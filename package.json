@@ -1,0 +1,20 @@
+{
+  "name": "argos",
+  "version": "0.1.0",
+  "description": "Argos is a visual diffing tool made with love",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argos-ci/argos.git"
+  },
+  "keywords": [
+  ],
+  "bugs": {
+    "url": "https://github.com/argos-ci/argos/issues"
+  },
+  "homepage": "https://github.com/argos-ci/argos#readme"
+}
