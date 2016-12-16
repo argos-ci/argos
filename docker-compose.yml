@@ -1,0 +1,11 @@
+version: '2'
+services:
+  postgres:
+    image: postgres:9.6
+    ports:
+      - '5432:5432'
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${USER}
+    volumes:
+      - ${PWD}/db:${PWD}/db

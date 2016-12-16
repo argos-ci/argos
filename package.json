@@ -5,16 +5,43 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint . && echo \"eslint: no lint errors\""
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/argos-ci/argos.git"
   },
-  "keywords": [
-  ],
+  "keywords": [],
   "bugs": {
     "url": "https://github.com/argos-ci/argos/issues"
   },
-  "homepage": "https://github.com/argos-ci/argos#readme"
+  "homepage": "https://github.com/argos-ci/argos#readme",
+  "dependencies": {
+    "amqplib": "^0.5.1",
+    "babel-cli": "^6.18.0",
+    "express": "^4.14.0",
+    "express-graphql": "^0.6.1",
+    "graphql": "^0.8.2",
+    "knex": "^0.12.6",
+    "objection": "^0.6.2",
+    "react": "^15.4.1",
+    "react-dom": "^15.4.1",
+    "react-router": "^4.0.0-alpha.6",
+    "recompose": "^0.21.0",
+    "material-ui-build-next": "git://github.com/oliviertassinari/material-ui.git#next-splitme",
+    "webpack": "^2.2.0-rc.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^7.1.1",
+    "eslint": "^3.12.2",
+    "eslint-config-airbnb": "^13.0.0",
+    "eslint-find-rules": "^1.14.3",
+    "eslint-plugin-babel": "^4.0.0",
+    "eslint-plugin-import": "^2.1.0",
+    "eslint-plugin-jsx-a11y": "^2.2.3",
+    "eslint-plugin-mocha": "^4.7.0",
+    "eslint-plugin-react": "^6.8.0",
+    "mocha": "^3.2.0",
+    "webpack-dev-server": "^2.2.0-rc.0"
+  }
 }
