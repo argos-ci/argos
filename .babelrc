@@ -1,5 +1,5 @@
 {
-  "presets": ["react],
+  "presets": ["react"],
   "env": {
     "server": {
       "presets": [
@@ -14,7 +14,7 @@
       "presets": [
         ["env", {
           "targets": {
-            "browsers": ["last 2 versions", "> 1%"],
+            "browsers": ["last 2 versions", "> 1%"]
           }
         }]
       ]

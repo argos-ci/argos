@@ -6,10 +6,11 @@
   "private": true,
   "scripts": {
     "lint": "eslint . && echo \"eslint: no lint errors\"",
+    "test": "npm run lint",
     "db:migrate": "knex migrate:latest",
     "postinstall": "yarn build:all && yarn db:migrate",
     "build:all": "yarn build:lib",
-    "build:lib": "NODE_ENV=production rm -rf lib/ && cp -R src/ lib/ && babel -d lib src"
+    "build:lib": "rm -rf lib/ && cp -R src/ lib/ && NODE_ENV=server babel -d lib src"
   },
   "repository": {
     "type": "git",
