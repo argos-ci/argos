@@ -8,7 +8,7 @@
     "lint": "eslint . && echo \"eslint: no lint errors\"",
     "test": "npm run lint",
     "db:migrate": "knex migrate:latest",
-    "postinstall": "yarn build:all && yarn db:migrate",
+    "heroku-postbuild": "yarn build:all && yarn db:migrate",
     "build:all": "yarn build:lib",
     "build:lib": "rm -rf lib/ && cp -R src/ lib/ && NODE_ENV=server babel -d lib src"
   },
@@ -19,6 +19,9 @@
   "keywords": [],
   "bugs": {
     "url": "https://github.com/argos-ci/argos/issues"
+  },
+  "engines": {
+    "node": "7.2.0"
   },
   "homepage": "https://github.com/argos-ci/argos#readme",
   "dependencies": {
