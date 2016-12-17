@@ -4,7 +4,12 @@ import convict from 'convict';
 const config = convict({
   env: {
     doc: 'The application environment',
-    format: ['production', 'development', 'test'],
+    format: [
+      'production',
+      'development',
+      'test',
+      'browser.development',
+    ],
     default: 'development',
     env: 'NODE_ENV',
   },
@@ -14,6 +19,13 @@ const config = convict({
       format: 'port',
       default: 3000,
       env: 'PORT',
+    },
+  },
+  client: {
+    port: {
+      doc: 'The client port number',
+      format: 'port',
+      default: 8000,
     },
   },
 });
