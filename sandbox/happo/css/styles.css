@@ -1,0 +1,16 @@
+@font-face{
+  font-family: 'Roboto';
+  src: url('/fonts/Roboto.woff') format('woff');
+}
+
+.foo {
+  padding: 30px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background-color: #ccc;
+  font-family: Roboto;
+  font-size: 18px;
+  line-height: 120%;
+  display: inline-block;
+
+}

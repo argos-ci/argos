@@ -1,0 +1,17 @@
+{
+  "name": "agros-sandbox-webdriverio",
+  "version": "1.0.0",
+  "description": "http://webdriver.io",
+  "main": "index.js",
+  "scripts": {
+    "start": "wdio webdriver.config.js"
+  },
+  "dependencies": {
+    "webdriverio": "^4.5.0"
+  },
+  "devDependencies": {
+    "wdio-dot-reporter": "0.0.6",
+    "wdio-mocha-framework": "^0.5.7",
+    "wdio-selenium-standalone-service": "0.0.7"
+  }
+}
