@@ -9,7 +9,7 @@ exports.config = {
   // directory is where your package.json resides, so `wdio` will be called from there.
   //
   specs: [
-    'google.spec.js'
+    'google.spec.js',
   ],
 
   // Patterns to exclude.
@@ -42,7 +42,7 @@ exports.config = {
     // grid with only 5 firefox instances available you can make sure that not more than
     // 5 instances get started at a time.
     maxInstances: 1,
-    browserName: 'chrome'
+    browserName: 'chrome',
   }],
 
   // ===================
@@ -123,15 +123,16 @@ exports.config = {
   // Options to be passed to Mocha.
   // See the full list at http://mochajs.org/
   mochaOpts: {
-    ui: 'bdd'
+    ui: 'bdd',
   },
 
   // =====
   // Hooks
   // =====
-  // WebdriverIO provides several hooks you can use to interfere with the test process in order to enhance
-  // it and to build services around it. You can either apply a single function or an array of
-  // methods to it. If one of them returns with a promise, WebdriverIO will wait until that promise got
+  // WebdriverIO provides several hooks you can use to interfere with the test
+  // process in order to enhance it and to build services around it. You can
+  // either apply a single function or an array of methods to it. If one of them
+  // returns with a promise, WebdriverIO will wait until that promise got
   // resolved to continue.
   //
   // Gets executed once before all workers get launched.
@@ -195,4 +196,4 @@ exports.config = {
   // possible to defer the end of the process using a promise.
   // onComplete: function(exitCode) {
   // }
-}
+};

@@ -28,7 +28,6 @@
     "react-dom": "^15.4.1",
     "react-router": "^4.0.0-alpha.6",
     "recompose": "^0.21.0",
-    "material-ui-build-next": "git://github.com/oliviertassinari/material-ui.git#next-splitme",
     "webpack": "^2.2.0-rc.0"
   },
   "devDependencies": {
