@@ -24,6 +24,7 @@
     "graphql": "^0.8.2",
     "knex": "^0.12.6",
     "objection": "^0.6.2",
+    "pg": "^6.1.2",
     "react": "^15.4.1",
     "react-dom": "^15.4.1",
     "react-router": "^4.0.0-alpha.6",
