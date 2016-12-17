@@ -8,6 +8,14 @@ const config = convict({
     default: 'development',
     env: 'NODE_ENV',
   },
+  server: {
+    port: {
+      doc: 'The server port number',
+      format: 'port',
+      default: 3000,
+      env: 'PORT',
+    },
+  },
 });
 
 const env = config.get('env');

@@ -6,7 +6,10 @@
   "private": true,
   "scripts": {
     "lint": "eslint . && echo \"eslint: no lint errors\"",
-    "db:migrate": "knex migrate:latest"
+    "db:migrate": "knex migrate:latest",
+    "postinstall": "yarn build:all && yarn db:migrate",
+    "build:all": "yarn build:lib",
+    "build:lib": "rm -rf lib/ && cp -R src/ lib/ && babel -d lib src"
   },
   "repository": {
     "type": "git",
@@ -22,11 +25,16 @@
     "babel-cli": "^6.18.0",
     "babel-preset-env": "^1.1.4",
     "babel-preset-react": "^6.16.0",
+    "babel-plugin-module-resolver": "^2.4.0",
+    "compression": "^1.6.2",
     "convict": "^1.5.0",
+    "ejs": "^2.5.5",
     "express": "^4.14.0",
+    "express-err": "^1.0.1",
     "express-graphql": "^0.6.1",
     "graphql": "^0.8.2",
     "knex": "^0.12.6",
+    "morgan": "^1.7.0",
     "objection": "^0.6.2",
     "pg": "^6.1.2",
     "react": "^15.4.1",
