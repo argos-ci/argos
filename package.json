@@ -5,7 +5,8 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "lint": "eslint . && echo \"eslint: no lint errors\""
+    "lint": "eslint . && echo \"eslint: no lint errors\"",
+    "db:migrate": "knex migrate:latest"
   },
   "repository": {
     "type": "git",
