@@ -1,11 +1,23 @@
 {
-  "presets": [
-    ["env", {
-      "targets": {
-        "browsers": ["last 2 versions", "> 1%"],
-        "node": "current"
-      }
-    }],
-    "react"
-  ]
+  "presets": ["react],
+  "env": {
+    "server": {
+      "presets": [
+        ["env", {
+          "targets": {
+            "node": "current"
+          }
+        }]
+      ]
+    },
+    "browser": {
+      "presets": [
+        ["env", {
+          "targets": {
+            "browsers": ["last 2 versions", "> 1%"],
+          }
+        }]
+      ]
+    }
+  }
 }

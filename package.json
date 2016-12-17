@@ -9,7 +9,7 @@
     "db:migrate": "knex migrate:latest",
     "postinstall": "yarn build:all && yarn db:migrate",
     "build:all": "yarn build:lib",
-    "build:lib": "rm -rf lib/ && cp -R src/ lib/ && babel -d lib src"
+    "build:lib": "NODE_ENV=production rm -rf lib/ && cp -R src/ lib/ && babel -d lib src"
   },
   "repository": {
     "type": "git",
