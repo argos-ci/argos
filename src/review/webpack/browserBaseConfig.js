@@ -32,14 +32,9 @@ export default {
         use: 'file-loader', // Hash name by default
       },
       {
-        test: /\.(jpe?g|png|gif|svg)$/,
+        test: /\.svg$/,
         use: 'image-webpack-loader',
         options: {
-          optimizationLevel: 7,
-          pngquant: {
-            quality: '65-90',
-            speed: 4,
-          },
           svgo: {
             plugins: [{
               convertPathData: {

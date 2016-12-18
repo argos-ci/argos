@@ -16,9 +16,12 @@ export default {
     // only- means to only hot reload for successful updates.
     'webpack/hot/only-dev-server',
   ],
+  // webpack-dev-server options.
   devServer: {
-    // activate hot reloading
+    // activate hot reloading.
     hot: true,
+
+    // webpack-dev-middleware options.
     quiet: false,
     noInfo: false,
     watchOptions: {
