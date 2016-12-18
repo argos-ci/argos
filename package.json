@@ -6,9 +6,10 @@
   "private": true,
   "scripts": {
     "lint": "eslint . && echo \"eslint: no lint errors\"",
-    "test": "npm run lint",
+    "test": "yarn lint && yarn test:unit",
+    "test:unit": "jest",
     "db:migrate": "knex migrate:latest",
-    "review:browser:development": "NODE_ENV=browser.development babel-node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --config=src/review/webpack/browserDevelopmentConfig.js --progress",
+    "review:browser:development": "babel-node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --config=src/review/webpack/browserDevelopmentConfig.js --progress",
     "heroku-postbuild": "yarn build:all && yarn db:migrate",
     "build:all": "yarn build:lib",
     "build:lib": "rm -rf lib/ && cp -R src/ lib/ && NODE_ENV=server babel -d lib src"
@@ -43,6 +44,7 @@
     "force-case-sensitivity-webpack-plugin": "^0.2.1",
     "graphql": "^0.8.2",
     "html-webpack-plugin": "^2.24.1",
+    "image-diff": "^1.6.3",
     "knex": "^0.12.6",
     "minimist": "^1.2.0",
     "morgan": "^1.7.0",
@@ -65,8 +67,18 @@
     "eslint-plugin-jsx-a11y": "^2.2.3",
     "eslint-plugin-mocha": "^4.7.0",
     "eslint-plugin-react": "^6.8.0",
+    "jest": "^18.0.0",
     "mocha": "^3.2.0",
     "selenium-webdriver": "^3.0.1",
     "webpack-dev-server": "^2.2.0-rc.0"
+  },
+  "jest": {
+    "notify": true,
+    "testPathDirs": [
+      "<rootDir>/src"
+    ],
+    "modulePaths": [
+      "<rootDir>/src"
+    ]
   }
 }

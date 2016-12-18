@@ -1,5 +1,9 @@
 {
-  "presets": ["react", "stage-2"],
+  "presets": ["react", "stage-2", ["env", {
+    "targets": {
+      "node": "current"
+    },
+  }]],
   "env": {
     "server": {
       "presets": [
@@ -9,15 +13,6 @@
           }
         }]
       ]
-    },
-    "browser.development": {
-      "presets": [
-        ["env", {
-          "targets": {
-            "node": "current"
-          },
-        }]
-      ],
     },
     "browser.production": {
       "presets": [
