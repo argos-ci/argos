@@ -42,6 +42,7 @@
     "express-graphql": "^0.6.1",
     "force-case-sensitivity-webpack-plugin": "^0.2.1",
     "graphql": "^0.8.2",
+    "html-webpack-plugin": "^2.24.1",
     "knex": "^0.12.6",
     "minimist": "^1.2.0",
     "morgan": "^1.7.0",

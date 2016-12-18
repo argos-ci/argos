@@ -6,7 +6,6 @@ import config from '../../config';
 export default {
   ...browserBaseConfig,
   entry: [
-    ...browserBaseConfig.entry,
     // activate HMR for React.
     'react-hot-loader/patch',
     // bundle the client for webpack-dev-server
@@ -15,11 +14,13 @@ export default {
     // bundle the client for hot reloading
     // only- means to only hot reload for successful updates.
     'webpack/hot/only-dev-server',
+    ...browserBaseConfig.entry,
   ],
   // webpack-dev-server options.
   devServer: {
     // activate hot reloading.
     hot: true,
+    port: config.get('client.port'),
 
     // webpack-dev-middleware options.
     quiet: false,
@@ -63,6 +64,7 @@ export default {
   },
   devtool: 'eval', // no SourceMap, but named modules. Fastest at the expense of detail.
   plugins: [
+    ...browserBaseConfig.plugins,
     // Prevent naming issues.
     new ForceCaseSensitivityPlugin(),
     // Activates HMR.

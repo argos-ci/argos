@@ -1,4 +1,5 @@
 import path from 'path';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
 
 export default {
   entry: [
@@ -54,4 +55,9 @@ export default {
     maxAssetSize: 2000000,
     maxEntrypointSize: 6000000,
   },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: 'src/review/index.ejs',
+    }),
+  ],
 };
