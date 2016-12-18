@@ -16,5 +16,18 @@ renderRoot();
 
 // Hot Module Replacement API
 if (module.hot) {
-  module.hot.accept('./Root', renderRoot);
+  /**
+   * The webpack docs say to use the following but jss hot reloading isnt working
+   * module.hot.accept('./Root', renderRoot);
+   */
+  module.hot.accept('./Root', () => {
+    const NextRoot = require('./Root').default; // eslint-disable-line global-require
+
+    render(
+      <AppContainer>
+        <NextRoot />
+      </AppContainer>,
+      document.getElementById('root'),
+    );
+  });
 }
