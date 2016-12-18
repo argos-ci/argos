@@ -7,6 +7,9 @@ module.exports = {
     node: true,
     mocha: true,
   },
+  globals: {
+    expect: true,
+  },
   extends: 'airbnb',
   parser: 'babel-eslint',
   parserOptions: {
