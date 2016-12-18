@@ -5,6 +5,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
+    "dev": "nodemon src/server",
     "lint": "eslint . && echo \"eslint: no lint errors\"",
     "test": "yarn lint && yarn test:unit",
     "test:unit": "jest",
