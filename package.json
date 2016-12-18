@@ -6,7 +6,8 @@
   "private": true,
   "scripts": {
     "lint": "eslint . && echo \"eslint: no lint errors\"",
-    "test": "npm run lint",
+    "test": "yarn lint && yarn test:unit",
+    "test:unit": "jest",
     "db:migrate": "knex migrate:latest",
     "review:browser:development": "babel-node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --config=src/review/webpack/browserDevelopmentConfig.js --progress",
     "heroku-postbuild": "yarn build:all && yarn db:migrate",
