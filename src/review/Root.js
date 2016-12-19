@@ -1,9 +1,17 @@
 import React from 'react';
+import MuiThemeProvider from 'material-ui-build-next/src/styles/MuiThemeProvider';
+import createStyleManager from 'modules/styles/createStyleManager';
+import Routes from './Routes';
 
-const App = () => (
-  <div>
-    <h2>Hello, </h2>
-  </div>
-);
+function Root() {
+  const styles = createStyleManager();
+  const { styleManager, theme } = styles;
 
-export default App;
+  return (
+    <MuiThemeProvider theme={theme} styleManager={styleManager}>
+      <Routes />
+    </MuiThemeProvider>
+  );
+}
+
+export default Root;
