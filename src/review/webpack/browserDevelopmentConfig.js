@@ -16,10 +16,17 @@ export default {
     'webpack/hot/only-dev-server',
     ...browserBaseConfig.entry,
   ],
+  output: {
+    ...browserBaseConfig.output,
+    // * filename */ comments to generated require()s in the output.
+    pathinfo: true,
+    publicPath: '/',
+  },
   // webpack-dev-server options.
   devServer: {
     // activate hot reloading.
     hot: true,
+    historyApiFallback: true,
     port: config.get('client.port'),
 
     // webpack-dev-middleware options.

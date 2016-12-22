@@ -5,6 +5,13 @@ import AppBar from 'material-ui-build-next/src/AppBar';
 import Toolbar from 'material-ui-build-next/src/Toolbar';
 import withStyles from 'material-ui-build-next/src/styles/withStyles';
 import { white } from 'material-ui-build-next/src/styles/colors';
+import { browserHistory, Router, Route, IndexRoute } from 'react-router';
+import Product from 'review/routes/product/Product';
+import Profile from 'review/routes/profile/Profile';
+import NotFound from 'review/routes/notFound/NotFound';
+import Repository from 'review/routes/repository/Repository';
+import Build from 'review/routes/build/Build';
+import Settings from 'review/routes/settings/Settings';
 
 const styleSheet = createStyleSheet('Routes', (theme) => {
   return {
@@ -31,13 +38,29 @@ function Routes(props) {
   } = props;
 
   return (
-    <AppBar>
-      <Toolbar>
-        <Text className={classes.title} type="title" colorInherit>
-          {'Argos'}
-        </Text>
-      </Toolbar>
-    </AppBar>
+    <div>
+      <AppBar>
+        <Toolbar>
+          <Text className={classes.title} type="title" colorInherit>
+            {'Argos'}
+          </Text>
+        </Toolbar>
+      </AppBar>
+      <br />
+      <br />
+      <br />
+      <br />
+      <Router history={browserHistory}>
+        <Route path="/" component={Product} />
+        <Route path="/profile/:profileId" component={Profile} />
+        <Route path="/:profileId/:repositoryId">
+          <IndexRoute component={Repository} />
+          <Route path="builds/:buildId" component={Build} />
+          <Route path="settings" component={Settings} />
+        </Route>
+        <Route path="*" component={NotFound} />
+      </Router>
+    </div>
   );
 }
 

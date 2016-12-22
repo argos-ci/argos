@@ -8,7 +8,7 @@ const renderRoot = () => {
     <AppContainer>
       <Root />
     </AppContainer>,
-    document.getElementById('root'),
+    document.querySelector('#root'),
   );
 };
 
@@ -27,7 +27,7 @@ if (module.hot) {
       <AppContainer>
         <NextRoot />
       </AppContainer>,
-      document.getElementById('root'),
+      document.querySelector('#root'),
     );
   });
 }
