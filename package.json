@@ -10,6 +10,7 @@
     "test": "yarn lint && yarn test:unit",
     "test:unit": "jest",
     "db:migrate": "knex migrate:latest",
+    "db:seed": "knex seed:run",
     "review:browser:development": "babel-node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --config=src/review/webpack/browserDevelopmentConfig.js --progress",
     "heroku-postbuild": "yarn build:all && yarn db:migrate",
     "build:all": "yarn build:lib",
