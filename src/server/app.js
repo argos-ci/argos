@@ -8,6 +8,9 @@ import errorHandler from 'express-err';
 import ejs from 'ejs';
 import graphqlMiddleware from 'server/graphql/middleware';
 import config from 'config';
+import configureDatabase from './configureDatabase';
+
+configureDatabase();
 
 const app = express();
 

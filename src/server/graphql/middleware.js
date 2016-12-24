@@ -1,4 +1,5 @@
 import graphqlHTTP from 'express-graphql';
+import config from 'config';
 import schema from './schema';
 
 export default () => {
@@ -7,7 +8,7 @@ export default () => {
     rootValue: {
       hello: () => 'Hello world!',
     },
-    pretty: true,
-    graphiql: true,
+    pretty: config.get('env') !== 'production',
+    graphiql: config.get('env') !== 'production',
   });
 };
