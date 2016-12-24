@@ -5,6 +5,9 @@ export default {
   entry: [
     './src/review/review.js',
   ],
+  output: {
+    pathinfo: false,
+  },
   target: 'web',
   resolve: {
     extensions: ['.js'],
@@ -52,12 +55,16 @@ export default {
     ],
   },
   performance: {
-    maxAssetSize: 2000000,
+    maxAssetSize: 4000000,
     maxEntrypointSize: 6000000,
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: 'src/review/index.ejs',
+      minify: {
+        removeComments: true,
+        collapseWhitespace: true,
+      },
     }),
   ],
 };
