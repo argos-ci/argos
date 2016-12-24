@@ -6,7 +6,8 @@ import compress from 'compression';
 import morgan from 'morgan';
 import errorHandler from 'express-err';
 import ejs from 'ejs';
-import config from './config';
+import graphqlMiddleware from 'server/graphql/middleware';
+import config from 'config';
 
 const app = express();
 
@@ -17,6 +18,8 @@ app.use(morgan('dev'));
 app.use(compress());
 
 app.use(express.static(path.join(__dirname, '../public')));
+
+app.use('/graphql', graphqlMiddleware());
 
 // Error handling.
 app.use((err, req, res, next) => {

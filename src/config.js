@@ -17,7 +17,7 @@ const config = convict({
     port: {
       doc: 'The server port number',
       format: 'port',
-      default: 3000,
+      default: 4001,
       env: 'PORT',
     },
   },
@@ -25,7 +25,7 @@ const config = convict({
     port: {
       doc: 'The client port number',
       format: 'port',
-      default: 4000,
+      default: 4002,
     },
   },
 });

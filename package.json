@@ -5,7 +5,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "dev": "nodemon src/server",
+    "server:development": "nodemon src/server/bootstrap/development",
     "lint": "eslint . && echo \"eslint: no lint errors\"",
     "test": "yarn lint && yarn test:unit",
     "test:unit": "jest",
@@ -29,6 +29,7 @@
   "homepage": "https://github.com/argos-ci/argos#readme",
   "dependencies": {
     "amqplib": "^0.5.1",
+    "app-module-path": "^2.1.0",
     "babel-cli": "^6.18.0",
     "babel-core": "^6.21.0",
     "babel-loader": "^6.2.10",
@@ -59,7 +60,8 @@
     "react-hot-loader": "3.0.0-beta.6",
     "react-router": "^3.0.0",
     "recompose": "^0.21.0",
-    "webpack": "^2.2.0-rc.0"
+    "webpack": "^2.2.0-rc.0",
+    "whatwg-fetch": "^2.0.1"
   },
   "devDependencies": {
     "babel-eslint": "^7.1.1",
@@ -73,6 +75,7 @@
     "eslint-plugin-react": "^6.8.0",
     "jest": "^18.0.0",
     "mocha": "^3.2.0",
+    "nodemon": "^1.11.0",
     "selenium-webdriver": "^3.0.1",
     "webpack-dev-server": "^2.2.0-rc.0"
   },
