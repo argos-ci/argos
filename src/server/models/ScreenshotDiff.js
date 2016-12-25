@@ -1,7 +1,7 @@
 import BaseModel from 'server/models/BaseModel';
 
 export default class ScreenshotDiff extends BaseModel {
-  static tableName = 'screenshotDiffs';
+  static tableName = 'screenshot_diffs';
 
   static jsonSchema = {
     ...BaseModel.jsonSchema,

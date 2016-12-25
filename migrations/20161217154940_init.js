@@ -23,7 +23,7 @@ exports.up = knex =>
       table.dateTime('createdAt').notNullable();
       table.dateTime('updatedAt').notNullable();
     })
-    .createTable('screenshotBuckets', (table) => {
+    .createTable('screenshot_buckets', (table) => {
       table.bigincrements('id').primary();
       table.string('name').notNullable().index();
       table.string('commit').notNullable().index();
@@ -34,7 +34,7 @@ exports.up = knex =>
     })
     .createTable('screenshots', (table) => {
       table.bigincrements('id').primary();
-      table.bigInteger('screenshotBucketId').notNullable().references('screenshotBuckets.id');
+      table.bigInteger('screenshotBucketId').notNullable().references('screenshot_buckets.id');
       table.string('name').notNullable().index();
       table.string('s3Id').notNullable().index();
       table.dateTime('createdAt').notNullable();
@@ -42,12 +42,12 @@ exports.up = knex =>
     })
     .createTable('builds', (table) => {
       table.bigincrements('id').primary();
-      table.bigInteger('baseScreenshotBucketId').notNullable().references('screenshotBuckets.id');
-      table.bigInteger('compareScreenshotBucketId').notNullable().references('screenshotBuckets.id');
+      table.bigInteger('baseScreenshotBucketId').notNullable().references('screenshot_buckets.id');
+      table.bigInteger('compareScreenshotBucketId').notNullable().references('screenshot_buckets.id');
       table.dateTime('createdAt').notNullable();
       table.dateTime('updatedAt').notNullable();
     })
-    .createTable('screenshotDiffs', (table) => {
+    .createTable('screenshot_diffs', (table) => {
       table.bigincrements('id').primary();
       table.bigInteger('buildId').notNullable().references('builds.id');
       table.bigInteger('baseScreenshotId').notNullable().references('screenshots.id');
@@ -61,10 +61,10 @@ exports.up = knex =>
 
 exports.down = knex =>
   knex.schema
-    .dropTableIfExists('users')
-    .dropTableIfExists('screenshotDiffs')
+    .dropTableIfExists('screenshot_diffs')
     .dropTableIfExists('builds')
     .dropTableIfExists('screenshots')
-    .dropTableIfExists('screenshotBuckets')
+    .dropTableIfExists('screenshot_buckets')
     .dropTableIfExists('repositories')
-    .dropTableIfExists('organizations');
+    .dropTableIfExists('organizations')
+    .dropTableIfExists('users');

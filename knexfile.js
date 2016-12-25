@@ -9,6 +9,9 @@ const config = {
       min: 2,
       max: 10,
     },
+    seeds: {
+      directory: './seeds',
+    },
   },
   production: {
     client: 'postgresql',

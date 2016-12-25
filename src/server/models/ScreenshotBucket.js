@@ -1,7 +1,7 @@
 import BaseModel from 'server/models/BaseModel';
 
 export default class ScreenshotBucket extends BaseModel {
-  static tableName = 'screenshotBuckets';
+  static tableName = 'screenshot_buckets';
 
   static jsonSchema = {
     ...BaseModel.jsonSchema,
