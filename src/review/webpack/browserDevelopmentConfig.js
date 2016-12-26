@@ -30,12 +30,6 @@ export default {
     port: config.get('client.port'),
 
     // webpack-dev-middleware options.
-    quiet: false,
-    noInfo: false,
-    watchOptions: {
-      aggregateTimeout: 300,
-      poll: 1000,
-    },
     stats: {
       // Remove built modules information.
       modules: false,
