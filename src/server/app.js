@@ -20,7 +20,7 @@ app.set('views', __dirname);
 app.use(morgan('dev'));
 app.use(compress());
 
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, '../../public')));
 
 app.use('/graphql', graphqlMiddleware());
 
