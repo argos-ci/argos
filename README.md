@@ -4,6 +4,12 @@
 
 [![Build Status](https://travis-ci.org/argos-ci/argos.svg?branch=master)](https://travis-ci.org/argos-ci/argos)
 
+## The problem solved
+
+- UI tests are **hard to write**.
+- Automated testing can't tell you if something doesn't look right. UI **regressions** may go undetected.
+- It's hard for **designers** to participate in the code review process.
+
 ## Install
 
 ```sh
