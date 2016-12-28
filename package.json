@@ -8,7 +8,7 @@
     "server:development": "nodemon src/server/bootstrap/development",
     "lint": "eslint . && echo \"eslint: no lint errors\"",
     "test": "yarn lint && yarn test:unit",
-    "test:unit": "jest",
+    "test:unit": "jest -i",
     "db:migrate": "knex migrate:latest",
     "db:seed": "knex seed:run",
     "review:browser:development": "babel-node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --config=src/review/webpack/browserDevelopmentConfig.js --progress",
