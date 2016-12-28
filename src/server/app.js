@@ -36,5 +36,5 @@ app.use(errorHandler({
 
 const server = http.createServer(app);
 server.listen(config.get('server.port'), () => {
-  console.log('App listening at port %s', server.address().port);
+  console.log('http://localhost:%s/', server.address().port);
 });
