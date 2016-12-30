@@ -18,3 +18,9 @@ nvm i
 npm i -g yarn
 yarn
 ```
+
+## Contributing
+
+Changes and improvements are more than welcome!
+Feel free to fork and open a pull request.
+Please make your changes in a specific branch and request to pull into master!
