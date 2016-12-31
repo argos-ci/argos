@@ -5,16 +5,18 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "server:development": "nodemon src/server/bootstrap/development",
+    "server:development": "nodemon src/server/bootstrap/bootstrap",
+    "server:production": "rm -rf lib/ && cp -R src/ lib/ && NODE_ENV=server babel -d lib src",
+    "server:start": "node lib/server/bootstrap/bootstrap",
     "lint": "eslint . && echo \"eslint: no lint errors\"",
     "test": "yarn lint && yarn test:unit",
     "test:unit": "jest -i",
     "db:migrate": "knex migrate:latest",
     "db:seed": "knex seed:run",
-    "review:browser:development": "babel-node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --config=src/review/webpack/browserDevelopmentConfig.js --progress",
-    "heroku-postbuild": "yarn build:all && yarn db:migrate",
-    "build:all": "yarn build:lib",
-    "build:lib": "rm -rf lib/ && cp -R src/ lib/ && NODE_ENV=server babel -d lib src"
+    "review:browser:development": "babel-node ./node_modules/.bin/webpack-dev-server --config=src/review/webpack/browserDevelopmentConfig.js --progress",
+    "review:browser:production": "rm -rf server/static/review && NODE_ENV=docs-browser-production babel-node ./node_modules/.bin/webpack --config=src/review/webpack/browserProductionConfig.js --progress",
+    "heroku-postbuild": "yarn build && yarn db:migrate",
+    "build": "yarn server:production && yarn review:browser:production"
   },
   "repository": {
     "type": "git",
@@ -31,6 +33,7 @@
   "dependencies": {
     "amqplib": "^0.5.1",
     "app-module-path": "^2.1.0",
+    "assets-webpack-plugin": "^3.5.0",
     "babel-cli": "^6.18.0",
     "babel-core": "^6.21.0",
     "babel-loader": "^6.2.10",
@@ -48,6 +51,7 @@
     "express-graphql": "^0.6.1",
     "force-case-sensitivity-webpack-plugin": "^0.2.1",
     "graphql": "^0.8.2",
+    "html-minifier": "^3.2.3",
     "html-webpack-plugin": "^2.24.1",
     "image-diff": "^1.6.3",
     "knex": "^0.12.6",

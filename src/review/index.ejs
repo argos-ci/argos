@@ -12,5 +12,9 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <% htmlWebpackPlugin.files.js.forEach((file) => { %>
+      <script src="<%=file %>" defer></script>
+    <% }); %>
   </body>
 </html>
