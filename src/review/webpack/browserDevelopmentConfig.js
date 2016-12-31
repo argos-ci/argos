@@ -1,5 +1,6 @@
 import webpack from 'webpack';
 import ForceCaseSensitivityPlugin from 'force-case-sensitivity-webpack-plugin';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
 import browserBaseConfig from './browserBaseConfig';
 import config from '../../config';
 
@@ -67,6 +68,10 @@ export default {
   devtool: 'eval', // no SourceMap, but named modules. Fastest at the expense of detail.
   plugins: [
     ...browserBaseConfig.plugins,
+    new HtmlWebpackPlugin({
+      inject: false,
+      template: 'src/review/index.ejs',
+    }),
     // Prevent naming issues.
     new ForceCaseSensitivityPlugin(),
     // Activates HMR.

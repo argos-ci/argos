@@ -1,12 +1,16 @@
 import path from 'path';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
 
 export default {
   entry: [
     './src/review/review.js',
   ],
   output: {
+    path: path.join(__dirname, '../../../server/static/review'),
+    publicPath: '/static/review/',
     pathinfo: false,
+    filename: '[name].[hash].js',
+    sourceMapFilename: '[name].[hash].map.js',
+    chunkFilename: '[id].chunk.[chunkhash].js',
   },
   target: 'web',
   resolve: {
@@ -55,16 +59,9 @@ export default {
     ],
   },
   performance: {
-    maxAssetSize: 4000000,
-    maxEntrypointSize: 6000000,
+    maxAssetSize: 4e6,
+    maxEntrypointSize: 6e6,
   },
   plugins: [
-    new HtmlWebpackPlugin({
-      template: 'src/review/index.ejs',
-      minify: {
-        removeComments: true,
-        collapseWhitespace: true,
-      },
-    }),
   ],
 };
