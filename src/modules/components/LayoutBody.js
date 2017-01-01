@@ -7,7 +7,10 @@ import withStyles from 'material-ui-build-next/src/styles/withStyles';
 
 const styleSheet = createStyleSheet('LayoutBody', () => ({
   root: {
-    margin: '0 0 38px',
+    margin: 8 * 2,
+  },
+  rootBottom: {
+    marginBottom: 8 * 4,
   },
   rootResponsive: {
     '@media (min-width: 600px)': {
@@ -35,8 +38,10 @@ const styleSheet = createStyleSheet('LayoutBody', () => ({
 
 function LayoutBody(props) {
   const {
+    bottom,
     children,
     classes,
+    className,
     fullHeight,
     fullWidth,
     style,
@@ -48,7 +53,8 @@ function LayoutBody(props) {
       className={classNames(classes.root, {
         [classes.rootResponsive]: !fullWidth,
         [classes.rootFullHeight]: fullHeight,
-      })}
+        [classes.rootBottom]: bottom,
+      }, className)}
       style={style}
       {...other}
     >
@@ -58,14 +64,17 @@ function LayoutBody(props) {
 }
 
 LayoutBody.propTypes = {
+  bottom: PropTypes.bool,
   children: PropTypes.node,
   classes: PropTypes.object.isRequired,
+  className: PropTypes.string,
   fullHeight: PropTypes.bool,
   fullWidth: PropTypes.bool,
   style: PropTypes.object,
 };
 
 LayoutBody.defaultProps = {
+  bottom: true,
   fullHeight: false,
   fullWidth: false,
 };

@@ -1,8 +1,26 @@
 # Argos
 
-> Argos is a visual diffing tool made with love.
+> Stop discovering visual regressions
 
 [![Build Status](https://travis-ci.org/argos-ci/argos.svg?branch=master)](https://travis-ci.org/argos-ci/argos)
+
+**Forget about regressions**:
+Argos will warn you if any visual regressions are introduced.
+It comes with a Github integration.
+It will notify you on pull requests when something might be broken.
+
+**Save time**:
+Argos compares screenshots at high speed.
+You get a fast feedback.
+You can review visual changes in one click as part of your code review process.
+
+**Integrates in your development workflow**:
+Argos integrates directly into your test suite and development workflow.
+We provide a command line interface streamlining the process.
+
+**Ship pixel perfect interfaces**:
+Argos provide different tools to compares screenshots.
+Designers can easily participate in the code review process.
 
 ## The problem solved
 
