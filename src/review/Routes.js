@@ -1,7 +1,14 @@
 import React from 'react';
 import { createStyleSheet } from 'jss-theme-reactor';
 import withStyles from 'material-ui-build-next/src/styles/withStyles';
-import { browserHistory, Router, Route, IndexRoute } from 'react-router';
+import {
+  applyRouterMiddleware,
+  browserHistory,
+  Router,
+  Route,
+  IndexRoute,
+ } from 'react-router';
+import plugAnalyticsMiddleware from 'modules/react-router/plugAnalyticsMiddleware';
 import ProductHome from 'review/routes/product/Home';
 import Profile from 'review/routes/profile/Profile';
 import NotFound from 'review/routes/notFound/NotFound';
@@ -27,7 +34,12 @@ const styleSheet = createStyleSheet('Routes', (theme) => {
 
 function Routes() {
   return (
-    <Router history={browserHistory}>
+    <Router
+      history={browserHistory}
+      render={applyRouterMiddleware(
+        plugAnalyticsMiddleware,
+      )}
+    >
       <Route path="/" component={ProductHome} />
       <Route path="/profile/:profileId" component={Profile} />
       <Route path="/:profileId/:repositoryId">
