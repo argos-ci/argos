@@ -13,6 +13,10 @@ const config = convict({
     default: 'development',
     env: 'NODE_ENV',
   },
+  googleAnalytics: {
+    doc: 'The tracking id',
+    default: 'UA-89989315-1',
+  },
   server: {
     port: {
       doc: 'The server port number',

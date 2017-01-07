@@ -5,6 +5,7 @@ import ejs from 'ejs';
 import fs from 'fs';
 import path from 'path';
 import { minify } from 'html-minifier';
+import config from 'config';
 
 let htmlWebpackPlugin;
 let indexString = fs.readFileSync(path.join(__dirname, '../review/index.ejs'), 'UTF-8');
@@ -51,6 +52,7 @@ export default (req, res) => {
     filename: 'review/index.ejs',
     isMediaBot: isMediaBot(req.headers['user-agent']),
     htmlWebpackPlugin,
+    config,
   });
 
   res.status(200).send(output);

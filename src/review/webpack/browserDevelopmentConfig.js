@@ -1,6 +1,5 @@
 import webpack from 'webpack';
 import ForceCaseSensitivityPlugin from 'force-case-sensitivity-webpack-plugin';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
 import browserBaseConfig from './browserBaseConfig';
 import config from '../../config';
 
@@ -19,6 +18,7 @@ export default {
   ],
   output: {
     ...browserBaseConfig.output,
+    filename: 'browser.js',
     // * filename */ comments to generated require()s in the output.
     pathinfo: true,
     publicPath: '/',
@@ -37,6 +37,9 @@ export default {
       // Remove built modules information to chunk information.
       chunkModules: false,
       colors: true,
+    },
+    proxy: {
+      '**': `http://localhost:${config.get('server.port')}`,
     },
   },
   module: {
@@ -68,10 +71,6 @@ export default {
   devtool: 'eval', // no SourceMap, but named modules. Fastest at the expense of detail.
   plugins: [
     ...browserBaseConfig.plugins,
-    new HtmlWebpackPlugin({
-      inject: false,
-      template: 'src/review/index.ejs',
-    }),
     // Prevent naming issues.
     new ForceCaseSensitivityPlugin(),
     // Activates HMR.

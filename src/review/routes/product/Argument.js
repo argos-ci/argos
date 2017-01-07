@@ -19,7 +19,7 @@ const styleSheet = createStyleSheet('ProductArgument', () => ({
   },
 }));
 
-const ProductArgument = (props) => {
+function ProductArgument(props) {
   const {
     classes,
     description,
@@ -28,7 +28,7 @@ const ProductArgument = (props) => {
 
   return (
     <div className={classes.screen}>
-      <LayoutBody bottom={false}>
+      <LayoutBody margin bottom={false}>
         <Text type="title" component="h3" gutterBottom>
           {title}
         </Text>
@@ -38,7 +38,7 @@ const ProductArgument = (props) => {
       </LayoutBody>
     </div>
   );
-};
+}
 
 ProductArgument.propTypes = {
   classes: PropTypes.object.isRequired,
