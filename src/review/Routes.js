@@ -8,7 +8,7 @@ import {
   Route,
   IndexRoute,
  } from 'react-router';
-import plugAnalyticsMiddleware from 'modules/react-router/plugAnalyticsMiddleware';
+import plugAnalyticsMiddleware from 'modules/reactRouter/plugAnalyticsMiddleware';
 import ProductHome from 'review/routes/product/Home';
 import Profile from 'review/routes/profile/Profile';
 import NotFound from 'review/routes/notFound/NotFound';
