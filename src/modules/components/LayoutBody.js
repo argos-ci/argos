@@ -6,7 +6,7 @@ import { createStyleSheet } from 'jss-theme-reactor';
 import withStyles from 'material-ui-build-next/src/styles/withStyles';
 
 const styleSheet = createStyleSheet('LayoutBody', () => ({
-  root: {
+  rootMargin: {
     margin: 8 * 2,
   },
   rootBottom: {
@@ -32,7 +32,6 @@ const styleSheet = createStyleSheet('LayoutBody', () => ({
   },
   rootFullHeight: {
     height: '100%',
-    marginBottom: 0,
   },
 }));
 
@@ -44,6 +43,7 @@ function LayoutBody(props) {
     className,
     fullHeight,
     fullWidth,
+    margin,
     style,
     ...other
   } = props;
@@ -53,6 +53,7 @@ function LayoutBody(props) {
       className={classNames(classes.root, {
         [classes.rootResponsive]: !fullWidth,
         [classes.rootFullHeight]: fullHeight,
+        [classes.rootMargin]: margin,
         [classes.rootBottom]: bottom,
       }, className)}
       style={style}
@@ -70,6 +71,7 @@ LayoutBody.propTypes = {
   className: PropTypes.string,
   fullHeight: PropTypes.bool,
   fullWidth: PropTypes.bool,
+  margin: PropTypes.bool,
   style: PropTypes.object,
 };
 
@@ -77,6 +79,7 @@ LayoutBody.defaultProps = {
   bottom: true,
   fullHeight: false,
   fullWidth: false,
+  margin: false,
 };
 
 export default withStyles(styleSheet)(LayoutBody);

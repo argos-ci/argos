@@ -39,7 +39,7 @@ function ProductHome(props) {
       </LayoutAppBar>
       <ScrollView>
         <Paper rounded={false} zDepth={3} className={classes.landing}>
-          <LayoutBody bottom={false}>
+          <LayoutBody margin bottom={false}>
             <Text type="display1" component="h1" gutterBottom>
               {'Stop discovering visual regressions'}
             </Text>
@@ -81,7 +81,7 @@ function ProductHome(props) {
           `}
         />
         <Divider />
-        <LayoutBody>
+        <LayoutBody margin>
           <Text type="body1" align="center">
             {'Argos · '}
             <a href="https://github.com/argos-ci/argos">

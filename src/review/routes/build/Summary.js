@@ -1,10 +1,11 @@
 import React from 'react';
+import Text from 'material-ui-build-next/src/Text';
 
 function BuildSummary() {
   return (
-    <div>
-      BuildSummary
-    </div>
+    <Text type="headline">
+      Summary
+    </Text>
   );
 }
 
