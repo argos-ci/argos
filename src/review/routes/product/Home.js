@@ -45,7 +45,7 @@ function ProductHome(props) {
             </Text>
             <Text type="headline" component="h2" className={classes.headline}>
               {`
-                Argos's visual regression system gives you high confidence in doing change
+                Argos's visual regression system gives you high confidence in doing changes
               `}
             </Text>
           </LayoutBody>
@@ -74,9 +74,9 @@ function ProductHome(props) {
           `}
         />
         <ProductArgument
-          title={'Ship pixel perfect interfaces'}
+          title={'Ship pixel-perfect interfaces'}
           description={`
-            Argos provide different tools to compares screenshots.
+            Argos provides different tools to compare screenshots.
             Designers can easily participate in the code review process.
           `}
         />

@@ -18,8 +18,8 @@ You can review visual changes in one click as part of your code review process.
 Argos integrates directly into your test suite and development workflow.
 We provide a command line interface streamlining the process.
 
-**Ship pixel perfect interfaces**:
-Argos provide different tools to compares screenshots.
+**Ship pixel-perfect interfaces**:
+Argos provides different tools to compare screenshots.
 Designers can easily participate in the code review process.
 
 ## The problem solved
