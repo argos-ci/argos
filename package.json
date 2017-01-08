@@ -7,7 +7,7 @@
   "scripts": {
     "server:development": "nodemon src/server/bootstrap/bootstrap",
     "server:production": "rm -rf lib/ && cp -R src/ lib/ && NODE_ENV=server babel -d lib src",
-    "server:start": "node lib/server/bootstrap/bootstrap",
+    "server:start": "NODE_ENV=production node lib/server/bootstrap/bootstrap",
     "lint": "eslint . && echo \"eslint: no lint errors\"",
     "test": "yarn lint && yarn test:unit",
     "test:unit": "jest -i",
