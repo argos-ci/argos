@@ -6,7 +6,7 @@ export default class Screenshot extends BaseModel {
   static jsonSchema = {
     ...BaseModel.jsonSchema,
     required: [
-      ...BaseModel.required,
+      ...BaseModel.jsonSchema.required,
       'name',
       's3Id',
     ],

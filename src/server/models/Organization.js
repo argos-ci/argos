@@ -6,7 +6,7 @@ export default class Organization extends BaseModel {
   static jsonSchema = {
     ...BaseModel.jsonSchema,
     required: [
-      ...BaseModel.required,
+      ...BaseModel.jsonSchema.required,
       'githubId',
       'name',
     ],

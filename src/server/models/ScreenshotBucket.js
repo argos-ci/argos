@@ -6,7 +6,7 @@ export default class ScreenshotBucket extends BaseModel {
   static jsonSchema = {
     ...BaseModel.jsonSchema,
     required: [
-      ...BaseModel.required,
+      ...BaseModel.jsonSchema.required,
       'name',
       'commit',
       'branch',
