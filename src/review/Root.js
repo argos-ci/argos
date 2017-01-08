@@ -5,6 +5,7 @@ import {
   compose,
   combineReducers,
 } from 'redux';
+import { combineEpics, createEpicMiddleware } from 'redux-observable';
 import { Provider } from 'react-redux';
 import MuiThemeProvider from 'material-ui-build-next/src/styles/MuiThemeProvider';
 import metricsMiddleware from 'browser-metrics/lib/reduxMetricsMiddleware';
@@ -12,11 +13,17 @@ import createStyleManager from 'modules/styles/createStyleManager';
 import analytics from 'modules/analytics/analytics';
 import Routes from 'review/Routes';
 import buildReducer from 'review/routes/build/reducer';
+import buildEpic from 'review/routes/build/epic';
+
+const rootEpic = combineEpics(
+  buildEpic,
+);
 
 let middlewares = [
   metricsMiddleware({
     trackTiming: analytics.trackTiming,
   }),
+  createEpicMiddleware(rootEpic),
 ];
 
 if (process.env.NODE_ENV === 'development' && !window.devToolsExtension) {
@@ -28,14 +35,18 @@ if (process.env.NODE_ENV === 'development' && !window.devToolsExtension) {
   ];
 }
 
-const reducers = combineReducers({
+const rootReducers = combineReducers({
   build: buildReducer,
 });
 
-const store = compose(
+/* eslint-disable no-underscore-dangle */
+const composeEnhancers = (process.env.NODE_ENV !== 'production' &&
+  window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) || compose;
+/* eslint-enable no-underscore-dangle */
+
+const store = composeEnhancers(
   applyMiddleware(...middlewares),
-  window.devToolsExtension ? window.devToolsExtension() : x => x,
-)(createStore)(reducers);
+)(createStore)(rootReducers);
 
 function Root() {
   const styles = createStyleManager();

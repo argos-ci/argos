@@ -9,7 +9,6 @@ import ScrollView from 'modules/components/ScrollView';
 import LayoutBody from 'modules/components/LayoutBody';
 import BuildSummary from 'review/routes/build/Summary';
 import BuildScreenshots from 'review/routes/build/Screenshots';
-import graphQLClient from 'modules/graphQL/client';
 
 class Build extends Component {
   static propTypes = {
@@ -19,14 +18,6 @@ class Build extends Component {
   componentDidMount() {
     this.props.dispatch({
       type: actionTypes.BUILD_FETCH,
-    });
-
-    graphQLClient.fetch({
-      query: `{
-        hello
-      }`,
-    }).then((a) => {
-      console.log('a', a);
     });
   }
 
@@ -54,4 +45,6 @@ class Build extends Component {
   }
 }
 
-export default connect()(Build);
+export default connect(state => ({
+  state,
+}))(Build);
