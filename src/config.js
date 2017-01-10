@@ -15,7 +15,7 @@ const config = convict({
   },
   googleAnalytics: {
     doc: 'The tracking id',
-    default: 'UA-89989315-1',
+    default: 'UA-89989315-2',
   },
   server: {
     port: {
