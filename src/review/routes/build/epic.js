@@ -7,7 +7,20 @@ const buildEpic = action$ =>
     .watchTask(actionTypes.BUILD_FETCH_TASK, () => (
       graphQLClient.fetch({
         query: `{
-          hello
+          build(id: 1) {
+            baseScreenshotBucket {
+              id
+              name
+              commit
+              jobStatus
+            }
+            compareScreenshotBucket {
+              id
+              name
+              commit
+              jobStatus
+            }
+          }
         }`,
       })
     ));

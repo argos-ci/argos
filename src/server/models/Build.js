@@ -6,10 +6,13 @@ export default class Build extends BaseModel {
   static jsonSchema = {
     ...BaseModel.jsonSchema,
     required: [
-      ...BaseModel.required,
+      ...BaseModel.jsonSchema.required,
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
     },
+  };
+
+  static relationMappings = {
   };
 }
