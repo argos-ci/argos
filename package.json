@@ -8,18 +8,14 @@
     "dev": "yarn dev:foreman & yarn dev:review",
     "dev:foreman": "nf --procfile Procfile.dev start",
     "dev:review": "babel-node ./node_modules/.bin/webpack-dev-server --config=src/review/webpack/browserDevelopmentConfig.js --progress",
-
     "test": "yarn lint && yarn test:unit",
     "test:unit": "jest -i",
     "lint": "eslint . && echo \"eslint: no lint errors\"",
-
     "db:migrate": "knex migrate:latest",
     "db:seed": "knex seed:run",
-
     "build": "yarn build:server && yarn build:review",
     "build:server": "rm -rf lib/ && cp -R src/ lib/ && babel -d lib src",
     "build:review": "rm -rf server/static/review && babel-node ./node_modules/.bin/webpack --config=src/review/webpack/browserProductionConfig.js --progress",
-
     "heroku-postbuild": "yarn build && yarn db:migrate"
   },
   "repository": {
@@ -41,6 +37,7 @@
     "babel-core": "^6.21.0",
     "babel-loader": "^6.2.10",
     "babel-plugin-module-resolver": "^2.4.0",
+    "babel-plugin-react-remove-properties": "^0.2.4",
     "babel-plugin-transform-dev-warning": "^0.1.0",
     "babel-preset-env": "^1.1.4",
     "babel-preset-latest": "^6.16.0",

@@ -519,6 +519,10 @@ babel-plugin-module-resolver@^2.4.0:
     glob "^7.1.1"
     resolve "^1.1.7"
 
+babel-plugin-react-remove-properties@^0.2.4:
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/babel-plugin-react-remove-properties/-/babel-plugin-react-remove-properties-0.2.4.tgz#54262d0da4c376f79291aeba671c326a2ae1fb69"
+
 babel-plugin-syntax-async-functions@^6.8.0:
   version "6.13.0"
   resolved "https://registry.yarnpkg.com/babel-plugin-syntax-async-functions/-/babel-plugin-syntax-async-functions-6.13.0.tgz#cad9cad1191b5ad634bf30ae0872391e0647be95"
