@@ -32,6 +32,14 @@ const config = convict({
       default: 4002,
     },
   },
+  amqp: {
+    url: {
+      doc: 'RabbitMQ url',
+      format: String,
+      default: 'amqp://localhost',
+      env: 'CLOUDAMQP_URL',
+    },
+  },
 });
 
 const env = config.get('env');
