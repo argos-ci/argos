@@ -1,0 +1,2 @@
+web: nodemon src/server/workers/web.js
+hello: nodemon src/server/workers/hello.js

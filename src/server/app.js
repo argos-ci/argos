@@ -1,13 +1,11 @@
 /* eslint no-console: 0 */
 import express from 'express';
 import path from 'path';
-import http from 'http';
 import compress from 'compression';
 import morgan from 'morgan';
 import errorHandler from 'express-err';
 import ejs from 'ejs';
 import graphqlMiddleware from 'server/graphql/middleware';
-import config from 'config';
 import configureDatabase from 'server/configureDatabase';
 import csp from 'server/csp';
 import rendering from 'server/rendering';
@@ -77,7 +75,4 @@ app.use(errorHandler({
 
 app.get('*', rendering);
 
-const server = http.createServer(app);
-server.listen(config.get('server.port'), () => {
-  console.log(`${Date(Date.now())}: http://localhost:${server.address().port}/`);
-});
+export default app;

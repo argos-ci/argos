@@ -1,11 +1,17 @@
 version: '2'
 services:
-  argosDatabase:
+  postgres:
     image: postgres:9.6
     ports:
       - '5432:5432'
-    container_name: postgres
     environment:
       POSTGRES_USER: ${USER}
     volumes:
       - ${PWD}/db:${PWD}/db
+  rabbitmq:
+    image: rabbitmq:3.6
+    ports:
+      - '15672:15672'
+      - '5672:5672'
+    volumes:
+      - './rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins'

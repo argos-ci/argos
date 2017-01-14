@@ -34,9 +34,10 @@ module.exports = {
     'operator-linebreak': ['error', 'after'], // aibnb is disabling this rule
     'no-restricted-syntax': 'off',
     'babel/object-curly-spacing': ['error', 'always'],
-    'import/no-unresolved': 'off',
     'import/extensions': 'off',
+    'import/no-unresolved': 'off',
     'import/no-extraneous-dependencies': 'off',
+    'import/prefer-default-export': 'off',
     'react/jsx-handler-names': ['error', { // airbnb is disabling this rule
       eventHandlerPrefix: 'handle',
       eventHandlerPropPrefix: 'on',
