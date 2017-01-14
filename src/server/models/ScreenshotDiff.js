@@ -34,4 +34,15 @@ export default class ScreenshotDiff extends BaseModel {
       },
     },
   };
+
+  static relationMappings = {
+    build: {
+      relation: BaseModel.BelongsToOneRelation,
+      modelClass: 'Build',
+      join: {
+        from: 'ScreenshotDiff.buildId',
+        to: 'Build.id',
+      },
+    },
+  };
 }

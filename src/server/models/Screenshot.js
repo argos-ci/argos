@@ -20,4 +20,7 @@ export default class Screenshot extends BaseModel {
       },
     },
   };
+
+  static relationMappings = {
+  };
 }

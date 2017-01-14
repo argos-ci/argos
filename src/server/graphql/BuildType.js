@@ -4,7 +4,9 @@ import {
   GraphQLID,
 } from 'graphql';
 import Build from 'server/models/Build';
-import ScreenshotBucketType, { resolve as resolveScreenshotBucket } from './ScreenshotBucketType';
+import ScreenshotBucketType, {
+  resolve as resolveScreenshotBucket,
+} from 'server/graphql/ScreenshotBucketType';
 
 export const resolve = (source, args) => {
   return Build
@@ -45,6 +47,12 @@ const BuildType = new GraphQLObjectType({
           id: source.compareScreenshotBucketId,
         })
       ),
+    },
+    createdAt: {
+      type: GraphQLString,
+    },
+    updatedAt: {
+      type: GraphQLString,
     },
   },
 });

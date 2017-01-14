@@ -12,8 +12,8 @@ export const resolve = (source, args) => {
     .where({
       id: args.id,
     })
-    .then(([build]) => {
-      return build;
+    .then(([screenshotBucket]) => {
+      return screenshotBucket;
     });
 };
 
@@ -34,7 +34,7 @@ const ScreenshotBucketType = new GraphQLObjectType({
     },
     jobStatus: {
       type: new GraphQLEnumType({
-        name: 'jobStatus',
+        name: 'jobBucketStatus',
         values: {
           pending: {
             value: 'pending',
@@ -48,6 +48,12 @@ const ScreenshotBucketType = new GraphQLObjectType({
         },
         description: 'Represent the state of the remote job providing the screenshots',
       }),
+    },
+    createdAt: {
+      type: GraphQLString,
+    },
+    updatedAt: {
+      type: GraphQLString,
     },
   },
 });

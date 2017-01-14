@@ -1,6 +1,6 @@
 import graphqlHTTP, { formatError } from 'express-graphql';
 import config from 'config';
-import schema from './schema';
+import schema from 'server/graphql/schema';
 
 let bestFormatError = formatError;
 
