@@ -59,6 +59,7 @@
     "material-ui-build-next": "git://github.com/oliviertassinari/material-ui.git#next-splitme",
     "minimist": "^1.2.0",
     "morgan": "^1.7.0",
+    "mz": "^2.6.0",
     "objection": "^0.6.2",
     "pg": "^6.1.2",
     "react": "^15.4.1",

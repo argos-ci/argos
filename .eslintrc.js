@@ -32,6 +32,7 @@ module.exports = {
     'no-use-before-define': ['error', { 'functions': false }], // airbnb have functions: true, annoying
     'object-curly-spacing': 'off', // use babel plugin rule
     'operator-linebreak': ['error', 'after'], // aibnb is disabling this rule
+    'no-restricted-syntax': 'off',
     'babel/object-curly-spacing': ['error', 'always'],
     'import/no-unresolved': 'off',
     'import/extensions': 'off',
