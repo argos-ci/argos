@@ -2,7 +2,7 @@ import React, { Component, PropTypes } from 'react';
 import { connect } from 'react-redux';
 import Text from 'material-ui-build-next/src/Text';
 import Toolbar from 'material-ui-build-next/src/Toolbar';
-import actionTypes from 'redux/actionTypes';
+import actionTypes from 'review/redux/actionTypes';
 import ViewContainer from 'modules/components/ViewContainer';
 import LayoutAppBar from 'modules/components/LayoutAppBar';
 import ScrollView from 'modules/components/ScrollView';
@@ -13,15 +13,28 @@ import BuildScreenshots from 'review/routes/build/Screenshots';
 class Build extends Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
+    params: PropTypes.shape({
+      buildId: PropTypes.string.isRequired,
+      profileId: PropTypes.string.isRequired,
+      repositoryId: PropTypes.string.isRequired,
+    }).isRequired,
   }
 
   componentDidMount() {
     this.props.dispatch({
       type: actionTypes.BUILD_FETCH,
+      payload: {
+        buildId: this.props.params.buildId,
+      },
     });
   }
 
   render() {
+    const {
+      profileId,
+      repositoryId,
+    } = this.props.params;
+
     return (
       <ViewContainer>
         <LayoutAppBar>
@@ -34,7 +47,7 @@ class Build extends Component {
         <ScrollView>
           <LayoutBody margin>
             <Text type="display1" gutterBottom>
-              argos-ci/argos
+              {`${profileId}/${repositoryId}`}
             </Text>
             <BuildSummary />
             <BuildScreenshots />
@@ -45,6 +58,4 @@ class Build extends Component {
   }
 }
 
-export default connect(state => ({
-  state,
-}))(Build);
+export default connect()(Build);

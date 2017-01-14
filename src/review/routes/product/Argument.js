@@ -1,11 +1,10 @@
 // @flow weak
 
 import React, { PropTypes } from 'react';
-import compose from 'recompose/compose';
-import pure from 'recompose/pure';
 import { createStyleSheet } from 'jss-theme-reactor';
 import withStyles from 'material-ui-build-next/src/styles/withStyles';
 import Text from 'material-ui-build-next/src/Text';
+import recompose from 'modules/recompose';
 import LayoutBody from 'modules/components/LayoutBody';
 
 const styleSheet = createStyleSheet('ProductArgument', () => ({
@@ -46,7 +45,7 @@ ProductArgument.propTypes = {
   title: PropTypes.string,
 };
 
-export default compose(
-  pure,
+export default recompose.compose(
+  recompose.pure,
   withStyles(styleSheet),
 )(ProductArgument);

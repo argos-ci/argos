@@ -1,13 +1,14 @@
-import actionTypes from 'redux/actionTypes';
+import actionTypes from 'review/redux/actionTypes';
 import graphQLClient from 'modules/graphQL/client';
 
 const buildEpic = action$ =>
   action$
     .ofType(actionTypes.BUILD_FETCH)
-    .watchTask(actionTypes.BUILD_FETCH_TASK, () => (
+    .watchTask(actionTypes.BUILD_FETCH_TASK, action => (
       graphQLClient.fetch({
         query: `{
-          build(id: 1) {
+          build(id: ${action.payload.buildId}) {
+            createdAt
             baseScreenshotBucket {
               id
               name
@@ -19,6 +20,20 @@ const buildEpic = action$ =>
               name
               commit
               jobStatus
+            }
+          }
+          screenshotDiffs(buildId: ${action.payload.buildId}) {
+            id
+            jobStatus
+            validationStatus
+            score
+            baseScreenshot {
+              name
+              s3Id
+            }
+            compareScreenshot {
+              name
+              s3Id
             }
           }
         }`,

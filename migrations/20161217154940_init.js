@@ -34,7 +34,9 @@ exports.up = knex =>
     })
     .createTable('screenshots', (table) => {
       table.bigincrements('id').primary();
-      table.bigInteger('screenshotBucketId').notNullable().references('screenshot_buckets.id');
+      table.bigInteger('screenshotBucketId')
+        .notNullable()
+        .references('screenshot_buckets.id');
       table.string('name').notNullable().index();
       table.string('s3Id').notNullable().index();
       table.dateTime('createdAt').notNullable();
@@ -42,16 +44,26 @@ exports.up = knex =>
     })
     .createTable('builds', (table) => {
       table.bigincrements('id').primary();
-      table.bigInteger('baseScreenshotBucketId').notNullable().references('screenshot_buckets.id');
-      table.bigInteger('compareScreenshotBucketId').notNullable().references('screenshot_buckets.id');
+      table.bigInteger('baseScreenshotBucketId')
+        .notNullable()
+        .references('screenshot_buckets.id');
+      table.bigInteger('compareScreenshotBucketId')
+        .notNullable()
+        .references('screenshot_buckets.id');
       table.dateTime('createdAt').notNullable();
       table.dateTime('updatedAt').notNullable();
     })
     .createTable('screenshot_diffs', (table) => {
       table.bigincrements('id').primary();
-      table.bigInteger('buildId').notNullable().references('builds.id');
-      table.bigInteger('baseScreenshotId').notNullable().references('screenshots.id');
-      table.bigInteger('compareScreenshotId').notNullable().references('screenshots.id');
+      table.bigInteger('buildId')
+        .notNullable()
+        .references('builds.id');
+      table.bigInteger('baseScreenshotId')
+        .notNullable()
+        .references('screenshots.id');
+      table.bigInteger('compareScreenshotId')
+        .notNullable()
+        .references('screenshots.id');
       table.integer('score').notNullable();
       table.string('jobStatus').notNullable();
       table.string('validationStatus').notNullable();
