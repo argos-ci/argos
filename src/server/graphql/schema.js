@@ -3,8 +3,12 @@ import {
   GraphQLSchema,
   GraphQLNonNull,
   GraphQLInt,
+  GraphQLList,
 } from 'graphql/type';
-import BuildType, { resolve as resolveBuild } from './BuildType';
+import BuildType, { resolve as resolveBuild } from 'server/graphql/BuildType';
+import ScreenshotDiffType, {
+  resolve as resolvesSreenshotDiff,
+} from 'server/graphql/ScreenshotDiffType';
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -18,6 +22,15 @@ export default new GraphQLSchema({
           },
         },
         resolve: resolveBuild,
+      },
+      screenshotDiffs: {
+        type: new GraphQLList(ScreenshotDiffType),
+        args: {
+          buildId: {
+            type: new GraphQLNonNull(GraphQLInt),
+          },
+        },
+        resolve: resolvesSreenshotDiff,
       },
     },
   }),
