@@ -14,10 +14,14 @@ describe('multipleDiffs', () => {
         expectedImage: path.join(__dirname, '__fixtures__/YDN_Color.png'),
         diffImage: path.join(__dirname, '__fixtures__/YDN_Color_multipleDiff2_tmp.png'),
       },
-    ]).then((manifest) => {
-      expect(manifest).toEqual([
-        { total: 1960.7, percentage: 0.0299183 },
-        { total: 1960.7, percentage: 0.0299183 },
+    ]).then((results) => {
+      // Avoid precision issues relative to Linux / macOS
+      results[0].total = Math.round(results[0].total);
+      results[1].total = Math.round(results[1].total);
+
+      expect(results).toEqual([
+        { total: 1961, percentage: 0.0299183 },
+        { total: 1961, percentage: 0.0299183 },
       ]);
     });
   });

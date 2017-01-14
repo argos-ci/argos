@@ -8,8 +8,11 @@ describe('generateManifest', () => {
       expectedImagesPath: path.join(__dirname, '__fixtures__/expected'),
       diffImagesPath: path.join(__dirname, '__fixtures__/diff'),
     }).then((manifest) => {
+      // Avoid precision issues relative to Linux / macOS
+      manifest[0].total = Math.round(manifest[0].total);
+
       expect(manifest).toEqual([
-        { total: 1960.7, percentage: 0.0299183 },
+        { total: 1961, percentage: 0.0299183 },
       ]);
     });
   });
