@@ -39,7 +39,16 @@ export default {
       colors: true,
     },
     proxy: {
-      '**': `http://localhost:${config.get('server.port')}`,
+      '**': {
+        target: {
+          host: 'www.argos-ci.dev',
+          protocol: 'http:',
+          port: config.get('server.port'),
+        },
+        ignorePath: true,
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   module: {

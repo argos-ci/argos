@@ -50,6 +50,7 @@
     "express": "^4.14.0",
     "express-err": "^1.0.1",
     "express-graphql": "^0.6.1",
+    "express-subdomain": "^1.0.5",
     "force-case-sensitivity-webpack-plugin": "^0.2.1",
     "graphql": "^0.8.2",
     "html-minifier": "^3.2.3",

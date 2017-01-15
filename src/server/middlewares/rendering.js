@@ -8,10 +8,10 @@ import { minify } from 'html-minifier';
 import config from 'config';
 
 let htmlWebpackPlugin;
-let indexString = fs.readFileSync(path.join(__dirname, '../review/index.ejs'), 'UTF-8');
+let indexString = fs.readFileSync(path.join(__dirname, '../../review/index.ejs'), 'UTF-8');
 
 if (process.env.NODE_ENV === 'production') {
-  const assets = require('../../server/static/review/assets.json');
+  const assets = require('../../../server/static/review/assets.json');
 
   indexString = minify(indexString, {
     collapseWhitespace: true,

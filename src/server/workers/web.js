@@ -1,8 +1,10 @@
-/* eslint-disable import/first, no-console */
+/* eslint-disable no-console */
+
+import 'server/bootstrap/setup';
 
 import http from 'http';
 import config from 'config';
-import app from 'server/app';
+import app from 'server/routes/app';
 
 const server = http.createServer(app);
 

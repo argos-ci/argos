@@ -37,6 +37,20 @@ npm i -g yarn
 yarn
 ```
 
+### Modifying your hosts
+
+```
+# Argos
+127.0.0.1 www.argos-ci.dev api.argos-ci.dev
+```
+
+## Develop
+
+```sh
+yarn dev # run server
+yarn dev:review # run webpack
+```
+
 ## Contributing
 
 Changes and improvements are more than welcome!
