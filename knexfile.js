@@ -3,7 +3,8 @@ const config = {
     debug: true,
     client: 'postgresql',
     connection: {
-      database: process.env.USER,
+      user: 'development',
+      database: 'development',
     },
     pool: {
       min: 2,

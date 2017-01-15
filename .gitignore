@@ -3,3 +3,4 @@ node_modules/
 /server/static/
 *.log
 .env
+!db/structure.sql
