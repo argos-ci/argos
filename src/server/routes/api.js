@@ -63,4 +63,16 @@ router.post('/buckets', upload.array('screenshots[]', 50), errorChecking(
   },
 ));
 
+router.get('/buckets', errorChecking(
+  async function (req, res) {
+    let query = ScreenshotBucket.query();
+
+    if (req.query.branch) {
+      query = query.where({ branch: req.query.branch });
+    }
+
+    res.send(await query);
+  },
+));
+
 export default router;
