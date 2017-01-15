@@ -1,0 +1,8 @@
+{
+  "server": {
+    "logFormat": "",
+  },
+  "s3": {
+    "screenshotsBucket": "argos-screenshots-test"
+  }
+}

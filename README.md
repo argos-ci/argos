@@ -31,10 +31,18 @@ Designers can easily participate in the code review process.
 ## Install
 
 ```sh
-brew install imagemagick graphicsmagick
+brew install imagemagick graphicsmagick autoenv
 nvm i
 npm i -g yarn
 yarn
+```
+
+### Setup your .env file
+
+```
+# Amazon
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
 ```
 
 ### Modifying your hosts

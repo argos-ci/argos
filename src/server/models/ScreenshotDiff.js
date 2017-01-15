@@ -40,8 +40,8 @@ export default class ScreenshotDiff extends BaseModel {
       relation: BaseModel.BelongsToOneRelation,
       modelClass: 'Build',
       join: {
-        from: 'ScreenshotDiff.buildId',
-        to: 'Build.id',
+        from: 'screenshot_diffs.buildId',
+        to: 'builds.id',
       },
     },
   };

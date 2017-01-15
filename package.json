@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "yarn dev:foreman & yarn dev:review",
-    "dev:foreman": "nf --procfile Procfile.dev start",
+    "dev:foreman": "nf --procfile Procfile.dev --port 4001 start",
     "dev:review": "babel-node ./node_modules/.bin/webpack-dev-server --config=src/review/webpack/browserDevelopmentConfig.js --progress",
     "test": "yarn lint && yarn test:unit",
     "test:unit": "jest -i",
@@ -33,6 +33,7 @@
   "dependencies": {
     "amqplib": "^0.5.1",
     "assets-webpack-plugin": "^3.5.0",
+    "aws-sdk": "^2.7.21",
     "babel-cli": "^6.18.0",
     "babel-core": "^6.21.0",
     "babel-loader": "^6.2.10",
@@ -60,6 +61,8 @@
     "material-ui-build-next": "git://github.com/oliviertassinari/material-ui.git#next-splitme",
     "minimist": "^1.2.0",
     "morgan": "^1.7.0",
+    "multer": "^1.2.1",
+    "multer-s3": "^2.5.0",
     "mz": "^2.6.0",
     "objection": "^0.6.2",
     "pg": "^6.1.2",
@@ -91,6 +94,7 @@
     "mocha": "^3.2.0",
     "nodemon": "^1.11.0",
     "selenium-webdriver": "^3.0.1",
+    "supertest": "^2.0.1",
     "webpack-dev-server": "^2.2.0-rc.0"
   },
   "jest": {
@@ -100,6 +104,9 @@
     ],
     "modulePaths": [
       "<rootDir>/src"
+    ],
+    "setupFiles": [
+      "<rootDir>/src/server/bootstrap/setupTest.js"
     ]
   }
 }
