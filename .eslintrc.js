@@ -22,6 +22,9 @@ module.exports = {
     'mocha',
   ],
   rules: {
+    'max-len': ['error', 100, 2, {
+      ignoreUrls: true,
+    }], // airbnb is allowing some edge cases
     'array-bracket-spacing': ['error', 'never'],
     'arrow-body-style': 'off',
     'consistent-this': ['error', 'self'],

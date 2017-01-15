@@ -4,13 +4,13 @@ import { Link } from 'react-router';
 function Profile() {
   return (
     <div>
-      <h2>Profile</h2>
+      <h2>{'Profile'}</h2>
       <Link to="/profile/2">
-        argos-ci
+        {'argos-ci'}
       </Link>
       <br />
       <Link to="/argos-ci/argos">
-        argos-ci/argos
+        {'argos-ci/argos'}
       </Link>
     </div>
   );

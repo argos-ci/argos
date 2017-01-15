@@ -1,15 +1,17 @@
-import actionTypes from 'redux/actionTypes';
+import actionTypes from 'review/redux/actionTypes';
 
 function buildReducer(state, action) {
   if (state === undefined) {
-    state = {};
+    state = {
+      fetch: {},
+    };
   }
 
   switch (action.type) {
     case actionTypes.BUILD_FETCH_TASK:
       return {
         ...state,
-        payload: action.payload,
+        fetch: action.payload,
       };
     default:
       return state;

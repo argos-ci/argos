@@ -26,7 +26,14 @@ const config = convict({
     },
     logFormat: {
       doc: 'The morgan log format to use',
-      format: String,
+      format: [
+        'dev',
+        'combined',
+        'common',
+        'short',
+        'tiny',
+        '',
+      ],
       default: 'dev',
     },
   },

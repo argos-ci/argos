@@ -45,7 +45,6 @@ export default {
           protocol: 'http:',
           port: config.get('server.port'),
         },
-        ignorePath: true,
         changeOrigin: true,
         secure: false,
       },
