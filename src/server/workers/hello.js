@@ -1,3 +1,5 @@
+import 'server/bootstrap/setup';
+
 import { worker } from 'server/jobs/hello';
 
 worker()

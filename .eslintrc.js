@@ -25,6 +25,9 @@ module.exports = {
     'array-bracket-spacing': ['error', 'never'],
     'arrow-body-style': 'off',
     'consistent-this': ['error', 'self'],
+    'func-names': 'off',
+    'no-shadow': 'off',
+    'prefer-arrow-callback': 'off',
     'global-require': 'off',
     'no-console': 'error', // airbnb is using warn
     'no-param-reassign': 'off',

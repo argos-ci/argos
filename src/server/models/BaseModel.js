@@ -3,10 +3,7 @@ import { Model } from 'objection';
 export default class BaseModel extends Model {
   static jsonSchema = {
     type: 'object',
-    required: [
-      'createdAt',
-      'updatedAt',
-    ],
+    required: [],
     properties: {
       id: {
         type: ['integer', 'string'],
@@ -21,7 +18,7 @@ export default class BaseModel extends Model {
   };
 
   // Centralize the models.
-  static modelPaths = __dirname;
+  static modelPaths = [__dirname];
 
   $beforeInsert() {
     this.createdAt = new Date().toISOString();

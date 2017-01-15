@@ -33,4 +33,15 @@ export default class ScreenshotBucket extends BaseModel {
       },
     },
   };
+
+  static relationMappings = {
+    screenshots: {
+      relation: BaseModel.HasManyRelation,
+      modelClass: 'Screenshot',
+      join: {
+        from: 'screenshot_buckets.id',
+        to: 'screenshots.screenshotBucketId',
+      },
+    },
+  };
 }

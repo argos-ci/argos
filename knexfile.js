@@ -13,6 +13,13 @@ const config = {
       directory: './seeds',
     },
   },
+  test: {
+    debug: false,
+    client: 'postgresql',
+    connection: {
+      database: 'test',
+    },
+  },
   production: {
     client: 'postgresql',
     pool: {

@@ -24,6 +24,11 @@ const config = convict({
       default: 4001,
       env: 'PORT',
     },
+    logFormat: {
+      doc: 'The morgan log format to use',
+      format: String,
+      default: 'dev',
+    },
   },
   client: {
     port: {
@@ -38,6 +43,13 @@ const config = convict({
       format: String,
       default: 'amqp://localhost',
       env: 'CLOUDAMQP_URL',
+    },
+  },
+  s3: {
+    screenshotsBucket: {
+      doc: 'Bucket containing screenshots',
+      format: String,
+      default: 'argos-screenshots-dev',
     },
   },
 });
