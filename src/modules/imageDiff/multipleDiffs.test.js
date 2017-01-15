@@ -1,7 +1,10 @@
 import path from 'path';
+import { setTestsTimeout } from 'server/testUtils';
 import multipleDiffs from './multipleDiffs';
 
 describe('multipleDiffs', () => {
+  setTestsTimeout(15000);
+
   it('should diff between several images and return the result', () => {
     return multipleDiffs([
       {

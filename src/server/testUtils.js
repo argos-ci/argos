@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+/* global jasmine */
 import { connect, disconnect } from 'server/database';
 
 
@@ -27,5 +28,18 @@ export const useDatabase = () => {
   afterEach(async function () {
     await truncateAll(knex);
     await disconnect(knex);
+  });
+};
+
+export const setTestsTimeout = (timeout) => {
+  let originalTimeout;
+
+  beforeEach(() => {
+    originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = timeout;
+  });
+
+  afterEach(() => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
   });
 };
