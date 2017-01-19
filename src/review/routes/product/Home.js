@@ -1,15 +1,15 @@
-import React, { PropTypes } from 'react';
-import { createStyleSheet } from 'jss-theme-reactor';
-import withStyles from 'material-ui-build-next/src/styles/withStyles';
-import Text from 'material-ui-build-next/src/Text';
-import Paper from 'material-ui-build-next/src/Paper';
-import Toolbar from 'material-ui-build-next/src/Toolbar';
-import Divider from 'material-ui-build-next/src/Divider';
-import ViewContainer from 'modules/components/ViewContainer';
-import LayoutAppBar from 'modules/components/LayoutAppBar';
-import ScrollView from 'modules/components/ScrollView';
-import LayoutBody from 'modules/components/LayoutBody';
-import ProductArgument from 'review/routes/product/Argument';
+import React, { PropTypes } from 'react'
+import { createStyleSheet } from 'jss-theme-reactor'
+import withStyles from 'material-ui-build-next/src/styles/withStyles'
+import Text from 'material-ui-build-next/src/Text'
+import Paper from 'material-ui-build-next/src/Paper'
+import Toolbar from 'material-ui-build-next/src/Toolbar'
+import Divider from 'material-ui-build-next/src/Divider'
+import ViewContainer from 'modules/components/ViewContainer'
+import LayoutAppBar from 'modules/components/LayoutAppBar'
+import ScrollView from 'modules/components/ScrollView'
+import LayoutBody from 'modules/components/LayoutBody'
+import ProductArgument from 'review/routes/product/Argument'
 
 const styleSheet = createStyleSheet('ProductHome', () => ({
   landing: {
@@ -21,12 +21,12 @@ const styleSheet = createStyleSheet('ProductHome', () => ({
   headline: {
     maxWidth: 500, // Don't use more space than the title.
   },
-}));
+}))
 
 function ProductHome(props) {
   const {
     classes,
-  } = props;
+  } = props
 
   return (
     <ViewContainer>
@@ -92,11 +92,11 @@ function ProductHome(props) {
         </LayoutBody>
       </ScrollView>
     </ViewContainer>
-  );
+  )
 }
 
 ProductHome.propTypes = {
   classes: PropTypes.object,
-};
+}
 
-export default withStyles(styleSheet)(ProductHome);
+export default withStyles(styleSheet)(ProductHome)

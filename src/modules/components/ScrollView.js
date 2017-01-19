@@ -1,9 +1,9 @@
 // @flow weak
 
-import React, { PropTypes } from 'react';
-import classNames from 'classnames';
-import { createStyleSheet } from 'jss-theme-reactor';
-import withStyles from 'material-ui-build-next/src/styles/withStyles';
+import React, { PropTypes } from 'react'
+import classNames from 'classnames'
+import { createStyleSheet } from 'jss-theme-reactor'
+import withStyles from 'material-ui-build-next/src/styles/withStyles'
 
 const styleSheet = createStyleSheet('ScrollView', () => ({
   root: {
@@ -16,7 +16,7 @@ const styleSheet = createStyleSheet('ScrollView', () => ({
   fullHeight: {
     height: '100%',
   },
-}));
+}))
 
 function ScrollView(props) {
   const {
@@ -24,7 +24,7 @@ function ScrollView(props) {
     classes,
     fullHeight,
     ...other
-  } = props;
+  } = props
 
   return (
     <div
@@ -35,17 +35,17 @@ function ScrollView(props) {
     >
       {children}
     </div>
-  );
+  )
 }
 
 ScrollView.propTypes = {
   children: PropTypes.node.isRequired,
   classes: PropTypes.object.isRequired,
   fullHeight: PropTypes.bool,
-};
+}
 
 ScrollView.defaultProps = {
   fullHeight: false,
-};
+}
 
-export default withStyles(styleSheet)(ScrollView);
+export default withStyles(styleSheet)(ScrollView)

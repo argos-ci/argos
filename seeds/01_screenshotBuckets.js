@@ -20,6 +20,6 @@ exports.seed = (knex, Promise) => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
-      ]);
-    });
-};
+      ])
+    })
+}

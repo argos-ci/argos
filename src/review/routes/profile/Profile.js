@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router';
+import React from 'react'
+import { Link } from 'react-router'
 
 function Profile() {
   return (
@@ -13,7 +13,7 @@ function Profile() {
         {'argos-ci/argos'}
       </Link>
     </div>
-  );
+  )
 }
 
-export default Profile;
+export default Profile

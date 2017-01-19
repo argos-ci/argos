@@ -4,11 +4,11 @@ import {
   GraphQLNonNull,
   GraphQLInt,
   GraphQLList,
-} from 'graphql/type';
-import BuildType, { resolve as resolveBuild } from 'server/graphql/BuildType';
+} from 'graphql/type'
+import BuildType, { resolve as resolveBuild } from 'server/graphql/BuildType'
 import ScreenshotDiffType, {
   resolve as resolvesSreenshotDiff,
-} from 'server/graphql/ScreenshotDiffType';
+} from 'server/graphql/ScreenshotDiffType'
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -34,4 +34,4 @@ export default new GraphQLSchema({
       },
     },
   }),
-});
+})

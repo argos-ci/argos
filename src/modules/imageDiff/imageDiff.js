@@ -1,4 +1,4 @@
-import imageDiffRaw from 'image-diff';
+import imageDiffRaw from 'image-diff'
 
 function imageDiff({ actualImage, expectedImage, diffImage }) {
   return new Promise((resolve, reject) => {
@@ -8,12 +8,12 @@ function imageDiff({ actualImage, expectedImage, diffImage }) {
       diffImage,
     }, (error, result) => {
       if (error) {
-        reject(error);
+        reject(error)
       } else {
-        resolve(result);
+        resolve(result)
       }
-    });
-  });
+    })
+  })
 }
 
-export default imageDiff;
+export default imageDiff

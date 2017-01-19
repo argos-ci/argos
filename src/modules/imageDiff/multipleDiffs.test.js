@@ -1,9 +1,9 @@
-import path from 'path';
-import { setTestsTimeout } from 'server/testUtils';
-import multipleDiffs from './multipleDiffs';
+import path from 'path'
+import { setTestsTimeout } from 'server/testUtils'
+import multipleDiffs from './multipleDiffs'
 
 describe('multipleDiffs', () => {
-  setTestsTimeout(15000);
+  setTestsTimeout(15000)
 
   it('should diff between several images and return the result', () => {
     return multipleDiffs([
@@ -19,13 +19,13 @@ describe('multipleDiffs', () => {
       },
     ]).then((results) => {
       // Avoid precision issues relative to Linux / macOS
-      results[0].total = Math.round(results[0].total);
-      results[1].total = Math.round(results[1].total);
+      results[0].total = Math.round(results[0].total)
+      results[1].total = Math.round(results[1].total)
 
       expect(results).toEqual([
         { total: 1961, percentage: 0.0299183 },
         { total: 1961, percentage: 0.0299183 },
-      ]);
-    });
-  });
-});
+      ])
+    })
+  })
+})

@@ -29,11 +29,11 @@ const config = {
       max: 10,
     },
   },
-};
+}
 
 if (process.env.DATABASE_URL) {
-  const url = require('url');
-  const pgProd = url.parse(process.env.DATABASE_URL);
+  const url = require('url')
+  const pgProd = url.parse(process.env.DATABASE_URL)
 
   config.production.connection = {
     host: pgProd.hostname,
@@ -42,7 +42,7 @@ if (process.env.DATABASE_URL) {
     password: pgProd.auth.split(':')[1],
     database: pgProd.path.substring(1),
     ssl: true,
-  };
+  }
 }
 
-module.exports = config;
+module.exports = config

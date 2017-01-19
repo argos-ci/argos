@@ -2,8 +2,8 @@ import {
   GraphQLObjectType,
   GraphQLID,
   GraphQLString,
-} from 'graphql';
-import Screenshot from 'server/models/Screenshot';
+} from 'graphql'
+import Screenshot from 'server/models/Screenshot'
 
 export const resolve = (source, args) => {
   return Screenshot
@@ -12,9 +12,9 @@ export const resolve = (source, args) => {
       id: args.id,
     })
     .then(([build]) => {
-      return build;
-    });
-};
+      return build
+    })
+}
 
 const ScreenshotType = new GraphQLObjectType({
   name: 'Screenshot',
@@ -38,6 +38,6 @@ const ScreenshotType = new GraphQLObjectType({
       type: GraphQLString,
     },
   },
-});
+})
 
-export default ScreenshotType;
+export default ScreenshotType

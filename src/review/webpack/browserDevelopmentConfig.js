@@ -1,7 +1,7 @@
-import webpack from 'webpack';
-import ForceCaseSensitivityPlugin from 'force-case-sensitivity-webpack-plugin';
-import browserBaseConfig from './browserBaseConfig';
-import config from '../../config';
+import webpack from 'webpack'
+import ForceCaseSensitivityPlugin from 'force-case-sensitivity-webpack-plugin'
+import browserBaseConfig from './browserBaseConfig'
+import config from '../../config'
 
 export default {
   ...browserBaseConfig,
@@ -69,10 +69,10 @@ export default {
                 'react-hot-loader/babel',
               ],
             },
-          };
+          }
         }
 
-        return rule;
+        return rule
       }),
     ],
   },
@@ -86,4 +86,4 @@ export default {
     // Prints more readable module names in the browser console on HMR updates.
     new webpack.NamedModulesPlugin(),
   ],
-};
+}

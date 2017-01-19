@@ -1,6 +1,6 @@
 // import webpack from 'webpack';
-import AssetsPlugin from 'assets-webpack-plugin';
-import browserBaseConfig from './browserBaseConfig';
+import AssetsPlugin from 'assets-webpack-plugin'
+import browserBaseConfig from './browserBaseConfig'
 
 export default {
   ...browserBaseConfig,
@@ -19,4 +19,4 @@ export default {
     //   },
     // }),
   ],
-};
+}

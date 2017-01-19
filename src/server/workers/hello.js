@@ -1,10 +1,10 @@
-import 'server/bootstrap/setup';
+import 'server/bootstrap/setup'
 
-import { worker } from 'server/jobs/hello';
+import { worker } from 'server/jobs/hello'
 
 worker()
   .catch((e) => {
     setTimeout(() => {
-      throw e;
-    });
-  });
+      throw e
+    })
+  })

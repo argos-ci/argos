@@ -1,9 +1,9 @@
 // @flow weak
 
-import React, { PropTypes } from 'react';
-import classNames from 'classnames';
-import { createStyleSheet } from 'jss-theme-reactor';
-import withStyles from 'material-ui-build-next/src/styles/withStyles';
+import React, { PropTypes } from 'react'
+import classNames from 'classnames'
+import { createStyleSheet } from 'jss-theme-reactor'
+import withStyles from 'material-ui-build-next/src/styles/withStyles'
 
 const styleSheet = createStyleSheet('LayoutBody', () => ({
   rootMargin: {
@@ -33,7 +33,7 @@ const styleSheet = createStyleSheet('LayoutBody', () => ({
   rootFullHeight: {
     height: '100%',
   },
-}));
+}))
 
 function LayoutBody(props) {
   const {
@@ -46,7 +46,7 @@ function LayoutBody(props) {
     margin,
     style,
     ...other
-  } = props;
+  } = props
 
   return (
     <div
@@ -61,7 +61,7 @@ function LayoutBody(props) {
     >
       {children}
     </div>
-  );
+  )
 }
 
 LayoutBody.propTypes = {
@@ -73,13 +73,13 @@ LayoutBody.propTypes = {
   fullWidth: PropTypes.bool,
   margin: PropTypes.bool,
   style: PropTypes.object,
-};
+}
 
 LayoutBody.defaultProps = {
   bottom: true,
   fullHeight: false,
   fullWidth: false,
   margin: false,
-};
+}
 
-export default withStyles(styleSheet)(LayoutBody);
+export default withStyles(styleSheet)(LayoutBody)

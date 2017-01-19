@@ -1,4 +1,4 @@
 export default {
   BUILD_FETCH: 'BUILD_FETCH',
   BUILD_FETCH_TASK: 'BUILD_FETCH_TASK',
-};
+}

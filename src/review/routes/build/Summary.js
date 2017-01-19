@@ -1,11 +1,11 @@
-import React, { PropTypes } from 'react';
-import { connect } from 'react-redux';
-import { createStyleSheet } from 'jss-theme-reactor';
-import withStyles from 'material-ui-build-next/src/styles/withStyles';
-import Text from 'material-ui-build-next/src/Text';
-import Paper from 'material-ui-build-next/src/Paper';
-import recompose from 'modules/recompose';
-import WatchTask from 'modules/components/WatchTask';
+import React, { PropTypes } from 'react'
+import { connect } from 'react-redux'
+import { createStyleSheet } from 'jss-theme-reactor'
+import withStyles from 'material-ui-build-next/src/styles/withStyles'
+import Text from 'material-ui-build-next/src/Text'
+import Paper from 'material-ui-build-next/src/Paper'
+import recompose from 'modules/recompose'
+import WatchTask from 'modules/components/WatchTask'
 
 const styleSheet = createStyleSheet('BuildSummary', () => {
   return {
@@ -13,8 +13,8 @@ const styleSheet = createStyleSheet('BuildSummary', () => {
       overflow: 'auto',
       marginBottom: 8 * 2,
     },
-  };
-});
+  }
+})
 
 function BuildSummary(props) {
   return (
@@ -34,17 +34,17 @@ function BuildSummary(props) {
                 },
               },
               screenshotDiffs,
-            } = props.fetch.output.data;
+            } = props.fetch.output.data
 
             const jobStatus = screenshotDiffs
               .every(screenshotDiff => screenshotDiff.jobStatus === 'done') ?
                 'done' :
-                'progress';
+                'progress'
 
             const validationStatus = screenshotDiffs
               .every(screenshotDiff => screenshotDiff.validationStatus === 'accepted') ?
                 'accepted' :
-                'unknown';
+                'unknown'
 
             return (
               <ul>
@@ -54,22 +54,22 @@ function BuildSummary(props) {
                 <li>{`Job status: ${jobStatus}`}</li>
                 <li>{`Validation status: ${validationStatus}`}</li>
               </ul>
-            );
+            )
           }}
         </WatchTask>
       </Paper>
     </div>
-  );
+  )
 }
 
 BuildSummary.propTypes = {
   classes: PropTypes.object.isRequired,
   fetch: PropTypes.object.isRequired,
-};
+}
 
 export default recompose.compose(
   withStyles(styleSheet),
   connect(state => ({
     fetch: state.build.fetch,
   })),
-)(BuildSummary);
+)(BuildSummary)

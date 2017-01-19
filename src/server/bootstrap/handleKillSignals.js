@@ -7,17 +7,17 @@
  */
 function terminator(sig) {
   if (typeof sig === 'string') {
-    console.log(`${Date(Date.now())}: Received ${sig}.`);
-    process.exit(1); // eslint-disable-line no-process-exit
+    console.log(`${Date(Date.now())}: Received ${sig}.`)
+    process.exit(1) // eslint-disable-line no-process-exit
   }
 
-  console.log(`${Date(Date.now())}: Node server stopped.`);
+  console.log(`${Date(Date.now())}: Node server stopped.`)
 }
 
 const handleKillSignals = () => {
   //  Process on exit and signals.
   process.on('exit', () => {
-    terminator();
+    terminator()
   });
 
   // Removed 'SIGPIPE' from the list - bugz 852598.
@@ -26,9 +26,9 @@ const handleKillSignals = () => {
     'SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM',
   ].forEach((element) => {
     process.on(element, () => {
-      terminator(element);
-    });
-  });
-};
+      terminator(element)
+    })
+  })
+}
 
-export default handleKillSignals;
+export default handleKillSignals

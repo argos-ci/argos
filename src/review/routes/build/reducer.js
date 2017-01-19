@@ -1,10 +1,10 @@
-import actionTypes from 'review/redux/actionTypes';
+import actionTypes from 'review/redux/actionTypes'
 
 function buildReducer(state, action) {
   if (state === undefined) {
     state = {
       fetch: {},
-    };
+    }
   }
 
   switch (action.type) {
@@ -12,10 +12,10 @@ function buildReducer(state, action) {
       return {
         ...state,
         fetch: action.payload,
-      };
+      }
     default:
-      return state;
+      return state
   }
 }
 
-export default buildReducer;
+export default buildReducer
