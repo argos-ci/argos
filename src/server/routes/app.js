@@ -6,10 +6,10 @@ import morgan from 'morgan'
 import ejs from 'ejs'
 import subdomain from 'express-subdomain'
 import errorHandler from 'express-err'
+import config from 'config'
 import csp from 'server/middlewares/csp'
 import www from 'server/routes/www'
 import api from 'server/routes/api'
-import config from 'config'
 
 const app = express()
 app.disable('x-powered-by')

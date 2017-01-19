@@ -7,9 +7,7 @@ import multerS3 from 'multer-s3'
 import config from 'config'
 
 const router = new express.Router()
-
 const s3 = new aws.S3()
-
 const upload = multer({
   storage: multerS3({
     s3,
@@ -24,7 +22,7 @@ const upload = multer({
  * exceptions are forwarded to the `next` handler.
  */
 function errorChecking(routeHandler) {
-  return async function (req, res, next) {
+  return async (req, res, next) => {
     try {
       await routeHandler(req, res, next)
     } catch (err) {
@@ -36,7 +34,7 @@ function errorChecking(routeHandler) {
 }
 
 router.post('/buckets', upload.array('screenshots[]', 50), errorChecking(
-  async function (req, res) {
+  async (req, res) => {
     const bucket = await transaction(ScreenshotBucket, async function (ScreenshotBucket) {
       const bucket = await ScreenshotBucket
         .query()
@@ -64,7 +62,7 @@ router.post('/buckets', upload.array('screenshots[]', 50), errorChecking(
 ))
 
 router.get('/buckets', errorChecking(
-  async function (req, res) {
+  async (req, res) => {
     let query = ScreenshotBucket.query()
 
     if (req.query.branch) {

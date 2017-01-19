@@ -16,3 +16,7 @@ services:
       - '5672:5672'
     volumes:
       - './rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins'
+  redis:
+    image: redis:2.8
+    ports:
+      - '6379:6379'
