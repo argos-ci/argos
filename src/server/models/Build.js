@@ -1,4 +1,4 @@
-import BaseModel from 'server/models/BaseModel';
+import BaseModel from 'server/models/BaseModel'
 
 export default class Build extends BaseModel {
   static tableName = 'builds';

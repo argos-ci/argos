@@ -1,9 +1,9 @@
-import 'modules/rxjs/rxjs';
+import 'modules/rxjs/rxjs'
 
-import React from 'react';
-import { render } from 'react-dom';
-import { AppContainer } from 'react-hot-loader';
-import Root from 'review/Root';
+import React from 'react'
+import { render } from 'react-dom'
+import { AppContainer } from 'react-hot-loader'
+import Root from 'review/Root'
 
 const renderRoot = () => {
   render(
@@ -11,10 +11,10 @@ const renderRoot = () => {
       <Root />
     </AppContainer>,
     document.querySelector('#root'),
-  );
-};
+  )
+}
 
-renderRoot();
+renderRoot()
 
 // Hot Module Replacement API
 if (module.hot) {
@@ -23,13 +23,13 @@ if (module.hot) {
    * module.hot.accept('./Root', renderRoot);
    */
   module.hot.accept('./Root', () => {
-    const NextRoot = require('./Root').default; // eslint-disable-line global-require
+    const NextRoot = require('./Root').default // eslint-disable-line global-require
 
     render(
       <AppContainer>
         <NextRoot />
       </AppContainer>,
       document.querySelector('#root'),
-    );
-  });
+    )
+  })
 }

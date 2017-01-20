@@ -1,5 +1,5 @@
-import actionTypes from 'review/redux/actionTypes';
-import graphQLClient from 'modules/graphQL/client';
+import actionTypes from 'review/redux/actionTypes'
+import graphQLClient from 'modules/graphQL/client'
 
 const buildEpic = action$ =>
   action$
@@ -38,6 +38,6 @@ const buildEpic = action$ =>
           }
         }`,
       })
-    ));
+    ))
 
-export default buildEpic;
+export default buildEpic

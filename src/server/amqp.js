@@ -1,13 +1,13 @@
-import amqp from 'amqplib';
-import config from 'config';
+import amqp from 'amqplib'
+import config from 'config'
 
-let channel;
+let channel
 
 export async function getChannel() {
   if (!channel) {
-    const connection = await amqp.connect(config.get('amqp.url'));
-    channel = await connection.createChannel();
+    const connection = await amqp.connect(config.get('amqp.url'))
+    channel = await connection.createChannel()
   }
 
-  return channel;
+  return channel
 }

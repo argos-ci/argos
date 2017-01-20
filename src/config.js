@@ -1,5 +1,5 @@
-import path from 'path';
-import convict from 'convict';
+import path from 'path'
+import convict from 'convict'
 
 const config = convict({
   env: {
@@ -59,10 +59,10 @@ const config = convict({
       default: 'argos-screenshots-dev',
     },
   },
-});
+})
 
-const env = config.get('env');
-config.loadFile(path.join(__dirname, `../config/${env}.json`));
-config.validate();
+const env = config.get('env')
+config.loadFile(path.join(__dirname, `../config/${env}.json`))
+config.validate()
 
-export default config;
+export default config

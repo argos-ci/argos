@@ -1,5 +1,5 @@
 // Fetch polyfill
-import 'whatwg-fetch';
+import 'whatwg-fetch'
 
 const graphQLClient = {
   fetch: (params) => {
@@ -11,8 +11,8 @@ const graphQLClient = {
       credentials: 'same-origin',
       body: JSON.stringify(params),
     })
-    .then(response => response.json());
+    .then(response => response.json())
   },
-};
+}
 
-export default graphQLClient;
+export default graphQLClient

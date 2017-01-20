@@ -1,11 +1,11 @@
-import imageDiff from './imageDiff';
+import imageDiff from './imageDiff'
 
 async function multipleDiffs(diffs) {
-  const results = [];
+  const results = []
   for (const diff of diffs) {
-    results.push(await imageDiff(diff));
+    results.push(await imageDiff(diff))
   }
-  return results;
+  return results
 }
 
-export default multipleDiffs;
+export default multipleDiffs

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router';
+import React from 'react'
+import { Link } from 'react-router'
 
 function Repository() {
   return (
@@ -13,7 +13,7 @@ function Repository() {
         {'Settings'}
       </Link>
     </div>
-  );
+  )
 }
 
-export default Repository;
+export default Repository

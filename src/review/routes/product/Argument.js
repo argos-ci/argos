@@ -1,11 +1,11 @@
 // @flow weak
 
-import React, { PropTypes } from 'react';
-import { createStyleSheet } from 'jss-theme-reactor';
-import withStyles from 'material-ui-build-next/src/styles/withStyles';
-import Text from 'material-ui-build-next/src/Text';
-import recompose from 'modules/recompose';
-import LayoutBody from 'modules/components/LayoutBody';
+import React, { PropTypes } from 'react'
+import { createStyleSheet } from 'jss-theme-reactor'
+import withStyles from 'material-ui-build-next/src/styles/withStyles'
+import Text from 'material-ui-build-next/src/Text'
+import recompose from 'modules/recompose'
+import LayoutBody from 'modules/components/LayoutBody'
 
 const styleSheet = createStyleSheet('ProductArgument', () => ({
   screen: {
@@ -16,14 +16,14 @@ const styleSheet = createStyleSheet('ProductArgument', () => ({
   description: {
     maxWidth: 650,
   },
-}));
+}))
 
 function ProductArgument(props) {
   const {
     classes,
     description,
     title,
-  } = props;
+  } = props
 
   return (
     <div className={classes.screen}>
@@ -36,16 +36,16 @@ function ProductArgument(props) {
         </Text>
       </LayoutBody>
     </div>
-  );
+  )
 }
 
 ProductArgument.propTypes = {
   classes: PropTypes.object.isRequired,
   description: PropTypes.string,
   title: PropTypes.string,
-};
+}
 
 export default recompose.compose(
   recompose.pure,
   withStyles(styleSheet),
-)(ProductArgument);
+)(ProductArgument)

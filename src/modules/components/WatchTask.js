@@ -1,18 +1,18 @@
 /* eslint-disable react/no-multi-comp */
-import React, { Component, PropTypes } from 'react';
-import recompose from 'modules/recompose';
-import CircularProgress from 'material-ui-build-next/src/Progress/CircularProgress';
-import { PROGRESS, SUCCESS, ERROR } from 'modules/rxjs/operator/watchTask';
-import WatchTaskContainer from 'modules/components/WatchTaskContainer';
+import React, { Component, PropTypes } from 'react'
+import recompose from 'modules/recompose'
+import CircularProgress from 'material-ui-build-next/src/Progress/CircularProgress'
+import { PROGRESS, SUCCESS, ERROR } from 'modules/rxjs/operator/watchTask'
+import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 
 function renderInContainer(props, node) {
-  const { Container } = props; // eslint-disable-line react/prop-types
+  const { Container } = props // eslint-disable-line react/prop-types
 
   if (Container) {
-    return <Container>{node}</Container>;
+    return <Container>{node}</Container>
   }
 
-  return node;
+  return node
 }
 
 export default class WatchTask extends Component {
@@ -38,7 +38,7 @@ export default class WatchTask extends Component {
       task: {
         state,
       },
-    } = this.props;
+    } = this.props
 
     if (state === ERROR) {
       return renderInContainer(
@@ -46,21 +46,21 @@ export default class WatchTask extends Component {
         <div>
           {'The loading failed'}
         </div>,
-      );
+      )
     }
 
     if (state === PROGRESS) {
       return renderInContainer(
         this.props,
         <CircularProgress />,
-      );
+      )
     }
 
     if (state === SUCCESS) {
-      return children();
+      return children()
     }
 
-    return null;
+    return null
   }
 }
 
@@ -69,5 +69,5 @@ export const watchTask = recompose.createHelper(mapProps => BaseComponent => (pr
     <WatchTask {...mapProps(props)}>
       {() => recompose.createEagerElement(BaseComponent, props)}
     </WatchTask>
-  );
-}, 'watchTask');
+  )
+}, 'watchTask')

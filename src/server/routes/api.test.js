@@ -1,12 +1,12 @@
 /* global jasmine */
-import path from 'path';
-import request from 'supertest';
-import { useDatabase } from 'server/testUtils';
-import ScreenshotBucket from 'server/models/ScreenshotBucket';
-import app from './app';
+import path from 'path'
+import request from 'supertest'
+import { useDatabase } from 'server/testUtils'
+import ScreenshotBucket from 'server/models/ScreenshotBucket'
+import app from './app'
 
 describe('api routes', () => {
-  useDatabase();
+  useDatabase()
 
   describe('POST /buckets', () => {
     it('should upload screenshots, update database and return result', () => {
@@ -19,15 +19,15 @@ describe('api routes', () => {
         .field('branch', 'test-branch')
         .expect(200)
         .expect((res) => {
-          expect(res.body.name).toBe('test-bucket');
-          expect(res.body.commit).toBe('test-commit');
-          expect(res.body.branch).toBe('test-branch');
-          expect(res.body.screenshots.length).toBe(1);
-          expect(res.body.screenshots[0].name).toBe('screenshot_test.jpg');
-          expect(res.body.screenshots[0].s3Id).toMatch(/^\w{32}$/);
-        });
-    });
-  });
+          expect(res.body.name).toBe('test-bucket')
+          expect(res.body.commit).toBe('test-commit')
+          expect(res.body.branch).toBe('test-branch')
+          expect(res.body.screenshots.length).toBe(1)
+          expect(res.body.screenshots[0].name).toBe('screenshot_test.jpg')
+          expect(res.body.screenshots[0].s3Id).toMatch(/^\w{32}$/)
+        })
+    })
+  })
 
   describe('GET /buckets', () => {
     beforeEach(async function () {
@@ -36,8 +36,8 @@ describe('api routes', () => {
         commit: 'test-commit',
         branch: 'test-branch',
         jobStatus: 'pending',
-      });
-    });
+      })
+    })
 
     it('should returns buckets', () => {
       return request(app)
@@ -45,12 +45,12 @@ describe('api routes', () => {
         .set('Host', 'api.argos-ci.dev')
         .expect(200)
         .expect((res) => {
-          expect(res.body[0].name).toBe('test-bucket');
-          expect(res.body[0].commit).toBe('test-commit');
-          expect(res.body[0].branch).toBe('test-branch');
-          expect(res.body[0].jobStatus).toBe('pending');
-        });
-    });
+          expect(res.body[0].name).toBe('test-bucket')
+          expect(res.body[0].commit).toBe('test-commit')
+          expect(res.body[0].branch).toBe('test-branch')
+          expect(res.body[0].jobStatus).toBe('pending')
+        })
+    })
 
     describe('with query.branch', () => {
       it('should filter by branch', async function () {
@@ -59,17 +59,17 @@ describe('api routes', () => {
           .set('Host', 'api.argos-ci.dev')
           .expect(200)
           .expect((res) => {
-            expect(res.body).toHaveLength(0);
-          });
+            expect(res.body).toHaveLength(0)
+          })
 
         await request(app)
           .get('/buckets?branch=test-branch')
           .set('Host', 'api.argos-ci.dev')
           .expect(200)
           .expect((res) => {
-            expect(res.body).toHaveLength(1);
-          });
-      });
-    });
-  });
-});
+            expect(res.body).toHaveLength(1)
+          })
+      })
+    })
+  })
+})

@@ -3,8 +3,8 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLEnumType,
-} from 'graphql';
-import ScreenshotBucket from 'server/models/ScreenshotBucket';
+} from 'graphql'
+import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
 export const resolve = (source, args) => {
   return ScreenshotBucket
@@ -13,9 +13,9 @@ export const resolve = (source, args) => {
       id: args.id,
     })
     .then(([screenshotBucket]) => {
-      return screenshotBucket;
-    });
-};
+      return screenshotBucket
+    })
+}
 
 const ScreenshotBucketType = new GraphQLObjectType({
   name: 'ScreenshotBucket',
@@ -56,6 +56,6 @@ const ScreenshotBucketType = new GraphQLObjectType({
       type: GraphQLString,
     },
   },
-});
+})
 
-export default ScreenshotBucketType;
+export default ScreenshotBucketType

@@ -1,20 +1,20 @@
-import React from 'react';
-import { createStyleSheet } from 'jss-theme-reactor';
-import withStyles from 'material-ui-build-next/src/styles/withStyles';
+import React from 'react'
+import { createStyleSheet } from 'jss-theme-reactor'
+import withStyles from 'material-ui-build-next/src/styles/withStyles'
 import {
   applyRouterMiddleware,
   browserHistory,
   Router,
   Route,
   IndexRoute,
- } from 'react-router';
-import plugAnalyticsMiddleware from 'modules/reactRouter/plugAnalyticsMiddleware';
-import ProductHome from 'review/routes/product/Home';
-import Profile from 'review/routes/profile/Profile';
-import NotFound from 'review/routes/notFound/NotFound';
-import Repository from 'review/routes/repository/Repository';
-import Build from 'review/routes/build/Build';
-import Settings from 'review/routes/settings/Settings';
+ } from 'react-router'
+import plugAnalyticsMiddleware from 'modules/reactRouter/plugAnalyticsMiddleware'
+import ProductHome from 'review/routes/product/Home'
+import Profile from 'review/routes/profile/Profile'
+import NotFound from 'review/routes/notFound/NotFound'
+import Repository from 'review/routes/repository/Repository'
+import Build from 'review/routes/build/Build'
+import Settings from 'review/routes/settings/Settings'
 
 const styleSheet = createStyleSheet('Routes', (theme) => {
   return {
@@ -29,8 +29,8 @@ const styleSheet = createStyleSheet('Routes', (theme) => {
         margin: 0,
       },
     },
-  };
-});
+  }
+})
 
 function Routes() {
   return (
@@ -49,7 +49,7 @@ function Routes() {
       </Route>
       <Route path="*" component={NotFound} />
     </Router>
-  );
+  )
 }
 
-export default withStyles(styleSheet)(Routes);
+export default withStyles(styleSheet)(Routes)

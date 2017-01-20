@@ -1,4 +1,4 @@
-import BaseModel from 'server/models/BaseModel';
+import BaseModel from 'server/models/BaseModel'
 
 export default class ScreenshotDiff extends BaseModel {
   static tableName = 'screenshot_diffs';

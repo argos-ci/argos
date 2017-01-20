@@ -2,11 +2,11 @@ import {
   GraphQLObjectType,
   GraphQLString,
   GraphQLID,
-} from 'graphql';
-import Build from 'server/models/Build';
+} from 'graphql'
+import Build from 'server/models/Build'
 import ScreenshotBucketType, {
   resolve as resolveScreenshotBucket,
-} from 'server/graphql/ScreenshotBucketType';
+} from 'server/graphql/ScreenshotBucketType'
 
 export const resolve = (source, args) => {
   return Build
@@ -16,9 +16,9 @@ export const resolve = (source, args) => {
     })
     // .eager('screenshotBucket')
     .then(([build]) => {
-      return build;
-    });
-};
+      return build
+    })
+}
 
 const BuildType = new GraphQLObjectType({
   name: 'Build',
@@ -55,6 +55,6 @@ const BuildType = new GraphQLObjectType({
       type: GraphQLString,
     },
   },
-});
+})
 
-export default BuildType;
+export default BuildType

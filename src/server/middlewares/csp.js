@@ -5,22 +5,22 @@ const sources = {
   'default-src': '* data: blob:',
   'script-src': "* 'unsafe-inline' 'unsafe-eval'",
   'style-src': "* 'unsafe-inline'",
-};
+}
 
 const csp = Object
   .keys(sources)
   .reduce((reduction, key) => {
-    return `${reduction} ${key} ${sources[key]};`;
-  }, '');
+    return `${reduction} ${key} ${sources[key]};`
+  }, '')
 
 // Content Security Policy
 export default function (req, res, next) {
-  res.setHeader('content-security-policy', csp);
+  res.setHeader('content-security-policy', csp)
 
   // Disallow embedded iframe
-  res.setHeader('x-frame-options', 'deny');
+  res.setHeader('x-frame-options', 'deny')
 
   // The browser only use the content type
-  res.setHeader('x-content-type-options', 'nosniff');
-  next();
+  res.setHeader('x-content-type-options', 'nosniff')
+  next()
 }

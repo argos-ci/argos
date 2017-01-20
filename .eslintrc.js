@@ -72,5 +72,6 @@ module.exports = {
     'mocha/no-global-tests': 'error',
     'mocha/no-pending-tests': 'error',
     'mocha/no-skipped-tests': 'error',
+    'semi': ['error', 'never'],
   },
 };

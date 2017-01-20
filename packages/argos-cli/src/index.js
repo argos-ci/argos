@@ -1,7 +1,7 @@
-import program from 'commander';
+import program from 'commander'
 
 if (!process.argv.slice(2).length) {
-  program.outputHelp();
+  program.outputHelp()
 } else {
-  program.parse(process.argv);
+  program.parse(process.argv)
 }

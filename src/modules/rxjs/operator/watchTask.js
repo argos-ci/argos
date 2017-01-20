@@ -1,12 +1,12 @@
 /* eslint-disable import/prefer-default-export */
 /* eslint-disable no-underscore-dangle */
 
-import { of } from 'rxjs/observable/of';
-import { from } from 'rxjs/observable/from';
+import { of } from 'rxjs/observable/of'
+import { from } from 'rxjs/observable/from'
 
-export const PROGRESS = 'PROGRESS';
-export const SUCCESS = 'SUCCESS';
-export const ERROR = 'ERROR';
+export const PROGRESS = 'PROGRESS'
+export const SUCCESS = 'SUCCESS'
+export const ERROR = 'ERROR'
 
 // Follow the FSA convention.
 // https://github.com/acdlite/flux-standard-action#libraries
@@ -18,7 +18,7 @@ const createTaskData = (type, state, input, output) => ({
     output,
   },
   error: state === ERROR,
-});
+})
 
 export function watchTask(type, selector) {
   return this
@@ -27,5 +27,5 @@ export function watchTask(type, selector) {
         .map(output => createTaskData(type, SUCCESS, input, output))
         ._catch(output => of(createTaskData(type, ERROR, input, output)))
         .startWith(createTaskData(type, PROGRESS, input, {})),
-    );
+    )
 }

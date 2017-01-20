@@ -7,6 +7,6 @@
  */
 export function debug(name, selector = x => x) {
   return this._do((value) => {
-    console.log(name, selector(value));
-  });
+    console.log(name, selector(value))
+  })
 }

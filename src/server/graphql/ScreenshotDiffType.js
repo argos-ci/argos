@@ -3,19 +3,19 @@ import {
   GraphQLString,
   GraphQLID,
   GraphQLEnumType,
-} from 'graphql';
-import ScreenshotDiff from 'server/models/ScreenshotDiff';
+} from 'graphql'
+import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import ScreenshotType, {
   resolve as resolveScreenshot,
-} from 'server/graphql/ScreenshotType';
+} from 'server/graphql/ScreenshotType'
 
 export const resolve = (source, args) => {
   return ScreenshotDiff
     .query()
     .where({
       buildId: args.buildId,
-    });
-};
+    })
+}
 
 const ScreenshotDiffType = new GraphQLObjectType({
   name: 'ScreenshotDiff',
@@ -92,6 +92,6 @@ const ScreenshotDiffType = new GraphQLObjectType({
       type: GraphQLString,
     },
   },
-});
+})
 
-export default ScreenshotDiffType;
+export default ScreenshotDiffType
