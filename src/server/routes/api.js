@@ -1,13 +1,15 @@
 import { transaction } from 'objection'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import express from 'express'
-import aws from 'aws-sdk'
+import S3 from 'aws-sdk/clients/s3'
 import multer from 'multer'
 import multerS3 from 'multer-s3'
 import config from 'config'
 
 const router = new express.Router()
-const s3 = new aws.S3()
+const s3 = new S3({
+  signatureVersion: 'v4',
+})
 const upload = multer({
   storage: multerS3({
     s3,
@@ -45,14 +47,14 @@ router.post('/buckets', upload.array('screenshots[]', 50), errorChecking(
           jobStatus: 'pending',
         })
 
-      for (const file of req.files) {
-        await bucket
-          .$relatedQuery('screenshots')
-          .insert({
-            name: file.originalname,
-            s3Id: file.key,
-          })
-      }
+      const inserts = req.files.map(file => bucket
+        .$relatedQuery('screenshots')
+        .insert({
+          name: file.originalname,
+          s3Id: file.key,
+        }))
+
+      await Promise.all(inserts)
 
       return bucket
     })

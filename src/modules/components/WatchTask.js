@@ -1,6 +1,6 @@
 /* eslint-disable react/no-multi-comp */
 import React, { Component, PropTypes } from 'react'
-import recompose from 'modules/recompose'
+import recompact from 'modules/recompact'
 import CircularProgress from 'material-ui-build-next/src/Progress/CircularProgress'
 import { PROGRESS, SUCCESS, ERROR } from 'modules/rxjs/operator/watchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
@@ -64,10 +64,10 @@ export default class WatchTask extends Component {
   }
 }
 
-export const watchTask = recompose.createHelper(mapProps => BaseComponent => (props) => {
+export const watchTask = recompact.createHelper(mapProps => BaseComponent => (props) => {
   return (
     <WatchTask {...mapProps(props)}>
-      {() => recompose.createEagerElement(BaseComponent, props)}
+      {() => recompact.createEagerElement(BaseComponent, props)}
     </WatchTask>
   )
 }, 'watchTask')

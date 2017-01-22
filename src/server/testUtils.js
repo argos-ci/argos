@@ -14,7 +14,7 @@ async function truncateAll(knex) {
     KNEX_TABLES.includes(tablename) ? tables : [...tables, tablename]
   ), [])
 
-  return await knex.schema.raw(`TRUNCATE ${tables.join(',')} CASCADE`)
+  return knex.schema.raw(`TRUNCATE ${tables.join(',')} CASCADE`)
 }
 
 export const useDatabase = () => {

@@ -44,6 +44,7 @@ module.exports = {
     'import/no-unresolved': 'off',
     'import/no-extraneous-dependencies': 'off',
     'import/prefer-default-export': 'off',
+    'react/require-default-props': 'off', // airbnb use error
     'react/jsx-handler-names': ['error', { // airbnb is disabling this rule
       eventHandlerPrefix: 'handle',
       eventHandlerPropPrefix: 'on',

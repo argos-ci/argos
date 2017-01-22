@@ -4,7 +4,7 @@ import React, { PropTypes } from 'react'
 import { createStyleSheet } from 'jss-theme-reactor'
 import withStyles from 'material-ui-build-next/src/styles/withStyles'
 import Text from 'material-ui-build-next/src/Text'
-import recompose from 'modules/recompose'
+import recompact from 'modules/recompact'
 import LayoutBody from 'modules/components/LayoutBody'
 
 const styleSheet = createStyleSheet('ProductArgument', () => ({
@@ -45,7 +45,7 @@ ProductArgument.propTypes = {
   title: PropTypes.string,
 }
 
-export default recompose.compose(
-  recompose.pure,
+export default recompact.compose(
+  recompact.pure,
   withStyles(styleSheet),
 )(ProductArgument)
