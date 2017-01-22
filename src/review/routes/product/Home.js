@@ -10,6 +10,7 @@ import LayoutAppBar from 'modules/components/LayoutAppBar'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
 import ProductArgument from 'review/routes/product/Argument'
+import Signup from 'review/routes/product/Signup'
 
 const styleSheet = createStyleSheet('ProductHome', () => ({
   landing: {
@@ -48,6 +49,7 @@ function ProductHome(props) {
                 Argos's visual regression system gives you high confidence in doing changes
               `}
             </Text>
+            <Signup />
           </LayoutBody>
         </Paper>
         <ProductArgument

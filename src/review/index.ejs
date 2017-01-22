@@ -24,7 +24,7 @@
       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
       ga('create', {trackingId: '<%= config.get("googleAnalytics") %>'});
 
-      var config = <%- config.toString() %>;
+      window.clientData = <%- clientData %>;
     </script>
 
     <% htmlWebpackPlugin.files.js.forEach((file) => { %>

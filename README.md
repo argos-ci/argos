@@ -40,9 +40,8 @@ yarn
 ### Setup your .env file
 
 ```
-# Amazon
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
+GITHUB_CLIENT_SECRET=
+SERVER_SESSION_SECRET=
 ```
 
 ### Modifying your hosts

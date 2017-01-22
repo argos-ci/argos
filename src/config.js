@@ -36,6 +36,17 @@ const config = convict({
       ],
       default: 'dev',
     },
+    url: {
+      doc: 'The user public url',
+      format: String,
+      default: 'http://www.argos-ci.dev:4002',
+    },
+    sessionSecret: {
+      doc: 'This is the secret used to sign the session ID cookie.',
+      format: String,
+      default: 'keyboard cat',
+      env: 'SERVER_SESSION_SECRET',
+    },
   },
   client: {
     port: {
@@ -57,6 +68,27 @@ const config = convict({
       doc: 'Bucket containing screenshots',
       format: String,
       default: 'argos-screenshots-dev',
+    },
+  },
+  github: {
+    clientId: {
+      doc: 'Client ID',
+      format: String,
+      default: 'c4636449f2df59e6010d',
+    },
+    clientSecret: {
+      doc: 'Client Secret',
+      format: String,
+      default: '1781c9a3e1d57fdcfdf9c29c02abf7d37e1c0427',
+      env: 'GITHUB_CLIENT_SECRET',
+    },
+  },
+  redis: {
+    url: {
+      doc: 'RabbitMQ url',
+      format: String,
+      default: 'redis://localhost:6379/1',
+      env: 'REDIS_URL',
     },
   },
 })

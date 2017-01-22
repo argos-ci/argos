@@ -46,6 +46,10 @@ function isMediaBot(userAgent) {
   return output
 }
 
+function injectJSON(data) {
+  return JSON.stringify(data, null, process.env.NODE_ENV === 'production' ? 0 : 2)
+}
+
 export default (req, res) => {
   const output = ejs.render(indexString, {
     cache: true,
@@ -53,6 +57,9 @@ export default (req, res) => {
     isMediaBot: isMediaBot(req.headers['user-agent']),
     htmlWebpackPlugin,
     config,
+    clientData: injectJSON({
+      user: req.user,
+    }),
   })
 
   res.status(200).send(output)
