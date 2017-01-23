@@ -1,6 +1,12 @@
 import imageDiffRaw from 'image-diff'
 
-function imageDiff({ actualImage, expectedImage, diffImage }) {
+function imageDiff(diff) {
+  const {
+    actualImage,
+    expectedImage,
+    diffImage,
+  } = diff
+
   return new Promise((resolve, reject) => {
     imageDiffRaw.getFullResult({
       actualImage,

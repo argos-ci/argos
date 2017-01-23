@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'mz/fs'
-import multipleDiffs from './multipleDiffs'
+import multipleDiffs from 'modules/imageDiff/multipleDiffs'
 
 async function generateDiff(imagePath, {
   actualImagesPath,
@@ -22,16 +22,13 @@ async function generateDiff(imagePath, {
 
 async function generateManifest(options) {
   const images = await fs.readdir(options.expectedImagesPath)
-  const diffs = []
+  const diffs = images.map(image => generateDiff(image, options))
 
-  for (const image of images) {
-    const diff = await generateDiff(image, options)
-    if (diff) {
-      diffs.push(diff)
-    }
-  }
-
-  return await multipleDiffs(diffs)
+  return Promise
+    .all(diffs)
+    .then((diffs) => {
+      return multipleDiffs(diffs.filter(diff => diff))
+    })
 }
 
 export default generateManifest

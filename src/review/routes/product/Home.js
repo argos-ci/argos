@@ -14,10 +14,9 @@ import Signup from 'review/routes/product/Signup'
 
 const styleSheet = createStyleSheet('ProductHome', () => ({
   landing: {
-    overflow: 'auto',
-    position: 'relative',
-    paddingTop: 8 * 6,
-    paddingBottom: 8 * 6,
+    minHeight: 300,
+    display: 'flex',
+    alignItems: 'center',
   },
   headline: {
     maxWidth: 500, // Don't use more space than the title.
@@ -44,7 +43,12 @@ function ProductHome(props) {
             <Text type="display1" component="h1" gutterBottom>
               {'Stop discovering visual regressions'}
             </Text>
-            <Text type="headline" component="h2" className={classes.headline}>
+            <Text
+              type="headline"
+              component="h2"
+              className={classes.headline}
+              gutterBottom
+            >
               {`
                 Argos's visual regression system gives you high confidence in doing changes
               `}

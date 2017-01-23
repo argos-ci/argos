@@ -4,7 +4,7 @@ import { createStyleSheet } from 'jss-theme-reactor'
 import withStyles from 'material-ui-build-next/src/styles/withStyles'
 import Text from 'material-ui-build-next/src/Text'
 import Paper from 'material-ui-build-next/src/Paper'
-import recompose from 'modules/recompose'
+import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
 
 const styleSheet = createStyleSheet('BuildScreenshots', () => {
@@ -65,7 +65,7 @@ BuildScreenshots.propTypes = {
   fetch: PropTypes.object.isRequired,
 }
 
-export default recompose.compose(
+export default recompact.compose(
   withStyles(styleSheet),
   connect(state => ({
     fetch: state.build.fetch,
