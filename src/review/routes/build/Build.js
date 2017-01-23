@@ -1,10 +1,9 @@
 import React, { Component, PropTypes } from 'react'
 import { connect } from 'react-redux'
 import Text from 'material-ui-build-next/src/Text'
-import Toolbar from 'material-ui-build-next/src/Toolbar'
-import actionTypes from 'review/redux/actionTypes'
+import actionTypes from 'review/modules/redux/actionTypes'
 import ViewContainer from 'modules/components/ViewContainer'
-import LayoutAppBar from 'modules/components/LayoutAppBar'
+import ReviewAppBar from 'review/modules/AppBar/AppBar'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
 import BuildSummary from 'review/routes/build/Summary'
@@ -37,13 +36,7 @@ class Build extends Component {
 
     return (
       <ViewContainer>
-        <LayoutAppBar>
-          <Toolbar>
-            <Text type="title" colorInherit>
-              {'Argos'}
-            </Text>
-          </Toolbar>
-        </LayoutAppBar>
+        <ReviewAppBar />
         <ScrollView>
           <LayoutBody margin>
             <Text type="display1" gutterBottom>

@@ -69,7 +69,5 @@ BuildSummary.propTypes = {
 
 export default recompact.compose(
   withStyles(styleSheet),
-  connect(state => ({
-    fetch: state.build.fetch,
-  })),
+  connect(state => state.ui.build),
 )(BuildSummary)
