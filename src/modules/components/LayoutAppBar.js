@@ -21,12 +21,7 @@ function LayoutAppBar(props) {
     ...other
   } = props
 
-  return (
-    <AppBar
-      className={classNames(classes.root)}
-      {...other}
-    />
-  )
+  return <AppBar className={classNames(classes.root)} {...other} />
 }
 
 LayoutAppBar.propTypes = {

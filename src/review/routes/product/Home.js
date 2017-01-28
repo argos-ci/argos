@@ -3,10 +3,9 @@ import { createStyleSheet } from 'jss-theme-reactor'
 import withStyles from 'material-ui-build-next/src/styles/withStyles'
 import Text from 'material-ui-build-next/src/Text'
 import Paper from 'material-ui-build-next/src/Paper'
-import Toolbar from 'material-ui-build-next/src/Toolbar'
 import Divider from 'material-ui-build-next/src/Divider'
 import ViewContainer from 'modules/components/ViewContainer'
-import LayoutAppBar from 'modules/components/LayoutAppBar'
+import ReviewAppBar from 'review/modules/AppBar/AppBar'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
 import ProductArgument from 'review/routes/product/Argument'
@@ -30,13 +29,7 @@ function ProductHome(props) {
 
   return (
     <ViewContainer>
-      <LayoutAppBar>
-        <Toolbar>
-          <Text type="title" colorInherit>
-            {'Argos'}
-          </Text>
-        </Toolbar>
-      </LayoutAppBar>
+      <ReviewAppBar />
       <ScrollView>
         <Paper rounded={false} zDepth={3} className={classes.landing}>
           <LayoutBody margin bottom={false}>

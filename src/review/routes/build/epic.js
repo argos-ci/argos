@@ -1,4 +1,4 @@
-import actionTypes from 'review/redux/actionTypes'
+import actionTypes from 'review/modules/redux/actionTypes'
 import graphQLClient from 'modules/graphQL/client'
 
 const buildEpic = action$ =>
