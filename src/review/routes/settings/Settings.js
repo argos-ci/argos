@@ -1,9 +1,12 @@
 import React from 'react'
+import Text from 'material-ui-build-next/src/Text'
 
 function Settings() {
   return (
     <div>
-      <h2>{'Settings'}</h2>
+      <Text type="headline">
+        {'Settings'}
+      </Text>
     </div>
   )
 }

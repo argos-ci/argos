@@ -7,7 +7,7 @@ import withStyles from 'material-ui-build-next/src/styles/withStyles'
 
 const styleSheet = createStyleSheet('LayoutBody', () => ({
   rootMargin: {
-    margin: 8 * 2,
+    margin: 8 * 3,
   },
   rootBottom: {
     marginBottom: 8 * 4,

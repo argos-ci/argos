@@ -35,16 +35,18 @@ function ReviewAppBar(props) {
           </Link>
         </Text>
         {user ? (
-          <Layout container align="center" className={classes.user}>
-            <Layout item>
-              <Text colorInherit>
-                {user.name}
-              </Text>
+          <Link component={LinkRouter} to={`/profile/${user.githubId}`} className={classes.user}>
+            <Layout container align="center">
+              <Layout item>
+                <Text colorInherit>
+                  {user.name}
+                </Text>
+              </Layout>
+              <Layout item>
+                <Avatar src={`https://avatars.githubusercontent.com/u/${user.githubId}`} />
+              </Layout>
             </Layout>
-            <Layout item>
-              <Avatar src={`https://avatars.githubusercontent.com/u/${user.githubId}`} />
-            </Layout>
-          </Layout>
+          </Link>
         ) : null}
       </Toolbar>
     </LayoutAppBar>

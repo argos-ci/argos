@@ -19,7 +19,7 @@ const styleSheet = createStyleSheet('BuildSummary', () => {
 function BuildSummary(props) {
   return (
     <div>
-      <Text type="headline" gutterBottom>
+      <Text type="headline" component="h3" gutterBottom>
         {'Summary'}
       </Text>
       <Paper className={props.classes.paper}>
