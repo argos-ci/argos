@@ -19,7 +19,7 @@ const styleSheet = createStyleSheet('BuildScreenshots', () => {
 function BuildScreenshots(props) {
   return (
     <div>
-      <Text type="headline" gutterBottom>
+      <Text type="headline" component="h3" gutterBottom>
         {'Screenshots'}
       </Text>
       <WatchTask task={props.fetch}>

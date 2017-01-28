@@ -1,4 +1,5 @@
 import React, { PropTypes } from 'react'
+import classNames from 'classnames'
 import { createStyleSheet } from 'jss-theme-reactor'
 import withStyles from 'material-ui-build-next/src/styles/withStyles'
 
@@ -7,7 +8,7 @@ const styleSheet = createStyleSheet('Link', () => ({
     color: 'inherit',
     textDecoration: 'inherit',
     '&:hover': {
-      borderBottom: '1px solid currentColor',
+      textDecoration: 'underline',
     },
   },
 }))
@@ -16,14 +17,16 @@ function Link(props) {
   const {
     component: ComponentProp,
     classes,
+    className,
     ...other
   } = props
 
-  return <ComponentProp className={classes.root} {...other} />
+  return <ComponentProp className={classNames(classes.root, className)} {...other} />
 }
 
 Link.propTypes = {
   classes: PropTypes.object.isRequired,
+  className: PropTypes.string,
   component: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
 }
 

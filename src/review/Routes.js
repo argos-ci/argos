@@ -9,10 +9,12 @@ import {
   IndexRoute,
  } from 'react-router'
 import plugAnalyticsMiddleware from 'modules/reactRouter/plugAnalyticsMiddleware'
-import ProductHome from 'review/routes/product/Home'
+import Homepage from 'review/routes/homepage/Homepage'
 import Profile from 'review/routes/profile/Profile'
+import ProfileDetails from 'review/routes/profile/Details'
 import NotFound from 'review/routes/notFound/NotFound'
 import Repository from 'review/routes/repository/Repository'
+import RepositoryDetails from 'review/routes/repository/Details'
 import Build from 'review/routes/build/Build'
 import Settings from 'review/routes/settings/Settings'
 
@@ -40,10 +42,11 @@ function Routes() {
         plugAnalyticsMiddleware,
       )}
     >
-      <Route path="/" component={ProductHome} />
-      <Route path="/profile/:profileId" component={Profile} />
-      <Route path="/:profileId/:repositoryId">
-        <IndexRoute component={Repository} />
+      <Route path="/" component={Homepage} />
+      <Route path="/profile/:profileId" component={ProfileDetails} />
+      <Route path="/:profileId" component={Profile} />
+      <Route path="/:profileId/:repositoryId" component={Repository}>
+        <IndexRoute component={RepositoryDetails} />
         <Route path="builds/:buildId" component={Build} />
         <Route path="settings" component={Settings} />
       </Route>

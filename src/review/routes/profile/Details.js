@@ -1,21 +1,19 @@
-import React from 'react'
+import React, { PropTypes } from 'react'
+import { connect } from 'react-redux'
 import Text from 'material-ui-build-next/src/Text'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
 import ReviewAppBar from 'review/modules/AppBar/AppBar'
 
-function NotFound() {
+function ProfileDetails(props) {
   return (
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin>
           <Text type="display1" component="h2" gutterBottom>
-            {'404: Something\'s Missing'}
-          </Text>
-          <Text type="subheading">
-            {'We\'re sorry! It seems like this page cannot be found.'}
+            {props.user.name}
           </Text>
         </LayoutBody>
       </ScrollView>
@@ -23,4 +21,10 @@ function NotFound() {
   )
 }
 
-export default NotFound
+ProfileDetails.propTypes = {
+  user: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+  }),
+}
+
+export default connect(state => state.data)(ProfileDetails)
