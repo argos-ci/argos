@@ -7,52 +7,52 @@ import createBuildDiffs from './createBuildDiffs'
 describe('createBuildDiffs', () => {
   useDatabase()
 
+  let compareBucket
+  let baseBucket
+  let compareScreenshot
+  let baseScreenshot
+
   beforeEach(async () => {
-    await ScreenshotBucket.query()
+    ([compareBucket, baseBucket] = await ScreenshotBucket.query()
       .insert([
         {
-          id: '1',
           name: 'test-bucket',
           commit: 'a',
           branch: 'test-branch',
         },
         {
-          id: '2',
           name: 'base-bucket',
           commit: 'b',
           branch: 'master',
         },
-      ])
+      ]));
 
-    await Screenshot.query()
+    ([compareScreenshot, , baseScreenshot] = await Screenshot.query()
       .insert([
         {
-          id: '1',
           name: 'a',
           s3Id: 'a',
-          screenshotBucketId: '1',
+          screenshotBucketId: compareBucket.id,
         },
         {
-          id: '2',
           name: 'b',
           s3Id: 'b',
-          screenshotBucketId: '1',
+          screenshotBucketId: compareBucket.id,
         },
         {
-          id: '3',
           name: 'a',
           s3Id: 'a',
-          screenshotBucketId: 2,
+          screenshotBucketId: baseBucket.id,
         },
-      ])
+      ]))
   })
 
   it('should return the build', async () => {
-    const build = await createBucketBuild(1)
-    const diffs = await createBuildDiffs(build)
+    const build = await createBucketBuild(compareBucket.id)
+    const diffs = await createBuildDiffs(build.id)
     expect(diffs[0].buildId).toBe(build.id)
-    expect(diffs[0].baseScreenshotId).toBe('3')
-    expect(diffs[0].compareScreenshotId).toBe('1')
+    expect(diffs[0].baseScreenshotId).toBe(baseScreenshot.id)
+    expect(diffs[0].compareScreenshotId).toBe(compareScreenshot.id)
     expect(diffs[0].jobStatus).toBe('pending')
     expect(diffs[0].validationStatus).toBe('unknown')
   })

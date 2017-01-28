@@ -64,6 +64,7 @@ describe('computeScreenshotDiff', () => {
       s3,
       bucket: 'argos-screenshots-sandbox',
     })
-    console.log(resultScreenshotDiff)
+    expect(resultScreenshotDiff.score > 0).toBeTruthy()
+    expect(resultScreenshotDiff.jobStatus).toBe('complete')
   })
 })

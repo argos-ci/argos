@@ -11,12 +11,8 @@ export default class Build extends BaseModel {
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
-      baseScreenshotBucketId: {
-        type: ['string'],
-      },
-      compareScreenshotBucketId: {
-        type: ['string'],
-      },
+      baseScreenshotBucketId: { type: ['string'] },
+      compareScreenshotBucketId: { type: ['string'] },
     },
   };
 

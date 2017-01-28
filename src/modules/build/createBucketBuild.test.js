@@ -5,11 +5,13 @@ import createBucketBuild from './createBucketBuild'
 describe('createBucketBuild', () => {
   useDatabase()
 
+  let compareBucket
+  let baseBucket
+
   beforeEach(async () => {
-    await ScreenshotBucket.query()
+    ([compareBucket, baseBucket] = await ScreenshotBucket.query()
       .insert([
         {
-          id: '1',
           name: 'test-bucket',
           commit: 'a',
           branch: 'test-branch',
@@ -20,12 +22,12 @@ describe('createBucketBuild', () => {
           commit: 'b',
           branch: 'master',
         },
-      ])
+      ]))
   })
 
   it('should return the build', async () => {
-    const build = await createBucketBuild(1)
-    expect(build.baseScreenshotBucketId).toBe('2')
-    expect(build.compareScreenshotBucketId).toBe('1')
+    const build = await createBucketBuild(compareBucket.id)
+    expect(build.baseScreenshotBucketId).toBe(baseBucket.id)
+    expect(build.compareScreenshotBucketId).toBe(compareBucket.id)
   })
 })

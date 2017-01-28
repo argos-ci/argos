@@ -2,7 +2,6 @@ import {
   GraphQLObjectType,
   GraphQLID,
   GraphQLString,
-  GraphQLEnumType,
 } from 'graphql'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
