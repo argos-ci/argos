@@ -44,7 +44,6 @@ router.post('/buckets', upload.array('screenshots[]', 50), errorChecking(
           name: req.body.name,
           commit: req.body.commit,
           branch: req.body.branch,
-          jobStatus: 'pending',
         })
 
       const inserts = req.files.map(file => bucket

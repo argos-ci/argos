@@ -12,7 +12,7 @@
     "test:unit": "jest --runInBand",
     "lint": "eslint . && echo \"eslint: no lint errors\"",
     "db:migrate": "knex migrate:latest",
-    "db:dump": "docker-compose exec postgres pg_dump -U development > db/structure.sql",
+    "db:dump": "docker-compose exec postgres pg_dump -s -U development > db/structure.sql",
     "db:load": "docker exec -i `docker-compose ps -q postgres` psql -U development < db/structure.sql",
     "db:seed": "knex seed:run",
     "build": "yarn build:server && yarn build:review",
@@ -101,6 +101,7 @@
     "nodemon": "^1.11.0",
     "selenium-webdriver": "^3.0.1",
     "supertest": "^2.0.1",
+    "tmp": "^0.0.31",
     "webpack-dev-server": "^2.2.0-rc.0"
   },
   "jest": {

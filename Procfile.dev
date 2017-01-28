@@ -1,2 +1,3 @@
 web: nodemon src/server/workers/web.js
-hello: nodemon src/server/workers/hello.js
+bucketBuild: nodemon src/server/workers/bucketBuild.js
+screenshotDiff: nodemon src/server/workers/screenshotDiff.js
