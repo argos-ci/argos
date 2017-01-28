@@ -40,7 +40,7 @@ SET default_with_oids = false;
 
 CREATE TABLE builds (
     id bigint NOT NULL,
-    "baseScreenshotBucketId" bigint NOT NULL,
+    "baseScreenshotBucketId" bigint,
     "compareScreenshotBucketId" bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL
@@ -198,7 +198,6 @@ CREATE TABLE screenshot_buckets (
     name character varying(255) NOT NULL,
     commit character varying(255) NOT NULL,
     branch character varying(255) NOT NULL,
-    "jobStatus" character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL
 );
@@ -236,7 +235,7 @@ CREATE TABLE screenshot_diffs (
     "buildId" bigint NOT NULL,
     "baseScreenshotId" bigint NOT NULL,
     "compareScreenshotId" bigint NOT NULL,
-    score integer NOT NULL,
+    score numeric(10,5),
     "jobStatus" character varying(255) NOT NULL,
     "validationStatus" character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
@@ -395,136 +394,6 @@ ALTER TABLE ONLY screenshots ALTER COLUMN id SET DEFAULT nextval('screenshots_id
 --
 
 ALTER TABLE ONLY users ALTER COLUMN id SET DEFAULT nextval('users_id_seq'::regclass);
-
-
---
--- Data for Name: builds; Type: TABLE DATA; Schema: public; Owner: development
---
-
-COPY builds (id, "baseScreenshotBucketId", "compareScreenshotBucketId", "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- Name: builds_id_seq; Type: SEQUENCE SET; Schema: public; Owner: development
---
-
-SELECT pg_catalog.setval('builds_id_seq', 1, false);
-
-
---
--- Data for Name: knex_migrations; Type: TABLE DATA; Schema: public; Owner: development
---
-
-COPY knex_migrations (id, name, batch, migration_time) FROM stdin;
-1	20161217154940_init.js	1	2017-01-15 16:21:18.803+00
-\.
-
-
---
--- Name: knex_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: development
---
-
-SELECT pg_catalog.setval('knex_migrations_id_seq', 1, true);
-
-
---
--- Data for Name: knex_migrations_lock; Type: TABLE DATA; Schema: public; Owner: development
---
-
-COPY knex_migrations_lock (is_locked) FROM stdin;
-0
-\.
-
-
---
--- Data for Name: organizations; Type: TABLE DATA; Schema: public; Owner: development
---
-
-COPY organizations (id, "githubId", name, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- Name: organizations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: development
---
-
-SELECT pg_catalog.setval('organizations_id_seq', 1, false);
-
-
---
--- Data for Name: repositories; Type: TABLE DATA; Schema: public; Owner: development
---
-
-COPY repositories (id, "githubId", name, enabled, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- Name: repositories_id_seq; Type: SEQUENCE SET; Schema: public; Owner: development
---
-
-SELECT pg_catalog.setval('repositories_id_seq', 1, false);
-
-
---
--- Data for Name: screenshot_buckets; Type: TABLE DATA; Schema: public; Owner: development
---
-
-COPY screenshot_buckets (id, name, commit, branch, "jobStatus", "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- Name: screenshot_buckets_id_seq; Type: SEQUENCE SET; Schema: public; Owner: development
---
-
-SELECT pg_catalog.setval('screenshot_buckets_id_seq', 1, false);
-
-
---
--- Data for Name: screenshot_diffs; Type: TABLE DATA; Schema: public; Owner: development
---
-
-COPY screenshot_diffs (id, "buildId", "baseScreenshotId", "compareScreenshotId", score, "jobStatus", "validationStatus", "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- Name: screenshot_diffs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: development
---
-
-SELECT pg_catalog.setval('screenshot_diffs_id_seq', 1, false);
-
-
---
--- Data for Name: screenshots; Type: TABLE DATA; Schema: public; Owner: development
---
-
-COPY screenshots (id, "screenshotBucketId", name, "s3Id", "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- Name: screenshots_id_seq; Type: SEQUENCE SET; Schema: public; Owner: development
---
-
-SELECT pg_catalog.setval('screenshots_id_seq', 1, false);
-
-
---
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: development
---
-
-COPY users (id, "githubId", name, email, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: development
---
-
-SELECT pg_catalog.setval('users_id_seq', 1, false);
 
 
 --

@@ -2,26 +2,28 @@ import BaseModel from 'server/models/BaseModel'
 
 export default class ScreenshotDiff extends BaseModel {
   static tableName = 'screenshot_diffs';
-
   static jsonSchema = {
     ...BaseModel.jsonSchema,
     required: [
       ...BaseModel.jsonSchema.required,
-      'score',
+      'buildId',
+      'baseScreenshotId',
+      'compareScreenshotId',
       'jobStatus',
       'validationStatus',
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
-      score: {
-        type: 'number',
-      },
+      buildId: { type: 'string' },
+      baseScreenshotId: { type: 'string' },
+      compareScreenshotId: { type: 'string' },
+      score: { type: 'number' },
       jobStatus: {
         type: 'string',
         enum: [
           'pending',
           'progress',
-          'done',
+          'complete',
         ],
       },
       validationStatus: {
@@ -42,6 +44,22 @@ export default class ScreenshotDiff extends BaseModel {
       join: {
         from: 'screenshot_diffs.buildId',
         to: 'builds.id',
+      },
+    },
+    baseScreenshot: {
+      relation: BaseModel.BelongsToOneRelation,
+      modelClass: 'Screenshot',
+      join: {
+        from: 'screenshot_diffs.baseScreenshotId',
+        to: 'screenshots.id',
+      },
+    },
+    compareScreenshot: {
+      relation: BaseModel.BelongsToOneRelation,
+      modelClass: 'Screenshot',
+      join: {
+        from: 'screenshot_diffs.compareScreenshotId',
+        to: 'screenshots.id',
       },
     },
   };

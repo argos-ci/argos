@@ -13,13 +13,11 @@ const buildEpic = action$ =>
               id
               name
               commit
-              jobStatus
             }
             compareScreenshotBucket {
               id
               name
               commit
-              jobStatus
             }
           }
           screenshotDiffs(buildId: ${action.payload.buildId}) {

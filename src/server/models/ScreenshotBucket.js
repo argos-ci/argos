@@ -10,7 +10,6 @@ export default class ScreenshotBucket extends BaseModel {
       'name',
       'commit',
       'branch',
-      'jobStatus',
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
@@ -22,14 +21,6 @@ export default class ScreenshotBucket extends BaseModel {
       },
       branch: {
         type: 'string',
-      },
-      jobStatus: {
-        type: 'string',
-        enum: [
-          'pending',
-          'progress',
-          'done',
-        ],
       },
     },
   };
@@ -44,4 +35,12 @@ export default class ScreenshotBucket extends BaseModel {
       },
     },
   };
+
+  async baseScreenshotBucket() {
+    const buckets = await this.constructor.query()
+      .where({ branch: 'master' })
+      .orderBy('id', 'desc')
+
+    return buckets[0] || null
+  }
 }

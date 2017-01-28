@@ -61,8 +61,8 @@ const ScreenshotDiffType = new GraphQLObjectType({
           progress: {
             value: 'progress',
           },
-          done: {
-            value: 'done',
+          complete: {
+            value: 'complete',
           },
         },
         description: 'Represent the state of the remote job generating the diffs',

@@ -32,23 +32,6 @@ const ScreenshotBucketType = new GraphQLObjectType({
     branch: {
       type: GraphQLString,
     },
-    jobStatus: {
-      type: new GraphQLEnumType({
-        name: 'jobBucketStatus',
-        values: {
-          pending: {
-            value: 'pending',
-          },
-          progress: {
-            value: 'progress',
-          },
-          done: {
-            value: 'done',
-          },
-        },
-        description: 'Represent the state of the remote job providing the screenshots',
-      }),
-    },
     createdAt: {
       type: GraphQLString,
     },

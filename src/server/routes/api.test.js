@@ -35,7 +35,6 @@ describe('api routes', () => {
         name: 'test-bucket',
         commit: 'test-commit',
         branch: 'test-branch',
-        jobStatus: 'pending',
       })
     })
 
@@ -48,7 +47,6 @@ describe('api routes', () => {
           expect(res.body[0].name).toBe('test-bucket')
           expect(res.body[0].commit).toBe('test-commit')
           expect(res.body[0].branch).toBe('test-branch')
-          expect(res.body[0].jobStatus).toBe('pending')
         })
     })
 
