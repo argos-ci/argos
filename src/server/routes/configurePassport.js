@@ -2,6 +2,13 @@ import { Strategy } from 'passport-github'
 import User from 'server/models/User'
 import config from 'config'
 
+function getDataFromProfile(profile) {
+  return {
+    name: profile.displayName,
+    email: profile.emails.find(email => email.primary).value,
+  }
+}
+
 export default (passport) => {
   passport.use(new Strategy({
     clientID: config.get('github.clientId'),
@@ -17,19 +24,22 @@ export default (passport) => {
           githubId: profile.id,
         })
 
-      if (!users[0]) {
-        const user = await User
+      let user = users[0]
+
+      if (!user) {
+        user = await User
           .query()
           .insert({
             githubId: profile.id,
-            name: profile.displayName,
-            email: profile.emails.find(email => email.primary).value,
+            ...getDataFromProfile(profile),
           })
-
-        done(null, user)
       } else {
-        done(null, users[0])
+        user = await User
+          .query()
+          .patchAndFetchById(user.id, getDataFromProfile(profile))
       }
+
+      done(null, user)
     } catch (err) {
       done(err)
     }
