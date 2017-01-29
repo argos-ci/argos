@@ -5,7 +5,7 @@ module.exports = {
     es6: true,
     browser: true,
     node: true,
-    mocha: true,
+    jest: true,
   },
   globals: {
     expect: true,

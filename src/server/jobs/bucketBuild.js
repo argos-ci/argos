@@ -1,6 +1,7 @@
 import { getChannel } from 'server/amqp'
 import createBucketBuild from 'modules/build/createBucketBuild'
 import createBuildDiffs from 'modules/build/createBuildDiffs'
+import { push as pushScreenshotDiffJob } from 'server/jobs/screenshotDiff'
 
 const QUEUE = 'bucketBuild'
 
@@ -17,7 +18,8 @@ export async function worker() {
   await channel.consume(QUEUE, async (msg) => {
     const bucketId = msg.content.toString()
     const build = await createBucketBuild(bucketId)
-    await createBuildDiffs(build.id)
+    const screenshotDiffs = await createBuildDiffs(build.id)
+    await Promise.all(screenshotDiffs.map(({ id }) => pushScreenshotDiffJob(id)))
     channel.ack(msg)
   })
 }

@@ -1,10 +1,11 @@
 import { transaction } from 'objection'
-import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import express from 'express'
-import S3 from 'aws-sdk/clients/s3'
 import multer from 'multer'
+import S3 from 'aws-sdk/clients/s3'
 import multerS3 from 'multer-s3'
 import config from 'config'
+import ScreenshotBucket from 'server/models/ScreenshotBucket'
+import { push as pushBucketBuildJob } from 'server/jobs/bucketBuild'
 
 const router = new express.Router()
 const s3 = new S3({
@@ -57,6 +58,8 @@ router.post('/buckets', upload.array('screenshots[]', 50), errorChecking(
 
       return bucket
     })
+
+    await pushBucketBuildJob(bucket.id)
 
     res.send(bucket)
   },

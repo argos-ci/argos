@@ -1,4 +1,3 @@
-/* global jasmine */
 import path from 'path'
 import request from 'supertest'
 import { useDatabase } from 'server/testUtils'
