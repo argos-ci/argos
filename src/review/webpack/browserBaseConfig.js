@@ -1,4 +1,5 @@
 import path from 'path'
+import webpack from 'webpack'
 
 export default {
   entry: [
@@ -63,5 +64,8 @@ export default {
     maxEntrypointSize: 6e6,
   },
   plugins: [
+    new webpack.DefinePlugin({
+      'process.env.PLATFORM': JSON.stringify('browser'),
+    }),
   ],
 }
