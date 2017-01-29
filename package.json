@@ -8,8 +8,9 @@
     "dev": "yarn dev:foreman & yarn dev:review",
     "dev:foreman": "nf --procfile Procfile.dev --port 4001 start",
     "dev:review": "babel-node ./node_modules/.bin/webpack-dev-server --config=src/review/webpack/browserDevelopmentConfig.js --progress",
-    "test": "yarn lint && yarn test:unit",
+    "test": "yarn lint && yarn test:unit && yarn argos",
     "test:unit": "jest --runInBand",
+    "argos": "ARGOS_COMMIT=$TRAVIS_COMMIT ARGOS_BRANCH=$TRAVIS_BRANCH argos upload sandbox/argos/screenshots --token $ARGOS_TOKEN",
     "lint": "eslint . && echo \"eslint: no lint errors\"",
     "db:migrate": "knex migrate:latest",
     "db:dump": "docker-compose exec postgres pg_dump -s -U development > db/structure.sql",
@@ -89,6 +90,7 @@
     "whatwg-fetch": "^2.0.2"
   },
   "devDependencies": {
+    "argos-cli": "^0.0.1",
     "babel-eslint": "^7.1.1",
     "eslint": "^3.14.0",
     "eslint-config-airbnb": "^14.0.0",
