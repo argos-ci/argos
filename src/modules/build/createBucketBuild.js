@@ -18,6 +18,7 @@ async function createBuild(screenshotBucketId) {
     .insert({
       baseScreenshotBucketId: baseScreenshotBucket.id,
       compareScreenshotBucketId: compareScreenshotBucket.id,
+      repositoryId: baseScreenshotBucket.repositoryId,
     })
 }
 

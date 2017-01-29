@@ -12,12 +12,8 @@ export default class Organization extends BaseModel {
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
-      githubId: {
-        type: 'string',
-      },
-      name: {
-        type: 'string',
-      },
+      githubId: { type: 'number' },
+      name: { type: 'string' },
     },
   };
 }

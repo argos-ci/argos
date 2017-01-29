@@ -11,8 +11,9 @@ export default class Build extends BaseModel {
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
-      baseScreenshotBucketId: { type: ['string'] },
-      compareScreenshotBucketId: { type: ['string'] },
+      baseScreenshotBucketId: { type: 'string' },
+      compareScreenshotBucketId: { type: 'string' },
+      repositoryId: { type: 'string' },
     },
   };
 
@@ -31,6 +32,14 @@ export default class Build extends BaseModel {
       join: {
         from: 'builds.compareScreenshotBucketId',
         to: 'screenshot_buckets.id',
+      },
+    },
+    repository: {
+      relation: BaseModel.BelongsToOneRelation,
+      modelClass: 'Repository',
+      join: {
+        from: 'builds.repositoryId',
+        to: 'repositories.id',
       },
     },
   };
