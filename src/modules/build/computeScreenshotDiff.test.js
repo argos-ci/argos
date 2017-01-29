@@ -78,5 +78,6 @@ describe('computeScreenshotDiff', () => {
     })
     expect(resultScreenshotDiff.score > 0).toBeTruthy()
     expect(resultScreenshotDiff.jobStatus).toBe('complete')
+    expect(resultScreenshotDiff.s3Id).not.toBeUndefined()
   })
 })
