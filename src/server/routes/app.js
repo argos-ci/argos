@@ -33,10 +33,12 @@ app.use(subdomain('api', api))
 app.use(crashReporter.errorHandler())
 
 // Log errors
-app.use((err, req, res, next) => {
-  console.log(err, err.stack)
-  next(err)
-})
+if (config.get('env') !== 'test') {
+  app.use((err, req, res, next) => {
+    console.log(err, err.stack)
+    next(err)
+  })
+}
 
 // Display errors
 app.use(errorHandler({

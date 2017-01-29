@@ -13,15 +13,10 @@ export default class ScreenshotBucket extends BaseModel {
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
-      name: {
-        type: 'string',
-      },
-      commit: {
-        type: 'string',
-      },
-      branch: {
-        type: 'string',
-      },
+      name: { type: 'string' },
+      commit: { type: 'string' },
+      branch: { type: 'string' },
+      repositoryId: { type: 'string' },
     },
   };
 
@@ -34,11 +29,19 @@ export default class ScreenshotBucket extends BaseModel {
         to: 'screenshots.screenshotBucketId',
       },
     },
+    repository: {
+      relation: BaseModel.BelongsToOneRelation,
+      modelClass: 'Repository',
+      join: {
+        from: 'screenshot_buckets.repositoryId',
+        to: 'repositories.id',
+      },
+    },
   };
 
   async baseScreenshotBucket() {
     const buckets = await this.constructor.query()
-      .where({ branch: 'master' })
+      .where({ branch: 'master', repositoryId: this.repositoryId })
       .orderBy('id', 'desc')
 
     return buckets[0] || null

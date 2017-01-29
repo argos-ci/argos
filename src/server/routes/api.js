@@ -1,4 +1,6 @@
 import { transaction } from 'objection'
+import errorHandler, { HttpError } from 'express-err'
+import Repository from 'server/models/Repository'
 import express from 'express'
 import multer from 'multer'
 import S3 from 'aws-sdk/clients/s3'
@@ -30,7 +32,7 @@ function errorChecking(routeHandler) {
       await routeHandler(req, res, next)
     } catch (err) {
       // Handle objection errors
-      err.status = err.statusCode
+      err.status = err.status || err.statusCode
       next(err)
     }
   }
@@ -38,6 +40,18 @@ function errorChecking(routeHandler) {
 
 router.post('/buckets', upload.array('screenshots[]', 50), errorChecking(
   async (req, res) => {
+    if (!req.body.token) {
+      throw new HttpError(400, 'Invalid token')
+    }
+
+    const [repository] = await Repository.query().where({ token: req.body.token })
+
+    if (!repository) {
+      throw new HttpError(400, `Repository not found (token: "${req.body.token}")`)
+    } else if (!repository.enabled) {
+      throw new HttpError(400, 'Repository not enabled')
+    }
+
     const bucket = await transaction(ScreenshotBucket, async function (ScreenshotBucket) {
       const bucket = await ScreenshotBucket
         .query()
@@ -45,6 +59,7 @@ router.post('/buckets', upload.array('screenshots[]', 50), errorChecking(
           name: req.body.name,
           commit: req.body.commit,
           branch: req.body.branch,
+          repositoryId: repository.id,
         })
 
       const inserts = req.files.map(file => bucket
@@ -76,5 +91,12 @@ router.get('/buckets', errorChecking(
     res.send(await query)
   },
 ))
+
+// Display errors
+router.use(errorHandler({
+  exitOnUncaughtException: false,
+  formatters: ['json'],
+  defaultFormatter: 'json',
+}))
 
 export default router

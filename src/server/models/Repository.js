@@ -13,15 +13,10 @@ export default class repository extends BaseModel {
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
-      githubId: {
-        type: 'string',
-      },
-      name: {
-        type: 'string',
-      },
-      enabled: {
-        type: 'boolean',
-      },
+      githubId: { type: 'number' },
+      name: { type: 'string' },
+      enabled: { type: 'boolean' },
+      token: { type: 'string' },
     },
   };
 }

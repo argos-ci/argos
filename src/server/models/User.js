@@ -13,15 +13,9 @@ export default class User extends BaseModel {
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
-      githubId: {
-        type: 'string',
-      },
-      name: {
-        type: 'string',
-      },
-      email: {
-        type: 'string',
-      },
+      githubId: { type: 'string' },
+      name: { type: 'string' },
+      email: { type: 'string' },
     },
   };
 }

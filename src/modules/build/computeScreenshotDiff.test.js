@@ -4,6 +4,7 @@ import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import Build from 'server/models/Build'
 import Screenshot from 'server/models/Screenshot'
+import Repository from 'server/models/Repository'
 import computeScreenshotDiff from './computeScreenshotDiff'
 
 describe('computeScreenshotDiff', () => {
@@ -15,17 +16,26 @@ describe('computeScreenshotDiff', () => {
   beforeEach(async () => {
     s3 = new S3({ signatureVersion: 'v4' })
 
+    const repository = await Repository.query().insert({
+      name: 'foo',
+      githubId: 12,
+      enabled: true,
+      token: 'xx',
+    })
+
     const [compareBucket, baseBucket] = await ScreenshotBucket.query()
       .insert([
         {
           name: 'test-bucket',
           commit: 'a',
           branch: 'test-branch',
+          repositoryId: repository.id,
         },
         {
           name: 'base-bucket',
           commit: 'b',
           branch: 'master',
+          repositoryId: repository.id,
         },
       ])
 
@@ -33,6 +43,7 @@ describe('computeScreenshotDiff', () => {
       .insert({
         baseScreenshotBucketId: baseBucket.id,
         compareScreenshotBucketId: compareBucket.id,
+        repositoryId: repository.id,
       })
 
     const [compareScreenshot, baseScreenshot] = await Screenshot.query()

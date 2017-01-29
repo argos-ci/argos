@@ -1,6 +1,7 @@
 import { useDatabase } from 'server/testUtils'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import Screenshot from 'server/models/Screenshot'
+import Repository from 'server/models/Repository'
 import createBucketBuild from './createBucketBuild'
 import createBuildDiffs from './createBuildDiffs'
 
@@ -13,17 +14,26 @@ describe('createBuildDiffs', () => {
   let baseScreenshot
 
   beforeEach(async () => {
+    const repository = await Repository.query().insert({
+      name: 'foo',
+      githubId: 12,
+      enabled: true,
+      token: 'xx',
+    });
+
     ([compareBucket, baseBucket] = await ScreenshotBucket.query()
       .insert([
         {
           name: 'test-bucket',
           commit: 'a',
           branch: 'test-branch',
+          repositoryId: repository.id,
         },
         {
           name: 'base-bucket',
           commit: 'b',
           branch: 'master',
+          repositoryId: repository.id,
         },
       ]));
 
