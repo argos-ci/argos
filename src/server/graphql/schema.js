@@ -5,9 +5,12 @@ import {
   GraphQLInt,
   GraphQLList,
 } from 'graphql/type'
-import BuildType, { resolve as resolveBuild } from 'server/graphql/BuildType'
+import BuildType, {
+  resolve as resolveBuild,
+  resolveList as resolveBuildList,
+} from 'server/graphql/BuildType'
 import ScreenshotDiffType, {
-  resolve as resolvesSreenshotDiff,
+  resolveList as resolveSreenshotDiffList,
 } from 'server/graphql/ScreenshotDiffType'
 
 export default new GraphQLSchema({
@@ -30,7 +33,16 @@ export default new GraphQLSchema({
             type: new GraphQLNonNull(GraphQLInt),
           },
         },
-        resolve: resolvesSreenshotDiff,
+        resolve: resolveSreenshotDiffList,
+      },
+      builds: {
+        type: new GraphQLList(BuildType),
+        args: {
+          repositoryGithubId: {
+            type: new GraphQLNonNull(GraphQLInt),
+          },
+        },
+        resolve: resolveBuildList,
       },
     },
   }),

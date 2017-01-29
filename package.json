@@ -14,6 +14,7 @@
     "lint": "eslint . && echo \"eslint: no lint errors\"",
     "db:migrate": "knex migrate:latest",
     "db:dump": "docker-compose exec postgres pg_dump -s -U development > db/structure.sql",
+    "db:truncate": "babel-node scripts/truncateAll.js",
     "db:load": "docker exec -i `docker-compose ps -q postgres` psql -U development < db/structure.sql",
     "db:seed": "knex seed:run",
     "build": "yarn build:server && yarn build:review",

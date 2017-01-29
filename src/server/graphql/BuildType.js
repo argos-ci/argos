@@ -20,6 +20,15 @@ export const resolve = (source, args) => {
     })
 }
 
+export const resolveList = (source, args) => {
+  return Build
+    .query()
+    .eager('repository')
+    .where({
+      'repository.githubId': args.repositoryGithubId,
+    })
+}
+
 const BuildType = new GraphQLObjectType({
   name: 'Build',
   fields: {

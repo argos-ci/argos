@@ -53,6 +53,12 @@ SERVER_SESSION_SECRET=
 127.0.0.1 www.argos-ci.dev api.argos-ci.dev
 ```
 
+### Setup the database
+
+```sh
+yarn db:truncate && yarn db:seed
+```
+
 ## Develop
 
 ```sh

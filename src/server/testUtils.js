@@ -5,7 +5,7 @@ import { connect, disconnect } from 'server/database'
 
 const KNEX_TABLES = ['knex_migrations', 'knex_migrations_lock']
 
-async function truncateAll(knex) {
+export async function truncateAll(knex) {
   const result = await knex.schema.raw(
     'SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = \'public\'',
   )

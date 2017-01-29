@@ -6,6 +6,7 @@ exports.seed = (knex, Promise) => {
           id: 1,
           baseScreenshotBucketId: 1,
           compareScreenshotBucketId: 2,
+          repositoryId: 1,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
