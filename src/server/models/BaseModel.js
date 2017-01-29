@@ -20,6 +20,9 @@ export default class BaseModel extends Model {
   // Centralize the models.
   static modelPaths = [__dirname];
 
+  // http://vincit.github.io/objection.js/#defaulteageralgorithm
+  static defaultEagerAlgorithm = Model.JoinEagerAlgorithm;
+
   $beforeInsert() {
     this.createdAt = new Date().toISOString()
     this.updatedAt = new Date().toISOString()

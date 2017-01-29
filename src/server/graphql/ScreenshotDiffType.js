@@ -9,7 +9,7 @@ import ScreenshotType, {
   resolve as resolveScreenshot,
 } from 'server/graphql/ScreenshotType'
 
-export const resolve = (source, args) => {
+export const resolveList = (source, args) => {
   return ScreenshotDiff
     .query()
     .where({

@@ -3,9 +3,9 @@ exports.seed = (knex, Promise) => {
     .then(() => {
       return Promise.all([
         knex('users').insert({
-          githubId: 4420103,
-          name: 'Nathan',
-          email: 'info@nathanmarks.io',
+          githubId: 3165635,
+          name: 'Olivier Tassinari',
+          email: 'olivier.tassinari@gmail.com',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
