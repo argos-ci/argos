@@ -21,9 +21,9 @@ const crashReporter = {
       raven.install()
     }
   },
-  captureException: raven.captureException.bind(raven),
-  requestHandler: raven.requestHandler.bind(raven),
-  errorHandler: raven.errorHandler.bind(raven),
+  captureException: (...args) => raven.captureException(...args),
+  requestHandler: () => raven.requestHandler(),
+  errorHandler: () => raven.errorHandler(),
 }
 
 export default crashReporter
