@@ -15,5 +15,10 @@
     "babel-cli": "^6.18.0",
     "babel-preset-env": "^1.1.8",
     "babel-preset-stage-1": "^6.16.0"
+  },
+  "dependencies": {
+    "form-data": "^2.1.2",
+    "mz": "^2.6.0",
+    "node-fetch": "^1.6.3"
   }
 }

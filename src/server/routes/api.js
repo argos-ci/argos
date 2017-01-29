@@ -1,13 +1,14 @@
 import { transaction } from 'objection'
 import errorHandler, { HttpError } from 'express-err'
-import Repository from 'server/models/Repository'
 import express from 'express'
 import multer from 'multer'
 import S3 from 'aws-sdk/clients/s3'
 import multerS3 from 'multer-s3'
 import config from 'config'
+import Build from 'server/models/Build'
+import Repository from 'server/models/Repository'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
-import { push as pushBucketBuildJob } from 'server/jobs/bucketBuild'
+import { push as pushBuild } from 'server/jobs/build'
 
 const router = new express.Router()
 const s3 = new S3({
@@ -38,7 +39,7 @@ function errorChecking(routeHandler) {
   }
 }
 
-router.post('/buckets', upload.array('screenshots[]', 50), errorChecking(
+router.post('/builds', upload.array('screenshots[]', 50), errorChecking(
   async (req, res) => {
     if (!req.body.token) {
       throw new HttpError(400, 'Invalid token')
@@ -52,31 +53,44 @@ router.post('/buckets', upload.array('screenshots[]', 50), errorChecking(
       throw new HttpError(400, 'Repository not enabled')
     }
 
-    const bucket = await transaction(ScreenshotBucket, async function (ScreenshotBucket) {
-      const bucket = await ScreenshotBucket
-        .query()
-        .insert({
-          name: req.body.name,
-          commit: req.body.commit,
-          branch: req.body.branch,
-          repositoryId: repository.id,
-        })
+    const build = await transaction(
+      Build,
+      ScreenshotBucket,
+      async function (Build, ScreenshotBucket) {
+        const bucket = await ScreenshotBucket
+          .query()
+          .insert({
+            name: 'default',
+            commit: req.body.commit,
+            branch: req.body.branch,
+            repositoryId: repository.id,
+          })
 
-      const inserts = req.files.map(file => bucket
-        .$relatedQuery('screenshots')
-        .insert({
-          name: file.originalname,
-          s3Id: file.key,
-        }))
+        const inserts = req.files.map(file => bucket
+          .$relatedQuery('screenshots')
+          .insert({
+            name: file.originalname,
+            s3Id: file.key,
+          }))
 
-      await Promise.all(inserts)
+        await Promise.all(inserts)
 
-      return bucket
-    })
+        const baseScreenshotBucket = await bucket.baseScreenshotBucket()
 
-    await pushBucketBuildJob(bucket.id)
+        const build = await Build.query()
+          .insert({
+            baseScreenshotBucketId: baseScreenshotBucket ? baseScreenshotBucket.id : undefined,
+            compareScreenshotBucketId: bucket.id,
+            repositoryId: repository.id,
+          })
 
-    res.send(bucket)
+        return build
+      },
+    )
+
+    await pushBuild(build.id)
+
+    res.send(build)
   },
 ))
 

@@ -1,29 +1,25 @@
-import S3 from 'aws-sdk/clients/s3'
-import config from 'config'
 import { getChannel } from 'server/amqp'
+import createBuildDiffs from 'modules/build/createBuildDiffs'
 import crashReporter from 'modules/crashReporter/crashReporter'
-import computeScreenshotDiff from 'modules/build/computeScreenshotDiff'
+import { push as pushScreenshotDiffJob } from 'server/jobs/screenshotDiff'
 
-const QUEUE = 'screenshotDiff'
+const QUEUE = 'build'
 
-export async function push(screenshotDiffId) {
+export async function push(buildId) {
   const channel = await getChannel()
   await channel.assertQueue(QUEUE, { durable: true })
-  channel.sendToQueue(QUEUE, new Buffer(screenshotDiffId), { persistent: true })
+  channel.sendToQueue(QUEUE, new Buffer(buildId), { persistent: true })
 }
 
 export async function worker() {
-  const s3 = new S3({ signatureVersion: 'v4' })
   const channel = await getChannel()
   await channel.assertQueue(QUEUE, { durable: true })
   await channel.prefetch(1)
   await channel.consume(QUEUE, async (msg) => {
     try {
-      const screenshotDiffId = msg.content.toString()
-      await computeScreenshotDiff(screenshotDiffId, {
-        s3,
-        bucket: config.get('s3.screenshotsBucket'),
-      })
+      const buildId = msg.content.toString()
+      const screenshotDiffs = await createBuildDiffs(buildId)
+      await Promise.all(screenshotDiffs.map(({ id }) => pushScreenshotDiffJob(id)))
     } catch (error) {
       console.error(error.message) // eslint-disable-line no-console
       console.error(error.stack) // eslint-disable-line no-console

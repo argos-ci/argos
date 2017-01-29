@@ -12,8 +12,6 @@ import csp from 'server/middlewares/csp'
 import www from 'server/routes/www'
 import api from 'server/routes/api'
 
-crashReporter.init()
-
 const app = express()
 app.disable('x-powered-by')
 app.engine('html', ejs.renderFile)
