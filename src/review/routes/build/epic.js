@@ -10,13 +10,10 @@ const buildEpic = action$ =>
           build(id: ${action.payload.buildId}) {
             createdAt
             baseScreenshotBucket {
-              id
-              name
               commit
             }
             compareScreenshotBucket {
-              id
-              name
+              branch
               commit
             }
           }

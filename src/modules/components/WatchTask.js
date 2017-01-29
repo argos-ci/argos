@@ -2,6 +2,7 @@
 import React, { Component, PropTypes } from 'react'
 import recompact from 'modules/recompact'
 import CircularProgress from 'material-ui-build-next/src/Progress/CircularProgress'
+import Text from 'material-ui-build-next/src/Text'
 import { PROGRESS, SUCCESS, ERROR } from 'modules/rxjs/operator/watchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 
@@ -41,19 +42,15 @@ export default class WatchTask extends Component {
     } = this.props
 
     if (state === ERROR) {
-      return renderInContainer(
-        this.props,
-        <div>
+      return renderInContainer(this.props,
+        <Text>
           {'The loading failed'}
-        </div>,
+        </Text>,
       )
     }
 
     if (state === PROGRESS) {
-      return renderInContainer(
-        this.props,
-        <CircularProgress />,
-      )
+      return renderInContainer(this.props, <CircularProgress />)
     }
 
     if (state === SUCCESS) {

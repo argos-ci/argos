@@ -16,6 +16,10 @@ const styleSheet = createStyleSheet('BuildSummary', () => {
   }
 })
 
+function formatShortCommit(commit) {
+  return commit.substring(0, 7)
+}
+
 function BuildSummary(props) {
   return (
     <div>
@@ -28,9 +32,12 @@ function BuildSummary(props) {
             const {
               build: {
                 createdAt,
+                baseScreenshotBucket: {
+                  commit: baseCommit,
+                },
                 compareScreenshotBucket: {
-                  commit,
-                  name,
+                  commit: compareCommit,
+                  branch,
                 },
               },
               screenshotDiffs,
@@ -48,11 +55,15 @@ function BuildSummary(props) {
 
             return (
               <ul>
-                <li>{`Build: ${name}`}</li>
-                <li>{`Commit: ${commit.substring(0, 7)}`}</li>
-                <li>{`Date: ${new Intl.DateTimeFormat().format(new Date(createdAt))}`}</li>
                 <li>{`Job status: ${jobStatus}`}</li>
                 <li>{`Validation status: ${validationStatus}`}</li>
+                <li>{`Commit: ${formatShortCommit(compareCommit)}`}</li>
+                <li>{`Branch: ${branch}`}</li>
+                <li>
+                  {`Compare: ${formatShortCommit(baseCommit)}...${
+                    formatShortCommit(compareCommit)}`}
+                </li>
+                <li>{`Date: ${new Intl.DateTimeFormat().format(new Date(createdAt))}`}</li>
               </ul>
             )
           }}
