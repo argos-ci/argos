@@ -4230,7 +4230,7 @@ marked@^0.3.6:
 
 "material-ui-build-next@git://github.com/oliviertassinari/material-ui.git#next-splitme":
   version "0.16.0-alpha"
-  resolved "git://github.com/oliviertassinari/material-ui.git#408f13ed4c06e0504770a6d336678fdd168e91c3"
+  resolved "git://github.com/oliviertassinari/material-ui.git#408f7146eb394dfca69cddee109624f5820def74"
   dependencies:
     classnames "^2.2.5"
     dom-helpers "^3.2.0"
