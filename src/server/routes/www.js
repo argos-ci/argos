@@ -69,6 +69,11 @@ router.get('/auth/github/callback',
   },
 )
 
+router.get('/auth/logout', (req, res) => {
+  req.logout()
+  res.redirect('/')
+})
+
 router.get('*', rendering)
 
 export default router
