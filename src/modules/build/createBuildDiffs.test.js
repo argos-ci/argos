@@ -1,13 +1,14 @@
 import { useDatabase } from 'server/testUtils'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
+import Build from 'server/models/Build'
 import Screenshot from 'server/models/Screenshot'
 import Repository from 'server/models/Repository'
-import createBucketBuild from './createBucketBuild'
 import createBuildDiffs from './createBuildDiffs'
 
 describe('createBuildDiffs', () => {
   useDatabase()
 
+  let build
   let compareBucket
   let baseBucket
   let compareScreenshot
@@ -35,7 +36,14 @@ describe('createBuildDiffs', () => {
           branch: 'master',
           repositoryId: repository.id,
         },
-      ]));
+      ]))
+
+    build = await Build.query()
+      .insert({
+        baseScreenshotBucketId: baseBucket.id,
+        compareScreenshotBucketId: compareBucket.id,
+        repositoryId: repository.id,
+      });
 
     ([compareScreenshot, , baseScreenshot] = await Screenshot.query()
       .insert([
@@ -58,7 +66,6 @@ describe('createBuildDiffs', () => {
   })
 
   it('should return the build', async () => {
-    const build = await createBucketBuild(compareBucket.id)
     const diffs = await createBuildDiffs(build.id)
     expect(diffs[0].buildId).toBe(build.id)
     expect(diffs[0].baseScreenshotId).toBe(baseScreenshot.id)

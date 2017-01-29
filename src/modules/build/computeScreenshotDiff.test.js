@@ -1,5 +1,5 @@
 import S3 from 'aws-sdk/clients/s3'
-import { useDatabase } from 'server/testUtils'
+import { useDatabase, setTestsTimeout } from 'server/testUtils'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import Build from 'server/models/Build'
@@ -9,6 +9,7 @@ import computeScreenshotDiff from './computeScreenshotDiff'
 
 describe('computeScreenshotDiff', () => {
   useDatabase()
+  setTestsTimeout(10000)
 
   let s3
   let screenshotDiff

@@ -2,5 +2,6 @@
   "execMap": {
     "js": "babel-node"
   },
-  "env": {}
+  "env": {},
+  "ignore": ["packages/*"]
 }
