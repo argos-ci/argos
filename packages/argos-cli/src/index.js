@@ -20,7 +20,7 @@ program
           throw new UploadError(res.error.message)
         }
 
-        console.log(chalk.bold.green(`Build created (id: ${res.id}).`))
+        console.log(chalk.green(`Build created (id: ${res.id}).`))
       })
       .catch((err) => {
         if (err instanceof UploadError) {
