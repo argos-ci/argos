@@ -30,6 +30,9 @@ const styleSheet = createStyleSheet('Routes', (theme) => {
       body: {
         margin: 0,
       },
+      a: {
+        color: 'inherit',
+      },
     },
   }
 })

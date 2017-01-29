@@ -9,6 +9,7 @@ const repositoryDetailsEpic = action$ =>
         query: `{
           builds(repositoryGithubId: ${action.payload.repositoryGithubId}) {
             id
+            createdAt
           }
         }`,
       })

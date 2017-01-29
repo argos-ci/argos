@@ -4,29 +4,40 @@ import { createStyleSheet } from 'jss-theme-reactor'
 import withStyles from 'material-ui-build-next/src/styles/withStyles'
 import Text from 'material-ui-build-next/src/Text'
 import Paper from 'material-ui-build-next/src/Paper'
+import Layout from 'material-ui-build-next/src/Layout'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
 
 const styleSheet = createStyleSheet('BuildScreenshots', () => {
   return {
-    paper: {
-      overflow: 'auto',
-      marginBottom: 8 * 2,
+    screenshot: {
+      width: '100%',
+      display: 'block',
     },
   }
 })
 
+function getS3Url(s3Id, screenshotsBucket) {
+  return `https://s3.amazonaws.com/${screenshotsBucket}/${s3Id}`
+}
+
 function BuildScreenshots(props) {
+  const {
+    classes,
+    fetch,
+    screenshotsBucket,
+  } = props
+
   return (
     <div>
       <Text type="headline" component="h3" gutterBottom>
         {'Screenshots'}
       </Text>
-      <WatchTask task={props.fetch}>
+      <WatchTask task={fetch}>
         {() => {
           const {
             screenshotDiffs,
-          } = props.fetch.output.data
+          } = fetch.output.data
 
           return (
             <ul>
@@ -39,16 +50,29 @@ function BuildScreenshots(props) {
 
                 return (
                   <li key={id}>
-                    <Paper className={props.classes.paper}>
-                      <img
-                        alt={baseScreenshot.name}
-                        src={baseScreenshot.s3Id}
-                      />
-                      <img
-                        alt={compareScreenshot.name}
-                        src={compareScreenshot.s3Id}
-                      />
-                    </Paper>
+                    <Text>
+                      {compareScreenshot.name}
+                    </Text>
+                    <Layout container>
+                      <Layout item xs={6}>
+                        <Paper className={props.classes.paper}>
+                          <img
+                            className={classes.screenshot}
+                            alt={baseScreenshot.name}
+                            src={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
+                          />
+                        </Paper>
+                      </Layout>
+                      <Layout item xs={6}>
+                        <Paper>
+                          <img
+                            className={classes.screenshot}
+                            alt={compareScreenshot.name}
+                            src={getS3Url(compareScreenshot.s3Id, screenshotsBucket)}
+                          />
+                        </Paper>
+                      </Layout>
+                    </Layout>
                   </li>
                 )
               })}
@@ -63,9 +87,13 @@ function BuildScreenshots(props) {
 BuildScreenshots.propTypes = {
   classes: PropTypes.object.isRequired,
   fetch: PropTypes.object.isRequired,
+  screenshotsBucket: PropTypes.string.isRequired,
 }
 
 export default recompact.compose(
   withStyles(styleSheet),
-  connect(state => state.ui.build),
+  connect(state => ({
+    fetch: state.ui.build.fetch,
+    screenshotsBucket: state.data.config.s3.screenshotsBucket,
+  })),
 )(BuildScreenshots)

@@ -4,10 +4,13 @@ import { Link as LinkRouter } from 'react-router'
 import {
   List,
   ListItem,
+  ListItemText,
 } from 'material-ui-build-next/src/List'
 import Paper from 'material-ui-build-next/src/Paper'
+import Text from 'material-ui-build-next/src/Text'
 import Link from 'modules/components/Link'
 import WatchTask from 'modules/components/WatchTask'
+import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import actionTypes from 'review/modules/redux/actionTypes'
 
 class RepositoryDetails extends Component {
@@ -52,6 +55,16 @@ class RepositoryDetails extends Component {
                 builds,
               } = this.props.fetch.output.data
 
+              if (builds.length === 0) {
+                return (
+                  <WatchTaskContainer>
+                    <Text>
+                      {'No build'}
+                    </Text>
+                  </WatchTaskContainer>
+                )
+              }
+
               return (
                 <List>
                   {builds.map(build => (
@@ -61,7 +74,10 @@ class RepositoryDetails extends Component {
                       component={LinkRouter}
                       to={`/${profileId}/${repositoryId}/builds/${build.id}`}
                     >
-                      {`build ${build.id}`}
+                      <ListItemText
+                        primary={`build ${build.id}`}
+                        secondary={new Intl.DateTimeFormat().format(new Date(build.createdAt))}
+                      />
                     </ListItem>
                   ))}
                 </List>

@@ -58,6 +58,11 @@ export default (req, res) => {
     htmlWebpackPlugin,
     config,
     clientData: injectJSON({
+      config: {
+        s3: {
+          screenshotsBucket: config.get('s3.screenshotsBucket'),
+        },
+      },
       releaseVersion: config.get('heroku.releaseVersion'),
       user: req.user,
     }),
