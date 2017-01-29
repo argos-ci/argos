@@ -87,6 +87,7 @@
     "redux-observable": "^0.13.0",
     "rxjs": "^5.0.3",
     "tmp": "^0.0.31",
+    "uuid": "^3.0.1",
     "webpack": "^2.2.0-rc.0",
     "whatwg-fetch": "^2.0.2"
   },
