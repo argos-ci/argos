@@ -58,6 +58,7 @@ export default (req, res) => {
     htmlWebpackPlugin,
     config,
     clientData: injectJSON({
+      releaseVersion: config.get('heroku.releaseVersion'),
       user: req.user,
     }),
   })

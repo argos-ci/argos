@@ -91,6 +91,14 @@ const config = convict({
       env: 'REDIS_URL',
     },
   },
+  heroku: {
+    releaseVersion: {
+      doc: 'Heroku release version',
+      format: String,
+      default: '',
+      env: 'HEROKU_RELEASE_VERSION',
+    },
+  },
 })
 
 const env = config.get('env')
