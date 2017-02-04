@@ -53,10 +53,10 @@ export default {
   module: {
     rules: [
       ...browserBaseConfig.module.rules.map((rule) => {
-        if (rule.use === 'babel-loader') {
+        if (rule.loader === 'babel-loader') {
           return {
             ...rule,
-            options: {
+            query: {
               presets: [
                 ['env', {
                   targets: {
@@ -67,6 +67,7 @@ export default {
               ],
               plugins: [
                 'react-hot-loader/babel',
+                'transform-class-properties',
               ],
             },
           }

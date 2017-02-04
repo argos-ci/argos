@@ -25,7 +25,7 @@ export default {
     rules: [
       {
         test: /\.js$/,
-        use: 'babel-loader',
+        loader: 'babel-loader',
         exclude: /node_modules\/(?!material-ui)/,
       },
       {
@@ -42,8 +42,8 @@ export default {
       },
       {
         test: /\.svg$/,
-        use: 'image-webpack-loader',
-        options: {
+        loader: 'image-webpack-loader',
+        query: {
           svgo: {
             plugins: [{
               convertPathData: {
