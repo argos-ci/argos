@@ -4284,7 +4284,7 @@ marked@^0.3.6:
 
 "material-ui-build-next@git://github.com/oliviertassinari/material-ui.git#next-splitme":
   version "1.0.0-alpha.1"
-  resolved "git://github.com/oliviertassinari/material-ui.git#193bfa8b24c8b93084df76c418316176f4e0708c"
+  resolved "git://github.com/oliviertassinari/material-ui.git#0a5470f4d04d66501c126840e208a8f99d36e306"
   dependencies:
     classnames "^2.2.5"
     dom-helpers "^3.2.0"
