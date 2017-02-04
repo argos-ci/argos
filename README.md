@@ -53,8 +53,9 @@ SERVER_SESSION_SECRET=
 127.0.0.1 www.argos-ci.dev api.argos-ci.dev
 ```
 
-### Setup the database
+### Use the seed
 
+You can fill the database with some development data with the following command:
 ```sh
 yarn db:truncate && yarn db:seed
 ```
