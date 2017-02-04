@@ -7,6 +7,12 @@
   "bin": {
     "argos": "bin/argos"
   },
+  "keywords": [
+    "visual regression",
+    "diff-ui",
+    "compare-screenshots",
+    "review-process"
+  ],
   "scripts": {
     "dev": "babel --watch -d lib src",
     "build": "NODE_ENV=production babel -d lib src",
@@ -18,6 +24,7 @@
     "babel-preset-stage-1": "^6.16.0"
   },
   "dependencies": {
+    "convict": "^2.0.0",
     "form-data": "^2.1.2",
     "mz": "^2.6.0",
     "node-fetch": "^1.6.3"

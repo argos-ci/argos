@@ -10,8 +10,9 @@
     "dev:review": "babel-node ./node_modules/.bin/webpack-dev-server --config=src/review/webpack/browserDevelopmentConfig.js --progress",
     "test": "yarn lint && yarn test:unit && yarn argos",
     "test:unit": "jest --runInBand",
+    "test:watch": "yarn test:unit -- --watch",
     "argos": "ARGOS_COMMIT=$TRAVIS_COMMIT ARGOS_BRANCH=$TRAVIS_BRANCH argos upload sandbox/argos/screenshots --token $ARGOS_TOKEN",
-    "lint": "eslint . && echo \"eslint: no lint errors\"",
+    "lint": "eslint . --cache && echo \"eslint: no lint errors\"",
     "db:migrate": "knex migrate:latest",
     "db:dump": "docker-compose exec postgres pg_dump -s -U development > db/structure.sql",
     "db:truncate": "babel-node scripts/truncateAll.js",
@@ -104,7 +105,6 @@
     "eslint-plugin-react": "^6.9.0",
     "foreman": "^2.0.0",
     "jest": "^18.1.0",
-    "mocha": "^3.2.0",
     "nodemon": "^1.11.0",
     "selenium-webdriver": "^3.0.1",
     "supertest": "^3.0.0",
@@ -113,7 +113,8 @@
   "jest": {
     "notify": true,
     "testPathDirs": [
-      "<rootDir>/src"
+      "<rootDir>/src",
+      "<rootDir>/packages"
     ],
     "modulePaths": [
       "<rootDir>/src"
