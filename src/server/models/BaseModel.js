@@ -24,7 +24,10 @@ export default class BaseModel extends Model {
   static defaultEagerAlgorithm = Model.JoinEagerAlgorithm;
 
   $beforeInsert() {
-    this.createdAt = new Date().toISOString()
+    if (!this.createdAt) {
+      this.createdAt = new Date().toISOString()
+    }
+
     this.updatedAt = new Date().toISOString()
   }
 

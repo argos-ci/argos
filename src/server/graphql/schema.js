@@ -26,15 +26,6 @@ export default new GraphQLSchema({
         },
         resolve: resolveBuild,
       },
-      screenshotDiffs: {
-        type: new GraphQLList(ScreenshotDiffType),
-        args: {
-          buildId: {
-            type: new GraphQLNonNull(GraphQLInt),
-          },
-        },
-        resolve: resolveSreenshotDiffList,
-      },
       builds: {
         type: new GraphQLList(BuildType),
         args: {
@@ -43,6 +34,15 @@ export default new GraphQLSchema({
           },
         },
         resolve: resolveBuildList,
+      },
+      screenshotDiffs: {
+        type: new GraphQLList(ScreenshotDiffType),
+        args: {
+          buildId: {
+            type: new GraphQLNonNull(GraphQLInt),
+          },
+        },
+        resolve: resolveSreenshotDiffList,
       },
     },
   }),

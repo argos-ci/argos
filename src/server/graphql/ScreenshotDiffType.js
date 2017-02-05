@@ -4,6 +4,7 @@ import {
   GraphQLID,
   GraphQLEnumType,
 } from 'graphql'
+import GraphQLDateType from 'graphql-custom-datetype'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import ScreenshotType, {
   resolve as resolveScreenshot,
@@ -86,10 +87,10 @@ const ScreenshotDiffType = new GraphQLObjectType({
       }),
     },
     createdAt: {
-      type: GraphQLString,
+      type: GraphQLDateType,
     },
     updatedAt: {
-      type: GraphQLString,
+      type: GraphQLDateType,
     },
   },
 })

@@ -61,6 +61,7 @@
     "express-subdomain": "^1.0.5",
     "force-case-sensitivity-webpack-plugin": "^0.2.1",
     "graphql": "^0.9.1",
+    "graphql-custom-datetype": "^0.3.0",
     "html-minifier": "^3.3.0",
     "image-diff": "^1.6.3",
     "jss": "^6.2.0",
