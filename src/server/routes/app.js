@@ -23,10 +23,6 @@ if (config.get('server.logFormat')) {
   app.use(morgan(config.get('server.logFormat')))
 }
 
-app.get('/.well-known/acme-challenge/:content', (req, res) => {
-  res.send(`${req.params.content}.tNBB5Q9TMaIzKpNdoFbqrfk4NmxtrNmDkdv75tPz-TQ`) // eslint-disable-line max-len
-})
-
 app.use(compress())
 app.use(csp) // Content Security Policy
 app.use(subdomain('www', www))
