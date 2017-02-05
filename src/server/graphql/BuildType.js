@@ -7,6 +7,7 @@ import Build from 'server/models/Build'
 import ScreenshotBucketType, {
   resolve as resolveScreenshotBucket,
 } from 'server/graphql/ScreenshotBucketType'
+import GraphQLDateType from 'graphql-custom-datetype'
 
 export const resolve = (source, args) => {
   return Build
@@ -26,6 +27,18 @@ export const resolveList = (source, args) => {
     .eager('repository')
     .where({
       'repository.githubId': args.repositoryGithubId,
+    })
+    // .orderBy('createdAt', 'desc') Do not work #WTF
+    .then((builds) => {
+      return builds.sort((a, b) => {
+        if (a.createdAt < b.createdAt) {
+          return 1
+        } else if (a.createdAt > b.createdAt) {
+          return -1
+        }
+
+        return 0
+      })
     })
 }
 
@@ -58,10 +71,10 @@ const BuildType = new GraphQLObjectType({
       ),
     },
     createdAt: {
-      type: GraphQLString,
+      type: GraphQLDateType,
     },
     updatedAt: {
-      type: GraphQLString,
+      type: GraphQLDateType,
     },
   },
 })

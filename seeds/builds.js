@@ -4,7 +4,7 @@ exports.seed = (knex, Promise) => {
       return Promise.all([
         knex('builds').insert({
           id: 1,
-          baseScreenshotBucketId: null,
+          baseScreenshotBucketId: 1,
           compareScreenshotBucketId: 1,
           repositoryId: 1,
           createdAt: '2017-02-02T15:05:55.293Z',

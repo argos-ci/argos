@@ -3,10 +3,21 @@ exports.seed = (knex, Promise) => {
     .then(() => {
       return Promise.all([
         knex('screenshot_diffs').insert({
+          buildId: 1,
+          baseScreenshotId: 1,
+          compareScreenshotId: 1,
+          score: 0,
+          jobStatus: 'complete',
+          validationStatus: 'unknown',
+          s3Id: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+        knex('screenshot_diffs').insert({
           buildId: 2,
           baseScreenshotId: 1,
           compareScreenshotId: 2,
-          score: 0.312,
+          score: 0,
           jobStatus: 'complete',
           validationStatus: 'unknown',
           s3Id: null,
@@ -17,7 +28,7 @@ exports.seed = (knex, Promise) => {
           buildId: 3,
           baseScreenshotId: 2,
           compareScreenshotId: 3,
-          score: 0.447,
+          score: 0,
           jobStatus: 'complete',
           validationStatus: 'unknown',
           s3Id: null,

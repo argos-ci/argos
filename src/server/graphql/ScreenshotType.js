@@ -3,6 +3,7 @@ import {
   GraphQLID,
   GraphQLString,
 } from 'graphql'
+import GraphQLDateType from 'graphql-custom-datetype'
 import Screenshot from 'server/models/Screenshot'
 
 export const resolve = (source, args) => {
@@ -32,10 +33,10 @@ const ScreenshotType = new GraphQLObjectType({
       type: GraphQLString,
     },
     createdAt: {
-      type: GraphQLString,
+      type: GraphQLDateType,
     },
     updatedAt: {
-      type: GraphQLString,
+      type: GraphQLDateType,
     },
   },
 })
