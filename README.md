@@ -67,6 +67,14 @@ yarn dev # run server
 yarn dev:review # run webpack
 ```
 
+## Previous work
+
+- [happo](https://github.com/Galooshi/happo)
+- [spectre](https://github.com/wearefriday/spectre)
+- [wraith](https://github.com/BBC-News/wraith)
+- [BackstopJS](https://github.com/garris/BackstopJS)
+- [VisualReview-protractor](https://github.com/xebia/VisualReview-protractor)
+
 ## Contributing
 
 Changes and improvements are more than welcome!
