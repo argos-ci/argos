@@ -1,5 +1,5 @@
 import React from 'react'
-import Button from 'material-ui-build-next/src/Button'
+import Button from 'material-ui/Button'
 
 function handleClickSignup() {
   window.location = '/auth/github'

@@ -1,9 +1,9 @@
 import React, { PropTypes } from 'react'
 import { connect } from 'react-redux'
 import { createStyleSheet } from 'jss-theme-reactor'
-import withStyles from 'material-ui-build-next/src/styles/withStyles'
-import Text from 'material-ui-build-next/src/Text'
-import Paper from 'material-ui-build-next/src/Paper'
+import withStyles from 'material-ui/styles/withStyles'
+import Text from 'material-ui/Text'
+import Paper from 'material-ui/Paper'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
 

@@ -2,7 +2,7 @@
 
 import React, { PropTypes } from 'react'
 import { createStyleSheet } from 'jss-theme-reactor'
-import withStyles from 'material-ui-build-next/src/styles/withStyles'
+import withStyles from 'material-ui/styles/withStyles'
 
 const styleSheet = createStyleSheet('ViewContainer', () => ({
   root: {

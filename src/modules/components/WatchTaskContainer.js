@@ -1,8 +1,8 @@
 /* eslint-disable react/no-multi-comp */
 import React, { PropTypes } from 'react'
 import { createStyleSheet } from 'jss-theme-reactor'
-import withStyles from 'material-ui-build-next/src/styles/withStyles'
-import Layout from 'material-ui-build-next/src/Layout'
+import withStyles from 'material-ui/styles/withStyles'
+import Layout from 'material-ui/Layout'
 
 const styleSheet = createStyleSheet('WatchTaskContainer', () => ({
   root: {

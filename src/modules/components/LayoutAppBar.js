@@ -3,9 +3,9 @@
 import React, { PropTypes } from 'react'
 import { createStyleSheet } from 'jss-theme-reactor'
 import classNames from 'classnames'
-import AppBar from 'material-ui-build-next/src/AppBar'
-import withStyles from 'material-ui-build-next/src/styles/withStyles'
-import { white } from 'material-ui-build-next/src/styles/colors'
+import AppBar from 'material-ui/AppBar'
+import withStyles from 'material-ui/styles/withStyles'
+import { white } from 'material-ui/styles/colors'
 
 const styleSheet = createStyleSheet('LayoutAppBar', () => ({
   root: {

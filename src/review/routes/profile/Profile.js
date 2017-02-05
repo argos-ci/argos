@@ -1,6 +1,6 @@
 import React, { PropTypes } from 'react'
 import { Link as LinkRouter } from 'react-router'
-import Text from 'material-ui-build-next/src/Text'
+import Text from 'material-ui/Text'
 import ViewContainer from 'modules/components/ViewContainer'
 import Link from 'modules/components/Link'
 import ScrollView from 'modules/components/ScrollView'
@@ -9,10 +9,8 @@ import ReviewAppBar from 'review/modules/AppBar/AppBar'
 
 function Profile(props) {
   const {
-    params: {
-      profileId,
-    },
-  } = props
+    profileName,
+  } = props.params
 
   return (
     <ViewContainer>
@@ -20,14 +18,14 @@ function Profile(props) {
       <ScrollView>
         <LayoutBody margin>
           <Text type="display1" component="h2" gutterBottom>
-            <Link component={LinkRouter} to={`/${profileId}`}>
-              {profileId}
+            <Link component={LinkRouter} to={`/${profileName}`}>
+              {profileName}
             </Link>
           </Text>
           <ul>
             <li>
               <Text>
-                <Link component={LinkRouter} to={`/${profileId}/material-ui`}>
+                <Link component={LinkRouter} to={`/${profileName}/material-ui`}>
                   {'material-ui'}
                 </Link>
               </Text>
@@ -41,7 +39,7 @@ function Profile(props) {
 
 Profile.propTypes = {
   params: PropTypes.shape({
-    profileId: PropTypes.string.isRequired,
+    profileName: PropTypes.string.isRequired,
   }).isRequired,
 }
 

@@ -1,8 +1,8 @@
 /* eslint-disable react/no-multi-comp */
 import React, { Component, PropTypes } from 'react'
 import recompact from 'modules/recompact'
-import CircularProgress from 'material-ui-build-next/src/Progress/CircularProgress'
-import Text from 'material-ui-build-next/src/Text'
+import CircularProgress from 'material-ui/Progress/CircularProgress'
+import Text from 'material-ui/Text'
 import { PROGRESS, SUCCESS, ERROR } from 'modules/rxjs/operator/watchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 
@@ -38,10 +38,11 @@ export default class WatchTask extends Component {
       children,
       task: {
         state,
+        output,
       },
     } = this.props
 
-    if (state === ERROR) {
+    if (state === ERROR || (state === SUCCESS && output.errors)) {
       return renderInContainer(this.props,
         <Text>
           {'The loading failed'}

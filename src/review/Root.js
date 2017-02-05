@@ -7,7 +7,7 @@ import {
 } from 'redux'
 import { combineEpics, createEpicMiddleware } from 'redux-observable'
 import { Provider } from 'react-redux'
-import MuiThemeProvider from 'material-ui-build-next/src/styles/MuiThemeProvider'
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import metricsMiddleware from 'browser-metrics/lib/reduxMetricsMiddleware'
 import createStyleManager from 'modules/styles/createStyleManager'
 import analytics from 'modules/analytics/analytics'
