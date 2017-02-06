@@ -7,7 +7,10 @@ const repositoryDetailsEpic = action$ =>
     .watchTask(actionTypes.REPOSITORY_DETAILS_FETCH_TASK, action => (
       graphQLClient.fetch({
         query: `{
-          builds(repositoryGithubId: ${action.payload.repositoryGithubId}) {
+          builds(
+            profileName: "${action.payload.profileName}",
+            repositoryName: "${action.payload.repositoryName}"
+          ) {
             id
             createdAt
           }

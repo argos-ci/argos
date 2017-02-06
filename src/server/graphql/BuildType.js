@@ -24,22 +24,14 @@ export const resolve = (source, args) => {
 export const resolveList = (source, args) => {
   return Build
     .query()
-    .eager('repository')
+    .select('builds.*')
+    .innerJoin('repositories', 'repositories.id', 'builds.repositoryId')
+    .innerJoin('organizations', 'organizations.id', 'repositories.organizationId')
     .where({
-      'repository.githubId': args.repositoryGithubId,
+      'repositories.name': args.repositoryName,
+      'organizations.name': args.profileName,
     })
-    // .orderBy('createdAt', 'desc') Do not work #WTF
-    .then((builds) => {
-      return builds.sort((a, b) => {
-        if (a.createdAt < b.createdAt) {
-          return 1
-        } else if (a.createdAt > b.createdAt) {
-          return -1
-        }
-
-        return 0
-      })
-    })
+    .orderBy('createdAt', 'desc')
 }
 
 const BuildType = new GraphQLObjectType({

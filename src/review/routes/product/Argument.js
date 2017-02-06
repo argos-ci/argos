@@ -2,8 +2,8 @@
 
 import React, { PropTypes } from 'react'
 import { createStyleSheet } from 'jss-theme-reactor'
-import withStyles from 'material-ui-build-next/src/styles/withStyles'
-import Text from 'material-ui-build-next/src/Text'
+import withStyles from 'material-ui/styles/withStyles'
+import Text from 'material-ui/Text'
 import recompact from 'modules/recompact'
 import LayoutBody from 'modules/components/LayoutBody'
 

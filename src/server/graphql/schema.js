@@ -3,6 +3,7 @@ import {
   GraphQLSchema,
   GraphQLNonNull,
   GraphQLInt,
+  GraphQLString,
   GraphQLList,
 } from 'graphql/type'
 import BuildType, {
@@ -29,8 +30,11 @@ export default new GraphQLSchema({
       builds: {
         type: new GraphQLList(BuildType),
         args: {
-          repositoryGithubId: {
-            type: new GraphQLNonNull(GraphQLInt),
+          profileName: {
+            type: new GraphQLNonNull(GraphQLString),
+          },
+          repositoryName: {
+            type: new GraphQLNonNull(GraphQLString),
           },
         },
         resolve: resolveBuildList,

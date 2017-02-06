@@ -1,6 +1,6 @@
 import React from 'react'
 import { createStyleSheet } from 'jss-theme-reactor'
-import withStyles from 'material-ui-build-next/src/styles/withStyles'
+import withStyles from 'material-ui/styles/withStyles'
 import {
   applyRouterMiddleware,
   browserHistory,
@@ -46,9 +46,9 @@ function Routes() {
       )}
     >
       <Route path="/" component={Homepage} />
-      <Route path="/profile/:profileId" component={ProfileDetails} />
-      <Route path="/:profileId" component={Profile} />
-      <Route path="/:profileId/:repositoryId" component={Repository}>
+      <Route path="/profile/:profileName" component={ProfileDetails} />
+      <Route path="/:profileName" component={Profile} />
+      <Route path="/:profileName/:repositoryName" component={Repository}>
         <IndexRoute component={RepositoryDetails} />
         <Route path="builds/:buildId" component={Build} />
         <Route path="settings" component={Settings} />

@@ -5,9 +5,9 @@ import {
   List,
   ListItem,
   ListItemText,
-} from 'material-ui-build-next/src/List'
-import Paper from 'material-ui-build-next/src/Paper'
-import Text from 'material-ui-build-next/src/Text'
+} from 'material-ui/List'
+import Paper from 'material-ui/Paper'
+import Text from 'material-ui/Text'
 import Link from 'modules/components/Link'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
@@ -18,8 +18,8 @@ class RepositoryDetails extends Component {
     dispatch: PropTypes.func.isRequired,
     fetch: PropTypes.object.isRequired,
     params: PropTypes.shape({
-      profileId: PropTypes.string.isRequired,
-      repositoryId: PropTypes.string.isRequired,
+      profileName: PropTypes.string.isRequired,
+      repositoryName: PropTypes.string.isRequired,
     }).isRequired,
   }
 
@@ -27,7 +27,8 @@ class RepositoryDetails extends Component {
     this.props.dispatch({
       type: actionTypes.REPOSITORY_DETAILS_FETCH,
       payload: {
-        repositoryGithubId: this.props.params.repositoryId,
+        profileName: this.props.params.profileName,
+        repositoryName: this.props.params.repositoryName,
       },
     })
   }
@@ -36,14 +37,14 @@ class RepositoryDetails extends Component {
     const {
       fetch,
       params: {
-        profileId,
-        repositoryId,
+        profileName,
+        repositoryName,
       },
     } = this.props
 
     return (
       <div>
-        <Link component={LinkRouter} to={`/${profileId}/${repositoryId}/settings`}>
+        <Link component={LinkRouter} to={`/${profileName}/${repositoryName}/settings`}>
           {'Settings'}
         </Link>
         <br />
@@ -72,7 +73,7 @@ class RepositoryDetails extends Component {
                       key={build.id}
                       button
                       component={LinkRouter}
-                      to={`/${profileId}/${repositoryId}/builds/${build.id}`}
+                      to={`/${profileName}/${repositoryName}/builds/${build.id}`}
                     >
                       <ListItemText
                         primary={`build ${build.id}`}

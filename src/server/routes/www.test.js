@@ -2,6 +2,7 @@ import request from 'supertest'
 import { useDatabase } from 'server/testUtils'
 import Build from 'server/models/Build'
 import Repository from 'server/models/Repository'
+import Organization from 'server/models/Organization'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import www from './www'
 
@@ -9,13 +10,20 @@ describe('GraphQL', () => {
   useDatabase()
 
   describe('builds', () => {
+    let organization
     let repository
 
     beforeEach(async function () {
+      organization = await Organization.query().insert({
+        name: 'bar',
+        githubId: 12,
+      })
+
       repository = await Repository.query().insert({
         name: 'foo',
         githubId: 12,
         enabled: true,
+        organizationId: organization.id,
       })
 
       const screenshotBucket = await ScreenshotBucket.query().insert({
@@ -43,7 +51,10 @@ describe('GraphQL', () => {
         .post('/graphql')
         .send({
           query: `{
-            builds(repositoryGithubId: ${repository.githubId}) {
+            builds(
+              profileName: "${organization.name}",
+              repositoryName: "${repository.name}"
+            ) {
               createdAt
             }
           }`,

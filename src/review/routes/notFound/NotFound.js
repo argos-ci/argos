@@ -1,5 +1,5 @@
 import React from 'react'
-import Text from 'material-ui-build-next/src/Text'
+import Text from 'material-ui/Text'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'

@@ -3,6 +3,7 @@ exports.seed = (knex, Promise) => {
     .then(() => {
       return Promise.all([
         knex('organizations').insert({
+          id: 1,
           githubId: 1262264,
           name: 'Call-Em-All',
           createdAt: new Date().toISOString(),

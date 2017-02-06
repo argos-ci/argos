@@ -1,6 +1,6 @@
 import React, { PropTypes } from 'react'
 import { Link as LinkRouter } from 'react-router'
-import Text from 'material-ui-build-next/src/Text'
+import Text from 'material-ui/Text'
 import ViewContainer from 'modules/components/ViewContainer'
 import Link from 'modules/components/Link'
 import ScrollView from 'modules/components/ScrollView'
@@ -10,8 +10,8 @@ import ReviewAppBar from 'review/modules/AppBar/AppBar'
 function Repository(props) {
   const {
     params: {
-      profileId,
-      repositoryId,
+      profileName,
+      repositoryName,
     },
     children,
   } = props
@@ -22,12 +22,12 @@ function Repository(props) {
       <ScrollView>
         <LayoutBody margin>
           <Text type="display1" component="h2" gutterBottom>
-            <Link component={LinkRouter} to={`/${profileId}`}>
-              {profileId}
+            <Link component={LinkRouter} to={`/${profileName}`}>
+              {profileName}
             </Link>
             {'/'}
-            <Link component={LinkRouter} to={`/${profileId}/${repositoryId}`}>
-              {repositoryId}
+            <Link component={LinkRouter} to={`/${profileName}/${repositoryName}`}>
+              {repositoryName}
             </Link>
           </Text>
           {children}
@@ -40,8 +40,8 @@ function Repository(props) {
 Repository.propTypes = {
   children: PropTypes.element.isRequired,
   params: PropTypes.shape({
-    profileId: PropTypes.string.isRequired,
-    repositoryId: PropTypes.string.isRequired,
+    profileName: PropTypes.string.isRequired,
+    repositoryName: PropTypes.string.isRequired,
   }).isRequired,
 }
 
