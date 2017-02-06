@@ -22,7 +22,7 @@
     "build": "yarn build:server && yarn build:review",
     "build:server": "rm -rf lib/ && cp -R src/ lib/ && babel -d lib src",
     "build:review": "rm -rf server/static/review && babel-node ./node_modules/.bin/webpack --config=src/review/webpack/browserProductionConfig.js --progress",
-    "heroku-postbuild": "yarn build && yarn db:migrate"
+    "heroku-postbuild": "yarn build && yarn db:migrate:latest"
   },
   "repository": {
     "type": "git",
