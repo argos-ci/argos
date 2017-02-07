@@ -68,7 +68,7 @@
     "image-diff": "^1.6.3",
     "jss": "^6.2.0",
     "knex": "^0.12.6",
-    "material-ui": "1.0.0-alpha.1",
+    "material-ui": "1.0.0-alpha.2",
     "minimist": "^1.2.0",
     "morgan": "^1.7.0",
     "multer": "^1.3.0",
