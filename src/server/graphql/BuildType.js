@@ -32,6 +32,19 @@ export const resolveList = (source, args) => {
       'organizations.name': args.profileName,
     })
     .orderBy('createdAt', 'desc')
+    .range(args.after, (args.after + args.first) - 1)
+    .then((result) => {
+      const hasNextPage = args.after + args.first < result.total
+
+      return {
+        pageInfo: {
+          totalCount: result.total,
+          hasNextPage,
+          endCursor: hasNextPage ? args.after + args.first : result.total,
+        },
+        edges: result.results,
+      }
+    })
 }
 
 const BuildType = new GraphQLObjectType({

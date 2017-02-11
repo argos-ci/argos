@@ -29,6 +29,33 @@ exports.seed = (knex, Promise) => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
+        knex('screenshots').insert({
+          id: 4,
+          screenshotBucketId: 4,
+          name: 'ListItem/IconListItem',
+          // s3Id: 'https://raw.githubusercontent.com/callemall/material-ui/1ffac615b85e8a63424252768d21b62381f1b44e/test/regressions/screenshots/baseline/ListItem/IconListItem/chrome-53.0.2785.143-linux.png',
+          s3Id: '4.png',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+        knex('screenshots').insert({
+          id: 5,
+          screenshotBucketId: 5,
+          name: 'ListItem/IconListItem',
+          // s3Id: 'https://raw.githubusercontent.com/callemall/material-ui/852cffe72a964f3783631a0ddc0b51484831363f/test/regressions/screenshots/baseline/ListItem/IconListItem/chrome-53.0.2785.143-linux.png',
+          s3Id: '5.png',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+        knex('screenshots').insert({
+          id: 6,
+          screenshotBucketId: 6,
+          name: 'ListItem/IconListItem',
+          // s3Id: 'https://raw.githubusercontent.com/callemall/material-ui/8fcaca081dcf18815b474d68b3c4952f4adc83cb/test/regressions/screenshots/baseline/ListItem/IconListItem/chrome-53.0.2785.143-linux.png',
+          s3Id: '6.png',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
       ])
     })
 }

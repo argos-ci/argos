@@ -6,6 +6,7 @@ import {
   GraphQLString,
   GraphQLList,
 } from 'graphql/type'
+import paginationTypeFactory from 'modules/graphQL/paginationTypeFactory'
 import BuildType, {
   resolve as resolveBuild,
   resolveList as resolveBuildList,
@@ -19,16 +20,15 @@ export default new GraphQLSchema({
     name: 'Query',
     fields: {
       build: {
-        type: BuildType,
         args: {
           id: {
             type: new GraphQLNonNull(GraphQLInt),
           },
         },
+        type: BuildType,
         resolve: resolveBuild,
       },
       builds: {
-        type: new GraphQLList(BuildType),
         args: {
           profileName: {
             type: new GraphQLNonNull(GraphQLString),
@@ -36,16 +36,25 @@ export default new GraphQLSchema({
           repositoryName: {
             type: new GraphQLNonNull(GraphQLString),
           },
+          first: { // Number to display
+            type: new GraphQLNonNull(GraphQLInt),
+          },
+          after: { // Cursor
+            type: new GraphQLNonNull(GraphQLInt),
+          },
         },
+        type: paginationTypeFactory({
+          type: BuildType,
+        }),
         resolve: resolveBuildList,
       },
       screenshotDiffs: {
-        type: new GraphQLList(ScreenshotDiffType),
         args: {
           buildId: {
             type: new GraphQLNonNull(GraphQLInt),
           },
         },
+        type: new GraphQLList(ScreenshotDiffType),
         resolve: resolveSreenshotDiffList,
       },
     },

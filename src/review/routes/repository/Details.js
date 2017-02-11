@@ -29,6 +29,8 @@ class RepositoryDetails extends Component {
       payload: {
         profileName: this.props.params.profileName,
         repositoryName: this.props.params.repositoryName,
+        first: 5,
+        after: 0,
       },
     })
   }
@@ -53,10 +55,10 @@ class RepositoryDetails extends Component {
           <WatchTask task={fetch}>
             {() => {
               const {
-                builds,
-              } = this.props.fetch.output.data
+                edges,
+              } = this.props.fetch.output.data.builds
 
-              if (builds.length === 0) {
+              if (edges.length === 0) {
                 return (
                   <WatchTaskContainer>
                     <Text>
@@ -68,7 +70,7 @@ class RepositoryDetails extends Component {
 
               return (
                 <List>
-                  {builds.map(build => (
+                  {edges.map(build => (
                     <ListItem
                       key={build.id}
                       button
