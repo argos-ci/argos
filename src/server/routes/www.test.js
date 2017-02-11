@@ -16,12 +16,12 @@ describe('GraphQL', () => {
     beforeEach(async function () {
       organization = await Organization.query().insert({
         name: 'bar',
-        githubId: 12,
+        githubId: 1,
       })
 
       repository = await Repository.query().insert({
         name: 'foo',
-        githubId: 12,
+        githubId: 11,
         enabled: true,
         organizationId: organization.id,
       })
@@ -68,6 +68,59 @@ describe('GraphQL', () => {
             },
             {
               createdAt: '2017-02-04T17:14:28.167Z',
+            },
+          ])
+        })
+    })
+  })
+
+  describe('repositories', () => {
+    let organization
+
+    beforeEach(async function () {
+      organization = await Organization.query().insert({
+        name: 'bar1',
+        githubId: 1,
+      })
+
+      const organization2 = await Organization.query().insert({
+        name: 'bar2',
+        githubId: 2,
+      })
+
+      await Repository.query().insert({
+        name: 'foo1',
+        githubId: 11,
+        enabled: true,
+        organizationId: organization.id,
+      })
+
+      await Repository.query().insert({
+        name: 'foo2',
+        githubId: 12,
+        enabled: true,
+        organizationId: organization2.id,
+      })
+    })
+
+    it('should filter the repositories', () => {
+      return request(www)
+        .post('/graphql')
+        .send({
+          query: `{
+            repositories(
+              profileName: "${organization.name}",
+            ) {
+              name
+            }
+          }`,
+        })
+        .expect(200)
+        .expect((res) => {
+          const repositories = res.body.data.repositories
+          expect(repositories).toEqual([
+            {
+              name: 'foo1',
             },
           ])
         })

@@ -14,13 +14,16 @@ import analytics from 'modules/analytics/analytics'
 import dataReducer from 'review/modules/redux/dataReducer'
 import Routes from 'review/Routes'
 import buildReducer from 'review/routes/build/reducer'
-import repositoryDetailsReducer from 'review/routes/repository/detailsReducer'
 import buildEpic from 'review/routes/build/epic'
+import repositoryDetailsReducer from 'review/routes/repository/detailsReducer'
 import repositoryDetailsEpic from 'review/routes/repository/detailsEpic'
+import profileReducer from 'review/routes/profile/reducer'
+import profileEpic from 'review/routes/profile/epic'
 
 const rootEpic = combineEpics(
   buildEpic,
   repositoryDetailsEpic,
+  profileEpic,
 )
 
 let middlewares = [
@@ -42,6 +45,7 @@ if (process.env.NODE_ENV === 'development' && !window.devToolsExtension) {
 const uiReducer = combineReducers({
   build: buildReducer,
   repositoryDetails: repositoryDetailsReducer,
+  profile: profileReducer,
 })
 
 const rootReducers = combineReducers({
