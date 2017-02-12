@@ -4,8 +4,8 @@ import {
   GraphQLBoolean,
   GraphQLID,
 } from 'graphql'
+import GraphQLDateTime from 'modules/graphQL/GraphQLDateTime'
 import Repository from 'server/models/Repository'
-import GraphQLDateType from 'graphql-custom-datetype'
 
 export const resolve = (source, args) => {
   return Repository
@@ -50,10 +50,10 @@ const RepositoryType = new GraphQLObjectType({
       type: GraphQLString,
     },
     createdAt: {
-      type: GraphQLDateType,
+      type: GraphQLDateTime,
     },
     updatedAt: {
-      type: GraphQLDateType,
+      type: GraphQLDateTime,
     },
   },
 })

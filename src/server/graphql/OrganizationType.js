@@ -3,8 +3,8 @@ import {
   GraphQLString,
   GraphQLID,
 } from 'graphql'
+import GraphQLDateTime from 'modules/graphQL/GraphQLDateTime'
 import Organization from 'server/models/Organization'
-import GraphQLDateType from 'graphql-custom-datetype'
 
 export const resolve = (source, args) => {
   return Organization
@@ -35,10 +35,10 @@ const OrganizationType = new GraphQLObjectType({
       type: GraphQLString,
     },
     createdAt: {
-      type: GraphQLDateType,
+      type: GraphQLDateTime,
     },
     updatedAt: {
-      type: GraphQLDateType,
+      type: GraphQLDateTime,
     },
   },
 })
