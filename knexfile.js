@@ -3,7 +3,7 @@ const config = {
     debug: true,
     client: 'postgresql',
     connection: {
-      user: 'development',
+      user: 'argos',
       database: 'development',
     },
     pool: {
@@ -18,7 +18,7 @@ const config = {
     debug: false,
     client: 'postgresql',
     connection: {
-      user: 'test',
+      user: 'argos',
       database: 'test',
     },
   },

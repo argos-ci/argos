@@ -23,10 +23,10 @@ export const useDatabase = () => {
   beforeEach(async function () {
     knex = connect('test')
     await knex.migrate.latest()
+    await truncateAll(knex)
   })
 
   afterEach(async function () {
-    await truncateAll(knex)
     await disconnect(knex)
   })
 }

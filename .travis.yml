@@ -7,8 +7,8 @@ cache:
 services:
   - postgresql
 before_script:
-  - psql -c 'CREATE USER test;' -U postgres
+  - psql -c 'CREATE USER argos;' -U postgres
   - psql -c 'CREATE DATABASE test;' -U postgres
-  - psql -c 'GRANT ALL PRIVILEGES ON DATABASE test TO test;' -U postgres
+  - psql -c 'GRANT ALL PRIVILEGES ON DATABASE test TO argos;' -U postgres
 addons:
   postgresql: '9.6'

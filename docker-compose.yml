@@ -5,7 +5,7 @@ services:
     ports:
       - '5432:5432'
     environment:
-      POSTGRES_USER: development
+      POSTGRES_USER: argos
     volumes:
       - ${PWD}/db:${PWD}/db
       - ${PWD}/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d

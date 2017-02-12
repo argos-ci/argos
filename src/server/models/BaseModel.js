@@ -34,4 +34,10 @@ export default class BaseModel extends Model {
   $beforeUpdate() {
     this.updatedAt = new Date().toISOString()
   }
+
+  async reload() {
+    const model = await this.$query()
+    Object.assign(this, model)
+    return this
+  }
 }
