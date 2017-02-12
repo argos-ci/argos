@@ -1,7 +1,7 @@
-import actionTypes from 'review/modules/redux/actionTypes'
 import graphQLClient from 'modules/graphQL/client'
+import actionTypes from 'review/modules/redux/actionTypes'
 
-const profileEpic = action$ =>
+const profileEpic = action$ => (
   action$
     .ofType(actionTypes.PROFILE_FETCH)
     .watchTask(actionTypes.PROFILE_FETCH_TASK, action => (
@@ -16,5 +16,6 @@ const profileEpic = action$ =>
         }`,
       })
     ))
+)
 
 export default profileEpic

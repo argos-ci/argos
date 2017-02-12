@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react'
+import React, { PropTypes } from 'react'
+import recompact from 'modules/recompact'
 import { connect } from 'react-redux'
 import { Link as LinkRouter } from 'react-router'
 import {
@@ -13,84 +14,85 @@ import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import actionTypes from 'review/modules/redux/actionTypes'
 
-class RepositoryDetails extends Component {
-  static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    fetch: PropTypes.object.isRequired,
-    params: PropTypes.shape({
-      profileName: PropTypes.string.isRequired,
-      repositoryName: PropTypes.string.isRequired,
-    }).isRequired,
-  }
+function RepositoryDetails(props) {
+  const {
+    fetch,
+    params: {
+      profileName,
+      repositoryName,
+    },
+  } = props
 
-  componentDidMount() {
-    this.props.dispatch({
-      type: actionTypes.REPOSITORY_DETAILS_FETCH,
-      payload: {
-        profileName: this.props.params.profileName,
-        repositoryName: this.props.params.repositoryName,
-        first: 5,
-        after: 0,
-      },
-    })
-  }
+  return (
+    <div>
+      <Link component={LinkRouter} to={`/${profileName}/${repositoryName}/settings`}>
+        {'Settings'}
+      </Link>
+      <br />
+      <br />
+      <Paper>
+        <WatchTask task={fetch}>
+          {() => {
+            const {
+              edges,
+            } = fetch.output.data.builds
 
-  render() {
-    const {
-      fetch,
-      params: {
-        profileName,
-        repositoryName,
-      },
-    } = this.props
-
-    return (
-      <div>
-        <Link component={LinkRouter} to={`/${profileName}/${repositoryName}/settings`}>
-          {'Settings'}
-        </Link>
-        <br />
-        <br />
-        <Paper>
-          <WatchTask task={fetch}>
-            {() => {
-              const {
-                edges,
-              } = this.props.fetch.output.data.builds
-
-              if (edges.length === 0) {
-                return (
-                  <WatchTaskContainer>
-                    <Text>
-                      {'No build'}
-                    </Text>
-                  </WatchTaskContainer>
-                )
-              }
-
+            if (edges.length === 0) {
               return (
-                <List>
-                  {edges.map(build => (
-                    <ListItem
-                      key={build.id}
-                      button
-                      component={LinkRouter}
-                      to={`/${profileName}/${repositoryName}/builds/${build.id}`}
-                    >
-                      <ListItemText
-                        primary={`build ${build.id}`}
-                        secondary={new Intl.DateTimeFormat().format(new Date(build.createdAt))}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
+                <WatchTaskContainer>
+                  <Text>
+                    {'No build'}
+                  </Text>
+                </WatchTaskContainer>
               )
-            }}
-          </WatchTask>
-        </Paper>
-      </div>
-    )
-  }
+            }
+
+            return (
+              <List>
+                {edges.map(build => (
+                  <ListItem
+                    key={build.id}
+                    button
+                    component={LinkRouter}
+                    to={`/${profileName}/${repositoryName}/builds/${build.id}`}
+                  >
+                    <ListItemText
+                      primary={`build ${build.id}`}
+                      secondary={new Intl.DateTimeFormat().format(new Date(build.createdAt))}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )
+          }}
+        </WatchTask>
+      </Paper>
+    </div>
+  )
 }
 
-export default connect(state => state.ui.repositoryDetails)(RepositoryDetails)
+RepositoryDetails.propTypes = {
+  dispatch: PropTypes.func.isRequired,
+  fetch: PropTypes.object.isRequired,
+  params: PropTypes.shape({
+    profileName: PropTypes.string.isRequired,
+    repositoryName: PropTypes.string.isRequired,
+  }).isRequired,
+}
+
+export default recompact.compose(
+  connect(state => state.ui.repositoryDetails),
+  recompact.lifecycle({
+    componentDidMount() {
+      this.props.dispatch({
+        type: actionTypes.REPOSITORY_DETAILS_FETCH,
+        payload: {
+          profileName: this.props.params.profileName,
+          repositoryName: this.props.params.repositoryName,
+          first: 5,
+          after: 0,
+        },
+      })
+    },
+  }),
+)(RepositoryDetails)

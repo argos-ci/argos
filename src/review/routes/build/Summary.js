@@ -21,13 +21,18 @@ function formatShortCommit(commit) {
 }
 
 function BuildSummary(props) {
+  const {
+    fetch,
+    classes,
+  } = props
+
   return (
     <div>
       <Text type="headline" component="h3" gutterBottom>
         {'Summary'}
       </Text>
-      <Paper className={props.classes.paper}>
-        <WatchTask task={props.fetch}>
+      <Paper className={classes.paper}>
+        <WatchTask task={fetch}>
           {() => {
             const {
               build: {
@@ -41,7 +46,7 @@ function BuildSummary(props) {
                 },
               },
               screenshotDiffs,
-            } = props.fetch.output.data
+            } = fetch.output.data
 
             const jobStatus = screenshotDiffs
               .every(screenshotDiff => screenshotDiff.jobStatus === 'done') ?
