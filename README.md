@@ -44,6 +44,7 @@ AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 GITHUB_CLIENT_SECRET=
 SERVER_SESSION_SECRET=
+NEOZIRO_ACCESS_TOKEN=
 ```
 
 ### Modifying your hosts
@@ -51,6 +52,14 @@ SERVER_SESSION_SECRET=
 ```
 # Argos
 127.0.0.1 www.argos-ci.dev api.argos-ci.dev
+```
+
+### Set up database
+
+```sh
+yarn db:drop
+yarn db:create
+yarn db:load
 ```
 
 ### Use the seed
@@ -65,6 +74,20 @@ yarn db:truncate && yarn db:seed
 ```sh
 yarn dev # run server
 yarn dev:review # run webpack
+```
+
+### Migrations
+
+#### Create a migration
+
+```sh
+knex migrate:make my_migration
+```
+
+#### Dump database
+
+```sh
+yarn db:dump
 ```
 
 ## Previous work

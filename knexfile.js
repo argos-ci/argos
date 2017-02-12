@@ -18,7 +18,7 @@ const config = {
     debug: false,
     client: 'postgresql',
     connection: {
-      user: 'test',
+      user: 'development',
       database: 'test',
     },
   },

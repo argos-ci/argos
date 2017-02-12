@@ -30,7 +30,7 @@ async function computeScreenshotDiff(screenshotDiffId, { s3, bucket }) {
     throw new Error(`Screenshot diff id: \`${screenshotDiff}\` not found`)
   }
 
-  await screenshotDiff.$query().patch({ jobStatus: 'pending' })
+  await screenshotDiff.$query().patch({ jobStatus: 'progress' })
 
   const tmpDir = await createTmpDirectory()
   const baseScreenshotPath = path.join(tmpDir, 'base')

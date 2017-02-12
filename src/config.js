@@ -85,7 +85,7 @@ const config = convict({
   },
   redis: {
     url: {
-      doc: 'RabbitMQ url',
+      doc: 'Redis url',
       format: String,
       default: 'redis://localhost:6379/1',
       env: 'REDIS_URL',

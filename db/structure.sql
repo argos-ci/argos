@@ -43,7 +43,8 @@ CREATE TABLE builds (
     "baseScreenshotBucketId" bigint,
     "compareScreenshotBucketId" bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
+    "updatedAt" timestamp with time zone NOT NULL,
+    "repositoryId" bigint NOT NULL
 );
 
 
@@ -162,7 +163,10 @@ CREATE TABLE repositories (
     name character varying(255) NOT NULL,
     enabled boolean DEFAULT false NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
+    "updatedAt" timestamp with time zone NOT NULL,
+    token character varying(255),
+    "organizationId" bigint,
+    "userId" bigint
 );
 
 
@@ -199,7 +203,8 @@ CREATE TABLE screenshot_buckets (
     commit character varying(255) NOT NULL,
     branch character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
+    "updatedAt" timestamp with time zone NOT NULL,
+    "repositoryId" bigint NOT NULL
 );
 
 
@@ -239,7 +244,8 @@ CREATE TABLE screenshot_diffs (
     "jobStatus" character varying(255) NOT NULL,
     "validationStatus" character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
+    "updatedAt" timestamp with time zone NOT NULL,
+    "s3Id" character varying(255)
 );
 
 
@@ -304,6 +310,115 @@ ALTER SEQUENCE screenshots_id_seq OWNED BY screenshots.id;
 
 
 --
+-- Name: synchronizations; Type: TABLE; Schema: public; Owner: development
+--
+
+CREATE TABLE synchronizations (
+    id bigint NOT NULL,
+    "userId" bigint NOT NULL,
+    "jobStatus" character varying(255) NOT NULL,
+    type character varying(255) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL
+);
+
+
+ALTER TABLE synchronizations OWNER TO development;
+
+--
+-- Name: synchronizations_id_seq; Type: SEQUENCE; Schema: public; Owner: development
+--
+
+CREATE SEQUENCE synchronizations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE synchronizations_id_seq OWNER TO development;
+
+--
+-- Name: synchronizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: development
+--
+
+ALTER SEQUENCE synchronizations_id_seq OWNED BY synchronizations.id;
+
+
+--
+-- Name: user_organization_rights; Type: TABLE; Schema: public; Owner: development
+--
+
+CREATE TABLE user_organization_rights (
+    id bigint NOT NULL,
+    "userId" bigint NOT NULL,
+    "organizationId" bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL
+);
+
+
+ALTER TABLE user_organization_rights OWNER TO development;
+
+--
+-- Name: user_organization_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: development
+--
+
+CREATE SEQUENCE user_organization_rights_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE user_organization_rights_id_seq OWNER TO development;
+
+--
+-- Name: user_organization_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: development
+--
+
+ALTER SEQUENCE user_organization_rights_id_seq OWNED BY user_organization_rights.id;
+
+
+--
+-- Name: user_repository_rights; Type: TABLE; Schema: public; Owner: development
+--
+
+CREATE TABLE user_repository_rights (
+    id bigint NOT NULL,
+    "userId" bigint NOT NULL,
+    "repositoryId" bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL
+);
+
+
+ALTER TABLE user_repository_rights OWNER TO development;
+
+--
+-- Name: user_repository_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: development
+--
+
+CREATE SEQUENCE user_repository_rights_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE user_repository_rights_id_seq OWNER TO development;
+
+--
+-- Name: user_repository_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: development
+--
+
+ALTER SEQUENCE user_repository_rights_id_seq OWNED BY user_repository_rights.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: development
 --
 
@@ -311,9 +426,10 @@ CREATE TABLE users (
     id bigint NOT NULL,
     "githubId" integer NOT NULL,
     name character varying(255) NOT NULL,
-    email character varying(255) NOT NULL,
+    email character varying(255),
     "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
+    "updatedAt" timestamp with time zone NOT NULL,
+    "accessToken" character varying(255)
 );
 
 
@@ -390,6 +506,27 @@ ALTER TABLE ONLY screenshots ALTER COLUMN id SET DEFAULT nextval('screenshots_id
 
 
 --
+-- Name: synchronizations id; Type: DEFAULT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY synchronizations ALTER COLUMN id SET DEFAULT nextval('synchronizations_id_seq'::regclass);
+
+
+--
+-- Name: user_organization_rights id; Type: DEFAULT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY user_organization_rights ALTER COLUMN id SET DEFAULT nextval('user_organization_rights_id_seq'::regclass);
+
+
+--
+-- Name: user_repository_rights id; Type: DEFAULT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY user_repository_rights ALTER COLUMN id SET DEFAULT nextval('user_repository_rights_id_seq'::regclass);
+
+
+--
 -- Name: users id; Type: DEFAULT; Schema: public; Owner: development
 --
 
@@ -453,6 +590,46 @@ ALTER TABLE ONLY screenshots
 
 
 --
+-- Name: synchronizations synchronizations_pkey; Type: CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY synchronizations
+    ADD CONSTRAINT synchronizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_organization_rights user_organization_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY user_organization_rights
+    ADD CONSTRAINT user_organization_rights_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_organization_rights user_organization_rights_userid_organizationid_unique; Type: CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY user_organization_rights
+    ADD CONSTRAINT user_organization_rights_userid_organizationid_unique UNIQUE ("userId", "organizationId");
+
+
+--
+-- Name: user_repository_rights user_repository_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY user_repository_rights
+    ADD CONSTRAINT user_repository_rights_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_repository_rights user_repository_rights_userid_repositoryid_unique; Type: CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY user_repository_rights
+    ADD CONSTRAINT user_repository_rights_userid_repositoryid_unique UNIQUE ("userId", "repositoryId");
+
+
+--
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: development
 --
 
@@ -479,6 +656,27 @@ CREATE INDEX repositories_enabled_index ON repositories USING btree (enabled);
 --
 
 CREATE INDEX repositories_githubid_index ON repositories USING btree ("githubId");
+
+
+--
+-- Name: repositories_organizationid_index; Type: INDEX; Schema: public; Owner: development
+--
+
+CREATE INDEX repositories_organizationid_index ON repositories USING btree ("organizationId");
+
+
+--
+-- Name: repositories_token_index; Type: INDEX; Schema: public; Owner: development
+--
+
+CREATE INDEX repositories_token_index ON repositories USING btree (token);
+
+
+--
+-- Name: repositories_userid_index; Type: INDEX; Schema: public; Owner: development
+--
+
+CREATE INDEX repositories_userid_index ON repositories USING btree ("userId");
 
 
 --
@@ -510,6 +708,55 @@ CREATE INDEX screenshots_s3id_index ON screenshots USING btree ("s3Id");
 
 
 --
+-- Name: synchronizations_jobstatus_index; Type: INDEX; Schema: public; Owner: development
+--
+
+CREATE INDEX synchronizations_jobstatus_index ON synchronizations USING btree ("jobStatus");
+
+
+--
+-- Name: synchronizations_type_index; Type: INDEX; Schema: public; Owner: development
+--
+
+CREATE INDEX synchronizations_type_index ON synchronizations USING btree (type);
+
+
+--
+-- Name: synchronizations_userid_index; Type: INDEX; Schema: public; Owner: development
+--
+
+CREATE INDEX synchronizations_userid_index ON synchronizations USING btree ("userId");
+
+
+--
+-- Name: user_organization_rights_organizationid_index; Type: INDEX; Schema: public; Owner: development
+--
+
+CREATE INDEX user_organization_rights_organizationid_index ON user_organization_rights USING btree ("organizationId");
+
+
+--
+-- Name: user_organization_rights_userid_index; Type: INDEX; Schema: public; Owner: development
+--
+
+CREATE INDEX user_organization_rights_userid_index ON user_organization_rights USING btree ("userId");
+
+
+--
+-- Name: user_repository_rights_repositoryid_index; Type: INDEX; Schema: public; Owner: development
+--
+
+CREATE INDEX user_repository_rights_repositoryid_index ON user_repository_rights USING btree ("repositoryId");
+
+
+--
+-- Name: user_repository_rights_userid_index; Type: INDEX; Schema: public; Owner: development
+--
+
+CREATE INDEX user_repository_rights_userid_index ON user_repository_rights USING btree ("userId");
+
+
+--
 -- Name: users_githubid_index; Type: INDEX; Schema: public; Owner: development
 --
 
@@ -530,6 +777,30 @@ ALTER TABLE ONLY builds
 
 ALTER TABLE ONLY builds
     ADD CONSTRAINT builds_comparescreenshotbucketid_foreign FOREIGN KEY ("compareScreenshotBucketId") REFERENCES screenshot_buckets(id);
+
+
+--
+-- Name: builds builds_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY builds
+    ADD CONSTRAINT builds_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES repositories(id);
+
+
+--
+-- Name: repositories repositories_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY repositories
+    ADD CONSTRAINT repositories_userid_foreign FOREIGN KEY ("userId") REFERENCES users(id);
+
+
+--
+-- Name: screenshot_buckets screenshot_buckets_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY screenshot_buckets
+    ADD CONSTRAINT screenshot_buckets_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES repositories(id);
 
 
 --
@@ -565,6 +836,63 @@ ALTER TABLE ONLY screenshots
 
 
 --
+-- Name: synchronizations synchronizations_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY synchronizations
+    ADD CONSTRAINT synchronizations_userid_foreign FOREIGN KEY ("userId") REFERENCES users(id);
+
+
+--
+-- Name: user_organization_rights user_organization_rights_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY user_organization_rights
+    ADD CONSTRAINT user_organization_rights_organizationid_foreign FOREIGN KEY ("organizationId") REFERENCES organizations(id);
+
+
+--
+-- Name: user_organization_rights user_organization_rights_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY user_organization_rights
+    ADD CONSTRAINT user_organization_rights_userid_foreign FOREIGN KEY ("userId") REFERENCES users(id);
+
+
+--
+-- Name: user_repository_rights user_repository_rights_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY user_repository_rights
+    ADD CONSTRAINT user_repository_rights_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES repositories(id);
+
+
+--
+-- Name: user_repository_rights user_repository_rights_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: development
+--
+
+ALTER TABLE ONLY user_repository_rights
+    ADD CONSTRAINT user_repository_rights_userid_foreign FOREIGN KEY ("userId") REFERENCES users(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
+-- Knex migrations
+
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20161217154940_init.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128163909_screenshot_buckets_drop_column_jobStatus.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165351_builds_alter_column_baseScreenshotBucketId.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165352_screenshot_diffs_alter_column_score.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165353_screenshot_diffs_alter_column_score.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170129135917_link_repositories.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170129213906_screenshot_diffs_add_column_s3id.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170205204435_organization-repository.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211133332_add_table_synchronizations.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211153730_users_add_column_accessToken.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211165500_create_table_user_organization_rights.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211165501_create_table_user_repository_rights.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212091412_users_email_remove_not_null.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212092004_add_column_userId_to_repositories.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212102433_repositories_alter_column_organization_id.js', 1, NOW());

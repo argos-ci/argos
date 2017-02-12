@@ -1,6 +1,7 @@
 import { Strategy } from 'passport-github'
 import User from 'server/models/User'
 import config from 'config'
+import syncFromUserId from 'modules/synchronizer/syncFromUserId'
 
 function getDataFromProfile(profile) {
   return {
@@ -21,7 +22,7 @@ export default (passport) => {
       const users = await User
         .query()
         .where({
-          githubId: profile.id,
+          githubId: Number(profile.id),
         })
 
       let user = users[0]
@@ -30,14 +31,17 @@ export default (passport) => {
         user = await User
           .query()
           .insert({
-            githubId: profile.id,
+            githubId: Number(profile.id),
+            accessToken,
             ...getDataFromProfile(profile),
           })
       } else {
         user = await User
           .query()
-          .patchAndFetchById(user.id, getDataFromProfile(profile))
+          .patchAndFetchById(user.id, { accessToken, ...getDataFromProfile(profile) })
       }
+
+      syncFromUserId(user.id)
 
       done(null, user)
     } catch (err) {

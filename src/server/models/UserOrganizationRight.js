@@ -1,33 +1,36 @@
 import BaseModel from 'server/models/BaseModel'
 
-export default class repository extends BaseModel {
-  static tableName = 'repositories';
+export default class UserOrganization extends BaseModel {
+  static tableName = 'user_organization_rights';
 
   static jsonSchema = {
     ...BaseModel.jsonSchema,
     required: [
       ...BaseModel.jsonSchema.required,
-      'githubId',
-      'name',
-      'enabled',
+      'userId',
+      'organizationId',
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
-      githubId: { type: 'number' },
-      name: { type: 'string' },
-      enabled: { type: 'boolean' },
-      token: { type: 'string' },
-      organizationId: { type: 'string' },
       userId: { type: 'string' },
+      organizationId: { type: 'string' },
     },
   };
 
   static relationMappings = {
+    user: {
+      relation: BaseModel.BelongsToOneRelation,
+      modelClass: 'User',
+      join: {
+        from: 'user_organization_rights.userId',
+        to: 'users.id',
+      },
+    },
     organization: {
       relation: BaseModel.BelongsToOneRelation,
       modelClass: 'Organization',
       join: {
-        from: 'repositories.organizationId',
+        from: 'user_organization_rights.organizationId',
         to: 'organizations.id',
       },
     },
