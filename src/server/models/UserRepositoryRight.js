@@ -1,6 +1,6 @@
 import BaseModel from 'server/models/BaseModel'
 
-export default class UserOrganization extends BaseModel {
+export default class UserRepositoryRight extends BaseModel {
   static tableName = 'user_repository_rights';
 
   static jsonSchema = {
