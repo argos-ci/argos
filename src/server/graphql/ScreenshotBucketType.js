@@ -3,7 +3,7 @@ import {
   GraphQLID,
   GraphQLString,
 } from 'graphql'
-import GraphQLDateType from 'graphql-custom-datetype'
+import GraphQLDateTime from 'modules/graphQL/GraphQLDateTime'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
 export const resolve = (source, args) => {
@@ -33,10 +33,10 @@ const ScreenshotBucketType = new GraphQLObjectType({
       type: GraphQLString,
     },
     createdAt: {
-      type: GraphQLDateType,
+      type: GraphQLDateTime,
     },
     updatedAt: {
-      type: GraphQLDateType,
+      type: GraphQLDateTime,
     },
   },
 })

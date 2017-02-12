@@ -7,7 +7,7 @@ import Build from 'server/models/Build'
 import ScreenshotBucketType, {
   resolve as resolveScreenshotBucket,
 } from 'server/graphql/ScreenshotBucketType'
-import GraphQLDateType from 'graphql-custom-datetype'
+import GraphQLDateTime from 'modules/graphQL/GraphQLDateTime'
 
 export const resolve = (source, args) => {
   return Build
@@ -76,10 +76,10 @@ const BuildType = new GraphQLObjectType({
       ),
     },
     createdAt: {
-      type: GraphQLDateType,
+      type: GraphQLDateTime,
     },
     updatedAt: {
-      type: GraphQLDateType,
+      type: GraphQLDateTime,
     },
   },
 })
