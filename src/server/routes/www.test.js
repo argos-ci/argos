@@ -53,24 +53,40 @@ describe('GraphQL', () => {
           query: `{
             builds(
               profileName: "${organization.name}",
-              repositoryName: "${repository.name}"
+              repositoryName: "${repository.name}",
+              first: 2,
+              after: 0
             ) {
-              createdAt
+              pageInfo {
+                totalCount
+                endCursor
+                hasNextPage
+              }
+              edges {
+                createdAt
+              }
             }
           }`,
         })
-        .expect(200)
         .expect((res) => {
           const builds = res.body.data.builds
-          expect(builds).toEqual([
-            {
-              createdAt: '2017-02-05T17:14:28.167Z',
+          expect(builds).toEqual({
+            pageInfo: {
+              endCursor: 2,
+              hasNextPage: false,
+              totalCount: 2,
             },
-            {
-              createdAt: '2017-02-04T17:14:28.167Z',
-            },
-          ])
+            edges: [
+              {
+                createdAt: '2017-02-05T17:14:28.167Z',
+              },
+              {
+                createdAt: '2017-02-04T17:14:28.167Z',
+              },
+            ],
+          })
         })
+        .expect(200)
     })
   })
 

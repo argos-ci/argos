@@ -1,7 +1,7 @@
 import actionTypes from 'review/modules/redux/actionTypes'
 import graphQLClient from 'modules/graphQL/client'
 
-const buildEpic = action$ =>
+const buildEpic = action$ => (
   action$
     .ofType(actionTypes.BUILD_FETCH)
     .watchTask(actionTypes.BUILD_FETCH_TASK, action => (
@@ -34,5 +34,6 @@ const buildEpic = action$ =>
         }`,
       })
     ))
+)
 
 export default buildEpic
