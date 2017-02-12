@@ -13,6 +13,9 @@ import BuildType, {
 import ScreenshotDiffType, {
   resolveList as resolveSreenshotDiffList,
 } from 'server/graphql/ScreenshotDiffType'
+import RepositoryType, {
+  resolveList as resolveRepositoryList,
+} from 'server/graphql/RepositoryType'
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -47,6 +50,15 @@ export default new GraphQLSchema({
           },
         },
         resolve: resolveSreenshotDiffList,
+      },
+      repositories: {
+        type: new GraphQLList(RepositoryType),
+        args: {
+          profileName: {
+            type: new GraphQLNonNull(GraphQLString),
+          },
+        },
+        resolve: resolveRepositoryList,
       },
     },
   }),
