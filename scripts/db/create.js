@@ -6,7 +6,7 @@ if (config.get('env') === 'production') {
   throw new Error('Not in production please!')
 }
 
-exec(`docker-compose run postgres createdb -h postgres -U development ${config.get('env')}`)
+exec(`docker-compose run postgres createdb -h postgres -U argos ${config.get('env')}`)
   .catch((err) => {
     setTimeout(() => { throw err })
   })
