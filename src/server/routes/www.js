@@ -44,10 +44,10 @@ router.use(session({
   resave: false,
   saveUninitialized: false,
 }))
-router.use(passport.initialize())
-router.use(passport.session())
+// router.use(passport.initialize())
+// router.use(passport.session())
 
-configurePassport(passport)
+// configurePassport(passport)
 
 // GraphQL
 router.use('/graphql', graphqlMiddleware())
