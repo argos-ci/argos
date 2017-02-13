@@ -17,7 +17,7 @@ describe('api routes', () => {
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
           .field('commit', 'test-commit')
           .field('branch', 'test-branch')
-          .expect(400)
+          .expect(401)
           .expect((res) => {
             expect(res.body.error.message).toBe('Invalid token')
           })

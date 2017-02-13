@@ -57,9 +57,7 @@ NEOZIRO_ACCESS_TOKEN=
 ### Set up database
 
 ```sh
-yarn db:drop
-yarn db:create
-yarn db:load
+yarn db:drop && yarn db:create && yarn db:load
 ```
 
 ### Use the seed
