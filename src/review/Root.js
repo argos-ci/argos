@@ -19,11 +19,14 @@ import repositoryDetailsReducer from 'review/routes/repository/detailsReducer'
 import repositoryDetailsEpic from 'review/routes/repository/detailsEpic'
 import profileReducer from 'review/routes/profile/reducer'
 import profileEpic from 'review/routes/profile/epic'
+import dashboardReducer from 'review/routes/dashboard/reducer'
+import dashboardEpic from 'review/routes/dashboard/epic'
 
 const rootEpic = combineEpics(
   buildEpic,
   repositoryDetailsEpic,
   profileEpic,
+  dashboardEpic,
 )
 
 let middlewares = [
@@ -46,6 +49,7 @@ const uiReducer = combineReducers({
   build: buildReducer,
   repositoryDetails: repositoryDetailsReducer,
   profile: profileReducer,
+  dashboard: dashboardReducer,
 })
 
 const rootReducers = combineReducers({
