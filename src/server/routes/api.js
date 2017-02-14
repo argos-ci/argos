@@ -42,7 +42,7 @@ function errorChecking(routeHandler) {
 router.post('/builds', upload.array('screenshots[]', 50), errorChecking(
   async (req, res) => {
     if (!req.body.token) {
-      throw new HttpError(400, 'Invalid token')
+      throw new HttpError(401, 'Invalid token')
     }
 
     const [repository] = await Repository.query().where({ token: req.body.token })
