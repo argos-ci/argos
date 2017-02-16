@@ -4,11 +4,13 @@ import { createStyleSheet } from 'jss-theme-reactor'
 import withStyles from 'material-ui/styles/withStyles'
 import Layout from 'material-ui/Layout'
 
-const styleSheet = createStyleSheet('WatchTaskContainer', () => ({
-  root: {
-    padding: 8,
-  },
-}))
+const styleSheet = createStyleSheet('WatchTaskContainer', (theme) => {
+  return {
+    root: {
+      padding: theme.spacing.unit,
+    },
+  }
+})
 
 function WatchTaskContainer(props) {
   return (
