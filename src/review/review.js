@@ -1,4 +1,5 @@
-import 'modules/rxjs/rxjs'
+// Bootstrap
+import 'modules/rxjs'
 
 import React from 'react'
 import { render } from 'react-dom'

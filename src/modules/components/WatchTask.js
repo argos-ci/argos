@@ -1,8 +1,8 @@
 /* eslint-disable react/no-multi-comp */
-import React, { Component, PropTypes } from 'react'
-import recompact from 'modules/recompact'
+import React, { PropTypes } from 'react'
 import CircularProgress from 'material-ui/Progress/CircularProgress'
 import Text from 'material-ui/Text'
+import recompact from 'modules/recompact'
 import { PROGRESS, SUCCESS, ERROR } from 'modules/rxjs/operator/watchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 
@@ -16,50 +16,49 @@ function renderInContainer(props, node) {
   return node
 }
 
-export default class WatchTask extends Component {
-  static propTypes = {
-    children: PropTypes.func.isRequired,
-    Container: PropTypes.func,
-    task: PropTypes.shape({
-      state: PropTypes.oneOf([
-        PROGRESS,
-        SUCCESS,
-        ERROR,
-      ]),
-    }).isRequired,
-  };
+export default function WatchTask(props) {
+  const {
+    children,
+    task: {
+      state,
+      output,
+    },
+  } = props
 
-  static defaultProps = {
-    Container: WatchTaskContainer,
-  };
-
-  render() {
-    const {
-      children,
-      task: {
-        state,
-        output,
-      },
-    } = this.props
-
-    if (state === ERROR || (state === SUCCESS && output.errors)) {
-      return renderInContainer(this.props,
-        <Text>
-          {'The loading failed'}
-        </Text>,
-      )
-    }
-
-    if (state === PROGRESS) {
-      return renderInContainer(this.props, <CircularProgress />)
-    }
-
-    if (state === SUCCESS) {
-      return children()
-    }
-
-    return null
+  if (state === ERROR || (state === SUCCESS && output.errors)) {
+    return renderInContainer(props,
+      <Text>
+        {'The loading failed'}
+      </Text>,
+    )
   }
+
+  if (state === PROGRESS) {
+    return renderInContainer(props, <CircularProgress />)
+  }
+
+  if (state === SUCCESS) {
+    return children()
+  }
+
+  return null
+}
+
+WatchTask.propTypes = {
+  children: PropTypes.func.isRequired,
+  Container: PropTypes.func,
+  task: PropTypes.shape({
+    state: PropTypes.oneOf([
+      PROGRESS,
+      SUCCESS,
+      ERROR,
+    ]),
+    output: PropTypes.object,
+  }).isRequired,
+}
+
+WatchTask.defaultProps = {
+  Container: WatchTaskContainer,
 }
 
 export const watchTask = recompact.createHelper(mapProps => BaseComponent => (props) => {

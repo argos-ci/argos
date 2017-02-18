@@ -1,5 +1,6 @@
 import recompact from 'recompact'
+import rxjsObservableConfig from 'recompact/rxjsObservableConfig'
 
-export default {
-  ...recompact,
-}
+recompact.setObservableConfig(rxjsObservableConfig)
+
+export default recompact
