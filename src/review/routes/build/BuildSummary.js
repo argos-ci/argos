@@ -20,7 +20,18 @@ function formatShortCommit(commit) {
   return commit.substring(0, 7)
 }
 
-function BuildSummary(props) {
+function getStatsFromScreenshotDiff(screenshotDiffs) {
+  return screenshotDiffs.reduce((stats, screenshotDiff) => {
+    stats[screenshotDiff.jobStatus] += 1
+    return stats
+  }, {
+    pending: 0,
+    progress: 0,
+    complete: 0,
+  })
+}
+
+export function BuildSummary(props) {
   const {
     fetch,
     classes,
@@ -48,10 +59,16 @@ function BuildSummary(props) {
               screenshotDiffs,
             } = fetch.output.data
 
-            const jobStatus = screenshotDiffs
-              .every(screenshotDiff => screenshotDiff.jobStatus === 'done') ?
-                'done' :
-                'progress'
+            const stats = getStatsFromScreenshotDiff(screenshotDiffs)
+            let jobStatus
+
+            if (stats.complete === screenshotDiffs.length) {
+              jobStatus = 'complete'
+            } else if (stats.pending === screenshotDiffs.length) {
+              jobStatus = 'pending'
+            } else {
+              jobStatus = 'progress'
+            }
 
             const validationStatus = screenshotDiffs
               .every(screenshotDiff => screenshotDiff.validationStatus === 'accepted') ?
