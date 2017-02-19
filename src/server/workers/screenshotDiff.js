@@ -1,7 +1,5 @@
 import 'server/bootstrap/setup'
+import createJobWorker from 'modules/jobs/createJobWorker'
+import screenshotDiffJob from 'server/jobs/screenshotDiff'
 
-import { worker } from 'server/jobs/screenshotDiff'
-
-worker().catch((e) => {
-  setTimeout(() => { throw e })
-})
+createJobWorker(screenshotDiffJob)

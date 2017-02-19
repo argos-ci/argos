@@ -1,5 +1,5 @@
 import Synchronization from 'server/models/Synchronization'
-import { push } from 'server/jobs/synchronize'
+import synchronizeJob from 'server/jobs/synchronize'
 
 async function syncFromUserId(userId) {
   const synchronization = await Synchronization.query().insert({
@@ -8,7 +8,7 @@ async function syncFromUserId(userId) {
     type: 'github',
   })
 
-  push(synchronization.id)
+  synchronizeJob.push(synchronization.id)
 }
 
 export default syncFromUserId

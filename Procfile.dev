@@ -1,4 +1,3 @@
 web: nodemon src/server/workers/web.js
-build: nodemon src/server/workers/build.js
+buildAndSynchronize: nodemon src/server/workers/buildAndSynchronize.js
 screenshotDiff: nodemon src/server/workers/screenshotDiff.js
-synchronize: nodemon src/server/workers/synchronize.js
