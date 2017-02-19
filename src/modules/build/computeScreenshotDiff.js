@@ -2,6 +2,7 @@ import path from 'path'
 import tmp from 'tmp'
 import fs from 'mz/fs'
 import download from 'modules/s3/download'
+import upload from 'modules/s3/upload'
 import imageDiff from 'modules/imageDiff/imageDiff'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 
@@ -33,9 +34,9 @@ async function computeScreenshotDiff(screenshotDiffId, { s3, bucket }) {
   await screenshotDiff.$query().patch({ jobStatus: 'progress' })
 
   const tmpDir = await createTmpDirectory()
-  const baseScreenshotPath = path.join(tmpDir, 'base')
-  const compareScreenshotPath = path.join(tmpDir, 'compare')
-  const diffResultPath = path.join(tmpDir, 'diff')
+  const baseScreenshotPath = path.join(tmpDir, screenshotDiff.baseScreenshot.s3Id)
+  const compareScreenshotPath = path.join(tmpDir, screenshotDiff.compareScreenshot.s3Id)
+  const diffResultPath = path.join(tmpDir, 'diff.png')
 
   await Promise.all([
     download({
@@ -58,7 +59,11 @@ async function computeScreenshotDiff(screenshotDiffId, { s3, bucket }) {
     diffResultPath,
   })
 
-  // TODO upload diff result image to s3 and save it in database
+  const uploadResult = await upload({
+    s3,
+    bucket,
+    inputPath: diffResultPath,
+  })
 
   await Promise.all([
     fs.unlink(compareScreenshotPath),
@@ -71,6 +76,7 @@ async function computeScreenshotDiff(screenshotDiffId, { s3, bucket }) {
   await screenshotDiff.$query().patch({
     score: diffResult.percentage,
     jobStatus: 'complete',
+    s3Id: uploadResult.Key,
   })
 
   return screenshotDiff

@@ -73,6 +73,7 @@
     "jss": "^6.2.0",
     "knex": "^0.12.6",
     "material-ui": "1.0.0-alpha.3",
+    "mime": "^1.3.4",
     "minimist": "^1.2.0",
     "morgan": "^1.8.1",
     "multer": "^1.3.0",
