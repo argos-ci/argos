@@ -71,6 +71,7 @@ router.post('/builds', upload.array('screenshots[]', 50), errorChecking(
           .insert({
             name: file.originalname,
             s3Id: file.key,
+            screenshotBucketId: bucket.id,
           }))
 
         await Promise.all(inserts)
