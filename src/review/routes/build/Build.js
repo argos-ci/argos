@@ -2,8 +2,8 @@ import React, { PropTypes } from 'react'
 import { connect } from 'react-redux'
 import recompact from 'modules/recompact'
 import actionTypes from 'review/modules/redux/actionTypes'
-import BuildSummary from 'review/routes/build/Summary'
-import BuildScreenshots from 'review/routes/build/Screenshots'
+import BuildSummary from 'review/routes/build/BuildSummary'
+import BuildScreenshots from 'review/routes/build/BuildScreenshots'
 
 function Build() {
   return (
