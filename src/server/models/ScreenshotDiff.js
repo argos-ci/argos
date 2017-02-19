@@ -1,3 +1,4 @@
+import { ValidationError } from 'objection'
 import BaseModel from 'server/models/BaseModel'
 
 export default class ScreenshotDiff extends BaseModel {
@@ -17,7 +18,11 @@ export default class ScreenshotDiff extends BaseModel {
       buildId: { type: 'string' },
       baseScreenshotId: { type: 'string' },
       compareScreenshotId: { type: 'string' },
-      score: { type: 'number' },
+      score: {
+        type: 'number',
+        minimum: 0,
+        maximum: 1,
+      },
       jobStatus: {
         type: 'string',
         enum: [
@@ -63,4 +68,10 @@ export default class ScreenshotDiff extends BaseModel {
       },
     },
   };
+
+  $afterValidate(json) { // eslint-disable-line class-methods-use-this
+    if (json.baseScreenshotId && json.baseScreenshotId === json.compareScreenshotId) {
+      throw new ValidationError('The base screenshot should be different to the compare one.')
+    }
+  }
 }

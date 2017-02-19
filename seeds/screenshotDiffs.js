@@ -68,6 +68,17 @@ exports.seed = (knex, Promise) => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
+        knex('screenshot_diffs').insert({
+          buildId: 6,
+          baseScreenshotId: 7,
+          compareScreenshotId: 8,
+          score: 0.3,
+          jobStatus: 'complete',
+          validationStatus: 'unknown',
+          s3Id: 'diff6.png',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
       ])
     })
 }

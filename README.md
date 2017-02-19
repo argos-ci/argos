@@ -51,7 +51,8 @@ NEOZIRO_ACCESS_TOKEN=
 
 ```
 # Argos
-127.0.0.1 www.argos-ci.dev api.argos-ci.dev
+127.0.0.1 www.argos-ci.dev
+127.0.0.1 api.argos-ci.dev
 ```
 
 ### Set up database
