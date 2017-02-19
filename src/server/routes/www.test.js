@@ -1,5 +1,5 @@
 import request from 'supertest'
-import { useDatabase } from 'server/testUtils'
+import { useDatabase } from 'server/test/utils'
 import Build from 'server/models/Build'
 import Repository from 'server/models/Repository'
 import Organization from 'server/models/Organization'

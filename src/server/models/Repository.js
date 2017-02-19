@@ -1,6 +1,6 @@
 import BaseModel from 'server/models/BaseModel'
 
-export default class repository extends BaseModel {
+export default class Repository extends BaseModel {
   static tableName = 'repositories';
 
   static jsonSchema = {
@@ -29,6 +29,14 @@ export default class repository extends BaseModel {
       join: {
         from: 'repositories.organizationId',
         to: 'organizations.id',
+      },
+    },
+    user: {
+      relation: BaseModel.BelongsToOneRelation,
+      modelClass: 'User',
+      join: {
+        from: 'repositories.userId',
+        to: 'users.id',
       },
     },
   };

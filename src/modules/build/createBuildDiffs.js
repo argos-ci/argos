@@ -1,8 +1,11 @@
 import { transaction } from 'objection'
 import Build from 'server/models/Build'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
+import { notifyProgress } from 'modules/build/notifyStatus'
 
 async function createBuildDiffs(buildId) {
+  await notifyProgress(buildId)
+
   const build = await Build
     .query()
     .findById(buildId)

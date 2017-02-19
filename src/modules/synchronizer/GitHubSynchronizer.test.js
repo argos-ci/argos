@@ -1,4 +1,4 @@
-import { setTestsTimeout, useDatabase } from 'server/testUtils'
+import { setTestsTimeout, useDatabase } from 'server/test/utils'
 import User from 'server/models/User'
 import Synchronization from 'server/models/Synchronization'
 import Organization from 'server/models/Organization'

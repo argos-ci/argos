@@ -9,6 +9,7 @@ export default class Screenshot extends BaseModel {
       ...BaseModel.jsonSchema.required,
       'name',
       's3Id',
+      'screenshotBucketId',
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,

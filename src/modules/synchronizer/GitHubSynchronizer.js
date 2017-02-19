@@ -22,15 +22,6 @@ class GitHubSynchronizer {
     })
   }
 
-  async synchronizeAuthUser() {
-    const githubUser = await this.github.users.get({})
-    await this.synchronization.user.$query().patch({
-      githubId: githubUser.id,
-      name: githubUser.name,
-      email: githubUser.email,
-    })
-  }
-
   async synchronizeRepositories({ page = 1 } = {}) {
     const githubRepositories = await this.github.repos.getAll({ page, per_page: 100 })
 
@@ -162,7 +153,6 @@ class GitHubSynchronizer {
 
   async synchronize() {
     await this.synchronization.$relatedQuery('user')
-    await this.synchronizeAuthUser()
     await this.synchronizeRepositories()
   }
 }

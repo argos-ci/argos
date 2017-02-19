@@ -1,6 +1,6 @@
 import path from 'path'
 import request from 'supertest'
-import { useDatabase } from 'server/testUtils'
+import { useDatabase } from 'server/test/utils'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import Repository from 'server/models/Repository'
 import app from './app'
