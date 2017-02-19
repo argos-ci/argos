@@ -1,5 +1,6 @@
 import fs from 'mz/fs'
 import uuid from 'uuid/v4'
+import mime from 'mime'
 
 function upload({
   s3,
@@ -12,6 +13,7 @@ function upload({
     s3.upload({
       Bucket: bucket,
       Body: readStream,
+      ContentType: mime.lookup(inputPath),
       Key: uuid(),
     }, (err, data) => {
       if (err) {
