@@ -26,6 +26,7 @@ export default new GraphQLSchema({
     name: 'Query',
     fields: {
       build: {
+        description: 'Get a build.',
         args: {
           id: {
             type: new GraphQLNonNull(GraphQLInt),
@@ -35,6 +36,7 @@ export default new GraphQLSchema({
         resolve: resolveBuild,
       },
       builds: {
+        description: 'Get a build list.',
         args: {
           profileName: {
             type: new GraphQLNonNull(GraphQLString),
@@ -55,6 +57,7 @@ export default new GraphQLSchema({
         resolve: resolveBuildList,
       },
       screenshotDiffs: {
+        description: 'Get the diffs for a given build.',
         args: {
           buildId: {
             type: new GraphQLNonNull(GraphQLInt),
@@ -64,15 +67,17 @@ export default new GraphQLSchema({
         resolve: resolveSreenshotDiffList,
       },
       repositories: {
-        type: new GraphQLList(RepositoryType),
+        description: 'Get a repository list.',
         args: {
           profileName: {
             type: new GraphQLNonNull(GraphQLString),
           },
         },
+        type: new GraphQLList(RepositoryType),
         resolve: resolveRepositoryList,
       },
       organizations: {
+        description: 'Get an organization list.',
         type: new GraphQLList(OrganizationType),
         resolve: resolveOrganizationList,
       },

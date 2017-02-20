@@ -1,3 +1,4 @@
+import { ValidationError } from 'objection'
 import BaseModel from 'server/models/BaseModel'
 import reduceJobStatus from 'modules/jobs/reduceJobStatus'
 import User from './User'
@@ -15,7 +16,7 @@ export default class Build extends BaseModel {
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
-      baseScreenshotBucketId: { type: 'string' },
+      baseScreenshotBucketId: { types: ['string', null] },
       compareScreenshotBucketId: { type: 'string' },
       repositoryId: { type: 'string' },
     },
@@ -47,6 +48,15 @@ export default class Build extends BaseModel {
       },
     },
   };
+
+  $afterValidate(json) { // eslint-disable-line class-methods-use-this
+    if (json.baseScreenshotBucketId &&
+      json.baseScreenshotBucketId === json.compareScreenshotBucketId) {
+      throw new ValidationError(
+        'The base screenshot bucket should be different to the compare one.',
+      )
+    }
+  }
 
   static async getStatus(buildId) {
     const screenshotDiffs = await ScreenshotDiff.query().where({ buildId })

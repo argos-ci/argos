@@ -1,9 +1,33 @@
+import { assert } from 'chai'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import Build from './Build'
 
-describe('Build', () => {
+const baseData = {
+  repositoryId: '1',
+  baseScreenshotBucketId: '1',
+  compareScreenshotBucketId: '2',
+}
+
+describe('models/Build', () => {
   useDatabase()
+
+  describe('validation screenshotBucket', () => {
+    it('should throw if the screenshot buckets are the same', () => {
+      assert.throws(() => {
+        Build.fromJson({
+          ...baseData,
+          compareScreenshotBucketId: '1',
+        })
+      }, 'The base screenshot bucket should be different to the compare one.')
+    })
+
+    it('should not throw if the screenshot buckets are different', () => {
+      assert.doesNotThrow(() => {
+        Build.fromJson(baseData)
+      })
+    })
+  })
 
   describe('#getUsers', () => {
     let user
