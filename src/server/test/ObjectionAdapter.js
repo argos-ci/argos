@@ -1,7 +1,7 @@
 /* eslint-disable class-methods-use-this */
 export default class ObjectionAdapter {
   build(Model, props) {
-    return Model.fromJson(props)
+    return Object.assign(new Model(), props)
   }
 
   async save(model, Model) {
