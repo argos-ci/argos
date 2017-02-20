@@ -34,8 +34,8 @@ async function computeScreenshotDiff(screenshotDiffId, { s3, bucket }) {
   await screenshotDiff.$query().patch({ jobStatus: 'progress' })
 
   const tmpDir = await createTmpDirectory()
-  const baseScreenshotPath = path.join(tmpDir, screenshotDiff.baseScreenshot.s3Id)
-  const compareScreenshotPath = path.join(tmpDir, screenshotDiff.compareScreenshot.s3Id)
+  const baseScreenshotPath = path.join(tmpDir, 'base')
+  const compareScreenshotPath = path.join(tmpDir, 'compare')
   const diffResultPath = path.join(tmpDir, 'diff.png')
 
   await Promise.all([
