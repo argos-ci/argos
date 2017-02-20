@@ -1,6 +1,7 @@
 import { Model } from 'objection'
 
 export default class BaseModel extends Model {
+  // Uses http://json-schema.org/latest/json-schema-validation.html
   static jsonSchema = {
     type: 'object',
     required: [],

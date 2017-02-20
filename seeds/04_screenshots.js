@@ -56,6 +56,24 @@ exports.seed = (knex, Promise) => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
+        knex('screenshots').insert({
+          id: 7,
+          screenshotBucketId: 6,
+          name: 'ListItem/PrimaryActionCheckboxListItem',
+          // s3Id: 'https://raw.githubusercontent.com/callemall/material-ui/8c1265eabdbb83778abf5cecd1e685a5742903d7/test/regressions/screenshots/baseline/ListItem/PrimaryActionCheckboxListItem/chrome-53.0.2785.143-linux.png',
+          s3Id: '7.png',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+        knex('screenshots').insert({
+          id: 8,
+          screenshotBucketId: 6,
+          name: 'ListItem/PrimaryActionCheckboxListItem',
+          // s3Id: 'https://raw.githubusercontent.com/callemall/material-ui/5a71e923860280dd6469936c43e57d6bfd220172/test/regressions/screenshots/baseline/ListItem/PrimaryActionCheckboxListItem/chrome-53.0.2785.143-linux.png',
+          s3Id: '8.png',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
       ])
     })
 }
