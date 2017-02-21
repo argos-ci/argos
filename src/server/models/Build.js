@@ -48,17 +48,8 @@ export default class Build extends BaseModel {
     },
   };
 
-  async getUsers() {
-    return User.query()
-      .select('users.*')
-      .join('user_repository_rights', 'users.id', '=', 'user_repository_rights.userId')
-      .join('repositories', 'user_repository_rights.repositoryId', '=', 'repositories.id')
-      .join('builds', 'repositories.id', '=', 'builds.repositoryId')
-      .where('builds.id', this.id)
-  }
-
-  async getStatus() {
-    const screenshotDiffs = await ScreenshotDiff.query().where({ buildId: this.id })
+  static async getStatus(buildId) {
+    const screenshotDiffs = await ScreenshotDiff.query().where({ buildId })
     const jobStatus = reduceJobStatus(screenshotDiffs.map(({ jobStatus }) => jobStatus))
 
     if (jobStatus === 'complete') {
@@ -67,5 +58,22 @@ export default class Build extends BaseModel {
     }
 
     return jobStatus
+  }
+
+  static async getUsers(buildId) {
+    return User.query()
+      .select('users.*')
+      .join('user_repository_rights', 'users.id', '=', 'user_repository_rights.userId')
+      .join('repositories', 'user_repository_rights.repositoryId', '=', 'repositories.id')
+      .join('builds', 'repositories.id', '=', 'builds.repositoryId')
+      .where('builds.id', buildId)
+  }
+
+  async getUsers() {
+    return this.constructor.getUsers(this.id)
+  }
+
+  async getStatus() {
+    return this.constructor.getStatus(this.id)
   }
 }

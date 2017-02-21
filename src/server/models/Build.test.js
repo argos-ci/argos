@@ -1,5 +1,6 @@
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
+import Build from './Build'
 
 describe('Build', () => {
   useDatabase()
@@ -19,6 +20,10 @@ describe('Build', () => {
       const users = await build.getUsers()
       expect(users.length === 1).toBeTruthy()
       expect(users[0].id).toBe(user.id)
+
+      const staticUsers = await Build.getUsers(build.id)
+      expect(staticUsers.length === 1).toBeTruthy()
+      expect(staticUsers[0].id).toBe(user.id)
     })
   })
 
@@ -85,7 +90,8 @@ describe('Build', () => {
       })
 
       it('should be success', async () => {
-        expect(await build.getStatus()).toBe('success')
+        expect(await Build.getStatus(build.id)).toBe('success') // static
+        expect(await build.getStatus()).toBe('success') // instance
       })
     })
   })

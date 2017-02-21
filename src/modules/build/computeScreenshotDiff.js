@@ -81,7 +81,7 @@ async function computeScreenshotDiff(screenshotDiffId, { s3, bucket }) {
     s3Id: uploadResult.Key,
   })
 
-  const buildStatus = await new Build({ id: screenshotDiff.buildId }).getStatus()
+  const buildStatus = await Build.getStatus(screenshotDiff.buildId)
 
   if (buildStatus === 'success') {
     await notifySuccess(screenshotDiff.buildId)
