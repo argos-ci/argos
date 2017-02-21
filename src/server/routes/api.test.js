@@ -83,10 +83,10 @@ describe('api routes', () => {
           .field('commit', 'test-commit')
           .field('branch', 'test-branch')
           .field('token', 'xx')
-          .expect(200)
           .expect((res) => {
             expect(res.body.id).not.toBeUndefined()
           })
+          .expect(200)
       })
     })
   })

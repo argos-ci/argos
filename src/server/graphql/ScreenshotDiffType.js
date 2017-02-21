@@ -1,6 +1,7 @@
 import {
   GraphQLObjectType,
   GraphQLString,
+  GraphQLFloat,
   GraphQLID,
   GraphQLEnumType,
 } from 'graphql'
@@ -16,6 +17,7 @@ export const resolveList = (source, args) => {
     .where({
       buildId: args.buildId,
     })
+    .orderBy('score', 'desc')
 }
 
 const ScreenshotDiffType = new GraphQLObjectType({
@@ -50,7 +52,7 @@ const ScreenshotDiffType = new GraphQLObjectType({
       ),
     },
     score: {
-      type: GraphQLString,
+      type: GraphQLFloat,
     },
     jobStatus: {
       type: new GraphQLEnumType({

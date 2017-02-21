@@ -69,9 +69,9 @@ router.post('/builds', upload.array('screenshots[]', 50), errorChecking(
         const inserts = req.files.map(file => bucket
           .$relatedQuery('screenshots')
           .insert({
+            screenshotBucketId: bucket.id,
             name: file.originalname,
             s3Id: file.key,
-            screenshotBucketId: bucket.id,
           }))
 
         await Promise.all(inserts)
