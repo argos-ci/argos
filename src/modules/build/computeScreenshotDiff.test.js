@@ -1,10 +1,6 @@
 import S3 from 'aws-sdk/clients/s3'
 import { useDatabase, setTestsTimeout } from 'server/test/utils'
-import ScreenshotBucket from 'server/models/ScreenshotBucket'
-import ScreenshotDiff from 'server/models/ScreenshotDiff'
-import Build from 'server/models/Build'
-import Screenshot from 'server/models/Screenshot'
-import Repository from 'server/models/Repository'
+import factory from 'server/test/factory'
 import computeScreenshotDiff from './computeScreenshotDiff'
 
 jest.mock('modules/build/notifyStatus')
@@ -21,58 +17,42 @@ describe('computeScreenshotDiff', () => {
   beforeEach(async () => {
     s3 = new S3({ signatureVersion: 'v4' })
 
-    const repository = await Repository.query().insert({
-      name: 'foo',
-      githubId: 12,
+    const repository = await factory.create('Repository', {
       enabled: true,
       token: 'xx',
     })
-
-    const [compareBucket, baseBucket] = await ScreenshotBucket.query()
-      .insert([
-        {
-          name: 'test-bucket',
-          commit: 'a',
-          branch: 'test-branch',
-          repositoryId: repository.id,
-        },
-        {
-          name: 'base-bucket',
-          commit: 'b',
-          branch: 'master',
-          repositoryId: repository.id,
-        },
-      ])
-
-    build = await Build.query()
-      .insert({
-        baseScreenshotBucketId: baseBucket.id,
-        compareScreenshotBucketId: compareBucket.id,
-        repositoryId: repository.id,
-      })
-
-    const [compareScreenshot, baseScreenshot] = await Screenshot.query()
-      .insert([
-        {
-          name: 'penelope-argos',
-          s3Id: 'penelope-argos.jpg',
-          screenshotBucketId: compareBucket.id,
-        },
-        {
-          name: 'penelope',
-          s3Id: 'penelope.jpg',
-          screenshotBucketId: baseBucket.id,
-        },
-      ])
-
-    screenshotDiff = await ScreenshotDiff.query()
-      .insert({
-        buildId: build.id,
-        baseScreenshotId: baseScreenshot.id,
-        compareScreenshotId: compareScreenshot.id,
-        jobStatus: 'pending',
-        validationStatus: 'unknown',
-      })
+    const compareBucket = await factory.create('ScreenshotBucket', {
+      name: 'test-bucket',
+      branch: 'test-branch',
+      repositoryId: repository.id,
+    })
+    const baseBucket = await factory.create('ScreenshotBucket', {
+      name: 'base-bucket',
+      branch: 'master',
+      repositoryId: repository.id,
+    })
+    build = await factory.create('Build', {
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      repositoryId: repository.id,
+    })
+    const compareScreenshot = await factory.create('Screenshot', {
+      name: 'penelope-argos',
+      s3Id: 'penelope-argos.jpg',
+      screenshotBucketId: compareBucket.id,
+    })
+    const baseScreenshot = await factory.create('Screenshot', {
+      name: 'penelope',
+      s3Id: 'penelope.jpg',
+      screenshotBucketId: baseBucket.id,
+    })
+    screenshotDiff = await factory.create('ScreenshotDiff', {
+      buildId: build.id,
+      baseScreenshotId: baseScreenshot.id,
+      compareScreenshotId: compareScreenshot.id,
+      jobStatus: 'pending',
+      validationStatus: 'unknown',
+    })
   })
 
   it('should process diff an update screenshot diff', async () => {

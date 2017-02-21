@@ -1,8 +1,7 @@
 import path from 'path'
 import request from 'supertest'
 import { useDatabase } from 'server/test/utils'
-import ScreenshotBucket from 'server/models/ScreenshotBucket'
-import Repository from 'server/models/Repository'
+import factory from 'server/test/factory'
 import app from './app'
 
 describe('api routes', () => {
@@ -41,17 +40,13 @@ describe('api routes', () => {
     })
 
     describe('with repository not enabled', () => {
-      beforeEach(async () => {
-        await Repository.query().insert({
-          name: 'foo',
-          githubId: 12,
+      it('should respond bad request', async () => {
+        await factory.create('Repository', {
           enabled: false,
           token: 'xx',
         })
-      })
 
-      it('should respond bad request', () => {
-        return request(app)
+        await request(app)
           .post('/builds')
           .set('Host', 'api.argos-ci.dev')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
@@ -66,17 +61,13 @@ describe('api routes', () => {
     })
 
     describe('with valid repository', () => {
-      beforeEach(async () => {
-        await Repository.query().insert({
-          name: 'foo',
-          githubId: 12,
+      it('should upload screenshots, update database and return result', async () => {
+        await factory.create('Repository', {
           enabled: true,
           token: 'xx',
         })
-      })
 
-      it('should upload screenshots, update database and return result', () => {
-        return request(app)
+        await request(app)
           .post('/builds')
           .set('Host', 'api.argos-ci.dev')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
@@ -94,14 +85,10 @@ describe('api routes', () => {
   describe('GET /buckets', () => {
     let repository
 
-    beforeEach(async function () {
-      repository = await Repository.query().insert({
-        name: 'foo',
-        githubId: 12,
-        enabled: true,
-      })
+    beforeEach(async () => {
+      repository = await factory.create('Repository')
 
-      await ScreenshotBucket.query().insert({
+      await factory.create('ScreenshotBucket', {
         name: 'test-bucket',
         commit: 'test-commit',
         branch: 'test-branch',
@@ -123,7 +110,7 @@ describe('api routes', () => {
     })
 
     describe('with query.branch', () => {
-      it('should filter by branch', async function () {
+      it('should filter by branch', async () => {
         await request(app)
           .get('/buckets?branch=whatever')
           .set('Host', 'api.argos-ci.dev')
