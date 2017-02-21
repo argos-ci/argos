@@ -14,7 +14,7 @@ const getMigrationInserts = async () => {
   ).join('')
 }
 
-exec('docker-compose exec postgres pg_dump -s -U argos > db/structure.sql')
+exec(`docker-compose exec postgres pg_dump -s -U argos ${config.get('env')} > db/structure.sql`)
   .then(async () => {
     const migrationInserts = await getMigrationInserts()
     return appendFile('db/structure.sql', `-- Knex migrations\n\n${migrationInserts}`)
