@@ -5,6 +5,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
+    "console": "babel-node scripts/repl.js",
     "dev": "yarn dev:foreman & yarn dev:review",
     "dev:foreman": "nf --procfile Procfile.dev --port 4001 start",
     "dev:review": "babel-node ./node_modules/.bin/webpack-dev-server --config=src/review/webpack/browserDevelopmentConfig.js --progress",
@@ -113,9 +114,11 @@
     "eslint-plugin-jsx-a11y": "^3.0.2",
     "eslint-plugin-mocha": "^4.7.0",
     "eslint-plugin-react": "^6.9.0",
+    "factory-girl": "^4.2.1",
     "foreman": "^2.0.0",
     "jest": "^18.1.0",
     "nodemon": "^1.11.0",
+    "promirepl": "^1.0.1",
     "selenium-webdriver": "^3.0.1",
     "supertest": "^3.0.0",
     "webpack-dev-server": "^2.3.0"

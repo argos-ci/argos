@@ -2,7 +2,6 @@
 /* global jasmine */
 import { connect, disconnect } from 'server/database'
 
-
 const KNEX_TABLES = ['knex_migrations', 'knex_migrations_lock']
 
 export async function truncateAll(knex) {

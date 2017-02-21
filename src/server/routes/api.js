@@ -8,7 +8,7 @@ import config from 'config'
 import Build from 'server/models/Build'
 import Repository from 'server/models/Repository'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
-import { push as pushBuild } from 'server/jobs/build'
+import buildJob from 'server/jobs/build'
 
 const router = new express.Router()
 const s3 = new S3({
@@ -71,6 +71,7 @@ router.post('/builds', upload.array('screenshots[]', 50), errorChecking(
           .insert({
             name: file.originalname,
             s3Id: file.key,
+            screenshotBucketId: bucket.id,
           }))
 
         await Promise.all(inserts)
@@ -88,7 +89,7 @@ router.post('/builds', upload.array('screenshots[]', 50), errorChecking(
       },
     )
 
-    await pushBuild(build.id)
+    await buildJob.push(build.id)
 
     res.send(build)
   },

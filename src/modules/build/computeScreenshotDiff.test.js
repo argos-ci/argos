@@ -1,5 +1,5 @@
 import S3 from 'aws-sdk/clients/s3'
-import { useDatabase, setTestsTimeout } from 'server/testUtils'
+import { useDatabase, setTestsTimeout } from 'server/test/utils'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import Build from 'server/models/Build'
@@ -7,10 +7,14 @@ import Screenshot from 'server/models/Screenshot'
 import Repository from 'server/models/Repository'
 import computeScreenshotDiff from './computeScreenshotDiff'
 
+jest.mock('modules/build/notifyStatus')
+const { notifyFailure } = require('modules/build/notifyStatus')
+
 describe('computeScreenshotDiff', () => {
   useDatabase()
   setTestsTimeout(10000)
 
+  let build
   let s3
   let screenshotDiff
 
@@ -40,7 +44,7 @@ describe('computeScreenshotDiff', () => {
         },
       ])
 
-    const build = await Build.query()
+    build = await Build.query()
       .insert({
         baseScreenshotBucketId: baseBucket.id,
         compareScreenshotBucketId: compareBucket.id,
@@ -71,7 +75,7 @@ describe('computeScreenshotDiff', () => {
       })
   })
 
-  it('should process diff an update screen shot diff', async () => {
+  it('should process diff an update screenshot diff', async () => {
     const resultScreenshotDiff = await computeScreenshotDiff(screenshotDiff.id, {
       s3,
       bucket: 'argos-screenshots-sandbox',
@@ -79,5 +83,6 @@ describe('computeScreenshotDiff', () => {
     expect(resultScreenshotDiff.score > 0).toBeTruthy()
     expect(resultScreenshotDiff.jobStatus).toBe('complete')
     expect(resultScreenshotDiff.s3Id).not.toBeUndefined()
+    expect(notifyFailure).toBeCalledWith(build.id)
   })
 })

@@ -1,4 +1,4 @@
-import { useDatabase } from 'server/testUtils'
+import { useDatabase } from 'server/test/utils'
 import ScreenshotBucket from './ScreenshotBucket'
 import Repository from './Repository'
 

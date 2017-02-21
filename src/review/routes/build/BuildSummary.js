@@ -6,6 +6,7 @@ import Text from 'material-ui/Text'
 import Paper from 'material-ui/Paper'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
+import reduceJobStatus from 'modules/jobs/reduceJobStatus'
 
 const styleSheet = createStyleSheet('BuildSummary', () => {
   return {
@@ -18,17 +19,6 @@ const styleSheet = createStyleSheet('BuildSummary', () => {
 
 function formatShortCommit(commit) {
   return commit.substring(0, 7)
-}
-
-function getStatsFromScreenshotDiff(screenshotDiffs) {
-  return screenshotDiffs.reduce((stats, screenshotDiff) => {
-    stats[screenshotDiff.jobStatus] += 1
-    return stats
-  }, {
-    pending: 0,
-    progress: 0,
-    complete: 0,
-  })
 }
 
 export function BuildSummary(props) {
@@ -59,16 +49,7 @@ export function BuildSummary(props) {
               screenshotDiffs,
             } = fetch.output.data
 
-            const stats = getStatsFromScreenshotDiff(screenshotDiffs)
-            let jobStatus
-
-            if (stats.complete === screenshotDiffs.length) {
-              jobStatus = 'complete'
-            } else if (stats.pending === screenshotDiffs.length) {
-              jobStatus = 'pending'
-            } else {
-              jobStatus = 'progress'
-            }
+            const jobStatus = reduceJobStatus(screenshotDiffs.map(({ jobStatus }) => jobStatus))
 
             const validationStatus = screenshotDiffs
               .every(screenshotDiff => screenshotDiff.validationStatus === 'accepted') ?

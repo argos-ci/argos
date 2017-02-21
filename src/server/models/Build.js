@@ -1,4 +1,7 @@
 import BaseModel from 'server/models/BaseModel'
+import reduceJobStatus from 'modules/jobs/reduceJobStatus'
+import User from './User'
+import ScreenshotDiff from './ScreenshotDiff'
 
 export default class Build extends BaseModel {
   static tableName = 'builds';
@@ -8,6 +11,7 @@ export default class Build extends BaseModel {
     required: [
       ...BaseModel.jsonSchema.required,
       'compareScreenshotBucketId',
+      'repositoryId',
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
@@ -43,4 +47,33 @@ export default class Build extends BaseModel {
       },
     },
   };
+
+  static async getStatus(buildId) {
+    const screenshotDiffs = await ScreenshotDiff.query().where({ buildId })
+    const jobStatus = reduceJobStatus(screenshotDiffs.map(({ jobStatus }) => jobStatus))
+
+    if (jobStatus === 'complete') {
+      const hasDiffs = screenshotDiffs.some(({ score }) => score > 0)
+      return hasDiffs ? 'failure' : 'success'
+    }
+
+    return jobStatus
+  }
+
+  static async getUsers(buildId) {
+    return User.query()
+      .select('users.*')
+      .join('user_repository_rights', 'users.id', '=', 'user_repository_rights.userId')
+      .join('repositories', 'user_repository_rights.repositoryId', '=', 'repositories.id')
+      .join('builds', 'repositories.id', '=', 'builds.repositoryId')
+      .where('builds.id', buildId)
+  }
+
+  async getUsers() {
+    return this.constructor.getUsers(this.id)
+  }
+
+  async getStatus() {
+    return this.constructor.getStatus(this.id)
+  }
 }
