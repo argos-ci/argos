@@ -1,8 +1,5 @@
 import { useDatabase } from 'server/test/utils'
-import ScreenshotBucket from 'server/models/ScreenshotBucket'
-import Build from 'server/models/Build'
-import Screenshot from 'server/models/Screenshot'
-import Repository from 'server/models/Repository'
+import factory from 'server/test/factory'
 import createBuildDiffs from './createBuildDiffs'
 
 jest.mock('modules/build/notifyStatus')
@@ -18,54 +15,35 @@ describe('createBuildDiffs', () => {
   let baseScreenshot
 
   beforeEach(async () => {
-    const repository = await Repository.query().insert({
-      name: 'foo',
-      githubId: 12,
+    const repository = await factory.create('Repository', {
       enabled: true,
-      token: 'xx',
-    });
-
-    ([compareBucket, baseBucket] = await ScreenshotBucket.query()
-      .insert([
-        {
-          name: 'test-bucket',
-          commit: 'a',
-          branch: 'test-branch',
-          repositoryId: repository.id,
-        },
-        {
-          name: 'base-bucket',
-          commit: 'b',
-          branch: 'master',
-          repositoryId: repository.id,
-        },
-      ]))
-
-    build = await Build.query()
-      .insert({
-        baseScreenshotBucketId: baseBucket.id,
-        compareScreenshotBucketId: compareBucket.id,
-        repositoryId: repository.id,
-      });
-
-    ([compareScreenshot, , baseScreenshot] = await Screenshot.query()
-      .insert([
-        {
-          name: 'a',
-          s3Id: 'a',
-          screenshotBucketId: compareBucket.id,
-        },
-        {
-          name: 'b',
-          s3Id: 'b',
-          screenshotBucketId: compareBucket.id,
-        },
-        {
-          name: 'a',
-          s3Id: 'a',
-          screenshotBucketId: baseBucket.id,
-        },
-      ]))
+    })
+    compareBucket = await factory.create('ScreenshotBucket', {
+      repositoryId: repository.id,
+    })
+    baseBucket = await factory.create('ScreenshotBucket', {
+      repositoryId: repository.id,
+    })
+    build = await factory.create('Build', {
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      repositoryId: repository.id,
+    })
+    compareScreenshot = await factory.create('Screenshot', {
+      name: 'a',
+      s3Id: 'a',
+      screenshotBucketId: compareBucket.id,
+    })
+    await factory.create('Screenshot', {
+      name: 'b',
+      s3Id: 'b',
+      screenshotBucketId: compareBucket.id,
+    })
+    baseScreenshot = await factory.create('Screenshot', {
+      name: 'a',
+      s3Id: 'a',
+      screenshotBucketId: baseBucket.id,
+    })
   })
 
   it('should return the build', async () => {

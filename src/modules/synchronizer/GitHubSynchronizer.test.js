@@ -1,6 +1,5 @@
 import { setTestsTimeout, useDatabase } from 'server/test/utils'
-import User from 'server/models/User'
-import Synchronization from 'server/models/Synchronization'
+import factory from 'server/test/factory'
 import Organization from 'server/models/Organization'
 import UserOrganizationRight from 'server/models/UserOrganizationRight'
 import Repository from 'server/models/Repository'
@@ -15,14 +14,14 @@ describe('GitHubSynchronizer', () => {
   let synchronization
 
   beforeEach(async () => {
-    user = await User.query().insert({
+    user = await factory.create('User', {
       accessToken: process.env.NEOZIRO_ACCESS_TOKEN,
       githubId: 266302,
       name: 'Greg Bergé',
       email: 'berge.greg@gmail.com',
     })
 
-    synchronization = await Synchronization.query().insert({
+    synchronization = await factory.create('Synchronization', {
       userId: user.id,
       jobStatus: 'pending',
       type: 'github',

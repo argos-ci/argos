@@ -19,13 +19,13 @@ export async function truncateAll(knex) {
 export const useDatabase = () => {
   let knex
 
-  beforeEach(async function () {
+  beforeEach(async () => {
     knex = connect('test')
     await knex.migrate.latest()
     await truncateAll(knex)
   })
 
-  afterEach(async function () {
+  afterEach(async () => {
     await disconnect(knex)
   })
 }

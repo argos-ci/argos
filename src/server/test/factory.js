@@ -6,6 +6,7 @@ import Repository from 'server/models/Repository'
 import Screenshot from 'server/models/Screenshot'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
+import Synchronization from 'server/models/Synchronization'
 import User from 'server/models/User'
 import UserRepositoryRight from 'server/models/UserRepositoryRight'
 
@@ -72,5 +73,10 @@ factory.define('Screenshot', Screenshot, {
   screenshotBucketId: factory.assoc('ScreenshotBucket', 'id'),
 })
 
+factory.define('Synchronization', Synchronization, {
+  userId: factory.assoc('User', 'id'),
+  jobStatus: 'success',
+  type: 'github',
+})
 
 export default factory
