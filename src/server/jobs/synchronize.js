@@ -1,6 +1,5 @@
 import synchronize from 'modules/synchronizer/synchronize'
-import createJob from 'modules/jobs/createJob'
+import Synchronization from 'server/models/Synchronization'
+import createModelJob from 'modules/jobs/createModelJob'
 
-export default createJob('synchronize', async (synchronizationId) => {
-  await synchronize(synchronizationId)
-})
+export default createModelJob('synchronize', Synchronization, synchronize)

@@ -21,9 +21,7 @@ export default (passport) => {
     try {
       const users = await User
         .query()
-        .where({
-          githubId: Number(profile.id),
-        })
+        .where({ githubId: Number(profile.id) })
 
       let user = users[0]
 
@@ -33,6 +31,7 @@ export default (passport) => {
           .insert({
             githubId: Number(profile.id),
             accessToken,
+            login: profile.username,
             ...getDataFromProfile(profile),
           })
       } else {

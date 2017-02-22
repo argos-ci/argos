@@ -29,6 +29,7 @@ export default class ScreenshotDiff extends BaseModel {
           'pending',
           'progress',
           'complete',
+          'error',
         ],
       },
       validationStatus: {

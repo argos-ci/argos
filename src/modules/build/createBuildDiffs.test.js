@@ -28,6 +28,7 @@ describe('createBuildDiffs', () => {
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,
       repositoryId: repository.id,
+      jobStatus: 'pending',
     })
     compareScreenshot = await factory.create('Screenshot', {
       name: 'a',
@@ -47,7 +48,7 @@ describe('createBuildDiffs', () => {
   })
 
   it('should return the build', async () => {
-    const diffs = await createBuildDiffs(build.id)
+    const diffs = await createBuildDiffs(build)
     expect(notifyProgress).toBeCalledWith(build.id)
     expect(diffs[0].buildId).toBe(build.id)
     expect(diffs[0].baseScreenshotId).toBe(baseScreenshot.id)

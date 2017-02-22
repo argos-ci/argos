@@ -7,6 +7,7 @@ const baseData = {
   repositoryId: '1',
   baseScreenshotBucketId: '1',
   compareScreenshotBucketId: '2',
+  jobStatus: 'pending',
 }
 
 describe('models/Build', () => {

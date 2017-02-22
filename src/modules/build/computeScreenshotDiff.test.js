@@ -56,12 +56,11 @@ describe('computeScreenshotDiff', () => {
   })
 
   it('should process diff an update screenshot diff', async () => {
-    const resultScreenshotDiff = await computeScreenshotDiff(screenshotDiff.id, {
+    const resultScreenshotDiff = await computeScreenshotDiff(screenshotDiff, {
       s3,
       bucket: 'argos-screenshots-sandbox',
     })
     expect(resultScreenshotDiff.score > 0).toBeTruthy()
-    expect(resultScreenshotDiff.jobStatus).toBe('complete')
     expect(resultScreenshotDiff.s3Id).not.toBeUndefined()
     expect(notifyFailure).toBeCalledWith(build.id)
   })

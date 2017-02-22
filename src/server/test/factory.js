@@ -20,6 +20,7 @@ factory.define('ScreenshotBucket', ScreenshotBucket, {
 })
 
 factory.define('Build', Build, {
+  jobStatus: 'complete',
   repositoryId: factory.assoc('Repository', 'id'),
 }, {
   async afterBuild(model, attrs) {
@@ -64,7 +65,7 @@ factory.define('ScreenshotDiff', ScreenshotDiff, {
   buildId: factory.assoc('Build', 'id'),
   baseScreenshotId: factory.assoc('Screenshot', 'id'),
   compareScreenshotId: factory.assoc('Screenshot', 'id'),
-  jobStatus: 'success',
+  jobStatus: 'complete',
   validationStatus: 'accepted',
 })
 
@@ -76,7 +77,7 @@ factory.define('Screenshot', Screenshot, {
 
 factory.define('Synchronization', Synchronization, {
   userId: factory.assoc('User', 'id'),
-  jobStatus: 'success',
+  jobStatus: 'complete',
   type: 'github',
 })
 

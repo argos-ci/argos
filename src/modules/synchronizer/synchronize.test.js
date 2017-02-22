@@ -27,9 +27,7 @@ describe('#synchronize', () => {
   })
 
   it('should call synchronizer', async () => {
-    await synchronize(synchronization.id)
+    await synchronize(synchronization)
     expect(GitHubSynchronizer).toBeCalledWith(expect.objectContaining({ id: synchronization.id }))
-    await synchronization.reload()
-    expect(synchronization.jobStatus).toBe('complete')
   })
 })

@@ -16,7 +16,7 @@ const logAndCaptureError = (error) => {
   crashReporter.captureException(error)
 }
 
-const createJob = (queue, consume) => {
+const createJob = (queue, consumer) => {
   return {
     async push(...args) {
       const channel = await getChannel()
@@ -31,7 +31,8 @@ const createJob = (queue, consume) => {
 
         try {
           payload = parseMessage(msg.content)
-          await consume(...payload.args)
+          await consumer.perform(...payload.args)
+          await consumer.complete(...payload.args)
         } catch (error) {
           logAndCaptureError(error)
           channel.nack(msg, false, false)
@@ -41,6 +42,8 @@ const createJob = (queue, consume) => {
               args: payload.args,
               attempts: payload.attempts + 1,
             }), { persistent: true })
+          } else {
+            await consumer.error(...payload.args)
           }
           return
         }

@@ -1,14 +1,15 @@
 import S3 from 'aws-sdk/clients/s3'
 import config from 'config'
 import computeScreenshotDiff from 'modules/build/computeScreenshotDiff'
-import createJob from 'modules/jobs/createJob'
+import ScreenshotDiff from 'server/models/ScreenshotDiff'
+import createModelJob from 'modules/jobs/createModelJob'
 
 let s3
 
-export default createJob('screenshotDiff', async (screenshotDiffId) => {
+export default createModelJob('screenshotDiff', ScreenshotDiff, async (screenshotDiff) => {
   s3 = s3 || new S3({ signatureVersion: 'v4' })
 
-  await computeScreenshotDiff(screenshotDiffId, {
+  await computeScreenshotDiff(screenshotDiff, {
     s3,
     bucket: config.get('s3.screenshotsBucket'),
   })

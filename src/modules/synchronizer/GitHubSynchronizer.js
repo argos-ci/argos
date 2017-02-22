@@ -12,13 +12,8 @@ const OWNER_USER = 'User'
 class GitHubSynchronizer {
   constructor(synchronization) {
     this.synchronization = synchronization
-
     this.github = new GitHubAPI({
       debug: config.get('env') === 'development',
-    })
-    this.github.authenticate({
-      type: 'oauth',
-      token: synchronization.user.accessToken,
     })
   }
 
@@ -152,6 +147,13 @@ class GitHubSynchronizer {
   }
 
   async synchronize() {
+    this.synchronization = await this.synchronization.$query().eager('user')
+
+    this.github.authenticate({
+      type: 'oauth',
+      token: this.synchronization.user.accessToken,
+    })
+
     await this.synchronization.$relatedQuery('user')
     await this.synchronizeRepositories()
   }
