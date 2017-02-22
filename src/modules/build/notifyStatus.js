@@ -15,7 +15,7 @@ const notifyStatus = async (buildId, { state, description }) => {
 
   const [user] = await build.getUsers()
 
-  if (user === 0) {
+  if (!user) {
     throw new NotifyError('No user found')
   }
 
