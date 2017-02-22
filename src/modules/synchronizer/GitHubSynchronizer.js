@@ -140,7 +140,7 @@ class GitHubSynchronizer {
 
   async synchronizeUser(githubUser) { // eslint-disable-line class-methods-use-this
     let [user] = await User.query().where({ githubId: githubUser.id })
-    const data = { githubId: githubUser.id, name: githubUser.login }
+    const data = { githubId: githubUser.id, login: githubUser.login }
 
     if (user) {
       await user.$query().patch(data)

@@ -8,13 +8,14 @@ export default class User extends BaseModel {
     required: [
       ...BaseModel.jsonSchema.required,
       'githubId',
-      'name',
+      'login',
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
       githubId: { type: 'number' },
       accessToken: { type: 'string' },
       name: { type: 'string' },
+      login: { type: 'string' },
       email: { type: ['string', null] },
     },
   };

@@ -39,6 +39,7 @@ factory.define('Build', Build, {
 factory.define('User', User, {
   githubId: factory.sequence('user.githubId', n => n),
   name: factory.chance('name'),
+  login: factory.sequence('user.login', n => `user-${n}`),
   email: factory.sequence('user.email', n => `user-${n}@email.com`),
 })
 

@@ -1,5 +1,5 @@
 import config from 'config'
-import { truncateAll } from 'server/testUtils'
+import { truncateAll } from 'server/test/utils'
 import { connect, disconnect } from 'server/database'
 
 if (config.get('env') === 'production') {
