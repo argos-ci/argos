@@ -79,8 +79,6 @@ async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
   } else if (buildStatus === 'failure') {
     await notifyFailure(screenshotDiff.buildId)
   }
-
-  return screenshotDiff
 }
 
 export default computeScreenshotDiff
