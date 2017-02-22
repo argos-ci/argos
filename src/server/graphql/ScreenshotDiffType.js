@@ -54,6 +54,9 @@ const ScreenshotDiffType = new GraphQLObjectType({
     score: {
       type: GraphQLFloat,
     },
+    s3Id: {
+      type: GraphQLString,
+    },
     jobStatus: {
       type: new GraphQLEnumType({
         name: 'jobDiffStatus',

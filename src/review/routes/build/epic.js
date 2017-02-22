@@ -22,6 +22,7 @@ const buildEpic = action$ => (
             jobStatus
             validationStatus
             score
+            s3Id
             baseScreenshot {
               name
               s3Id
