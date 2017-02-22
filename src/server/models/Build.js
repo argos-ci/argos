@@ -29,6 +29,7 @@ export default class Build extends BaseModel {
       baseScreenshotBucketId: { types: ['string', null] },
       compareScreenshotBucketId: { type: 'string' },
       repositoryId: { type: 'string' },
+      number: { type: 'integer' },
     },
   };
 
@@ -66,6 +67,16 @@ export default class Build extends BaseModel {
         'The base screenshot bucket should be different to the compare one.',
       )
     }
+  }
+
+  $toDatabaseJson() {
+    const attributes = super.$toDatabaseJson()
+    attributes.number = this.$knex().raw(
+      '(select coalesce(max(number),0) + 1 as number from builds where "repositoryId" = ?)',
+      attributes.repositoryId,
+    )
+
+    return attributes
   }
 
   static async getStatus(buildId) {

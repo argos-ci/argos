@@ -106,6 +106,7 @@
   "devDependencies": {
     "argos-cli": "^0.0.2",
     "babel-eslint": "^7.1.1",
+    "clear-require": "^2.0.0",
     "eslint": "^3.16.1",
     "eslint-config-airbnb": "^14.1.0",
     "eslint-find-rules": "^1.14.3",
