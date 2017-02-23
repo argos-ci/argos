@@ -62,9 +62,8 @@ describe('computeScreenshotDiff', () => {
     })
 
     await screenshotDiff.reload()
-    expect(screenshotDiff.score > 0).toBeTruthy()
-    expect(screenshotDiff.s3Id).not.toBeUndefined()
-    expect(screenshotDiff.s3Id).not.toBeNull()
+    expect(screenshotDiff.score > 0).toBe(true)
+    expect(typeof screenshotDiff.s3Id === 'string').toBe(true)
     expect(notifyFailure).toBeCalledWith(build.id)
   })
 })
