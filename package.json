@@ -86,7 +86,6 @@
     "passport": "^0.3.2",
     "passport-github": "^1.1.0",
     "pg": "^6.1.2",
-    "pg-native": "^1.10.0",
     "raven": "^1.1.2",
     "raven-js": "^3.11.0",
     "react": "^15.4.2",

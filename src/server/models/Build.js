@@ -4,6 +4,8 @@ import reduceJobStatus from 'modules/jobs/reduceJobStatus'
 import User from './User'
 import ScreenshotDiff from './ScreenshotDiff'
 
+const NEXT_NUMBER = Symbol('nextNumber')
+
 export default class Build extends BaseModel {
   static tableName = 'builds';
 
@@ -71,10 +73,18 @@ export default class Build extends BaseModel {
 
   $beforeInsert(queryContext) {
     super.$beforeInsert(queryContext)
-    this.number = this.$knex().raw(
-      '(select coalesce(max(number),0) + 1 as number from builds where "repositoryId" = ?)',
-      this.repositoryId,
-    )
+    this.number = NEXT_NUMBER
+  }
+
+  $toDatabaseJson(queryContext) {
+    const json = super.$toDatabaseJson(queryContext)
+    if (json.number === NEXT_NUMBER) {
+      json.number = this.$knex().raw(
+        '(select coalesce(max(number),0) + 1 as number from builds where "repositoryId" = ?)',
+        this.repositoryId,
+      )
+    }
+    return json
   }
 
   $afterInsert(queryContext) {
