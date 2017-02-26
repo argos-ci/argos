@@ -10,10 +10,17 @@ const parseMessage = (message) => {
   return payload
 }
 
-const logAndCaptureError = (error) => {
+const logAndCaptureError = (error, { args, queue }) => {
   console.error(error.message) // eslint-disable-line no-console
   console.error(error.stack) // eslint-disable-line no-console
-  crashReporter.captureException(error)
+  crashReporter.captureException(error, {
+    tags: {
+      jobQueue: queue,
+    },
+    extra: {
+      jobArgs: args,
+    },
+  })
 }
 
 const createJob = (queue, consumer) => {
@@ -34,7 +41,10 @@ const createJob = (queue, consumer) => {
           await consumer.perform(...payload.args)
           await consumer.complete(...payload.args)
         } catch (error) {
-          logAndCaptureError(error)
+          logAndCaptureError(error, {
+            args: payload.args,
+            queue,
+          })
           channel.nack(msg, false, false)
           // Retry two times
           if (payload && payload.attempts < 2) {
