@@ -5,6 +5,7 @@ import configurePassport from 'server/routes/configurePassport'
 import session from 'express-session'
 import connectRedis from 'connect-redis'
 import config from 'config'
+import * as redis from 'server/services/redis'
 import graphqlMiddleware from 'server/graphql/middleware'
 import rendering from 'server/middlewares/rendering'
 
@@ -33,9 +34,7 @@ router.use('/graphql', graphqlMiddleware())
 
 router.use(session({
   secret: config.get('server.sessionSecret'),
-  store: new RedisStore({
-    url: config.get('redis.url'),
-  }),
+  store: new RedisStore({ client: redis.connect() }),
   cookie: {
     secure: false, // To activate once we do HTTPS.
   },

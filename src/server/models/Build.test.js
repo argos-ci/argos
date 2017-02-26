@@ -13,6 +13,26 @@ const baseData = {
 describe('models/Build', () => {
   useDatabase()
 
+  describe('create build', () => {
+    it('should add a build number', async () => {
+      const build1 = await factory.create('Build')
+      const build2 = await factory.create('Build', { repositoryId: build1.repositoryId })
+      expect(build1.number).toBe(1)
+      expect(build2.number).toBe(2)
+    })
+  })
+
+  describe('patch build', () => {
+    it('should not add a build number', async () => {
+      const build = await factory.create('Build')
+      expect(build.number).toBe(1)
+      await build.$query().patch({ jobStatus: 'complete' })
+      await build.reload()
+      expect(build.number).toBe(1)
+      expect(build.jobStatus).toBe('complete')
+    })
+  })
+
   describe('validation screenshotBucket', () => {
     it('should throw if the screenshot buckets are the same', () => {
       assert.throws(() => {

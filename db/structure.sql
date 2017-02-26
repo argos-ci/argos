@@ -44,7 +44,9 @@ CREATE TABLE builds (
     "compareScreenshotBucketId" bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "repositoryId" bigint NOT NULL
+    "repositoryId" bigint NOT NULL,
+    number integer NOT NULL,
+    "jobStatus" character varying(255) NOT NULL
 );
 
 
@@ -639,6 +641,13 @@ ALTER TABLE ONLY users
 
 
 --
+-- Name: builds_number_index; Type: INDEX; Schema: public; Owner: argos
+--
+
+CREATE INDEX builds_number_index ON builds USING btree (number);
+
+
+--
 -- Name: organizations_githubid_index; Type: INDEX; Schema: public; Owner: argos
 --
 
@@ -898,3 +907,5 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212091412
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212092004_add_column_userId_to_repositories.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212102433_repositories_alter_column_organization_id.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000548_users_name_login.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000549_builds_number.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222222346_add_jobStatus_to_builds.js', 1, NOW());

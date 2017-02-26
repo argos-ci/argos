@@ -1,4 +1,4 @@
-import { connect } from 'server/database'
+import { connect } from 'server/services/database'
 import handleKillSignals from 'server/bootstrap/handleKillSignals'
 import crashReporter from 'modules/crashReporter/crashReporter'
 

@@ -69,14 +69,17 @@ export default class Build extends BaseModel {
     }
   }
 
-  $toDatabaseJson() {
-    const attributes = super.$toDatabaseJson()
-    attributes.number = this.$knex().raw(
+  $beforeInsert(queryContext) {
+    super.$beforeInsert(queryContext)
+    this.number = this.$knex().raw(
       '(select coalesce(max(number),0) + 1 as number from builds where "repositoryId" = ?)',
-      attributes.repositoryId,
+      this.repositoryId,
     )
+  }
 
-    return attributes
+  $afterInsert(queryContext) {
+    super.$afterInsert(queryContext)
+    return this.reload()
   }
 
   static async getStatus(buildId) {

@@ -5,7 +5,7 @@ if (config.get('env') === 'production') {
   throw new Error('Not in production please!')
 }
 
-exec(`docker-compose run postgres dropdb -h postgres -U argos ${config.get('env')}`)
+exec(`docker-compose run postgres dropdb -h postgres -U argos ${config.get('env')} --if-exists`)
   .catch((err) => {
     setTimeout(() => { throw err })
   })

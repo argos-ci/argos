@@ -1,4 +1,4 @@
-import { getChannel } from 'server/amqp'
+import { getChannel } from 'server/services/amqp'
 import crashReporter from 'modules/crashReporter/crashReporter'
 
 const serializeMessage = payload => new Buffer(JSON.stringify(payload))
