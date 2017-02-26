@@ -5,6 +5,8 @@ import syncFromUserId from 'modules/synchronizer/syncFromUserId'
 
 function getDataFromProfile(profile) {
   return {
+    githubId: Number(profile.id),
+    login: profile.username,
     name: profile.displayName,
     email: profile.emails.find(email => email.primary).value,
   }
@@ -21,9 +23,7 @@ export default (passport) => {
     try {
       const users = await User
         .query()
-        .where({
-          githubId: Number(profile.id),
-        })
+        .where({ githubId: Number(profile.id) })
 
       let user = users[0]
 
@@ -31,7 +31,6 @@ export default (passport) => {
         user = await User
           .query()
           .insert({
-            githubId: Number(profile.id),
             accessToken,
             ...getDataFromProfile(profile),
           })

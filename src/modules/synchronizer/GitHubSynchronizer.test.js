@@ -26,8 +26,6 @@ describe('GitHubSynchronizer', () => {
       jobStatus: 'pending',
       type: 'github',
     })
-
-    await synchronization.$relatedQuery('user')
   })
 
   it('should synchronize all GitHub data', async () => {

@@ -83,6 +83,7 @@ router.post('/builds', upload.array('screenshots[]', 50), errorChecking(
             baseScreenshotBucketId: baseScreenshotBucket ? baseScreenshotBucket.id : undefined,
             compareScreenshotBucketId: bucket.id,
             repositoryId: repository.id,
+            jobStatus: 'pending',
           })
 
         return build

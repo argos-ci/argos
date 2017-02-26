@@ -20,6 +20,7 @@ export default class Synchronization extends BaseModel {
           'pending',
           'progress',
           'complete',
+          'error',
         ],
       },
       type: {

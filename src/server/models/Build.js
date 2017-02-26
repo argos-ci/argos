@@ -13,9 +13,19 @@ export default class Build extends BaseModel {
       ...BaseModel.jsonSchema.required,
       'compareScreenshotBucketId',
       'repositoryId',
+      'jobStatus',
     ],
     properties: {
       ...BaseModel.jsonSchema.properties,
+      jobStatus: {
+        type: 'string',
+        enum: [
+          'pending',
+          'progress',
+          'complete',
+          'error',
+        ],
+      },
       baseScreenshotBucketId: { types: ['string', null] },
       compareScreenshotBucketId: { type: 'string' },
       repositoryId: { type: 'string' },

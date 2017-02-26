@@ -1,15 +1,13 @@
 import { transaction } from 'objection'
-import Build from 'server/models/Build'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import { notifyProgress } from 'modules/build/notifyStatus'
 
-async function createBuildDiffs(buildId) {
-  await notifyProgress(buildId)
+async function createBuildDiffs(build) {
+  await notifyProgress(build.id)
 
-  const build = await Build
-    .query()
-    .findById(buildId)
-    .eager('[baseScreenshotBucket.screenshots, compareScreenshotBucket.screenshots]')
+  build = await build.$query().eager(
+    '[baseScreenshotBucket.screenshots, compareScreenshotBucket.screenshots]',
+  )
 
   if (!build.baseScreenshotBucket) {
     return []
