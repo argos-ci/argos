@@ -18,7 +18,7 @@ export default class ScreenshotDiff extends BaseModel {
       buildId: { type: 'string' },
       baseScreenshotId: { type: 'string' },
       compareScreenshotId: { type: 'string' },
-      s3Id: { type: 'string' },
+      s3Id: { type: ['string', null] },
       score: {
         type: 'number',
         minimum: 0,
@@ -70,6 +70,16 @@ export default class ScreenshotDiff extends BaseModel {
       },
     },
   };
+
+  $parseDatabaseJson(json) {
+    json = super.$parseDatabaseJson(json)
+
+    if (typeof json.score === 'string') {
+      json.score = Number(json.score)
+    }
+
+    return json
+  }
 
   $afterValidate(json) { // eslint-disable-line class-methods-use-this
     if (json.baseScreenshotId && json.baseScreenshotId === json.compareScreenshotId) {
