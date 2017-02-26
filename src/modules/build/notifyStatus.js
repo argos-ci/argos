@@ -34,12 +34,13 @@ const notifyStatus = async (buildId, { state, description }) => {
     token: user.accessToken,
   })
 
+  // https://developer.github.com/v3/repos/statuses/
   return github.repos.createStatus({
     owner: owner.name,
     repo: build.repository.name,
     sha: build.compareScreenshotBucket.commit,
     state,
-    description,
+    description, // Short description of the status.
     target_url: 'https://www.argos-ci.com/', // TODO compute build url
     context: 'argos',
   })
