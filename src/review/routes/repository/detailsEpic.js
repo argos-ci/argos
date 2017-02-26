@@ -24,6 +24,7 @@ const repositoryDetailsEpic = action$ => (
             }
             edges {
               id
+              number
               createdAt
             }
           }
