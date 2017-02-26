@@ -12,12 +12,7 @@ describe('#synchronize', () => {
   let synchronization
 
   beforeEach(async () => {
-    user = await factory.create('User', {
-      accessToken: process.env.NEOZIRO_ACCESS_TOKEN,
-      githubId: 266302,
-      name: 'Greg Bergé',
-      email: 'berge.greg@gmail.com',
-    })
+    user = await factory.create('User')
 
     synchronization = await factory.create('Synchronization', {
       userId: user.id,

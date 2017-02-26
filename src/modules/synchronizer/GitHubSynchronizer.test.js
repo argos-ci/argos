@@ -15,10 +15,7 @@ describe('GitHubSynchronizer', () => {
 
   beforeEach(async () => {
     user = await factory.create('User', {
-      accessToken: process.env.NEOZIRO_ACCESS_TOKEN,
-      githubId: 266302,
-      name: 'Greg Bergé',
-      email: 'berge.greg@gmail.com',
+      accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
     })
 
     synchronization = await factory.create('Synchronization', {

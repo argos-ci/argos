@@ -9,10 +9,7 @@ describe('notifyStatus', () => {
 
   beforeEach(async () => {
     const user = await factory.create('User', {
-      accessToken: process.env.NEOZIRO_ACCESS_TOKEN,
-      githubId: 266302,
-      name: 'Greg Bergé',
-      email: 'berge.greg@gmail.com',
+      accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
     })
     const organization = await factory.create('Organization', { name: 'argos-ci' })
     const repository = await factory.create('Repository', {
@@ -34,9 +31,8 @@ describe('notifyStatus', () => {
       state: 'pending',
       description: 'Pending status from argos',
     })
-
-    expect(result.id).not.toBeUndefined()
-    expect(result.description).toBe('Pending status from argos')
-    expect(result.state).toBe('pending')
+    expect(result.data.id).not.toBeUndefined()
+    expect(result.data.description).toBe('Pending status from argos')
+    expect(result.data.state).toBe('pending')
   })
 })

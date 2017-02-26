@@ -25,7 +25,7 @@ class GitHubSynchronizer {
       this.synchronizeOwners(githubRepositories, OWNER_USER),
     ])
 
-    await Promise.all(githubRepositories.map(async (githubRepository) => {
+    await Promise.all(githubRepositories.data.map(async (githubRepository) => {
       const data = {
         githubId: githubRepository.id,
         name: githubRepository.name,
@@ -63,7 +63,7 @@ class GitHubSynchronizer {
   }
 
   async synchronizeOwners(githubRepositories, type) {
-    const githubOwners = githubRepositories
+    const githubOwners = githubRepositories.data
       .reduce((githubOwners, githubRepository) => {
         if (githubRepository.owner.type !== type) {
           return githubOwners
@@ -94,7 +94,7 @@ class GitHubSynchronizer {
         break
     }
 
-    return githubRepositories
+    return githubRepositories.data
       .reduce((ownerIdByRepositoryId, githubRepository) => {
         if (githubRepository.owner.type === type) {
           ownerIdByRepositoryId[githubRepository.id] = owners
