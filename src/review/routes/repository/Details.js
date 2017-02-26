@@ -57,7 +57,7 @@ function RepositoryDetails(props) {
                     to={`/${profileName}/${repositoryName}/builds/${build.id}`}
                   >
                     <ListItemText
-                      primary={`build ${build.id}`}
+                      primary={`build ${build.number}`}
                       secondary={new Intl.DateTimeFormat().format(new Date(build.createdAt))}
                     />
                   </ListItem>
@@ -73,7 +73,19 @@ function RepositoryDetails(props) {
 
 RepositoryDetails.propTypes = {
   dispatch: PropTypes.func.isRequired,
-  fetch: PropTypes.object.isRequired,
+  fetch: PropTypes.shape({
+    output: PropTypes.shape({
+      data: PropTypes.shape({
+        builds: PropTypes.shape({
+          edges: PropTypes.arrayOf(PropTypes.shape({
+            id: PropTypes.string.isRequired,
+            number: PropTypes.number.isRequired,
+            createdAt: PropTypes.string.isRequired,
+          })),
+        }),
+      }),
+    }),
+  }).isRequired,
   params: PropTypes.shape({
     profileName: PropTypes.string.isRequired,
     repositoryName: PropTypes.string.isRequired,

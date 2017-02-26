@@ -2,6 +2,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
   GraphQLID,
+  GraphQLInt,
 } from 'graphql'
 import Build from 'server/models/Build'
 import ScreenshotBucketType, {
@@ -74,6 +75,13 @@ const BuildType = new GraphQLObjectType({
           id: source.compareScreenshotBucketId,
         })
       ),
+    },
+    number: {
+      description: `
+        Continuous number.
+        It is increameted after each build for a given repository.
+      `,
+      type: GraphQLInt,
     },
     createdAt: {
       type: GraphQLDateTime,
