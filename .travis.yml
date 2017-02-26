@@ -7,9 +7,8 @@ cache:
 services:
   - postgresql
 before_script:
-  - psql -c 'CREATE USER argos;' -U postgres
+  - createuser -s argos
   - psql -c 'CREATE DATABASE test;' -U postgres
-  - psql -c 'GRANT ALL PRIVILEGES ON DATABASE test TO argos;' -U postgres
 script:
   - npm run test:travis
 addons:
