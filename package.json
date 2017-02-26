@@ -10,7 +10,7 @@
     "dev:foreman": "nf --procfile Procfile.dev --port 4001 start",
     "dev:review": "babel-node ./node_modules/.bin/webpack-dev-server --config=src/review/webpack/browserDevelopmentConfig.js --progress",
     "test": "yarn lint && yarn test:unit && yarn argos",
-    "test:travis": "yarn db:load && yarn test",
+    "test:travis": "NODE_ENV=test yarn db:load && yarn test",
     "test:unit": "jest --runInBand",
     "test:watch": "yarn test:unit -- --watch",
     "argos": "ARGOS_COMMIT=$TRAVIS_COMMIT ARGOS_BRANCH=$TRAVIS_BRANCH argos upload sandbox/argos/screenshots --token $ARGOS_TOKEN || true",
