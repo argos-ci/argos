@@ -35,7 +35,7 @@ const crashReporter = {
     })
     raven.install()
   },
-  captureException: (...args) => raven.captureException(...args),
+  captureException: (error, options) => raven.captureException(error, options),
   requestHandler: () => raven.requestHandler(),
   errorHandler: () => raven.errorHandler(),
 }
