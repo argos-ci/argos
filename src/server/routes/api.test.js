@@ -9,8 +9,8 @@ describe('api routes', () => {
 
   describe('POST /builds', () => {
     describe('with no valid token', () => {
-      it('should respond bad request', () => {
-        return request(app)
+      it('should respond bad request', async () => {
+        await request(app)
           .post('/builds')
           .set('Host', 'api.argos-ci.dev')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
@@ -24,8 +24,8 @@ describe('api routes', () => {
     })
 
     describe('with no corresponding repository', () => {
-      it('should respond bad request', () => {
-        return request(app)
+      it('should respond bad request', async () => {
+        await request(app)
           .post('/builds')
           .set('Host', 'api.argos-ci.dev')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))

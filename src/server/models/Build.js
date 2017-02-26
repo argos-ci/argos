@@ -4,6 +4,8 @@ import reduceJobStatus from 'modules/jobs/reduceJobStatus'
 import User from './User'
 import ScreenshotDiff from './ScreenshotDiff'
 
+const NEXT_NUMBER = Symbol('nextNumber')
+
 export default class Build extends BaseModel {
   static tableName = 'builds';
 
@@ -29,6 +31,7 @@ export default class Build extends BaseModel {
       baseScreenshotBucketId: { types: ['string', null] },
       compareScreenshotBucketId: { type: 'string' },
       repositoryId: { type: 'string' },
+      number: { type: 'integer' },
     },
   };
 
@@ -66,6 +69,27 @@ export default class Build extends BaseModel {
         'The base screenshot bucket should be different to the compare one.',
       )
     }
+  }
+
+  $beforeInsert(queryContext) {
+    super.$beforeInsert(queryContext)
+    this.number = NEXT_NUMBER
+  }
+
+  $toDatabaseJson(queryContext) {
+    const json = super.$toDatabaseJson(queryContext)
+    if (json.number === NEXT_NUMBER) {
+      json.number = this.$knex().raw(
+        '(select coalesce(max(number),0) + 1 as number from builds where "repositoryId" = ?)',
+        this.repositoryId,
+      )
+    }
+    return json
+  }
+
+  $afterInsert(queryContext) {
+    super.$afterInsert(queryContext)
+    return this.reload()
   }
 
   static async getStatus(buildId) {

@@ -1,4 +1,4 @@
-import { getChannel } from 'server/amqp'
+import { getChannel } from 'server/services/amqp'
 
 const createJobWorker = async (...jobs) => {
   try {

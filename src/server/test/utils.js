@@ -1,10 +1,16 @@
 /* eslint-disable no-console */
 /* global jasmine */
-import { connect, disconnect } from 'server/database'
+import * as allServices from 'server/services/all'
+import * as database from 'server/services/database'
 
 const KNEX_TABLES = ['knex_migrations', 'knex_migrations_lock']
 
-export async function truncateAll(knex) {
+let truncateQuery
+async function getTruncateQuery(knex) {
+  if (truncateQuery) {
+    return truncateQuery
+  }
+
   const result = await knex.schema.raw(
     'SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = \'public\'',
   )
@@ -13,20 +19,26 @@ export async function truncateAll(knex) {
     KNEX_TABLES.includes(tablename) ? tables : [...tables, tablename]
   ), [])
 
-  return knex.schema.raw(`TRUNCATE ${tables.join(',')} CASCADE`)
+  return `TRUNCATE ${tables.join(',')} CASCADE`
+}
+
+export async function truncateAll(knex) {
+  return knex.schema.raw(await getTruncateQuery(knex))
 }
 
 export const useDatabase = () => {
   let knex
 
-  beforeEach(async () => {
-    knex = connect('test')
-    await knex.migrate.latest()
-    await truncateAll(knex)
+  beforeAll(() => {
+    knex = database.connect('test')
   })
 
-  afterEach(async () => {
-    await disconnect(knex)
+  afterAll(async () => {
+    await allServices.disconnect()
+  })
+
+  beforeEach(async () => {
+    await truncateAll(knex)
   })
 }
 
