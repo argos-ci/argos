@@ -16,4 +16,8 @@ export default class Organization extends BaseModel {
       name: { type: 'string' },
     },
   };
+
+  getUrlIdentifier() {
+    return this.name
+  }
 }

@@ -2,6 +2,7 @@ import GitHubAPI from 'github'
 import config from 'config'
 import Build from 'server/models/Build'
 import crashReporter from 'modules/crashReporter/crashReporter'
+import { formatUrlFromBuild } from 'modules/urls/buildUrl'
 
 export class NotifyError extends Error {}
 
@@ -34,6 +35,8 @@ const notifyStatus = async (buildId, { state, description }) => {
     token: user.accessToken,
   })
 
+  const buildUrl = await formatUrlFromBuild(build, { absolute: true })
+
   // https://developer.github.com/v3/repos/statuses/
   return github.repos.createStatus({
     owner: owner.name,
@@ -41,7 +44,7 @@ const notifyStatus = async (buildId, { state, description }) => {
     sha: build.compareScreenshotBucket.commit,
     state,
     description, // Short description of the status.
-    target_url: 'https://www.argos-ci.com/', // TODO compute build url
+    target_url: buildUrl,
     context: 'argos',
   })
 }

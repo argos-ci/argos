@@ -15,11 +15,14 @@ const config = {
     },
   },
   test: {
-    debug: false,
     client: 'postgresql',
     connection: {
       user: 'argos',
       database: 'test',
+    },
+    pool: {
+      min: 2,
+      max: 10,
     },
   },
   production: {

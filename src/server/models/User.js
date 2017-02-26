@@ -34,4 +34,8 @@ export default class User extends BaseModel {
       },
     },
   }
+
+  getUrlIdentifier() {
+    return this.login
+  }
 }
