@@ -34,5 +34,6 @@ describe('notifyStatus', () => {
     expect(result.data.id).not.toBeUndefined()
     expect(result.data.description).toBe('Pending status from argos')
     expect(result.data.state).toBe('pending')
+    expect(result.data.target_url).toBe(`http://www.argos-ci.test/argos-ci/test-repository/builds/${build.id}`)
   })
 })

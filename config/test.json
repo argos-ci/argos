@@ -1,6 +1,7 @@
 {
   "server": {
     "logFormat": "",
+    "url": "http://www.argos-ci.test"
   },
   "s3": {
     "screenshotsBucket": "argos-screenshots-test"

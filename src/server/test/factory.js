@@ -46,7 +46,7 @@ factory.define('User', User, {
 
 factory.define('Organization', Organization, {
   githubId: factory.sequence('organization.githubId', n => n),
-  name: factory.chance('name'),
+  name: factory.sequence('user.login', n => `orga-${n}`),
 })
 
 factory.define('Repository', Repository, {
