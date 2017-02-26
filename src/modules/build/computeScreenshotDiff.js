@@ -52,11 +52,14 @@ async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
     diffResultPath,
   })
 
-  const uploadResult = await upload({
-    s3,
-    bucket,
-    inputPath: diffResultPath,
-  })
+  let uploadResult = null
+  if (diffResult.percentage > 0) {
+    uploadResult = await upload({
+      s3,
+      bucket,
+      inputPath: diffResultPath,
+    })
+  }
 
   await Promise.all([
     fs.unlink(compareScreenshotPath),
@@ -69,7 +72,7 @@ async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
   await screenshotDiff.$query().patch({
     score: diffResult.percentage,
     jobStatus: 'complete',
-    s3Id: uploadResult.Key,
+    s3Id: uploadResult ? uploadResult.Key : null,
   })
 
   const buildStatus = await Build.getStatus(screenshotDiff.buildId)
