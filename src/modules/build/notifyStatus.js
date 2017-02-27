@@ -60,17 +60,17 @@ const softNotifyStatus = async (buildId, status) => {
 
 export const notifyProgress = buildId => softNotifyStatus(buildId, {
   state: 'pending',
-  description: 'Argos build in progress',
+  description: 'Argos build is in progress.',
 })
 
 export const notifySuccess = buildId => softNotifyStatus(buildId, {
   state: 'success',
-  description: 'Argos build success',
+  description: 'All screenshots are good!',
 })
 
 export const notifyFailure = buildId => softNotifyStatus(buildId, {
-  state: 'failure',
-  description: 'Argos build failure',
+  state: 'success',
+  description: 'A difference in a screenshot has been detected.',
 })
 
 export default notifyStatus
