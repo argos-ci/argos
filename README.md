@@ -89,6 +89,13 @@ knex migrate:make my_migration
 yarn db:dump
 ```
 
+### Running the test suite
+
+You can reset the test database using:
+```sh
+NODE_ENV=test yarn db:reset
+```
+
 ## Previous work
 
 - [happo](https://github.com/Galooshi/happo)
@@ -96,6 +103,7 @@ yarn db:dump
 - [wraith](https://github.com/BBC-News/wraith)
 - [BackstopJS](https://github.com/garris/BackstopJS)
 - [VisualReview-protractor](https://github.com/xebia/VisualReview-protractor)
+- [Shoov](https://github.com/shoov/shoov)
 
 ## Contributing
 
