@@ -1,3 +1,7 @@
+const workers = 3
+const maxConnectionsAllowed = 20
+const freeConnectionsForThierdTools = 2
+
 const config = {
   development: {
     debug: true,
@@ -29,7 +33,7 @@ const config = {
     client: 'postgresql',
     pool: {
       min: 2,
-      max: 10,
+      max: Math.floor((maxConnectionsAllowed - freeConnectionsForThierdTools) / workers),
     },
   },
 }
