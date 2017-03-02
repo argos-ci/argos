@@ -58,6 +58,7 @@ const ScreenshotDiffType = new GraphQLObjectType({
       type: GraphQLString,
     },
     jobStatus: {
+      description: 'Represent the state of the remote job generating the diffs',
       type: new GraphQLEnumType({
         name: 'jobDiffStatus',
         values: {
@@ -71,10 +72,10 @@ const ScreenshotDiffType = new GraphQLObjectType({
             value: 'complete',
           },
         },
-        description: 'Represent the state of the remote job generating the diffs',
       }),
     },
     validationStatus: {
+      description: 'Represent the state of the remote job generating the diffs',
       type: new GraphQLEnumType({
         name: 'validationStatus',
         values: {
@@ -88,7 +89,6 @@ const ScreenshotDiffType = new GraphQLObjectType({
             value: 'rejected',
           },
         },
-        description: 'Represent the state of the remote job generating the diffs',
       }),
     },
     createdAt: {

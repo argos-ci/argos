@@ -16,6 +16,7 @@ const buildEpic = action$ => (
               branch
               commit
             }
+            status
           }
           screenshotDiffs(buildId: ${action.payload.buildId}) {
             id

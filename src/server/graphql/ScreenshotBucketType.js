@@ -9,12 +9,7 @@ import ScreenshotBucket from 'server/models/ScreenshotBucket'
 export const resolve = (source, args) => {
   return ScreenshotBucket
     .query()
-    .where({
-      id: args.id,
-    })
-    .then(([screenshotBucket]) => {
-      return screenshotBucket
-    })
+    .findById(args.id)
 }
 
 const ScreenshotBucketType = new GraphQLObjectType({

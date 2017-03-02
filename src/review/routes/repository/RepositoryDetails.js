@@ -4,8 +4,6 @@ import { connect } from 'react-redux'
 import { Link as LinkRouter } from 'react-router'
 import {
   List,
-  ListItem,
-  ListItemText,
 } from 'material-ui/List'
 import Paper from 'material-ui/Paper'
 import Text from 'material-ui/Text'
@@ -13,6 +11,7 @@ import Link from 'modules/components/Link'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import actionTypes from 'review/modules/redux/actionTypes'
+import RepositoryDetailsItem from 'review/routes/repository/RepositoryDetailsItem'
 
 function RepositoryDetails(props) {
   const {
@@ -50,17 +49,12 @@ function RepositoryDetails(props) {
             return (
               <List>
                 {edges.map(build => (
-                  <ListItem
+                  <RepositoryDetailsItem
                     key={build.id}
-                    button
-                    component={LinkRouter}
-                    to={`/${profileName}/${repositoryName}/builds/${build.id}`}
-                  >
-                    <ListItemText
-                      primary={`build ${build.number}`}
-                      secondary={new Intl.DateTimeFormat().format(new Date(build.createdAt))}
-                    />
-                  </ListItem>
+                    build={build}
+                    profileName={profileName}
+                    repositoryName={repositoryName}
+                  />
                 ))}
               </List>
             )

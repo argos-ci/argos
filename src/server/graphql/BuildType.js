@@ -3,6 +3,7 @@ import {
   GraphQLString,
   GraphQLID,
   GraphQLInt,
+  GraphQLEnumType,
 } from 'graphql'
 import Build from 'server/models/Build'
 import ScreenshotBucketType, {
@@ -13,12 +14,14 @@ import GraphQLDateTime from 'modules/graphQL/GraphQLDateTime'
 export const resolve = (source, args) => {
   return Build
     .query()
-    .where({
-      id: args.id,
-    })
-    // .eager('screenshotBucket')
-    .then(([build]) => {
-      return build
+    .findById(args.id)
+    .then(async (build) => {
+      const status = await build.getStatus()
+
+      return {
+        ...build,
+        status,
+      }
     })
 }
 
@@ -34,8 +37,9 @@ export const resolveList = (source, args) => {
     })
     .orderBy('createdAt', 'desc')
     .range(args.after, (args.after + args.first) - 1)
-    .then((result) => {
+    .then(async (result) => {
       const hasNextPage = args.after + args.first < result.total
+      const statuses = await Promise.all(result.results.map(build => build.getStatus()))
 
       return {
         pageInfo: {
@@ -43,7 +47,10 @@ export const resolveList = (source, args) => {
           hasNextPage,
           endCursor: hasNextPage ? args.after + args.first : result.total,
         },
-        edges: result.results,
+        edges: result.results.map((build, index) => {
+          build.status = statuses[index]
+          return build
+        }),
       }
     })
 }
@@ -82,6 +89,26 @@ const BuildType = new GraphQLObjectType({
         It is increameted after each build for a given repository.
       `,
       type: GraphQLInt,
+    },
+    status: {
+      description: 'Aggregate view on the build status',
+      type: new GraphQLEnumType({
+        name: 'status',
+        values: {
+          pending: {
+            value: 'pending',
+          },
+          progress: {
+            value: 'progress',
+          },
+          failure: {
+            value: 'failure',
+          },
+          success: {
+            value: 'success',
+          },
+        },
+      }),
     },
     createdAt: {
       type: GraphQLDateTime,

@@ -6,13 +6,18 @@ import Text from 'material-ui/Text'
 import Paper from 'material-ui/Paper'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
-import reduceJobStatus from 'modules/jobs/reduceJobStatus'
+import ItemStatus from 'review/modules/components/ItemStatus'
 
-const styleSheet = createStyleSheet('BuildSummary', () => {
+const styleSheet = createStyleSheet('BuildSummary', (theme) => {
   return {
     paper: {
       overflow: 'auto',
-      marginBottom: 8 * 2,
+      marginBottom: theme.spacing.unit * 2,
+    },
+    list: {
+      margin: 0,
+      listStyle: 'none',
+      padding: theme.spacing.unit * 2,
     },
   }
 })
@@ -38,6 +43,7 @@ export function BuildSummary(props) {
             const {
               build: {
                 createdAt,
+                status,
                 baseScreenshotBucket: {
                   commit: baseCommit,
                 },
@@ -49,25 +55,25 @@ export function BuildSummary(props) {
               screenshotDiffs,
             } = fetch.output.data
 
-            const jobStatus = reduceJobStatus(screenshotDiffs.map(({ jobStatus }) => jobStatus))
-
             const validationStatus = screenshotDiffs
               .every(screenshotDiff => screenshotDiff.validationStatus === 'accepted') ?
                 'accepted' :
                 'unknown'
 
             return (
-              <ul>
-                <li>{`Job status: ${jobStatus}`}</li>
-                <li>{`Validation status: ${validationStatus}`}</li>
-                <li>{`Commit: ${formatShortCommit(compareCommit)}`}</li>
-                <li>{`Branch: ${branch}`}</li>
-                <li>
-                  {`Compare: ${formatShortCommit(baseCommit)}...${
-                    formatShortCommit(compareCommit)}`}
-                </li>
-                <li>{`Date: ${new Intl.DateTimeFormat().format(new Date(createdAt))}`}</li>
-              </ul>
+              <ItemStatus status={status}>
+                <ul className={classes.list}>
+                  <li>{`Job status: ${status}`}</li>
+                  <li>{`Validation status: ${validationStatus}`}</li>
+                  <li>{`Commit: ${formatShortCommit(compareCommit)}`}</li>
+                  <li>{`Branch: ${branch}`}</li>
+                  <li>
+                    {`Compare: ${formatShortCommit(baseCommit)}...${
+                      formatShortCommit(compareCommit)}`}
+                  </li>
+                  <li>{`Date: ${new Intl.DateTimeFormat().format(new Date(createdAt))}`}</li>
+                </ul>
+              </ItemStatus>
             )
           }}
         </WatchTask>

@@ -13,6 +13,7 @@ describe('<BuildSummary />', () => {
         output: {
           data: {
             build: {
+              status: 'failure',
               createdAt: null,
               baseScreenshotBucket: {
                 commit: '',
@@ -28,41 +29,11 @@ describe('<BuildSummary />', () => {
       }
     })
 
-    it('should be complete when everything is done', () => {
-      fetch.output.data.screenshotDiffs = [{
-        jobStatus: 'complete',
-      }]
-
+    it('should be failure', () => {
       const wrapper = shallow(<BuildSummary classes={{}} fetch={fetch} />)
       const wrapperWatchTask = wrapper.find('WatchTask').shallow()
 
-      assert.strictEqual(wrapperWatchTask.contains('Job status: complete'), true)
-    })
-
-    it('should be progress when something has been done or is in progress', () => {
-      fetch.output.data.screenshotDiffs = [{
-        jobStatus: 'complete',
-      }, {
-        jobStatus: 'pending',
-      }]
-
-      const wrapper = shallow(<BuildSummary classes={{}} fetch={fetch} />)
-      const wrapperWatchTask = wrapper.find('WatchTask').shallow()
-
-      assert.strictEqual(wrapperWatchTask.contains('Job status: progress'), true)
-    })
-
-    it('should be pending when nothing started', () => {
-      fetch.output.data.screenshotDiffs = [{
-        jobStatus: 'pending',
-      }, {
-        jobStatus: 'pending',
-      }]
-
-      const wrapper = shallow(<BuildSummary classes={{}} fetch={fetch} />)
-      const wrapperWatchTask = wrapper.find('WatchTask').shallow()
-
-      assert.strictEqual(wrapperWatchTask.contains('Job status: pending'), true)
+      assert.strictEqual(wrapperWatchTask.contains('Job status: failure'), true)
     })
   })
 })
