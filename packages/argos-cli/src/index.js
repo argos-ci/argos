@@ -9,7 +9,7 @@ program
   .option('-T, --token <token>', 'Repository token')
   .action((directory, command) => {
     if (!command.token) {
-      console.log(chalk.bold.red('You must provide a repository token using --token.'))
+      console.log(chalk.bold.red('argos-ci: You must provide a repository token using --token.'))
       return
     }
 
@@ -20,13 +20,14 @@ program
           throw new UploadError(res.error.message)
         }
 
-        console.log(chalk.green(`Build created (id: ${res.id}).`))
+        console.log(chalk.green(`argos-ci: Build created (id: ${res.id}).`))
       })
       .catch((err) => {
+        console.error(chalk.bold.red('argos-ci: Sorry an error happened:\n'))
+
         if (err instanceof UploadError) {
           console.error(chalk.bold.red(err.message))
         } else {
-          console.error(chalk.bold.red('Sorry an error happened:\n'))
           console.error(chalk.bold.red(err.message))
           console.error(chalk.bold.red(err.stack))
         }

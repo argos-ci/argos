@@ -39,7 +39,7 @@ function errorChecking(routeHandler) {
   }
 }
 
-router.post('/builds', upload.array('screenshots[]', 50), errorChecking(
+router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
   async (req, res) => {
     if (!req.body.token) {
       throw new HttpError(401, 'Invalid token')
