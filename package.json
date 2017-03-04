@@ -57,6 +57,7 @@
     "babel-preset-stage-1": "^6.22.0",
     "browser-metrics": "^0.1.2",
     "chai": "^3.5.0",
+    "clear-require": "^2.0.0",
     "compression": "^1.6.2",
     "connect-redis": "^3.2.0",
     "convict": "^2.0.0",
@@ -109,7 +110,6 @@
   "devDependencies": {
     "argos-cli": "^0.0.2",
     "babel-eslint": "^7.1.1",
-    "clear-require": "^2.0.0",
     "eslint": "^3.17.0",
     "eslint-config-airbnb": "^14.1.0",
     "eslint-find-rules": "^1.14.3",
