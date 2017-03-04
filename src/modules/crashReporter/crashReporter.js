@@ -20,6 +20,9 @@ if (process.env.PLATFORM === 'browser') {
     DSN = 'https://261cb80891cb480fa452f7e18c0e57c0:dc050bb97a4d4692aa3e957c5c89d393@sentry.io/133418'
   } else {
     DSN = false
+    // Prevent logging of useless information
+    // https://github.com/getsentry/raven-node/blob/3f3d553cb02c7d69deeab4edaf928f739b17071f/docs/usage.rst#disable-console-alerts
+    raven.disableConsoleAlerts()
   }
   ravenConfig = {
     autoBreadcrumbs: true,

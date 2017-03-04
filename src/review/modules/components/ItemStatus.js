@@ -5,25 +5,21 @@ import { createStyleSheet } from 'jss-theme-reactor'
 import classNames from 'classnames'
 import withStyles from 'material-ui/styles/withStyles'
 
-function generateBackground(color) {
-  return `linear-gradient(to right, ${color} 0, ${color} 10px, #fff 10px, #fff 100%) no-repeat`
-}
-
 const styleSheet = createStyleSheet('ItemStatus', theme => ({
   success: {
-    background: generateBackground(theme.status.success),
+    borderLeft: `10px solid ${theme.status.success}`,
   },
   failure: {
-    background: generateBackground(theme.status.failure),
+    borderLeft: `10px solid ${theme.status.failure}`,
   },
   progress: {
-    background: generateBackground(theme.status.progress),
+    borderLeft: `10px solid ${theme.status.progress}`,
   },
   pending: {
-    background: generateBackground(theme.status.progress),
+    borderLeft: `10px solid ${theme.status.progress}`,
   },
   unknown: {
-    background: generateBackground(theme.status.unknown),
+    borderLeft: `10px solid ${theme.status.unknown}`,
   },
 }))
 

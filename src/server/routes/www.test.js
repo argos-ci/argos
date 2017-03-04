@@ -3,7 +3,7 @@ import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import www from './www'
 
-describe('GraphQL', () => {
+describe('GraphQL query', () => {
   useDatabase()
 
   describe('screenshotDiffs', () => {
@@ -109,6 +109,8 @@ describe('GraphQL', () => {
                 hasNextPage
               }
               edges {
+                status
+                number
                 createdAt
               }
             }
@@ -124,9 +126,13 @@ describe('GraphQL', () => {
             },
             edges: [
               {
+                number: 2,
+                status: 'success',
                 createdAt: '2017-02-05T17:14:28.167Z',
               },
               {
+                number: 1,
+                status: 'success',
                 createdAt: '2017-02-04T17:14:28.167Z',
               },
             ],

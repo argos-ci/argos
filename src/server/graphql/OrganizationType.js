@@ -9,12 +9,7 @@ import Organization from 'server/models/Organization'
 export const resolve = (source, args) => {
   return Organization
     .query()
-    .where({
-      id: args.id,
-    })
-    .then(([organization]) => {
-      return organization
-    })
+    .findById(args.id)
 }
 
 export const resolveList = () => {

@@ -9,12 +9,7 @@ import Screenshot from 'server/models/Screenshot'
 export const resolve = (source, args) => {
   return Screenshot
     .query()
-    .where({
-      id: args.id,
-    })
-    .then(([build]) => {
-      return build
-    })
+    .findById(args.id)
 }
 
 const ScreenshotType = new GraphQLObjectType({

@@ -40,7 +40,7 @@ const styleSheet = createStyleSheet('BuildScreenshotItem', (theme) => {
     },
     cardContent: {
       padding: `${theme.spacing.unit * 2}px ${theme.spacing.unit * 2}px 0 ${
-        (theme.spacing.unit * 2) + 10}px`,
+        theme.spacing.unit * 2}px`,
     },
     cardActions: {
       display: 'flex',

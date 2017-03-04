@@ -10,12 +10,7 @@ import Repository from 'server/models/Repository'
 export const resolve = (source, args) => {
   return Repository
     .query()
-    .where({
-      id: args.id,
-    })
-    .then(([organization]) => {
-      return organization
-    })
+    .findById(args.id)
 }
 
 export const resolveList = (source, args) => {

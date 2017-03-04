@@ -14,7 +14,7 @@ import Profile from 'review/routes/profile/Profile'
 import ProfileDetails from 'review/routes/profile/Details'
 import NotFound from 'review/routes/notFound/NotFound'
 import Repository from 'review/routes/repository/Repository'
-import RepositoryDetails from 'review/routes/repository/Details'
+import RepositoryDetails from 'review/routes/repository/RepositoryDetails'
 import Build from 'review/routes/build/Build'
 import Settings from 'review/routes/settings/Settings'
 
