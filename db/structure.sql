@@ -267,7 +267,7 @@ CREATE TABLE screenshot_diffs (
     "buildId" bigint NOT NULL,
     "baseScreenshotId" bigint NOT NULL,
     "compareScreenshotId" bigint NOT NULL,
-    score numeric(10,5) NOT NULL,
+    score numeric(10,5),
     "jobStatus" job_status,
     "validationStatus" character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
@@ -943,3 +943,4 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000548
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000549_builds_number.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222222346_add_jobStatus_to_builds.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184220_add_constraints.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184221_remove_constraints.js', 1, NOW());
