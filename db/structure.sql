@@ -30,6 +30,31 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 SET search_path = public, pg_catalog;
 
+--
+-- Name: job_status; Type: TYPE; Schema: public; Owner: argos
+--
+
+CREATE TYPE job_status AS ENUM (
+    'pending',
+    'progress',
+    'complete',
+    'error'
+);
+
+
+ALTER TYPE job_status OWNER TO argos;
+
+--
+-- Name: service_type; Type: TYPE; Schema: public; Owner: argos
+--
+
+CREATE TYPE service_type AS ENUM (
+    'github'
+);
+
+
+ALTER TYPE service_type OWNER TO argos;
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
@@ -46,7 +71,7 @@ CREATE TABLE builds (
     "updatedAt" timestamp with time zone NOT NULL,
     "repositoryId" bigint NOT NULL,
     number integer NOT NULL,
-    "jobStatus" character varying(255) NOT NULL
+    "jobStatus" job_status
 );
 
 
@@ -242,8 +267,8 @@ CREATE TABLE screenshot_diffs (
     "buildId" bigint NOT NULL,
     "baseScreenshotId" bigint NOT NULL,
     "compareScreenshotId" bigint NOT NULL,
-    score numeric(10,5),
-    "jobStatus" character varying(255) NOT NULL,
+    score numeric(10,5) NOT NULL,
+    "jobStatus" job_status,
     "validationStatus" character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
@@ -318,8 +343,8 @@ ALTER SEQUENCE screenshots_id_seq OWNED BY screenshots.id;
 CREATE TABLE synchronizations (
     id bigint NOT NULL,
     "userId" bigint NOT NULL,
-    "jobStatus" character varying(255) NOT NULL,
-    type character varying(255) NOT NULL,
+    "jobStatus" job_status,
+    type service_type,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL
 );
@@ -798,6 +823,14 @@ ALTER TABLE ONLY builds
 
 
 --
+-- Name: repositories repositories_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+--
+
+ALTER TABLE ONLY repositories
+    ADD CONSTRAINT repositories_organizationid_foreign FOREIGN KEY ("organizationId") REFERENCES organizations(id);
+
+
+--
 -- Name: repositories repositories_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
 --
 
@@ -909,3 +942,4 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212102433
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000548_users_name_login.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000549_builds_number.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222222346_add_jobStatus_to_builds.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184220_add_constraints.js', 1, NOW());
