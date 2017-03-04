@@ -67,6 +67,7 @@ factory.define('ScreenshotDiff', ScreenshotDiff, {
   compareScreenshotId: factory.assoc('Screenshot', 'id'),
   jobStatus: 'complete',
   validationStatus: 'accepted',
+  score: 0,
 })
 
 factory.define('Screenshot', Screenshot, {
