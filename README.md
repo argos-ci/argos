@@ -75,6 +75,15 @@ yarn dev # run server
 yarn dev:review # run webpack
 ```
 
+### Jobs
+
+#### Recover pending or error jobs
+
+1. Run console on heroku: `heroku run yarn run console`
+2. Get all concerned objects (ex: `const builds = Build.query().whereNot({ jobStatus: 'complete' })`)
+3. Add a job for these objects (ex: `builds.then(builds => builds.forEach(build => buildJob.push(build.id)))`)
+4. Verify that jobs are correctly processed: `Build.query().whereNot({ jobStatus: 'complete' })`
+
 ### Migrations
 
 #### Create a migration
