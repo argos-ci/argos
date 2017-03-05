@@ -47,6 +47,11 @@ const config = convict({
       default: 'keyboard cat',
       env: 'SERVER_SESSION_SECRET',
     },
+    secure: {
+      doc: 'Specify if the server is using https or not.',
+      format: Boolean,
+      default: false,
+    },
   },
   client: {
     port: {

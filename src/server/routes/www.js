@@ -36,7 +36,9 @@ router.use(session({
   secret: config.get('server.sessionSecret'),
   store: new RedisStore({ client: redis.connect() }),
   cookie: {
-    secure: false, // To activate once we do HTTPS.
+    secure: config.get('server.secure'),
+    httpOnly: true,
+    maxAge: 2592000000, // 30 days
   },
   // Touch is supported by the Redis store.
   // No need to resave, we can avoid concurrency issues.
