@@ -1,18 +1,15 @@
-import BaseModel from 'server/models/BaseModel'
+import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 
 export default class Repository extends BaseModel {
   static tableName = 'repositories';
 
-  static jsonSchema = {
-    ...BaseModel.jsonSchema,
+  static jsonSchema = mergeSchemas(BaseModel.jsonSchema, {
     required: [
-      ...BaseModel.jsonSchema.required,
       'githubId',
       'name',
       'enabled',
     ],
     properties: {
-      ...BaseModel.jsonSchema.properties,
       githubId: { type: 'number' },
       name: { type: 'string' },
       enabled: { type: 'boolean' },
@@ -20,7 +17,7 @@ export default class Repository extends BaseModel {
       organizationId: { type: ['string', null] },
       userId: { type: ['string', null] },
     },
-  };
+  });
 
   static relationMappings = {
     organization: {

@@ -1,24 +1,21 @@
-import BaseModel from 'server/models/BaseModel'
+import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 
 export default class ScreenshotBucket extends BaseModel {
   static tableName = 'screenshot_buckets';
 
-  static jsonSchema = {
-    ...BaseModel.jsonSchema,
+  static jsonSchema = mergeSchemas(BaseModel.jsonSchema, {
     required: [
-      ...BaseModel.jsonSchema.required,
       'name',
       'commit',
       'branch',
     ],
     properties: {
-      ...BaseModel.jsonSchema.properties,
       name: { type: 'string' },
       commit: { type: 'string' },
       branch: { type: 'string' },
       repositoryId: { type: 'string' },
     },
-  };
+  });
 
   static relationMappings = {
     screenshots: {

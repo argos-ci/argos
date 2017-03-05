@@ -1,6 +1,7 @@
 import { factory } from 'factory-girl'
 import ObjectionAdapter from 'server/test/ObjectionAdapter'
 import Build from 'server/models/Build'
+import BuildNotification from 'server/models/BuildNotification'
 import Organization from 'server/models/Organization'
 import Repository from 'server/models/Repository'
 import Screenshot from 'server/models/Screenshot'
@@ -35,6 +36,12 @@ factory.define('Build', Build, {
 
     return model
   },
+})
+
+factory.define('BuildNotification', BuildNotification, {
+  buildId: factory.assoc('Build', 'id'),
+  jobStatus: 'complete',
+  type: 'no-diff-detected',
 })
 
 factory.define('User', User, {

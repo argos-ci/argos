@@ -2,8 +2,8 @@ import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import createBuildDiffs from './createBuildDiffs'
 
-jest.mock('modules/build/notifyStatus')
-const { notifyProgress } = require('modules/build/notifyStatus')
+jest.mock('modules/build/notifications')
+const { pushBuildNotification } = require('modules/build/notifications')
 
 describe('createBuildDiffs', () => {
   useDatabase()
@@ -49,7 +49,10 @@ describe('createBuildDiffs', () => {
 
   it('should return the build', async () => {
     const diffs = await createBuildDiffs(build)
-    expect(notifyProgress).toBeCalledWith(build.id)
+    expect(pushBuildNotification).toBeCalledWith({
+      buildId: build.id,
+      type: 'progress',
+    })
     expect(diffs[0].buildId).toBe(build.id)
     expect(diffs[0].baseScreenshotId).toBe(baseScreenshot.id)
     expect(diffs[0].compareScreenshotId).toBe(compareScreenshot.id)

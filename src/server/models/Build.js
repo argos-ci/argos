@@ -1,5 +1,6 @@
 import { ValidationError } from 'objection'
-import BaseModel from 'server/models/BaseModel'
+import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
+import jobModelSchema from 'server/models/schemas/jobModelSchema'
 import reduceJobStatus from 'modules/jobs/reduceJobStatus'
 import User from './User'
 import ScreenshotDiff from './ScreenshotDiff'
@@ -9,31 +10,22 @@ const NEXT_NUMBER = Symbol('nextNumber')
 export default class Build extends BaseModel {
   static tableName = 'builds';
 
-  static jsonSchema = {
-    ...BaseModel.jsonSchema,
-    required: [
-      ...BaseModel.jsonSchema.required,
-      'compareScreenshotBucketId',
-      'repositoryId',
-      'jobStatus',
-    ],
-    properties: {
-      ...BaseModel.jsonSchema.properties,
-      jobStatus: {
-        type: 'string',
-        enum: [
-          'pending',
-          'progress',
-          'complete',
-          'error',
-        ],
+  static jsonSchema = mergeSchemas(
+    BaseModel.jsonSchema,
+    jobModelSchema,
+    {
+      required: [
+        'compareScreenshotBucketId',
+        'repositoryId',
+      ],
+      properties: {
+        baseScreenshotBucketId: { types: ['string', null] },
+        compareScreenshotBucketId: { type: 'string' },
+        repositoryId: { type: 'string' },
+        number: { type: 'integer' },
       },
-      baseScreenshotBucketId: { types: ['string', null] },
-      compareScreenshotBucketId: { type: 'string' },
-      repositoryId: { type: 'string' },
-      number: { type: 'integer' },
     },
-  };
+  )
 
   static relationMappings = {
     baseScreenshotBucket: {

@@ -5,7 +5,7 @@ import download from 'modules/s3/download'
 import upload from 'modules/s3/upload'
 import imageDiff from 'modules/imageDiff/imageDiff'
 import Build from 'server/models/Build'
-import { notifySuccess, notifyFailure } from 'modules/build/notifyStatus'
+import { pushBuildNotification } from 'modules/build/notifications'
 
 function createTmpDirectory() {
   return new Promise((resolve, reject) => {
@@ -78,9 +78,15 @@ async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
   const buildStatus = await Build.getStatus(screenshotDiff.buildId)
 
   if (buildStatus === 'success') {
-    await notifySuccess(screenshotDiff.buildId)
+    await pushBuildNotification({
+      buildId: screenshotDiff.buildId,
+      type: 'no-diff-detected',
+    })
   } else if (buildStatus === 'failure') {
-    await notifyFailure(screenshotDiff.buildId)
+    await pushBuildNotification({
+      buildId: screenshotDiff.buildId,
+      type: 'diff-detected',
+    })
   }
 }
 

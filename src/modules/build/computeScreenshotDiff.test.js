@@ -3,8 +3,8 @@ import { useDatabase, setTestsTimeout } from 'server/test/utils'
 import factory from 'server/test/factory'
 import computeScreenshotDiff from './computeScreenshotDiff'
 
-jest.mock('modules/build/notifyStatus')
-const { notifyFailure, notifySuccess } = require('modules/build/notifyStatus')
+jest.mock('modules/build/notifications')
+const { pushBuildNotification } = require('modules/build/notifications')
 
 describe('computeScreenshotDiff', () => {
   useDatabase()
@@ -61,7 +61,7 @@ describe('computeScreenshotDiff', () => {
       })
     })
 
-    it('should update result and notify failure', async () => {
+    it('should update result and notify "diff-detected"', async () => {
       await computeScreenshotDiff(screenshotDiff, {
         s3,
         bucket: 'argos-screenshots-sandbox',
@@ -70,7 +70,10 @@ describe('computeScreenshotDiff', () => {
       await screenshotDiff.reload()
       expect(screenshotDiff.score > 0).toBe(true)
       expect(typeof screenshotDiff.s3Id === 'string').toBe(true)
-      expect(notifyFailure).toBeCalledWith(build.id)
+      expect(pushBuildNotification).toBeCalledWith({
+        buildId: build.id,
+        type: 'diff-detected',
+      })
     })
   })
 
@@ -95,7 +98,7 @@ describe('computeScreenshotDiff', () => {
       })
     })
 
-    it('should not update result and notify success', async () => {
+    it('should not update result and notify "no-diff-detected"', async () => {
       await computeScreenshotDiff(screenshotDiff, {
         s3,
         bucket: 'argos-screenshots-sandbox',
@@ -104,7 +107,10 @@ describe('computeScreenshotDiff', () => {
       await screenshotDiff.reload()
       expect(screenshotDiff.score).toBe(0)
       expect(screenshotDiff.s3Id).toBe(null)
-      expect(notifySuccess).toBeCalledWith(build.id)
+      expect(pushBuildNotification).toBeCalledWith({
+        buildId: build.id,
+        type: 'no-diff-detected',
+      })
     })
   })
 })

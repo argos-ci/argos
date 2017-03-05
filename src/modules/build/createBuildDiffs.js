@@ -1,9 +1,12 @@
 import { transaction } from 'objection'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
-import { notifyProgress } from 'modules/build/notifyStatus'
+import { pushBuildNotification } from 'modules/build/notifications'
 
 async function createBuildDiffs(build) {
-  await notifyProgress(build.id)
+  await pushBuildNotification({
+    buildId: build.id,
+    type: 'progress',
+  })
 
   build = await build.$query().eager(
     '[baseScreenshotBucket.screenshots, compareScreenshotBucket.screenshots]',

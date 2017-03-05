@@ -1,36 +1,34 @@
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 import jobModelSchema from 'server/models/schemas/jobModelSchema'
 
-export default class Synchronization extends BaseModel {
-  static tableName = 'synchronizations';
+export default class BuildNotification extends BaseModel {
+  static tableName = 'build_notifications';
 
   static jsonSchema = mergeSchemas(
     BaseModel.jsonSchema,
     jobModelSchema,
     {
       required: [
-        'userId',
         'type',
+        'buildId',
       ],
       properties: {
-        userId: { type: 'string' },
         type: {
           type: 'string',
-          enum: [
-            'github',
-          ],
+          enum: ['progress', 'no-diff-detected', 'diff-detected'],
         },
+        buildId: { type: 'string' },
       },
     },
   );
 
   static relationMappings = {
-    user: {
+    build: {
       relation: BaseModel.BelongsToOneRelation,
-      modelClass: 'User',
+      modelClass: 'Build',
       join: {
-        from: 'synchronizations.userId',
-        to: 'users.id',
+        from: 'build_notifications.buildId',
+        to: 'builds.id',
       },
     },
   };
