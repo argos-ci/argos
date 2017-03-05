@@ -1,5 +1,23 @@
 import { Model } from 'objection'
 
+export function mergeSchemas(...schemas) {
+  return schemas.reduce((mergedSchema, schema) => ({
+    ...mergedSchema,
+    ...schema,
+    required: [
+      ...mergedSchema.required,
+      ...schema.required,
+    ],
+    properties: {
+      ...mergedSchema.properties,
+      ...schema.properties,
+    },
+  }), {
+    required: [],
+    properties: {},
+  })
+}
+
 export default class BaseModel extends Model {
   // Uses http://json-schema.org/latest/json-schema-validation.html
   static jsonSchema = {

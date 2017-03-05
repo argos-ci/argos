@@ -1,48 +1,41 @@
 import { ValidationError } from 'objection'
-import BaseModel from 'server/models/BaseModel'
+import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
+import jobModelSchema from 'server/models/schemas/jobModelSchema'
 
 export default class ScreenshotDiff extends BaseModel {
   static tableName = 'screenshot_diffs';
-  static jsonSchema = {
-    ...BaseModel.jsonSchema,
-    required: [
-      ...BaseModel.jsonSchema.required,
-      'buildId',
-      'baseScreenshotId',
-      'compareScreenshotId',
-      'jobStatus',
-      'validationStatus',
-    ],
-    properties: {
-      ...BaseModel.jsonSchema.properties,
-      buildId: { type: 'string' },
-      baseScreenshotId: { type: 'string' },
-      compareScreenshotId: { type: 'string' },
-      s3Id: { type: ['string', null] },
-      score: {
-        type: 'number',
-        minimum: 0,
-        maximum: 1,
-      },
-      jobStatus: {
-        type: 'string',
-        enum: [
-          'pending',
-          'progress',
-          'complete',
-          'error',
-        ],
-      },
-      validationStatus: {
-        type: 'string',
-        enum: [
-          'unknown',
-          'accepted',
-          'rejected',
-        ],
+
+  static jsonSchema = mergeSchemas(
+    BaseModel.jsonSchema,
+    jobModelSchema,
+    {
+      required: [
+        'buildId',
+        'baseScreenshotId',
+        'compareScreenshotId',
+        'validationStatus',
+      ],
+      properties: {
+        buildId: { type: 'string' },
+        baseScreenshotId: { type: 'string' },
+        compareScreenshotId: { type: 'string' },
+        s3Id: { type: ['string', null] },
+        score: {
+          type: 'number',
+          minimum: 0,
+          maximum: 1,
+        },
+        validationStatus: {
+          type: 'string',
+          enum: [
+            'unknown',
+            'accepted',
+            'rejected',
+          ],
+        },
       },
     },
-  };
+  );
 
   static relationMappings = {
     build: {

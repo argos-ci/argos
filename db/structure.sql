@@ -31,6 +31,19 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 SET search_path = public, pg_catalog;
 
 --
+-- Name: build_notifications_type; Type: TYPE; Schema: public; Owner: argos
+--
+
+CREATE TYPE build_notifications_type AS ENUM (
+    'progress',
+    'no-diff-detected',
+    'diff-detected'
+);
+
+
+ALTER TYPE build_notifications_type OWNER TO argos;
+
+--
 -- Name: job_status; Type: TYPE; Schema: public; Owner: argos
 --
 
@@ -58,6 +71,43 @@ ALTER TYPE service_type OWNER TO argos;
 SET default_tablespace = '';
 
 SET default_with_oids = false;
+
+--
+-- Name: build_notifications; Type: TABLE; Schema: public; Owner: argos
+--
+
+CREATE TABLE build_notifications (
+    id bigint NOT NULL,
+    type build_notifications_type NOT NULL,
+    "jobStatus" job_status NOT NULL,
+    "buildId" bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL
+);
+
+
+ALTER TABLE build_notifications OWNER TO argos;
+
+--
+-- Name: build_notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+--
+
+CREATE SEQUENCE build_notifications_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE build_notifications_id_seq OWNER TO argos;
+
+--
+-- Name: build_notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+--
+
+ALTER SEQUENCE build_notifications_id_seq OWNED BY build_notifications.id;
+
 
 --
 -- Name: builds; Type: TABLE; Schema: public; Owner: argos
@@ -485,6 +535,13 @@ ALTER SEQUENCE users_id_seq OWNED BY users.id;
 
 
 --
+-- Name: build_notifications id; Type: DEFAULT; Schema: public; Owner: argos
+--
+
+ALTER TABLE ONLY build_notifications ALTER COLUMN id SET DEFAULT nextval('build_notifications_id_seq'::regclass);
+
+
+--
 -- Name: builds id; Type: DEFAULT; Schema: public; Owner: argos
 --
 
@@ -559,6 +616,14 @@ ALTER TABLE ONLY user_repository_rights ALTER COLUMN id SET DEFAULT nextval('use
 --
 
 ALTER TABLE ONLY users ALTER COLUMN id SET DEFAULT nextval('users_id_seq'::regclass);
+
+
+--
+-- Name: build_notifications build_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+--
+
+ALTER TABLE ONLY build_notifications
+    ADD CONSTRAINT build_notifications_pkey PRIMARY KEY (id);
 
 
 --
@@ -663,6 +728,13 @@ ALTER TABLE ONLY user_repository_rights
 
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: build_notifications_buildid_index; Type: INDEX; Schema: public; Owner: argos
+--
+
+CREATE INDEX build_notifications_buildid_index ON build_notifications USING btree ("buildId");
 
 
 --
@@ -796,6 +868,14 @@ CREATE INDEX user_repository_rights_userid_index ON user_repository_rights USING
 --
 
 CREATE INDEX users_githubid_index ON users USING btree ("githubId");
+
+
+--
+-- Name: build_notifications build_notifications_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+--
+
+ALTER TABLE ONLY build_notifications
+    ADD CONSTRAINT build_notifications_buildid_foreign FOREIGN KEY ("buildId") REFERENCES builds(id);
 
 
 --
@@ -944,3 +1024,4 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000549
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222222346_add_jobStatus_to_builds.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184220_add_constraints.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184221_remove_constraints.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170305095107_notifications.js', 1, NOW());
