@@ -29,9 +29,6 @@ router.use('/static', express.static(path.join(__dirname, '../../../server/stati
   index: false,
 }))
 
-// GraphQL
-router.use('/graphql', graphqlMiddleware())
-
 router.use(session({
   secret: config.get('server.sessionSecret'),
   store: new RedisStore({ client: redis.connect() }),

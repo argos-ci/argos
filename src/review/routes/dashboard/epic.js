@@ -7,9 +7,9 @@ const dashboardEpic = action$ => (
     .watchTask(actionTypes.DASHBOARD_FETCH_TASK, () => (
       graphQLClient.fetch({
         query: `{
-          organizations {
-            id
+          owners {
             name
+            type
           }
         }`,
       })

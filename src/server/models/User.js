@@ -24,10 +24,22 @@ export default class User extends BaseModel {
       join: {
         from: 'users.id',
         through: {
-          from: 'user_organizations.userId',
-          to: 'user_organizations.organizationId',
+          from: 'user_organization_rights.userId',
+          to: 'user_organization_rights.organizationId',
         },
         to: 'organizations.id',
+      },
+    },
+    repositories: {
+      relation: BaseModel.ManyToManyRelation,
+      modelClass: 'Repository',
+      join: {
+        from: 'users.id',
+        through: {
+          from: 'user_repository_rights.userId',
+          to: 'user_repository_rights.repositoryId',
+        },
+        to: 'repositories.id',
       },
     },
   }

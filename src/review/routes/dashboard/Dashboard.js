@@ -5,7 +5,9 @@ import recompact from 'modules/recompact'
 import Text from 'material-ui/Text'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
+import Avatar from 'material-ui/Avatar'
 import Paper from 'material-ui/Paper'
+import Layout from 'material-ui/Layout'
 import {
   List,
   ListItem,
@@ -33,11 +35,9 @@ function Dashboard(props) {
           <Paper>
             <WatchTask task={fetch}>
               {() => {
-                const {
-                  organizations,
-                } = fetch.output.data
+                const { owners } = fetch.output.data
 
-                if (organizations.length === 0) {
+                if (owners.length === 0) {
                   return (
                     <WatchTaskContainer>
                       <Text>
@@ -49,14 +49,21 @@ function Dashboard(props) {
 
                 return (
                   <List>
-                    {organizations.map(organization => (
+                    {owners.map(({ name }) => (
                       <ListItem
-                        key={organization.id}
+                        key={name}
                         button
                         component={LinkRouter}
-                        to={`/${organization.name}`}
+                        to={`/${name}`}
                       >
-                        <ListItemText primary={organization.name} />
+                        <Layout container align="center">
+                          <Layout item>
+                            <Avatar src={`https://github.com/${name}.png?size=200`} />
+                          </Layout>
+                          <Layout item>
+                            <ListItemText primary={name} />
+                          </Layout>
+                        </Layout>
                       </ListItem>
                     ))}
                   </List>

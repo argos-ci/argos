@@ -68,6 +68,11 @@ factory.define('UserRepositoryRight', UserRepositoryRight, {
   repositoryId: factory.assoc('Repository', 'id'),
 })
 
+factory.define('UserOrganizationRight', UserRepositoryRight, {
+  organizationId: factory.assoc('Organization', 'id'),
+  repositoryId: factory.assoc('Repository', 'id'),
+})
+
 factory.define('ScreenshotDiff', ScreenshotDiff, {
   buildId: factory.assoc('Build', 'id'),
   baseScreenshotId: factory.assoc('Screenshot', 'id'),
