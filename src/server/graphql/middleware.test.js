@@ -1,14 +1,16 @@
 import request from 'supertest'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
-import graphqlMiddleware from 'server/graphql/middleware'
+import graphqlMiddleware from './middleware'
 
-describe('GraphQL query', () => {
+describe('GraphQL', () => {
   useDatabase()
 
   describe('screenshotDiffs', () => {
-    it('should sort the diffs by score', async () => {
-      const build = await factory.create('Build')
+    let build
+
+    beforeEach(async () => {
+      build = await factory.create('Build')
       const screenshot1 = await factory.create('Screenshot', {
         name: 'email_deleted',
       })
@@ -27,7 +29,9 @@ describe('GraphQL query', () => {
         compareScreenshotId: screenshot2.id,
         score: 0.3,
       })
+    })
 
+    it('should sort the diffs by score', async () => {
       await request(graphqlMiddleware())
         .post('/')
         .send({
@@ -63,6 +67,46 @@ describe('GraphQL query', () => {
                 name: 'email_deleted',
               },
               score: 0,
+            },
+          ])
+        })
+        .expect(200)
+    })
+
+    it('should mutate all the validationStatus', async () => {
+      await request(graphqlMiddleware())
+        .post('/')
+        .send({
+          query: `
+            mutation {
+              setValidationStatus(buildId: ${build.id}, validationStatus: rejected)
+            }
+          `,
+        })
+        .expect((res) => {
+          expect(res.body.data).toEqual({
+            setValidationStatus: 'rejected',
+          })
+        })
+        .expect(200)
+
+      await request(graphqlMiddleware())
+        .post('/')
+        .send({
+          query: `{
+            screenshotDiffs(buildId: ${build.id}) {
+              validationStatus
+            }
+          }`,
+        })
+        .expect((res) => {
+          const screenshotDiffs = res.body.data.screenshotDiffs
+          expect(screenshotDiffs).toEqual([
+            {
+              validationStatus: 'rejected',
+            },
+            {
+              validationStatus: 'rejected',
             },
           ])
         })

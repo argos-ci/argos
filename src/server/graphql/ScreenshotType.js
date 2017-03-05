@@ -3,10 +3,10 @@ import {
   GraphQLID,
   GraphQLString,
 } from 'graphql'
-import GraphQLDateTime from 'modules/graphQL/GraphQLDateTime'
+import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 import Screenshot from 'server/models/Screenshot'
 
-export const resolve = (source, args) => {
+export function resolve(source, args) {
   return Screenshot
     .query()
     .findById(args.id)
@@ -28,10 +28,10 @@ const ScreenshotType = new GraphQLObjectType({
       type: GraphQLString,
     },
     createdAt: {
-      type: GraphQLDateTime,
+      type: graphQLDateTime,
     },
     updatedAt: {
-      type: GraphQLDateTime,
+      type: graphQLDateTime,
     },
   },
 })

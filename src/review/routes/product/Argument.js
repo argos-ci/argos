@@ -9,7 +9,6 @@ import LayoutBody from 'modules/components/LayoutBody'
 
 const styleSheet = createStyleSheet('ProductArgument', () => ({
   screen: {
-    overflow: 'auto',
     paddingTop: 8 * 2,
     paddingBottom: 8 * 2,
   },
