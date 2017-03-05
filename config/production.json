@@ -7,6 +7,7 @@
     "clientId": "8460535e1d4c40dfdf05",
   },
   "server": {
-    "url": "http://www.argos-ci.com"
+    "url": "https://www.argos-ci.com",
+    "secure": true
   }
 }
