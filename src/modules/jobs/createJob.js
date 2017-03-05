@@ -4,7 +4,7 @@ import crashReporter from 'modules/crashReporter/crashReporter'
 const serializeMessage = payload => new Buffer(JSON.stringify(payload))
 const parseMessage = (message) => {
   const payload = JSON.parse(message.toString())
-  if (!Array.isArray(payload.args) || !Number.isInteger(payload.attempts)) {
+  if (!payload || !Array.isArray(payload.args) || !Number.isInteger(payload.attempts)) {
     throw new Error('Invalid payload')
   }
   return payload
