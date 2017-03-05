@@ -10,10 +10,6 @@ const config = {
       user: 'argos',
       database: 'development',
     },
-    pool: {
-      min: 2,
-      max: 10,
-    },
     seeds: {
       directory: './seeds',
     },
@@ -23,10 +19,6 @@ const config = {
     connection: {
       user: 'argos',
       database: 'test',
-    },
-    pool: {
-      min: 2,
-      max: 10,
     },
   },
   production: {
