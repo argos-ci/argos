@@ -16,7 +16,7 @@ const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
   async function getModels() {
     const models = await fs.readdir(MODEL_DIRECTORY)
     return models.reduce((models, model) => {
-      if (model.match(/\.test\.js$/)) {
+      if (model.match(/\.test\.js$/) || !model.match(/\.js$/)) {
         return models
       }
 
@@ -37,15 +37,15 @@ const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
     }, {})
   }
 
-  const reload = async (log = true) => {
-    if (log) console.log('Reloading...') // eslint-disable-line no-console
+  const reload = async () => {
+    console.log('Loading...') // eslint-disable-line no-console
     clearRequire.match(new RegExp(MODEL_DIRECTORY))
     const models = await getModels()
     const jobs = await getJobs()
     Object.assign(r.context, models, jobs, { reload })
-    if (log) console.log('Reloaded!') // eslint-disable-line no-console
+    console.log('Loaded!') // eslint-disable-line no-console
   }
 
-  await reload(false)
+  await reload()
   promirepl(r)
 })().catch(err => setTimeout(() => { throw err }))
