@@ -55,7 +55,7 @@ function Dashboard(props) {
                         component={LinkRouter}
                         to={`/${name}`}
                       >
-                        <Avatar src={`https://github.com/${name}.png?size=200`} />
+                        <Avatar src={`https://github.com/${name}.png?size=80`} />
                         <ListItemText primary={name} />
                       </ListItem>
                     ))}
