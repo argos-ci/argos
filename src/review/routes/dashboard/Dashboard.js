@@ -7,7 +7,6 @@ import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import Avatar from 'material-ui/Avatar'
 import Paper from 'material-ui/Paper'
-import Layout from 'material-ui/Layout'
 import {
   List,
   ListItem,
@@ -56,14 +55,8 @@ function Dashboard(props) {
                         component={LinkRouter}
                         to={`/${name}`}
                       >
-                        <Layout container align="center">
-                          <Layout item>
-                            <Avatar src={`https://github.com/${name}.png?size=200`} />
-                          </Layout>
-                          <Layout item>
-                            <ListItemText primary={name} />
-                          </Layout>
-                        </Layout>
+                        <Avatar src={`https://github.com/${name}.png?size=200`} />
+                        <ListItemText primary={name} />
                       </ListItem>
                     ))}
                   </List>
