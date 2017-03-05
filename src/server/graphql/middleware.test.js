@@ -3,14 +3,26 @@ import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import graphqlMiddleware from './middleware'
 
+jest.mock('modules/build/notifications')
+const { pushBuildNotification } = require('modules/build/notifications')
+
 describe('GraphQL', () => {
   useDatabase()
 
   describe('screenshotDiffs', () => {
     let build
+    let user
 
     beforeEach(async () => {
-      build = await factory.create('Build')
+      user = await factory.create('User')
+      const repository = await factory.create('Repository')
+      await factory.create('UserRepositoryRight', {
+        userId: user.id,
+        repositoryId: repository.id,
+      })
+      build = await factory.create('Build', {
+        repositoryId: repository.id,
+      })
       const screenshot1 = await factory.create('Screenshot', {
         name: 'email_deleted',
       })
@@ -73,44 +85,73 @@ describe('GraphQL', () => {
         .expect(200)
     })
 
-    it('should mutate all the validationStatus', async () => {
-      await request(graphqlMiddleware())
-        .post('/')
-        .send({
-          query: `
-            mutation {
-              setValidationStatus(buildId: ${build.id}, validationStatus: rejected)
-            }
-          `,
-        })
-        .expect((res) => {
-          expect(res.body.data).toEqual({
-            setValidationStatus: 'rejected',
+    describe('validationStatus', () => {
+      it('should mutate all the validationStatus', async () => {
+        await request(graphqlMiddleware({
+          context: { user },
+        }))
+          .post('/')
+          .send({
+            query: `
+              mutation {
+                setValidationStatus(buildId: "${build.id}", validationStatus: rejected)
+              }
+            `,
           })
-        })
-        .expect(200)
+          .expect((res) => {
+            expect(res.body.data).toEqual({
+              setValidationStatus: 'rejected',
+            })
+          })
+          .expect(200)
 
-      await request(graphqlMiddleware())
-        .post('/')
-        .send({
-          query: `{
-            screenshotDiffs(buildId: ${build.id}) {
-              validationStatus
-            }
-          }`,
+        expect(pushBuildNotification).toBeCalledWith({
+          buildId: build.id,
+          type: 'diff-rejected',
         })
-        .expect((res) => {
-          const screenshotDiffs = res.body.data.screenshotDiffs
-          expect(screenshotDiffs).toEqual([
-            {
-              validationStatus: 'rejected',
-            },
-            {
-              validationStatus: 'rejected',
-            },
-          ])
-        })
-        .expect(200)
+
+        await request(graphqlMiddleware())
+          .post('/')
+          .send({
+            query: `{
+              screenshotDiffs(buildId: ${build.id}) {
+                validationStatus
+              }
+            }`,
+          })
+          .expect((res) => {
+            const screenshotDiffs = res.body.data.screenshotDiffs
+            expect(screenshotDiffs).toEqual([
+              {
+                validationStatus: 'rejected',
+              },
+              {
+                validationStatus: 'rejected',
+              },
+            ])
+          })
+          .expect(200)
+      })
+
+      it('should not mutate when the user is unauthorized', async () => {
+        const user2 = await factory.create('User')
+
+        await request(graphqlMiddleware({
+          context: { user: user2 },
+        }))
+          .post('/')
+          .send({
+            query: `
+              mutation {
+                setValidationStatus(buildId: "${build.id}", validationStatus: rejected)
+              }
+            `,
+          })
+          .expect((res) => {
+            expect(res.body.errors[0].message).toBe('Invalid user authorization')
+          })
+          .expect(200)
+      })
     })
   })
 

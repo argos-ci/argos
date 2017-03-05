@@ -37,7 +37,9 @@ SET search_path = public, pg_catalog;
 CREATE TYPE build_notifications_type AS ENUM (
     'progress',
     'no-diff-detected',
-    'diff-detected'
+    'diff-detected',
+    'diff-accepted',
+    'diff-rejected'
 );
 
 
@@ -1025,3 +1027,4 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222222346
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184220_add_constraints.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184221_remove_constraints.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170305095107_notifications.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170306205356_new-notifications.js', 1, NOW());

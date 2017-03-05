@@ -6,6 +6,8 @@ import {
   GraphQLEnumType,
 } from 'graphql'
 import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
+import { pushBuildNotification } from 'modules/build/notifications'
+import Build from 'server/models/Build'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import ScreenshotType, {
   resolve as resolveScreenshot,
@@ -36,16 +38,40 @@ export const validationStatusType = new GraphQLEnumType({
   },
 })
 
-export function resolveSetValidationStatus(source, args) {
-  return ScreenshotDiff
+export async function resolveSetValidationStatus(source, args, context) {
+  const {
+    buildId,
+    validationStatus,
+  } = args
+
+  const user = await Build.getUsers(buildId).findById(context.user.id)
+
+  if (!user) {
+    throw new Error('Invalid user authorization')
+  }
+
+  await ScreenshotDiff
     .query()
     .where({
-      buildId: args.buildId,
+      buildId,
     })
     .patch({
-      validationStatus: args.validationStatus,
+      validationStatus,
     })
-    .then(() => args.validationStatus)
+
+  if (validationStatus === 'accepted') {
+    await pushBuildNotification({
+      buildId,
+      type: 'diff-accepted',
+    })
+  } else if (validationStatus === 'rejected') {
+    await pushBuildNotification({
+      buildId,
+      type: 'diff-rejected',
+    })
+  }
+
+  return validationStatus
 }
 
 const ScreenshotDiffType = new GraphQLObjectType({

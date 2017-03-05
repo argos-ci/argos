@@ -16,9 +16,6 @@ if (config.get('env') !== 'production') {
 export default ({ context } = {}) => {
   return graphqlHTTP({
     schema,
-    rootValue: {
-      hello: () => 'Hello world!',
-    },
     pretty: config.get('env') !== 'production',
     graphiql: config.get('env') !== 'production',
     formatError: bestFormatError,

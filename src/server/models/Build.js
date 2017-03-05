@@ -1,9 +1,9 @@
 import { ValidationError } from 'objection'
+import reduceJobStatus from 'modules/jobs/reduceJobStatus'
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 import jobModelSchema from 'server/models/schemas/jobModelSchema'
-import reduceJobStatus from 'modules/jobs/reduceJobStatus'
-import User from './User'
-import ScreenshotDiff from './ScreenshotDiff'
+import User from 'server/models/User'
+import ScreenshotDiff from 'server/models/ScreenshotDiff'
 
 const NEXT_NUMBER = Symbol('nextNumber')
 
@@ -96,7 +96,7 @@ export default class Build extends BaseModel {
     return jobStatus
   }
 
-  static async getUsers(buildId) {
+  static getUsers(buildId) {
     return User.query()
       .select('users.*')
       .join('user_repository_rights', 'users.id', '=', 'user_repository_rights.userId')
@@ -105,11 +105,11 @@ export default class Build extends BaseModel {
       .where('builds.id', buildId)
   }
 
-  async getUsers() {
+  getUsers() {
     return this.constructor.getUsers(this.id)
   }
 
-  async getStatus() {
+  getStatus() {
     return this.constructor.getStatus(this.id)
   }
 }

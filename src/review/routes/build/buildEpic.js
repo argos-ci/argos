@@ -55,7 +55,7 @@ const validationEpic = action$ => (
         query: `
           mutation {
             setValidationStatus(
-              buildId: ${action.payload.buildId},
+              buildId: "${action.payload.buildId}",
               validationStatus: ${action.payload.validationStatus}
             )
           }

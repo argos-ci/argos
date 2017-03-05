@@ -93,7 +93,7 @@ export default new GraphQLSchema({
         description: 'Change the validationStatus on a build',
         args: {
           buildId: {
-            type: new GraphQLNonNull(GraphQLInt),
+            type: new GraphQLNonNull(GraphQLString),
           },
           validationStatus: {
             type: validationStatusType,
