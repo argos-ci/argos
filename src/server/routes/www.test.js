@@ -1,7 +1,7 @@
 import request from 'supertest'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
-import www from './www'
+import graphqlMiddleware from 'server/graphql/middleware'
 
 describe('GraphQL query', () => {
   useDatabase()
@@ -28,8 +28,8 @@ describe('GraphQL query', () => {
         score: 0.3,
       })
 
-      await request(www)
-        .post('/graphql')
+      await request(graphqlMiddleware())
+        .post('/')
         .send({
           query: `{
             screenshotDiffs(buildId: ${build.id}) {
@@ -71,15 +71,25 @@ describe('GraphQL query', () => {
   })
 
   describe('builds', () => {
+    let user
     let organization
     let repository
 
     beforeEach(async () => {
+      user = await factory.create('User')
       organization = await factory.create('Organization', {
         name: 'bar',
       })
       repository = await factory.create('Repository', {
         name: 'foo',
+        organizationId: organization.id,
+      })
+      await factory.create('UserRepositoryRight', {
+        userId: user.id,
+        repositoryId: repository.id,
+      })
+      await factory.create('UserOrganizationRight', {
+        userId: user.id,
         organizationId: organization.id,
       })
       await factory.create('Build', {
@@ -93,8 +103,10 @@ describe('GraphQL query', () => {
     })
 
     it('should be sorted', () => {
-      return request(www)
-        .post('/graphql')
+      return request(graphqlMiddleware({
+        context: { user },
+      }))
+        .post('/')
         .send({
           query: `{
             builds(
@@ -144,26 +156,42 @@ describe('GraphQL query', () => {
 
   describe('repositories', () => {
     let organization
+    let user
 
     beforeEach(async () => {
+      user = await factory.create('User')
       organization = await factory.create('Organization', {
         name: 'bar1',
       })
       const organization2 = await factory.create('Organization', {
         name: 'bar2',
       })
-      await factory.create('Repository', {
+      await factory.create('UserOrganizationRight', {
+        userId: user.id,
+        organizationId: organization.id,
+      })
+      const repository1 = await factory.create('Repository', {
         name: 'foo1',
         organizationId: organization.id,
       })
-      await factory.create('Repository', {
+      const repository2 = await factory.create('Repository', {
         name: 'foo2',
         organizationId: organization2.id,
+      })
+      await factory.create('UserRepositoryRight', {
+        userId: user.id,
+        repositoryId: repository1.id,
+      })
+      await factory.create('UserRepositoryRight', {
+        userId: user.id,
+        repositoryId: repository2.id,
       })
     })
 
     it('should filter the repositories', () => {
-      return request(www)
+      return request(graphqlMiddleware({
+        context: { user },
+      }))
         .post('/graphql')
         .send({
           query: `{

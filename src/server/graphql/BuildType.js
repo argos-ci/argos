@@ -25,34 +25,39 @@ export const resolve = (source, args) => {
     })
 }
 
-export const resolveList = (source, args) => {
-  return Build
+export async function resolveList(source, args, context) {
+  const result = await Build
     .query()
     .select('builds.*')
     .innerJoin('repositories', 'repositories.id', 'builds.repositoryId')
-    .innerJoin('organizations', 'organizations.id', 'repositories.organizationId')
-    .where({
-      'repositories.name': args.repositoryName,
-      'organizations.name': args.profileName,
-    })
+    .innerJoin(
+      'user_repository_rights',
+      'user_repository_rights.repositoryId',
+      'builds.repositoryId',
+    )
+    .leftJoin('organizations', 'organizations.id', 'repositories.organizationId')
+    .leftJoin('users', 'users.id', 'repositories.userId')
+    .where('repositories.name', args.repositoryName)
+    .where('user_repository_rights.userId', context.user.id)
+    .where('organizations.name', args.profileName)
+    .orWhere('users.login', args.profileName)
     .orderBy('createdAt', 'desc')
     .range(args.after, (args.after + args.first) - 1)
-    .then(async (result) => {
-      const hasNextPage = args.after + args.first < result.total
-      const statuses = await Promise.all(result.results.map(build => build.getStatus()))
 
-      return {
-        pageInfo: {
-          totalCount: result.total,
-          hasNextPage,
-          endCursor: hasNextPage ? args.after + args.first : result.total,
-        },
-        edges: result.results.map((build, index) => {
-          build.status = statuses[index]
-          return build
-        }),
-      }
-    })
+  const hasNextPage = args.after + args.first < result.total
+  const statuses = await Promise.all(result.results.map(build => build.getStatus()))
+
+  return {
+    pageInfo: {
+      totalCount: result.total,
+      hasNextPage,
+      endCursor: hasNextPage ? args.after + args.first : result.total,
+    },
+    edges: result.results.map((build, index) => {
+      build.status = statuses[index]
+      return build
+    }),
+  }
 }
 
 const BuildType = new GraphQLObjectType({

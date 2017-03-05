@@ -5,22 +5,14 @@ import {
   GraphQLID,
 } from 'graphql'
 import GraphQLDateTime from 'modules/graphQL/GraphQLDateTime'
-import Repository from 'server/models/Repository'
 
-export const resolve = (source, args) => {
-  return Repository
-    .query()
-    .findById(args.id)
-}
-
-export const resolveList = (source, args) => {
-  return Repository
-    .query()
+export function resolveList(source, args, context) {
+  return context.user.$relatedQuery('repositories')
     .select('repositories.*')
-    .innerJoin('organizations', 'organizations.id', 'repositories.organizationId')
-    .where({
-      'organizations.name': args.profileName,
-    })
+    .leftJoin('organizations', 'organizations.id', 'repositories.organizationId')
+    .leftJoin('users', 'users.id', 'repositories.userId')
+    .where('organizations.name', args.profileName)
+    .orWhere('users.login', args.profileName)
 }
 
 const RepositoryType = new GraphQLObjectType({

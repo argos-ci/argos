@@ -17,9 +17,9 @@ import ScreenshotDiffType, {
 import RepositoryType, {
   resolveList as resolveRepositoryList,
 } from 'server/graphql/RepositoryType'
-import OrganizationType, {
-  resolveList as resolveOrganizationList,
-} from 'server/graphql/OrganizationType'
+import OwnerType, {
+  resolveList as resolveOwnerList,
+} from 'server/graphql/OwnerType'
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -76,10 +76,10 @@ export default new GraphQLSchema({
         type: new GraphQLList(RepositoryType),
         resolve: resolveRepositoryList,
       },
-      organizations: {
-        description: 'Get an organization list.',
-        type: new GraphQLList(OrganizationType),
-        resolve: resolveOrganizationList,
+      owners: {
+        description: 'Get owners list.',
+        type: new GraphQLList(OwnerType),
+        resolve: resolveOwnerList,
       },
     },
   }),
