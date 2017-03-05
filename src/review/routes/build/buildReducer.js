@@ -13,6 +13,11 @@ function buildReducer(state, action) {
         ...state,
         fetch: action.payload,
       }
+    case actionTypes.BUILD_VALIDATION_TASK:
+      return {
+        ...state,
+        validation: action.payload,
+      }
     default:
       return state
   }

@@ -5,19 +5,47 @@ import {
   GraphQLID,
   GraphQLEnumType,
 } from 'graphql'
-import GraphQLDateTime from 'modules/graphQL/GraphQLDateTime'
+import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import ScreenshotType, {
   resolve as resolveScreenshot,
 } from 'server/graphql/ScreenshotType'
 
-export const resolveList = (source, args) => {
+export function resolveList(source, args) {
   return ScreenshotDiff
     .query()
     .where({
       buildId: args.buildId,
     })
     .orderBy('score', 'desc')
+}
+
+export const validationStatusType = new GraphQLEnumType({
+  description: 'Represent the user feedback after reviewing the diffs',
+  name: 'validationStatus',
+  values: {
+    unknown: {
+      value: 'unknown',
+    },
+    accepted: {
+      value: 'accepted',
+    },
+    rejected: {
+      value: 'rejected',
+    },
+  },
+})
+
+export function resolveSetValidationStatus(source, args) {
+  return ScreenshotDiff
+    .query()
+    .where({
+      buildId: args.buildId,
+    })
+    .patch({
+      validationStatus: args.validationStatus,
+    })
+    .then(() => args.validationStatus)
 }
 
 const ScreenshotDiffType = new GraphQLObjectType({
@@ -58,8 +86,8 @@ const ScreenshotDiffType = new GraphQLObjectType({
       type: GraphQLString,
     },
     jobStatus: {
-      description: 'Represent the state of the remote job generating the diffs',
       type: new GraphQLEnumType({
+        description: 'Represent the state of the remote job generating the diffs',
         name: 'jobDiffStatus',
         values: {
           pending: {
@@ -75,27 +103,13 @@ const ScreenshotDiffType = new GraphQLObjectType({
       }),
     },
     validationStatus: {
-      description: 'Represent the state of the remote job generating the diffs',
-      type: new GraphQLEnumType({
-        name: 'validationStatus',
-        values: {
-          unknown: {
-            value: 'unknown',
-          },
-          accepted: {
-            value: 'accepted',
-          },
-          rejected: {
-            value: 'rejected',
-          },
-        },
-      }),
+      type: validationStatusType,
     },
     createdAt: {
-      type: GraphQLDateTime,
+      type: graphQLDateTime,
     },
     updatedAt: {
-      type: GraphQLDateTime,
+      type: graphQLDateTime,
     },
   },
 })

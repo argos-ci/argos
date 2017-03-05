@@ -4,7 +4,7 @@ import {
   GraphQLBoolean,
   GraphQLID,
 } from 'graphql'
-import GraphQLDateTime from 'modules/graphQL/GraphQLDateTime'
+import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 
 export function resolveList(source, args, context) {
   return context.user.$relatedQuery('repositories')
@@ -37,10 +37,10 @@ const RepositoryType = new GraphQLObjectType({
       type: GraphQLString,
     },
     createdAt: {
-      type: GraphQLDateTime,
+      type: graphQLDateTime,
     },
     updatedAt: {
-      type: GraphQLDateTime,
+      type: graphQLDateTime,
     },
   },
 })

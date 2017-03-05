@@ -21,7 +21,7 @@ function coerceDateTime(value) {
   return value.toJSON()
 }
 
-const GraphQLDateType = new GraphQLScalarType({
+const graphQLDateType = new GraphQLScalarType({
   name: 'DateTime',
   description: 'The DateTime scalar type represents date time strings complying to ISO-8601.',
   serialize: coerceDateTime,
@@ -51,4 +51,4 @@ const GraphQLDateType = new GraphQLScalarType({
   },
 })
 
-export default GraphQLDateType
+export default graphQLDateType

@@ -13,6 +13,8 @@ import BuildType, {
 } from 'server/graphql/BuildType'
 import ScreenshotDiffType, {
   resolveList as resolveSreenshotDiffList,
+  resolveSetValidationStatus,
+  validationStatusType,
 } from 'server/graphql/ScreenshotDiffType'
 import RepositoryType, {
   resolveList as resolveRepositoryList,
@@ -23,7 +25,7 @@ import OwnerType, {
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
-    name: 'Query',
+    name: 'Queries',
     fields: {
       build: {
         description: 'Get a build.',
@@ -80,6 +82,24 @@ export default new GraphQLSchema({
         description: 'Get owners list.',
         type: new GraphQLList(OwnerType),
         resolve: resolveOwnerList,
+      },
+    },
+  }),
+  mutation: new GraphQLObjectType({
+    name: 'Mutations',
+    fields: {
+      setValidationStatus: {
+        type: validationStatusType,
+        description: 'Change the validationStatus on a build',
+        args: {
+          buildId: {
+            type: new GraphQLNonNull(GraphQLInt),
+          },
+          validationStatus: {
+            type: validationStatusType,
+          },
+        },
+        resolve: resolveSetValidationStatus,
       },
     },
   }),

@@ -30,7 +30,13 @@ describe('<BuildSummary />', () => {
     })
 
     it('should be failure', () => {
-      const wrapper = shallow(<BuildSummary classes={{}} fetch={fetch} />)
+      const wrapper = shallow(
+        <BuildSummary
+          classes={{}}
+          fetch={fetch}
+          onValidationClick={() => {}}
+        />,
+      )
       const wrapperWatchTask = wrapper.find('WatchTask').shallow()
 
       assert.strictEqual(wrapperWatchTask.contains('Job status: failure'), true)

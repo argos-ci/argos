@@ -9,9 +9,9 @@ import Build from 'server/models/Build'
 import ScreenshotBucketType, {
   resolve as resolveScreenshotBucket,
 } from 'server/graphql/ScreenshotBucketType'
-import GraphQLDateTime from 'modules/graphQL/GraphQLDateTime'
+import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 
-export const resolve = (source, args) => {
+export function resolve(source, args) {
   return Build
     .query()
     .findById(args.id)
@@ -116,10 +116,10 @@ const BuildType = new GraphQLObjectType({
       }),
     },
     createdAt: {
-      type: GraphQLDateTime,
+      type: graphQLDateTime,
     },
     updatedAt: {
-      type: GraphQLDateTime,
+      type: graphQLDateTime,
     },
   },
 })
