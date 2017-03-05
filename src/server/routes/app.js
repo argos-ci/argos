@@ -15,6 +15,7 @@ import api from 'server/routes/api'
 const app = express()
 app.disable('x-powered-by')
 app.engine('html', ejs.renderFile)
+app.set('trust proxy', 1)
 app.set('views', path.join(__dirname, '..'))
 
 app.use(crashReporter.requestHandler())
