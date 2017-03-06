@@ -18,6 +18,14 @@ const NOTIFICATIONS = {
     state: 'success',
     description: 'A difference in a screenshot has been detected.',
   },
+  'diff-accepted': {
+    state: 'success',
+    description: 'The difference in the screenshots has been accepted.',
+  },
+  'diff-rejection': {
+    state: 'success',
+    description: 'The difference in the screenshots has been rejected.',
+  },
 }
 
 export async function pushBuildNotification({ type, buildId }) {

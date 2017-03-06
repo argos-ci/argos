@@ -15,7 +15,13 @@ export default class BuildNotification extends BaseModel {
       properties: {
         type: {
           type: 'string',
-          enum: ['progress', 'no-diff-detected', 'diff-detected'],
+          enum: [
+            'progress',
+            'no-diff-detected',
+            'diff-detected',
+            'diff-accepted',
+            'diff-rejected',
+          ],
         },
         buildId: { type: 'string' },
       },
