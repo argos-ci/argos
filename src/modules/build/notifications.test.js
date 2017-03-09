@@ -58,7 +58,7 @@ describe('notifications', () => {
     it('should notify GitHub', async () => {
       const result = await processBuildNotification(buildNotification)
       expect(result.data.id).not.toBeUndefined()
-      expect(result.data.description).toBe('Argos build is in progress.')
+      expect(result.data.description).toBe('Build in progress...')
       expect(result.data.state).toBe('pending')
       expect(result.data.target_url).toBe(`http://www.argos-ci.test/argos-ci/test-repository/builds/${build.id}`)
     })
