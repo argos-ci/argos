@@ -8,23 +8,23 @@ import buildNotificationJob from 'server/jobs/buildNotification'
 const NOTIFICATIONS = {
   progress: {
     state: 'pending',
-    description: 'Argos build is in progress.',
+    description: 'Build in progress...',
   },
   'no-diff-detected': {
     state: 'success',
-    description: 'All screenshots are good!',
+    description: 'Everything good!',
   },
   'diff-detected': {
-    state: 'success',
-    description: 'A difference in a screenshot has been detected.',
+    state: 'failure',
+    description: 'Difference detected.',
   },
   'diff-accepted': {
     state: 'success',
-    description: 'The difference in the screenshots has been accepted.',
+    description: 'Difference accepted.',
   },
   'diff-rejection': {
     state: 'success',
-    description: 'The difference in the screenshots has been rejected.',
+    description: 'Difference rejected.',
   },
 }
 
