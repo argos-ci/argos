@@ -26,6 +26,18 @@ if (config.get('server.logFormat')) {
 
 app.use(compress())
 app.use(csp) // Content Security Policy
+
+// Redirect from http to https
+if (config.get('server.secure')) {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      res.redirect(`${config.get('server.url')}${req.url}`)
+    } else {
+      next() /* Continue to other routes if we're not redirecting */
+    }
+  })
+}
+
 app.use(subdomain('www', www))
 app.use(subdomain('api', api))
 
