@@ -57,13 +57,20 @@ function BuildScreenshotItem(props) {
     screenshotDiff: {
       s3Id,
       score,
+      jobStatus,
       baseScreenshot,
       compareScreenshot,
     },
   } = props
 
+  let status = jobStatus
+
+  if (jobStatus === 'complete') {
+    status = score === 0 ? 'success' : 'unknown'
+  }
+
   return (
-    <ItemStatus status={score > 0 ? 'unknown' : 'success'}>
+    <ItemStatus status={status}>
       <Paper>
         <div className={classes.cardContent}>
           <Text type="subheading" component="h4" className={classes.name}>
@@ -138,6 +145,7 @@ BuildScreenshotItem.propTypes = {
   screenshotDiff: PropTypes.shape({
     s3id: PropTypes.string,
     score: PropTypes.number,
+    jobStatus: PropTypes.string.isRequired,
     baseScreenshot: PropTypes.object.isRequired,
     compareScreenshot: PropTypes.object.isRequired,
   }).isRequired,

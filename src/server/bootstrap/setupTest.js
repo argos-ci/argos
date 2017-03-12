@@ -1,5 +1,8 @@
 /* eslint-disable no-console */
 
+// Add until method to enzyme Wrapper
+import 'modules/enzyme/add/until'
+
 process.env.NODE_ENV = 'test'
 
 jest.mock('server/jobs/build')
