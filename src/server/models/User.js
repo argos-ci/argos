@@ -14,6 +14,7 @@ export default class User extends BaseModel {
       name: { type: 'string' },
       login: { type: 'string' },
       email: { type: ['string', null] },
+      privateSync: { type: 'boolean' },
     },
   });
 
