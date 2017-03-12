@@ -5,11 +5,10 @@ import withStyles from 'material-ui/styles/withStyles'
 import Text from 'material-ui/Text'
 import Paper from 'material-ui/Paper'
 import Layout from 'material-ui/Layout'
-import Button from 'material-ui/Button'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
-import actionTypes from 'review/modules/redux/actionTypes'
 import ItemStatus from 'review/modules/components/ItemStatus'
+import BuildActions from 'review/routes/build/BuildActions'
 
 const styleSheet = createStyleSheet('BuildSummary', (theme) => {
   return {
@@ -20,9 +19,6 @@ const styleSheet = createStyleSheet('BuildSummary', (theme) => {
       margin: 0,
       listStyle: 'none',
       padding: theme.spacing.unit,
-    },
-    validationStatus: {
-      margin: `0 ${theme.spacing.unit}px`,
     },
   }
 })
@@ -35,7 +31,6 @@ export function BuildSummary(props) {
   const {
     classes,
     fetch,
-    onValidationClick,
   } = props
 
   return (
@@ -46,25 +41,18 @@ export function BuildSummary(props) {
       <Paper className={classes.paper}>
         <WatchTask task={fetch}>
           {() => {
+            const build = fetch.output.data.build
             const {
-              build: {
-                createdAt,
-                status,
-                baseScreenshotBucket: {
-                  commit: baseCommit,
-                },
-                compareScreenshotBucket: {
-                  commit: compareCommit,
-                  branch,
-                },
+              createdAt,
+              status,
+              baseScreenshotBucket: {
+                commit: baseCommit,
               },
-              screenshotDiffs,
-            } = fetch.output.data
-
-            const validationStatus = screenshotDiffs
-              .every(screenshotDiff => screenshotDiff.validationStatus === 'accepted') ?
-                'accepted' :
-                'unknown'
+              compareScreenshotBucket: {
+                commit: compareCommit,
+                branch,
+              },
+            } = build
 
             return (
               <ItemStatus status={status}>
@@ -73,7 +61,6 @@ export function BuildSummary(props) {
                     <Layout item xs={12} sm>
                       <ul className={classes.list}>
                         <li>{`Job status: ${status}`}</li>
-                        <li>{`Validation status: ${validationStatus}`}</li>
                         <li>{`Commit: ${formatShortCommit(compareCommit)}`}</li>
                         <li>{`Branch: ${branch}`}</li>
                         <li>
@@ -84,14 +71,7 @@ export function BuildSummary(props) {
                       </ul>
                     </Layout>
                     <Layout item>
-                      <Button
-                        primary
-                        raised
-                        onClick={onValidationClick}
-                        className={classes.validationStatus}
-                      >
-                        {'Approve'}
-                      </Button>
+                      <BuildActions build={build} />
                     </Layout>
                   </Layout>
                 </div>
@@ -107,21 +87,9 @@ export function BuildSummary(props) {
 BuildSummary.propTypes = {
   classes: PropTypes.object.isRequired,
   fetch: PropTypes.object.isRequired,
-  onValidationClick: PropTypes.func.isRequired,
 }
 
 export default recompact.compose(
   withStyles(styleSheet),
   connect(state => state.ui.build),
-  recompact.withHandlers({
-    onValidationClick: props => () => {
-      props.dispatch({
-        type: actionTypes.BUILD_VALIDATION_CLICK,
-        payload: {
-          buildId: props.fetch.output.data.build.id,
-          validationStatus: 'accepted',
-        },
-      })
-    },
-  }),
 )(BuildSummary)

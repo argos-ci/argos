@@ -1,5 +1,6 @@
 import { transaction } from 'objection'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
+import { VALIDATION_STATUS } from 'server/models/constant'
 import { pushBuildNotification } from 'modules/build/notifications'
 
 async function createBuildDiffs(build) {
@@ -31,7 +32,7 @@ async function createBuildDiffs(build) {
           baseScreenshotId: baseScreenshot.id,
           compareScreenshotId: compareScreenshot.id,
           jobStatus: 'pending',
-          validationStatus: 'unknown',
+          validationStatus: VALIDATION_STATUS.unknown,
         }))
 
         return diffInserts

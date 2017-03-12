@@ -1,6 +1,7 @@
 import { ValidationError } from 'objection'
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 import jobModelSchema from 'server/models/schemas/jobModelSchema'
+import { VALIDATION_STATUS } from 'server/models/constant'
 
 export default class ScreenshotDiff extends BaseModel {
   static tableName = 'screenshot_diffs';
@@ -28,9 +29,9 @@ export default class ScreenshotDiff extends BaseModel {
         validationStatus: {
           type: 'string',
           enum: [
-            'unknown',
-            'accepted',
-            'rejected',
+            VALIDATION_STATUS.unknown,
+            VALIDATION_STATUS.accepted,
+            VALIDATION_STATUS.rejected,
           ],
         },
       },

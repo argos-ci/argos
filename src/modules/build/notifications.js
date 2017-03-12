@@ -22,8 +22,8 @@ const NOTIFICATIONS = {
     state: 'success',
     description: 'Difference accepted.',
   },
-  'diff-rejection': {
-    state: 'success',
+  'diff-rejected': {
+    state: 'failure',
     description: 'Difference rejected.',
   },
 }

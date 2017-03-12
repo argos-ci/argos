@@ -1,6 +1,7 @@
 import { assert } from 'chai'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
+import { VALIDATION_STATUS } from 'server/models/constant'
 import Build from './Build'
 
 const baseData = {
@@ -137,6 +138,48 @@ describe('models/Build', () => {
       it('should be success', async () => {
         expect(await Build.getStatus(build.id)).toBe('success') // static
         expect(await build.getStatus()).toBe('success') // instance
+      })
+    })
+
+    describe('with the validationStatus', () => {
+      beforeEach(async () => {
+        build = await factory.create('Build')
+      })
+
+      it('should be failure n°1', async () => {
+        await factory.create('ScreenshotDiff', {
+          buildId: build.id,
+          jobStatus: 'complete',
+          score: 0,
+          validationStatus: VALIDATION_STATUS.rejected,
+        })
+        expect(await build.getStatus({
+          useValidation: true,
+        })).toBe('failure')
+      })
+
+      it('should be failure n°2', async () => {
+        await factory.create('ScreenshotDiff', {
+          buildId: build.id,
+          jobStatus: 'complete',
+          score: 1,
+          validationStatus: VALIDATION_STATUS.unknown,
+        })
+        expect(await build.getStatus({
+          useValidation: true,
+        })).toBe('failure')
+      })
+
+      it('should be success', async () => {
+        await factory.create('ScreenshotDiff', {
+          buildId: build.id,
+          jobStatus: 'complete',
+          score: 0.2,
+          validationStatus: VALIDATION_STATUS.accepted,
+        })
+        expect(await build.getStatus({
+          useValidation: true,
+        })).toBe('success')
       })
     })
   })

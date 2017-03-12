@@ -4,6 +4,7 @@ import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 import jobModelSchema from 'server/models/schemas/jobModelSchema'
 import User from 'server/models/User'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
+import { VALIDATION_STATUS } from 'server/models/constant'
 
 const NEXT_NUMBER = Symbol('nextNumber')
 
@@ -84,13 +85,28 @@ export default class Build extends BaseModel {
     return this.reload()
   }
 
-  static async getStatus(buildId) {
+  static async getStatus(buildId, options = {}) {
+    const {
+      useScore = true,
+      useValidation = false,
+    } = options
+
     const screenshotDiffs = await ScreenshotDiff.query().where({ buildId })
     const jobStatus = reduceJobStatus(screenshotDiffs.map(({ jobStatus }) => jobStatus))
 
     if (jobStatus === 'complete') {
-      const hasDiffs = screenshotDiffs.some(({ score }) => score > 0)
-      return hasDiffs ? 'failure' : 'success'
+      if (useValidation && useScore) {
+        const isFailure = screenshotDiffs.some(({ score, validationStatus }) => (
+          validationStatus === VALIDATION_STATUS.rejected ||
+          (validationStatus === VALIDATION_STATUS.unknown && score > 0)
+        ))
+        return isFailure ? 'failure' : 'success'
+      } else if (useScore) {
+        const hasDiffs = screenshotDiffs.some(({ score }) => score > 0)
+        return hasDiffs ? 'failure' : 'success'
+      }
+
+      throw new Error('Those options are not supported', options)
     }
 
     return jobStatus
@@ -109,7 +125,7 @@ export default class Build extends BaseModel {
     return this.constructor.getUsers(this.id)
   }
 
-  getStatus() {
-    return this.constructor.getStatus(this.id)
+  getStatus(options) {
+    return this.constructor.getStatus(this.id, options)
   }
 }
