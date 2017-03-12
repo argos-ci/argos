@@ -2,7 +2,7 @@ import config from 'config'
 
 export async function formatUrlFromBuild(build, { absolute = false } = {}) {
   if (!build.repository) {
-    [build.repository] = await build.$relatedQuery('repository')
+    build.repository = await build.$relatedQuery('repository')
   }
 
   const owner = await build.repository.getOwner()
