@@ -47,7 +47,8 @@ ItemStatus.propTypes = {
   status: PropTypes.oneOf([
     'success',
     'failure',
-    'started',
+    'progress',
+    'pending',
     'unknown',
   ]),
 }
