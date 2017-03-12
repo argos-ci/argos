@@ -2,7 +2,6 @@ import {
   GraphQLObjectType,
   GraphQLString,
   GraphQLBoolean,
-  GraphQLID,
 } from 'graphql'
 import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 
@@ -19,7 +18,7 @@ const RepositoryType = new GraphQLObjectType({
   name: 'Repository',
   fields: {
     id: {
-      type: GraphQLID,
+      type: GraphQLString,
     },
     githubId: {
       type: GraphQLString,

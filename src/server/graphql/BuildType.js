@@ -1,7 +1,6 @@
 import {
   GraphQLObjectType,
   GraphQLString,
-  GraphQLID,
   GraphQLInt,
   GraphQLEnumType,
 } from 'graphql'
@@ -70,7 +69,7 @@ const BuildType = new GraphQLObjectType({
   name: 'Build',
   fields: {
     id: {
-      type: GraphQLID,
+      type: GraphQLString,
     },
     baseScreenshotBucketId: {
       type: GraphQLString,
