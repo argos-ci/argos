@@ -65,7 +65,7 @@ export default (req, res) => {
         },
       },
       releaseVersion: config.get('heroku.releaseVersion'),
-      user: pick(req.user, 'name', 'email', 'login', 'privateSync'),
+      user: req.user ? pick(req.user, 'name', 'email', 'login', 'privateSync') : null,
     }),
   })
 

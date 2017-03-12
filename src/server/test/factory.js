@@ -62,6 +62,7 @@ factory.define('Repository', Repository, {
   name: factory.sequence('repository.name', n => `repo-${n}`),
   enabled: true,
   organizationId: factory.assoc('Organization', 'id'),
+  private: false,
 })
 
 factory.define('UserRepositoryRight', UserRepositoryRight, {

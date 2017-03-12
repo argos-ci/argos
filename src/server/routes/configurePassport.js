@@ -29,17 +29,19 @@ export default (passport) => {
       try {
         let [user] = await User.query().where({ githubId: Number(profile.id) })
 
-        user = user ?
-          await User.query().patchAndFetchById(user.id, {
+        if (user) {
+          user = await user.$query().patchAndFetch({
             accessToken,
             privateSync: user.privateSync || type === 'private',
             ...getDataFromProfile(profile),
-          }) :
-          await User.query().insert({
+          })
+        } else {
+          user = await User.query().insert({
             accessToken,
             privateSync: type === 'private',
             ...getDataFromProfile(profile),
           })
+        }
 
         syncFromUserId(user.id)
 
@@ -53,7 +55,8 @@ export default (passport) => {
   passport.serializeUser((user, done) => done(null, user.id))
   passport.deserializeUser(async (id, done) => {
     try {
-      done(null, await User.query().findById(id))
+      const [user] = await User.query().where({ id })
+      done(null, user)
     } catch (err) {
       done(err)
     }

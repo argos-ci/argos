@@ -8,6 +8,7 @@ export default class Repository extends BaseModel {
       'githubId',
       'name',
       'enabled',
+      'private',
     ],
     properties: {
       githubId: { type: 'number' },
@@ -16,6 +17,7 @@ export default class Repository extends BaseModel {
       token: { type: 'string' },
       organizationId: { type: ['string', null] },
       userId: { type: ['string', null] },
+      private: { type: 'boolean' },
     },
   });
 
