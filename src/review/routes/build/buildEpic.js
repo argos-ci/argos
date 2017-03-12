@@ -30,7 +30,6 @@ const fetchEpic = action$ => (
           screenshotDiffs(buildId: ${action.payload.buildId}) {
             id
             jobStatus
-            validationStatus
             score
             s3Id
             baseScreenshot {

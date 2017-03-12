@@ -1,5 +1,6 @@
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
+import { VALIDATION_STATUS } from 'server/models/constant'
 import createBuildDiffs from './createBuildDiffs'
 
 jest.mock('modules/build/notifications')
@@ -57,6 +58,6 @@ describe('createBuildDiffs', () => {
     expect(diffs[0].baseScreenshotId).toBe(baseScreenshot.id)
     expect(diffs[0].compareScreenshotId).toBe(compareScreenshot.id)
     expect(diffs[0].jobStatus).toBe('pending')
-    expect(diffs[0].validationStatus).toBe('unknown')
+    expect(diffs[0].validationStatus).toBe(VALIDATION_STATUS.unknown)
   })
 })

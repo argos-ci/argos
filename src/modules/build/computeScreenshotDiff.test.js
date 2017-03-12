@@ -1,6 +1,7 @@
 import S3 from 'aws-sdk/clients/s3'
 import { useDatabase, setTestsTimeout } from 'server/test/utils'
 import factory from 'server/test/factory'
+import { VALIDATION_STATUS } from 'server/models/constant'
 import computeScreenshotDiff from './computeScreenshotDiff'
 
 jest.mock('modules/build/notifications')
@@ -57,7 +58,7 @@ describe('computeScreenshotDiff', () => {
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot.id,
         jobStatus: 'pending',
-        validationStatus: 'unknown',
+        validationStatus: VALIDATION_STATUS.unknown,
       })
     })
 
@@ -94,7 +95,7 @@ describe('computeScreenshotDiff', () => {
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot.id,
         jobStatus: 'pending',
-        validationStatus: 'unknown',
+        validationStatus: VALIDATION_STATUS.unknown,
       })
     })
 

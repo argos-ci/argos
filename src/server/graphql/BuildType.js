@@ -16,7 +16,9 @@ export function resolve(source, args) {
     .query()
     .findById(args.id)
     .then(async (build) => {
-      const status = await build.getStatus()
+      const status = await build.getStatus({
+        useValidation: true,
+      })
 
       return {
         ...build,
@@ -45,7 +47,11 @@ export async function resolveList(source, args, context) {
     .range(args.after, (args.after + args.first) - 1)
 
   const hasNextPage = args.after + args.first < result.total
-  const statuses = await Promise.all(result.results.map(build => build.getStatus()))
+  const statuses = await Promise.all(
+    result.results.map(build => build.getStatus({
+      useValidation: true,
+    })),
+  )
 
   return {
     pageInfo: {

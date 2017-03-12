@@ -9,6 +9,7 @@ import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 import { pushBuildNotification } from 'modules/build/notifications'
 import Build from 'server/models/Build'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
+import { VALIDATION_STATUS } from 'server/models/constant'
 import ScreenshotType, {
   resolve as resolveScreenshot,
 } from 'server/graphql/ScreenshotType'
@@ -27,13 +28,13 @@ export const validationStatusType = new GraphQLEnumType({
   name: 'validationStatus',
   values: {
     unknown: {
-      value: 'unknown',
+      value: VALIDATION_STATUS.unknown,
     },
     accepted: {
-      value: 'accepted',
+      value: VALIDATION_STATUS.accepted,
     },
     rejected: {
-      value: 'rejected',
+      value: VALIDATION_STATUS.rejected,
     },
   },
 })
@@ -59,12 +60,13 @@ export async function resolveSetValidationStatus(source, args, context) {
       validationStatus,
     })
 
-  if (validationStatus === 'accepted') {
+  // That might be better suited into a $afterUpdate hook.
+  if (validationStatus === VALIDATION_STATUS.accepted) {
     await pushBuildNotification({
       buildId,
       type: 'diff-accepted',
     })
-  } else if (validationStatus === 'rejected') {
+  } else if (validationStatus === VALIDATION_STATUS.rejected) {
     await pushBuildNotification({
       buildId,
       type: 'diff-rejected',

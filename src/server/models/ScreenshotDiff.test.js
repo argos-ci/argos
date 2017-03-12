@@ -1,4 +1,5 @@
 import { assert } from 'chai'
+import { VALIDATION_STATUS } from 'server/models/constant'
 import ScreenshotDiff from './ScreenshotDiff'
 
 const baseData = {
@@ -6,11 +7,11 @@ const baseData = {
   baseScreenshotId: '1',
   compareScreenshotId: '2',
   jobStatus: 'pending',
-  validationStatus: 'unknown',
+  validationStatus: VALIDATION_STATUS.unknown,
 }
 
 describe('models/ScreenshotDiff', () => {
-  describe('validation score', () => {
+  describe('validation', () => {
     it('should throw if the score is invalid', () => {
       assert.throws(() => {
         ScreenshotDiff.fromJson({
@@ -28,9 +29,7 @@ describe('models/ScreenshotDiff', () => {
         })
       })
     })
-  })
 
-  describe('validation screenshot', () => {
     it('should throw if the screenshots are the same', () => {
       assert.throws(() => {
         ScreenshotDiff.fromJson({

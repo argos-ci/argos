@@ -1,6 +1,7 @@
 import request from 'supertest'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
+import { VALIDATION_STATUS } from 'server/models/constant'
 import graphqlMiddleware from './middleware'
 
 jest.mock('modules/build/notifications')
@@ -94,13 +95,16 @@ describe('GraphQL', () => {
           .send({
             query: `
               mutation {
-                setValidationStatus(buildId: "${build.id}", validationStatus: rejected)
+                setValidationStatus(
+                  buildId: "${build.id}",
+                  validationStatus: ${VALIDATION_STATUS.rejected}
+                )
               }
             `,
           })
           .expect((res) => {
             expect(res.body.data).toEqual({
-              setValidationStatus: 'rejected',
+              setValidationStatus: VALIDATION_STATUS.rejected,
             })
           })
           .expect(200)
@@ -123,10 +127,10 @@ describe('GraphQL', () => {
             const screenshotDiffs = res.body.data.screenshotDiffs
             expect(screenshotDiffs).toEqual([
               {
-                validationStatus: 'rejected',
+                validationStatus: VALIDATION_STATUS.rejected,
               },
               {
-                validationStatus: 'rejected',
+                validationStatus: VALIDATION_STATUS.rejected,
               },
             ])
           })
@@ -143,7 +147,10 @@ describe('GraphQL', () => {
           .send({
             query: `
               mutation {
-                setValidationStatus(buildId: "${build.id}", validationStatus: rejected)
+                setValidationStatus(
+                  buildId: "${build.id}",
+                  validationStatus: ${VALIDATION_STATUS.rejected}
+                )
               }
             `,
           })
