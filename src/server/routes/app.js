@@ -31,7 +31,7 @@ app.use(csp) // Content Security Policy
 if (config.get('server.secure')) {
   app.use((req, res, next) => {
     if (req.headers['x-forwarded-proto'] !== 'https') {
-      res.redirect(`${config.get('server.url')}${req.url}`)
+      res.redirect(`https://${req.hostname}${req.url}`)
     } else {
       next() /* Continue to other routes if we're not redirecting */
     }
