@@ -13,15 +13,6 @@ import ScreenshotType, {
   resolve as resolveScreenshot,
 } from 'server/graphql/ScreenshotType'
 
-export function resolveList(source, args) {
-  return ScreenshotDiff
-    .query()
-    .where({
-      buildId: args.buildId,
-    })
-    .orderBy('score', 'desc')
-}
-
 export const validationStatusType = new GraphQLEnumType({
   description: 'Represent the user feedback after reviewing the diffs',
   name: 'validationStatus',

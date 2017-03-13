@@ -6,6 +6,7 @@ import fs from 'fs'
 import path from 'path'
 import { minify } from 'html-minifier'
 import config from 'config'
+import { pick } from 'lodash'
 
 let htmlWebpackPlugin
 let indexString = fs.readFileSync(path.join(__dirname, '../../review/index.ejs'), 'UTF-8')
@@ -64,7 +65,7 @@ export default (req, res) => {
         },
       },
       releaseVersion: config.get('heroku.releaseVersion'),
-      user: req.user,
+      user: req.user ? pick(req.user, 'name', 'email', 'login', 'privateSync') : null,
     }),
   })
 

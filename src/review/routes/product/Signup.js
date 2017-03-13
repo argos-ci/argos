@@ -8,7 +8,7 @@ export default function Signup() {
       raised
       accent
       component={Link}
-      href="/auth/github"
+      href="/auth/github-public"
     >
       {'Sign up'}
     </Button>

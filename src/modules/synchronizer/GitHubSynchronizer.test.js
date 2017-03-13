@@ -29,7 +29,7 @@ describe('GitHubSynchronizer', () => {
     const synchronizer = new GitHubSynchronizer(synchronization)
     await synchronizer.synchronize()
 
-    const [argosOrganization] = await Organization.query().where({ name: 'argos-ci' })
+    const [argosOrganization] = await Organization.query().where({ login: 'argos-ci' })
     expect(argosOrganization.githubId).toBe(24552866)
 
     const [argosOrganizationRight] = await UserOrganizationRight.query()

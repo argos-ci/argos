@@ -14,6 +14,7 @@ export default class User extends BaseModel {
       name: { type: 'string' },
       login: { type: 'string' },
       email: { type: ['string', null] },
+      privateSync: { type: 'boolean' },
     },
   });
 
@@ -31,6 +32,14 @@ export default class User extends BaseModel {
       },
     },
     repositories: {
+      relation: BaseModel.HasManyRelation,
+      modelClass: 'Repository',
+      join: {
+        from: 'users.id',
+        to: 'repositories.userId',
+      },
+    },
+    relatedRepositories: {
       relation: BaseModel.ManyToManyRelation,
       modelClass: 'Repository',
       join: {
@@ -42,9 +51,5 @@ export default class User extends BaseModel {
         to: 'repositories.id',
       },
     },
-  }
-
-  getUrlIdentifier() {
-    return this.login
   }
 }

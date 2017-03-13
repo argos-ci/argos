@@ -203,9 +203,10 @@ ALTER TABLE knex_migrations_lock OWNER TO argos;
 CREATE TABLE organizations (
     id bigint NOT NULL,
     "githubId" integer NOT NULL,
-    name character varying(255) NOT NULL,
+    name character varying(255),
     "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
+    "updatedAt" timestamp with time zone NOT NULL,
+    login character varying(255) NOT NULL
 );
 
 
@@ -245,7 +246,8 @@ CREATE TABLE repositories (
     "updatedAt" timestamp with time zone NOT NULL,
     token character varying(255),
     "organizationId" bigint,
-    "userId" bigint
+    "userId" bigint,
+    private boolean DEFAULT false NOT NULL
 );
 
 
@@ -509,7 +511,8 @@ CREATE TABLE users (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "accessToken" character varying(255),
-    login character varying(255) NOT NULL
+    login character varying(255) NOT NULL,
+    "privateSync" boolean DEFAULT false NOT NULL
 );
 
 
@@ -1028,3 +1031,6 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184220
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184221_remove_constraints.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170305095107_notifications.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170306205356_new-notifications.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312191852_users_add_private_enabled.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312202055_repositories_add_column_private.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312230324_organizations_login.js', 1, NOW());

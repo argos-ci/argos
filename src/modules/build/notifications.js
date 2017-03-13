@@ -77,7 +77,7 @@ export async function processBuildNotification(buildNotification) {
 
   // https://developer.github.com/v3/repos/statuses/
   return github.repos.createStatus({
-    owner: owner.name,
+    owner: owner.login,
     repo: build.repository.name,
     sha: build.compareScreenshotBucket.commit,
     state: notification.state,

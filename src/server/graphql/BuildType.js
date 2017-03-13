@@ -3,45 +3,31 @@ import {
   GraphQLString,
   GraphQLInt,
   GraphQLEnumType,
+  GraphQLList,
 } from 'graphql'
 import Build from 'server/models/Build'
 import ScreenshotBucketType, {
   resolve as resolveScreenshotBucket,
 } from 'server/graphql/ScreenshotBucketType'
+import ScreenshotDiffType from 'server/graphql/ScreenshotDiffType'
+import { isRepositoryAccessible } from 'server/graphql/utils'
 import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 
-export function resolve(source, args) {
-  return Build
-    .query()
-    .findById(args.id)
-    .then(async (build) => {
-      const status = await build.getStatus({
-        useValidation: true,
-      })
+export async function resolve(source, args, context) {
+  const build = await Build.query().findById(args.id).eager('repository')
 
-      return {
-        ...build,
-        status,
-      }
-    })
+  if (!build || !(await isRepositoryAccessible(build.repository, context))) {
+    return null
+  }
+
+  build.status = await build.getStatus({ useValidation: true })
+  return build
 }
 
-export async function resolveList(source, args, context) {
+export async function resolveList(repository, args) {
   const result = await Build
     .query()
-    .select('builds.*')
-    .innerJoin('repositories', 'repositories.id', 'builds.repositoryId')
-    .innerJoin(
-      'user_repository_rights',
-      'user_repository_rights.repositoryId',
-      'builds.repositoryId',
-    )
-    .leftJoin('organizations', 'organizations.id', 'repositories.organizationId')
-    .leftJoin('users', 'users.id', 'repositories.userId')
-    .where('repositories.name', args.repositoryName)
-    .where('user_repository_rights.userId', context.user.id)
-    .where('organizations.name', args.profileName)
-    .orWhere('users.login', args.profileName)
+    .where({ repositoryId: repository.id })
     .orderBy('createdAt', 'desc')
     .range(args.after, (args.after + args.first) - 1)
 
@@ -70,6 +56,11 @@ const BuildType = new GraphQLObjectType({
   fields: {
     id: {
       type: GraphQLString,
+    },
+    screenshotDiffs: {
+      description: 'Get the diffs for a given build.',
+      type: new GraphQLList(ScreenshotDiffType),
+      resolve: build => build.$relatedQuery('screenshotDiffs').orderBy('score', 'desc'),
     },
     baseScreenshotBucketId: {
       type: GraphQLString,

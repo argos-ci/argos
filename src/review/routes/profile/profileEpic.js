@@ -7,11 +7,12 @@ const profileEpic = action$ => (
     .watchTask(actionTypes.PROFILE_FETCH_TASK, action => (
       graphQLClient.fetch({
         query: `{
-          repositories(
-            profileName: "${action.payload.profileName}",
-          ) {
-            id
+          owner(login: "${action.payload.profileName}") {
             name
+            repositories {
+              id
+              name
+            }
           }
         }`,
       })

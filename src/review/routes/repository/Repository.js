@@ -1,6 +1,7 @@
 import React, { PropTypes } from 'react'
 import { Link as LinkRouter } from 'react-router'
 import Text from 'material-ui/Text'
+import Layout from 'material-ui/Layout'
 import ViewContainer from 'modules/components/ViewContainer'
 import Link from 'modules/components/Link'
 import ScrollView from 'modules/components/ScrollView'
@@ -21,16 +22,22 @@ function Repository(props) {
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin>
-          <Text type="display1" component="h2" gutterBottom>
-            <Link component={LinkRouter} to={`/${profileName}`}>
-              {profileName}
-            </Link>
-            {'/'}
-            <Link component={LinkRouter} to={`/${profileName}/${repositoryName}`}>
-              {repositoryName}
-            </Link>
-          </Text>
-          {children}
+          <Layout container gutter={24}>
+            <Layout item xs={12}>
+              <Text type="display1" component="h2" gutterBottom>
+                <Link component={LinkRouter} to={`/${profileName}`}>
+                  {profileName}
+                </Link>
+                {'/'}
+                <Link component={LinkRouter} to={`/${profileName}/${repositoryName}`}>
+                  {repositoryName}
+                </Link>
+              </Text>
+            </Layout>
+            <Layout item xs={12}>
+              {children}
+            </Layout>
+          </Layout>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>

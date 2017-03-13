@@ -48,15 +48,15 @@ function Dashboard(props) {
 
                 return (
                   <List>
-                    {owners.map(({ name }) => (
+                    {owners.map(({ login, name }) => (
                       <ListItem
-                        key={name}
+                        key={login}
                         button
                         component={LinkRouter}
-                        to={`/${name}`}
+                        to={`/${login}`}
                       >
-                        <Avatar src={`https://github.com/${name}.png?size=80`} />
-                        <ListItemText primary={name} />
+                        <Avatar src={`https://github.com/${login}.png?size=80`} />
+                        <ListItemText primary={name || login} />
                       </ListItem>
                     ))}
                   </List>

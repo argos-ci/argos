@@ -21,6 +21,9 @@ const styleSheet = createStyleSheet('ReviewAppBar', () => ({
   },
 }))
 
+const DEVICE_PIXEL_RATIO = window.devicePixelRatio || 1
+const AVATAR_SIZE = Math.round(DEVICE_PIXEL_RATIO * 40)
+
 class ReviewAppBar extends Component {
   state = {
     open: false,
@@ -75,7 +78,7 @@ class ReviewAppBar extends Component {
                   </Text>
                 </Layout>
                 <Layout item>
-                  <Avatar src={`https://avatars.githubusercontent.com/u/${user.githubId}`} />
+                  <Avatar src={`https://github.com/${user.login}.png?size=${AVATAR_SIZE}`} />
                 </Layout>
               </Layout>
             </Link>
@@ -89,7 +92,7 @@ class ReviewAppBar extends Component {
             >
               <MenuItem
                 component={LinkRouter}
-                to={`/profile/${user.githubId}`}
+                to={`/profile/${user.login}`}
                 button={false}
                 onClick={this.handleRequestClose}
               >
@@ -114,7 +117,7 @@ class ReviewAppBar extends Component {
 ReviewAppBar.propTypes = {
   classes: PropTypes.object.isRequired,
   user: PropTypes.shape({
-    githubId: PropTypes.number.isRequired,
+    login: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
   }),
 }

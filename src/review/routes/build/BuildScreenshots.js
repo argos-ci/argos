@@ -7,6 +7,7 @@ import Layout from 'material-ui/Layout'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
 import BuildScreenshotItem from 'review/routes/build/BuildScreenshotItem'
+import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 
 const styleSheet = createStyleSheet('BuildScreenshots', () => {
   return {
@@ -25,9 +26,18 @@ function BuildScreenshots(props) {
       </Text>
       <WatchTask task={fetch}>
         {() => {
+          if (!fetch.output.data.build) {
+            return (
+              <WatchTaskContainer>
+                <Text>
+                  {'Profile not found.'}
+                </Text>
+              </WatchTaskContainer>
+            )
+          }
           const {
             screenshotDiffs,
-          } = fetch.output.data
+          } = fetch.output.data.build
 
           return (
             <Layout container direction="column">
