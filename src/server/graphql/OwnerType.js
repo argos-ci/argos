@@ -39,7 +39,12 @@ const OwnerType = new GraphQLObjectType({
       type: new GraphQLList(RepositoryType),
       resolve(source, args, context) {
         if (!context.user) {
-          return source.$relatedQuery('repositories').where({ private: false, enabled: true })
+          return source.$relatedQuery('repositories')
+            .where({
+              private: false,
+              enabled: true,
+              [`${source.type}Id`]: source.id,
+            })
         }
 
         return source.$relatedQuery('repositories')
@@ -54,6 +59,7 @@ const OwnerType = new GraphQLObjectType({
             'user_repository_rights.userId': context.user.id,
             private: true,
             enabled: true,
+            [`${source.type}Id`]: source.id,
           })
       },
     },
