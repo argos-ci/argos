@@ -1,6 +1,6 @@
 {
   "name": "argos-cli",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Argos command line interface.",
   "repository": "https://github.com/argos-ci/argos",
   "license": "MIT",
@@ -19,9 +19,9 @@
     "prepublish": "npm run build"
   },
   "devDependencies": {
-    "babel-cli": "^6.18.0",
-    "babel-preset-env": "^1.1.8",
-    "babel-preset-stage-1": "^6.16.0"
+    "babel-cli": "^6.24.0",
+    "babel-preset-env": "^1.2.1",
+    "babel-preset-stage-1": "^6.22.0"
   },
   "dependencies": {
     "convict": "^2.0.0",
