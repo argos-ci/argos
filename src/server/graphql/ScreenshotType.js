@@ -1,6 +1,5 @@
 import {
   GraphQLObjectType,
-  GraphQLID,
   GraphQLString,
 } from 'graphql'
 import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
@@ -16,7 +15,7 @@ const ScreenshotType = new GraphQLObjectType({
   name: 'Screenshot',
   fields: {
     id: {
-      type: GraphQLID,
+      type: GraphQLString,
     },
     screenshotBucketId: {
       type: GraphQLString,

@@ -1,8 +1,7 @@
 import {
   GraphQLObjectType,
-  GraphQLString,
   GraphQLFloat,
-  GraphQLID,
+  GraphQLString,
   GraphQLEnumType,
 } from 'graphql'
 import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
@@ -80,7 +79,7 @@ const ScreenshotDiffType = new GraphQLObjectType({
   name: 'ScreenshotDiff',
   fields: {
     id: {
-      type: GraphQLID,
+      type: GraphQLString,
     },
     buildId: {
       type: GraphQLString,
