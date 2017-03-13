@@ -109,7 +109,7 @@
     "whatwg-fetch": "^2.0.3"
   },
   "devDependencies": {
-    "argos-cli": "^0.0.2",
+    "argos-cli": "^0.0.3",
     "babel-eslint": "^7.1.1",
     "eslint": "^3.17.1",
     "eslint-config-airbnb": "^14.1.0",
