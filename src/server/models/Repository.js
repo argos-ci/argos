@@ -41,7 +41,7 @@ export default class Repository extends BaseModel {
   async getOwner() {
     if (this.userId) {
       if (!this.user) {
-        [this.user] = await this.$relatedQuery('user')
+        this.user = await this.$relatedQuery('user')
       }
 
       return this.user
@@ -49,7 +49,7 @@ export default class Repository extends BaseModel {
 
     if (this.organizationId) {
       if (!this.organization) {
-        [this.organization] = await this.$relatedQuery('organization')
+        this.organization = await this.$relatedQuery('organization')
       }
 
       return this.organization
