@@ -119,10 +119,12 @@ class GitHubSynchronizer {
   }
 
   async synchronizeOrganization(githubOrganization) { // eslint-disable-line class-methods-use-this
+    ({ data: githubOrganization } = await this.github.orgs.get({ org: githubOrganization.login }))
     let [organization] = await Organization.query().where({ githubId: githubOrganization.id })
     const data = {
       githubId: githubOrganization.id,
-      name: githubOrganization.login,
+      name: githubOrganization.name,
+      login: githubOrganization.login,
     }
 
     if (organization) {

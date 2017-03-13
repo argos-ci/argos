@@ -48,9 +48,9 @@ router.use(passport.session())
 configurePassport(passport)
 
 // GraphQL
-router.use('/graphql', graphqlMiddleware());
+router.use('/graphql', graphqlMiddleware())
 
-['private', 'public'].forEach((type) => {
+;['private', 'public'].forEach((type) => {
   router.get(`/auth/github-${type}`, passport.authenticate(`github-${type}`))
   router.get(
     `/auth/github/callback/${type}`,

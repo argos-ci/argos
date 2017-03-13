@@ -11,22 +11,26 @@ const repositoryDetailsEpic = action$ => (
 
       return graphQLClient.fetch({
         query: `{
-          builds(
-            profileName: "${payload.profileName}",
+          repository(
+            ownerLogin: "${payload.profileName}",
             repositoryName: "${payload.repositoryName}"
-            first: ${payload.first}
-            after: ${payload.after}
           ) {
-            pageInfo {
-              totalCount
-              endCursor
-              hasNextPage
-            }
-            edges {
-              id
-              number
-              status
-              createdAt
+            name
+            builds(
+              first: ${payload.first}
+              after: ${payload.after}
+            ) {
+              pageInfo {
+                totalCount
+                endCursor
+                hasNextPage
+              }
+              edges {
+                id
+                number
+                status
+                createdAt
+              }
             }
           }
         }`,

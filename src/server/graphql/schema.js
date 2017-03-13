@@ -6,22 +6,20 @@ import {
   GraphQLString,
   GraphQLList,
 } from 'graphql/type'
-import paginationTypeFactory from 'modules/graphQL/paginationTypeFactory'
 import BuildType, {
   resolve as resolveBuild,
-  resolveList as resolveBuildList,
 } from 'server/graphql/BuildType'
-import ScreenshotDiffType, {
-  resolveList as resolveSreenshotDiffList,
+import OwnerType, {
+  resolve as resolveOwner,
+  resolveList as resolveOwnerList,
+} from 'server/graphql/OwnerType'
+import RepositoryType, {
+  resolve as resolveRepository,
+} from 'server/graphql/RepositoryType'
+import {
   resolveSetValidationStatus,
   validationStatusType,
 } from 'server/graphql/ScreenshotDiffType'
-import RepositoryType, {
-  resolveList as resolveRepositoryList,
-} from 'server/graphql/RepositoryType'
-import OwnerType, {
-  resolveList as resolveOwnerList,
-} from 'server/graphql/OwnerType'
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -37,46 +35,28 @@ export default new GraphQLSchema({
         type: BuildType,
         resolve: resolveBuild,
       },
-      builds: {
-        description: 'Get a build list.',
+      repository: {
+        description: 'Get a repository.',
         args: {
-          profileName: {
+          ownerLogin: {
             type: new GraphQLNonNull(GraphQLString),
           },
           repositoryName: {
             type: new GraphQLNonNull(GraphQLString),
           },
-          first: { // Number to display
-            type: new GraphQLNonNull(GraphQLInt),
-          },
-          after: { // Cursor
-            type: new GraphQLNonNull(GraphQLInt),
-          },
         },
-        type: paginationTypeFactory({
-          type: BuildType,
-        }),
-        resolve: resolveBuildList,
+        type: RepositoryType,
+        resolve: resolveRepository,
       },
-      screenshotDiffs: {
-        description: 'Get the diffs for a given build.',
+      owner: {
+        description: 'Get a owner.',
         args: {
-          buildId: {
-            type: new GraphQLNonNull(GraphQLInt),
-          },
-        },
-        type: new GraphQLList(ScreenshotDiffType),
-        resolve: resolveSreenshotDiffList,
-      },
-      repositories: {
-        description: 'Get a repository list.',
-        args: {
-          profileName: {
+          login: {
             type: new GraphQLNonNull(GraphQLString),
           },
         },
-        type: new GraphQLList(RepositoryType),
-        resolve: resolveRepositoryList,
+        type: OwnerType,
+        resolve: resolveOwner,
       },
       owners: {
         description: 'Get owners list.',

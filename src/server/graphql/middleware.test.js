@@ -49,19 +49,21 @@ describe('GraphQL', () => {
         .post('/')
         .send({
           query: `{
-            screenshotDiffs(buildId: ${build.id}) {
-              baseScreenshot {
-                name
+            build(id: ${build.id}) {
+              screenshotDiffs {
+                baseScreenshot {
+                  name
+                }
+                compareScreenshot {
+                  name
+                }
+                score
               }
-              compareScreenshot {
-                name
-              }
-              score
             }
           }`,
         })
         .expect((res) => {
-          const screenshotDiffs = res.body.data.screenshotDiffs
+          const { screenshotDiffs } = res.body.data.build
           expect(screenshotDiffs).toEqual([
             {
               baseScreenshot: {
@@ -118,13 +120,15 @@ describe('GraphQL', () => {
           .post('/')
           .send({
             query: `{
-              screenshotDiffs(buildId: ${build.id}) {
-                validationStatus
+              build(id: ${build.id}) {
+                screenshotDiffs {
+                  validationStatus
+                }
               }
             }`,
           })
           .expect((res) => {
-            const screenshotDiffs = res.body.data.screenshotDiffs
+            const { screenshotDiffs } = res.body.data.build
             expect(screenshotDiffs).toEqual([
               {
                 validationStatus: VALIDATION_STATUS.rejected,
@@ -201,27 +205,30 @@ describe('GraphQL', () => {
         .post('/')
         .send({
           query: `{
-            builds(
-              profileName: "${organization.name}",
+            repository(
+              ownerLogin: "${organization.login}",
               repositoryName: "${repository.name}",
-              first: 2,
-              after: 0
             ) {
-              pageInfo {
-                totalCount
-                endCursor
-                hasNextPage
-              }
-              edges {
-                status
-                number
-                createdAt
+              builds(
+                first: 2,
+                after: 0,
+              ) {
+                pageInfo {
+                  totalCount
+                  endCursor
+                  hasNextPage
+                }
+                edges {
+                  status
+                  number
+                  createdAt
+                }
               }
             }
           }`,
         })
         .expect((res) => {
-          const builds = res.body.data.builds
+          const { builds } = res.body.data.repository
           expect(builds).toEqual({
             pageInfo: {
               endCursor: 2,
@@ -287,16 +294,18 @@ describe('GraphQL', () => {
         .post('/graphql')
         .send({
           query: `{
-            repositories(
-              profileName: "${organization.name}",
+            owner(
+              login: "${organization.login}",
             ) {
-              name
+              repositories {
+                name
+              }
             }
           }`,
         })
         .expect(200)
         .expect((res) => {
-          const repositories = res.body.data.repositories
+          const { repositories } = res.body.data.owner
           expect(repositories).toEqual([
             {
               name: 'foo1',

@@ -8,6 +8,7 @@ const dashboardEpic = action$ => (
       graphQLClient.fetch({
         query: `{
           owners {
+            login
             name
             type
           }

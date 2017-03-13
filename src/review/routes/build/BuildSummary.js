@@ -42,6 +42,11 @@ export function BuildSummary(props) {
         <WatchTask task={fetch}>
           {() => {
             const build = fetch.output.data.build
+
+            if (!build) {
+              return null
+            }
+
             const {
               createdAt,
               status,

@@ -1,13 +1,11 @@
 import React, { PropTypes } from 'react'
 import recompact from 'modules/recompact'
 import { connect } from 'react-redux'
-import { Link as LinkRouter } from 'react-router'
 import {
   List,
 } from 'material-ui/List'
 import Paper from 'material-ui/Paper'
 import Text from 'material-ui/Text'
-import Link from 'modules/components/Link'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import actionTypes from 'review/modules/redux/actionTypes'
@@ -23,45 +21,48 @@ function RepositoryDetails(props) {
   } = props
 
   return (
-    <div>
-      <Link component={LinkRouter} to={`/${profileName}/${repositoryName}/settings`}>
-        {'Settings'}
-      </Link>
-      <br />
-      <br />
-      <Paper>
-        <WatchTask task={fetch}>
-          {() => {
-            const {
-              edges,
-            } = fetch.output.data.builds
-
-            if (edges.length === 0) {
-              return (
-                <WatchTaskContainer>
-                  <Text>
-                    {'No build'}
-                  </Text>
-                </WatchTaskContainer>
-              )
-            }
-
+    <Paper>
+      <WatchTask task={fetch}>
+        {() => {
+          if (!fetch.output.data.repository) {
             return (
-              <List>
-                {edges.map(build => (
-                  <RepositoryDetailsItem
-                    key={build.id}
-                    build={build}
-                    profileName={profileName}
-                    repositoryName={repositoryName}
-                  />
-                ))}
-              </List>
+              <WatchTaskContainer>
+                <Text>
+                  {'Repository not found'}
+                </Text>
+              </WatchTaskContainer>
             )
-          }}
-        </WatchTask>
-      </Paper>
-    </div>
+          }
+
+          const {
+            edges,
+          } = fetch.output.data.repository.builds
+
+          if (edges.length === 0) {
+            return (
+              <WatchTaskContainer>
+                <Text>
+                  {'No build yet for this repository.'}
+                </Text>
+              </WatchTaskContainer>
+            )
+          }
+
+          return (
+            <List>
+              {edges.map(build => (
+                <RepositoryDetailsItem
+                  key={build.id}
+                  build={build}
+                  profileName={profileName}
+                  repositoryName={repositoryName}
+                />
+              ))}
+            </List>
+          )
+        }}
+      </WatchTask>
+    </Paper>
   )
 }
 

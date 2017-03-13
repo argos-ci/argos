@@ -14,7 +14,7 @@ describe('notifications', () => {
     const user = await factory.create('User', {
       accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
     })
-    const organization = await factory.create('Organization', { name: 'argos-ci' })
+    const organization = await factory.create('Organization', { login: 'argos-ci' })
     const repository = await factory.create('Repository', {
       name: 'test-repository',
       organizationId: organization.id,

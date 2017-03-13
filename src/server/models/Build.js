@@ -53,6 +53,14 @@ export default class Build extends BaseModel {
         to: 'repositories.id',
       },
     },
+    screenshotDiffs: {
+      relation: BaseModel.HasManyRelation,
+      modelClass: 'ScreenshotDiff',
+      join: {
+        from: 'builds.id',
+        to: 'screenshot_diffs.buildId',
+      },
+    },
   };
 
   $afterValidate(json) { // eslint-disable-line class-methods-use-this

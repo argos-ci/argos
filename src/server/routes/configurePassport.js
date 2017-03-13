@@ -55,8 +55,7 @@ export default (passport) => {
   passport.serializeUser((user, done) => done(null, user.id))
   passport.deserializeUser(async (id, done) => {
     try {
-      const [user] = await User.query().where({ id })
-      done(null, user)
+      done(null, await User.query().findById(id))
     } catch (err) {
       done(err)
     }

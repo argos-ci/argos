@@ -4,12 +4,13 @@ import { connect } from 'react-redux'
 import recompact from 'modules/recompact'
 import Text from 'material-ui/Text'
 import Paper from 'material-ui/Paper'
+import Avatar from 'material-ui/Avatar'
+import Layout from 'material-ui/Layout'
 import {
   List,
   ListItem,
   ListItemText,
 } from 'material-ui/List'
-import Link from 'modules/components/Link'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ViewContainer from 'modules/components/ViewContainer'
@@ -31,45 +32,76 @@ function Profile(props) {
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin>
-          <Text type="display1" component="h2" gutterBottom>
-            <Link component={LinkRouter} to={`/${profileName}`}>
-              {profileName}
-            </Link>
-          </Text>
-          <Paper>
-            <WatchTask task={fetch}>
-              {() => {
-                const {
-                  repositories,
-                } = fetch.output.data
+          <Layout container gutter={24}>
+            <Layout
+              align="center"
+              container
+              item
+              xs={12}
+            >
+              <Layout item>
+                <Avatar
+                  src={`https://github.com/${profileName}.png?size=300`}
+                  style={{ width: 120, height: 120 }}
+                />
+              </Layout>
+              <Layout item>
+                <Text type="display1" component="h2" gutterBottom>
+                  {
+                    (
+                      fetch.state === 'SUCCESS' && fetch.output.data.owner ?
+                        fetch.output.data.owner.name :
+                        null
+                    ) || profileName
+                  }
+                </Text>
+              </Layout>
+            </Layout>
+            <Layout item xs={12}>
+              <Paper>
+                <WatchTask task={fetch}>
+                  {() => {
+                    if (!fetch.output.data.owner) {
+                      return (
+                        <WatchTaskContainer>
+                          <Text>
+                            {'Profile not found.'}
+                          </Text>
+                        </WatchTaskContainer>
+                      )
+                    }
 
-                if (repositories.length === 0) {
-                  return (
-                    <WatchTaskContainer>
-                      <Text>
-                        {'No repository'}
-                      </Text>
-                    </WatchTaskContainer>
-                  )
-                }
+                    const { repositories } = fetch.output.data.owner
 
-                return (
-                  <List>
-                    {repositories.map(repository => (
-                      <ListItem
-                        key={repository.id}
-                        button
-                        component={LinkRouter}
-                        to={`/${profileName}/${repository.name}`}
-                      >
-                        <ListItemText primary={repository.name} />
-                      </ListItem>
-                    ))}
-                  </List>
-                )
-              }}
-            </WatchTask>
-          </Paper>
+                    if (repositories.length === 0) {
+                      return (
+                        <WatchTaskContainer>
+                          <Text>
+                            {'No repository enabled.'}
+                          </Text>
+                        </WatchTaskContainer>
+                      )
+                    }
+
+                    return (
+                      <List>
+                        {repositories.map(repository => (
+                          <ListItem
+                            key={repository.id}
+                            button
+                            component={LinkRouter}
+                            to={`/${profileName}/${repository.name}`}
+                          >
+                            <ListItemText primary={repository.name} />
+                          </ListItem>
+                        ))}
+                      </List>
+                    )
+                  }}
+                </WatchTask>
+              </Paper>
+            </Layout>
+          </Layout>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>

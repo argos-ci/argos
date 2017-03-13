@@ -26,19 +26,19 @@ const fetchEpic = action$ => (
               commit
             }
             status
-          }
-          screenshotDiffs(buildId: ${action.payload.buildId}) {
-            id
-            jobStatus
-            score
-            s3Id
-            baseScreenshot {
-              name
+            screenshotDiffs {
+              id
+              jobStatus
+              score
               s3Id
-            }
-            compareScreenshot {
-              name
-              s3Id
+              baseScreenshot {
+                name
+                s3Id
+              }
+              compareScreenshot {
+                name
+                s3Id
+              }
             }
           }
         }`,
