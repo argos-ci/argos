@@ -16,17 +16,25 @@
   "scripts": {
     "dev": "babel --watch -d lib src",
     "build": "NODE_ENV=production babel -d lib src",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "test": "jest --runInBand"
   },
   "devDependencies": {
     "babel-cli": "^6.24.0",
     "babel-preset-env": "^1.2.1",
-    "babel-preset-stage-1": "^6.22.0"
+    "babel-preset-stage-1": "^6.22.0",
+    "jest": "^19.0.2"
   },
   "dependencies": {
     "convict": "^2.0.0",
     "form-data": "^2.1.2",
     "mz": "^2.6.0",
     "node-fetch": "^1.6.3"
+  },
+  "jest": {
+    "roots": ["<rootDir>/src"],
+    "setupFiles": [
+      "<rootDir>/test/setupEnv.js"
+    ]
   }
 }

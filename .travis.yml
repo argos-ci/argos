@@ -11,5 +11,6 @@ before_script:
   - psql -c 'CREATE DATABASE test;' -U postgres
 script:
   - npm run test
+  - cd packages/argos-cli && npm run test
 addons:
   postgresql: '9.6'
