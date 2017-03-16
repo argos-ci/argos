@@ -30,6 +30,9 @@ describe('GraphQL', () => {
       const screenshot2 = await factory.create('Screenshot', {
         name: 'email_deleted',
       })
+      const screenshot3 = await factory.create('Screenshot', {
+        name: 'email_added',
+      })
       await factory.create('ScreenshotDiff', {
         buildId: build.id,
         baseScreenshotId: screenshot1.id,
@@ -41,6 +44,12 @@ describe('GraphQL', () => {
         baseScreenshotId: screenshot1.id,
         compareScreenshotId: screenshot2.id,
         score: 0.3,
+      })
+      await factory.create('ScreenshotDiff', {
+        buildId: build.id,
+        baseScreenshotId: screenshot3.id,
+        compareScreenshotId: screenshot3.id,
+        score: 0,
       })
     })
 
@@ -73,6 +82,15 @@ describe('GraphQL', () => {
                 name: 'email_deleted',
               },
               score: 0.3,
+            },
+            {
+              baseScreenshot: {
+                name: 'email_added',
+              },
+              compareScreenshot: {
+                name: 'email_added',
+              },
+              score: 0,
             },
             {
               baseScreenshot: {
@@ -130,6 +148,9 @@ describe('GraphQL', () => {
           .expect((res) => {
             const { screenshotDiffs } = res.body.data.build
             expect(screenshotDiffs).toEqual([
+              {
+                validationStatus: VALIDATION_STATUS.rejected,
+              },
               {
                 validationStatus: VALIDATION_STATUS.rejected,
               },

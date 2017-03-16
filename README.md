@@ -98,6 +98,12 @@ knex migrate:make my_migration
 yarn db:dump
 ```
 
+#### Execute the latest migration
+
+```sh
+yarn db:migrate:latest
+```
+
 ### Running the test suite
 
 You can reset the test database using:

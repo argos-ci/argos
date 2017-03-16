@@ -74,6 +74,15 @@ exports.seed = (knex, Promise) => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
+        knex('screenshots').insert({
+          id: 9,
+          screenshotBucketId: 6,
+          name: 'ListItem/AvatarListItem',
+          // s3Id: 'https://raw.githubusercontent.com/callemall/material-ui/5a71e923860280dd6469936c43e57d6bfd220172/test/regressions/screenshots/baseline/ListItem/AvatarListItem/chrome-53.0.2785.143-linux.png',
+          s3Id: '9.png',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
       ])
     })
 }
