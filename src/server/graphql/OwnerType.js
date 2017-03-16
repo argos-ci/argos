@@ -43,7 +43,7 @@ const OwnerType = new GraphQLObjectType({
             .where({
               private: false,
               enabled: true,
-              [`${source.type}Id`]: source.id,
+              [`repositories.${source.type}Id`]: source.id,
             })
         }
 
@@ -59,7 +59,7 @@ const OwnerType = new GraphQLObjectType({
             'user_repository_rights.userId': context.user.id,
             private: true,
             enabled: true,
-            [`${source.type}Id`]: source.id,
+            [`repositories.${source.type}Id`]: source.id,
           })
       },
     },
