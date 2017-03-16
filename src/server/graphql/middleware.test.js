@@ -10,7 +10,7 @@ const { pushBuildNotification } = require('modules/build/notifications')
 describe('GraphQL', () => {
   useDatabase()
 
-  describe('screenshotDiffs', () => {
+  describe('build', () => {
     let build
     let user
 
@@ -166,7 +166,7 @@ describe('GraphQL', () => {
     })
   })
 
-  describe('builds', () => {
+  describe('repository', () => {
     let user
     let organization
     let repository
@@ -198,7 +198,7 @@ describe('GraphQL', () => {
       })
     })
 
-    it('should be sorted', () => {
+    it('should list builds sorted by number', () => {
       return request(graphqlMiddleware({
         context: { user },
       }))
@@ -253,7 +253,7 @@ describe('GraphQL', () => {
     })
   })
 
-  describe('repositories', () => {
+  describe('owner', () => {
     let organization
     let user
 
@@ -277,6 +277,10 @@ describe('GraphQL', () => {
         name: 'foo2',
         organizationId: organization2.id,
       })
+      const repository3 = await factory.create('Repository', {
+        name: 'foo3',
+        userId: user.id,
+      })
       await factory.create('UserRepositoryRight', {
         userId: user.id,
         repositoryId: repository1.id,
@@ -285,9 +289,13 @@ describe('GraphQL', () => {
         userId: user.id,
         repositoryId: repository2.id,
       })
+      await factory.create('UserRepositoryRight', {
+        userId: user.id,
+        repositoryId: repository3.id,
+      })
     })
 
-    it('should filter the repositories', () => {
+    it('should filter the repositories (organization)', () => {
       return request(graphqlMiddleware({
         context: { user },
       }))
@@ -309,6 +317,33 @@ describe('GraphQL', () => {
           expect(repositories).toEqual([
             {
               name: 'foo1',
+            },
+          ])
+        })
+    })
+
+    it('should filter the repositories (user)', () => {
+      return request(graphqlMiddleware({
+        context: { user },
+      }))
+        .post('/graphql')
+        .send({
+          query: `{
+            owner(
+              login: "${user.login}",
+            ) {
+              repositories {
+                name
+              }
+            }
+          }`,
+        })
+        .expect(200)
+        .expect((res) => {
+          const { repositories } = res.body.data.owner
+          expect(repositories).toEqual([
+            {
+              name: 'foo3',
             },
           ])
         })
