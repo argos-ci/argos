@@ -130,10 +130,8 @@
     "webpack-dev-server": "^2.4.1"
   },
   "jest": {
-    "notify": false,
     "roots": [
-      "<rootDir>/src",
-      "<rootDir>/packages"
+      "<rootDir>/src"
     ],
     "modulePaths": [
       "<rootDir>/src"

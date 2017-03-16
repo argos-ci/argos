@@ -10,6 +10,7 @@ before_script:
   - createuser -s argos
   - psql -c 'CREATE DATABASE test;' -U postgres
 script:
-  - npm run test
+  - yarn test
+  - cd packages/argos-cli && yarn && yarn test
 addons:
   postgresql: '9.6'
