@@ -29,10 +29,13 @@
     "convict": "^2.0.0",
     "form-data": "^2.1.2",
     "mz": "^2.6.0",
-    "node-fetch": "^1.6.3"
+    "node-fetch": "^1.6.3",
+    "raven": "^1.2.0"
   },
   "jest": {
-    "roots": ["<rootDir>/src"],
+    "roots": [
+      "<rootDir>/src"
+    ],
     "setupFiles": [
       "<rootDir>/test/setupEnv.js"
     ]
