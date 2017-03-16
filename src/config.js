@@ -100,7 +100,7 @@ const config = convict({
     releaseVersion: {
       doc: 'Heroku release version',
       format: String,
-      default: '',
+      default: 'dev',
       env: 'HEROKU_RELEASE_VERSION',
     },
   },

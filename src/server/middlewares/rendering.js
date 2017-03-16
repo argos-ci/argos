@@ -64,7 +64,6 @@ export default (req, res) => {
           screenshotsBucket: config.get('s3.screenshotsBucket'),
         },
       },
-      releaseVersion: config.get('heroku.releaseVersion'),
       user: req.user ? pick(req.user, 'name', 'email', 'login', 'privateSync') : null,
     }),
   })
