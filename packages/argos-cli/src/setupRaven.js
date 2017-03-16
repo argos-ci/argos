@@ -6,7 +6,7 @@ const DSN = 'https://33b6f7cfa05848f8a1edd6997db57ac1:00e3923d9b874f499e75be04b7
 
 function setupRaven() {
   raven.config(noSentry ? false : DSN, {
-    environment: process.env.NODE_ENV, // Should always be production
+    environment: 'production',
     autoBreadcrumbs: true,
     release: pkg.version,
   })
