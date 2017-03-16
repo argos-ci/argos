@@ -1,16 +1,19 @@
 import React, { PropTypes } from 'react'
 import { Link as LinkRouter } from 'react-router'
+import { createStyleSheet } from 'jss-theme-reactor'
 import { connect } from 'react-redux'
 import recompact from 'modules/recompact'
 import Text from 'material-ui/Text'
 import Paper from 'material-ui/Paper'
 import Avatar from 'material-ui/Avatar'
 import Layout from 'material-ui/Layout'
+import { white } from 'material-ui/styles/colors'
 import {
   List,
   ListItem,
   ListItemText,
 } from 'material-ui/List'
+import withStyles from 'material-ui/styles/withStyles'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ViewContainer from 'modules/components/ViewContainer'
@@ -19,8 +22,17 @@ import LayoutBody from 'modules/components/LayoutBody'
 import ReviewAppBar from 'review/modules/AppBar/AppBar'
 import actionTypes from 'review/modules/redux/actionTypes'
 
+const styleSheet = createStyleSheet('Profile', () => ({
+  avatar: {
+    width: 120,
+    height: 120,
+    background: white,
+  },
+}))
+
 function Profile(props) {
   const {
+    classes,
     fetch,
     params: {
       profileName,
@@ -42,17 +54,15 @@ function Profile(props) {
               <Layout item>
                 <Avatar
                   src={`https://github.com/${profileName}.png?size=300`}
-                  style={{ width: 120, height: 120 }}
+                  className={classes.avatar}
                 />
               </Layout>
               <Layout item>
                 <Text type="display1" component="h2" gutterBottom>
                   {
-                    (
-                      fetch.state === 'SUCCESS' && fetch.output.data.owner ?
-                        fetch.output.data.owner.name :
-                        null
-                    ) || profileName
+                    fetch.state === 'SUCCESS' && fetch.output.data.owner ?
+                      fetch.output.data.owner.name :
+                      null
                   }
                 </Text>
               </Layout>
@@ -109,6 +119,7 @@ function Profile(props) {
 }
 
 Profile.propTypes = {
+  classes: PropTypes.object.isRequired,
   dispatch: PropTypes.func.isRequired,
   fetch: PropTypes.object.isRequired,
   params: PropTypes.shape({
@@ -117,6 +128,7 @@ Profile.propTypes = {
 }
 
 export default recompact.compose(
+  withStyles(styleSheet),
   connect(state => state.ui.profile),
   recompact.lifecycle({
     componentDidMount() {

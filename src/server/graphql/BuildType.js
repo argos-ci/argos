@@ -60,7 +60,11 @@ const BuildType = new GraphQLObjectType({
     screenshotDiffs: {
       description: 'Get the diffs for a given build.',
       type: new GraphQLList(ScreenshotDiffType),
-      resolve: build => build.$relatedQuery('screenshotDiffs').orderBy('score', 'desc'),
+      resolve: source => source
+        .$relatedQuery('screenshotDiffs')
+        .innerJoin('screenshots', 'screenshots.id', 'screenshot_diffs.baseScreenshotId')
+        .orderBy('score', 'desc')
+        .orderBy('screenshots.name', 'asc'),
     },
     baseScreenshotBucketId: {
       type: GraphQLString,
