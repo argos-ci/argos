@@ -6,7 +6,8 @@ const graphQLClient = {
     return fetch(`${window.location.origin}/graphql`, {
       method: 'post',
       headers: {
-        'content-type': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Argos-Release': process.env.RELEASE_VERSION,
       },
       credentials: 'same-origin',
       body: JSON.stringify(params),

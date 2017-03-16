@@ -88,6 +88,7 @@
     "passport": "^0.3.2",
     "passport-github": "^1.1.0",
     "pg": "^6.1.4",
+    "pretty-error": "^2.0.3",
     "promirepl": "^1.0.1",
     "raven": "^1.1.4",
     "raven-js": "^3.12.1",

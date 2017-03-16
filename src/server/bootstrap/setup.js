@@ -1,10 +1,10 @@
 import { connect } from 'server/services/database'
 import handleKillSignals from 'server/bootstrap/handleKillSignals'
-import crashReporter from 'modules/crashReporter/crashReporter'
+import crashReporter, { initializeCrashReporter } from 'modules/crashReporter/crashReporter'
 
 handleKillSignals()
 connect()
-crashReporter.init()
+initializeCrashReporter()
 
 process.on('error', (error) => {
   crashReporter.captureException(error)

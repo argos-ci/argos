@@ -7,7 +7,7 @@ import ejs from 'ejs'
 import subdomain from 'express-subdomain'
 import errorHandler from 'express-err'
 import config from 'config'
-import crashReporter from 'modules/crashReporter/crashReporter'
+import crashReporter, { captureClientRelease } from 'modules/crashReporter/crashReporter'
 import csp from 'server/middlewares/csp'
 import www from 'server/routes/www'
 import api from 'server/routes/api'
@@ -18,6 +18,7 @@ app.engine('html', ejs.renderFile)
 app.set('trust proxy', 1)
 app.set('views', path.join(__dirname, '..'))
 
+app.use(captureClientRelease())
 app.use(crashReporter.requestHandler())
 
 if (config.get('server.logFormat')) {

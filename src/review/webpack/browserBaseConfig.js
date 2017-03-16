@@ -1,5 +1,6 @@
 import path from 'path'
 import webpack from 'webpack'
+import config from 'config'
 
 export default {
   entry: [
@@ -20,6 +21,9 @@ export default {
       path.join(__dirname, '../../'),
       'node_modules',
     ],
+    alias: {
+      raven: 'raven-js',
+    },
   },
   module: {
     rules: [
@@ -66,6 +70,7 @@ export default {
   plugins: [
     new webpack.DefinePlugin({
       'process.env.PLATFORM': JSON.stringify('browser'),
+      'process.env.RELEASE_VERSION': JSON.stringify(config.get('heroku.releaseVersion')),
     }),
   ],
 }
