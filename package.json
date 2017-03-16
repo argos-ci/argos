@@ -139,6 +139,7 @@
       "<rootDir>/src"
     ],
     "setupFiles": [
+      "<rootDir>/src/server/bootstrap/nodeEnvTest.js",
       "<rootDir>/src/server/bootstrap/setupTest.js"
     ]
   }
