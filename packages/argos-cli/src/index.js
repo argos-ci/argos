@@ -1,9 +1,14 @@
 /* eslint-disable no-console */
 import program from 'commander'
 import chalk from 'chalk'
+import setupRaven from './setupRaven'
+import pkg from '../package.json'
 import upload, { UploadError } from './upload'
 
+setupRaven()
+
 program
+  .version(pkg.version)
   .command('upload <directory>')
   .description('Upload screenshots')
   .option('-T, --token <token>', 'Repository token')
