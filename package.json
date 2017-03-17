@@ -140,5 +140,8 @@
       "<rootDir>/src/server/bootstrap/nodeEnvTest.js",
       "<rootDir>/src/server/bootstrap/setupTest.js"
     ]
+  },
+  "engines": {
+    "node": "7.7.3"
   }
 }
