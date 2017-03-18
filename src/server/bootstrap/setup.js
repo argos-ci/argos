@@ -1,4 +1,4 @@
-import 'newrelic'
+import '@risingstack/trace'
 import { connect } from 'server/services/database'
 import handleKillSignals from 'server/bootstrap/handleKillSignals'
 import crashReporter, { initializeCrashReporter } from 'modules/crashReporter/crashReporter'
