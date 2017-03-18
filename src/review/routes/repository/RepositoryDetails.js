@@ -1,4 +1,5 @@
 import React, { PropTypes } from 'react'
+import { createStyleSheet } from 'jss-theme-reactor'
 import recompact from 'modules/recompact'
 import { connect } from 'react-redux'
 import {
@@ -6,13 +7,21 @@ import {
 } from 'material-ui/List'
 import Paper from 'material-ui/Paper'
 import Text from 'material-ui/Text'
+import withStyles from 'material-ui/styles/withStyles'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import actionTypes from 'review/modules/redux/actionTypes'
 import RepositoryDetailsItem from 'review/routes/repository/RepositoryDetailsItem'
 
+const styleSheet = createStyleSheet('RepositoryDetails', () => ({
+  paper: {
+    display: 'flex',
+  },
+}))
+
 function RepositoryDetails(props) {
   const {
+    classes,
     fetch,
     params: {
       profileName,
@@ -21,7 +30,7 @@ function RepositoryDetails(props) {
   } = props
 
   return (
-    <Paper>
+    <Paper className={classes.paper}>
       <WatchTask task={fetch}>
         {() => {
           if (!fetch.output.data.repository) {
@@ -67,6 +76,7 @@ function RepositoryDetails(props) {
 }
 
 RepositoryDetails.propTypes = {
+  classes: PropTypes.object.isRequired,
   dispatch: PropTypes.func.isRequired,
   fetch: PropTypes.shape({
     output: PropTypes.shape({
@@ -88,6 +98,7 @@ RepositoryDetails.propTypes = {
 }
 
 export default recompact.compose(
+  withStyles(styleSheet),
   connect(state => state.ui.repositoryDetails),
   recompact.lifecycle({
     componentDidMount() {

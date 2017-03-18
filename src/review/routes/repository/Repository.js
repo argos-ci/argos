@@ -24,7 +24,7 @@ function Repository(props) {
         <LayoutBody margin>
           <Layout container gutter={24}>
             <Layout item xs={12}>
-              <Text type="display1" component="h2" gutterBottom>
+              <Text type="display1" component="h2">
                 <Link component={LinkRouter} to={`/${profileName}`}>
                   {profileName}
                 </Link>

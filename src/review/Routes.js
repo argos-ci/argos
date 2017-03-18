@@ -11,7 +11,7 @@ import {
 import plugAnalyticsMiddleware from 'modules/reactRouter/plugAnalyticsMiddleware'
 import Homepage from 'review/routes/homepage/Homepage'
 import Profile from 'review/routes/profile/Profile'
-import ProfileDetails from 'review/routes/profile/Details'
+import ProfileDetails from 'review/routes/profile/ProfileDetails'
 import NotFound from 'review/routes/notFound/NotFound'
 import Repository from 'review/routes/repository/Repository'
 import RepositoryDetails from 'review/routes/repository/RepositoryDetails'

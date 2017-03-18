@@ -28,6 +28,9 @@ const styleSheet = createStyleSheet('Profile', () => ({
     height: 120,
     background: white,
   },
+  paper: {
+    display: 'flex',
+  },
 }))
 
 function Profile(props) {
@@ -68,7 +71,7 @@ function Profile(props) {
               </Layout>
             </Layout>
             <Layout item xs={12}>
-              <Paper>
+              <Paper className={classes.paper}>
                 <WatchTask task={fetch}>
                   {() => {
                     if (!fetch.output.data.owner) {

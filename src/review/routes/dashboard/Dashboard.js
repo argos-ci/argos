@@ -1,10 +1,9 @@
 import React, { PropTypes } from 'react'
+import { createStyleSheet } from 'jss-theme-reactor'
 import { Link as LinkRouter } from 'react-router'
 import { connect } from 'react-redux'
-import recompact from 'modules/recompact'
 import Text from 'material-ui/Text'
-import WatchTask from 'modules/components/WatchTask'
-import WatchTaskContainer from 'modules/components/WatchTaskContainer'
+import Layout from 'material-ui/Layout'
 import Avatar from 'material-ui/Avatar'
 import Paper from 'material-ui/Paper'
 import {
@@ -12,14 +11,25 @@ import {
   ListItem,
   ListItemText,
 } from 'material-ui/List'
+import withStyles from 'material-ui/styles/withStyles'
+import recompact from 'modules/recompact'
+import WatchTask from 'modules/components/WatchTask'
+import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
 import ReviewAppBar from 'review/modules/AppBar/AppBar'
 import actionTypes from 'review/modules/redux/actionTypes'
 
+const styleSheet = createStyleSheet('Dashboard', () => ({
+  paper: {
+    display: 'flex',
+  },
+}))
+
 function Dashboard(props) {
   const {
+    classes,
     fetch,
   } = props
 
@@ -28,42 +38,48 @@ function Dashboard(props) {
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin>
-          <Text type="display1" component="h2" gutterBottom>
-            {'Dashboard'}
-          </Text>
-          <Paper>
-            <WatchTask task={fetch}>
-              {() => {
-                const { owners } = fetch.output.data
+          <Layout container gutter={24}>
+            <Layout item xs={12}>
+              <Text type="display1" component="h2">
+                {'Dashboard'}
+              </Text>
+            </Layout>
+            <Layout item xs={12}>
+              <Paper className={classes.paper}>
+                <WatchTask task={fetch}>
+                  {() => {
+                    const { owners } = fetch.output.data
 
-                if (owners.length === 0) {
-                  return (
-                    <WatchTaskContainer>
-                      <Text>
-                        {'No organization'}
-                      </Text>
-                    </WatchTaskContainer>
-                  )
-                }
+                    if (owners.length === 0) {
+                      return (
+                        <WatchTaskContainer>
+                          <Text>
+                            {'No organization'}
+                          </Text>
+                        </WatchTaskContainer>
+                      )
+                    }
 
-                return (
-                  <List>
-                    {owners.map(({ login, name }) => (
-                      <ListItem
-                        key={login}
-                        button
-                        component={LinkRouter}
-                        to={`/${login}`}
-                      >
-                        <Avatar src={`https://github.com/${login}.png?size=80`} />
-                        <ListItemText primary={name || login} />
-                      </ListItem>
-                    ))}
-                  </List>
-                )
-              }}
-            </WatchTask>
-          </Paper>
+                    return (
+                      <List>
+                        {owners.map(({ login, name }) => (
+                          <ListItem
+                            key={login}
+                            button
+                            component={LinkRouter}
+                            to={`/${login}`}
+                          >
+                            <Avatar src={`https://github.com/${login}.png?size=80`} />
+                            <ListItemText primary={name || login} />
+                          </ListItem>
+                        ))}
+                      </List>
+                    )
+                  }}
+                </WatchTask>
+              </Paper>
+            </Layout>
+          </Layout>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>
@@ -71,11 +87,13 @@ function Dashboard(props) {
 }
 
 Dashboard.propTypes = {
+  classes: PropTypes.object.isRequired,
   dispatch: PropTypes.func.isRequired,
   fetch: PropTypes.object.isRequired,
 }
 
 export default recompact.compose(
+  withStyles(styleSheet),
   connect(state => state.ui.dashboard),
   recompact.lifecycle({
     componentDidMount() {
