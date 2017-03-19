@@ -39,6 +39,15 @@ if (config.get('server.secure')) {
   })
 }
 
+// Public directory
+app.use(express.static(path.join(__dirname, '../../../server/public'), {
+  etag: true,
+  lastModified: false,
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-cache')
+  },
+}))
+
 app.use(subdomain('www', www))
 app.use(subdomain('api', api))
 
