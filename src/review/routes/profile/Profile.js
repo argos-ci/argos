@@ -78,7 +78,7 @@ function Profile(props) {
                       return (
                         <WatchTaskContainer>
                           <Text>
-                            {'Profile not found.'}
+                            Profile not found.
                           </Text>
                         </WatchTaskContainer>
                       )
@@ -90,7 +90,7 @@ function Profile(props) {
                       return (
                         <WatchTaskContainer>
                           <Text>
-                            {'No repository enabled.'}
+                            No repository enabled.
                           </Text>
                         </WatchTaskContainer>
                       )

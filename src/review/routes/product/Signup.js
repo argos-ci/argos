@@ -10,7 +10,7 @@ export default function Signup() {
       component={Link}
       href="/auth/github-public"
     >
-      {'Sign up'}
+      Sign up
     </Button>
   )
 }

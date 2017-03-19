@@ -5,7 +5,7 @@ function Settings() {
   return (
     <div>
       <Text type="headline">
-        {'Settings'}
+        Settings
       </Text>
     </div>
   )

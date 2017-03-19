@@ -37,7 +37,7 @@ function RepositoryDetails(props) {
             return (
               <WatchTaskContainer>
                 <Text>
-                  {'Repository not found'}
+                  Repository not found
                 </Text>
               </WatchTaskContainer>
             )
@@ -51,7 +51,7 @@ function RepositoryDetails(props) {
             return (
               <WatchTaskContainer>
                 <Text>
-                  {'No build yet for this repository.'}
+                  No build yet for this repository.
                 </Text>
               </WatchTaskContainer>
             )
