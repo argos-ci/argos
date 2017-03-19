@@ -16,10 +16,10 @@ describe('api routes', () => {
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
           .field('commit', 'test-commit')
           .field('branch', 'test-branch')
-          .expect(401)
           .expect((res) => {
             expect(res.body.error.message).toBe('Invalid token')
           })
+          .expect(401)
       })
     })
 
@@ -32,10 +32,10 @@ describe('api routes', () => {
           .field('commit', 'test-commit')
           .field('branch', 'test-branch')
           .field('token', 'xx')
-          .expect(400)
           .expect((res) => {
             expect(res.body.error.message).toBe('Repository not found (token: "xx")')
           })
+          .expect(400)
       })
     })
 
@@ -53,10 +53,10 @@ describe('api routes', () => {
           .field('commit', 'test-commit')
           .field('branch', 'test-branch')
           .field('token', 'xx')
-          .expect(400)
           .expect((res) => {
             expect(res.body.error.message).toBe('Repository not enabled')
           })
+          .expect(400)
       })
     })
 
@@ -100,13 +100,13 @@ describe('api routes', () => {
       return request(app)
         .get('/buckets')
         .set('Host', 'api.argos-ci.dev')
-        .expect(200)
         .expect((res) => {
           expect(res.body[0].name).toBe('test-bucket')
           expect(res.body[0].commit).toBe('test-commit')
           expect(res.body[0].branch).toBe('test-branch')
           expect(res.body[0].repositoryId).toBe(repository.id)
         })
+        .expect(200)
     })
 
     describe('with query.branch', () => {
@@ -114,18 +114,18 @@ describe('api routes', () => {
         await request(app)
           .get('/buckets?branch=whatever')
           .set('Host', 'api.argos-ci.dev')
-          .expect(200)
           .expect((res) => {
             expect(res.body).toHaveLength(0)
           })
+          .expect(200)
 
         await request(app)
           .get('/buckets?branch=test-branch')
           .set('Host', 'api.argos-ci.dev')
-          .expect(200)
           .expect((res) => {
             expect(res.body).toHaveLength(1)
           })
+          .expect(200)
       })
     })
   })
