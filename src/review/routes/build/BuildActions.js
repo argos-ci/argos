@@ -10,7 +10,8 @@ import actionTypes from 'review/modules/redux/actionTypes'
 const styleSheet = createStyleSheet('BuildActions', (theme) => {
   return {
     validationStatus: {
-      margin: `0 ${theme.spacing.unit}px`,
+      marginTop: theme.spacing.unit,
+      marginRight: theme.spacing.unit,
     },
   }
 })

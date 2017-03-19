@@ -13,7 +13,11 @@ import BuildActions from 'review/routes/build/BuildActions'
 const styleSheet = createStyleSheet('BuildSummary', (theme) => {
   return {
     paper: {
+      display: 'flex',
       marginBottom: theme.spacing.unit * 2,
+    },
+    itemStatusChild: {
+      width: '100%',
     },
     list: {
       margin: 0,
@@ -61,7 +65,7 @@ export function BuildSummary(props) {
 
             return (
               <ItemStatus status={status}>
-                <div>
+                <div className={classes.itemStatusChild}>
                   <Layout container>
                     <Layout item xs={12} sm>
                       <ul className={classes.list}>
