@@ -1,6 +1,5 @@
 import path from 'path'
 import webpack from 'webpack'
-import config from 'config'
 
 export default {
   entry: [
@@ -70,7 +69,6 @@ export default {
   plugins: [
     new webpack.DefinePlugin({
       'process.env.PLATFORM': JSON.stringify('browser'),
-      'process.env.RELEASE_VERSION': JSON.stringify(config.get('heroku.releaseVersion')),
     }),
   ],
 }
