@@ -64,9 +64,7 @@ export async function processBuildNotification(buildNotification) {
     throw new Error('Owner not found')
   }
 
-  const github = new GitHubAPI({
-    debug: config.get('env') === 'development',
-  })
+  const github = new GitHubAPI({ debug: config.get('env') === 'development' })
 
   github.authenticate({
     type: 'oauth',

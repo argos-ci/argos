@@ -7,6 +7,7 @@ import path from 'path'
 import { minify } from 'html-minifier'
 import config from 'config'
 import { pick } from 'lodash'
+import getAuthorizationStatus from 'modules/authorizations/getAuthorizationStatus'
 
 let htmlWebpackPlugin
 let indexString = fs.readFileSync(path.join(__dirname, '../../review/index.ejs'), 'UTF-8')
@@ -64,7 +65,10 @@ export default (req, res) => {
           screenshotsBucket: config.get('s3.screenshotsBucket'),
         },
       },
-      user: req.user ? pick(req.user, 'name', 'email', 'login', 'privateSync') : null,
+      ...(req.user ? {
+        authorizationStatus: getAuthorizationStatus(req.user),
+        user: pick(req.user, 'name', 'email', 'login', 'privateSync'),
+      } : { user: null }),
     }),
   })
 

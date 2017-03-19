@@ -2,6 +2,8 @@ import { Strategy as GithubStrategy } from 'passport-github'
 import User from 'server/models/User'
 import config from 'config'
 import syncFromUserId from 'modules/synchronizer/syncFromUserId'
+import { PUBLIC_SCOPES, PRIVATE_SCOPES } from 'modules/authorizations/scopes'
+import getUserAuthorizationState from 'modules/authorizations/getUserAuthorizationState'
 
 function getDataFromProfile(profile) {
   return {
@@ -12,33 +14,39 @@ function getDataFromProfile(profile) {
   }
 }
 
+
 export default (passport) => {
   ['private', 'public'].forEach((type) => {
     passport.use(`github-${type}`, new GithubStrategy({
       clientID: config.get('github.clientId'),
       clientSecret: config.get('github.clientSecret'),
       callbackURL: `${config.get('server.url')}/auth/github/callback/${type}`,
-      // https://developer.github.com/v3/oauth/#scopes
-      scope: [
-        'user:email',
-        'repo:status',
-        'read:org',
-        ...(type === 'private' ? ['repo'] : []),
-      ],
+      scope: type === 'private' ? PRIVATE_SCOPES : PUBLIC_SCOPES,
     }, async (accessToken, refreshToken, profile, done) => {
       try {
         let [user] = await User.query().where({ githubId: Number(profile.id) })
 
         if (user) {
-          user = await user.$query().patchAndFetch({
+          const privateSync = user.privateSync || type === 'private'
+          const authorizationState = await getUserAuthorizationState({
             accessToken,
-            privateSync: user.privateSync || type === 'private',
+            previousAccessToken: user.accessToken,
+            privateSync,
+          })
+          user = await user.$query().patchAndFetch({
+            ...authorizationState,
+            privateSync,
             ...getDataFromProfile(profile),
           })
         } else {
-          user = await User.query().insert({
+          const privateSync = type === 'private'
+          const authorizationState = await getUserAuthorizationState({
             accessToken,
-            privateSync: type === 'private',
+            privateSync,
+          })
+          user = await User.query().insert({
+            ...authorizationState,
+            privateSync,
             ...getDataFromProfile(profile),
           })
         }
