@@ -28,7 +28,7 @@ export default function WatchTask(props) {
   if (state === ERROR || (state === SUCCESS && output.errors)) {
     return renderInContainer(props,
       <Text>
-        {'The loading failed'}
+        The loading failed
       </Text>,
     )
   }

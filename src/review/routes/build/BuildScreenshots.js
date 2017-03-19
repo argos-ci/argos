@@ -22,7 +22,7 @@ function BuildScreenshots(props) {
   return (
     <div>
       <Text type="headline" component="h3" gutterBottom>
-        {'Screenshots'}
+        Screenshots
       </Text>
       <WatchTask task={fetch}>
         {() => {
@@ -30,7 +30,7 @@ function BuildScreenshots(props) {
             return (
               <WatchTaskContainer>
                 <Text>
-                  {'Profile not found.'}
+                  Profile not found.
                 </Text>
               </WatchTaskContainer>
             )
