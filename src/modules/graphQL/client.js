@@ -7,7 +7,7 @@ const graphQLClient = {
       method: 'post',
       headers: {
         'Content-Type': 'application/json',
-        'X-Argos-Release': process.env.RELEASE_VERSION,
+        'X-Argos-Release': window.clientData.releaseVersion,
       },
       credentials: 'same-origin',
       body: JSON.stringify(params),
