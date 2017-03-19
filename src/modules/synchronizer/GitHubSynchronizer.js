@@ -12,9 +12,7 @@ const OWNER_USER = 'User'
 class GitHubSynchronizer {
   constructor(synchronization) {
     this.synchronization = synchronization
-    this.github = new GitHubAPI({
-      debug: config.get('env') === 'development',
-    })
+    this.github = new GitHubAPI({ debug: config.get('env') === 'development' })
     this.repositories = []
     this.organizationIds = []
   }

@@ -1,0 +1,4 @@
+export const CONSISTENT = 'CONSISTENT'
+export const INCONSISTENT = 'INCONSISTENT'
+
+export default [CONSISTENT, INCONSISTENT]

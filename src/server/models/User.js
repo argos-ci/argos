@@ -15,6 +15,11 @@ export default class User extends BaseModel {
       login: { type: 'string' },
       email: { type: ['string', null] },
       privateSync: { type: 'boolean' },
+      githubScopes: {
+        type: ['array', null],
+        items: { type: 'string' },
+        uniqueItems: true,
+      },
     },
   });
 

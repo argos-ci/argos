@@ -512,7 +512,8 @@ CREATE TABLE users (
     "updatedAt" timestamp with time zone NOT NULL,
     "accessToken" character varying(255),
     login character varying(255) NOT NULL,
-    "privateSync" boolean DEFAULT false NOT NULL
+    "privateSync" boolean DEFAULT false NOT NULL,
+    "githubScopes" jsonb
 );
 
 
@@ -1034,3 +1035,4 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170306205356
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312191852_users_add_private_enabled.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312202055_repositories_add_column_private.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312230324_organizations_login.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170319114827_add_github_scopes_to_users.js', 1, NOW());
