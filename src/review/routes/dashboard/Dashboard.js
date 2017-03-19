@@ -43,7 +43,7 @@ function Dashboard(props) {
           <Layout container gutter={24}>
             <Layout item xs={12}>
               <Text type="display1" component="h2">
-                {'Dashboard'}
+                Dashboard
               </Text>
             </Layout>
             <Layout item xs={12}>
@@ -56,7 +56,7 @@ function Dashboard(props) {
                       return (
                         <WatchTaskContainer>
                           <Text>
-                            {'No organization'}
+                            No organization
                           </Text>
                         </WatchTaskContainer>
                       )

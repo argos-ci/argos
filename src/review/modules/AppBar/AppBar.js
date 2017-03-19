@@ -60,7 +60,7 @@ class ReviewAppBar extends Component {
         <Toolbar>
           <Text type="title" colorInherit className={classes.title}>
             <Link component={LinkRouter} to="/">
-              {'Argos'}
+              Argos
             </Link>
           </Text>
           {user ? (
@@ -96,7 +96,7 @@ class ReviewAppBar extends Component {
                 button={false}
                 onClick={this.handleRequestClose}
               >
-                {'Accounts'}
+                Accounts
               </MenuItem>
               <MenuItem
                 component="a"
@@ -104,7 +104,7 @@ class ReviewAppBar extends Component {
                 button={false}
                 onClick={this.handleRequestClose}
               >
-                {'Sign Out'}
+                Sign Out
               </MenuItem>
             </Menu>
           ) : null}

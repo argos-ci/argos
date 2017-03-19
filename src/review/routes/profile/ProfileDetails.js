@@ -24,7 +24,7 @@ function ProfileDetails({ user }) {
               component={Link}
               href="/auth/github-private"
             >
-              {'Synchronize private repositories'}
+              Synchronize private repositories
             </Button>
           )}
         </LayoutBody>

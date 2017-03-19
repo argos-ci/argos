@@ -40,7 +40,7 @@ export function BuildSummary(props) {
   return (
     <div>
       <Text type="headline" component="h3" gutterBottom>
-        {'Summary'}
+        Summary
       </Text>
       <Paper className={classes.paper}>
         <WatchTask task={fetch}>

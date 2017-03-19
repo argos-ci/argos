@@ -34,7 +34,7 @@ function ProductHome(props) {
         <Paper rounded={false} elevation={3} className={classes.landing}>
           <LayoutBody margin bottom={false}>
             <Text type="display1" component="h1" gutterBottom>
-              {'Stop discovering visual regressions'}
+              Stop discovering visual regressions
             </Text>
             <Text
               type="headline"
@@ -50,7 +50,7 @@ function ProductHome(props) {
           </LayoutBody>
         </Paper>
         <ProductArgument
-          title={'Forget about regressions'}
+          title="Forget about regressions"
           description={`
             Argos will warn you if any visual regressions are introduced.
             It comes with a Github integration.
@@ -58,7 +58,7 @@ function ProductHome(props) {
           `}
         />
         <ProductArgument
-          title={'Save time'}
+          title="Save time"
           description={`
             Argos compares screenshots at high speed.
             You get a fast feedback.
@@ -66,14 +66,14 @@ function ProductHome(props) {
           `}
         />
         <ProductArgument
-          title={'Integrates in your development workflow'}
+          title="Integrates in your development workflow"
           description={`
             Argos integrates directly into your test suite and development workflow.
             We provide a command line interface streamlining the process.
           `}
         />
         <ProductArgument
-          title={'Ship pixel-perfect interfaces'}
+          title="Ship pixel-perfect interfaces"
           description={`
             Argos provides different tools to compare screenshots.
             Designers can easily participate in the code review process.
@@ -84,7 +84,7 @@ function ProductHome(props) {
           <Text type="body1" align="center">
             {'Argos · '}
             <a href="https://github.com/argos-ci/argos">
-              {'Github'}
+              Github
             </a>
             {' · Copyright © 2017 Argos'}
           </Text>

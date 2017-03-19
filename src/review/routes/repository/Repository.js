@@ -28,7 +28,7 @@ function Repository(props) {
                 <Link component={LinkRouter} to={`/${profileName}`}>
                   {profileName}
                 </Link>
-                {'/'}
+                /
                 <Link component={LinkRouter} to={`/${profileName}/${repositoryName}`}>
                   {repositoryName}
                 </Link>
