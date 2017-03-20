@@ -26,7 +26,7 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
         <Layout item xs={12} sm>
           Your GitHub authentification is outdated, please authenticate to fix it.
         </Layout>
-        <Layout item sm={false}>
+        <Layout item>
           <Button
             accent
             compact

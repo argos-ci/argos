@@ -12,15 +12,6 @@ import rendering from 'server/middlewares/rendering'
 const router = new express.Router()
 const RedisStore = connectRedis(session)
 
-// Public directory
-router.use(express.static(path.join(__dirname, '../../../server/public'), {
-  etag: true,
-  lastModified: false,
-  setHeaders: (res) => {
-    res.set('Cache-Control', 'no-cache')
-  },
-}))
-
 // Static directory
 router.use('/static', express.static(path.join(__dirname, '../../../server/static'), {
   etag: true,
@@ -63,7 +54,6 @@ router.use('/graphql', graphqlMiddleware())
     },
   )
 })
-
 
 router.get('/auth/logout', (req, res) => {
   req.logout()
