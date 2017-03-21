@@ -55,7 +55,7 @@ export async function processBuildNotification(buildNotification) {
   const [user] = await build.getUsers()
 
   if (!user) {
-    throw new Error('No user found')
+    throw new Error('User not found')
   }
 
   const owner = build.repository.user || build.repository.organization

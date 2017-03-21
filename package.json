@@ -126,6 +126,7 @@
     "factory-girl": "^4.2.1",
     "foreman": "^2.0.0",
     "jest": "^19.0.2",
+    "nock": "^9.0.9",
     "nodemon": "^1.11.0",
     "selenium-webdriver": "^3.3.0",
     "supertest": "^3.0.0",

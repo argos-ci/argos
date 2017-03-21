@@ -1,4 +1,5 @@
 import { setTestsTimeout, useDatabase } from 'server/test/utils'
+import playback from 'server/test/playback'
 import factory from 'server/test/factory'
 import Organization from 'server/models/Organization'
 import UserOrganizationRight from 'server/models/UserOrganizationRight'
@@ -9,13 +10,19 @@ import GitHubSynchronizer from './GitHubSynchronizer'
 describe('GitHubSynchronizer', () => {
   setTestsTimeout(10000)
   useDatabase()
+  playback({
+    name: 'GitHubSynchronizer.json',
+    mode: 'dryrun',
+    // mode: 'record',
+  })
 
   let user
   let synchronization
 
   beforeEach(async () => {
     user = await factory.create('User', {
-      accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
+      accessToken: 'zzzz',
+      // accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
     })
 
     synchronization = await factory.create('Synchronization', {

@@ -1,3 +1,4 @@
+import playback from 'server/test/playback'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import buildNotificationJob from 'server/jobs/buildNotification'
@@ -14,9 +15,16 @@ describe('notifications', () => {
     buildNotificationJob.push = jest.fn()
   })
 
+  playback({
+    name: 'notifications.json',
+    mode: 'dryrun',
+    // mode: 'record',
+  })
+
   beforeEach(async () => {
     const user = await factory.create('User', {
-      accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
+      // accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
+      accessToken: 'aaaa',
     })
     const organization = await factory.create('Organization', { login: 'argos-ci' })
     const repository = await factory.create('Repository', {
@@ -28,6 +36,7 @@ describe('notifications', () => {
       commit: 'e8f58427ebe378ba73dea669c975122fcb8cb9cf',
     })
     build = await factory.create('Build', {
+      id: 750,
       repositoryId: repository.id,
       compareScreenshotBucketId: compareScreenshotBucket.id,
     })
@@ -49,17 +58,13 @@ describe('notifications', () => {
   })
 
   describe('#processBuildNotification', () => {
-    let buildNotification
-
-    beforeEach(async () => {
-      buildNotification = await factory.create('BuildNotification', {
+    it('should notify GitHub', async () => {
+      const buildNotification = await factory.create('BuildNotification', {
         buildId: build.id,
         type: 'progress',
         jobStatus: 'pending',
       })
-    })
 
-    it('should notify GitHub', async () => {
       const result = await processBuildNotification(buildNotification)
       expect(result.data.id).not.toBeUndefined()
       expect(result.data.description).toBe('Build in progress...')
