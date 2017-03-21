@@ -7,7 +7,7 @@ import Paper from 'material-ui/Paper'
 import Layout from 'material-ui/Layout'
 import Button from 'material-ui/Button'
 import Link from 'modules/components/Link'
-import authorizationStatuses, { CONSISTENT } from 'modules/authorizations/authorizationStatuses'
+import { CONSISTENT, INCONSISTENT } from 'modules/authorizations/authorizationStatuses'
 
 const styleSheet = createStyleSheet('AuthorizationNotice', () => ({
   paper: {
@@ -43,7 +43,7 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
 }
 
 AuthorizationNotice.propTypes = {
-  authorizationStatus: PropTypes.oneOf(authorizationStatuses),
+  authorizationStatus: PropTypes.oneOf([CONSISTENT, INCONSISTENT]),
   classes: PropTypes.object.isRequired,
   user: PropTypes.shape({
     privateSync: PropTypes.bool,
