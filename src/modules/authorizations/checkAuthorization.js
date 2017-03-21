@@ -1,43 +1,27 @@
-import GitHubAPI from 'github'
 import config from 'config'
-import getAuthorizationStatus, { CONSISTENT } from './getAuthorizationStatus'
-
-const github = new GitHubAPI()
-github.authenticate({
-  type: 'basic',
-  username: config.get('github.clientId'),
-  password: config.get('github.clientSecret'),
-})
-
-export const VALID_AUTHORIZATION = 'VALID_AUTHORIZATION'
-export const INVALID_TOKEN = 'INVALID_TOKEN'
-export const SCOPE_MISSING = 'SCOPE_MISSING'
+import { INVALID_TOKEN } from 'modules/authorizations/authorizationStatuses'
+import getAuthorizationStatus from 'modules/authorizations/getAuthorizationStatus'
+import githubClient from 'modules/authorizations/githubClient'
 
 async function checkAuthorization({ accessToken, privateSync }) {
   let authorization
 
   try {
-    authorization = await github.authorization.check({
+    authorization = await githubClient.authorization.check({
       access_token: accessToken,
       client_id: config.get('github.clientId'),
     })
   } catch (error) {
     if (error.code === 404) {
-      return { result: INVALID_TOKEN }
+      return { status: INVALID_TOKEN }
     }
 
     throw error
   }
 
-  const { scopes } = authorization.data
+  const { data: { scopes } } = authorization
   const status = getAuthorizationStatus({ privateSync, githubScopes: scopes })
-  return status === CONSISTENT ? {
-    result: VALID_AUTHORIZATION,
-    scopes,
-  } : {
-    result: SCOPE_MISSING,
-    scopes,
-  }
+  return { scopes, status }
 }
 
 export default checkAuthorization

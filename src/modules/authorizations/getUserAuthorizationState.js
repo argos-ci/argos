@@ -1,27 +1,25 @@
-import checkAuthorization, {
+import {
+  CONSISTENT,
+  INCONSISTENT,
   INVALID_TOKEN,
-  SCOPE_MISSING,
-  VALID_AUTHORIZATION,
-} from 'modules/authorizations/checkAuthorization'
+} from 'modules/authorizations/authorizationStatuses'
+import checkAuthorization from 'modules/authorizations/checkAuthorization'
 
 async function getUserAuthorizationState({
   accessToken,
   privateSync,
   previousAccessToken,
 }) {
-  const authorization = await checkAuthorization({
-    privateSync,
-    accessToken,
-  })
-  switch (authorization.result) {
+  const authorization = await checkAuthorization({ accessToken, privateSync })
+  switch (authorization.status) {
     case INVALID_TOKEN:
       throw new Error('Access token is invalid')
-    case VALID_AUTHORIZATION:
+    case CONSISTENT:
       return {
         accessToken,
         githubScopes: authorization.scopes,
       }
-    case SCOPE_MISSING: {
+    case INCONSISTENT: {
       if (!previousAccessToken) {
         return {
           accessToken,
@@ -30,15 +28,15 @@ async function getUserAuthorizationState({
       }
 
       const previousAuthorization = await checkAuthorization({
-        privateSync,
         accessToken: previousAccessToken,
+        privateSync,
       })
-      switch (previousAuthorization.result) {
-        case VALID_AUTHORIZATION:
+      switch (previousAuthorization.status) {
+        case CONSISTENT:
           return {
             githubScopes: previousAuthorization.scopes,
           }
-        case SCOPE_MISSING:
+        case INCONSISTENT:
         case INVALID_TOKEN:
           return {
             accessToken,
