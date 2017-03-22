@@ -1,14 +1,18 @@
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
+import buildNotificationJob from 'server/jobs/buildNotification'
 import { processBuildNotification, pushBuildNotification } from './notifications'
 
 jest.mock('server/jobs/buildNotification')
-const buildNotificationJob = require('server/jobs/buildNotification').default
 
 describe('notifications', () => {
   let build
 
   useDatabase()
+
+  beforeAll(() => {
+    buildNotificationJob.push = jest.fn()
+  })
 
   beforeEach(async () => {
     const user = await factory.create('User', {

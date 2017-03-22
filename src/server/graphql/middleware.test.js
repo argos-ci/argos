@@ -2,13 +2,17 @@ import request from 'supertest'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import { VALIDATION_STATUS } from 'server/models/constant'
+import * as notifications from 'modules/build/notifications'
 import graphqlMiddleware from './middleware'
 
 jest.mock('modules/build/notifications')
-const { pushBuildNotification } = require('modules/build/notifications')
 
 describe('GraphQL', () => {
   useDatabase()
+
+  beforeAll(() => {
+    notifications.pushBuildNotification = jest.fn()
+  })
 
   describe('build', () => {
     let build
@@ -129,7 +133,7 @@ describe('GraphQL', () => {
           })
           .expect(200)
 
-        expect(pushBuildNotification).toBeCalledWith({
+        expect(notifications.pushBuildNotification).toBeCalledWith({
           buildId: build.id,
           type: 'diff-rejected',
         })

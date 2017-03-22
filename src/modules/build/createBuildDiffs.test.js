@@ -1,13 +1,17 @@
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import { VALIDATION_STATUS } from 'server/models/constant'
+import * as notifications from 'modules/build/notifications'
 import createBuildDiffs from './createBuildDiffs'
 
 jest.mock('modules/build/notifications')
-const { pushBuildNotification } = require('modules/build/notifications')
 
 describe('createBuildDiffs', () => {
   useDatabase()
+
+  beforeAll(() => {
+    notifications.pushBuildNotification = jest.fn()
+  })
 
   let build
   let compareBucket
@@ -50,7 +54,7 @@ describe('createBuildDiffs', () => {
 
   it('should return the build', async () => {
     const diffs = await createBuildDiffs(build)
-    expect(pushBuildNotification).toBeCalledWith({
+    expect(notifications.pushBuildNotification).toBeCalledWith({
       buildId: build.id,
       type: 'progress',
     })

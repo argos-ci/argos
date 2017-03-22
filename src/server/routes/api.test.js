@@ -2,10 +2,15 @@ import path from 'path'
 import request from 'supertest'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
+import buildJob from 'server/jobs/build'
 import app from './app'
 
 describe('api routes', () => {
   useDatabase()
+
+  beforeAll(() => {
+    buildJob.push = jest.fn()
+  })
 
   describe('POST /builds', () => {
     describe('with no valid token', () => {

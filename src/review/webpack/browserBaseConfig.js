@@ -28,7 +28,26 @@ export default {
     rules: [
       {
         test: /\.js$/,
-        loader: 'babel-loader',
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: [
+              'react',
+              ['env', {
+                targets: {
+                  browsers: ['last 2 versions'],
+                },
+              }],
+            ],
+            plugins: [
+              ['module-resolver', {
+                root: ['./src'],
+              }],
+              'transform-object-rest-spread',
+              'transform-class-properties',
+            ],
+          },
+        },
         exclude: /node_modules\/(?!material-ui)/,
       },
       {
