@@ -2,14 +2,18 @@ import S3 from 'aws-sdk/clients/s3'
 import { useDatabase, setTestsTimeout } from 'server/test/utils'
 import factory from 'server/test/factory'
 import { VALIDATION_STATUS } from 'server/models/constant'
+import * as notifications from 'modules/build/notifications'
 import computeScreenshotDiff from './computeScreenshotDiff'
 
 jest.mock('modules/build/notifications')
-const { pushBuildNotification } = require('modules/build/notifications')
 
 describe('computeScreenshotDiff', () => {
   useDatabase()
   setTestsTimeout(10000)
+
+  beforeAll(() => {
+    notifications.pushBuildNotification = jest.fn()
+  })
 
   let baseBucket
   let build
@@ -71,7 +75,7 @@ describe('computeScreenshotDiff', () => {
       await screenshotDiff.reload()
       expect(screenshotDiff.score > 0).toBe(true)
       expect(typeof screenshotDiff.s3Id === 'string').toBe(true)
-      expect(pushBuildNotification).toBeCalledWith({
+      expect(notifications.pushBuildNotification).toBeCalledWith({
         buildId: build.id,
         type: 'diff-detected',
       })
@@ -108,7 +112,7 @@ describe('computeScreenshotDiff', () => {
       await screenshotDiff.reload()
       expect(screenshotDiff.score).toBe(0)
       expect(screenshotDiff.s3Id).toBe(null)
-      expect(pushBuildNotification).toBeCalledWith({
+      expect(notifications.pushBuildNotification).toBeCalledWith({
         buildId: build.id,
         type: 'no-diff-detected',
       })

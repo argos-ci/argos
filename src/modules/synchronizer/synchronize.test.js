@@ -8,6 +8,10 @@ jest.mock('./GitHubSynchronizer')
 describe('#synchronize', () => {
   useDatabase()
 
+  beforeAll(() => {
+    GitHubSynchronizer.prototype.synchronize = jest.fn()
+  })
+
   let user
   let synchronization
 
