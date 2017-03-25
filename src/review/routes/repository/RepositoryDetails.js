@@ -9,8 +9,9 @@ import Text from 'material-ui/Text'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
-import actionTypes from 'review/modules/redux/actionTypes'
+import detailsActions from 'review/routes/repository/detailsActions'
 import RepositoryDetailsItem from 'review/routes/repository/RepositoryDetailsItem'
+import RepositoryDetailsLoadMore from 'review/routes/repository/RepositoryDetailsLoadMore'
 
 const styleSheet = createStyleSheet('RepositoryDetails', () => ({
   paper: {
@@ -22,55 +23,55 @@ function RepositoryDetails(props) {
   const {
     classes,
     fetch,
-    params: {
-      profileName,
-      repositoryName,
-    },
+    params,
   } = props
 
   return (
-    <Paper className={classes.paper}>
-      <WatchTask task={fetch}>
-        {() => {
-          if (!fetch.output.data.repository) {
+    <div>
+      <Paper className={classes.paper}>
+        <WatchTask task={fetch}>
+          {() => {
+            const repository = fetch.output.data.repository
+
+            if (!repository) {
+              return (
+                <WatchTaskContainer>
+                  <Text>
+                    Repository not found
+                  </Text>
+                </WatchTaskContainer>
+              )
+            }
+
+            const edges = repository.builds.edges
+
+            if (edges.length === 0) {
+              return (
+                <WatchTaskContainer>
+                  <Text>
+                    No build yet for this repository.
+                  </Text>
+                </WatchTaskContainer>
+              )
+            }
+
             return (
-              <WatchTaskContainer>
-                <Text>
-                  Repository not found
-                </Text>
-              </WatchTaskContainer>
+              <List>
+                {edges.map(build => (
+                  <RepositoryDetailsItem
+                    key={build.id}
+                    build={build}
+                    profileName={params.profileName}
+                    repositoryName={params.repositoryName}
+                  />
+                ))}
+              </List>
             )
-          }
-
-          const {
-            edges,
-          } = fetch.output.data.repository.builds
-
-          if (edges.length === 0) {
-            return (
-              <WatchTaskContainer>
-                <Text>
-                  No build yet for this repository.
-                </Text>
-              </WatchTaskContainer>
-            )
-          }
-
-          return (
-            <List>
-              {edges.map(build => (
-                <RepositoryDetailsItem
-                  key={build.id}
-                  build={build}
-                  profileName={profileName}
-                  repositoryName={repositoryName}
-                />
-              ))}
-            </List>
-          )
-        }}
-      </WatchTask>
-    </Paper>
+          }}
+        </WatchTask>
+      </Paper>
+      <RepositoryDetailsLoadMore params={params} />
+    </div>
   )
 }
 
@@ -98,18 +99,12 @@ RepositoryDetails.propTypes = {
 
 export default recompact.compose(
   withStyles(styleSheet),
-  connect(state => state.ui.repositoryDetails),
+  connect(state => ({
+    fetch: state.ui.repositoryDetails.fetch,
+  })),
   recompact.lifecycle({
     componentDidMount() {
-      this.props.dispatch({
-        type: actionTypes.REPOSITORY_DETAILS_FETCH,
-        payload: {
-          profileName: this.props.params.profileName,
-          repositoryName: this.props.params.repositoryName,
-          first: 5,
-          after: 0,
-        },
-      })
+      this.props.dispatch(detailsActions.fetch(this.props, 0))
     },
   }),
 )(RepositoryDetails)

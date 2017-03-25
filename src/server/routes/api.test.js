@@ -80,7 +80,7 @@ describe('api routes', () => {
           .field('branch', 'test-branch')
           .field('token', 'xx')
           .expect((res) => {
-            expect(res.body.id).not.toBeUndefined()
+            expect(res.body.id).not.toBe(undefined)
           })
           .expect(200)
       })

@@ -1,0 +1,61 @@
+import React, { PropTypes } from 'react'
+import recompact from 'modules/recompact'
+import { connect } from 'react-redux'
+import Button from 'material-ui/Button'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
+import detailsActions from 'review/routes/repository/detailsActions'
+import { isSuccess } from 'modules/rxjs/operator/watchTask'
+
+const styleSheet = createStyleSheet('RepositoryDetailsLoadMore', theme => ({
+  loadMore: {
+    marginTop: theme.spacing.unit * 2,
+  },
+}))
+
+function RepositoryDetailsLoadMore(props) {
+  const {
+    classes,
+    fetch,
+    onClickLoadMore,
+  } = props
+
+  if (!isSuccess(fetch)) {
+    return null
+  }
+
+  const data = fetch.output.data
+
+  if (!data.repository || !data.repository.builds.pageInfo.hasNextPage) {
+    return null
+  }
+
+  return (
+    <Button className={classes.loadMore} onClick={onClickLoadMore}>
+      Load more
+    </Button>
+  )
+}
+
+RepositoryDetailsLoadMore.propTypes = {
+  classes: PropTypes.object.isRequired,
+  dispatch: PropTypes.func.isRequired,
+  fetch: PropTypes.object.isRequired,
+  onClickLoadMore: PropTypes.func.isRequired,
+  params: PropTypes.shape({
+    profileName: PropTypes.string.isRequired,
+    repositoryName: PropTypes.string.isRequired,
+  }).isRequired,
+}
+
+export default recompact.compose(
+  withStyles(styleSheet),
+  connect(state => ({
+    fetch: state.ui.repositoryDetails.fetch,
+  })),
+  recompact.withHandlers({
+    onClickLoadMore: props => () => {
+      const after = props.fetch.output.data.repository.builds.pageInfo.endCursor
+      props.dispatch(detailsActions.fetch(props, after))
+    },
+  }),
+)(RepositoryDetailsLoadMore)

@@ -5,20 +5,16 @@ const repositoryDetailsEpic = action$ => (
   action$
     .ofType(actionTypes.REPOSITORY_DETAILS_FETCH)
     .watchTask(actionTypes.REPOSITORY_DETAILS_FETCH_TASK, (action) => {
-      const {
-        payload,
-      } = action
-
       return graphQLClient.fetch({
         query: `{
           repository(
-            ownerLogin: "${payload.profileName}",
-            repositoryName: "${payload.repositoryName}"
+            ownerLogin: "${action.payload.profileName}",
+            repositoryName: "${action.payload.repositoryName}"
           ) {
             name
             builds(
-              first: ${payload.first}
-              after: ${payload.after}
+              first: 5
+              after: ${action.payload.after}
             ) {
               pageInfo {
                 totalCount

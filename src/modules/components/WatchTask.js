@@ -3,7 +3,7 @@ import React, { PropTypes } from 'react'
 import CircularProgress from 'material-ui/Progress/CircularProgress'
 import Text from 'material-ui/Text'
 import recompact from 'modules/recompact'
-import { PROGRESS, SUCCESS, ERROR } from 'modules/rxjs/operator/watchTask'
+import { PROGRESS, SUCCESS, ERROR, isError } from 'modules/rxjs/operator/watchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 
 function renderInContainer(props, node) {
@@ -19,13 +19,10 @@ function renderInContainer(props, node) {
 export default function WatchTask(props) {
   const {
     children,
-    task: {
-      state,
-      output,
-    },
+    task,
   } = props
 
-  if (state === ERROR || (state === SUCCESS && output.errors)) {
+  if (isError(props.task)) {
     return renderInContainer(props,
       <Text>
         The loading failed
@@ -33,11 +30,11 @@ export default function WatchTask(props) {
     )
   }
 
-  if (state === PROGRESS) {
+  if (task.state === PROGRESS) {
     return renderInContainer(props, <CircularProgress />)
   }
 
-  if (state === SUCCESS) {
+  if (task.state === SUCCESS) {
     return children()
   }
 

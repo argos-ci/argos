@@ -64,11 +64,11 @@ describe('models/Build', () => {
 
     it('should return users having rights on the repository', async () => {
       const users = await build.getUsers()
-      expect(users.length === 1).toBeTruthy()
+      expect(users.length === 1).toBe(true)
       expect(users[0].id).toBe(user.id)
 
       const staticUsers = await Build.getUsers(build.id)
-      expect(staticUsers.length === 1).toBeTruthy()
+      expect(staticUsers.length === 1).toBe(true)
       expect(staticUsers[0].id).toBe(user.id)
     })
   })

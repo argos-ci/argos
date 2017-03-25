@@ -17,6 +17,6 @@ describe('upload', () => {
       inputPath,
     })
 
-    expect(data.Key).not.toBeUndefined()
+    expect(data.Key).not.toBe(undefined)
   })
 })
