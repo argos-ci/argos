@@ -1,9 +1,8 @@
 // @flow weak
 
 import { cloneElement, PropTypes } from 'react'
-import { createStyleSheet } from 'jss-theme-reactor'
 import classNames from 'classnames'
-import withStyles from 'material-ui/styles/withStyles'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 
 const styleSheet = createStyleSheet('ItemStatus', theme => ({
   success: {

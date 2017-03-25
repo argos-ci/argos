@@ -1,6 +1,5 @@
 import React from 'react'
-import { createStyleSheet } from 'jss-theme-reactor'
-import withStyles from 'material-ui/styles/withStyles'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 import {
   applyRouterMiddleware,
   browserHistory,

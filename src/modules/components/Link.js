@@ -1,7 +1,6 @@
 import React, { PropTypes } from 'react'
 import classNames from 'classnames'
-import { createStyleSheet } from 'jss-theme-reactor'
-import withStyles from 'material-ui/styles/withStyles'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 
 const styleSheet = createStyleSheet('Link', () => ({
   root: {

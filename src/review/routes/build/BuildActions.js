@@ -1,7 +1,6 @@
 import React, { PropTypes } from 'react'
-import { createStyleSheet } from 'jss-theme-reactor'
 import { connect } from 'react-redux'
-import withStyles from 'material-ui/styles/withStyles'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Button from 'material-ui/Button'
 import recompact from 'modules/recompact'
 import { VALIDATION_STATUS } from 'server/models/constant'

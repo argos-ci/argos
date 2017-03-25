@@ -1,5 +1,4 @@
 import React, { PropTypes } from 'react'
-import { createStyleSheet } from 'jss-theme-reactor'
 import { Link as LinkRouter } from 'react-router'
 import { connect } from 'react-redux'
 import Text from 'material-ui/Text'
@@ -11,7 +10,7 @@ import {
   ListItem,
   ListItemText,
 } from 'material-ui/List'
-import withStyles from 'material-ui/styles/withStyles'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'

@@ -7,8 +7,7 @@ import {
   ListItemText,
 } from 'material-ui/List'
 import ItemStatus from 'review/modules/components/ItemStatus'
-import { createStyleSheet } from 'jss-theme-reactor'
-import withStyles from 'material-ui/styles/withStyles'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 
 const styleSheet = createStyleSheet('RepositoryDetailsItem', () => ({
 }))

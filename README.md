@@ -58,7 +58,7 @@ TEST_GITHUB_USER_ACCESS_TOKEN=
 ### Set up database
 
 ```sh
-yarn db:drop && yarn db:create && yarn db:load
+yarn db:reset
 ```
 
 ### Use the seed
