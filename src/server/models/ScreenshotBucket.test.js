@@ -28,7 +28,7 @@ describe('ScreenshotBucket', () => {
 
     it('should not return himself', async () => {
       const baseScreenshotBucket = await masterBucket.baseScreenshotBucket()
-      expect(baseScreenshotBucket).toBeNull()
+      expect(baseScreenshotBucket).toBe(null)
     })
   })
 })

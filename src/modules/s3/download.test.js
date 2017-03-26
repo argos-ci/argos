@@ -41,6 +41,6 @@ describe('download', () => {
       error = e
     }
 
-    expect(error).not.toBeUndefined()
+    expect(error).not.toBe(undefined)
   })
 })

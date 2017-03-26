@@ -20,6 +20,14 @@ const createTaskData = (type, state, input, output) => ({
   error: state === ERROR,
 })
 
+export function isError(task) {
+  return task.state === ERROR || (task.state === SUCCESS && task.output.errors)
+}
+
+export function isSuccess(task) {
+  return task.state === SUCCESS && !task.output.errors
+}
+
 export function watchTask(type, selector) {
   return this
     .switchMap(input =>
