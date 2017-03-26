@@ -33,7 +33,7 @@ function ProductHome(props) {
         <Paper rounded={false} elevation={3} className={classes.landing}>
           <LayoutBody margin bottom={false}>
             <Text type="display1" component="h1" gutterBottom>
-              Stop discovering visual regressions
+              Automate visual regression testing
             </Text>
             <Text
               type="headline"
