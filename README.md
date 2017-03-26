@@ -4,8 +4,6 @@
 
 [![Build Status](https://travis-ci.org/argos-ci/argos.svg?branch=master)](https://travis-ci.org/argos-ci/argos)
 
-## The problem solved
-
 **Forget about regressions**:
 Argos will warn you if any visual regressions are introduced.
 It comes with a Github integration.
