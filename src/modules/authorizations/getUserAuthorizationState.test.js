@@ -20,7 +20,7 @@ describe('getUserAuthorizationState', () => {
           previousAccessToken: null,
         })
       } catch (error) {
-        expect(error.message).toEqual('Access token is invalid')
+        expect(error.message).toBe('Access token is invalid')
       }
     })
   })
