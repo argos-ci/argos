@@ -15,7 +15,9 @@ export default ({ context } = {}) => graphqlHTTP(req => ({
   graphiql: config.get('env') !== 'production',
   formatError(error) {
     if (error.path || error.name !== 'GraphQLError') {
-      console.error(pe.render(error))
+      if (process.env.NODE_ENV === 'development') {
+        console.error(pe.render(error))
+      }
       crashReporter.captureException(
         error,
         {
@@ -29,7 +31,9 @@ export default ({ context } = {}) => graphqlHTTP(req => ({
         },
       )
     } else {
-      console.error(pe.render(error.message))
+      if (process.env.NODE_ENV === 'development') {
+        console.error(pe.render(error.message))
+      }
       crashReporter.captureMessage(
         `GraphQLWrongQuery: ${error.message}`,
         {
@@ -42,6 +46,7 @@ export default ({ context } = {}) => graphqlHTTP(req => ({
         },
       )
     }
+
     return {
       message: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack.split('\n') : null,

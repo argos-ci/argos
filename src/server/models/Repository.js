@@ -1,4 +1,5 @@
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
+import User from 'server/models/User'
 
 export default class Repository extends BaseModel {
   static tableName = 'repositories';
@@ -39,6 +40,18 @@ export default class Repository extends BaseModel {
       },
     },
   };
+
+  static getUsers(repositoryId) {
+    return User.query()
+      .select('users.*')
+      .join('user_repository_rights', 'users.id', '=', 'user_repository_rights.userId')
+      .join('repositories', 'user_repository_rights.repositoryId', '=', 'repositories.id')
+      .where('repositories.id', repositoryId)
+  }
+
+  getUsers() {
+    return this.constructor.getUsers(this.id)
+  }
 
   async getOwner() {
     if (this.userId) {

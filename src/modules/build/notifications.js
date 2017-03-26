@@ -52,10 +52,10 @@ export async function processBuildNotification(buildNotification) {
     throw new Error(`Cannot find notification for type: "${buildNotification.type}"`)
   }
 
-  const [user] = await build.getUsers()
+  const user = await build.getUsers().limit(1).first()
 
   if (!user) {
-    throw new Error('No user found')
+    throw new Error('User not found')
   }
 
   const owner = build.repository.user || build.repository.organization

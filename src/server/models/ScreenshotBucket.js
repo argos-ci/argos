@@ -35,13 +35,4 @@ export default class ScreenshotBucket extends BaseModel {
       },
     },
   };
-
-  async baseScreenshotBucket() {
-    const buckets = await this.constructor.query()
-      .where({ branch: 'master', repositoryId: this.repositoryId })
-      .whereNot({ id: this.id })
-      .orderBy('id', 'desc')
-
-    return buckets[0] || null
-  }
 }
