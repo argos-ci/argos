@@ -1,5 +1,4 @@
 import React, { PropTypes } from 'react'
-import { createStyleSheet } from 'jss-theme-reactor'
 import recompact from 'modules/recompact'
 import { connect } from 'react-redux'
 import {
@@ -7,7 +6,7 @@ import {
 } from 'material-ui/List'
 import Paper from 'material-ui/Paper'
 import Text from 'material-ui/Text'
-import withStyles from 'material-ui/styles/withStyles'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import actionTypes from 'review/modules/redux/actionTypes'

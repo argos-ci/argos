@@ -1,7 +1,6 @@
 import React, { PropTypes } from 'react'
 import { connect } from 'react-redux'
-import { createStyleSheet } from 'jss-theme-reactor'
-import withStyles from 'material-ui/styles/withStyles'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import Paper from 'material-ui/Paper'
 import Layout from 'material-ui/Layout'

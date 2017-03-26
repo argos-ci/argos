@@ -1,5 +1,7 @@
 /**
  * Copy pasted from Material-UI, to be removed once we expose this helper.
+ *
+ * import createShallow from 'material-ui/test-utils/createShallow'
  */
 
 import { create } from 'jss'

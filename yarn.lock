@@ -2,9 +2,9 @@
 # yarn lockfile v1
 
 
-"@risingstack/trace@^3.5.2":
-  version "3.5.2"
-  resolved "https://registry.yarnpkg.com/@risingstack/trace/-/trace-3.5.2.tgz#960e661df46b2d928982b817017ac7c83197cbdd"
+"@risingstack/trace@^3.5.3":
+  version "3.5.3"
+  resolved "https://registry.yarnpkg.com/@risingstack/trace/-/trace-3.5.3.tgz#6d7da7f2a1e7fb84f87b5523e940525071d22bff"
   dependencies:
     bl "1.2.0"
     continuation-local-storage "3.2.0"
@@ -329,9 +329,9 @@ asynckit@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
 
-aws-sdk@^2.30.0:
-  version "2.30.0"
-  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.30.0.tgz#9d6d3b665e18fb7b9b9481092ea4d1ee1bfeed63"
+aws-sdk@^2.32.0:
+  version "2.32.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.32.0.tgz#9fe278b2ec1b12fddd1afeb74439581cdc2e5990"
   dependencies:
     buffer "4.9.1"
     crypto-browserify "1.0.9"
@@ -404,15 +404,14 @@ babel-core@^6.0.0, babel-core@^6.2.1, babel-core@^6.24.0:
     slash "^1.0.0"
     source-map "^0.5.0"
 
-babel-eslint@^7.2.0:
-  version "7.2.0"
-  resolved "https://registry.yarnpkg.com/babel-eslint/-/babel-eslint-7.2.0.tgz#8941514b9dead06f0df71b29d5d5b193a92ee0ae"
+babel-eslint@^7.2.1:
+  version "7.2.1"
+  resolved "https://registry.yarnpkg.com/babel-eslint/-/babel-eslint-7.2.1.tgz#079422eb73ba811e3ca0865ce87af29327f8c52f"
   dependencies:
     babel-code-frame "^6.22.0"
     babel-traverse "^6.23.1"
     babel-types "^6.23.0"
     babylon "^6.16.1"
-    lodash "^4.17.4"
 
 babel-generator@^6.18.0, babel-generator@^6.24.0:
   version "6.24.0"
@@ -1608,6 +1607,19 @@ convict@^2.0.0:
   optionalDependencies:
     varify "0.1.1"
 
+convict@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/convict/-/convict-3.0.0.tgz#259f30bfb87ee0944860486203519d467b4d51b5"
+  dependencies:
+    depd "1.1.0"
+    json5 "0.5.1"
+    lodash.clonedeep "4.5.0"
+    minimist "1.2.0"
+    moment "2.17.1"
+    validator "7.0.0"
+  optionalDependencies:
+    varify "0.2.0"
+
 cookie-signature@1.0.6:
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/cookie-signature/-/cookie-signature-1.0.6.tgz#e303a882b342cc3ee8ca513a79999734dab3ae2c"
@@ -2002,9 +2014,9 @@ entities@^1.1.1, entities@~1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/entities/-/entities-1.1.1.tgz#6e5c2d0a5621b5dadaecef80b90edfb5cd7772f0"
 
-enzyme@^2.7.1:
-  version "2.7.1"
-  resolved "https://registry.yarnpkg.com/enzyme/-/enzyme-2.7.1.tgz#76370e1d99e91f73091bb8c4314b7c128cc2d621"
+enzyme@^2.8.0:
+  version "2.8.0"
+  resolved "https://registry.yarnpkg.com/enzyme/-/enzyme-2.8.0.tgz#86cc1fc96e5cbd7695766dd6e89deb13a0aead51"
   dependencies:
     cheerio "^0.22.0"
     function.prototype.name "^1.0.0"
@@ -2280,6 +2292,10 @@ esprima@^3.1.1:
 esprima@~1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/esprima/-/esprima-1.0.4.tgz#9f557e08fc3b4d26ece9dd34f8fbf476b62585ad"
+
+esprima@~3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/esprima/-/esprima-3.0.0.tgz#53cf247acda77313e551c3aa2e73342d3fb4f7d9"
 
 esquery@^1.0.0:
   version "1.0.0"
@@ -3904,9 +3920,9 @@ kind-of@^3.0.2:
   dependencies:
     is-buffer "^1.0.2"
 
-knex@^0.12.8:
-  version "0.12.8"
-  resolved "https://registry.yarnpkg.com/knex/-/knex-0.12.8.tgz#77374309ede1f0a238c9f9312694968bfec2e7d4"
+knex@^0.12.9:
+  version "0.12.9"
+  resolved "https://registry.yarnpkg.com/knex/-/knex-0.12.9.tgz#aa852138c09ed46181e890fd698270bbe7761124"
   dependencies:
     babel-runtime "^6.11.6"
     bluebird "^3.4.6"
@@ -4250,9 +4266,9 @@ map-stream@~0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/map-stream/-/map-stream-0.1.0.tgz#e56aa94c4c8055a16404a0674b78f215f7c8e194"
 
-material-ui@1.0.0-alpha.7:
-  version "1.0.0-alpha.7"
-  resolved "https://registry.yarnpkg.com/material-ui/-/material-ui-1.0.0-alpha.7.tgz#d43edec4379cdc82742dae88200c62213eb9ae0a"
+material-ui@1.0.0-alpha.8:
+  version "1.0.0-alpha.8"
+  resolved "https://registry.yarnpkg.com/material-ui/-/material-ui-1.0.0-alpha.8.tgz#c2e8f16de69c6c4a936f325bc48c3067a82ffa2f"
   dependencies:
     classnames "^2.2.5"
     dom-helpers "^3.2.1"
@@ -4669,9 +4685,9 @@ object.values@^1.0.3:
     function-bind "^1.1.0"
     has "^1.0.1"
 
-objection@^0.7.9:
-  version "0.7.9"
-  resolved "https://registry.yarnpkg.com/objection/-/objection-0.7.9.tgz#a4b47efc3f470e8253f1e4786109806f78ae93f8"
+objection@^0.7.10:
+  version "0.7.10"
+  resolved "https://registry.yarnpkg.com/objection/-/objection-0.7.10.tgz#23bd780aba20c000f0c832090c0a73cee19419eb"
   dependencies:
     ajv "^4.8.2"
     babel-runtime "^6.6.1"
@@ -5165,9 +5181,9 @@ range-parser@^1.0.3, range-parser@~1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/range-parser/-/range-parser-1.2.0.tgz#f49be6b487894ddc40dcc94a322f611092e00d5e"
 
-raven-js@^3.13.0:
-  version "3.13.0"
-  resolved "https://registry.yarnpkg.com/raven-js/-/raven-js-3.13.0.tgz#baf9d7f913524e8782578e766931194dba2ac93a"
+raven-js@^3.13.1:
+  version "3.13.1"
+  resolved "https://registry.yarnpkg.com/raven-js/-/raven-js-3.13.1.tgz#3156903b96989ab4314128d999fbe4f971a66876"
   dependencies:
     json-stringify-safe "^5.0.1"
 
@@ -5403,6 +5419,12 @@ redeyed@~0.4.2:
   dependencies:
     esprima "~1.0.4"
 
+redeyed@~1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/redeyed/-/redeyed-1.0.1.tgz#e96c193b40c0816b00aec842698e61185e55498a"
+  dependencies:
+    esprima "~3.0.0"
+
 redis-commands@^1.2.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/redis-commands/-/redis-commands-1.3.0.tgz#4307d8094aee1315829ab6729b37b99f62365d63"
@@ -5419,9 +5441,9 @@ redis@^2.1.0, redis@^2.7.1:
     redis-commands "^1.2.0"
     redis-parser "^2.5.0"
 
-redux-logger@^2.10.1:
-  version "2.10.1"
-  resolved "https://registry.yarnpkg.com/redux-logger/-/redux-logger-2.10.1.tgz#c34931a0e3d91aa12ad95d54a7fe8aa143484110"
+redux-logger@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/redux-logger/-/redux-logger-3.0.0.tgz#f552052d8992d058cfcdb42b5c654fa5f7beb9cc"
   dependencies:
     deep-diff "0.3.4"
 
@@ -5839,9 +5861,9 @@ sockjs@0.3.18:
     faye-websocket "^0.10.0"
     uuid "^2.0.2"
 
-source-list-map@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/source-list-map/-/source-list-map-1.0.1.tgz#cc1fc17122ae0a51978024c2cc0f8c35659026b8"
+source-list-map@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/source-list-map/-/source-list-map-1.1.1.tgz#1a33ac210ca144d1e561f906ebccab5669ff4cb4"
 
 source-map-support@^0.4.2:
   version "0.4.8"
@@ -6425,11 +6447,22 @@ validator@6.2.0:
   version "6.2.0"
   resolved "https://registry.yarnpkg.com/validator/-/validator-6.2.0.tgz#b2cccdc49ff0f4b8ee4e61dba2ddd3dde13f23e7"
 
+validator@7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/validator/-/validator-7.0.0.tgz#c74deb8063512fac35547938e6f0b1504a282fd2"
+
 varify@0.1.1:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/varify/-/varify-0.1.1.tgz#98854bf465438a520788cfca136e14f511155b1e"
   dependencies:
     redeyed "~0.4.2"
+    through "~2.3.4"
+
+varify@0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/varify/-/varify-0.2.0.tgz#191da9fe9dc4cd68d0d14498d4e2a910ff4e6516"
+  dependencies:
+    redeyed "~1.0.1"
     through "~2.3.4"
 
 vary@~1.1.0:
@@ -6517,16 +6550,16 @@ webpack-dev-server@^2.4.2:
     webpack-dev-middleware "^1.9.0"
     yargs "^6.0.0"
 
-webpack-sources@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/webpack-sources/-/webpack-sources-0.2.0.tgz#fea93ba840f16cdd3f246f0ee95f88a9492c69fb"
+webpack-sources@^0.2.3:
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/webpack-sources/-/webpack-sources-0.2.3.tgz#17c62bfaf13c707f9d02c479e0dcdde8380697fb"
   dependencies:
-    source-list-map "^1.0.1"
+    source-list-map "^1.1.1"
     source-map "~0.5.3"
 
-webpack@^2.3.0:
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/webpack/-/webpack-2.3.0.tgz#0ae2d90350a7d48a44fddd7dd85c855642bc042e"
+webpack@^2.3.2:
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/webpack/-/webpack-2.3.2.tgz#7d521e6f0777a3a58985c69425263fdfe977b458"
   dependencies:
     acorn "^4.0.4"
     acorn-dynamic-import "^2.0.0"
@@ -6546,7 +6579,7 @@ webpack@^2.3.0:
     tapable "~0.2.5"
     uglify-js "^2.8.5"
     watchpack "^1.3.1"
-    webpack-sources "^0.2.0"
+    webpack-sources "^0.2.3"
     yargs "^6.0.0"
 
 websocket-driver@>=0.5.1:

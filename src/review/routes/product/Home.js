@@ -1,6 +1,5 @@
 import React, { PropTypes } from 'react'
-import { createStyleSheet } from 'jss-theme-reactor'
-import withStyles from 'material-ui/styles/withStyles'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Text from 'material-ui/Text'
 import Paper from 'material-ui/Paper'
 import Divider from 'material-ui/Divider'

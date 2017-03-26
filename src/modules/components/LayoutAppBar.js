@@ -1,10 +1,9 @@
 // @flow weak
 
 import React, { PropTypes } from 'react'
-import { createStyleSheet } from 'jss-theme-reactor'
 import classNames from 'classnames'
 import AppBar from 'material-ui/AppBar'
-import withStyles from 'material-ui/styles/withStyles'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 import { white } from 'material-ui/styles/colors'
 
 const styleSheet = createStyleSheet('LayoutAppBar', () => ({
