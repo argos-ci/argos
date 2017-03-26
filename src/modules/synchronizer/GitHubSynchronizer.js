@@ -135,8 +135,11 @@ class GitHubSynchronizer {
   }
 
   async synchronizeUser(githubUser) { // eslint-disable-line class-methods-use-this
-    let [user] = await User.query().where({ githubId: githubUser.id })
     const data = { githubId: githubUser.id, login: githubUser.login }
+    let user = await User.query()
+      .where({ githubId: githubUser.id })
+      .limit(1)
+      .first()
 
     if (user) {
       await user.$query().patchAndFetch(data)

@@ -24,7 +24,10 @@ export default (passport) => {
       scope: type === 'private' ? PRIVATE_SCOPES : PUBLIC_SCOPES,
     }, async (accessToken, refreshToken, profile, done) => {
       try {
-        let [user] = await User.query().where({ githubId: Number(profile.id) })
+        let user = await User.query()
+          .where({ githubId: Number(profile.id) })
+          .limit(1)
+          .first()
 
         if (user) {
           const privateSync = user.privateSync || type === 'private'

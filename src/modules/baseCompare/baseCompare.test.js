@@ -33,8 +33,6 @@ describe('baseCompare', () => {
   // * 0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92
   it('should work with a rebased PR', async () => {
     const screenshotBucket = await factory.create('ScreenshotBucket', {
-      name: 'test-bucket',
-      branch: 'test-branch',
       commit: '0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92',
       repositoryId: repository.id,
     })
@@ -56,14 +54,10 @@ describe('baseCompare', () => {
   // * 0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92
   it('should work with a non rebase PR', async () => {
     const screenshotBucket1 = await factory.create('ScreenshotBucket', {
-      name: 'test-bucket',
-      branch: 'test-branch',
       commit: '0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92',
       repositoryId: repository.id,
     })
     await factory.create('ScreenshotBucket', {
-      name: 'test-bucket',
-      branch: 'test-branch',
       commit: 'e97e6d9054ac1b4f6f9ef55ff3d7ed8cc18394bd',
       repositoryId: repository.id,
     })

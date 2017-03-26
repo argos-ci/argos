@@ -3,25 +3,25 @@ import config from 'config'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
 async function fallbackToMaster(repository) {
-  const buckets = await ScreenshotBucket.query()
+  const bucket = await ScreenshotBucket.query()
     .where({
       branch: 'master',
       repositoryId: repository.id,
     })
     .orderBy('id', 'desc')
-  return buckets[0] || null
+    .limit(1)
+    .first()
+
+  return bucket || null
 }
 
-export default async function baseCompare(options) {
-  const {
-    baseCommit,
-    compareCommit,
-    repository,
-    perPage = 30,
-  } = options
-
-  const github = new GitHubAPI({ debug: config.get('env') === 'development' })
-  const [user] = await repository.getUsers()
+export default async function baseCompare({
+  baseCommit,
+  compareCommit,
+  repository,
+  perPage = 30,
+}) {
+  const user = await repository.getUsers().limit(1).first()
 
   if (!user) {
     return {
@@ -31,12 +31,12 @@ export default async function baseCompare(options) {
     }
   }
 
+  const owner = await repository.getOwner()
+  const github = new GitHubAPI({ debug: config.get('env') === 'development' })
   github.authenticate({
     type: 'oauth',
     token: user.accessToken,
   })
-
-  const owner = await repository.getOwner()
 
   // http://stackoverflow.com/questions/9179828/github-api-retrieve-all-commits-for-all-branches-for-a-repo
   // http://mikedeboer.github.io/node-github/#api-repos-getBranch
@@ -74,11 +74,9 @@ export default async function baseCompare(options) {
   const forkCommit = baseCommits.data.find((baseCommit) => {
     potentialCommits.push(baseCommit)
 
-    return compareCommits.data.some((compareCommit) => {
-      const compare = baseCommit.sha === compareCommit.sha
-
-      return compare
-    })
+    return compareCommits.data.some(compareCommit => (
+      baseCommit.sha === compareCommit.sha
+    ))
   })
 
   let baseScreenshotBucket

@@ -52,7 +52,7 @@ export async function processBuildNotification(buildNotification) {
     throw new Error(`Cannot find notification for type: "${buildNotification.type}"`)
   }
 
-  const [user] = await build.getUsers()
+  const user = await build.getUsers().limit(1).first()
 
   if (!user) {
     throw new Error('User not found')

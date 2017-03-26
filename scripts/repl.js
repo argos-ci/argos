@@ -1,6 +1,7 @@
 /* eslint-disable import/no-dynamic-require */
 import 'server/bootstrap/setup'
 
+// https://nodejs.org/api/repl.html
 import repl from 'repl'
 import path from 'path'
 import fs from 'mz/fs'
@@ -11,7 +12,7 @@ const MODEL_DIRECTORY = path.join(__dirname, '../src/server/models')
 const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
 
 ;(async () => {
-  const r = repl.start()
+  const replServer = repl.start()
 
   async function getModels() {
     const models = await fs.readdir(MODEL_DIRECTORY)
@@ -42,10 +43,12 @@ const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
     clearRequire.match(new RegExp(MODEL_DIRECTORY))
     const models = await getModels()
     const jobs = await getJobs()
-    Object.assign(r.context, models, jobs, { reload })
+    Object.assign(replServer.context, models, jobs, { reload })
     console.log('Loaded!') // eslint-disable-line no-console
   }
 
   await reload()
-  promirepl(r)
+
+  // https://github.com/building5/node-promirepl
+  promirepl(replServer)
 })().catch(err => setTimeout(() => { throw err }))
