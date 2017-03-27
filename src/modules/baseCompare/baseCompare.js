@@ -71,12 +71,24 @@ export default async function baseCompare({
   }
 
   const potentialCommits = []
-  const forkCommit = baseCommits.data.find((baseCommit) => {
-    potentialCommits.push(baseCommit)
+  const forkCommit = baseCommits.data.find((baseCommit, index) => {
+    const comparingWithHimself = baseCommit.sha === compareCommit
 
-    return compareCommits.data.some(compareCommit => (
+    // We can't compare with ourself.
+    if (!comparingWithHimself) {
+      potentialCommits.push(baseCommit)
+    }
+
+    const found = compareCommits.data.some(compareCommit => (
       baseCommit.sha === compareCommit.sha
     ))
+
+    // Takes the previous commit too.
+    if (found && comparingWithHimself && index + 1 < baseCommits.data.length) {
+      potentialCommits.push(baseCommits.data[index + 1])
+    }
+
+    return found
   })
 
   let baseScreenshotBucket
@@ -85,17 +97,20 @@ export default async function baseCompare({
     baseScreenshotBucket = await fallbackToMaster(repository)
   }
 
+  const potentialCommitShas = potentialCommits.map(commit => commit.sha)
+
   if (!baseScreenshotBucket) {
     const buckets = await ScreenshotBucket.query()
       .where({
         repositoryId: repository.id,
       })
-      .whereIn('commit', potentialCommits.map(commit => commit.sha))
+      .whereIn('commit', potentialCommitShas)
 
     // Reverse the potentialCommits order.
-    buckets.sort((bucketA, bucketB) => {
-      return potentialCommits.indexOf(bucketA.commit) - potentialCommits.indexOf(bucketB.commit)
-    })
+    buckets.sort((bucketA, bucketB) => (
+      potentialCommitShas.indexOf(bucketB.commit) -
+      potentialCommitShas.indexOf(bucketA.commit)
+    ))
 
     baseScreenshotBucket = buckets[0] || null
   }
