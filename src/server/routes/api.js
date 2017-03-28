@@ -46,13 +46,20 @@ router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
       throw new HttpError(401, 'Invalid token')
     }
 
-    const [repository] = await Repository.query().where({ token: req.body.token })
+    if (!req.body.commit) {
+      throw new HttpError(401, 'Invalid commit')
+    }
+
+    const repository = await Repository.query()
+      .where({ token: req.body.token })
+      .limit(1)
+      .first()
 
     if (!repository) {
       throw new HttpError(400, `Repository not found (token: "${req.body.token}")`)
     }
     if (!repository.enabled) {
-      throw new HttpError(400, 'Repository not enabled')
+      throw new HttpError(400, `Repository not enabled (name: "${repository.name}")`)
     }
 
     const {
@@ -69,7 +76,7 @@ router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
       throw new HttpError(400, 'User not found')
     }
     if (!compareCommitFound) {
-      throw new HttpError(400, 'Commit not found')
+      throw new HttpError(400, `Commit not found (commit: ${req.body.commit})`)
     }
 
     const build = await transaction(

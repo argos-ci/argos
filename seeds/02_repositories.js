@@ -7,7 +7,7 @@ exports.seed = (knex, Promise) => {
           githubId: 23083156,
           name: 'material-ui',
           enabled: true,
-          token: '79579349bdea7f9da50a964a36d5e6d7092c9aaca2250925842d1f6a801a64d3',
+          token: 'Qns97I3q7XxryiU0Hm0sRk1s6YXO93Vc',
           organizationId: 1,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

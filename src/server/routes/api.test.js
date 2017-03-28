@@ -51,6 +51,7 @@ describe('api routes', () => {
       it('should respond bad request', async () => {
         await factory.create('Repository', {
           enabled: false,
+          name: 'foo',
           token,
         })
 
@@ -62,7 +63,7 @@ describe('api routes', () => {
           .field('branch', 'test-branch')
           .field('token', token)
           .expect((res) => {
-            expect(res.body.error.message).toBe('Repository not enabled')
+            expect(res.body.error.message).toBe('Repository not enabled (name: "foo")')
           })
           .expect(400)
       })
