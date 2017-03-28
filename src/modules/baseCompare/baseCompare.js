@@ -15,7 +15,7 @@ async function fallbackToMaster(repository) {
   return bucket || null
 }
 
-export default async function baseCompare({
+async function baseCompare({
   baseCommit,
   compareCommit,
   repository,
@@ -32,7 +32,7 @@ export default async function baseCompare({
   }
 
   const owner = await repository.getOwner()
-  const github = new GitHubAPI({ debug: config.get('env') === 'development' })
+  const github = new GitHubAPI({ debug: true })
   github.authenticate({
     type: 'oauth',
     token: user.accessToken,
@@ -121,3 +121,5 @@ export default async function baseCompare({
     baseScreenshotBucket,
   }
 }
+
+export default baseCompare
