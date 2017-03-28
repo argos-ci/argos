@@ -32,7 +32,7 @@ async function baseCompare({
   }
 
   const owner = await repository.getOwner()
-  const github = new GitHubAPI({ debug: true })
+  const github = new GitHubAPI({ debug: config.get('env') === 'development' })
   github.authenticate({
     type: 'oauth',
     token: user.accessToken,
