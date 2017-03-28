@@ -15,6 +15,29 @@ async function fallbackToMaster(repository) {
   return bucket || null
 }
 
+async function getBaseScreenshotBucket({
+  forkCommit,
+  potentialCommits,
+  repository,
+}) {
+  if (!forkCommit) {
+    return fallbackToMaster(repository)
+  }
+
+  const potentialCommitShas = potentialCommits.map(commit => commit.sha)
+  const buckets = await ScreenshotBucket.query()
+    .where({ repositoryId: repository.id })
+    .whereIn('commit', potentialCommitShas)
+
+  // Reverse the potentialCommits order.
+  buckets.sort((bucketA, bucketB) => (
+    potentialCommitShas.indexOf(bucketB.commit) -
+    potentialCommitShas.indexOf(bucketA.commit)
+  ))
+
+  return buckets[0] || fallbackToMaster(repository)
+}
+
 async function baseCompare({
   baseCommit,
   compareCommit,
@@ -91,29 +114,11 @@ async function baseCompare({
     return found
   })
 
-  let baseScreenshotBucket
-
-  if (!forkCommit) {
-    baseScreenshotBucket = await fallbackToMaster(repository)
-  }
-
-  const potentialCommitShas = potentialCommits.map(commit => commit.sha)
-
-  if (!baseScreenshotBucket) {
-    const buckets = await ScreenshotBucket.query()
-      .where({
-        repositoryId: repository.id,
-      })
-      .whereIn('commit', potentialCommitShas)
-
-    // Reverse the potentialCommits order.
-    buckets.sort((bucketA, bucketB) => (
-      potentialCommitShas.indexOf(bucketB.commit) -
-      potentialCommitShas.indexOf(bucketA.commit)
-    ))
-
-    baseScreenshotBucket = buckets[0] || null
-  }
+  const baseScreenshotBucket = await getBaseScreenshotBucket({
+    forkCommit,
+    potentialCommits,
+    repository,
+  })
 
   return {
     user,
