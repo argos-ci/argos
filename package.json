@@ -12,7 +12,7 @@
     "test": "./ci/test.sh",
     "test:unit": "jest --runInBand",
     "test:watch": "yarn test:unit -- --watch",
-    "argos": "ARGOS_COMMIT=$TRAVIS_COMMIT ARGOS_BRANCH=$TRAVIS_BRANCH argos upload sandbox/argos/screenshots --token $ARGOS_TOKEN || true",
+    "argos": "ARGOS_COMMIT=$TRAVIS_COMMIT ARGOS_BRANCH=$TRAVIS_BRANCH argos upload sandbox/argos-bootstrap/screenshots --token $ARGOS_TOKEN || true",
     "lint": "eslint . --cache && echo \"eslint: no lint errors\"",
     "db:console": "docker-compose run postgres psql -h postgres -U argos",
     "db:create": "babel-node scripts/db/create.js",
