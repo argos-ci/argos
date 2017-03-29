@@ -11,7 +11,7 @@ export default class User extends BaseModel {
     properties: {
       githubId: { type: 'number' },
       accessToken: { type: 'string' },
-      name: { type: 'string' },
+      name: { type: ['string', null] },
       login: { type: 'string' },
       email: { type: ['string', null] },
       privateSync: { type: 'boolean' },
