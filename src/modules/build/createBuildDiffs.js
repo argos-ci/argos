@@ -1,29 +1,48 @@
 import { transaction } from 'objection'
+import baseCompare from 'modules/baseCompare/baseCompare'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
+import Build from 'server/models/Build'
 import { VALIDATION_STATUS } from 'server/models/constant'
-import { pushBuildNotification } from 'modules/build/notifications'
 
 async function createBuildDiffs(build) {
-  await pushBuildNotification({
-    buildId: build.id,
-    type: 'progress',
-  })
-
   build = await build.$query().eager(
-    '[baseScreenshotBucket.screenshots, compareScreenshotBucket.screenshots]',
+    '[repository, baseScreenshotBucket, compareScreenshotBucket.screenshots]',
   )
 
-  if (!build.baseScreenshotBucket) {
-    return []
-  }
+  const baseScreenshotBucket = await baseCompare({
+    baseCommit: 'master',
+    compareCommit: build.compareScreenshotBucket.commit,
+    build,
+  })
 
-  return transaction(ScreenshotDiff, function (ScreenshotDiff) {
+  return transaction(ScreenshotDiff, Build, async (ScreenshotDiff, Build) => {
+    if (baseScreenshotBucket) {
+      build.baseScreenshotBucket = await baseScreenshotBucket.$query()
+        .eager('screenshots')
+
+      await Build.query()
+        .patch({ baseScreenshotBucketId: baseScreenshotBucket.id })
+        .where({ id: build.id })
+    }
+
+    // At some point, we should handle baseScreenshots no longer in the
+    // compareScreenshots.
     const diffInserts = build.compareScreenshotBucket.screenshots
       .reduce((diffInserts, compareScreenshot) => {
-        const baseScreenshot = build.baseScreenshotBucket.screenshots
-          .find(({ name }) => name === compareScreenshot.name)
+        const baseScreenshot = build.baseScreenshotBucket ?
+          build.baseScreenshotBucket.screenshots
+            .find(({ name }) => name === compareScreenshot.name) :
+          null
 
         if (!baseScreenshot) {
+          diffInserts.push(ScreenshotDiff.query().insert({
+            buildId: build.id,
+            baseScreenshotId: null,
+            compareScreenshotId: compareScreenshot.id,
+            jobStatus: 'complete',
+            validationStatus: VALIDATION_STATUS.unknown,
+          }))
+
           return diffInserts
         }
 
@@ -42,4 +61,8 @@ async function createBuildDiffs(build) {
   })
 }
 
-export default createBuildDiffs
+// Solve jest mocking issue with async.
+// Wait for https://github.com/facebook/jest/pull/3209 to be released
+export default (...args) => {
+  return createBuildDiffs(...args)
+}

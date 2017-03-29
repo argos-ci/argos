@@ -69,26 +69,6 @@ describe('app routes', () => {
       })
     })
 
-    describe('with no user', () => {
-      it('should respond bad request', async () => {
-        await factory.create('Repository', {
-          token,
-        })
-
-        await request(app)
-          .post('/builds')
-          .set('Host', 'api.argos-ci.dev')
-          .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
-          .field('commit', 'test-commit')
-          .field('branch', 'test-branch')
-          .field('token', token)
-          .expect((res) => {
-            expect(res.body.error.message).toBe('User not found')
-          })
-          .expect(400)
-      })
-    })
-
     describe('with valid repository', () => {
       playback({
         name: 'api.builds.json',

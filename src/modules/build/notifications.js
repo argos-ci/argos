@@ -39,7 +39,8 @@ export async function pushBuildNotification({ type, buildId }) {
 }
 
 export async function processBuildNotification(buildNotification) {
-  const build = await Build.query().findById(buildNotification.buildId)
+  const build = await Build.query()
+    .findById(buildNotification.buildId)
     .eager('[repository, repository.user, repository.organization, compareScreenshotBucket]')
 
   if (!build) {
@@ -52,16 +53,16 @@ export async function processBuildNotification(buildNotification) {
     throw new Error(`Cannot find notification for type: "${buildNotification.type}"`)
   }
 
-  const user = await build.getUsers().limit(1).first()
-
-  if (!user) {
-    throw new Error('User not found')
-  }
-
   const owner = build.repository.user || build.repository.organization
 
   if (!owner) {
     throw new Error('Owner not found')
+  }
+
+  const user = await build.repository.getUsers().limit(1).first()
+
+  if (!user) {
+    throw new Error('User not found')
   }
 
   const github = new GitHubAPI({ debug: config.get('env') === 'development' })

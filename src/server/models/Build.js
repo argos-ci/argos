@@ -1,10 +1,10 @@
 import { ValidationError } from 'objection'
 import reduceJobStatus from 'modules/jobs/reduceJobStatus'
-import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
-import jobModelSchema from 'server/models/schemas/jobModelSchema'
-import User from 'server/models/User'
-import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import { VALIDATION_STATUS } from 'server/models/constant'
+import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
+import User from 'server/models/User'
+import jobModelSchema from 'server/models/schemas/jobModelSchema'
+import ScreenshotDiff from 'server/models/ScreenshotDiff'
 
 const NEXT_NUMBER = Symbol('nextNumber')
 
@@ -120,6 +120,10 @@ export default class Build extends BaseModel {
     return jobStatus
   }
 
+  getStatus(options) {
+    return this.constructor.getStatus(this.id, options)
+  }
+
   static getUsers(buildId) {
     return User.query()
       .select('users.*')
@@ -131,9 +135,5 @@ export default class Build extends BaseModel {
 
   getUsers() {
     return this.constructor.getUsers(this.id)
-  }
-
-  getStatus(options) {
-    return this.constructor.getStatus(this.id, options)
   }
 }

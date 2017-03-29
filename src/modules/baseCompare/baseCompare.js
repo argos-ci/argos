@@ -1,12 +1,16 @@
 import GitHubAPI from 'github'
 import config from 'config'
+import crashReporter from 'modules/crashReporter/crashReporter'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
-async function fallbackToMaster(repository) {
+async function fallbackToMaster(build) {
   const bucket = await ScreenshotBucket.query()
     .where({
       branch: 'master',
-      repositoryId: repository.id,
+      repositoryId: build.repository.id,
+    })
+    .whereNot({
+      id: build.compareScreenshotBucket.id,
     })
     .orderBy('id', 'desc')
     .limit(1)
@@ -18,15 +22,15 @@ async function fallbackToMaster(repository) {
 async function getBaseScreenshotBucket({
   forkCommit,
   potentialCommits,
-  repository,
+  build,
 }) {
   if (!forkCommit) {
-    return fallbackToMaster(repository)
+    return fallbackToMaster(build)
   }
 
   const potentialCommitShas = potentialCommits.map(commit => commit.sha)
   const buckets = await ScreenshotBucket.query()
-    .where({ repositoryId: repository.id })
+    .where({ repositoryId: build.repository.id })
     .whereIn('commit', potentialCommitShas)
 
   // Reverse the potentialCommits order.
@@ -35,66 +39,58 @@ async function getBaseScreenshotBucket({
     potentialCommitShas.indexOf(bucketA.commit)
   ))
 
-  return buckets[0] || fallbackToMaster(repository)
+  return buckets[0] || fallbackToMaster(build)
 }
 
 async function baseCompare({
   baseCommit,
   compareCommit,
-  repository,
+  build,
   perPage = 30,
 }) {
-  const user = await repository.getUsers().limit(1).first()
+  build = await build.$query().eager('[repository, compareScreenshotBucket]')
+  const user = await build.repository.getUsers().limit(1).first()
 
   if (!user) {
-    return {
-      user: null,
-      compareCommitFound: false,
-      baseScreenshotBucket: null,
-    }
+    return fallbackToMaster(build)
   }
 
-  const owner = await repository.getOwner()
+  const owner = await build.repository.getOwner()
   const github = new GitHubAPI({ debug: config.get('env') === 'development' })
   github.authenticate({
     type: 'oauth',
     token: user.accessToken,
   })
 
-  // http://stackoverflow.com/questions/9179828/github-api-retrieve-all-commits-for-all-branches-for-a-repo
-  // http://mikedeboer.github.io/node-github/#api-repos-getBranch
-  const baseCommits = await github.repos.getCommits({
-    owner: owner.login,
-    repo: repository.name,
-    sha: baseCommit,
-    per_page: perPage,
-    page: 1,
-  })
-
-  let compareCommits
+  let baseCommits = []
+  let compareCommits = []
 
   try {
+    // http://stackoverflow.com/questions/9179828/github-api-retrieve-all-commits-for-all-branches-for-a-repo
+    // http://mikedeboer.github.io/node-github/#api-repos-getBranch
+    baseCommits = await github.repos.getCommits({
+      owner: owner.login,
+      repo: build.repository.name,
+      sha: baseCommit,
+      per_page: perPage,
+      page: 1,
+    })
+    baseCommits = baseCommits.data
+
     compareCommits = await github.repos.getCommits({
       owner: owner.login,
-      repo: repository.name,
+      repo: build.repository.name,
       sha: compareCommit,
       per_page: perPage,
       page: 1,
     })
+    compareCommits = compareCommits.data
   } catch (error) {
-    if (error.status === 'Not Found') {
-      return {
-        user,
-        compareCommitFound: false,
-        baseScreenshotBucket: null,
-      }
-    }
-
-    throw error
+    crashReporter.captureException(error)
   }
 
   const potentialCommits = []
-  const forkCommit = baseCommits.data.find((baseCommit, index) => {
+  const forkCommit = baseCommits.find((baseCommit, index) => {
     const comparingWithHimself = baseCommit.sha === compareCommit
 
     // We can't compare with ourself.
@@ -102,13 +98,13 @@ async function baseCompare({
       potentialCommits.push(baseCommit)
     }
 
-    const found = compareCommits.data.some(compareCommit => (
+    const found = compareCommits.some(compareCommit => (
       baseCommit.sha === compareCommit.sha
     ))
 
     // Takes the previous commit too.
-    if (found && comparingWithHimself && index + 1 < baseCommits.data.length) {
-      potentialCommits.push(baseCommits.data[index + 1])
+    if (found && comparingWithHimself && index + 1 < baseCommits.length) {
+      potentialCommits.push(baseCommits[index + 1])
     }
 
     return found
@@ -117,14 +113,10 @@ async function baseCompare({
   const baseScreenshotBucket = await getBaseScreenshotBucket({
     forkCommit,
     potentialCommits,
-    repository,
+    build,
   })
 
-  return {
-    user,
-    compareCommitFound: true,
-    baseScreenshotBucket,
-  }
+  return baseScreenshotBucket
 }
 
 export default baseCompare

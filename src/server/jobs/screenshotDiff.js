@@ -1,8 +1,8 @@
 import S3 from 'aws-sdk/clients/s3'
 import config from 'config'
 import computeScreenshotDiff from 'modules/build/computeScreenshotDiff'
-import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import createModelJob from 'modules/jobs/createModelJob'
+import ScreenshotDiff from 'server/models/ScreenshotDiff'
 
 let s3
 

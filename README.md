@@ -89,7 +89,7 @@ yarn dev:review # run webpack
 #### Create a migration
 
 ```sh
-knex migrate:make my_migration
+./node_modules/.bin/knex migrate:make my_migration
 ```
 
 #### Dump database
