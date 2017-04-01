@@ -1,5 +1,5 @@
 import { transaction } from 'objection'
-import errorHandler, { HttpError } from 'express-err'
+import { HttpError, formatters } from 'express-err'
 import express from 'express'
 import multer from 'multer'
 import S3 from 'aws-sdk/clients/s3'
@@ -10,6 +10,7 @@ import Build from 'server/models/Build'
 import Repository from 'server/models/Repository'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import buildJob from 'server/jobs/build'
+import errorHandler from 'server/middlewares/errorHandler'
 
 const router = new express.Router()
 const s3 = new S3({
@@ -133,11 +134,11 @@ router.get('/buckets', errorChecking(
   },
 ))
 
-// Display errors
 router.use(errorHandler({
-  exitOnUncaughtException: false,
-  formatters: ['json'],
-  defaultFormatter: 'json',
+  formatters: {
+    json: formatters.json,
+    default: formatters.json,
+  },
 }))
 
 export default router
