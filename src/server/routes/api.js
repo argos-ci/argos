@@ -5,7 +5,6 @@ import multer from 'multer'
 import S3 from 'aws-sdk/clients/s3'
 import multerS3 from 'multer-s3'
 import config from 'config'
-import baseCompare from 'modules/baseCompare/baseCompare'
 import Build from 'server/models/Build'
 import Repository from 'server/models/Repository'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
@@ -59,31 +58,15 @@ router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
     if (!repository) {
       throw new HttpError(400, `Repository not found (token: "${req.body.token}")`)
     }
+
     if (!repository.enabled) {
       throw new HttpError(400, `Repository not enabled (name: "${repository.name}")`)
-    }
-
-    const {
-      user,
-      compareCommitFound,
-      baseScreenshotBucket,
-    } = await baseCompare({
-      baseCommit: 'master',
-      compareCommit: req.body.commit,
-      repository,
-    })
-
-    if (!user) {
-      throw new HttpError(400, 'User not found')
-    }
-    if (!compareCommitFound) {
-      throw new HttpError(400, `Commit not found (commit: ${req.body.commit})`)
     }
 
     const build = await transaction(
       Build,
       ScreenshotBucket,
-      async function (Build, ScreenshotBucket) {
+      async (Build, ScreenshotBucket) => {
         const bucket = await ScreenshotBucket
           .query()
           .insert({
@@ -105,7 +88,7 @@ router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
 
         const build = await Build.query()
           .insert({
-            baseScreenshotBucketId: baseScreenshotBucket ? baseScreenshotBucket.id : null,
+            baseScreenshotBucketId: null,
             compareScreenshotBucketId: bucket.id,
             repositoryId: repository.id,
             jobStatus: 'pending',

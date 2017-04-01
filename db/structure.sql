@@ -319,7 +319,7 @@ ALTER SEQUENCE screenshot_buckets_id_seq OWNED BY screenshot_buckets.id;
 CREATE TABLE screenshot_diffs (
     id bigint NOT NULL,
     "buildId" bigint NOT NULL,
-    "baseScreenshotId" bigint NOT NULL,
+    "baseScreenshotId" bigint,
     "compareScreenshotId" bigint NOT NULL,
     score numeric(10,5),
     "jobStatus" job_status,
@@ -1036,3 +1036,4 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312191852
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312202055_repositories_add_column_private.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312230324_organizations_login.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170319114827_add_github_scopes_to_users.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170329213934_allow_null_baseScreenshotIds.js', 1, NOW());

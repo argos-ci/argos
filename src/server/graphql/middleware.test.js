@@ -17,6 +17,7 @@ describe('GraphQL', () => {
   describe('build', () => {
     let build
     let user
+    let screenshot2
 
     beforeEach(async () => {
       user = await factory.create('User')
@@ -31,7 +32,7 @@ describe('GraphQL', () => {
       const screenshot1 = await factory.create('Screenshot', {
         name: 'email_deleted',
       })
-      const screenshot2 = await factory.create('Screenshot', {
+      screenshot2 = await factory.create('Screenshot', {
         name: 'email_deleted',
       })
       const screenshot3 = await factory.create('Screenshot', {
@@ -78,6 +79,73 @@ describe('GraphQL', () => {
         .expect((res) => {
           const { screenshotDiffs } = res.body.data.build
           expect(screenshotDiffs).toEqual([
+            {
+              baseScreenshot: {
+                name: 'email_deleted',
+              },
+              compareScreenshot: {
+                name: 'email_deleted',
+              },
+              score: 0.3,
+            },
+            {
+              baseScreenshot: {
+                name: 'email_added',
+              },
+              compareScreenshot: {
+                name: 'email_added',
+              },
+              score: 0,
+            },
+            {
+              baseScreenshot: {
+                name: 'email_deleted',
+              },
+              compareScreenshot: {
+                name: 'email_deleted',
+              },
+              score: 0,
+            },
+          ])
+        })
+        .expect(200)
+    })
+
+    it('should also display transitioning diffs', async () => {
+      await factory.create('ScreenshotDiff', {
+        buildId: build.id,
+        baseScreenshotId: null,
+        compareScreenshotId: screenshot2.id,
+        score: null,
+      })
+
+      await request(graphqlMiddleware())
+        .post('/')
+        .send({
+          query: `{
+            build(id: ${build.id}) {
+              screenshotDiffs {
+                baseScreenshot {
+                  name
+                }
+                compareScreenshot {
+                  name
+                }
+                score
+              }
+            }
+          }`,
+        })
+        .expect((res) => {
+          const { screenshotDiffs } = res.body.data.build
+          expect(screenshotDiffs).toEqual([
+            {
+              baseScreenshot: null,
+              compareScreenshot: {
+                name: 'email_deleted',
+              },
+              score: null,
+            },
             {
               baseScreenshot: {
                 name: 'email_deleted',

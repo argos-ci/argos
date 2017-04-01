@@ -18,7 +18,7 @@ export default class ScreenshotDiff extends BaseModel {
       ],
       properties: {
         buildId: { type: 'string' },
-        baseScreenshotId: { type: 'string' },
+        baseScreenshotId: { type: ['string', null] },
         compareScreenshotId: { type: 'string' },
         s3Id: { type: ['string', null] },
         score: {

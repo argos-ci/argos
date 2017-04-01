@@ -62,7 +62,7 @@ const BuildType = new GraphQLObjectType({
       type: new GraphQLList(ScreenshotDiffType),
       resolve: source => source
         .$relatedQuery('screenshotDiffs')
-        .innerJoin('screenshots', 'screenshots.id', 'screenshot_diffs.baseScreenshotId')
+        .leftJoin('screenshots', 'screenshots.id', 'screenshot_diffs.baseScreenshotId')
         .orderBy('score', 'desc')
         .orderBy('screenshots.name', 'asc'),
     },

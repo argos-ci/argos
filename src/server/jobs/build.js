@@ -1,9 +1,28 @@
+import { pushBuildNotification } from 'modules/build/notifications'
 import createBuildDiffs from 'modules/build/createBuildDiffs'
 import createModelJob from 'modules/jobs/createModelJob'
 import screenshotDiffJob from 'server/jobs/screenshotDiff'
 import Build from 'server/models/Build'
 
-export default createModelJob('build', Build, async (build) => {
+export async function performBuild(build) {
+  await pushBuildNotification({
+    buildId: build.id,
+    type: 'progress',
+  })
+
   const screenshotDiffs = await createBuildDiffs(build)
-  await Promise.all(screenshotDiffs.map(({ id }) => screenshotDiffJob.push(id)))
-})
+  const screenshotDiffJobs = await Promise.all(
+    screenshotDiffs
+      .filter(({ baseScreenshotId }) => baseScreenshotId !== null)
+      .map(({ id }) => screenshotDiffJob.push(id)),
+  )
+
+  if (screenshotDiffJobs.length === 0) {
+    await pushBuildNotification({
+      buildId: build.id,
+      type: 'no-diff-detected',
+    })
+  }
+}
+
+export default createModelJob('build', Build, performBuild)

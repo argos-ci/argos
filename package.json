@@ -133,6 +133,10 @@
     "webpack-dev-server": "^2.4.2"
   },
   "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json"
+    ],
     "roots": [
       "<rootDir>/src"
     ],

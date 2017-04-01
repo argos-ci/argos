@@ -1,10 +1,11 @@
 import React from 'react'
 import { assert } from 'chai'
 import { shallow } from 'enzyme'
+import BuildSummaryBody from 'review/routes/build/BuildSummaryBody'
 import { BuildSummary } from './BuildSummary'
 
 describe('<BuildSummary />', () => {
-  describe('jobStatus', () => {
+  describe('task', () => {
     let fetch
 
     beforeEach(() => {
@@ -29,17 +30,10 @@ describe('<BuildSummary />', () => {
       }
     })
 
-    it('should be failure', () => {
-      const wrapper = shallow(
-        <BuildSummary
-          classes={{}}
-          fetch={fetch}
-          onValidationClick={() => {}}
-        />,
-      )
+    it('should render when success', () => {
+      const wrapper = shallow(<BuildSummary classes={{}} fetch={fetch} />)
       const wrapperWatchTask = wrapper.find('WatchTask').shallow()
-
-      assert.strictEqual(wrapperWatchTask.contains('Job status: failure'), true)
+      assert.strictEqual(wrapperWatchTask.find(BuildSummaryBody).length, 1)
     })
   })
 })

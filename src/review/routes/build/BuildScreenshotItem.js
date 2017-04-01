@@ -90,17 +90,19 @@ function BuildScreenshotItem(props) {
         <Collapse in={expandIn} transitionDuration="auto" unmountOnExit>
           <Layout container>
             <Layout item xs={4}>
-              <a
-                href={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  className={classes.screenshot}
-                  alt={baseScreenshot.name}
-                  src={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
-                />
-              </a>
+              {baseScreenshot ? (
+                <a
+                  href={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img
+                    className={classes.screenshot}
+                    alt={baseScreenshot.name}
+                    src={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
+                  />
+                </a>
+              ) : null}
             </Layout>
             <Layout item xs={4}>
               <a
@@ -145,7 +147,7 @@ BuildScreenshotItem.propTypes = {
     s3id: PropTypes.string,
     score: PropTypes.number,
     jobStatus: PropTypes.string.isRequired,
-    baseScreenshot: PropTypes.object.isRequired,
+    baseScreenshot: PropTypes.object,
     compareScreenshot: PropTypes.object.isRequired,
   }).isRequired,
   screenshotsBucket: PropTypes.string.isRequired,
@@ -157,7 +159,7 @@ export default recompact.compose(
     screenshotsBucket: state.data.config.s3.screenshotsBucket,
   })),
   recompact.withState('expandIn', 'onExpandIn', props => (
-    props.screenshotDiff.score > 0
+    props.screenshotDiff.score !== 0
   )),
   recompact.withHandlers(() => ({
     onClickExpand: props => () => {

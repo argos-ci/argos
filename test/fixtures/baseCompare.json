@@ -2,7 +2,7 @@
   {
     "scope": "https://api.github.com:443",
     "method": "get",
-    "path": "/repos/callemall/material-ui/commits?sha=0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92&page=1&per_page=5&access_token=foo",
+    "path": "/repos/callemall/material-ui/commits?sha=0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92&page=1&per_page=5&access_token=ACCESS_TOKEN",
     "body": "",
     "status": 200,
     "response": [
@@ -387,7 +387,7 @@
   {
     "scope": "https://api.github.com:443",
     "method": "get",
-    "path": "/repos/callemall/material-ui/commits?sha=3304d38afd1838cadf4e859de46b495fb347efec&page=1&per_page=5&access_token=foo",
+    "path": "/repos/callemall/material-ui/commits?sha=3304d38afd1838cadf4e859de46b495fb347efec&page=1&per_page=5&access_token=ACCESS_TOKEN",
     "body": "",
     "status": 200,
     "response": [
@@ -700,7 +700,7 @@
   {
     "scope": "https://api.github.com:443",
     "method": "get",
-    "path": "/repos/callemall/material-ui/commits?sha=e97e6d9054ac1b4f6f9ef55ff3d7ed8cc18394bd&page=1&per_page=5&access_token=foo",
+    "path": "/repos/callemall/material-ui/commits?sha=e97e6d9054ac1b4f6f9ef55ff3d7ed8cc18394bd&page=1&per_page=5&access_token=ACCESS_TOKEN",
     "body": "",
     "status": 200,
     "response": [
@@ -1085,7 +1085,7 @@
   {
     "scope": "https://api.github.com:443",
     "method": "get",
-    "path": "/repos/callemall/material-ui/commits?sha=3304d38afd1838cadf4e859de46b495fb347efec&page=1&per_page=5&access_token=foo",
+    "path": "/repos/callemall/material-ui/commits?sha=3304d38afd1838cadf4e859de46b495fb347efec&page=1&per_page=5&access_token=ACCESS_TOKEN",
     "body": "",
     "status": 200,
     "response": [
@@ -1398,7 +1398,7 @@
   {
     "scope": "https://api.github.com:443",
     "method": "get",
-    "path": "/repos/callemall/material-ui/commits?sha=master&page=1&per_page=5&access_token=foo",
+    "path": "/repos/callemall/material-ui/commits?sha=master&page=1&per_page=5&access_token=ACCESS_TOKEN",
     "body": "",
     "status": 200,
     "response": [
@@ -1783,7 +1783,7 @@
   {
     "scope": "https://api.github.com:443",
     "method": "get",
-    "path": "/repos/callemall/material-ui/commits?sha=3304d38afd1838cadf4e859de46b495fb347efec&page=1&per_page=5&access_token=foo",
+    "path": "/repos/callemall/material-ui/commits?sha=3304d38afd1838cadf4e859de46b495fb347efec&page=1&per_page=5&access_token=ACCESS_TOKEN",
     "body": "",
     "status": 200,
     "response": [
@@ -2096,7 +2096,7 @@
   {
     "scope": "https://api.github.com:443",
     "method": "get",
-    "path": "/repos/callemall/material-ui/commits?sha=master&page=1&per_page=5&access_token=foo",
+    "path": "/repos/callemall/material-ui/commits?sha=master&page=1&per_page=5&access_token=ACCESS_TOKEN",
     "body": "",
     "status": 200,
     "response": [
@@ -2481,7 +2481,7 @@
   {
     "scope": "https://api.github.com:443",
     "method": "get",
-    "path": "/repos/callemall/material-ui/commits?sha=1304d38afd1838cadf4e859de46b495fb347efec&page=1&per_page=5&access_token=foo",
+    "path": "/repos/callemall/material-ui/commits?sha=1304d38afd1838cadf4e859de46b495fb347efec&page=1&per_page=5&access_token=ACCESS_TOKEN",
     "body": "",
     "status": 404,
     "response": {
