@@ -8,6 +8,9 @@ import config from 'config'
 import * as redis from 'server/services/redis'
 import graphqlMiddleware from 'server/graphql/middleware'
 import rendering from 'server/middlewares/rendering'
+import errorHandler from 'server/middlewares/errorHandler'
+
+const dev = config.get('env') === 'development'
 
 const router = new express.Router()
 const RedisStore = connectRedis(session)
@@ -60,6 +63,23 @@ router.get('/auth/logout', (req, res) => {
   res.redirect('/')
 })
 
-router.get('*', rendering)
+router.get('*', rendering())
+
+const htmlErrorHandler = (err, req, res, next) => {
+  rendering({
+    error: {
+      statusCode: res.statusCode,
+      message: dev ? err.message : '',
+      stack: dev ? err.stack : '',
+    },
+  })(req, res, next)
+}
+
+router.use(errorHandler({
+  formatters: {
+    html: htmlErrorHandler,
+    default: htmlErrorHandler,
+  },
+}))
 
 export default router

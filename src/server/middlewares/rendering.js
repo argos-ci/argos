@@ -52,7 +52,7 @@ function injectJSON(data) {
   return JSON.stringify(data, null, process.env.NODE_ENV === 'production' ? 0 : 2)
 }
 
-export default (req, res) => {
+export default additionalClientData => (req, res) => {
   const output = ejs.render(indexString, {
     cache: true,
     filename: 'review/index.ejs',
@@ -70,6 +70,7 @@ export default (req, res) => {
         authorizationStatus: getAuthorizationStatus(req.user),
         user: pick(req.user, 'name', 'email', 'login', 'privateSync'),
       } : { user: null }),
+      ...additionalClientData,
     }),
   })
 

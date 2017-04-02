@@ -5,7 +5,6 @@ import compress from 'compression'
 import morgan from 'morgan'
 import ejs from 'ejs'
 import subdomain from 'express-subdomain'
-import errorHandler from 'express-err'
 import config from 'config'
 import crashReporter, { captureClientRelease } from 'modules/crashReporter/crashReporter'
 import csp from 'server/middlewares/csp'
@@ -50,21 +49,5 @@ app.use(express.static(path.join(__dirname, '../../../server/public'), {
 
 app.use(subdomain('www', www))
 app.use(subdomain('api', api))
-
-app.use(crashReporter.errorHandler())
-
-// Log errors
-if (config.get('env') !== 'test') {
-  app.use((err, req, res, next) => {
-    console.log(err, err.stack)
-    next(err)
-  })
-}
-
-// Display errors
-app.use(errorHandler({
-  exitOnUncaughtException: false,
-  formatters: ['json'],
-}))
 
 export default app
