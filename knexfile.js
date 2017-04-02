@@ -4,7 +4,7 @@ const freeConnectionsForThierdTools = 2
 
 const config = {
   development: {
-    debug: false,
+    debug: true,
     client: 'postgresql',
     connection: {
       user: 'argos',
