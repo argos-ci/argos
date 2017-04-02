@@ -10,6 +10,7 @@ export default class Repository extends BaseModel {
       'name',
       'enabled',
       'private',
+      'baselineBranch',
     ],
     properties: {
       githubId: { type: 'number' },
@@ -19,6 +20,7 @@ export default class Repository extends BaseModel {
       organizationId: { type: ['string', null] },
       userId: { type: ['string', null] },
       private: { type: 'boolean' },
+      baselineBranch: { type: 'string' },
     },
   });
 

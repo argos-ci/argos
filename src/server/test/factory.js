@@ -62,6 +62,7 @@ factory.define('Repository', Repository, {
   githubId: factory.sequence('repository.githubId', n => n),
   name: factory.sequence('repository.name', n => `repo-${n}`),
   enabled: true,
+  baselineBranch: 'master',
   organizationId: factory.assoc('Organization', 'id'),
   private: false,
 })

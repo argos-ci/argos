@@ -10,7 +10,7 @@ async function createBuildDiffs(build) {
   )
 
   const baseScreenshotBucket = await baseCompare({
-    baseCommit: 'master',
+    baseCommit: build.repository.baselineBranch,
     compareCommit: build.compareScreenshotBucket.commit,
     build,
   })

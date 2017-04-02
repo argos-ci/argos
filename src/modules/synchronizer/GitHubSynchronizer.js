@@ -44,6 +44,7 @@ class GitHubSynchronizer {
       } else {
         repository = await Repository.query().insert({
           ...data,
+          baselineBranch: 'master',
           enabled: false,
         })
       }
