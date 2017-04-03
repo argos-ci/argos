@@ -247,7 +247,8 @@ CREATE TABLE repositories (
     token character varying(255),
     "organizationId" bigint,
     "userId" bigint,
-    private boolean DEFAULT false NOT NULL
+    private boolean DEFAULT false NOT NULL,
+    "baselineBranch" character varying(255) NOT NULL
 );
 
 
@@ -1037,3 +1038,4 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312202055
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312230324_organizations_login.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170319114827_add_github_scopes_to_users.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170329213934_allow_null_baseScreenshotIds.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170402203440_repository_baseline_branch.js', 1, NOW());

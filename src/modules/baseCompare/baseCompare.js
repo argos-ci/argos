@@ -6,7 +6,7 @@ import ScreenshotBucket from 'server/models/ScreenshotBucket'
 async function fallbackToMaster(build) {
   const bucket = await ScreenshotBucket.query()
     .where({
-      branch: 'master',
+      branch: build.repository.baselineBranch,
       repositoryId: build.repository.id,
     })
     .whereNot({
