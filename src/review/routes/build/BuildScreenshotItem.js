@@ -14,38 +14,36 @@ function getS3Url(s3Id, screenshotsBucket) {
   return `https://s3.amazonaws.com/${screenshotsBucket}/${s3Id}`
 }
 
-const styleSheet = createStyleSheet('BuildScreenshotItem', (theme) => {
-  return {
-    name: {
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    },
-    screenshot: {
-      width: '100%',
-      display: 'block',
-    },
-    expand: {
-      transform: 'rotate(0deg)',
-      transition: theme.transitions.create('transform', {
-        duration: theme.transitions.duration.shortest,
-      }),
-    },
-    expandIn: {
-      transform: 'rotate(180deg)',
-    },
-    flexGrow: {
-      flexGrow: 1,
-    },
-    cardContent: {
-      padding: `${theme.spacing.unit * 2}px ${theme.spacing.unit * 2}px 0 ${
-        theme.spacing.unit * 2}px`,
-    },
-    cardActions: {
-      display: 'flex',
-    },
-  }
-})
+const styleSheet = createStyleSheet('BuildScreenshotItem', theme => ({
+  name: {
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  screenshot: {
+    width: '100%',
+    display: 'block',
+  },
+  expand: {
+    transform: 'rotate(0deg)',
+    transition: theme.transitions.create('transform', {
+      duration: theme.transitions.duration.shortest,
+    }),
+  },
+  expandIn: {
+    transform: 'rotate(180deg)',
+  },
+  flexGrow: {
+    flexGrow: 1,
+  },
+  cardContent: {
+    padding: `${theme.spacing.unit * 2}px ${theme.spacing.unit * 2}px 0 ${
+      theme.spacing.unit * 2}px`,
+  },
+  cardActions: {
+    display: 'flex',
+  },
+}))
 
 function BuildScreenshotItem(props) {
   const {

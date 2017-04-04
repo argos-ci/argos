@@ -12,8 +12,8 @@ import {
   grey,
 } from 'material-ui/styles/colors'
 
-export default () => {
-  return MuiThemeProvider.createDefaultContext({
+export default () =>
+  MuiThemeProvider.createDefaultContext({
     theme: createMuiTheme({
       palette: createPalette({
         primary: brown,
@@ -29,4 +29,3 @@ export default () => {
       },
     }),
   })
-}

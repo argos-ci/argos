@@ -1,3 +1,4 @@
+/* eslint-disable global-require */
 import raven from 'raven'
 
 const production = process.env.NODE_ENV === 'production'

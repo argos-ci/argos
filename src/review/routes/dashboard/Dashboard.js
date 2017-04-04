@@ -89,7 +89,6 @@ function Dashboard(props) {
 
 Dashboard.propTypes = {
   classes: PropTypes.object.isRequired,
-  dispatch: PropTypes.func.isRequired,
   fetch: PropTypes.object.isRequired,
 }
 

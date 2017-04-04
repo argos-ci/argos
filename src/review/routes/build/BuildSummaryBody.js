@@ -8,20 +8,18 @@ function formatShortCommit(sha) {
   return sha.substring(0, 7)
 }
 
-const styleSheet = createStyleSheet('BuildSummaryBody', (theme) => {
-  return {
-    itemStatusChild: {
-      width: '100%',
-    },
-    list: {
-      margin: 0,
-      listStyle: 'none',
-      padding: theme.spacing.unit,
-    },
-  }
-})
+const styleSheet = createStyleSheet('BuildSummaryBody', theme => ({
+  itemStatusChild: {
+    width: '100%',
+  },
+  list: {
+    margin: 0,
+    listStyle: 'none',
+    padding: theme.spacing.unit,
+  },
+}))
 
-export function BuildSummaryBody(props) {
+export function BuildSummaryBodyView(props) {
   const {
     build,
     classes,
@@ -64,7 +62,7 @@ export function BuildSummaryBody(props) {
   )
 }
 
-BuildSummaryBody.propTypes = {
+BuildSummaryBodyView.propTypes = {
   build: PropTypes.shape({
     createdAt: PropTypes.string.isRequired,
     status: PropTypes.string.isRequired,
@@ -74,4 +72,4 @@ BuildSummaryBody.propTypes = {
   classes: PropTypes.object.isRequired,
 }
 
-export default withStyles(styleSheet)(BuildSummaryBody)
+export default withStyles(styleSheet)(BuildSummaryBodyView)

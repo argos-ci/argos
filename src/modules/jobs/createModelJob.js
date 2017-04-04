@@ -1,7 +1,7 @@
 import createJob from 'modules/jobs/createJob'
 
-const createModelJob = (queue, Model, perform) => {
-  return createJob(queue, {
+const createModelJob = (queue, Model, perform) =>
+  createJob(queue, {
     async perform(id) {
       const model = await Model.query().findById(id)
 
@@ -25,6 +25,5 @@ const createModelJob = (queue, Model, perform) => {
         .where({ id })
     },
   })
-}
 
 export default createModelJob

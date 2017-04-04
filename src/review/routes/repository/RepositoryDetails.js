@@ -77,7 +77,6 @@ function RepositoryDetails(props) {
 
 RepositoryDetails.propTypes = {
   classes: PropTypes.object.isRequired,
-  dispatch: PropTypes.func.isRequired,
   fetch: PropTypes.shape({
     output: PropTypes.shape({
       data: PropTypes.shape({

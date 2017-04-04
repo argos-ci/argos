@@ -9,9 +9,7 @@ const sources = {
 
 const csp = Object
   .keys(sources)
-  .reduce((reduction, key) => {
-    return `${reduction} ${key} ${sources[key]};`
-  }, '')
+  .reduce((reduction, key) => `${reduction} ${key} ${sources[key]};`, '')
 
 // Content Security Policy
 export default function (req, res, next) {

@@ -2,8 +2,8 @@ import path from 'path'
 import generateReport from './generateReport'
 
 describe('generateReport', () => {
-  it('should generate a report from files', () => {
-    return generateReport({
+  it('should generate a report from files', () => (
+    generateReport({
       compareScreenshotsPath: path.join(__dirname, '__fixtures__/actual'),
       baseScreenshotsPath: path.join(__dirname, '__fixtures__/expected'),
       diffResultsPath: path.join(__dirname, '__fixtures__/diff'),
@@ -15,5 +15,5 @@ describe('generateReport', () => {
         { total: 1961, percentage: 0.0299183 },
       ])
     })
-  })
+  ))
 })

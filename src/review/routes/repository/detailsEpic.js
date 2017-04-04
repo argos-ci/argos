@@ -4,8 +4,8 @@ import actionTypes from 'review/modules/redux/actionTypes'
 const repositoryDetailsEpic = action$ => (
   action$
     .ofType(actionTypes.REPOSITORY_DETAILS_FETCH)
-    .watchTask(actionTypes.REPOSITORY_DETAILS_FETCH_TASK, (action) => {
-      return graphQLClient.fetch({
+    .watchTask(actionTypes.REPOSITORY_DETAILS_FETCH_TASK, action => (
+      graphQLClient.fetch({
         query: `{
           repository(
             ownerLogin: "${action.payload.profileName}",
@@ -31,7 +31,7 @@ const repositoryDetailsEpic = action$ => (
           }
         }`,
       })
-    })
+    ))
 )
 
 export default repositoryDetailsEpic

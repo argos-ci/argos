@@ -2,8 +2,8 @@
 import 'whatwg-fetch'
 
 const graphQLClient = {
-  fetch: (params) => {
-    return fetch(`${window.location.origin}/graphql`, {
+  fetch: params => (
+    fetch(`${window.location.origin}/graphql`, {
       method: 'post',
       headers: {
         'Content-Type': 'application/json',
@@ -13,7 +13,7 @@ const graphQLClient = {
       body: JSON.stringify(params),
     })
     .then(response => response.json())
-  },
+  ),
 }
 
 export default graphQLClient

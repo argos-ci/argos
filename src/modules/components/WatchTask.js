@@ -58,10 +58,8 @@ WatchTask.defaultProps = {
   Container: WatchTaskContainer,
 }
 
-export const watchTask = recompact.createHelper(mapProps => BaseComponent => (props) => {
-  return (
-    <WatchTask {...mapProps(props)}>
-      {() => recompact.createEagerElement(BaseComponent, props)}
-    </WatchTask>
-  )
-}, 'watchTask')
+export const watchTask = recompact.createHelper(mapProps => BaseComponent => props => (
+  <WatchTask {...mapProps(props)}>
+    {() => recompact.createEagerElement(BaseComponent, props)}
+  </WatchTask>
+), 'watchTask')

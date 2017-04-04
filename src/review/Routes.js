@@ -17,24 +17,22 @@ import RepositoryDetails from 'review/routes/repository/RepositoryDetails'
 import Build from 'review/routes/build/Build'
 import Settings from 'review/routes/settings/Settings'
 
-const styleSheet = createStyleSheet('Routes', (theme) => {
-  return {
-    '@global': {
-      html: {
-        background: theme.palette.background.default,
-        fontFamily: theme.typography.fontFamily,
-        WebkitFontSmoothing: 'antialiased', // Antialiasing.
-        MozOsxFontSmoothing: 'grayscale', // Antialiasing.
-      },
-      body: {
-        margin: 0,
-      },
-      a: {
-        color: 'inherit',
-      },
+const styleSheet = createStyleSheet('Routes', theme => ({
+  '@global': {
+    html: {
+      background: theme.palette.background.default,
+      fontFamily: theme.typography.fontFamily,
+      WebkitFontSmoothing: 'antialiased', // Antialiasing.
+      MozOsxFontSmoothing: 'grayscale', // Antialiasing.
     },
-  }
-})
+    body: {
+      margin: 0,
+    },
+    a: {
+      color: 'inherit',
+    },
+  },
+}))
 
 function Routes() {
   return (

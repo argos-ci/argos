@@ -291,8 +291,8 @@ describe('GraphQL', () => {
       })
     })
 
-    it('should list builds sorted by number', () => {
-      return request(graphqlMiddleware({
+    it('should list builds sorted by number', () => (
+      request(graphqlMiddleware({
         context: { user },
       }))
         .post('/')
@@ -343,7 +343,7 @@ describe('GraphQL', () => {
           })
         })
         .expect(200)
-    })
+    ))
   })
 
   describe('owner', () => {
@@ -388,8 +388,8 @@ describe('GraphQL', () => {
       })
     })
 
-    it('should filter the repositories (organization)', () => {
-      return request(graphqlMiddleware({
+    it('should filter the repositories (organization)', () => (
+      request(graphqlMiddleware({
         context: { user },
       }))
         .post('/graphql')
@@ -413,10 +413,10 @@ describe('GraphQL', () => {
             },
           ])
         })
-    })
+    ))
 
-    it('should filter the repositories (user)', () => {
-      return request(graphqlMiddleware({
+    it('should filter the repositories (user)', () => (
+      request(graphqlMiddleware({
         context: { user },
       }))
         .post('/graphql')
@@ -440,6 +440,6 @@ describe('GraphQL', () => {
             },
           ])
         })
-    })
+    ))
   })
 })

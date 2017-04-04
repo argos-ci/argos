@@ -6,15 +6,13 @@ import recompact from 'modules/recompact'
 import { VALIDATION_STATUS } from 'server/models/constant'
 import actionTypes from 'review/modules/redux/actionTypes'
 
-const styleSheet = createStyleSheet('BuildActions', (theme) => {
-  return {
-    validationStatus: {
-      margin: theme.spacing.unit,
-    },
-  }
-})
+const styleSheet = createStyleSheet('BuildActions', theme => ({
+  validationStatus: {
+    margin: theme.spacing.unit,
+  },
+}))
 
-export function BuildActions(props) {
+function BuildActions(props) {
   const {
     build,
     classes,

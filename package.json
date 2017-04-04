@@ -59,6 +59,7 @@
     "babel-preset-react": "^6.23.0",
     "browser-metrics": "^0.1.2",
     "chai": "^3.5.0",
+    "classnames": "^2.2.5",
     "clear-require": "^2.0.0",
     "compression": "^1.6.2",
     "connect-redis": "^3.2.0",
@@ -109,6 +110,7 @@
     "sinon": "^2.1.0",
     "tmp": "^0.0.31",
     "uuid": "^3.0.1",
+    "warning": "^3.0.0",
     "webpack": "^2.3.3",
     "whatwg-fetch": "^2.0.3"
   },
@@ -118,6 +120,7 @@
     "eslint": "^3.19.0",
     "eslint-config-airbnb": "^14.1.0",
     "eslint-find-rules": "^1.14.3",
+    "eslint-import-resolver-node": "^0.3.0",
     "eslint-plugin-babel": "^4.1.1",
     "eslint-plugin-import": "^2.1.0",
     "eslint-plugin-jsx-a11y": "^3.0.2",

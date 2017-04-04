@@ -1,3 +1,4 @@
+/* eslint-disable global-require */
 import 'rxjs/add/observable/of'
 
 import 'rxjs/add/operator/delay'

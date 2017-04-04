@@ -38,13 +38,8 @@ function RepositoryDetailsLoadMore(props) {
 
 RepositoryDetailsLoadMore.propTypes = {
   classes: PropTypes.object.isRequired,
-  dispatch: PropTypes.func.isRequired,
   fetch: PropTypes.object.isRequired,
   onClickLoadMore: PropTypes.func.isRequired,
-  params: PropTypes.shape({
-    profileName: PropTypes.string.isRequired,
-    repositoryName: PropTypes.string.isRequired,
-  }).isRequired,
 }
 
 export default recompact.compose(
