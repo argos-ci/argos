@@ -31,7 +31,7 @@ export async function resolveList(obj, args, context) {
 
 const OwnerType = new GraphQLObjectType({
   name: 'Owner',
-  fields: {
+  fields: () => ({
     name: { type: GraphQLString },
     login: { type: GraphQLString },
     type: { type: GraphQLString },
@@ -63,7 +63,7 @@ const OwnerType = new GraphQLObjectType({
           })
       },
     },
-  },
+  }),
 })
 
 export default OwnerType

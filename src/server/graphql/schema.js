@@ -1,4 +1,5 @@
 import {
+  GraphQLBoolean,
   GraphQLObjectType,
   GraphQLSchema,
   GraphQLNonNull,
@@ -15,11 +16,15 @@ import OwnerType, {
 } from 'server/graphql/OwnerType'
 import RepositoryType, {
   resolve as resolveRepository,
+  toggleRepository,
 } from 'server/graphql/RepositoryType'
 import {
   resolveSetValidationStatus,
   validationStatusType,
 } from 'server/graphql/ScreenshotDiffType'
+import UserType, {
+  resolve as resolveUser,
+} from 'server/graphql/UserType'
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -63,6 +68,11 @@ export default new GraphQLSchema({
         type: new GraphQLList(OwnerType),
         resolve: resolveOwnerList,
       },
+      user: {
+        description: 'Get current user.',
+        type: UserType,
+        resolve: resolveUser,
+      },
     },
   }),
   mutation: new GraphQLObjectType({
@@ -80,6 +90,19 @@ export default new GraphQLSchema({
           },
         },
         resolve: resolveSetValidationStatus,
+      },
+      toggleRepository: {
+        type: RepositoryType,
+        description: 'Enable or disable a repository.',
+        args: {
+          enabled: {
+            type: GraphQLBoolean,
+          },
+          repositoryId: {
+            type: new GraphQLNonNull(GraphQLString),
+          },
+        },
+        resolve: toggleRepository,
       },
     },
   }),

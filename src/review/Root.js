@@ -13,6 +13,8 @@ import createStyleManager from 'modules/styles/createStyleManager'
 import analytics from 'modules/analytics/analytics'
 import dataReducer from 'review/modules/redux/dataReducer'
 import Routes from 'review/Routes'
+import accountReducer from 'review/routes/profile/accountReducer'
+import accountEpic from 'review/routes/profile/accountEpic'
 import buildReducer from 'review/routes/build/buildReducer'
 import buildEpic from 'review/routes/build/buildEpic'
 import repositoryDetailsReducer from 'review/routes/repository/detailsReducer'
@@ -23,6 +25,7 @@ import dashboardReducer from 'review/routes/dashboard/dashboardReducer'
 import dashboardEpic from 'review/routes/dashboard/dashboardEpic'
 
 const rootEpic = combineEpics(
+  accountEpic,
   buildEpic,
   repositoryDetailsEpic,
   profileEpic,
@@ -46,6 +49,7 @@ if (process.env.NODE_ENV === 'development' && !window.devToolsExtension) {
 }
 
 const uiReducer = combineReducers({
+  account: accountReducer,
   build: buildReducer,
   repositoryDetails: repositoryDetailsReducer,
   profile: profileReducer,

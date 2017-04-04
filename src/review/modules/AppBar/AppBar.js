@@ -91,7 +91,7 @@ class ReviewAppBar extends Component {
             >
               <MenuItem
                 component={LinkRouter}
-                to={`/profile/${user.login}`}
+                to="/profile/account"
                 button={false}
                 onClick={this.handleRequestClose}
               >

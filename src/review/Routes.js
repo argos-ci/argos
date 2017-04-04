@@ -10,7 +10,7 @@ import {
 import plugAnalyticsMiddleware from 'modules/reactRouter/plugAnalyticsMiddleware'
 import Homepage from 'review/routes/homepage/Homepage'
 import Profile from 'review/routes/profile/Profile'
-import ProfileDetails from 'review/routes/profile/ProfileDetails'
+import Account from 'review/routes/profile/Account'
 import NotFound from 'review/routes/notFound/NotFound'
 import Repository from 'review/routes/repository/Repository'
 import RepositoryDetails from 'review/routes/repository/RepositoryDetails'
@@ -45,7 +45,7 @@ function Routes() {
       )}
     >
       <Route path="/" component={Homepage} />
-      <Route path="/profile/:profileName" component={ProfileDetails} />
+      <Route path="/profile/account" component={Account} />
       <Route path="/:profileName" component={Profile} />
       <Route path="/:profileName/:repositoryName" component={Repository}>
         <IndexRoute component={RepositoryDetails} />
