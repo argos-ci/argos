@@ -1,6 +1,6 @@
 import React from 'react'
 import { shallow as enzymeShallow } from 'enzyme'
-import createShallow from 'review/test/createShallow'
+import createShallow from 'material-ui/test-utils/createShallow'
 import ItemStatus from 'review/modules/components/ItemStatus'
 import BuildScreenshotItem from './BuildScreenshotItem'
 
