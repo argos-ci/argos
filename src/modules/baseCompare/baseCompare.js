@@ -46,7 +46,7 @@ async function baseCompare({
   baseCommit,
   compareCommit,
   build,
-  perPage = 30,
+  perPage = 100,
 }) {
   build = await build.$query().eager('[repository, compareScreenshotBucket]')
   const user = await build.repository.getUsers().limit(1).first()
