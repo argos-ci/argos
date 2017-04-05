@@ -1,7 +1,6 @@
 import { transaction } from 'objection'
 import baseCompare from 'modules/baseCompare/baseCompare'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
-import Build from 'server/models/Build'
 import { VALIDATION_STATUS } from 'server/models/constant'
 
 async function createBuildDiffs(build) {
@@ -15,15 +14,14 @@ async function createBuildDiffs(build) {
     build,
   })
 
-  return transaction(ScreenshotDiff, Build, async (ScreenshotDiff, Build) => {
+  return transaction(ScreenshotDiff, async (ScreenshotDiff) => {
     if (baseScreenshotBucket) {
-      build.baseScreenshotBucket = await baseScreenshotBucket.$query()
-        .eager('screenshots')
-
-      await Build.query()
-        .patch({ baseScreenshotBucketId: baseScreenshotBucket.id })
-        .where({ id: build.id })
+      await build.$query().patch({ baseScreenshotBucketId: baseScreenshotBucket.id })
+      build.baseScreenshotBucket = await baseScreenshotBucket.$query().eager('screenshots')
     }
+
+    const compareWithBaseline = build
+      .compareScreenshotBucket.branch === build.repository.baselineBranch
 
     // At some point, we should handle baseScreenshots no longer in the
     // compareScreenshots.
@@ -50,7 +48,7 @@ async function createBuildDiffs(build) {
           buildId: build.id,
           baseScreenshotId: baseScreenshot.id,
           compareScreenshotId: compareScreenshot.id,
-          jobStatus: 'pending',
+          jobStatus: compareWithBaseline ? 'complete' : 'pending',
           validationStatus: VALIDATION_STATUS.unknown,
         }))
 

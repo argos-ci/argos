@@ -5,23 +5,17 @@ import screenshotDiffJob from 'server/jobs/screenshotDiff'
 import Build from 'server/models/Build'
 
 export async function performBuild(build) {
-  await pushBuildNotification({
-    buildId: build.id,
-    type: 'progress',
-  })
+  await pushBuildNotification({ buildId: build.id, type: 'progress' })
 
   const screenshotDiffs = await createBuildDiffs(build)
   const screenshotDiffJobs = await Promise.all(
     screenshotDiffs
-      .filter(({ baseScreenshotId }) => baseScreenshotId !== null)
+      .filter(({ jobStatus }) => jobStatus !== 'complete')
       .map(({ id }) => screenshotDiffJob.push(id)),
   )
 
   if (screenshotDiffJobs.length === 0) {
-    await pushBuildNotification({
-      buildId: build.id,
-      type: 'no-diff-detected',
-    })
+    await pushBuildNotification({ buildId: build.id, type: 'no-diff-detected' })
   }
 }
 
