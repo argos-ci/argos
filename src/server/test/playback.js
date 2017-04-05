@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import nock from 'nock'
 import path from 'path'
 
@@ -14,7 +15,7 @@ function playback(options) {
   let nockDoneSaved
 
   global.beforeAll((done) => {
-    nock.back(name, function (nockDone) {
+    nock.back(name, (nockDone) => {
       nockDoneSaved = nockDone
       done()
     })

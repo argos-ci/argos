@@ -1,17 +1,11 @@
 import React, { PropTypes } from 'react'
 import { connect } from 'react-redux'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Text from 'material-ui/Text'
 import Layout from 'material-ui/Layout'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
 import BuildScreenshotItem from 'review/routes/build/BuildScreenshotItem'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
-
-const styleSheet = createStyleSheet('BuildScreenshots', () => {
-  return {
-  }
-})
 
 function BuildScreenshots(props) {
   const {
@@ -34,19 +28,14 @@ function BuildScreenshots(props) {
               </WatchTaskContainer>
             )
           }
-          const {
-            screenshotDiffs,
-          } = fetch.output.data.build
 
           return (
             <Layout container direction="column">
-              {screenshotDiffs.map((screenshotDiff) => {
-                return (
-                  <Layout item key={screenshotDiff.id}>
-                    <BuildScreenshotItem screenshotDiff={screenshotDiff} />
-                  </Layout>
-                )
-              })}
+              {fetch.output.data.build.screenshotDiffs.map(screenshotDiff => (
+                <Layout item key={screenshotDiff.id}>
+                  <BuildScreenshotItem screenshotDiff={screenshotDiff} />
+                </Layout>
+              ))}
             </Layout>
           )
         }}
@@ -56,13 +45,10 @@ function BuildScreenshots(props) {
 }
 
 BuildScreenshots.propTypes = {
-  classes: PropTypes.object.isRequired,
   fetch: PropTypes.object.isRequired,
-  screenshotsBucket: PropTypes.string.isRequired,
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
   connect(state => ({
     fetch: state.ui.build.fetch,
     screenshotsBucket: state.data.config.s3.screenshotsBucket,

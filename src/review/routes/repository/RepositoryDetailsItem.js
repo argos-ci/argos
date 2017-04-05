@@ -1,5 +1,3 @@
-// @flow weak
-
 import React, { PropTypes } from 'react'
 import { Link as LinkRouter } from 'react-router'
 import {
@@ -7,10 +5,6 @@ import {
   ListItemText,
 } from 'material-ui/List'
 import ItemStatus from 'review/modules/components/ItemStatus'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
-
-const styleSheet = createStyleSheet('RepositoryDetailsItem', () => ({
-}))
 
 function RepositoryDetailsItem(props) {
   const {
@@ -47,9 +41,8 @@ RepositoryDetailsItem.propTypes = {
     number: PropTypes.number.isRequired,
     createdAt: PropTypes.string.isRequired,
   }).isRequired,
-  classes: PropTypes.object.isRequired,
   profileName: PropTypes.string.isRequired,
   repositoryName: PropTypes.string.isRequired,
 }
 
-export default withStyles(styleSheet)(RepositoryDetailsItem)
+export default RepositoryDetailsItem

@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import { factory } from 'factory-girl'
 import ObjectionAdapter from 'server/test/ObjectionAdapter'
 import { VALIDATION_STATUS } from 'server/models/constant'

@@ -122,7 +122,6 @@ function Profile(props) {
 
 Profile.propTypes = {
   classes: PropTypes.object.isRequired,
-  dispatch: PropTypes.func.isRequired,
   fetch: PropTypes.object.isRequired,
   params: PropTypes.shape({
     profileName: PropTypes.string.isRequired,

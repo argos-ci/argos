@@ -123,8 +123,8 @@ describe('app routes', () => {
       })
     })
 
-    it('should returns buckets', () => {
-      return request(app)
+    it('should returns buckets', () => (
+      request(app)
         .get('/buckets')
         .set('Host', 'api.argos-ci.dev')
         .expect((res) => {
@@ -134,7 +134,7 @@ describe('app routes', () => {
           expect(res.body[0].repositoryId).toBe(repository.id)
         })
         .expect(200)
-    })
+    ))
 
     describe('with query.branch', () => {
       it('should filter by branch', async () => {

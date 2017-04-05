@@ -3,13 +3,11 @@ import React, { PropTypes } from 'react'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Layout from 'material-ui/Layout'
 
-const styleSheet = createStyleSheet('WatchTaskContainer', (theme) => {
-  return {
-    root: {
-      padding: theme.spacing.unit,
-    },
-  }
-})
+const styleSheet = createStyleSheet('WatchTaskContainer', theme => ({
+  root: {
+    padding: theme.spacing.unit,
+  },
+}))
 
 function WatchTaskContainer(props) {
   return (

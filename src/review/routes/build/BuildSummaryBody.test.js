@@ -1,7 +1,7 @@
 import React from 'react'
 import { assert } from 'chai'
 import { shallow } from 'enzyme'
-import { BuildSummaryBody } from './BuildSummaryBody'
+import { BuildSummaryBodyView } from './BuildSummaryBody'
 
 describe('<BuildSummaryBody />', () => {
   describe('compare', () => {
@@ -15,7 +15,7 @@ describe('<BuildSummaryBody />', () => {
           branch: null,
         },
       }
-      const wrapper = shallow(<BuildSummaryBody classes={{}} build={build} />)
+      const wrapper = shallow(<BuildSummaryBodyView classes={{}} build={build} />)
 
       assert.strictEqual(wrapper.find('li').length, 4)
     })

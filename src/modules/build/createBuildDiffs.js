@@ -63,6 +63,4 @@ async function createBuildDiffs(build) {
 
 // Solve jest mocking issue with async.
 // Wait for https://github.com/facebook/jest/pull/3209 to be released
-export default (...args) => {
-  return createBuildDiffs(...args)
-}
+export default (...args) => createBuildDiffs(...args)

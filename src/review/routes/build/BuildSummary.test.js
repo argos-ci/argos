@@ -2,7 +2,7 @@ import React from 'react'
 import { assert } from 'chai'
 import { shallow } from 'enzyme'
 import BuildSummaryBody from 'review/routes/build/BuildSummaryBody'
-import { BuildSummary } from './BuildSummary'
+import { BuildSummaryView } from './BuildSummary'
 
 describe('<BuildSummary />', () => {
   describe('task', () => {
@@ -31,7 +31,7 @@ describe('<BuildSummary />', () => {
     })
 
     it('should render when success', () => {
-      const wrapper = shallow(<BuildSummary classes={{}} fetch={fetch} />)
+      const wrapper = shallow(<BuildSummaryView classes={{}} fetch={fetch} />)
       const wrapperWatchTask = wrapper.find('WatchTask').shallow()
       assert.strictEqual(wrapperWatchTask.find(BuildSummaryBody).length, 1)
     })

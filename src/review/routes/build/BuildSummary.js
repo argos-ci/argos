@@ -7,16 +7,14 @@ import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
 import BuildSummaryBody from 'review/routes/build/BuildSummaryBody'
 
-const styleSheet = createStyleSheet('BuildSummary', (theme) => {
-  return {
-    paper: {
-      display: 'flex',
-      marginBottom: theme.spacing.unit * 2,
-    },
-  }
-})
+const styleSheet = createStyleSheet('BuildSummary', theme => ({
+  paper: {
+    display: 'flex',
+    marginBottom: theme.spacing.unit * 2,
+  },
+}))
 
-export function BuildSummary(props) {
+export function BuildSummaryView(props) {
   const {
     classes,
     fetch,
@@ -36,7 +34,7 @@ export function BuildSummary(props) {
   )
 }
 
-BuildSummary.propTypes = {
+BuildSummaryView.propTypes = {
   classes: PropTypes.object.isRequired,
   fetch: PropTypes.object.isRequired,
 }
@@ -44,4 +42,4 @@ BuildSummary.propTypes = {
 export default recompact.compose(
   withStyles(styleSheet),
   connect(state => state.ui.build),
-)(BuildSummary)
+)(BuildSummaryView)

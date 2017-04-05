@@ -1,3 +1,4 @@
+/* eslint-disable global-require */
 const workers = 3
 const maxConnectionsAllowed = 20
 const freeConnectionsForThierdTools = 2

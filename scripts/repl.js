@@ -1,4 +1,4 @@
-/* eslint-disable import/no-dynamic-require */
+/* eslint-disable import/no-dynamic-require, global-require */
 import 'server/bootstrap/setup'
 
 // https://nodejs.org/api/repl.html
@@ -15,26 +15,28 @@ const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
   const replServer = repl.start()
 
   async function getModels() {
-    const models = await fs.readdir(MODEL_DIRECTORY)
-    return models.reduce((models, model) => {
+    return (await fs.readdir(MODEL_DIRECTORY)).reduce((models, model) => {
       if (model.match(/\.test\.js$/) || !model.match(/\.js$/)) {
         return models
       }
 
-      models[model.replace(/\.js$/, '')] = require(path.join(MODEL_DIRECTORY, model)).default
-      return models
+      return {
+        ...models,
+        [model.replace(/\.js$/, '')]: require(path.join(MODEL_DIRECTORY, model)).default,
+      }
     }, {})
   }
 
   async function getJobs() {
-    const jobs = await fs.readdir(JOB_DIRECTORY)
-    return jobs.reduce((jobs, job) => {
+    return (await fs.readdir(JOB_DIRECTORY)).reduce((jobs, job) => {
       if (job.match(/\.test\.js$/)) {
         return jobs
       }
 
-      jobs[job.replace(/\.js$/, 'Job')] = require(path.join(JOB_DIRECTORY, job)).default
-      return jobs
+      return {
+        ...jobs,
+        [job.replace(/\.js$/, 'Job')]: require(path.join(JOB_DIRECTORY, job)).default,
+      }
     }, {})
   }
 
