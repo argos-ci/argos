@@ -67,7 +67,7 @@ describe('build', () => {
           buildId: build.id,
           baseScreenshotId: screenshot21.id,
           compareScreenshotId: screenshot22.id,
-          jobStatus: 'complete',
+          jobStatus: 'pending',
           validationStatus: 'unknown',
         })
 

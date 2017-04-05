@@ -25,6 +25,7 @@ describe('createBuildDiffs', () => {
       enabled: true,
     })
     compareBucket = await factory.create('ScreenshotBucket', {
+      branch: 'BUGS-123',
       repositoryId: repository.id,
     })
     build = await factory.create('Build', {
@@ -40,36 +41,63 @@ describe('createBuildDiffs', () => {
     })
   })
 
-  it('should return the build', async () => {
-    baseBucket = await factory.create('ScreenshotBucket', {
-      repositoryId: repository.id,
-    })
-    baseScreenshot = await factory.create('Screenshot', {
-      name: 'a',
-      s3Id: 'a',
-      screenshotBucketId: baseBucket.id,
-    })
-    const compareScreenshot2 = await factory.create('Screenshot', {
-      name: 'a',
-      s3Id: 'a',
-      screenshotBucketId: compareBucket.id,
+  describe('with existing ScreenshotBucket', () => {
+    let compareScreenshot2
+
+    beforeEach(async () => {
+      baseBucket = await factory.create('ScreenshotBucket', {
+        branch: 'master',
+        repositoryId: repository.id,
+      })
+      baseScreenshot = await factory.create('Screenshot', {
+        name: 'a',
+        s3Id: 'a',
+        screenshotBucketId: baseBucket.id,
+      })
+      compareScreenshot2 = await factory.create('Screenshot', {
+        name: 'a',
+        s3Id: 'a',
+        screenshotBucketId: compareBucket.id,
+      })
     })
 
-    const diffs = await createBuildDiffs(build)
-    expect(diffs.length).toBe(2)
-    expect(diffs[0]).toMatchObject({
-      buildId: build.id,
-      baseScreenshotId: null,
-      compareScreenshotId: compareScreenshot1.id,
-      jobStatus: 'complete',
-      validationStatus: VALIDATION_STATUS.unknown,
+    it('should return the build', async () => {
+      const diffs = await createBuildDiffs(build)
+      expect(diffs.length).toBe(2)
+      expect(diffs[0]).toMatchObject({
+        buildId: build.id,
+        baseScreenshotId: null,
+        compareScreenshotId: compareScreenshot1.id,
+        jobStatus: 'complete',
+        validationStatus: VALIDATION_STATUS.unknown,
+      })
+      expect(diffs[1]).toMatchObject({
+        buildId: build.id,
+        baseScreenshotId: baseScreenshot.id,
+        compareScreenshotId: compareScreenshot2.id,
+        jobStatus: 'pending',
+        validationStatus: VALIDATION_STATUS.unknown,
+      })
     })
-    expect(diffs[1]).toMatchObject({
-      buildId: build.id,
-      baseScreenshotId: baseScreenshot.id,
-      compareScreenshotId: compareScreenshot2.id,
-      jobStatus: 'pending',
-      validationStatus: VALIDATION_STATUS.unknown,
+
+    it('should not run the diff when comparing the base branch against itself', async () => {
+      await compareBucket.$query().patch({ branch: 'master' })
+      const diffs = await createBuildDiffs(build)
+      expect(diffs.length).toBe(2)
+      expect(diffs[0]).toMatchObject({
+        buildId: build.id,
+        baseScreenshotId: null,
+        compareScreenshotId: compareScreenshot1.id,
+        jobStatus: 'complete',
+        validationStatus: VALIDATION_STATUS.unknown,
+      })
+      expect(diffs[1]).toMatchObject({
+        buildId: build.id,
+        baseScreenshotId: baseScreenshot.id,
+        compareScreenshotId: compareScreenshot2.id,
+        jobStatus: 'complete',
+        validationStatus: VALIDATION_STATUS.unknown,
+      })
     })
   })
 
