@@ -11,9 +11,7 @@ module.exports = {
     browser: true,
   },
   rules: {
-    'max-len': ['error', 120, 2, {
-      ignoreUrls: true,
-    }],
+    'max-len': ['error', 100, 2, { ignoreUrls: true }],
     semi: ['error', 'never'],
     'no-shadow': 'off',
     'no-param-reassign': 'off',
