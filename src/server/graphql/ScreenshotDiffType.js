@@ -35,6 +35,10 @@ export async function resolveSetValidationStatus(source, args, context) {
     validationStatus,
   } = args
 
+  if (!context.user) {
+    throw new Error('Invalid user identification')
+  }
+
   const user = await Build.getUsers(buildId).findById(context.user.id)
 
   if (!user) {

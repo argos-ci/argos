@@ -10,6 +10,7 @@ import ScreenshotBucketType, {
   resolve as resolveScreenshotBucket,
 } from 'server/graphql/ScreenshotBucketType'
 import ScreenshotDiffType from 'server/graphql/ScreenshotDiffType'
+import RepositoryType from 'server/graphql/RepositoryType'
 import { isRepositoryAccessible } from 'server/graphql/utils'
 import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 
@@ -87,6 +88,13 @@ const BuildType = new GraphQLObjectType({
           id: source.compareScreenshotBucketId,
         })
       ),
+    },
+    repository: {
+      type: RepositoryType,
+      resolve: async (source) => {
+        const build = await source.$query().eager('repository')
+        return build.repository
+      },
     },
     number: {
       description: `

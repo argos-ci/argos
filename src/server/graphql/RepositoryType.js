@@ -86,6 +86,17 @@ const RepositoryType = new GraphQLObjectType({
       }),
       resolve: resolveBuildList,
     },
+    authorization: {
+      description: 'Determine if the current user has write access to the repository',
+      type: GraphQLBoolean,
+      resolve: (source, args, context) => {
+        if (!context.user) {
+          return false
+        }
+
+        return Boolean(Repository.getUsers(source.id).findById(context.user.id))
+      },
+    },
     owner: {
       description: 'Owner of repository.',
       type: OwnerType,
