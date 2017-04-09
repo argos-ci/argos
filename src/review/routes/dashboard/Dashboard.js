@@ -94,7 +94,9 @@ Dashboard.propTypes = {
 
 export default recompact.compose(
   withStyles(styleSheet),
-  connect(state => state.ui.dashboard),
+  connect(state => ({
+    fetch: state.ui.dashboard.fetch,
+  })),
   recompact.lifecycle({
     componentDidMount() {
       this.props.dispatch({

@@ -130,7 +130,9 @@ Profile.propTypes = {
 
 export default recompact.compose(
   withStyles(styleSheet),
-  connect(state => state.ui.profile),
+  connect(state => ({
+    fetch: state.ui.profile.fetch,
+  })),
   recompact.lifecycle({
     componentDidMount() {
       this.props.dispatch({

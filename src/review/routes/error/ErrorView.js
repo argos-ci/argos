@@ -1,21 +1,21 @@
-import React from 'react'
+import React, { PropTypes } from 'react'
 import Text from 'material-ui/Text'
+import LayoutBody from 'modules/components/LayoutBody'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
-import LayoutBody from 'modules/components/LayoutBody'
 import ReviewAppBar from 'review/modules/AppBar/AppBar'
 
-function NotFound() {
+function ErrorView(props) {
   return (
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin>
           <Text type="display1" component="h2" gutterBottom>
-            {'404: Something\'s Missing'}
+            {props.title}
           </Text>
           <Text type="subheading">
-            {'We\'re sorry! It seems like this page cannot be found.'}
+            {props.message}
           </Text>
         </LayoutBody>
       </ScrollView>
@@ -23,4 +23,9 @@ function NotFound() {
   )
 }
 
-export default NotFound
+ErrorView.propTypes = {
+  title: PropTypes.node.isRequired,
+  message: PropTypes.node.isRequired,
+}
+
+export default ErrorView

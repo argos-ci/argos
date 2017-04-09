@@ -4,7 +4,6 @@ import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Text from 'material-ui/Text'
 import Paper from 'material-ui/Paper'
 import recompact from 'modules/recompact'
-import WatchTask from 'modules/components/WatchTask'
 import BuildSummaryBody from 'review/routes/build/BuildSummaryBody'
 
 const styleSheet = createStyleSheet('BuildSummary', theme => ({
@@ -26,9 +25,7 @@ export function BuildSummaryView(props) {
         Summary
       </Text>
       <Paper className={classes.paper}>
-        <WatchTask task={fetch}>
-          {() => <BuildSummaryBody build={fetch.output.data.build} />}
-        </WatchTask>
+        <BuildSummaryBody build={fetch.output.data.build} />
       </Paper>
     </div>
   )

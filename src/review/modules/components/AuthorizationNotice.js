@@ -1,10 +1,10 @@
 import React, { PropTypes } from 'react'
 import { connect } from 'react-redux'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import recompact from 'modules/recompact'
 import Paper from 'material-ui/Paper'
 import Layout from 'material-ui/Layout'
 import Button from 'material-ui/Button'
+import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
 import { CONSISTENT, INCONSISTENT } from 'modules/authorizations/authorizationStatuses'
 
@@ -33,7 +33,7 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
             href={user.privateSync ? '/auth/github-private' : '/auth/github-public'}
             raised
           >
-            {'Authenticate to GitHub'}
+            Authenticate to GitHub
           </Button>
         </Layout>
       </Layout>
@@ -51,5 +51,8 @@ AuthorizationNotice.propTypes = {
 
 export default recompact.compose(
   withStyles(styleSheet),
-  connect(state => state.data),
+  connect(state => ({
+    user: state.data.user,
+    authorizationStatus: state.data.authorizationStatus,
+  })),
 )(AuthorizationNotice)
