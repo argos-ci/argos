@@ -1,5 +1,4 @@
 import React from 'react'
-import { assert } from 'chai'
 import { shallow } from 'enzyme'
 import { BuildSummaryBodyView } from './BuildSummaryBody'
 
@@ -17,7 +16,7 @@ describe('<BuildSummaryBody />', () => {
       }
       const wrapper = shallow(<BuildSummaryBodyView classes={{}} build={build} />)
 
-      assert.strictEqual(wrapper.find('li').length, 4)
+      expect(wrapper.find('li').length).toBe(4)
     })
   })
 })

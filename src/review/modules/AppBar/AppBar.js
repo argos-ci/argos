@@ -123,5 +123,7 @@ ReviewAppBar.propTypes = {
 
 export default recompact.compose(
   withStyles(styleSheet),
-  connect(state => state.data),
+  connect(state => ({
+    user: state.data.user,
+  })),
 )(ReviewAppBar)

@@ -22,6 +22,7 @@ module.exports = {
     'react/prop-types': 'off',
     'react/require-default-props': 'off',
     'react/forbid-prop-types': 'off',
+    'react/no-unused-prop-types': 'off', // Doesn't work correctly.
 
     'import/prefer-default-export': 'off',
   },

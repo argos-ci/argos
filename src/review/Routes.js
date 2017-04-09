@@ -8,10 +8,11 @@ import {
   IndexRoute,
  } from 'react-router'
 import plugAnalyticsMiddleware from 'modules/reactRouter/plugAnalyticsMiddleware'
+import App from 'review/routes/App'
 import Homepage from 'review/routes/homepage/Homepage'
 import Profile from 'review/routes/profile/Profile'
 import Account from 'review/routes/profile/Account'
-import NotFound from 'review/routes/notFound/NotFound'
+import ErrorNotFound from 'review/routes/error/ErrorNotFound'
 import Repository from 'review/routes/repository/Repository'
 import RepositoryDetails from 'review/routes/repository/RepositoryDetails'
 import Build from 'review/routes/build/Build'
@@ -42,15 +43,17 @@ function Routes() {
         plugAnalyticsMiddleware,
       )}
     >
-      <Route path="/" component={Homepage} />
-      <Route path="/profile/account" component={Account} />
-      <Route path="/:profileName" component={Profile} />
-      <Route path="/:profileName/:repositoryName" component={Repository}>
-        <IndexRoute component={RepositoryDetails} />
-        <Route path="builds/:buildId" component={Build} />
-        <Route path="settings" component={Settings} />
+      <Route component={App}>
+        <Route path="/" component={Homepage} />
+        <Route path="/profile/account" component={Account} />
+        <Route path="/:profileName" component={Profile} />
+        <Route path="/:profileName/:repositoryName" component={Repository}>
+          <IndexRoute component={RepositoryDetails} />
+          <Route path="builds/:buildId" component={Build} />
+          <Route path="settings" component={Settings} />
+        </Route>
+        <Route path="*" component={ErrorNotFound} />
       </Route>
-      <Route path="*" component={NotFound} />
     </Router>
   )
 }

@@ -68,7 +68,9 @@ export default additionalClientData => (req, res) => {
       ...(req.user ? {
         authorizationStatus: getAuthorizationStatus(req.user),
         user: pick(req.user, 'name', 'email', 'login', 'privateSync'),
-      } : { user: null }),
+      } : {
+        user: null,
+      }),
       ...additionalClientData,
     }),
   })

@@ -1,4 +1,3 @@
-import { assert } from 'chai'
 import reduceJobStatus from './reduceJobStatus'
 
 describe('modules/jobs/reduceJobStatus', () => {
@@ -9,7 +8,7 @@ describe('modules/jobs/reduceJobStatus', () => {
     ]
     const status = reduceJobStatus(statuses)
 
-    assert.strictEqual(status, 'complete')
+    expect(status).toBe('complete')
   })
 
   it('should be progress when something has been done or is in progress', () => {
@@ -19,7 +18,7 @@ describe('modules/jobs/reduceJobStatus', () => {
     ]
     const status = reduceJobStatus(statuses)
 
-    assert.strictEqual(status, 'progress')
+    expect(status).toBe('progress')
   })
 
   it('should be pending when nothing started', () => {
@@ -29,6 +28,6 @@ describe('modules/jobs/reduceJobStatus', () => {
     ]
     const status = reduceJobStatus(statuses)
 
-    assert.strictEqual(status, 'pending')
+    expect(status).toBe('pending')
   })
 })

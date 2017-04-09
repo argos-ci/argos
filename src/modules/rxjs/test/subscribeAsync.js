@@ -1,5 +1,4 @@
 import { spy } from 'sinon'
-import { assert } from 'chai'
 
 export const subscribeAsync = (observable, expectedEmissionsCount = 1) => {
   if (!Number.isInteger(expectedEmissionsCount)) {
@@ -20,8 +19,7 @@ export const subscribeAsync = (observable, expectedEmissionsCount = 1) => {
           return
         }
         subscription.unsubscribe()
-        assert.strictEqual(
-          expectedEmissionsCount,
+        expect(expectedEmissionsCount).toBe(
           emissionsCount,
           `expected observable to emit ${expectedEmissionsCount} times, emitted ${
             emissionsCount} times instead`,
