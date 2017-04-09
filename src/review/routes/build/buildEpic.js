@@ -25,6 +25,9 @@ const fetchEpic = action$ => (
               branch
               commit
             }
+            repository {
+              authorization
+            }
             status
             screenshotDiffs {
               id

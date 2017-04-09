@@ -9,12 +9,13 @@ export async function getOwner({ login }) {
     return owner
   }
 
-  ([owner] = await User.query().where({ login }))
-  if (!owner) {
-    return null
+  [owner] = await User.query().where({ login })
+  if (owner) {
+    owner.type = 'user'
+    return owner
   }
-  owner.type = 'user'
-  return owner
+
+  return null
 }
 
 export async function isRepositoryAccessible(repository, context) {
@@ -30,10 +31,13 @@ export async function isRepositoryAccessible(repository, context) {
     return false
   }
 
-  const userRepositoryRights = await UserRepositoryRight.query().where({
-    userId: context.user.id,
-    repositoryId: repository.id,
-  })
+  const userRepositoryRight = await UserRepositoryRight.query()
+    .where({
+      userId: context.user.id,
+      repositoryId: repository.id,
+    })
+    .limit(1)
+    .first()
 
-  return userRepositoryRights.length > 0
+  return userRepositoryRight
 }

@@ -19,6 +19,10 @@ function BuildActions(props) {
     onValidationClick,
   } = props
 
+  if (!build.repository.authorization) {
+    return null
+  }
+
   let actionMessage
 
   switch (build.status) {
@@ -45,7 +49,13 @@ function BuildActions(props) {
 }
 
 BuildActions.propTypes = {
-  build: PropTypes.object.isRequired,
+  build: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    status: PropTypes.string.isRequired,
+    repository: PropTypes.shape({
+      authorization: PropTypes.bool.isRequired,
+    }).isRequired,
+  }).isRequired,
   classes: PropTypes.object.isRequired,
   onValidationClick: PropTypes.func.isRequired,
 }
