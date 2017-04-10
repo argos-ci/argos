@@ -93,6 +93,7 @@
     "pg": "^6.1.5",
     "pretty-error": "^2.1.0",
     "promirepl": "^1.0.1",
+    "prop-types": "^15.5.6",
     "raven": "^1.2.1",
     "raven-js": "^3.14.0",
     "react": "^15.5.3",

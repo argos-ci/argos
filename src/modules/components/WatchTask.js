@@ -1,5 +1,6 @@
 /* eslint-disable react/no-multi-comp */
-import React, { PropTypes } from 'react'
+import React from 'react'
+import PropTypes from 'prop-types'
 import CircularProgress from 'material-ui/Progress/CircularProgress'
 import Text from 'material-ui/Text'
 import recompact from 'modules/recompact'

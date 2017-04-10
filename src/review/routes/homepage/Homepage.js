@@ -1,4 +1,5 @@
-import React, { PropTypes } from 'react'
+import React from 'react'
+import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import ProductHome from 'review/routes/product/Home'
 import Dashboard from 'review/routes/dashboard/Dashboard'
