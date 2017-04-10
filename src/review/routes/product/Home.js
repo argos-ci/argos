@@ -30,7 +30,7 @@ function ProductHome(props) {
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
-        <Paper rounded={false} elevation={3} className={classes.landing}>
+        <Paper square elevation={3} className={classes.landing}>
           <LayoutBody margin bottom={false}>
             <Text type="display1" component="h1" gutterBottom>
               Automate visual regression testing
