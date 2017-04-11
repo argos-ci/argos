@@ -1,4 +1,5 @@
-import React, { PropTypes } from 'react'
+import React from 'react'
+import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Layout from 'material-ui/Layout'
 import ItemStatus from 'review/modules/components/ItemStatus'

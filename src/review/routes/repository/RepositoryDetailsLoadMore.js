@@ -1,4 +1,5 @@
-import React, { PropTypes } from 'react'
+import React from 'react'
+import PropTypes from 'prop-types'
 import recompact from 'modules/recompact'
 import { connect } from 'react-redux'
 import Button from 'material-ui/Button'

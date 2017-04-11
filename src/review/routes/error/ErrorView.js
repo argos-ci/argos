@@ -1,4 +1,5 @@
-import React, { PropTypes } from 'react'
+import React from 'react'
+import PropTypes from 'prop-types'
 import Text from 'material-ui/Text'
 import LayoutBody from 'modules/components/LayoutBody'
 import ViewContainer from 'modules/components/ViewContainer'
