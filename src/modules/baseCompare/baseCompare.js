@@ -20,14 +20,9 @@ async function fallbackToMaster(build) {
 }
 
 async function getBaseScreenshotBucket({
-  forkCommit,
   potentialCommits,
   build,
 }) {
-  if (!forkCommit) {
-    return fallbackToMaster(build)
-  }
-
   const potentialCommitShas = potentialCommits.map(commit => commit.sha)
   const buckets = await ScreenshotBucket.query()
     .where({ repositoryId: build.repository.id })
@@ -51,6 +46,7 @@ async function baseCompare({
   build = await build.$query().eager('[repository, compareScreenshotBucket]')
   const user = await build.repository.getUsers().limit(1).first()
 
+  // We can't use Github information without a user.
   if (!user) {
     return fallbackToMaster(build)
   }
@@ -86,10 +82,13 @@ async function baseCompare({
     })
     compareCommits = compareCommits.data
   } catch (error) {
+    if (error.code !== 401) {
+      console.error(error)
+    }
     crashReporter.captureException(error)
   }
 
-  const potentialCommits = []
+  let potentialCommits = []
   const forkCommit = baseCommits.find((baseCommit, index) => {
     const comparingWithHimself = baseCommit.sha === compareCommit
 
@@ -110,8 +109,13 @@ async function baseCompare({
     return found
   })
 
+  // We can't find a fork commit, we miss history information.
+  // Let's use the oldest base bucket from master we can find.
+  if (!forkCommit) {
+    potentialCommits = baseCommits
+  }
+
   const baseScreenshotBucket = await getBaseScreenshotBucket({
-    forkCommit,
     potentialCommits,
     build,
   })
