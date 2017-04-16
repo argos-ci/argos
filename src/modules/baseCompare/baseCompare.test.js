@@ -4,18 +4,21 @@ import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import baseCompare from './baseCompare'
 
+function nockGithub(branch) {
+  return nock('https://api.github.com:443')
+    .get(`/repos/callemall/material-ui/commits?sha=${
+      branch
+    }&page=1&per_page=100&access_token=ACCESS_TOKEN`)
+}
+
 describe('baseCompare', () => {
   useDatabase()
 
   let repository
 
   beforeEach(async () => {
-    const organization = await factory.create('Organization', {
-      login: 'callemall',
-    })
-    const user = await factory.create('User', {
-      accessToken: 'ACCESS_TOKEN',
-    })
+    const organization = await factory.create('Organization', { login: 'callemall' })
+    const user = await factory.create('User', { accessToken: 'ACCESS_TOKEN' })
     repository = await factory.create('Repository', {
       name: 'material-ui',
       organizationId: organization.id,
@@ -59,7 +62,7 @@ describe('baseCompare', () => {
 
     // History:
     // * e97e6d9054ac1b4f6f9ef55ff3d7ed8cc18394bd (master)
-    // * | - 3304d38afd1838cadf4e859de46b495fb347efec
+    // * | - 3304d38afd1838cadf4e859de46b495fb347efec (branch)
     // * 0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92
     it('should work with a non rebase PR', async () => {
       const screenshotBucket1 = await factory.create('ScreenshotBucket', {
@@ -109,9 +112,13 @@ describe('baseCompare', () => {
   })
 
   it('should fallback to master if no base commit found', async () => {
-    nock('api.github.com')
-      .get('/repos/callemall/material-ui/commits' +
-        '?sha=master&page=1&per_page=5&access_token=ACCESS_TOKEN')
+    nockGithub('master')
+      .reply(401, {
+        message: 'Bad credentials',
+        documentation_url: 'https://developer.github.com/v3',
+      })
+
+    nockGithub('7abbb0e131ec5b3f6ab8e54a25b047705a013864')
       .reply(401, {
         message: 'Bad credentials',
         documentation_url: 'https://developer.github.com/v3',
@@ -124,7 +131,7 @@ describe('baseCompare', () => {
     const screenshotBucket2 = await factory.create('ScreenshotBucket', {
       branch: 'SCALE-123',
       repositoryId: repository.id,
-      commit: '3304d38afd1838cadf4e859de46b495fb347efec',
+      commit: '7abbb0e131ec5b3f6ab8e54a25b047705a013864',
     })
     const build = await factory.create('Build', {
       repositoryId: repository.id,
@@ -134,9 +141,8 @@ describe('baseCompare', () => {
 
     const baseScreenshotBucket = await baseCompare({
       baseCommit: 'master',
-      compareCommit: '3304d38afd1838cadf4e859de46b495fb347efec',
+      compareCommit: '7abbb0e131ec5b3f6ab8e54a25b047705a013864',
       build,
-      perPage: 5,
     })
 
     expect(baseScreenshotBucket.id).toBe(screenshotBucket1.id)
@@ -181,5 +187,48 @@ describe('baseCompare', () => {
 
       expect(baseScreenshotBucket.id).toBe(screenshotBucket3.id)
     })
+  })
+
+  // History:
+  // * e97e6d9054ac1b4f6f9ef55ff3d7ed8cc18394bd (master)
+  // * | - 3304d38afd1838cadf4e859de46b495fb347efec (branch)
+  // * | - 0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92
+  // * d2e624599bff1f9103bca64848fe17768da9cfa6
+  it('should try every commits available', async () => {
+    nockGithub('master')
+      .reply(200, [
+        { sha: 'e97e6d9054ac1b4f6f9ef55ff3d7ed8cc18394bd' },
+        { sha: 'd2e624599bff1f9103bca64848fe17768da9cfa6' },
+      ])
+
+    nockGithub('3304d38afd1838cadf4e859de46b495fb347efec')
+      .reply(200, [
+        { sha: '3304d38afd1838cadf4e859de46b495fb347efec' },
+        { sha: '0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92' },
+        // We are missing that information
+        // { sha: 'd2e624599bff1f9103bca64848fe17768da9cfa6' },
+      ])
+
+    const screenshotBucket1 = await factory.create('ScreenshotBucket', {
+      commit: 'd2e624599bff1f9103bca64848fe17768da9cfa6',
+      repositoryId: repository.id,
+    })
+    const screenshotBucket2 = await factory.create('ScreenshotBucket', {
+      commit: 'e97e6d9054ac1b4f6f9ef55ff3d7ed8cc18394bd',
+      repositoryId: repository.id,
+    })
+    const build = await factory.create('Build', {
+      repositoryId: repository.id,
+      baseScreenshotBucket: null,
+      comapreScreenshotBucket: screenshotBucket2,
+    })
+
+    const baseScreenshotBucket = await baseCompare({
+      baseCommit: 'master',
+      compareCommit: '3304d38afd1838cadf4e859de46b495fb347efec',
+      build,
+    })
+
+    expect(baseScreenshotBucket.id).toBe(screenshotBucket1.id)
   })
 })
