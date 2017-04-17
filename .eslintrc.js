@@ -14,6 +14,7 @@ module.exports = {
     'max-len': ['error', 100, 2, { ignoreUrls: true }],
     semi: ['error', 'never'],
     'no-shadow': 'off',
+    'no-console': 'error', // Airbnb use 'warn'
     'no-param-reassign': 'off',
     'no-nested-ternary': 'off',
     'no-use-before-define': ['error', { functions: false, classes: false }],

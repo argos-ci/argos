@@ -132,6 +132,7 @@
     "jest": "^19.0.2",
     "nock": "^9.0.13",
     "nodemon": "^1.11.0",
+    "react-test-renderer": "^15.5.4",
     "selenium-webdriver": "^3.3.0",
     "supertest": "^3.0.0",
     "webpack-dev-server": "^2.4.2"
