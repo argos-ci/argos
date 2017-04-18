@@ -27,6 +27,10 @@ const fetchEpic = action$ => (
             }
             repository {
               authorization
+              name
+              owner {
+                login
+              }
             }
             status
             screenshotDiffs {

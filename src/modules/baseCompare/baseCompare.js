@@ -83,7 +83,7 @@ async function baseCompare({
     compareCommits = compareCommits.data
   } catch (error) {
     if (error.code !== 401) {
-      console.error(error)
+      console.error(error) // eslint-disable-line no-console
     }
     crashReporter.captureException(error)
   }
