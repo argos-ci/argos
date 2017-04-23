@@ -8,7 +8,6 @@ const config = convict({
       'production',
       'development',
       'test',
-      'browser.development',
     ],
     default: 'development',
     env: 'NODE_ENV',

@@ -22,10 +22,12 @@ import LayoutBody from 'modules/components/LayoutBody'
 import ReviewAppBar from 'review/modules/AppBar/AppBar'
 import actionTypes from 'review/modules/redux/actionTypes'
 
+const SIZE = 120
+
 const styleSheet = createStyleSheet('Profile', () => ({
   avatar: {
-    width: 120,
-    height: 120,
+    width: SIZE,
+    height: SIZE,
     background: white,
   },
   paper: {
@@ -56,7 +58,7 @@ function Profile(props) {
             >
               <Layout item>
                 <Avatar
-                  src={`https://github.com/${profileName}.png?size=300`}
+                  src={`https://github.com/${profileName}.png?size=${SIZE * 2}`}
                   className={classes.avatar}
                 />
               </Layout>
