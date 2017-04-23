@@ -43,6 +43,11 @@ export function errorChecking(routeHandler) {
 
 router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
   async (req, res) => {
+    if (global.gc) {
+      console.log('Force garbage collection') // eslint-disable-line no-console
+      global.gc()
+    }
+
     if (!req.body.token) {
       throw new HttpError(401, 'Invalid token')
     }
