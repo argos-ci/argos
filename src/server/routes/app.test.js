@@ -22,8 +22,11 @@ describe('app routes', () => {
           .post('/builds')
           .set('Host', 'api.argos-ci.dev')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
-          .field('commit', 'test-commit')
-          .field('branch', 'test-branch')
+          .field('data', JSON.stringify({
+            commit: 'test-commit',
+            branch: 'test-branch',
+            names: ['screenshot_test.jpg'],
+          }))
           .expect((res) => {
             expect(res.body.error.message).toBe('Invalid token')
           })
@@ -37,9 +40,12 @@ describe('app routes', () => {
           .post('/builds')
           .set('Host', 'api.argos-ci.dev')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
-          .field('commit', 'test-commit')
-          .field('branch', 'test-branch')
-          .field('token', token)
+          .field('data', JSON.stringify({
+            commit: 'test-commit',
+            branch: 'test-branch',
+            token,
+            names: ['screenshot_test.jpg'],
+          }))
           .expect((res) => {
             expect(res.body.error.message).toBe('Repository not found (token: "xx")')
           })
@@ -59,9 +65,12 @@ describe('app routes', () => {
           .post('/builds')
           .set('Host', 'api.argos-ci.dev')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
-          .field('commit', 'test-commit')
-          .field('branch', 'test-branch')
-          .field('token', token)
+          .field('data', JSON.stringify({
+            commit: 'test-commit',
+            branch: 'test-branch',
+            token,
+            names: ['screenshot_test.jpg'],
+          }))
           .expect((res) => {
             expect(res.body.error.message).toBe('Repository not enabled (name: "foo")')
           })
@@ -84,7 +93,7 @@ describe('app routes', () => {
         const user = await factory.create('User', {
           accessToken,
         })
-        const repository = await factory.create('Repository', {
+        let repository = await factory.create('Repository', {
           name: 'material-ui',
           organizationId: organization.id,
           token,
@@ -94,17 +103,23 @@ describe('app routes', () => {
           repositoryId: repository.id,
         })
 
-        await request(app)
+        const name = 'chrome/screenshot_test.jpg'
+        const res = await request(app)
           .post('/builds')
           .set('Host', 'api.argos-ci.dev')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
-          .field('commit', '7abbb0e131ec5b3f6ab8e54a25b047705a013864')
-          .field('branch', 'related-scrollable-tabs')
-          .field('token', token)
-          .expect((res) => {
-            expect(res.body.build.id).not.toBe(undefined)
-          })
+          .field('data', JSON.stringify({
+            commit: '7abbb0e131ec5b3f6ab8e54a25b047705a013864',
+            branch: 'related-scrollable-tabs',
+            token,
+            names: [name],
+          }))
           .expect(200)
+
+        repository = await repository.$query().eager('[builds.compareScreenshotBucket.screenshots]')
+        expect(res.body.build.id).not.toBe(undefined)
+        expect(repository.builds[0].compareScreenshotBucket.screenshots[0].name)
+          .toBe(name)
       })
     })
   })
