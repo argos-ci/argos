@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Link as LinkRouter } from 'react-router'
 import Text from 'material-ui/Text'
+import Button from 'material-ui/Button'
 import Layout from 'material-ui/Layout'
 import ViewContainer from 'modules/components/ViewContainer'
 import Link from 'modules/components/Link'
@@ -24,7 +25,7 @@ function Repository(props) {
       <ScrollView>
         <LayoutBody margin>
           <Layout container gutter={24}>
-            <Layout item xs={12}>
+            <Layout item xs>
               <Text type="display1" component="h2">
                 <Link component={LinkRouter} to={`/${profileName}`}>
                   {profileName}
@@ -34,6 +35,11 @@ function Repository(props) {
                   {repositoryName}
                 </Link>
               </Text>
+            </Layout>
+            <Layout item>
+              <Button component={LinkRouter} to={`/${profileName}/${repositoryName}/settings`}>
+                Settings
+              </Button>
             </Layout>
             <Layout item xs={12}>
               {children}

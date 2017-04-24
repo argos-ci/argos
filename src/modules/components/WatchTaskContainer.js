@@ -7,12 +7,18 @@ import Layout from 'material-ui/Layout'
 const styleSheet = createStyleSheet('WatchTaskContainer', theme => ({
   root: {
     padding: theme.spacing.unit,
+    minHeight: 76,
   },
 }))
 
 function WatchTaskContainer(props) {
   return (
-    <Layout container justify="center" className={props.classes.root}>
+    <Layout
+      container
+      justify="center"
+      className={props.classes.root}
+      align="center"
+    >
       <Layout item>
         {props.children}
       </Layout>

@@ -102,7 +102,7 @@ describe('app routes', () => {
           .field('branch', 'related-scrollable-tabs')
           .field('token', token)
           .expect((res) => {
-            expect(res.body.id).not.toBe(undefined)
+            expect(res.body.build.id).not.toBe(undefined)
           })
           .expect(200)
       })

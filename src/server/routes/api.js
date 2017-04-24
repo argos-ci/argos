@@ -100,8 +100,7 @@ router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
     )
 
     await buildJob.push(build.id)
-
-    res.send(build)
+    res.send({ build })
   },
 ))
 

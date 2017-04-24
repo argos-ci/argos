@@ -29,7 +29,7 @@ export default {
     hot: true,
     historyApiFallback: true,
     port: config.get('client.port'),
-
+    disableHostCheck: true, // For security checks, no need here.
     // webpack-dev-middleware options.
     stats: {
       // Remove built modules information.

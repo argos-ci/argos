@@ -1,6 +1,7 @@
 // @flow weak
 
-import { cloneElement, PropTypes } from 'react'
+import { cloneElement } from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 
