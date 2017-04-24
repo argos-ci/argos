@@ -25,6 +25,14 @@ export default class Repository extends BaseModel {
   });
 
   static relationMappings = {
+    builds: {
+      relation: BaseModel.HasManyRelation,
+      modelClass: 'Build',
+      join: {
+        from: 'repositories.id',
+        to: 'builds.repositoryId',
+      },
+    },
     organization: {
       relation: BaseModel.BelongsToOneRelation,
       modelClass: 'Organization',

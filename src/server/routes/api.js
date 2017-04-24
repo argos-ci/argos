@@ -43,21 +43,24 @@ export function errorChecking(routeHandler) {
 
 router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
   async (req, res) => {
-    if (!req.body.token) {
+    // Support legacy clients
+    const data = req.body.data ? JSON.parse(req.body.data) : req.body
+
+    if (!data.token) {
       throw new HttpError(401, 'Invalid token')
     }
 
-    if (!req.body.commit) {
+    if (!data.commit) {
       throw new HttpError(401, 'Invalid commit')
     }
 
     const repository = await Repository.query()
-      .where({ token: req.body.token })
+      .where({ token: data.token })
       .limit(1)
       .first()
 
     if (!repository) {
-      throw new HttpError(400, `Repository not found (token: "${req.body.token}")`)
+      throw new HttpError(400, `Repository not found (token: "${data.token}")`)
     }
 
     if (!repository.enabled) {
@@ -72,16 +75,17 @@ router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
           .query()
           .insert({
             name: 'default',
-            commit: req.body.commit,
-            branch: req.body.branch,
+            commit: data.commit,
+            branch: data.branch,
             repositoryId: repository.id,
           })
 
-        const inserts = req.files.map(file => bucket
+        const inserts = req.files.map((file, index) => bucket
           .$relatedQuery('screenshots')
           .insert({
             screenshotBucketId: bucket.id,
-            name: file.originalname,
+            // Support legacy clients
+            name: data.names ? data.names[index] : file.originalname,
             s3Id: file.key,
           }))
 
