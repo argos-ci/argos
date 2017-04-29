@@ -59,7 +59,7 @@ class ReviewAppBar extends Component {
       <LayoutAppBar>
         <Toolbar>
           <Text type="title" colorInherit className={classes.title}>
-            <Link component={LinkRouter} to="/">
+            <Link to="/">
               Argos
             </Link>
           </Text>
@@ -85,6 +85,10 @@ class ReviewAppBar extends Component {
           ) : null}
           {user ? (
             <Menu
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
               id="review-app-bar-menu"
               anchorEl={anchorEl}
               open={open}

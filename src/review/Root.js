@@ -18,6 +18,8 @@ import accountReducer from 'review/routes/profile/accountReducer'
 import accountEpic from 'review/routes/profile/accountEpic'
 import buildReducer from 'review/routes/build/buildReducer'
 import buildEpic from 'review/routes/build/buildEpic'
+import repositoryReducer from 'review/routes/repository/repositoryReducer'
+import repositoryEpic from 'review/routes/repository/repositoryEpic'
 import repositoryDetailsReducer from 'review/routes/repository/detailsReducer'
 import repositoryDetailsEpic from 'review/routes/repository/detailsEpic'
 import profileReducer from 'review/routes/profile/profileReducer'
@@ -28,6 +30,7 @@ import dashboardEpic from 'review/routes/dashboard/dashboardEpic'
 const rootEpic = combineEpics(
   accountEpic,
   buildEpic,
+  repositoryEpic,
   repositoryDetailsEpic,
   profileEpic,
   dashboardEpic,
@@ -52,6 +55,7 @@ if (process.env.NODE_ENV === 'development' && !window.devToolsExtension) {
 const uiReducer = combineReducers({
   account: accountReducer,
   build: buildReducer,
+  repository: repositoryReducer,
   repositoryDetails: repositoryDetailsReducer,
   profile: profileReducer,
   dashboard: dashboardReducer,

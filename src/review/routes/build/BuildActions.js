@@ -39,7 +39,7 @@ function BuildActions(props) {
 
   return (
     <Button
-      primary
+      accent
       raised
       onClick={onValidationClick}
       className={classes.validationStatus}

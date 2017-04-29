@@ -12,6 +12,7 @@ const repositoryDetailsEpic = action$ => (
             repositoryName: "${action.payload.repositoryName}"
           ) {
             name
+            sampleBuildId
             builds(
               first: 5
               after: ${action.payload.after}

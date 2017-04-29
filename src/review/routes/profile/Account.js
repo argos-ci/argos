@@ -1,47 +1,32 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { compose, lifecycle, withHandlers, withProps } from 'recompact'
 import Text from 'material-ui/Text'
 import Button from 'material-ui/Button'
+import { List } from 'material-ui/List'
+import Paper from 'material-ui/Paper'
+import Layout from 'material-ui/Layout'
+import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
+import WatchTask from 'modules/components/WatchTask'
 import ReviewAppBar from 'review/modules/AppBar/AppBar'
 import actionTypes from 'review/modules/redux/actionTypes'
-import { List, ListItem, ListItemText } from 'material-ui/List'
-import Paper from 'material-ui/Paper'
-import Layout from 'material-ui/Layout'
-import Switch from 'material-ui/Switch'
-import WatchTask from 'modules/components/WatchTask'
+import RepositoryListItem from 'review/routes/profile/RepositoryListItem'
 
-const RepositoryListItem = compose(
-  withProps(({ repository }) => ({
-    uri: `${repository.owner.login}/${repository.name}`,
-  })),
-  withHandlers({
-    onToggle: ({ onToggle, repository }) => () => onToggle({
-      repositoryId: repository.id,
-      enabled: !repository.enabled,
-    }),
-  }),
-)(({ onToggle, repository, uri }) => (
-  <ListItem button key={uri} onClick={onToggle}>
-    <ListItemText primary={uri} />
-    <Switch checked={repository.enabled} />
-  </ListItem>
-))
+function Account(props) {
+  const { account, onToggleRepository, user } = props
 
-function Account({ account, onToggleRepository, user }) {
   return (
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin>
-          <Layout container>
+          <Layout container gutter={24}>
             <Layout item xs>
-              <Text type="display1" component="h2" gutterBottom>
+              <Text type="display1" component="h2">
                 {user.name}
               </Text>
             </Layout>
@@ -57,22 +42,24 @@ function Account({ account, onToggleRepository, user }) {
                 </Button>
               </Layout>
             )}
+            <Layout item xs={12}>
+              <Paper>
+                <WatchTask task={account.fetch}>
+                  {() => (
+                    <List>
+                      {account.fetch.output.data.user.relatedRepositories.map(repository => (
+                        <RepositoryListItem
+                          key={repository.id}
+                          onToggle={onToggleRepository}
+                          repository={repository}
+                        />
+                      ))}
+                    </List>
+                  )}
+                </WatchTask>
+              </Paper>
+            </Layout>
           </Layout>
-          <Paper>
-            <WatchTask task={account.fetch}>
-              {() => (
-                <List>
-                  {account.fetch.output.data.user.relatedRepositories.map((repository, index) => (
-                    <RepositoryListItem
-                      key={index} // eslint-disable-line react/no-array-index-key
-                      onToggle={onToggleRepository}
-                      repository={repository}
-                    />
-                  ))}
-                </List>
-              )}
-            </WatchTask>
-          </Paper>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>
@@ -80,7 +67,7 @@ function Account({ account, onToggleRepository, user }) {
 }
 
 Account.propTypes = {
-  account: PropTypes.object,
+  account: PropTypes.object.isRequired,
   onToggleRepository: PropTypes.func.isRequired,
   user: PropTypes.shape({
     name: PropTypes.string.isRequired,
@@ -88,18 +75,18 @@ Account.propTypes = {
   }),
 }
 
-export default compose(
+export default recompact.compose(
   connect(state => ({
     user: state.data.user,
     account: state.ui.account,
   })),
-  withHandlers({
+  recompact.withHandlers({
     onToggleRepository: ({ dispatch }) => payload => dispatch({
       type: actionTypes.ACCOUNT_TOGGLE_CLICK,
       payload,
     }),
   }),
-  lifecycle({
+  recompact.lifecycle({
     componentDidMount() {
       this.props.dispatch({ type: actionTypes.ACCOUNT_FETCH, payload: {} })
     },

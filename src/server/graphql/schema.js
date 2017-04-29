@@ -19,7 +19,7 @@ import RepositoryType, {
   toggleRepository,
 } from 'server/graphql/RepositoryType'
 import {
-  resolveSetValidationStatus,
+  setValidationStatus,
   validationStatusType,
 } from 'server/graphql/ScreenshotDiffType'
 import UserType, {
@@ -89,7 +89,7 @@ export default new GraphQLSchema({
             type: validationStatusType,
           },
         },
-        resolve: resolveSetValidationStatus,
+        resolve: setValidationStatus,
       },
       toggleRepository: {
         type: RepositoryType,

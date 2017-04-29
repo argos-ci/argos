@@ -18,6 +18,9 @@ const styleSheet = createStyleSheet('ItemStatus', theme => ({
   pending: {
     borderLeft: `10px solid ${theme.status.progress}`,
   },
+  error: {
+    borderLeft: `10px solid ${theme.status.error}`,
+  },
   unknown: {
     borderLeft: `10px solid ${theme.status.unknown}`,
   },
@@ -49,6 +52,7 @@ ItemStatus.propTypes = {
     'failure',
     'progress',
     'pending',
+    'error',
     'unknown',
   ]),
 }

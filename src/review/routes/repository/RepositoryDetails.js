@@ -6,11 +6,10 @@ import {
   List,
 } from 'material-ui/List'
 import Paper from 'material-ui/Paper'
-import Text from 'material-ui/Text'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import WatchTask from 'modules/components/WatchTask'
-import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import detailsActions from 'review/routes/repository/detailsActions'
+import RepositoryDetailsEmpty from 'review/routes/repository/RepositoryDetailsEmpty'
 import RepositoryDetailsItem from 'review/routes/repository/RepositoryDetailsItem'
 import RepositoryDetailsLoadMore from 'review/routes/repository/RepositoryDetailsLoadMore'
 
@@ -33,27 +32,10 @@ function RepositoryDetails(props) {
         <WatchTask task={fetch}>
           {() => {
             const repository = fetch.output.data.repository
-
-            if (!repository) {
-              return (
-                <WatchTaskContainer>
-                  <Text>
-                    Repository not found
-                  </Text>
-                </WatchTaskContainer>
-              )
-            }
-
             const edges = repository.builds.edges
 
             if (edges.length === 0) {
-              return (
-                <WatchTaskContainer>
-                  <Text>
-                    No build yet for this repository.
-                  </Text>
-                </WatchTaskContainer>
-              )
+              return <RepositoryDetailsEmpty repository={repository} />
             }
 
             return (

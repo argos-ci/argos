@@ -6,6 +6,7 @@ function getStats(statuses) {
     pending: 0,
     progress: 0,
     complete: 0,
+    error: 0,
   })
 }
 

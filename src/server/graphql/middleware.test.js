@@ -281,6 +281,39 @@ describe('GraphQL', () => {
         userId: user.id,
         organizationId: organization.id,
       })
+    })
+
+    it('should mutate the repository', async () => {
+      expect(repository.token).toBe(undefined)
+      await request(graphqlMiddleware({
+        context: { user },
+      }))
+        .post('/')
+        .send({
+          query: `
+            mutation {
+              toggleRepository(
+                enabled: true,
+                repositoryId: "${repository.id}"
+              ) {
+                enabled
+                token
+              }
+            }
+          `,
+        })
+        .expect((res) => {
+          expect(res.body.data).toMatchObject({
+            toggleRepository: {
+              enabled: true,
+            },
+          })
+          expect(res.body.data.toggleRepository.token.length).toBe(40)
+        })
+        .expect(200)
+    })
+
+    it('should list builds sorted by number', async () => {
       await factory.create('Build', {
         repositoryId: repository.id,
         createdAt: '2017-02-04T17:14:28.167Z',
@@ -289,10 +322,7 @@ describe('GraphQL', () => {
         repositoryId: repository.id,
         createdAt: '2017-02-05T17:14:28.167Z',
       })
-    })
-
-    it('should list builds sorted by number', () => (
-      request(graphqlMiddleware({
+      await request(graphqlMiddleware({
         context: { user },
       }))
         .post('/')
@@ -343,7 +373,7 @@ describe('GraphQL', () => {
           })
         })
         .expect(200)
-    ))
+    })
   })
 
   describe('owner', () => {

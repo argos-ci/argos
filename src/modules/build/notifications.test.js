@@ -1,3 +1,4 @@
+import nock from 'nock'
 import playback from 'server/test/playback'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
@@ -8,6 +9,9 @@ jest.mock('server/jobs/buildNotification')
 
 describe('notifications', () => {
   let build
+  let repository
+  let user
+  const commit = 'e8f58427ebe378ba73dea669c975122fcb8cb9cf'
 
   useDatabase()
 
@@ -22,19 +26,20 @@ describe('notifications', () => {
   })
 
   beforeEach(async () => {
-    const user = await factory.create('User', {
+    user = await factory.create('User', {
       // accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
       accessToken: 'aaaa',
     })
     const organization = await factory.create('Organization', { login: 'argos-ci' })
-    const repository = await factory.create('Repository', {
+    repository = await factory.create('Repository', {
       name: 'test-repository',
       organizationId: organization.id,
     })
-    await factory.create('UserRepositoryRight', { userId: user.id, repositoryId: repository.id })
-    const compareScreenshotBucket = await factory.create('ScreenshotBucket', {
-      commit: 'e8f58427ebe378ba73dea669c975122fcb8cb9cf',
+    await factory.create('UserRepositoryRight', {
+      userId: user.id,
+      repositoryId: repository.id,
     })
+    const compareScreenshotBucket = await factory.create('ScreenshotBucket', { commit })
     build = await factory.create('Build', {
       id: 750,
       repositoryId: repository.id,
@@ -70,6 +75,28 @@ describe('notifications', () => {
       expect(result.data.description).toBe('Build in progress...')
       expect(result.data.state).toBe('pending')
       expect(result.data.target_url).toBe(`http://www.argos-ci.test/argos-ci/test-repository/builds/${build.id}`)
+    })
+
+    describe('repository linked to a user', () => {
+      it('should create a status', async () => {
+        const response = {
+          foo: 'bar',
+        }
+        nock('https://api.github.com')
+          .post(`/repos/user-3/test-repository/statuses/${commit}?access_token=aaaa`)
+          .reply(200, response)
+        await repository.$query().patch({
+          organizationId: null,
+          userId: user.id,
+        })
+        const buildNotification = await factory.create('BuildNotification', {
+          buildId: build.id,
+          type: 'progress',
+          jobStatus: 'pending',
+        })
+        const result = await processBuildNotification(buildNotification)
+        expect(result.data).toEqual(response)
+      })
     })
   })
 })

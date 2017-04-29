@@ -40,11 +40,16 @@ export async function pushBuildNotification({ type, buildId }) {
 
 export async function processBuildNotification(buildNotification) {
   const build = await Build.query()
+    .eager('[repository.[organization, user], compareScreenshotBucket]')
     .findById(buildNotification.buildId)
-    .eager('[repository, repository.user, repository.organization, compareScreenshotBucket]')
 
   if (!build) {
     throw new Error('Build not found')
+  }
+
+  // Skip sample build
+  if (build.number === 0) {
+    return null
   }
 
   const notification = NOTIFICATIONS[buildNotification.type]

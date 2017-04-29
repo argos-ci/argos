@@ -79,6 +79,10 @@ export default {
         test: /\.html$/,
         loader: 'html-loader',
       },
+      {
+        test: /\.md$/,
+        loader: 'raw-loader',
+      },
     ],
   },
   performance: {
