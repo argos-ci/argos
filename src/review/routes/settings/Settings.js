@@ -38,7 +38,7 @@ function Settings(props) {
           Environment Variables
         </Text>
         <Text type="subheading">
-          {'To send data to Argos-ci you will need to configure a'}
+          {'To send data to Argos-ci you will need to configure a '}
           <Link
             href="https://github.com/argos-ci/argos-cli"
             target="_blank"
@@ -46,7 +46,7 @@ function Settings(props) {
           >
             CLI
           </Link>
-          {'with a client key (usually referred to as the ARGOS_TOKEN value).'}
+          {' with a client key (usually referred to as the ARGOS_TOKEN value).'}
           <br />
           {'ARGOS_TOKEN is a project-specific, it should be kept secret.'}
           <br />
