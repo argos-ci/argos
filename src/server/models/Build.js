@@ -74,7 +74,9 @@ export default class Build extends BaseModel {
 
   $beforeInsert(queryContext) {
     super.$beforeInsert(queryContext)
-    this.number = NEXT_NUMBER
+    if (this.number === undefined) {
+      this.number = NEXT_NUMBER
+    }
   }
 
   $toDatabaseJson(queryContext) {
@@ -93,13 +95,20 @@ export default class Build extends BaseModel {
     return this.reload()
   }
 
-  static async getStatus(buildId, options = {}) {
+  static async getStatus(build, options = {}) {
     const {
       useScore = true,
       useValidation = false,
     } = options
 
-    const screenshotDiffs = await ScreenshotDiff.query().where({ buildId })
+    // If something bad happened at the build level
+    if (build.jobStatus !== 'complete') {
+      return build.jobStatus
+    }
+
+    const screenshotDiffs = await ScreenshotDiff.query().where({
+      buildId: build.id,
+    })
     const jobStatus = reduceJobStatus(screenshotDiffs.map(({ jobStatus }) => jobStatus))
 
     if (jobStatus === 'complete') {
@@ -121,7 +130,7 @@ export default class Build extends BaseModel {
   }
 
   getStatus(options) {
-    return this.constructor.getStatus(this.id, options)
+    return this.constructor.getStatus(this, options)
   }
 
   static getUsers(buildId) {

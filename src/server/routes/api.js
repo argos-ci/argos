@@ -91,14 +91,12 @@ router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
 
         await Promise.all(inserts)
 
-        const build = await Build.query()
-          .insert({
-            baseScreenshotBucketId: null,
-            compareScreenshotBucketId: bucket.id,
-            repositoryId: repository.id,
-            jobStatus: 'pending',
-          })
-
+        const build = await Build.query().insert({
+          baseScreenshotBucketId: null,
+          compareScreenshotBucketId: bucket.id,
+          repositoryId: repository.id,
+          jobStatus: 'pending',
+        })
         return build
       },
     )

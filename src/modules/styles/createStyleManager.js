@@ -10,6 +10,7 @@ import {
   green,
   orange,
   grey,
+  black,
 } from 'material-ui/styles/colors'
 
 export default () =>
@@ -25,6 +26,7 @@ export default () =>
         failure: red[500],
         progress: grey[500],
         pending: grey[500],
+        error: black,
         unknown: orange[500],
       },
     }),

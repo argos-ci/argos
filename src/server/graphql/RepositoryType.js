@@ -5,12 +5,30 @@ import {
   GraphQLNonNull,
   GraphQLInt,
 } from 'graphql'
+import crypto from 'crypto'
 import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 import paginationTypeFactory from 'modules/graphQL/paginationTypeFactory'
 import { getOwner, isRepositoryAccessible } from 'server/graphql/utils'
-import BuildType, { resolveList as resolveBuildList } from 'server/graphql/BuildType'
+import BuildType, {
+  resolveList as resolveBuildList,
+  resolveSample as resolveBuildSample,
+} from 'server/graphql/BuildType'
 import OwnerType from 'server/graphql/OwnerType'
 import Repository from 'server/models/Repository'
+import generateSample from 'modules/sample/generateSample'
+
+function toPromise(wrapped) {
+  return new Promise((resolve, reject) => {
+    wrapped((err, data) => {
+      if (err) {
+        reject(err)
+        return
+      }
+
+      resolve(data)
+    })
+  })
+}
 
 export async function resolve(source, args, context) {
   const owner = await getOwner({ login: args.ownerLogin })
@@ -31,14 +49,40 @@ export async function resolve(source, args, context) {
   return null
 }
 
-export async function toggleRepository(source, { repositoryId, enabled }, context) {
+export async function toggleRepository(source, args, context) {
+  if (!context.user) {
+    throw new Error('Invalid user identification')
+  }
+
+  const { repositoryId, enabled } = args
   const user = await Repository.getUsers(repositoryId).findById(context.user.id)
 
   if (!user) {
     throw new Error('Invalid user authorization')
   }
 
-  return Repository.query().patchAndFetchById(repositoryId, { enabled })
+  let repository = await Repository.query().patchAndFetchById(repositoryId, { enabled })
+
+  // We can skip further work when disabling a repository
+  if (!enabled) {
+    return repository
+  }
+
+  const sample = await resolveBuildSample(repository)
+
+  // No need to generate a sample if we find one.
+  if (!sample) {
+    generateSample(repositoryId)
+  }
+
+  if (!repository.token) {
+    const token = await toPromise(callback => crypto.randomBytes(20, callback))
+    repository = await Repository.query().patchAndFetchById(repositoryId, {
+      token: token.toString('hex'),
+    })
+  }
+
+  return repository
 }
 
 const RepositoryType = new GraphQLObjectType({
@@ -100,9 +144,12 @@ const RepositoryType = new GraphQLObjectType({
     owner: {
       description: 'Owner of repository.',
       type: OwnerType,
-      resolve(source) {
-        return source.getOwner()
-      },
+      resolve: source => source.getOwner(),
+    },
+    sampleBuildId: {
+      description: 'build id of the sample',
+      type: GraphQLString,
+      resolve: resolveBuildSample,
     },
   }),
 })

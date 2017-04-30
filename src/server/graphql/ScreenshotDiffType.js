@@ -29,30 +29,21 @@ export const validationStatusType = new GraphQLEnumType({
   },
 })
 
-export async function resolveSetValidationStatus(source, args, context) {
-  const {
-    buildId,
-    validationStatus,
-  } = args
-
+export async function setValidationStatus(source, args, context) {
   if (!context.user) {
     throw new Error('Invalid user identification')
   }
 
+  const { buildId, validationStatus } = args
   const user = await Build.getUsers(buildId).findById(context.user.id)
 
   if (!user) {
     throw new Error('Invalid user authorization')
   }
 
-  await ScreenshotDiff
-    .query()
-    .where({
-      buildId,
-    })
-    .patch({
-      validationStatus,
-    })
+  await ScreenshotDiff.query()
+    .where({ buildId })
+    .patch({ validationStatus })
 
   // That might be better suited into a $afterUpdate hook.
   if (validationStatus === VALIDATION_STATUS.accepted) {
@@ -120,6 +111,9 @@ const ScreenshotDiffType = new GraphQLObjectType({
           },
           complete: {
             value: 'complete',
+          },
+          error: {
+            value: 'error',
           },
         },
       }),

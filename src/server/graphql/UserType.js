@@ -13,7 +13,7 @@ const OwnerType = new GraphQLObjectType({
   fields: {
     relatedRepositories: {
       type: new GraphQLList(RepositoryType),
-      async resolve(source) {
+      resolve: async (source) => {
         const repositories = await source
           .$relatedQuery('relatedRepositories')
           .eager('[organization, user]')

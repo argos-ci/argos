@@ -21,6 +21,13 @@ describe('models/Build', () => {
       expect(build1.number).toBe(1)
       expect(build2.number).toBe(2)
     })
+
+    it('should be able to override the number', async () => {
+      const build = await factory.create('Build', {
+        number: 0,
+      })
+      expect(build.number).toBe(0)
+    })
   })
 
   describe('patch build', () => {
@@ -77,31 +84,25 @@ describe('models/Build', () => {
     let build
 
     describe('with all in pending', () => {
-      beforeEach(async () => {
+      it('should be pending', async () => {
         build = await factory.create('Build')
         await factory.create('ScreenshotDiff', { buildId: build.id, jobStatus: 'pending' })
         await factory.create('ScreenshotDiff', { buildId: build.id, jobStatus: 'pending' })
-      })
-
-      it('should be pending', async () => {
         expect(await build.getStatus()).toBe('pending')
       })
     })
 
     describe('with one in progress', () => {
-      beforeEach(async () => {
+      it('should be progress', async () => {
         build = await factory.create('Build')
         await factory.create('ScreenshotDiff', { buildId: build.id, jobStatus: 'pending' })
         await factory.create('ScreenshotDiff', { buildId: build.id, jobStatus: 'progress' })
-      })
-
-      it('should be progress', async () => {
         expect(await build.getStatus()).toBe('progress')
       })
     })
 
     describe('with all in complete, some score > 0', () => {
-      beforeEach(async () => {
+      it('should be failure', async () => {
         build = await factory.create('Build')
         await factory.create('ScreenshotDiff', {
           buildId: build.id,
@@ -113,31 +114,26 @@ describe('models/Build', () => {
           jobStatus: 'complete',
           score: 0,
         })
-      })
-
-      it('should be failure', async () => {
         expect(await build.getStatus()).toBe('failure')
       })
     })
 
     describe('with all in complete, every score == 0', () => {
-      beforeEach(async () => {
-        build = await factory.create('Build')
-        await factory.create('ScreenshotDiff', {
-          buildId: build.id,
-          jobStatus: 'complete',
-          score: 0,
-        })
-        await factory.create('ScreenshotDiff', {
-          buildId: build.id,
-          jobStatus: 'complete',
-          score: 0,
-        })
-      })
-
       it('should be success', async () => {
-        expect(await Build.getStatus(build.id)).toBe('success') // static
-        expect(await build.getStatus()).toBe('success') // instance
+        build = await factory.create('Build', {
+          jobStatus: 'complete',
+        })
+        await factory.create('ScreenshotDiff', {
+          buildId: build.id,
+          jobStatus: 'complete',
+          score: 0,
+        })
+        await factory.create('ScreenshotDiff', {
+          buildId: build.id,
+          jobStatus: 'complete',
+          score: 0,
+        })
+        expect(await Build.getStatus(build)).toBe('success')
       })
     })
 
@@ -180,6 +176,15 @@ describe('models/Build', () => {
         expect(await build.getStatus({
           useValidation: true,
         })).toBe('success')
+      })
+    })
+
+    describe('with an error build', () => {
+      it('should be error', async () => {
+        build = await factory.create('Build', {
+          jobStatus: 'error',
+        })
+        expect(await build.getStatus()).toBe('error')
       })
     })
   })

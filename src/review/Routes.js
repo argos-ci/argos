@@ -17,6 +17,7 @@ import Repository from 'review/routes/repository/Repository'
 import RepositoryDetails from 'review/routes/repository/RepositoryDetails'
 import Build from 'review/routes/build/Build'
 import Settings from 'review/routes/settings/Settings'
+import GettingStarted from 'review/routes/gettingStarted/GettingStarted'
 
 const styleSheet = createStyleSheet('Routes', theme => ({
   '@global': {
@@ -51,6 +52,7 @@ function Routes() {
           <IndexRoute component={RepositoryDetails} />
           <Route path="builds/:buildId" component={Build} />
           <Route path="settings" component={Settings} />
+          <Route path="getting-started" component={GettingStarted} />
         </Route>
         <Route path="*" component={ErrorNotFound} />
       </Route>

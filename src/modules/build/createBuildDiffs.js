@@ -5,19 +5,24 @@ import { VALIDATION_STATUS } from 'server/models/constant'
 
 async function createBuildDiffs(build) {
   build = await build.$query().eager(
-    '[repository, baseScreenshotBucket, compareScreenshotBucket.screenshots]',
+    '[repository, baseScreenshotBucket.screenshots, compareScreenshotBucket.screenshots]',
   )
 
-  const baseScreenshotBucket = await baseCompare({
-    baseCommit: build.repository.baselineBranch,
-    compareCommit: build.compareScreenshotBucket.commit,
-    build,
-  })
+  let newBaseScreenshotBucket
+
+  // We need a baseScreenshotBucket to move forward
+  if (!build.baseScreenshotBucket) {
+    newBaseScreenshotBucket = await baseCompare({
+      baseCommit: build.repository.baselineBranch,
+      compareCommit: build.compareScreenshotBucket.commit,
+      build,
+    })
+  }
 
   return transaction(ScreenshotDiff, async (ScreenshotDiff) => {
-    if (baseScreenshotBucket) {
-      await build.$query().patch({ baseScreenshotBucketId: baseScreenshotBucket.id })
-      build.baseScreenshotBucket = await baseScreenshotBucket.$query().eager('screenshots')
+    if (newBaseScreenshotBucket) {
+      await build.$query().patch({ baseScreenshotBucketId: newBaseScreenshotBucket.id })
+      build.baseScreenshotBucket = await newBaseScreenshotBucket.$query().eager('screenshots')
     }
 
     const compareWithBaseline = build

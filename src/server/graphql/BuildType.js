@@ -29,6 +29,7 @@ export async function resolveList(repository, args) {
   const result = await Build
     .query()
     .where({ repositoryId: repository.id })
+    .whereNot({ number: 0 })
     .orderBy('createdAt', 'desc')
     .range(args.after, (args.after + args.first) - 1)
 
@@ -50,6 +51,17 @@ export async function resolveList(repository, args) {
       return build
     }),
   }
+}
+
+export function resolveSample(repository) {
+  return Build.query()
+    .where({
+      repositoryId: repository.id,
+      number: 0,
+    })
+    .pluck('id')
+    .limit(1)
+    .first()
 }
 
 const BuildType = new GraphQLObjectType({
@@ -119,6 +131,9 @@ const BuildType = new GraphQLObjectType({
           },
           success: {
             value: 'success',
+          },
+          error: {
+            value: 'error',
           },
         },
       }),
