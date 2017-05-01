@@ -5,7 +5,7 @@ import classnames from 'classnames'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import { Paper } from 'material-ui/Paper'
 import Layout from 'material-ui/Layout'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import IconButton from 'material-ui/IconButton'
 import Collapse from 'material-ui/transitions/Collapse'
 import recompact from 'modules/recompact'
@@ -71,9 +71,9 @@ function BuildScreenshotItem(props) {
     <ItemStatus status={status}>
       <Paper>
         <div className={classes.cardContent}>
-          <Text type="subheading" component="h4" className={classes.name}>
+          <Typography type="subheading" component="h4" className={classes.name}>
             {compareScreenshot.name}
-          </Text>
+          </Typography>
         </div>
         <div className={classes.cardActions}>
           <div className={classes.flexGrow} />

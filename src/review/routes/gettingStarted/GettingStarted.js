@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import { Link as LinkRouter } from 'react-router'
 import Button from 'material-ui/Button'
@@ -35,9 +35,9 @@ function GettingStarted(props) {
 
   return (
     <div>
-      <Text type="headline" gutterBottom>
+      <Typography type="headline" gutterBottom>
         Getting started
-      </Text>
+      </Typography>
       <Paper className={classes.paper}>
         <MarkdownElement text={text} disableAnchor />
         <Button

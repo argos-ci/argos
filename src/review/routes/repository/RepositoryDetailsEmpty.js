@@ -4,7 +4,7 @@ import { Link as LinkRouter, withRouter } from 'react-router'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
 import Layout from 'material-ui/Layout'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import Button from 'material-ui/Button'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import beast from 'review/routes/repository/beast.svg'
@@ -37,9 +37,9 @@ function RepositoryDetailsEmpty(props) {
       </Layout>
       <Layout item xs={12} sm={8}>
         <div className={classes.body}>
-          <Text type="title" gutterBottom>
+          <Typography type="title" gutterBottom>
             {'Waiting for screenshots…'}
-          </Text>
+          </Typography>
           {'Our screenshot beast is waiting to scan your first screenshots.'}
           <br />
           <Button

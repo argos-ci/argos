@@ -5,7 +5,7 @@ import { Link as LinkRouter } from 'react-router'
 import Toolbar from 'material-ui/Toolbar'
 import Avatar from 'material-ui/Avatar'
 import Layout from 'material-ui/Layout'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import { Menu, MenuItem } from 'material-ui/Menu'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
@@ -58,11 +58,11 @@ class ReviewAppBar extends Component {
     return (
       <LayoutAppBar>
         <Toolbar>
-          <Text type="title" colorInherit className={classes.title}>
+          <Typography type="title" colorInherit className={classes.title}>
             <Link to="/">
               Argos
             </Link>
-          </Text>
+          </Typography>
           {user ? (
             <Link
               href="#"
@@ -73,9 +73,9 @@ class ReviewAppBar extends Component {
             >
               <Layout container align="center">
                 <Layout item>
-                  <Text colorInherit>
+                  <Typography colorInherit>
                     {user.name}
-                  </Text>
+                  </Typography>
                 </Layout>
                 <Layout item>
                   <Avatar src={`https://github.com/${user.login}.png?size=${AVATAR_SIZE}`} />

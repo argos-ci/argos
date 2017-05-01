@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import LayoutBody from 'modules/components/LayoutBody'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
@@ -12,12 +12,12 @@ function ErrorView(props) {
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin>
-          <Text type="display1" component="h2" gutterBottom>
+          <Typography type="display1" component="h2" gutterBottom>
             {props.title}
-          </Text>
-          <Text type="subheading">
+          </Typography>
+          <Typography type="subheading">
             {props.message}
-          </Text>
+          </Typography>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>

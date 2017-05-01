@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { Link as LinkRouter } from 'react-router'
 import { connect } from 'react-redux'
 import recompact from 'modules/recompact'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import Avatar from 'material-ui/Avatar'
 import Layout from 'material-ui/Layout'
@@ -63,13 +63,13 @@ function Profile(props) {
                 />
               </Layout>
               <Layout item>
-                <Text type="display1" component="h2" gutterBottom>
+                <Typography type="display1" component="h2" gutterBottom>
                   {
                     fetch.state === 'SUCCESS' && fetch.output.data.owner ?
                       fetch.output.data.owner.name :
                       null
                   }
-                </Text>
+                </Typography>
               </Layout>
             </Layout>
             <Layout item xs={12}>
@@ -79,9 +79,9 @@ function Profile(props) {
                     if (!fetch.output.data.owner) {
                       return (
                         <WatchTaskContainer>
-                          <Text>
+                          <Typography>
                             Profile not found.
-                          </Text>
+                          </Typography>
                         </WatchTaskContainer>
                       )
                     }
@@ -91,9 +91,9 @@ function Profile(props) {
                     if (repositories.length === 0) {
                       return (
                         <WatchTaskContainer>
-                          <Text>
+                          <Typography>
                             No repository enabled.
-                          </Text>
+                          </Typography>
                         </WatchTaskContainer>
                       )
                     }
