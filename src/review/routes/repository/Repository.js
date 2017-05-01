@@ -51,17 +51,28 @@ function Repository(props) {
                 </Link>
               </Typography>
             </Layout>
-            <Layout item>
-              <Button component={LinkRouter} to={`/${profileName}/${repositoryName}/settings`}>
-                Settings
-              </Button>
-            </Layout>
+            <WatchTask task={fetch} onlySuccess>
+              {(data) => {
+                if (!data.repository.authorization) {
+                  return null
+                }
+
+                return (
+                  <Layout item>
+                    <Button
+                      component={LinkRouter}
+                      to={`/${profileName}/${repositoryName}/settings`}
+                    >
+                      Settings
+                    </Button>
+                  </Layout>
+                )
+              }}
+            </WatchTask>
             <Layout item xs={12}>
               <WatchTask task={fetch}>
-                {() => {
-                  const { repository } = fetch.output.data
-
-                  if (!repository) {
+                {(data) => {
+                  if (!data.repository) {
                     return (
                       <Paper className={classes.paper}>
                         <WatchTaskContainer>
@@ -72,7 +83,6 @@ function Repository(props) {
                       </Paper>
                     )
                   }
-
                   return children
                 }}
               </WatchTask>

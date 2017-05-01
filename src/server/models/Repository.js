@@ -1,4 +1,5 @@
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
+import UserRepositoryRight from 'server/models/UserRepositoryRight'
 import User from 'server/models/User'
 
 export default class Repository extends BaseModel {
@@ -81,5 +82,30 @@ export default class Repository extends BaseModel {
     }
 
     return null
+  }
+
+  async authorization(user) {
+    if (!user) {
+      return false
+    }
+
+    const userRepositoryRight = await UserRepositoryRight.query()
+      .where({ userId: user.id, repositoryId: this.id })
+      .limit(1)
+      .first()
+
+    return Boolean(userRepositoryRight)
+  }
+
+  static async isAccessible(repository, user) {
+    if (!repository) {
+      return false
+    }
+
+    if (repository.private !== true) {
+      return true
+    }
+
+    return repository.authorization(user)
   }
 }

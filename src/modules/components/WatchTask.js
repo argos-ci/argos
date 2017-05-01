@@ -21,9 +21,10 @@ export default function WatchTask(props) {
   const {
     children,
     task,
+    onlySuccess,
   } = props
 
-  if (isError(props.task)) {
+  if (isError(task) && !onlySuccess) {
     return renderInContainer(props,
       <Typography>
         The loading failed
@@ -31,12 +32,12 @@ export default function WatchTask(props) {
     )
   }
 
-  if (task.state === PROGRESS) {
+  if (task.state === PROGRESS && !onlySuccess) {
     return renderInContainer(props, <CircularProgress />)
   }
 
   if (task.state === SUCCESS) {
-    return children()
+    return children(task.output.data)
   }
 
   return null
@@ -45,6 +46,7 @@ export default function WatchTask(props) {
 WatchTask.propTypes = {
   children: PropTypes.func.isRequired,
   Container: PropTypes.func,
+  onlySuccess: PropTypes.bool,
   task: PropTypes.shape({
     state: PropTypes.oneOf([
       PROGRESS,
@@ -57,6 +59,7 @@ WatchTask.propTypes = {
 
 WatchTask.defaultProps = {
   Container: WatchTaskContainer,
+  onlySuccess: false,
 }
 
 export const watchTask = recompact.createHelper(mapProps => BaseComponent => props => (

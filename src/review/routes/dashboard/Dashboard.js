@@ -49,10 +49,8 @@ function Dashboard(props) {
             <Layout item xs={12}>
               <Paper className={classes.paper}>
                 <WatchTask task={fetch}>
-                  {() => {
-                    const { owners } = fetch.output.data
-
-                    if (owners.length === 0) {
+                  {(data) => {
+                    if (data.owners.length === 0) {
                       return (
                         <WatchTaskContainer>
                           <Typography>
@@ -64,7 +62,7 @@ function Dashboard(props) {
 
                     return (
                       <List>
-                        {owners.map(({ login, name }) => (
+                        {data.owners.map(({ login, name }) => (
                           <ListItem
                             key={login}
                             button

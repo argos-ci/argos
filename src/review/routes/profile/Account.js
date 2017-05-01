@@ -45,9 +45,9 @@ function Account(props) {
             <Layout item xs={12}>
               <Paper>
                 <WatchTask task={account.fetch}>
-                  {() => (
+                  {data => (
                     <List>
-                      {account.fetch.output.data.user.relatedRepositories.map(repository => (
+                      {data.user.relatedRepositories.map(repository => (
                         <RepositoryListItem
                           key={repository.id}
                           onToggle={onToggleRepository}

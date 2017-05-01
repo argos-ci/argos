@@ -11,13 +11,13 @@ import ScreenshotBucketType, {
 } from 'server/graphql/ScreenshotBucketType'
 import ScreenshotDiffType from 'server/graphql/ScreenshotDiffType'
 import RepositoryType from 'server/graphql/RepositoryType'
-import { isRepositoryAccessible } from 'server/graphql/utils'
+import Repository from 'server/models/Repository'
 import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 
 export async function resolve(source, args, context) {
   const build = await Build.query().findById(args.id).eager('repository')
 
-  if (!build || !(await isRepositoryAccessible(build.repository, context))) {
+  if (!build || !(await Repository.isAccessible(build.repository, context.user))) {
     return null
   }
 
