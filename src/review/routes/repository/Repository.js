@@ -53,7 +53,7 @@ function Repository(props) {
             </Layout>
             <WatchTask task={fetch} onlySuccess>
               {(data) => {
-                if (!data.repository.authorization) {
+                if (!data.repository || !data.repository.authorization) {
                   return null
                 }
 
