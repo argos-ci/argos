@@ -64,19 +64,17 @@ function Profile(props) {
               </Layout>
               <Layout item>
                 <Typography type="display1" component="h2" gutterBottom>
-                  {
-                    fetch.state === 'SUCCESS' && fetch.output.data.owner ?
-                      fetch.output.data.owner.name :
-                      null
-                  }
+                  <WatchTask task={fetch} onlySuccess>
+                    {data => (data.owner ? <span>{data.owner.name}</span> : null)}
+                  </WatchTask>
                 </Typography>
               </Layout>
             </Layout>
             <Layout item xs={12}>
               <Paper className={classes.paper}>
                 <WatchTask task={fetch}>
-                  {() => {
-                    if (!fetch.output.data.owner) {
+                  {(data) => {
+                    if (!data.owner) {
                       return (
                         <WatchTaskContainer>
                           <Typography>
@@ -86,9 +84,7 @@ function Profile(props) {
                       )
                     }
 
-                    const { repositories } = fetch.output.data.owner
-
-                    if (repositories.length === 0) {
+                    if (data.owner.repositories.length === 0) {
                       return (
                         <WatchTaskContainer>
                           <Typography>
@@ -100,7 +96,7 @@ function Profile(props) {
 
                     return (
                       <List>
-                        {repositories.map(repository => (
+                        {data.owner.repositories.map(repository => (
                           <ListItem
                             key={repository.id}
                             button

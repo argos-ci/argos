@@ -8,7 +8,7 @@ import {
 import crypto from 'crypto'
 import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
 import paginationTypeFactory from 'modules/graphQL/paginationTypeFactory'
-import { getOwner, isRepositoryAccessible } from 'server/graphql/utils'
+import { getOwner } from 'server/graphql/utils'
 import BuildType, {
   resolveList as resolveBuildList,
   resolveSample as resolveBuildSample,
@@ -37,12 +37,15 @@ export async function resolve(source, args, context) {
     return null
   }
 
-  const [repository] = await Repository.query().where({
-    [`${owner.type}Id`]: owner.id,
-    name: args.repositoryName,
-  })
+  const repository = await Repository.query()
+    .where({
+      [`${owner.type}Id`]: owner.id,
+      name: args.repositoryName,
+    })
+    .limit(1)
+    .first()
 
-  if (await isRepositoryAccessible(repository, context)) {
+  if (await Repository.isAccessible(repository, context.user)) {
     return repository
   }
 
@@ -105,6 +108,13 @@ const RepositoryType = new GraphQLObjectType({
     },
     token: {
       type: GraphQLString,
+      resolve: async (repository, args, context) => {
+        if (!await repository.authorization(context.user)) {
+          return null
+        }
+
+        return repository.token
+      },
     },
     organizationId: {
       type: GraphQLString,
@@ -133,13 +143,7 @@ const RepositoryType = new GraphQLObjectType({
     authorization: {
       description: 'Determine if the current user has write access to the repository',
       type: GraphQLBoolean,
-      resolve: (source, args, context) => {
-        if (!context.user) {
-          return false
-        }
-
-        return Boolean(Repository.getUsers(source.id).findById(context.user.id))
-      },
+      resolve: (repository, args, context) => repository.authorization(context.user),
     },
     owner: {
       description: 'Owner of repository.',

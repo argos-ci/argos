@@ -12,6 +12,7 @@ const repositoryEpic = action$ => (
             repositoryName: "${action.payload.repositoryName}"
           ) {
             token
+            authorization
           }
         }`,
       })

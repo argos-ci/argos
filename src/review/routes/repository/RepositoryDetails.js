@@ -30,12 +30,11 @@ function RepositoryDetails(props) {
     <div>
       <Paper className={classes.paper}>
         <WatchTask task={fetch}>
-          {() => {
-            const repository = fetch.output.data.repository
-            const edges = repository.builds.edges
+          {(data) => {
+            const edges = data.repository.builds.edges
 
             if (edges.length === 0) {
-              return <RepositoryDetailsEmpty repository={repository} />
+              return <RepositoryDetailsEmpty repository={data.repository} />
             }
 
             return (

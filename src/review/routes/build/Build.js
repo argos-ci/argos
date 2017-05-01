@@ -26,8 +26,8 @@ function Build(props) {
   return (
     <div>
       <WatchTask task={fetch}>
-        {() => {
-          if (!fetch.output.data.build) {
+        {(data) => {
+          if (!data.build) {
             return (
               <Paper className={classes.paper}>
                 <WatchTaskContainer>
