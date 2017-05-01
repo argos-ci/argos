@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Link as LinkRouter } from 'react-router'
 import { connect } from 'react-redux'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import Layout from 'material-ui/Layout'
 import Avatar from 'material-ui/Avatar'
 import Paper from 'material-ui/Paper'
@@ -42,9 +42,9 @@ function Dashboard(props) {
         <LayoutBody margin>
           <Layout container gutter={24}>
             <Layout item xs={12}>
-              <Text type="display1" component="h2">
+              <Typography type="display1" component="h2">
                 Dashboard
-              </Text>
+              </Typography>
             </Layout>
             <Layout item xs={12}>
               <Paper className={classes.paper}>
@@ -55,9 +55,9 @@ function Dashboard(props) {
                     if (owners.length === 0) {
                       return (
                         <WatchTaskContainer>
-                          <Text>
+                          <Typography>
                             No organization
-                          </Text>
+                          </Typography>
                         </WatchTaskContainer>
                       )
                     }

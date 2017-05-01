@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
@@ -31,9 +31,9 @@ function Build(props) {
             return (
               <Paper className={classes.paper}>
                 <WatchTaskContainer>
-                  <Text>
+                  <Typography>
                     Build not found.
-                  </Text>
+                  </Typography>
                 </WatchTaskContainer>
               </Paper>
             )

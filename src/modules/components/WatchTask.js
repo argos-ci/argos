@@ -2,7 +2,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import CircularProgress from 'material-ui/Progress/CircularProgress'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import recompact from 'modules/recompact'
 import { PROGRESS, SUCCESS, ERROR, isError } from 'modules/rxjs/operator/watchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
@@ -25,9 +25,9 @@ export default function WatchTask(props) {
 
   if (isError(props.task)) {
     return renderInContainer(props,
-      <Text>
+      <Typography>
         The loading failed
-      </Text>,
+      </Typography>,
     )
   }
 

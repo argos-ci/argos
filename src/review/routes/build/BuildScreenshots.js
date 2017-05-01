@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import Layout from 'material-ui/Layout'
 import recompact from 'modules/recompact'
 import BuildScreenshotItem from 'review/routes/build/BuildScreenshotItem'
@@ -13,9 +13,9 @@ function BuildScreenshots(props) {
 
   return (
     <div>
-      <Text type="headline" component="h3" gutterBottom>
+      <Typography type="headline" component="h3" gutterBottom>
         Screenshots
-      </Text>
+      </Typography>
       <Layout container direction="column">
         {fetch.output.data.build.screenshotDiffs.map(screenshotDiff => (
           <Layout item key={screenshotDiff.id}>

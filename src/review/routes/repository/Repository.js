@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { Link as LinkRouter } from 'react-router'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import Button from 'material-ui/Button'
 import Paper from 'material-ui/Paper'
 import Layout from 'material-ui/Layout'
@@ -41,7 +41,7 @@ function Repository(props) {
         <LayoutBody margin>
           <Layout container gutter={24}>
             <Layout item xs>
-              <Text type="display1" component="h2" noWrap>
+              <Typography type="display1" component="h2" noWrap>
                 <Link to={`/${profileName}`}>
                   {profileName}
                 </Link>
@@ -49,7 +49,7 @@ function Repository(props) {
                 <Link to={`/${profileName}/${repositoryName}`}>
                   {repositoryName}
                 </Link>
-              </Text>
+              </Typography>
             </Layout>
             <Layout item>
               <Button component={LinkRouter} to={`/${profileName}/${repositoryName}/settings`}>
@@ -65,9 +65,9 @@ function Repository(props) {
                     return (
                       <Paper className={classes.paper}>
                         <WatchTaskContainer>
-                          <Text>
+                          <Typography>
                             Repository not found
-                          </Text>
+                          </Typography>
                         </WatchTaskContainer>
                       </Paper>
                     )

@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import Button from 'material-ui/Button'
 import { List } from 'material-ui/List'
 import Paper from 'material-ui/Paper'
@@ -26,9 +26,9 @@ function Account(props) {
         <LayoutBody margin>
           <Layout container gutter={24}>
             <Layout item xs>
-              <Text type="display1" component="h2">
+              <Typography type="display1" component="h2">
                 {user.name}
-              </Text>
+              </Typography>
             </Layout>
             {!user.privateSync && (
               <Layout item>

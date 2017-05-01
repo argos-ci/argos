@@ -3,7 +3,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import recompact from 'modules/recompact'
 import LayoutBody from 'modules/components/LayoutBody'
 
@@ -27,12 +27,12 @@ function ProductArgument(props) {
   return (
     <div className={classes.screen}>
       <LayoutBody margin bottom={false}>
-        <Text type="title" component="h3" gutterBottom>
+        <Typography type="title" component="h3" gutterBottom>
           {title}
-        </Text>
-        <Text type="subheading" component="p" className={classes.description}>
+        </Typography>
+        <Typography type="subheading" component="p" className={classes.description}>
           {description}
-        </Text>
+        </Typography>
       </LayoutBody>
     </div>
   )

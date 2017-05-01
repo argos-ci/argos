@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import TextField from 'material-ui/TextField'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
@@ -30,14 +30,14 @@ function Settings(props) {
 
   return (
     <div>
-      <Text type="headline" gutterBottom>
+      <Typography type="headline" gutterBottom>
         Settings
-      </Text>
+      </Typography>
       <Paper className={classes.paper}>
-        <Text type="title" gutterBottom>
+        <Typography type="title" gutterBottom>
           Environment Variables
-        </Text>
-        <Text type="subheading">
+        </Typography>
+        <Typography type="subheading">
           {'To send data to Argos-ci you will need to configure a '}
           <Link
             href="https://github.com/argos-ci/argos-cli"
@@ -56,7 +56,7 @@ For more information on integrating Sentry with your application take a look at 
           <Link to={`/${profileName}/${repositoryName}/getting-started`} variant="primary">
             documentation.
           </Link>
-        </Text>
+        </Typography>
         <TextField
           readOnly
           className={classes.textField}

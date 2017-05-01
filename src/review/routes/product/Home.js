@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import Text from 'material-ui/Text'
+import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import Divider from 'material-ui/Divider'
 import ViewContainer from 'modules/components/ViewContainer'
@@ -33,10 +33,10 @@ function ProductHome(props) {
       <ScrollView>
         <Paper square elevation={3} className={classes.landing}>
           <LayoutBody margin bottom={false}>
-            <Text type="display1" component="h1" gutterBottom>
+            <Typography type="display1" component="h1" gutterBottom>
               Automate visual regression testing
-            </Text>
-            <Text
+            </Typography>
+            <Typography
               type="headline"
               component="h2"
               className={classes.headline}
@@ -45,7 +45,7 @@ function ProductHome(props) {
               {`
                 Argos's visual regression system gives you high confidence in doing changes
               `}
-            </Text>
+            </Typography>
             <Signup />
           </LayoutBody>
         </Paper>
@@ -81,13 +81,13 @@ function ProductHome(props) {
         />
         <Divider />
         <LayoutBody margin>
-          <Text type="body1" align="center">
+          <Typography type="body1" align="center">
             {'Argos · '}
             <a href="https://github.com/argos-ci/argos">
               Github
             </a>
             {' · Copyright © 2017 Argos'}
-          </Text>
+          </Typography>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>
