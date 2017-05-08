@@ -4,12 +4,13 @@ import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import Divider from 'material-ui/Divider'
+import Button from 'material-ui/Button'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
+import Link from 'modules/components/Link'
 import ReviewAppBar from 'review/modules/AppBar/AppBar'
 import ProductArgument from 'review/routes/product/Argument'
-import Signup from 'review/routes/product/Signup'
 
 const styleSheet = createStyleSheet('ProductHome', () => ({
   landing: {
@@ -46,7 +47,14 @@ function ProductHome(props) {
                 Argos's visual regression system gives you high confidence in doing changes
               `}
             </Typography>
-            <Signup />
+            <Button
+              raised
+              accent
+              component={Link}
+              href="/auth/github-public"
+            >
+              Try it
+            </Button>
           </LayoutBody>
         </Paper>
         <ProductArgument

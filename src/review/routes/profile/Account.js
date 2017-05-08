@@ -6,9 +6,11 @@ import Button from 'material-ui/Button'
 import List from 'material-ui/List'
 import Paper from 'material-ui/Paper'
 import Grid from 'material-ui/Grid'
+import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
 import ViewContainer from 'modules/components/ViewContainer'
+import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
 import WatchTask from 'modules/components/WatchTask'
@@ -16,8 +18,19 @@ import ReviewAppBar from 'review/modules/AppBar/AppBar'
 import actionTypes from 'review/modules/redux/actionTypes'
 import RepositoryListItem from 'review/routes/profile/RepositoryListItem'
 
+const styleSheet = createStyleSheet('Account', () => ({
+  paper: {
+    display: 'flex',
+  },
+}))
+
 function Account(props) {
-  const { account, onToggleRepository, user } = props
+  const {
+    account,
+    classes,
+    onToggleRepository,
+    user,
+  } = props
 
   return (
     <ViewContainer>
@@ -43,19 +56,31 @@ function Account(props) {
               </Grid>
             )}
             <Grid item xs={12}>
-              <Paper>
+              <Paper className={classes.paper}>
                 <WatchTask task={account.fetch}>
-                  {data => (
-                    <List>
-                      {data.user.relatedRepositories.map(repository => (
-                        <RepositoryListItem
-                          key={repository.id}
-                          onToggle={onToggleRepository}
-                          repository={repository}
-                        />
-                      ))}
-                    </List>
-                  )}
+                  {(data) => {
+                    if (data.user.relatedRepositories.length === 0) {
+                      return (
+                        <WatchTaskContainer>
+                          <Typography>
+                            No related repository
+                          </Typography>
+                        </WatchTaskContainer>
+                      )
+                    }
+
+                    return (
+                      <List>
+                        {data.user.relatedRepositories.map(repository => (
+                          <RepositoryListItem
+                            key={repository.id}
+                            onToggle={onToggleRepository}
+                            repository={repository}
+                          />
+                        ))}
+                      </List>
+                    )
+                  }}
                 </WatchTask>
               </Paper>
             </Grid>
@@ -68,6 +93,7 @@ function Account(props) {
 
 Account.propTypes = {
   account: PropTypes.object.isRequired,
+  classes: PropTypes.object.isRequired,
   onToggleRepository: PropTypes.func.isRequired,
   user: PropTypes.shape({
     name: PropTypes.string.isRequired,
@@ -76,6 +102,7 @@ Account.propTypes = {
 }
 
 export default recompact.compose(
+  withStyles(styleSheet),
   connect(state => ({
     user: state.data.user,
     account: state.ui.account,
