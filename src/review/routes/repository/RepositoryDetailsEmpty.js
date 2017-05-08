@@ -7,7 +7,7 @@ import Grid from 'material-ui/Grid'
 import Typography from 'material-ui/Typography'
 import Button from 'material-ui/Button'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import beast from 'review/routes/repository/beast.svg'
+import Beast from 'review/routes/repository/Beast'
 
 const styleSheet = createStyleSheet('RepositoryDetailsEmpty', theme => ({
   root: {
@@ -18,6 +18,9 @@ const styleSheet = createStyleSheet('RepositoryDetailsEmpty', theme => ({
   },
   body: {
     margin: theme.spacing.unit * 2,
+  },
+  beast: {
+    fill: theme.brandColor,
   },
 }))
 
@@ -32,7 +35,7 @@ function RepositoryDetailsEmpty(props) {
     <Grid container align="center" className={classes.root}>
       <Grid item xs={12} sm={4}>
         <Grid container justify="center">
-          <img src={beast} alt="beast" width="100" height="100" />
+          <Beast width="100" height="100" className={classes.beast} />
         </Grid>
       </Grid>
       <Grid item xs={12} sm={8}>
