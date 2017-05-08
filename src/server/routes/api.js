@@ -43,8 +43,7 @@ export function errorChecking(routeHandler) {
 
 router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
   async (req, res) => {
-    // Support legacy clients
-    const data = req.body.data ? JSON.parse(req.body.data) : req.body
+    const data = JSON.parse(req.body.data)
 
     if (!data.token) {
       throw new HttpError(401, 'Invalid token')
@@ -84,8 +83,7 @@ router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
           .$relatedQuery('screenshots')
           .insert({
             screenshotBucketId: bucket.id,
-            // Support legacy clients
-            name: data.names ? data.names[index] : file.originalname,
+            name: data.names[index],
             s3Id: file.key,
           }))
 
