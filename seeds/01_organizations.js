@@ -11,5 +11,13 @@ exports.seed = (knex, Promise) =>
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
+        {
+          id: 2,
+          githubId: 5823649,
+          name: 'Doctolib',
+          login: 'doctolib',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
       ]),
     ]))

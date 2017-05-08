@@ -50,7 +50,7 @@ function Dashboard(props) {
                       return (
                         <WatchTaskContainer>
                           <Typography>
-                            No organization
+                            No owners
                           </Typography>
                         </WatchTaskContainer>
                       )

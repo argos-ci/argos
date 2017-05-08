@@ -45,15 +45,23 @@ configurePassport(passport)
 router.use('/graphql', graphqlMiddleware())
 
 ;['private', 'public'].forEach((type) => {
-  router.get(`/auth/github-${type}`, passport.authenticate(`github-${type}`))
-  router.get(
-    `/auth/github/callback/${type}`,
+  router.get(`/auth/github-${type}`, (req, res, next) => {
+    // Save the referer to later redirect back to it.
+    req.session.returnTo = req.header('Referer')
+    next()
+  }, passport.authenticate(`github-${type}`))
+  router.get(`/auth/github/callback/${type}`,
     // Public and private strategies have the same authenticate behavior,
     // so we use public for both
     passport.authenticate(`github-${type}`, { failureRedirect: '/login' }),
     (req, res) => {
-      // Successful authentication, redirect home.
-      res.redirect('/')
+      // Successful authentication
+      let returnTo = '/'
+      if (req.session.returnTo) {
+        returnTo = req.session.returnTo
+        delete req.session.returnTo
+      }
+      res.redirect(returnTo)
     },
   )
 })

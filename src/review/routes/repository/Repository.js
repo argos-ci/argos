@@ -77,7 +77,7 @@ function Repository(props) {
                       <Paper className={classes.paper}>
                         <WatchTaskContainer>
                           <Typography>
-                            Repository not found
+                            Repository not found, try to login.
                           </Typography>
                         </WatchTaskContainer>
                       </Paper>

@@ -4,6 +4,7 @@ import { connect } from 'react-redux'
 import { Link as LinkRouter } from 'react-router'
 import Toolbar from 'material-ui/Toolbar'
 import Avatar from 'material-ui/Avatar'
+import Button from 'material-ui/Button'
 import Grid from 'material-ui/Grid'
 import Typography from 'material-ui/Typography'
 import Menu, { MenuItem } from 'material-ui/Menu'
@@ -55,6 +56,8 @@ class ReviewAppBar extends Component {
       anchorEl,
     } = this.state
 
+    const logged = Boolean(user)
+
     return (
       <LayoutAppBar>
         <Toolbar>
@@ -63,7 +66,7 @@ class ReviewAppBar extends Component {
               Argos
             </Link>
           </Typography>
-          {user ? (
+          {logged && (
             <Link
               href="#"
               onClick={this.handleClickUser}
@@ -82,8 +85,8 @@ class ReviewAppBar extends Component {
                 </Grid>
               </Grid>
             </Link>
-          ) : null}
-          {user ? (
+          )}
+          {logged && (
             <Menu
               anchorOrigin={{
                 vertical: 'top',
@@ -111,7 +114,16 @@ class ReviewAppBar extends Component {
                 Sign Out
               </MenuItem>
             </Menu>
-          ) : null}
+          )}
+          {!logged && (
+            <Button
+              contrast
+              component={Link}
+              href="/auth/github-public"
+            >
+              Login
+            </Button>
+          )}
         </Toolbar>
       </LayoutAppBar>
     )
