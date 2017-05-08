@@ -1,10 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Link as LinkRouter } from 'react-router'
-import {
-  ListItem,
-  ListItemText,
-} from 'material-ui/List'
+import { ListItem, ListItemText } from 'material-ui/List'
 import ItemStatus from 'review/modules/components/ItemStatus'
 
 function RepositoryDetailsItem(props) {

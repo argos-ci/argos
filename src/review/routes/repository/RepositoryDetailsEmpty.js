@@ -3,7 +3,7 @@ import { PropTypes } from 'prop-types'
 import { Link as LinkRouter, withRouter } from 'react-router'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
-import Layout from 'material-ui/Layout'
+import Grid from 'material-ui/Grid'
 import Typography from 'material-ui/Typography'
 import Button from 'material-ui/Button'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
@@ -29,13 +29,13 @@ function RepositoryDetailsEmpty(props) {
   } = props
 
   return (
-    <Layout container align="center" className={classes.root}>
-      <Layout item xs={12} sm={4}>
-        <Layout container justify="center">
+    <Grid container align="center" className={classes.root}>
+      <Grid item xs={12} sm={4}>
+        <Grid container justify="center">
           <img src={beast} alt="beast" width="100" height="100" />
-        </Layout>
-      </Layout>
-      <Layout item xs={12} sm={8}>
+        </Grid>
+      </Grid>
+      <Grid item xs={12} sm={8}>
         <div className={classes.body}>
           <Typography type="title" gutterBottom>
             {'Waiting for screenshots…'}
@@ -60,8 +60,8 @@ function RepositoryDetailsEmpty(props) {
             {'Or see a sample build'}
           </Link>
         </div>
-      </Layout>
-    </Layout>
+      </Grid>
+    </Grid>
   )
 }
 

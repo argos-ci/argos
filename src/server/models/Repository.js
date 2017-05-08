@@ -97,7 +97,7 @@ export default class Repository extends BaseModel {
     return Boolean(userRepositoryRight)
   }
 
-  static async isAccessible(repository, user) {
+  static isAccessible(repository, user) {
     if (!repository) {
       return false
     }

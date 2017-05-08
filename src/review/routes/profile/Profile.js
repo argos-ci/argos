@@ -6,13 +6,9 @@ import recompact from 'modules/recompact'
 import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import Avatar from 'material-ui/Avatar'
-import Layout from 'material-ui/Layout'
+import Grid from 'material-ui/Grid'
 import { white } from 'material-ui/styles/colors'
-import {
-  List,
-  ListItem,
-  ListItemText,
-} from 'material-ui/List'
+import List, { ListItem, ListItemText } from 'material-ui/List'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
@@ -49,28 +45,28 @@ function Profile(props) {
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin>
-          <Layout container gutter={24}>
-            <Layout
+          <Grid container gutter={24}>
+            <Grid
               align="center"
               container
               item
               xs={12}
             >
-              <Layout item>
+              <Grid item>
                 <Avatar
                   src={`https://github.com/${profileName}.png?size=${SIZE * 2}`}
                   className={classes.avatar}
                 />
-              </Layout>
-              <Layout item>
+              </Grid>
+              <Grid item>
                 <Typography type="display1" component="h2" gutterBottom>
                   <WatchTask task={fetch} onlySuccess>
                     {data => (data.owner ? <span>{data.owner.name}</span> : null)}
                   </WatchTask>
                 </Typography>
-              </Layout>
-            </Layout>
-            <Layout item xs={12}>
+              </Grid>
+            </Grid>
+            <Grid item xs={12}>
               <Paper className={classes.paper}>
                 <WatchTask task={fetch}>
                   {(data) => {
@@ -111,8 +107,8 @@ function Profile(props) {
                   }}
                 </WatchTask>
               </Paper>
-            </Layout>
-          </Layout>
+            </Grid>
+          </Grid>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>

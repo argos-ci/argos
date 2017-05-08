@@ -3,8 +3,8 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import classnames from 'classnames'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import { Paper } from 'material-ui/Paper'
-import Layout from 'material-ui/Layout'
+import Paper from 'material-ui/Paper'
+import Grid from 'material-ui/Grid'
 import Typography from 'material-ui/Typography'
 import IconButton from 'material-ui/IconButton'
 import Collapse from 'material-ui/transitions/Collapse'
@@ -87,8 +87,8 @@ function BuildScreenshotItem(props) {
           </IconButton>
         </div>
         <Collapse in={expandIn} transitionDuration="auto" unmountOnExit>
-          <Layout container>
-            <Layout item xs={4}>
+          <Grid container>
+            <Grid item xs={4}>
               {baseScreenshot ? (
                 <a
                   href={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
@@ -102,8 +102,8 @@ function BuildScreenshotItem(props) {
                   />
                 </a>
               ) : null}
-            </Layout>
-            <Layout item xs={4}>
+            </Grid>
+            <Grid item xs={4}>
               <a
                 href={getS3Url(compareScreenshot.s3Id, screenshotsBucket)}
                 target="_blank"
@@ -115,8 +115,8 @@ function BuildScreenshotItem(props) {
                   src={getS3Url(compareScreenshot.s3Id, screenshotsBucket)}
                 />
               </a>
-            </Layout>
-            <Layout item xs={4}>
+            </Grid>
+            <Grid item xs={4}>
               {s3Id && (
                 <a
                   href={getS3Url(s3Id, screenshotsBucket)}
@@ -130,8 +130,8 @@ function BuildScreenshotItem(props) {
                   />
                 </a>
               )}
-            </Layout>
-          </Layout>
+            </Grid>
+          </Grid>
         </Collapse>
       </Paper>
     </ItemStatus>

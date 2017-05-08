@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Paper from 'material-ui/Paper'
-import Layout from 'material-ui/Layout'
+import Grid from 'material-ui/Grid'
 import Button from 'material-ui/Button'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
@@ -22,11 +22,11 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
 
   return (
     <Paper className={classes.paper}>
-      <Layout container align="center" justify="center">
-        <Layout item xs={12} sm>
+      <Grid container align="center" justify="center">
+        <Grid item xs={12} sm>
           Your GitHub authentification is outdated, please authenticate to fix it.
-        </Layout>
-        <Layout item>
+        </Grid>
+        <Grid item>
           <Button
             accent
             compact
@@ -36,8 +36,8 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
           >
             Authenticate to GitHub
           </Button>
-        </Layout>
-      </Layout>
+        </Grid>
+      </Grid>
     </Paper>
   )
 }

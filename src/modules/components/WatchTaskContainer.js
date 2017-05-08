@@ -2,7 +2,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import Layout from 'material-ui/Layout'
+import Grid from 'material-ui/Grid'
 
 const styleSheet = createStyleSheet('WatchTaskContainer', theme => ({
   root: {
@@ -13,16 +13,16 @@ const styleSheet = createStyleSheet('WatchTaskContainer', theme => ({
 
 function WatchTaskContainer(props) {
   return (
-    <Layout
+    <Grid
       container
       justify="center"
       className={props.classes.root}
       align="center"
     >
-      <Layout item>
+      <Grid item>
         {props.children}
-      </Layout>
-    </Layout>
+      </Grid>
+    </Grid>
   )
 }
 
