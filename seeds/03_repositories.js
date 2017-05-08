@@ -28,7 +28,7 @@ exports.seed = (knex, Promise) =>
           id: 3,
           githubId: 14022421,
           name: 'doctolib',
-          enabled: false,
+          enabled: true,
           token: '650ded7d72e85b52e099df6e56aa204d4fe92fd3',
           organizationId: 2,
           private: true,

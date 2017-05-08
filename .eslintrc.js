@@ -26,6 +26,7 @@ module.exports = {
     'react/no-unused-prop-types': 'off', // Doesn't work correctly.
 
     'import/prefer-default-export': 'off',
+    'import/no-extraneous-dependencies': ['error', { devDependencies: true }], // Airbnb forbid devDependencies
     'import/no-unresolved': 'off', // Do not know webpack tricks
   },
   settings: {
