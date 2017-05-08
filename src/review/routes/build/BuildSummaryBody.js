@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import Layout from 'material-ui/Layout'
+import Grid from 'material-ui/Grid'
 import Link from 'modules/components/Link'
 import ItemStatus from 'review/modules/components/ItemStatus'
 import BuildActions from 'review/routes/build/BuildActions'
@@ -61,8 +61,8 @@ export function BuildSummaryBodyView(props) {
   return (
     <ItemStatus status={status}>
       <div className={classes.itemStatusChild}>
-        <Layout container>
-          <Layout item xs={12} sm>
+        <Grid container>
+          <Grid item xs={12} sm>
             <ul className={classes.list}>
               <li>{`Job status: ${status}`}</li>
               <li>
@@ -78,11 +78,11 @@ export function BuildSummaryBodyView(props) {
               {compare}
               <li>{`Date: ${new Intl.DateTimeFormat().format(new Date(createdAt))}`}</li>
             </ul>
-          </Layout>
-          <Layout item>
+          </Grid>
+          <Grid item>
             <BuildActions build={build} />
-          </Layout>
-        </Layout>
+          </Grid>
+        </Grid>
       </div>
     </ItemStatus>
   )

@@ -2,9 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import recompact from 'modules/recompact'
 import { connect } from 'react-redux'
-import {
-  List,
-} from 'material-ui/List'
+import List from 'material-ui/List'
 import Paper from 'material-ui/Paper'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import WatchTask from 'modules/components/WatchTask'

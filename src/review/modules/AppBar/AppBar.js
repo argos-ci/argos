@@ -4,9 +4,9 @@ import { connect } from 'react-redux'
 import { Link as LinkRouter } from 'react-router'
 import Toolbar from 'material-ui/Toolbar'
 import Avatar from 'material-ui/Avatar'
-import Layout from 'material-ui/Layout'
+import Grid from 'material-ui/Grid'
 import Typography from 'material-ui/Typography'
-import { Menu, MenuItem } from 'material-ui/Menu'
+import Menu, { MenuItem } from 'material-ui/Menu'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
@@ -71,16 +71,16 @@ class ReviewAppBar extends Component {
               aria-owns="review-app-bar-menu"
               aria-haspopup="true"
             >
-              <Layout container align="center">
-                <Layout item>
+              <Grid container align="center">
+                <Grid item>
                   <Typography colorInherit>
                     {user.name}
                   </Typography>
-                </Layout>
-                <Layout item>
+                </Grid>
+                <Grid item>
                   <Avatar src={`https://github.com/${user.login}.png?size=${AVATAR_SIZE}`} />
-                </Layout>
-              </Layout>
+                </Grid>
+              </Grid>
             </Link>
           ) : null}
           {user ? (

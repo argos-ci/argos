@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import Typography from 'material-ui/Typography'
-import Layout from 'material-ui/Layout'
+import Grid from 'material-ui/Grid'
 import recompact from 'modules/recompact'
 import BuildScreenshotItem from 'review/routes/build/BuildScreenshotItem'
 
@@ -16,13 +16,13 @@ function BuildScreenshots(props) {
       <Typography type="headline" component="h3" gutterBottom>
         Screenshots
       </Typography>
-      <Layout container direction="column">
+      <Grid container direction="column">
         {fetch.output.data.build.screenshotDiffs.map(screenshotDiff => (
-          <Layout item key={screenshotDiff.id}>
+          <Grid item key={screenshotDiff.id}>
             <BuildScreenshotItem screenshotDiff={screenshotDiff} />
-          </Layout>
+          </Grid>
         ))}
-      </Layout>
+      </Grid>
     </div>
   )
 }

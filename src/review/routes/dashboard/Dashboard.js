@@ -3,14 +3,10 @@ import PropTypes from 'prop-types'
 import { Link as LinkRouter } from 'react-router'
 import { connect } from 'react-redux'
 import Typography from 'material-ui/Typography'
-import Layout from 'material-ui/Layout'
+import Grid from 'material-ui/Grid'
 import Avatar from 'material-ui/Avatar'
 import Paper from 'material-ui/Paper'
-import {
-  List,
-  ListItem,
-  ListItemText,
-} from 'material-ui/List'
+import List, { ListItem, ListItemText } from 'material-ui/List'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
@@ -40,13 +36,13 @@ function Dashboard(props) {
       <AuthorizationNotice />
       <ScrollView>
         <LayoutBody margin>
-          <Layout container gutter={24}>
-            <Layout item xs={12}>
+          <Grid container gutter={24}>
+            <Grid item xs={12}>
               <Typography type="display1" component="h2">
                 Dashboard
               </Typography>
-            </Layout>
-            <Layout item xs={12}>
+            </Grid>
+            <Grid item xs={12}>
               <Paper className={classes.paper}>
                 <WatchTask task={fetch}>
                   {(data) => {
@@ -78,8 +74,8 @@ function Dashboard(props) {
                   }}
                 </WatchTask>
               </Paper>
-            </Layout>
-          </Layout>
+            </Grid>
+          </Grid>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>

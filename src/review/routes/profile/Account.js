@@ -3,9 +3,9 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import Typography from 'material-ui/Typography'
 import Button from 'material-ui/Button'
-import { List } from 'material-ui/List'
+import List from 'material-ui/List'
 import Paper from 'material-ui/Paper'
-import Layout from 'material-ui/Layout'
+import Grid from 'material-ui/Grid'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
 import ViewContainer from 'modules/components/ViewContainer'
@@ -24,14 +24,14 @@ function Account(props) {
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin>
-          <Layout container gutter={24}>
-            <Layout item xs>
+          <Grid container gutter={24}>
+            <Grid item xs>
               <Typography type="display1" component="h2">
                 {user.name}
               </Typography>
-            </Layout>
+            </Grid>
             {!user.privateSync && (
-              <Layout item>
+              <Grid item>
                 <Button
                   raised
                   accent
@@ -40,9 +40,9 @@ function Account(props) {
                 >
                   Synchronize private repositories
                 </Button>
-              </Layout>
+              </Grid>
             )}
-            <Layout item xs={12}>
+            <Grid item xs={12}>
               <Paper>
                 <WatchTask task={account.fetch}>
                   {data => (
@@ -58,8 +58,8 @@ function Account(props) {
                   )}
                 </WatchTask>
               </Paper>
-            </Layout>
-          </Layout>
+            </Grid>
+          </Grid>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>

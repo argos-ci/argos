@@ -5,7 +5,7 @@ import { Link as LinkRouter } from 'react-router'
 import Typography from 'material-ui/Typography'
 import Button from 'material-ui/Button'
 import Paper from 'material-ui/Paper'
-import Layout from 'material-ui/Layout'
+import Grid from 'material-ui/Grid'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import ViewContainer from 'modules/components/ViewContainer'
@@ -39,8 +39,8 @@ function Repository(props) {
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin>
-          <Layout container gutter={24}>
-            <Layout item xs>
+          <Grid container gutter={24}>
+            <Grid item xs>
               <Typography type="display1" component="h2" noWrap>
                 <Link to={`/${profileName}`}>
                   {profileName}
@@ -50,7 +50,7 @@ function Repository(props) {
                   {repositoryName}
                 </Link>
               </Typography>
-            </Layout>
+            </Grid>
             <WatchTask task={fetch} onlySuccess>
               {(data) => {
                 if (!data.repository || !data.repository.authorization) {
@@ -58,18 +58,18 @@ function Repository(props) {
                 }
 
                 return (
-                  <Layout item>
+                  <Grid item>
                     <Button
                       component={LinkRouter}
                       to={`/${profileName}/${repositoryName}/settings`}
                     >
                       Settings
                     </Button>
-                  </Layout>
+                  </Grid>
                 )
               }}
             </WatchTask>
-            <Layout item xs={12}>
+            <Grid item xs={12}>
               <WatchTask task={fetch}>
                 {(data) => {
                   if (!data.repository) {
@@ -86,8 +86,8 @@ function Repository(props) {
                   return children
                 }}
               </WatchTask>
-            </Layout>
-          </Layout>
+            </Grid>
+          </Grid>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>
