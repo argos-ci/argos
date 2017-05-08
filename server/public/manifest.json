@@ -1,0 +1,34 @@
+{
+  "name": "Argos CI",
+  "short_name": "Argos CI",
+  "display": "standalone",
+  "start_url": "/?launcher=true",
+  "theme_color": "#795548",
+  "background_color": "#fafafa",
+  "icons": [
+    {
+      "src": "/icon/48x48.png",
+      "sizes": "48x48"
+    },
+    {
+      "src": "/icon/96x96.png",
+      "sizes": "96x96"
+    },
+    {
+      "src": "/icon/192x192.png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon/256x256.png",
+      "sizes": "256x256"
+    },
+    {
+      "src": "/icon/384x384.png",
+      "sizes": "384x384"
+    },
+    {
+      "src": "/icon/512x512.png",
+      "sizes": "512x512"
+    }
+  ]
+}

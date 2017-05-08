@@ -76,8 +76,7 @@ const store = composeEnhancers(
 )(createStore)(rootReducers)
 
 function Root() {
-  const styles = createStyleManager()
-  const { styleManager, theme } = styles
+  const { styleManager, theme } = createStyleManager()
 
   return (
     <Provider store={store}>

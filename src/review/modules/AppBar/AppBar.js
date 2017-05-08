@@ -63,7 +63,7 @@ class ReviewAppBar extends Component {
         <Toolbar>
           <Typography type="title" colorInherit className={classes.title}>
             <Link to="/">
-              Argos
+              {'Argos CI'}
             </Link>
           </Typography>
           {logged && (
