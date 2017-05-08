@@ -13,7 +13,7 @@ import {
   black,
 } from 'material-ui/styles/colors'
 
-export default () =>
+export default () => (
   MuiThemeProvider.createDefaultContext({
     theme: createMuiTheme({
       palette: createPalette({
@@ -29,5 +29,7 @@ export default () =>
         error: black,
         unknown: orange[500],
       },
+      brandColor: '#1C2541',
     }),
   })
+)
