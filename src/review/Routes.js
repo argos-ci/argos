@@ -18,6 +18,12 @@ import RepositoryDetails from 'review/routes/repository/RepositoryDetails'
 import Build from 'review/routes/build/Build'
 import Settings from 'review/routes/settings/Settings'
 import GettingStarted from 'review/routes/gettingStarted/GettingStarted'
+import About from 'review/routes/about/About'
+import Security from 'review/routes/security/Security'
+import Terms from 'review/routes/terms/Terms'
+import Support from 'review/routes/support/Support'
+import Privacy from 'review/routes/privacy/Privacy'
+import Documentation from 'review/routes/documentation/Documentation'
 
 const styleSheet = createStyleSheet('Routes', theme => ({
   '@global': {
@@ -46,6 +52,12 @@ function Routes() {
     >
       <Route component={App}>
         <Route path="/" component={Homepage} />
+        <Route path="/about" component={About} />
+        <Route path="/documentation" component={Documentation} />
+        <Route path="/security" component={Security} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/support" component={Support} />
+        <Route path="/privacy" component={Privacy} />
         <Route path="/profile/account" component={Account} />
         <Route path="/:profileName" component={Profile} />
         <Route path="/:profileName/:repositoryName" component={Repository}>

@@ -7,29 +7,16 @@ import Grid from 'material-ui/Grid'
 import Button from 'material-ui/Button'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
-import LayoutBody from 'modules/components/LayoutBody'
 import Link from 'modules/components/Link'
-import ReviewAppBar from 'review/modules/AppBar/AppBar'
+import ReviewAppBar from 'review/modules/components/AppBar'
+import ProductHeader from 'review/modules/components/ProductHeader'
+import ProductFooter from 'review/modules/components/ProductFooter'
 import ProductArgument from 'review/routes/product/Argument'
 import Beast from 'review/routes/repository/Beast'
 import doctolib from 'review/routes/product/doctolib.svg'
 import materialUI from 'review/routes/product/material-ui.svg'
 
 const styleSheet = createStyleSheet('ProductHome', theme => ({
-  landing: {
-    minHeight: 300,
-    display: 'flex',
-    alignItems: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  landingText: {
-    zIndex: 1,
-  },
-  headline: {
-    maxWidth: 500, // Don't use more space than the title.
-    marginBottom: theme.spacing.unit * 3,
-  },
   beast: {
     padding: theme.spacing.unit * 3,
     position: 'absolute',
@@ -70,37 +57,26 @@ function ProductHome(props) {
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
-        <Paper square elevation={0} className={classes.landing}>
-          <LayoutBody margin bottom={false} className={classes.landingText}>
-            <Typography type="display1" component="h1" gutterBottom>
-              Automate visual regression testing
-            </Typography>
-            <Typography
-              type="headline"
-              component="h2"
-              className={classes.headline}
-            >
-              {`
-                Argos's visual regression system gives you high confidence in doing changes
-              `}
-            </Typography>
-            <Button
-              raised
-              accent
-              component={Link}
-              href="/auth/github-public"
-            >
-              Try it
-            </Button>
-          </LayoutBody>
+        <ProductHeader
+          display1="Automate visual regression testing"
+          headline="Argos's visual regression system gives you high confidence in doing changes"
+        >
+          <Button
+            raised
+            accent
+            component={Link}
+            href="/auth/github-public"
+          >
+            {'Try it'}
+          </Button>
           <Beast className={classes.beast} />
-        </Paper>
+        </ProductHeader>
         <ProductArgument
           title="Forget about regressions"
           description={`
             Argos will warn you if any visual regressions is about to be introduced,
             so they those don't end-up in production.
-            It comes with a Github integration.
+            It comes with a GitHub integration.
             It will notify you on pull requests when something might be broken.
           `}
         />
@@ -147,7 +123,7 @@ function ProductHome(props) {
               justify="center"
             >
               <a
-                href="https://www.doctolib.com"
+                href="https://github.com/doctolib"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={classes.trustedLogoLink}
@@ -189,22 +165,14 @@ function ProductHome(props) {
             </Grid>
           </Grid>
         </Paper>
-        <LayoutBody margin>
-          <Typography type="body1" align="center">
-            {'Argos · '}
-            <a href="https://github.com/argos-ci/argos">
-              Github
-            </a>
-            {' · Copyright © 2017 Argos'}
-          </Typography>
-        </LayoutBody>
+        <ProductFooter />
       </ScrollView>
     </ViewContainer>
   )
 }
 
 ProductHome.propTypes = {
-  classes: PropTypes.object,
+  classes: PropTypes.object.isRequired,
 }
 
 export default withStyles(styleSheet)(ProductHome)

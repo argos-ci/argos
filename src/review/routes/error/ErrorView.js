@@ -4,7 +4,7 @@ import Typography from 'material-ui/Typography'
 import LayoutBody from 'modules/components/LayoutBody'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
-import ReviewAppBar from 'review/modules/AppBar/AppBar'
+import ReviewAppBar from 'review/modules/components/AppBar'
 
 function ErrorView(props) {
   return (

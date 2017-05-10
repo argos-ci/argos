@@ -14,7 +14,7 @@ import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
 import WatchTask from 'modules/components/WatchTask'
-import ReviewAppBar from 'review/modules/AppBar/AppBar'
+import ReviewAppBar from 'review/modules/components/AppBar'
 import actionTypes from 'review/modules/redux/actionTypes'
 import RepositoryListItem from 'review/routes/profile/RepositoryListItem'
 
