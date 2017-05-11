@@ -1,9 +1,12 @@
 import React from 'react'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
+import MarkdownElement from 'modules/components/MarkdownElement'
+import LayoutBody from 'modules/components/LayoutBody'
 import ReviewAppBar from 'review/modules/components/AppBar'
 import ProductHeader from 'review/modules/components/ProductHeader'
 import ProductFooter from 'review/modules/components/ProductFooter'
+import support from './support.md'
 
 function Support() {
   return (
@@ -12,8 +15,11 @@ function Support() {
       <ScrollView>
         <ProductHeader
           display1="Help and Support"
-          headline=""
+          headline="From community help to premium support, we’re here to help."
         />
+        <LayoutBody margin>
+          <MarkdownElement text={support} />
+        </LayoutBody>
         <ProductFooter />
       </ScrollView>
     </ViewContainer>

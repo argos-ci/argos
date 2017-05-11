@@ -52,7 +52,6 @@ const styleSheet = createStyleSheet('MarkdownElement', theme => ({
   root: {
     marginTop: theme.spacing.unit * 2,
     marginBottom: theme.spacing.unit * 2,
-    padding: `0 ${theme.spacing.unit * 2}px`,
     '& .anchor-link': {
       marginTop: -theme.spacing.unit * 12, // Offset for the anchor.
       position: 'absolute',

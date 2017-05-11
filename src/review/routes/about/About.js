@@ -1,9 +1,12 @@
 import React from 'react'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
+import MarkdownElement from 'modules/components/MarkdownElement'
+import LayoutBody from 'modules/components/LayoutBody'
 import ReviewAppBar from 'review/modules/components/AppBar'
 import ProductHeader from 'review/modules/components/ProductHeader'
 import ProductFooter from 'review/modules/components/ProductFooter'
+import about from './about.md'
 
 function About() {
   return (
@@ -11,9 +14,12 @@ function About() {
       <ReviewAppBar />
       <ScrollView>
         <ProductHeader
-          display1="About Argos CI"
-          headline=""
+          display1="All about Argos CI"
+          headline="💅"
         />
+        <LayoutBody margin>
+          <MarkdownElement text={about} />
+        </LayoutBody>
         <ProductFooter />
       </ScrollView>
     </ViewContainer>
