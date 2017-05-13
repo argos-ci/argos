@@ -1,6 +1,6 @@
 import React from 'react'
 import { PropTypes } from 'prop-types'
-import { Link as LinkRouter, withRouter } from 'react-router'
+import { withRouter } from 'react-router'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
 import Grid from 'material-ui/Grid'
@@ -46,7 +46,7 @@ function RepositoryDetailsEmpty(props) {
           {'Our screenshot beast is waiting to scan your first screenshots.'}
           <br />
           <Button
-            component={LinkRouter}
+            component={Link}
             to={`${location.pathname}/getting-started`}
             raised
             accent
@@ -56,7 +56,7 @@ function RepositoryDetailsEmpty(props) {
           </Button>
           <br />
           <Link
-            component={LinkRouter}
+            component={Link}
             to={`${location.pathname}/builds/${repository.sampleBuildId}?sample`}
             variant="primary"
           >

@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Link as LinkRouter } from 'react-router'
 import { connect } from 'react-redux'
 import Typography from 'material-ui/Typography'
 import Grid from 'material-ui/Grid'
@@ -10,11 +9,13 @@ import List, { ListItem, ListItemText } from 'material-ui/List'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
+import Link from 'modules/components/Link'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
-import ReviewAppBar from 'review/modules/components/AppBar'
+import ReviewAppBar from 'review/modules/components/ReviewAppBar'
+import ReviewFooter from 'review/modules/components/ReviewFooter'
 import AuthorizationNotice from 'review/modules/components/AuthorizationNotice'
 import actionTypes from 'review/modules/redux/actionTypes'
 
@@ -62,7 +63,7 @@ function Dashboard(props) {
                           <ListItem
                             key={login}
                             button
-                            component={LinkRouter}
+                            component={Link}
                             to={`/${login}`}
                           >
                             <Avatar src={`https://github.com/${login}.png?size=80`} />
@@ -77,6 +78,7 @@ function Dashboard(props) {
             </Grid>
           </Grid>
         </LayoutBody>
+        <ReviewFooter />
       </ScrollView>
     </ViewContainer>
   )
