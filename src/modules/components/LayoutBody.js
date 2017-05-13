@@ -5,7 +5,7 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 
-const styleSheet = createStyleSheet('LayoutBody', () => ({
+const styleSheet = createStyleSheet('LayoutBody', theme => ({
   rootMargin: {
     margin: 8 * 3,
   },
@@ -13,13 +13,13 @@ const styleSheet = createStyleSheet('LayoutBody', () => ({
     marginBottom: 8 * 4,
   },
   rootResponsive: {
-    '@media (min-width: 600px)': {
+    [theme.breakpoints.up('sm')]: {
       width: 'auto',
       marginLeft: 40,
       marginRight: 40,
     },
-    '@media (min-width: 920px)': {
-      width: 840,
+    [theme.breakpoints.up('md')]: {
+      width: 880,
       marginLeft: 'auto',
       marginRight: 'auto',
     },
