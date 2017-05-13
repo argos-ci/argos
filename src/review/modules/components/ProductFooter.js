@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Typography from 'material-ui/Typography'
 import Divider from 'material-ui/Divider'
+import Grid from 'material-ui/Grid'
 import { fullWhite, darkWhite, lightWhite } from 'material-ui/styles/colors'
 import LayoutBody from 'modules/components/LayoutBody'
 import Link from 'modules/components/Link'
@@ -29,6 +30,10 @@ const styleSheet = createStyleSheet('ProductFooter', theme => ({
     paddingLeft: 0,
     listStyle: 'none',
   },
+  listItem: {
+    paddingTop: theme.spacing.unit / 2,
+    paddingBottom: theme.spacing.unit / 2,
+  },
   icon: {
     width: 16,
     height: 16,
@@ -48,40 +53,50 @@ function ProductFooter(props) {
           Quick Links
         </Typography>
         <Typography type="subheading" colorInherit component="div">
-          <ul className={classes.list}>
-            <li>
-              <Link to="/about">
-                About Us
-              </Link>
-            </li>
-            <li>
-              <Link to="/documentation">
-                Documentation
-              </Link>
-            </li>
-            <li>
-              <Link to="/security">
-                Security
-              </Link>
-            </li>
-            <li>
-              <Link to="/privacy">
-                Privacy Policy
-              </Link>
-            </li>
-            <li>
-              <Link to="/terms">
-                Terms of Service
-              </Link>
-            </li>
-            <li>
-              <Link to="/support">
-                Support
-              </Link>
-            </li>
-          </ul>
-          <Divider className={classes.divider} />
-          <Link href="https://github.com/argos-ci/argos">
+          <Grid container gutter={0}>
+            <Grid item xs={12} sm={6}>
+              <ul className={classes.list}>
+                <li className={classes.listItem}>
+                  <Link to="/about">
+                    About Us
+                  </Link>
+                </li>
+                <li className={classes.listItem}>
+                  <Link to="/documentation">
+                    Documentation
+                  </Link>
+                </li>
+                <li className={classes.listItem}>
+                  <Link to="/security">
+                    Security
+                  </Link>
+                </li>
+              </ul>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <ul className={classes.list}>
+                <li className={classes.listItem}>
+                  <Link to="/privacy">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li className={classes.listItem}>
+                  <Link to="/terms">
+                    Terms of Service
+                  </Link>
+                </li>
+                <li className={classes.listItem}>
+                  <Link to="/support">
+                    Support
+                  </Link>
+                </li>
+              </ul>
+            </Grid>
+          </Grid>
+        </Typography>
+        <Divider className={classes.divider} />
+        <Typography type="subheading" colorInherit component="div">
+          <Link href="https://github.com/argos-ci">
             <GitHub className={classes.icon} />
             {'GitHub'}
           </Link>

@@ -59,7 +59,8 @@ function ProductHome(props) {
       <ScrollView>
         <ProductHeader
           display1="Automate visual regression testing"
-          headline="Argos's visual regression system gives you high confidence in doing changes"
+          headline="Argos's visual regression system gives you high confidence in doing changes."
+          beast={<Beast className={classes.beast} />}
         >
           <Button
             raised
@@ -69,7 +70,6 @@ function ProductHome(props) {
           >
             {'Try it'}
           </Button>
-          <Beast className={classes.beast} />
         </ProductHeader>
         <ProductArgument
           title="Forget about regressions"

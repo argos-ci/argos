@@ -28,6 +28,7 @@ function ProductHeader(props) {
     display1,
     headline,
     children,
+    beast,
   } = props
 
   return (
@@ -50,6 +51,7 @@ function ProductHeader(props) {
         </Typography>
         {children}
       </LayoutBody>
+      {beast}
     </Paper>
   )
 }
@@ -58,6 +60,7 @@ ProductHeader.propTypes = {
   display1: PropTypes.node.isRequired,
   headline: PropTypes.node,
   children: PropTypes.node,
+  beast: PropTypes.node,
   classes: PropTypes.object.isRequired,
 }
 

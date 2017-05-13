@@ -15,7 +15,7 @@ const contact = `
 If you have any questions or concerns about our Privacy Policy, please contact us at:
 
 Email Address:<br />
-[tech@argos-ci.com](mailto:tech@argos-ci.com)
+**[julia@argos-ci.com](mailto:julia@argos-ci.com)**
 
 Mailing Address:<br />
 **10 boulevard de la libération, 78220 VIROFLAY, FRANCE**
@@ -30,8 +30,8 @@ function Privacy() {
           display1="Privacy Policy"
           headline="Argos CI is committed to protecting and respecting your privacy."
         />
-        <LayoutBody>
-          <Grid container>
+        <LayoutBody margin>
+          <Grid container gutter={24}>
             <Grid item xs={12} sm={3}>
               <MarkdownElement text={contact} />
             </Grid>
