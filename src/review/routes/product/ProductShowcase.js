@@ -47,7 +47,7 @@ function ProductShowcase(props) {
     >
       <LayoutBody margin bottom={false}>
         <Grid container direction={textPosition === 'left' ? 'row' : 'row-reverse'} gutter={24}>
-          <Grid item xs={12} md={5}>
+          <Grid item xs={12} md={image ? 5 : 12}>
             <Typography type={size === 'large' ? 'display1' : 'title'} component="h3" gutterBottom>
               {title}
             </Typography>
@@ -55,15 +55,17 @@ function ProductShowcase(props) {
               {description}
             </Typography>
           </Grid>
-          <Grid
-            item
-            xs={12}
-            md={7}
-            component="figure"
-            className={classes.image}
-          >
-            {image}
-          </Grid>
+          {image ? (
+            <Grid
+              item
+              xs={12}
+              md={7}
+              component="figure"
+              className={classes.image}
+            >
+              {image}
+            </Grid>
+          ) : null}
         </Grid>
       </LayoutBody>
     </div>
