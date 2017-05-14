@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Link as LinkRouter } from 'react-router'
 import { ListItem, ListItemText } from 'material-ui/List'
+import Link from 'modules/components/Link'
 import ItemStatus from 'review/modules/components/ItemStatus'
 
 function RepositoryDetailsItem(props) {
@@ -20,7 +20,7 @@ function RepositoryDetailsItem(props) {
     <ItemStatus status={status}>
       <ListItem
         button
-        component={LinkRouter}
+        component={Link}
         to={`/${profileName}/${repositoryName}/builds/${id}`}
       >
         <ListItemText

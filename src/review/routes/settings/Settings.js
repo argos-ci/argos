@@ -58,7 +58,9 @@ For more information on integrating Sentry with your application take a look at 
           </Link>
         </Typography>
         <TextField
-          readOnly
+          inputProps={{
+            readOnly: true,
+          }}
           className={classes.textField}
           id="ARGOS_TOKEN"
           label="ARGOS_TOKEN"

@@ -1,7 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { Link as LinkRouter } from 'react-router'
 import Toolbar from 'material-ui/Toolbar'
 import Avatar from 'material-ui/Avatar'
 import Button from 'material-ui/Button'
@@ -98,7 +97,7 @@ class ReviewAppBar extends Component {
               onRequestClose={this.handleRequestClose}
             >
               <MenuItem
-                component={LinkRouter}
+                component={Link}
                 to="/profile/account"
                 button={false}
                 onClick={this.handleRequestClose}
@@ -106,7 +105,7 @@ class ReviewAppBar extends Component {
                 Accounts
               </MenuItem>
               <MenuItem
-                component="a"
+                component={Link}
                 href="/auth/logout"
                 button={false}
                 onClick={this.handleRequestClose}

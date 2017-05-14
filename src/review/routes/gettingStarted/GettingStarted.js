@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
-import { Link as LinkRouter } from 'react-router'
+import Link from 'modules/components/Link'
 import Button from 'material-ui/Button'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
@@ -41,7 +41,7 @@ function GettingStarted(props) {
       <Paper className={classes.paper}>
         <MarkdownElement text={text} disableAnchor />
         <Button
-          component={LinkRouter}
+          component={Link}
           to={`/${profileName}/${repositoryName}`}
           raised
           accent

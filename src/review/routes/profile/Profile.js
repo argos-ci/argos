@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Link as LinkRouter } from 'react-router'
+import Link from 'modules/components/Link'
 import { connect } from 'react-redux'
 import recompact from 'modules/recompact'
 import Typography from 'material-ui/Typography'
@@ -15,7 +15,8 @@ import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
-import ReviewAppBar from 'review/modules/components/AppBar'
+import ReviewAppBar from 'review/modules/components/ReviewAppBar'
+import ReviewFooter from 'review/modules/components/ReviewFooter'
 import actionTypes from 'review/modules/redux/actionTypes'
 
 const SIZE = 120
@@ -96,7 +97,7 @@ function Profile(props) {
                           <ListItem
                             key={repository.id}
                             button
-                            component={LinkRouter}
+                            component={Link}
                             to={`/${profileName}/${repository.name}`}
                           >
                             <ListItemText primary={repository.name} />
@@ -110,6 +111,7 @@ function Profile(props) {
             </Grid>
           </Grid>
         </LayoutBody>
+        <ReviewFooter />
       </ScrollView>
     </ViewContainer>
   )

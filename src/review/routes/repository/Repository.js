@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { Link as LinkRouter } from 'react-router'
 import Typography from 'material-ui/Typography'
 import Button from 'material-ui/Button'
 import Paper from 'material-ui/Paper'
@@ -14,7 +13,8 @@ import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
-import ReviewAppBar from 'review/modules/components/AppBar'
+import ReviewAppBar from 'review/modules/components/ReviewAppBar'
+import ReviewFooter from 'review/modules/components/ReviewFooter'
 import actionTypes from 'review/modules/redux/actionTypes'
 
 const styleSheet = createStyleSheet('Repository', () => ({
@@ -59,10 +59,7 @@ function Repository(props) {
 
                 return (
                   <Grid item>
-                    <Button
-                      component={LinkRouter}
-                      to={`/${profileName}/${repositoryName}/settings`}
-                    >
+                    <Button component={Link} to={`/${profileName}/${repositoryName}/settings`}>
                       Settings
                     </Button>
                   </Grid>
@@ -89,6 +86,7 @@ function Repository(props) {
             </Grid>
           </Grid>
         </LayoutBody>
+        <ReviewFooter />
       </ScrollView>
     </ViewContainer>
   )

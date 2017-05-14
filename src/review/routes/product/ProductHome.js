@@ -1,20 +1,17 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import Typography from 'material-ui/Typography'
-import Paper from 'material-ui/Paper'
-import Grid from 'material-ui/Grid'
 import Button from 'material-ui/Button'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import Link from 'modules/components/Link'
-import ReviewAppBar from 'review/modules/components/AppBar'
+import ReviewAppBar from 'review/modules/components/ReviewAppBar'
 import ProductHeader from 'review/modules/components/ProductHeader'
 import ProductFooter from 'review/modules/components/ProductFooter'
-import ProductArgument from 'review/routes/product/Argument'
+import ProductShowcase from 'review/routes/product/ProductShowcase'
 import Beast from 'review/routes/repository/Beast'
-import doctolib from 'review/routes/product/doctolib.svg'
-import materialUI from 'review/routes/product/material-ui.svg'
+import ProductTrust from 'review/routes/product/ProductTrust'
+import GitHubStatus from 'review/routes/product/GitHubStatus'
 
 const styleSheet = createStyleSheet('ProductHome', theme => ({
   beast: {
@@ -71,100 +68,67 @@ function ProductHome(props) {
             {'Try it'}
           </Button>
         </ProductHeader>
-        <ProductArgument
+        <ProductShowcase
           title="Forget about regressions"
+          size="large"
+          textPosition="left"
           description={`
             Argos will warn you if any visual regressions is about to be introduced,
             so they those don't end-up in production.
-            It comes with a GitHub integration.
-            It will notify you on pull requests when something might be broken.
+            We are giving developers high confidence in doing changes so they can quickly iterate.
+            You can review visual changes in one click as part of your code review process.
           `}
+          image={
+            <div />
+          }
         />
-        <ProductArgument
+        <ProductShowcase
           title="Save time"
+          textPosition="right"
           description={`
             Argos compares screenshots at high speed.
             You get a fast feedback.
-            You can review visual changes in one click as part of your code review process.
+            It comes with a GitHub integration.
+            It will notify you on pull requests when something might be broken.
           `}
+          image={
+            <GitHubStatus />
+          }
         />
-        <ProductArgument
+        <ProductShowcase
           title="Integrates in your development workflow"
+          textPosition="left"
           description={`
             Argos integrates directly into your test suite and development workflow.
             We provide a command line interface streamlining the process.
           `}
+          image={
+            <div />
+          }
         />
-        <ProductArgument
+        <ProductShowcase
           title="Ship pixel-perfect interfaces"
+          textPosition="right"
           description={`
             Argos provides different tools to compare screenshots.
             Designers can easily participate in the code review process.
           `}
+          image={
+            <div />
+          }
         />
-        <Paper square elevation={0} className={classes.trusted}>
-          <Grid container>
-            <Grid
-              item
-              sm="3"
-              container
-              align="center"
-              justify="center"
-            >
-              <Typography type="subheading" className={classes.trustedLogoLink}>
-                {'Trusted by: '}
-              </Typography>
-            </Grid>
-            <Grid
-              item
-              sm="3"
-              container
-              align="center"
-              justify="center"
-            >
-              <a
-                href="https://github.com/doctolib"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={classes.trustedLogoLink}
-              >
-                <img src={doctolib} alt="Doctolib" className={classes.trustedLogoImage} />
-              </a>
-            </Grid>
-            <Grid
-              item
-              sm="3"
-              container
-              align="center"
-              justify="center"
-            >
-              <a
-                href="https://github.com/callemall/material-ui"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={classes.trustedLogoLink}
-              >
-                <img
-                  src={materialUI}
-                  alt="Material-UI"
-                  title="Material-UI"
-                  className={classes.trustedLogoImage}
-                />
-              </a>
-            </Grid>
-            <Grid
-              item
-              sm="3"
-              container
-              align="center"
-              justify="center"
-            >
-              <Typography type="title" className={classes.trustedLogoLink}>
-                You?
-              </Typography>
-            </Grid>
-          </Grid>
-        </Paper>
+        <ProductShowcase
+          title="Testing your open source project is 100% free"
+          textPosition="left"
+          description={`
+Seriously. Always. We like to think of it as our way of giving
+back to a community that gives us so much as well.
+          `}
+          image={
+            <div />
+          }
+        />
+        <ProductTrust />
         <ProductFooter />
       </ScrollView>
     </ViewContainer>

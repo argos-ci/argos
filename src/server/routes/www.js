@@ -47,7 +47,10 @@ router.use('/graphql', graphqlMiddleware())
 ;['private', 'public'].forEach((type) => {
   router.get(`/auth/github-${type}`, (req, res, next) => {
     // Save the referer to later redirect back to it.
-    req.session.returnTo = req.header('Referer')
+    // Sessing can be undefined when Redis is down.
+    if (req.session) {
+      req.session.returnTo = req.header('Referer')
+    }
     next()
   }, passport.authenticate(`github-${type}`))
   router.get(`/auth/github/callback/${type}`,
