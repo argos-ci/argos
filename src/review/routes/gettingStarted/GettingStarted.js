@@ -13,6 +13,7 @@ import gettingStarted from './getting-started.md'
 const styleSheet = createStyleSheet('GettingStarted', theme => ({
   paper: {
     overflow: 'auto',
+    padding: theme.spacing.unit * 2,
   },
   button: {
     marginLeft: theme.spacing.unit * 2,

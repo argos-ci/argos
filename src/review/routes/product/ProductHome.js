@@ -105,9 +105,7 @@ function ProductHome(props) {
             It comes with a GitHub integration.
             It will notify you on pull requests when something might be broken.
           `}
-          image={
-            <GitHubStatus />
-          }
+          image={<GitHubStatus />}
         />
         <ProductShowcase
           title="Integrates in your development workflow"
@@ -135,12 +133,9 @@ function ProductHome(props) {
           title="Testing your open source project is 100% free"
           textPosition="left"
           description={`
-Seriously. Always. We like to think of it as our way of giving
-back to a community that gives us so much as well.
+            Seriously. Always. We like to think of it as our way of giving
+            back to a community that gives us so much as well.
           `}
-          image={
-            <div />
-          }
         />
         <ProductTrust />
         <ProductFooter />
