@@ -7,7 +7,6 @@ const styleSheet = createStyleSheet('GitHubStatus', () => ({
   root: {
     display: 'flex',
     alignItems: 'flex-start',
-    justifyContent: 'center',
     fontFamily: `-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
       sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"`,
     WebkitFontSmoothing: 'subpixel-antialiased',
@@ -44,7 +43,6 @@ const styleSheet = createStyleSheet('GitHubStatus', () => ({
       lineHeight: 1,
       verticalAlign: 'middle',
       borderRadius: 3,
-      width: 'auto !important',
     },
     '.mr-2': {
       marginRight: 8,
