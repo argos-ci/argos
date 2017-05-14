@@ -9,10 +9,12 @@ import Grid from 'material-ui/Grid'
 import recompact from 'modules/recompact'
 import LayoutBody from 'modules/components/LayoutBody'
 
-const styleSheet = createStyleSheet('ProductShowcase', () => ({
+const styleSheet = createStyleSheet('ProductShowcase', theme => ({
   screen: {
-    paddingTop: 8 * 2,
-    paddingBottom: 8 * 2,
+    padding: `${theme.spacing.unit * 2}px 0`,
+    [theme.breakpoints.up('md')]: {
+      padding: `${theme.spacing.unit * 5}px 0`,
+    },
   },
   description: {
     maxWidth: 650,
@@ -22,9 +24,8 @@ const styleSheet = createStyleSheet('ProductShowcase', () => ({
   },
   image: {
     margin: 0,
-    '& img': {
-      width: '100%',
-    },
+    display: 'flex',
+    justifyContent: 'center',
   },
 }))
 
@@ -46,7 +47,7 @@ function ProductShowcase(props) {
     >
       <LayoutBody margin bottom={false}>
         <Grid container direction={textPosition === 'left' ? 'row' : 'row-reverse'} gutter={24}>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={5}>
             <Typography type={size === 'large' ? 'display1' : 'title'} component="h3" gutterBottom>
               {title}
             </Typography>
@@ -57,7 +58,7 @@ function ProductShowcase(props) {
           <Grid
             item
             xs={12}
-            md={6}
+            md={7}
             component="figure"
             className={classes.image}
           >

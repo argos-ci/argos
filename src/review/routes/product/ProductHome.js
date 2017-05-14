@@ -12,6 +12,9 @@ import ProductShowcase from 'review/routes/product/ProductShowcase'
 import Beast from 'review/routes/repository/Beast'
 import ProductTrust from 'review/routes/product/ProductTrust'
 import GitHubStatus from 'review/routes/product/GitHubStatus'
+import build from 'review/routes/product/build.png'
+import ci from 'review/routes/product/ci.png'
+import perfect from 'review/routes/product/perfect.png'
 
 const styleSheet = createStyleSheet('ProductHome', theme => ({
   beast: {
@@ -32,16 +35,27 @@ const styleSheet = createStyleSheet('ProductHome', theme => ({
       zIndex: 3,
     },
   },
-  trusted: {
-    display: 'flex',
+  showcaseBuild: {
+    border: '1px solid rgba(0, 0, 0, 0.1)',
+    borderRadius: 4,
+    maxHeight: 298.5, // 2x ratio
+    [theme.breakpoints.up('sm')]: {
+      maxHeight: 380,
+    },
   },
-  trustedLogoLink: {
-    display: 'block',
-    padding: theme.spacing.unit * 2,
+  showcasePerfect: {
+    [theme.breakpoints.down('sm')]: {
+      // 2x ration
+      width: 93,
+      height: 93,
+    },
   },
-  trustedLogoImage: {
-    maxHeight: 80,
-    width: '100%',
+  showcaseCi: {
+    [theme.breakpoints.down('sm')]: {
+      // 2x ration
+      width: 158,
+      height: 158,
+    },
   },
 }))
 
@@ -79,7 +93,7 @@ function ProductHome(props) {
             You can review visual changes in one click as part of your code review process.
           `}
           image={
-            <div />
+            <img src={build} alt="build" className={classes.showcaseBuild} />
           }
         />
         <ProductShowcase
@@ -103,7 +117,7 @@ function ProductHome(props) {
             We provide a command line interface streamlining the process.
           `}
           image={
-            <div />
+            <img src={ci} alt="ci" className={classes.showcaseCi} />
           }
         />
         <ProductShowcase
@@ -114,7 +128,7 @@ function ProductHome(props) {
             Designers can easily participate in the code review process.
           `}
           image={
-            <div />
+            <img src={perfect} alt="perfect" className={classes.showcasePerfect} />
           }
         />
         <ProductShowcase
