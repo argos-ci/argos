@@ -10,10 +10,13 @@ const styleSheet = createStyleSheet('ProductHeader', theme => ({
     minHeight: 300,
     display: 'flex',
     alignItems: 'center',
-    position: 'relative',
     overflow: 'hidden',
   },
+  wrapper: {
+    position: 'relative',
+  },
   text: {
+    position: 'relative',
     zIndex: 1,
   },
   headline: {
@@ -24,11 +27,11 @@ const styleSheet = createStyleSheet('ProductHeader', theme => ({
 
 function ProductHeader(props) {
   const {
+    beast,
     classes,
+    children,
     display1,
     headline,
-    children,
-    beast,
   } = props
 
   return (
@@ -38,30 +41,32 @@ function ProductHeader(props) {
       elevation={0}
       className={classes.root}
     >
-      <LayoutBody margin bottom={false} className={classes.text}>
-        <Typography type="display1" component="h1" gutterBottom>
-          {display1}
-        </Typography>
-        <Typography
-          type="headline"
-          component="h2"
-          className={classes.headline}
-        >
-          {headline}
-        </Typography>
-        {children}
+      <LayoutBody margin bottom={false} className={classes.wrapper}>
+        <div className={classes.text}>
+          <Typography type="display1" component="h1" gutterBottom>
+            {display1}
+          </Typography>
+          <Typography
+            type="headline"
+            component="h2"
+            className={classes.headline}
+          >
+            {headline}
+          </Typography>
+          {children}
+        </div>
+        {beast}
       </LayoutBody>
-      {beast}
     </Paper>
   )
 }
 
 ProductHeader.propTypes = {
+  beast: PropTypes.node,
+  children: PropTypes.node,
+  classes: PropTypes.object.isRequired,
   display1: PropTypes.node.isRequired,
   headline: PropTypes.node,
-  children: PropTypes.node,
-  beast: PropTypes.node,
-  classes: PropTypes.object.isRequired,
 }
 
 export default withStyles(styleSheet)(ProductHeader)

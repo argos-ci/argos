@@ -3,6 +3,8 @@ import classNames from 'classnames'
 import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 
+const codecov = 'https://codecov.io/gh/callemall/material-ui/compare/306a500828ab4e78561753ecc6402403db1cb276...f6fee890063fea05d9d07ea03a59684503cac292'
+
 const styleSheet = createStyleSheet('GitHubStatus', () => ({
   root: {
     display: 'flex',
@@ -224,7 +226,7 @@ function GitHubStatus(props) {
               <div className="d-flex col-2 flex-shrink-0">
                 <a
                   className={classNames(classes.statusActions, classes.statusActionsActive)}
-                  href="https://www.argos-ci.com/callemall/material-ui/builds/3222"
+                  href="https://www.argos-ci.com/callemall/material-ui/builds/3176"
                 >
                   Details
                 </a>
@@ -270,7 +272,7 @@ function GitHubStatus(props) {
               <div className="d-flex col-2 flex-shrink-0">
                 <a
                   className={classes.statusActions}
-                  href="https://circleci.com/gh/callemall/material-ui/2619?utm_campaign=vcs-integration-link&amp;utm_medium=referral&amp;utm_source=github-build-link"
+                  href="https://circleci.com/gh/callemall/material-ui/2592"
                 >
                   Details
                 </a>
@@ -314,10 +316,7 @@ function GitHubStatus(props) {
                 {' — 100% of diff hit (target 97.98%)'}
               </div>
               <div className="d-flex col-2 flex-shrink-0">
-                <a
-                  className={classes.statusActions}
-                  href="https://codecov.io/gh/callemall/material-ui/compare/33fa3b60b5bb2a3502ad93d0c25cb8df4d28bab6...9cb441467c939080f7258e0b19bef8255194d2b4"
-                >
+                <a className={classes.statusActions} href={codecov}>
                   Details
                 </a>
               </div>
@@ -360,10 +359,7 @@ function GitHubStatus(props) {
                 {' — 98.03% (+0.05%) compared to 33fa3b6'}
               </div>
               <div className="d-flex col-2 flex-shrink-0">
-                <a
-                  className={classes.statusActions}
-                  href="https://codecov.io/gh/callemall/material-ui/compare/33fa3b60b5bb2a3502ad93d0c25cb8df4d28bab6...9cb441467c939080f7258e0b19bef8255194d2b4"
-                >
+                <a className={classes.statusActions} href={codecov}>
                   Details
                 </a>
               </div>
@@ -391,9 +387,9 @@ function GitHubStatus(props) {
       </button>
       <a
         className={classes.code}
-        href="/callemall/material-ui/pull/6846/commits/9cb441467c939080f7258e0b19bef8255194d2b4"
+        href="/callemall/material-ui/pull/6846/commits/f6fee89"
       >
-        9cb4414
+        f6fee89
       </a>
     </div>
   )

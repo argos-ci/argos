@@ -20,7 +20,7 @@ const styleSheet = createStyleSheet('ProductHome', theme => ({
   beast: {
     padding: theme.spacing.unit * 3,
     position: 'absolute',
-    bottom: '-35%',
+    bottom: '-60%',
     height: '100%',
     right: 0,
     transform: 'rotate(180deg)',
@@ -93,7 +93,9 @@ function ProductHome(props) {
             You can review visual changes in one click as part of your code review process.
           `}
           image={
-            <img src={build} alt="build" className={classes.showcaseBuild} />
+            <Link href="https://www.argos-ci.com/callemall/material-ui/builds/3176">
+              <img src={build} alt="build" className={classes.showcaseBuild} />
+            </Link>
           }
         />
         <ProductShowcase
