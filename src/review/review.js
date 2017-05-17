@@ -3,7 +3,7 @@ import 'modules/rxjs'
 import React from 'react'
 import { render } from 'react-dom'
 import { AppContainer } from 'react-hot-loader'
-import { initializeCrashReporter } from 'modules/crashReporter/crashReporter'
+import { initializeCrashReporter } from 'modules/crashReporter'
 import Root from 'review/Root'
 
 initializeCrashReporter()

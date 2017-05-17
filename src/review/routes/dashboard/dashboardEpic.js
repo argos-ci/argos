@@ -1,5 +1,5 @@
-import graphQLClient from 'modules/graphQL/client'
-import actionTypes from 'review/modules/redux/actionTypes'
+import graphQLClient from 'modules/graphql/client'
+import actionTypes from 'modules/redux/actionTypes'
 
 const dashboardEpic = action$ => (
   action$

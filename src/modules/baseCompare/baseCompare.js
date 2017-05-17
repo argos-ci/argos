@@ -1,6 +1,6 @@
 import GitHubAPI from 'github'
 import config from 'config'
-import crashReporter from 'modules/crashReporter/crashReporter'
+import crashReporter from 'modules/crashReporter'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
 async function fallbackToMaster(build) {

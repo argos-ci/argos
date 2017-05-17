@@ -6,8 +6,8 @@ import {
   GraphQLInt,
 } from 'graphql'
 import crypto from 'crypto'
-import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
-import paginationTypeFactory from 'modules/graphQL/paginationTypeFactory'
+import graphQLDateTime from 'modules/graphql/graphQLDateTime'
+import paginationTypeFactory from 'modules/graphql/paginationTypeFactory'
 import { getOwner } from 'server/graphql/utils'
 import BuildType, {
   resolveList as resolveBuildList,

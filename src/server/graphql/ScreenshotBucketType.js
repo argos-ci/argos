@@ -2,7 +2,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql'
-import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
+import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
 export function resolve(source, args) {

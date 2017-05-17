@@ -15,9 +15,9 @@ import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
-import ReviewAppBar from 'review/modules/components/ReviewAppBar'
-import ReviewFooter from 'review/modules/components/ReviewFooter'
-import actionTypes from 'review/modules/redux/actionTypes'
+import ReviewAppBar from 'modules/components/ReviewAppBar'
+import ReviewFooter from 'modules/components/ReviewFooter'
+import actionTypes from 'modules/redux/actionTypes'
 
 const SIZE = 120
 

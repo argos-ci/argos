@@ -1,4 +1,4 @@
-import actionTypes from 'review/modules/redux/actionTypes'
+import actionTypes from 'modules/redux/actionTypes'
 
 function buildReducer(state, action) {
   if (state === undefined) {

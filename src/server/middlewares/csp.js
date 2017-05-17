@@ -1,5 +1,3 @@
-// @flow weak
-
 const sources = {
   'frame-ancestors': "'none'", // Disallow embedding of content CSP 2
   'default-src': '* data: blob:',

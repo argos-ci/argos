@@ -7,7 +7,7 @@ import Grid from 'material-ui/Grid'
 import { fullWhite, darkWhite, lightWhite } from 'material-ui/styles/colors'
 import LayoutBody from 'modules/components/LayoutBody'
 import Link from 'modules/components/Link'
-import GitHub from 'review/modules/components/GitHub'
+import GitHub from 'modules/components/GitHub'
 
 const styleSheet = createStyleSheet('ProductFooter', theme => ({
   root: {

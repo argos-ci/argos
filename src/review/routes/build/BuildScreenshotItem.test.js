@@ -1,7 +1,7 @@
 import React from 'react'
 import { shallow as enzymeShallow } from 'enzyme'
 import createShallow from 'material-ui/test-utils/createShallow'
-import ItemStatus from 'review/modules/components/ItemStatus'
+import ItemStatus from 'modules/components/ItemStatus'
 import BuildScreenshotItem from './BuildScreenshotItem'
 
 describe('<BuildScreenshotItem />', () => {

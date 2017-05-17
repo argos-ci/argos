@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import expressErr from 'express-err'
-import crashReporter from 'modules/crashReporter/crashReporter'
+import crashReporter from 'modules/crashReporter'
 import config from 'config'
 
 export default ({ formatters }) => (err, req, res, next) => {
