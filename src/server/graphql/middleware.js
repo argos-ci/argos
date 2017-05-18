@@ -3,7 +3,7 @@ import graphqlHTTP from 'express-graphql'
 import config from 'config'
 import schema from 'server/graphql/schema'
 import PrettyError from 'pretty-error'
-import crashReporter from 'modules/crashReporter/crashReporter'
+import crashReporter from 'modules/crashReporter'
 
 const pe = new PrettyError()
 pe.skipNodeFiles()

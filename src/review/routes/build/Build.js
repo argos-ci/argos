@@ -7,7 +7,7 @@ import { withStyles, createStyleSheet } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
-import actionTypes from 'review/modules/redux/actionTypes'
+import actionTypes from 'modules/redux/actionTypes'
 import BuildSummary from 'review/routes/build/BuildSummary'
 import BuildScreenshots from 'review/routes/build/BuildScreenshots'
 

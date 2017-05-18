@@ -12,7 +12,7 @@ import ScreenshotBucketType, {
 import ScreenshotDiffType from 'server/graphql/ScreenshotDiffType'
 import RepositoryType from 'server/graphql/RepositoryType'
 import Repository from 'server/models/Repository'
-import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
+import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 
 export async function resolve(source, args, context) {
   const build = await Build.query().findById(args.id).eager('repository')

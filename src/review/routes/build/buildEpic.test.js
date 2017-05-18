@@ -2,11 +2,11 @@ import { ActionsObservable } from 'redux-observable'
 import { Subject } from 'modules/rxjs'
 import { subscribeAsync } from 'modules/rxjs/test/subscribeAsync'
 import { SUCCESS } from 'modules/rxjs/operator/watchTask'
-import actionTypes from 'review/modules/redux/actionTypes'
+import actionTypes from 'modules/redux/actionTypes'
 import buildEpic from './buildEpic'
 
-jest.mock('modules/graphQL/client')
-const graphQLClient = require('modules/graphQL/client').default
+jest.mock('modules/graphql/client')
+const graphQLClient = require('modules/graphql/client').default
 
 describe('buildEpic', () => {
   describe('fetchEpic', () => {

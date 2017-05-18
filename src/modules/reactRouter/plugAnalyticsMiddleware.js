@@ -1,5 +1,5 @@
 import url from 'url'
-import analytics from 'modules/analytics/analytics'
+import analytics from 'modules/analytics'
 
 const plugAnalyticsMiddleware = {
   renderRouterContext: (child, props) => {

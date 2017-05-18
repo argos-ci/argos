@@ -4,7 +4,7 @@ import {
   GraphQLString,
   GraphQLEnumType,
 } from 'graphql'
-import graphQLDateTime from 'modules/graphQL/graphQLDateTime'
+import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 import { pushBuildNotification } from 'modules/build/notifications'
 import Build from 'server/models/Build'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'

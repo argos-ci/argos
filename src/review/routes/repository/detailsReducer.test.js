@@ -1,4 +1,4 @@
-import actionTypes from 'review/modules/redux/actionTypes'
+import actionTypes from 'modules/redux/actionTypes'
 import { PROGRESS, SUCCESS } from 'modules/rxjs/operator/watchTask'
 import detailsReducer from './detailsReducer'
 

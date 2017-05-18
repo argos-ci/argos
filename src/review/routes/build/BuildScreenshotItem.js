@@ -9,7 +9,7 @@ import Typography from 'material-ui/Typography'
 import IconButton from 'material-ui/IconButton'
 import Collapse from 'material-ui/transitions/Collapse'
 import recompact from 'modules/recompact'
-import ItemStatus from 'review/modules/components/ItemStatus'
+import ItemStatus from 'modules/components/ItemStatus'
 
 function getS3Url(s3Id, screenshotsBucket) {
   return `https://s3.amazonaws.com/${screenshotsBucket}/${s3Id}`

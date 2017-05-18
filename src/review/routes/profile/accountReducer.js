@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import actionTypes from 'review/modules/redux/actionTypes'
+import actionTypes from 'modules/redux/actionTypes'
 import { SUCCESS } from 'modules/rxjs/operator/watchTask'
 
 function accountReducer(state, action) {

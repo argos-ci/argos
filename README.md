@@ -38,8 +38,8 @@ back to a community that gives us so much as well.
 
 ```sh
 brew install imagemagick graphicsmagick autoenv
-nvm i
-npm i -g yarn
+nvm install
+npm install -g yarn
 yarn
 ```
 
