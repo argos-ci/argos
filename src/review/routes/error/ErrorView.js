@@ -25,8 +25,8 @@ function ErrorView(props) {
 }
 
 ErrorView.propTypes = {
-  title: PropTypes.node.isRequired,
   message: PropTypes.node.isRequired,
+  title: PropTypes.node.isRequired,
 }
 
 export default ErrorView
