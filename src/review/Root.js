@@ -1,4 +1,5 @@
-/* eslint-disable global-require */
+/* eslint-disable global-require, no-underscore-dangle */
+
 import React from 'react'
 import {
   createStore,
@@ -10,7 +11,7 @@ import { combineEpics, createEpicMiddleware } from 'redux-observable'
 import { Provider } from 'react-redux'
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import metricsMiddleware from 'browser-metrics/lib/reduxMetricsMiddleware'
-import createStyleManager from 'modules/styles/createStyleManager'
+import createStyleManager from 'modules/styles/createDefaultContext'
 import analytics from 'modules/analytics'
 import dataReducer from 'modules/redux/dataReducer'
 import Routes from 'review/Routes'
@@ -43,13 +44,13 @@ let middlewares = [
   createEpicMiddleware(rootEpic),
 ]
 
-if (process.env.NODE_ENV === 'development' && !window.devToolsExtension) {
-  const loggerMiddleware = require('redux-logger')
+if (
+  process.env.NODE_ENV !== 'production' &&
+  !window.__REDUX_DEVTOOLS_EXTENSION__
+) {
+  const createLogger = require('redux-logger').createLogger
 
-  middlewares = [
-    ...middlewares,
-    loggerMiddleware(),
-  ]
+  middlewares = [...middlewares, createLogger()]
 }
 
 const uiReducer = combineReducers({
@@ -66,10 +67,8 @@ const rootReducers = combineReducers({
   data: dataReducer,
 })
 
-/* eslint-disable no-underscore-dangle */
 const composeEnhancers = (process.env.NODE_ENV !== 'production' &&
   window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) || compose
-/* eslint-enable no-underscore-dangle */
 
 const store = composeEnhancers(
   applyMiddleware(...middlewares),

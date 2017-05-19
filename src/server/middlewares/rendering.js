@@ -7,7 +7,7 @@ import { minify } from 'html-minifier'
 import config from 'config'
 import { pick } from 'lodash'
 import getAuthorizationStatus from 'modules/authorizations/getAuthorizationStatus'
-import createStyleManager from 'modules/styles/createStyleManager'
+import createDefaultContext from 'modules/styles/createDefaultContext'
 
 let htmlWebpackPlugin
 let indexString = fs.readFileSync(path.join(__dirname, '../../review/index.ejs'), 'UTF-8')
@@ -52,7 +52,7 @@ function injectJSON(data) {
   return JSON.stringify(data, null, process.env.NODE_ENV === 'production' ? 0 : 2)
 }
 
-const { theme } = createStyleManager()
+const { theme } = createDefaultContext()
 
 export default additionalClientData => (req, res) => {
   const output = ejs.render(indexString, {
