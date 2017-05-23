@@ -47,6 +47,7 @@ function RepositoryDetailsEmpty(props) {
           <br />
           <Button
             component={Link}
+            variant="button"
             to={`${location.pathname}/getting-started`}
             raised
             accent
@@ -56,7 +57,6 @@ function RepositoryDetailsEmpty(props) {
           </Button>
           <br />
           <Link
-            component={Link}
             to={`${location.pathname}/builds/${repository.sampleBuildId}?sample`}
             variant="primary"
           >

@@ -1,5 +1,4 @@
 import React from 'react'
-import { shallow as enzymeShallow } from 'enzyme'
 import createShallow from 'material-ui/test-utils/createShallow'
 import BuildSummary from 'review/routes/build/BuildSummary'
 import Build from './Build'
@@ -11,17 +10,19 @@ describe('<Build />', () => {
     let params
 
     beforeAll(() => {
-      shallow = createShallow(enzymeShallow, {
-        store: {
-          subscribe: () => {},
-          dispatch: () => {},
-          getState: () => ({
-            ui: {
-              build: {
-                fetch,
+      shallow = createShallow({
+        otherContext: {
+          store: {
+            subscribe: () => {},
+            dispatch: () => {},
+            getState: () => ({
+              ui: {
+                build: {
+                  fetch,
+                },
               },
-            },
-          }),
+            }),
+          },
         },
       })
       params = {

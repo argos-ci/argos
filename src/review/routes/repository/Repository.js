@@ -59,7 +59,11 @@ function Repository(props) {
 
                 return (
                   <Grid item>
-                    <Button component={Link} to={`/${profileName}/${repositoryName}/settings`}>
+                    <Button
+                      component={Link}
+                      variant="button"
+                      to={`/${profileName}/${repositoryName}/settings`}
+                    >
                       Settings
                     </Button>
                   </Grid>
