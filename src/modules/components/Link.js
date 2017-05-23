@@ -15,7 +15,7 @@ const styleSheet = createStyleSheet('Link', theme => ({
   primary: {
     color: theme.palette.primary[500],
   },
-  menu: {
+  button: {
     '&:hover': {
       textDecoration: 'inherit',
     },
@@ -47,7 +47,7 @@ function Link(props) {
       to={to}
       className={classNames(classes.root, {
         [classes.primary]: variant === 'primary',
-        [classes.menu]: variant === 'menu',
+        [classes.button]: variant === 'button',
       }, className)}
       {...other}
     />
@@ -61,7 +61,7 @@ Link.propTypes = {
   to: PropTypes.string,
   variant: PropTypes.oneOf([
     'primary',
-    'menu',
+    'button',
   ]),
 }
 
