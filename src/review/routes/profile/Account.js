@@ -50,6 +50,7 @@ function Account(props) {
                   raised
                   accent
                   component={Link}
+                  variant="button"
                   href="/auth/github-private"
                 >
                   Synchronize private repositories

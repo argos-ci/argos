@@ -31,6 +31,7 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
             accent
             compact
             component={Link}
+            variant="button"
             href={user.privateSync ? '/auth/github-private' : '/auth/github-public'}
             raised
           >

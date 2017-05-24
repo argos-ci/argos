@@ -64,6 +64,7 @@ function Dashboard(props) {
                             key={login}
                             button
                             component={Link}
+                            variant="button"
                             to={`/${login}`}
                           >
                             <Avatar src={`https://github.com/${login}.png?size=80`} />

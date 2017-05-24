@@ -21,6 +21,7 @@ function RepositoryDetailsItem(props) {
       <ListItem
         button
         component={Link}
+        variant="button"
         to={`/${profileName}/${repositoryName}/builds/${id}`}
       >
         <ListItemText

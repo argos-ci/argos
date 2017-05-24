@@ -1,6 +1,6 @@
 import React from 'react'
-import { shallow as enzymeShallow } from 'enzyme'
 import createShallow from 'material-ui/test-utils/createShallow'
+import Collapse from 'material-ui/transitions/Collapse'
 import ItemStatus from 'modules/components/ItemStatus'
 import BuildScreenshotItem from './BuildScreenshotItem'
 
@@ -8,19 +8,21 @@ describe('<BuildScreenshotItem />', () => {
   let shallow
 
   beforeAll(() => {
-    shallow = createShallow(enzymeShallow, {
-      store: {
-        subscribe: () => {},
-        dispatch: () => {},
-        getState: () => ({
-          data: {
-            config: {
-              s3: {
-                screenshotsBucket: '',
+    shallow = createShallow({
+      otherContext: {
+        store: {
+          subscribe: () => {},
+          dispatch: () => {},
+          getState: () => ({
+            data: {
+              config: {
+                s3: {
+                  screenshotsBucket: '',
+                },
               },
             },
-          },
-        }),
+          }),
+        },
       },
     })
   })
@@ -50,7 +52,7 @@ describe('<BuildScreenshotItem />', () => {
         compareScreenshot: {},
       }
       const wrapper = shallow(<BuildScreenshotItem screenshotDiff={screenshotDiff} />)
-      expect(wrapper.until('BuildScreenshotItem').find('Collapse').props().in).toBe(true)
+      expect(wrapper.until('BuildScreenshotItem').find(Collapse).props().in).toBe(true)
     })
 
     it('should be closed when the score is zero', () => {
@@ -61,7 +63,7 @@ describe('<BuildScreenshotItem />', () => {
         compareScreenshot: {},
       }
       const wrapper = shallow(<BuildScreenshotItem screenshotDiff={screenshotDiff} />)
-      expect(wrapper.until('BuildScreenshotItem').find('Collapse').props().in).toBe(false)
+      expect(wrapper.until('BuildScreenshotItem').find(Collapse).props().in).toBe(false)
     })
   })
 })

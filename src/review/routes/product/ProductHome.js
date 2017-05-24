@@ -77,6 +77,7 @@ function ProductHome(props) {
             raised
             accent
             component={Link}
+            variant="button"
             href="/auth/github-public"
           >
             {'Try it'}

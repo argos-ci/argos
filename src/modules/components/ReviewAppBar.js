@@ -98,6 +98,7 @@ class ReviewAppBar extends Component {
             >
               <MenuItem
                 component={Link}
+                variant="button"
                 to="/profile/account"
                 button={false}
                 onClick={this.handleRequestClose}
@@ -106,6 +107,7 @@ class ReviewAppBar extends Component {
               </MenuItem>
               <MenuItem
                 component={Link}
+                variant="button"
                 href="/auth/logout"
                 button={false}
                 onClick={this.handleRequestClose}
@@ -118,6 +120,7 @@ class ReviewAppBar extends Component {
             <Button
               contrast
               component={Link}
+              variant="button"
               href="/auth/github-public"
             >
               Login

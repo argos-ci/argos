@@ -98,6 +98,7 @@ function Profile(props) {
                             key={repository.id}
                             button
                             component={Link}
+                            variant="button"
                             to={`/${profileName}/${repository.name}`}
                           >
                             <ListItemText primary={repository.name} />

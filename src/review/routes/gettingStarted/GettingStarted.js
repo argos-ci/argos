@@ -43,6 +43,7 @@ function GettingStarted(props) {
         <MarkdownElement text={text} disableAnchor />
         <Button
           component={Link}
+          variant="button"
           to={`/${profileName}/${repositoryName}`}
           raised
           accent
