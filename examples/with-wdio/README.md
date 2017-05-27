@@ -12,8 +12,10 @@ cd with-wdio
 Install it and run:
 
 ```bash
+docker-compose -f ../docker-compose.yml up
 npm install
-npm run dev
+npm run test
+npm run argos
 ```
 
 ## The idea behind the example

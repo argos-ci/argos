@@ -1,0 +1,17 @@
+{
+  "name": "with-wdio",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "wdio",
+    "argos": "argos upload screenshots --token $ARGOS_TOKEN || true"
+  },
+  "dependencies": {
+    "argos-cli": "latest",
+    "babel-register": "^6.24.1",
+    "wdio-mocha-framework": "^0.5.10",
+    "wdio-screenshot": "^0.6.0",
+    "wdio-visual-regression-service": "^0.8.0",
+    "webdriverio": "^4.8.0"
+  },
+  "license": "MIT"
+}
