@@ -1,10 +1,4 @@
-import {
-  GraphQLObjectType,
-  GraphQLString,
-  GraphQLInt,
-  GraphQLEnumType,
-  GraphQLList,
-} from 'graphql'
+import { GraphQLObjectType, GraphQLString, GraphQLInt, GraphQLEnumType, GraphQLList } from 'graphql'
 import Build from 'server/models/Build'
 import ScreenshotBucketType, {
   resolve as resolveScreenshotBucket,
@@ -17,7 +11,7 @@ import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 export async function resolve(source, args, context) {
   const build = await Build.query().findById(args.id).eager('repository')
 
-  if (!build || !(await Repository.isAccessible(build.repository, context.user))) {
+  if (!build || !await Repository.isAccessible(build.repository, context.user)) {
     return null
   }
 
@@ -26,18 +20,19 @@ export async function resolve(source, args, context) {
 }
 
 export async function resolveList(repository, args) {
-  const result = await Build
-    .query()
+  const result = await Build.query()
     .where({ repositoryId: repository.id })
     .whereNot({ number: 0 })
     .orderBy('createdAt', 'desc')
-    .range(args.after, (args.after + args.first) - 1)
+    .range(args.after, args.after + args.first - 1)
 
   const hasNextPage = args.after + args.first < result.total
   const statuses = await Promise.all(
-    result.results.map(build => build.getStatus({
-      useValidation: true,
-    })),
+    result.results.map(build =>
+      build.getStatus({
+        useValidation: true,
+      })
+    )
   )
 
   return {
@@ -73,37 +68,36 @@ const BuildType = new GraphQLObjectType({
     screenshotDiffs: {
       description: 'Get the diffs for a given build.',
       type: new GraphQLList(ScreenshotDiffType),
-      resolve: source => source
-        .$relatedQuery('screenshotDiffs')
-        .leftJoin('screenshots', 'screenshots.id', 'screenshot_diffs.baseScreenshotId')
-        .orderBy('score', 'desc')
-        .orderBy('screenshots.name', 'asc'),
+      resolve: source =>
+        source
+          .$relatedQuery('screenshotDiffs')
+          .leftJoin('screenshots', 'screenshots.id', 'screenshot_diffs.baseScreenshotId')
+          .orderBy('score', 'desc')
+          .orderBy('screenshots.name', 'asc'),
     },
     baseScreenshotBucketId: {
       type: GraphQLString,
     },
     baseScreenshotBucket: {
       type: ScreenshotBucketType,
-      resolve: source => (
+      resolve: source =>
         resolveScreenshotBucket(source, {
           id: source.baseScreenshotBucketId,
-        })
-      ),
+        }),
     },
     compareScreenshotBucketId: {
       type: GraphQLString,
     },
     compareScreenshotBucket: {
       type: ScreenshotBucketType,
-      resolve: source => (
+      resolve: source =>
         resolveScreenshotBucket(source, {
           id: source.compareScreenshotBucketId,
-        })
-      ),
+        }),
     },
     repository: {
       type: RepositoryType,
-      resolve: async (source) => {
+      resolve: async source => {
         const build = await source.$query().eager('repository')
         return build.repository
       },

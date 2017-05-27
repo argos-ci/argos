@@ -2,7 +2,7 @@
 import 'whatwg-fetch'
 
 const graphQLClient = {
-  fetch: params => (
+  fetch: params =>
     fetch(`${window.location.origin}/graphql`, {
       method: 'post',
       headers: {
@@ -11,9 +11,7 @@ const graphQLClient = {
       },
       credentials: 'same-origin',
       body: JSON.stringify(params),
-    })
-    .then(response => response.json())
-  ),
+    }).then(response => response.json()),
 }
 
 export default graphQLClient

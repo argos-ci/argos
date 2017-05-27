@@ -2,9 +2,7 @@ import path from 'path'
 import webpack from 'webpack'
 
 export default {
-  entry: [
-    './src/review/review.js',
-  ],
+  entry: ['./src/review/review.js'],
   output: {
     path: path.join(__dirname, '../../../server/static/review'),
     publicPath: '/static/review/',
@@ -16,10 +14,7 @@ export default {
   target: 'web',
   resolve: {
     extensions: ['.js'],
-    modules: [
-      path.join(__dirname, '../../'),
-      'node_modules',
-    ],
+    modules: [path.join(__dirname, '../../'), 'node_modules'],
     alias: {
       raven: 'raven-js',
     },
@@ -33,16 +28,22 @@ export default {
           options: {
             presets: [
               'react',
-              ['env', {
-                targets: {
-                  browsers: ['last 2 versions'],
+              [
+                'env',
+                {
+                  targets: {
+                    browsers: ['last 2 versions'],
+                  },
                 },
-              }],
+              ],
             ],
             plugins: [
-              ['module-resolver', {
-                root: ['./src'],
-              }],
+              [
+                'module-resolver',
+                {
+                  root: ['./src'],
+                },
+              ],
               'transform-object-rest-spread',
               'transform-class-properties',
             ],
@@ -67,11 +68,13 @@ export default {
         loader: 'image-webpack-loader',
         query: {
           svgo: {
-            plugins: [{
-              convertPathData: {
-                floatPrecision: 2,
+            plugins: [
+              {
+                convertPathData: {
+                  floatPrecision: 2,
+                },
               },
-            }],
+            ],
           },
         },
       },

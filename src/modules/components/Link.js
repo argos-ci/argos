@@ -23,14 +23,7 @@ const styleSheet = createStyleSheet('Link', theme => ({
 }))
 
 function Link(props) {
-  const {
-    component: ComponentProp,
-    classes,
-    className,
-    variant,
-    to,
-    ...other
-  } = props
+  const { component: ComponentProp, classes, className, variant, to, ...other } = props
 
   let Component
 
@@ -45,10 +38,14 @@ function Link(props) {
   return (
     <Component
       to={to}
-      className={classNames(classes.root, {
-        [classes.primary]: variant === 'primary',
-        [classes.button]: variant === 'button',
-      }, className)}
+      className={classNames(
+        classes.root,
+        {
+          [classes.primary]: variant === 'primary',
+          [classes.button]: variant === 'button',
+        },
+        className
+      )}
       {...other}
     />
   )
@@ -59,10 +56,7 @@ Link.propTypes = {
   className: PropTypes.string,
   component: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   to: PropTypes.string,
-  variant: PropTypes.oneOf([
-    'primary',
-    'button',
-  ]),
+  variant: PropTypes.oneOf(['primary', 'button']),
 }
 
 export default withStyles(styleSheet)(Link)

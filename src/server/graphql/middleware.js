@@ -9,18 +9,17 @@ const pe = new PrettyError()
 pe.skipNodeFiles()
 pe.skipPackage('express', 'graphql')
 
-export default ({ context } = {}) => graphqlHTTP(req => ({
-  schema,
-  pretty: config.get('env') !== 'production',
-  graphiql: config.get('env') !== 'production',
-  formatError(error) {
-    if (error.path || error.name !== 'GraphQLError') {
-      if (process.env.NODE_ENV === 'development') {
-        console.error(pe.render(error))
-      }
-      crashReporter.captureException(
-        error,
-        {
+export default ({ context } = {}) =>
+  graphqlHTTP(req => ({
+    schema,
+    pretty: config.get('env') !== 'production',
+    graphiql: config.get('env') !== 'production',
+    formatError(error) {
+      if (error.path || error.name !== 'GraphQLError') {
+        if (process.env.NODE_ENV === 'development') {
+          console.error(pe.render(error))
+        }
+        crashReporter.captureException(error, {
           ...crashReporter.parsers.parseRequest(req),
           tags: { graphql: 'exec_error' },
           extra: {
@@ -28,29 +27,25 @@ export default ({ context } = {}) => graphqlHTTP(req => ({
             positions: error.positions,
             path: error.path,
           },
-        },
-      )
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.error(pe.render(error.message))
-      }
-      crashReporter.captureMessage(
-        `GraphQLWrongQuery: ${error.message}`,
-        {
+        })
+      } else {
+        if (process.env.NODE_ENV === 'development') {
+          console.error(pe.render(error.message))
+        }
+        crashReporter.captureMessage(`GraphQLWrongQuery: ${error.message}`, {
           ...crashReporter.parsers.parseRequest(req),
           tags: { graphql: 'wrong_query' },
           extra: {
             source: error.source && error.source.body,
             positions: error.positions,
           },
-        },
-      )
-    }
+        })
+      }
 
-    return {
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack.split('\n') : null,
-    }
-  },
-  context,
-}))
+      return {
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack.split('\n') : null,
+      }
+    },
+    context,
+  }))

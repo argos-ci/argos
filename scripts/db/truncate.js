@@ -12,6 +12,8 @@ truncateAll(knex)
   .then(() => {
     disconnect(knex)
   })
-  .catch((err) => {
-    setTimeout(() => { throw err })
+  .catch(err => {
+    setTimeout(() => {
+      throw err
+    })
   })

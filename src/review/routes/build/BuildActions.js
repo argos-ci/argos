@@ -14,11 +14,7 @@ const styleSheet = createStyleSheet('BuildActions', theme => ({
 }))
 
 function BuildActions(props) {
-  const {
-    build,
-    classes,
-    onValidationClick,
-  } = props
+  const { build, classes, onValidationClick } = props
 
   if (!build.repository.authorization) {
     return null
@@ -38,12 +34,7 @@ function BuildActions(props) {
   }
 
   return (
-    <Button
-      accent
-      raised
-      onClick={onValidationClick}
-      className={classes.validationStatus}
-    >
+    <Button accent raised onClick={onValidationClick} className={classes.validationStatus}>
       {actionMessage}
     </Button>
   )
@@ -70,11 +61,11 @@ export default recompact.compose(
         type: actionTypes.BUILD_VALIDATION_CLICK,
         payload: {
           buildId: props.build.id,
-          validationStatus: props.build.status === 'failure' ?
-            VALIDATION_STATUS.accepted :
-            VALIDATION_STATUS.rejected,
+          validationStatus: props.build.status === 'failure'
+            ? VALIDATION_STATUS.accepted
+            : VALIDATION_STATUS.rejected,
         },
       })
     },
-  }),
+  })
 )(BuildActions)

@@ -3,14 +3,10 @@ import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 const SHA1_REGEXP = '^[a-zA-Z0-9]{40}$'
 
 export default class ScreenshotBucket extends BaseModel {
-  static tableName = 'screenshot_buckets';
+  static tableName = 'screenshot_buckets'
 
   static jsonSchema = mergeSchemas(BaseModel.jsonSchema, {
-    required: [
-      'name',
-      'commit',
-      'branch',
-    ],
+    required: ['name', 'commit', 'branch'],
     properties: {
       name: { type: 'string' },
       commit: {
@@ -20,7 +16,7 @@ export default class ScreenshotBucket extends BaseModel {
       branch: { type: 'string' },
       repositoryId: { type: 'string' },
     },
-  });
+  })
 
   static relationMappings = {
     screenshots: {
@@ -39,5 +35,5 @@ export default class ScreenshotBucket extends BaseModel {
         to: 'repositories.id',
       },
     },
-  };
+  }
 }

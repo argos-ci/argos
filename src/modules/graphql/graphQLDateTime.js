@@ -30,7 +30,7 @@ const graphQLDateType = new GraphQLScalarType({
     if (ast.kind !== Kind.STRING) {
       throw new GraphQLError(
         `Query error: Can only parse strings to dates but got a: ${ast.kind}`,
-        [ast],
+        [ast]
       )
     }
 
@@ -43,7 +43,7 @@ const graphQLDateType = new GraphQLScalarType({
     if (ast.value !== result.toJSON()) {
       throw new GraphQLError(
         'Query error: Invalid date format, only accepts: YYYY-MM-DDTHH:MM:SS.SSSZ',
-        [ast],
+        [ast]
       )
     }
 

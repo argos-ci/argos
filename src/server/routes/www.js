@@ -16,26 +16,31 @@ const router = new express.Router()
 const RedisStore = connectRedis(session)
 
 // Static directory
-router.use('/static', express.static(path.join(__dirname, '../../../server/static'), {
-  etag: true,
-  lastModified: false,
-  maxAge: '1 year',
-  index: false,
-}))
+router.use(
+  '/static',
+  express.static(path.join(__dirname, '../../../server/static'), {
+    etag: true,
+    lastModified: false,
+    maxAge: '1 year',
+    index: false,
+  })
+)
 
-router.use(session({
-  secret: config.get('server.sessionSecret'),
-  store: new RedisStore({ client: redis.connect() }),
-  cookie: {
-    secure: config.get('server.secure'),
-    httpOnly: true,
-    maxAge: 2592000000, // 30 days
-  },
-  // Touch is supported by the Redis store.
-  // No need to resave, we can avoid concurrency issues.
-  resave: false,
-  saveUninitialized: false,
-}))
+router.use(
+  session({
+    secret: config.get('server.sessionSecret'),
+    store: new RedisStore({ client: redis.connect() }),
+    cookie: {
+      secure: config.get('server.secure'),
+      httpOnly: true,
+      maxAge: 2592000000, // 30 days
+    },
+    // Touch is supported by the Redis store.
+    // No need to resave, we can avoid concurrency issues.
+    resave: false,
+    saveUninitialized: false,
+  })
+)
 router.use(passport.initialize())
 router.use(passport.session())
 
@@ -43,17 +48,21 @@ configurePassport(passport)
 
 // GraphQL
 router.use('/graphql', graphqlMiddleware())
-
-;['private', 'public'].forEach((type) => {
-  router.get(`/auth/github-${type}`, (req, res, next) => {
-    // Save the referer to later redirect back to it.
-    // Sessing can be undefined when Redis is down.
-    if (req.session) {
-      req.session.returnTo = req.header('Referer')
-    }
-    next()
-  }, passport.authenticate(`github-${type}`))
-  router.get(`/auth/github/callback/${type}`,
+;['private', 'public'].forEach(type => {
+  router.get(
+    `/auth/github-${type}`,
+    (req, res, next) => {
+      // Save the referer to later redirect back to it.
+      // Sessing can be undefined when Redis is down.
+      if (req.session) {
+        req.session.returnTo = req.header('Referer')
+      }
+      next()
+    },
+    passport.authenticate(`github-${type}`)
+  )
+  router.get(
+    `/auth/github/callback/${type}`,
     // Public and private strategies have the same authenticate behavior,
     // so we use public for both
     passport.authenticate(`github-${type}`, { failureRedirect: '/login' }),
@@ -65,7 +74,7 @@ router.use('/graphql', graphqlMiddleware())
         delete req.session.returnTo
       }
       res.redirect(returnTo)
-    },
+    }
   )
 })
 
@@ -86,11 +95,13 @@ const htmlErrorHandler = (err, req, res, next) => {
   })(req, res, next)
 }
 
-router.use(errorHandler({
-  formatters: {
-    html: htmlErrorHandler,
-    default: htmlErrorHandler,
-  },
-}))
+router.use(
+  errorHandler({
+    formatters: {
+      html: htmlErrorHandler,
+      default: htmlErrorHandler,
+    },
+  })
+)
 
 export default router

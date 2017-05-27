@@ -5,9 +5,7 @@ import * as services from 'server/services/all'
 const SHUTDOWN_TIMEOUT = 3000
 
 let shutdown
-const callbacks = [
-  () => services.disconnect(),
-]
+const callbacks = [() => services.disconnect()]
 
 function log(message) {
   console.info(`${new Date().toJSON()}: ${message}`)
@@ -40,13 +38,23 @@ function handleKillSignals() {
   //  Process on exit and signals.
   process.on('exit', () => {
     log('Node server stopped.')
-  });
+  })
 
   // Removed 'SIGPIPE' from the list - bugz 852598.
-  [
-    'SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT',
-    'SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM',
-  ].forEach((signal) => {
+  ;[
+    'SIGHUP',
+    'SIGINT',
+    'SIGQUIT',
+    'SIGILL',
+    'SIGTRAP',
+    'SIGABRT',
+    'SIGBUS',
+    'SIGFPE',
+    'SIGUSR1',
+    'SIGSEGV',
+    'SIGUSR2',
+    'SIGTERM',
+  ].forEach(signal => {
     process.on(signal, () => {
       terminator(signal)
     })

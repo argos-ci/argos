@@ -3,16 +3,16 @@ import graphQLClient from 'modules/graphql/client'
 import actionTypes from 'modules/redux/actionTypes'
 import { SUCCESS } from 'modules/rxjs/operator/watchTask'
 
-const fetchEpic = action$ => (
+const fetchEpic = action$ =>
   action$
     .ofType(actionTypes.BUILD_FETCH)
     .combineLatest(
       action$
         .ofType(actionTypes.BUILD_VALIDATION_TASK)
         .filter(action => action.payload.state === SUCCESS)
-        .startWith({}),
+        .startWith({})
     )
-    .watchTask(actionTypes.BUILD_FETCH_TASK, ([action]) => (
+    .watchTask(actionTypes.BUILD_FETCH_TASK, ([action]) =>
       graphQLClient.fetch({
         query: `{
           build(id: ${action.payload.buildId}) {
@@ -50,13 +50,12 @@ const fetchEpic = action$ => (
           }
         }`,
       })
-    ))
-)
+    )
 
-const validationEpic = action$ => (
+const validationEpic = action$ =>
   action$
     .ofType(actionTypes.BUILD_VALIDATION_CLICK)
-    .watchTask(actionTypes.BUILD_VALIDATION_TASK, action => (
+    .watchTask(actionTypes.BUILD_VALIDATION_TASK, action =>
       graphQLClient.fetch({
         query: `
           mutation {
@@ -67,8 +66,7 @@ const validationEpic = action$ => (
           }
         `,
       })
-    ))
-)
+    )
 
 const buildEpic = combineEpics(fetchEpic, validationEpic)
 

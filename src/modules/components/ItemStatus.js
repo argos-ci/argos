@@ -25,13 +25,7 @@ const styleSheet = createStyleSheet('ItemStatus', theme => ({
 }))
 
 function ItemStatus(props) {
-  const {
-    children,
-    classes,
-    className,
-    status,
-    ...other
-  } = props
+  const { children, classes, className, status, ...other } = props
 
   return cloneElement(children, {
     className: classNames(className, children.props.className, {
@@ -45,14 +39,7 @@ ItemStatus.propTypes = {
   children: PropTypes.element.isRequired,
   classes: PropTypes.object.isRequired,
   className: PropTypes.string,
-  status: PropTypes.oneOf([
-    'success',
-    'failure',
-    'progress',
-    'pending',
-    'error',
-    'unknown',
-  ]),
+  status: PropTypes.oneOf(['success', 'failure', 'progress', 'pending', 'error', 'unknown']),
 }
 
 export default withStyles(styleSheet)(ItemStatus)

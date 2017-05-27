@@ -19,30 +19,22 @@ async function fallbackToMaster(build) {
   return bucket || null
 }
 
-async function getBaseScreenshotBucket({
-  potentialCommits,
-  build,
-}) {
+async function getBaseScreenshotBucket({ potentialCommits, build }) {
   const potentialCommitShas = potentialCommits.map(commit => commit.sha)
   const buckets = await ScreenshotBucket.query()
     .where({ repositoryId: build.repository.id })
     .whereIn('commit', potentialCommitShas)
 
   // Reverse the potentialCommits order.
-  buckets.sort((bucketA, bucketB) => (
-    potentialCommitShas.indexOf(bucketB.commit) -
-    potentialCommitShas.indexOf(bucketA.commit)
-  ))
+  buckets.sort(
+    (bucketA, bucketB) =>
+      potentialCommitShas.indexOf(bucketB.commit) - potentialCommitShas.indexOf(bucketA.commit)
+  )
 
   return buckets[0] || fallbackToMaster(build)
 }
 
-async function baseCompare({
-  baseCommit,
-  compareCommit,
-  build,
-  perPage = 100,
-}) {
+async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) {
   build = await build.$query().eager('[repository, compareScreenshotBucket]')
   const user = await build.repository.getUsers().limit(1).first()
 
@@ -97,9 +89,7 @@ async function baseCompare({
       potentialCommits.push(baseCommit)
     }
 
-    const found = compareCommits.some(compareCommit => (
-      baseCommit.sha === compareCommit.sha
-    ))
+    const found = compareCommits.some(compareCommit => baseCommit.sha === compareCommit.sha)
 
     // Takes the previous commit too.
     if (found && comparingWithHimself && index + 1 < baseCommits.length) {

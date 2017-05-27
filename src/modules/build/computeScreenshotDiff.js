@@ -20,8 +20,7 @@ function createTmpDirectory() {
 }
 
 async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
-  screenshotDiff = await screenshotDiff.$query()
-    .eager('[build, baseScreenshot, compareScreenshot]')
+  screenshotDiff = await screenshotDiff.$query().eager('[build, baseScreenshot, compareScreenshot]')
 
   if (!screenshotDiff) {
     throw new Error(`Screenshot diff id: \`${screenshotDiff}\` not found`)

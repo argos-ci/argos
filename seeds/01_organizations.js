@@ -1,7 +1,6 @@
 exports.seed = (knex, Promise) =>
-  knex.raw('TRUNCATE organizations CASCADE')
-    .then(() => knex('organizations').delete())
-    .then(() => Promise.all([
+  knex.raw('TRUNCATE organizations CASCADE').then(() => knex('organizations').delete()).then(() =>
+    Promise.all([
       knex('organizations').insert([
         {
           id: 1,
@@ -20,4 +19,5 @@ exports.seed = (knex, Promise) =>
           updatedAt: new Date().toISOString(),
         },
       ]),
-    ]))
+    ])
+  )

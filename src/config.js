@@ -4,11 +4,7 @@ import convict from 'convict'
 const config = convict({
   env: {
     doc: 'The application environment',
-    format: [
-      'production',
-      'development',
-      'test',
-    ],
+    format: ['production', 'development', 'test'],
     default: 'development',
     env: 'NODE_ENV',
   },
@@ -25,14 +21,7 @@ const config = convict({
     },
     logFormat: {
       doc: 'The morgan log format to use',
-      format: [
-        'dev',
-        'combined',
-        'common',
-        'short',
-        'tiny',
-        '',
-      ],
+      format: ['dev', 'combined', 'common', 'short', 'tiny', ''],
       default: 'dev',
     },
     url: {

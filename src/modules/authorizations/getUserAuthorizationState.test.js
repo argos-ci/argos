@@ -27,9 +27,11 @@ describe('getUserAuthorizationState', () => {
 
   describe('with a consistent token', () => {
     beforeEach(() => {
-      githubClient.authorization.check.mockImplementation(validToken({
-        scopes: PRIVATE_SCOPES,
-      }))
+      githubClient.authorization.check.mockImplementation(
+        validToken({
+          scopes: PRIVATE_SCOPES,
+        })
+      )
     })
 
     it('should return token and githubScopes', async () => {
@@ -44,9 +46,11 @@ describe('getUserAuthorizationState', () => {
 
   describe('with an inconsistent token', () => {
     beforeEach(() => {
-      githubClient.authorization.check.mockImplementationOnce(validToken({
-        scopes: PUBLIC_SCOPES,
-      }))
+      githubClient.authorization.check.mockImplementationOnce(
+        validToken({
+          scopes: PUBLIC_SCOPES,
+        })
+      )
     })
 
     describe('without previousAccessToken', () => {
@@ -62,9 +66,11 @@ describe('getUserAuthorizationState', () => {
 
     describe('with a consistent previousToken', () => {
       beforeEach(() => {
-        githubClient.authorization.check.mockImplementationOnce(validToken({
-          scopes: PRIVATE_SCOPES,
-        }))
+        githubClient.authorization.check.mockImplementationOnce(
+          validToken({
+            scopes: PRIVATE_SCOPES,
+          })
+        )
       })
 
       it('should return githubScopes', async () => {
@@ -79,9 +85,11 @@ describe('getUserAuthorizationState', () => {
 
     describe('with an inconsistent previousToken', () => {
       beforeEach(() => {
-        githubClient.authorization.check.mockImplementationOnce(validToken({
-          scopes: PUBLIC_SCOPES,
-        }))
+        githubClient.authorization.check.mockImplementationOnce(
+          validToken({
+            scopes: PUBLIC_SCOPES,
+          })
+        )
       })
 
       it('should return accessToken and githubScopes', async () => {

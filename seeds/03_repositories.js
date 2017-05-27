@@ -1,6 +1,6 @@
 exports.seed = (knex, Promise) =>
-  knex('repositories').delete()
-    .then(() => Promise.all([
+  knex('repositories').delete().then(() =>
+    Promise.all([
       knex('repositories').insert([
         {
           id: 1,
@@ -37,4 +37,5 @@ exports.seed = (knex, Promise) =>
           updatedAt: new Date().toISOString(),
         },
       ]),
-    ]))
+    ])
+  )

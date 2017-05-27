@@ -11,23 +11,22 @@ import imageDiffRaw from 'image-diff'
  * @returns {number} result.total
  * @returns {number} result.percentage
  */
-function imageDiff({
-  compareScreenshotPath,
-  baseScreenshotPath,
-  diffResultPath,
-}) {
+function imageDiff({ compareScreenshotPath, baseScreenshotPath, diffResultPath }) {
   return new Promise((resolve, reject) => {
-    imageDiffRaw.getFullResult({
-      actualImage: compareScreenshotPath,
-      expectedImage: baseScreenshotPath,
-      diffImage: diffResultPath,
-    }, (error, result) => {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(result)
+    imageDiffRaw.getFullResult(
+      {
+        actualImage: compareScreenshotPath,
+        expectedImage: baseScreenshotPath,
+        diffImage: diffResultPath,
+      },
+      (error, result) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve(result)
+        }
       }
-    })
+    )
   })
 }
 

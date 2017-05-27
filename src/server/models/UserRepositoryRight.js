@@ -1,18 +1,15 @@
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 
 export default class UserRepositoryRight extends BaseModel {
-  static tableName = 'user_repository_rights';
+  static tableName = 'user_repository_rights'
 
   static jsonSchema = mergeSchemas(BaseModel.jsonSchema, {
-    required: [
-      'userId',
-      'repositoryId',
-    ],
+    required: ['userId', 'repositoryId'],
     properties: {
       userId: { type: 'string' },
       repositoryId: { type: 'string' },
     },
-  });
+  })
 
   static relationMappings = {
     user: {
@@ -31,5 +28,5 @@ export default class UserRepositoryRight extends BaseModel {
         to: 'repositories.id',
       },
     },
-  };
+  }
 }

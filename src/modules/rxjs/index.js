@@ -25,8 +25,4 @@ if (process.env.NODE_ENV !== 'production') {
   require('modules/rxjs/add/operator/debug')
 }
 
-export {
-  BehaviorSubject,
-  Observable,
-  Subject,
-}
+export { BehaviorSubject, Observable, Subject }

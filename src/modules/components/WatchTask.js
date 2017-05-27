@@ -18,17 +18,14 @@ function renderInContainer(props, node) {
 }
 
 export default function WatchTask(props) {
-  const {
-    children,
-    task,
-    onlySuccess,
-  } = props
+  const { children, task, onlySuccess } = props
 
   if (isError(task) && !onlySuccess) {
-    return renderInContainer(props,
+    return renderInContainer(
+      props,
       <Typography>
         The loading failed
-      </Typography>,
+      </Typography>
     )
   }
 
@@ -48,11 +45,7 @@ WatchTask.propTypes = {
   Container: PropTypes.func,
   onlySuccess: PropTypes.bool,
   task: PropTypes.shape({
-    state: PropTypes.oneOf([
-      PROGRESS,
-      SUCCESS,
-      ERROR,
-    ]),
+    state: PropTypes.oneOf([PROGRESS, SUCCESS, ERROR]),
     output: PropTypes.object,
   }).isRequired,
 }
@@ -62,8 +55,11 @@ WatchTask.defaultProps = {
   onlySuccess: false,
 }
 
-export const watchTask = recompact.createHelper(mapProps => BaseComponent => props => (
-  <WatchTask {...mapProps(props)}>
-    {() => recompact.createEagerElement(BaseComponent, props)}
-  </WatchTask>
-), 'watchTask')
+export const watchTask = recompact.createHelper(
+  mapProps => BaseComponent => props => (
+    <WatchTask {...mapProps(props)}>
+      {() => recompact.createEagerElement(BaseComponent, props)}
+    </WatchTask>
+  ),
+  'watchTask'
+)

@@ -17,12 +17,7 @@ const styleSheet = createStyleSheet('ScrollView', () => ({
 }))
 
 function ScrollView(props) {
-  const {
-    children,
-    classes,
-    fullHeight,
-    ...other
-  } = props
+  const { children, classes, fullHeight, ...other } = props
 
   return (
     <div

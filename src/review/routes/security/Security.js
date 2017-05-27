@@ -13,10 +13,7 @@ function Security() {
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
-        <ProductHeader
-          display1="Security Policy"
-          headline="We take security very seriously."
-        />
+        <ProductHeader display1="Security Policy" headline="We take security very seriously." />
         <LayoutBody margin>
           <MarkdownElement text={security} />
         </LayoutBody>

@@ -13,7 +13,7 @@ const renderRoot = () => {
     <AppContainer>
       <Root />
     </AppContainer>,
-    document.querySelector('#root'),
+    document.querySelector('#root')
   )
 }
 
@@ -32,7 +32,7 @@ if (module.hot) {
       <AppContainer>
         <NextRoot />
       </AppContainer>,
-      document.querySelector('#root'),
+      document.querySelector('#root')
     )
   })
 }

@@ -18,17 +18,13 @@ const styleSheet = createStyleSheet('RepositoryDetails', () => ({
 }))
 
 function RepositoryDetails(props) {
-  const {
-    classes,
-    fetch,
-    params,
-  } = props
+  const { classes, fetch, params } = props
 
   return (
     <div>
       <Paper className={classes.paper}>
         <WatchTask task={fetch}>
-          {(data) => {
+          {data => {
             const edges = data.repository.builds.edges
 
             if (edges.length === 0) {
@@ -61,11 +57,13 @@ RepositoryDetails.propTypes = {
     output: PropTypes.shape({
       data: PropTypes.shape({
         builds: PropTypes.shape({
-          edges: PropTypes.arrayOf(PropTypes.shape({
-            id: PropTypes.string.isRequired,
-            number: PropTypes.number.isRequired,
-            createdAt: PropTypes.string.isRequired,
-          })),
+          edges: PropTypes.arrayOf(
+            PropTypes.shape({
+              id: PropTypes.string.isRequired,
+              number: PropTypes.number.isRequired,
+              createdAt: PropTypes.string.isRequired,
+            })
+          ),
         }),
       }),
     }),
@@ -85,5 +83,5 @@ export default recompact.compose(
     componentDidMount() {
       this.props.dispatch(detailsActions.fetch(this.props, 0))
     },
-  }),
+  })
 )(RepositoryDetails)

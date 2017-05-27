@@ -5,8 +5,8 @@ const EXPANDED_SCOPES = {
   repo: ['repo:status'],
 }
 
-export const expandScopes = scopes => scopes.reduce((expandedScopes, scope) => [
-  ...expandedScopes,
-  scope,
-  ...(EXPANDED_SCOPES[scope] || []),
-], [])
+export const expandScopes = scopes =>
+  scopes.reduce(
+    (expandedScopes, scope) => [...expandedScopes, scope, ...(EXPANDED_SCOPES[scope] || [])],
+    []
+  )

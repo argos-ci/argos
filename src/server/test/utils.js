@@ -9,12 +9,14 @@ let truncateQuery
 async function getTruncateQuery(knex) {
   if (!truncateQuery) {
     const result = await knex.schema.raw(
-      'SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = \'public\'',
+      "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'"
     )
 
-    const tables = result.rows.reduce((tables, { tablename }) => (
-      KNEX_TABLES.includes(tablename) ? tables : [...tables, tablename]
-    ), [])
+    const tables = result.rows.reduce(
+      (tables, { tablename }) =>
+        KNEX_TABLES.includes(tablename) ? tables : [...tables, tablename],
+      []
+    )
 
     const disableTriggers = tables.map(table => `ALTER TABLE ${table} DISABLE TRIGGER ALL`)
     const deletes = tables.map(table => `DELETE FROM ${table}`)
@@ -46,7 +48,7 @@ export const useDatabase = () => {
   })
 }
 
-export const setTestsTimeout = (timeout) => {
+export const setTestsTimeout = timeout => {
   let originalTimeout
 
   beforeEach(() => {

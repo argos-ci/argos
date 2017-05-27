@@ -10,7 +10,6 @@ import clearRequire from 'clear-require'
 
 const MODEL_DIRECTORY = path.join(__dirname, '../src/server/models')
 const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
-
 ;(async () => {
   const replServer = repl.start()
 
@@ -53,4 +52,8 @@ const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
 
   // https://github.com/building5/node-promirepl
   promirepl(replServer)
-})().catch(err => setTimeout(() => { throw err }))
+})().catch(err =>
+  setTimeout(() => {
+    throw err
+  })
+)

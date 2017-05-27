@@ -28,7 +28,8 @@
     "build:server": "rm -rf lib/ && cp -R src/ lib/ && babel -d lib src",
     "build:review": "rm -rf server/static/review && babel-node ./node_modules/.bin/webpack --config=src/review/webpack/browserProductionConfig.js --progress",
     "build:icons": "babel-node scripts/generateIcons.js",
-    "heroku-postbuild": "yarn build && yarn db:migrate:latest"
+    "heroku-postbuild": "yarn build && yarn db:migrate:latest",
+    "prettier": "find . -name \"*.js\" | grep -v -f .eslintignore | xargs prettier --write --no-semi --single-quote --trailing-comma es5 --print-width 100"
   },
   "repository": {
     "type": "git",
@@ -132,6 +133,7 @@
     "eslint-plugin-import": "^2.3.0",
     "eslint-plugin-jsx-a11y": "^5.0.3",
     "eslint-plugin-mocha": "^4.9.0",
+    "eslint-plugin-prettier": "^2.1.1",
     "eslint-plugin-react": "^7.0.1",
     "factory-girl": "^4.2.2",
     "foreman": "^2.0.0",
@@ -139,6 +141,7 @@
     "jest": "^20.0.4",
     "nock": "^9.0.13",
     "nodemon": "^1.11.0",
+    "prettier": "^1.3.1",
     "react-test-renderer": "^15.5.4",
     "selenium-webdriver": "^3.4.0",
     "supertest": "^3.0.0",

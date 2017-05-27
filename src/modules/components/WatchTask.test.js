@@ -8,17 +8,19 @@ describe('WatchTask', () => {
     const task = {
       state: SUCCESS,
       output: {
-        errors: [{
-          message: '',
-          location: {},
-          stack: '',
-        }],
+        errors: [
+          {
+            message: '',
+            location: {},
+            stack: '',
+          },
+        ],
       },
     }
     const wrapper = shallow(
       <WatchTask task={task}>
         {() => null}
-      </WatchTask>,
+      </WatchTask>
     )
 
     expect(wrapper.contains('The loading failed')).toBe(true)

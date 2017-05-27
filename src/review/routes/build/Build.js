@@ -18,15 +18,12 @@ const styleSheet = createStyleSheet('Build', () => ({
 }))
 
 function Build(props) {
-  const {
-    fetch,
-    classes,
-  } = props
+  const { fetch, classes } = props
 
   return (
     <div>
       <WatchTask task={fetch}>
-        {(data) => {
+        {data => {
           if (!data.build) {
             return (
               <Paper className={classes.paper}>
@@ -74,5 +71,5 @@ export default recompact.compose(
         },
       })
     },
-  }),
+  })
 )(Build)

@@ -1,13 +1,16 @@
 function getStats(statuses) {
-  return statuses.reduce((stats, status) => {
-    stats[status] += 1
-    return stats
-  }, {
-    pending: 0,
-    progress: 0,
-    complete: 0,
-    error: 0,
-  })
+  return statuses.reduce(
+    (stats, status) => {
+      stats[status] += 1
+      return stats
+    },
+    {
+      pending: 0,
+      progress: 0,
+      complete: 0,
+      error: 0,
+    }
+  )
 }
 
 function reduceJobStatus(statuses) {

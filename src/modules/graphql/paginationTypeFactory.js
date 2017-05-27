@@ -28,9 +28,7 @@ function pageInfoTypeFactory(name) {
 }
 
 function paginationTypeFactory(options) {
-  const {
-    type,
-  } = options
+  const { type } = options
 
   const name = type.name
 

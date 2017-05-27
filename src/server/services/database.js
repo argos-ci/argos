@@ -21,7 +21,7 @@ export async function disconnect() {
       return
     }
 
-    knex.destroy((error) => {
+    knex.destroy(error => {
       if (error) {
         reject(error)
       } else {

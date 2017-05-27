@@ -149,9 +149,11 @@ describe('models/Build', () => {
           score: 0,
           validationStatus: VALIDATION_STATUS.rejected,
         })
-        expect(await build.getStatus({
-          useValidation: true,
-        })).toBe('failure')
+        expect(
+          await build.getStatus({
+            useValidation: true,
+          })
+        ).toBe('failure')
       })
 
       it('should be failure n°2', async () => {
@@ -161,9 +163,11 @@ describe('models/Build', () => {
           score: 1,
           validationStatus: VALIDATION_STATUS.unknown,
         })
-        expect(await build.getStatus({
-          useValidation: true,
-        })).toBe('failure')
+        expect(
+          await build.getStatus({
+            useValidation: true,
+          })
+        ).toBe('failure')
       })
 
       it('should be success', async () => {
@@ -173,9 +177,11 @@ describe('models/Build', () => {
           score: 0.2,
           validationStatus: VALIDATION_STATUS.accepted,
         })
-        expect(await build.getStatus({
-          useValidation: true,
-        })).toBe('success')
+        expect(
+          await build.getStatus({
+            useValidation: true,
+          })
+        ).toBe('success')
       })
     })
 

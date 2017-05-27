@@ -22,23 +22,28 @@ factory.define('ScreenshotBucket', ScreenshotBucket, {
   repositoryId: factory.assoc('Repository', 'id'),
 })
 
-factory.define('Build', Build, {
-  jobStatus: 'complete',
-  repositoryId: factory.assoc('Repository', 'id'),
-}, {
-  async afterBuild(model, attrs) {
-    if (!attrs.compareScreenshotBucketId) {
-      const compareScreenshotBucket = await factory.create('ScreenshotBucket', {
-        repositoryId: model.repositoryId || attrs.repositoryId,
-      })
-      model.compareScreenshotBucketId = compareScreenshotBucket.id
-    } else {
-      model.compareScreenshotBucketId = attrs.compareScreenshotBucketId
-    }
-
-    return model
+factory.define(
+  'Build',
+  Build,
+  {
+    jobStatus: 'complete',
+    repositoryId: factory.assoc('Repository', 'id'),
   },
-})
+  {
+    async afterBuild(model, attrs) {
+      if (!attrs.compareScreenshotBucketId) {
+        const compareScreenshotBucket = await factory.create('ScreenshotBucket', {
+          repositoryId: model.repositoryId || attrs.repositoryId,
+        })
+        model.compareScreenshotBucketId = compareScreenshotBucket.id
+      } else {
+        model.compareScreenshotBucketId = attrs.compareScreenshotBucketId
+      }
+
+      return model
+    },
+  }
+)
 
 factory.define('BuildNotification', BuildNotification, {
   buildId: factory.assoc('Build', 'id'),

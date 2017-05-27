@@ -5,17 +5,14 @@ import path from 'path'
 nock.back.fixtures = path.join(process.cwd(), 'test', 'fixtures')
 
 function playback(options) {
-  const {
-    name,
-    mode,
-  } = options
+  const { name, mode } = options
 
   nock.back.setMode(mode)
 
   let nockDoneSaved
 
-  global.beforeAll((done) => {
-    nock.back(name, (nockDone) => {
+  global.beforeAll(done => {
+    nock.back(name, nockDone => {
       nockDoneSaved = nockDone
       done()
     })

@@ -41,8 +41,10 @@ export function errorChecking(routeHandler) {
   }
 }
 
-router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
-  async (req, res) => {
+router.post(
+  '/builds',
+  upload.array('screenshots[]', 500),
+  errorChecking(async (req, res) => {
     const data = JSON.parse(req.body.data)
 
     if (!data.token) {
@@ -53,10 +55,7 @@ router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
       throw new HttpError(401, 'Invalid commit')
     }
 
-    const repository = await Repository.query()
-      .where({ token: data.token })
-      .limit(1)
-      .first()
+    const repository = await Repository.query().where({ token: data.token }).limit(1).first()
 
     if (!repository) {
       throw new HttpError(400, `Repository not found (token: "${data.token}")`)
@@ -66,46 +65,41 @@ router.post('/builds', upload.array('screenshots[]', 500), errorChecking(
       throw new HttpError(400, `Repository not enabled (name: "${repository.name}")`)
     }
 
-    const build = await transaction(
-      Build,
-      ScreenshotBucket,
-      async (Build, ScreenshotBucket) => {
-        const bucket = await ScreenshotBucket
-          .query()
-          .insert({
-            name: 'default',
-            commit: data.commit,
-            branch: data.branch,
-            repositoryId: repository.id,
-          })
+    const build = await transaction(Build, ScreenshotBucket, async (Build, ScreenshotBucket) => {
+      const bucket = await ScreenshotBucket.query().insert({
+        name: 'default',
+        commit: data.commit,
+        branch: data.branch,
+        repositoryId: repository.id,
+      })
 
-        const inserts = req.files.map((file, index) => bucket
-          .$relatedQuery('screenshots')
-          .insert({
-            screenshotBucketId: bucket.id,
-            name: data.names[index],
-            s3Id: file.key,
-          }))
-
-        await Promise.all(inserts)
-
-        const build = await Build.query().insert({
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: bucket.id,
-          repositoryId: repository.id,
-          jobStatus: 'pending',
+      const inserts = req.files.map((file, index) =>
+        bucket.$relatedQuery('screenshots').insert({
+          screenshotBucketId: bucket.id,
+          name: data.names[index],
+          s3Id: file.key,
         })
-        return build
-      },
-    )
+      )
+
+      await Promise.all(inserts)
+
+      const build = await Build.query().insert({
+        baseScreenshotBucketId: null,
+        compareScreenshotBucketId: bucket.id,
+        repositoryId: repository.id,
+        jobStatus: 'pending',
+      })
+      return build
+    })
 
     await buildJob.push(build.id)
     res.send({ build })
-  },
-))
+  })
+)
 
-router.get('/buckets', errorChecking(
-  async (req, res) => {
+router.get(
+  '/buckets',
+  errorChecking(async (req, res) => {
     let query = ScreenshotBucket.query()
 
     if (req.query.branch) {
@@ -113,14 +107,16 @@ router.get('/buckets', errorChecking(
     }
 
     res.send(await query)
-  },
-))
+  })
+)
 
-router.use(errorHandler({
-  formatters: {
-    json: formatters.json,
-    default: formatters.json,
-  },
-}))
+router.use(
+  errorHandler({
+    formatters: {
+      json: formatters.json,
+      default: formatters.json,
+    },
+  })
+)
 
 export default router

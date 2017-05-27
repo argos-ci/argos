@@ -29,11 +29,10 @@ export function isSuccess(task) {
 }
 
 export function watchTask(type, selector) {
-  return this
-    .switchMap(input =>
-      from(selector(input))
-        .map(output => createTaskData(type, SUCCESS, input, output))
-        ._catch(output => of(createTaskData(type, ERROR, input, output)))
-        .startWith(createTaskData(type, PROGRESS, input, {})),
-    )
+  return this.switchMap(input =>
+    from(selector(input))
+      .map(output => createTaskData(type, SUCCESS, input, output))
+      ._catch(output => of(createTaskData(type, ERROR, input, output)))
+      .startWith(createTaskData(type, PROGRESS, input, {}))
+  )
 }

@@ -1,6 +1,6 @@
 exports.seed = (knex, Promise) =>
-  knex('screenshot_buckets').delete()
-    .then(() => Promise.all([
+  knex('screenshot_buckets').delete().then(() =>
+    Promise.all([
       knex('screenshot_buckets').insert([
         {
           id: 1,
@@ -57,4 +57,5 @@ exports.seed = (knex, Promise) =>
           updatedAt: '2017-02-06T01:41:35Z',
         },
       ]),
-    ]))
+    ])
+  )

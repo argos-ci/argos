@@ -7,9 +7,7 @@ import recompact from 'modules/recompact'
 import BuildScreenshotItem from 'review/routes/build/BuildScreenshotItem'
 
 function BuildScreenshots(props) {
-  const {
-    fetch,
-  } = props
+  const { fetch } = props
 
   return (
     <div>
@@ -35,5 +33,5 @@ export default recompact.compose(
   connect(state => ({
     fetch: state.ui.build.fetch,
     screenshotsBucket: state.data.config.s3.screenshotsBucket,
-  })),
+  }))
 )(BuildScreenshots)

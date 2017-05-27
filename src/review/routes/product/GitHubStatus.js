@@ -3,7 +3,8 @@ import classNames from 'classnames'
 import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 
-const codecov = 'https://codecov.io/gh/callemall/material-ui/compare/306a500828ab4e78561753ecc6402403db1cb276...f6fee890063fea05d9d07ea03a59684503cac292'
+const codecov =
+  'https://codecov.io/gh/callemall/material-ui/compare/306a500828ab4e78561753ecc6402403db1cb276...f6fee890063fea05d9d07ea03a59684503cac292'
 
 const styleSheet = createStyleSheet('GitHubStatus', () => ({
   root: {
@@ -195,10 +196,7 @@ function GitHubStatus(props) {
                   viewBox="0 0 12 16"
                   width="12"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 5l-8 8-4-4 1.5-1.5L4 10l6.5-6.5z"
-                  />
+                  <path fillRule="evenodd" d="M12 5l-8 8-4-4 1.5-1.5L4 10l6.5-6.5z" />
                 </svg>
               </div>
               <a
@@ -214,10 +212,7 @@ function GitHubStatus(props) {
                   width="20"
                 />
               </a>
-              <div
-                className="text-gray col-10 css-truncate"
-                title="Difference accepted."
-              >
+              <div className="text-gray col-10 css-truncate" title="Difference accepted.">
                 <strong className="text-emphasized">
                   argos
                 </strong>
@@ -241,10 +236,7 @@ function GitHubStatus(props) {
                   viewBox="0 0 12 16"
                   width="12"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 5l-8 8-4-4 1.5-1.5L4 10l6.5-6.5z"
-                  />
+                  <path fillRule="evenodd" d="M12 5l-8 8-4-4 1.5-1.5L4 10l6.5-6.5z" />
                 </svg>
               </div>
               <a
@@ -260,10 +252,7 @@ function GitHubStatus(props) {
                   width="20"
                 />
               </a>
-              <div
-                className="text-gray col-10 css-truncate"
-                title="Your tests passed on CircleCI!"
-              >
+              <div className="text-gray col-10 css-truncate" title="Your tests passed on CircleCI!">
                 <strong className="text-emphasized">
                   ci/circleci
                 </strong>
@@ -287,10 +276,7 @@ function GitHubStatus(props) {
                   viewBox="0 0 12 16"
                   width="12"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 5l-8 8-4-4 1.5-1.5L4 10l6.5-6.5z"
-                  />
+                  <path fillRule="evenodd" d="M12 5l-8 8-4-4 1.5-1.5L4 10l6.5-6.5z" />
                 </svg>
               </div>
               <a
@@ -330,10 +316,7 @@ function GitHubStatus(props) {
                   viewBox="0 0 12 16"
                   width="12"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 5l-8 8-4-4 1.5-1.5L4 10l6.5-6.5z"
-                  />
+                  <path fillRule="evenodd" d="M12 5l-8 8-4-4 1.5-1.5L4 10l6.5-6.5z" />
                 </svg>
               </div>
               <a
@@ -379,16 +362,10 @@ function GitHubStatus(props) {
           viewBox="0 0 12 16"
           width="12"
         >
-          <path
-            fillRule="evenodd"
-            d="M12 5l-8 8-4-4 1.5-1.5L4 10l6.5-6.5z"
-          />
+          <path fillRule="evenodd" d="M12 5l-8 8-4-4 1.5-1.5L4 10l6.5-6.5z" />
         </svg>
       </button>
-      <a
-        className={classes.code}
-        href="/callemall/material-ui/pull/6846/commits/f6fee89"
-      >
+      <a className={classes.code} href="/callemall/material-ui/pull/6846/commits/f6fee89">
         f6fee89
       </a>
     </div>

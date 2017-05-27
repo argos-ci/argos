@@ -18,7 +18,7 @@ export async function disconnect() {
       return
     }
 
-    redisClient.quit((error) => {
+    redisClient.quit(error => {
       if (error) {
         reject(error)
       } else {

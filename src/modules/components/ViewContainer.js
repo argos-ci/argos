@@ -13,10 +13,7 @@ const styleSheet = createStyleSheet('ViewContainer', () => ({
 }))
 
 function ViewContainer(props) {
-  const {
-    children,
-    classes,
-  } = props
+  const { children, classes } = props
 
   return (
     <div className={classes.root}>

@@ -1,21 +1,21 @@
 import { Model } from 'objection'
 
 export function mergeSchemas(...schemas) {
-  return schemas.reduce((mergedSchema, schema) => ({
-    ...mergedSchema,
-    ...schema,
-    required: [
-      ...mergedSchema.required,
-      ...schema.required,
-    ],
-    properties: {
-      ...mergedSchema.properties,
-      ...schema.properties,
-    },
-  }), {
-    required: [],
-    properties: {},
-  })
+  return schemas.reduce(
+    (mergedSchema, schema) => ({
+      ...mergedSchema,
+      ...schema,
+      required: [...mergedSchema.required, ...schema.required],
+      properties: {
+        ...mergedSchema.properties,
+        ...schema.properties,
+      },
+    }),
+    {
+      required: [],
+      properties: {},
+    }
+  )
 }
 
 export default class BaseModel extends Model {
@@ -34,13 +34,13 @@ export default class BaseModel extends Model {
         type: 'string',
       },
     },
-  };
+  }
 
   // Centralize the models.
-  static modelPaths = [__dirname];
+  static modelPaths = [__dirname]
 
   // http://vincit.github.io/objection.js/#defaulteageralgorithm
-  static defaultEagerAlgorithm = Model.JoinEagerAlgorithm;
+  static defaultEagerAlgorithm = Model.JoinEagerAlgorithm
 
   $beforeInsert() {
     if (!this.createdAt) {

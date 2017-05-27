@@ -1,7 +1,4 @@
-import {
-  GraphQLObjectType,
-  GraphQLString,
-} from 'graphql'
+import { GraphQLObjectType, GraphQLString } from 'graphql'
 import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 import Screenshot from 'server/models/Screenshot'
 

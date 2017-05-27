@@ -128,10 +128,12 @@ const RepositoryType = new GraphQLObjectType({
     builds: {
       description: 'Get repository builds.',
       args: {
-        first: { // Number to display
+        first: {
+          // Number to display
           type: new GraphQLNonNull(GraphQLInt),
         },
-        after: { // Cursor
+        after: {
+          // Cursor
           type: new GraphQLNonNull(GraphQLInt),
         },
       },

@@ -1,7 +1,6 @@
 exports.seed = (knex, Promise) =>
-  knex.raw('TRUNCATE users CASCADE')
-    .then(() => knex('users').delete())
-    .then(() => Promise.all([
+  knex.raw('TRUNCATE users CASCADE').then(() => knex('users').delete()).then(() =>
+    Promise.all([
       knex('users').insert([
         {
           id: 1,
@@ -22,4 +21,5 @@ exports.seed = (knex, Promise) =>
           updatedAt: new Date().toISOString(),
         },
       ]),
-    ]))
+    ])
+  )

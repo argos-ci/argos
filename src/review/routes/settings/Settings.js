@@ -18,14 +18,7 @@ const styleSheet = createStyleSheet('Settings', theme => ({
 }))
 
 function Settings(props) {
-  const {
-    classes,
-    fetch,
-    params: {
-      profileName,
-      repositoryName,
-    },
-  } = props
+  const { classes, fetch, params: { profileName, repositoryName } } = props
   const { repository } = fetch.output.data
 
   return (
@@ -39,11 +32,7 @@ function Settings(props) {
         </Typography>
         <Typography type="subheading">
           {'To send data to Argos-ci you will need to configure a '}
-          <Link
-            href="https://github.com/argos-ci/argos-cli"
-            target="_blank"
-            variant="primary"
-          >
+          <Link href="https://github.com/argos-ci/argos-cli" target="_blank" variant="primary">
             CLI
           </Link>
           {' with a client key (usually referred to as the ARGOS_TOKEN value).'}
@@ -84,5 +73,5 @@ export default recompact.compose(
   withStyles(styleSheet),
   connect(state => ({
     fetch: state.ui.repository.fetch,
-  })),
+  }))
 )(Settings)

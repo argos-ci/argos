@@ -7,9 +7,7 @@ import {
   GraphQLString,
   GraphQLList,
 } from 'graphql/type'
-import BuildType, {
-  resolve as resolveBuild,
-} from 'server/graphql/BuildType'
+import BuildType, { resolve as resolveBuild } from 'server/graphql/BuildType'
 import OwnerType, {
   resolve as resolveOwner,
   resolveList as resolveOwnerList,
@@ -18,13 +16,8 @@ import RepositoryType, {
   resolve as resolveRepository,
   toggleRepository,
 } from 'server/graphql/RepositoryType'
-import {
-  setValidationStatus,
-  validationStatusType,
-} from 'server/graphql/ScreenshotDiffType'
-import UserType, {
-  resolve as resolveUser,
-} from 'server/graphql/UserType'
+import { setValidationStatus, validationStatusType } from 'server/graphql/ScreenshotDiffType'
+import UserType, { resolve as resolveUser } from 'server/graphql/UserType'
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({

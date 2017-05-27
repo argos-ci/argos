@@ -26,12 +26,7 @@ const styleSheet = createStyleSheet('Account', () => ({
 }))
 
 function Account(props) {
-  const {
-    account,
-    classes,
-    onToggleRepository,
-    user,
-  } = props
+  const { account, classes, onToggleRepository, user } = props
 
   return (
     <ViewContainer>
@@ -44,23 +39,16 @@ function Account(props) {
                 {user.name}
               </Typography>
             </Grid>
-            {!user.privateSync && (
+            {!user.privateSync &&
               <Grid item>
-                <Button
-                  raised
-                  accent
-                  component={Link}
-                  variant="button"
-                  href="/auth/github-private"
-                >
+                <Button raised accent component={Link} variant="button" href="/auth/github-private">
                   Synchronize private repositories
                 </Button>
-              </Grid>
-            )}
+              </Grid>}
             <Grid item xs={12}>
               <Paper className={classes.paper}>
                 <WatchTask task={account.fetch}>
-                  {(data) => {
+                  {data => {
                     if (data.user.relatedRepositories.length === 0) {
                       return (
                         <WatchTaskContainer>
@@ -111,14 +99,15 @@ export default recompact.compose(
     account: state.ui.account,
   })),
   recompact.withHandlers({
-    onToggleRepository: ({ dispatch }) => payload => dispatch({
-      type: actionTypes.ACCOUNT_TOGGLE_CLICK,
-      payload,
-    }),
+    onToggleRepository: ({ dispatch }) => payload =>
+      dispatch({
+        type: actionTypes.ACCOUNT_TOGGLE_CLICK,
+        payload,
+      }),
   }),
   recompact.lifecycle({
     componentDidMount() {
       this.props.dispatch({ type: actionTypes.ACCOUNT_FETCH, payload: {} })
     },
-  }),
+  })
 )(Account)

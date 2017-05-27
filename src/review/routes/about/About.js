@@ -13,10 +13,7 @@ function About() {
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
-        <ProductHeader
-          display1="All about Argos CI"
-          headline="💅"
-        />
+        <ProductHeader display1="All about Argos CI" headline="💅" />
         <LayoutBody margin>
           <MarkdownElement text={about} />
         </LayoutBody>

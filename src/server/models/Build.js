@@ -9,24 +9,17 @@ import ScreenshotDiff from 'server/models/ScreenshotDiff'
 const NEXT_NUMBER = Symbol('nextNumber')
 
 export default class Build extends BaseModel {
-  static tableName = 'builds';
+  static tableName = 'builds'
 
-  static jsonSchema = mergeSchemas(
-    BaseModel.jsonSchema,
-    jobModelSchema,
-    {
-      required: [
-        'compareScreenshotBucketId',
-        'repositoryId',
-      ],
-      properties: {
-        baseScreenshotBucketId: { types: ['string', null] },
-        compareScreenshotBucketId: { type: 'string' },
-        repositoryId: { type: 'string' },
-        number: { type: 'integer' },
-      },
+  static jsonSchema = mergeSchemas(BaseModel.jsonSchema, jobModelSchema, {
+    required: ['compareScreenshotBucketId', 'repositoryId'],
+    properties: {
+      baseScreenshotBucketId: { types: ['string', null] },
+      compareScreenshotBucketId: { type: 'string' },
+      repositoryId: { type: 'string' },
+      number: { type: 'integer' },
     },
-  )
+  })
 
   static relationMappings = {
     baseScreenshotBucket: {
@@ -61,13 +54,16 @@ export default class Build extends BaseModel {
         to: 'screenshot_diffs.buildId',
       },
     },
-  };
+  }
 
-  $afterValidate(json) { // eslint-disable-line class-methods-use-this
-    if (json.baseScreenshotBucketId &&
-      json.baseScreenshotBucketId === json.compareScreenshotBucketId) {
+  // eslint-disable-next-line class-methods-use-this
+  $afterValidate(json) {
+    if (
+      json.baseScreenshotBucketId &&
+      json.baseScreenshotBucketId === json.compareScreenshotBucketId
+    ) {
       throw new ValidationError(
-        'The base screenshot bucket should be different to the compare one.',
+        'The base screenshot bucket should be different to the compare one.'
       )
     }
   }
@@ -84,7 +80,7 @@ export default class Build extends BaseModel {
     if (json.number === NEXT_NUMBER) {
       json.number = this.$knex().raw(
         '(select coalesce(max(number),0) + 1 as number from builds where "repositoryId" = ?)',
-        this.repositoryId,
+        this.repositoryId
       )
     }
     return json
@@ -96,10 +92,7 @@ export default class Build extends BaseModel {
   }
 
   static async getStatus(build, options = {}) {
-    const {
-      useScore = true,
-      useValidation = false,
-    } = options
+    const { useScore = true, useValidation = false } = options
 
     // If something bad happened at the build level
     if (build.jobStatus !== 'complete') {
@@ -113,10 +106,11 @@ export default class Build extends BaseModel {
 
     if (jobStatus === 'complete') {
       if (useValidation && useScore) {
-        const isFailure = screenshotDiffs.some(({ score, validationStatus }) => (
-          validationStatus === VALIDATION_STATUS.rejected ||
-          (validationStatus === VALIDATION_STATUS.unknown && score > 0)
-        ))
+        const isFailure = screenshotDiffs.some(
+          ({ score, validationStatus }) =>
+            validationStatus === VALIDATION_STATUS.rejected ||
+            (validationStatus === VALIDATION_STATUS.unknown && score > 0)
+        )
         return isFailure ? 'failure' : 'success'
       } else if (useScore) {
         const hasDiffs = screenshotDiffs.some(({ score }) => score > 0)

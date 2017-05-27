@@ -23,31 +23,17 @@ const styleSheet = createStyleSheet('ProductTrust', theme => ({
 }))
 
 function ProductTrust(props) {
-  const {
-    classes,
-  } = props
+  const { classes } = props
 
   return (
     <Paper square elevation={0} className={classes.trusted}>
       <Grid container>
-        <Grid
-          item
-          sm={3}
-          container
-          align="center"
-          justify="center"
-        >
+        <Grid item sm={3} container align="center" justify="center">
           <Typography type="subheading" className={classes.trustedLogoLink}>
             {'Trusted by: '}
           </Typography>
         </Grid>
-        <Grid
-          item
-          sm={3}
-          container
-          align="center"
-          justify="center"
-        >
+        <Grid item sm={3} container align="center" justify="center">
           <Link
             href="https://github.com/doctolib"
             target="_blank"
@@ -57,13 +43,7 @@ function ProductTrust(props) {
             <img src={doctolib} alt="Doctolib" className={classes.trustedLogoImage} />
           </Link>
         </Grid>
-        <Grid
-          item
-          sm={3}
-          container
-          align="center"
-          justify="center"
-        >
+        <Grid item sm={3} container align="center" justify="center">
           <Link
             href="https://github.com/callemall/material-ui"
             target="_blank"
@@ -78,13 +58,7 @@ function ProductTrust(props) {
             />
           </Link>
         </Grid>
-        <Grid
-          item
-          sm={3}
-          container
-          align="center"
-          justify="center"
-        >
+        <Grid item sm={3} container align="center" justify="center">
           <Typography type="title" className={classes.trustedLogoLink}>
             You?
           </Typography>

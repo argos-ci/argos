@@ -1,8 +1,4 @@
-import {
-  GraphQLObjectType,
-  GraphQLString,
-  GraphQLList,
-} from 'graphql'
+import { GraphQLObjectType, GraphQLString, GraphQLList } from 'graphql'
 import RepositoryType from 'server/graphql/RepositoryType'
 import User from 'server/models/User'
 import { getOwner } from 'server/graphql/utils'
@@ -15,8 +11,7 @@ export function resolve(obj, args) {
 
 export async function resolveList(obj, args, context) {
   const organizations = await context.user.$relatedQuery('organizations')
-  const users = await User
-    .query()
+  const users = await User.query()
     .distinct('users.id')
     .select('users.*')
     .innerJoin('repositories', 'repositories.userId', 'users.id')
@@ -39,20 +34,20 @@ const OwnerType = new GraphQLObjectType({
       type: new GraphQLList(RepositoryType),
       resolve(source, args, context) {
         if (!context.user) {
-          return source.$relatedQuery('repositories')
-            .where({
-              private: false,
-              enabled: true,
-              [`repositories.${source.type}Id`]: source.id,
-            })
+          return source.$relatedQuery('repositories').where({
+            private: false,
+            enabled: true,
+            [`repositories.${source.type}Id`]: source.id,
+          })
         }
 
-        return source.$relatedQuery('repositories')
+        return source
+          .$relatedQuery('repositories')
           .select('repositories.*')
           .leftJoin(
             'user_repository_rights',
             'user_repository_rights.repositoryId',
-            'repositories.id',
+            'repositories.id'
           )
           .where({ private: false, enabled: true })
           .orWhere({

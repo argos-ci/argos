@@ -8,11 +8,12 @@ if (config.get('env') === 'production') {
 
 const travis = process.env.TRAVIS === 'true'
 
-const command = travis ?
-  `psql -U argos ${config.get('env')} < db/structure.sql` :
-  `docker exec -i \`docker-compose ps -q postgres\` psql -U argos ${config.get('env')} < db/structure.sql`
+const command = travis
+  ? `psql -U argos ${config.get('env')} < db/structure.sql`
+  : `docker exec -i \`docker-compose ps -q postgres\` psql -U argos ${config.get('env')} < db/structure.sql`
 
-exec(command)
-  .catch((err) => {
-    setTimeout(() => { throw err })
+exec(command).catch(err => {
+  setTimeout(() => {
+    throw err
   })
+})

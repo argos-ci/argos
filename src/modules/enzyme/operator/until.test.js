@@ -47,9 +47,13 @@ describe('modules/enzyme/until', () => {
   })
 
   it('throws when it is called on an empty wrapper', () => {
-    assert.throws(() => {
-      until.call(shallow(<Div />).find('Foo'), 'div')
-    }, Error, 'Method “until” is only meant to be run on a single node. 0 found instead.')
+    assert.throws(
+      () => {
+        until.call(shallow(<Div />).find('Foo'), 'div')
+      },
+      Error,
+      'Method “until” is only meant to be run on a single node. 0 found instead.'
+    )
   })
 
   it('shallow renders non-root wrappers', () => {
@@ -65,7 +69,7 @@ describe('modules/enzyme/until', () => {
     class Bar extends React.Component {
       static childContextTypes = { quux: PropTypes.bool }
       getChildContext = () => ({ quux: true })
-      render = () => <Foo />;
+      render = () => <Foo />
     }
 
     it('passes down context from the root component', () => {

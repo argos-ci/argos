@@ -38,10 +38,10 @@ if (process.env.NODE_ENV === 'production') {
 function isMediaBot(userAgent) {
   let output = false
 
-  if (userAgent && (
-    userAgent.indexOf('facebookexternalhit') !== -1 ||
-    userAgent.indexOf('Twitterbot') !== -1
-    )) {
+  if (
+    userAgent &&
+    (userAgent.indexOf('facebookexternalhit') !== -1 || userAgent.indexOf('Twitterbot') !== -1)
+  ) {
     output = true
   }
 
@@ -69,12 +69,14 @@ export default additionalClientData => (req, res) => {
         },
       },
       releaseVersion: config.get('heroku.releaseVersion'),
-      ...(req.user ? {
-        authorizationStatus: getAuthorizationStatus(req.user),
-        user: pick(req.user, 'name', 'email', 'login', 'privateSync'),
-      } : {
-        user: null,
-      }),
+      ...(req.user
+        ? {
+            authorizationStatus: getAuthorizationStatus(req.user),
+            user: pick(req.user, 'name', 'email', 'login', 'privateSync'),
+          }
+        : {
+            user: null,
+          }),
       ...additionalClientData,
     }),
   })

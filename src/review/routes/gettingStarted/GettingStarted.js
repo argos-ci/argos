@@ -22,14 +22,7 @@ const styleSheet = createStyleSheet('GettingStarted', theme => ({
 }))
 
 function GettingStarted(props) {
-  const {
-    classes,
-    fetch,
-    params: {
-      profileName,
-      repositoryName,
-    },
-  } = props
+  const { classes, fetch, params: { profileName, repositoryName } } = props
 
   const { repository } = fetch.output.data
   const text = gettingStarted.replace(/__ARGOS_TOKEN__/g, repository.token)
@@ -69,5 +62,5 @@ export default recompact.compose(
   withStyles(styleSheet),
   connect(state => ({
     fetch: state.ui.repository.fetch,
-  })),
+  }))
 )(GettingStarted)

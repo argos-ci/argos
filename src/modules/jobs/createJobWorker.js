@@ -5,7 +5,9 @@ const createJobWorker = async (...jobs) => {
     const channel = await getChannel()
     await Promise.all(jobs.map(job => job.process({ channel })))
   } catch (error) {
-    setTimeout(() => { throw error })
+    setTimeout(() => {
+      throw error
+    })
   }
 }
 

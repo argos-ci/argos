@@ -10,10 +10,7 @@ function Documentation() {
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
-        <ProductHeader
-          display1="Documentation"
-          headline="This is work in progress…"
-        />
+        <ProductHeader display1="Documentation" headline="This is work in progress…" />
         <ProductFooter />
       </ScrollView>
     </ViewContainer>
