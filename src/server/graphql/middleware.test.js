@@ -76,7 +76,7 @@ describe('GraphQL', () => {
             }
           }`,
         })
-        .expect((res) => {
+        .expect(res => {
           const { screenshotDiffs } = res.body.data.build
           expect(screenshotDiffs).toEqual([
             {
@@ -136,7 +136,7 @@ describe('GraphQL', () => {
             }
           }`,
         })
-        .expect((res) => {
+        .expect(res => {
           const { screenshotDiffs } = res.body.data.build
           expect(screenshotDiffs).toEqual([
             {
@@ -180,9 +180,11 @@ describe('GraphQL', () => {
 
     describe('validationStatus', () => {
       it('should mutate all the validationStatus', async () => {
-        await request(graphqlMiddleware({
-          context: { user },
-        }))
+        await request(
+          graphqlMiddleware({
+            context: { user },
+          })
+        )
           .post('/')
           .send({
             query: `
@@ -194,7 +196,7 @@ describe('GraphQL', () => {
               }
             `,
           })
-          .expect((res) => {
+          .expect(res => {
             expect(res.body.data).toEqual({
               setValidationStatus: VALIDATION_STATUS.rejected,
             })
@@ -217,7 +219,7 @@ describe('GraphQL', () => {
               }
             }`,
           })
-          .expect((res) => {
+          .expect(res => {
             const { screenshotDiffs } = res.body.data.build
             expect(screenshotDiffs).toEqual([
               {
@@ -237,9 +239,11 @@ describe('GraphQL', () => {
       it('should not mutate when the user is unauthorized', async () => {
         const user2 = await factory.create('User')
 
-        await request(graphqlMiddleware({
-          context: { user: user2 },
-        }))
+        await request(
+          graphqlMiddleware({
+            context: { user: user2 },
+          })
+        )
           .post('/')
           .send({
             query: `
@@ -251,7 +255,7 @@ describe('GraphQL', () => {
               }
             `,
           })
-          .expect((res) => {
+          .expect(res => {
             expect(res.body.errors[0].message).toBe('Invalid user authorization')
           })
           .expect(200)
@@ -285,9 +289,11 @@ describe('GraphQL', () => {
 
     it('should mutate the repository', async () => {
       expect(repository.token).toBe(undefined)
-      await request(graphqlMiddleware({
-        context: { user },
-      }))
+      await request(
+        graphqlMiddleware({
+          context: { user },
+        })
+      )
         .post('/')
         .send({
           query: `
@@ -302,7 +308,7 @@ describe('GraphQL', () => {
             }
           `,
         })
-        .expect((res) => {
+        .expect(res => {
           expect(res.body.data).toMatchObject({
             toggleRepository: {
               enabled: true,
@@ -322,9 +328,11 @@ describe('GraphQL', () => {
         repositoryId: repository.id,
         createdAt: '2017-02-05T17:14:28.167Z',
       })
-      await request(graphqlMiddleware({
-        context: { user },
-      }))
+      await request(
+        graphqlMiddleware({
+          context: { user },
+        })
+      )
         .post('/')
         .send({
           query: `{
@@ -350,7 +358,7 @@ describe('GraphQL', () => {
             }
           }`,
         })
-        .expect((res) => {
+        .expect(res => {
           const { builds } = res.body.data.repository
           expect(builds).toEqual({
             pageInfo: {
@@ -418,10 +426,12 @@ describe('GraphQL', () => {
       })
     })
 
-    it('should filter the repositories (organization)', () => (
-      request(graphqlMiddleware({
-        context: { user },
-      }))
+    it('should filter the repositories (organization)', () =>
+      request(
+        graphqlMiddleware({
+          context: { user },
+        })
+      )
         .post('/graphql')
         .send({
           query: `{
@@ -435,20 +445,21 @@ describe('GraphQL', () => {
           }`,
         })
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           const { repositories } = res.body.data.owner
           expect(repositories).toEqual([
             {
               name: 'foo1',
             },
           ])
-        })
-    ))
+        }))
 
-    it('should filter the repositories (user)', () => (
-      request(graphqlMiddleware({
-        context: { user },
-      }))
+    it('should filter the repositories (user)', () =>
+      request(
+        graphqlMiddleware({
+          context: { user },
+        })
+      )
         .post('/graphql')
         .send({
           query: `{
@@ -462,14 +473,13 @@ describe('GraphQL', () => {
           }`,
         })
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           const { repositories } = res.body.data.owner
           expect(repositories).toEqual([
             {
               name: 'foo3',
             },
           ])
-        })
-    ))
+        }))
   })
 })

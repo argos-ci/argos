@@ -74,7 +74,9 @@ describe('notifications', () => {
       expect(result.data.id).not.toBeUndefined()
       expect(result.data.description).toBe('Build in progress...')
       expect(result.data.state).toBe('pending')
-      expect(result.data.target_url).toBe(`http://www.argos-ci.test/argos-ci/test-repository/builds/${build.id}`)
+      expect(result.data.target_url).toBe(
+        `http://www.argos-ci.test/argos-ci/test-repository/builds/${build.id}`
+      )
     })
 
     describe('repository linked to a user', () => {

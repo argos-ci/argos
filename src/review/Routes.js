@@ -1,12 +1,6 @@
 import React from 'react'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import {
-  applyRouterMiddleware,
-  browserHistory,
-  Router,
-  Route,
-  IndexRoute,
- } from 'react-router'
+import { applyRouterMiddleware, browserHistory, Router, Route, IndexRoute } from 'react-router'
 import plugAnalyticsMiddleware from 'modules/reactRouter/plugAnalyticsMiddleware'
 import App from 'review/routes/App'
 import Homepage from 'review/routes/homepage/Homepage'
@@ -44,12 +38,7 @@ const styleSheet = createStyleSheet('Routes', theme => ({
 
 function Routes() {
   return (
-    <Router
-      history={browserHistory}
-      render={applyRouterMiddleware(
-        plugAnalyticsMiddleware,
-      )}
-    >
+    <Router history={browserHistory} render={applyRouterMiddleware(plugAnalyticsMiddleware)}>
       <Route component={App}>
         <Route path="/" component={Homepage} />
         <Route path="/about" component={About} />

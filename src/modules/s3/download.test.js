@@ -9,8 +9,8 @@ describe('download', () => {
   let tmpDirectory
 
   beforeEach(() => {
-    s3 = new S3({ signatureVersion: 'v4' });
-    ({ name: tmpDirectory } = tmp.dirSync())
+    s3 = new S3({ signatureVersion: 'v4' })
+    ;({ name: tmpDirectory } = tmp.dirSync())
   })
 
   it('should download a file from S3', async () => {

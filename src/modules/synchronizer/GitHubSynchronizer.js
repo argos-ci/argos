@@ -28,40 +28,42 @@ class GitHubSynchronizer {
       this.synchronizeOwners(githubRepositories, OWNER_USER),
     ])
 
-    const repositories = await Promise.all(githubRepositories.data.map(async (githubRepository) => {
-      const data = {
-        githubId: githubRepository.id,
-        name: githubRepository.name,
-        organizationId: organizationIdByRepositoryId[githubRepository.id],
-        userId: userIdByRepositoryId[githubRepository.id],
-        private: githubRepository.private,
-      }
+    const repositories = await Promise.all(
+      githubRepositories.data.map(async githubRepository => {
+        const data = {
+          githubId: githubRepository.id,
+          name: githubRepository.name,
+          organizationId: organizationIdByRepositoryId[githubRepository.id],
+          userId: userIdByRepositoryId[githubRepository.id],
+          private: githubRepository.private,
+        }
 
-      let [repository] = await Repository.query().where({ githubId: githubRepository.id })
+        let [repository] = await Repository.query().where({ githubId: githubRepository.id })
 
-      if (repository) {
-        await repository.$query().patchAndFetch(data)
-      } else {
-        repository = await Repository.query().insert({
-          ...data,
-          baselineBranch: 'master',
-          enabled: false,
-        })
-      }
+        if (repository) {
+          await repository.$query().patchAndFetch(data)
+        } else {
+          repository = await Repository.query().insert({
+            ...data,
+            baselineBranch: 'master',
+            enabled: false,
+          })
+        }
 
-      return repository
-    }))
+        return repository
+      })
+    )
 
     if (this.github.hasNextPage(githubRepositories)) {
       const nextPageData = await this.synchronizeRepositories({ page: page + 1 })
 
-      nextPageData.repositories.forEach((repository) => {
+      nextPageData.repositories.forEach(repository => {
         if (!repositories.find(({ id }) => id === repository.id)) {
           repositories.push(repository)
         }
       })
 
-      nextPageData.organizations.forEach((organization) => {
+      nextPageData.organizations.forEach(organization => {
         if (!organizations.find(({ id }) => id === organization.id)) {
           organizations.push(organization)
         }
@@ -72,53 +74,57 @@ class GitHubSynchronizer {
   }
 
   async synchronizeOwners(githubRepositories, type) {
-    const githubOwners = githubRepositories.data
-      .reduce((githubOwners, githubRepository) => {
-        if (githubRepository.owner.type !== type) {
-          return githubOwners
-        }
-
-        let githubOwner = githubOwners.find(({ id }) => id === githubRepository.owner.id)
-
-        if (!githubOwner) {
-          githubOwner = githubRepository.owner
-          githubOwners.push(githubRepository.owner)
-        }
-
+    const githubOwners = githubRepositories.data.reduce((githubOwners, githubRepository) => {
+      if (githubRepository.owner.type !== type) {
         return githubOwners
-      }, [])
+      }
+
+      let githubOwner = githubOwners.find(({ id }) => id === githubRepository.owner.id)
+
+      if (!githubOwner) {
+        githubOwner = githubRepository.owner
+        githubOwners.push(githubRepository.owner)
+      }
+
+      return githubOwners
+    }, [])
 
     let owners
 
     switch (type) { // eslint-disable-line default-case
       case OWNER_ORGANIZATION:
         owners = await Promise.all(
-          githubOwners.map(githubOwner => this.synchronizeOrganization(githubOwner)),
+          githubOwners.map(githubOwner => this.synchronizeOrganization(githubOwner))
         )
         break
       case OWNER_USER:
         owners = await Promise.all(
-          githubOwners.map(githubOwner => this.synchronizeUser(githubOwner)),
+          githubOwners.map(githubOwner => this.synchronizeUser(githubOwner))
         )
         break
     }
 
     return {
       owners,
-      ownerIdByRepositoryId: githubRepositories.data
-        .reduce((ownerIdByRepositoryId, githubRepository) => {
+      ownerIdByRepositoryId: githubRepositories.data.reduce(
+        (ownerIdByRepositoryId, githubRepository) => {
           if (githubRepository.owner.type === type) {
-            ownerIdByRepositoryId[githubRepository.id] = owners
-              .find(owner => owner.githubId === githubRepository.owner.id).id
+            ownerIdByRepositoryId[githubRepository.id] = owners.find(
+              owner => owner.githubId === githubRepository.owner.id
+            ).id
           }
 
           return ownerIdByRepositoryId
-        }, {}),
+        },
+        {}
+      ),
     }
   }
 
-  async synchronizeOrganization(githubOrganization) { // eslint-disable-line class-methods-use-this
-    ({ data: githubOrganization } = await this.github.orgs.get({ org: githubOrganization.login }))
+  // eslint-disable-next-line class-methods-use-this
+  async synchronizeOrganization(githubOrganization) {
+    const organizationData = await this.github.orgs.get({ org: githubOrganization.login })
+    githubOrganization = organizationData.data
     let [organization] = await Organization.query().where({ githubId: githubOrganization.id })
     const data = {
       githubId: githubOrganization.id,
@@ -135,12 +141,10 @@ class GitHubSynchronizer {
     return organization
   }
 
-  async synchronizeUser(githubUser) { // eslint-disable-line class-methods-use-this
+  // eslint-disable-next-line class-methods-use-this
+  async synchronizeUser(githubUser) {
     const data = { githubId: githubUser.id, login: githubUser.login }
-    let user = await User.query()
-      .where({ githubId: githubUser.id })
-      .limit(1)
-      .first()
+    let user = await User.query().where({ githubId: githubUser.id }).limit(1).first()
 
     if (user) {
       await user.$query().patchAndFetch(data)
@@ -156,26 +160,32 @@ class GitHubSynchronizer {
       userId: this.synchronization.user.id,
     })
 
-    await Promise.all(repositories.map(async (repository) => {
-      const hasRights = userRepositoryRights
-        .some(({ repositoryId }) => repositoryId === repository.id)
+    await Promise.all(
+      repositories.map(async repository => {
+        const hasRights = userRepositoryRights.some(
+          ({ repositoryId }) => repositoryId === repository.id
+        )
 
-      if (!hasRights) {
-        await UserRepositoryRight.query().insert({
-          userId: this.synchronization.user.id,
-          repositoryId: repository.id,
-        })
-      }
-    }))
+        if (!hasRights) {
+          await UserRepositoryRight.query().insert({
+            userId: this.synchronization.user.id,
+            repositoryId: repository.id,
+          })
+        }
+      })
+    )
 
-    await Promise.all(userRepositoryRights.map(async (userRepositoryRight) => {
-      const repositoryStillExists = repositories
-        .find(({ id }) => id === userRepositoryRight.repositoryId)
+    await Promise.all(
+      userRepositoryRights.map(async userRepositoryRight => {
+        const repositoryStillExists = repositories.find(
+          ({ id }) => id === userRepositoryRight.repositoryId
+        )
 
-      if (!repositoryStillExists) {
-        await userRepositoryRight.$query().delete()
-      }
-    }))
+        if (!repositoryStillExists) {
+          await userRepositoryRight.$query().delete()
+        }
+      })
+    )
   }
 
   async synchronizeOrganizationRights(organizations) {
@@ -183,26 +193,32 @@ class GitHubSynchronizer {
       userId: this.synchronization.user.id,
     })
 
-    await Promise.all(organizations.map(async (organization) => {
-      const hasRights = userOrganizationRights
-        .some(({ organizationId }) => organizationId === organization.id)
+    await Promise.all(
+      organizations.map(async organization => {
+        const hasRights = userOrganizationRights.some(
+          ({ organizationId }) => organizationId === organization.id
+        )
 
-      if (!hasRights) {
-        await UserOrganizationRight.query().insert({
-          userId: this.synchronization.user.id,
-          organizationId: organization.id,
-        })
-      }
-    }))
+        if (!hasRights) {
+          await UserOrganizationRight.query().insert({
+            userId: this.synchronization.user.id,
+            organizationId: organization.id,
+          })
+        }
+      })
+    )
 
-    await Promise.all(userOrganizationRights.map(async (userOrganizationRight) => {
-      const organizationStillExists = organizations
-        .find(({ id }) => id === userOrganizationRight.organizationId)
+    await Promise.all(
+      userOrganizationRights.map(async userOrganizationRight => {
+        const organizationStillExists = organizations.find(
+          ({ id }) => id === userOrganizationRight.organizationId
+        )
 
-      if (!organizationStillExists) {
-        await userOrganizationRight.$query().delete()
-      }
-    }))
+        if (!organizationStillExists) {
+          await userOrganizationRight.$query().delete()
+        }
+      })
+    )
   }
 
   async synchronize() {

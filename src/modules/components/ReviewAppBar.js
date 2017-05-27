@@ -28,32 +28,26 @@ class ReviewAppBar extends Component {
   state = {
     open: false,
     anchorEl: undefined,
-  };
+  }
 
-  handleClickUser = (event) => {
+  handleClickUser = event => {
     event.preventDefault()
     this.setState({
       open: true,
       anchorEl: event.currentTarget,
     })
-  };
+  }
 
   handleRequestClose = () => {
     this.setState({
       open: false,
     })
-  };
+  }
 
   render() {
-    const {
-      classes,
-      user,
-    } = this.props
+    const { classes, user } = this.props
 
-    const {
-      open,
-      anchorEl,
-    } = this.state
+    const { open, anchorEl } = this.state
 
     const logged = Boolean(user)
 
@@ -65,7 +59,7 @@ class ReviewAppBar extends Component {
               {'Argos CI'}
             </Link>
           </Typography>
-          {logged && (
+          {logged &&
             <Link
               href="#"
               onClick={this.handleClickUser}
@@ -83,9 +77,8 @@ class ReviewAppBar extends Component {
                   <Avatar src={`https://github.com/${user.login}.png?size=${AVATAR_SIZE}`} />
                 </Grid>
               </Grid>
-            </Link>
-          )}
-          {logged && (
+            </Link>}
+          {logged &&
             <Menu
               anchorOrigin={{
                 vertical: 'top',
@@ -114,18 +107,11 @@ class ReviewAppBar extends Component {
               >
                 Sign Out
               </MenuItem>
-            </Menu>
-          )}
-          {!logged && (
-            <Button
-              contrast
-              component={Link}
-              variant="button"
-              href="/auth/github-public"
-            >
+            </Menu>}
+          {!logged &&
+            <Button contrast component={Link} variant="button" href="/auth/github-public">
               Login
-            </Button>
-          )}
+            </Button>}
         </Toolbar>
       </LayoutAppBar>
     )
@@ -144,5 +130,5 @@ export default recompact.compose(
   withStyles(styleSheet),
   connect(state => ({
     user: state.data.user,
-  })),
+  }))
 )(ReviewAppBar)

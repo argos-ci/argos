@@ -56,5 +56,5 @@ export default recompact.compose(
   connect(state => ({
     user: state.data.user,
     authorizationStatus: state.data.authorizationStatus,
-  })),
+  }))
 )(AuthorizationNotice)

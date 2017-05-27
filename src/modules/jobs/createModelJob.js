@@ -13,16 +13,10 @@ const createModelJob = (queue, Model, perform) =>
       await perform(model)
     },
     async error(id) {
-      await Model
-        .query()
-        .patch({ jobStatus: 'error' })
-        .where({ id })
+      await Model.query().patch({ jobStatus: 'error' }).where({ id })
     },
     async complete(id) {
-      await Model
-        .query()
-        .patch({ jobStatus: 'complete' })
-        .where({ id })
+      await Model.query().patch({ jobStatus: 'complete' }).where({ id })
     },
   })
 

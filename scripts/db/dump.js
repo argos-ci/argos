@@ -9,9 +9,13 @@ if (config.get('env') !== 'development') {
 
 const getMigrationInserts = async () => {
   const migrations = await readdir(join(__dirname, '../../migrations'))
-  return migrations.map(migration =>
-    `INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('${migration}', 1, NOW());\n`,
-  ).join('')
+  return migrations
+    .map(
+      migration =>
+        `INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('${migration}` +
+        ', 1, NOW());\n'
+    )
+    .join('')
 }
 
 exec(`docker-compose exec postgres pg_dump -s -U argos ${config.get('env')} > db/structure.sql`)
@@ -19,6 +23,8 @@ exec(`docker-compose exec postgres pg_dump -s -U argos ${config.get('env')} > db
     const migrationInserts = await getMigrationInserts()
     return appendFile('db/structure.sql', `-- Knex migrations\n\n${migrationInserts}`)
   })
-  .catch((err) => {
-    setTimeout(() => { throw err })
+  .catch(err => {
+    setTimeout(() => {
+      throw err
+    })
   })

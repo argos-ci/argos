@@ -38,8 +38,8 @@ const styleSheet = createStyleSheet('BuildScreenshotItem', theme => ({
     flexGrow: 1,
   },
   cardContent: {
-    padding: `${theme.spacing.unit * 2}px ${theme.spacing.unit * 2}px 0 ${
-      theme.spacing.unit * 2}px`,
+    padding: `${theme.spacing.unit * 2}px ${theme.spacing.unit * 2}px ` +
+      `0 ${theme.spacing.unit * 2}px`,
   },
   cardActions: {
     display: 'flex',
@@ -52,13 +52,7 @@ function BuildScreenshotItem(props) {
     expandIn,
     onClickExpand,
     screenshotsBucket,
-    screenshotDiff: {
-      s3Id,
-      score,
-      jobStatus,
-      baseScreenshot,
-      compareScreenshot,
-    },
+    screenshotDiff: { s3Id, score, jobStatus, baseScreenshot, compareScreenshot },
   } = props
 
   let status = jobStatus
@@ -89,19 +83,19 @@ function BuildScreenshotItem(props) {
         <Collapse in={expandIn} transitionDuration="auto" unmountOnExit>
           <Grid container>
             <Grid item xs={4}>
-              {baseScreenshot ? (
-                <a
-                  href={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <img
-                    className={classes.screenshot}
-                    alt={baseScreenshot.name}
-                    src={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
-                  />
-                </a>
-              ) : null}
+              {baseScreenshot
+                ? <a
+                    href={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      className={classes.screenshot}
+                      alt={baseScreenshot.name}
+                      src={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
+                    />
+                  </a>
+                : null}
             </Grid>
             <Grid item xs={4}>
               <a
@@ -117,7 +111,7 @@ function BuildScreenshotItem(props) {
               </a>
             </Grid>
             <Grid item xs={4}>
-              {s3Id && (
+              {s3Id &&
                 <a
                   href={getS3Url(s3Id, screenshotsBucket)}
                   target="_blank"
@@ -128,8 +122,7 @@ function BuildScreenshotItem(props) {
                     alt="diff"
                     src={getS3Url(s3Id, screenshotsBucket)}
                   />
-                </a>
-              )}
+                </a>}
             </Grid>
           </Grid>
         </Collapse>
@@ -157,12 +150,10 @@ export default recompact.compose(
   connect(state => ({
     screenshotsBucket: state.data.config.s3.screenshotsBucket,
   })),
-  recompact.withState('expandIn', 'onExpandIn', props => (
-    props.screenshotDiff.score !== 0
-  )),
+  recompact.withState('expandIn', 'onExpandIn', props => props.screenshotDiff.score !== 0),
   recompact.withHandlers(() => ({
     onClickExpand: props => () => {
       props.onExpandIn(!props.expandIn)
     },
-  })),
+  }))
 )(BuildScreenshotItem)

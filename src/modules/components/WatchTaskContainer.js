@@ -13,12 +13,7 @@ const styleSheet = createStyleSheet('WatchTaskContainer', theme => ({
 
 function WatchTaskContainer(props) {
   return (
-    <Grid
-      container
-      justify="center"
-      className={props.classes.root}
-      align="center"
-    >
+    <Grid container justify="center" className={props.classes.root} align="center">
       <Grid item>
         {props.children}
       </Grid>

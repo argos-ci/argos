@@ -15,9 +15,11 @@ describe('buildEpic', () => {
       const actions$ = new ActionsObservable(subject)
       const epic$ = buildEpic(actions$)
 
-      graphQLClient.fetch.mockImplementation(() => Promise.resolve({
-        data: {},
-      }))
+      graphQLClient.fetch.mockImplementation(() =>
+        Promise.resolve({
+          data: {},
+        })
+      )
 
       const promise = subscribeAsync(epic$, 3)
 
@@ -34,7 +36,7 @@ describe('buildEpic', () => {
         },
       })
 
-      return promise.then((spy) => {
+      return promise.then(spy => {
         expect(spy.args[2][0].payload.state).toBe(SUCCESS)
       })
     })

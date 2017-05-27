@@ -14,11 +14,7 @@ const styleSheet = createStyleSheet('RepositoryDetailsLoadMore', theme => ({
 }))
 
 function RepositoryDetailsLoadMore(props) {
-  const {
-    classes,
-    fetch,
-    onClickLoadMore,
-  } = props
+  const { classes, fetch, onClickLoadMore } = props
 
   if (!isSuccess(fetch)) {
     return null
@@ -53,5 +49,5 @@ export default recompact.compose(
       const after = props.fetch.output.data.repository.builds.pageInfo.endCursor
       props.dispatch(detailsActions.fetch(props, after))
     },
-  }),
+  })
 )(RepositoryDetailsLoadMore)

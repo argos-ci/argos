@@ -1,17 +1,10 @@
-import {
-  GraphQLObjectType,
-  GraphQLFloat,
-  GraphQLString,
-  GraphQLEnumType,
-} from 'graphql'
+import { GraphQLObjectType, GraphQLFloat, GraphQLString, GraphQLEnumType } from 'graphql'
 import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 import { pushBuildNotification } from 'modules/build/notifications'
 import Build from 'server/models/Build'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import { VALIDATION_STATUS } from 'server/models/constant'
-import ScreenshotType, {
-  resolve as resolveScreenshot,
-} from 'server/graphql/ScreenshotType'
+import ScreenshotType, { resolve as resolveScreenshot } from 'server/graphql/ScreenshotType'
 
 export const validationStatusType = new GraphQLEnumType({
   description: 'Represent the user feedback after reviewing the diffs',
@@ -41,9 +34,7 @@ export async function setValidationStatus(source, args, context) {
     throw new Error('Invalid user authorization')
   }
 
-  await ScreenshotDiff.query()
-    .where({ buildId })
-    .patch({ validationStatus })
+  await ScreenshotDiff.query().where({ buildId }).patch({ validationStatus })
 
   // That might be better suited into a $afterUpdate hook.
   if (validationStatus === VALIDATION_STATUS.accepted) {
@@ -75,22 +66,20 @@ const ScreenshotDiffType = new GraphQLObjectType({
     },
     baseScreenshot: {
       type: ScreenshotType,
-      resolve: source => (
+      resolve: source =>
         resolveScreenshot(source, {
           id: source.baseScreenshotId,
-        })
-      ),
+        }),
     },
     compareScreenshotId: {
       type: GraphQLString,
     },
     compareScreenshot: {
       type: ScreenshotType,
-      resolve: source => (
+      resolve: source =>
         resolveScreenshot(source, {
           id: source.compareScreenshotId,
-        })
-      ),
+        }),
     },
     score: {
       type: GraphQLFloat,

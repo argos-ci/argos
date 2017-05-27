@@ -42,9 +42,7 @@ const styleSheet = createStyleSheet('ProductFooter', theme => ({
 }))
 
 function ProductFooter(props) {
-  const {
-    classes,
-  } = props
+  const { classes } = props
 
   return (
     <footer className={classes.root}>

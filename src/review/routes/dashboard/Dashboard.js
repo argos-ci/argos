@@ -26,10 +26,7 @@ const styleSheet = createStyleSheet('Dashboard', () => ({
 }))
 
 function Dashboard(props) {
-  const {
-    classes,
-    fetch,
-  } = props
+  const { classes, fetch } = props
 
   return (
     <ViewContainer>
@@ -46,7 +43,7 @@ function Dashboard(props) {
             <Grid item xs={12}>
               <Paper className={classes.paper}>
                 <WatchTask task={fetch}>
-                  {(data) => {
+                  {data => {
                     if (data.owners.length === 0) {
                       return (
                         <WatchTaskContainer>
@@ -101,5 +98,5 @@ export default recompact.compose(
         type: actionTypes.DASHBOARD_FETCH,
       })
     },
-  }),
+  })
 )(Dashboard)

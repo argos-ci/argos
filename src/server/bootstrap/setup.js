@@ -7,7 +7,7 @@ handleKillSignals()
 connect()
 initializeCrashReporter()
 
-process.on('error', (error) => {
+process.on('error', error => {
   crashReporter.captureException(error)
   throw error
 })

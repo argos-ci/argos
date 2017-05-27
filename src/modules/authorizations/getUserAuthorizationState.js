@@ -5,11 +5,7 @@ import {
 } from 'modules/authorizations/authorizationStatuses'
 import checkAuthorization from 'modules/authorizations/checkAuthorization'
 
-async function getUserAuthorizationState({
-  accessToken,
-  privateSync,
-  previousAccessToken,
-}) {
+async function getUserAuthorizationState({ accessToken, privateSync, previousAccessToken }) {
   const authorization = await checkAuthorization({ accessToken, privateSync })
   switch (authorization.status) {
     case INVALID_TOKEN:

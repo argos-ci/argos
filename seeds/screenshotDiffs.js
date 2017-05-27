@@ -1,6 +1,6 @@
 exports.seed = (knex, Promise) =>
-  knex('screenshot_diffs').delete()
-    .then(() => Promise.all([
+  knex('screenshot_diffs').delete().then(() =>
+    Promise.all([
       knex('screenshot_diffs').insert([
         {
           buildId: 1,
@@ -91,4 +91,5 @@ exports.seed = (knex, Promise) =>
           updatedAt: new Date().toISOString(),
         },
       ]),
-    ]))
+    ])
+  )

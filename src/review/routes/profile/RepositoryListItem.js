@@ -26,8 +26,9 @@ RepositoryListItem.propTypes = {
 }
 
 export default recompact.withHandlers({
-  onToggle: ({ onToggle, repository }) => () => onToggle({
-    repositoryId: repository.id,
-    enabled: !repository.enabled,
-  }),
+  onToggle: ({ onToggle, repository }) => () =>
+    onToggle({
+      repositoryId: repository.id,
+      enabled: !repository.enabled,
+    }),
 })(RepositoryListItem)

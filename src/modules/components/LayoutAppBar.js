@@ -14,10 +14,7 @@ const styleSheet = createStyleSheet('LayoutAppBar', () => ({
 }))
 
 function LayoutAppBar(props) {
-  const {
-    classes,
-    ...other
-  } = props
+  const { classes, ...other } = props
 
   return <AppBar className={classNames(classes.root)} {...other} />
 }

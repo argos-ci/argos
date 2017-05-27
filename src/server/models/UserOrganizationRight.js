@@ -1,18 +1,15 @@
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 
 export default class UserOrganizationRight extends BaseModel {
-  static tableName = 'user_organization_rights';
+  static tableName = 'user_organization_rights'
 
   static jsonSchema = mergeSchemas(BaseModel.jsonSchema, {
-    required: [
-      'userId',
-      'organizationId',
-    ],
+    required: ['userId', 'organizationId'],
     properties: {
       userId: { type: 'string' },
       organizationId: { type: 'string' },
     },
-  });
+  })
 
   static relationMappings = {
     user: {
@@ -31,5 +28,5 @@ export default class UserOrganizationRight extends BaseModel {
         to: 'organizations.id',
       },
     },
-  };
+  }
 }

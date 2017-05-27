@@ -3,16 +3,10 @@ import UserRepositoryRight from 'server/models/UserRepositoryRight'
 import User from 'server/models/User'
 
 export default class Repository extends BaseModel {
-  static tableName = 'repositories';
+  static tableName = 'repositories'
 
   static jsonSchema = mergeSchemas(BaseModel.jsonSchema, {
-    required: [
-      'githubId',
-      'name',
-      'enabled',
-      'private',
-      'baselineBranch',
-    ],
+    required: ['githubId', 'name', 'enabled', 'private', 'baselineBranch'],
     properties: {
       githubId: { type: 'number' },
       name: { type: 'string' },
@@ -23,7 +17,7 @@ export default class Repository extends BaseModel {
       private: { type: 'boolean' },
       baselineBranch: { type: 'string' },
     },
-  });
+  })
 
   static relationMappings = {
     builds: {
@@ -50,7 +44,7 @@ export default class Repository extends BaseModel {
         to: 'users.id',
       },
     },
-  };
+  }
 
   static getUsers(repositoryId) {
     return User.query()

@@ -24,15 +24,7 @@ const styleSheet = createStyleSheet('Repository', () => ({
 }))
 
 function Repository(props) {
-  const {
-    children,
-    classes,
-    fetch,
-    params: {
-      profileName,
-      repositoryName,
-    },
-  } = props
+  const { children, classes, fetch, params: { profileName, repositoryName } } = props
 
   return (
     <ViewContainer>
@@ -52,7 +44,7 @@ function Repository(props) {
               </Typography>
             </Grid>
             <WatchTask task={fetch} onlySuccess>
-              {(data) => {
+              {data => {
                 if (!data.repository || !data.repository.authorization) {
                   return null
                 }
@@ -72,7 +64,7 @@ function Repository(props) {
             </WatchTask>
             <Grid item xs={12}>
               <WatchTask task={fetch}>
-                {(data) => {
+                {data => {
                   if (!data.repository) {
                     return (
                       <Paper className={classes.paper}>
@@ -121,5 +113,5 @@ export default recompact.compose(
         },
       })
     },
-  }),
+  })
 )(Repository)

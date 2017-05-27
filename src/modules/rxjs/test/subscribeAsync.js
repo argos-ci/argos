@@ -14,15 +14,15 @@ export const subscribeAsync = (observable, expectedEmissionsCount = 1) => {
       .scan(emissionsCount => emissionsCount + 1, -1)
       .debounceTime(0)
       .delay(0) // So that the observer always gets notified asynchronously.
-      .subscribe((emissionsCount) => {
+      .subscribe(emissionsCount => {
         if (emissionsCount < expectedEmissionsCount) {
           return
         }
         subscription.unsubscribe()
         expect(expectedEmissionsCount).toBe(
           emissionsCount,
-          `expected observable to emit ${expectedEmissionsCount} times, emitted ${
-            emissionsCount} times instead`,
+          `expected observable to emit ${expectedEmissionsCount} times, ` +
+            `emitted ${emissionsCount} times instead`
         )
         resolve(handle)
       }, reject)

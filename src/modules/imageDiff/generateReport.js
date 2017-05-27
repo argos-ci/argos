@@ -15,11 +15,10 @@ import imageDiff from 'modules/imageDiff/imageDiff'
  * @returns {diff.baseScreenshotPath} Expected image path
  * @returns {diff.diffResultPath} Diff image path
  */
-async function generateImagePaths(imagePath, {
-  compareScreenshotsPath,
-  baseScreenshotsPath,
-  diffResultsPath,
-}) {
+async function generateImagePaths(
+  imagePath,
+  { compareScreenshotsPath, baseScreenshotsPath, diffResultsPath }
+) {
   const diff = {
     compareScreenshotPath: path.join(compareScreenshotsPath, imagePath),
     baseScreenshotPath: path.join(baseScreenshotsPath, imagePath),
@@ -45,10 +44,9 @@ async function generateImagePaths(imagePath, {
 async function generateReport(options) {
   const baseScreenshotsPaths = await fs.readdir(options.baseScreenshotsPath)
 
-  return Promise.all(baseScreenshotsPaths.map(path => generateImagePaths(path, options)))
-    .then(paths =>
-      Promise.all(paths.map(paths => imageDiff(paths))),
-    )
+  return Promise.all(
+    baseScreenshotsPaths.map(path => generateImagePaths(path, options))
+  ).then(paths => Promise.all(paths.map(paths => imageDiff(paths))))
 }
 
 export default generateReport

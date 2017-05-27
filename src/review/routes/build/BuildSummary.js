@@ -15,10 +15,7 @@ const styleSheet = createStyleSheet('BuildSummary', theme => ({
 }))
 
 export function BuildSummaryView(props) {
-  const {
-    classes,
-    fetch,
-  } = props
+  const { classes, fetch } = props
 
   return (
     <div>
@@ -41,5 +38,5 @@ export default recompact.compose(
   withStyles(styleSheet),
   connect(state => ({
     fetch: state.ui.build.fetch,
-  })),
+  }))
 )(BuildSummaryView)

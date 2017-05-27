@@ -5,12 +5,13 @@ const sources = {
   'style-src': "* 'unsafe-inline'",
 }
 
-const csp = Object
-  .keys(sources)
-  .reduce((reduction, key) => `${reduction} ${key} ${sources[key]};`, '')
+const csp = Object.keys(sources).reduce(
+  (reduction, key) => `${reduction} ${key} ${sources[key]};`,
+  ''
+)
 
 // Content Security Policy
-export default function (req, res, next) {
+export default function(req, res, next) {
   res.setHeader('content-security-policy', csp)
 
   // Disallow embedded iframe

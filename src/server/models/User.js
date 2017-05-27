@@ -1,13 +1,10 @@
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 
 export default class User extends BaseModel {
-  static tableName = 'users';
+  static tableName = 'users'
 
   static jsonSchema = mergeSchemas(BaseModel.jsonSchema, {
-    required: [
-      'githubId',
-      'login',
-    ],
+    required: ['githubId', 'login'],
     properties: {
       githubId: { type: 'number' },
       accessToken: { type: 'string' },
@@ -21,7 +18,7 @@ export default class User extends BaseModel {
         uniqueItems: true,
       },
     },
-  });
+  })
 
   static relationMappings = {
     organizations: {

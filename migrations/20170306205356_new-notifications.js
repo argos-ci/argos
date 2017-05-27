@@ -6,15 +6,13 @@ exports.up = knex =>
     .raw(`ALTER TYPE build_notifications_type ADD VALUE 'diff-rejected'`)
 
 exports.down = knex =>
-  knex.schema
-    .raw(`
+  knex.schema.raw(`
       DELETE FROM pg_enum
       WHERE enumlabel = 'diff-accepted'
       AND enumtypid = (
         SELECT oid FROM pg_type WHERE typname = 'build_notifications_type'
       )
-    `)
-    .raw(`
+    `).raw(`
       DELETE FROM pg_enum
       WHERE enumlabel = 'diff-rejected'
       AND enumtypid = (
@@ -23,4 +21,3 @@ exports.down = knex =>
     `)
 
 exports.config = { transaction: false }
-

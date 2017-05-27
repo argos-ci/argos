@@ -2,12 +2,10 @@ import graphQLClient from 'modules/graphql/client'
 import actionTypes from 'modules/redux/actionTypes'
 import { combineEpics } from 'redux-observable'
 
-const fetchEpic = action$ => (
-  action$
-    .ofType(actionTypes.ACCOUNT_FETCH)
-    .watchTask(actionTypes.ACCOUNT_FETCH_TASK, () => (
-      graphQLClient.fetch({
-        query: `{
+const fetchEpic = action$ =>
+  action$.ofType(actionTypes.ACCOUNT_FETCH).watchTask(actionTypes.ACCOUNT_FETCH_TASK, () =>
+    graphQLClient.fetch({
+      query: `{
           user {
             relatedRepositories {
               id
@@ -19,14 +17,13 @@ const fetchEpic = action$ => (
             }
           }
         }`,
-      })
-    ))
-)
+    })
+  )
 
-const toggleEpic = action$ => (
+const toggleEpic = action$ =>
   action$
     .ofType(actionTypes.ACCOUNT_TOGGLE_CLICK)
-    .watchTask(actionTypes.ACCOUNT_TOGGLE_TASK, action => (
+    .watchTask(actionTypes.ACCOUNT_TOGGLE_TASK, action =>
       graphQLClient.fetch({
         query: `
           mutation {
@@ -40,8 +37,7 @@ const toggleEpic = action$ => (
           }
         `,
       })
-    ))
-)
+    )
 
 const accountEpic = combineEpics(fetchEpic, toggleEpic)
 

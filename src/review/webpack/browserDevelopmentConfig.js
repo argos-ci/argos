@@ -52,23 +52,23 @@ export default {
   },
   module: {
     rules: [
-      ...browserBaseConfig.module.rules.map((rule) => {
+      ...browserBaseConfig.module.rules.map(rule => {
         if (rule.loader === 'babel-loader') {
           return {
             ...rule,
             query: {
               presets: [
-                ['env', {
-                  targets: {
-                    browsers: ['last 2 versions', '> 1%'],
+                [
+                  'env',
+                  {
+                    targets: {
+                      browsers: ['last 2 versions', '> 1%'],
+                    },
+                    modules: false,
                   },
-                  modules: false,
-                }],
+                ],
               ],
-              plugins: [
-                'react-hot-loader/babel',
-                'transform-class-properties',
-              ],
+              plugins: ['react-hot-loader/babel', 'transform-class-properties'],
             },
           }
         }

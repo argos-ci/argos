@@ -25,11 +25,7 @@ const styleSheet = createStyleSheet('RepositoryDetailsEmpty', theme => ({
 }))
 
 function RepositoryDetailsEmpty(props) {
-  const {
-    classes,
-    location,
-    repository,
-  } = props
+  const { classes, location, repository } = props
 
   return (
     <Grid container align="center" className={classes.root}>
@@ -76,7 +72,4 @@ RepositoryDetailsEmpty.propTypes = {
   }).isRequired,
 }
 
-export default recompact.compose(
-  withStyles(styleSheet),
-  withRouter,
-)(RepositoryDetailsEmpty)
+export default recompact.compose(withStyles(styleSheet), withRouter)(RepositoryDetailsEmpty)

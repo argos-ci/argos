@@ -27,12 +27,15 @@ function accountReducer(state, action) {
                 ...state.fetch.output.data,
                 user: {
                   ...state.fetch.output.data.user,
-                  relatedRepositories: state.fetch.output.data.user.relatedRepositories.reduce((all, repository) => [
-                    ...all,
-                    repository.id === action.payload.repositoryId ?
-                      { ...repository, enabled: action.payload.enabled } :
-                      repository,
-                  ], []),
+                  relatedRepositories: state.fetch.output.data.user.relatedRepositories.reduce(
+                    (all, repository) => [
+                      ...all,
+                      repository.id === action.payload.repositoryId
+                        ? { ...repository, enabled: action.payload.enabled }
+                        : repository,
+                    ],
+                    []
+                  ),
                 },
               },
             },
@@ -56,12 +59,18 @@ function accountReducer(state, action) {
                 ...state.fetch.output.data,
                 user: {
                   ...state.fetch.output.data.user,
-                  relatedRepositories: state.fetch.output.data.user.relatedRepositories.reduce((all, repository) => [
-                    ...all,
-                    repository.id === action.payload.output.data.toggleRepository.id ?
-                      { ...repository, enabled: action.payload.output.data.toggleRepository.enabled } :
-                      repository,
-                  ], []),
+                  relatedRepositories: state.fetch.output.data.user.relatedRepositories.reduce(
+                    (all, repository) => [
+                      ...all,
+                      repository.id === action.payload.output.data.toggleRepository.id
+                        ? {
+                            ...repository,
+                            enabled: action.payload.output.data.toggleRepository.enabled,
+                          }
+                        : repository,
+                    ],
+                    []
+                  ),
                 },
               },
             },

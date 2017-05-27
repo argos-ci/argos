@@ -28,14 +28,7 @@ const styleSheet = createStyleSheet('ProductShowcase', theme => ({
 }))
 
 function ProductShowcase(props) {
-  const {
-    classes,
-    description,
-    title,
-    image,
-    textPosition,
-    size,
-  } = props
+  const { classes, description, title, image, textPosition, size } = props
 
   return (
     <div
@@ -53,17 +46,11 @@ function ProductShowcase(props) {
               {description}
             </Typography>
           </Grid>
-          {image ? (
-            <Grid
-              item
-              xs={12}
-              md={7}
-              component="figure"
-              className={classes.image}
-            >
-              {image}
-            </Grid>
-          ) : null}
+          {image
+            ? <Grid item xs={12} md={7} component="figure" className={classes.image}>
+                {image}
+              </Grid>
+            : null}
         </Grid>
       </LayoutBody>
     </div>
@@ -83,7 +70,4 @@ ProductShowcase.defaultProps = {
   size: 'normal',
 }
 
-export default recompact.compose(
-  recompact.pure,
-  withStyles(styleSheet),
-)(ProductShowcase)
+export default recompact.compose(recompact.pure, withStyles(styleSheet))(ProductShowcase)

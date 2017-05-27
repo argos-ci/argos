@@ -1,10 +1,10 @@
 import graphQLClient from 'modules/graphql/client'
 import actionTypes from 'modules/redux/actionTypes'
 
-const repositoryDetailsEpic = action$ => (
+const repositoryDetailsEpic = action$ =>
   action$
     .ofType(actionTypes.REPOSITORY_DETAILS_FETCH)
-    .watchTask(actionTypes.REPOSITORY_DETAILS_FETCH_TASK, action => (
+    .watchTask(actionTypes.REPOSITORY_DETAILS_FETCH_TASK, action =>
       graphQLClient.fetch({
         query: `{
           repository(
@@ -32,7 +32,6 @@ const repositoryDetailsEpic = action$ => (
           }
         }`,
       })
-    ))
-)
+    )
 
 export default repositoryDetailsEpic

@@ -60,9 +60,7 @@ const styleSheet = createStyleSheet('ProductHome', theme => ({
 }))
 
 function ProductHome(props) {
-  const {
-    classes,
-  } = props
+  const { classes } = props
 
   return (
     <ViewContainer>
@@ -73,13 +71,7 @@ function ProductHome(props) {
           headline="Argos's visual regression system gives you high confidence in doing changes."
           beast={<Beast className={classes.beast} />}
         >
-          <Button
-            raised
-            accent
-            component={Link}
-            variant="button"
-            href="/auth/github-public"
-          >
+          <Button raised accent component={Link} variant="button" href="/auth/github-public">
             {'Try it'}
           </Button>
         </ProductHeader>
@@ -117,9 +109,7 @@ function ProductHome(props) {
             Argos integrates directly into your test suite and development workflow.
             We provide a command line interface streamlining the process.
           `}
-          image={
-            <img src={ci} alt="ci" className={classes.showcaseCi} />
-          }
+          image={<img src={ci} alt="ci" className={classes.showcaseCi} />}
         />
         <ProductShowcase
           title="Ship pixel-perfect interfaces"
@@ -128,9 +118,7 @@ function ProductHome(props) {
             Argos provides different tools to compare screenshots.
             Designers can easily participate in the code review process.
           `}
-          image={
-            <img src={perfect} alt="perfect" className={classes.showcasePerfect} />
-          }
+          image={<img src={perfect} alt="perfect" className={classes.showcasePerfect} />}
         />
         <ProductShowcase
           title="Testing your open source project is 100% free"

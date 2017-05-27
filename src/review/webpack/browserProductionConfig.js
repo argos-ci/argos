@@ -6,22 +6,23 @@ export default {
   ...browserBaseConfig,
   module: {
     rules: [
-      ...browserBaseConfig.module.rules.map((rule) => {
+      ...browserBaseConfig.module.rules.map(rule => {
         if (rule.loader === 'babel-loader') {
           return {
             ...rule,
             query: {
               presets: [
-                ['env', {
-                  targets: {
-                    browsers: ['last 2 versions', '> 1%'],
+                [
+                  'env',
+                  {
+                    targets: {
+                      browsers: ['last 2 versions', '> 1%'],
+                    },
+                    modules: false,
                   },
-                  modules: false,
-                }],
+                ],
               ],
-              plugins: [
-                'transform-class-properties',
-              ],
+              plugins: ['transform-class-properties'],
             },
           }
         }

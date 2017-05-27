@@ -48,12 +48,16 @@ function LayoutBody(props) {
 
   return (
     <div
-      className={classNames(classes.root, {
-        [classes.rootResponsive]: !fullWidth,
-        [classes.rootFullHeight]: fullHeight,
-        [classes.rootMargin]: margin,
-        [classes.rootBottom]: bottom,
-      }, className)}
+      className={classNames(
+        classes.root,
+        {
+          [classes.rootResponsive]: !fullWidth,
+          [classes.rootFullHeight]: fullHeight,
+          [classes.rootMargin]: margin,
+          [classes.rootBottom]: bottom,
+        },
+        className
+      )}
       style={style}
       {...other}
     >

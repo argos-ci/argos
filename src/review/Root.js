@@ -1,12 +1,7 @@
 /* eslint-disable global-require, no-underscore-dangle */
 
 import React from 'react'
-import {
-  createStore,
-  applyMiddleware,
-  compose,
-  combineReducers,
-} from 'redux'
+import { createStore, applyMiddleware, compose, combineReducers } from 'redux'
 import { combineEpics, createEpicMiddleware } from 'redux-observable'
 import { Provider } from 'react-redux'
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
@@ -34,7 +29,7 @@ const rootEpic = combineEpics(
   repositoryEpic,
   repositoryDetailsEpic,
   profileEpic,
-  dashboardEpic,
+  dashboardEpic
 )
 
 let middlewares = [
@@ -44,10 +39,7 @@ let middlewares = [
   createEpicMiddleware(rootEpic),
 ]
 
-if (
-  process.env.NODE_ENV !== 'production' &&
-  !window.__REDUX_DEVTOOLS_EXTENSION__
-) {
+if (process.env.NODE_ENV !== 'production' && !window.__REDUX_DEVTOOLS_EXTENSION__) {
   const createLogger = require('redux-logger').createLogger
 
   middlewares = [...middlewares, createLogger()]
@@ -67,12 +59,10 @@ const rootReducers = combineReducers({
   data: dataReducer,
 })
 
-const composeEnhancers = (process.env.NODE_ENV !== 'production' &&
-  window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) || compose
+const composeEnhancers =
+  (process.env.NODE_ENV !== 'production' && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) || compose
 
-const store = composeEnhancers(
-  applyMiddleware(...middlewares),
-)(createStore)(rootReducers)
+const store = composeEnhancers(applyMiddleware(...middlewares))(createStore)(rootReducers)
 
 function Root() {
   const { styleManager, theme } = createDefaultContext()

@@ -6,7 +6,7 @@
  * Log the flow of the observable.
  */
 export function debug(name, selector = x => x) {
-  return this._do((value) => {
+  return this._do(value => {
     console.log(name, selector(value))
   })
 }

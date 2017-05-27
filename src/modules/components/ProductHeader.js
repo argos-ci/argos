@@ -26,31 +26,16 @@ const styleSheet = createStyleSheet('ProductHeader', theme => ({
 }))
 
 function ProductHeader(props) {
-  const {
-    beast,
-    classes,
-    children,
-    display1,
-    headline,
-  } = props
+  const { beast, classes, children, display1, headline } = props
 
   return (
-    <Paper
-      component="header"
-      square
-      elevation={0}
-      className={classes.root}
-    >
+    <Paper component="header" square elevation={0} className={classes.root}>
       <LayoutBody margin bottom={false} className={classes.wrapper}>
         <div className={classes.text}>
           <Typography type="display1" component="h1" gutterBottom>
             {display1}
           </Typography>
-          <Typography
-            type="headline"
-            component="h2"
-            className={classes.headline}
-          >
+          <Typography type="headline" component="h2" className={classes.headline}>
             {headline}
           </Typography>
           {children}

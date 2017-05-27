@@ -22,33 +22,22 @@ const styleSheet = createStyleSheet('BuildSummaryBody', theme => ({
 }))
 
 export function BuildSummaryBodyView(props) {
-  const {
-    build,
-    classes,
-  } = props
+  const { build, classes } = props
 
   const {
     createdAt,
     status,
     baseScreenshotBucket,
-    compareScreenshotBucket: {
-      commit: compareCommit,
-      branch,
-    },
-    repository: {
-      name,
-      owner: {
-        login,
-      },
-    },
+    compareScreenshotBucket: { commit: compareCommit, branch },
+    repository: { name, owner: { login } },
   } = build
 
   const githubBaseUrl = `https://github.com/${login}/${name}`
   let compare
 
   if (baseScreenshotBucket) {
-    const compareFormated = `${formatShortCommit(baseScreenshotBucket.commit)}...${
-      formatShortCommit(compareCommit)}`
+    // eslint-disable-next-line max-len
+    const compareFormated = `${formatShortCommit(baseScreenshotBucket.commit)}...${formatShortCommit(compareCommit)}`
     compare = (
       <li>
         <Link href={`${githubBaseUrl}/compare/${compareFormated}`}>

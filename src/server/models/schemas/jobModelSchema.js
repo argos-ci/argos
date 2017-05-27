@@ -1,16 +1,9 @@
 const jobModelSchema = {
-  required: [
-    'jobStatus',
-  ],
+  required: ['jobStatus'],
   properties: {
     jobStatus: {
       type: 'string',
-      enum: [
-        'pending',
-        'progress',
-        'complete',
-        'error',
-      ],
+      enum: ['pending', 'progress', 'complete', 'error'],
     },
   },
 }

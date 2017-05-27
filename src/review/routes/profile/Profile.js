@@ -33,13 +33,7 @@ const styleSheet = createStyleSheet('Profile', () => ({
 }))
 
 function Profile(props) {
-  const {
-    classes,
-    fetch,
-    params: {
-      profileName,
-    },
-  } = props
+  const { classes, fetch, params: { profileName } } = props
 
   return (
     <ViewContainer>
@@ -47,12 +41,7 @@ function Profile(props) {
       <ScrollView>
         <LayoutBody margin>
           <Grid container gutter={24}>
-            <Grid
-              align="center"
-              container
-              item
-              xs={12}
-            >
+            <Grid align="center" container item xs={12}>
               <Grid item>
                 <Avatar
                   src={`https://github.com/${profileName}.png?size=${SIZE * 2}`}
@@ -70,7 +59,7 @@ function Profile(props) {
             <Grid item xs={12}>
               <Paper className={classes.paper}>
                 <WatchTask task={fetch}>
-                  {(data) => {
+                  {data => {
                     if (!data.owner) {
                       return (
                         <WatchTaskContainer>
@@ -140,5 +129,5 @@ export default recompact.compose(
         },
       })
     },
-  }),
+  })
 )(Profile)

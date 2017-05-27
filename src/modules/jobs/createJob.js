@@ -2,7 +2,7 @@ import { getChannel } from 'server/services/amqp'
 import crashReporter from 'modules/crashReporter'
 
 const serializeMessage = payload => new Buffer(JSON.stringify(payload))
-const parseMessage = (message) => {
+const parseMessage = message => {
   const payload = JSON.parse(message.toString())
   if (!payload || !Array.isArray(payload.args) || !Number.isInteger(payload.attempts)) {
     throw new Error('Invalid payload')
@@ -32,7 +32,7 @@ const createJob = (queue, consumer) => ({
   async process({ channel }) {
     await channel.prefetch(1)
     await channel.assertQueue(queue, { durable: true })
-    await channel.consume(queue, async (msg) => {
+    await channel.consume(queue, async msg => {
       let payload
 
       try {
@@ -47,10 +47,14 @@ const createJob = (queue, consumer) => ({
         channel.nack(msg, false, false)
         // Retry two times
         if (payload && payload.attempts < 2) {
-          channel.sendToQueue(queue, serializeMessage({
-            args: payload.args,
-            attempts: payload.attempts + 1,
-          }), { persistent: true })
+          channel.sendToQueue(
+            queue,
+            serializeMessage({
+              args: payload.args,
+              attempts: payload.attempts + 1,
+            }),
+            { persistent: true }
+          )
         } else {
           await consumer.error(...payload.args)
         }

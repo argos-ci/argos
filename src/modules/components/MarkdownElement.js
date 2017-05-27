@@ -11,15 +11,14 @@ const rendererDefault = new marked.Renderer()
 rendererAnchor.heading = (text, level) => {
   const escapedText = text.toLowerCase().replace(/[^\w]+/g, '-')
 
-  return `
+  return (
+    `
     <h${level}>
-      <a class="anchor-link" id="${escapedText}"></a>${
-      text
-      }<a class="anchor-link-style" href="#${escapedText}">${
-        '#'
-      }</a>
+      <a class="anchor-link" id="${escapedText}"></a>${text}` +
+    `<a class="anchor-link-style" href="#${escapedText}">${'#'}</a>
     </h${level}>
   `
+  )
 }
 
 marked.setOptions({
@@ -114,8 +113,8 @@ const styleSheet = createStyleSheet('MarkdownElement', theme => ({
     },
     '& td': {
       borderBottom: `1px solid ${theme.palette.text.lightDivider}`,
-      padding: `${theme.spacing.unit}px ${theme.spacing.unit * 8}px ${
-        theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
+      padding: `${theme.spacing.unit}px ${theme.spacing.unit * 8}px ` +
+        `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`,
       textAlign: 'left',
     },
     '& td:last-child': {
@@ -163,12 +162,7 @@ const styleSheet = createStyleSheet('MarkdownElement', theme => ({
 }))
 
 function MarkdownElement(props) {
-  const {
-    className,
-    classes,
-    disableAnchor,
-    text,
-  } = props
+  const { className, classes, disableAnchor, text } = props
 
   const renderer = disableAnchor ? rendererDefault : rendererAnchor
 

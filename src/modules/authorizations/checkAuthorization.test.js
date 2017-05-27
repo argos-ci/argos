@@ -23,9 +23,11 @@ describe('checkAuthorization', () => {
 
   describe('with a valid response', () => {
     beforeEach(() => {
-      githubClient.authorization.check.mockImplementation(validToken({
-        scopes: ['user:email', 'repo', 'read:org', 'orga'],
-      }))
+      githubClient.authorization.check.mockImplementation(
+        validToken({
+          scopes: ['user:email', 'repo', 'read:org', 'orga'],
+        })
+      )
     })
 
     it('should return status: CONSISTENT with scopes', async () => {
