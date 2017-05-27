@@ -51,7 +51,7 @@ function Settings(props) {
           {'ARGOS_TOKEN is a project-specific, it should be kept secret.'}
           <br />
           {`
-For more information on integrating Sentry with your application take a look at our
+For more information on integrating Argos CI with your application take a look at our
           `}
           <Link to={`/${profileName}/${repositoryName}/getting-started`} variant="primary">
             documentation.
