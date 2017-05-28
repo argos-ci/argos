@@ -1,0 +1,21 @@
+{
+  "name": "with-happo",
+  "version": "1.0.0",
+  "scripts": {
+    "test:react": "webpack --config test/webpack.config.js && rm -rf screenshots && happo run",
+    "argos": "argos upload screenshots --token $ARGOS_TOKEN || true"
+  },
+  "dependencies": {
+    "argos-cli": "latest",
+    "babel-loader": "^7.0.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.23.0",
+    "babel-preset-react": "^6.24.1",
+    "happo": "^5.0.0-rc.3",
+    "happo-target-firefox": "^5.0.0-rc.5",
+    "react": "^15.5.4",
+    "react-dom": "^15.5.4",
+    "webpack": "^2.6.1"
+  },
+  "license": "MIT"
+}
