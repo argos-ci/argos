@@ -11,6 +11,8 @@ cd with-wdio
 
 Install it and run:
 
+Install [GraphicsMagick](https://github.com/zinserjan/wdio-screenshot#use-graphicsmagick)
+
 ```bash
 docker-compose -f ../docker-compose.yml up
 npm install
