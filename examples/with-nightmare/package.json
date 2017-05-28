@@ -1,0 +1,14 @@
+{
+  "name": "with-nightmare",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "jest",
+    "argos": "argos upload screenshots --token $ARGOS_TOKEN || true"
+  },
+  "dependencies": {
+    "argos-cli": "latest",
+    "jest": "^20.0.4",
+    "nightmare": "^2.10.0"
+  },
+  "license": "MIT"
+}
