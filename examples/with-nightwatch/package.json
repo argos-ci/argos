@@ -1,0 +1,13 @@
+{
+  "name": "with-nightwatch",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "nightwatch --env firefox,chrome",
+    "argos": "argos upload screenshots --token $ARGOS_TOKEN || true"
+  },
+  "dependencies": {
+    "argos-cli": "latest",
+    "nightwatch": "^0.9.15"
+  },
+  "license": "MIT"
+}
