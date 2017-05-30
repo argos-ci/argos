@@ -5,11 +5,15 @@ import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import TextField from 'material-ui/TextField'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
+import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
 
 const styleSheet = createStyleSheet('Settings', theme => ({
   paper: {
+    display: 'flex',
+  },
+  padding: {
     padding: theme.spacing.unit * 2,
   },
   textField: {
@@ -18,15 +22,26 @@ const styleSheet = createStyleSheet('Settings', theme => ({
 }))
 
 function Settings(props) {
-  const { classes, fetch, params: { profileName, repositoryName } } = props
-  const { repository } = fetch.output.data
+  const { classes, repository, params: { profileName, repositoryName } } = props
+
+  if (!repository.authorization) {
+    return (
+      <Paper className={classes.paper}>
+        <WatchTaskContainer>
+          <Typography>
+            {"You don't have enough access right to see that content."}
+          </Typography>
+        </WatchTaskContainer>
+      </Paper>
+    )
+  }
 
   return (
     <div>
       <Typography type="headline" gutterBottom>
         Settings
       </Typography>
-      <Paper className={classes.paper}>
+      <Paper className={classes.padding}>
         <Typography type="title" gutterBottom>
           Environment Variables
         </Typography>
@@ -62,7 +77,10 @@ For more information on integrating Argos CI with your application take a look a
 
 Settings.propTypes = {
   classes: PropTypes.object.isRequired,
-  fetch: PropTypes.object.isRequired,
+  repository: PropTypes.shape({
+    authorization: PropTypes.bool.isRequired,
+    token: PropTypes.string,
+  }).isRequired,
   params: PropTypes.shape({
     profileName: PropTypes.string.isRequired,
     repositoryName: PropTypes.string.isRequired,
@@ -72,6 +90,6 @@ Settings.propTypes = {
 export default recompact.compose(
   withStyles(styleSheet),
   connect(state => ({
-    fetch: state.ui.repository.fetch,
+    repository: state.ui.repository.fetch.output.data.repository,
   }))
 )(Settings)
