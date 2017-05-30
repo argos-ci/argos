@@ -3,5 +3,7 @@
     "js": "babel-node"
   },
   "env": {},
-  "ignore": ["packages/*"]
+  "ignore": [
+    "src/review"
+  ]
 }
