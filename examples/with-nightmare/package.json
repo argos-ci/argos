@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "test": "jest",
-    "argos": "argos upload screenshots --token $ARGOS_TOKEN || true"
+    "argos": "argos upload screenshots --token <your-argos-token>"
   },
   "dependencies": {
     "argos-cli": "latest",

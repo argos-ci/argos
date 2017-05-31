@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "test": "webpack --config test/webpack.config.js && vrtest run --config vrtest.conf.js --record",
-    "argos": "argos upload screenshots --token $ARGOS_TOKEN || true"
+    "argos": "argos upload screenshots --token <your-argos-token>"
   },
   "dependencies": {
     "@angular/common": "^4.1.3",
