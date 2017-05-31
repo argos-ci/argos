@@ -2,11 +2,12 @@
   "name": "with-happo",
   "version": "1.0.0",
   "scripts": {
-    "test:react": "webpack --config test/webpack.config.js && rm -rf screenshots && happo run",
-    "argos": "argos upload screenshots --token $ARGOS_TOKEN || true"
+    "test": "webpack --config test/webpack.config.js && rm -rf screenshots && happo run",
+    "argos": "argos upload screenshots --token <your-argos-token>"
   },
   "dependencies": {
     "argos-cli": "latest",
+    "babel-core": "^6.24.1",
     "babel-loader": "^7.0.0",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-plugin-transform-object-rest-spread": "^6.23.0",
