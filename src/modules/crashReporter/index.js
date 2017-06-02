@@ -9,13 +9,13 @@ let ravenConfig
 if (process.env.PLATFORM === 'browser') {
   DSN = 'https://f1690f74cc6e432e922f32da3eb051c9@sentry.io/133417'
   ravenConfig = {
-    release: window.clientData.releaseVersion,
+    releaseVersion: window.clientData.config.heroku.releaseVersion,
   }
 } else {
   DSN = 'https://261cb80891cb480fa452f7e18c0e57c0:dc050bb97a4d4692aa3e957c5c89d393@sentry.io/133418'
   ravenConfig = {
     autoBreadcrumbs: true,
-    release: require('../../config').default.get('heroku.releaseVersion'),
+    releaseVersion: require('../../config').default.get('heroku.releaseVersion'),
   }
 
   if (!production) {
@@ -37,9 +37,13 @@ export function initializeCrashReporter() {
 }
 
 export const captureClientRelease = () => (req, res, next) => {
-  if (req.headers['x-argos-release']) {
+  if (req.headers['x-argos-release-version']) {
     raven.mergeContext({
-      tags: { clientRelease: req.headers['x-argos-release'] },
+      tags: { clientReleaseVersion: req.headers['x-argos-release-version'] },
+    })
+  } else if (req.headers['x-argos-cli-version']) {
+    raven.mergeContext({
+      tags: { clientCliVersion: req.headers['x-argos-cli-version'] },
     })
   }
 

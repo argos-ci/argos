@@ -77,7 +77,7 @@ export async function processBuildNotification(buildNotification) {
     token: user.accessToken,
   })
 
-  const buildUrl = await formatUrlFromBuild(build, { absolute: true })
+  const buildUrl = await formatUrlFromBuild(build)
 
   // https://developer.github.com/v3/repos/statuses/
   return github.repos.createStatus({

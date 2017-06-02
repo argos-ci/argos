@@ -5,6 +5,7 @@ import multer from 'multer'
 import S3 from 'aws-sdk/clients/s3'
 import multerS3 from 'multer-s3'
 import config from 'config'
+import { formatUrlFromBuild } from 'modules/urls/buildUrl'
 import Build from 'server/models/Build'
 import Repository from 'server/models/Repository'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
@@ -65,7 +66,7 @@ router.post(
       throw new HttpError(400, `Repository not enabled (name: "${repository.name}")`)
     }
 
-    const build = await transaction(Build, ScreenshotBucket, async (Build, ScreenshotBucket) => {
+    let build = await transaction(Build, ScreenshotBucket, async (Build, ScreenshotBucket) => {
       const bucket = await ScreenshotBucket.query().insert({
         name: 'default',
         commit: data.commit,
@@ -92,8 +93,18 @@ router.post(
       return build
     })
 
+    // So we don't reuse the previous transaction
+    build = await Build.query().where({ id: build.id }).limit(1).first()
+
+    const buildUrl = await formatUrlFromBuild(build)
     await buildJob.push(build.id)
-    res.send({ build })
+    res.send({
+      build: {
+        ...build,
+        repository: undefined,
+        buildUrl,
+      },
+    })
   })
 )
 

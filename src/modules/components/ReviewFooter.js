@@ -17,7 +17,7 @@ function ReviewFooter(props) {
       <LayoutBody margin bottom>
         <Grid container justify="space-between">
           <Grid item>
-            {`Argos ${window.clientData.releaseVersion}`}
+            {`Argos ${window.clientData.config.heroku.releaseVersion}`}
           </Grid>
           <Grid item>
             <Link href="https://github.com/argos-ci/argos">

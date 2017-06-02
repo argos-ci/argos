@@ -130,6 +130,13 @@ describe('app routes', () => {
 
         repository = await repository.$query().eager('[builds.compareScreenshotBucket.screenshots]')
         expect(res.body.build.id).not.toBe(undefined)
+        expect(res.body.build.repository).toBe(undefined) // Not leaking private data
+        expect(res.body.build).toMatchObject({
+          jobStatus: 'pending',
+          number: 1,
+          repositoryId: repository.id,
+          buildUrl: `http://www.argos-ci.test/callemall/material-ui/builds/${res.body.build.id}`,
+        })
         expect(repository.builds[0].compareScreenshotBucket.screenshots[0].name).toBe(name)
       })
     })
