@@ -67,8 +67,10 @@ export default additionalClientData => (req, res) => {
         s3: {
           screenshotsBucket: config.get('s3.screenshotsBucket'),
         },
+        heroku: {
+          releaseVersion: config.get('heroku.releaseVersion'),
+        },
       },
-      releaseVersion: config.get('heroku.releaseVersion'),
       ...(req.user
         ? {
             authorizationStatus: getAuthorizationStatus(req.user),

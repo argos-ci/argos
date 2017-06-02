@@ -1,13 +1,11 @@
-const FirefoxTarget = require('happo-target-firefox');
+const FirefoxTarget = require('happo-target-firefox')
 
 module.exports = {
   snapshotsFolder: 'screenshots',
   targets: [
     new FirefoxTarget({
       name: 'firefox',
-      sourceFiles: [
-        '.happo/react.js',
-      ],
+      sourceFiles: ['.happo/react.js'],
       viewports: {
         desktop: {
           width: 1024,
@@ -20,4 +18,4 @@ module.exports = {
       },
     }),
   ],
-};
+}
