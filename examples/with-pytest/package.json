@@ -1,0 +1,12 @@
+{
+  "name": "with-pytest",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "argos": "argos upload screenshots --token <your-argos-token>"
+  },
+  "dependencies": {
+    "argos-cli": "latest"
+  },
+  "license": "MIT"
+}

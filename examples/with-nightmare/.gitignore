@@ -1,2 +1,2 @@
 yarn.lock
-screenshots/*.png
+screenshots/**/*.png
