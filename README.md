@@ -123,6 +123,7 @@ NODE_ENV=test yarn db:reset
 - [spectre](https://github.com/wearefriday/spectre)
 - [wraith](https://github.com/BBC-News/wraith)
 - [BackstopJS](https://github.com/garris/BackstopJS)
+- [VisualReview](https://github.com/xebia/VisualReview)
 - [VisualReview-protractor](https://github.com/xebia/VisualReview-protractor)
 - [Shoov](https://github.com/shoov/shoov)
 

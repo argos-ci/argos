@@ -1,4 +1,4 @@
-# happo example
+# Happo example
 
 ## How to use
 
