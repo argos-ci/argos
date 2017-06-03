@@ -1,5 +1,6 @@
 {
   "name": "with-wdio",
+  "private": true,
   "version": "1.0.0",
   "scripts": {
     "test": "wdio",

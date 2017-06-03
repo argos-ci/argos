@@ -1,5 +1,6 @@
 {
   "name": "with-vrtest",
+  "private": true,
   "version": "1.0.0",
   "scripts": {
     "test": "webpack --config test/webpack.config.js && vrtest run --config vrtest.conf.js --record",

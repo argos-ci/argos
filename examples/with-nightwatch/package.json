@@ -1,5 +1,6 @@
 {
   "name": "with-nightwatch",
+  "private": true,
   "version": "1.0.0",
   "scripts": {
     "test": "nightwatch --env firefox,chrome",

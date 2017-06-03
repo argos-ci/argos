@@ -1,5 +1,6 @@
 {
   "name": "with-happo",
+  "private": true,
   "version": "1.0.0",
   "scripts": {
     "test": "webpack --config test/webpack.config.js && rm -rf screenshots && happo run",
