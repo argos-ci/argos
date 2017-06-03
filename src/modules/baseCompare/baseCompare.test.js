@@ -47,7 +47,7 @@ describe('baseCompare', () => {
       const build = await factory.create('Build', {
         repositoryId: repository.id,
         baseScreenshotBucket: null,
-        comapreScreenshotBucket: screenshotBucket,
+        compareScreenshotBucket: screenshotBucket,
       })
 
       const baseScreenshotBucket = await baseCompare({
@@ -76,7 +76,7 @@ describe('baseCompare', () => {
       const build = await factory.create('Build', {
         repositoryId: repository.id,
         baseScreenshotBucket: null,
-        comapreScreenshotBucket: screenshotBucket2,
+        compareScreenshotBucket: screenshotBucket2,
       })
 
       const baseScreenshotBucket = await baseCompare({
@@ -97,7 +97,7 @@ describe('baseCompare', () => {
       const build = await factory.create('Build', {
         repositoryId: repository.id,
         baseScreenshotBucket: null,
-        comapreScreenshotBucket: screenshotBucket,
+        compareScreenshotBucket: screenshotBucket,
       })
 
       const baseScreenshotBucket = await baseCompare({
@@ -134,7 +134,7 @@ describe('baseCompare', () => {
     const build = await factory.create('Build', {
       repositoryId: repository.id,
       baseScreenshotBucket: null,
-      comapreScreenshotBucket: screenshotBucket2,
+      compareScreenshotBucket: screenshotBucket2,
     })
 
     const baseScreenshotBucket = await baseCompare({
@@ -173,7 +173,7 @@ describe('baseCompare', () => {
       const build = await factory.create('Build', {
         repositoryId: repository.id,
         baseScreenshotBucket: null,
-        comapreScreenshotBucket: screenshotBucket2,
+        compareScreenshotBucket: screenshotBucket2,
       })
 
       const baseScreenshotBucket = await baseCompare({
@@ -216,7 +216,7 @@ describe('baseCompare', () => {
     const build = await factory.create('Build', {
       repositoryId: repository.id,
       baseScreenshotBucket: null,
-      comapreScreenshotBucket: screenshotBucket2,
+      compareScreenshotBucket: screenshotBucket2,
     })
 
     const baseScreenshotBucket = await baseCompare({

@@ -12,6 +12,7 @@ import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import Synchronization from 'server/models/Synchronization'
 import User from 'server/models/User'
 import UserRepositoryRight from 'server/models/UserRepositoryRight'
+import UserOrganizationRight from 'server/models/UserOrganizationRight'
 
 factory.setAdapter(new ObjectionAdapter())
 
@@ -78,9 +79,9 @@ factory.define('UserRepositoryRight', UserRepositoryRight, {
   repositoryId: factory.assoc('Repository', 'id'),
 })
 
-factory.define('UserOrganizationRight', UserRepositoryRight, {
+factory.define('UserOrganizationRight', UserOrganizationRight, {
+  userId: factory.assoc('User', 'id'),
   organizationId: factory.assoc('Organization', 'id'),
-  repositoryId: factory.assoc('Repository', 'id'),
 })
 
 factory.define('ScreenshotDiff', ScreenshotDiff, {
