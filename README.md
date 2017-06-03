@@ -34,89 +34,6 @@ back to a community that gives us so much as well.
 - Automated testing can't tell you if something doesn't look right. UI **regressions** may go undetected.
 - It's hard for **designers** to participate in the code review process.
 
-## Install
-
-```sh
-brew install imagemagick graphicsmagick autoenv
-nvm install
-npm install -g yarn
-yarn
-```
-
-### Setup your .env file
-
-```
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-GITHUB_CLIENT_SECRET=
-SERVER_SESSION_SECRET=
-TEST_GITHUB_USER_ACCESS_TOKEN=
-```
-
-### Modifying your hosts
-
-```
-# Argos
-127.0.0.1 www.argos-ci.dev
-127.0.0.1 api.argos-ci.dev
-```
-
-### Set up database
-
-```sh
-yarn db:reset
-```
-
-### Use the seed
-
-You can fill the database with some development data with the following command:
-```sh
-yarn db:truncate && yarn db:seed
-```
-
-## Develop
-
-```sh
-yarn dev # run server
-yarn dev:review # run webpack
-```
-
-### Jobs
-
-#### Recover pending or error jobs
-
-1. Run console on heroku: `heroku run yarn run console`
-2. Get all concerned objects (ex: `const builds = Build.query().whereNot({ jobStatus: 'complete' })`)
-3. Add a job for these objects (ex: `builds.then(builds => builds.forEach(build => buildJob.push(build.id)))`)
-4. Verify that jobs are correctly processed: `Build.query().whereNot({ jobStatus: 'complete' })`
-
-### Migrations
-
-#### Create a migration
-
-```sh
-./node_modules/.bin/knex migrate:make my_migration
-```
-
-#### Dump database
-
-```sh
-yarn db:dump
-```
-
-#### Execute the latest migration
-
-```sh
-yarn db:migrate:latest
-```
-
-### Running the test suite
-
-You can reset the test database using:
-```sh
-NODE_ENV=test yarn db:reset
-```
-
 ## Previous work
 
 - [happo](https://github.com/Galooshi/happo)
@@ -130,5 +47,5 @@ NODE_ENV=test yarn db:reset
 ## Contributing
 
 Changes and improvements are more than welcome!
-Feel free to fork and open a pull request.
 Please make your changes in a specific branch and request to pull into master!
+To learn more about it, have a look at our [CONTRIBUTING.md](/CONTRIBUTING.md).
