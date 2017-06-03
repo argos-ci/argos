@@ -82,7 +82,7 @@ function Profile(props) {
 
                     return (
                       <List>
-                        {data.owner.repositories.map(repository => (
+                        {data.owner.repositories.map(repository =>
                           <ListItem
                             key={repository.id}
                             button
@@ -92,7 +92,7 @@ function Profile(props) {
                           >
                             <ListItemText primary={repository.name} />
                           </ListItem>
-                        ))}
+                        )}
                       </List>
                     )
                   }}

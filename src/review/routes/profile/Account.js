@@ -61,13 +61,13 @@ function Account(props) {
 
                     return (
                       <List>
-                        {data.user.relatedRepositories.map(repository => (
+                        {data.user.relatedRepositories.map(repository =>
                           <RepositoryListItem
                             key={repository.id}
                             onToggle={onToggleRepository}
                             repository={repository}
                           />
-                        ))}
+                        )}
                       </List>
                     )
                   }}

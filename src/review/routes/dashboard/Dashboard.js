@@ -56,7 +56,7 @@ function Dashboard(props) {
 
                     return (
                       <List>
-                        {data.owners.map(({ login, name }) => (
+                        {data.owners.map(({ login, name }) =>
                           <ListItem
                             key={login}
                             button
@@ -67,7 +67,7 @@ function Dashboard(props) {
                             <Avatar src={`https://github.com/${login}.png?size=80`} />
                             <ListItemText primary={name || login} />
                           </ListItem>
-                        ))}
+                        )}
                       </List>
                     )
                   }}

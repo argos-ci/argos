@@ -33,14 +33,14 @@ function RepositoryDetails(props) {
 
             return (
               <List>
-                {edges.map(build => (
+                {edges.map(build =>
                   <RepositoryDetailsItem
                     key={build.id}
                     build={build}
                     profileName={params.profileName}
                     repositoryName={params.repositoryName}
                   />
-                ))}
+                )}
               </List>
             )
           }}

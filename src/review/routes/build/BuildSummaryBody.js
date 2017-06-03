@@ -36,8 +36,9 @@ export function BuildSummaryBodyView(props) {
   let compare
 
   if (baseScreenshotBucket) {
-    // eslint-disable-next-line max-len
-    const compareFormated = `${formatShortCommit(baseScreenshotBucket.commit)}...${formatShortCommit(compareCommit)}`
+    const compareFormated = `${formatShortCommit(
+      baseScreenshotBucket.commit
+    )}...${formatShortCommit(compareCommit)}`
     compare = (
       <li>
         <Link href={`${githubBaseUrl}/compare/${compareFormated}`}>
