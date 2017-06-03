@@ -1,14 +1,12 @@
 {
-  "name": "with-protractor",
+  "name": "with-rails",
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "protractor conf.js",
     "argos": "argos upload screenshots --token <your-argos-token>"
   },
   "dependencies": {
-    "argos-cli": "latest",
-    "protractor": "^5.1.2"
+    "argos-cli": "latest"
   },
   "license": "MIT"
 }
