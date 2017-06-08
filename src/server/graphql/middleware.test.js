@@ -1,5 +1,5 @@
 import request from 'supertest'
-import { useDatabase } from 'server/test/utils'
+import { useDatabase, noGraphqlErrors } from 'server/test/utils'
 import factory from 'server/test/factory'
 import { VALIDATION_STATUS } from 'server/models/constant'
 import * as notifications from 'modules/build/notifications'
@@ -76,6 +76,7 @@ describe('GraphQL', () => {
             }
           }`,
         })
+        .expect(noGraphqlErrors)
         .expect(res => {
           const { screenshotDiffs } = res.body.data.build
           expect(screenshotDiffs).toEqual([
@@ -136,6 +137,7 @@ describe('GraphQL', () => {
             }
           }`,
         })
+        .expect(noGraphqlErrors)
         .expect(res => {
           const { screenshotDiffs } = res.body.data.build
           expect(screenshotDiffs).toEqual([
@@ -196,6 +198,7 @@ describe('GraphQL', () => {
               }
             `,
           })
+          .expect(noGraphqlErrors)
           .expect(res => {
             expect(res.body.data).toEqual({
               setValidationStatus: VALIDATION_STATUS.rejected,
@@ -219,6 +222,7 @@ describe('GraphQL', () => {
               }
             }`,
           })
+          .expect(noGraphqlErrors)
           .expect(res => {
             const { screenshotDiffs } = res.body.data.build
             expect(screenshotDiffs).toEqual([
@@ -308,6 +312,7 @@ describe('GraphQL', () => {
             }
           `,
         })
+        .expect(noGraphqlErrors)
         .expect(res => {
           expect(res.body.data).toMatchObject({
             toggleRepository: {
@@ -358,6 +363,7 @@ describe('GraphQL', () => {
             }
           }`,
         })
+        .expect(noGraphqlErrors)
         .expect(res => {
           const { builds } = res.body.data.repository
           expect(builds).toEqual({
@@ -444,7 +450,7 @@ describe('GraphQL', () => {
             }
           }`,
         })
-        .expect(200)
+        .expect(noGraphqlErrors)
         .expect(res => {
           const { repositories } = res.body.data.owner
           expect(repositories).toEqual([
@@ -452,7 +458,8 @@ describe('GraphQL', () => {
               name: 'foo1',
             },
           ])
-        }))
+        })
+        .expect(200))
 
     it('should filter the repositories (user)', () =>
       request(
@@ -472,7 +479,7 @@ describe('GraphQL', () => {
             }
           }`,
         })
-        .expect(200)
+        .expect(noGraphqlErrors)
         .expect(res => {
           const { repositories } = res.body.data.owner
           expect(repositories).toEqual([
@@ -480,6 +487,7 @@ describe('GraphQL', () => {
               name: 'foo3',
             },
           ])
-        }))
+        })
+        .expect(200))
   })
 })
