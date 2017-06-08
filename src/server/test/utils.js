@@ -60,3 +60,7 @@ export const setTestsTimeout = timeout => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
   })
 }
+
+export function noGraphqlErrors(res) {
+  expect(res.body.errors).toBe(undefined)
+}
