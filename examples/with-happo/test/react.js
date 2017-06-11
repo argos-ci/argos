@@ -2,16 +2,14 @@ import React from 'react'
 import { render } from 'react-dom'
 
 const requireTests = require.context('../components', true, /js$/)
-const tests = requireTests.keys().reduce((res, path) => {
+const tests = requireTests.keys().map(path => {
   const [suite, name] = path.replace('./', '').replace(/.js$/, '').split('/')
-  res.push({
-    path,
+  return {
     suite,
     name,
     case: requireTests(path),
-  })
-  return res
-}, [])
+  }
+})
 
 tests.forEach(test => {
   happo.define(

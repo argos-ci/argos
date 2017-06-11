@@ -9,16 +9,14 @@ import { NgModule, Component } from '@angular/core'
 import { BrowserModule } from '@angular/platform-browser'
 
 const requireTests = require.context('../components', true, /(js|vue)$/)
-const tests = requireTests.keys().reduce((res, path) => {
+const tests = requireTests.keys().map(path => {
   const [suite, name] = path.replace('./', '').replace(/.(js|vue)$/, '').split('/')
-  res.push({
-    path,
+  return {
     suite,
     name,
     case: requireTests(path),
-  })
-  return res
-}, [])
+  }
+})
 
 function getElements() {
   const rootEl = document.createElement('div')
