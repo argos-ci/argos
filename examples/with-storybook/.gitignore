@@ -1,0 +1,4 @@
+yarn.lock
+.happo
+screenshots/**/*.png
+screenshots/**/*.json
