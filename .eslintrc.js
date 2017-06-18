@@ -61,6 +61,7 @@ module.exports = {
     'import/prefer-default-export': 'off',
     'import/no-extraneous-dependencies': ['error', { devDependencies: true }], // Airbnb forbid devDependencies
     'import/no-unresolved': 'off', // Do not know webpack tricks
+    'import/extensions': 'off', // Issue with storybook
 
     'prettier/prettier': [
       'error',
