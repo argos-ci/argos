@@ -54,7 +54,7 @@ class ReviewAppBar extends Component {
     return (
       <LayoutAppBar>
         <Toolbar>
-          <Typography type="title" colorInherit className={classes.title}>
+          <Typography type="title" color="inherit" className={classes.title}>
             <Link to="/">
               {'Argos-CI'}
             </Link>
@@ -69,7 +69,7 @@ class ReviewAppBar extends Component {
             >
               <Grid container align="center">
                 <Grid item>
-                  <Typography colorInherit>
+                  <Typography color="inherit">
                     {user.name}
                   </Typography>
                 </Grid>

@@ -71,7 +71,13 @@ function ProductHome(props) {
           headline="Argos's visual regression system gives you high confidence in doing changes."
           beast={<Beast className={classes.beast} />}
         >
-          <Button raised accent component={Link} variant="button" href="/auth/github-public">
+          <Button
+            raised
+            color="accent"
+            component={Link}
+            variant="button"
+            href="/auth/github-public"
+          >
             {'Try it'}
           </Button>
         </ProductHeader>

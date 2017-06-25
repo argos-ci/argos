@@ -28,7 +28,7 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
         </Grid>
         <Grid item>
           <Button
-            accent
+            color="accent"
             compact
             component={Link}
             variant="button"

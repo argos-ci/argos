@@ -41,7 +41,13 @@ function Account(props) {
             </Grid>
             {!user.privateSync &&
               <Grid item>
-                <Button raised accent component={Link} variant="button" href="/auth/github-private">
+                <Button
+                  raised
+                  color="accent"
+                  component={Link}
+                  variant="button"
+                  href="/auth/github-private"
+                >
                   Synchronize private repositories
                 </Button>
               </Grid>}

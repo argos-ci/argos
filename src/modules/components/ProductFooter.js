@@ -50,7 +50,7 @@ function ProductFooter(props) {
         <Typography type="title" className={classes.title} gutterBottom>
           Quick Links
         </Typography>
-        <Typography type="subheading" colorInherit component="div">
+        <Typography type="subheading" color="inherit" component="div">
           <Grid container gutter={0}>
             <Grid item xs={12} sm={6}>
               <ul className={classes.list}>
@@ -93,13 +93,13 @@ function ProductFooter(props) {
           </Grid>
         </Typography>
         <Divider className={classes.divider} />
-        <Typography type="subheading" colorInherit component="div">
+        <Typography type="subheading" color="inherit" component="div">
           <Link href="https://github.com/argos-ci">
             <GitHub className={classes.icon} />
             {'GitHub'}
           </Link>
         </Typography>
-        <Typography colorInherit className={classes.copyright}>
+        <Typography color="inherit" className={classes.copyright}>
           {'Copyright © 2017 Argos'}
         </Typography>
       </LayoutBody>
