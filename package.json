@@ -9,7 +9,6 @@
     "dev": "yarn dev:foreman & yarn dev:review",
     "dev:foreman": "nf --procfile Procfile.dev --port 4001 start",
     "dev:review": "babel-node ./node_modules/.bin/webpack-dev-server --config=src/review/webpack/browserDevelopmentConfig.js --progress",
-    "test": "./ci/test.sh",
     "test:unit": "jest --runInBand",
     "test:watch": "yarn test:unit -- --watch",
     "argos": "argos upload screenshots/sample --token $ARGOS_TOKEN || true",
