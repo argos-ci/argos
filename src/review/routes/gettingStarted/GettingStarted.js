@@ -39,7 +39,7 @@ function GettingStarted(props) {
           variant="button"
           to={`/${profileName}/${repositoryName}`}
           raised
-          accent
+          color="accent"
           className={classes.button}
         >
           {'Got it! Go to the Build Stream'}

@@ -12,7 +12,7 @@ module.exports = {
     ecmaVersion: 7,
     sourceType: 'module',
   },
-  plugins: ['babel', 'import', 'jsx-a11y', 'prettier'],
+  plugins: ['babel', 'import', 'jsx-a11y', 'prettier', 'jest'],
   settings: {
     'import/resolver': {
       node: {

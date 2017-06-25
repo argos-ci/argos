@@ -34,7 +34,7 @@ function BuildActions(props) {
   }
 
   return (
-    <Button accent raised onClick={onValidationClick} className={classes.validationStatus}>
+    <Button color="accent" raised onClick={onValidationClick} className={classes.validationStatus}>
       {actionMessage}
     </Button>
   )

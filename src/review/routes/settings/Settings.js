@@ -18,6 +18,7 @@ const styleSheet = createStyleSheet('Settings', theme => ({
   },
   textField: {
     margin: `${theme.spacing.unit * 2}px 0 0`,
+    width: '100%',
   },
 }))
 

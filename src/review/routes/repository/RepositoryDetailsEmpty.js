@@ -46,7 +46,7 @@ function RepositoryDetailsEmpty(props) {
             variant="button"
             to={`${location.pathname}/getting-started`}
             raised
-            accent
+            color="accent"
             className={classes.instructions}
           >
             {'Installation Instructions'}
