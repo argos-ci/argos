@@ -53,10 +53,11 @@ npm install
 ## Install
 
 ```sh
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
 brew install imagemagick graphicsmagick autoenv watchman
 nvm install
 npm install -g yarn
-yarn
+nvm alias default "$(cat .nvmrc)"
 ```
 
 ### Setup your .env file

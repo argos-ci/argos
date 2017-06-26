@@ -6,10 +6,10 @@ if (config.get('env') === 'production') {
   throw new Error('Not in production please!')
 }
 
-const travis = process.env.TRAVIS === 'true'
+const CI = process.env.CI === 'true'
 
-const command = travis
-  ? `createdb -U argos ${config.get('env')}`
+const command = CI
+  ? `createdb --host localhost -U argos ${config.get('env')}`
   : `docker-compose run postgres createdb -h postgres -U argos ${config.get('env')}`
 
 exec(command).catch(err => {

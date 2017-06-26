@@ -1,0 +1,91 @@
+defaults: &defaults
+  working_directory: /tmp/argos
+  docker:
+    - image: circleci/node:8.1.2
+    - image: postgres:9.6
+      environment:
+        POSTGRES_USER: argos
+      ports:
+        - '5432:5432'
+version: 2
+jobs:
+  checkout:
+    <<: *defaults
+    steps:
+      # Fetch the code
+      - checkout
+      - run:
+          name: Check versions and env
+          command: |
+            yarn --version
+            node --version
+            docker --version
+            docker-compose --version
+            env
+            yarn cache dir
+      - restore_cache:
+          key: yarn-sha-{{ checksum "yarn.lock" }}
+      - run:
+          name: Install js dependencies
+          command: |
+            yarn install --pure-lockfile
+      - save_cache:
+          key: yarn-sha-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/.cache/yarn/v1
+      - persist_to_workspace:
+          root: /tmp/argos
+          paths:
+            - argos
+  test_unit:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: /tmp/argos
+      - run:
+          name: postgres
+          command: |
+            sudo apt-get update
+            sudo apt-get install postgresql postgresql-contrib
+      - run:
+          name: Unit
+          environment:
+            NODE_ENV: test
+          command: |
+            yarn db:reset
+            yarn test:unit
+  test_misc:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: /tmp/argos
+      - run:
+          name: Lint
+          command: yarn lint
+      - run:
+          name: postgres
+          command: |
+            sudo apt-get update
+            sudo apt-get install postgresql postgresql-contrib
+      - run:
+          name: Can run the seeds
+          environment:
+            NODE_ENV: test
+          command: |
+            yarn db:reset
+            yarn db:seed
+            yarn db:truncate
+      - run:
+          name: Can run argos
+          command: yarn argos
+workflows:
+  version: 2
+  pipeline:
+    jobs:
+      - checkout
+      - test_unit:
+          requires:
+            - checkout
+      - test_misc:
+          requires:
+            - checkout

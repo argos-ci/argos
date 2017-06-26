@@ -6,10 +6,10 @@ if (config.get('env') === 'production') {
   throw new Error('Not in production please!')
 }
 
-const travis = process.env.TRAVIS === 'true'
+const CI = process.env.CI === 'true'
 
-const command = travis
-  ? `psql -U argos ${config.get('env')} < db/structure.sql`
+const command = CI
+  ? `psql --host localhost -U argos ${config.get('env')} < db/structure.sql`
   : `docker exec -i \`docker-compose ps -q postgres\` psql -U argos ${config.get(
       'env'
     )} < db/structure.sql`
