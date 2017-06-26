@@ -10,5 +10,11 @@
     "logFormat": "combined",
     "secure": true,
     "url": "https://www.argos-ci.com"
+  },
+  "api": {
+    "domain": "api"
+  },
+  "www": {
+    "domain": "www"
   }
 }

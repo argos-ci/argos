@@ -19,7 +19,10 @@ import ReviewFooter from 'modules/components/ReviewFooter'
 import AuthorizationNotice from 'modules/components/AuthorizationNotice'
 import actionTypes from 'modules/redux/actionTypes'
 
-const styleSheet = createStyleSheet('Dashboard', () => ({
+const styleSheet = createStyleSheet('Dashboard', theme => ({
+  avatar: {
+    backgroundColor: theme.palette.background.default,
+  },
   paper: {
     display: 'flex',
   },
@@ -64,7 +67,10 @@ function Dashboard(props) {
                             variant="button"
                             to={`/${login}`}
                           >
-                            <Avatar src={`https://github.com/${login}.png?size=80`} />
+                            <Avatar
+                              className={classes.avatar}
+                              src={`https://github.com/${login}.png?size=80`}
+                            />
                             <ListItemText primary={name || login} />
                           </ListItem>
                         )}

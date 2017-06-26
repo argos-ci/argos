@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { connect } from 'react-redux'
 import classnames from 'classnames'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Paper from 'material-ui/Paper'
@@ -10,9 +9,10 @@ import IconButton from 'material-ui/IconButton'
 import Collapse from 'material-ui/transitions/Collapse'
 import recompact from 'modules/recompact'
 import ItemStatus from 'modules/components/ItemStatus'
+import configBrowser from 'configBrowser'
 
-function getS3Url(s3Id, screenshotsBucket) {
-  return `https://s3.amazonaws.com/${screenshotsBucket}/${s3Id}`
+function getS3Url(s3Id) {
+  return `https://s3.amazonaws.com/${configBrowser.get('s3.screenshotsBucket')}/${s3Id}`
 }
 
 const styleSheet = createStyleSheet('BuildScreenshotItem', theme => ({
@@ -51,7 +51,6 @@ function BuildScreenshotItem(props) {
     classes,
     expandIn,
     onClickExpand,
-    screenshotsBucket,
     screenshotDiff: { s3Id, score, jobStatus, baseScreenshot, compareScreenshot },
   } = props
 
@@ -84,44 +83,28 @@ function BuildScreenshotItem(props) {
           <Grid container>
             <Grid item xs={4}>
               {baseScreenshot
-                ? <a
-                    href={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                ? <a href={getS3Url(baseScreenshot.s3Id)} target="_blank" rel="noopener noreferrer">
                     <img
                       className={classes.screenshot}
                       alt={baseScreenshot.name}
-                      src={getS3Url(baseScreenshot.s3Id, screenshotsBucket)}
+                      src={getS3Url(baseScreenshot.s3Id)}
                     />
                   </a>
                 : null}
             </Grid>
             <Grid item xs={4}>
-              <a
-                href={getS3Url(compareScreenshot.s3Id, screenshotsBucket)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href={getS3Url(compareScreenshot.s3Id)} target="_blank" rel="noopener noreferrer">
                 <img
                   className={classes.screenshot}
                   alt={compareScreenshot.name}
-                  src={getS3Url(compareScreenshot.s3Id, screenshotsBucket)}
+                  src={getS3Url(compareScreenshot.s3Id)}
                 />
               </a>
             </Grid>
             <Grid item xs={4}>
               {s3Id &&
-                <a
-                  href={getS3Url(s3Id, screenshotsBucket)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <img
-                    className={classes.screenshot}
-                    alt="diff"
-                    src={getS3Url(s3Id, screenshotsBucket)}
-                  />
+                <a href={getS3Url(s3Id)} target="_blank" rel="noopener noreferrer">
+                  <img className={classes.screenshot} alt="diff" src={getS3Url(s3Id)} />
                 </a>}
             </Grid>
           </Grid>
@@ -142,14 +125,10 @@ BuildScreenshotItem.propTypes = {
     baseScreenshot: PropTypes.object,
     compareScreenshot: PropTypes.object.isRequired,
   }).isRequired,
-  screenshotsBucket: PropTypes.string.isRequired,
 }
 
 export default recompact.compose(
   withStyles(styleSheet),
-  connect(state => ({
-    screenshotsBucket: state.data.config.s3.screenshotsBucket,
-  })),
   recompact.withState('expandIn', 'onExpandIn', props => props.screenshotDiff.score !== 0),
   recompact.withHandlers(() => ({
     onClickExpand: props => () => {

@@ -32,6 +32,5 @@ BuildScreenshots.propTypes = {
 export default recompact.compose(
   connect(state => ({
     fetch: state.ui.build.fetch,
-    screenshotsBucket: state.data.config.s3.screenshotsBucket,
   }))
 )(BuildScreenshots)

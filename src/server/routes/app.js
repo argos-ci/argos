@@ -49,7 +49,7 @@ app.use(
   })
 )
 
-app.use(subdomain('www', www))
-app.use(subdomain('api', api))
+app.use(subdomain(config.get('www.subdomain'), www))
+app.use(subdomain(config.get('api.subdomain'), api))
 
 export default app

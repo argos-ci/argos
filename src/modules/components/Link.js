@@ -3,19 +3,22 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { Link as LinkRouter } from 'react-router'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { capitalizeFirstLetter } from 'material-ui/utils/helpers'
 
 const styleSheet = createStyleSheet('Link', theme => ({
   root: {
-    color: 'inherit',
     textDecoration: 'inherit',
     '&:hover': {
       textDecoration: 'underline',
     },
   },
-  primary: {
+  variantDefault: {
+    color: 'inherit',
+  },
+  variantPrimary: {
     color: theme.palette.primary[500],
   },
-  button: {
+  variantButton: {
     '&:hover': {
       textDecoration: 'inherit',
     },
@@ -40,10 +43,7 @@ function Link(props) {
       to={to}
       className={classNames(
         classes.root,
-        {
-          [classes.primary]: variant === 'primary',
-          [classes.button]: variant === 'button',
-        },
+        classes[`variant${capitalizeFirstLetter(variant)}`],
         className
       )}
       {...other}
@@ -56,7 +56,11 @@ Link.propTypes = {
   className: PropTypes.string,
   component: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   to: PropTypes.string,
-  variant: PropTypes.oneOf(['primary', 'button']),
+  variant: PropTypes.oneOf(['primary', 'button', 'default']),
+}
+
+Link.defaultProps = {
+  variant: 'default',
 }
 
 export default withStyles(styleSheet)(Link)

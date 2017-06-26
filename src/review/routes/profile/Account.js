@@ -7,6 +7,7 @@ import List from 'material-ui/List'
 import Paper from 'material-ui/Paper'
 import Grid from 'material-ui/Grid'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
+import configBrowser from 'configBrowser'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
 import ViewContainer from 'modules/components/ViewContainer'
@@ -52,6 +53,12 @@ function Account(props) {
                 </Button>
               </Grid>}
             <Grid item xs={12}>
+              <Typography gutterBottom>
+                {'Are you missing a GitHub organization? '}
+                <Link variant="primary" href={configBrowser.get('github.applicationUrl')}>
+                  Check permissions.
+                </Link>
+              </Typography>
               <Paper className={classes.paper}>
                 <WatchTask task={account.fetch}>
                   {data => {

@@ -41,7 +41,7 @@ export default {
     proxy: {
       '**': {
         target: {
-          host: 'www.argos-ci.dev',
+          host: 'www.dev.argos-ci.com',
           protocol: 'http:',
           port: config.get('server.port'),
         },

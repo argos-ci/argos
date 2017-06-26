@@ -70,6 +70,9 @@ export default additionalClientData => (req, res) => {
         heroku: {
           releaseVersion: config.get('heroku.releaseVersion'),
         },
+        github: {
+          applicationUrl: config.get('github.applicationUrl'),
+        },
       },
       ...(req.user
         ? {
