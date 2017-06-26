@@ -12,9 +12,9 @@
     "url": "https://www.argos-ci.com"
   },
   "api": {
-    "domain": "api"
+    "subdomain": "api"
   },
   "www": {
-    "domain": "www"
+    "subdomain": "www"
   }
 }
