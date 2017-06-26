@@ -14,7 +14,7 @@ describe('buildUrl', () => {
 
     it('should return url', async () => {
       expect(await formatUrlFromBuild(build)).toBe(
-        `http://www.argos-ci.test/orga-1/repo-1/builds/${build.id}`
+        `http://www.test.argos-ci.com/orga-1/repo-1/builds/${build.id}`
       )
     })
   })

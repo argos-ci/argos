@@ -73,8 +73,8 @@ TEST_GITHUB_USER_ACCESS_TOKEN=
 
 ```
 # Argos
-127.0.0.1 www.argos-ci.dev
-127.0.0.1 api.argos-ci.dev
+127.0.0.1 www.dev.argos-ci.com
+127.0.0.1 api.dev.argos-ci.com
 ```
 
 ### Set up database

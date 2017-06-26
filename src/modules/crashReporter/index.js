@@ -1,5 +1,6 @@
 /* eslint-disable global-require */
 import raven from 'raven'
+import configBrowser from 'configBrowser'
 
 const production = process.env.NODE_ENV === 'production'
 
@@ -9,7 +10,7 @@ let ravenConfig
 if (process.env.PLATFORM === 'browser') {
   DSN = 'https://f1690f74cc6e432e922f32da3eb051c9@sentry.io/133417'
   ravenConfig = {
-    releaseVersion: window.clientData.config.heroku.releaseVersion,
+    releaseVersion: configBrowser.get('heroku.releaseVersion'),
   }
 } else {
   DSN = 'https://261cb80891cb480fa452f7e18c0e57c0:dc050bb97a4d4692aa3e957c5c89d393@sentry.io/133418'

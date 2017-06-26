@@ -109,7 +109,7 @@ class ReviewAppBar extends Component {
               </MenuItem>
             </Menu>}
           {!logged &&
-            <Button contrast component={Link} variant="button" href="/auth/github-public">
+            <Button color="inherit" component={Link} variant="button" href="/auth/github-public">
               Login
             </Button>}
         </Toolbar>

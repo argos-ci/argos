@@ -20,7 +20,7 @@ describe('app routes', () => {
       it('should respond bad request', async () => {
         await request(app)
           .post('/builds')
-          .set('Host', 'api.argos-ci.dev')
+          .set('Host', 'api.dev.argos-ci.com')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
           .field(
             'data',
@@ -41,7 +41,7 @@ describe('app routes', () => {
       it('should respond bad request', async () => {
         await request(app)
           .post('/builds')
-          .set('Host', 'api.argos-ci.dev')
+          .set('Host', 'api.dev.argos-ci.com')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
           .field(
             'data',
@@ -69,7 +69,7 @@ describe('app routes', () => {
 
         await request(app)
           .post('/builds')
-          .set('Host', 'api.argos-ci.dev')
+          .set('Host', 'api.dev.argos-ci.com')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
           .field(
             'data',
@@ -115,7 +115,7 @@ describe('app routes', () => {
         const name = 'chrome/screenshot_test.jpg'
         const res = await request(app)
           .post('/builds')
-          .set('Host', 'api.argos-ci.dev')
+          .set('Host', 'api.dev.argos-ci.com')
           .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
           .field(
             'data',
@@ -135,7 +135,8 @@ describe('app routes', () => {
           jobStatus: 'pending',
           number: 1,
           repositoryId: repository.id,
-          buildUrl: `http://www.argos-ci.test/callemall/material-ui/builds/${res.body.build.id}`,
+          buildUrl: `http://www.test.argos-ci.com/callemall/material-ui/builds/${res.body.build
+            .id}`,
         })
         expect(repository.builds[0].compareScreenshotBucket.screenshots[0].name).toBe(name)
       })
@@ -159,7 +160,7 @@ describe('app routes', () => {
     it('should returns buckets', () =>
       request(app)
         .get('/buckets')
-        .set('Host', 'api.argos-ci.dev')
+        .set('Host', 'api.dev.argos-ci.com')
         .expect(res => {
           expect(res.body[0].name).toBe('test-bucket')
           expect(res.body[0].commit).toBe('test-commit')
@@ -172,7 +173,7 @@ describe('app routes', () => {
       it('should filter by branch', async () => {
         await request(app)
           .get('/buckets?branch=whatever')
-          .set('Host', 'api.argos-ci.dev')
+          .set('Host', 'api.dev.argos-ci.com')
           .expect(res => {
             expect(res.body).toHaveLength(0)
           })
@@ -180,7 +181,7 @@ describe('app routes', () => {
 
         await request(app)
           .get('/buckets?branch=test-branch')
-          .set('Host', 'api.argos-ci.dev')
+          .set('Host', 'api.dev.argos-ci.com')
           .expect(res => {
             expect(res.body).toHaveLength(1)
           })

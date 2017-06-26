@@ -12,6 +12,18 @@ const config = convict({
     doc: 'The tracking id',
     default: 'UA-89989315-2',
   },
+  api: {
+    subdomain: {
+      format: String,
+      default: 'api.dev',
+    },
+  },
+  www: {
+    subdomain: {
+      format: String,
+      default: 'www.dev',
+    },
+  },
   server: {
     port: {
       doc: 'The server port number',
@@ -27,7 +39,7 @@ const config = convict({
     url: {
       doc: 'The user public url',
       format: String,
-      default: 'http://www.argos-ci.dev:4002',
+      default: 'http://www.dev.argos-ci.com:4002',
     },
     sessionSecret: {
       doc: 'This is the secret used to sign the session ID cookie.',
@@ -74,6 +86,10 @@ const config = convict({
       format: String,
       default: '1781c9a3e1d57fdcfdf9c29c02abf7d37e1c0427',
       env: 'GITHUB_CLIENT_SECRET',
+    },
+    applicationUrl: {
+      format: String,
+      default: 'https://github.com/settings/connections/applications/8460535e1d4c40dfdf05',
     },
   },
   redis: {
