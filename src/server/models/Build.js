@@ -1,6 +1,6 @@
 import { ValidationError } from 'objection'
 import reduceJobStatus from 'modules/jobs/reduceJobStatus'
-import { VALIDATION_STATUS } from 'server/models/constant'
+import { VALIDATION_STATUS } from 'server/models/constants'
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 import User from 'server/models/User'
 import jobModelSchema from 'server/models/schemas/jobModelSchema'

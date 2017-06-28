@@ -50,9 +50,7 @@ function Dashboard(props) {
                     if (data.owners.length === 0) {
                       return (
                         <WatchTaskContainer>
-                          <Typography>
-                            No owners
-                          </Typography>
+                          <Typography>No owners</Typography>
                         </WatchTaskContainer>
                       )
                     }

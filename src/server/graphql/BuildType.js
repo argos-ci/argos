@@ -1,7 +1,9 @@
 import { GraphQLObjectType, GraphQLString, GraphQLInt, GraphQLEnumType, GraphQLList } from 'graphql'
 import Build from 'server/models/Build'
 // eslint-disable-next-line max-len
-import ScreenshotBucketType, { resolve as resolveScreenshotBucket } from 'server/graphql/ScreenshotBucketType'
+import ScreenshotBucketType, {
+  resolve as resolveScreenshotBucket,
+} from 'server/graphql/ScreenshotBucketType'
 import ScreenshotDiffType from 'server/graphql/ScreenshotDiffType'
 import RepositoryType from 'server/graphql/RepositoryType'
 import Repository from 'server/models/Repository'

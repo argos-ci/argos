@@ -1,7 +1,7 @@
 import request from 'supertest'
 import { useDatabase, noGraphqlErrors } from 'server/test/utils'
 import factory from 'server/test/factory'
-import { VALIDATION_STATUS } from 'server/models/constant'
+import { VALIDATION_STATUS } from 'server/models/constants'
 import * as notifications from 'modules/build/notifications'
 import graphqlMiddleware from './middleware'
 

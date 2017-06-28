@@ -21,7 +21,6 @@ jobs:
             node --version
             docker --version
             docker-compose --version
-            env
             yarn cache dir
       - restore_cache:
           key: yarn-sha-{{ checksum "yarn.lock" }}

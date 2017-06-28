@@ -51,7 +51,12 @@ function Profile(props) {
               <Grid item>
                 <Typography type="display1" component="h2" gutterBottom>
                   <WatchTask task={fetch} onlySuccess>
-                    {data => (data.owner ? <span>{data.owner.name}</span> : null)}
+                    {data =>
+                      data.owner
+                        ? <span>
+                            {data.owner.name}
+                          </span>
+                        : null}
                   </WatchTask>
                 </Typography>
               </Grid>
@@ -63,9 +68,7 @@ function Profile(props) {
                     if (!data.owner) {
                       return (
                         <WatchTaskContainer>
-                          <Typography>
-                            Profile not found.
-                          </Typography>
+                          <Typography>Profile not found.</Typography>
                         </WatchTaskContainer>
                       )
                     }
@@ -73,9 +76,7 @@ function Profile(props) {
                     if (data.owner.repositories.length === 0) {
                       return (
                         <WatchTaskContainer>
-                          <Typography>
-                            No repository enabled.
-                          </Typography>
+                          <Typography>No repository enabled.</Typography>
                         </WatchTaskContainer>
                       )
                     }

@@ -28,9 +28,7 @@ function Build(props) {
             return (
               <Paper className={classes.paper}>
                 <WatchTaskContainer>
-                  <Typography>
-                    Build not found.
-                  </Typography>
+                  <Typography>Build not found.</Typography>
                 </WatchTaskContainer>
               </Paper>
             )

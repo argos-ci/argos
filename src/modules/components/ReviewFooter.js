@@ -21,9 +21,7 @@ function ReviewFooter(props) {
             {`Argos ${configBrowser.get('heroku.releaseVersion')}`}
           </Grid>
           <Grid item>
-            <Link href="https://github.com/argos-ci/argos">
-              Contribute
-            </Link>
+            <Link href="https://github.com/argos-ci/argos">Contribute</Link>
           </Grid>
         </Grid>
       </LayoutBody>
