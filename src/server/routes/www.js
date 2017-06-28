@@ -10,7 +10,7 @@ import graphqlMiddleware from 'server/graphql/middleware'
 import rendering from 'server/middlewares/rendering'
 import errorHandler from 'server/middlewares/errorHandler'
 
-const dev = config.get('env') === 'development'
+const production = process.env.NODE_ENV === 'production'
 
 const router = new express.Router()
 const RedisStore = connectRedis(session)
@@ -89,8 +89,8 @@ const htmlErrorHandler = (err, req, res, next) => {
   rendering({
     error: {
       statusCode: res.statusCode,
-      message: dev ? err.message : '',
-      stack: dev ? err.stack : '',
+      message: production ? '' : err.message,
+      stack: production ? '' : err.stack,
     },
   })(req, res, next)
 }

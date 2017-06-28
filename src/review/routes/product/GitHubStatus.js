@@ -213,9 +213,7 @@ function GitHubStatus(props) {
                 />
               </a>
               <div className="text-gray col-10 css-truncate" title="Difference accepted.">
-                <strong className="text-emphasized">
-                  argos
-                </strong>
+                <strong className="text-emphasized">argos</strong>
                 {' — Difference accepted.'}
               </div>
               <div className="d-flex col-2 flex-shrink-0">
@@ -253,9 +251,7 @@ function GitHubStatus(props) {
                 />
               </a>
               <div className="text-gray col-10 css-truncate" title="Your tests passed on CircleCI!">
-                <strong className="text-emphasized">
-                  ci/circleci
-                </strong>
+                <strong className="text-emphasized">ci/circleci</strong>
                 {' — Your tests passed on CircleCI!'}
               </div>
               <div className="d-flex col-2 flex-shrink-0">
@@ -296,9 +292,7 @@ function GitHubStatus(props) {
                 className="text-gray col-10 css-truncate"
                 title="100% of diff hit (target 97.98%)"
               >
-                <strong className="text-emphasized">
-                  codecov/patch
-                </strong>
+                <strong className="text-emphasized">codecov/patch</strong>
                 {' — 100% of diff hit (target 97.98%)'}
               </div>
               <div className="d-flex col-2 flex-shrink-0">
@@ -336,9 +330,7 @@ function GitHubStatus(props) {
                 className="text-gray col-10 css-truncate"
                 title="98.03% (+0.05%) compared to 33fa3b6"
               >
-                <strong className="text-emphasized">
-                  codecov/project
-                </strong>
+                <strong className="text-emphasized">codecov/project</strong>
                 {' — 98.03% (+0.05%) compared to 33fa3b6'}
               </div>
               <div className="d-flex col-2 flex-shrink-0">

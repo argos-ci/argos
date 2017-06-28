@@ -20,7 +20,7 @@ const OwnerType = new GraphQLObjectType({
         return repositories.sort(
           (a, b) =>
             `${(a.organization || a.user).login}${a.name}` >
-              `${(b.organization || b.user).login}${b.name}`
+            `${(b.organization || b.user).login}${b.name}`
               ? 1
               : -1
         )

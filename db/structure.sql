@@ -514,7 +514,8 @@ CREATE TABLE users (
     "accessToken" character varying(255),
     login character varying(255) NOT NULL,
     "privateSync" boolean DEFAULT false NOT NULL,
-    "githubScopes" jsonb
+    "githubScopes" jsonb,
+    scopes jsonb
 );
 
 
@@ -1011,31 +1012,32 @@ ALTER TABLE ONLY user_repository_rights
 
 -- Knex migrations
 
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20161217154940_init.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128163909_screenshot_buckets_drop_column_jobStatus.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165351_builds_alter_column_baseScreenshotBucketId.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165352_screenshot_diffs_alter_column_score.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165353_screenshot_diffs_alter_column_score.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170129135917_link_repositories.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170129213906_screenshot_diffs_add_column_s3id.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170205204435_organization-repository.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211133332_add_table_synchronizations.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211153730_users_add_column_accessToken.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211165500_create_table_user_organization_rights.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211165501_create_table_user_repository_rights.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212091412_users_email_remove_not_null.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212092004_add_column_userId_to_repositories.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212102433_repositories_alter_column_organization_id.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000548_users_name_login.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000549_builds_number.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222222346_add_jobStatus_to_builds.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184220_add_constraints.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184221_remove_constraints.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170305095107_notifications.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170306205356_new-notifications.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312191852_users_add_private_enabled.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312202055_repositories_add_column_private.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312230324_organizations_login.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170319114827_add_github_scopes_to_users.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170329213934_allow_null_baseScreenshotIds.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170402203440_repository_baseline_branch.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20161217154940_init.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128163909_screenshot_buckets_drop_column_jobStatus.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165351_builds_alter_column_baseScreenshotBucketId.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165352_screenshot_diffs_alter_column_score.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165353_screenshot_diffs_alter_column_score.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170129135917_link_repositories.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170129213906_screenshot_diffs_add_column_s3id.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170205204435_organization-repository.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211133332_add_table_synchronizations.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211153730_users_add_column_accessToken.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211165500_create_table_user_organization_rights.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211165501_create_table_user_repository_rights.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212091412_users_email_remove_not_null.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212092004_add_column_userId_to_repositories.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212102433_repositories_alter_column_organization_id.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000548_users_name_login.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000549_builds_number.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222222346_add_jobStatus_to_builds.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184220_add_constraints.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184221_remove_constraints.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170305095107_notifications.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170306205356_new-notifications.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312191852_users_add_private_enabled.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312202055_repositories_add_column_private.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312230324_organizations_login.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170319114827_add_github_scopes_to_users.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170329213934_allow_null_baseScreenshotIds.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170402203440_repository_baseline_branch.js, 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170628232300_add_scopes_to_users.js, 1, NOW());

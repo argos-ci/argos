@@ -19,5 +19,9 @@ function Button(props) {
 storiesOf('Button', module)
   .add('with text', () => <Button>Hello Button</Button>)
   .add('with some emoji', () =>
-    <Button><span role="img" aria-label="emoji">😀 😎 👍 💯</span></Button>
+    <Button>
+      <span role="img" aria-label="emoji">
+        😀 😎 👍 💯
+      </span>
+    </Button>
   )

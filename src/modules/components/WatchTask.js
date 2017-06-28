@@ -11,7 +11,11 @@ function renderInContainer(props, node) {
   const { Container } = props // eslint-disable-line react/prop-types
 
   if (Container) {
-    return <Container>{node}</Container>
+    return (
+      <Container>
+        {node}
+      </Container>
+    )
   }
 
   return node
@@ -21,12 +25,7 @@ export default function WatchTask(props) {
   const { children, task, onlySuccess } = props
 
   if (isError(task) && !onlySuccess) {
-    return renderInContainer(
-      props,
-      <Typography>
-        The loading failed
-      </Typography>
-    )
+    return renderInContainer(props, <Typography>The loading failed</Typography>)
   }
 
   if (task.state === PROGRESS && !onlySuccess) {

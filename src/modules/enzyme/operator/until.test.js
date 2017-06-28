@@ -42,8 +42,21 @@ describe('modules/enzyme/until', () => {
   })
 
   it('stops shallow rendering when it encounters a DOM element', () => {
-    const wrapper = until.call(shallow(<div><Div /></div>), 'Div')
-    expect(wrapper.contains(<div><Div /></div>)).toBe(true)
+    const wrapper = until.call(
+      shallow(
+        <div>
+          <Div />
+        </div>
+      ),
+      'Div'
+    )
+    expect(
+      wrapper.contains(
+        <div>
+          <Div />
+        </div>
+      )
+    ).toBe(true)
   })
 
   it('throws when it is called on an empty wrapper', () => {
@@ -57,7 +70,10 @@ describe('modules/enzyme/until', () => {
   })
 
   it('shallow renders non-root wrappers', () => {
-    const Container = () => <div><Div /></div>
+    const Container = () =>
+      <div>
+        <Div />
+      </div>
     const wrapper = until.call(shallow(<Container />).find(Div))
     expect(wrapper.contains(<div />)).toBe(true)
   })

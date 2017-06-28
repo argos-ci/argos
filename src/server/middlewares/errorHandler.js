@@ -1,11 +1,11 @@
 /* eslint-disable no-console */
+
 import expressErr from 'express-err'
 import crashReporter from 'modules/crashReporter'
-import config from 'config'
 
 export default ({ formatters }) => (err, req, res, next) => {
   crashReporter.errorHandler()(err, req, res, () => {
-    if (config.get('env') !== 'test') {
+    if (process.env.NODE_ENV !== 'test') {
       console.log(err, err.stack)
     }
 

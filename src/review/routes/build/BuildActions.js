@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Button from 'material-ui/Button'
 import recompact from 'modules/recompact'
-import { VALIDATION_STATUS } from 'server/models/constant'
+import { VALIDATION_STATUS } from 'server/models/constants'
 import actionTypes from 'modules/redux/actionTypes'
 
 const styleSheet = createStyleSheet('BuildActions', theme => ({
@@ -61,9 +61,10 @@ export default recompact.compose(
         type: actionTypes.BUILD_VALIDATION_CLICK,
         payload: {
           buildId: props.build.id,
-          validationStatus: props.build.status === 'failure'
-            ? VALIDATION_STATUS.accepted
-            : VALIDATION_STATUS.rejected,
+          validationStatus:
+            props.build.status === 'failure'
+              ? VALIDATION_STATUS.accepted
+              : VALIDATION_STATUS.rejected,
         },
       })
     },

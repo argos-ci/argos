@@ -18,8 +18,16 @@ function ErrorServer(props) {
       title={`Error ${error.statusCode}`}
       message={
         <div>
-          {error.message && <div>{error.message}</div>}
-          {error.stack && <code><pre className={classes.code}>{error.stack}</pre></code>}
+          {error.message &&
+            <div>
+              {error.message}
+            </div>}
+          {error.stack &&
+            <code>
+              <pre className={classes.code}>
+                {error.stack}
+              </pre>
+            </code>}
         </div>
       }
     />

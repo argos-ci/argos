@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
+
 import graphqlHTTP from 'express-graphql'
-import config from 'config'
 import schema from 'server/graphql/schema'
 import PrettyError from 'pretty-error'
 import crashReporter from 'modules/crashReporter'
@@ -12,8 +12,8 @@ pe.skipPackage('express', 'graphql')
 export default ({ context } = {}) =>
   graphqlHTTP(req => ({
     schema,
-    pretty: config.get('env') !== 'production',
-    graphiql: config.get('env') !== 'production',
+    pretty: process.env.NODE_ENV !== 'production',
+    graphiql: process.env.NODE_ENV !== 'production',
     formatError(error) {
       if (error.path || error.name !== 'GraphQLError') {
         if (process.env.NODE_ENV === 'development') {

@@ -34,13 +34,9 @@ function Repository(props) {
           <Grid container gutter={24}>
             <Grid item xs>
               <Typography type="display1" component="h2" noWrap>
-                <Link to={`/${profileName}`}>
-                  {profileName}
-                </Link>
+                <Link to={`/${profileName}`}>{profileName}</Link>
                 /
-                <Link to={`/${profileName}/${repositoryName}`}>
-                  {repositoryName}
-                </Link>
+                <Link to={`/${profileName}/${repositoryName}`}>{repositoryName}</Link>
               </Typography>
             </Grid>
             <WatchTask task={fetch} onlySuccess>
@@ -69,9 +65,7 @@ function Repository(props) {
                     return (
                       <Paper className={classes.paper}>
                         <WatchTaskContainer>
-                          <Typography>
-                            Repository not found, try to login.
-                          </Typography>
+                          <Typography>Repository not found, try to login.</Typography>
                         </WatchTaskContainer>
                       </Paper>
                     )

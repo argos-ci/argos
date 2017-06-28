@@ -55,38 +55,26 @@ function ProductFooter(props) {
             <Grid item xs={12} sm={6}>
               <ul className={classes.list}>
                 <li className={classes.listItem}>
-                  <Link to="/about">
-                    About Us
-                  </Link>
+                  <Link to="/about">About Us</Link>
                 </li>
                 <li className={classes.listItem}>
-                  <Link to="/documentation">
-                    Documentation
-                  </Link>
+                  <Link to="/documentation">Documentation</Link>
                 </li>
                 <li className={classes.listItem}>
-                  <Link to="/security">
-                    Security
-                  </Link>
+                  <Link to="/security">Security</Link>
                 </li>
               </ul>
             </Grid>
             <Grid item xs={12} sm={6}>
               <ul className={classes.list}>
                 <li className={classes.listItem}>
-                  <Link to="/privacy">
-                    Privacy Policy
-                  </Link>
+                  <Link to="/privacy">Privacy Policy</Link>
                 </li>
                 <li className={classes.listItem}>
-                  <Link to="/terms">
-                    Terms of Service
-                  </Link>
+                  <Link to="/terms">Terms of Service</Link>
                 </li>
                 <li className={classes.listItem}>
-                  <Link to="/support">
-                    Support
-                  </Link>
+                  <Link to="/support">Support</Link>
                 </li>
               </ul>
             </Grid>

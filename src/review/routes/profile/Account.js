@@ -65,9 +65,7 @@ function Account(props) {
                     if (data.user.relatedRepositories.length === 0) {
                       return (
                         <WatchTaskContainer>
-                          <Typography>
-                            No related repository
-                          </Typography>
+                          <Typography>No related repository</Typography>
                         </WatchTaskContainer>
                       )
                     }

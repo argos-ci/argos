@@ -17,6 +17,11 @@ export default class User extends BaseModel {
         items: { type: 'string' },
         uniqueItems: true,
       },
+      scopes: {
+        type: ['array', null],
+        items: { type: 'string' },
+        uniqueItems: true,
+      },
     },
   })
 

@@ -3,7 +3,7 @@ import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 import { pushBuildNotification } from 'modules/build/notifications'
 import Build from 'server/models/Build'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
-import { VALIDATION_STATUS } from 'server/models/constant'
+import { VALIDATION_STATUS } from 'server/models/constants'
 import ScreenshotType, { resolve as resolveScreenshot } from 'server/graphql/ScreenshotType'
 
 export const validationStatusType = new GraphQLEnumType({

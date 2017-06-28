@@ -3,5 +3,5 @@ node_modules/
 /server/static/
 *.log
 .env
-!db/structure.sql
 .eslintcache
+/src/modules/imageDiff/**/*_tmp.png
