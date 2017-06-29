@@ -5,6 +5,7 @@ import {
   GraphQLNonNull,
   GraphQLInt,
 } from 'graphql'
+import { promisify } from 'util'
 import crypto from 'crypto'
 import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 import paginationTypeFactory from 'modules/graphql/paginationTypeFactory'
@@ -16,19 +17,6 @@ import BuildType, {
 import OwnerType from 'server/graphql/OwnerType'
 import Repository from 'server/models/Repository'
 import generateSample from 'modules/sample/generateSample'
-
-function toPromise(wrapped) {
-  return new Promise((resolve, reject) => {
-    wrapped((err, data) => {
-      if (err) {
-        reject(err)
-        return
-      }
-
-      resolve(data)
-    })
-  })
-}
 
 export async function resolve(source, args, context) {
   const owner = await getOwner({ login: args.ownerLogin })
@@ -79,7 +67,7 @@ export async function toggleRepository(source, args, context) {
   }
 
   if (!repository.token) {
-    const token = await toPromise(callback => crypto.randomBytes(20, callback))
+    const token = await promisify(crypto.randomBytes)(20)
     repository = await Repository.query().patchAndFetchById(repositoryId, {
       token: token.toString('hex'),
     })
