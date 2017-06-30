@@ -1,3 +1,3 @@
-web: TRACE_SERVICE_NAME=web ./node_modules/.bin/heroku-node-settings lib/server/workers/web.js
-buildAndSynchronize: TRACE_SERVICE_NAME=buildAndSynchronize ./node_modules/.bin/heroku-node-settings lib/server/workers/buildAndSynchronize.js
-screenshotDiff: TRACE_SERVICE_NAME=screenshotDiff ./node_modules/.bin/heroku-node-settings lib/server/workers/screenshotDiff.js
+web: TRACE_SERVICE_NAME=web ./scripts/heroku-node-settings.sh lib/server/workers/web.js
+buildAndSynchronize: TRACE_SERVICE_NAME=buildAndSynchronize ./scripts/heroku-node-settings.sh lib/server/workers/buildAndSynchronize.js
+screenshotDiff: TRACE_SERVICE_NAME=screenshotDiff ./scripts/heroku-node-settings.sh lib/server/workers/screenshotDiff.js

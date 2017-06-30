@@ -11,6 +11,7 @@
     "dev:review": "babel-node ./node_modules/.bin/webpack-dev-server --config=src/review/webpack/browserDevelopmentConfig.js --progress",
     "test:unit": "jest --runInBand",
     "test:watch": "yarn test:unit -- --watch",
+    "web:compress": "open -a ImageOptim src server/public",
     "argos": "argos upload screenshots/sample --token $ARGOS_TOKEN || true",
     "lint": "eslint . --cache && echo \"eslint: no lint errors\"",
     "db:console": "docker-compose run postgres psql -h postgres -U argos",
@@ -39,7 +40,7 @@
     "url": "https://github.com/argos-ci/argos/issues"
   },
   "engines": {
-    "node": "8.1.2"
+    "node": "7.7.3"
   },
   "homepage": "https://github.com/argos-ci/argos#readme",
   "dependencies": {
@@ -75,7 +76,6 @@
     "force-case-sensitivity-webpack-plugin": "^0.2.1",
     "github": "^9.2.0",
     "graphql": "^0.10.3",
-    "heroku-node-settings": "^1.0.2",
     "html-minifier": "^3.5.1",
     "image-diff": "^1.6.3",
     "image-webpack-loader": "^3.3.1",
