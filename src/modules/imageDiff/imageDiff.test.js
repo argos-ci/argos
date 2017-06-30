@@ -10,7 +10,7 @@ describe('imageDiff', () => {
     })
 
     // Avoid precision issues relative to Linux / macOS
-    expect(Math.round(result.total)).toBe(2264)
-    expect(result.percentage).toBe(0.0345467)
+    expect(Math.round(result.total)).toBe(1961)
+    expect(result.percentage).toBe(0.0299183)
   })
 })
