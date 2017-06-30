@@ -11,7 +11,7 @@ function ErrorView(props) {
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
-        <LayoutBody margin>
+        <LayoutBody margin marginBottom>
           <Typography type="display1" component="h2" gutterBottom>
             {props.title}
           </Typography>

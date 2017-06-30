@@ -17,7 +17,7 @@ function Support() {
           display1="Help and Support"
           headline="From community help to premium support, we’re here to help."
         />
-        <LayoutBody margin>
+        <LayoutBody margin marginBottom>
           <MarkdownElement text={support} />
         </LayoutBody>
         <ProductFooter />

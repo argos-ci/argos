@@ -30,7 +30,7 @@ function Repository(props) {
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
-        <LayoutBody margin>
+        <LayoutBody margin marginBottom>
           <Grid container gutter={24}>
             <Grid item xs>
               <Typography type="display1" component="h2" noWrap>

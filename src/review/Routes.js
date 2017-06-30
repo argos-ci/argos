@@ -4,6 +4,7 @@ import { applyRouterMiddleware, browserHistory, Router, Route, IndexRoute } from
 import plugAnalyticsMiddleware from 'modules/reactRouter/plugAnalyticsMiddleware'
 import App from 'review/routes/App'
 import Homepage from 'review/routes/homepage/Homepage'
+import Admin from 'review/routes/admin/Admin'
 import Profile from 'review/routes/profile/Profile'
 import Account from 'review/routes/profile/Account'
 import ErrorNotFound from 'review/routes/error/ErrorNotFound'
@@ -39,6 +40,7 @@ function Routes() {
       <Route component={App}>
         <Route path="/" component={Homepage} />
         <Route path="/about" component={About} />
+        <Route path="/admin" component={Admin} />
         <Route path="/documentation" component={Documentation} />
         <Route path="/security" component={Security} />
         <Route path="/terms" component={Terms} />

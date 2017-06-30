@@ -36,7 +36,7 @@ function Dashboard(props) {
       <ReviewAppBar />
       <AuthorizationNotice />
       <ScrollView>
-        <LayoutBody margin>
+        <LayoutBody margin marginBottom>
           <Grid container gutter={24}>
             <Grid item xs={12}>
               <Typography type="display1" component="h2">

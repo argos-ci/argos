@@ -46,7 +46,7 @@ function ProductFooter(props) {
 
   return (
     <footer className={classes.root}>
-      <LayoutBody margin>
+      <LayoutBody margin marginBottom>
         <Typography type="title" className={classes.title} gutterBottom>
           Quick Links
         </Typography>

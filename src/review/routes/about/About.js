@@ -14,7 +14,7 @@ function About() {
       <ReviewAppBar />
       <ScrollView>
         <ProductHeader display1="All about Argos CI" headline="💅" />
-        <LayoutBody margin>
+        <LayoutBody margin marginBottom>
           <MarkdownElement text={about} />
         </LayoutBody>
         <ProductFooter />

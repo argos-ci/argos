@@ -30,7 +30,7 @@ function Privacy() {
           display1="Privacy Policy"
           headline="Argos CI is committed to protecting and respecting your privacy."
         />
-        <LayoutBody margin>
+        <LayoutBody margin marginBottom>
           <Grid container gutter={24}>
             <Grid item xs={12} sm={3}>
               <MarkdownElement text={contact} />
