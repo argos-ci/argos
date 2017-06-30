@@ -1,7 +1,7 @@
 defaults: &defaults
   working_directory: /tmp/argos
   docker:
-    - image: circleci/node:7.7.3
+    - image: circleci/node:8.1.2
     - image: postgres:9.6
       environment:
         POSTGRES_USER: argos
