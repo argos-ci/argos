@@ -30,7 +30,7 @@ function ProductHeader(props) {
 
   return (
     <Paper component="header" square elevation={0} className={classes.root}>
-      <LayoutBody margin bottom={false} className={classes.wrapper}>
+      <LayoutBody margin className={classes.wrapper}>
         <div className={classes.text}>
           <Typography type="display1" component="h1" gutterBottom>
             {display1}

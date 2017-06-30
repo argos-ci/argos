@@ -7,7 +7,7 @@ const styleSheet = createStyleSheet('LayoutBody', theme => ({
   rootMargin: {
     margin: 8 * 3,
   },
-  rootBottom: {
+  rootMarginBottom: {
     marginBottom: 8 * 4,
   },
   rootResponsive: {
@@ -35,13 +35,13 @@ const styleSheet = createStyleSheet('LayoutBody', theme => ({
 
 function LayoutBody(props) {
   const {
-    bottom,
     children,
     classes,
     className,
     fullHeight,
     fullWidth,
     margin,
+    marginBottom,
     style,
     ...other
   } = props
@@ -54,7 +54,7 @@ function LayoutBody(props) {
           [classes.rootResponsive]: !fullWidth,
           [classes.rootFullHeight]: fullHeight,
           [classes.rootMargin]: margin,
-          [classes.rootBottom]: bottom,
+          [classes.rootMarginBottom]: marginBottom,
         },
         className
       )}
@@ -67,18 +67,18 @@ function LayoutBody(props) {
 }
 
 LayoutBody.propTypes = {
-  bottom: PropTypes.bool,
   children: PropTypes.node,
   classes: PropTypes.object.isRequired,
   className: PropTypes.string,
   fullHeight: PropTypes.bool,
   fullWidth: PropTypes.bool,
   margin: PropTypes.bool,
+  marginBottom: PropTypes.bool,
   style: PropTypes.object,
 }
 
 LayoutBody.defaultProps = {
-  bottom: true,
+  marginBottom: false,
   fullHeight: false,
   fullWidth: false,
   margin: false,

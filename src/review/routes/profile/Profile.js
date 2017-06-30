@@ -39,7 +39,7 @@ function Profile(props) {
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
-        <LayoutBody margin>
+        <LayoutBody margin marginBottom>
           <Grid container gutter={24}>
             <Grid align="center" container item xs={12}>
               <Grid item>

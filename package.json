@@ -39,7 +39,7 @@
     "url": "https://github.com/argos-ci/argos/issues"
   },
   "engines": {
-    "node": "7.7.3"
+    "node": "8.1.2"
   },
   "homepage": "https://github.com/argos-ci/argos#readme",
   "dependencies": {

@@ -14,7 +14,7 @@ function Terms() {
       <ReviewAppBar />
       <ScrollView>
         <ProductHeader display1="Terms and Conditions" headline="License Agreement" />
-        <LayoutBody margin>
+        <LayoutBody margin marginBottom>
           <MarkdownElement text={terms} />
         </LayoutBody>
         <ProductFooter />

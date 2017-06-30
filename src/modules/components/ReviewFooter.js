@@ -15,7 +15,7 @@ const styleSheet = createStyleSheet('ReviewFooter', theme => ({
 function ReviewFooter(props) {
   return (
     <footer className={props.classes.root}>
-      <LayoutBody margin bottom>
+      <LayoutBody margin marginBottom>
         <Grid container justify="space-between">
           <Grid item>
             {`Argos ${configBrowser.get('heroku.releaseVersion')}`}
