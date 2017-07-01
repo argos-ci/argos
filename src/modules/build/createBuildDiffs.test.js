@@ -1,7 +1,7 @@
 import * as notifications from 'modules/build/notifications'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
-import { VALIDATION_STATUS } from 'server/models/constants'
+import { VALIDATION_STATUS } from 'server/constants'
 import createBuildDiffs from './createBuildDiffs'
 
 jest.mock('modules/build/notifications')

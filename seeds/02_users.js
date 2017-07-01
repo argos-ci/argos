@@ -8,6 +8,7 @@ exports.seed = (knex, Promise) =>
           name: 'Olivier Tassinari',
           login: 'oliviertassinari',
           email: 'olivier.tassinari@gmail.com',
+          scopes: JSON.stringify(['SUPER_ADMIN']),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },

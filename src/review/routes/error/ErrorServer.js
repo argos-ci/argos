@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import ErrorView from 'review/routes/error/ErrorView'
+import ClientErrorView from 'review/modules/components/ClientErrorView'
 
 const styleSheet = createStyleSheet('ErrorServer', () => ({
   code: {
@@ -14,7 +14,7 @@ function ErrorServer(props) {
   const { error, classes } = props
 
   return (
-    <ErrorView
+    <ClientErrorView
       title={`Error ${error.statusCode}`}
       message={
         <div>

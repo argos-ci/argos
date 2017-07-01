@@ -3,11 +3,13 @@
 import React from 'react'
 import { createStore, applyMiddleware, compose, combineReducers } from 'redux'
 import { combineEpics, createEpicMiddleware } from 'redux-observable'
-import { Provider } from 'react-redux'
+import { ApolloProvider } from 'react-apollo'
+import { reducer as formReducer } from 'redux-form'
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import metricsMiddleware from 'browser-metrics/lib/reduxMetricsMiddleware'
 import createDefaultContext from 'modules/styles/createDefaultContext'
 import analytics from 'modules/analytics'
+import initApollo from 'modules/apollo/initApollo'
 import dataReducer from 'modules/redux/dataReducer'
 import Routes from 'review/Routes'
 import accountReducer from 'review/routes/profile/accountReducer'
@@ -23,6 +25,8 @@ import profileEpic from 'review/routes/profile/profileEpic'
 import dashboardReducer from 'review/routes/dashboard/dashboardReducer'
 import dashboardEpic from 'review/routes/dashboard/dashboardEpic'
 
+const apollo = initApollo()
+
 const rootEpic = combineEpics(
   accountEpic,
   buildEpic,
@@ -33,6 +37,7 @@ const rootEpic = combineEpics(
 )
 
 let middlewares = [
+  apollo.middleware(),
   metricsMiddleware({
     trackTiming: analytics.trackTiming,
   }),
@@ -45,18 +50,18 @@ if (process.env.NODE_ENV !== 'production' && !window.__REDUX_DEVTOOLS_EXTENSION_
   middlewares = [...middlewares, createLogger()]
 }
 
-const uiReducer = combineReducers({
-  account: accountReducer,
-  build: buildReducer,
-  repository: repositoryReducer,
-  repositoryDetails: repositoryDetailsReducer,
-  profile: profileReducer,
-  dashboard: dashboardReducer,
-})
-
 const rootReducers = combineReducers({
-  ui: uiReducer,
+  apollo: apollo.reducer(),
+  ui: combineReducers({
+    account: accountReducer,
+    build: buildReducer,
+    repository: repositoryReducer,
+    repositoryDetails: repositoryDetailsReducer,
+    profile: profileReducer,
+    dashboard: dashboardReducer,
+  }),
   data: dataReducer,
+  form: formReducer,
 })
 
 const composeEnhancers =
@@ -68,11 +73,11 @@ function Root() {
   const { styleManager, theme } = createDefaultContext()
 
   return (
-    <Provider store={store}>
+    <ApolloProvider client={apollo} store={store}>
       <MuiThemeProvider theme={theme} styleManager={styleManager}>
         <Routes />
       </MuiThemeProvider>
-    </Provider>
+    </ApolloProvider>
   )
 }
 

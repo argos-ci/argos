@@ -8,7 +8,6 @@ import { white } from 'material-ui/styles/colors'
 const styleSheet = createStyleSheet('LayoutAppBar', () => ({
   root: {
     flex: '0 0 auto',
-    position: 'static',
     color: white,
   },
 }))
@@ -16,7 +15,7 @@ const styleSheet = createStyleSheet('LayoutAppBar', () => ({
 function LayoutAppBar(props) {
   const { classes, ...other } = props
 
-  return <AppBar className={classNames(classes.root)} {...other} />
+  return <AppBar position="static" className={classNames(classes.root)} {...other} />
 }
 
 LayoutAppBar.propTypes = {

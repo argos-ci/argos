@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Grid from 'material-ui/Grid'
 import Link from 'modules/components/Link'
-import ItemStatus from 'modules/components/ItemStatus'
+import ItemStatus from 'review/modules/components/ItemStatus'
 import BuildActions from 'review/routes/build/BuildActions'
 
 function formatShortCommit(sha) {

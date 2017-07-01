@@ -2,7 +2,7 @@
 
 import { factory } from 'factory-girl'
 import ObjectionAdapter from 'server/test/ObjectionAdapter'
-import { VALIDATION_STATUS } from 'server/models/constants'
+import { VALIDATION_STATUS } from 'server/constants'
 import Build from 'server/models/Build'
 import BuildNotification from 'server/models/BuildNotification'
 import Organization from 'server/models/Organization'

@@ -1,15 +1,10 @@
-/* eslint-disable no-console */
-
+import { displayError, displayInfo, displaySuccess } from 'modules/scripts/display'
 import * as services from 'server/services/all'
 
 const SHUTDOWN_TIMEOUT = 3000
 
-let shutdown
+let shutdown = false
 const callbacks = [() => services.disconnect()]
-
-function log(message) {
-  console.info(`${new Date().toJSON()}: ${message}`)
-}
 
 /**
  * terminator === the termination handler
@@ -18,15 +13,21 @@ function log(message) {
  */
 function terminator(signal) {
   if (typeof signal === 'string') {
-    log(`Received ${signal}.`)
+    displayInfo(`Received ${signal}.`)
   }
 
   // At the first SIGTERM, we try to shutdown the service gracefully
   if ((signal === 'SIGTERM' || signal === 'SIGINT') && !shutdown) {
-    log('Shutdown server gracefully...')
-    log(`${SHUTDOWN_TIMEOUT}ms before killing it.`)
-    callbacks.forEach(callback => callback())
-    setTimeout(() => terminator(), SHUTDOWN_TIMEOUT)
+    displayInfo('Shutdown server gracefully...')
+    displayInfo(`${SHUTDOWN_TIMEOUT}ms before killing it.`)
+    const timer = setTimeout(() => {
+      displayError('Force shutdown')
+      terminator()
+    }, SHUTDOWN_TIMEOUT)
+    Promise.all(callbacks.map(callback => callback())).then(() => {
+      clearTimeout(timer)
+      displaySuccess('Node server stopped.')
+    })
     shutdown = true
     return
   }
@@ -37,7 +38,7 @@ function terminator(signal) {
 function handleKillSignals() {
   //  Process on exit and signals.
   process.on('exit', () => {
-    log('Node server stopped.')
+    displaySuccess('Node server stopped.')
   })
 
   // Removed 'SIGPIPE' from the list - bugz 852598.

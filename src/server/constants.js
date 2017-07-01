@@ -3,3 +3,7 @@ export const VALIDATION_STATUS = {
   accepted: 'accepted',
   rejected: 'rejected',
 }
+
+export const SCOPES = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+}

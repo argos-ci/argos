@@ -9,9 +9,9 @@ import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
 import { CONSISTENT, INCONSISTENT } from 'modules/authorizations/authorizationStatuses'
 
-const styleSheet = createStyleSheet('AuthorizationNotice', () => ({
+const styleSheet = createStyleSheet('AuthorizationNotice', theme => ({
   paper: {
-    padding: 16,
+    padding: theme.spacing.unit * 2,
   },
 }))
 
@@ -29,7 +29,7 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
         <Grid item>
           <Button
             color="accent"
-            compact
+            dense
             component={Link}
             variant="button"
             href={user.privateSync ? '/auth/github-private' : '/auth/github-public'}

@@ -14,6 +14,7 @@ import BuildType, {
   resolveSample as resolveBuildSample,
 } from 'server/graphql/BuildType'
 import OwnerType from 'server/graphql/OwnerType'
+import APIError from 'server/graphql/APIError'
 import Repository from 'server/models/Repository'
 import generateSample from 'modules/sample/generateSample'
 
@@ -54,14 +55,14 @@ export async function resolve(source, args, context) {
 
 export async function toggleRepository(source, args, context) {
   if (!context.user) {
-    throw new Error('Invalid user identification')
+    throw new APIError('Invalid user identification')
   }
 
   const { repositoryId, enabled } = args
   const user = await Repository.getUsers(repositoryId).findById(context.user.id)
 
   if (!user) {
-    throw new Error('Invalid user authorization')
+    throw new APIError('Invalid user authorization')
   }
 
   let repository = await Repository.query().patchAndFetchById(repositoryId, { enabled })

@@ -14,10 +14,10 @@ import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
-import ReviewAppBar from 'modules/components/ReviewAppBar'
-import ReviewFooter from 'modules/components/ReviewFooter'
-import AuthorizationNotice from 'modules/components/AuthorizationNotice'
 import actionTypes from 'modules/redux/actionTypes'
+import ReviewFooter from 'review/modules/components/ReviewFooter'
+import AuthorizationNotice from 'review/modules/components/AuthorizationNotice'
+import ReviewAppBar from 'review/modules/components/ReviewAppBar'
 
 const styleSheet = createStyleSheet('Dashboard', theme => ({
   avatar: {

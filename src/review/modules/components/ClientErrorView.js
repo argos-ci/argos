@@ -4,9 +4,9 @@ import Typography from 'material-ui/Typography'
 import LayoutBody from 'modules/components/LayoutBody'
 import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
-import ReviewAppBar from 'modules/components/ReviewAppBar'
+import ReviewAppBar from 'review/modules/components/ReviewAppBar'
 
-function ErrorView(props) {
+function ClientErrorView(props) {
   return (
     <ViewContainer>
       <ReviewAppBar />
@@ -24,9 +24,9 @@ function ErrorView(props) {
   )
 }
 
-ErrorView.propTypes = {
+ClientErrorView.propTypes = {
   message: PropTypes.node.isRequired,
   title: PropTypes.node.isRequired,
 }
 
-export default ErrorView
+export default ClientErrorView

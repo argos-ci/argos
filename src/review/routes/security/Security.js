@@ -3,9 +3,9 @@ import ViewContainer from 'modules/components/ViewContainer'
 import ScrollView from 'modules/components/ScrollView'
 import MarkdownElement from 'modules/components/MarkdownElement'
 import LayoutBody from 'modules/components/LayoutBody'
-import ReviewAppBar from 'modules/components/ReviewAppBar'
-import ProductHeader from 'modules/components/ProductHeader'
-import ProductFooter from 'modules/components/ProductFooter'
+import ReviewAppBar from 'review/modules/components/ReviewAppBar'
+import ProductHeader from 'review/modules/components/ProductHeader'
+import ProductFooter from 'review/modules/components/ProductFooter'
 import security from './security.md'
 
 function Security() {

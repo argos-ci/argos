@@ -1,5 +1,4 @@
-// Fetch polyfill
-import 'whatwg-fetch'
+import 'isomorphic-fetch'
 import configBrowser from 'configBrowser'
 
 const graphQLClient = {
@@ -8,7 +7,7 @@ const graphQLClient = {
       method: 'post',
       headers: {
         'Content-Type': 'application/json',
-        'x-argos-release-version': configBrowser.get('heroku.releaseVersion'),
+        'x-argos-release-version': configBrowser.get('releaseVersion'),
       },
       credentials: 'same-origin',
       body: JSON.stringify(params),

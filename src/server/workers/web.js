@@ -15,6 +15,9 @@ server.listen(config.get('server.port'), err => {
   console.log(`${Date(Date.now())}: http://localhost:${server.address().port}/`)
 })
 
-addCloseCallback(() => {
-  server.close()
-})
+addCloseCallback(
+  () =>
+    new Promise(accept => {
+      server.close(accept)
+    })
+)
