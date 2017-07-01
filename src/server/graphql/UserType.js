@@ -1,4 +1,4 @@
-import { GraphQLObjectType, GraphQLList } from 'graphql'
+import { GraphQLObjectType, GraphQLString, GraphQLList } from 'graphql'
 import RepositoryType from 'server/graphql/RepositoryType'
 
 export function resolve(obj, args, context) {
@@ -8,6 +8,9 @@ export function resolve(obj, args, context) {
 const OwnerType = new GraphQLObjectType({
   name: 'User',
   fields: {
+    id: {
+      type: GraphQLString,
+    },
     relatedRepositories: {
       type: new GraphQLList(RepositoryType),
       resolve: async source => {

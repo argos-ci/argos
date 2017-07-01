@@ -1,7 +1,7 @@
 import React from 'react'
 import createShallow from 'material-ui/test-utils/createShallow'
 import Collapse from 'material-ui/transitions/Collapse'
-import ItemStatus from 'modules/components/ItemStatus'
+import ItemStatus from 'review/modules/components/ItemStatus'
 import BuildScreenshotItem from './BuildScreenshotItem'
 
 describe('<BuildScreenshotItem />', () => {

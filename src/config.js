@@ -100,13 +100,11 @@ const config = convict({
       env: 'REDIS_URL',
     },
   },
-  heroku: {
-    releaseVersion: {
-      doc: 'Heroku release version',
-      format: String,
-      default: 'dev',
-      env: 'HEROKU_RELEASE_VERSION',
-    },
+  releaseVersion: {
+    doc: 'Heroku release version',
+    format: String,
+    default: 'dev',
+    env: 'HEROKU_RELEASE_VERSION',
   },
 })
 

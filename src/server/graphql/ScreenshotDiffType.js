@@ -3,7 +3,8 @@ import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 import { pushBuildNotification } from 'modules/build/notifications'
 import Build from 'server/models/Build'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
-import { VALIDATION_STATUS } from 'server/models/constants'
+import APIError from 'server/graphql/APIError'
+import { VALIDATION_STATUS } from 'server/constants'
 import ScreenshotType, { resolve as resolveScreenshot } from 'server/graphql/ScreenshotType'
 
 export const validationStatusType = new GraphQLEnumType({
@@ -24,14 +25,14 @@ export const validationStatusType = new GraphQLEnumType({
 
 export async function setValidationStatus(source, args, context) {
   if (!context.user) {
-    throw new Error('Invalid user identification')
+    throw new APIError('Invalid user identification')
   }
 
   const { buildId, validationStatus } = args
   const user = await Build.getUsers(buildId).findById(context.user.id)
 
   if (!user) {
-    throw new Error('Invalid user authorization')
+    throw new APIError('Invalid user authorization')
   }
 
   await ScreenshotDiff.query().where({ buildId }).patch({ validationStatus })

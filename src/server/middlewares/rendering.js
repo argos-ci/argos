@@ -67,9 +67,7 @@ export default additionalClientData => (req, res) => {
         s3: {
           screenshotsBucket: config.get('s3.screenshotsBucket'),
         },
-        heroku: {
-          releaseVersion: config.get('heroku.releaseVersion'),
-        },
+        releaseVersion: config.get('releaseVersion'),
         github: {
           applicationUrl: config.get('github.applicationUrl'),
         },
@@ -77,7 +75,7 @@ export default additionalClientData => (req, res) => {
       ...(req.user
         ? {
             authorizationStatus: getAuthorizationStatus(req.user),
-            user: pick(req.user, 'name', 'email', 'login', 'privateSync'),
+            user: pick(req.user, 'name', 'email', 'login', 'privateSync', 'scopes'),
           }
         : {
             user: null,

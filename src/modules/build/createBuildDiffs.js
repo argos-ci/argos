@@ -1,7 +1,7 @@
 import { transaction } from 'objection'
 import baseCompare from 'modules/baseCompare/baseCompare'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
-import { VALIDATION_STATUS } from 'server/models/constants'
+import { VALIDATION_STATUS } from 'server/constants'
 
 async function createBuildDiffs(build) {
   build = await build

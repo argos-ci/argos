@@ -12,10 +12,10 @@ import Link from 'modules/components/Link'
 import ScrollView from 'modules/components/ScrollView'
 import LayoutBody from 'modules/components/LayoutBody'
 import WatchTask from 'modules/components/WatchTask'
-import WatchTaskContainer from 'modules/components/WatchTaskContainer'
-import ReviewAppBar from 'modules/components/ReviewAppBar'
-import ReviewFooter from 'modules/components/ReviewFooter'
 import actionTypes from 'modules/redux/actionTypes'
+import WatchTaskContainer from 'modules/components/WatchTaskContainer'
+import ReviewAppBar from 'review/modules/components/ReviewAppBar'
+import ReviewFooter from 'review/modules/components/ReviewFooter'
 
 const styleSheet = createStyleSheet('Repository', () => ({
   paper: {

@@ -46,6 +46,7 @@ export default {
               ],
               'transform-object-rest-spread',
               'transform-class-properties',
+              'transform-runtime',
             ],
           },
         },
@@ -87,10 +88,6 @@ export default {
         loader: 'raw-loader',
       },
     ],
-  },
-  performance: {
-    maxAssetSize: 4e6,
-    maxEntrypointSize: 6e6,
   },
   plugins: [
     new webpack.DefinePlugin({

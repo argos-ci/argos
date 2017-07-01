@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { ListItem, ListItemText } from 'material-ui/List'
 import Link from 'modules/components/Link'
-import ItemStatus from 'modules/components/ItemStatus'
+import ItemStatus from 'review/modules/components/ItemStatus'
 
 function RepositoryDetailsItem(props) {
   const { build: { id, status, createdAt, number }, profileName, repositoryName } = props

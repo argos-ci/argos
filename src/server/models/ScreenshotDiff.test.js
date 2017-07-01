@@ -1,5 +1,5 @@
 import { assert } from 'chai'
-import { VALIDATION_STATUS } from 'server/models/constants'
+import { VALIDATION_STATUS } from 'server/constants'
 import ScreenshotDiff from './ScreenshotDiff'
 
 const baseData = {

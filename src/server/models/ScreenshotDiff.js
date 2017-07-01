@@ -1,7 +1,7 @@
 import { ValidationError } from 'objection'
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 import jobModelSchema from 'server/models/schemas/jobModelSchema'
-import { VALIDATION_STATUS } from 'server/models/constants'
+import { VALIDATION_STATUS } from 'server/constants'
 
 export default class ScreenshotDiff extends BaseModel {
   static tableName = 'screenshot_diffs'

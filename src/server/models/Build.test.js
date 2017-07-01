@@ -1,7 +1,7 @@
 import { assert } from 'chai'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
-import { VALIDATION_STATUS } from 'server/models/constants'
+import { VALIDATION_STATUS } from 'server/constants'
 import Build from './Build'
 
 const baseData = {

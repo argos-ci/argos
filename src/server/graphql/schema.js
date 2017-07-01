@@ -6,6 +6,7 @@ import {
   GraphQLInt,
   GraphQLString,
   GraphQLList,
+  GraphQLInputObjectType,
 } from 'graphql/type'
 import BuildType, { resolve as resolveBuild } from 'server/graphql/BuildType'
 import OwnerType, {
@@ -18,6 +19,7 @@ import RepositoryType, {
 } from 'server/graphql/RepositoryType'
 import { setValidationStatus, validationStatusType } from 'server/graphql/ScreenshotDiffType'
 import UserType, { resolve as resolveUser } from 'server/graphql/UserType'
+import resolveUsurpUser from 'server/graphql/resolveUsurpUser'
 
 export default new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -96,6 +98,23 @@ export default new GraphQLSchema({
           },
         },
         resolve: toggleRepository,
+      },
+      usurpUser: {
+        type: UserType,
+        description: 'Can be used to usur a user',
+        args: {
+          input: {
+            type: new GraphQLInputObjectType({
+              name: 'UsurpUserInputType',
+              fields: {
+                email: {
+                  type: new GraphQLNonNull(GraphQLString),
+                },
+              },
+            }),
+          },
+        },
+        resolve: resolveUsurpUser,
       },
     },
   }),

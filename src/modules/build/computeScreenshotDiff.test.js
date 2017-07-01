@@ -1,7 +1,7 @@
 import S3 from 'aws-sdk/clients/s3'
 import { useDatabase, setTestsTimeout } from 'server/test/utils'
 import factory from 'server/test/factory'
-import { VALIDATION_STATUS } from 'server/models/constants'
+import { VALIDATION_STATUS } from 'server/constants'
 import * as notifications from 'modules/build/notifications'
 import computeScreenshotDiff from './computeScreenshotDiff'
 
