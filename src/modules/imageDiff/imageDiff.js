@@ -1,16 +1,13 @@
 import imageDiffRaw from 'image-diff'
 
-/**
- * Generate an image diff result.
- *
- * @param {object} options
- * @param {string} options.compareScreenshotPath Actual image path
- * @param {string} options.baseScreenshotPath Expected image path
- * @param {string} options.diffResultPath Diff image path
- * @returns {Promise.<object>} result
- * @returns {number} result.total
- * @returns {number} result.percentage
- */
+// Generate an image diff result.
+//
+// We have been benchmarking other libraries, they are way too slow
+// https://github.com/mapbox/pixelmatch
+// https://github.com/gemini-testing/looks-same
+//
+// Some documentation
+// https://en.wikipedia.org/wiki/Color_difference
 function imageDiff({ compareScreenshotPath, baseScreenshotPath, diffResultPath }) {
   return new Promise((resolve, reject) => {
     imageDiffRaw.getFullResult(
