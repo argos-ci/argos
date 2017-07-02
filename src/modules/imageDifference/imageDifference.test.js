@@ -1,64 +1,54 @@
 import path from 'path'
-import imageDiff from './imageDiff'
+import imageDifference from './imageDifference'
 
-function round(total) {
-  // Avoid precision issues relative to Linux / macOS
-  return Math.round(total)
-}
-
-describe('imageDiff', () => {
+describe('imageDifference', () => {
   it('simple', async () => {
-    const result = await imageDiff({
+    const result = await imageDifference({
       compareScreenshotPath: path.join(__dirname, '__fixtures__/simple/compare.png'),
       baseScreenshotPath: path.join(__dirname, '__fixtures__/simple/base.png'),
       diffResultPath: path.join(__dirname, '__fixtures__/simple/diff_tmp.png'),
     })
 
-    expect(round(result.total)).toBe(1961)
-    expect(result.percentage).toBe(0.0299183)
+    expect(result).toMatchSnapshot()
   })
 
   it('alphaBackground', async () => {
-    const result = await imageDiff({
+    const result = await imageDifference({
       compareScreenshotPath: path.join(__dirname, '__fixtures__/alphaBackground/compare.png'),
       baseScreenshotPath: path.join(__dirname, '__fixtures__/alphaBackground/base.png'),
       diffResultPath: path.join(__dirname, '__fixtures__/alphaBackground/diff_tmp.png'),
     })
 
-    expect(round(result.total)).toBe(3)
-    expect(result.percentage).toBe(0.0000444664)
+    expect(result).toMatchSnapshot()
   })
 
   it('boxShadow', async () => {
-    const result = await imageDiff({
+    const result = await imageDifference({
       compareScreenshotPath: path.join(__dirname, '__fixtures__/boxShadow/compare.png'),
       baseScreenshotPath: path.join(__dirname, '__fixtures__/boxShadow/base.png'),
       diffResultPath: path.join(__dirname, '__fixtures__/boxShadow/diff_tmp.png'),
     })
 
-    expect(round(result.total)).toBe(17)
-    expect(result.percentage).toBe(0.000255956)
+    expect(result).toMatchSnapshot()
   })
 
   it('fontAliasing', async () => {
-    const result = await imageDiff({
+    const result = await imageDifference({
       compareScreenshotPath: path.join(__dirname, '__fixtures__/fontAliasing/compare.png'),
       baseScreenshotPath: path.join(__dirname, '__fixtures__/fontAliasing/base.png'),
       diffResultPath: path.join(__dirname, '__fixtures__/fontAliasing/diff_tmp.png'),
     })
 
-    expect(round(result.total)).toBe(346)
-    expect(result.percentage).toBe(0.00527853)
+    expect(result).toMatchSnapshot()
   })
 
   it('imageCompression', async () => {
-    const result = await imageDiff({
+    const result = await imageDifference({
       compareScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression/compare.png'),
       baseScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression/base.png'),
       diffResultPath: path.join(__dirname, '__fixtures__/imageCompression/diff_tmp.png'),
     })
 
-    expect(round(result.total)).toBe(5)
-    expect(result.percentage).toBe(0.000079001)
+    expect(result).toMatchSnapshot()
   })
 })

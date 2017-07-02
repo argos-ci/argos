@@ -4,4 +4,3 @@ node_modules/
 *.log
 .env
 .eslintcache
-/src/modules/imageDiff/**/*_tmp.png

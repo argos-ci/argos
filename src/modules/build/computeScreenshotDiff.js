@@ -3,7 +3,7 @@ import tmp from 'tmp'
 import fs from 'mz/fs'
 import download from 'modules/s3/download'
 import upload from 'modules/s3/upload'
-import imageDiff from 'modules/imageDiff/imageDiff'
+import imageDifference from 'modules/imageDifference/imageDifference'
 import Build from 'server/models/Build'
 import { pushBuildNotification } from 'modules/build/notifications'
 
@@ -46,14 +46,14 @@ async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
     }),
   ])
 
-  const diffResult = await imageDiff({
+  const difference = await imageDifference({
     compareScreenshotPath,
     baseScreenshotPath,
     diffResultPath,
   })
 
   let uploadResult = null
-  if (diffResult.percentage > 0) {
+  if (difference.score > 0) {
     uploadResult = await upload({
       s3,
       bucket,
@@ -70,7 +70,7 @@ async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
   await fs.rmdir(tmpDir)
 
   await screenshotDiff.$query().patch({
-    score: diffResult.percentage,
+    score: difference.score,
     jobStatus: 'complete',
     s3Id: uploadResult ? uploadResult.Key : null,
   })
