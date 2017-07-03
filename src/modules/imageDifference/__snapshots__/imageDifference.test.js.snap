@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`imageDifference alphaBackground 1`] = `
+Object {
+  "score": 0,
+}
+`;
+
+exports[`imageDifference boxShadow 1`] = `
+Object {
+  "score": 0,
+}
+`;
+
+exports[`imageDifference fontAliasing 1`] = `
+Object {
+  "score": 0.012325699745547074,
+}
+`;
+
+exports[`imageDifference imageCompression 1`] = `
+Object {
+  "score": 0.00018854475638637879,
+}
+`;
+
+exports[`imageDifference simple 1`] = `
+Object {
+  "score": 0.3110468142432871,
+}
+`;
