@@ -8,17 +8,25 @@ import imageDifferenceRaw from 'image-difference'
 //
 // Some documentation
 // https://en.wikipedia.org/wiki/Color_difference
-async function imageDifference({ compareScreenshotPath, baseScreenshotPath, diffResultPath }) {
+async function imageDifference({
+  compareScreenshotPath,
+  baseScreenshotPath,
+  diffResultPath,
+  fuzz = 20 ** 2, // Small threshold to remove imperceptible changes.
+}) {
   const difference = await imageDifferenceRaw({
     actualFilename: compareScreenshotPath,
     expectedFilename: baseScreenshotPath,
     diffFilename: diffResultPath,
-    fuzz: 18 ** 2, // Small threshold to remove imperceptible changes.
+    fuzz,
   })
 
+  const score = difference.value / (difference.width * difference.height)
+
   return {
-    // Accept up to 5 unequal pixels.
-    score: difference.value < 5 ? 0 : difference.value / (difference.width * difference.height),
+    score: score < 0.00003 ? 0 : score,
+    pixels: difference.value,
+    scoreRaw: score,
   }
 }
 
