@@ -26,13 +26,13 @@ function terminator(signal) {
     }, SHUTDOWN_TIMEOUT)
     Promise.all(callbacks.map(callback => callback())).then(() => {
       clearTimeout(timer)
-      displaySuccess('Node server stopped.')
+      process.exit(0)
     })
     shutdown = true
     return
   }
 
-  process.exit(1) // eslint-disable-line no-process-exit
+  process.exit(1)
 }
 
 function handleKillSignals() {
