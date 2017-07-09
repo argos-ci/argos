@@ -1,7 +1,7 @@
 /* global happo */
 
 import React from 'react'
-import { render } from 'react-dom'
+import { render, unmountComponentAtNode } from 'react-dom'
 
 const requireTests = require.context('../components', true, /js$/)
 const tests = requireTests.keys().map(path => {
@@ -12,6 +12,11 @@ const tests = requireTests.keys().map(path => {
     case: requireTests(path),
   }
 })
+
+// Clean up the event handlers
+happo.cleanOutElement = element => {
+  unmountComponentAtNode(element)
+}
 
 tests.forEach(test => {
   happo.define(

@@ -78,4 +78,14 @@ describe('imageDifference', () => {
     expect(result.score).toBe(0)
     expect(result).toMatchSnapshot()
   })
+
+  it('imageCompression2', async () => {
+    const result = await imageDifference({
+      compareScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression2/compare.png'),
+      baseScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression2/base.png'),
+      diffResultPath: path.join(__dirname, '__fixtures__/imageCompression2/diff_tmp.png'),
+    })
+
+    expect(result).toMatchSnapshot()
+  })
 })
