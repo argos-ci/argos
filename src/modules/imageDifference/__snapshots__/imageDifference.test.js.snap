@@ -48,6 +48,14 @@ Object {
 }
 `;
 
+exports[`imageDifference imageCompression3 1`] = `
+Object {
+  "pixels": 1170,
+  "score": 0.0015234375,
+  "scoreRaw": 0.0015234375,
+}
+`;
+
 exports[`imageDifference simple 1`] = `
 Object {
   "pixels": 501292,
