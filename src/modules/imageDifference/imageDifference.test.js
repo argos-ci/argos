@@ -88,4 +88,14 @@ describe('imageDifference', () => {
 
     expect(result).toMatchSnapshot()
   })
+
+  it('imageCompression3', async () => {
+    const result = await imageDifference({
+      compareScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression3/compare.png'),
+      baseScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression3/base.png'),
+      diffResultPath: path.join(__dirname, '__fixtures__/imageCompression3/diff_tmp.png'),
+    })
+
+    expect(result).toMatchSnapshot()
+  })
 })
