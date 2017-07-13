@@ -1,33 +1,24 @@
-import Knex from 'knex'
+import knex from 'knex'
 import { Model } from 'objection'
 import config from 'config'
 import knexConfig from '../../../knexfile'
 
-let knex
+let knexInstance
 
 export function connect() {
-  if (!knex) {
-    knex = Knex(knexConfig[config.get('env')])
-    Model.knex(knex)
+  if (!knexInstance) {
+    knexInstance = knex(knexConfig[config.get('env')])
+    Model.knex(knexInstance)
   }
 
-  return knex
+  return knexInstance
 }
 
 export async function disconnect() {
-  return new Promise((resolve, reject) => {
-    if (!knex) {
-      resolve()
-      return
-    }
+  if (!knexInstance) {
+    return
+  }
 
-    knex.destroy(error => {
-      if (error) {
-        reject(error)
-      } else {
-        knex = null
-        resolve()
-      }
-    })
-  })
+  await knexInstance.destroy()
+  knexInstance = null
 }

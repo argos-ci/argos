@@ -19,14 +19,14 @@ import Repository from 'server/models/Repository'
 import generateSample from 'modules/sample/generateSample'
 
 function toPromise(wrapped) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve2, reject) => {
     wrapped((err, data) => {
       if (err) {
         reject(err)
         return
       }
 
-      resolve(data)
+      resolve2(data)
     })
   })
 }

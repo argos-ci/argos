@@ -60,10 +60,10 @@ function ProductShowcase(props) {
 ProductShowcase.propTypes = {
   classes: PropTypes.object.isRequired,
   description: PropTypes.string,
-  title: PropTypes.string,
   image: PropTypes.node,
-  textPosition: PropTypes.oneOf(['left', 'right']).isRequired,
   size: PropTypes.oneOf(['normal', 'large']),
+  textPosition: PropTypes.oneOf(['left', 'right']).isRequired,
+  title: PropTypes.string,
 }
 
 ProductShowcase.defaultProps = {

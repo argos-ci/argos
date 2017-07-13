@@ -1,10 +1,10 @@
 module.exports = {
   root: true, // So parent files don't get applied
   env: {
-    jest: true,
     es6: true,
     browser: true,
     node: true,
+    jest: true,
   },
   extends: ['airbnb', 'plugin:import/recommended', 'plugin:jest/recommended'],
   parser: 'babel-eslint',
@@ -16,25 +16,27 @@ module.exports = {
   settings: {
     'import/resolver': {
       node: {
-        // As configured in webpack and jest
+        // As configured in webpack
         moduleDirectory: ['node_modules', 'src'],
       },
     },
   },
   rules: {
-    'max-len': ['error', 100, 2, { ignoreUrls: true }],
+    'arrow-body-style': 'off', // Not our taste?
+    'max-len': 'off', // Not our taste?
+    'no-shadow': 'off',
+    'no-param-reassign': 'off',
     'arrow-parens': 'off', // Incompatible with prettier
     'no-confusing-arrow': 'off', // Incompatible with prettier
     indent: 'off', // Incompatible with prettier
-    'no-mixed-operators': 'off', // Incompatible with prettier
     'space-before-function-paren': 'off', // Incompatible with prettier
     semi: ['error', 'never'],
-    'no-shadow': 'off',
-    'no-console': 'error', // Airbnb use 'warn'
-    'no-param-reassign': 'off',
-    'no-nested-ternary': 'off',
-    'no-use-before-define': ['error', { functions: false, classes: false }],
-    'global-require': 'off', // Sounds like a great pattern!
+    'consistent-this': ['error', 'self'],
+    'no-console': 'error', // airbnb is using warn
+    'no-alert': 'error', // airbnb is using warn
+    'object-curly-spacing': 'off', // use babel plugin rule
+    'no-restricted-properties': 'off', // To remove once react-docgen support ** operator.
+    'no-mixed-operators': 'off', // allow a + b * c instead of a + (b * c), prettier conflict
     'comma-dangle': [
       'error',
       {
@@ -46,23 +48,52 @@ module.exports = {
       },
     ],
 
-    'react/jsx-wrap-multilines': 'off', // Incompatible with prettier
-    'react/jsx-closing-bracket-location': 'off', // Incompatible with prettier
-    'react/jsx-indent': 'off', // Incompatible with prettier
-    'react/jsx-indent-props': 'off', // Incompatible with prettier
-    'react/jsx-filename-extension': ['error', { extensions: ['.js'] }],
-    'react/prop-types': 'off',
-    'react/require-default-props': 'off',
-    'react/forbid-prop-types': 'off',
-    'react/no-unused-prop-types': 'off', // Doesn't work correctly.
+    'babel/object-curly-spacing': ['error', 'always'],
 
     'import/unambiguous': 'off',
-    'import/namespace': 'off', // Do no work?
+    'import/no-unresolved': 'off',
+    'import/no-named-as-default': 'off',
+    'import/extensions': 'off',
+    'import/no-extraneous-dependencies': 'off',
     'import/prefer-default-export': 'off',
-    'import/no-extraneous-dependencies': ['error', { devDependencies: true }], // Airbnb forbid devDependencies
-    'import/no-unresolved': 'off', // Do not know webpack tricks
-    'import/extensions': 'off', // Issue with storybook
+    'import/namespace': 'off',
 
+    'react/jsx-handler-names': [
+      'error',
+      {
+        // airbnb is disabling this rule
+        eventHandlerPrefix: 'handle',
+        eventHandlerPropPrefix: 'on',
+      },
+    ],
+    'react/jsx-indent': 'off', // Incompatible with prettier
+    'react/jsx-wrap-multilines': 'off', // Incompatible with prettier
+    'react/jsx-indent-props': 'off', // Incompatible with prettier
+    'react/jsx-closing-bracket-location': 'off', // Incompatible with prettier
+    'react/require-default-props': 'off', // airbnb use error
+    'react/forbid-prop-types': 'off', // airbnb use error
+    'react/jsx-filename-extension': ['error', { extensions: ['.js'] }], // airbnb is using .jsx
+    'react/no-danger': 'error', // airbnb is using warn
+    'react/no-direct-mutation-state': 'error', // airbnb is disabling this rule
+    'react/no-find-dom-node': 'off', // I don't know
+    'react/no-unused-prop-types': 'off', // Is still buggy
+    'react/sort-prop-types': 'error', // airbnb do nothing here.
+    'react/sort-comp': [
+      2,
+      {
+        order: [
+          'type-annotations',
+          'static-methods',
+          'props',
+          'lifecycle',
+          // '/^handle.+$/', // wishlist -- needs above first
+          // '/^(get|set)(?!(InitialState$|DefaultProps$|ChildContext$)).+$/', // wishlist -- needs above first
+          'everything-else',
+          '/^render.+$/',
+          'render',
+        ],
+      },
+    ],
     'prettier/prettier': [
       'error',
       {
@@ -72,5 +103,7 @@ module.exports = {
         semi: false,
       },
     ],
+
+    'jsx-a11y/no-autofocus': 'off',
   },
 }

@@ -181,8 +181,8 @@ function MarkdownElement(props) {
 }
 
 MarkdownElement.propTypes = {
-  className: PropTypes.string,
   classes: PropTypes.object.isRequired,
+  className: PropTypes.string,
   disableAnchor: PropTypes.bool,
   text: PropTypes.string.isRequired,
 }

@@ -3,7 +3,7 @@
 import graphqlHTTP from 'express-graphql'
 import schema from 'server/graphql/schema'
 import PrettyError from 'pretty-error'
-import crashReporter from 'modules/crashReporter'
+import crashReporter from 'modules/crashReporter/common'
 
 const pe = new PrettyError()
 pe.skipNodeFiles()
@@ -21,8 +21,8 @@ export default ({ context } = {}) =>
           if (process.env.NODE_ENV !== 'production') {
             console.error(pe.render(error))
           }
-          crashReporter.captureException(error, {
-            ...crashReporter.parsers.parseRequest(req),
+          crashReporter().captureException(error, {
+            ...crashReporter().parsers.parseRequest(req),
             tags: { graphql: 'exec_error' },
             extra: {
               source: error.source && error.source.body,
@@ -34,8 +34,8 @@ export default ({ context } = {}) =>
           if (process.env.NODE_ENV !== 'production') {
             console.error(pe.render(error.message))
           }
-          crashReporter.captureMessage(`GraphQLWrongQuery: ${error.message}`, {
-            ...crashReporter.parsers.parseRequest(req),
+          crashReporter().captureMessage(`GraphQLWrongQuery: ${error.message}`, {
+            ...crashReporter().parsers.parseRequest(req),
             tags: { graphql: 'wrong_query' },
             extra: {
               source: error.source && error.source.body,

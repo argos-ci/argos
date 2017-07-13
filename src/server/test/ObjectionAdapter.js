@@ -1,3 +1,5 @@
+// Wait for https://github.com/aexmachina/factory-girl/pull/105
+
 /* eslint-disable class-methods-use-this */
 export default class ObjectionAdapter {
   build(Model, props) {

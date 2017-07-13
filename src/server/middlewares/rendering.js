@@ -7,7 +7,7 @@ import { minify } from 'html-minifier'
 import config from 'config'
 import { pick } from 'lodash'
 import getAuthorizationStatus from 'modules/authorizations/getAuthorizationStatus'
-import createDefaultContext from 'modules/styles/createDefaultContext'
+import theme from 'modules/styles/theme'
 
 let htmlWebpackPlugin
 let indexString = fs.readFileSync(path.join(__dirname, '../../review/index.ejs'), 'UTF-8')
@@ -51,8 +51,6 @@ function isMediaBot(userAgent) {
 function injectJSON(data) {
   return JSON.stringify(data, null, process.env.NODE_ENV === 'production' ? 0 : 2)
 }
-
-const { theme } = createDefaultContext()
 
 export default additionalClientData => (req, res) => {
   const output = ejs.render(indexString, {

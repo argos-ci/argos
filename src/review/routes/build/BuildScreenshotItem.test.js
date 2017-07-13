@@ -1,5 +1,5 @@
 import React from 'react'
-import createShallow from 'material-ui/test-utils/createShallow'
+import { createShallow } from 'material-ui/test-utils'
 import Collapse from 'material-ui/transitions/Collapse'
 import ItemStatus from 'review/modules/components/ItemStatus'
 import BuildScreenshotItem from './BuildScreenshotItem'

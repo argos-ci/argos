@@ -3,12 +3,11 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import AppBar from 'material-ui/AppBar'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
-import { white } from 'material-ui/styles/colors'
 
-const styleSheet = createStyleSheet('LayoutAppBar', () => ({
+const styleSheet = createStyleSheet('LayoutAppBar', theme => ({
   root: {
     flex: '0 0 auto',
-    color: white,
+    color: theme.palette.common.white,
   },
 }))
 

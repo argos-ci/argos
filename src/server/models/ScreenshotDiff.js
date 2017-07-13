@@ -53,13 +53,13 @@ export default class ScreenshotDiff extends BaseModel {
   }
 
   $parseDatabaseJson(json) {
-    json = super.$parseDatabaseJson(json)
+    const newJson = super.$parseDatabaseJson(json)
 
-    if (typeof json.score === 'string') {
-      json.score = Number(json.score)
+    if (typeof newJson.score === 'string') {
+      newJson.score = Number(newJson.score)
     }
 
-    return json
+    return newJson
   }
 
   // eslint-disable-next-line class-methods-use-this

@@ -1,5 +1,5 @@
 import { getChannel } from 'server/services/amqp'
-import crashReporter from 'modules/crashReporter'
+import crashReporter from 'modules/crashReporter/common'
 
 const serializeMessage = payload => new Buffer(JSON.stringify(payload))
 const parseMessage = message => {
@@ -11,9 +11,7 @@ const parseMessage = message => {
 }
 
 const logAndCaptureError = (error, { args, queue }) => {
-  console.error(error.message) // eslint-disable-line no-console
-  console.error(error.stack) // eslint-disable-line no-console
-  crashReporter.captureException(error, {
+  crashReporter().captureException(error, {
     tags: {
       jobQueue: queue,
     },

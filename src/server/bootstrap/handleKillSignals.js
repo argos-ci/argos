@@ -1,44 +1,49 @@
-import { displayError, displayInfo, displaySuccess } from 'modules/scripts/display'
-import * as services from 'server/services/all'
+import display from 'modules/scripts/display'
 
 const SHUTDOWN_TIMEOUT = 3000
 
-let shutdown = false
-const callbacks = [() => services.disconnect()]
+let isShuttingDown = false
+const teardowns = []
 
 /**
- * terminator === the termination handler
+ * shutdown === the termination handler
  * Terminate server on receipt of the specified signal.
  * @param {string} signal  Signal to terminate on.
  */
-function terminator(signal) {
+export async function shutdown(signal) {
   if (typeof signal === 'string') {
-    displayInfo(`Received ${signal}.`)
+    display.info(`Received ${signal}.`)
   }
 
-  // At the first SIGTERM, we try to shutdown the service gracefully
-  if ((signal === 'SIGTERM' || signal === 'SIGINT') && !shutdown) {
-    displayInfo('Shutdown server gracefully...')
-    displayInfo(`${SHUTDOWN_TIMEOUT}ms before killing it.`)
+  // At the first soft kill signal, we try to shutdown the service gracefully.
+  if ((signal === 'SIGTERM' || signal === 'SIGINT') && !isShuttingDown) {
+    isShuttingDown = true
+    display.info('Shutdown server gracefully...')
+    display.info(`${SHUTDOWN_TIMEOUT}ms before killing it.`)
     const timer = setTimeout(() => {
-      displayError('Force shutdown')
-      terminator()
+      display.error('Force shutdown')
+      shutdown()
     }, SHUTDOWN_TIMEOUT)
-    Promise.all(callbacks.map(callback => callback())).then(() => {
-      clearTimeout(timer)
-      process.exit(0)
-    })
-    shutdown = true
+
+    const teardownsSorted = teardowns.sort((a, b) => b.nice - a.nice)
+
+    for (let i = 0; i < teardownsSorted.length; i += 1) {
+      const teardown = teardownsSorted[i]
+      await teardown.callback() // eslint-disable-line no-await-in-loop
+    }
+
+    clearTimeout(timer)
+    process.exit(0)
     return
   }
 
-  process.exit(1)
+  process.exit(1) // eslint-disable-line no-process-exit
 }
 
 function handleKillSignals() {
   //  Process on exit and signals.
   process.on('exit', () => {
-    displaySuccess('Node server stopped.')
+    display.success('Node server stopped.')
   })
 
   // Removed 'SIGPIPE' from the list - bugz 852598.
@@ -57,13 +62,13 @@ function handleKillSignals() {
     'SIGTERM',
   ].forEach(signal => {
     process.on(signal, () => {
-      terminator(signal)
+      shutdown(signal)
     })
   })
 }
 
-export function addCloseCallback(callback) {
-  callbacks.push(callback)
+export function addTeardown(teardown) {
+  teardowns.push(teardown)
 }
 
 export default handleKillSignals

@@ -14,8 +14,8 @@ function App(props) {
 }
 
 App.propTypes = {
-  error: PropTypes.object,
   children: PropTypes.node.isRequired,
+  error: PropTypes.object,
 }
 
 export default connect(state => ({
