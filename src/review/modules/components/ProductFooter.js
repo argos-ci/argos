@@ -4,7 +4,6 @@ import { withStyles, createStyleSheet } from 'material-ui/styles'
 import Typography from 'material-ui/Typography'
 import Divider from 'material-ui/Divider'
 import Grid from 'material-ui/Grid'
-import { fullWhite, darkWhite, lightWhite } from 'material-ui/styles/colors'
 import LayoutBody from 'modules/components/LayoutBody'
 import Link from 'modules/components/Link'
 import GitHub from 'modules/components/GitHub'
@@ -12,18 +11,18 @@ import GitHub from 'modules/components/GitHub'
 const styleSheet = createStyleSheet('ProductFooter', theme => ({
   root: {
     background: theme.brandColor,
-    color: darkWhite,
+    color: theme.palette.common.darkWhite,
     overflow: 'auto',
   },
   title: {
-    color: fullWhite,
+    color: theme.palette.common.fullWhite,
   },
   divider: {
     margin: `${theme.spacing.unit * 2}px 0`,
     background: 'rgba(255, 255, 255, 0.2)',
   },
   copyright: {
-    color: lightWhite,
+    color: theme.palette.common.lightWhite,
   },
   list: {
     margin: 0,
