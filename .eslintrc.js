@@ -22,7 +22,7 @@ module.exports = {
     },
   },
   rules: {
-    'max-len': ['error', 100, 2, { ignoreUrls: true }],
+    'max-len': 'off', // Incompatible with prettier
     'arrow-parens': 'off', // Incompatible with prettier
     'no-confusing-arrow': 'off', // Incompatible with prettier
     indent: 'off', // Incompatible with prettier

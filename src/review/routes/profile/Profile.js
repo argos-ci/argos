@@ -7,7 +7,6 @@ import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import Avatar from 'material-ui/Avatar'
 import Grid from 'material-ui/Grid'
-import { white } from 'material-ui/styles/colors'
 import List, { ListItem, ListItemText } from 'material-ui/List'
 import { withStyles, createStyleSheet } from 'material-ui/styles'
 import WatchTask from 'modules/components/WatchTask'
@@ -21,11 +20,11 @@ import ReviewFooter from 'review/modules/components/ReviewFooter'
 
 const SIZE = 120
 
-const styleSheet = createStyleSheet('Profile', () => ({
+const styleSheet = createStyleSheet('Profile', theme => ({
   avatar: {
     width: SIZE,
     height: SIZE,
-    background: white,
+    background: theme.palette.common.white,
   },
   paper: {
     display: 'flex',

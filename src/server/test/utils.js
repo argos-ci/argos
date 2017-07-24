@@ -8,7 +8,7 @@ const KNEX_TABLES = ['knex_migrations', 'knex_migrations_lock']
 let truncateQuery
 async function getTruncateQuery(knex) {
   if (!truncateQuery) {
-    const result = await knex.schema.raw(
+    const result = await knex.raw(
       "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'"
     )
 
@@ -29,7 +29,7 @@ async function getTruncateQuery(knex) {
 
 export async function truncateAll(knex) {
   const query = await getTruncateQuery(knex)
-  return knex.schema.raw(query)
+  return knex.raw(query)
 }
 
 export const useDatabase = () => {

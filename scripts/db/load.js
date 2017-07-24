@@ -1,11 +1,13 @@
-/* eslint-disable max-len */
-import { exec } from 'mz/child_process'
+import { exec } from 'child_process'
+import { promisify } from 'util'
 import config from 'config'
+import { displayError } from '../../src/modules/scripts/display'
 
 if (config.get('env') === 'production') {
   throw new Error('Not in production please!')
 }
 
+const execAsync = promisify(exec)
 const CI = process.env.CI === 'true'
 
 const command = CI
@@ -14,8 +16,6 @@ const command = CI
       'env'
     )} < db/structure.sql`
 
-exec(command).catch(err => {
-  setTimeout(() => {
-    throw err
-  })
+execAsync(command).catch(err => {
+  displayError(`${err.stderr}\n${err.stdout}`)
 })
