@@ -69,7 +69,9 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
     // Unauthorized
     if (error.code !== 401) {
       crashReporter().captureException(error, {
-        baseCommitParams,
+        extra: {
+          baseCommitParams,
+        },
       })
     }
   }
@@ -89,7 +91,9 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
     // Unauthorized
     if (error.code !== 401) {
       crashReporter().captureException(error, {
-        compareCommitPararms,
+        extra: {
+          compareCommitPararms,
+        },
       })
     }
   }
