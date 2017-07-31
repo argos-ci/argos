@@ -58,7 +58,7 @@ app.use(
         // Blob for the upload page
         defaultSrc: ['*', 'blob:'],
         styleSrc: ['*', "'unsafe-inline'"],
-        scriptSrc: ['*', "'unsafe-inline'"],
+        scriptSrc: ['*', "'unsafe-inline'", "'unsafe-eval'"],
         frameAncestors: ["'none'"], // Disallow embedding of content
       },
       // Don't support old version and help with CDN
