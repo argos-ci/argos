@@ -26,7 +26,7 @@
     "db:truncate": "babel-node scripts/db/truncate.js",
     "db:seed": "knex seed:run",
     "db:reset": "yarn db:drop && yarn db:create && yarn db:load",
-    "heroku-postbuild": "yarn build:server && yarn build:review && yarn db:migrate:latest",
+    "heroku-postbuild": "yarn server:build && yarn web:build && yarn db:migrate:latest",
     "prettier": "find . -name \"*.js\" | grep -v -f .eslintignore | xargs prettier --write --no-semi --single-quote --trailing-comma es5 --print-width 100"
   },
   "repository": {
