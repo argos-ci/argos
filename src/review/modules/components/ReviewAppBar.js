@@ -68,7 +68,7 @@ class ReviewAppBar extends Component {
               aria-haspopup="true"
             >
               <Grid container align="center">
-                <Grid item>
+                <Grid item xs>
                   <Typography color="inherit">
                     {user.name}
                   </Typography>
