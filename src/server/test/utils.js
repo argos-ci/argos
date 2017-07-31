@@ -1,6 +1,6 @@
 /* global jasmine */
 
-import * as allServices from 'server/services/all'
+import * as services from 'server/services/all'
 import * as database from 'server/services/database'
 
 const KNEX_TABLES = ['knex_migrations', 'knex_migrations_lock']
@@ -8,13 +8,13 @@ const KNEX_TABLES = ['knex_migrations', 'knex_migrations_lock']
 let truncateQuery
 async function getTruncateQuery(knex) {
   if (!truncateQuery) {
-    const result = await knex.schema.raw(
+    const result = await knex.raw(
       "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'"
     )
 
     const tables = result.rows.reduce(
-      (tables, { tablename }) =>
-        KNEX_TABLES.includes(tablename) ? tables : [...tables, tablename],
+      (tablesAcc, { tablename }) =>
+        KNEX_TABLES.includes(tablename) ? tablesAcc : [...tablesAcc, tablename],
       []
     )
 
@@ -29,7 +29,7 @@ async function getTruncateQuery(knex) {
 
 export async function truncateAll(knex) {
   const query = await getTruncateQuery(knex)
-  return knex.schema.raw(query)
+  return knex.raw(query)
 }
 
 export const useDatabase = () => {
@@ -40,7 +40,7 @@ export const useDatabase = () => {
   })
 
   afterAll(async () => {
-    await allServices.disconnect()
+    await services.disconnect()
   })
 
   beforeEach(async () => {

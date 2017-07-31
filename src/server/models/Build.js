@@ -102,7 +102,9 @@ export default class Build extends BaseModel {
     const screenshotDiffs = await ScreenshotDiff.query().where({
       buildId: build.id,
     })
-    const jobStatus = reduceJobStatus(screenshotDiffs.map(({ jobStatus }) => jobStatus))
+    const jobStatus = reduceJobStatus(
+      screenshotDiffs.map(screenshotDiff => screenshotDiff.jobStatus)
+    )
 
     if (jobStatus === 'complete') {
       if (useValidation && useScore) {

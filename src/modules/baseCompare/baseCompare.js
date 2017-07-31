@@ -1,6 +1,6 @@
 import GitHubAPI from 'github'
 import config from 'config'
-import crashReporter from 'modules/crashReporter'
+import crashReporter from 'modules/crashReporter/common'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
 async function fallbackToMaster(build) {
@@ -52,32 +52,46 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
 
   let baseCommits = []
   let compareCommits = []
+  const baseCommitParams = {
+    owner: owner.login,
+    repo: build.repository.name,
+    sha: baseCommit,
+    per_page: perPage,
+    page: 1,
+  }
 
   try {
     // http://stackoverflow.com/questions/9179828/github-api-retrieve-all-commits-for-all-branches-for-a-repo
     // http://mikedeboer.github.io/node-github/#api-repos-getBranch
-    baseCommits = await github.repos.getCommits({
-      owner: owner.login,
-      repo: build.repository.name,
-      sha: baseCommit,
-      per_page: perPage,
-      page: 1,
-    })
+    baseCommits = await github.repos.getCommits(baseCommitParams)
     baseCommits = baseCommits.data
+  } catch (error) {
+    // Unauthorized
+    if (error.code !== 401) {
+      crashReporter().captureException(error, {
+        baseCommitParams,
+      })
+    }
+  }
 
-    compareCommits = await github.repos.getCommits({
-      owner: owner.login,
-      repo: build.repository.name,
-      sha: compareCommit,
-      per_page: perPage,
-      page: 1,
-    })
+  const compareCommitPararms = {
+    owner: owner.login,
+    repo: build.repository.name,
+    sha: compareCommit,
+    per_page: perPage,
+    page: 1,
+  }
+
+  try {
+    compareCommits = await github.repos.getCommits(compareCommitPararms)
     compareCommits = compareCommits.data
   } catch (error) {
+    // Unauthorized
     if (error.code !== 401) {
-      console.error(error) // eslint-disable-line no-console
+      crashReporter().captureException(error, {
+        compareCommitPararms,
+      })
     }
-    crashReporter.captureException(error)
   }
 
   let potentialCommits = []

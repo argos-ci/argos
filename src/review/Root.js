@@ -7,7 +7,7 @@ import { ApolloProvider } from 'react-apollo'
 import { reducer as formReducer } from 'redux-form'
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import metricsMiddleware from 'browser-metrics/lib/reduxMetricsMiddleware'
-import createDefaultContext from 'modules/styles/createDefaultContext'
+import theme from 'modules/styles/theme'
 import analytics from 'modules/analytics'
 import initApollo from 'modules/apollo/initApollo'
 import dataReducer from 'modules/redux/dataReducer'
@@ -70,11 +70,9 @@ const composeEnhancers =
 const store = composeEnhancers(applyMiddleware(...middlewares))(createStore)(rootReducers)
 
 function Root() {
-  const { styleManager, theme } = createDefaultContext()
-
   return (
     <ApolloProvider client={apollo} store={store}>
-      <MuiThemeProvider theme={theme} styleManager={styleManager}>
+      <MuiThemeProvider theme={theme}>
         <Routes />
       </MuiThemeProvider>
     </ApolloProvider>

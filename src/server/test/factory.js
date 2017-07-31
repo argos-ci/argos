@@ -33,16 +33,17 @@ factory.define(
   },
   {
     async afterBuild(model, attrs) {
+      const newModel = model
       if (!attrs.compareScreenshotBucketId) {
         const compareScreenshotBucket = await factory.create('ScreenshotBucket', {
           repositoryId: model.repositoryId || attrs.repositoryId,
         })
-        model.compareScreenshotBucketId = compareScreenshotBucket.id
+        newModel.compareScreenshotBucketId = compareScreenshotBucket.id
       } else {
-        model.compareScreenshotBucketId = attrs.compareScreenshotBucketId
+        newModel.compareScreenshotBucketId = attrs.compareScreenshotBucketId
       }
 
-      return model
+      return newModel
     },
   }
 )

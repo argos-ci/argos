@@ -2,22 +2,28 @@
 
 import chalk from 'chalk'
 
-export function displayInfo(message) {
-  if (process.env.NODE_ENV === 'test') {
-    return
-  }
+const display = {
+  info: (...args) => {
+    if (process.env.NODE_ENV === 'test') {
+      return
+    }
 
-  console.info(chalk.cyan(`i  ${message}`))
+    console.info(chalk.cyan(`i  ${args.join(' ')}`))
+  },
+  error: (...args) => {
+    if (process.env.NODE_ENV === 'test') {
+      return
+    }
+
+    console.error(chalk.bold.red(`\n✘  ${args.join(' ')}`))
+  },
+  success: (...args) => {
+    if (process.env.NODE_ENV === 'test') {
+      return
+    }
+
+    console.log(chalk.green(`\n✔  ${args.join(' ')}`))
+  },
 }
 
-export function displayError(message) {
-  if (process.env.NODE_ENV === 'test') {
-    return
-  }
-
-  console.error(chalk.bold.red(`\n✘  ${message}`))
-}
-
-export function displaySuccess(message) {
-  console.log(chalk.green(`\n✔  ${message}`))
-}
+export default display

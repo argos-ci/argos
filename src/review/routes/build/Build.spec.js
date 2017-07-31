@@ -1,5 +1,5 @@
 import React from 'react'
-import createShallow from 'material-ui/test-utils/createShallow'
+import { createShallow } from 'material-ui/test-utils'
 import BuildSummary from 'review/routes/build/BuildSummary'
 import Build from './Build'
 

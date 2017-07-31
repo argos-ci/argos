@@ -78,13 +78,13 @@ For more information on integrating Argos CI with your application take a look a
 
 Settings.propTypes = {
   classes: PropTypes.object.isRequired,
-  repository: PropTypes.shape({
-    authorization: PropTypes.bool.isRequired,
-    token: PropTypes.string,
-  }).isRequired,
   params: PropTypes.shape({
     profileName: PropTypes.string.isRequired,
     repositoryName: PropTypes.string.isRequired,
+  }).isRequired,
+  repository: PropTypes.shape({
+    authorization: PropTypes.bool.isRequired,
+    token: PropTypes.string,
   }).isRequired,
 }
 

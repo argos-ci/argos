@@ -4,7 +4,7 @@ import config from 'config'
 import syncFromUserId from 'modules/synchronizer/syncFromUserId'
 import { PUBLIC_SCOPES, PRIVATE_SCOPES } from 'modules/authorizations/scopes'
 import getUserAuthorizationState from 'modules/authorizations/getUserAuthorizationState'
-import crashReporter from 'modules/crashReporter'
+import crashReporter from 'modules/crashReporter/common'
 
 function getDataFromProfile(profile) {
   return {
@@ -60,7 +60,7 @@ export default passport => {
 
             done(null, user)
           } catch (err) {
-            crashReporter.captureException(err)
+            crashReporter().captureException(err)
             done(err)
           }
         }
@@ -73,7 +73,7 @@ export default passport => {
     try {
       done(null, await User.query().findById(id))
     } catch (err) {
-      crashReporter.captureException(err)
+      crashReporter().captureException(err)
       done(err)
     }
   })

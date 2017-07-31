@@ -43,8 +43,9 @@ export async function resolveList(repository, args) {
       endCursor: hasNextPage ? args.after + args.first : result.total,
     },
     edges: result.results.map((build, index) => {
-      build.status = statuses[index]
-      return build
+      const newBuild = build
+      newBuild.status = statuses[index]
+      return newBuild
     }),
   }
 }

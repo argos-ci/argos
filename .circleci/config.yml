@@ -7,12 +7,16 @@ defaults: &defaults
         POSTGRES_USER: argos
       ports:
         - '5432:5432'
+restore_repo: &restore_repo
+  restore_cache:
+    keys:
+      - v1-repo-{{ .Branch }}-{{ .Revision }}
 version: 2
 jobs:
   checkout:
     <<: *defaults
     steps:
-      # Fetch the code
+      - *restore_repo
       - checkout
       - run:
           name: Check versions and env
@@ -32,15 +36,14 @@ jobs:
           key: yarn-sha-{{ checksum "yarn.lock" }}
           paths:
             - ~/.cache/yarn/v1
-      - persist_to_workspace:
-          root: /tmp/argos
+      - save_cache:
+          key: v1-repo-{{ .Branch }}-{{ .Revision }}
           paths:
-            - argos
+            - /tmp/argos
   test_unit:
     <<: *defaults
     steps:
-      - attach_workspace:
-          at: /tmp/argos
+      - *restore_repo
       - run:
           name: postgres
           command: |
@@ -56,8 +59,7 @@ jobs:
   test_misc:
     <<: *defaults
     steps:
-      - attach_workspace:
-          at: /tmp/argos
+      - *restore_repo
       - run:
           name: Lint
           command: yarn lint

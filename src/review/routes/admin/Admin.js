@@ -101,6 +101,9 @@ class Admin extends Component {
 Admin.propTypes = {
   classes: PropTypes.object.isRequired,
   createAction: PropTypes.func.isRequired,
+  error: PropTypes.bool.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  submitting: PropTypes.bool.isRequired,
 }
 
 const usurpUser = gql`

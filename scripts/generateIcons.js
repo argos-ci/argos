@@ -1,12 +1,12 @@
 import path from 'path'
 import gm from 'gm'
-import { displayError, displayInfo, displaySuccess } from '../src/modules/scripts/display'
+import display from '../src/modules/scripts/display'
 
 const SIZES = [48, 70, 96, 150, 152, 192, 256, 310, 384, 512]
 const INPUT_ICON = path.join(__dirname, '../assets/logo.png')
 const OUTPUT_DIR = path.join(__dirname, '../server/public/icon')
 
-displayInfo('Generating Icons')
+display.info('Generating Icons')
 
 const promises = SIZES.map(
   size =>
@@ -18,14 +18,14 @@ const promises = SIZES.map(
         }
 
         resolve()
-        displaySuccess(`Size ${size} created`)
+        display.success(`Size ${size} created`)
       })
     })
 )
 
 Promise.all(promises).catch(err => {
   setTimeout(() => {
-    displayError(err)
+    display.error(err)
     throw err
   }, 0)
 })

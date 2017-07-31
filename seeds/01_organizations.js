@@ -3,7 +3,7 @@ exports.seed = (knex, Promise) =>
     Promise.all([
       knex('organizations').insert([
         {
-          id: 1,
+          id: '1',
           githubId: 1262264,
           name: 'Call-Em-All',
           login: 'callemall',
@@ -11,7 +11,7 @@ exports.seed = (knex, Promise) =>
           updatedAt: new Date().toISOString(),
         },
         {
-          id: 2,
+          id: '2',
           githubId: 5823649,
           name: 'Doctolib',
           login: 'doctolib',

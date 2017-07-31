@@ -28,7 +28,7 @@ const NOTIFICATIONS = {
   },
 }
 
-export async function pushBuildNotification({ type, buildId }) {
+async function pushBuildNotification({ type, buildId }) {
   const buildNotification = await BuildNotification.query().insert({
     buildId,
     type,
@@ -37,6 +37,8 @@ export async function pushBuildNotification({ type, buildId }) {
   buildNotificationJob.push(buildNotification.id)
   return buildNotification
 }
+
+export { pushBuildNotification }
 
 export async function processBuildNotification(buildNotification) {
   const build = await Build.query()
