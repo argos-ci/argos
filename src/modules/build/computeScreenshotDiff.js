@@ -1,11 +1,15 @@
 import path from 'path'
 import tmp from 'tmp'
-import fs from 'mz/fs'
+import { promisify } from 'util'
+import { rmdir, unlink } from 'fs'
 import download from 'modules/s3/download'
 import upload from 'modules/s3/upload'
 import imageDifference from 'modules/imageDifference/imageDifference'
 import Build from 'server/models/Build'
 import { pushBuildNotification } from 'modules/build/notifications'
+
+const rmdirAsync = promisify(rmdir)
+const unlinkAsync = promisify(unlink)
 
 function createTmpDirectory() {
   return new Promise((resolve, reject) => {
@@ -62,12 +66,12 @@ async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
   }
 
   await Promise.all([
-    fs.unlink(compareScreenshotPath),
-    fs.unlink(baseScreenshotPath),
-    fs.unlink(diffResultPath),
+    unlinkAsync(compareScreenshotPath),
+    unlinkAsync(baseScreenshotPath),
+    unlinkAsync(diffResultPath),
   ])
 
-  await fs.rmdir(tmpDir)
+  await rmdirAsync(tmpDir)
 
   await screenshotDiff.$query().patch({
     score: difference.score,
