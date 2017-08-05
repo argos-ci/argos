@@ -1,8 +1,11 @@
 import path from 'path'
 import tmp from 'tmp'
 import S3 from 'aws-sdk/clients/s3'
-import fs from 'mz/fs'
+import { promisify } from 'util'
+import { readFile } from 'fs'
 import download from './download'
+
+const readFileAsync = promisify(readFile)
 
 describe('download', () => {
   let s3
@@ -22,7 +25,7 @@ describe('download', () => {
       outputPath,
     })
 
-    const file = await fs.readFile(outputPath, 'utf-8')
+    const file = await readFileAsync(outputPath, 'utf-8')
     expect(file).toEqual('hello!\n')
   })
 

@@ -1,4 +1,4 @@
-import fs from 'mz/fs'
+import { createWriteStream } from 'fs'
 
 function download({ s3, bucket, fileKey, outputPath }) {
   return new Promise((resolve, reject) => {
@@ -8,7 +8,7 @@ function download({ s3, bucket, fileKey, outputPath }) {
         Key: fileKey,
       })
       .createReadStream()
-    const writeStream = fs.createWriteStream(outputPath)
+    const writeStream = createWriteStream(outputPath)
     writeStream.on('finish', resolve)
     readStream.on('error', reject)
     writeStream.on('error', reject)

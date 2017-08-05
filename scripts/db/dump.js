@@ -1,7 +1,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { join } from 'path'
-import { appendFile, readdir } from 'mz/fs'
+import { appendFile, readdir } from 'fs'
 import config from 'config'
 import display from '../../src/modules/scripts/display'
 
@@ -10,8 +10,10 @@ if (config.get('env') !== 'development') {
 }
 
 const execAsync = promisify(exec)
+const appendFileAsync = promisify(appendFile)
+const readdirAsync = promisify(readdir)
 const getMigrationInserts = async () => {
-  const migrations = await readdir(join(__dirname, '../../migrations'))
+  const migrations = await readdirAsync(join(__dirname, '../../migrations'))
   return migrations
     .map(
       migration =>
@@ -25,7 +27,7 @@ execAsync(
 )
   .then(async () => {
     const migrationInserts = await getMigrationInserts()
-    return appendFile('db/structure.sql', `-- Knex migrations\n\n${migrationInserts}`)
+    return appendFileAsync('db/structure.sql', `-- Knex migrations\n\n${migrationInserts}`)
   })
   .catch(err => {
     display.error(`${err.stderr}\n${err.stdout}`)
