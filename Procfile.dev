@@ -1,3 +1,0 @@
-web: nodemon src/server/workers/web.js
-buildAndSynchronize: nodemon src/server/workers/buildAndSynchronize.js
-screenshotDiff: nodemon src/server/workers/screenshotDiff.js

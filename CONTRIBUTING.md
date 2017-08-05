@@ -93,8 +93,8 @@ yarn db:truncate && yarn db:seed
 ## Develop
 
 ```sh
-yarn dev::foreman # run server and workers
-yarn dev:review # run client assets
+yarn web:dev # run server and workers
+yarn review:dev # run client assets
 ```
 
 ### Jobs
