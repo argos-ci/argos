@@ -1,5 +1,6 @@
 import path from 'path'
 import S3 from 'aws-sdk/clients/s3'
+import config from 'config'
 import upload from './upload'
 
 describe('upload', () => {
@@ -13,8 +14,8 @@ describe('upload', () => {
     const inputPath = path.join(__dirname, '__fixtures__', 'screenshot_test.jpg')
     const data = await upload({
       s3,
-      bucket: 'argos-screenshots-test',
       inputPath,
+      Bucket: config.get('s3.screenshotsBucket'),
     })
 
     expect(data.Key).not.toBe(undefined)

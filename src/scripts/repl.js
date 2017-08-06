@@ -1,8 +1,8 @@
 /* eslint-disable import/no-dynamic-require, global-require */
-import 'server/bootstrap/setup'
 
-// https://nodejs.org/api/repl.html
-import repl from 'repl'
+import 'server/bootstrap/setup'
+// --- Post bootstrap -----
+import repl from 'repl' // https://nodejs.org/api/repl.html
 import path from 'path'
 import { promisify } from 'util'
 import { readdir } from 'fs'

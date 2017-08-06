@@ -37,7 +37,7 @@ function ProductShowcase(props) {
       })}
     >
       <LayoutBody margin>
-        <Grid container direction={textPosition === 'left' ? 'row' : 'row-reverse'} gutter={24}>
+        <Grid container direction={textPosition === 'left' ? 'row' : 'row-reverse'} spacing={24}>
           <Grid item xs={12} md={image ? 5 : 12}>
             <Typography type={size === 'large' ? 'display1' : 'title'} component="h3" gutterBottom>
               {title}

@@ -3,7 +3,7 @@ import { promisify } from 'util'
 import { join } from 'path'
 import { appendFile, readdir } from 'fs'
 import config from 'config'
-import display from '../../src/modules/scripts/display'
+import display from 'modules/scripts/display'
 
 if (config.get('env') !== 'development') {
   throw new Error('You should only dump in development')
@@ -23,11 +23,16 @@ const getMigrationInserts = async () => {
 }
 
 execAsync(
-  `docker-compose exec postgres pg_dump -s -U argos ${config.get('env')} > db/structure.sql`
+  `docker-compose exec postgres pg_dump -s -U argos ${config.get(
+    'env'
+  )} > src/server/db/structure.sql`
 )
   .then(async () => {
     const migrationInserts = await getMigrationInserts()
-    return appendFileAsync('db/structure.sql', `-- Knex migrations\n\n${migrationInserts}`)
+    return appendFileAsync(
+      'src/server/db/structure.sql',
+      `-- Knex migrations\n\n${migrationInserts}`
+    )
   })
   .catch(err => {
     display.error(`${err.stderr}\n${err.stdout}`)

@@ -25,7 +25,7 @@ export default function crashReporter() {
       if (process.env.NODE_ENV !== 'production') {
         // Useful for debugging
         // eslint-disable-next-line no-console
-        console.error('crashReporter.captureException', ...args)
+        console.warn('crashReporter.captureException', ...args)
       }
 
       global.__CRASH_REPORTER_LIB__.captureException(...args)

@@ -31,7 +31,7 @@ function Repository(props) {
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin marginBottom>
-          <Grid container gutter={24}>
+          <Grid container spacing={24}>
             <Grid item xs>
               <Typography type="display1" component="h2" noWrap>
                 <Link to={`/${profileName}`}>{profileName}</Link>

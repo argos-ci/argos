@@ -39,12 +39,12 @@ export const useDatabase = () => {
     knex = database.connect('test')
   })
 
-  afterAll(async () => {
-    await services.disconnect()
-  })
-
   beforeEach(async () => {
     await truncateAll(knex)
+  })
+
+  afterAll(async () => {
+    await services.disconnect()
   })
 }
 
@@ -61,6 +61,8 @@ export const setTestsTimeout = timeout => {
   })
 }
 
-export function noGraphqlErrors(res) {
-  expect(res.body.errors).toBe(undefined)
+export function noGraphqlError(res) {
+  if (res.body.errors !== undefined) {
+    expect(res.body.errors).toEqual([])
+  }
 }
