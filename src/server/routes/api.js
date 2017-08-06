@@ -66,36 +66,29 @@ router.post(
       throw new HttpError(400, `Repository not enabled (name: "${repository.name}")`)
     }
 
-    let build = await transaction(
-      Build,
-      ScreenshotBucket,
-      async (BuildTransaction, ScreenshotBucketTransaction) => {
-        const bucket = await ScreenshotBucketTransaction.query().insert({
-          name: 'default',
-          commit: data.commit,
-          branch: data.branch,
-          repositoryId: repository.id,
-        })
+    let build = await transaction(Build, ScreenshotBucket, async (Build, ScreenshotBucket) => {
+      const bucket = await ScreenshotBucket.query().insert({
+        name: 'default',
+        commit: data.commit,
+        branch: data.branch,
+        repositoryId: repository.id,
+      })
+      await bucket.$relatedQuery('screenshots').insert(
+        req.files.map((file, index) => ({
+          screenshotBucketId: bucket.id,
+          name: data.names[index],
+          s3Id: file.key,
+        }))
+      )
+      const newBuild = await Build.query().insert({
+        baseScreenshotBucketId: null,
+        compareScreenshotBucketId: bucket.id,
+        repositoryId: repository.id,
+        jobStatus: 'pending',
+      })
 
-        const inserts = req.files.map((file, index) =>
-          bucket.$relatedQuery('screenshots').insert({
-            screenshotBucketId: bucket.id,
-            name: data.names[index],
-            s3Id: file.key,
-          })
-        )
-
-        await Promise.all(inserts)
-
-        const newBuild = await BuildTransaction.query().insert({
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: bucket.id,
-          repositoryId: repository.id,
-          jobStatus: 'pending',
-        })
-        return newBuild
-      }
-    )
+      return newBuild
+    })
 
     // So we don't reuse the previous transaction
     build = await Build.query().where({ id: build.id }).limit(1).first()

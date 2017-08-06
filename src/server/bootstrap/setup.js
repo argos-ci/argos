@@ -1,8 +1,11 @@
 import '@risingstack/trace'
+import AWS from 'aws-sdk'
 import { connect } from 'server/services/database'
 import handleKillSignals from 'server/bootstrap/handleKillSignals'
 import { initializeCrashReporterServer } from 'modules/crashReporter/server'
 import crashReporter from 'modules/crashReporter/common'
+
+AWS.config.setPromisesDependency(Promise)
 
 connect()
 handleKillSignals()

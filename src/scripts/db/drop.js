@@ -1,7 +1,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import config from 'config'
-import display from '../../src/modules/scripts/display'
+import display from 'modules/scripts/display'
 
 if (config.get('env') === 'production') {
   throw new Error('Not in production please!')

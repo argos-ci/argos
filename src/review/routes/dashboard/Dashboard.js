@@ -37,7 +37,7 @@ function Dashboard(props) {
       <AuthorizationNotice />
       <ScrollView>
         <LayoutBody margin marginBottom>
-          <Grid container gutter={24}>
+          <Grid container spacing={24}>
             <Grid item xs={12}>
               <Typography type="display1" component="h2">
                 Dashboard

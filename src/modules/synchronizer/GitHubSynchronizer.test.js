@@ -8,7 +8,7 @@ import UserRepositoryRight from 'server/models/UserRepositoryRight'
 import GitHubSynchronizer from './GitHubSynchronizer'
 
 describe('GitHubSynchronizer', () => {
-  setTestsTimeout(10000)
+  setTestsTimeout(10e3)
   useDatabase()
   playback({
     name: 'GitHubSynchronizer.json',

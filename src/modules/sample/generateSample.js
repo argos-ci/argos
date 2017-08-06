@@ -36,34 +36,30 @@ const sampleScreenshots = {
 
 async function generateSample(repositoryId) {
   const build = await transaction(Build, ScreenshotBucket, async (Build, ScreenshotBucket) => {
-    let inserts
     const baseScreenshotBucket = await ScreenshotBucket.query().insert({
-      name: 'argos-ci-integration',
+      name: 'default',
       commit: '7c854111d458d5848bff6c0f3b065b58bc28f160',
       branch: 'argos-ci-integration',
       repositoryId,
     })
-    inserts = sampleScreenshots.base.map(screenshot =>
-      baseScreenshotBucket.$relatedQuery('screenshots').insert({
+    await baseScreenshotBucket.$relatedQuery('screenshots').insert(
+      sampleScreenshots.base.map(screenshot => ({
         screenshotBucketId: baseScreenshotBucket.id,
         ...screenshot,
-      })
+      }))
     )
-    await Promise.all(inserts)
-
     const compareScreenshotBucket = await ScreenshotBucket.query().insert({
-      name: 'argos-ci-integration',
+      name: 'default',
       commit: 'a60b931a9ef036b8c6b4dbef09a652911542a494',
       branch: 'argos-ci-integration',
       repositoryId,
     })
-    inserts = sampleScreenshots.compare.map(screenshot =>
-      compareScreenshotBucket.$relatedQuery('screenshots').insert({
+    await compareScreenshotBucket.$relatedQuery('screenshots').insert(
+      sampleScreenshots.compare.map(screenshot => ({
         screenshotBucketId: compareScreenshotBucket.id,
         ...screenshot,
-      })
+      }))
     )
-    await Promise.all(inserts)
 
     const build = Build.query().insert({
       baseScreenshotBucketId: baseScreenshotBucket.id,

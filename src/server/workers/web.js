@@ -1,4 +1,5 @@
 import 'server/bootstrap/setup'
+// --- Post bootstrap -----
 import http from 'http'
 import config from 'config'
 import display from 'modules/scripts/display'

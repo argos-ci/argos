@@ -5,8 +5,8 @@ import { rmdir, unlink } from 'fs'
 import download from 'modules/s3/download'
 import upload from 'modules/s3/upload'
 import imageDifference from 'modules/imageDifference/imageDifference'
-import Build from 'server/models/Build'
 import { pushBuildNotification } from 'modules/build/notifications'
+import Build from 'server/models/Build'
 
 const rmdirAsync = promisify(rmdir)
 const unlinkAsync = promisify(unlink)
@@ -38,15 +38,15 @@ async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
   await Promise.all([
     download({
       s3,
-      bucket,
-      fileKey: screenshotDiff.baseScreenshot.s3Id,
       outputPath: baseScreenshotPath,
+      Bucket: bucket,
+      Key: screenshotDiff.baseScreenshot.s3Id,
     }),
     download({
       s3,
-      bucket,
-      fileKey: screenshotDiff.compareScreenshot.s3Id,
       outputPath: compareScreenshotPath,
+      Bucket: bucket,
+      Key: screenshotDiff.compareScreenshot.s3Id,
     }),
   ])
 
@@ -60,7 +60,7 @@ async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
   if (difference.score > 0) {
     uploadResult = await upload({
       s3,
-      bucket,
+      Bucket: bucket,
       inputPath: diffResultPath,
     })
   }

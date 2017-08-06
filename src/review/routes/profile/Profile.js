@@ -39,7 +39,7 @@ function Profile(props) {
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin marginBottom>
-          <Grid container gutter={24}>
+          <Grid container spacing={24}>
             <Grid align="center" container item xs={12}>
               <Grid item>
                 <Avatar
