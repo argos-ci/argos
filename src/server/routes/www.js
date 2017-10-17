@@ -53,7 +53,7 @@ router.use('/graphql', graphqlMiddleware())
     `/auth/github-${type}`,
     (req, res, next) => {
       // Save the referer to later redirect back to it.
-      // Sessing can be undefined when Redis is down.
+      // req.session can be undefined when Redis is down.
       if (req.session) {
         req.session.returnTo = req.header('Referer')
       }
