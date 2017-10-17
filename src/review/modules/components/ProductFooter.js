@@ -50,7 +50,7 @@ function ProductFooter(props) {
           Quick Links
         </Typography>
         <Typography type="subheading" color="inherit" component="div">
-          <Grid container gutter={0}>
+          <Grid container spacing={0}>
             <Grid item xs={12} sm={6}>
               <ul className={classes.list}>
                 <li className={classes.listItem}>

@@ -65,6 +65,7 @@ nvm alias default "$(cat .nvmrc)"
 ```
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
+AWS_SCREENSHOTS_BUCKET=
 GITHUB_CLIENT_SECRET=
 TEST_GITHUB_USER_ACCESS_TOKEN=
 ```
@@ -93,8 +94,8 @@ yarn db:truncate && yarn db:seed
 ## Develop
 
 ```sh
-yarn dev::foreman # run server and workers
-yarn dev:review # run client assets
+yarn web:dev # run server and workers
+yarn review:dev # run client assets
 ```
 
 ### Jobs

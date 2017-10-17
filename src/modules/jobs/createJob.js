@@ -22,6 +22,7 @@ const logAndCaptureError = (error, { args, queue }) => {
 }
 
 const createJob = (queue, consumer) => ({
+  queue,
   async push(...args) {
     const channel = await getChannel()
     await channel.assertQueue(queue, { durable: true })

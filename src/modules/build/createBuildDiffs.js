@@ -10,7 +10,9 @@ async function createBuildDiffs(build) {
 
   let newBaseScreenshotBucket
 
-  // We need a baseScreenshotBucket to move forward
+  // We need a baseScreenshotBucket to move forward.
+  // However, it can already be present, for instance
+  // by the sample build feature.
   if (!build.baseScreenshotBucket) {
     newBaseScreenshotBucket = await baseCompare({
       baseCommit: build.repository.baselineBranch,
@@ -28,8 +30,7 @@ async function createBuildDiffs(build) {
     const compareWithBaseline =
       build.compareScreenshotBucket.branch === build.repository.baselineBranch
 
-    // At some point, we should handle baseScreenshots no longer in the
-    // compareScreenshots.
+    // At some point, we should handle baseScreenshots no longer in the compareScreenshots.
     const diffInserts = build.compareScreenshotBucket.screenshots.reduce(
       (diffInserts, compareScreenshot) => {
         const baseScreenshot = build.baseScreenshotBucket

@@ -4,32 +4,40 @@ const workers = 3
 const maxConnectionsAllowed = 20
 const freeConnectionsForThirdTools = 2
 
+const configDefault = {
+  migrations: {
+    directory: 'src/server/migrations',
+  },
+  seeds: {
+    directory: 'src/server/seeds',
+  },
+}
+
 const config = {
-  development: {
+  development: Object.assign({}, configDefault, {
     debug: true,
     client: 'postgresql',
     connection: {
       user: 'argos',
       database: 'development',
     },
-    seeds: {
-      directory: './seeds',
-    },
-  },
-  test: {
+  }),
+  test: Object.assign({}, configDefault, {
+    debug: false,
     client: 'postgresql',
     connection: {
       user: 'argos',
       database: 'test',
     },
-  },
-  production: {
+  }),
+  production: Object.assign({}, configDefault, {
+    debug: false,
     client: 'postgresql',
     pool: {
       min: 2,
       max: Math.floor((maxConnectionsAllowed - freeConnectionsForThirdTools) / workers),
     },
-  },
+  }),
 }
 
 if (process.env.DATABASE_URL) {

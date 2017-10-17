@@ -1,6 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 import { factory } from 'factory-girl'
+import crypto from 'crypto'
 import ObjectionAdapter from 'server/test/ObjectionAdapter'
 import { VALIDATION_STATUS } from 'server/constants'
 import Build from 'server/models/Build'
@@ -17,9 +18,18 @@ import UserOrganizationRight from 'server/models/UserOrganizationRight'
 
 factory.setAdapter(new ObjectionAdapter())
 
+// Taken from uuid/bytesToUuid.js
+function bytesToString(bytes) {
+  let output = ''
+  for (let i = 0; i < bytes.length; i += 1) {
+    output += (bytes[i] + 0x100).toString(16).substr(1)
+  }
+  return output
+}
+
 factory.define('ScreenshotBucket', ScreenshotBucket, {
   name: factory.sequence('repository.name', n => `bucket-${n}`),
-  commit: '4342ce965368d3281bb59a4a49f5486acda23eae',
+  commit: () => bytesToString(crypto.randomBytes(20)),
   branch: 'master',
   repositoryId: factory.assoc('Repository', 'id'),
 })
