@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 import '@risingstack/trace'
 import { connect } from 'server/services/database'
 import handleKillSignals from 'server/bootstrap/handleKillSignals'
@@ -14,8 +16,6 @@ process.on('error', error => {
 })
 
 process.on('unhandledRejection', (reason, promise) => {
-  // eslint-disable-next-line no-console
   console.log('unhandledRejection', 'reason', reason)
-  // eslint-disable-next-line no-console
   console.log('unhandledRejection', 'promise', promise)
 })
