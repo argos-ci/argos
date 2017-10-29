@@ -4,17 +4,17 @@
     "screenshotsBucket": "argos-screenshots-us"
   },
   "github": {
-    "clientId": "8460535e1d4c40dfdf05"
+    "clientId": "7eab46f148a2f0822953"
   },
   "server": {
     "logFormat": "combined",
     "secure": true,
-    "url": "https://www.argos-ci.com"
+    "url": "https://doctolib-argos.herokuapp.com"
   },
   "api": {
-    "subdomain": "api"
+    "subdomain": "doctolib-argos"
   },
   "www": {
-    "subdomain": "www"
+    "subdomain": "doctolib-argos"
   }
 }

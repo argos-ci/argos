@@ -15,7 +15,7 @@ const config = convict({
   api: {
     subdomain: {
       format: String,
-      default: 'api.dev',
+      default: 'www.dev',
     },
   },
   www: {
@@ -90,7 +90,7 @@ const config = convict({
     },
     applicationUrl: {
       format: String,
-      default: 'https://github.com/settings/connections/applications/8460535e1d4c40dfdf05',
+      default: 'https://github.com/settings/connections/applications/7eab46f148a2f0822953',
     },
   },
   redis: {
