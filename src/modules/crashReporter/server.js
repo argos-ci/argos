@@ -11,7 +11,7 @@ export function initializeCrashReporterServer() {
 
   initializeCrashReporter({
     DSN:
-      'https://261cb80891cb480fa452f7e18c0e57c0:dc050bb97a4d4692aa3e957c5c89d393@sentry.io/133418',
+      'https://e2b4a90bdcc64abf9f446d6612b16471:9d24ce54a34345e29684f23d453ac21d@sentry.io/237155',
     ravenConfig: {
       autoBreadcrumbs: true,
       release: config.get('releaseVersion'),
