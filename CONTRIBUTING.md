@@ -60,6 +60,14 @@ npm install -g yarn
 nvm alias default "$(cat .nvmrc)"
 ```
 
+### Start containers
+
+Download [Docker](https://docs.docker.com/compose/install/#install-compose) and run the following command:
+
+```sh
+docker-compose up
+```
+
 ### Setup your .env file
 
 ```
