@@ -70,7 +70,12 @@ app.use(
     },
   })
 )
-app.use(subdomain(config.get('www.subdomain'), www))
-app.use(subdomain(config.get('api.subdomain'), api))
+
+if (config.get('www.subdomain') === config.get('api.subdomain')) {
+  app.use(api, www)
+} else {
+  app.use(subdomain(config.get('api.subdomain'), api))
+  app.use(subdomain(config.get('www.subdomain'), www))
+}
 
 export default app
