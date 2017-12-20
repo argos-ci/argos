@@ -56,8 +56,9 @@ npm install
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
 brew install imagemagick@6 graphicsmagick autoenv watchman
 nvm install
-npm install -g yarn
 nvm alias default "$(cat .nvmrc)"
+npm install -g yarn
+yarn
 ```
 
 ### Start containers
@@ -78,12 +79,37 @@ GITHUB_CLIENT_SECRET=
 TEST_GITHUB_USER_ACCESS_TOKEN=
 ```
 
-### Modifying your hosts
+### Modify your hosts
 
 ```
 # Argos
 127.0.0.1 www.dev.argos-ci.com
 127.0.0.1 api.dev.argos-ci.com
+```
+
+### Create an S3 bucket to host screenshots
+
+```js
+const S3 = require('aws-sdk/clients/s3')
+const s3 = new S3({ signatureVersion: 'v4' })
+const bucketName = 'argos.doctolib.com'
+
+(async () => {
+  await s3.createBucket({ Bucket: bucketName }).promise()
+  await s3.putBucketPolicy({
+    Bucket: bucketName,
+    Policy: JSON.stringify({
+      Version: '2012-10-17',
+      Statement: [{
+        Sid: 'AllowPublicRead',
+        Effect: 'Allow',
+        Principal: { AWS: '*'},
+        Action: 's3:GetObject',
+        Resource: `arn:aws:s3:::${bucketName}/*`
+      }]
+    })
+  })
+})().then(() => console.log('Success!'), error => console.log('Error:', error.message))
 ```
 
 ### Set up database
