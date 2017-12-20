@@ -92,6 +92,6 @@ export async function processBuildNotification(buildNotification) {
     state: notification.state,
     description: notification.description, // Short description of the status.
     target_url: buildUrl,
-    context: 'argos',
+    context: 'doctolib/argos',
   })
 }
