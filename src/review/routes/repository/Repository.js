@@ -16,6 +16,7 @@ import actionTypes from 'modules/redux/actionTypes'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ReviewAppBar from 'review/modules/components/ReviewAppBar'
 import ReviewFooter from 'review/modules/components/ReviewFooter'
+import RepositoryNotFound from './RepositoryNotFound'
 
 const styles = {
   paper: {
@@ -70,16 +71,14 @@ function Repository(props) {
             <Grid item xs={12}>
               <WatchTask task={fetch}>
                 {data => {
-                  if (!data.repository) {
-                    return (
-                      <Paper className={classes.paper}>
-                        <WatchTaskContainer>
-                          <Typography>Repository not found, try to login.</Typography>
-                        </WatchTaskContainer>
-                      </Paper>
-                    )
-                  }
-                  return children
+                  if (data.repository) return children
+                  return (
+                    <Paper className={classes.paper}>
+                      <WatchTaskContainer>
+                        <RepositoryNotFound />
+                      </WatchTaskContainer>
+                    </Paper>
+                  )
                 }}
               </WatchTask>
             </Grid>
