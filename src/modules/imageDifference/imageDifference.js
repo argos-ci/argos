@@ -12,7 +12,7 @@ async function imageDifference({
   compareScreenshotPath,
   baseScreenshotPath,
   diffResultPath,
-  fuzz = '8%',
+  fuzz = '10%',
 }) {
   const difference = await imageDifferenceRaw({
     actualFilename: compareScreenshotPath,
