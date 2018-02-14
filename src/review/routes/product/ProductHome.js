@@ -86,7 +86,7 @@ function ProductHome(props) {
           size="large"
           textPosition="left"
           description={`
-            Argos will warn you if any visual regressions is about to be introduced,
+            Argos will warn you if any visual regressions are about to be introduced,
             so they those don't end-up in production.
             We are giving developers high confidence in doing changes so they can quickly iterate.
             You can review visual changes in one click as part of your code review process.
