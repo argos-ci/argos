@@ -1,15 +1,13 @@
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 
-export default class Screenshot extends BaseModel {
-  static tableName = 'screenshots'
+export default class ScreenshotBatch extends BaseModel {
+  static tableName = 'screenshot_batches'
 
   static jsonSchema = mergeSchemas(BaseModel.jsonSchema, {
-    required: ['name', 's3Id', 'screenshotBucketId'],
+    required: ['screenshotBucketId', 'externalId'],
     properties: {
-      name: { type: 'string' },
-      s3Id: { type: 'string' },
       screenshotBucketId: { type: 'string' },
-      screenshotBatchId: { type: ['string', null] },
+      externalId: { type: ['string', null] },
     },
   })
 
@@ -18,7 +16,7 @@ export default class Screenshot extends BaseModel {
       relation: BaseModel.BelongsToOneRelation,
       modelClass: 'ScreenshotBucket',
       join: {
-        from: 'screenshots.screenshotBucketId',
+        from: 'screenshot_batches.screenshotBucketId',
         to: 'screenshot_buckets.id',
       },
     },

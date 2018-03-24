@@ -15,6 +15,7 @@ export default class ScreenshotBucket extends BaseModel {
       },
       branch: { type: 'string' },
       repositoryId: { type: 'string' },
+      batchTotal: { type: ['integer', null] },
     },
   })
 

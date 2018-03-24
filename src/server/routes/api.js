@@ -9,6 +9,7 @@ import { formatUrlFromBuild } from 'modules/urls/buildUrl'
 import Build from 'server/models/Build'
 import Repository from 'server/models/Repository'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
+import ScreenshotBatch from 'server/models/ScreenshotBatch'
 import buildJob from 'server/jobs/build'
 import errorHandler from 'server/middlewares/errorHandler'
 
@@ -56,10 +57,7 @@ router.post(
       throw new HttpError(401, 'Missing commit')
     }
 
-    const repository = await Repository.query()
-      .where({ token: data.token })
-      .limit(1)
-      .first()
+    const repository = await Repository.query().findOne({ token: data.token })
 
     if (!repository) {
       throw new HttpError(404, `Repository not found (token: "${data.token}")`)
@@ -69,45 +67,85 @@ router.post(
       throw new HttpError(400, `Repository not enabled (name: "${repository.name}")`)
     }
 
-    let build = await transaction(Build, ScreenshotBucket, async (Build, ScreenshotBucket) => {
-      const bucket = await ScreenshotBucket.query().insert({
-        name: 'default',
-        commit: data.commit,
-        branch: data.branch,
-        repositoryId: repository.id,
-      })
-      await bucket.$relatedQuery('screenshots').insert(
-        req.files.map((file, index) => ({
-          screenshotBucketId: bucket.id,
-          name: data.names[index],
-          s3Id: file.key,
-        }))
-      )
-      const newBuild = await Build.query().insert({
-        baseScreenshotBucketId: null,
-        compareScreenshotBucketId: bucket.id,
-        repositoryId: repository.id,
-        jobStatus: 'pending',
-      })
+    const batchTotal = data.batchTotal ? Number(data.batchTotal) : null
 
-      return newBuild
-    })
+    let build = await transaction(
+      Build,
+      ScreenshotBucket,
+      ScreenshotBatch,
+      async (Build, ScreenshotBucket, ScreenshotBatch) => {
+        const build = data.buildId
+          ? await Build.query()
+              .eager('compareScreenshotBucket')
+              .findOne({ externalId: data.buildId })
+          : null
+
+        const bucket = build
+          ? build.compareScreenshotBucket
+          : await ScreenshotBucket.query().insert({
+              name: 'default',
+              commit: data.commit,
+              branch: data.branch,
+              repositoryId: repository.id,
+              batchTotal,
+            })
+
+        const batchId =
+          data.batchId !== undefined
+            ? (await ScreenshotBatch.query().insert({
+                screenshotBucketId: bucket.id,
+                externalId: data.batchId,
+              })).id
+            : null
+
+        await bucket.$relatedQuery('screenshots').insert(
+          req.files.map((file, index) => ({
+            screenshotBucketId: bucket.id,
+            name: data.names[index],
+            s3Id: file.key,
+            screenshotBatchId: batchId,
+          }))
+        )
+
+        if (build) return build
+
+        return Build.query().insert({
+          baseScreenshotBucketId: null,
+          compareScreenshotBucketId: bucket.id,
+          repositoryId: repository.id,
+          jobStatus: 'pending',
+          externalId: data.buildId,
+        })
+      }
+    )
 
     // So we don't reuse the previous transaction
+<<<<<<< HEAD
     build = await Build.query()
       .where({ id: build.id })
       .limit(1)
       .first()
+=======
+    build = await Build.query().findById(build.id)
+>>>>>>> feat: add support for batched uploads
 
     const buildUrl = await formatUrlFromBuild(build)
-    await buildJob.push(build.id)
-    res.send({
-      build: {
-        ...build,
-        repository: undefined,
-        buildUrl,
-      },
-    })
+
+    if (batchTotal) {
+      const screenshotBatchesCount = Number(
+        (await ScreenshotBatch.query()
+          .where({ screenshotBucketId: build.compareScreenshotBucketId })
+          .countDistinct('externalId'))[0].count
+      )
+
+      if (screenshotBatchesCount >= batchTotal) {
+        await buildJob.push(build.id)
+      }
+    } else {
+      await buildJob.push(build.id)
+    }
+
+    res.send({ build: { ...build, repository: undefined, buildUrl } })
   })
 )
 

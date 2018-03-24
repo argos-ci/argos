@@ -5,6 +5,7 @@ import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 import User from 'server/models/User'
 import jobModelSchema from 'server/models/schemas/jobModelSchema'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
+import ScreenshotBatch from 'server/models/ScreenshotBatch'
 
 const NEXT_NUMBER = Symbol('nextNumber')
 
@@ -18,6 +19,7 @@ export default class Build extends BaseModel {
       compareScreenshotBucketId: { type: 'string' },
       repositoryId: { type: 'string' },
       number: { type: 'integer' },
+      externalId: { type: ['string', null] },
     },
   })
 
