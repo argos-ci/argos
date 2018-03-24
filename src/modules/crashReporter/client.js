@@ -9,15 +9,13 @@ export function initializeCrashReporterClient() {
   // Raven should be initialize with the server.js module on the server.
   warning(process.browser, 'You are not supposed to call initializeCrashReporter on the server.')
 
-  if (!configBrowser.get('sentry.clientDsn')) return
-
   // Initialize only once on the browser
   if (global.__CRASH_REPORTER_INITIALIZED__) {
     return
   }
 
   initializeCrashReporter({
-    DSN: configBrowser.get('sentry.clientDsn'),
+    DSN: 'https://9cb925a0634f4f78896523e9dea07b7a@sentry.io/533428',
     ravenConfig: {
       release: configBrowser.get('releaseVersion'),
     },
