@@ -10,8 +10,8 @@ import { promirepl } from 'promirepl'
 import clearRequire from 'clear-require'
 
 const readdirAsync = promisify(readdir)
-const MODEL_DIRECTORY = path.join(__dirname, '../src/server/models')
-const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
+const MODEL_DIRECTORY = path.join(__dirname, '../../src/server/models')
+const JOB_DIRECTORY = path.join(__dirname, '../../src/server/jobs')
 ;(async () => {
   const replServer = repl.start()
 
