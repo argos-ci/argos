@@ -3,6 +3,8 @@ import config from 'config'
 import { initializeCrashReporter } from 'modules/crashReporter/common'
 
 export function initializeCrashReporterServer() {
+  if (!config.get('sentry.serverDsn')) return
+
   if (process.env.NODE_ENV !== 'production') {
     // Prevent logging of useless information
     // https://github.com/getsentry/raven-node/blob/3f3d553cb02c7d69deeab4edaf928f739b17071f/docs/usage.rst#disable-console-alerts
@@ -10,8 +12,7 @@ export function initializeCrashReporterServer() {
   }
 
   initializeCrashReporter({
-    DSN:
-      'https://e2b4a90bdcc64abf9f446d6612b16471:9d24ce54a34345e29684f23d453ac21d@sentry.io/237155',
+    DSN: config.get('sentry.serverDsn'),
     ravenConfig: {
       autoBreadcrumbs: true,
       release: config.get('releaseVersion'),

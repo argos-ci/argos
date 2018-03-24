@@ -107,6 +107,20 @@ const config = convict({
     default: 'dev',
     env: 'HEROKU_RELEASE_VERSION',
   },
+  sentry: {
+    clientDsn: {
+      doc: 'Sentry client DSN',
+      format: String,
+      default: undefined,
+      env: 'SENTRY_CLIENT_DSN',
+    },
+    serverDsn: {
+      doc: 'Heroku release version',
+      format: String,
+      default: undefined,
+      env: 'SENTRY_SERVER_DSN',
+    },
+  },
 })
 
 const env = config.get('env')
