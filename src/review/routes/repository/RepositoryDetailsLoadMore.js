@@ -3,15 +3,15 @@ import PropTypes from 'prop-types'
 import recompact from 'modules/recompact'
 import { connect } from 'react-redux'
 import Button from 'material-ui/Button'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import detailsActions from 'review/routes/repository/detailsActions'
 import { isSuccess } from 'modules/rxjs/operator/watchTask'
 
-const styleSheet = createStyleSheet('RepositoryDetailsLoadMore', theme => ({
+const styles = theme => ({
   loadMore: {
     marginTop: theme.spacing.unit * 2,
   },
-}))
+})
 
 function RepositoryDetailsLoadMore(props) {
   const { classes, fetch, onClickLoadMore } = props
@@ -40,7 +40,7 @@ RepositoryDetailsLoadMore.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   connect(state => ({
     fetch: state.ui.repositoryDetails.fetch,
   })),

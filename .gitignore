@@ -1,6 +1,7 @@
-node_modules/
-/lib/
-/server/static/
 *.log
 .env
 .eslintcache
+/.volume
+/lib/
+/server/static/
+node_modules/

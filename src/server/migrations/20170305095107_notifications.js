@@ -9,7 +9,10 @@ exports.up = knex =>
       table.bigincrements('id').primary()
       table.specificType('type', 'build_notifications_type').notNullable()
       table.specificType('jobStatus', 'job_status').notNullable()
-      table.bigInteger('buildId').notNullable().index()
+      table
+        .bigInteger('buildId')
+        .notNullable()
+        .index()
       table.foreign('buildId').references('builds.id')
       table.dateTime('createdAt').notNullable()
       table.dateTime('updatedAt').notNullable()

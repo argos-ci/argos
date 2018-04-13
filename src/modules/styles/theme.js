@@ -1,14 +1,12 @@
-import createMuiTheme from 'material-ui/styles/theme'
-import createPalette from 'material-ui/styles/palette'
+import { createMuiTheme } from 'material-ui/styles'
 import { brown, deepOrange, red, green, orange, grey } from 'material-ui/colors'
 import common from 'material-ui/colors/common'
 
 const theme = createMuiTheme({
-  palette: createPalette({
+  palette: {
     primary: brown,
-    accent: deepOrange,
-    type: 'light',
-  }),
+    secondary: deepOrange,
+  },
   status: {
     success: green[500],
     failure: red[500],

@@ -29,7 +29,10 @@ export default passport => {
         },
         async (accessToken, refreshToken, profile, done) => {
           try {
-            let user = await User.query().where({ githubId: Number(profile.id) }).limit(1).first()
+            let user = await User.query()
+              .where({ githubId: Number(profile.id) })
+              .limit(1)
+              .first()
 
             if (user) {
               const privateSync = user.privateSync || type === 'private'

@@ -19,7 +19,9 @@ async function checkAuthorization({ accessToken, privateSync }) {
     throw error
   }
 
-  const { data: { scopes } } = authorization
+  const {
+    data: { scopes },
+  } = authorization
   const status = getAuthorizationStatus({ privateSync, githubScopes: scopes })
   return { scopes, status }
 }

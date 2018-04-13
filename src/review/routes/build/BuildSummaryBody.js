@@ -1,7 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import Grid from 'material-ui/Grid'
+import Typography from 'material-ui/Typography'
 import Link from 'modules/components/Link'
 import ItemStatus from 'review/modules/components/ItemStatus'
 import BuildActions from 'review/routes/build/BuildActions'
@@ -10,7 +11,7 @@ function formatShortCommit(sha) {
   return sha.substring(0, 7)
 }
 
-const styleSheet = createStyleSheet('BuildSummaryBody', theme => ({
+const styles = theme => ({
   itemStatusChild: {
     width: '100%',
   },
@@ -19,7 +20,7 @@ const styleSheet = createStyleSheet('BuildSummaryBody', theme => ({
     listStyle: 'none',
     padding: theme.spacing.unit,
   },
-}))
+})
 
 export function BuildSummaryBodyView(props) {
   const { build, classes } = props
@@ -29,7 +30,10 @@ export function BuildSummaryBodyView(props) {
     status,
     baseScreenshotBucket,
     compareScreenshotBucket: { commit: compareCommit, branch },
-    repository: { name, owner: { login } },
+    repository: {
+      name,
+      owner: { login },
+    },
   } = build
 
   const githubBaseUrl = `https://github.com/${login}/${name}`
@@ -53,21 +57,21 @@ export function BuildSummaryBodyView(props) {
       <div className={classes.itemStatusChild}>
         <Grid container>
           <Grid item xs={12} sm>
-            <ul className={classes.list}>
-              <li>{`Job status: ${status}`}</li>
-              <li>
-                <Link href={`${githubBaseUrl}/commit/${compareCommit}`}>
-                  {`Commit ${formatShortCommit(compareCommit)}`}
-                </Link>
-              </li>
-              <li>
-                <Link href={`${githubBaseUrl}/tree/${branch}`}>
-                  {`Branch ${branch}`}
-                </Link>
-              </li>
-              {compare}
-              <li>{`Date: ${new Intl.DateTimeFormat().format(new Date(createdAt))}`}</li>
-            </ul>
+            <Typography>
+              <ul className={classes.list}>
+                <li>{`Job status: ${status}`}</li>
+                <li>
+                  <Link href={`${githubBaseUrl}/commit/${compareCommit}`}>
+                    {`Commit ${formatShortCommit(compareCommit)}`}
+                  </Link>
+                </li>
+                <li>
+                  <Link href={`${githubBaseUrl}/tree/${branch}`}>{`Branch ${branch}`}</Link>
+                </li>
+                {compare}
+                <li>{`Date: ${new Intl.DateTimeFormat().format(new Date(createdAt))}`}</li>
+              </ul>
+            </Typography>
           </Grid>
           <Grid item>
             <BuildActions build={build} />
@@ -94,4 +98,4 @@ BuildSummaryBodyView.propTypes = {
   classes: PropTypes.object.isRequired,
 }
 
-export default withStyles(styleSheet)(BuildSummaryBodyView)
+export default withStyles(styles)(BuildSummaryBodyView)

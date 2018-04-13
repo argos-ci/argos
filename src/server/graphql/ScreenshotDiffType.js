@@ -35,7 +35,9 @@ export async function setValidationStatus(source, args, context) {
     throw new APIError('Invalid user authorization')
   }
 
-  await ScreenshotDiff.query().where({ buildId }).patch({ validationStatus })
+  await ScreenshotDiff.query()
+    .where({ buildId })
+    .patch({ validationStatus })
 
   // That might be better suited into a $afterUpdate hook.
   if (validationStatus === VALIDATION_STATUS.accepted) {

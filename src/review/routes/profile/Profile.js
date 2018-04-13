@@ -8,7 +8,7 @@ import Paper from 'material-ui/Paper'
 import Avatar from 'material-ui/Avatar'
 import Grid from 'material-ui/Grid'
 import List, { ListItem, ListItemText } from 'material-ui/List'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ViewContainer from 'modules/components/ViewContainer'
@@ -20,19 +20,21 @@ import ReviewFooter from 'review/modules/components/ReviewFooter'
 
 const SIZE = 120
 
-const styleSheet = createStyleSheet('Profile', theme => ({
+const styles = theme => ({
   avatar: {
     width: SIZE,
     height: SIZE,
     background: theme.palette.common.white,
   },
-  paper: {
-    display: 'flex',
-  },
-}))
+  paper: {},
+})
 
 function Profile(props) {
-  const { classes, fetch, params: { profileName } } = props
+  const {
+    classes,
+    fetch,
+    params: { profileName },
+  } = props
 
   return (
     <ViewContainer>
@@ -40,7 +42,7 @@ function Profile(props) {
       <ScrollView>
         <LayoutBody margin marginBottom>
           <Grid container spacing={24}>
-            <Grid align="center" container item xs={12}>
+            <Grid alignItems="center" container item xs={12} spacing={16}>
               <Grid item>
                 <Avatar
                   src={`https://github.com/${profileName}.png?size=${SIZE * 2}`}
@@ -48,14 +50,9 @@ function Profile(props) {
                 />
               </Grid>
               <Grid item>
-                <Typography type="display1" component="h2" gutterBottom>
+                <Typography variant="display1" component="h2" gutterBottom>
                   <WatchTask task={fetch} onlySuccess>
-                    {data =>
-                      data.owner
-                        ? <span>
-                            {data.owner.name}
-                          </span>
-                        : null}
+                    {data => (data.owner ? <span>{data.owner.name}</span> : null)}
                   </WatchTask>
                 </Typography>
               </Grid>
@@ -82,7 +79,7 @@ function Profile(props) {
 
                     return (
                       <List>
-                        {data.owner.repositories.map(repository =>
+                        {data.owner.repositories.map(repository => (
                           <ListItem
                             key={repository.id}
                             button
@@ -92,7 +89,7 @@ function Profile(props) {
                           >
                             <ListItemText primary={repository.name} />
                           </ListItem>
-                        )}
+                        ))}
                       </List>
                     )
                   }}
@@ -116,7 +113,7 @@ Profile.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   connect(state => ({
     fetch: state.ui.profile.fetch,
   })),

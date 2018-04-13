@@ -91,7 +91,7 @@ class GitHubSynchronizer {
 
     let owners
 
-    switch (type) { // eslint-disable-line default-case
+    switch (type) {
       case OWNER_ORGANIZATION:
         owners = await Promise.all(
           githubOwners.map(githubOwner => this.synchronizeOrganization(githubOwner))
@@ -102,6 +102,8 @@ class GitHubSynchronizer {
           githubOwners.map(githubOwner => this.synchronizeUser(githubOwner))
         )
         break
+      default:
+        throw new Error(`Unsupported type ${type}`)
     }
 
     return {
@@ -144,7 +146,10 @@ class GitHubSynchronizer {
   // eslint-disable-next-line class-methods-use-this
   async synchronizeUser(githubUser) {
     const data = { githubId: githubUser.id, login: githubUser.login }
-    let user = await User.query().where({ githubId: githubUser.id }).limit(1).first()
+    let user = await User.query()
+      .where({ githubId: githubUser.id })
+      .limit(1)
+      .first()
 
     if (user) {
       await user.$query().patchAndFetch(data)

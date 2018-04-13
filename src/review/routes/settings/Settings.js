@@ -4,12 +4,12 @@ import { connect } from 'react-redux'
 import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import TextField from 'material-ui/TextField'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
 
-const styleSheet = createStyleSheet('Settings', theme => ({
+const styles = theme => ({
   paper: {
     display: 'flex',
   },
@@ -20,18 +20,20 @@ const styleSheet = createStyleSheet('Settings', theme => ({
     margin: `${theme.spacing.unit * 2}px 0 0`,
     width: '100%',
   },
-}))
+})
 
 function Settings(props) {
-  const { classes, repository, params: { profileName, repositoryName } } = props
+  const {
+    classes,
+    repository,
+    params: { profileName, repositoryName },
+  } = props
 
   if (!repository.authorization) {
     return (
       <Paper className={classes.paper}>
         <WatchTaskContainer>
-          <Typography>
-            {"You don't have enough access right to see that content."}
-          </Typography>
+          <Typography>{"You don't have enough access right to see that content."}</Typography>
         </WatchTaskContainer>
       </Paper>
     )
@@ -39,14 +41,14 @@ function Settings(props) {
 
   return (
     <div>
-      <Typography type="headline" gutterBottom>
+      <Typography variant="headline" gutterBottom>
         Settings
       </Typography>
       <Paper className={classes.padding}>
-        <Typography type="title" gutterBottom>
+        <Typography variant="title" gutterBottom>
           Environment Variables
         </Typography>
-        <Typography type="subheading">
+        <Typography variant="subheading">
           {'To send data to Argos-ci you will need to configure a '}
           <Link href="https://github.com/argos-ci/argos-cli" target="_blank" variant="primary">
             CLI
@@ -89,7 +91,7 @@ Settings.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   connect(state => ({
     repository: state.ui.repository.fetch.output.data.repository,
   }))

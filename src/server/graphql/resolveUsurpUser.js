@@ -11,7 +11,10 @@ export default async function resolveUsurpUser(source, { input }, context) {
     throw new APIError('Invalid user authorization')
   }
 
-  const user = await User.query().where({ email: input.email }).limit(1).first()
+  const user = await User.query()
+    .where({ email: input.email })
+    .limit(1)
+    .first()
 
   if (!user) {
     throw new APIError('Wrong email')

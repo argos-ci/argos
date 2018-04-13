@@ -1,14 +1,14 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import ClientErrorView from 'review/modules/components/ClientErrorView'
 
-const styleSheet = createStyleSheet('ErrorServer', () => ({
+const styles = {
   code: {
     whiteSpace: 'pre-wrap',
     wordWrap: 'break-word',
   },
-}))
+}
 
 function ErrorServer(props) {
   const { error, classes } = props
@@ -18,16 +18,12 @@ function ErrorServer(props) {
       title={`Error ${error.statusCode}`}
       message={
         <div>
-          {error.message &&
-            <div>
-              {error.message}
-            </div>}
-          {error.stack &&
+          {error.message && <div>{error.message}</div>}
+          {error.stack && (
             <code>
-              <pre className={classes.code}>
-                {error.stack}
-              </pre>
-            </code>}
+              <pre className={classes.code}>{error.stack}</pre>
+            </code>
+          )}
         </div>
       }
     />
@@ -39,4 +35,4 @@ ErrorServer.propTypes = {
   error: PropTypes.object.isRequired,
 }
 
-export default withStyles(styleSheet)(ErrorServer)
+export default withStyles(styles)(ErrorServer)

@@ -1,19 +1,24 @@
 import { exec } from 'child_process'
-import { promisify } from 'util'
+import util from 'util'
 import config from 'config'
 import display from 'modules/scripts/display'
 
-if (config.get('env') === 'production') {
+if (process.env.NODE_ENV === 'production') {
   throw new Error('Not in production please!')
 }
 
-const execAsync = promisify(exec)
+const execAsync = util.promisify(exec)
 const CI = process.env.CI === 'true'
+const user = 'argos'
+const database = config.get('env')
 
 const command = CI
-  ? `dropdb --host localhost -U argos ${config.get('env')} --if-exists`
-  : `docker-compose run postgres dropdb -h postgres -U argos ${config.get('env')} --if-exists`
+  ? `dropdb --host localhost -U ${user} ${database} --if-exists`
+  : `docker-compose exec -T postgres \
+  bash -c 'psql -U ${user} ${database} -c "REVOKE CONNECT ON DATABASE ${database} FROM public" \
+  && dropdb -U ${user} ${database}'`
 
 execAsync(command).catch(err => {
   display.error(`${err.stderr}\n${err.stdout}`)
+  process.exit(1)
 })

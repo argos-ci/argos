@@ -10,7 +10,7 @@ describe('<Build />', () => {
 
   beforeAll(() => {
     shallow = createShallow({
-      otherContext: {
+      context: {
         store: {
           subscribe: () => {},
           dispatch: () => {},
@@ -54,12 +54,18 @@ describe('<Build />', () => {
   it('should render an error message', () => {
     fetch.output.data.build = null
 
-    const wrapper = shallow(<Build params={params} />).until('Build').find('WatchTask').shallow()
+    const wrapper = shallow(<Build params={params} />)
+      .until('Build')
+      .find('WatchTask')
+      .shallow()
     expect(wrapper.debug()).toContain('Build not found.')
   })
 
   it('should render the children', () => {
-    const wrapper = shallow(<Build params={params} />).until('Build').find('WatchTask').shallow()
+    const wrapper = shallow(<Build params={params} />)
+      .until('Build')
+      .find('WatchTask')
+      .shallow()
     expect(wrapper.find(BuildSummary).length).toBe(1)
   })
 })

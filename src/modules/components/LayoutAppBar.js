@@ -2,14 +2,14 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import AppBar from 'material-ui/AppBar'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 
-const styleSheet = createStyleSheet('LayoutAppBar', theme => ({
+const styles = theme => ({
   root: {
     flex: '0 0 auto',
     color: theme.palette.common.white,
   },
-}))
+})
 
 function LayoutAppBar(props) {
   const { classes, ...other } = props
@@ -22,4 +22,4 @@ LayoutAppBar.propTypes = {
   style: PropTypes.object,
 }
 
-export default withStyles(styleSheet)(LayoutAppBar)
+export default withStyles(styles)(LayoutAppBar)

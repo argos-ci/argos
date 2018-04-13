@@ -1,6 +1,9 @@
 exports.up = async knex => {
   await knex.schema.table('repositories', table => {
-    table.boolean('private').notNullable().defaultTo(false)
+    table
+      .boolean('private')
+      .notNullable()
+      .defaultTo(false)
   })
 }
 

@@ -1,17 +1,17 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import Button from 'material-ui/Button'
 import recompact from 'modules/recompact'
 import { VALIDATION_STATUS } from 'server/constants'
 import actionTypes from 'modules/redux/actionTypes'
 
-const styleSheet = createStyleSheet('BuildActions', theme => ({
-  validationStatus: {
+const styles = theme => ({
+  status: {
     margin: theme.spacing.unit,
   },
-}))
+})
 
 function BuildActions(props) {
   const { build, classes, onValidationClick } = props
@@ -34,7 +34,7 @@ function BuildActions(props) {
   }
 
   return (
-    <Button color="accent" raised onClick={onValidationClick} className={classes.validationStatus}>
+    <Button color="secondary" raised onClick={onValidationClick} className={classes.status}>
       {actionMessage}
     </Button>
   )
@@ -53,7 +53,7 @@ BuildActions.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   connect(),
   recompact.withHandlers({
     onValidationClick: props => () => {

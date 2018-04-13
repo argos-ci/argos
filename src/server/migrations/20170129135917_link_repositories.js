@@ -4,10 +4,16 @@ exports.up = knex =>
       table.string('token').index()
     })
     .table('screenshot_buckets', table => {
-      table.bigInteger('repositoryId').notNullable().references('repositories.id')
+      table
+        .bigInteger('repositoryId')
+        .notNullable()
+        .references('repositories.id')
     })
     .table('builds', table => {
-      table.bigInteger('repositoryId').notNullable().references('repositories.id')
+      table
+        .bigInteger('repositoryId')
+        .notNullable()
+        .references('repositories.id')
     })
 
 exports.down = knex =>

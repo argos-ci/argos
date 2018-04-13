@@ -2,10 +2,10 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { Link as LinkRouter } from 'react-router'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
-import { capitalizeFirstLetter } from 'material-ui/utils/helpers'
+import { withStyles } from 'material-ui/styles'
+import { capitalize } from 'material-ui/utils/helpers'
 
-const styleSheet = createStyleSheet('Link', theme => ({
+const styles = theme => ({
   root: {
     textDecoration: 'inherit',
     '&:hover': {
@@ -23,7 +23,7 @@ const styleSheet = createStyleSheet('Link', theme => ({
       textDecoration: 'inherit',
     },
   },
-}))
+})
 
 function Link(props) {
   const { component: ComponentProp, classes, className, variant, to, ...other } = props
@@ -41,11 +41,7 @@ function Link(props) {
   return (
     <Component
       to={to}
-      className={classNames(
-        classes.root,
-        classes[`variant${capitalizeFirstLetter(variant)}`],
-        className
-      )}
+      className={classNames(classes.root, classes[`variant${capitalize(variant)}`], className)}
       {...other}
     />
   )
@@ -63,4 +59,4 @@ Link.defaultProps = {
   variant: 'default',
 }
 
-export default withStyles(styleSheet)(Link)
+export default withStyles(styles)(Link)

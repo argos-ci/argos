@@ -9,7 +9,7 @@ describe('<Settings />', () => {
 
   beforeAll(() => {
     shallow = createShallow({
-      otherContext: {
+      context: {
         store: {
           subscribe: () => {},
           dispatch: () => {},

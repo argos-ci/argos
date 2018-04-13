@@ -12,12 +12,10 @@ function ClientErrorView(props) {
       <ReviewAppBar />
       <ScrollView>
         <LayoutBody margin marginBottom>
-          <Typography type="display1" component="h2" gutterBottom>
+          <Typography variant="display1" component="h2" gutterBottom>
             {props.title}
           </Typography>
-          <Typography type="subheading">
-            {props.message}
-          </Typography>
+          <Typography variant="subheading">{props.message}</Typography>
         </LayoutBody>
       </ScrollView>
     </ViewContainer>

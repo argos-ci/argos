@@ -10,7 +10,10 @@ import { BrowserModule } from '@angular/platform-browser'
 
 const requireTests = require.context('../components', true, /(js|vue)$/)
 const tests = requireTests.keys().map(path => {
-  const [suite, name] = path.replace('./', '').replace(/.(js|vue)$/, '').split('/')
+  const [suite, name] = path
+    .replace('./', '')
+    .replace(/.(js|vue)$/, '')
+    .split('/')
   return {
     suite,
     name,

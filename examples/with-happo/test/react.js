@@ -5,7 +5,10 @@ import { render, unmountComponentAtNode } from 'react-dom'
 
 const requireTests = require.context('../components', true, /js$/)
 const tests = requireTests.keys().map(path => {
-  const [suite, name] = path.replace('./', '').replace(/.js$/, '').split('/')
+  const [suite, name] = path
+    .replace('./', '')
+    .replace(/.js$/, '')
+    .split('/')
   return {
     suite,
     name,

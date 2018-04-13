@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import Typography from 'material-ui/Typography'
 import Divider from 'material-ui/Divider'
 import Grid from 'material-ui/Grid'
@@ -8,21 +8,21 @@ import LayoutBody from 'modules/components/LayoutBody'
 import Link from 'modules/components/Link'
 import GitHub from 'modules/components/GitHub'
 
-const styleSheet = createStyleSheet('ProductFooter', theme => ({
+const styles = theme => ({
   root: {
     background: theme.brandColor,
-    color: theme.palette.common.darkWhite,
+    color: 'rgba(255, 255, 255, 0.87)',
     overflow: 'auto',
   },
   title: {
-    color: theme.palette.common.fullWhite,
+    color: theme.palette.common.white,
   },
   divider: {
     margin: `${theme.spacing.unit * 2}px 0`,
     background: 'rgba(255, 255, 255, 0.2)',
   },
   copyright: {
-    color: theme.palette.common.lightWhite,
+    color: 'rgba(255, 255, 255, 0.54)',
   },
   list: {
     margin: 0,
@@ -38,7 +38,7 @@ const styleSheet = createStyleSheet('ProductFooter', theme => ({
     height: 16,
     marginRight: theme.spacing.unit,
   },
-}))
+})
 
 function ProductFooter(props) {
   const { classes } = props
@@ -46,10 +46,10 @@ function ProductFooter(props) {
   return (
     <footer className={classes.root}>
       <LayoutBody margin marginBottom>
-        <Typography type="title" className={classes.title} gutterBottom>
+        <Typography variant="title" className={classes.title} gutterBottom>
           Quick Links
         </Typography>
-        <Typography type="subheading" color="inherit" component="div">
+        <Typography variant="subheading" color="inherit" component="div">
           <Grid container spacing={0}>
             <Grid item xs={12} sm={6}>
               <ul className={classes.list}>
@@ -80,7 +80,7 @@ function ProductFooter(props) {
           </Grid>
         </Typography>
         <Divider className={classes.divider} />
-        <Typography type="subheading" color="inherit" component="div">
+        <Typography variant="subheading" color="inherit" component="div">
           <Link href="https://github.com/argos-ci">
             <GitHub className={classes.icon} />
             {'GitHub'}
@@ -98,4 +98,4 @@ ProductFooter.propTypes = {
   classes: PropTypes.object.isRequired,
 }
 
-export default withStyles(styleSheet)(ProductFooter)
+export default withStyles(styles)(ProductFooter)
