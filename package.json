@@ -23,7 +23,7 @@
     "api:db:load": "babel-node src/scripts/db/load.js",
     "api:db:reset": "yarn api:db:drop && yarn api:db:create && yarn api:db:load",
     "api:db:truncate": "babel-node src/scripts/db/truncate.js",
-    "heroku-postbuild": "yarn web:build && yarn review:build && yarn api:db:migrate:latest",
+    "heroku-postbuild": "yarn web:build && yarn review:build && yarn knex migrate:latest",
     "prettier": "find . -name \"*.js\" | grep -v -f .eslintignore | xargs prettier --write"
   },
   "repository": {
