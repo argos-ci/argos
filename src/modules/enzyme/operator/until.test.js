@@ -70,10 +70,11 @@ describe('modules/enzyme/until', () => {
   })
 
   it('shallow renders non-root wrappers', () => {
-    const Container = () =>
+    const Container = () => (
       <div>
         <Div />
       </div>
+    )
     const wrapper = until.call(shallow(<Container />).find(Div))
     expect(wrapper.contains(<div />)).toBe(true)
   })

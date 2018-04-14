@@ -5,12 +5,12 @@ import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import Link from 'modules/components/Link'
 import Button from 'material-ui/Button'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import MarkdownElement from 'modules/components/MarkdownElement'
 import gettingStarted from './getting-started.md'
 
-const styleSheet = createStyleSheet('GettingStarted', theme => ({
+const styles = theme => ({
   paper: {
     overflow: 'auto',
     padding: theme.spacing.unit * 2,
@@ -19,27 +19,31 @@ const styleSheet = createStyleSheet('GettingStarted', theme => ({
     marginLeft: theme.spacing.unit * 2,
     marginBottom: theme.spacing.unit * 2,
   },
-}))
+})
 
 function GettingStarted(props) {
-  const { classes, fetch, params: { profileName, repositoryName } } = props
+  const {
+    classes,
+    fetch,
+    params: { profileName, repositoryName },
+  } = props
 
   const { repository } = fetch.output.data
   const text = gettingStarted.replace(/__ARGOS_TOKEN__/g, repository.token)
 
   return (
     <div>
-      <Typography type="headline" gutterBottom>
+      <Typography variant="headline" gutterBottom>
         Getting started
       </Typography>
       <Paper className={classes.paper}>
         <MarkdownElement text={text} disableAnchor />
         <Button
-          component={Link}
-          variant="button"
-          to={`/${profileName}/${repositoryName}`}
-          raised
-          color="accent"
+          component={props => (
+            <Link {...props} variant="button" to={`/${profileName}/${repositoryName}`} />
+          )}
+          variant="raised"
+          color="secondary"
           className={classes.button}
         >
           {'Got it! Go to the Build Stream'}
@@ -59,7 +63,7 @@ GettingStarted.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   connect(state => ({
     fetch: state.ui.repository.fetch,
   }))

@@ -4,18 +4,16 @@ import recompact from 'modules/recompact'
 import { connect } from 'react-redux'
 import List from 'material-ui/List'
 import Paper from 'material-ui/Paper'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import WatchTask from 'modules/components/WatchTask'
 import detailsActions from 'review/routes/repository/detailsActions'
 import RepositoryDetailsEmpty from 'review/routes/repository/RepositoryDetailsEmpty'
 import RepositoryDetailsItem from 'review/routes/repository/RepositoryDetailsItem'
 import RepositoryDetailsLoadMore from 'review/routes/repository/RepositoryDetailsLoadMore'
 
-const styleSheet = createStyleSheet('RepositoryDetails', () => ({
-  paper: {
-    display: 'flex',
-  },
-}))
+const styles = {
+  paper: {},
+}
 
 function RepositoryDetails(props) {
   const { classes, fetch, params } = props
@@ -33,14 +31,14 @@ function RepositoryDetails(props) {
 
             return (
               <List>
-                {edges.map(build =>
+                {edges.map(build => (
                   <RepositoryDetailsItem
                     key={build.id}
                     build={build}
                     profileName={params.profileName}
                     repositoryName={params.repositoryName}
                   />
-                )}
+                ))}
               </List>
             )
           }}
@@ -75,7 +73,7 @@ RepositoryDetails.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   connect(state => ({
     fetch: state.ui.repositoryDetails.fetch,
   })),

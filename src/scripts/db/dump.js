@@ -1,19 +1,24 @@
 import { exec } from 'child_process'
-import { promisify } from 'util'
-import { join } from 'path'
-import { appendFile, readdir } from 'fs'
+import util from 'util'
+import fs from 'fs'
+import path from 'path'
 import config from 'config'
 import display from 'modules/scripts/display'
 
-if (config.get('env') !== 'development') {
+if (process.env.NODE_ENV === 'production') {
   throw new Error('You should only dump in development')
 }
 
-const execAsync = promisify(exec)
-const appendFileAsync = promisify(appendFile)
-const readdirAsync = promisify(readdir)
-const getMigrationInserts = async () => {
-  const migrations = await readdirAsync(join(__dirname, '../../migrations'))
+const execAsync = util.promisify(exec)
+const readdirAsync = util.promisify(fs.readdir)
+const readFileAsync = util.promisify(fs.readFile)
+const writeFileAsync = util.promisify(fs.writeFile)
+const user = 'argos'
+const database = config.get('env')
+const structure = 'src/server/db/structure.sql'
+
+async function getMigrationInserts() {
+  const migrations = await readdirAsync(path.join(__dirname, '../../server/migrations'))
   return migrations
     .map(
       migration =>
@@ -23,17 +28,17 @@ const getMigrationInserts = async () => {
 }
 
 execAsync(
-  `docker-compose exec postgres pg_dump -s -U argos ${config.get(
-    'env'
-  )} > src/server/db/structure.sql`
+  `docker-compose exec -T postgres pg_dump -U ${user} ${database} --schema-only > ${structure}`
 )
   .then(async () => {
+    let data = await readFileAsync(structure, 'utf-8')
     const migrationInserts = await getMigrationInserts()
-    return appendFileAsync(
-      'src/server/db/structure.sql',
-      `-- Knex migrations\n\n${migrationInserts}`
-    )
+
+    data += `\n\n${migrationInserts}`
+
+    await writeFileAsync(structure, data, 'utf-8')
   })
   .catch(err => {
     display.error(`${err.stderr}\n${err.stdout}`)
+    process.exit(1)
   })

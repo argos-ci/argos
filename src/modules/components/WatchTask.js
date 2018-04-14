@@ -11,11 +11,7 @@ function renderInContainer(props, node) {
   const { Container } = props // eslint-disable-line react/prop-types
 
   if (Container) {
-    return (
-      <Container>
-        {node}
-      </Container>
-    )
+    return <Container>{node}</Container>
   }
 
   return node
@@ -55,9 +51,10 @@ WatchTask.defaultProps = {
 }
 
 export const watchTask = recompact.createHelper(
-  mapProps => BaseComponent => props =>
+  mapProps => BaseComponent => props => (
     <WatchTask {...mapProps(props)}>
       {() => recompact.createEagerElement(BaseComponent, props)}
-    </WatchTask>,
+    </WatchTask>
+  ),
   'watchTask'
 )

@@ -36,7 +36,10 @@ async function getBaseScreenshotBucket({ potentialCommits, build }) {
 
 async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) {
   build = await build.$query().eager('[repository, compareScreenshotBucket]')
-  const user = await build.repository.getUsers().limit(1).first()
+  const user = await build.repository
+    .getUsers()
+    .limit(1)
+    .first()
 
   // We can't use Github information without a user.
   if (!user) {

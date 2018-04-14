@@ -94,15 +94,7 @@ module.exports = {
         ],
       },
     ],
-    'prettier/prettier': [
-      'error',
-      {
-        singleQuote: true,
-        printWidth: 100,
-        trailingComma: 'es5',
-        semi: false,
-      },
-    ],
+    'prettier/prettier': 'error',
 
     'jsx-a11y/no-autofocus': 'off',
   },

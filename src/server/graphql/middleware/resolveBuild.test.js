@@ -51,8 +51,10 @@ describe('GraphQL', () => {
     })
 
     it('should sort the diffs by score', async () => {
-      const res = await request(graphqlMiddleware()).post('/').send({
-        query: `{
+      const res = await request(graphqlMiddleware())
+        .post('/')
+        .send({
+          query: `{
             build(id: ${build.id}) {
               screenshotDiffs {
                 baseScreenshot {
@@ -65,7 +67,7 @@ describe('GraphQL', () => {
               }
             }
           }`,
-      })
+        })
       noGraphqlError(res)
       expect(res.status).toBe(200)
 

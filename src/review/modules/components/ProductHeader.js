@@ -1,11 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
 import LayoutBody from 'modules/components/LayoutBody'
 
-const styleSheet = createStyleSheet('ProductHeader', theme => ({
+const styles = theme => ({
   root: {
     minHeight: 300,
     display: 'flex',
@@ -23,7 +23,7 @@ const styleSheet = createStyleSheet('ProductHeader', theme => ({
     maxWidth: 500, // Don't use more space than the title.
     marginBottom: theme.spacing.unit * 3,
   },
-}))
+})
 
 function ProductHeader(props) {
   const { beast, classes, children, display1, headline } = props
@@ -32,10 +32,10 @@ function ProductHeader(props) {
     <Paper component="header" square elevation={0} className={classes.root}>
       <LayoutBody margin className={classes.wrapper}>
         <div className={classes.text}>
-          <Typography type="display1" component="h1" gutterBottom>
+          <Typography variant="display1" component="h1" gutterBottom>
             {display1}
           </Typography>
-          <Typography type="headline" component="h2" className={classes.headline}>
+          <Typography variant="headline" component="h2" className={classes.headline}>
             {headline}
           </Typography>
           {children}
@@ -54,4 +54,4 @@ ProductHeader.propTypes = {
   headline: PropTypes.node,
 }
 
-export default withStyles(styleSheet)(ProductHeader)
+export default withStyles(styles)(ProductHeader)

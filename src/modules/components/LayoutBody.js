@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 
-const styleSheet = createStyleSheet('LayoutBody', theme => ({
+const styles = theme => ({
   rootMargin: {
     margin: 8 * 3,
   },
@@ -31,7 +31,7 @@ const styleSheet = createStyleSheet('LayoutBody', theme => ({
   rootFullHeight: {
     height: '100%',
   },
-}))
+})
 
 function LayoutBody(props) {
   const {
@@ -84,4 +84,4 @@ LayoutBody.defaultProps = {
   margin: false,
 }
 
-export default withStyles(styleSheet)(LayoutBody)
+export default withStyles(styles)(LayoutBody)

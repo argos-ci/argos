@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 
-import '@risingstack/trace'
 import AWS from 'aws-sdk'
 import { connect } from 'server/services/database'
 import handleKillSignals from 'server/bootstrap/handleKillSignals'

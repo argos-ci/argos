@@ -1,8 +1,7 @@
-import config from 'config'
 import { truncateAll } from 'server/test/utils'
 import { connect, disconnect } from 'server/services/database'
 
-if (config.get('env') === 'production') {
+if (process.env.NODE_ENV === 'production') {
   throw new Error('Not in production please!')
 }
 

@@ -56,7 +56,10 @@ router.post(
       throw new HttpError(401, 'Invalid commit')
     }
 
-    const repository = await Repository.query().where({ token: data.token }).limit(1).first()
+    const repository = await Repository.query()
+      .where({ token: data.token })
+      .limit(1)
+      .first()
 
     if (!repository) {
       throw new HttpError(400, `Repository not found (token: "${data.token}")`)
@@ -91,7 +94,10 @@ router.post(
     })
 
     // So we don't reuse the previous transaction
-    build = await Build.query().where({ id: build.id }).limit(1).first()
+    build = await Build.query()
+      .where({ id: build.id })
+      .limit(1)
+      .first()
 
     const buildUrl = await formatUrlFromBuild(build)
     await buildJob.push(build.id)

@@ -1,12 +1,12 @@
 import React from 'react'
 import classNames from 'classnames'
 import PropTypes from 'prop-types'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 
 const codecov =
   'https://codecov.io/gh/callemall/material-ui/compare/306a500828ab4e78561753ecc6402403db1cb276...f6fee890063fea05d9d07ea03a59684503cac292'
 
-const styleSheet = createStyleSheet('GitHubStatus', () => ({
+const styles = {
   root: {
     display: 'flex',
     alignItems: 'flex-start',
@@ -175,7 +175,7 @@ const styleSheet = createStyleSheet('GitHubStatus', () => ({
       color: '#24292e',
     },
   },
-}))
+}
 
 function GitHubStatus(props) {
   const { classes } = props
@@ -368,4 +368,4 @@ GitHubStatus.propTypes = {
   classes: PropTypes.object.isRequired,
 }
 
-export default withStyles(styleSheet)(GitHubStatus)
+export default withStyles(styles)(GitHubStatus)

@@ -6,7 +6,7 @@ import Grid from 'material-ui/Grid'
 import Avatar from 'material-ui/Avatar'
 import Paper from 'material-ui/Paper'
 import List, { ListItem, ListItemText } from 'material-ui/List'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
 import Link from 'modules/components/Link'
@@ -19,14 +19,11 @@ import ReviewFooter from 'review/modules/components/ReviewFooter'
 import AuthorizationNotice from 'review/modules/components/AuthorizationNotice'
 import ReviewAppBar from 'review/modules/components/ReviewAppBar'
 
-const styleSheet = createStyleSheet('Dashboard', theme => ({
+const styles = theme => ({
   avatar: {
     backgroundColor: theme.palette.background.default,
   },
-  paper: {
-    display: 'flex',
-  },
-}))
+})
 
 function Dashboard(props) {
   const { classes, fetch } = props
@@ -39,12 +36,12 @@ function Dashboard(props) {
         <LayoutBody margin marginBottom>
           <Grid container spacing={24}>
             <Grid item xs={12}>
-              <Typography type="display1" component="h2">
+              <Typography variant="display1" component="h2">
                 Dashboard
               </Typography>
             </Grid>
             <Grid item xs={12}>
-              <Paper className={classes.paper}>
+              <Paper>
                 <WatchTask task={fetch}>
                   {data => {
                     if (data.owners.length === 0) {
@@ -57,7 +54,7 @@ function Dashboard(props) {
 
                     return (
                       <List>
-                        {data.owners.map(({ login, name }) =>
+                        {data.owners.map(({ login, name }) => (
                           <ListItem
                             key={login}
                             button
@@ -71,7 +68,7 @@ function Dashboard(props) {
                             />
                             <ListItemText primary={name || login} />
                           </ListItem>
-                        )}
+                        ))}
                       </List>
                     )
                   }}
@@ -92,7 +89,7 @@ Dashboard.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   connect(state => ({
     fetch: state.ui.dashboard.fetch,
   })),

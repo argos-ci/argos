@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import Typography from 'material-ui/Typography'
 import Paper from 'material-ui/Paper'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import WatchTask from 'modules/components/WatchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
@@ -11,11 +11,11 @@ import actionTypes from 'modules/redux/actionTypes'
 import BuildSummary from 'review/routes/build/BuildSummary'
 import BuildScreenshots from 'review/routes/build/BuildScreenshots'
 
-const styleSheet = createStyleSheet('Build', () => ({
+const styles = {
   paper: {
     display: 'flex',
   },
-}))
+}
 
 function Build(props) {
   const { fetch, classes } = props
@@ -56,7 +56,7 @@ Build.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   connect(state => ({
     fetch: state.ui.build.fetch,
   })),

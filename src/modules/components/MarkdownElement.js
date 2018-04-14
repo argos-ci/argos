@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import marked from 'marked'
 import prism from 'modules/prism'
 
@@ -47,7 +47,7 @@ const anchorLinkStyle = theme => ({
   },
 })
 
-const styleSheet = createStyleSheet('MarkdownElement', theme => ({
+const styles = theme => ({
   root: {
     marginTop: theme.spacing.unit * 2,
     marginBottom: theme.spacing.unit * 2,
@@ -159,7 +159,7 @@ const styleSheet = createStyleSheet('MarkdownElement', theme => ({
       },
     },
   },
-}))
+})
 
 function MarkdownElement(props) {
   const { className, classes, disableAnchor, text } = props
@@ -191,4 +191,4 @@ MarkdownElement.defaultProps = {
   disableAnchor: false,
 }
 
-export default withStyles(styleSheet)(MarkdownElement)
+export default withStyles(styles)(MarkdownElement)

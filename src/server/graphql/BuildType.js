@@ -10,7 +10,9 @@ import Repository from 'server/models/Repository'
 import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 
 export async function resolve(source, args, context) {
-  const build = await Build.query().findById(args.id).eager('repository')
+  const build = await Build.query()
+    .findById(args.id)
+    .eager('repository')
 
   if (!build || !await Repository.isAccessible(build.repository, context.user)) {
     return null

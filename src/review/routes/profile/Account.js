@@ -6,7 +6,7 @@ import Button from 'material-ui/Button'
 import List from 'material-ui/List'
 import Paper from 'material-ui/Paper'
 import Grid from 'material-ui/Grid'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import configBrowser from 'configBrowser'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
@@ -20,11 +20,9 @@ import ReviewAppBar from 'review/modules/components/ReviewAppBar'
 import ReviewFooter from 'review/modules/components/ReviewFooter'
 import RepositoryListItem from 'review/routes/profile/RepositoryListItem'
 
-const styleSheet = createStyleSheet('Account', () => ({
-  paper: {
-    display: 'flex',
-  },
-}))
+const styles = {
+  paper: {},
+}
 
 function Account(props) {
   const { account, classes, onToggleRepository, user } = props
@@ -36,22 +34,23 @@ function Account(props) {
         <LayoutBody margin marginBottom>
           <Grid container spacing={24}>
             <Grid item xs>
-              <Typography type="display1" component="h2">
+              <Typography variant="display1" component="h2">
                 {user.name}
               </Typography>
             </Grid>
-            {!user.privateSync &&
+            {!user.privateSync && (
               <Grid item>
                 <Button
                   raised
-                  color="accent"
+                  color="secondary"
                   component={Link}
                   variant="button"
                   href="/auth/github-private"
                 >
                   Synchronize private repositories
                 </Button>
-              </Grid>}
+              </Grid>
+            )}
             <Grid item xs={12}>
               <Typography gutterBottom>
                 {'Are you missing a GitHub organization? '}
@@ -72,13 +71,13 @@ function Account(props) {
 
                     return (
                       <List>
-                        {data.user.relatedRepositories.map(repository =>
+                        {data.user.relatedRepositories.map(repository => (
                           <RepositoryListItem
                             key={repository.id}
                             onToggle={onToggleRepository}
                             repository={repository}
                           />
-                        )}
+                        ))}
                       </List>
                     )
                   }}
@@ -104,7 +103,7 @@ Account.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   connect(state => ({
     user: state.data.user,
     account: state.ui.account,

@@ -5,7 +5,7 @@ import { gql, graphql } from 'react-apollo'
 import Typography from 'material-ui/Typography'
 import Button from 'material-ui/Button'
 import Paper from 'material-ui/Paper'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import { email, required } from 'modules/form/validation'
 import ViewContainer from 'modules/components/ViewContainer'
@@ -26,7 +26,7 @@ function validate(values) {
   return errors
 }
 
-const styleSheet = createStyleSheet('Admin', theme => ({
+const styles = theme => ({
   padding: {
     padding: theme.spacing.unit * 2,
   },
@@ -35,7 +35,7 @@ const styleSheet = createStyleSheet('Admin', theme => ({
     marginTop: theme.spacing.unit,
     marginBottom: theme.spacing.unit * 2,
   },
-}))
+})
 
 class Admin extends Component {
   handleSubmit = async values => {
@@ -63,10 +63,10 @@ class Admin extends Component {
         <ReviewAppBar />
         <ScrollView>
           <LayoutBody margin marginBottom>
-            <Typography type="display1" component="h2" gutterBottom>
+            <Typography variant="display1" component="h2" gutterBottom>
               Admin
             </Typography>
-            <Typography type="headline" gutterBottom>
+            <Typography variant="headline" gutterBottom>
               Usurpation
             </Typography>
             <Paper className={classes.padding}>
@@ -82,11 +82,8 @@ class Admin extends Component {
                   label={'Email address'}
                   marginForm
                 />
-                {error &&
-                  <Typography gutterBottom>
-                    {error}
-                  </Typography>}
-                <Button disabled={submitting} raised color="accent" type="submit">
+                {error && <Typography gutterBottom>{error}</Typography>}
+                <Button disabled={submitting} raised color="secondary" type="submit">
                   {'Usurp'}
                 </Button>
               </form>
@@ -117,7 +114,7 @@ export default recompact.compose(
   restrictedPage({
     scopes: [SCOPES.SUPER_ADMIN],
   }),
-  withStyles(styleSheet),
+  withStyles(styles),
   graphql(usurpUser, {
     name: 'createAction',
   }),

@@ -11,15 +11,15 @@ function BuildScreenshots(props) {
 
   return (
     <div>
-      <Typography type="headline" component="h3" gutterBottom>
+      <Typography variant="headline" component="h3" gutterBottom>
         Screenshots
       </Typography>
       <Grid container direction="column">
-        {fetch.output.data.build.screenshotDiffs.map(screenshotDiff =>
+        {fetch.output.data.build.screenshotDiffs.map(screenshotDiff => (
           <Grid item key={screenshotDiff.id}>
             <BuildScreenshotItem screenshotDiff={screenshotDiff} />
           </Grid>
-        )}
+        ))}
       </Grid>
     </div>
   )

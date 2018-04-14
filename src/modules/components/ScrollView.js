@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 
-const styleSheet = createStyleSheet('ScrollView', () => ({
+const styles = {
   root: {
     flex: '1 1 auto',
     overflowY: 'auto',
@@ -14,7 +14,7 @@ const styleSheet = createStyleSheet('ScrollView', () => ({
   fullHeight: {
     height: '100%',
   },
-}))
+}
 
 function ScrollView(props) {
   const { children, classes, fullHeight, ...other } = props
@@ -41,4 +41,4 @@ ScrollView.defaultProps = {
   fullHeight: false,
 }
 
-export default withStyles(styleSheet)(ScrollView)
+export default withStyles(styles)(ScrollView)

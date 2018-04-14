@@ -1,22 +1,30 @@
-version: '2'
+version: '3'
 services:
   postgres:
+    # Last time I have checked, production is running 9.6.8
     image: postgres:9.6
-    ports:
-      - '5432:5432'
     environment:
-      POSTGRES_USER: argos
+      POSTGRES_USER: ${POSTGRES_USER-argos}
+      POSTGRES_DB: ${POSTGRES_DB-development}
+    ports:
+      - "5432:5432" # Expose the port in development so we can connect to it from the a SQL client.
     volumes:
-      - ${PWD}/db:${PWD}/db
-      - ${PWD}/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - .volume/var/lib/postgres:/var/lib/postgresql/data
+    restart: always
   rabbitmq:
-    image: rabbitmq:3.6
+    # Last time I have checked, production is running 3.5.8
+    image: rabbitmq:3.5
     ports:
       - '15672:15672'
       - '5672:5672'
     volumes:
       - './rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins'
   redis:
-    image: redis:2.8
+    command: redis-server --appendonly yes
+    # Last time I have checked, production is running 3.2.4
+    image: redis:3.2
     ports:
-      - '6379:6379'
+      - "6379:6379"
+    restart: always
+    volumes:
+      - .volume/var/redis:/data

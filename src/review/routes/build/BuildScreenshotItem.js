@@ -1,11 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classnames from 'classnames'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import Paper from 'material-ui/Paper'
 import Grid from 'material-ui/Grid'
 import Typography from 'material-ui/Typography'
 import IconButton from 'material-ui/IconButton'
+import Icon from 'material-ui/Icon'
 import Collapse from 'material-ui/transitions/Collapse'
 import configBrowser from 'configBrowser'
 import recompact from 'modules/recompact'
@@ -15,7 +16,7 @@ function getS3Url(s3Id) {
   return `https://s3.amazonaws.com/${configBrowser.get('s3.screenshotsBucket')}/${s3Id}`
 }
 
-const styleSheet = createStyleSheet('BuildScreenshotItem', theme => ({
+const styles = theme => ({
   name: {
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -44,7 +45,7 @@ const styleSheet = createStyleSheet('BuildScreenshotItem', theme => ({
   cardActions: {
     display: 'flex',
   },
-}))
+})
 
 function BuildScreenshotItem(props) {
   const {
@@ -64,7 +65,7 @@ function BuildScreenshotItem(props) {
     <ItemStatus status={status}>
       <Paper>
         <div className={classes.cardContent}>
-          <Typography type="subheading" component="h4" className={classes.name}>
+          <Typography variant="subheading" component="h4" className={classes.name}>
             {compareScreenshot.name}
           </Typography>
         </div>
@@ -76,21 +77,21 @@ function BuildScreenshotItem(props) {
             })}
             onClick={onClickExpand}
           >
-            expand_more
+            <Icon>expand_more</Icon>
           </IconButton>
         </div>
         <Collapse in={expandIn} transitionDuration="auto" unmountOnExit>
           <Grid container>
             <Grid item xs={4}>
-              {baseScreenshot
-                ? <a href={getS3Url(baseScreenshot.s3Id)} target="_blank" rel="noopener noreferrer">
-                    <img
-                      className={classes.screenshot}
-                      alt={baseScreenshot.name}
-                      src={getS3Url(baseScreenshot.s3Id)}
-                    />
-                  </a>
-                : null}
+              {baseScreenshot ? (
+                <a href={getS3Url(baseScreenshot.s3Id)} target="_blank" rel="noopener noreferrer">
+                  <img
+                    className={classes.screenshot}
+                    alt={baseScreenshot.name}
+                    src={getS3Url(baseScreenshot.s3Id)}
+                  />
+                </a>
+              ) : null}
             </Grid>
             <Grid item xs={4}>
               <a href={getS3Url(compareScreenshot.s3Id)} target="_blank" rel="noopener noreferrer">
@@ -102,10 +103,11 @@ function BuildScreenshotItem(props) {
               </a>
             </Grid>
             <Grid item xs={4}>
-              {s3Id &&
+              {s3Id && (
                 <a href={getS3Url(s3Id)} target="_blank" rel="noopener noreferrer">
                   <img className={classes.screenshot} alt="diff" src={getS3Url(s3Id)} />
-                </a>}
+                </a>
+              )}
             </Grid>
           </Grid>
         </Collapse>
@@ -128,7 +130,7 @@ BuildScreenshotItem.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   recompact.withState('expandIn', 'onExpandIn', props => props.screenshotDiff.score !== 0),
   recompact.withHandlers(() => ({
     onClickExpand: props => () => {

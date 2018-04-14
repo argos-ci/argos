@@ -5,7 +5,7 @@ import Typography from 'material-ui/Typography'
 import Button from 'material-ui/Button'
 import Paper from 'material-ui/Paper'
 import Grid from 'material-ui/Grid'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 import recompact from 'modules/recompact'
 import ViewContainer from 'modules/components/ViewContainer'
 import Link from 'modules/components/Link'
@@ -17,14 +17,19 @@ import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 import ReviewAppBar from 'review/modules/components/ReviewAppBar'
 import ReviewFooter from 'review/modules/components/ReviewFooter'
 
-const styleSheet = createStyleSheet('Repository', () => ({
+const styles = {
   paper: {
     display: 'flex',
   },
-}))
+}
 
 function Repository(props) {
-  const { children, classes, fetch, params: { profileName, repositoryName } } = props
+  const {
+    children,
+    classes,
+    fetch,
+    params: { profileName, repositoryName },
+  } = props
 
   return (
     <ViewContainer>
@@ -33,7 +38,7 @@ function Repository(props) {
         <LayoutBody margin marginBottom>
           <Grid container spacing={24}>
             <Grid item xs>
-              <Typography type="display1" component="h2" noWrap>
+              <Typography variant="display1" component="h2" noWrap>
                 <Link to={`/${profileName}`}>{profileName}</Link>
                 /
                 <Link to={`/${profileName}/${repositoryName}`}>{repositoryName}</Link>
@@ -48,9 +53,13 @@ function Repository(props) {
                 return (
                   <Grid item>
                     <Button
-                      component={Link}
-                      variant="button"
-                      to={`/${profileName}/${repositoryName}/settings`}
+                      component={props => (
+                        <Link
+                          {...props}
+                          variant="button"
+                          to={`/${profileName}/${repositoryName}/settings`}
+                        />
+                      )}
                     >
                       Settings
                     </Button>
@@ -93,7 +102,7 @@ Repository.propTypes = {
 }
 
 export default recompact.compose(
-  withStyles(styleSheet),
+  withStyles(styles),
   connect(state => ({
     fetch: state.ui.repository.fetch,
   })),

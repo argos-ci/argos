@@ -17,11 +17,7 @@ describe('WatchTask', () => {
         ],
       },
     }
-    const wrapper = shallow(
-      <WatchTask task={task}>
-        {() => null}
-      </WatchTask>
-    )
+    const wrapper = shallow(<WatchTask task={task}>{() => null}</WatchTask>)
 
     expect(wrapper.contains('The loading failed')).toBe(true)
   })

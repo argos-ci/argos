@@ -1,5 +1,5 @@
 import React from 'react'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import CssBaseline from 'material-ui/CssBaseline'
 import { applyRouterMiddleware, browserHistory, Router, Route, IndexRoute } from 'react-router'
 import plugAnalyticsMiddleware from 'modules/reactRouter/plugAnalyticsMiddleware'
 import App from 'review/routes/App'
@@ -20,44 +20,33 @@ import Support from 'review/routes/support/Support'
 import Privacy from 'review/routes/privacy/Privacy'
 import Documentation from 'review/routes/documentation/Documentation'
 
-const styleSheet = createStyleSheet('Routes', theme => ({
-  '@global': {
-    html: {
-      background: theme.palette.background.default,
-      fontFamily: theme.typography.fontFamily,
-      WebkitFontSmoothing: 'antialiased', // Antialiasing.
-      MozOsxFontSmoothing: 'grayscale', // Antialiasing.
-    },
-    body: {
-      margin: 0,
-    },
-  },
-}))
-
 function Routes() {
   return (
-    <Router history={browserHistory} render={applyRouterMiddleware(plugAnalyticsMiddleware)}>
-      <Route component={App}>
-        <Route path="/" component={Homepage} />
-        <Route path="/about" component={About} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/documentation" component={Documentation} />
-        <Route path="/security" component={Security} />
-        <Route path="/terms" component={Terms} />
-        <Route path="/support" component={Support} />
-        <Route path="/privacy" component={Privacy} />
-        <Route path="/profile/account" component={Account} />
-        <Route path="/:profileName" component={Profile} />
-        <Route path="/:profileName/:repositoryName" component={Repository}>
-          <IndexRoute component={RepositoryDetails} />
-          <Route path="builds/:buildId" component={Build} />
-          <Route path="settings" component={Settings} />
-          <Route path="getting-started" component={GettingStarted} />
+    <div>
+      <CssBaseline />
+      <Router history={browserHistory} render={applyRouterMiddleware(plugAnalyticsMiddleware)}>
+        <Route component={App}>
+          <Route path="/" component={Homepage} />
+          <Route path="/about" component={About} />
+          <Route path="/admin" component={Admin} />
+          <Route path="/documentation" component={Documentation} />
+          <Route path="/security" component={Security} />
+          <Route path="/terms" component={Terms} />
+          <Route path="/support" component={Support} />
+          <Route path="/privacy" component={Privacy} />
+          <Route path="/profile/account" component={Account} />
+          <Route path="/:profileName" component={Profile} />
+          <Route path="/:profileName/:repositoryName" component={Repository}>
+            <IndexRoute component={RepositoryDetails} />
+            <Route path="builds/:buildId" component={Build} />
+            <Route path="settings" component={Settings} />
+            <Route path="getting-started" component={GettingStarted} />
+          </Route>
+          <Route path="*" component={ErrorNotFound} />
         </Route>
-        <Route path="*" component={ErrorNotFound} />
-      </Route>
-    </Router>
+      </Router>
+    </div>
   )
 }
 
-export default withStyles(styleSheet)(Routes)
+export default Routes

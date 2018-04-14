@@ -1,7 +1,7 @@
 defaults: &defaults
   working_directory: /tmp/argos
   docker:
-    - image: circleci/node:8.1.2
+    - image: circleci/node:9.10
     - image: postgres:9.6
       environment:
         POSTGRES_USER: argos
@@ -54,7 +54,7 @@ jobs:
           environment:
             NODE_ENV: test
           command: |
-            yarn db:reset
+            yarn api:db:reset
             yarn test:unit
   test_misc:
     <<: *defaults
@@ -73,9 +73,9 @@ jobs:
           environment:
             NODE_ENV: test
           command: |
-            yarn db:reset
-            yarn db:seed
-            yarn db:truncate
+            yarn api:db:reset
+            yarn knex seed:run
+            yarn api:db:truncate
       - run:
           name: Can run argos
           command: yarn argos

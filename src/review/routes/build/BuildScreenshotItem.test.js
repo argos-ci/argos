@@ -8,23 +8,7 @@ describe('<BuildScreenshotItem />', () => {
   let shallow
 
   beforeAll(() => {
-    shallow = createShallow({
-      otherContext: {
-        store: {
-          subscribe: () => {},
-          dispatch: () => {},
-          getState: () => ({
-            data: {
-              config: {
-                s3: {
-                  screenshotsBucket: '',
-                },
-              },
-            },
-          }),
-        },
-      },
-    })
+    shallow = createShallow()
   })
 
   afterAll(() => {
@@ -40,7 +24,12 @@ describe('<BuildScreenshotItem />', () => {
       compareScreenshot: {},
     }
     const wrapper = shallow(<BuildScreenshotItem screenshotDiff={screenshotDiff} />)
-    expect(wrapper.until('BuildScreenshotItem').find(ItemStatus).props().status).toBe(status)
+    expect(
+      wrapper
+        .until('BuildScreenshotItem')
+        .find(ItemStatus)
+        .props().status
+    ).toBe(status)
   })
 
   describe('expandIn', () => {
@@ -52,7 +41,12 @@ describe('<BuildScreenshotItem />', () => {
         compareScreenshot: {},
       }
       const wrapper = shallow(<BuildScreenshotItem screenshotDiff={screenshotDiff} />)
-      expect(wrapper.until('BuildScreenshotItem').find(Collapse).props().in).toBe(true)
+      expect(
+        wrapper
+          .until('BuildScreenshotItem')
+          .find(Collapse)
+          .props().in
+      ).toBe(true)
     })
 
     it('should be closed when the score is zero', () => {
@@ -63,7 +57,12 @@ describe('<BuildScreenshotItem />', () => {
         compareScreenshot: {},
       }
       const wrapper = shallow(<BuildScreenshotItem screenshotDiff={screenshotDiff} />)
-      expect(wrapper.until('BuildScreenshotItem').find(Collapse).props().in).toBe(false)
+      expect(
+        wrapper
+          .until('BuildScreenshotItem')
+          .find(Collapse)
+          .props().in
+      ).toBe(false)
     })
   })
 })

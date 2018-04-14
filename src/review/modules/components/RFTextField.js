@@ -3,7 +3,12 @@ import PropTypes from 'prop-types'
 import TextField from 'material-ui/TextField'
 
 function RFTextField(props) {
-  const { autoComplete, input, meta: { touched, error }, ...other } = props
+  const {
+    autoComplete,
+    input,
+    meta: { touched, error },
+    ...other
+  } = props
 
   return (
     <TextField

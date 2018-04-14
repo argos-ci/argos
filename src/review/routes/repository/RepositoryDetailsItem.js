@@ -5,7 +5,11 @@ import Link from 'modules/components/Link'
 import ItemStatus from 'review/modules/components/ItemStatus'
 
 function RepositoryDetailsItem(props) {
-  const { build: { id, status, createdAt, number }, profileName, repositoryName } = props
+  const {
+    build: { id, status, createdAt, number },
+    profileName,
+    repositoryName,
+  } = props
 
   return (
     <ItemStatus status={status}>

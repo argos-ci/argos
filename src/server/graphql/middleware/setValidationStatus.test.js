@@ -85,15 +85,17 @@ describe('GraphQL', () => {
         type: 'diff-rejected',
       })
 
-      res = await request(graphqlMiddleware()).post('/').send({
-        query: `{
+      res = await request(graphqlMiddleware())
+        .post('/')
+        .send({
+          query: `{
             build(id: ${build.id}) {
               screenshotDiffs {
                 validationStatus
               }
             }
           }`,
-      })
+        })
       noGraphqlError(res)
       expect(res.status).toBe(200)
       const { screenshotDiffs } = res.body.data.build

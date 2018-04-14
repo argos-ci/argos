@@ -1,9 +1,9 @@
 import { cloneElement } from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { withStyles, createStyleSheet } from 'material-ui/styles'
+import { withStyles } from 'material-ui/styles'
 
-const styleSheet = createStyleSheet('ItemStatus', theme => ({
+const styles = theme => ({
   success: {
     borderLeft: `10px solid ${theme.status.success}`,
   },
@@ -22,7 +22,7 @@ const styleSheet = createStyleSheet('ItemStatus', theme => ({
   unknown: {
     borderLeft: `10px solid ${theme.status.unknown}`,
   },
-}))
+})
 
 function ItemStatus(props) {
   const { children, classes, className, status, ...other } = props
@@ -42,4 +42,4 @@ ItemStatus.propTypes = {
   status: PropTypes.oneOf(['success', 'failure', 'progress', 'pending', 'error', 'unknown']),
 }
 
-export default withStyles(styleSheet)(ItemStatus)
+export default withStyles(styles)(ItemStatus)
