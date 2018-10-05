@@ -68,6 +68,7 @@ export async function processBuildNotification(buildNotification) {
 
   const user = await build.repository
     .getUsers()
+    .orderBy('id', 'asc')
     .limit(1)
     .first()
 
