@@ -111,13 +111,13 @@ const config = convict({
     clientDsn: {
       doc: 'Sentry client DSN',
       format: String,
-      default: undefined,
+      default: '__DSN__',
       env: 'SENTRY_CLIENT_DSN',
     },
     serverDsn: {
       doc: 'Heroku release version',
       format: String,
-      default: undefined,
+      default: '__DSN__',
       env: 'SENTRY_SERVER_DSN',
     },
   },

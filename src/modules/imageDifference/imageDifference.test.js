@@ -7,9 +7,10 @@ describe('imageDifference', () => {
       compareScreenshotPath: path.join(__dirname, '__fixtures__/simple/compare.png'),
       baseScreenshotPath: path.join(__dirname, '__fixtures__/simple/base.png'),
       diffResultPath: path.join(__dirname, '__fixtures__/simple/diff_tmp.png'),
+      fuzz: 900,
     })
 
-    expect(result.score > 0).toBe(true)
+    expect(result.score).toBeGreaterThan(0)
     expect(result).toMatchSnapshot()
   })
 

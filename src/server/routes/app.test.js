@@ -31,7 +31,7 @@ describe('app routes', () => {
             })
           )
           .expect(res => {
-            expect(res.body.error.message).toBe('Invalid token')
+            expect(res.body.error.message).toBe('Missing token')
           })
           .expect(401)
       })

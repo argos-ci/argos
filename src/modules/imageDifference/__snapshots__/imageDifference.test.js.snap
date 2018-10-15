@@ -10,9 +10,9 @@ Object {
 
 exports[`imageDifference border 1`] = `
 Object {
-  "pixels": 10,
+  "pixels": 7,
   "score": 0,
-  "scoreRaw": 0.00001272264631043257,
+  "scoreRaw": 0.000008905852417302798,
 }
 `;
 
@@ -26,9 +26,9 @@ Object {
 
 exports[`imageDifference fontAliasing 1`] = `
 Object {
-  "pixels": 2128,
-  "score": 0.010829516539440203,
-  "scoreRaw": 0.010829516539440203,
+  "pixels": 4,
+  "score": 0,
+  "scoreRaw": 0.00002035623409669211,
 }
 `;
 
@@ -42,25 +42,25 @@ Object {
 
 exports[`imageDifference imageCompression2 1`] = `
 Object {
-  "pixels": 962,
-  "score": 0.004423903796187717,
-  "scoreRaw": 0.004423903796187717,
+  "pixels": 0,
+  "score": 0,
+  "scoreRaw": 0,
 }
 `;
 
 exports[`imageDifference imageCompression3 1`] = `
 Object {
-  "pixels": 1170,
-  "score": 0.0015234375,
-  "scoreRaw": 0.0015234375,
+  "pixels": 33,
+  "score": 0.00004296875,
+  "scoreRaw": 0.00004296875,
 }
 `;
 
 exports[`imageDifference simple 1`] = `
 Object {
-  "pixels": 501292,
-  "score": 0.30696671871651204,
-  "scoreRaw": 0.30696671871651204,
+  "pixels": 500807,
+  "score": 0.30666972842227735,
+  "scoreRaw": 0.30666972842227735,
 }
 `;
 

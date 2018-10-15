@@ -60,7 +60,7 @@ router.post(
     const repository = await Repository.query().findOne({ token: data.token })
 
     if (!repository) {
-      throw new HttpError(404, `Repository not found (token: "${data.token}")`)
+      throw new HttpError(400, `Repository not found (token: "${data.token}")`)
     }
 
     if (!repository.enabled) {
