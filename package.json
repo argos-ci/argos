@@ -121,6 +121,7 @@
     "argos-cli": "^0.0.9",
     "babel-eslint": "^7.2.3",
     "chalk": "^2.0.1",
+    "dotenv": "^6.1.0",
     "eslint": "^4.1.1",
     "eslint-config-airbnb": "^15.1.0",
     "eslint-import-resolver-node": "^0.3.1",
