@@ -15,12 +15,10 @@ function RepositoryNotFound({ user }) {
           Repository not found.
         </Typography>
         <Button
-          color="accent"
-          dense
-          component={Link}
-          variant="button"
-          href="/auth/github-private"
-          raised
+          color="secondary"
+          size="small"
+          variant="raised"
+          component={props => <Link {...props} variant="button" href="/auth/github-private" />}
         >
           Grant access to private repositories
         </Button>
