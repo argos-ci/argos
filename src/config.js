@@ -75,7 +75,7 @@ const config = convict({
     screenshotsBucket: {
       doc: 'Bucket containing screenshots',
       format: String,
-      default: 'doctolib-argos',
+      default: 'argos-screenshots-dev',
       env: 'AWS_SCREENSHOTS_BUCKET',
     },
   },
