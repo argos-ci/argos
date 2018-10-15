@@ -1,24 +1,22 @@
-import { exec } from 'child_process'
-import util from 'util'
+import { execSync } from 'child_process'
 import config from 'config'
-import display from 'modules/scripts/display'
 
 if (process.env.NODE_ENV === 'production') {
   throw new Error('Not in production please!')
 }
 
-const execAsync = util.promisify(exec)
 const CI = process.env.CI === 'true'
 const user = 'argos'
 const database = config.get('env')
 
+if (!CI) {
+  execSync(
+    `docker-compose exec -T postgres psql -U ${user} ${database} -c "REVOKE CONNECT ON DATABASE ${database} FROM public" 2>/dev/null || true`
+  )
+}
+
 const command = CI
   ? `dropdb --host localhost -U ${user} ${database} --if-exists`
-  : `docker-compose exec -T postgres \
-  bash -c 'psql -U ${user} ${database} -c "REVOKE CONNECT ON DATABASE ${database} FROM public" \
-  && dropdb -U ${user} ${database}'`
+  : `docker-compose exec -T postgres dropdb -U ${user} ${database} --if-exists`
 
-execAsync(command).catch(err => {
-  display.error(`${err.stderr}\n${err.stdout}`)
-  process.exit(1)
-})
+execSync(command)
