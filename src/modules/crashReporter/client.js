@@ -15,7 +15,7 @@ export function initializeCrashReporterClient() {
   }
 
   initializeCrashReporter({
-    DSN: 'https://9cb925a0634f4f78896523e9dea07b7a@sentry.io/533428',
+    DSN: configBrowser.get('sentry.clientDsn'),
     ravenConfig: {
       release: configBrowser.get('releaseVersion'),
     },
