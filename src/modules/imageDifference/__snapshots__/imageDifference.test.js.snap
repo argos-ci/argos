@@ -8,27 +8,11 @@ Object {
 }
 `;
 
-exports[`imageDifference border 1`] = `
-Object {
-  "pixels": 7,
-  "score": 0,
-  "scoreRaw": 0.000008905852417302798,
-}
-`;
-
 exports[`imageDifference boxShadow 1`] = `
 Object {
   "pixels": 0,
   "score": 0,
   "scoreRaw": 0,
-}
-`;
-
-exports[`imageDifference fontAliasing 1`] = `
-Object {
-  "pixels": 4,
-  "score": 0,
-  "scoreRaw": 0.00002035623409669211,
 }
 `;
 
@@ -45,22 +29,6 @@ Object {
   "pixels": 0,
   "score": 0,
   "scoreRaw": 0,
-}
-`;
-
-exports[`imageDifference imageCompression3 1`] = `
-Object {
-  "pixels": 33,
-  "score": 0.00004296875,
-  "scoreRaw": 0.00004296875,
-}
-`;
-
-exports[`imageDifference simple 1`] = `
-Object {
-  "pixels": 500807,
-  "score": 0.30666972842227735,
-  "scoreRaw": 0.30666972842227735,
 }
 `;
 

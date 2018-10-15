@@ -10,8 +10,8 @@ describe('imageDifference', () => {
       fuzz: 900,
     })
 
-    expect(result.score).toBeGreaterThan(0)
-    expect(result).toMatchSnapshot()
+    expect(result.score).toBeCloseTo(0.306, 2)
+    expect(result.pixels).toBeCloseTo(501e3, -3)
   })
 
   it('simple with enough fuzz', async () => {
@@ -56,7 +56,6 @@ describe('imageDifference', () => {
     })
 
     expect(result.score).toBe(0)
-    expect(result).toMatchSnapshot()
   })
 
   it('fontAliasing', async () => {
@@ -66,7 +65,7 @@ describe('imageDifference', () => {
       diffResultPath: path.join(__dirname, '__fixtures__/fontAliasing/diff_tmp.png'),
     })
 
-    expect(result).toMatchSnapshot()
+    expect(result.score).toBeCloseTo(0, 2)
   })
 
   it('imageCompression', async () => {
@@ -97,6 +96,7 @@ describe('imageDifference', () => {
       diffResultPath: path.join(__dirname, '__fixtures__/imageCompression3/diff_tmp.png'),
     })
 
-    expect(result).toMatchSnapshot()
+    expect(result.pixels).toBeCloseTo(35, -1)
+    expect(result.score).toBeCloseTo(0, 3)
   })
 })

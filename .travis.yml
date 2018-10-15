@@ -1,0 +1,17 @@
+language: node_js
+sudo: required
+
+cache:
+  directories:
+    - node_modules
+
+addons:
+  postgresql: 9.6
+
+before_script:
+  - createuser -U postgres -s argos
+  - NODE_ENV=test yarn api:db:create
+  - NODE_ENV=test yarn api:db:load
+  - convert -version # ImageMagick version.
+
+script: yarn test:unit
