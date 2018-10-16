@@ -90,35 +90,14 @@ TEST_GITHUB_USER_ACCESS_TOKEN=
 
 ### Create an S3 bucket to host screenshots
 
-```js
-const S3 = require('aws-sdk/clients/s3')
-const s3 = new S3({ signatureVersion: 'v4' })
-const bucketName = 'argos.doctolib.com'
-;(async () => {
-  try {
-    await s3.createBucket({ Bucket: bucketName }).promise()
-    await s3
-      .putBucketPolicy({
-        Bucket: bucketName,
-        Policy: JSON.stringify({
-          Version: '2012-10-17',
-          Statement: [
-            {
-              Sid: 'AllowPublicRead',
-              Effect: 'Allow',
-              Principal: { AWS: '*' },
-              Action: 's3:GetObject',
-              Resource: `arn:aws:s3:::${bucketName}/*`,
-            },
-          ],
-        }),
-      })
-      .promise()
-    console.log('Success!')
-  } catch (e) {
-    console.log('Error:', error.message)
-  }
-})()
+Install the AWS CLI, run `aws configure` and run the following commands:
+
+```bash
+aws iam create-user --user-name argos
+aws iam create-access-key --user-name argos
+aws s3api create-bucket --bucket argos-screenshots --acl public-read --region eu-west-1 --grant-full-control argos
+aws s3api create-bucket --bucket argos-screenshots-dev --acl public-read --region eu-west-1 --grant-full-control argos
+aws s3api create-bucket --bucket argos-screenshots-test --acl public-read --region eu-west-1 --grant-full-control argos
 ```
 
 ### Set up database
