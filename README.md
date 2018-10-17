@@ -2,7 +2,9 @@
 
 > Automate visual regression testing.
 
-[![Build Status](https://travis-ci.org/argos-ci/argos.svg?branch=master)](https://travis-ci.org/argos-ci/argos)
+Note: this is a fork of https://github.com/argos-ci/argos.
+
+[![Build Status](https://travis-ci.org/doctolib/argos.svg?branch=master)](https://travis-ci.org/doctolib/argos)
 
 **Forget about regressions**:
 Argos will warn you if any visual regressions are about to be introduced,
