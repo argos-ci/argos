@@ -1,6 +1,7 @@
 import * as notifications from 'modules/build/notifications'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
+import { sortBy } from 'lodash'
 import { VALIDATION_STATUS } from 'server/constants'
 import createBuildDiffs from './createBuildDiffs'
 
@@ -62,7 +63,7 @@ describe('createBuildDiffs', () => {
     })
 
     it('should return the build', async () => {
-      const diffs = await createBuildDiffs(build)
+      const diffs = sortBy(await createBuildDiffs(build), 'id')
       expect(diffs.length).toBe(2)
       expect(diffs[0]).toMatchObject({
         buildId: build.id,
@@ -82,7 +83,7 @@ describe('createBuildDiffs', () => {
 
     it('should not run the diff when comparing the base branch against itself', async () => {
       await compareBucket.$query().patch({ branch: 'master' })
-      const diffs = await createBuildDiffs(build)
+      const diffs = sortBy(await createBuildDiffs(build), 'id')
       expect(diffs.length).toBe(2)
       expect(diffs[0]).toMatchObject({
         buildId: build.id,
