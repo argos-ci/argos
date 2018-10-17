@@ -1,7 +1,7 @@
 {
   "googleAnalytics": "UA-89989315-1",
   "s3": {
-    "screenshotsBucket": "doctolib-argos"
+    "screenshotsBucket": "argos-screenshots"
   },
   "github": {
     "clientId": "7eab46f148a2f0822953"

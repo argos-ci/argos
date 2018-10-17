@@ -90,15 +90,51 @@ TEST_GITHUB_USER_ACCESS_TOKEN=
 
 ### Create an S3 bucket to host screenshots
 
-Install the AWS CLI, run `aws configure` and run the following commands:
+1. Install the AWS CLI and run `aws configure`.
 
-```bash
-aws iam create-user --user-name argos
-aws iam create-access-key --user-name argos
-aws s3api create-bucket --bucket argos-screenshots --acl public-read --region eu-west-1 --grant-full-control argos
-aws s3api create-bucket --bucket argos-screenshots-dev --acl public-read --region eu-west-1 --grant-full-control argos
-aws s3api create-bucket --bucket argos-screenshots-test --acl public-read --region eu-west-1 --grant-full-control argos
-```
+2. Create a new user and an access key:
+
+   ```bash
+   aws iam create-user --user-name argos
+   aws iam create-access-key --user-name argos
+   ```
+
+   Update your `.env` file with the user's access and secret access keys.
+
+3. Retrieve your account ID:
+
+   ```bash
+   account_id=$(aws sts get-caller-identity --output text --query 'Account')
+   ```
+
+4. Create buckets:
+
+   ```bash
+   for bucket in argos-screenshots{,dev,test}; do
+     aws s3api create-bucket --bucket $bucket
+     aws s3api put-bucket-policy --bucket $bucket --policy '{
+       "Version": "2012-10-17",
+       "Statement": [
+         {
+           "Effect": "Allow",
+           "Principal": {
+             "AWS": "*"
+           },
+           "Action": "s3:GetObject",
+           "Resource": "arn:aws:s3:::'$bucket'/*"
+         },
+         {
+           "Effect": "Allow",
+           "Principal": {
+             "AWS": "arn:aws:iam::'$account_id':argos"
+           },
+           "Action": "s3:PutObject",
+           "Resource": "arn:aws:s3:::'$bucket'/*"
+         }
+       ]
+     }'
+   done
+   ```
 
 ### Set up database
 
