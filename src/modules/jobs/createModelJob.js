@@ -13,6 +13,7 @@ const createModelJob = (queue, Model, perform) =>
       await perform(model)
     },
     async error(id) {
+      console.log('ERROR in createJob', Model.name, id)
       await Model.query()
         .patch({ jobStatus: 'error' })
         .where({ id })
