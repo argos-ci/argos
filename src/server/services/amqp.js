@@ -20,6 +20,7 @@ export async function disconnect() {
   try {
     await connection.close()
   } catch (error) {
+    console.error('AMQP Error', error)
     throw error
   }
 }
