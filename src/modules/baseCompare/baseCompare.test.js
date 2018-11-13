@@ -18,7 +18,10 @@ describe('baseCompare', () => {
 
   beforeEach(async () => {
     const organization = await factory.create('Organization', { login: 'callemall' })
-    const user = await factory.create('User', { accessToken: 'ACCESS_TOKEN' })
+    const user = await factory.create('User', {
+      login: 'cyrilchampier',
+      accessToken: 'ACCESS_TOKEN',
+    })
     repository = await factory.create('Repository', {
       name: 'material-ui',
       organizationId: organization.id,

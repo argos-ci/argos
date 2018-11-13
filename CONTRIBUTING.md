@@ -55,7 +55,12 @@ npm install
 
 ```sh
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+
+# MacOS
 brew install imagemagick@6 graphicsmagick autoenv watchman
+# Linux
+sudo apt-get install graphicsmagick imagemagick
+
 nvm install
 nvm alias default "$(cat .nvmrc)"
 npm install -g yarn
@@ -77,7 +82,7 @@ AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_SCREENSHOTS_BUCKET=
 GITHUB_CLIENT_SECRET=
-TEST_GITHUB_USER_ACCESS_TOKEN=
+#TEST_GITHUB_USER_ACCESS_TOKEN= # Still needed?
 ```
 
 ### Modify your hosts
@@ -139,7 +144,7 @@ TEST_GITHUB_USER_ACCESS_TOKEN=
 ### Set up database
 
 ```sh
-yarn db:reset
+yarn api:db:reset
 ```
 
 ### Use the seed
@@ -191,7 +196,7 @@ yarn db:migrate:latest
 You can reset the test database using:
 
 ```sh
-NODE_ENV=test yarn db:reset
+NODE_ENV=test yarn api:db:reset
 ```
 
 ## Coding style
