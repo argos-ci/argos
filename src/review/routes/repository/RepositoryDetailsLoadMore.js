@@ -13,41 +13,42 @@ const styles = theme => ({
   },
 })
 
-function RepositoryDetailsLoadMore(props) {
-  const { classes, fetch, onClickLoadMore } = props
-
-  if (!isSuccess(fetch)) {
-    return null
+class RepositoryDetailsLoadMore extends React.Component {
+  static propTypes = {
+    classes: PropTypes.object.isRequired,
+    fetch: PropTypes.object.isRequired,
+    onClickLoadMore: PropTypes.func.isRequired,
   }
 
-  const data = fetch.output.data
-
-  if (!data.repository || !data.repository.builds.pageInfo.hasNextPage) {
-    return null
+  onClickLoadMore = () => {
+    const after = this.props.fetch.output.data.repository.builds.pageInfo.endCursor
+    this.props.dispatch(detailsActions.fetch(this.props, after))
   }
 
-  return (
-    <Button className={classes.loadMore} onClick={onClickLoadMore}>
-      Load more
-    </Button>
-  )
-}
+  render() {
+    const { classes, fetch } = this.props
 
-RepositoryDetailsLoadMore.propTypes = {
-  classes: PropTypes.object.isRequired,
-  fetch: PropTypes.object.isRequired,
-  onClickLoadMore: PropTypes.func.isRequired,
+    if (!isSuccess(fetch)) {
+      return null
+    }
+
+    const data = fetch.output.data
+
+    if (!data.repository || !data.repository.builds.pageInfo.hasNextPage) {
+      return null
+    }
+
+    return (
+      <Button className={classes.loadMore} onClick={this.onClickLoadMore}>
+        Load more
+      </Button>
+    )
+  }
 }
 
 export default recompact.compose(
   withStyles(styles),
   connect(state => ({
     fetch: state.ui.repositoryDetails.fetch,
-  })),
-  recompact.withHandlers({
-    onClickLoadMore: props => () => {
-      const after = props.fetch.output.data.repository.builds.pageInfo.endCursor
-      props.dispatch(detailsActions.fetch(props, after))
-    },
-  })
+  }))
 )(RepositoryDetailsLoadMore)

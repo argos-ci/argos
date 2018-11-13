@@ -81,7 +81,7 @@ docker-compose up
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_SCREENSHOTS_BUCKET=
-GITHUB_CLIENT_SECRET=
+GITHUB_CLIENT_SECRET=1781c9a3e1d57fdcfdf9c29c02abf7d37e1c0427
 #TEST_GITHUB_USER_ACCESS_TOKEN= # Still needed?
 ```
 
@@ -95,7 +95,7 @@ GITHUB_CLIENT_SECRET=
 
 ### Create an S3 bucket to host screenshots
 
-1. Install the AWS CLI and run `aws configure`.
+1. Install the AWS CLI (`pip3 install awscli`) and run `aws configure`.
 
 2. Create a new user and an access key:
 
