@@ -11,7 +11,7 @@ const parseMessage = message => {
 }
 
 const logAndCaptureError = (error, { args, queue }) => {
-  console.error('ERROR', error, args)
+  console.log('ERROR', error, args)
   crashReporter().captureException(error, {
     tags: {
       jobQueue: queue,

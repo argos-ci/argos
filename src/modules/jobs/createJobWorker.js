@@ -11,7 +11,7 @@ const createJobWorker = async (...jobs) => {
       })
     )
   } catch (error) {
-    console.error('ERROR in JobWorker', error)
+    console.log('ERROR in JobWorker', error)
     setTimeout(() => {
       throw error
     })

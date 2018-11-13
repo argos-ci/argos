@@ -69,7 +69,7 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
     baseCommits = await github.repos.getCommits(baseCommitParams)
     baseCommits = baseCommits.data
   } catch (error) {
-    console.error('ERROR', error)
+    console.log('ERROR', error)
     // Unauthorized
     if (error.code !== 401) {
       crashReporter().captureException(error, {
@@ -92,7 +92,7 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
     compareCommits = await github.repos.getCommits(compareCommitPararms)
     compareCommits = compareCommits.data
   } catch (error) {
-    console.error('ERROR', error)
+    console.log('ERROR', error)
     // Unauthorized
     if (error.code !== 401) {
       crashReporter().captureException(error, {
