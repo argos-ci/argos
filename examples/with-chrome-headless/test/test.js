@@ -53,7 +53,7 @@ CDP(async client => {
 
     setTimeout(async () => {
       const screenshot = await Page.captureScreenshot({ format: 'png' })
-      const buffer = new Buffer(screenshot.data, 'base64')
+      const buffer = Buffer.from(screenshot.data, 'base64')
       fs.writeFile('screenshots/output.png', buffer, 'base64', err => {
         if (err) {
           console.error(err)

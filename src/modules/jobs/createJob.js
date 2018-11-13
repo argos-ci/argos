@@ -1,7 +1,7 @@
 import { getChannel } from 'server/services/amqp'
 import crashReporter from 'modules/crashReporter/common'
 
-const serializeMessage = payload => new Buffer(JSON.stringify(payload))
+const serializeMessage = payload => Buffer.from(JSON.stringify(payload))
 const parseMessage = message => {
   const payload = JSON.parse(message.toString())
   if (!payload || !Array.isArray(payload.args) || !Number.isInteger(payload.attempts)) {

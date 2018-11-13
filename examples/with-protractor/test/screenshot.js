@@ -5,7 +5,7 @@ function screenshot(name) {
   Promise.all([browser.takeScreenshot(), browser.getCapabilities()]).then(([png, capabilities]) => {
     const filename = `${name}-${capabilities.get('browserName')}.png`
     const stream = fs.createWriteStream(path.join(__dirname, '../screenshots', filename))
-    stream.write(new Buffer(png, 'base64'))
+    stream.write(Buffer.from(png, 'base64'))
     stream.end()
   })
 }
