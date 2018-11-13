@@ -43,6 +43,7 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
 
   // We can't use Github information without a user.
   if (!user) {
+    console.log('ERROR', 'No valid github user found.')
     return fallbackToMaster(build)
   }
 
