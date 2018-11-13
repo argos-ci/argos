@@ -49,19 +49,17 @@ async function createBuildDiffs(build) {
               validationStatus: VALIDATION_STATUS.unknown,
             })
           )
-
-          return diffInserts
+        } else {
+          diffInserts.push(
+            ScreenshotDiff.query().insert({
+              buildId: build.id,
+              baseScreenshotId: baseScreenshot.id,
+              compareScreenshotId: compareScreenshot.id,
+              jobStatus: compareWithBaseline ? 'complete' : 'pending',
+              validationStatus: VALIDATION_STATUS.unknown,
+            })
+          )
         }
-
-        diffInserts.push(
-          ScreenshotDiff.query().insert({
-            buildId: build.id,
-            baseScreenshotId: baseScreenshot.id,
-            compareScreenshotId: compareScreenshot.id,
-            jobStatus: compareWithBaseline ? 'complete' : 'pending',
-            validationStatus: VALIDATION_STATUS.unknown,
-          })
-        )
 
         return diffInserts
       },
