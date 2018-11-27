@@ -189,7 +189,7 @@ First, always check [https://sentry.io/doctolib/argos/](https://sentry.io/doctol
 Helpful commands:
 
 ```sh
-heroku git:remote -a doctolib-argos # name can be found at: https://dashboard.heroku.com/apps/doctolib-argos/deploy/heroku-git)
+heroku git:remote -a doctolib-argos # name can be found at: https://dashboard.heroku.com/apps/doctolib-argos/deploy/heroku-git
 heroku config
 heroku config --shell # Get production credentials
 ```
@@ -211,7 +211,7 @@ How to fix:
 
 probleme de crash, dequeue un seul de queue 'build' (https://impala.rmq.cloudamqp.com/#/queues/rfjlrqhu/build) puis relancer tous les dynos
 
-#### 2. Github Token is expired
+### 2. Github Token is expired
 
 Argos uses [Cyril Champier's Github token](https://github.com/doctolib/argos/commit/7722b4598bd74746c24420483c7f7b346dc10ae2) to communicate with Github. Every once in a while, it expires.
 
@@ -225,7 +225,7 @@ OR
   - At https://dashboard.heroku.com/apps/doctolib-argos/resources, click on [Adminium](https://addons-sso.heroku.com/apps/6a65d6ef-042b-4dd7-a0de-ea98e2ca7411/addons/3bbf4f69-7ddd-40d0-bea3-1e4cd01ce832)
   - Update the token in the [users table](https://www.adminium.io/resources/users)
 
-#### 3. Database is full
+### 3. Database is full
 
 Our current plan does not offer unlimited database plan.
 
