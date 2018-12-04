@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/argos-ci/argos#readme",
   "dependencies": {
-    "amqplib": "^0.5.1",
+    "amqplib": "^0.5.3",
     "assets-webpack-plugin": "^3.5.1",
     "aws-sdk": "^2.94.0",
     "babel-cli": "^6.24.1",
