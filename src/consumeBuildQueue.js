@@ -1,12 +1,12 @@
 import { getChannel, disconnect } from 'server/services/amqp'
 
-const queue = 'build'
-
 /**
  * Sometimes, the buildAndSynchronise job crashes (Out of Memory) because of a build message
  * which, for some reason, make NodeJS runs out of memory. By consuming that message and de-enqueuing it,
  * we can safely restart the job.
- **/
+ */
+
+const queue = 'build'
 
 const parseMessage = message => {
   const payload = JSON.parse(message.toString())

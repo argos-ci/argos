@@ -16,7 +16,7 @@ echo " " node $NODE_FLAGS "$@"
 if [ "$CONSUME_AND_RESTART" == "1" ]; then
   echo "Will consume build queue and relaunch automatically when it crashes..."
   while true; do
-    node $NODE_FLAGS "$@" || node $NODE_FLAGS ./src/consumeBuildQueue.js
+    node $NODE_FLAGS "$@" || npx babel-node ./src/consumeBuildQueue.js
   done
 else
   node $NODE_FLAGS "$@"
