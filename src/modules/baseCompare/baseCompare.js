@@ -38,7 +38,7 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
   build = await build.$query().eager('[repository, compareScreenshotBucket]')
   const user = await build.repository
     .getUsers()
-    .where('login', 'cyrilchampier')
+    .where('login', 'agaryen')
     .first()
 
   // We can't use Github information without a user.
