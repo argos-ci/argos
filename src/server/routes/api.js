@@ -120,14 +120,7 @@ router.post(
     )
 
     // So we don't reuse the previous transaction
-<<<<<<< HEAD
-    build = await Build.query()
-      .where({ id: build.id })
-      .limit(1)
-      .first()
-=======
     build = await Build.query().findById(build.id)
->>>>>>> feat: add support for batched uploads
 
     const buildUrl = await formatUrlFromBuild(build)
 

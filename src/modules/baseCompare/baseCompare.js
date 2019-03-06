@@ -38,12 +38,11 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
   build = await build.$query().eager('[repository, compareScreenshotBucket]')
   const user = await build.repository
     .getUsers()
-    .where('login', 'cyrilchampier')
+    .limit(1)
     .first()
 
   // We can't use Github information without a user.
   if (!user) {
-    console.log('ERROR', 'No valid github user found.')
     return fallbackToMaster(build)
   }
 
@@ -70,7 +69,6 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
     baseCommits = await github.repos.getCommits(baseCommitParams)
     baseCommits = baseCommits.data
   } catch (error) {
-    console.log('ERROR', error)
     // Unauthorized
     if (error.code !== 401) {
       crashReporter().captureException(error, {
@@ -93,7 +91,6 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
     compareCommits = await github.repos.getCommits(compareCommitPararms)
     compareCommits = compareCommits.data
   } catch (error) {
-    console.log('ERROR', error)
     // Unauthorized
     if (error.code !== 401) {
       crashReporter().captureException(error, {
