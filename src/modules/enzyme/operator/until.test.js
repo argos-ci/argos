@@ -46,16 +46,16 @@ describe('modules/enzyme/until', () => {
       shallow(
         <div>
           <Div />
-        </div>
+        </div>,
       ),
-      'Div'
+      'Div',
     )
     expect(
       wrapper.contains(
         <div>
           <Div />
-        </div>
-      )
+        </div>,
+      ),
     ).toBe(true)
   })
 
@@ -65,7 +65,7 @@ describe('modules/enzyme/until', () => {
         until.call(shallow(<Div />).find('Foo'), 'div')
       },
       Error,
-      'Method “until” is only meant to be run on a single node. 0 found instead.'
+      'Method “until” is only meant to be run on a single node. 0 found instead.',
     )
   })
 
@@ -85,13 +85,18 @@ describe('modules/enzyme/until', () => {
 
     class Bar extends React.Component {
       static childContextTypes = { quux: PropTypes.bool }
+
       getChildContext = () => ({ quux: true })
+
       render = () => <Foo />
     }
 
     it('passes down context from the root component', () => {
       const EnhancedFoo = hoc(Foo)
-      const wrapper = until.call(shallow(<EnhancedFoo />, { context: { quux: true } }), 'Foo')
+      const wrapper = until.call(
+        shallow(<EnhancedFoo />, { context: { quux: true } }),
+        'Foo',
+      )
       expect(wrapper.context('quux')).toBe(true)
       expect(wrapper.contains(<Div />)).toBe(true)
     })

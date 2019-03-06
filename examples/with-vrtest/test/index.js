@@ -1,3 +1,5 @@
+/* eslint-env browser */
+
 import 'reflect-metadata' // For Angular
 import 'zone.js' // For Angular
 import vrtest from 'vrtest/client'
@@ -71,7 +73,7 @@ tests.forEach(test => {
         })
         break
       case 'angular': {
-        const selector = test.case.default.annotations[0].selector
+        const { selector } = test.case.default.annotations[0]
         class AppComponent {}
         AppComponent.annotations = [
           new Component({

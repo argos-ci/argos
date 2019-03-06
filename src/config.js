@@ -1,5 +1,8 @@
 import path from 'path'
 import convict from 'convict'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const config = convict({
   env: {
@@ -16,12 +19,14 @@ const config = convict({
     subdomain: {
       format: String,
       default: 'api.dev',
+      env: 'API_SUBDOMAIN',
     },
   },
   www: {
     subdomain: {
       format: String,
       default: 'www.dev',
+      env: 'WWW_SUBDOMAIN',
     },
   },
   server: {
@@ -40,6 +45,7 @@ const config = convict({
       doc: 'The user public url',
       format: String,
       default: 'http://www.dev.argos-ci.com:4002',
+      env: 'SERVER_URL',
     },
     sessionSecret: {
       doc: 'This is the secret used to sign the session ID cookie.',
@@ -81,6 +87,7 @@ const config = convict({
       doc: 'Client ID',
       format: String,
       default: 'c4636449f2df59e6010d',
+      env: 'GITHUB_CLIENT_ID',
     },
     clientSecret: {
       doc: 'Client Secret',
@@ -90,7 +97,9 @@ const config = convict({
     },
     applicationUrl: {
       format: String,
-      default: 'https://github.com/settings/connections/applications/8460535e1d4c40dfdf05',
+      default:
+        'https://github.com/settings/connections/applications/8460535e1d4c40dfdf05',
+      env: 'GITHUB_APPLICATION_URL',
     },
   },
   redis: {
@@ -106,6 +115,21 @@ const config = convict({
     format: String,
     default: 'dev',
     env: 'HEROKU_RELEASE_VERSION',
+  },
+  sentry: {
+    clientDsn: {
+      doc: 'Sentry client DSN',
+      format: String,
+      default: 'https://f1690f74cc6e432e922f32da3eb051c9@sentry.io/133417',
+      env: 'SENTRY_CLIENT_DSN',
+    },
+    serverDsn: {
+      doc: 'Sentry server DSN',
+      format: String,
+      default:
+        'https://261cb80891cb480fa452f7e18c0e57c0:dc050bb97a4d4692aa3e957c5c89d393@sentry.io/133418',
+      env: 'SENTRY_SERVER_DSN',
+    },
   },
 })
 

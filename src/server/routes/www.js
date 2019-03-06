@@ -23,7 +23,7 @@ router.use(
     lastModified: false,
     maxAge: '1 year',
     index: false,
-  })
+  }),
 )
 
 router.use(
@@ -39,7 +39,7 @@ router.use(
     // No need to resave, we can avoid concurrency issues.
     resave: false,
     saveUninitialized: false,
-  })
+  }),
 )
 router.use(passport.initialize())
 router.use(passport.session())
@@ -59,7 +59,7 @@ router.use('/graphql', graphqlMiddleware())
       }
       next()
     },
-    passport.authenticate(`github-${type}`)
+    passport.authenticate(`github-${type}`),
   )
   router.get(
     `/auth/github/callback/${type}`,
@@ -70,11 +70,11 @@ router.use('/graphql', graphqlMiddleware())
       // Successful authentication
       let returnTo = '/'
       if (req.session.returnTo) {
-        returnTo = req.session.returnTo
+        ;({ returnTo } = req.session)
         delete req.session.returnTo
       }
       res.redirect(returnTo)
-    }
+    },
   )
 })
 
@@ -101,7 +101,7 @@ router.use(
       html: htmlErrorHandler,
       default: htmlErrorHandler,
     },
-  })
+  }),
 )
 
 export default router

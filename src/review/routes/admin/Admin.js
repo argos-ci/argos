@@ -1,3 +1,5 @@
+/* eslint-env browser */
+
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { Field, reduxForm, SubmissionError } from 'redux-form'
@@ -70,7 +72,10 @@ class Admin extends Component {
               Usurpation
             </Typography>
             <Paper className={classes.padding}>
-              <form onSubmit={handleSubmit(this.handleSubmit)} className={classes.form}>
+              <form
+                onSubmit={handleSubmit(this.handleSubmit)}
+                className={classes.form}
+              >
                 <Field
                   className={classes.textField}
                   autoFocus
@@ -79,11 +84,16 @@ class Admin extends Component {
                   required
                   name="email"
                   autoComplete="email"
-                  label={'Email address'}
+                  label="Email address"
                   marginForm
                 />
                 {error && <Typography gutterBottom>{error}</Typography>}
-                <Button disabled={submitting} raised color="secondary" type="submit">
+                <Button
+                  disabled={submitting}
+                  raised
+                  color="secondary"
+                  type="submit"
+                >
                   {'Usurp'}
                 </Button>
               </form>
@@ -121,5 +131,5 @@ export default recompact.compose(
   reduxForm({
     form: 'adminUsurpation',
     validate,
-  })
+  }),
 )(Admin)

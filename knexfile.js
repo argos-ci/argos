@@ -18,7 +18,7 @@ const config = {
     debug: true,
     client: 'postgresql',
     connection: {
-      user: 'argos',
+      user: 'postgres',
       database: 'development',
     },
   }),
@@ -26,7 +26,7 @@ const config = {
     debug: false,
     client: 'postgresql',
     connection: {
-      user: 'argos',
+      user: 'postgres',
       database: 'test',
     },
   }),
@@ -35,7 +35,9 @@ const config = {
     client: 'postgresql',
     pool: {
       min: 2,
-      max: Math.floor((maxConnectionsAllowed - freeConnectionsForThirdTools) / workers),
+      max: Math.floor(
+        (maxConnectionsAllowed - freeConnectionsForThirdTools) / workers,
+      ),
     },
   }),
 }

@@ -1,10 +1,8 @@
 defaults: &defaults
   working_directory: /tmp/argos
   docker:
-    - image: circleci/node:9.10
+    - image: circleci/node:8
     - image: postgres:9.6
-      environment:
-        POSTGRES_USER: argos
       ports:
         - '5432:5432'
 restore_repo: &restore_repo
@@ -79,6 +77,7 @@ jobs:
       - run:
           name: Can run argos
           command: yarn argos
+
 workflows:
   version: 2
   pipeline:

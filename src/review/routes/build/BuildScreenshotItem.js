@@ -13,7 +13,7 @@ import recompact from 'modules/recompact'
 import ItemStatus from 'review/modules/components/ItemStatus'
 
 function getS3Url(s3Id) {
-  return `https://s3.amazonaws.com/${configBrowser.get('s3.screenshotsBucket')}/${s3Id}`
+  return `https://${configBrowser.get('s3.screenshotsBucket')}.s3.amazonaws.com/${s3Id}`
 }
 
 const styles = theme => ({

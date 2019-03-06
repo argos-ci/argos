@@ -9,7 +9,7 @@ function getStats(statuses) {
       progress: 0,
       complete: 0,
       error: 0,
-    }
+    },
   )
 }
 
@@ -18,7 +18,8 @@ function reduceJobStatus(statuses) {
 
   if (stats.complete === statuses.length) {
     return 'complete'
-  } else if (stats.pending === statuses.length) {
+  }
+  if (stats.pending === statuses.length) {
     return 'pending'
   }
 

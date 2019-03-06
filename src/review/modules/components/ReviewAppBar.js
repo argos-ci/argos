@@ -1,3 +1,5 @@
+/* eslint-env browser */
+
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
@@ -55,7 +57,7 @@ class ReviewAppBar extends Component {
       <LayoutAppBar>
         <Toolbar>
           <Typography variant="title" color="inherit" className={classes.title}>
-            <Link to="/">{'Argos-CI'}</Link>
+            <Link to="/">Argos-CI</Link>
           </Typography>
           {logged && (
             <Link
@@ -70,7 +72,11 @@ class ReviewAppBar extends Component {
                   <Typography color="inherit">{user.name}</Typography>
                 </Grid>
                 <Grid item>
-                  <Avatar src={`https://github.com/${user.login}.png?size=${AVATAR_SIZE}`} />
+                  <Avatar
+                    src={`https://github.com/${
+                      user.login
+                    }.png?size=${AVATAR_SIZE}`}
+                  />
                 </Grid>
               </Grid>
             </Link>
@@ -109,7 +115,9 @@ class ReviewAppBar extends Component {
           {!logged && (
             <Button
               color="inherit"
-              component={props => <Link {...props} variant="button" href="/auth/github-public" />}
+              component={props => (
+                <Link {...props} variant="button" href="/auth/github-public" />
+              )}
             >
               Login
             </Button>
@@ -132,5 +140,5 @@ export default recompact.compose(
   withStyles(styles),
   connect(state => ({
     user: state.data.user,
-  }))
+  })),
 )(ReviewAppBar)

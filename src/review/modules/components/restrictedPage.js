@@ -14,8 +14,8 @@ const restrictedPage = options => BaseComponent => {
     if (!props.user) {
       return (
         <ClientErrorView
-          title={'Authentication error'}
-          message={'You need to be log in to access this page.'}
+          title="Authentication error"
+          message="You need to be log in to access this page."
         />
       )
     }
@@ -23,8 +23,8 @@ const restrictedPage = options => BaseComponent => {
     if (intersection(props.user.scopes, scopes).length !== scopes.length) {
       return (
         <ClientErrorView
-          title={'Authorisation error'}
-          message={"You don't have the access rights needed."}
+          title="Authorisation error"
+          message="You don't have the access rights needed."
         />
       )
     }
@@ -37,7 +37,10 @@ const restrictedPage = options => BaseComponent => {
   }
 
   if (process.env.NODE_ENV !== 'production') {
-    RestrictedPage.displayName = wrapDisplayName(BaseComponent, 'restrictedPage')
+    RestrictedPage.displayName = wrapDisplayName(
+      BaseComponent,
+      'restrictedPage',
+    )
   }
 
   return connect(state => ({

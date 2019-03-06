@@ -23,7 +23,7 @@ function RepositoryDetails(props) {
       <Paper className={classes.paper}>
         <WatchTask task={fetch}>
           {data => {
-            const edges = data.repository.builds.edges
+            const { edges } = data.repository.builds
 
             if (edges.length === 0) {
               return <RepositoryDetailsEmpty repository={data.repository} />
@@ -60,7 +60,7 @@ RepositoryDetails.propTypes = {
               id: PropTypes.string.isRequired,
               number: PropTypes.number.isRequired,
               createdAt: PropTypes.string.isRequired,
-            })
+            }),
           ),
         }),
       }),
@@ -81,5 +81,5 @@ export default recompact.compose(
     componentDidMount() {
       this.props.dispatch(detailsActions.fetch(this.props, 0))
     },
-  })
+  }),
 )(RepositoryDetails)

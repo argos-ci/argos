@@ -1,4 +1,5 @@
 /* global happo */
+/* eslint-env browser */
 
 import { render } from 'react-dom'
 import { getStorybook } from '@storybook/react'
@@ -43,6 +44,6 @@ tests.forEach(test => {
       document.body.appendChild(div)
       render(test.case(test.context), div)
     },
-    { viewports: ['desktop', 'mobile'] }
+    { viewports: ['desktop', 'mobile'] },
   )
 })

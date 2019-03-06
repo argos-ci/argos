@@ -14,7 +14,7 @@ function coerceDateTime(value) {
     throw new TypeError('DateTime can only represent instance of Date.')
   }
 
-  if (isNaN(value.getTime())) {
+  if (Number.isNaN(value.getTime())) {
     throw new TypeError('DateTime only accept valid dates.')
   }
 
@@ -23,27 +23,28 @@ function coerceDateTime(value) {
 
 const graphQLDateType = new GraphQLScalarType({
   name: 'DateTime',
-  description: 'The DateTime scalar type represents date time strings complying to ISO-8601.',
+  description:
+    'The DateTime scalar type represents date time strings complying to ISO-8601.',
   serialize: coerceDateTime,
   parseValue: coerceDateTime,
   parseLiteral(ast) {
     if (ast.kind !== Kind.STRING) {
       throw new GraphQLError(
         `Query error: Can only parse strings to dates but got a: ${ast.kind}`,
-        [ast]
+        [ast],
       )
     }
 
     const result = new Date(ast.value)
 
-    if (isNaN(result.getTime())) {
+    if (Number.isNaN(result.getTime())) {
       throw new GraphQLError('Query error: Invalid date', [ast])
     }
 
     if (ast.value !== result.toJSON()) {
       throw new GraphQLError(
         'Query error: Invalid date format, only accepts: YYYY-MM-DDTHH:MM:SS.SSSZ',
-        [ast]
+        [ast],
       )
     }
 

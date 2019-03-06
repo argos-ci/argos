@@ -1,7 +1,7 @@
 import config from 'config'
 
 export async function formatUrlFromBuild(build) {
-  let repository = build.repository
+  let { repository } = build
 
   if (!repository) {
     repository = await build.$relatedQuery('repository')

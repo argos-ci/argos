@@ -18,6 +18,8 @@ export function initializeCrashReporter(options) {
 }
 
 export default function crashReporter() {
+  if (!global.__CRASH_REPORTER_LIB__) throw new Error("Crash reporter hasn't been initialized")
+
   return {
     // We use __CRASH_REPORTER_LIB__ in order to be able to share code between the server and the client
     ...global.__CRASH_REPORTER_LIB__,

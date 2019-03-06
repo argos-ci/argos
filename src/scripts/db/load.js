@@ -9,7 +9,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const execAsync = util.promisify(exec)
 const CI = process.env.CI === 'true'
-const user = 'argos'
+const user = 'postgres'
 const database = config.get('env')
 
 const command = CI

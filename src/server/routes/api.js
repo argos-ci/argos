@@ -42,6 +42,46 @@ export function errorChecking(routeHandler) {
   }
 }
 
+async function createBuild({ Build, ScreenshotBucket, data, repository }) {
+  const bucket = await ScreenshotBucket.query().insertAndFetch({
+    name: 'default',
+    commit: data.commit,
+    branch: data.branch,
+    repositoryId: repository.id,
+  })
+
+  const build = await Build.query().insertAndFetch({
+    baseScreenshotBucketId: null,
+    compareScreenshotBucketId: bucket.id,
+    repositoryId: repository.id,
+    jobStatus: 'pending',
+    externalId: data.externalBuildId || null,
+    batchCount: data.batchCount ? 1 : null,
+  })
+
+  build.compareScreenshotBucket = bucket
+
+  return build
+}
+
+async function useExistingBuild({ Build, ScreenshotBucket, data, repository }) {
+  const build = await Build.query()
+    .eager('compareScreenshotBucket')
+    .findOne({
+      'builds.repositoryId': repository.id,
+      externalId: data.externalBuildId,
+    })
+
+  // @TODO Throw an error if batchCount is superior to expected
+
+  if (build) {
+    await build.$query().patch({ batchCount: build.batchCount + 1 })
+    return build
+  }
+
+  return createBuild({ Build, ScreenshotBucket, data, repository })
+}
+
 router.post(
   '/builds',
   upload.array('screenshots[]', 500),
@@ -49,11 +89,11 @@ router.post(
     const data = JSON.parse(req.body.data)
 
     if (!data.token) {
-      throw new HttpError(401, 'Invalid token')
+      throw new HttpError(401, 'Missing token')
     }
 
     if (!data.commit) {
-      throw new HttpError(401, 'Invalid commit')
+      throw new HttpError(401, 'Missing commit')
     }
 
     const repository = await Repository.query()
@@ -66,41 +106,46 @@ router.post(
     }
 
     if (!repository.enabled) {
-      throw new HttpError(400, `Repository not enabled (name: "${repository.name}")`)
+      throw new HttpError(
+        400,
+        `Repository not enabled (name: "${repository.name}")`,
+      )
     }
 
-    let build = await transaction(Build, ScreenshotBucket, async (Build, ScreenshotBucket) => {
-      const bucket = await ScreenshotBucket.query().insert({
-        name: 'default',
-        commit: data.commit,
-        branch: data.branch,
-        repositoryId: repository.id,
-      })
-      await bucket.$relatedQuery('screenshots').insert(
-        req.files.map((file, index) => ({
-          screenshotBucketId: bucket.id,
-          name: data.names[index],
-          s3Id: file.key,
-        }))
-      )
-      const newBuild = await Build.query().insert({
-        baseScreenshotBucketId: null,
-        compareScreenshotBucketId: bucket.id,
-        repositoryId: repository.id,
-        jobStatus: 'pending',
-      })
+    const strategy = data.externalBuildId ? useExistingBuild : createBuild
 
-      return newBuild
-    })
+    let build = await transaction(
+      Build,
+      ScreenshotBucket,
+      async (Build, ScreenshotBucket) => {
+        const build = await strategy({
+          Build,
+          ScreenshotBucket,
+          data,
+          repository,
+        })
+
+        await build.compareScreenshotBucket.$relatedQuery('screenshots').insert(
+          req.files.map((file, index) => ({
+            screenshotBucketId: build.compareScreenshotBucket.id,
+            name: data.names[index],
+            s3Id: file.key,
+          })),
+        )
+
+        return build
+      },
+    )
 
     // So we don't reuse the previous transaction
-    build = await Build.query()
-      .where({ id: build.id })
-      .limit(1)
-      .first()
+    build = await Build.query().findById(build.id)
 
     const buildUrl = await formatUrlFromBuild(build)
-    await buildJob.push(build.id)
+
+    if (!data.batchCount || data.batchCount === build.batchCount) {
+      await buildJob.push(build.id)
+    }
+
     res.send({
       build: {
         ...build,
@@ -108,7 +153,7 @@ router.post(
         buildUrl,
       },
     })
-  })
+  }),
 )
 
 router.get(
@@ -121,7 +166,7 @@ router.get(
     }
 
     res.send(await query)
-  })
+  }),
 )
 
 router.use(
@@ -130,7 +175,7 @@ router.use(
       json: formatters.json,
       default: formatters.json,
     },
-  })
+  }),
 )
 
 export default router

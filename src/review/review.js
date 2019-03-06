@@ -1,3 +1,5 @@
+/* eslint-env browser */
+
 import 'modules/rxjs'
 import React from 'react'
 import { render } from 'react-dom'
@@ -12,7 +14,7 @@ const renderRoot = () => {
     <AppContainer>
       <Root />
     </AppContainer>,
-    document.querySelector('#root')
+    document.querySelector('#root'),
   )
 }
 
@@ -29,7 +31,7 @@ if (module.hot) {
       <AppContainer>
         <NextRoot />
       </AppContainer>,
-      document.querySelector('#root')
+      document.querySelector('#root'),
     )
   })
 }

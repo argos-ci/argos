@@ -1,3 +1,5 @@
+/* eslint-env browser */
+
 import warning from 'warning'
 
 const analytics = {
@@ -17,7 +19,10 @@ const analytics = {
     })
   },
   trackTiming(category, metric, duration) {
-    warning(duration === parseInt(duration, 10), 'The duration should be an integer')
+    warning(
+      duration === parseInt(duration, 10),
+      'The duration should be an integer',
+    )
 
     // https://developers.google.com/analytics/devguides/collection/analyticsjs/user-timings
     window.ga('send', {

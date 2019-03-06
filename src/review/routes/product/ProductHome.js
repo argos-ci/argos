@@ -74,7 +74,9 @@ function ProductHome(props) {
           <Button
             variant="raised"
             color="secondary"
-            component={props => <Link {...props} variant="button" href="/auth/github-public" />}
+            component={props => (
+              <Link {...props} variant="button" href="/auth/github-public" />
+            )}
           >
             {'Try it'}
           </Button>
@@ -83,12 +85,12 @@ function ProductHome(props) {
           title="Forget about regressions"
           size="large"
           textPosition="left"
-          description={`
+          description="
             Argos will warn you if any visual regressions are about to be introduced,
             so they those don't end-up in production.
             We are giving developers high confidence in doing changes so they can quickly iterate.
             You can review visual changes in one click as part of your code review process.
-          `}
+          "
           image={
             <Link href="https://www.argos-ci.com/callemall/material-ui/builds/3176">
               <img src={build} alt="build" className={classes.showcaseBuild} />
@@ -98,39 +100,45 @@ function ProductHome(props) {
         <ProductShowcase
           title="Save time"
           textPosition="right"
-          description={`
+          description="
             Argos compares screenshots at high speed.
             You get a fast feedback.
             It comes with a GitHub integration.
             It will notify you on pull requests when something might be broken.
-          `}
+          "
           image={<GitHubStatus />}
         />
         <ProductShowcase
           title="Integrates in your development workflow"
           textPosition="left"
-          description={`
+          description="
             Argos integrates directly into your test suite and development workflow.
             We provide a command line interface streamlining the process.
-          `}
+          "
           image={<img src={ci} alt="ci" className={classes.showcaseCi} />}
         />
         <ProductShowcase
           title="Ship pixel-perfect interfaces"
           textPosition="right"
-          description={`
+          description="
             Argos provides different tools to compare screenshots.
             Designers can easily participate in the code review process.
-          `}
-          image={<img src={perfect} alt="perfect" className={classes.showcasePerfect} />}
+          "
+          image={
+            <img
+              src={perfect}
+              alt="perfect"
+              className={classes.showcasePerfect}
+            />
+          }
         />
         <ProductShowcase
           title="Testing your open source project is 100% free"
           textPosition="left"
-          description={`
+          description="
             Seriously. Always. We like to think of it as our way of giving
             back to a community that gives us so much as well.
-          `}
+          "
         />
         <ProductTrust />
         <ProductFooter />

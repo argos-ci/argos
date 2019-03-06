@@ -18,6 +18,8 @@ export default class Build extends BaseModel {
       compareScreenshotBucketId: { type: 'string' },
       repositoryId: { type: 'string' },
       number: { type: 'integer' },
+      externalId: { type: ['string', null] },
+      batchCount: { type: ['integer', null] },
     },
   })
 
@@ -63,7 +65,7 @@ export default class Build extends BaseModel {
       json.baseScreenshotBucketId === json.compareScreenshotBucketId
     ) {
       throw new ValidationError(
-        'The base screenshot bucket should be different to the compare one.'
+        'The base screenshot bucket should be different to the compare one.',
       )
     }
   }
@@ -80,7 +82,7 @@ export default class Build extends BaseModel {
     if (json.number === NEXT_NUMBER) {
       json.number = this.$knex().raw(
         '(select coalesce(max(number),0) + 1 as number from builds where "repositoryId" = ?)',
-        this.repositoryId
+        this.repositoryId,
       )
     }
     return json
@@ -103,7 +105,7 @@ export default class Build extends BaseModel {
       buildId: build.id,
     })
     const jobStatus = reduceJobStatus(
-      screenshotDiffs.map(screenshotDiff => screenshotDiff.jobStatus)
+      screenshotDiffs.map(screenshotDiff => screenshotDiff.jobStatus),
     )
 
     if (jobStatus === 'complete') {
@@ -111,10 +113,11 @@ export default class Build extends BaseModel {
         const isFailure = screenshotDiffs.some(
           ({ score, validationStatus }) =>
             validationStatus === VALIDATION_STATUS.rejected ||
-            (validationStatus === VALIDATION_STATUS.unknown && score > 0)
+            (validationStatus === VALIDATION_STATUS.unknown && score > 0),
         )
         return isFailure ? 'failure' : 'success'
-      } else if (useScore) {
+      }
+      if (useScore) {
         const hasDiffs = screenshotDiffs.some(({ score }) => score > 0)
         return hasDiffs ? 'failure' : 'success'
       }
@@ -132,8 +135,18 @@ export default class Build extends BaseModel {
   static getUsers(buildId) {
     return User.query()
       .select('users.*')
-      .join('user_repository_rights', 'users.id', '=', 'user_repository_rights.userId')
-      .join('repositories', 'user_repository_rights.repositoryId', '=', 'repositories.id')
+      .join(
+        'user_repository_rights',
+        'users.id',
+        '=',
+        'user_repository_rights.userId',
+      )
+      .join(
+        'repositories',
+        'user_repository_rights.repositoryId',
+        '=',
+        'repositories.id',
+      )
       .join('builds', 'repositories.id', '=', 'builds.repositoryId')
       .where('builds.id', buildId)
   }

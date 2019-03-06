@@ -1,4 +1,5 @@
 /* global happo */
+/* eslint-env browser */
 
 import React from 'react'
 import { render, unmountComponentAtNode } from 'react-dom'
@@ -32,6 +33,6 @@ tests.forEach(test => {
       const TestCase = test.case.default
       render(<TestCase />, div)
     },
-    { viewports: ['desktop', 'mobile'] }
+    { viewports: ['desktop', 'mobile'] },
   )
 })

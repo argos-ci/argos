@@ -13,22 +13,24 @@ const execAsync = util.promisify(exec)
 const readdirAsync = util.promisify(fs.readdir)
 const readFileAsync = util.promisify(fs.readFile)
 const writeFileAsync = util.promisify(fs.writeFile)
-const user = 'argos'
+const user = 'postgres'
 const database = config.get('env')
 const structure = 'src/server/db/structure.sql'
 
 async function getMigrationInserts() {
-  const migrations = await readdirAsync(path.join(__dirname, '../../server/migrations'))
+  const migrations = await readdirAsync(
+    path.join(__dirname, '../../server/migrations'),
+  )
   return migrations
     .map(
       migration =>
-        `INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('${migration}', 1, NOW());\n`
+        `INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('${migration}', 1, NOW());\n`,
     )
     .join('')
 }
 
 execAsync(
-  `docker-compose exec -T postgres pg_dump -U ${user} ${database} --schema-only > ${structure}`
+  `docker-compose exec -T postgres pg_dump -U ${user} ${database} --schema-only > ${structure}`,
 )
   .then(async () => {
     let data = await readFileAsync(structure, 'utf-8')
