@@ -48,8 +48,6 @@ async function createBuild({ Build, ScreenshotBucket, data, repository }) {
     commit: data.commit,
     branch: data.branch,
     repositoryId: repository.id,
-    externalId: data.externalId || null,
-    batchCount: data.batchCount ? 1 : null,
   })
 
   const build = await Build.query().insertAndFetch({
@@ -57,6 +55,8 @@ async function createBuild({ Build, ScreenshotBucket, data, repository }) {
     compareScreenshotBucketId: bucket.id,
     repositoryId: repository.id,
     jobStatus: 'pending',
+    externalId: data.externalBuildId || null,
+    batchCount: data.batchCount ? 1 : null,
   })
 
   build.compareScreenshotBucket = bucket
@@ -69,7 +69,7 @@ async function useExistingBuild({ Build, ScreenshotBucket, data, repository }) {
     .eager('compareScreenshotBucket')
     .findOne({
       repositoryId: repository.id,
-      externalId: data.externalId,
+      externalId: data.externalBuildId,
     })
 
   if (build) {
@@ -110,7 +110,7 @@ router.post(
       )
     }
 
-    const strategy = data.externalId ? useExistingBuild : createBuild
+    const strategy = data.externalBuildId ? useExistingBuild : createBuild
 
     let build = await transaction(
       Build,

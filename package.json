@@ -8,7 +8,7 @@
     "console": "babel-node src/scripts/repl.js",
     "test:unit": "jest --runInBand",
     "test:watch": "yarn test:unit --watch",
-    "web:dev": "heroku local -f Procfile.dev",
+    "web:dev": "heroku local -f Procfile.dev -p 4001",
     "web:build": "rm -rf lib/ && cp -R src/ lib/ && babel -d lib src",
     "review:dev": "babel-node ./node_modules/.bin/webpack-dev-server --config=src/review/webpack/browserDevelopmentConfig.js --progress",
     "review:build": "rm -rf server/static/review && babel-node ./node_modules/.bin/webpack --config=src/review/webpack/browserProductionConfig.js --progress",

@@ -10,7 +10,10 @@ import getAuthorizationStatus from 'modules/authorizations/getAuthorizationStatu
 import theme from 'modules/styles/theme'
 
 let htmlWebpackPlugin
-let indexString = fs.readFileSync(path.join(__dirname, '../../review/index.ejs'), 'UTF-8')
+let indexString = fs.readFileSync(
+  path.join(__dirname, '../../review/index.ejs'),
+  'UTF-8',
+)
 
 if (process.env.NODE_ENV === 'production') {
   const assets = require('../../../server/static/review/assets.json')
@@ -40,7 +43,8 @@ function isMediaBot(userAgent) {
 
   if (
     userAgent &&
-    (userAgent.indexOf('facebookexternalhit') !== -1 || userAgent.indexOf('Twitterbot') !== -1)
+    (userAgent.indexOf('facebookexternalhit') !== -1 ||
+      userAgent.indexOf('Twitterbot') !== -1)
   ) {
     output = true
   }
@@ -49,7 +53,11 @@ function isMediaBot(userAgent) {
 }
 
 function injectJSON(data) {
-  return JSON.stringify(data, null, process.env.NODE_ENV === 'production' ? 0 : 2)
+  return JSON.stringify(
+    data,
+    null,
+    process.env.NODE_ENV === 'production' ? 0 : 2,
+  )
 }
 
 export default additionalClientData => (req, res) => {
@@ -65,6 +73,9 @@ export default additionalClientData => (req, res) => {
         s3: {
           screenshotsBucket: config.get('s3.screenshotsBucket'),
         },
+        sentry: {
+          clientDsn: config.get('sentry.clientDsn'),
+        },
         releaseVersion: config.get('releaseVersion'),
         github: {
           applicationUrl: config.get('github.applicationUrl'),
@@ -73,7 +84,14 @@ export default additionalClientData => (req, res) => {
       ...(req.user
         ? {
             authorizationStatus: getAuthorizationStatus(req.user),
-            user: pick(req.user, 'name', 'email', 'login', 'privateSync', 'scopes'),
+            user: pick(
+              req.user,
+              'name',
+              'email',
+              'login',
+              'privateSync',
+              'scopes',
+            ),
           }
         : {
             user: null,
