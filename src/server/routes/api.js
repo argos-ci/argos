@@ -68,12 +68,14 @@ async function useExistingBuild({ Build, ScreenshotBucket, data, repository }) {
   const build = await Build.query()
     .eager('compareScreenshotBucket')
     .findOne({
-      repositoryId: repository.id,
+      'builds.repositoryId': repository.id,
       externalId: data.externalBuildId,
     })
 
+  // @TODO Throw an error if batchCount is superior to expected
+
   if (build) {
-    await build.update({ batchCount: build.batchCount + 1 })
+    await build.$query().patch({ batchCount: build.batchCount + 1 })
     return build
   }
 
@@ -138,17 +140,19 @@ router.post(
     // So we don't reuse the previous transaction
     build = await Build.query().findById(build.id)
 
+    const buildUrl = await formatUrlFromBuild(build)
+
     if (!data.batchCount || data.batchCount === build.batchCount) {
-      const buildUrl = await formatUrlFromBuild(build)
       await buildJob.push(build.id)
-      res.send({
-        build: {
-          ...build,
-          repository: undefined,
-          buildUrl,
-        },
-      })
     }
+
+    res.send({
+      build: {
+        ...build,
+        repository: undefined,
+        buildUrl,
+      },
+    })
   }),
 )
 
