@@ -33,7 +33,9 @@ function Settings(props) {
     return (
       <Paper className={classes.paper}>
         <WatchTaskContainer>
-          <Typography>{"You don't have enough access right to see that content."}</Typography>
+          <Typography>
+            You don't have enough access right to see that content.
+          </Typography>
         </WatchTaskContainer>
       </Paper>
     )
@@ -50,7 +52,11 @@ function Settings(props) {
         </Typography>
         <Typography variant="subheading">
           {'To send data to Argos-ci you will need to configure a '}
-          <Link href="https://github.com/argos-ci/argos-cli" target="_blank" variant="primary">
+          <Link
+            href="https://github.com/argos-ci/argos-cli"
+            target="_blank"
+            variant="primary"
+          >
             CLI
           </Link>
           {' with a client key (usually referred to as the ARGOS_TOKEN value).'}
@@ -60,7 +66,10 @@ function Settings(props) {
           {`
 For more information on integrating Argos CI with your application take a look at our
           `}
-          <Link to={`/${profileName}/${repositoryName}/getting-started`} variant="primary">
+          <Link
+            to={`/${profileName}/${repositoryName}/getting-started`}
+            variant="primary"
+          >
             documentation.
           </Link>
         </Typography>
@@ -94,5 +103,5 @@ export default recompact.compose(
   withStyles(styles),
   connect(state => ({
     repository: state.ui.repository.fetch.output.data.repository,
-  }))
+  })),
 )(Settings)

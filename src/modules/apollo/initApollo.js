@@ -1,3 +1,4 @@
+/* eslint-env browser */
 /* eslint-disable no-underscore-dangle */
 
 import { ApolloClient, createNetworkInterface } from 'react-apollo'

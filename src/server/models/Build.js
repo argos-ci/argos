@@ -116,7 +116,8 @@ export default class Build extends BaseModel {
             (validationStatus === VALIDATION_STATUS.unknown && score > 0),
         )
         return isFailure ? 'failure' : 'success'
-      } else if (useScore) {
+      }
+      if (useScore) {
         const hasDiffs = screenshotDiffs.some(({ score }) => score > 0)
         return hasDiffs ? 'failure' : 'success'
       }

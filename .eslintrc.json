@@ -1,4 +1,8 @@
 {
   "root": true,
-  "extends": ["smooth", "smooth/project", "smooth/react"]
+  "extends": ["smooth", "smooth/project", "smooth/react"],
+  "rules": {
+    "react/no-unescaped-entities": "off",
+    "react/forbid-prop-types": "off"
+  }
 }

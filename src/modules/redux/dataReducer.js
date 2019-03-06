@@ -1,3 +1,5 @@
+/* eslint-env browser */
+
 function dataReducer(state, action) {
   if (state === undefined) {
     state = window.clientData

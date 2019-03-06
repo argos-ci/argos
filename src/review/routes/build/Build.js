@@ -48,7 +48,6 @@ function Build(props) {
 
 Build.propTypes = {
   classes: PropTypes.object.isRequired,
-  dispatch: PropTypes.func.isRequired,
   fetch: PropTypes.object.isRequired,
   params: PropTypes.shape({
     buildId: PropTypes.string.isRequired,
@@ -69,5 +68,5 @@ export default recompact.compose(
         },
       })
     },
-  })
+  }),
 )(Build)

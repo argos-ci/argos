@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import nock from 'nock'
 import path from 'path'
 
@@ -14,7 +15,10 @@ function playback(options) {
     nock.back(name, function teardown(nockDone) {
       nock.enableNetConnect()
       // eslint-disable-next-line no-console
-      console.log(`playback: isLoaded ${!!this.isLoaded}, isRecording ${!!this.isRecording}`)
+      console.log(
+        `playback: isLoaded ${!!this.isLoaded}, isRecording ${!!this
+          .isRecording}`,
+      )
       nockDoneSaved = nockDone
       done()
     })

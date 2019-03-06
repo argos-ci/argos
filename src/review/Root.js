@@ -1,4 +1,5 @@
 /* eslint-disable global-require, no-underscore-dangle */
+/* eslint-env browser */
 
 import React from 'react'
 import { createStore, applyMiddleware, compose, combineReducers } from 'redux'
@@ -33,7 +34,7 @@ const rootEpic = combineEpics(
   repositoryEpic,
   repositoryDetailsEpic,
   profileEpic,
-  dashboardEpic
+  dashboardEpic,
 )
 
 let middlewares = [
@@ -44,8 +45,11 @@ let middlewares = [
   createEpicMiddleware(rootEpic),
 ]
 
-if (process.env.NODE_ENV !== 'production' && !window.__REDUX_DEVTOOLS_EXTENSION__) {
-  const createLogger = require('redux-logger').createLogger
+if (
+  process.env.NODE_ENV !== 'production' &&
+  !window.__REDUX_DEVTOOLS_EXTENSION__
+) {
+  const { createLogger } = require('redux-logger')
 
   middlewares = [...middlewares, createLogger()]
 }
@@ -65,9 +69,13 @@ const rootReducers = combineReducers({
 })
 
 const composeEnhancers =
-  (process.env.NODE_ENV !== 'production' && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) || compose
+  (process.env.NODE_ENV !== 'production' &&
+    window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
+  compose
 
-const store = composeEnhancers(applyMiddleware(...middlewares))(createStore)(rootReducers)
+const store = composeEnhancers(applyMiddleware(...middlewares))(createStore)(
+  rootReducers,
+)
 
 function Root() {
   return (

@@ -17,11 +17,11 @@ class RepositoryDetailsLoadMore extends React.Component {
   static propTypes = {
     classes: PropTypes.object.isRequired,
     fetch: PropTypes.object.isRequired,
-    onClickLoadMore: PropTypes.func.isRequired,
   }
 
   onClickLoadMore = () => {
-    const after = this.props.fetch.output.data.repository.builds.pageInfo.endCursor
+    const after = this.props.fetch.output.data.repository.builds.pageInfo
+      .endCursor
     this.props.dispatch(detailsActions.fetch(this.props, after))
   }
 
@@ -32,7 +32,7 @@ class RepositoryDetailsLoadMore extends React.Component {
       return null
     }
 
-    const data = fetch.output.data
+    const { data } = fetch.output
 
     if (!data.repository || !data.repository.builds.pageInfo.hasNextPage) {
       return null
@@ -50,5 +50,5 @@ export default recompact.compose(
   withStyles(styles),
   connect(state => ({
     fetch: state.ui.repositoryDetails.fetch,
-  }))
+  })),
 )(RepositoryDetailsLoadMore)

@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies, import/no-unresolved */
 import path from 'path'
 import gm from 'gm'
 import display from '../src/modules/scripts/display'
@@ -22,7 +23,7 @@ const promises = SIZES.map(
           resolve()
           display.success(`Size ${size} created`)
         })
-    })
+    }),
 )
 
 Promise.all(promises).catch(err => {

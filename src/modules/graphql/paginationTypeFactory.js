@@ -30,7 +30,7 @@ function pageInfoTypeFactory(name) {
 function paginationTypeFactory(options) {
   const { type } = options
 
-  const name = type.name
+  const { name } = type
 
   return new GraphQLObjectType({
     name: `${name}Pagination`,

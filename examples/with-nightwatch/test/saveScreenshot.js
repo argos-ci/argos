@@ -1,5 +1,5 @@
 function screenshotName(browser, filename) {
-  const browserName = browser.options.desiredCapabilities.browserName
+  const { browserName } = browser.options.desiredCapabilities
   return `screenshots/${filename}-${browserName}.png`
 }
 
