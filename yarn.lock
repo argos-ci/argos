@@ -440,10 +440,10 @@ are-we-there-yet@~1.1.2:
     delegates "^1.0.0"
     readable-stream "^2.0.6"
 
-argos-cli@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/argos-cli/-/argos-cli-0.1.0.tgz#d2c83bb110639ef87ca0f7cfd3c48ab29302c438"
-  integrity sha512-dTtDNVAUp2ChortMu9uFSybk8aVhpfcTND45iEGdnkMONgY0kwjUh4IH1mDraBG9dY/nBW/Z+sJKqVdo5Juk/w==
+argos-cli@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/argos-cli/-/argos-cli-0.1.1.tgz#b95e974fb7c8e16e7f6428f85ce079b530e81a6c"
+  integrity sha512-u8A/oYwfL5Xf9ezUbYpxGoh4l2FC4GbBaMqrA3Iy18YQaQTB5y0vAt5nb6dksy7kqUbCEk1fu0QhM0ZYmOJl4w==
   dependencies:
     chalk "^2.4.2"
     commander "^2.19.0"

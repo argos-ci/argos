@@ -24,7 +24,7 @@
     "api:db:load": "babel-node src/scripts/db/load.js",
     "api:db:reset": "yarn api:db:drop && yarn api:db:create && yarn api:db:load",
     "api:db:truncate": "babel-node src/scripts/db/truncate.js",
-    "heroku-postbuild": "yarn web:build && yarn review:build && yarn knex migrate:latest",
+    "heroku-postbuild": "yarn web:build && yarn review:build",
     "prettier": "find . -name \"*.js\" | grep -v -f .eslintignore | xargs prettier --write"
   },
   "repository": {
@@ -120,7 +120,7 @@
     "webpack": "^3.4.1"
   },
   "devDependencies": {
-    "argos-cli": "^0.1.0",
+    "argos-cli": "^0.1.1",
     "babel-eslint": "^10.0.1",
     "chalk": "^2.4.2",
     "eslint": "^5.15.1",
