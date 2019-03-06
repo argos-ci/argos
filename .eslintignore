@@ -1,4 +1,4 @@
-/lib
-/sandbox
-/server/static
-node_modules
+/lib/
+/sandbox/
+/server/static/
+node_modules/

@@ -9,7 +9,6 @@ import { formatUrlFromBuild } from 'modules/urls/buildUrl'
 import Build from 'server/models/Build'
 import Repository from 'server/models/Repository'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
-import ScreenshotBatch from 'server/models/ScreenshotBatch'
 import buildJob from 'server/jobs/build'
 import errorHandler from 'server/middlewares/errorHandler'
 
@@ -43,6 +42,44 @@ export function errorChecking(routeHandler) {
   }
 }
 
+async function createBuild({ Build, ScreenshotBucket, data, repository }) {
+  const bucket = await ScreenshotBucket.query().insertAndFetch({
+    name: 'default',
+    commit: data.commit,
+    branch: data.branch,
+    repositoryId: repository.id,
+    externalId: data.externalId || null,
+    batchCount: data.batchCount ? 1 : null,
+  })
+
+  const build = await Build.query().insertAndFetch({
+    baseScreenshotBucketId: null,
+    compareScreenshotBucketId: bucket.id,
+    repositoryId: repository.id,
+    jobStatus: 'pending',
+  })
+
+  build.compareScreenshotBucket = bucket
+
+  return build
+}
+
+async function useExistingBuild({ Build, ScreenshotBucket, data, repository }) {
+  const build = await Build.query()
+    .eager('compareScreenshotBucket')
+    .findOne({
+      repositoryId: repository.id,
+      externalId: data.externalId,
+    })
+
+  if (build) {
+    await build.update({ batchCount: build.batchCount + 1 })
+    return build
+  }
+
+  return createBuild({ Build, ScreenshotBucket, data, repository })
+}
+
 router.post(
   '/builds',
   upload.array('screenshots[]', 500),
@@ -57,89 +94,62 @@ router.post(
       throw new HttpError(401, 'Missing commit')
     }
 
-    const repository = await Repository.query().findOne({ token: data.token })
+    const repository = await Repository.query()
+      .where({ token: data.token })
+      .limit(1)
+      .first()
 
     if (!repository) {
       throw new HttpError(400, `Repository not found (token: "${data.token}")`)
     }
 
     if (!repository.enabled) {
-      throw new HttpError(400, `Repository not enabled (name: "${repository.name}")`)
+      throw new HttpError(
+        400,
+        `Repository not enabled (name: "${repository.name}")`,
+      )
     }
 
-    const batchTotal = data.batchTotal ? Number(data.batchTotal) : null
+    const strategy = data.externalId ? useExistingBuild : createBuild
 
     let build = await transaction(
       Build,
       ScreenshotBucket,
-      ScreenshotBatch,
-      async (Build, ScreenshotBucket, ScreenshotBatch) => {
-        const build = data.buildId
-          ? await Build.query()
-              .eager('compareScreenshotBucket')
-              .findOne({ externalId: data.buildId })
-          : null
+      async (Build, ScreenshotBucket) => {
+        const build = await strategy({
+          Build,
+          ScreenshotBucket,
+          data,
+          repository,
+        })
 
-        const bucket = build
-          ? build.compareScreenshotBucket
-          : await ScreenshotBucket.query().insert({
-              name: 'default',
-              commit: data.commit,
-              branch: data.branch,
-              repositoryId: repository.id,
-              batchTotal,
-            })
-
-        const batchId =
-          data.batchId !== undefined
-            ? (await ScreenshotBatch.query().insert({
-                screenshotBucketId: bucket.id,
-                externalId: data.batchId,
-              })).id
-            : null
-
-        await bucket.$relatedQuery('screenshots').insert(
+        await build.compareScreenshotBucket.$relatedQuery('screenshots').insert(
           req.files.map((file, index) => ({
-            screenshotBucketId: bucket.id,
+            screenshotBucketId: build.compareScreenshotBucket.id,
             name: data.names[index],
             s3Id: file.key,
-            screenshotBatchId: batchId,
-          }))
+          })),
         )
 
-        if (build) return build
-
-        return Build.query().insert({
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: bucket.id,
-          repositoryId: repository.id,
-          jobStatus: 'pending',
-          externalId: data.buildId,
-        })
-      }
+        return build
+      },
     )
 
     // So we don't reuse the previous transaction
     build = await Build.query().findById(build.id)
 
-    const buildUrl = await formatUrlFromBuild(build)
-
-    if (batchTotal) {
-      const screenshotBatchesCount = Number(
-        (await ScreenshotBatch.query()
-          .where({ screenshotBucketId: build.compareScreenshotBucketId })
-          .countDistinct('externalId'))[0].count
-      )
-
-      if (screenshotBatchesCount >= batchTotal) {
-        await buildJob.push(build.id)
-      }
-    } else {
+    if (!data.batchCount || data.batchCount === build.batchCount) {
+      const buildUrl = await formatUrlFromBuild(build)
       await buildJob.push(build.id)
+      res.send({
+        build: {
+          ...build,
+          repository: undefined,
+          buildUrl,
+        },
+      })
     }
-
-    res.send({ build: { ...build, repository: undefined, buildUrl } })
-  })
+  }),
 )
 
 router.get(
@@ -152,7 +162,7 @@ router.get(
     }
 
     res.send(await query)
-  })
+  }),
 )
 
 router.use(
@@ -161,7 +171,7 @@ router.use(
       json: formatters.json,
       default: formatters.json,
     },
-  })
+  }),
 )
 
 export default router

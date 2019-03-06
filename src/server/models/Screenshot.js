@@ -9,7 +9,6 @@ export default class Screenshot extends BaseModel {
       name: { type: 'string' },
       s3Id: { type: 'string' },
       screenshotBucketId: { type: 'string' },
-      screenshotBatchId: { type: ['string', null] },
     },
   })
 
