@@ -3,14 +3,10 @@ services:
   postgres:
     # Last time I have checked, production is running 9.6.8
     image: postgres:9.6
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER-argos}
-      POSTGRES_DB: ${POSTGRES_DB-development}
     ports:
-      - "5432:5432" # Expose the port in development so we can connect to it from the a SQL client.
+      - '5432:5432' # Expose the port in development so we can connect to it from the a SQL client.
     volumes:
-      - .volume/var/lib/postgres:/var/lib/postgresql/data
-    restart: always
+      - pg_data:/var/lib/postgresql/data
   rabbitmq:
     # Last time I have checked, production is running 3.5.8
     image: rabbitmq:3.5
@@ -24,7 +20,10 @@ services:
     # Last time I have checked, production is running 3.2.4
     image: redis:3.2
     ports:
-      - "6379:6379"
-    restart: always
+      - '6379:6379'
     volumes:
-      - .volume/var/redis:/data
+      - redis_data:/data
+
+volumes:
+  pg_data:
+  redis_data:

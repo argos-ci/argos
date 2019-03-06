@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.8
--- Dumped by pg_dump version 9.6.8
+-- Dumped from database version 9.6.12
+-- Dumped by pg_dump version 9.6.12
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -30,7 +30,7 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 
 --
--- Name: build_notifications_type; Type: TYPE; Schema: public; Owner: argos
+-- Name: build_notifications_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
 CREATE TYPE public.build_notifications_type AS ENUM (
@@ -42,10 +42,10 @@ CREATE TYPE public.build_notifications_type AS ENUM (
 );
 
 
-ALTER TYPE public.build_notifications_type OWNER TO argos;
+ALTER TYPE public.build_notifications_type OWNER TO postgres;
 
 --
--- Name: job_status; Type: TYPE; Schema: public; Owner: argos
+-- Name: job_status; Type: TYPE; Schema: public; Owner: postgres
 --
 
 CREATE TYPE public.job_status AS ENUM (
@@ -56,10 +56,10 @@ CREATE TYPE public.job_status AS ENUM (
 );
 
 
-ALTER TYPE public.job_status OWNER TO argos;
+ALTER TYPE public.job_status OWNER TO postgres;
 
 --
--- Name: service_type; Type: TYPE; Schema: public; Owner: argos
+-- Name: service_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
 CREATE TYPE public.service_type AS ENUM (
@@ -67,14 +67,14 @@ CREATE TYPE public.service_type AS ENUM (
 );
 
 
-ALTER TYPE public.service_type OWNER TO argos;
+ALTER TYPE public.service_type OWNER TO postgres;
 
 SET default_tablespace = '';
 
 SET default_with_oids = false;
 
 --
--- Name: build_notifications; Type: TABLE; Schema: public; Owner: argos
+-- Name: build_notifications; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.build_notifications (
@@ -87,10 +87,10 @@ CREATE TABLE public.build_notifications (
 );
 
 
-ALTER TABLE public.build_notifications OWNER TO argos;
+ALTER TABLE public.build_notifications OWNER TO postgres;
 
 --
--- Name: build_notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: build_notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.build_notifications_id_seq
@@ -101,17 +101,17 @@ CREATE SEQUENCE public.build_notifications_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.build_notifications_id_seq OWNER TO argos;
+ALTER TABLE public.build_notifications_id_seq OWNER TO postgres;
 
 --
--- Name: build_notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: build_notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.build_notifications_id_seq OWNED BY public.build_notifications.id;
 
 
 --
--- Name: builds; Type: TABLE; Schema: public; Owner: argos
+-- Name: builds; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.builds (
@@ -122,14 +122,16 @@ CREATE TABLE public.builds (
     "updatedAt" timestamp with time zone NOT NULL,
     "repositoryId" bigint NOT NULL,
     number integer NOT NULL,
-    "jobStatus" public.job_status
+    "jobStatus" public.job_status,
+    "externalId" character varying(255),
+    "batchCount" integer
 );
 
 
-ALTER TABLE public.builds OWNER TO argos;
+ALTER TABLE public.builds OWNER TO postgres;
 
 --
--- Name: builds_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: builds_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.builds_id_seq
@@ -140,17 +142,17 @@ CREATE SEQUENCE public.builds_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.builds_id_seq OWNER TO argos;
+ALTER TABLE public.builds_id_seq OWNER TO postgres;
 
 --
--- Name: builds_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: builds_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.builds_id_seq OWNED BY public.builds.id;
 
 
 --
--- Name: knex_migrations; Type: TABLE; Schema: public; Owner: argos
+-- Name: knex_migrations; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.knex_migrations (
@@ -161,10 +163,10 @@ CREATE TABLE public.knex_migrations (
 );
 
 
-ALTER TABLE public.knex_migrations OWNER TO argos;
+ALTER TABLE public.knex_migrations OWNER TO postgres;
 
 --
--- Name: knex_migrations_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: knex_migrations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.knex_migrations_id_seq
@@ -175,17 +177,17 @@ CREATE SEQUENCE public.knex_migrations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.knex_migrations_id_seq OWNER TO argos;
+ALTER TABLE public.knex_migrations_id_seq OWNER TO postgres;
 
 --
--- Name: knex_migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: knex_migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.knex_migrations_id_seq OWNED BY public.knex_migrations.id;
 
 
 --
--- Name: knex_migrations_lock; Type: TABLE; Schema: public; Owner: argos
+-- Name: knex_migrations_lock; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.knex_migrations_lock (
@@ -193,10 +195,10 @@ CREATE TABLE public.knex_migrations_lock (
 );
 
 
-ALTER TABLE public.knex_migrations_lock OWNER TO argos;
+ALTER TABLE public.knex_migrations_lock OWNER TO postgres;
 
 --
--- Name: organizations; Type: TABLE; Schema: public; Owner: argos
+-- Name: organizations; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.organizations (
@@ -209,10 +211,10 @@ CREATE TABLE public.organizations (
 );
 
 
-ALTER TABLE public.organizations OWNER TO argos;
+ALTER TABLE public.organizations OWNER TO postgres;
 
 --
--- Name: organizations_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: organizations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.organizations_id_seq
@@ -223,17 +225,17 @@ CREATE SEQUENCE public.organizations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.organizations_id_seq OWNER TO argos;
+ALTER TABLE public.organizations_id_seq OWNER TO postgres;
 
 --
--- Name: organizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: organizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.organizations_id_seq OWNED BY public.organizations.id;
 
 
 --
--- Name: repositories; Type: TABLE; Schema: public; Owner: argos
+-- Name: repositories; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.repositories (
@@ -251,10 +253,10 @@ CREATE TABLE public.repositories (
 );
 
 
-ALTER TABLE public.repositories OWNER TO argos;
+ALTER TABLE public.repositories OWNER TO postgres;
 
 --
--- Name: repositories_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: repositories_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.repositories_id_seq
@@ -265,17 +267,17 @@ CREATE SEQUENCE public.repositories_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.repositories_id_seq OWNER TO argos;
+ALTER TABLE public.repositories_id_seq OWNER TO postgres;
 
 --
--- Name: repositories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: repositories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.repositories_id_seq OWNED BY public.repositories.id;
 
 
 --
--- Name: screenshot_buckets; Type: TABLE; Schema: public; Owner: argos
+-- Name: screenshot_buckets; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.screenshot_buckets (
@@ -289,10 +291,10 @@ CREATE TABLE public.screenshot_buckets (
 );
 
 
-ALTER TABLE public.screenshot_buckets OWNER TO argos;
+ALTER TABLE public.screenshot_buckets OWNER TO postgres;
 
 --
--- Name: screenshot_buckets_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: screenshot_buckets_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.screenshot_buckets_id_seq
@@ -303,17 +305,17 @@ CREATE SEQUENCE public.screenshot_buckets_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.screenshot_buckets_id_seq OWNER TO argos;
+ALTER TABLE public.screenshot_buckets_id_seq OWNER TO postgres;
 
 --
--- Name: screenshot_buckets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: screenshot_buckets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.screenshot_buckets_id_seq OWNED BY public.screenshot_buckets.id;
 
 
 --
--- Name: screenshot_diffs; Type: TABLE; Schema: public; Owner: argos
+-- Name: screenshot_diffs; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.screenshot_diffs (
@@ -330,10 +332,10 @@ CREATE TABLE public.screenshot_diffs (
 );
 
 
-ALTER TABLE public.screenshot_diffs OWNER TO argos;
+ALTER TABLE public.screenshot_diffs OWNER TO postgres;
 
 --
--- Name: screenshot_diffs_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: screenshot_diffs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.screenshot_diffs_id_seq
@@ -344,17 +346,17 @@ CREATE SEQUENCE public.screenshot_diffs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.screenshot_diffs_id_seq OWNER TO argos;
+ALTER TABLE public.screenshot_diffs_id_seq OWNER TO postgres;
 
 --
--- Name: screenshot_diffs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: screenshot_diffs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.screenshot_diffs_id_seq OWNED BY public.screenshot_diffs.id;
 
 
 --
--- Name: screenshots; Type: TABLE; Schema: public; Owner: argos
+-- Name: screenshots; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.screenshots (
@@ -367,10 +369,10 @@ CREATE TABLE public.screenshots (
 );
 
 
-ALTER TABLE public.screenshots OWNER TO argos;
+ALTER TABLE public.screenshots OWNER TO postgres;
 
 --
--- Name: screenshots_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: screenshots_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.screenshots_id_seq
@@ -381,17 +383,17 @@ CREATE SEQUENCE public.screenshots_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.screenshots_id_seq OWNER TO argos;
+ALTER TABLE public.screenshots_id_seq OWNER TO postgres;
 
 --
--- Name: screenshots_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: screenshots_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.screenshots_id_seq OWNED BY public.screenshots.id;
 
 
 --
--- Name: synchronizations; Type: TABLE; Schema: public; Owner: argos
+-- Name: synchronizations; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.synchronizations (
@@ -404,10 +406,10 @@ CREATE TABLE public.synchronizations (
 );
 
 
-ALTER TABLE public.synchronizations OWNER TO argos;
+ALTER TABLE public.synchronizations OWNER TO postgres;
 
 --
--- Name: synchronizations_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: synchronizations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.synchronizations_id_seq
@@ -418,17 +420,17 @@ CREATE SEQUENCE public.synchronizations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.synchronizations_id_seq OWNER TO argos;
+ALTER TABLE public.synchronizations_id_seq OWNER TO postgres;
 
 --
--- Name: synchronizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: synchronizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.synchronizations_id_seq OWNED BY public.synchronizations.id;
 
 
 --
--- Name: user_organization_rights; Type: TABLE; Schema: public; Owner: argos
+-- Name: user_organization_rights; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.user_organization_rights (
@@ -440,10 +442,10 @@ CREATE TABLE public.user_organization_rights (
 );
 
 
-ALTER TABLE public.user_organization_rights OWNER TO argos;
+ALTER TABLE public.user_organization_rights OWNER TO postgres;
 
 --
--- Name: user_organization_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: user_organization_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.user_organization_rights_id_seq
@@ -454,17 +456,17 @@ CREATE SEQUENCE public.user_organization_rights_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.user_organization_rights_id_seq OWNER TO argos;
+ALTER TABLE public.user_organization_rights_id_seq OWNER TO postgres;
 
 --
--- Name: user_organization_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: user_organization_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.user_organization_rights_id_seq OWNED BY public.user_organization_rights.id;
 
 
 --
--- Name: user_repository_rights; Type: TABLE; Schema: public; Owner: argos
+-- Name: user_repository_rights; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.user_repository_rights (
@@ -476,10 +478,10 @@ CREATE TABLE public.user_repository_rights (
 );
 
 
-ALTER TABLE public.user_repository_rights OWNER TO argos;
+ALTER TABLE public.user_repository_rights OWNER TO postgres;
 
 --
--- Name: user_repository_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: user_repository_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.user_repository_rights_id_seq
@@ -490,17 +492,17 @@ CREATE SEQUENCE public.user_repository_rights_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.user_repository_rights_id_seq OWNER TO argos;
+ALTER TABLE public.user_repository_rights_id_seq OWNER TO postgres;
 
 --
--- Name: user_repository_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: user_repository_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.user_repository_rights_id_seq OWNED BY public.user_repository_rights.id;
 
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: argos
+-- Name: users; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.users (
@@ -518,10 +520,10 @@ CREATE TABLE public.users (
 );
 
 
-ALTER TABLE public.users OWNER TO argos;
+ALTER TABLE public.users OWNER TO postgres;
 
 --
--- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: argos
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.users_id_seq
@@ -532,101 +534,101 @@ CREATE SEQUENCE public.users_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.users_id_seq OWNER TO argos;
+ALTER TABLE public.users_id_seq OWNER TO postgres;
 
 --
--- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: argos
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
--- Name: build_notifications id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: build_notifications id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.build_notifications ALTER COLUMN id SET DEFAULT nextval('public.build_notifications_id_seq'::regclass);
 
 
 --
--- Name: builds id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: builds id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.builds ALTER COLUMN id SET DEFAULT nextval('public.builds_id_seq'::regclass);
 
 
 --
--- Name: knex_migrations id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: knex_migrations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.knex_migrations ALTER COLUMN id SET DEFAULT nextval('public.knex_migrations_id_seq'::regclass);
 
 
 --
--- Name: organizations id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: organizations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.organizations ALTER COLUMN id SET DEFAULT nextval('public.organizations_id_seq'::regclass);
 
 
 --
--- Name: repositories id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: repositories id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.repositories ALTER COLUMN id SET DEFAULT nextval('public.repositories_id_seq'::regclass);
 
 
 --
--- Name: screenshot_buckets id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: screenshot_buckets id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshot_buckets ALTER COLUMN id SET DEFAULT nextval('public.screenshot_buckets_id_seq'::regclass);
 
 
 --
--- Name: screenshot_diffs id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: screenshot_diffs id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshot_diffs ALTER COLUMN id SET DEFAULT nextval('public.screenshot_diffs_id_seq'::regclass);
 
 
 --
--- Name: screenshots id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: screenshots id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshots ALTER COLUMN id SET DEFAULT nextval('public.screenshots_id_seq'::regclass);
 
 
 --
--- Name: synchronizations id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: synchronizations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.synchronizations ALTER COLUMN id SET DEFAULT nextval('public.synchronizations_id_seq'::regclass);
 
 
 --
--- Name: user_organization_rights id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: user_organization_rights id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.user_organization_rights ALTER COLUMN id SET DEFAULT nextval('public.user_organization_rights_id_seq'::regclass);
 
 
 --
--- Name: user_repository_rights id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: user_repository_rights id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.user_repository_rights ALTER COLUMN id SET DEFAULT nextval('public.user_repository_rights_id_seq'::regclass);
 
 
 --
--- Name: users id; Type: DEFAULT; Schema: public; Owner: argos
+-- Name: users id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
 
 
 --
--- Name: build_notifications build_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: build_notifications build_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.build_notifications
@@ -634,7 +636,7 @@ ALTER TABLE ONLY public.build_notifications
 
 
 --
--- Name: builds builds_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: builds builds_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.builds
@@ -642,7 +644,7 @@ ALTER TABLE ONLY public.builds
 
 
 --
--- Name: knex_migrations knex_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: knex_migrations knex_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.knex_migrations
@@ -650,7 +652,7 @@ ALTER TABLE ONLY public.knex_migrations
 
 
 --
--- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.organizations
@@ -658,7 +660,7 @@ ALTER TABLE ONLY public.organizations
 
 
 --
--- Name: repositories repositories_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: repositories repositories_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.repositories
@@ -666,7 +668,7 @@ ALTER TABLE ONLY public.repositories
 
 
 --
--- Name: screenshot_buckets screenshot_buckets_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: screenshot_buckets screenshot_buckets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshot_buckets
@@ -674,7 +676,7 @@ ALTER TABLE ONLY public.screenshot_buckets
 
 
 --
--- Name: screenshot_diffs screenshot_diffs_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: screenshot_diffs screenshot_diffs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshot_diffs
@@ -682,7 +684,7 @@ ALTER TABLE ONLY public.screenshot_diffs
 
 
 --
--- Name: screenshots screenshots_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: screenshots screenshots_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshots
@@ -690,7 +692,7 @@ ALTER TABLE ONLY public.screenshots
 
 
 --
--- Name: synchronizations synchronizations_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: synchronizations synchronizations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.synchronizations
@@ -698,7 +700,7 @@ ALTER TABLE ONLY public.synchronizations
 
 
 --
--- Name: user_organization_rights user_organization_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: user_organization_rights user_organization_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.user_organization_rights
@@ -706,7 +708,7 @@ ALTER TABLE ONLY public.user_organization_rights
 
 
 --
--- Name: user_organization_rights user_organization_rights_userid_organizationid_unique; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: user_organization_rights user_organization_rights_userid_organizationid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.user_organization_rights
@@ -714,7 +716,7 @@ ALTER TABLE ONLY public.user_organization_rights
 
 
 --
--- Name: user_repository_rights user_repository_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: user_repository_rights user_repository_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.user_repository_rights
@@ -722,7 +724,7 @@ ALTER TABLE ONLY public.user_repository_rights
 
 
 --
--- Name: user_repository_rights user_repository_rights_userid_repositoryid_unique; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: user_repository_rights user_repository_rights_userid_repositoryid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.user_repository_rights
@@ -730,7 +732,7 @@ ALTER TABLE ONLY public.user_repository_rights
 
 
 --
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: argos
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.users
@@ -738,147 +740,182 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: build_notifications_buildid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: build_notifications_buildid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX build_notifications_buildid_index ON public.build_notifications USING btree ("buildId");
 
 
 --
--- Name: builds_number_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: builds_basescreenshotbucketid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_basescreenshotbucketid_index ON public.builds USING btree ("baseScreenshotBucketId");
+
+
+--
+-- Name: builds_comparescreenshotbucketid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_comparescreenshotbucketid_index ON public.builds USING btree ("compareScreenshotBucketId");
+
+
+--
+-- Name: builds_externalid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_externalid_index ON public.builds USING btree ("externalId");
+
+
+--
+-- Name: builds_number_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX builds_number_index ON public.builds USING btree (number);
 
 
 --
--- Name: organizations_githubid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: organizations_githubid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX organizations_githubid_index ON public.organizations USING btree ("githubId");
 
 
 --
--- Name: repositories_enabled_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: repositories_enabled_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX repositories_enabled_index ON public.repositories USING btree (enabled);
 
 
 --
--- Name: repositories_githubid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: repositories_githubid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX repositories_githubid_index ON public.repositories USING btree ("githubId");
 
 
 --
--- Name: repositories_organizationid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: repositories_organizationid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX repositories_organizationid_index ON public.repositories USING btree ("organizationId");
 
 
 --
--- Name: repositories_token_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: repositories_token_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX repositories_token_index ON public.repositories USING btree (token);
 
 
 --
--- Name: repositories_userid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: repositories_userid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX repositories_userid_index ON public.repositories USING btree ("userId");
 
 
 --
--- Name: screenshot_buckets_commit_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: screenshot_buckets_commit_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX screenshot_buckets_commit_index ON public.screenshot_buckets USING btree (commit);
 
 
 --
--- Name: screenshot_buckets_name_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: screenshot_buckets_name_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX screenshot_buckets_name_index ON public.screenshot_buckets USING btree (name);
 
 
 --
--- Name: screenshots_name_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: screenshot_diffs_buildid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_buildid_index ON public.screenshot_diffs USING btree ("buildId");
+
+
+--
+-- Name: screenshots_name_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX screenshots_name_index ON public.screenshots USING btree (name);
 
 
 --
--- Name: screenshots_s3id_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: screenshots_s3id_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX screenshots_s3id_index ON public.screenshots USING btree ("s3Id");
 
 
 --
--- Name: synchronizations_jobstatus_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: screenshots_screenshotbucketid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshots_screenshotbucketid_index ON public.screenshots USING btree ("screenshotBucketId");
+
+
+--
+-- Name: synchronizations_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX synchronizations_jobstatus_index ON public.synchronizations USING btree ("jobStatus");
 
 
 --
--- Name: synchronizations_type_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: synchronizations_type_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX synchronizations_type_index ON public.synchronizations USING btree (type);
 
 
 --
--- Name: synchronizations_userid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: synchronizations_userid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX synchronizations_userid_index ON public.synchronizations USING btree ("userId");
 
 
 --
--- Name: user_organization_rights_organizationid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: user_organization_rights_organizationid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX user_organization_rights_organizationid_index ON public.user_organization_rights USING btree ("organizationId");
 
 
 --
--- Name: user_organization_rights_userid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: user_organization_rights_userid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX user_organization_rights_userid_index ON public.user_organization_rights USING btree ("userId");
 
 
 --
--- Name: user_repository_rights_repositoryid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: user_repository_rights_repositoryid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX user_repository_rights_repositoryid_index ON public.user_repository_rights USING btree ("repositoryId");
 
 
 --
--- Name: user_repository_rights_userid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: user_repository_rights_userid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX user_repository_rights_userid_index ON public.user_repository_rights USING btree ("userId");
 
 
 --
--- Name: users_githubid_index; Type: INDEX; Schema: public; Owner: argos
+-- Name: users_githubid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX users_githubid_index ON public.users USING btree ("githubId");
 
 
 --
--- Name: build_notifications build_notifications_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: build_notifications build_notifications_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.build_notifications
@@ -886,7 +923,7 @@ ALTER TABLE ONLY public.build_notifications
 
 
 --
--- Name: builds builds_basescreenshotbucketid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: builds builds_basescreenshotbucketid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.builds
@@ -894,7 +931,7 @@ ALTER TABLE ONLY public.builds
 
 
 --
--- Name: builds builds_comparescreenshotbucketid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: builds builds_comparescreenshotbucketid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.builds
@@ -902,7 +939,7 @@ ALTER TABLE ONLY public.builds
 
 
 --
--- Name: builds builds_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: builds builds_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.builds
@@ -910,7 +947,7 @@ ALTER TABLE ONLY public.builds
 
 
 --
--- Name: repositories repositories_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: repositories repositories_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.repositories
@@ -918,7 +955,7 @@ ALTER TABLE ONLY public.repositories
 
 
 --
--- Name: repositories repositories_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: repositories repositories_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.repositories
@@ -926,7 +963,7 @@ ALTER TABLE ONLY public.repositories
 
 
 --
--- Name: screenshot_buckets screenshot_buckets_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: screenshot_buckets screenshot_buckets_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshot_buckets
@@ -934,7 +971,7 @@ ALTER TABLE ONLY public.screenshot_buckets
 
 
 --
--- Name: screenshot_diffs screenshot_diffs_basescreenshotid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: screenshot_diffs screenshot_diffs_basescreenshotid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshot_diffs
@@ -942,7 +979,7 @@ ALTER TABLE ONLY public.screenshot_diffs
 
 
 --
--- Name: screenshot_diffs screenshot_diffs_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: screenshot_diffs screenshot_diffs_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshot_diffs
@@ -950,7 +987,7 @@ ALTER TABLE ONLY public.screenshot_diffs
 
 
 --
--- Name: screenshot_diffs screenshot_diffs_comparescreenshotid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: screenshot_diffs screenshot_diffs_comparescreenshotid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshot_diffs
@@ -958,7 +995,7 @@ ALTER TABLE ONLY public.screenshot_diffs
 
 
 --
--- Name: screenshots screenshots_screenshotbucketid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: screenshots screenshots_screenshotbucketid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshots
@@ -966,7 +1003,7 @@ ALTER TABLE ONLY public.screenshots
 
 
 --
--- Name: synchronizations synchronizations_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: synchronizations synchronizations_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.synchronizations
@@ -974,7 +1011,7 @@ ALTER TABLE ONLY public.synchronizations
 
 
 --
--- Name: user_organization_rights user_organization_rights_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: user_organization_rights user_organization_rights_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.user_organization_rights
@@ -982,7 +1019,7 @@ ALTER TABLE ONLY public.user_organization_rights
 
 
 --
--- Name: user_organization_rights user_organization_rights_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: user_organization_rights user_organization_rights_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.user_organization_rights
@@ -990,7 +1027,7 @@ ALTER TABLE ONLY public.user_organization_rights
 
 
 --
--- Name: user_repository_rights user_repository_rights_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: user_repository_rights user_repository_rights_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.user_repository_rights
@@ -998,7 +1035,7 @@ ALTER TABLE ONLY public.user_repository_rights
 
 
 --
--- Name: user_repository_rights user_repository_rights_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: argos
+-- Name: user_repository_rights user_repository_rights_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.user_repository_rights
@@ -1040,3 +1077,5 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170319114827
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170329213934_allow_null_baseScreenshotIds.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170402203440_repository_baseline_branch.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170628232300_add_scopes_to_users.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20180323213911_screenshot_batches.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20181017110213_indexes.js', 1, NOW());
