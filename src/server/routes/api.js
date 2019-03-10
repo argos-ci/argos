@@ -142,7 +142,7 @@ router.post(
 
     const buildUrl = await formatUrlFromBuild(build)
 
-    if (!data.batchCount || data.batchCount === build.batchCount) {
+    if (!data.batchCount || Number(data.batchCount) === build.batchCount) {
       await buildJob.push(build.id)
     }
 
