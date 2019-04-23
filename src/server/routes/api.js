@@ -1,4 +1,4 @@
-import { transaction } from 'objection'
+import { transaction, raw } from 'objection'
 import { HttpError, formatters } from 'express-err'
 import express from 'express'
 import multer from 'multer'
@@ -75,7 +75,7 @@ async function useExistingBuild({ Build, ScreenshotBucket, data, repository }) {
   // @TODO Throw an error if batchCount is superior to expected
 
   if (build) {
-    await build.$query().patch({ batchCount: build.batchCount + 1 })
+    await build.$query().patch({ batchCount: raw('"batchCount" + 1')})
     return build
   }
 
