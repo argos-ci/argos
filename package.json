@@ -80,7 +80,7 @@
     "isomorphic-fetch": "^2.2.1",
     "jss": "^8.1.0",
     "knex": "^0.13.0",
-    "lodash": "^4.17.4",
+    "lodash": "^4.17.13",
     "marked": "^0.3.6",
     "material-ui": "1.0.0-beta.41",
     "mime": "^1.3.6",
