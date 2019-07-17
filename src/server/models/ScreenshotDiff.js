@@ -77,9 +77,10 @@ export default class ScreenshotDiff extends BaseModel {
       json.baseScreenshotId &&
       json.baseScreenshotId === json.compareScreenshotId
     ) {
-      throw new ValidationError(
-        'The base screenshot should be different to the compare one.',
-      )
+      throw new ValidationError({
+        type: ValidationError.Type.ModelValidation,
+        message: 'The base screenshot should be different to the compare one.',
+      })
     }
   }
 }
