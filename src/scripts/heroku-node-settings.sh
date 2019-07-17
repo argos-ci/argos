@@ -2,11 +2,11 @@
 
 if [ ! "$WEB_MEMORY" = "" ]; then
   if [ $WEB_MEMORY -le 512 ]; then
-    NODE_FLAGS="--max-semi-space-size=2 --max-old-space-size=256"
+    NODE_FLAGS="--optimize-for-size --max-old-space-size=460"
   elif [ $WEB_MEMORY -le 768 ]; then
-    NODE_FLAGS="--max-semi-space-size=8 --max-old-space-size=512"
+    NODE_FLAGS="--optimize-for-size --max-old-space-size=690"
   elif [ $WEB_MEMORY -le 1024 ]; then
-    NODE_FLAGS="--max-semi-space-size=16 --max-old-space-size=1024"
+    NODE_FLAGS="--optimize-for-size --max-old-space-size=920"
   fi
 fi
 
