@@ -20,7 +20,9 @@ async function getLatestMasterBucket(build) {
 }
 
 async function getBaseScreenshotBucket({ commits, build }) {
-  const shas = commits.map(commit => commit.sha)
+  // We hope we will have a build of Argos from the latest 5 commits
+  // no need to ask for more, we will run out of memory
+  const shas = commits.map(commit => commit.sha).slice(0, 5)
   const buckets = await ScreenshotBucket.query()
     .where({
       repositoryId: build.repository.id,
