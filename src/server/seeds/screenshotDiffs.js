@@ -1,4 +1,4 @@
-exports.seed = (knex, Promise) =>
+exports.seed = knex =>
   knex('screenshot_diffs')
     .delete()
     .then(() =>
