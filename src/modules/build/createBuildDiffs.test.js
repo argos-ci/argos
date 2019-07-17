@@ -63,7 +63,9 @@ describe('createBuildDiffs', () => {
     })
 
     it('should return the build', async () => {
-      const diffs = sortBy(await createBuildDiffs(build), diff => Number(diff.baseScreenshotId))
+      const diffs = sortBy(await createBuildDiffs(build), diff =>
+        Number(diff.baseScreenshotId),
+      )
       expect(diffs.length).toBe(2)
       expect(diffs[0]).toMatchObject({
         buildId: build.id,
@@ -82,8 +84,10 @@ describe('createBuildDiffs', () => {
     })
 
     it('should not run the diff when comparing the base branch against itself', async () => {
-      await compareBucket.$query().patch({ branch: 'master' })
-      const diffs = sortBy(await createBuildDiffs(build), diff => Number(diff.baseScreenshotId))
+      await compareBucket.$query().patch({ commit: baseBucket.commit })
+      const diffs = sortBy(await createBuildDiffs(build), diff =>
+        Number(diff.baseScreenshotId),
+      )
       expect(diffs.length).toBe(2)
       expect(diffs[0]).toMatchObject({
         buildId: build.id,

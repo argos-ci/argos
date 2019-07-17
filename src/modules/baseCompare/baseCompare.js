@@ -3,7 +3,7 @@ import config from 'config'
 import crashReporter from 'modules/crashReporter/common'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
-async function fallbackToMaster(build) {
+async function getLatestMasterBucket(build) {
   const bucket = await ScreenshotBucket.query()
     .where({
       branch: build.repository.baselineBranch,
@@ -19,22 +19,68 @@ async function fallbackToMaster(build) {
   return bucket || null
 }
 
-async function getBaseScreenshotBucket({ potentialCommits, build }) {
-  const potentialCommitShas = potentialCommits.map(commit => commit.sha)
+async function getBaseScreenshotBucket({ commits, build }) {
+  const shas = commits.map(commit => commit.sha)
   const buckets = await ScreenshotBucket.query()
-    .where({ repositoryId: build.repository.id })
-    .whereIn('commit', potentialCommitShas)
+    .where({
+      repositoryId: build.repository.id,
+      branch: build.repository.baselineBranch,
+    })
+    .whereIn('commit', shas)
 
   // Reverse the potentialCommits order.
   buckets.sort(
     (bucketA, bucketB) =>
-      potentialCommitShas.indexOf(bucketB.commit) - potentialCommitShas.indexOf(bucketA.commit)
+      shas.indexOf(bucketA.commit) - shas.indexOf(bucketB.commit),
   )
 
-  return buckets[0] || fallbackToMaster(build)
+  return buckets[0] || getLatestMasterBucket(build)
 }
 
-async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) {
+async function getCommits({ github, owner, repo, sha, perPage }) {
+  const params = {
+    owner,
+    repo,
+    sha,
+    per_page: perPage,
+    page: 1,
+  }
+
+  try {
+    // http://stackoverflow.com/questions/9179828/github-api-retrieve-all-commits-for-all-branches-for-a-repo
+    // http://mikedeboer.github.io/node-github/#api-repos-getBranch
+    const response = await github.repos.getCommits(params)
+    return response.data
+  } catch (error) {
+    // Unauthorized
+    if (error.code !== 401) {
+      crashReporter().captureException(error, { extra: { params } })
+    }
+    return []
+  }
+}
+
+function getPotentialCommits({ baseCommits, compareCommits }) {
+  // We take all commits included in base commit history and in compare commit history
+  const potentialCommits = baseCommits.filter(baseCommit =>
+    compareCommits.some(compareCommit => baseCommit.sha === compareCommit.sha),
+  )
+
+  // If no commit is found, we will use all base commits
+  // TODO: this case should not happen, we should always find a base commit to our branch
+  if (!potentialCommits.length) {
+    return baseCommits
+  }
+
+  return potentialCommits
+}
+
+async function baseCompare({
+  baseCommit,
+  compareCommit,
+  build,
+  perPage = 100,
+}) {
   build = await build.$query().eager('[repository, compareScreenshotBucket]')
   const user = await build.repository
     .getUsers()
@@ -43,9 +89,10 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
 
   // We can't use Github information without a user.
   if (!user) {
-    return fallbackToMaster(build)
+    return getLatestMasterBucket(build)
   }
 
+  // Initialize GitHub API
   const owner = await build.repository.getOwner()
   const github = new GitHubAPI({ debug: config.get('env') === 'development' })
   github.authenticate({
@@ -53,85 +100,31 @@ async function baseCompare({ baseCommit, compareCommit, build, perPage = 100 }) 
     token: user.accessToken,
   })
 
-  let baseCommits = []
-  let compareCommits = []
-  const baseCommitParams = {
+  const baseCommits = await getCommits({
+    github,
     owner: owner.login,
     repo: build.repository.name,
     sha: baseCommit,
-    per_page: perPage,
-    page: 1,
-  }
+    perPage,
+  })
 
-  try {
-    // http://stackoverflow.com/questions/9179828/github-api-retrieve-all-commits-for-all-branches-for-a-repo
-    // http://mikedeboer.github.io/node-github/#api-repos-getBranch
-    baseCommits = await github.repos.getCommits(baseCommitParams)
-    baseCommits = baseCommits.data
-  } catch (error) {
-    // Unauthorized
-    if (error.code !== 401) {
-      crashReporter().captureException(error, {
-        extra: {
-          baseCommitParams,
-        },
-      })
-    }
-  }
-
-  const compareCommitPararms = {
+  const compareCommits = await getCommits({
+    github,
     owner: owner.login,
     repo: build.repository.name,
     sha: compareCommit,
-    per_page: perPage,
-    page: 1,
-  }
-
-  try {
-    compareCommits = await github.repos.getCommits(compareCommitPararms)
-    compareCommits = compareCommits.data
-  } catch (error) {
-    // Unauthorized
-    if (error.code !== 401) {
-      crashReporter().captureException(error, {
-        extra: {
-          compareCommitPararms,
-        },
-      })
-    }
-  }
-
-  let potentialCommits = []
-  const forkCommit = baseCommits.find((baseCommit, index) => {
-    const comparingWithHimself = baseCommit.sha === compareCommit
-
-    // We can't compare with ourself.
-    if (!comparingWithHimself) {
-      potentialCommits.push(baseCommit)
-    }
-
-    const found = compareCommits.some(compareCommit => baseCommit.sha === compareCommit.sha)
-
-    // Takes the previous commit too.
-    if (found && comparingWithHimself && index + 1 < baseCommits.length) {
-      potentialCommits.push(baseCommits[index + 1])
-    }
-
-    return found
+    perPage,
   })
 
-  // We can't find a fork commit, we miss history information.
-  // Let's use the oldest base bucket from master we can find.
-  if (!forkCommit) {
-    potentialCommits = baseCommits
-  }
+  const potentialCommits = getPotentialCommits({
+    baseCommits,
+    compareCommits,
+  })
 
-  const baseScreenshotBucket = await getBaseScreenshotBucket({
-    potentialCommits,
+  return getBaseScreenshotBucket({
+    commits: potentialCommits,
     build,
   })
-
-  return baseScreenshotBucket
 }
 
 export default baseCompare
