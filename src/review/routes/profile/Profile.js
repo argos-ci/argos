@@ -52,7 +52,9 @@ function Profile(props) {
               <Grid item>
                 <Typography variant="display1" component="h2" gutterBottom>
                   <WatchTask task={fetch} onlySuccess>
-                    {data => (data.owner ? <span>{data.owner.name}</span> : null)}
+                    {data =>
+                      data.owner ? <span>{data.owner.name}</span> : null
+                    }
                   </WatchTask>
                 </Typography>
               </Grid>
@@ -126,5 +128,5 @@ export default recompact.compose(
         },
       })
     },
-  })
+  }),
 )(Profile)

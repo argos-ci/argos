@@ -34,7 +34,7 @@ function accountReducer(state, action) {
                         ? { ...repository, enabled: action.payload.enabled }
                         : repository,
                     ],
-                    []
+                    [],
                   ),
                 },
               },
@@ -62,14 +62,17 @@ function accountReducer(state, action) {
                   relatedRepositories: state.fetch.output.data.user.relatedRepositories.reduce(
                     (all, repository) => [
                       ...all,
-                      repository.id === action.payload.output.data.toggleRepository.id
+                      repository.id ===
+                      action.payload.output.data.toggleRepository.id
                         ? {
                             ...repository,
-                            enabled: action.payload.output.data.toggleRepository.enabled,
+                            enabled:
+                              action.payload.output.data.toggleRepository
+                                .enabled,
                           }
                         : repository,
                     ],
-                    []
+                    [],
                   ),
                 },
               },

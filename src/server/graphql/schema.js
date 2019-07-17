@@ -17,7 +17,10 @@ import RepositoryType, {
   resolve as resolveRepository,
   toggleRepository,
 } from 'server/graphql/RepositoryType'
-import { setValidationStatus, validationStatusType } from 'server/graphql/ScreenshotDiffType'
+import {
+  setValidationStatus,
+  validationStatusType,
+} from 'server/graphql/ScreenshotDiffType'
 import UserType, { resolve as resolveUser } from 'server/graphql/UserType'
 import resolveUsurpUser from 'server/graphql/resolveUsurpUser'
 

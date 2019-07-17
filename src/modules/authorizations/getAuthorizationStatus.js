@@ -1,5 +1,12 @@
-import { expandScopes, PRIVATE_SCOPES, PUBLIC_SCOPES } from 'modules/authorizations/scopes'
-import { CONSISTENT, INCONSISTENT } from 'modules/authorizations/authorizationStatuses'
+import {
+  expandScopes,
+  PRIVATE_SCOPES,
+  PUBLIC_SCOPES,
+} from 'modules/authorizations/scopes'
+import {
+  CONSISTENT,
+  INCONSISTENT,
+} from 'modules/authorizations/authorizationStatuses'
 
 function getAuthorizationStatus({ privateSync, githubScopes }) {
   const scopes = expandScopes(githubScopes || [])

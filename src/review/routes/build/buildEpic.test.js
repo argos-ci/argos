@@ -18,7 +18,7 @@ describe('buildEpic', () => {
       graphQLClient.fetch.mockImplementation(() =>
         Promise.resolve({
           data: {},
-        })
+        }),
       )
 
       const promise = subscribeAsync(epic$, 3)

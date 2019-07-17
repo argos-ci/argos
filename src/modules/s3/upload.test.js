@@ -11,7 +11,11 @@ describe('upload', () => {
   })
 
   it('should upload a file to S3', async () => {
-    const inputPath = path.join(__dirname, '__fixtures__', 'screenshot_test.jpg')
+    const inputPath = path.join(
+      __dirname,
+      '__fixtures__',
+      'screenshot_test.jpg',
+    )
     const data = await upload({
       s3,
       inputPath,

@@ -37,7 +37,11 @@ function ProductShowcase(props) {
       })}
     >
       <LayoutBody margin>
-        <Grid container direction={textPosition === 'left' ? 'row' : 'row-reverse'} spacing={24}>
+        <Grid
+          container
+          direction={textPosition === 'left' ? 'row' : 'row-reverse'}
+          spacing={24}
+        >
           <Grid item xs={12} md={image ? 5 : 12}>
             <Typography
               variant={size === 'large' ? 'display1' : 'title'}
@@ -46,12 +50,22 @@ function ProductShowcase(props) {
             >
               {title}
             </Typography>
-            <Typography variant="subheading" component="p" className={classes.description}>
+            <Typography
+              variant="subheading"
+              component="p"
+              className={classes.description}
+            >
               {description}
             </Typography>
           </Grid>
           {image ? (
-            <Grid item xs={12} md={7} component="figure" className={classes.image}>
+            <Grid
+              item
+              xs={12}
+              md={7}
+              component="figure"
+              className={classes.image}
+            >
               {image}
             </Grid>
           ) : null}
@@ -74,4 +88,7 @@ ProductShowcase.defaultProps = {
   size: 'normal',
 }
 
-export default recompact.compose(recompact.pure, withStyles(styles))(ProductShowcase)
+export default recompact.compose(
+  recompact.pure,
+  withStyles(styles),
+)(ProductShowcase)

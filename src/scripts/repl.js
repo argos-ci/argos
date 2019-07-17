@@ -23,7 +23,8 @@ const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
 
       return {
         ...models,
-        [model.replace(/\.js$/, '')]: require(path.join(MODEL_DIRECTORY, model)).default,
+        [model.replace(/\.js$/, '')]: require(path.join(MODEL_DIRECTORY, model))
+          .default,
       }
     }, {})
   }
@@ -36,7 +37,8 @@ const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
 
       return {
         ...jobs,
-        [job.replace(/\.js$/, 'Job')]: require(path.join(JOB_DIRECTORY, job)).default,
+        [job.replace(/\.js$/, 'Job')]: require(path.join(JOB_DIRECTORY, job))
+          .default,
       }
     }, {})
   }
@@ -57,5 +59,5 @@ const JOB_DIRECTORY = path.join(__dirname, '../src/server/jobs')
 })().catch(err =>
   setTimeout(() => {
     throw err
-  })
+  }),
 )

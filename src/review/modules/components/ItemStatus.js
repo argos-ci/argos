@@ -39,7 +39,14 @@ ItemStatus.propTypes = {
   children: PropTypes.element.isRequired,
   classes: PropTypes.object.isRequired,
   className: PropTypes.string,
-  status: PropTypes.oneOf(['success', 'failure', 'progress', 'pending', 'error', 'unknown']),
+  status: PropTypes.oneOf([
+    'success',
+    'failure',
+    'progress',
+    'pending',
+    'error',
+    'unknown',
+  ]),
 }
 
 export default withStyles(styles)(ItemStatus)

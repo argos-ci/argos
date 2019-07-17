@@ -1,4 +1,10 @@
-import { GraphQLObjectType, GraphQLString, GraphQLInt, GraphQLEnumType, GraphQLList } from 'graphql'
+import {
+  GraphQLObjectType,
+  GraphQLString,
+  GraphQLInt,
+  GraphQLEnumType,
+  GraphQLList,
+} from 'graphql'
 import Build from 'server/models/Build'
 // eslint-disable-next-line max-len
 import ScreenshotBucketType, {
@@ -14,7 +20,10 @@ export async function resolve(source, args, context) {
     .findById(args.id)
     .eager('repository')
 
-  if (!build || !await Repository.isAccessible(build.repository, context.user)) {
+  if (
+    !build ||
+    !(await Repository.isAccessible(build.repository, context.user))
+  ) {
     return null
   }
 
@@ -34,8 +43,8 @@ export async function resolveList(repository, args) {
     result.results.map(build =>
       build.getStatus({
         useValidation: true,
-      })
-    )
+      }),
+    ),
   )
 
   return {
@@ -75,7 +84,11 @@ const BuildType = new GraphQLObjectType({
       resolve: source =>
         source
           .$relatedQuery('screenshotDiffs')
-          .leftJoin('screenshots', 'screenshots.id', 'screenshot_diffs.baseScreenshotId')
+          .leftJoin(
+            'screenshots',
+            'screenshots.id',
+            'screenshot_diffs.baseScreenshotId',
+          )
           .orderBy('score', 'desc')
           .orderBy('screenshots.name', 'asc'),
     },

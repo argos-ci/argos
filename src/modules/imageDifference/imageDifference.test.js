@@ -4,7 +4,10 @@ import imageDifference from './imageDifference'
 describe('imageDifference', () => {
   it('simple', async () => {
     const result = await imageDifference({
-      compareScreenshotPath: path.join(__dirname, '__fixtures__/simple/compare.png'),
+      compareScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/simple/compare.png',
+      ),
       baseScreenshotPath: path.join(__dirname, '__fixtures__/simple/base.png'),
       diffResultPath: path.join(__dirname, '__fixtures__/simple/diff_tmp.png'),
       fuzz: 900,
@@ -16,7 +19,10 @@ describe('imageDifference', () => {
 
   it('simple with enough fuzz', async () => {
     const result = await imageDifference({
-      compareScreenshotPath: path.join(__dirname, '__fixtures__/simple/compare.png'),
+      compareScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/simple/compare.png',
+      ),
       baseScreenshotPath: path.join(__dirname, '__fixtures__/simple/base.png'),
       diffResultPath: path.join(__dirname, '__fixtures__/simple/diff_tmp.png'),
       fuzz: 70 ** 2,
@@ -28,9 +34,18 @@ describe('imageDifference', () => {
 
   it('alphaBackground', async () => {
     const result = await imageDifference({
-      compareScreenshotPath: path.join(__dirname, '__fixtures__/alphaBackground/compare.png'),
-      baseScreenshotPath: path.join(__dirname, '__fixtures__/alphaBackground/base.png'),
-      diffResultPath: path.join(__dirname, '__fixtures__/alphaBackground/diff_tmp.png'),
+      compareScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/alphaBackground/compare.png',
+      ),
+      baseScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/alphaBackground/base.png',
+      ),
+      diffResultPath: path.join(
+        __dirname,
+        '__fixtures__/alphaBackground/diff_tmp.png',
+      ),
     })
 
     expect(result.score).toBe(0)
@@ -39,9 +54,18 @@ describe('imageDifference', () => {
 
   it('boxShadow', async () => {
     const result = await imageDifference({
-      compareScreenshotPath: path.join(__dirname, '__fixtures__/boxShadow/compare.png'),
-      baseScreenshotPath: path.join(__dirname, '__fixtures__/boxShadow/base.png'),
-      diffResultPath: path.join(__dirname, '__fixtures__/boxShadow/diff_tmp.png'),
+      compareScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/boxShadow/compare.png',
+      ),
+      baseScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/boxShadow/base.png',
+      ),
+      diffResultPath: path.join(
+        __dirname,
+        '__fixtures__/boxShadow/diff_tmp.png',
+      ),
     })
 
     expect(result.score).toBe(0)
@@ -50,7 +74,10 @@ describe('imageDifference', () => {
 
   it('border', async () => {
     const result = await imageDifference({
-      compareScreenshotPath: path.join(__dirname, '__fixtures__/border/compare.png'),
+      compareScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/border/compare.png',
+      ),
       baseScreenshotPath: path.join(__dirname, '__fixtures__/border/base.png'),
       diffResultPath: path.join(__dirname, '__fixtures__/border/diff_tmp.png'),
     })
@@ -60,9 +87,18 @@ describe('imageDifference', () => {
 
   it('fontAliasing', async () => {
     const result = await imageDifference({
-      compareScreenshotPath: path.join(__dirname, '__fixtures__/fontAliasing/compare.png'),
-      baseScreenshotPath: path.join(__dirname, '__fixtures__/fontAliasing/base.png'),
-      diffResultPath: path.join(__dirname, '__fixtures__/fontAliasing/diff_tmp.png'),
+      compareScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/fontAliasing/compare.png',
+      ),
+      baseScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/fontAliasing/base.png',
+      ),
+      diffResultPath: path.join(
+        __dirname,
+        '__fixtures__/fontAliasing/diff_tmp.png',
+      ),
     })
 
     expect(result.score).toBeCloseTo(0, 2)
@@ -70,9 +106,18 @@ describe('imageDifference', () => {
 
   it('imageCompression', async () => {
     const result = await imageDifference({
-      compareScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression/compare.png'),
-      baseScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression/base.png'),
-      diffResultPath: path.join(__dirname, '__fixtures__/imageCompression/diff_tmp.png'),
+      compareScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/imageCompression/compare.png',
+      ),
+      baseScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/imageCompression/base.png',
+      ),
+      diffResultPath: path.join(
+        __dirname,
+        '__fixtures__/imageCompression/diff_tmp.png',
+      ),
     })
 
     expect(result.score).toBe(0)
@@ -81,9 +126,18 @@ describe('imageDifference', () => {
 
   it('imageCompression2', async () => {
     const result = await imageDifference({
-      compareScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression2/compare.png'),
-      baseScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression2/base.png'),
-      diffResultPath: path.join(__dirname, '__fixtures__/imageCompression2/diff_tmp.png'),
+      compareScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/imageCompression2/compare.png',
+      ),
+      baseScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/imageCompression2/base.png',
+      ),
+      diffResultPath: path.join(
+        __dirname,
+        '__fixtures__/imageCompression2/diff_tmp.png',
+      ),
     })
 
     expect(result).toMatchSnapshot()
@@ -91,9 +145,18 @@ describe('imageDifference', () => {
 
   it('imageCompression3', async () => {
     const result = await imageDifference({
-      compareScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression3/compare.png'),
-      baseScreenshotPath: path.join(__dirname, '__fixtures__/imageCompression3/base.png'),
-      diffResultPath: path.join(__dirname, '__fixtures__/imageCompression3/diff_tmp.png'),
+      compareScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/imageCompression3/compare.png',
+      ),
+      baseScreenshotPath: path.join(
+        __dirname,
+        '__fixtures__/imageCompression3/base.png',
+      ),
+      diffResultPath: path.join(
+        __dirname,
+        '__fixtures__/imageCompression3/diff_tmp.png',
+      ),
     })
 
     expect(result.pixels).toBeCloseTo(35, -1)

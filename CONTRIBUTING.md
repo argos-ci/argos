@@ -42,6 +42,7 @@ Please create a new branch from an up to date master on your fork. (Note, urgent
 5. Visit github and make your pull request.
 
 If you have an existing local repository, please update it before you start, to minimise the chance of merge conflicts.
+
 ```js
 git remote add upstream git@github.com:argos-ci/argos.git
 git checkout master
@@ -87,6 +88,7 @@ yarn db:reset
 ### Use the seed
 
 You can fill the database with some development data with the following command:
+
 ```sh
 yarn db:truncate && yarn db:seed
 ```
@@ -130,6 +132,7 @@ yarn db:migrate:latest
 ### Running the test suite
 
 You can reset the test database using:
+
 ```sh
 NODE_ENV=test yarn db:reset
 ```

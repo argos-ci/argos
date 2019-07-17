@@ -7,6 +7,10 @@ const EXPANDED_SCOPES = {
 
 export const expandScopes = scopes =>
   scopes.reduce(
-    (expandedScopes, scope) => [...expandedScopes, scope, ...(EXPANDED_SCOPES[scope] || [])],
-    []
+    (expandedScopes, scope) => [
+      ...expandedScopes,
+      scope,
+      ...(EXPANDED_SCOPES[scope] || []),
+    ],
+    [],
   )

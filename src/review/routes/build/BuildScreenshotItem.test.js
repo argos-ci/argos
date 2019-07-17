@@ -23,12 +23,14 @@ describe('<BuildScreenshotItem />', () => {
       baseScreenshot: {},
       compareScreenshot: {},
     }
-    const wrapper = shallow(<BuildScreenshotItem screenshotDiff={screenshotDiff} />)
+    const wrapper = shallow(
+      <BuildScreenshotItem screenshotDiff={screenshotDiff} />,
+    )
     expect(
       wrapper
         .until('BuildScreenshotItem')
         .find(ItemStatus)
-        .props().status
+        .props().status,
     ).toBe(status)
   })
 
@@ -40,12 +42,14 @@ describe('<BuildScreenshotItem />', () => {
         baseScreenshot: {},
         compareScreenshot: {},
       }
-      const wrapper = shallow(<BuildScreenshotItem screenshotDiff={screenshotDiff} />)
+      const wrapper = shallow(
+        <BuildScreenshotItem screenshotDiff={screenshotDiff} />,
+      )
       expect(
         wrapper
           .until('BuildScreenshotItem')
           .find(Collapse)
-          .props().in
+          .props().in,
       ).toBe(true)
     })
 
@@ -56,12 +60,14 @@ describe('<BuildScreenshotItem />', () => {
         baseScreenshot: {},
         compareScreenshot: {},
       }
-      const wrapper = shallow(<BuildScreenshotItem screenshotDiff={screenshotDiff} />)
+      const wrapper = shallow(
+        <BuildScreenshotItem screenshotDiff={screenshotDiff} />,
+      )
       expect(
         wrapper
           .until('BuildScreenshotItem')
           .find(Collapse)
-          .props().in
+          .props().in,
       ).toBe(false)
     })
   })

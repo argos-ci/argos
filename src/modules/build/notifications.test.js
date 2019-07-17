@@ -3,7 +3,10 @@ import playback from 'server/test/playback'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import buildNotificationJob from 'server/jobs/buildNotification'
-import { processBuildNotification, pushBuildNotification } from './notifications'
+import {
+  processBuildNotification,
+  pushBuildNotification,
+} from './notifications'
 
 jest.mock('server/jobs/buildNotification')
 
@@ -30,7 +33,9 @@ describe('notifications', () => {
       // accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
       accessToken: 'aaaa',
     })
-    const organization = await factory.create('Organization', { login: 'argos-ci' })
+    const organization = await factory.create('Organization', {
+      login: 'argos-ci',
+    })
     repository = await factory.create('Repository', {
       name: 'test-repository',
       organizationId: organization.id,
@@ -39,7 +44,9 @@ describe('notifications', () => {
       userId: user.id,
       repositoryId: repository.id,
     })
-    const compareScreenshotBucket = await factory.create('ScreenshotBucket', { commit })
+    const compareScreenshotBucket = await factory.create('ScreenshotBucket', {
+      commit,
+    })
     build = await factory.create('Build', {
       id: 750,
       repositoryId: repository.id,
@@ -75,7 +82,7 @@ describe('notifications', () => {
       expect(result.data.description).toBe('Build in progress...')
       expect(result.data.state).toBe('pending')
       expect(result.data.target_url).toBe(
-        `http://www.test.argos-ci.com/argos-ci/test-repository/builds/${build.id}`
+        `http://www.test.argos-ci.com/argos-ci/test-repository/builds/${build.id}`,
       )
     })
 
@@ -85,7 +92,9 @@ describe('notifications', () => {
           foo: 'bar',
         }
         nock('https://api.github.com')
-          .post(`/repos/user-3/test-repository/statuses/${commit}?access_token=aaaa`)
+          .post(
+            `/repos/user-3/test-repository/statuses/${commit}?access_token=aaaa`,
+          )
           .reply(200, response)
         await repository.$query().patch({
           organizationId: null,

@@ -7,7 +7,10 @@ import Grid from 'material-ui/Grid'
 import Button from 'material-ui/Button'
 import recompact from 'modules/recompact'
 import Link from 'modules/components/Link'
-import { CONSISTENT, INCONSISTENT } from 'modules/authorizations/authorizationStatuses'
+import {
+  CONSISTENT,
+  INCONSISTENT,
+} from 'modules/authorizations/authorizationStatuses'
 
 const styles = theme => ({
   paper: {
@@ -24,7 +27,8 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
     <Paper className={classes.paper}>
       <Grid container alignItems="center" justify="center">
         <Grid item xs={12} sm>
-          Your GitHub authentification is outdated, please authenticate to fix it.
+          Your GitHub authentification is outdated, please authenticate to fix
+          it.
         </Grid>
         <Grid item>
           <Button
@@ -34,7 +38,11 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
               <Link
                 {...props}
                 variant="button"
-                href={user.privateSync ? '/auth/github-private' : '/auth/github-public'}
+                href={
+                  user.privateSync
+                    ? '/auth/github-private'
+                    : '/auth/github-public'
+                }
               />
             )}
             variant="raised"
@@ -60,5 +68,5 @@ export default recompact.compose(
   connect(state => ({
     user: state.data.user,
     authorizationStatus: state.data.authorizationStatus,
-  }))
+  })),
 )(AuthorizationNotice)

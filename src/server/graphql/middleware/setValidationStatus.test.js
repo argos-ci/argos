@@ -62,7 +62,7 @@ describe('GraphQL', () => {
       let res = await request(
         graphqlMiddleware({
           context: { user },
-        })
+        }),
       )
         .post('/')
         .send({
@@ -117,7 +117,7 @@ describe('GraphQL', () => {
       const res = await request(
         graphqlMiddleware({
           context: { user: user2 },
-        })
+        }),
       )
         .post('/')
         .send({

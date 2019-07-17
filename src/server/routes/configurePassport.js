@@ -24,7 +24,9 @@ export default passport => {
         {
           clientID: config.get('github.clientId'),
           clientSecret: config.get('github.clientSecret'),
-          callbackURL: `${config.get('server.url')}/auth/github/callback/${type}`,
+          callbackURL: `${config.get(
+            'server.url',
+          )}/auth/github/callback/${type}`,
           scope: type === 'private' ? PRIVATE_SCOPES : PUBLIC_SCOPES,
         },
         async (accessToken, refreshToken, profile, done) => {
@@ -66,8 +68,8 @@ export default passport => {
             crashReporter().captureException(err)
             done(err)
           }
-        }
-      )
+        },
+      ),
     )
   })
 

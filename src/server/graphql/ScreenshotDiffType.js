@@ -1,11 +1,18 @@
-import { GraphQLObjectType, GraphQLFloat, GraphQLString, GraphQLEnumType } from 'graphql'
+import {
+  GraphQLObjectType,
+  GraphQLFloat,
+  GraphQLString,
+  GraphQLEnumType,
+} from 'graphql'
 import graphQLDateTime from 'modules/graphql/graphQLDateTime'
 import { pushBuildNotification } from 'modules/build/notifications'
 import Build from 'server/models/Build'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import APIError from 'server/graphql/APIError'
 import { VALIDATION_STATUS } from 'server/constants'
-import ScreenshotType, { resolve as resolveScreenshot } from 'server/graphql/ScreenshotType'
+import ScreenshotType, {
+  resolve as resolveScreenshot,
+} from 'server/graphql/ScreenshotType'
 
 export const validationStatusType = new GraphQLEnumType({
   description: 'Represent the user feedback after reviewing the diffs',
@@ -92,7 +99,8 @@ const ScreenshotDiffType = new GraphQLObjectType({
     },
     jobStatus: {
       type: new GraphQLEnumType({
-        description: 'Represent the state of the remote job generating the diffs',
+        description:
+          'Represent the state of the remote job generating the diffs',
         name: 'jobDiffStatus',
         values: {
           pending: {

@@ -45,9 +45,12 @@ factory.define(
     async afterBuild(model, attrs) {
       const newModel = model
       if (!attrs.compareScreenshotBucketId) {
-        const compareScreenshotBucket = await factory.create('ScreenshotBucket', {
-          repositoryId: model.repositoryId || attrs.repositoryId,
-        })
+        const compareScreenshotBucket = await factory.create(
+          'ScreenshotBucket',
+          {
+            repositoryId: model.repositoryId || attrs.repositoryId,
+          },
+        )
         newModel.compareScreenshotBucketId = compareScreenshotBucket.id
       } else {
         newModel.compareScreenshotBucketId = attrs.compareScreenshotBucketId
@@ -55,7 +58,7 @@ factory.define(
 
       return newModel
     },
-  }
+  },
 )
 
 factory.define('BuildNotification', BuildNotification, {

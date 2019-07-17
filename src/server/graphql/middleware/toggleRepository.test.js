@@ -42,7 +42,7 @@ describe('GraphQL', () => {
       const res = await request(
         graphqlMiddleware({
           context: { user },
-        })
+        }),
       )
         .post('/')
         .send({

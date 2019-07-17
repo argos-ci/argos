@@ -8,7 +8,7 @@ const createJobWorker = async (...jobs) => {
       jobs.map(job => {
         display.info(`Start consuming ${job.queue} queue`)
         return job.process({ channel })
-      })
+      }),
     )
   } catch (error) {
     setTimeout(() => {

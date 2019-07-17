@@ -3,9 +3,11 @@ import actionTypes from 'modules/redux/actionTypes'
 import { combineEpics } from 'redux-observable'
 
 const fetchEpic = action$ =>
-  action$.ofType(actionTypes.ACCOUNT_FETCH).watchTask(actionTypes.ACCOUNT_FETCH_TASK, () =>
-    graphQLClient.fetch({
-      query: `{
+  action$
+    .ofType(actionTypes.ACCOUNT_FETCH)
+    .watchTask(actionTypes.ACCOUNT_FETCH_TASK, () =>
+      graphQLClient.fetch({
+        query: `{
           user {
             relatedRepositories {
               id
@@ -17,8 +19,8 @@ const fetchEpic = action$ =>
             }
           }
         }`,
-    })
-  )
+      }),
+    )
 
 const toggleEpic = action$ =>
   action$
@@ -36,7 +38,7 @@ const toggleEpic = action$ =>
             }
           }
         `,
-      })
+      }),
     )
 
 const accountEpic = combineEpics(fetchEpic, toggleEpic)

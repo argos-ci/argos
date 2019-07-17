@@ -33,6 +33,6 @@ export function watchTask(type, selector) {
     from(selector(input))
       .map(output => createTaskData(type, SUCCESS, input, output))
       ._catch(output => of(createTaskData(type, ERROR, input, output)))
-      .startWith(createTaskData(type, PROGRESS, input, {}))
+      .startWith(createTaskData(type, PROGRESS, input, {})),
   )
 }

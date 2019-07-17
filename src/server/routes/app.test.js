@@ -21,14 +21,17 @@ describe('app routes', () => {
         await request(app)
           .post('/builds')
           .set('Host', 'api.dev.argos-ci.com')
-          .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
+          .attach(
+            'screenshots[]',
+            path.join(__dirname, '__fixtures__/screenshot_test.jpg'),
+          )
           .field(
             'data',
             JSON.stringify({
               commit: 'test-commit',
               branch: 'test-branch',
               names: ['screenshot_test.jpg'],
-            })
+            }),
           )
           .expect(res => {
             expect(res.body.error.message).toBe('Missing token')
@@ -42,7 +45,10 @@ describe('app routes', () => {
         await request(app)
           .post('/builds')
           .set('Host', 'api.dev.argos-ci.com')
-          .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
+          .attach(
+            'screenshots[]',
+            path.join(__dirname, '__fixtures__/screenshot_test.jpg'),
+          )
           .field(
             'data',
             JSON.stringify({
@@ -50,10 +56,12 @@ describe('app routes', () => {
               branch: 'test-branch',
               token,
               names: ['screenshot_test.jpg'],
-            })
+            }),
           )
           .expect(res => {
-            expect(res.body.error.message).toBe('Repository not found (token: "xx")')
+            expect(res.body.error.message).toBe(
+              'Repository not found (token: "xx")',
+            )
           })
           .expect(400)
       })
@@ -70,7 +78,10 @@ describe('app routes', () => {
         await request(app)
           .post('/builds')
           .set('Host', 'api.dev.argos-ci.com')
-          .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
+          .attach(
+            'screenshots[]',
+            path.join(__dirname, '__fixtures__/screenshot_test.jpg'),
+          )
           .field(
             'data',
             JSON.stringify({
@@ -78,10 +89,12 @@ describe('app routes', () => {
               branch: 'test-branch',
               token,
               names: ['screenshot_test.jpg'],
-            })
+            }),
           )
           .expect(res => {
-            expect(res.body.error.message).toBe('Repository not enabled (name: "foo")')
+            expect(res.body.error.message).toBe(
+              'Repository not enabled (name: "foo")',
+            )
           })
           .expect(400)
       })
@@ -116,7 +129,10 @@ describe('app routes', () => {
         const res = await request(app)
           .post('/builds')
           .set('Host', 'api.dev.argos-ci.com')
-          .attach('screenshots[]', path.join(__dirname, '__fixtures__/screenshot_test.jpg'))
+          .attach(
+            'screenshots[]',
+            path.join(__dirname, '__fixtures__/screenshot_test.jpg'),
+          )
           .field(
             'data',
             JSON.stringify({
@@ -124,22 +140,24 @@ describe('app routes', () => {
               branch: 'related-scrollable-tabs',
               token,
               names: [name],
-            })
+            }),
           )
           .expect(200)
 
-        repository = await repository.$query().eager('[builds.compareScreenshotBucket.screenshots]')
+        repository = await repository
+          .$query()
+          .eager('[builds.compareScreenshotBucket.screenshots]')
         expect(res.body.build.id).not.toBe(undefined)
         expect(res.body.build.repository).toBe(undefined) // Not leaking private data
         expect(res.body.build).toMatchObject({
           jobStatus: 'pending',
           number: 1,
           repositoryId: repository.id,
-          buildUrl: `http://www.test.argos-ci.com/callemall/material-ui/builds/${
-            res.body.build.id
-          }`,
+          buildUrl: `http://www.test.argos-ci.com/callemall/material-ui/builds/${res.body.build.id}`,
         })
-        expect(repository.builds[0].compareScreenshotBucket.screenshots[0].name).toBe(name)
+        expect(
+          repository.builds[0].compareScreenshotBucket.screenshots[0].name,
+        ).toBe(name)
       })
     })
   })

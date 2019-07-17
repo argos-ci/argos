@@ -13,14 +13,15 @@ $ npm install --save argos-cli
 ### Configuring the CLI
 
 The CLI needs the following environment variables to improve the experience:
+
 - `ARGOS_COMMIT`: the commit the screenshots have been taken on
 - `ARGOS_BRANCH`: the branch the screenshots have been taken on
 
 He also needs a token to authorize push access to your repository.
+
 ```sh
 $ export ARGOS_TOKEN=__ARGOS_TOKEN__
 ```
-
 
 #### Example on Circle-CI
 

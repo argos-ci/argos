@@ -5,12 +5,13 @@ We automate visual regression testing.
 We are giving developers high confidence in doing changes.
 
 This project was developed from our realization as front-end developers:
+
 - At [@doctolib](https://github.com/doctolib), we were sharing components between 4 differents applications to increase code reuse but we had no way to quickly and safely iterate on them.
-We were constantly releasing visual regressions.
-How can a back-end developer or a new joiner safely iterate on the front-end while
-the ones who wrote the code can't?
+  We were constantly releasing visual regressions.
+  How can a back-end developer or a new joiner safely iterate on the front-end while
+  the ones who wrote the code can't?
 - At [@Material-UI](https://github.com/callemall/material-ui), we realized that our problem wasn't scoped to [@doctolib](https://github.com/doctolib).
-How can we ensure that 500+ contributors can safely submit pull requests without introducing breaking changes while maintainer who are supposed to know the code best can't?
+  How can we ensure that 500+ contributors can safely submit pull requests without introducing breaking changes while maintainer who are supposed to know the code best can't?
 
 It's 100% open source.
 All features are built in the open and can be followed and contributed to on [GitHub](https://github.com/argos-ci/argos).

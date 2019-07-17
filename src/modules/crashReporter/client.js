@@ -7,7 +7,10 @@ import { initializeCrashReporter } from 'modules/crashReporter/common'
 
 export function initializeCrashReporterClient() {
   // Raven should be initialize with the server.js module on the server.
-  warning(process.browser, 'You are not supposed to call initializeCrashReporter on the server.')
+  warning(
+    process.browser,
+    'You are not supposed to call initializeCrashReporter on the server.',
+  )
 
   // Initialize only once on the browser
   if (global.__CRASH_REPORTER_INITIALIZED__) {

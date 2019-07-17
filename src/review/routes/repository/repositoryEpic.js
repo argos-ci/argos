@@ -15,7 +15,7 @@ const repositoryEpic = action$ =>
             authorization
           }
         }`,
-      })
+      }),
     )
 
 export default repositoryEpic

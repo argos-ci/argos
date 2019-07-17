@@ -73,9 +73,7 @@ class ReviewAppBar extends Component {
                 </Grid>
                 <Grid item>
                   <Avatar
-                    src={`https://github.com/${
-                      user.login
-                    }.png?size=${AVATAR_SIZE}`}
+                    src={`https://github.com/${user.login}.png?size=${AVATAR_SIZE}`}
                   />
                 </Grid>
               </Grid>

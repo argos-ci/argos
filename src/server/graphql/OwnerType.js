@@ -15,11 +15,18 @@ export async function resolveList(obj, args, context) {
     .distinct('users.id')
     .select('users.*')
     .innerJoin('repositories', 'repositories.userId', 'users.id')
-    .innerJoin('user_repository_rights', 'user_repository_rights.repositoryId', 'repositories.id')
+    .innerJoin(
+      'user_repository_rights',
+      'user_repository_rights.repositoryId',
+      'repositories.id',
+    )
     .where('user_repository_rights.userId', context.user.id)
 
   return [
-    ...organizations.map(organization => ({ ...organization, type: 'organization' })),
+    ...organizations.map(organization => ({
+      ...organization,
+      type: 'organization',
+    })),
     ...users.map(user => ({ ...user, type: 'user' })),
   ].sort(sortByLogin)
 }
@@ -47,7 +54,7 @@ const OwnerType = new GraphQLObjectType({
           .leftJoin(
             'user_repository_rights',
             'user_repository_rights.repositoryId',
-            'repositories.id'
+            'repositories.id',
           )
           .where({ private: false, enabled: true })
           .orWhere({

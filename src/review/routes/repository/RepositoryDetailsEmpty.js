@@ -45,7 +45,11 @@ function RepositoryDetailsEmpty(props) {
           <br />
           <Button
             component={props => (
-              <Link {...props} variant="button" to={`${location.pathname}/getting-started`} />
+              <Link
+                {...props}
+                variant="button"
+                to={`${location.pathname}/getting-started`}
+              />
             )}
             variant="raised"
             color="secondary"
@@ -79,4 +83,7 @@ RepositoryDetailsEmpty.propTypes = {
   }).isRequired,
 }
 
-export default recompact.compose(withStyles(styles), withRouter)(RepositoryDetailsEmpty)
+export default recompact.compose(
+  withStyles(styles),
+  withRouter,
+)(RepositoryDetailsEmpty)

@@ -18,7 +18,9 @@ function RepositoryNotFound({ user }) {
           color="secondary"
           size="small"
           variant="raised"
-          component={props => <Link {...props} variant="button" href="/auth/github-private" />}
+          component={props => (
+            <Link {...props} variant="button" href="/auth/github-private" />
+          )}
         >
           Grant access to private repositories
         </Button>

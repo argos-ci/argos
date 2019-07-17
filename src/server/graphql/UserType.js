@@ -20,12 +20,11 @@ const OwnerType = new GraphQLObjectType({
 
         // Sorting using database doesn't work, probably an objection issue.
         // Eager is breaking it.
-        return repositories.sort(
-          (a, b) =>
-            `${(a.organization || a.user).login}${a.name}` >
-            `${(b.organization || b.user).login}${b.name}`
-              ? 1
-              : -1
+        return repositories.sort((a, b) =>
+          `${(a.organization || a.user).login}${a.name}` >
+          `${(b.organization || b.user).login}${b.name}`
+            ? 1
+            : -1,
         )
       },
     },

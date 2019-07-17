@@ -75,7 +75,7 @@ async function useExistingBuild({ Build, ScreenshotBucket, data, repository }) {
   // @TODO Throw an error if batchCount is superior to expected
 
   if (build) {
-    await build.$query().patch({ batchCount: raw('"batchCount" + 1')})
+    await build.$query().patch({ batchCount: raw('"batchCount" + 1') })
     return build
   }
 
