@@ -7,7 +7,7 @@ import baseCompare from './baseCompare'
 function nockGithub(branch) {
   return nock('https://api.github.com:443').get(
     `/repos/callemall/material-ui/commits?sha=${branch}` +
-      '&page=1&per_page=100&access_token=ACCESS_TOKEN'
+      '&page=1&per_page=100&access_token=ACCESS_TOKEN',
   )
 }
 
@@ -17,7 +17,9 @@ describe('baseCompare', () => {
   let repository
 
   beforeEach(async () => {
-    const organization = await factory.create('Organization', { login: 'callemall' })
+    const organization = await factory.create('Organization', {
+      login: 'callemall',
+    })
     const user = await factory.create('User', { accessToken: 'ACCESS_TOKEN' })
     repository = await factory.create('Repository', {
       name: 'material-ui',
@@ -159,21 +161,24 @@ describe('baseCompare', () => {
     // * 7abbb0e131ec5b3f6ab8e54a25b047705a013864
     it('should handle master commits correctly', async () => {
       await factory.create('ScreenshotBucket', {
+        branch: 'master',
         commit: 'c5a2fb0c0fde1a6e541ccaa3e63d6789248ae771',
         repositoryId: repository.id,
       })
-      const screenshotBucket2 = await factory.create('ScreenshotBucket', {
+      const bucket2 = await factory.create('ScreenshotBucket', {
+        branch: 'x',
         commit: '8388279f9ddd5123e3440ada890db468c04b2e65',
         repositoryId: repository.id,
       })
-      const screenshotBucket3 = await factory.create('ScreenshotBucket', {
+      const bucket3 = await factory.create('ScreenshotBucket', {
+        branch: 'master',
         commit: '7abbb0e131ec5b3f6ab8e54a25b047705a013864',
         repositoryId: repository.id,
       })
       const build = await factory.create('Build', {
         repositoryId: repository.id,
         baseScreenshotBucket: null,
-        compareScreenshotBucket: screenshotBucket2,
+        compareScreenshotBucket: bucket2,
       })
 
       const baseScreenshotBucket = await baseCompare({
@@ -183,7 +188,7 @@ describe('baseCompare', () => {
         perPage: 5,
       })
 
-      expect(baseScreenshotBucket.id).toBe(screenshotBucket3.id)
+      expect(baseScreenshotBucket.id).toBe(bucket3.id)
     })
   })
 
@@ -205,18 +210,20 @@ describe('baseCompare', () => {
       // { sha: 'd2e624599bff1f9103bca64848fe17768da9cfa6' },
     ])
 
-    const screenshotBucket1 = await factory.create('ScreenshotBucket', {
+    const bucket1 = await factory.create('ScreenshotBucket', {
       commit: 'd2e624599bff1f9103bca64848fe17768da9cfa6',
       repositoryId: repository.id,
+      branch: 'master',
     })
-    const screenshotBucket2 = await factory.create('ScreenshotBucket', {
+    const bucket2 = await factory.create('ScreenshotBucket', {
       commit: 'e97e6d9054ac1b4f6f9ef55ff3d7ed8cc18394bd',
       repositoryId: repository.id,
+      branch: 'x',
     })
     const build = await factory.create('Build', {
       repositoryId: repository.id,
       baseScreenshotBucket: null,
-      compareScreenshotBucket: screenshotBucket2,
+      compareScreenshotBucket: bucket2,
     })
 
     const baseScreenshotBucket = await baseCompare({
@@ -225,6 +232,6 @@ describe('baseCompare', () => {
       build,
     })
 
-    expect(baseScreenshotBucket.id).toBe(screenshotBucket1.id)
+    expect(baseScreenshotBucket.id).toBe(bucket1.id)
   })
 })
