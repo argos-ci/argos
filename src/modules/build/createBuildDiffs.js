@@ -54,17 +54,17 @@ export default async function createBuildDiffs(build) {
               )
             : null
 
-        return ScreenshotDiff.query().insert({
+        return {
           buildId: build.id,
           baseScreenshotId: baseScreenshot ? baseScreenshot.id : null,
           compareScreenshotId: compareScreenshot.id,
           jobStatus: getJobStatus({ compareWithBaseline, baseScreenshot }),
           validationStatus: VALIDATION_STATUS.unknown,
-        })
+        }
       },
       [],
     )
 
-    return Promise.all(inserts)
+    return ScreenshotDiff.query().insert(inserts)
   })
 }
