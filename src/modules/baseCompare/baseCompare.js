@@ -28,7 +28,7 @@ async function getBaseScreenshotBucket({ commits, build }) {
     })
     .whereIn('commit', shas)
 
-  // Reverse the potentialCommits order.
+  // Sort buckets from the most recent commit to the oldest one
   buckets.sort(
     (bucketA, bucketB) =>
       shas.indexOf(bucketA.commit) - shas.indexOf(bucketB.commit),
