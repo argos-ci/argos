@@ -64,9 +64,11 @@ export default class Build extends BaseModel {
       json.baseScreenshotBucketId &&
       json.baseScreenshotBucketId === json.compareScreenshotBucketId
     ) {
-      throw new ValidationError(
-        'The base screenshot bucket should be different to the compare one.',
-      )
+      throw new ValidationError({
+        type: ValidationError.Type.ModelValidation,
+        message:
+          'The base screenshot bucket should be different to the compare one.',
+      })
     }
   }
 
