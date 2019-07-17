@@ -1,4 +1,4 @@
-exports.seed = (knex, Promise) =>
+exports.seed = knex =>
   knex
     .raw('TRUNCATE users CASCADE')
     .then(() => knex('users').delete())
