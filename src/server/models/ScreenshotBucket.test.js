@@ -17,17 +17,9 @@ describe('ScreenshotBucket', () => {
           commit: 'esfsefsfsef',
         })
       } catch (error) {
-        expect(JSON.parse(error.message)).toEqual({
-          commit: [
-            {
-              message: 'should match pattern "^[a-zA-Z0-9]{40}$"',
-              keyword: 'pattern',
-              params: {
-                pattern: '^[a-zA-Z0-9]{40}$',
-              },
-            },
-          ],
-        })
+        expect(error.message).toBe(
+          'commit: should match pattern "^[a-zA-Z0-9]{40}$"',
+        )
       }
     })
 
