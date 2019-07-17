@@ -35,16 +35,16 @@ export default async function createBuildDiffs(build) {
       '[repository, baseScreenshotBucket.screenshots, compareScreenshotBucket.screenshots]',
     )
 
-  const baseScreenshotBucket = await getOrCreateBaseScreenshotBucket(build)
-
-  const compareWithBaseline =
-    baseScreenshotBucket &&
-    baseScreenshotBucket.commit === build.compareScreenshotBucket.commit
-  const sameBucket =
-    baseScreenshotBucket &&
-    baseScreenshotBucket.id === build.compareScreenshotBucket.id
-
   return transaction(ScreenshotDiff, async ScreenshotDiff => {
+    const baseScreenshotBucket = await getOrCreateBaseScreenshotBucket(build)
+
+    const compareWithBaseline =
+      baseScreenshotBucket &&
+      baseScreenshotBucket.commit === build.compareScreenshotBucket.commit
+    const sameBucket =
+      baseScreenshotBucket &&
+      baseScreenshotBucket.id === build.compareScreenshotBucket.id
+
     const inserts = build.compareScreenshotBucket.screenshots.map(
       compareScreenshot => {
         const baseScreenshot =
