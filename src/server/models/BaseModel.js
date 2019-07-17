@@ -14,7 +14,7 @@ export function mergeSchemas(...schemas) {
     {
       required: [],
       properties: {},
-    }
+    },
   )
 }
 

@@ -99,5 +99,5 @@ export default recompact.compose(
         type: actionTypes.DASHBOARD_FETCH,
       })
     },
-  })
+  }),
 )(Dashboard)

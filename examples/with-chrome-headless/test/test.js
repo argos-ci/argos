@@ -27,7 +27,10 @@ CDP(async client => {
     mobile: false,
     fitWindow: false,
   })
-  await Emulation.setVisibleSize({ width: viewportWidth, height: viewportHeight })
+  await Emulation.setVisibleSize({
+    width: viewportWidth,
+    height: viewportHeight,
+  })
 
   // Navigate to target page
   await Page.navigate({ url })
@@ -44,7 +47,10 @@ CDP(async client => {
       })
       const boxModel = await DOM.getBoxModel({ nodeId: bodyNode.nodeId })
 
-      await Emulation.setVisibleSize({ width: viewportWidth, height: boxModel.model.height })
+      await Emulation.setVisibleSize({
+        width: viewportWidth,
+        height: boxModel.model.height,
+      })
 
       // This forceViewport call ensures that content outside the viewport is
       // rendered, otherwise it shows up as grey. Possibly a bug?

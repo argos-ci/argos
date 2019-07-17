@@ -21,20 +21,26 @@ export default ({ context } = {}) =>
             },
           })
         } else {
-          crashReporter().captureMessage(`GraphQLWrongQuery: ${error.message}`, {
-            ...crashReporter().parsers.parseRequest(req),
-            tags: { graphql: 'wrong_query' },
-            extra: {
-              source: error.source && error.source.body,
-              positions: error.positions,
+          crashReporter().captureMessage(
+            `GraphQLWrongQuery: ${error.message}`,
+            {
+              ...crashReporter().parsers.parseRequest(req),
+              tags: { graphql: 'wrong_query' },
+              extra: {
+                source: error.source && error.source.body,
+                positions: error.positions,
+              },
             },
-          })
+          )
         }
       }
 
       return {
         message: error.message,
-        stack: process.env.NODE_ENV === 'production' ? null : error.stack.split('\n'),
+        stack:
+          process.env.NODE_ENV === 'production'
+            ? null
+            : error.stack.split('\n'),
       }
     },
     context,

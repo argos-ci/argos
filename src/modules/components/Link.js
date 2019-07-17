@@ -26,7 +26,14 @@ const styles = theme => ({
 })
 
 function Link(props) {
-  const { component: ComponentProp, classes, className, variant, to, ...other } = props
+  const {
+    component: ComponentProp,
+    classes,
+    className,
+    variant,
+    to,
+    ...other
+  } = props
 
   let Component
 
@@ -41,7 +48,11 @@ function Link(props) {
   return (
     <Component
       to={to}
-      className={classNames(classes.root, classes[`variant${capitalize(variant)}`], className)}
+      className={classNames(
+        classes.root,
+        classes[`variant${capitalize(variant)}`],
+        className,
+      )}
       {...other}
     />
   )

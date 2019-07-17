@@ -38,5 +38,5 @@ export default recompact.compose(
   withStyles(styles),
   connect(state => ({
     fetch: state.ui.build.fetch,
-  }))
+  })),
 )(BuildSummaryView)

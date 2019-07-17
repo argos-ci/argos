@@ -34,7 +34,12 @@ function BuildActions(props) {
   }
 
   return (
-    <Button color="secondary" raised onClick={onValidationClick} className={classes.status}>
+    <Button
+      color="secondary"
+      raised
+      onClick={onValidationClick}
+      className={classes.status}
+    >
       {actionMessage}
     </Button>
   )
@@ -68,5 +73,5 @@ export default recompact.compose(
         },
       })
     },
-  })
+  }),
 )(BuildActions)

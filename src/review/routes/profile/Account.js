@@ -54,7 +54,10 @@ function Account(props) {
             <Grid item xs={12}>
               <Typography gutterBottom>
                 {'Are you missing a GitHub organization? '}
-                <Link variant="primary" href={configBrowser.get('github.applicationUrl')}>
+                <Link
+                  variant="primary"
+                  href={configBrowser.get('github.applicationUrl')}
+                >
                   Check permissions.
                 </Link>
               </Typography>
@@ -119,5 +122,5 @@ export default recompact.compose(
     componentDidMount() {
       this.props.dispatch({ type: actionTypes.ACCOUNT_FETCH, payload: {} })
     },
-  })
+  }),
 )(Account)

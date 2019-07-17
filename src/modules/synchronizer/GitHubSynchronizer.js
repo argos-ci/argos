@@ -18,10 +18,16 @@ class GitHubSynchronizer {
   }
 
   async synchronizeRepositories({ page = 1 } = {}) {
-    const githubRepositories = await this.github.repos.getAll({ page, per_page: 100 })
+    const githubRepositories = await this.github.repos.getAll({
+      page,
+      per_page: 100,
+    })
 
     const [
-      { owners: organizations, ownerIdByRepositoryId: organizationIdByRepositoryId },
+      {
+        owners: organizations,
+        ownerIdByRepositoryId: organizationIdByRepositoryId,
+      },
       { ownerIdByRepositoryId: userIdByRepositoryId },
     ] = await Promise.all([
       this.synchronizeOwners(githubRepositories, OWNER_ORGANIZATION),
@@ -38,7 +44,9 @@ class GitHubSynchronizer {
           private: githubRepository.private,
         }
 
-        let [repository] = await Repository.query().where({ githubId: githubRepository.id })
+        let [repository] = await Repository.query().where({
+          githubId: githubRepository.id,
+        })
 
         if (repository) {
           await repository.$query().patchAndFetch(data)
@@ -51,11 +59,13 @@ class GitHubSynchronizer {
         }
 
         return repository
-      })
+      }),
     )
 
     if (this.github.hasNextPage(githubRepositories)) {
-      const nextPageData = await this.synchronizeRepositories({ page: page + 1 })
+      const nextPageData = await this.synchronizeRepositories({
+        page: page + 1,
+      })
 
       nextPageData.repositories.forEach(repository => {
         if (!repositories.find(({ id }) => id === repository.id)) {
@@ -74,32 +84,39 @@ class GitHubSynchronizer {
   }
 
   async synchronizeOwners(githubRepositories, type) {
-    const githubOwners = githubRepositories.data.reduce((githubOwners, githubRepository) => {
-      if (githubRepository.owner.type !== type) {
+    const githubOwners = githubRepositories.data.reduce(
+      (githubOwners, githubRepository) => {
+        if (githubRepository.owner.type !== type) {
+          return githubOwners
+        }
+
+        let githubOwner = githubOwners.find(
+          ({ id }) => id === githubRepository.owner.id,
+        )
+
+        if (!githubOwner) {
+          githubOwner = githubRepository.owner
+          githubOwners.push(githubRepository.owner)
+        }
+
         return githubOwners
-      }
-
-      let githubOwner = githubOwners.find(({ id }) => id === githubRepository.owner.id)
-
-      if (!githubOwner) {
-        githubOwner = githubRepository.owner
-        githubOwners.push(githubRepository.owner)
-      }
-
-      return githubOwners
-    }, [])
+      },
+      [],
+    )
 
     let owners
 
     switch (type) {
       case OWNER_ORGANIZATION:
         owners = await Promise.all(
-          githubOwners.map(githubOwner => this.synchronizeOrganization(githubOwner))
+          githubOwners.map(githubOwner =>
+            this.synchronizeOrganization(githubOwner),
+          ),
         )
         break
       case OWNER_USER:
         owners = await Promise.all(
-          githubOwners.map(githubOwner => this.synchronizeUser(githubOwner))
+          githubOwners.map(githubOwner => this.synchronizeUser(githubOwner)),
         )
         break
       default:
@@ -112,22 +129,26 @@ class GitHubSynchronizer {
         (ownerIdByRepositoryId, githubRepository) => {
           if (githubRepository.owner.type === type) {
             ownerIdByRepositoryId[githubRepository.id] = owners.find(
-              owner => owner.githubId === githubRepository.owner.id
+              owner => owner.githubId === githubRepository.owner.id,
             ).id
           }
 
           return ownerIdByRepositoryId
         },
-        {}
+        {},
       ),
     }
   }
 
   // eslint-disable-next-line class-methods-use-this
   async synchronizeOrganization(githubOrganization) {
-    const organizationData = await this.github.orgs.get({ org: githubOrganization.login })
+    const organizationData = await this.github.orgs.get({
+      org: githubOrganization.login,
+    })
     githubOrganization = organizationData.data
-    let [organization] = await Organization.query().where({ githubId: githubOrganization.id })
+    let [organization] = await Organization.query().where({
+      githubId: githubOrganization.id,
+    })
     const data = {
       githubId: githubOrganization.id,
       name: githubOrganization.name,
@@ -168,7 +189,7 @@ class GitHubSynchronizer {
     await Promise.all(
       repositories.map(async repository => {
         const hasRights = userRepositoryRights.some(
-          ({ repositoryId }) => repositoryId === repository.id
+          ({ repositoryId }) => repositoryId === repository.id,
         )
 
         if (!hasRights) {
@@ -177,19 +198,19 @@ class GitHubSynchronizer {
             repositoryId: repository.id,
           })
         }
-      })
+      }),
     )
 
     await Promise.all(
       userRepositoryRights.map(async userRepositoryRight => {
         const repositoryStillExists = repositories.find(
-          ({ id }) => id === userRepositoryRight.repositoryId
+          ({ id }) => id === userRepositoryRight.repositoryId,
         )
 
         if (!repositoryStillExists) {
           await userRepositoryRight.$query().delete()
         }
-      })
+      }),
     )
   }
 
@@ -201,7 +222,7 @@ class GitHubSynchronizer {
     await Promise.all(
       organizations.map(async organization => {
         const hasRights = userOrganizationRights.some(
-          ({ organizationId }) => organizationId === organization.id
+          ({ organizationId }) => organizationId === organization.id,
         )
 
         if (!hasRights) {
@@ -210,19 +231,19 @@ class GitHubSynchronizer {
             organizationId: organization.id,
           })
         }
-      })
+      }),
     )
 
     await Promise.all(
       userOrganizationRights.map(async userOrganizationRight => {
         const organizationStillExists = organizations.find(
-          ({ id }) => id === userOrganizationRight.organizationId
+          ({ id }) => id === userOrganizationRight.organizationId,
         )
 
         if (!organizationStillExists) {
           await userOrganizationRight.$query().delete()
         }
-      })
+      }),
     )
   }
 

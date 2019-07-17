@@ -1,6 +1,9 @@
 import { PRIVATE_SCOPES, PUBLIC_SCOPES } from 'modules/authorizations/scopes'
 import githubClient from 'modules/authorizations/githubClient'
-import { notFoundToken, validToken } from 'modules/authorizations/githubClientFixtures'
+import {
+  notFoundToken,
+  validToken,
+} from 'modules/authorizations/githubClientFixtures'
 import getUserAuthorizationState from './getUserAuthorizationState'
 
 jest.mock('modules/authorizations/githubClient')
@@ -30,7 +33,7 @@ describe('getUserAuthorizationState', () => {
       githubClient.authorization.check.mockImplementation(
         validToken({
           scopes: PRIVATE_SCOPES,
-        })
+        }),
       )
     })
 
@@ -49,7 +52,7 @@ describe('getUserAuthorizationState', () => {
       githubClient.authorization.check.mockImplementationOnce(
         validToken({
           scopes: PUBLIC_SCOPES,
-        })
+        }),
       )
     })
 
@@ -60,7 +63,10 @@ describe('getUserAuthorizationState', () => {
           privateSync: true,
           previousAccessToken: null,
         })
-        expect(result).toEqual({ accessToken: 'a', githubScopes: PUBLIC_SCOPES })
+        expect(result).toEqual({
+          accessToken: 'a',
+          githubScopes: PUBLIC_SCOPES,
+        })
       })
     })
 
@@ -69,7 +75,7 @@ describe('getUserAuthorizationState', () => {
         githubClient.authorization.check.mockImplementationOnce(
           validToken({
             scopes: PRIVATE_SCOPES,
-          })
+          }),
         )
       })
 
@@ -88,7 +94,7 @@ describe('getUserAuthorizationState', () => {
         githubClient.authorization.check.mockImplementationOnce(
           validToken({
             scopes: PUBLIC_SCOPES,
-          })
+          }),
         )
       })
 
@@ -98,7 +104,10 @@ describe('getUserAuthorizationState', () => {
           privateSync: true,
           previousAccessToken: 'b',
         })
-        expect(result).toEqual({ accessToken: 'a', githubScopes: PUBLIC_SCOPES })
+        expect(result).toEqual({
+          accessToken: 'a',
+          githubScopes: PUBLIC_SCOPES,
+        })
       })
     })
 
@@ -113,7 +122,10 @@ describe('getUserAuthorizationState', () => {
           privateSync: true,
           previousAccessToken: 'b',
         })
-        expect(result).toEqual({ accessToken: 'a', githubScopes: PUBLIC_SCOPES })
+        expect(result).toEqual({
+          accessToken: 'a',
+          githubScopes: PUBLIC_SCOPES,
+        })
       })
     })
   })

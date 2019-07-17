@@ -7,7 +7,12 @@ export default class ScreenshotDiff extends BaseModel {
   static tableName = 'screenshot_diffs'
 
   static jsonSchema = mergeSchemas(BaseModel.jsonSchema, jobModelSchema, {
-    required: ['buildId', 'baseScreenshotId', 'compareScreenshotId', 'validationStatus'],
+    required: [
+      'buildId',
+      'baseScreenshotId',
+      'compareScreenshotId',
+      'validationStatus',
+    ],
     properties: {
       buildId: { type: 'string' },
       baseScreenshotId: { type: ['string', null] },
@@ -20,7 +25,11 @@ export default class ScreenshotDiff extends BaseModel {
       },
       validationStatus: {
         type: 'string',
-        enum: [VALIDATION_STATUS.unknown, VALIDATION_STATUS.accepted, VALIDATION_STATUS.rejected],
+        enum: [
+          VALIDATION_STATUS.unknown,
+          VALIDATION_STATUS.accepted,
+          VALIDATION_STATUS.rejected,
+        ],
       },
     },
   })
@@ -64,8 +73,13 @@ export default class ScreenshotDiff extends BaseModel {
 
   // eslint-disable-next-line class-methods-use-this
   $afterValidate(json) {
-    if (json.baseScreenshotId && json.baseScreenshotId === json.compareScreenshotId) {
-      throw new ValidationError('The base screenshot should be different to the compare one.')
+    if (
+      json.baseScreenshotId &&
+      json.baseScreenshotId === json.compareScreenshotId
+    ) {
+      throw new ValidationError(
+        'The base screenshot should be different to the compare one.',
+      )
     }
   }
 }

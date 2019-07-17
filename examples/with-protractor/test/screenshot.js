@@ -2,12 +2,16 @@ const fs = require('fs')
 const path = require('path')
 
 function screenshot(name) {
-  Promise.all([browser.takeScreenshot(), browser.getCapabilities()]).then(([png, capabilities]) => {
-    const filename = `${name}-${capabilities.get('browserName')}.png`
-    const stream = fs.createWriteStream(path.join(__dirname, '../screenshots', filename))
-    stream.write(Buffer.from(png, 'base64'))
-    stream.end()
-  })
+  Promise.all([browser.takeScreenshot(), browser.getCapabilities()]).then(
+    ([png, capabilities]) => {
+      const filename = `${name}-${capabilities.get('browserName')}.png`
+      const stream = fs.createWriteStream(
+        path.join(__dirname, '../screenshots', filename),
+      )
+      stream.write(Buffer.from(png, 'base64'))
+      stream.end()
+    },
+  )
 }
 
 describe('protractor', () => {

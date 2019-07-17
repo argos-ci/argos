@@ -11,7 +11,10 @@ import factory from 'server/test/factory'
 
 display.info('Start script')
 
-const SCREENSHOTS_SEEDS_DIRECTORY = path.join(__dirname, '../../../screenshots/seeds')
+const SCREENSHOTS_SEEDS_DIRECTORY = path.join(
+  __dirname,
+  '../../../screenshots/seeds',
+)
 const readdirAsync = promisify(readdir)
 
 async function uploadSeedToS3() {

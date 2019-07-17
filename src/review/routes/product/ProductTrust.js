@@ -40,7 +40,11 @@ function ProductTrust(props) {
             rel="noopener noreferrer"
             className={classes.trustedLogoLink}
           >
-            <img src={doctolib} alt="Doctolib" className={classes.trustedLogoImage} />
+            <img
+              src={doctolib}
+              alt="Doctolib"
+              className={classes.trustedLogoImage}
+            />
           </Link>
         </Grid>
         <Grid item sm={3} container alignItems="center" justify="center">

@@ -21,14 +21,16 @@ describe('<BuildSummaryBody />', () => {
           },
         },
       }
-      const wrapper = shallow(<BuildSummaryBodyView classes={{}} build={build} />)
+      const wrapper = shallow(
+        <BuildSummaryBodyView classes={{}} build={build} />,
+      )
 
       expect(wrapper.find('li').length).toBe(4)
       expect(
         wrapper
           .find(Link)
           .at(0)
-          .props().href
+          .props().href,
       ).toBe('https://github.com/callemall/material-ui/commit/azerty')
     })
   })

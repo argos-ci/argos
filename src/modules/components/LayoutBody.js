@@ -56,7 +56,7 @@ function LayoutBody(props) {
           [classes.rootMargin]: margin,
           [classes.rootMarginBottom]: marginBottom,
         },
-        className
+        className,
       )}
       style={style}
       {...other}

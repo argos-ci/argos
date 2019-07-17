@@ -40,7 +40,11 @@ function GettingStarted(props) {
         <MarkdownElement text={text} disableAnchor />
         <Button
           component={props => (
-            <Link {...props} variant="button" to={`/${profileName}/${repositoryName}`} />
+            <Link
+              {...props}
+              variant="button"
+              to={`/${profileName}/${repositoryName}`}
+            />
           )}
           variant="raised"
           color="secondary"
@@ -66,5 +70,5 @@ export default recompact.compose(
   withStyles(styles),
   connect(state => ({
     fetch: state.ui.repository.fetch,
-  }))
+  })),
 )(GettingStarted)

@@ -41,7 +41,7 @@ export function BuildSummaryBodyView(props) {
 
   if (baseScreenshotBucket) {
     const compareFormated = `${formatShortCommit(
-      baseScreenshotBucket.commit
+      baseScreenshotBucket.commit,
     )}...${formatShortCommit(compareCommit)}`
     compare = (
       <li>
@@ -66,10 +66,14 @@ export function BuildSummaryBodyView(props) {
                   </Link>
                 </li>
                 <li>
-                  <Link href={`${githubBaseUrl}/tree/${branch}`}>{`Branch ${branch}`}</Link>
+                  <Link
+                    href={`${githubBaseUrl}/tree/${branch}`}
+                  >{`Branch ${branch}`}</Link>
                 </li>
                 {compare}
-                <li>{`Date: ${new Intl.DateTimeFormat().format(new Date(createdAt))}`}</li>
+                <li>{`Date: ${new Intl.DateTimeFormat().format(
+                  new Date(createdAt),
+                )}`}</li>
               </ul>
             </Typography>
           </Grid>

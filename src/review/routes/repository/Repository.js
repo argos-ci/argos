@@ -40,9 +40,10 @@ function Repository(props) {
           <Grid container spacing={24}>
             <Grid item xs>
               <Typography variant="display1" component="h2" noWrap>
-                <Link to={`/${profileName}`}>{profileName}</Link>
-                /
-                <Link to={`/${profileName}/${repositoryName}`}>{repositoryName}</Link>
+                <Link to={`/${profileName}`}>{profileName}</Link>/
+                <Link to={`/${profileName}/${repositoryName}`}>
+                  {repositoryName}
+                </Link>
               </Typography>
             </Grid>
             <WatchTask task={fetch} onlySuccess>
@@ -115,5 +116,5 @@ export default recompact.compose(
         },
       })
     },
-  })
+  }),
 )(Repository)

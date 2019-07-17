@@ -2,7 +2,9 @@
 
 exports.up = knex =>
   knex.schema
-    .raw(`CREATE TYPE job_status AS ENUM ('pending', 'progress', 'complete', 'error')`)
+    .raw(
+      `CREATE TYPE job_status AS ENUM ('pending', 'progress', 'complete', 'error')`,
+    )
     .raw(`CREATE TYPE service_type AS ENUM ('github')`)
     .alterTable('builds', table => {
       table.specificType('jobStatus', 'job_status').alter()

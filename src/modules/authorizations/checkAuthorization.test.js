@@ -1,6 +1,12 @@
-import { CONSISTENT, INVALID_TOKEN } from 'modules/authorizations/authorizationStatuses'
+import {
+  CONSISTENT,
+  INVALID_TOKEN,
+} from 'modules/authorizations/authorizationStatuses'
 import githubClient from 'modules/authorizations/githubClient'
-import { notFoundToken, validToken } from 'modules/authorizations/githubClientFixtures'
+import {
+  notFoundToken,
+  validToken,
+} from 'modules/authorizations/githubClientFixtures'
 import checkAuthorization from './checkAuthorization'
 
 jest.mock('modules/authorizations/githubClient')
@@ -26,7 +32,7 @@ describe('checkAuthorization', () => {
       githubClient.authorization.check.mockImplementation(
         validToken({
           scopes: ['user:email', 'repo', 'read:org', 'orga'],
-        })
+        }),
       )
     })
 

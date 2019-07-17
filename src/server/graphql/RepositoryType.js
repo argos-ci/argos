@@ -53,7 +53,9 @@ export async function toggleRepository(source, args, context) {
     throw new APIError('Invalid user authorization')
   }
 
-  let repository = await Repository.query().patchAndFetchById(repositoryId, { enabled })
+  let repository = await Repository.query().patchAndFetchById(repositoryId, {
+    enabled,
+  })
 
   // We can skip further work when disabling a repository
   if (!enabled) {
@@ -98,7 +100,7 @@ const RepositoryType = new GraphQLObjectType({
     token: {
       type: GraphQLString,
       resolve: async (repository, args, context) => {
-        if (!await repository.authorization(context.user)) {
+        if (!(await repository.authorization(context.user))) {
           return null
         }
 
@@ -132,9 +134,11 @@ const RepositoryType = new GraphQLObjectType({
       resolve: resolveBuildList,
     },
     authorization: {
-      description: 'Determine if the current user has write access to the repository',
+      description:
+        'Determine if the current user has write access to the repository',
       type: GraphQLBoolean,
-      resolve: (repository, args, context) => repository.authorization(context.user),
+      resolve: (repository, args, context) =>
+        repository.authorization(context.user),
     },
     owner: {
       description: 'Owner of repository.',

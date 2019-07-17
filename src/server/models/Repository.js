@@ -49,8 +49,18 @@ export default class Repository extends BaseModel {
   static getUsers(repositoryId) {
     return User.query()
       .select('users.*')
-      .join('user_repository_rights', 'users.id', '=', 'user_repository_rights.userId')
-      .join('repositories', 'user_repository_rights.repositoryId', '=', 'repositories.id')
+      .join(
+        'user_repository_rights',
+        'users.id',
+        '=',
+        'user_repository_rights.userId',
+      )
+      .join(
+        'repositories',
+        'user_repository_rights.repositoryId',
+        '=',
+        'repositories.id',
+      )
       .where('repositories.id', repositoryId)
   }
 

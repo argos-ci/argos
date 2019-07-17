@@ -53,7 +53,10 @@ describe('Repository', () => {
     beforeEach(async () => {
       user = await factory.create('User')
       repository = await factory.create('Repository')
-      await factory.create('UserRepositoryRight', { userId: user.id, repositoryId: repository.id })
+      await factory.create('UserRepositoryRight', {
+        userId: user.id,
+        repositoryId: repository.id,
+      })
     })
 
     it('should return users having rights on the repository', async () => {

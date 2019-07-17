@@ -16,7 +16,7 @@ Promise.all(
     const output = path.join(
       config.get().snapshotsFolder,
       suite,
-      `${name}-${newImage.viewportName}.png`
+      `${name}-${newImage.viewportName}.png`,
     )
 
     return new Promise((accept, reject) => {
@@ -25,14 +25,17 @@ Promise.all(
           reject(err)
           return
         }
-        fs.remove(input.replace(`/@${newImage.viewportName}/current.png`, ''), err2 => {
-          if (err2) {
-            reject(err2)
-            return
-          }
-          accept()
-        })
+        fs.remove(
+          input.replace(`/@${newImage.viewportName}/current.png`, ''),
+          err2 => {
+            if (err2) {
+              reject(err2)
+              return
+            }
+            accept()
+          },
+        )
       })
     })
-  })
+  }),
 )

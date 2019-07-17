@@ -7,7 +7,10 @@ function screenshotName(context) {
   const name = context.browser.name.toLocaleLowerCase().replace(/ /g, '_')
   const { width, height } = context.meta.viewport
 
-  return path.join(__dirname, `screenshots/${testName}_${name}_${width}x${height}.png`)
+  return path.join(
+    __dirname,
+    `screenshots/${testName}_${name}_${width}x${height}.png`,
+  )
 }
 
 const conf = {

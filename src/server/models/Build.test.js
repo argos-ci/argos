@@ -17,7 +17,9 @@ describe('models/Build', () => {
   describe('create build', () => {
     it('should add a build number', async () => {
       const build1 = await factory.create('Build')
-      const build2 = await factory.create('Build', { repositoryId: build1.repositoryId })
+      const build2 = await factory.create('Build', {
+        repositoryId: build1.repositoryId,
+      })
       expect(build1.number).toBe(1)
       expect(build2.number).toBe(2)
     })
@@ -65,7 +67,10 @@ describe('models/Build', () => {
     beforeEach(async () => {
       user = await factory.create('User')
       const repository = await factory.create('Repository')
-      await factory.create('UserRepositoryRight', { userId: user.id, repositoryId: repository.id })
+      await factory.create('UserRepositoryRight', {
+        userId: user.id,
+        repositoryId: repository.id,
+      })
       build = await factory.create('Build', { repositoryId: repository.id })
     })
 
@@ -86,8 +91,14 @@ describe('models/Build', () => {
     describe('with all in pending', () => {
       it('should be pending', async () => {
         build = await factory.create('Build')
-        await factory.create('ScreenshotDiff', { buildId: build.id, jobStatus: 'pending' })
-        await factory.create('ScreenshotDiff', { buildId: build.id, jobStatus: 'pending' })
+        await factory.create('ScreenshotDiff', {
+          buildId: build.id,
+          jobStatus: 'pending',
+        })
+        await factory.create('ScreenshotDiff', {
+          buildId: build.id,
+          jobStatus: 'pending',
+        })
         expect(await build.getStatus()).toBe('pending')
       })
     })
@@ -95,8 +106,14 @@ describe('models/Build', () => {
     describe('with one in progress', () => {
       it('should be progress', async () => {
         build = await factory.create('Build')
-        await factory.create('ScreenshotDiff', { buildId: build.id, jobStatus: 'pending' })
-        await factory.create('ScreenshotDiff', { buildId: build.id, jobStatus: 'progress' })
+        await factory.create('ScreenshotDiff', {
+          buildId: build.id,
+          jobStatus: 'pending',
+        })
+        await factory.create('ScreenshotDiff', {
+          buildId: build.id,
+          jobStatus: 'progress',
+        })
         expect(await build.getStatus()).toBe('progress')
       })
     })
@@ -152,7 +169,7 @@ describe('models/Build', () => {
         expect(
           await build.getStatus({
             useValidation: true,
-          })
+          }),
         ).toBe('failure')
       })
 
@@ -166,7 +183,7 @@ describe('models/Build', () => {
         expect(
           await build.getStatus({
             useValidation: true,
-          })
+          }),
         ).toBe('failure')
       })
 
@@ -180,7 +197,7 @@ describe('models/Build', () => {
         expect(
           await build.getStatus({
             useValidation: true,
-          })
+          }),
         ).toBe('success')
       })
     })

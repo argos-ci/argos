@@ -1,5 +1,8 @@
 import { PRIVATE_SCOPES, PUBLIC_SCOPES } from 'modules/authorizations/scopes'
-import { CONSISTENT, INCONSISTENT } from 'modules/authorizations/authorizationStatuses'
+import {
+  CONSISTENT,
+  INCONSISTENT,
+} from 'modules/authorizations/authorizationStatuses'
 import getAuthorizationStatus from './getAuthorizationStatus'
 
 describe('getAuthorizationStatus', () => {
@@ -8,7 +11,7 @@ describe('getAuthorizationStatus', () => {
       getAuthorizationStatus({
         privateSync: true,
         githubScopes: PRIVATE_SCOPES,
-      })
+      }),
     ).toBe(CONSISTENT)
   })
 
@@ -17,7 +20,7 @@ describe('getAuthorizationStatus', () => {
       getAuthorizationStatus({
         privateSync: true,
         githubScopes: PUBLIC_SCOPES,
-      })
+      }),
     ).toBe(INCONSISTENT)
   })
 
@@ -26,7 +29,7 @@ describe('getAuthorizationStatus', () => {
       getAuthorizationStatus({
         privateSync: false,
         githubScopes: PRIVATE_SCOPES,
-      })
+      }),
     ).toBe(CONSISTENT)
   })
 
@@ -35,7 +38,7 @@ describe('getAuthorizationStatus', () => {
       getAuthorizationStatus({
         privateSync: false,
         githubScopes: PUBLIC_SCOPES,
-      })
+      }),
     ).toBe(CONSISTENT)
   })
 })

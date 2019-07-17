@@ -57,7 +57,9 @@ export async function processBuildNotification(buildNotification) {
   const notification = NOTIFICATIONS[buildNotification.type]
 
   if (!notification) {
-    throw new Error(`Cannot find notification for type: "${buildNotification.type}"`)
+    throw new Error(
+      `Cannot find notification for type: "${buildNotification.type}"`,
+    )
   }
 
   const owner = build.repository.user || build.repository.organization

@@ -13,7 +13,12 @@ const styles = theme => ({
 
 function WatchTaskContainer(props) {
   return (
-    <Grid container justify="center" className={props.classes.root} alignItems="center">
+    <Grid
+      container
+      justify="center"
+      className={props.classes.root}
+      alignItems="center"
+    >
       <Grid item>{props.children}</Grid>
     </Grid>
   )

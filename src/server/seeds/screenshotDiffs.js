@@ -93,5 +93,5 @@ exports.seed = (knex, Promise) =>
             updatedAt: new Date().toISOString(),
           },
         ]),
-      ])
+      ]),
     )

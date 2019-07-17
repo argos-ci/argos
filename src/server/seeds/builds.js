@@ -65,5 +65,5 @@ exports.seed = (knex, Promise) =>
             updatedAt: '2017-02-06T01:41:35Z',
           },
         ]),
-      ])
+      ]),
     )

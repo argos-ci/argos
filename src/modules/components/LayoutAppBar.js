@@ -14,7 +14,9 @@ const styles = theme => ({
 function LayoutAppBar(props) {
   const { classes, ...other } = props
 
-  return <AppBar position="static" className={classNames(classes.root)} {...other} />
+  return (
+    <AppBar position="static" className={classNames(classes.root)} {...other} />
+  )
 }
 
 LayoutAppBar.propTypes = {

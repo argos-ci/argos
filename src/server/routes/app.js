@@ -46,7 +46,7 @@ app.use(
     setHeaders: res => {
       res.set('Cache-Control', 'no-cache')
     },
-  })
+  }),
 )
 
 app.use(
@@ -68,7 +68,7 @@ app.use(
     frameguard: {
       action: 'deny', // Disallow embedded iframe
     },
-  })
+  }),
 )
 
 if (config.get('www.subdomain') === config.get('api.subdomain')) {

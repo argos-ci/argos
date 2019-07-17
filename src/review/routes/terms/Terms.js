@@ -13,7 +13,10 @@ function Terms() {
     <ViewContainer>
       <ReviewAppBar />
       <ScrollView>
-        <ProductHeader display1="Terms and Conditions" headline="License Agreement" />
+        <ProductHeader
+          display1="Terms and Conditions"
+          headline="License Agreement"
+        />
         <LayoutBody margin marginBottom>
           <MarkdownElement text={terms} />
         </LayoutBody>

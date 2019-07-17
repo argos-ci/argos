@@ -10,7 +10,11 @@ const queue = 'build'
 
 const parseMessage = message => {
   const payload = JSON.parse(message.toString())
-  if (!payload || !Array.isArray(payload.args) || !Number.isInteger(payload.attempts)) {
+  if (
+    !payload ||
+    !Array.isArray(payload.args) ||
+    !Number.isInteger(payload.attempts)
+  ) {
     throw new Error('Invalid payload')
   }
   return payload

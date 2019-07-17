@@ -10,7 +10,7 @@ const fetchEpic = action$ =>
       action$
         .ofType(actionTypes.BUILD_VALIDATION_TASK)
         .filter(action => action.payload.state === SUCCESS)
-        .startWith({})
+        .startWith({}),
     )
     .watchTask(actionTypes.BUILD_FETCH_TASK, ([action]) =>
       graphQLClient.fetch({
@@ -49,7 +49,7 @@ const fetchEpic = action$ =>
             }
           }
         }`,
-      })
+      }),
     )
 
 const validationEpic = action$ =>
@@ -65,7 +65,7 @@ const validationEpic = action$ =>
             )
           }
         `,
-      })
+      }),
     )
 
 const buildEpic = combineEpics(fetchEpic, validationEpic)

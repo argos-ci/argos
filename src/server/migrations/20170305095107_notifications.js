@@ -3,7 +3,7 @@
 exports.up = knex =>
   knex.schema
     .raw(
-      `CREATE TYPE build_notifications_type AS ENUM ('progress', 'no-diff-detected', 'diff-detected')`
+      `CREATE TYPE build_notifications_type AS ENUM ('progress', 'no-diff-detected', 'diff-detected')`,
     )
     .createTable('build_notifications', table => {
       table.bigincrements('id').primary()
@@ -19,4 +19,6 @@ exports.up = knex =>
     })
 
 exports.down = knex =>
-  knex.schema.dropTableIfExists('build_notifications').raw(`DROP TYPE build_notifications_type`)
+  knex.schema
+    .dropTableIfExists('build_notifications')
+    .raw(`DROP TYPE build_notifications_type`)

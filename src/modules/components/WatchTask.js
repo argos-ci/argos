@@ -4,7 +4,12 @@ import PropTypes from 'prop-types'
 import CircularProgress from 'material-ui/Progress/CircularProgress'
 import Typography from 'material-ui/Typography'
 import recompact from 'modules/recompact'
-import { PROGRESS, SUCCESS, ERROR, isError } from 'modules/rxjs/operator/watchTask'
+import {
+  PROGRESS,
+  SUCCESS,
+  ERROR,
+  isError,
+} from 'modules/rxjs/operator/watchTask'
 import WatchTaskContainer from 'modules/components/WatchTaskContainer'
 
 function renderInContainer(props, node) {
@@ -56,5 +61,5 @@ export const watchTask = recompact.createHelper(
       {() => recompact.createEagerElement(BaseComponent, props)}
     </WatchTask>
   ),
-  'watchTask'
+  'watchTask',
 )
