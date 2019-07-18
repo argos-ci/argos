@@ -39,8 +39,8 @@ export default class BaseModel extends Model {
   // Centralize the models.
   static modelPaths = [__dirname]
 
-  // http://vincit.github.io/objection.js/#defaulteageralgorithm
-  static defaultEagerAlgorithm = Model.JoinEagerAlgorithm
+  // https://vincit.github.io/objection.js/api/model/static-properties.html#static-defaulteageralgorithm
+  static defaultEagerAlgorithm = Model.WhereInEagerAlgorithm
 
   $beforeInsert() {
     if (!this.createdAt) {
