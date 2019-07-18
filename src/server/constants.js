@@ -1,9 +1,14 @@
-export const VALIDATION_STATUS = {
+export const VALIDATION_STATUSES = {
   unknown: 'unknown',
   accepted: 'accepted',
   rejected: 'rejected',
 }
 
 export const SCOPES = {
-  SUPER_ADMIN: 'SUPER_ADMIN',
+  superAdmin: 'SUPER_ADMIN',
+}
+
+export const OWNER_TYPES = {
+  organization: 'organization',
+  user: 'user',
 }

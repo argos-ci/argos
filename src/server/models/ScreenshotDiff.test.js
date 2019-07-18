@@ -1,5 +1,5 @@
 import { assert } from 'chai'
-import { VALIDATION_STATUS } from 'server/constants'
+import { VALIDATION_STATUSES } from 'server/constants'
 import ScreenshotDiff from './ScreenshotDiff'
 
 const baseData = {
@@ -7,7 +7,7 @@ const baseData = {
   baseScreenshotId: '1',
   compareScreenshotId: '2',
   jobStatus: 'pending',
-  validationStatus: VALIDATION_STATUS.unknown,
+  validationStatus: VALIDATION_STATUSES.unknown,
 }
 
 describe('models/ScreenshotDiff', () => {

@@ -1,6 +1,6 @@
 import { ValidationError } from 'objection'
 import reduceJobStatus from 'modules/jobs/reduceJobStatus'
-import { VALIDATION_STATUS } from 'server/constants'
+import { VALIDATION_STATUSES } from 'server/constants'
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 import User from 'server/models/User'
 import jobModelSchema from 'server/models/schemas/jobModelSchema'
@@ -114,8 +114,8 @@ export default class Build extends BaseModel {
       if (useValidation && useScore) {
         const isFailure = screenshotDiffs.some(
           ({ score, validationStatus }) =>
-            validationStatus === VALIDATION_STATUS.rejected ||
-            (validationStatus === VALIDATION_STATUS.unknown && score > 0),
+            validationStatus === VALIDATION_STATUSES.rejected ||
+            (validationStatus === VALIDATION_STATUSES.unknown && score > 0),
         )
         return isFailure ? 'failure' : 'success'
       }

@@ -15,7 +15,7 @@ const configDefault = {
 
 const config = {
   development: Object.assign({}, configDefault, {
-    debug: true,
+    debug: false,
     client: 'postgresql',
     connection: {
       user: 'postgres',

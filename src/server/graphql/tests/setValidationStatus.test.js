@@ -1,9 +1,10 @@
 import request from 'supertest'
 import { useDatabase, noGraphqlError } from 'server/test/utils'
 import factory from 'server/test/factory'
-import { VALIDATION_STATUS } from 'server/constants'
+import { VALIDATION_STATUSES } from 'server/constants'
 import * as notifications from 'modules/build/notifications'
-import graphqlMiddleware from '../middleware'
+import { apolloServer } from '../apollo'
+import { createApolloServerApp } from './util'
 
 jest.mock('modules/build/notifications')
 
@@ -59,24 +60,20 @@ describe('GraphQL', () => {
     })
 
     it('should mutate all the validationStatus', async () => {
-      let res = await request(
-        graphqlMiddleware({
-          context: { user },
-        }),
-      )
-        .post('/')
+      let res = await request(createApolloServerApp(apolloServer, { user }))
+        .post('/graphql')
         .send({
           query: `
             mutation {
               setValidationStatus(
                 buildId: "${build.id}",
-                validationStatus: ${VALIDATION_STATUS.rejected}
+                validationStatus: ${VALIDATION_STATUSES.rejected}
               )
             }
           `,
         })
       expect(res.body.data).toEqual({
-        setValidationStatus: VALIDATION_STATUS.rejected,
+        setValidationStatus: VALIDATION_STATUSES.rejected,
       })
       noGraphqlError(res)
       expect(res.status).toBe(200)
@@ -85,8 +82,8 @@ describe('GraphQL', () => {
         type: 'diff-rejected',
       })
 
-      res = await request(graphqlMiddleware())
-        .post('/')
+      res = await request(createApolloServerApp(apolloServer))
+        .post('/graphql')
         .send({
           query: `{
             build(id: ${build.id}) {
@@ -101,13 +98,13 @@ describe('GraphQL', () => {
       const { screenshotDiffs } = res.body.data.build
       expect(screenshotDiffs).toEqual([
         {
-          validationStatus: VALIDATION_STATUS.rejected,
+          validationStatus: VALIDATION_STATUSES.rejected,
         },
         {
-          validationStatus: VALIDATION_STATUS.rejected,
+          validationStatus: VALIDATION_STATUSES.rejected,
         },
         {
-          validationStatus: VALIDATION_STATUS.rejected,
+          validationStatus: VALIDATION_STATUSES.rejected,
         },
       ])
     })
@@ -115,17 +112,15 @@ describe('GraphQL', () => {
     it('should not mutate when the user is unauthorized', async () => {
       const user2 = await factory.create('User')
       const res = await request(
-        graphqlMiddleware({
-          context: { user: user2 },
-        }),
+        createApolloServerApp(apolloServer, { user: user2 }),
       )
-        .post('/')
+        .post('/graphql')
         .send({
           query: `
             mutation {
               setValidationStatus(
                 buildId: "${build.id}",
-                validationStatus: ${VALIDATION_STATUS.rejected}
+                validationStatus: ${VALIDATION_STATUSES.rejected}
               )
             }
           `,

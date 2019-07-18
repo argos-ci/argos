@@ -1,7 +1,8 @@
 import request from 'supertest'
 import { useDatabase, noGraphqlError } from 'server/test/utils'
 import factory from 'server/test/factory'
-import graphqlMiddleware from '../middleware'
+import { apolloServer } from '../apollo'
+import { createApolloServerApp } from './util'
 
 describe('GraphQL', () => {
   useDatabase()
@@ -49,11 +50,7 @@ describe('GraphQL', () => {
     })
 
     it('should filter the repositories (organization)', async () => {
-      const res = await request(
-        graphqlMiddleware({
-          context: { user },
-        }),
-      )
+      const res = await request(createApolloServerApp(apolloServer, { user }))
         .post('/graphql')
         .send({
           query: `{
@@ -77,11 +74,7 @@ describe('GraphQL', () => {
     })
 
     it('should filter the repositories (user)', async () => {
-      const res = await request(
-        graphqlMiddleware({
-          context: { user },
-        }),
-      )
+      const res = await request(createApolloServerApp(apolloServer, { user }))
         .post('/graphql')
         .send({
           query: `{

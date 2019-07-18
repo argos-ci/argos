@@ -2,7 +2,7 @@ import * as notifications from 'modules/build/notifications'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import { sortBy } from 'lodash'
-import { VALIDATION_STATUS } from 'server/constants'
+import { VALIDATION_STATUSES } from 'server/constants'
 import createBuildDiffs from './createBuildDiffs'
 
 jest.mock('modules/build/notifications')
@@ -72,14 +72,14 @@ describe('createBuildDiffs', () => {
         baseScreenshotId: null,
         compareScreenshotId: compareScreenshot1.id,
         jobStatus: 'complete',
-        validationStatus: VALIDATION_STATUS.unknown,
+        validationStatus: VALIDATION_STATUSES.unknown,
       })
       expect(diffs[1]).toMatchObject({
         buildId: build.id,
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot2.id,
         jobStatus: 'pending',
-        validationStatus: VALIDATION_STATUS.unknown,
+        validationStatus: VALIDATION_STATUSES.unknown,
       })
     })
 
@@ -94,14 +94,14 @@ describe('createBuildDiffs', () => {
         baseScreenshotId: null,
         compareScreenshotId: compareScreenshot1.id,
         jobStatus: 'complete',
-        validationStatus: VALIDATION_STATUS.unknown,
+        validationStatus: VALIDATION_STATUSES.unknown,
       })
       expect(diffs[1]).toMatchObject({
         buildId: build.id,
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot2.id,
         jobStatus: 'complete',
-        validationStatus: VALIDATION_STATUS.unknown,
+        validationStatus: VALIDATION_STATUSES.unknown,
       })
     })
   })
@@ -114,7 +114,7 @@ describe('createBuildDiffs', () => {
       baseScreenshotId: null,
       compareScreenshotId: compareScreenshot1.id,
       jobStatus: 'complete',
-      validationStatus: VALIDATION_STATUS.unknown,
+      validationStatus: VALIDATION_STATUSES.unknown,
     })
   })
 })

@@ -1,7 +1,7 @@
 import { transaction } from 'objection'
 import baseCompare from 'modules/baseCompare/baseCompare'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
-import { VALIDATION_STATUS } from 'server/constants'
+import { VALIDATION_STATUSES } from 'server/constants'
 
 async function getOrCreateBaseScreenshotBucket(build) {
   // It can already be present, for instance by the sample build feature.
@@ -59,7 +59,7 @@ export default async function createBuildDiffs(build) {
           baseScreenshotId: baseScreenshot ? baseScreenshot.id : null,
           compareScreenshotId: compareScreenshot.id,
           jobStatus: getJobStatus({ compareWithBaseline, baseScreenshot }),
-          validationStatus: VALIDATION_STATUS.unknown,
+          validationStatus: VALIDATION_STATUSES.unknown,
         }
       },
       [],
