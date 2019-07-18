@@ -33,7 +33,7 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   htmlWebpackPlugin = {
     files: {
-      js: ['/browser.js'],
+      js: ['/static/review/main.js'],
     },
   }
 }
