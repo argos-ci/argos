@@ -6,7 +6,7 @@ import session from 'express-session'
 import connectRedis from 'connect-redis'
 import config from 'config'
 import * as redis from 'server/services/redis'
-import graphqlMiddleware from 'server/graphql/middleware'
+import { apolloServer } from 'server/graphql'
 import rendering from 'server/middlewares/rendering'
 import errorHandler from 'server/middlewares/errorHandler'
 
@@ -46,8 +46,9 @@ router.use(passport.session())
 
 configurePassport(passport)
 
+apolloServer.applyMiddleware({ app: router })
+
 // GraphQL
-router.use('/graphql', graphqlMiddleware())
 ;['private', 'public'].forEach(type => {
   router.get(
     `/auth/github-${type}`,

@@ -2,7 +2,8 @@ import request from 'supertest'
 import { useDatabase, noGraphqlError } from 'server/test/utils'
 import factory from 'server/test/factory'
 import buildJob from 'server/jobs/build'
-import graphqlMiddleware from '../middleware'
+import { apolloServer } from '../apollo'
+import { createApolloServerApp } from './util'
 
 jest.mock('modules/build/notifications')
 
@@ -39,12 +40,8 @@ describe('GraphQL', () => {
 
     it('should mutate the repository', async () => {
       expect(repository.token).toBe(undefined)
-      const res = await request(
-        graphqlMiddleware({
-          context: { user },
-        }),
-      )
-        .post('/')
+      const res = await request(createApolloServerApp(apolloServer, { user }))
+        .post('/graphql')
         .send({
           query: `
             mutation {

@@ -1,7 +1,7 @@
 import { assert } from 'chai'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
-import { VALIDATION_STATUS } from 'server/constants'
+import { VALIDATION_STATUSES } from 'server/constants'
 import Build from './Build'
 
 const baseData = {
@@ -164,7 +164,7 @@ describe('models/Build', () => {
           buildId: build.id,
           jobStatus: 'complete',
           score: 0,
-          validationStatus: VALIDATION_STATUS.rejected,
+          validationStatus: VALIDATION_STATUSES.rejected,
         })
         expect(
           await build.getStatus({
@@ -178,7 +178,7 @@ describe('models/Build', () => {
           buildId: build.id,
           jobStatus: 'complete',
           score: 1,
-          validationStatus: VALIDATION_STATUS.unknown,
+          validationStatus: VALIDATION_STATUSES.unknown,
         })
         expect(
           await build.getStatus({
@@ -192,7 +192,7 @@ describe('models/Build', () => {
           buildId: build.id,
           jobStatus: 'complete',
           score: 0.2,
-          validationStatus: VALIDATION_STATUS.accepted,
+          validationStatus: VALIDATION_STATUSES.accepted,
         })
         expect(
           await build.getStatus({

@@ -122,7 +122,7 @@ const usurpUser = gql`
 `
 export default recompact.compose(
   restrictedPage({
-    scopes: [SCOPES.SUPER_ADMIN],
+    scopes: [SCOPES.superAdmin],
   }),
   withStyles(styles),
   graphql(usurpUser, {

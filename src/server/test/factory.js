@@ -3,7 +3,7 @@
 import { factory } from 'factory-girl'
 import crypto from 'crypto'
 import ObjectionAdapter from 'server/test/ObjectionAdapter'
-import { VALIDATION_STATUS } from 'server/constants'
+import { VALIDATION_STATUSES } from 'server/constants'
 import Build from 'server/models/Build'
 import BuildNotification from 'server/models/BuildNotification'
 import Organization from 'server/models/Organization'
@@ -104,7 +104,7 @@ factory.define('ScreenshotDiff', ScreenshotDiff, {
   baseScreenshotId: factory.assoc('Screenshot', 'id'),
   compareScreenshotId: factory.assoc('Screenshot', 'id'),
   jobStatus: 'complete',
-  validationStatus: VALIDATION_STATUS.accepted,
+  validationStatus: VALIDATION_STATUSES.accepted,
   score: 0,
 })
 

@@ -3,7 +3,7 @@ import path from 'path'
 import config from 'config'
 import { useDatabase, setTestsTimeout } from 'server/test/utils'
 import factory from 'server/test/factory'
-import { VALIDATION_STATUS } from 'server/constants'
+import { VALIDATION_STATUSES } from 'server/constants'
 import * as notifications from 'modules/build/notifications'
 import upload from 'modules/s3/upload'
 import computeScreenshotDiff from './computeScreenshotDiff'
@@ -76,7 +76,7 @@ describe('computeScreenshotDiff', () => {
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot.id,
         jobStatus: 'pending',
-        validationStatus: VALIDATION_STATUS.unknown,
+        validationStatus: VALIDATION_STATUSES.unknown,
       })
     })
 
@@ -113,7 +113,7 @@ describe('computeScreenshotDiff', () => {
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot.id,
         jobStatus: 'pending',
-        validationStatus: VALIDATION_STATUS.unknown,
+        validationStatus: VALIDATION_STATUSES.unknown,
       })
     })
 

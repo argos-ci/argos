@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import { withStyles } from 'material-ui/styles'
 import Button from 'material-ui/Button'
 import recompact from 'modules/recompact'
-import { VALIDATION_STATUS } from 'server/constants'
+import { VALIDATION_STATUSES } from 'server/constants'
 import actionTypes from 'modules/redux/actionTypes'
 
 const styles = theme => ({
@@ -68,8 +68,8 @@ export default recompact.compose(
           buildId: props.build.id,
           validationStatus:
             props.build.status === 'failure'
-              ? VALIDATION_STATUS.accepted
-              : VALIDATION_STATUS.rejected,
+              ? VALIDATION_STATUSES.accepted
+              : VALIDATION_STATUSES.rejected,
         },
       })
     },
