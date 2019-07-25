@@ -117,6 +117,12 @@ const config = convict({
     env: 'HEROKU_SLUG_COMMIT',
   },
   sentry: {
+    environment: {
+      doc: 'Sentry environment',
+      format: String,
+      default: 'development',
+      env: 'NODE_ENV',
+    },
     clientDsn: {
       doc: 'Sentry client DSN',
       format: String,

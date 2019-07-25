@@ -14,3 +14,6 @@ yarn sentry-cli releases new -p argos-browser -p argos-server $VERSION
 
 # Associate commits with the release
 yarn sentry-cli releases set-commits --commit "argos-ci/argos@$VERSION" $VERSION
+
+# Mark the deploy
+sentry-cli releases deploys $VERSION new -e production

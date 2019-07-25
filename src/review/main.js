@@ -13,6 +13,7 @@ import Root from 'review/Root'
 // Initialize Sentry
 Sentry.init({
   dsn: configBrowser.get('sentry.clientDsn'),
+  environment: configBrowser.get('sentry.environment'),
   release: configBrowser.get('releaseVersion'),
 })
 

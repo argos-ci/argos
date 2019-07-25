@@ -9,6 +9,7 @@ import handleKillSignals from 'server/bootstrap/handleKillSignals'
 // Initialize sentry
 Sentry.init({
   dsn: config.get('sentry.serverDsn'),
+  environment: config.get('sentry.environment'),
   release: config.get('releaseVersion'),
 })
 

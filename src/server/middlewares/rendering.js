@@ -74,6 +74,7 @@ export default additionalClientData => (req, res) => {
           screenshotsBucket: config.get('s3.screenshotsBucket'),
         },
         sentry: {
+          environment: config.get('sentry.environment'),
           clientDsn: config.get('sentry.clientDsn'),
         },
         releaseVersion: config.get('releaseVersion'),
