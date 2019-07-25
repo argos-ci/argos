@@ -1,6 +1,6 @@
+import * as Sentry from '@sentry/node'
 import GitHubAPI from 'github'
 import config from 'config'
-import crashReporter from 'modules/crashReporter/common'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
 async function getLatestMasterBucket(build) {
@@ -56,7 +56,10 @@ async function getCommits({ github, owner, repo, sha, perPage }) {
   } catch (error) {
     // Unauthorized
     if (error.code !== 401) {
-      crashReporter().captureException(error, { extra: { params } })
+      Sentry.withScope(scope => {
+        scope.setExtra('params', params)
+        Sentry.captureException(error)
+      })
     }
     return []
   }

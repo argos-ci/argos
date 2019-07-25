@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import * as Sentry from '@sentry/node'
 import path from 'path'
 import express from 'express'
 import compress from 'compression'
@@ -7,8 +8,6 @@ import helmet from 'helmet'
 import ejs from 'ejs'
 import subdomain from 'express-subdomain'
 import config from 'config'
-import { captureClientRelease } from 'modules/crashReporter/server'
-import crashReporter from 'modules/crashReporter/common'
 import www from 'server/routes/www'
 import api from 'server/routes/api'
 
@@ -18,8 +17,24 @@ app.engine('html', ejs.renderFile)
 app.set('trust proxy', 1)
 app.set('views', path.join(__dirname, '..'))
 
-app.use(captureClientRelease())
-app.use(crashReporter().requestHandler())
+app.use(function captureClientRelease(req, res, next) {
+  if (req.headers['x-argos-release-version']) {
+    Sentry.configureScope(scope => {
+      scope.setTag(
+        'clientReleaseVersion',
+        req.headers['x-argos-release-version'],
+      )
+    })
+  } else if (req.headers['x-argos-cli-version']) {
+    Sentry.configureScope(scope => {
+      scope.setTag('clientCliVersion', req.headers['x-argos-cli-version'])
+    })
+  }
+
+  next()
+})
+
+app.use(Sentry.Handlers.requestHandler())
 
 if (config.get('server.logFormat')) {
   app.use(morgan(config.get('server.logFormat')))

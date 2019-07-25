@@ -1,17 +1,18 @@
 /* eslint-disable no-console */
 
+import * as Sentry from '@sentry/node'
 import expressErr from 'express-err'
-import crashReporter from 'modules/crashReporter/common'
 
-export default ({ formatters }) => (err, req, res, next) => {
-  crashReporter().errorHandler()(err, req, res, () => {
+export default ({ formatters }) => [
+  Sentry.Handlers.errorHandler(),
+  (error, req, res, next) => {
     if (process.env.NODE_ENV !== 'test') {
-      console.log(err, err.stack)
+      console.log(error, error.stack)
     }
-
-    expressErr({
-      exitOnUncaughtException: false,
-      formatters,
-    })(err, req, res, next)
-  })
-}
+    next(error)
+  },
+  expressErr({
+    exitOnUncaughtException: false,
+    formatters,
+  }),
+]
