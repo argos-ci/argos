@@ -1,5 +1,6 @@
 import nock from 'nock'
 import playback from 'server/test/playback'
+import { TEST_GITHUB_USER_ACCESS_TOKEN } from 'server/test/constants'
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import baseCompare from './baseCompare'
@@ -7,7 +8,7 @@ import baseCompare from './baseCompare'
 function nockGithub(branch) {
   return nock('https://api.github.com:443').get(
     `/repos/callemall/material-ui/commits?sha=${branch}` +
-      '&page=1&per_page=100&access_token=ACCESS_TOKEN',
+      `&page=1&per_page=100&access_token=${TEST_GITHUB_USER_ACCESS_TOKEN}`,
   )
 }
 
@@ -20,7 +21,9 @@ describe('baseCompare', () => {
     const organization = await factory.create('Organization', {
       login: 'callemall',
     })
-    const user = await factory.create('User', { accessToken: 'ACCESS_TOKEN' })
+    const user = await factory.create('User', {
+      accessToken: TEST_GITHUB_USER_ACCESS_TOKEN,
+    })
     repository = await factory.create('Repository', {
       name: 'material-ui',
       organizationId: organization.id,
@@ -66,7 +69,7 @@ describe('baseCompare', () => {
     // * e97e6d9054ac1b4f6f9ef55ff3d7ed8cc18394bd (master)
     // * | - 3304d38afd1838cadf4e859de46b495fb347efec (branch)
     // * 0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92
-    it('should work with a non rebase PR', async () => {
+    it('should work with a non rebased PR', async () => {
       const screenshotBucket1 = await factory.create('ScreenshotBucket', {
         commit: '0e4c8e8ee37c9f62c4e77f5b8d1abe3ebe845a92',
         repositoryId: repository.id,

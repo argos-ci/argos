@@ -7,12 +7,12 @@ async function checkAuthorization({ accessToken, privateSync }) {
   let authorization
 
   try {
-    authorization = await githubClient.authorization.check({
+    authorization = await githubClient.oauthAuthorizations.checkAuthorization({
       access_token: accessToken,
       client_id: config.get('github.clientId'),
     })
   } catch (error) {
-    if (error.code === 404) {
+    if (error.status === 404) {
       return { status: INVALID_TOKEN }
     }
 

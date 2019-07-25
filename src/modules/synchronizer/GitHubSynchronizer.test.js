@@ -5,6 +5,7 @@ import Organization from 'server/models/Organization'
 import UserOrganizationRight from 'server/models/UserOrganizationRight'
 import Repository from 'server/models/Repository'
 import UserRepositoryRight from 'server/models/UserRepositoryRight'
+import { TEST_GITHUB_USER_ACCESS_TOKEN } from 'server/test/constants'
 import GitHubSynchronizer from './GitHubSynchronizer'
 
 describe('GitHubSynchronizer', () => {
@@ -21,8 +22,7 @@ describe('GitHubSynchronizer', () => {
 
   beforeEach(async () => {
     user = await factory.create('User', {
-      accessToken: 'zzzz',
-      // accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
+      accessToken: TEST_GITHUB_USER_ACCESS_TOKEN,
     })
 
     synchronization = await factory.create('Synchronization', {
