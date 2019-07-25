@@ -42,6 +42,7 @@
   "homepage": "https://github.com/argos-ci/argos#readme",
   "dependencies": {
     "@sentry/browser": "^5.5.0",
+    "@sentry/node": "^5.5.0",
     "amqplib": "^0.5.3",
     "apollo-server-express": "^2.7.0",
     "assets-webpack-plugin": "^3.9.10",
@@ -90,8 +91,6 @@
     "prismjs": "^1.6.0",
     "promirepl": "^1.0.1",
     "prop-types": "^15.7.2",
-    "raven": "^2.1.1",
-    "raven-js": "^3.17.0",
     "raw-loader": "^3.0.0",
     "react": "^15.6.1",
     "react-addons-test-utils": "^15.6.2",

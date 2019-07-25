@@ -1,5 +1,5 @@
+import * as Sentry from '@sentry/node'
 import { getChannel } from 'server/services/amqp'
-import crashReporter from 'modules/crashReporter/common'
 
 const serializeMessage = payload => Buffer.from(JSON.stringify(payload))
 const parseMessage = message => {
@@ -15,13 +15,10 @@ const parseMessage = message => {
 }
 
 const logAndCaptureError = (error, { args, queue }) => {
-  crashReporter().captureException(error, {
-    tags: {
-      jobQueue: queue,
-    },
-    extra: {
-      jobArgs: args,
-    },
+  Sentry.withScope(scope => {
+    scope.setTag('jobQueue', queue)
+    scope.setExtra('jobArgs', args)
+    Sentry.captureException(error)
   })
 }
 
