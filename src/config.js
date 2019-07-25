@@ -111,10 +111,10 @@ const config = convict({
     },
   },
   releaseVersion: {
-    doc: 'Heroku release version',
+    doc: 'Sentry release version',
     format: String,
     default: 'dev',
-    env: 'HEROKU_RELEASE_VERSION',
+    env: 'HEROKU_SLUG_COMMIT',
   },
   sentry: {
     clientDsn: {

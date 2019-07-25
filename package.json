@@ -41,6 +41,7 @@
   },
   "homepage": "https://github.com/argos-ci/argos#readme",
   "dependencies": {
+    "@sentry/browser": "^5.5.0",
     "amqplib": "^0.5.3",
     "apollo-server-express": "^2.7.0",
     "assets-webpack-plugin": "^3.9.10",
