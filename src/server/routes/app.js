@@ -33,6 +33,7 @@ app.use(function captureClientRelease(req, res, next) {
 
   next()
 })
+
 app.use(Sentry.Handlers.requestHandler())
 
 if (config.get('server.logFormat')) {

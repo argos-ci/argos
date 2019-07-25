@@ -5,11 +5,11 @@ import expressErr from 'express-err'
 
 export default ({ formatters }) => [
   Sentry.Handlers.errorHandler(),
-  // eslint-disable-next-line no-unused-vars
-  (err, req, res, next) => {
+  (error, req, res, next) => {
     if (process.env.NODE_ENV !== 'test') {
-      console.log(err, err.stack)
+      console.log(error, error.stack)
     }
+    next(error)
   },
   expressErr({
     exitOnUncaughtException: false,
