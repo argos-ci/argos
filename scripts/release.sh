@@ -1,11 +1,11 @@
 # Run migrations
-yarn db:migrate
+yarn api:db:migrate
 
 # Install sentry-cli
 yarn add @sentry/cli --dev
 
 # Setup releases on Sentry
-export SENTRY_AUTH_TOKEN=d2d0dd2bec244b7793310abc8101bf95d5f7c3f6b55f4ef18be3a4eeec01a3a4
+export SENTRY_AUTH_TOKEN=c1ca8a7da65a4482a8d7ea10c9e10dea9a5aff40d0a044cb8ae2d020f7291b8a
 export SENTRY_ORG=argos
 VERSION=$(sentry-cli releases propose-version)
 
