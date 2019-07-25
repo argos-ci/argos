@@ -42,6 +42,7 @@
   "homepage": "https://github.com/argos-ci/argos#readme",
   "dependencies": {
     "@sentry/browser": "^5.5.0",
+    "@sentry/cli": "^1.47.0",
     "@sentry/node": "^5.5.0",
     "amqplib": "^0.5.3",
     "apollo-server-express": "^2.7.0",

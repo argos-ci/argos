@@ -1022,6 +1022,18 @@
     "@sentry/utils" "5.5.0"
     tslib "^1.9.3"
 
+"@sentry/cli@^1.47.0":
+  version "1.47.0"
+  resolved "https://registry.yarnpkg.com/@sentry/cli/-/cli-1.47.0.tgz#7e29b06400511f2948429f7da89f7744216c5ecb"
+  integrity sha512-QTl2mqHIW5Q9JWofFkNG0aPCo4qnyZdaMatVYxrDAKiqapX6Q1Y84S9qofjBuo87ELjd9hD7UeDcbLEqqGuIKA==
+  dependencies:
+    fs-copy-file-sync "^1.1.1"
+    https-proxy-agent "^2.2.1"
+    mkdirp "^0.5.1"
+    node-fetch "^2.1.2"
+    progress "2.0.0"
+    proxy-from-env "^1.0.0"
+
 "@sentry/core@5.5.0":
   version "5.5.0"
   resolved "https://registry.yarnpkg.com/@sentry/core/-/core-5.5.0.tgz#574fdc9228c8b4a909c0140eb0d8b098175c0f47"
@@ -1536,7 +1548,7 @@ agent-base@2:
     extend "~3.0.0"
     semver "~5.0.1"
 
-agent-base@^4.1.0:
+agent-base@^4.1.0, agent-base@^4.3.0:
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/agent-base/-/agent-base-4.3.0.tgz#8165f01c436009bccad0b1d122f05ed770efc6ee"
   integrity sha512-salcGninV0nPrwpGNn4VTXBb1SOuXQBiqbrNXoeizJsHrsL6ERFM2Ne3JUSBWRE6aeNJI2ROP/WEEIDUiDe3cg==
@@ -5182,6 +5194,11 @@ fs-constants@^1.0.0:
   resolved "https://registry.yarnpkg.com/fs-constants/-/fs-constants-1.0.0.tgz#6be0de9be998ce16af8afc24497b9ee9b7ccd9ad"
   integrity sha512-y6OAwoSIf7FyjMIv94u+b5rdheZEjzR63GTyZJm5qh4Bi+2YgwLCcI/fPFZkL5PSixOt6ZNKm+w+Hfp/Bciwow==
 
+fs-copy-file-sync@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/fs-copy-file-sync/-/fs-copy-file-sync-1.1.1.tgz#11bf32c096c10d126e5f6b36d06eece776062918"
+  integrity sha512-2QY5eeqVv4m2PfyMiEuy9adxNP+ajf+8AR05cEi+OAzPcOj90hvFImeZhTmKLBgSd9EvG33jsD7ZRxsx9dThkQ==
+
 fs-minipass@^1.2.5:
   version "1.2.6"
   resolved "https://registry.yarnpkg.com/fs-minipass/-/fs-minipass-1.2.6.tgz#2c5cc30ded81282bfe8a0d7c7c1853ddeb102c07"
@@ -5975,6 +5992,14 @@ https-proxy-agent@^1.0.0:
     agent-base "2"
     debug "2"
     extend "3"
+
+https-proxy-agent@^2.2.1:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/https-proxy-agent/-/https-proxy-agent-2.2.2.tgz#271ea8e90f836ac9f119daccd39c19ff7dfb0793"
+  integrity sha512-c8Ndjc9Bkpfx/vCJueCPy0jlP4ccCCSNDp8xwCZzPjKJUm+B+u9WX2x98Qx4n1PiMNTWo3D7KK5ifNV/yJyRzg==
+  dependencies:
+    agent-base "^4.3.0"
+    debug "^3.1.0"
 
 hyphenate-style-name@^1.0.2:
   version "1.0.3"
@@ -9400,6 +9425,11 @@ process@~0.5.1:
   resolved "https://registry.yarnpkg.com/process/-/process-0.5.2.tgz#1638d8a8e34c2f440a91db95ab9aeb677fc185cf"
   integrity sha1-FjjYqONML0QKkduVq5rrZ3/Bhc8=
 
+progress@2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/progress/-/progress-2.0.0.tgz#8a1be366bf8fc23db2bd23f10c6fe920b4389d1f"
+  integrity sha1-ihvjZr+Pwj2yvSPxDG/pILQ4nR8=
+
 progress@^2.0.0:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/progress/-/progress-2.0.3.tgz#7e8cf8d8f5b8f239c1bc68beb4eb78567d572ef8"
@@ -9489,6 +9519,11 @@ proxy-addr@~2.0.5:
   dependencies:
     forwarded "~0.1.2"
     ipaddr.js "1.9.0"
+
+proxy-from-env@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/proxy-from-env/-/proxy-from-env-1.0.0.tgz#33c50398f70ea7eb96d21f7b817630a55791c7ee"
+  integrity sha1-M8UDmPcOp+uW0h97gXYwpVeRx+4=
 
 prr@~1.0.1:
   version "1.0.1"
