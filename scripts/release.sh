@@ -2,7 +2,6 @@
 yarn api:db:migrate
 
 # Setup releases on Sentry
-export SENTRY_AUTH_TOKEN=c1ca8a7da65a4482a8d7ea10c9e10dea9a5aff40d0a044cb8ae2d020f7291b8a
 export SENTRY_ORG=argos
 VERSION=$(sentry-cli releases propose-version)
 
