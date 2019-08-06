@@ -1,4 +1,4 @@
-import GitHubAPI from 'github'
+import Octokit from '@octokit/rest'
 import config from 'config'
 import Build from 'server/models/Build'
 import BuildNotification from 'server/models/BuildNotification'
@@ -28,7 +28,7 @@ const NOTIFICATIONS = {
   },
 }
 
-async function pushBuildNotification({ type, buildId }) {
+export async function pushBuildNotification({ type, buildId }) {
   const buildNotification = await BuildNotification.query().insert({
     buildId,
     type,
@@ -37,8 +37,6 @@ async function pushBuildNotification({ type, buildId }) {
   buildNotificationJob.push(buildNotification.id)
   return buildNotification
 }
-
-export { pushBuildNotification }
 
 export async function processBuildNotification(buildNotification) {
   const build = await Build.query()
@@ -78,23 +76,21 @@ export async function processBuildNotification(buildNotification) {
     throw new Error('User not found')
   }
 
-  const github = new GitHubAPI({ debug: config.get('env') === 'development' })
-
-  github.authenticate({
-    type: 'oauth',
-    token: user.accessToken,
+  const octokit = new Octokit({
+    debug: config.get('env') === 'development',
+    auth: user.accessToken,
   })
 
   const buildUrl = await formatUrlFromBuild(build)
 
   // https://developer.github.com/v3/repos/statuses/
-  return github.repos.createStatus({
+  return octokit.repos.createStatus({
     owner: owner.login,
     repo: build.repository.name,
     sha: build.compareScreenshotBucket.commit,
     state: notification.state,
-    description: notification.description, // Short description of the status.
     target_url: buildUrl,
+    description: notification.description, // Short description of the status.
     context: 'argos',
   })
 }

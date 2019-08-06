@@ -4,9 +4,7 @@ import path from 'path'
 
 nock.back.fixtures = path.join(__dirname, '../../../test/fixtures')
 
-function playback(options) {
-  const { name, mode } = options
-
+function playback({ name, mode }) {
   let nockDoneSaved
 
   global.beforeAll(done => {
@@ -15,10 +13,7 @@ function playback(options) {
     nock.back(name, function teardown(nockDone) {
       nock.enableNetConnect()
       // eslint-disable-next-line no-console
-      console.log(
-        `playback: isLoaded ${!!this.isLoaded}, isRecording ${!!this
-          .isRecording}`,
-      )
+      console.log(`🎙  playback recording: ${Boolean(this.isRecording)}`)
       nockDoneSaved = nockDone
       done()
     })

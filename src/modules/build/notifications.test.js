@@ -1,6 +1,6 @@
-import nock from 'nock'
 import playback from 'server/test/playback'
 import { useDatabase } from 'server/test/utils'
+import { TEST_GITHUB_USER_ACCESS_TOKEN } from 'server/test/constants'
 import factory from 'server/test/factory'
 import buildNotificationJob from 'server/jobs/buildNotification'
 import {
@@ -11,16 +11,7 @@ import {
 jest.mock('server/jobs/buildNotification')
 
 describe('notifications', () => {
-  let build
-  let repository
-  let user
-  const commit = 'e8f58427ebe378ba73dea669c975122fcb8cb9cf'
-
   useDatabase()
-
-  beforeAll(() => {
-    buildNotificationJob.push = jest.fn()
-  })
 
   playback({
     name: 'notifications.json',
@@ -28,33 +19,13 @@ describe('notifications', () => {
     // mode: 'record',
   })
 
-  beforeEach(async () => {
-    user = await factory.create('User', {
-      // accessToken: process.env.TEST_GITHUB_USER_ACCESS_TOKEN,
-      accessToken: 'aaaa',
-    })
-    const organization = await factory.create('Organization', {
-      login: 'argos-ci',
-    })
-    repository = await factory.create('Repository', {
-      name: 'test-repository',
-      organizationId: organization.id,
-    })
-    await factory.create('UserRepositoryRight', {
-      userId: user.id,
-      repositoryId: repository.id,
-    })
-    const compareScreenshotBucket = await factory.create('ScreenshotBucket', {
-      commit,
-    })
-    build = await factory.create('Build', {
-      id: 750,
-      repositoryId: repository.id,
-      compareScreenshotBucketId: compareScreenshotBucket.id,
-    })
-  })
-
   describe('#pushBuildNotification', () => {
+    let build
+
+    beforeEach(async () => {
+      build = await factory.create('Build')
+    })
+
     it('should create a build notification and add a job', async () => {
       const buildNotification = await pushBuildNotification({
         buildId: build.id,
@@ -70,43 +41,92 @@ describe('notifications', () => {
   })
 
   describe('#processBuildNotification', () => {
-    it('should notify GitHub', async () => {
-      const buildNotification = await factory.create('BuildNotification', {
-        buildId: build.id,
-        type: 'progress',
-        jobStatus: 'pending',
+    describe('repository linked to an organization', () => {
+      let build
+
+      beforeEach(async () => {
+        const user = await factory.create('User', {
+          login: 'neoziro',
+          accessToken: TEST_GITHUB_USER_ACCESS_TOKEN,
+        })
+        const organization = await factory.create('Organization', {
+          login: 'argos-ci',
+        })
+        const repository = await factory.create('Repository', {
+          name: 'test-repository',
+          organizationId: organization.id,
+        })
+        await factory.create('UserRepositoryRight', {
+          userId: user.id,
+          repositoryId: repository.id,
+        })
+        const compareScreenshotBucket = await factory.create(
+          'ScreenshotBucket',
+          { commit: 'e8f58427ebe378ba73dea669c975122fcb8cb9cf' },
+        )
+        build = await factory.create('Build', {
+          id: 750, // Build id will be in request params
+          repositoryId: repository.id,
+          compareScreenshotBucketId: compareScreenshotBucket.id,
+        })
       })
 
-      const result = await processBuildNotification(buildNotification)
-      expect(result.data.id).not.toBeUndefined()
-      expect(result.data.description).toBe('Build in progress...')
-      expect(result.data.state).toBe('pending')
-      expect(result.data.target_url).toBe(
-        `http://www.test.argos-ci.com/argos-ci/test-repository/builds/${build.id}`,
-      )
+      it('should notify GitHub', async () => {
+        const buildNotification = await factory.create('BuildNotification', {
+          buildId: build.id,
+          type: 'progress',
+          jobStatus: 'pending',
+        })
+
+        const result = await processBuildNotification(buildNotification)
+        expect(result.data.id).not.toBeUndefined()
+        expect(result.data.description).toBe('Build in progress...')
+        expect(result.data.state).toBe('pending')
+        expect(result.data.target_url).toBe(
+          `http://www.test.argos-ci.com/argos-ci/test-repository/builds/${build.id}`,
+        )
+      })
     })
 
     describe('repository linked to a user', () => {
-      it('should create a status', async () => {
-        const response = {
-          foo: 'bar',
-        }
-        nock('https://api.github.com')
-          .post(
-            `/repos/user-3/test-repository/statuses/${commit}?access_token=aaaa`,
-          )
-          .reply(200, response)
-        await repository.$query().patch({
-          organizationId: null,
+      let build
+
+      beforeEach(async () => {
+        const user = await factory.create('User', {
+          login: 'neoziro',
+          accessToken: TEST_GITHUB_USER_ACCESS_TOKEN,
+        })
+        const repository = await factory.create('Repository', {
+          name: 'argos-test-repository',
           userId: user.id,
         })
+        await factory.create('UserRepositoryRight', {
+          userId: user.id,
+          repositoryId: repository.id,
+        })
+        const compareScreenshotBucket = await factory.create(
+          'ScreenshotBucket',
+          { commit: '77a0572157705698e4bfd26ce01a59029e8100d8' },
+        )
+        build = await factory.create('Build', {
+          id: 750, // Build id will be in request params
+          repositoryId: repository.id,
+          compareScreenshotBucketId: compareScreenshotBucket.id,
+        })
+      })
+
+      it('should create a status', async () => {
         const buildNotification = await factory.create('BuildNotification', {
           buildId: build.id,
           type: 'progress',
           jobStatus: 'pending',
         })
         const result = await processBuildNotification(buildNotification)
-        expect(result.data).toEqual(response)
+        expect(result.data.context).toBe('argos')
+        expect(result.data.state).toBe('pending')
+        expect(result.data.target_url).toBe(
+          `http://www.test.argos-ci.com/neoziro/argos-test-repository/builds/${build.id}`,
+        )
       })
     })
   })

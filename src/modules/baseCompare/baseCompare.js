@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node'
-import GitHubAPI from 'github'
+import Octokit from '@octokit/rest'
 import config from 'config'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 
@@ -39,7 +39,7 @@ async function getBaseScreenshotBucket({ commits, build }) {
   return buckets[0] || getLatestMasterBucket(build)
 }
 
-async function getCommits({ github, owner, repo, sha, perPage }) {
+async function getCommits({ octokit, owner, repo, sha, perPage }) {
   const params = {
     owner,
     repo,
@@ -49,13 +49,11 @@ async function getCommits({ github, owner, repo, sha, perPage }) {
   }
 
   try {
-    // http://stackoverflow.com/questions/9179828/github-api-retrieve-all-commits-for-all-branches-for-a-repo
-    // http://mikedeboer.github.io/node-github/#api-repos-getBranch
-    const response = await github.repos.getCommits(params)
+    const response = await octokit.repos.listCommits(params)
     return response.data
   } catch (error) {
     // Unauthorized
-    if (error.code !== 401) {
+    if (error.status !== 401) {
       Sentry.withScope(scope => {
         scope.setExtra('params', params)
         Sentry.captureException(error)
@@ -99,14 +97,13 @@ async function baseCompare({
 
   // Initialize GitHub API
   const owner = await build.repository.getOwner()
-  const github = new GitHubAPI({ debug: config.get('env') === 'development' })
-  github.authenticate({
-    type: 'oauth',
-    token: user.accessToken,
+  const octokit = new Octokit({
+    debug: config.get('env') === 'development',
+    auth: user.accessToken,
   })
 
   const baseCommits = await getCommits({
-    github,
+    octokit,
     owner: owner.login,
     repo: build.repository.name,
     sha: baseCommit,
@@ -114,7 +111,7 @@ async function baseCompare({
   })
 
   const compareCommits = await getCommits({
-    github,
+    octokit,
     owner: owner.login,
     repo: build.repository.name,
     sha: compareCommit,

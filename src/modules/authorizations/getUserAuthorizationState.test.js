@@ -11,7 +11,9 @@ jest.mock('modules/authorizations/githubClient')
 describe('getUserAuthorizationState', () => {
   describe('without a valid token', () => {
     beforeEach(() => {
-      githubClient.authorization.check.mockImplementation(notFoundToken())
+      githubClient.oauthAuthorizations.checkAuthorization.mockImplementation(
+        notFoundToken(),
+      )
     })
 
     it('should throw an error', async () => {
@@ -30,7 +32,7 @@ describe('getUserAuthorizationState', () => {
 
   describe('with a consistent token', () => {
     beforeEach(() => {
-      githubClient.authorization.check.mockImplementation(
+      githubClient.oauthAuthorizations.checkAuthorization.mockImplementation(
         validToken({
           scopes: PRIVATE_SCOPES,
         }),
@@ -49,7 +51,7 @@ describe('getUserAuthorizationState', () => {
 
   describe('with an inconsistent token', () => {
     beforeEach(() => {
-      githubClient.authorization.check.mockImplementationOnce(
+      githubClient.oauthAuthorizations.checkAuthorization.mockImplementationOnce(
         validToken({
           scopes: PUBLIC_SCOPES,
         }),
@@ -72,7 +74,7 @@ describe('getUserAuthorizationState', () => {
 
     describe('with a consistent previousToken', () => {
       beforeEach(() => {
-        githubClient.authorization.check.mockImplementationOnce(
+        githubClient.oauthAuthorizations.checkAuthorization.mockImplementationOnce(
           validToken({
             scopes: PRIVATE_SCOPES,
           }),
@@ -91,7 +93,7 @@ describe('getUserAuthorizationState', () => {
 
     describe('with an inconsistent previousToken', () => {
       beforeEach(() => {
-        githubClient.authorization.check.mockImplementationOnce(
+        githubClient.oauthAuthorizations.checkAuthorization.mockImplementationOnce(
           validToken({
             scopes: PUBLIC_SCOPES,
           }),
@@ -113,7 +115,9 @@ describe('getUserAuthorizationState', () => {
 
     describe('with an invalid previousToken', () => {
       beforeEach(() => {
-        githubClient.authorization.check.mockImplementationOnce(notFoundToken())
+        githubClient.oauthAuthorizations.checkAuthorization.mockImplementationOnce(
+          notFoundToken(),
+        )
       })
 
       it('should return accessToken and githubScopes', async () => {

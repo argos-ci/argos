@@ -1,4 +1,4 @@
-import GitHubAPI from 'github'
+import Octokit from '@octokit/rest'
 import config from 'config'
 import Organization from 'server/models/Organization'
 import Repository from 'server/models/Repository'
@@ -12,16 +12,14 @@ const OWNER_USER = 'User'
 class GitHubSynchronizer {
   constructor(synchronization) {
     this.synchronization = synchronization
-    this.github = new GitHubAPI({ debug: config.get('env') === 'development' })
     this.repositories = []
     this.organizationIds = []
   }
 
-  async synchronizeRepositories({ page = 1 } = {}) {
-    const githubRepositories = await this.github.repos.getAll({
-      page,
-      per_page: 100,
-    })
+  async synchronizeRepositories() {
+    const githubRepositories = await this.octokit.paginate(
+      this.octokit.repos.list.endpoint.DEFAULTS,
+    )
 
     const [
       {
@@ -35,7 +33,7 @@ class GitHubSynchronizer {
     ])
 
     const repositories = await Promise.all(
-      githubRepositories.data.map(async githubRepository => {
+      githubRepositories.map(async githubRepository => {
         const data = {
           githubId: githubRepository.id,
           name: githubRepository.name,
@@ -62,29 +60,11 @@ class GitHubSynchronizer {
       }),
     )
 
-    if (this.github.hasNextPage(githubRepositories)) {
-      const nextPageData = await this.synchronizeRepositories({
-        page: page + 1,
-      })
-
-      nextPageData.repositories.forEach(repository => {
-        if (!repositories.find(({ id }) => id === repository.id)) {
-          repositories.push(repository)
-        }
-      })
-
-      nextPageData.organizations.forEach(organization => {
-        if (!organizations.find(({ id }) => id === organization.id)) {
-          organizations.push(organization)
-        }
-      })
-    }
-
     return { repositories, organizations }
   }
 
   async synchronizeOwners(githubRepositories, type) {
-    const githubOwners = githubRepositories.data.reduce(
+    const githubOwners = githubRepositories.reduce(
       (githubOwners, githubRepository) => {
         if (githubRepository.owner.type !== type) {
           return githubOwners
@@ -125,7 +105,7 @@ class GitHubSynchronizer {
 
     return {
       owners,
-      ownerIdByRepositoryId: githubRepositories.data.reduce(
+      ownerIdByRepositoryId: githubRepositories.reduce(
         (ownerIdByRepositoryId, githubRepository) => {
           if (githubRepository.owner.type === type) {
             ownerIdByRepositoryId[githubRepository.id] = owners.find(
@@ -142,7 +122,7 @@ class GitHubSynchronizer {
 
   // eslint-disable-next-line class-methods-use-this
   async synchronizeOrganization(githubOrganization) {
-    const organizationData = await this.github.orgs.get({
+    const organizationData = await this.octokit.orgs.get({
       org: githubOrganization.login,
     })
     githubOrganization = organizationData.data
@@ -250,9 +230,9 @@ class GitHubSynchronizer {
   async synchronize() {
     this.synchronization = await this.synchronization.$query().eager('user')
 
-    this.github.authenticate({
-      type: 'oauth',
-      token: this.synchronization.user.accessToken,
+    this.octokit = new Octokit({
+      debug: config.get('env') === 'development',
+      auth: this.synchronization.user.accessToken,
     })
 
     await this.synchronization.$relatedQuery('user')

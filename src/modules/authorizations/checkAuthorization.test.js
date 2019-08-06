@@ -14,12 +14,14 @@ jest.mock('modules/authorizations/githubClient')
 describe('checkAuthorization', () => {
   describe('with a "Not found error" (code: 404)', () => {
     beforeEach(() => {
-      githubClient.authorization.check.mockImplementation(notFoundToken())
+      githubClient.oauthAuthorizations.checkAuthorization.mockImplementation(
+        notFoundToken(),
+      )
     })
 
     it('should return status: INVALID_TOKEN with a 404 error', async () => {
       const result = await checkAuthorization({
-        accessToken: 'my-token',
+        accessToken: 'xxx',
         privateSync: true,
       })
 
@@ -29,22 +31,22 @@ describe('checkAuthorization', () => {
 
   describe('with a valid response', () => {
     beforeEach(() => {
-      githubClient.authorization.check.mockImplementation(
+      githubClient.oauthAuthorizations.checkAuthorization.mockImplementation(
         validToken({
-          scopes: ['user:email', 'repo', 'read:org', 'orga'],
+          scopes: ['read:org', 'repo:status', 'user:email'],
         }),
       )
     })
 
     it('should return status: CONSISTENT with scopes', async () => {
       const result = await checkAuthorization({
-        accessToken: 'my-token',
-        privateSync: true,
+        accessToken: 'xxx',
+        privateSync: false,
       })
 
       expect(result).toEqual({
         status: CONSISTENT,
-        scopes: ['user:email', 'repo', 'read:org', 'orga'],
+        scopes: ['read:org', 'repo:status', 'user:email'],
       })
     })
   })
