@@ -6,7 +6,7 @@ function upload({ s3, inputPath, ...other }) {
   return s3
     .upload({
       Body: createReadStream(inputPath),
-      ContentType: mime.lookup(inputPath),
+      ContentType: mime.getType(inputPath),
       Key: uuid(),
       ...other,
     })
