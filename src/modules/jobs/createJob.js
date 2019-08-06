@@ -42,10 +42,12 @@ const createJob = (queue, consumer) => ({
         await consumer.perform(...payload.args)
         await consumer.complete(...payload.args)
       } catch (error) {
-        logAndCaptureError(error, {
-          args: payload.args,
-          queue,
-        })
+        if (error.ignoreCapture) {
+          logAndCaptureError(error, {
+            args: payload.args,
+            queue,
+          })
+        }
         channel.nack(msg, false, false)
         // Retry two times
         if (payload && payload.attempts < 2) {
