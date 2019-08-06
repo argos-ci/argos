@@ -8,7 +8,7 @@ describe('modules/rxjs/operator/watchTask', () => {
       Observable.of(null).watchTask('action', () => new Promise(() => {})),
       1,
     ).then(spy => {
-      const [[event]] = spy.args
+      const [[event]] = spy.mock.calls
       expect(event.payload.state).toBe(PROGRESS)
     }))
 
@@ -27,7 +27,7 @@ describe('modules/rxjs/operator/watchTask', () => {
         Observable.of(null).watchTask('action', () => Promise.resolve()),
         2,
       ).then(spy => {
-        const [, [event]] = spy.args
+        const [, [event]] = spy.mock.calls
         expect(event.payload.state).toBe(SUCCESS)
       }))
 
@@ -36,7 +36,7 @@ describe('modules/rxjs/operator/watchTask', () => {
         Observable.of(null).watchTask('action', () => Promise.resolve('bar')),
         2,
       ).then(spy => {
-        const [, [event]] = spy.args
+        const [, [event]] = spy.mock.calls
         expect(event.payload.output).toBe('bar')
       }))
   })
@@ -47,7 +47,7 @@ describe('modules/rxjs/operator/watchTask', () => {
         Observable.of(null).watchTask('action', () => Promise.reject()),
         2,
       ).then(spy => {
-        const [, [event]] = spy.args
+        const [, [event]] = spy.mock.calls
         expect(event.payload.state).toBe(ERROR)
       }))
 
@@ -58,7 +58,7 @@ describe('modules/rxjs/operator/watchTask', () => {
         ),
         2,
       ).then(spy => {
-        const [, [event]] = spy.args
+        const [, [event]] = spy.mock.calls
         expect(event.payload.output.message).toBe('bar')
       }))
   })

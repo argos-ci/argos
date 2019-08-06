@@ -1,9 +1,9 @@
-import { stub } from 'sinon'
-
 export const notFoundToken = () => {
   const notFoundError = new Error('Not found')
   notFoundError.status = 404
-  return stub().rejects(notFoundError)
+  return async () => {
+    throw notFoundError
+  }
 }
 
-export const validToken = ({ scopes }) => stub().resolves({ data: { scopes } })
+export const validToken = ({ scopes }) => async () => ({ data: { scopes } })

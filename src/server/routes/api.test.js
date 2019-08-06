@@ -1,11 +1,10 @@
-import { spy } from 'sinon'
 import { errorChecking } from './api'
 
 describe('api', () => {
   describe('errorChecking', () => {
     it('should fall back to the code', () => {
       const status = 401
-      const next = spy()
+      const next = jest.fn()
 
       errorChecking(() => {
         const githubError = new Error('')
@@ -14,7 +13,7 @@ describe('api', () => {
         throw githubError
       })(() => {}, () => {}, next)
 
-      expect(next.args[0][0].status).toBe(status)
+      expect(next.mock.calls[0][0].status).toBe(status)
     })
   })
 })

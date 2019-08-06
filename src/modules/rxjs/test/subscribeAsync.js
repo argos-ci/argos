@@ -1,5 +1,3 @@
-import { spy } from 'sinon'
-
 export const subscribeAsync = (observable, expectedEmissionsCount = 1) => {
   if (!Number.isInteger(expectedEmissionsCount)) {
     throw TypeError(
@@ -8,7 +6,7 @@ export const subscribeAsync = (observable, expectedEmissionsCount = 1) => {
   }
 
   return new Promise((resolve, reject) => {
-    const handle = spy()
+    const handle = jest.fn()
 
     const subscription = observable
       .do(handle)

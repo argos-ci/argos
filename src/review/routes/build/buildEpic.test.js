@@ -37,7 +37,7 @@ describe('buildEpic', () => {
       })
 
       return promise.then(spy => {
-        expect(spy.args[2][0].payload.state).toBe(SUCCESS)
+        expect(spy.mock.calls[2][0].payload.state).toBe(SUCCESS)
       })
     })
   })
