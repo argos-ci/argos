@@ -2,7 +2,9 @@ import Octokit from '@octokit/rest'
 import config from 'config'
 import Build from 'server/models/Build'
 import BuildNotification from 'server/models/BuildNotification'
+import UserRepositoryRight from 'server/models/UserRepositoryRight'
 import { formatUrlFromBuild } from 'modules/urls/buildUrl'
+import syncFromUserId from 'modules/synchronizer/syncFromUserId'
 import buildNotificationJob from 'server/jobs/buildNotification'
 
 const NOTIFICATIONS = {
@@ -84,13 +86,36 @@ export async function processBuildNotification(buildNotification) {
   const buildUrl = await formatUrlFromBuild(build)
 
   // https://developer.github.com/v3/repos/statuses/
-  return octokit.repos.createStatus({
-    owner: owner.login,
-    repo: build.repository.name,
-    sha: build.compareScreenshotBucket.commit,
-    state: notification.state,
-    target_url: buildUrl,
-    description: notification.description, // Short description of the status.
-    context: 'argos',
-  })
+  try {
+    return await octokit.repos.createStatus({
+      owner: owner.login,
+      repo: build.repository.name,
+      sha: build.compareScreenshotBucket.commit,
+      state: notification.state,
+      target_url: buildUrl,
+      description: notification.description, // Short description of the status.
+      context: 'argos',
+    })
+  } catch (error) {
+    // Several things here:
+    // - Token is no longer valid
+    // - The user lost access to the repository
+    // - The repository has been removed
+    if (error.status === 401 || error.status === 404) {
+      // We remove the right for the user
+      await UserRepositoryRight.query()
+        .where({ userId: user.id, repositoryId: build.repository.id })
+        .delete()
+      // We push a synchronization job to fix auth
+      await syncFromUserId(user.id)
+      // We push a new notification
+      await pushBuildNotification({
+        type: buildNotification.type,
+        buildId: build.id,
+      })
+      // The error should not be notified on Sentry
+      error.ignoreCapture = true
+    }
+    throw error
+  }
 }

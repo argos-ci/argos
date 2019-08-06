@@ -2,13 +2,17 @@ import playback from 'server/test/playback'
 import { useDatabase } from 'server/test/utils'
 import { TEST_GITHUB_USER_ACCESS_TOKEN } from 'server/test/constants'
 import factory from 'server/test/factory'
+import UserRepositoryRight from 'server/models/UserRepositoryRight'
+import BuildNotification from 'server/models/BuildNotification'
 import buildNotificationJob from 'server/jobs/buildNotification'
+import syncFromUserId from 'modules/synchronizer/syncFromUserId'
 import {
   processBuildNotification,
   pushBuildNotification,
 } from './notifications'
 
 jest.mock('server/jobs/buildNotification')
+jest.mock('modules/synchronizer/syncFromUserId')
 
 describe('notifications', () => {
   useDatabase()
@@ -127,6 +131,70 @@ describe('notifications', () => {
         expect(result.data.target_url).toBe(
           `http://www.test.argos-ci.com/neoziro/argos-test-repository/builds/${build.id}`,
         )
+      })
+    })
+
+    describe('repository with invalid token', () => {
+      let build
+      let user
+
+      beforeEach(async () => {
+        user = await factory.create('User', {
+          login: 'neoziro',
+          accessToken: 'invalid-token',
+        })
+        const organization = await factory.create('Organization', {
+          login: 'argos-ci',
+        })
+        const repository = await factory.create('Repository', {
+          name: 'test-repository',
+          organizationId: organization.id,
+        })
+        await factory.create('UserRepositoryRight', {
+          userId: user.id,
+          repositoryId: repository.id,
+        })
+        const compareScreenshotBucket = await factory.create(
+          'ScreenshotBucket',
+          { commit: 'e8f58427ebe378ba73dea669c975122fcb8cb9cf' },
+        )
+        build = await factory.create('Build', {
+          id: 750, // Build id will be in request params
+          repositoryId: repository.id,
+          compareScreenshotBucketId: compareScreenshotBucket.id,
+        })
+      })
+
+      it('should remove rights, add a sync job and add a build job', async () => {
+        expect.assertions(5)
+        const buildNotification = await factory.create('BuildNotification', {
+          buildId: build.id,
+          type: 'progress',
+          jobStatus: 'pending',
+        })
+
+        try {
+          await processBuildNotification(buildNotification)
+        } catch (error) {
+          expect(error.ignoreCapture).toBe(true)
+        }
+
+        // Rights removed
+        const userRepositoryRights = await UserRepositoryRight.query()
+        expect(userRepositoryRights).toHaveLength(0)
+
+        // Sync job
+        expect(syncFromUserId).toBeCalledWith(user.id)
+
+        // Build notification job
+        const newBuildNotification = await BuildNotification.query()
+          .whereNot({
+            id: buildNotification.id,
+          })
+          .first()
+
+        expect(newBuildNotification.type).toBe('progress')
+        expect(newBuildNotification.buildId).toBe(build.id)
       })
     })
   })
