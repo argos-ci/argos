@@ -3,26 +3,19 @@
 import ejs from 'ejs'
 import fs from 'fs'
 import path from 'path'
-import { minify } from 'html-minifier'
 import config from 'config'
 import { pick } from 'lodash'
 import getAuthorizationStatus from 'modules/authorizations/getAuthorizationStatus'
 import theme from 'modules/styles/theme'
 
 let htmlWebpackPlugin
-let indexString = fs.readFileSync(
+const indexString = fs.readFileSync(
   path.join(__dirname, '../../review/index.ejs'),
   'UTF-8',
 )
 
 if (process.env.NODE_ENV === 'production') {
   const assets = require('../../../server/static/review/assets.json')
-
-  indexString = minify(indexString, {
-    collapseWhitespace: true,
-    removeComments: true,
-    minifyJS: true,
-  })
 
   htmlWebpackPlugin = {
     files: {
