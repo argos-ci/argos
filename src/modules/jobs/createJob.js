@@ -42,7 +42,7 @@ const createJob = (queue, consumer) => ({
         await consumer.perform(...payload.args)
         await consumer.complete(...payload.args)
       } catch (error) {
-        if (error.ignoreCapture) {
+        if (!error.ignoreCapture) {
           logAndCaptureError(error, {
             args: payload.args,
             queue,
