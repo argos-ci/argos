@@ -14,14 +14,6 @@ const parseMessage = message => {
   return payload
 }
 
-const logAndCaptureError = (error, { args, queue }) => {
-  Sentry.withScope(scope => {
-    scope.setTag('jobQueue', queue)
-    scope.setExtra('jobArgs', args)
-    Sentry.captureException(error)
-  })
-}
-
 const createJob = (queue, consumer) => ({
   queue,
   async push(...args) {
@@ -32,6 +24,9 @@ const createJob = (queue, consumer) => ({
     })
   },
   async process({ channel }) {
+    Sentry.configureScope(scope => {
+      scope.setTag('jobQueue', queue)
+    })
     await channel.prefetch(1)
     await channel.assertQueue(queue, { durable: true })
     await channel.consume(queue, async msg => {
@@ -39,14 +34,14 @@ const createJob = (queue, consumer) => ({
 
       try {
         payload = parseMessage(msg.content)
+        Sentry.configureScope(scope => {
+          scope.setExtra('jobArgs', payload.args)
+        })
         await consumer.perform(...payload.args)
         await consumer.complete(...payload.args)
       } catch (error) {
         if (!error.ignoreCapture) {
-          logAndCaptureError(error, {
-            args: payload.args,
-            queue,
-          })
+          Sentry.captureException(error)
         }
         channel.nack(msg, false, false)
         // Retry two times
