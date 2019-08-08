@@ -5,14 +5,12 @@ import factory from 'server/test/factory'
 import UserRepositoryRight from 'server/models/UserRepositoryRight'
 import BuildNotification from 'server/models/BuildNotification'
 import buildNotificationJob from 'server/jobs/buildNotification'
-import syncFromUserId from 'modules/synchronizer/syncFromUserId'
 import {
   processBuildNotification,
   pushBuildNotification,
 } from './notifications'
 
 jest.mock('server/jobs/buildNotification')
-jest.mock('modules/synchronizer/syncFromUserId')
 
 describe('notifications', () => {
   useDatabase()
@@ -166,7 +164,7 @@ describe('notifications', () => {
       })
 
       it('should remove rights, add a sync job and add a build job', async () => {
-        expect.assertions(5)
+        expect.assertions(4)
         const buildNotification = await factory.create('BuildNotification', {
           buildId: build.id,
           type: 'progress',
@@ -182,9 +180,6 @@ describe('notifications', () => {
         // Rights removed
         const userRepositoryRights = await UserRepositoryRight.query()
         expect(userRepositoryRights).toHaveLength(0)
-
-        // Sync job
-        expect(syncFromUserId).toBeCalledWith(user.id)
 
         // Build notification job
         const newBuildNotification = await BuildNotification.query()

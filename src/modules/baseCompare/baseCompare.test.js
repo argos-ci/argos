@@ -5,8 +5,6 @@ import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
 import baseCompare from './baseCompare'
 
-jest.mock('modules/synchronizer/syncFromUserId')
-
 function nockGithub(branch) {
   return nock('https://api.github.com').get(
     `/repos/callemall/material-ui/commits?sha=${branch}&per_page=100&page=1`,
