@@ -2,9 +2,8 @@ import Octokit from '@octokit/rest'
 import config from 'config'
 import Build from 'server/models/Build'
 import BuildNotification from 'server/models/BuildNotification'
-import UserRepositoryRight from 'server/models/UserRepositoryRight'
 import { formatUrlFromBuild } from 'modules/urls/buildUrl'
-import syncFromUserId from 'modules/synchronizer/syncFromUserId'
+import removeUserRights from 'modules/authorizations/removeUserRights'
 import buildNotificationJob from 'server/jobs/buildNotification'
 
 const NOTIFICATIONS = {
@@ -102,12 +101,11 @@ export async function processBuildNotification(buildNotification) {
     // - The user lost access to the repository
     // - The repository has been removed
     if (error.status === 401 || error.status === 404) {
-      // We remove the right for the user
-      await UserRepositoryRight.query()
-        .where({ userId: user.id, repositoryId: build.repository.id })
-        .delete()
-      // We push a synchronization job to fix auth
-      await syncFromUserId(user.id)
+      // We remove the rights for the user
+      await removeUserRights({
+        userId: user.id,
+        repositoryId: build.repository.id,
+      })
       // We push a new notification
       await pushBuildNotification({
         type: buildNotification.type,

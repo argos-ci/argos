@@ -1,7 +1,7 @@
-import * as Sentry from '@sentry/node'
 import Octokit from '@octokit/rest'
 import config from 'config'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
+import removeUserRights from 'modules/authorizations/removeUserRights'
 
 async function getLatestMasterBucket(build) {
   const bucket = await ScreenshotBucket.query()
@@ -39,10 +39,10 @@ async function getBaseScreenshotBucket({ commits, build }) {
   return buckets[0] || getLatestMasterBucket(build)
 }
 
-async function getCommits({ octokit, owner, repo, sha, perPage }) {
+async function getCommits({ user, repository, octokit, owner, sha, perPage }) {
   const params = {
     owner,
-    repo,
+    repo: repository.name,
     sha,
     per_page: perPage,
     page: 1,
@@ -52,14 +52,21 @@ async function getCommits({ octokit, owner, repo, sha, perPage }) {
     const response = await octokit.repos.listCommits(params)
     return response.data
   } catch (error) {
-    // Unauthorized
-    if (error.status !== 401) {
-      Sentry.withScope(scope => {
-        scope.setExtra('params', params)
-        Sentry.captureException(error)
+    // Several things here:
+    // - Token is no longer valid
+    // - The user lost access to the repository
+    // - The repository has been removed
+    if (error.status === 401 || error.status === 404) {
+      // We remove the rights for the user
+      await removeUserRights({
+        userId: user.id,
+        repositoryId: repository.id,
       })
+      // The error should not be notified on Sentry
+      error.ignoreCapture = true
+      return []
     }
-    return []
+    throw error
   }
 }
 
@@ -103,17 +110,19 @@ async function baseCompare({
   })
 
   const baseCommits = await getCommits({
+    user,
+    repository: build.repository,
     octokit,
     owner: owner.login,
-    repo: build.repository.name,
     sha: baseCommit,
     perPage,
   })
 
   const compareCommits = await getCommits({
+    user,
+    repository: build.repository,
     octokit,
     owner: owner.login,
-    repo: build.repository.name,
     sha: compareCommit,
     perPage,
   })
