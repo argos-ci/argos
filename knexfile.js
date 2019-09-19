@@ -14,23 +14,26 @@ const configDefault = {
 }
 
 const config = {
-  development: Object.assign({}, configDefault, {
+  development: {
+    ...configDefault,
     debug: false,
     client: 'postgresql',
     connection: {
       user: 'postgres',
       database: 'development',
     },
-  }),
-  test: Object.assign({}, configDefault, {
+  },
+  test: {
+    ...configDefault,
     debug: false,
     client: 'postgresql',
     connection: {
       user: 'postgres',
       database: 'test',
     },
-  }),
-  production: Object.assign({}, configDefault, {
+  },
+  production: {
+    ...configDefault,
     debug: false,
     client: 'postgresql',
     pool: {
@@ -39,7 +42,7 @@ const config = {
         (maxConnectionsAllowed - freeConnectionsForThirdTools) / workers,
       ),
     },
-  }),
+  },
 }
 
 if (process.env.DATABASE_URL) {

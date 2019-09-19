@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 /* eslint-env browser */
 
 import 'reflect-metadata' // For Angular
