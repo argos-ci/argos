@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.12
--- Dumped by pg_dump version 9.6.12
+-- Dumped from database version 9.6.14
+-- Dumped by pg_dump version 9.6.14
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -12,6 +12,7 @@ SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
+SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
@@ -191,11 +192,33 @@ ALTER SEQUENCE public.knex_migrations_id_seq OWNED BY public.knex_migrations.id;
 --
 
 CREATE TABLE public.knex_migrations_lock (
+    index integer NOT NULL,
     is_locked integer
 );
 
 
 ALTER TABLE public.knex_migrations_lock OWNER TO postgres;
+
+--
+-- Name: knex_migrations_lock_index_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.knex_migrations_lock_index_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.knex_migrations_lock_index_seq OWNER TO postgres;
+
+--
+-- Name: knex_migrations_lock_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.knex_migrations_lock_index_seq OWNED BY public.knex_migrations_lock.index;
+
 
 --
 -- Name: organizations; Type: TABLE; Schema: public; Owner: postgres
@@ -287,7 +310,8 @@ CREATE TABLE public.screenshot_buckets (
     branch character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "repositoryId" bigint NOT NULL
+    "repositoryId" bigint NOT NULL,
+    complete boolean DEFAULT true
 );
 
 
@@ -565,6 +589,13 @@ ALTER TABLE ONLY public.knex_migrations ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
+-- Name: knex_migrations_lock index; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.knex_migrations_lock ALTER COLUMN index SET DEFAULT nextval('public.knex_migrations_lock_index_seq'::regclass);
+
+
+--
 -- Name: organizations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -641,6 +672,14 @@ ALTER TABLE ONLY public.build_notifications
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: knex_migrations_lock knex_migrations_lock_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.knex_migrations_lock
+    ADD CONSTRAINT knex_migrations_lock_pkey PRIMARY KEY (index);
 
 
 --
@@ -821,6 +860,13 @@ CREATE INDEX repositories_userid_index ON public.repositories USING btree ("user
 --
 
 CREATE INDEX screenshot_buckets_commit_index ON public.screenshot_buckets USING btree (commit);
+
+
+--
+-- Name: screenshot_buckets_complete_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_buckets_complete_index ON public.screenshot_buckets USING btree (complete);
 
 
 --
@@ -1079,3 +1125,4 @@ INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170402203440
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170628232300_add_scopes_to_users.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20180323213911_screenshot_batches.js', 1, NOW());
 INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20181017110213_indexes.js', 1, NOW());
+INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20190919113147_bucket-status.js', 1, NOW());

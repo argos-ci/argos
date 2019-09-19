@@ -9,6 +9,7 @@ export default class ScreenshotBucket extends BaseModel {
     required: ['name', 'commit', 'branch'],
     properties: {
       name: { type: 'string' },
+      complete: { type: 'boolean' },
       commit: {
         type: 'string',
         pattern: SHA1_REGEXP,
