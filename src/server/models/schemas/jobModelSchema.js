@@ -3,7 +3,7 @@ const jobModelSchema = {
   properties: {
     jobStatus: {
       type: 'string',
-      enum: ['pending', 'progress', 'complete', 'error'],
+      enum: ['pending', 'progress', 'complete', 'error', 'aborted'],
     },
   },
 }

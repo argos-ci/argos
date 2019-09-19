@@ -5,6 +5,7 @@ import multer from 'multer'
 import S3 from 'aws-sdk/clients/s3'
 import multerS3 from 'multer-s3'
 import config from 'config'
+import bodyParser from 'body-parser'
 import { formatUrlFromBuild } from 'modules/urls/buildUrl'
 import Build from 'server/models/Build'
 import Repository from 'server/models/Repository'
@@ -138,6 +139,10 @@ router.post(
           repository,
         })
 
+        if (build.jobStatus === 'aborted') {
+          throw new HttpError(400, 'Build is aborted')
+        }
+
         await build.compareScreenshotBucket.$relatedQuery('screenshots').insert(
           req.files.map((file, index) => ({
             screenshotBucketId: build.compareScreenshotBucket.id,
@@ -169,6 +174,54 @@ router.post(
         buildUrl,
       },
     })
+  }),
+)
+
+router.post(
+  '/cancel-build',
+  bodyParser.json(),
+  errorChecking(async (req, res) => {
+    if (!req.body.token) {
+      throw new HttpError(401, 'Missing token')
+    }
+
+    if (!req.body.externalBuildId) {
+      throw new HttpError(401, 'Missing externalBuildId')
+    }
+
+    const repository = await Repository.query()
+      .where({ token: req.body.token })
+      .limit(1)
+      .first()
+
+    if (!repository) {
+      throw new HttpError(
+        400,
+        `Repository not found (token: "${req.body.token}")`,
+      )
+    }
+
+    if (!repository.enabled) {
+      throw new HttpError(
+        400,
+        `Repository not enabled (name: "${repository.name}")`,
+      )
+    }
+
+    const build = await transaction(Build, async Build => {
+      const build = await Build.query().findOne({
+        'builds.repositoryId': repository.id,
+        externalId: req.body.externalBuildId,
+      })
+
+      if (!build) return null
+
+      await build.$query().patch({ jobStatus: 'aborted' })
+
+      return build
+    })
+
+    res.send({ build })
   }),
 )
 

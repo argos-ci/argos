@@ -49,6 +49,7 @@
     "apollo-server-express": "^2.9.3",
     "assets-webpack-plugin": "^3.9.10",
     "aws-sdk": "^2.531.0",
+    "body-parser": "^1.19.0",
     "browser-metrics": "^0.1.4",
     "chai": "^4.1.1",
     "classnames": "^2.2.5",
