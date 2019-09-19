@@ -13,6 +13,7 @@ export const typeDefs = gql`
     failure
     success
     error
+    aborted
   }
 
   type Build {
