@@ -4,6 +4,7 @@
   "rules": {
     "react/no-unescaped-entities": "off",
     "react/forbid-prop-types": "off",
+    "react/static-property-placement": "off",
     "import/no-cycle": "off"
   }
 }

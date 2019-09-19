@@ -17,11 +17,7 @@ export async function disconnect() {
   }
 
   const connection = await amqpConnectionPromise
-  try {
-    await connection.close()
-  } catch (error) {
-    throw error
-  }
+  await connection.close()
 }
 
 let channel
