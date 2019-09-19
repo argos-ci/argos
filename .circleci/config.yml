@@ -2,6 +2,9 @@ defaults: &defaults
   working_directory: /tmp/argos
   docker:
     - image: circleci/node:10
+    - image: circleci/redis
+      ports:
+        - '6379:6379'
     - image: postgres:9.6
       ports:
         - '5432:5432'
