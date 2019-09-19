@@ -42,12 +42,19 @@ export function errorChecking(routeHandler) {
   }
 }
 
-async function createBuild({ Build, ScreenshotBucket, data, repository }) {
+async function createBuild({
+  Build,
+  ScreenshotBucket,
+  data,
+  repository,
+  complete = true,
+}) {
   const bucket = await ScreenshotBucket.query().insertAndFetch({
     name: 'default',
     commit: data.commit,
     branch: data.branch,
     repositoryId: repository.id,
+    complete,
   })
 
   const build = await Build.query().insertAndFetch({
@@ -79,7 +86,13 @@ async function useExistingBuild({ Build, ScreenshotBucket, data, repository }) {
     return build
   }
 
-  return createBuild({ Build, ScreenshotBucket, data, repository })
+  return createBuild({
+    Build,
+    ScreenshotBucket,
+    data,
+    repository,
+    complete: false,
+  })
 }
 
 router.post(
@@ -143,6 +156,9 @@ router.post(
     const buildUrl = await formatUrlFromBuild(build)
 
     if (!data.batchCount || Number(data.batchCount) === build.batchCount) {
+      await build
+        .$relatedQuery('compareScreenshotBucket')
+        .patch({ complete: true })
       await buildJob.push(build.id)
     }
 

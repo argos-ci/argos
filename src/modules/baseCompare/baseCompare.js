@@ -8,6 +8,7 @@ async function getLatestMasterBucket(build) {
     .where({
       branch: build.repository.baselineBranch,
       repositoryId: build.repository.id,
+      complete: true,
     })
     .whereNot({
       id: build.compareScreenshotBucket.id,
@@ -27,6 +28,7 @@ async function getBaseScreenshotBucket({ commits, build }) {
     .where({
       repositoryId: build.repository.id,
       branch: build.repository.baselineBranch,
+      complete: true,
     })
     .whereIn('commit', shas)
 
