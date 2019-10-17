@@ -13,9 +13,16 @@ module.exports = {
     filename: prod ? '[name]-bundle-[chunkhash:8].js' : '[name].js',
     publicPath: '/static/review/',
   },
+  devtool: prod ? 'source-map' : false,
   resolve: {
+    extensions: ['.js', '.jsx'],
     alias: {
       raven: 'raven-js',
+      components: path.resolve(__dirname, 'src/review/components/'),
+      containers: path.resolve(__dirname, 'src/review/containers/'),
+      modules: path.resolve(__dirname, 'src/review/modules/'),
+      pages: path.resolve(__dirname, 'src/review/pages/'),
+      assets: path.resolve(__dirname, 'src/review/assets/'),
     },
   },
   module: {
@@ -27,6 +34,7 @@ module.exports = {
       },
       {
         test: /\.json$/,
+        exclude: /node_modules/,
         use: 'json-loader',
       },
       {
@@ -73,6 +81,7 @@ module.exports = {
       : []),
     new webpack.EnvironmentPlugin({
       PLATFORM: 'browser',
+      SENTRY_RELEASE: process.env.COMMIT_REF || '',
     }),
   ],
   devServer: {

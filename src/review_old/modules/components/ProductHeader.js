@@ -35,13 +35,7 @@ function ProductHeader(props) {
           <Typography variant="display1" component="h1" gutterBottom>
             {display1}
           </Typography>
-          <Typography
-            variant="headline"
-            component="h2"
-            className={classes.headline}
-          >
-            {headline}
-          </Typography>
+          <Typography variant="headline">{headline}</Typography>
           {children}
         </div>
         {beast}
