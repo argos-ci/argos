@@ -6,6 +6,7 @@ import S3 from 'aws-sdk/clients/s3'
 import multerS3 from 'multer-s3'
 import config from 'config'
 import bodyParser from 'body-parser'
+import { getRedisLock } from 'server/services/redis'
 import { formatUrlFromBuild } from 'modules/urls/buildUrl'
 import Build from 'server/models/Build'
 import Repository from 'server/models/Repository'
@@ -127,53 +128,63 @@ router.post(
     }
 
     const strategy = data.externalBuildId ? useExistingBuild : createBuild
+    const lock = getRedisLock()
 
-    let build = await transaction(
-      Build,
-      ScreenshotBucket,
-      async (Build, ScreenshotBucket) => {
-        const build = await strategy({
-          Build,
-          ScreenshotBucket,
-          data,
-          repository,
-        })
+    async function task() {
+      let build = await transaction(
+        Build,
+        ScreenshotBucket,
+        async (Build, ScreenshotBucket) => {
+          const build = await strategy({
+            Build,
+            ScreenshotBucket,
+            data,
+            repository,
+          })
 
-        if (build.jobStatus === 'aborted') {
-          throw new HttpError(400, 'Build is aborted')
-        }
+          if (build.jobStatus === 'aborted') {
+            throw new HttpError(400, 'Build is aborted')
+          }
 
-        await build.compareScreenshotBucket.$relatedQuery('screenshots').insert(
-          req.files.map((file, index) => ({
-            screenshotBucketId: build.compareScreenshotBucket.id,
-            name: data.names[index],
-            s3Id: file.key,
-          })),
-        )
+          await build.compareScreenshotBucket
+            .$relatedQuery('screenshots')
+            .insert(
+              req.files.map((file, index) => ({
+                screenshotBucketId: build.compareScreenshotBucket.id,
+                name: data.names[index],
+                s3Id: file.key,
+              })),
+            )
 
-        return build
-      },
-    )
+          return build
+        },
+      )
 
-    // So we don't reuse the previous transaction
-    build = await Build.query().findById(build.id)
+      // So we don't reuse the previous transaction
+      build = await Build.query().findById(build.id)
 
-    const buildUrl = await formatUrlFromBuild(build)
+      const buildUrl = await formatUrlFromBuild(build)
 
-    if (!data.batchCount || Number(data.batchCount) === build.batchCount) {
-      await build
-        .$relatedQuery('compareScreenshotBucket')
-        .patch({ complete: true })
-      await buildJob.push(build.id)
+      if (!data.batchCount || Number(data.batchCount) === build.batchCount) {
+        await build
+          .$relatedQuery('compareScreenshotBucket')
+          .patch({ complete: true })
+        await buildJob.push(build.id)
+      }
+
+      res.send({
+        build: {
+          ...build,
+          repository: undefined,
+          buildUrl,
+        },
+      })
     }
 
-    res.send({
-      build: {
-        ...build,
-        repository: undefined,
-        buildUrl,
-      },
-    })
+    const lockName = [data.token, data.commit, data.externalBuildId]
+      .filter(Boolean)
+      .join('-')
+    await lock(lockName, task)
   }),
 )
 
