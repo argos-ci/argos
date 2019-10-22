@@ -69,7 +69,7 @@ export function AppNavbar() {
           <Button
             variant="dark"
             as="a"
-            href={`https://github.com/login/oauth/authorize?scope=user:email&client_id=${process.env.GITHUB_CLIENT_ID}`}
+            href="/auth/github-public"
             display="flex"
             alignItems="center"
           >

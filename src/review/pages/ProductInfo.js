@@ -1,7 +1,7 @@
 import React from 'react'
 import styled, { css } from '@xstyled/styled-components'
 import { Box, Text, Button } from '@smooth-ui/core-sc'
-import { up, down, variant } from '@xstyled/system'
+import { up, down, variant, th } from '@xstyled/system'
 
 import LayoutBody from 'components/LayoutBody'
 import ProductHeader from 'components/ProductHeader'
@@ -48,6 +48,9 @@ const StyledProductShowcaseContainer = styled.box`
 
   ${variant({
     variants: {
+      gray: css`
+        background: ${th.color('gray200')};
+      `,
       white: css`
         background: white;
       `,
@@ -65,7 +68,7 @@ const ProductShowcase = ({ description, title, image, textPosition, size }) => {
   const colMd = image ? 5 / 12 : 1
   return (
     <StyledProductShowcaseContainer
-      variant={textPosition === 'right' && 'white'}
+      variant={textPosition === 'right' ? 'gray' : 'white'}
     >
       <LayoutBody variant="margin">
         <Box
@@ -77,7 +80,7 @@ const ProductShowcase = ({ description, title, image, textPosition, size }) => {
             <Text
               variant={size === 'large' ? 'display1' : 'title'}
               forwardedAs="h3"
-              gutterBottom
+              mb={2}
             >
               {title}
             </Text>
@@ -146,12 +149,8 @@ const ProductInfo = () => (
       headline="Argos's visual regression system gives you high confidence in doing changes."
       beast={<StyledBeast />}
     >
-      <Button
-        component={props => (
-          <Link {...props} variant="button" href="/auth/github-public" />
-        )}
-      >
-        {'Try it'}
+      <Button as="a" href="/auth/github-public">
+        Try it
       </Button>
     </ProductHeader>
     <ProductShowcase
