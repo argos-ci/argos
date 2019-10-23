@@ -11,7 +11,7 @@ function ApolloProvider({ children, authToken }) {
   const apolloClient = React.useMemo(
     () =>
       new ApolloClient({
-        uri: `${process.env.API_BASE_URL}/graphql`,
+        uri: `/graphql`,
         headers: {
           authorization,
         },

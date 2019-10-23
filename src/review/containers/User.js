@@ -9,17 +9,13 @@ const UserQuery = gql`
   query User {
     user {
       id
+      email
+      name
       login
+      privateSync
       latestSynchronization {
         id
         jobStatus
-      }
-      installations {
-        id
-        latestSynchronization {
-          id
-          jobStatus
-        }
       }
     }
   }
@@ -29,6 +25,7 @@ export function UserInitializer({ children }) {
   const token = useAuthToken()
   const logout = useLogout()
   const { loading, data, refetch } = useQuery(UserQuery, { skip: !token })
+
   // Remove token if outdated
   React.useEffect(() => {
     if (!loading && token && data.user === null) {

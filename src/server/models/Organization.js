@@ -1,4 +1,5 @@
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
+import { OWNER_TYPES } from 'server/constants'
 
 export default class Organization extends BaseModel {
   static tableName = 'organizations'
@@ -33,5 +34,9 @@ export default class Organization extends BaseModel {
         to: 'repositories.id',
       },
     },
+  }
+
+  type() {
+    return OWNER_TYPES.organization
   }
 }

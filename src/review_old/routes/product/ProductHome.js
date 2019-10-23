@@ -75,7 +75,7 @@ function ProductHome(props) {
             variant="raised"
             color="secondary"
             component={props => (
-              <Link {...props} variant="button" href="/auth/github-public" />
+              <Link {...props} variant="button" href="/auth/github/public" />
             )}
           >
             {'Try it'}

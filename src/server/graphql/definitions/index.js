@@ -10,6 +10,8 @@ import * as ScreenshotBucket from './ScreenshotBucket'
 import * as ScreenshotDiff from './ScreenshotDiff'
 import * as User from './User'
 import * as ValidationStatus from './ValidationStatus'
+import * as Synchronization from './Synchronization'
+import * as Permission from './Permission'
 
 export const definitions = [
   Build,
@@ -24,4 +26,6 @@ export const definitions = [
   ScreenshotDiff,
   User,
   ValidationStatus,
+  Synchronization,
+  Permission,
 ]

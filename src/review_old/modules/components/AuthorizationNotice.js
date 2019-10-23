@@ -40,8 +40,8 @@ function AuthorizationNotice({ authorizationStatus, classes, user }) {
                 variant="button"
                 href={
                   user.privateSync
-                    ? '/auth/github-private'
-                    : '/auth/github-public'
+                    ? '/auth/github/private'
+                    : '/auth/github/public'
                 }
               />
             )}

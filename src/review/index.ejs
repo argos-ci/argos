@@ -49,6 +49,8 @@
       }
       gtag('js', new Date())
       gtag('config', '<%= config.get("googleAnalytics") %>')
+
+      window.clientData = <%- clientData %>;
     </script>
 
     <% htmlWebpackPlugin.files.js.forEach((file) => { %>

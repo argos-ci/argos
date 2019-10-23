@@ -4,7 +4,9 @@ import { useStoreState } from './Store'
 const AuthContext = React.createContext()
 
 function AuthProvider({ children }) {
-  const [token, setToken] = useStoreState('token', null)
+  const { user } = global.clientData
+  const { email } = user
+  const [token, setToken] = useStoreState('token', !!email || null)
   const value = React.useMemo(() => ({ token, setToken }), [token, setToken])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

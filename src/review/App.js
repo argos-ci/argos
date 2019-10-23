@@ -1,6 +1,6 @@
 import React from 'react'
 import { Helmet } from 'react-helmet'
-import { BrowserRouter, Route, Switch, Redirect } from 'react-router-dom'
+import { BrowserRouter, Route, Switch } from 'react-router-dom'
 import { Normalize } from '@smooth-ui/core-sc'
 import { ScrollToTop, GoogleAnalytics } from 'containers/Router'
 import { AuthInitializer } from 'containers/Auth'
@@ -14,7 +14,6 @@ import { Home } from 'pages/Home'
 import { Owner } from 'pages/Owner'
 import { ErrorPage } from 'pages/ErrorPage'
 import { Repository } from 'pages/Repository'
-import { AuthCallback } from 'pages/AuthCallback'
 import { NotFound } from 'pages/NotFound'
 import { Documentation } from 'pages/Documentation'
 import Privacy from 'pages/Privacy.md'
@@ -47,11 +46,6 @@ export function App() {
               <UserInitializer>
                 <Switch>
                   <Route
-                    exact
-                    path="/auth/github/callback"
-                    component={AuthCallback}
-                  />
-                  <Route
                     render={() => (
                       <Layout>
                         <LayoutHeader>
@@ -62,7 +56,6 @@ export function App() {
                           <Catch fallback={<ErrorPage />}>
                             <Switch>
                               <Route exact path="/" component={Home} />
-                              <Redirect exact path="/gh" to="/" />
                               <Route
                                 exact
                                 path="/privacy"
@@ -114,16 +107,16 @@ export function App() {
                               />
                               <Route
                                 exact
-                                path="/gh/:ownerLogin"
+                                path="/:ownerLogin"
                                 component={Owner}
                               />
                               <Route
                                 exact
-                                path="/account/gh/:ownerLogin"
+                                path="/account/:ownerLogin"
                                 component={Owner}
                               />
                               <Route
-                                path="/gh/:ownerLogin/:repositoryName"
+                                path="/:ownerLogin/:repositoryName"
                                 component={Repository}
                               />
                               <Route component={NotFound} />

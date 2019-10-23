@@ -3,7 +3,6 @@ import { theme as suiTheme } from '@smooth-ui/core-sc'
 import { css, ThemeProvider } from '@xstyled/styled-components'
 import { rpxTransformers } from '@xstyled/system'
 
-console.log(suiTheme)
 const theme = {
   ...suiTheme,
   sizes: {

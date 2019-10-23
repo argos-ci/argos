@@ -149,7 +149,7 @@ const ProductInfo = () => (
       headline="Argos's visual regression system gives you high confidence in doing changes."
       beast={<StyledBeast />}
     >
-      <Button as="a" href="/auth/github-public">
+      <Button as="a" href="/auth/github/public">
         Try it
       </Button>
     </ProductHeader>

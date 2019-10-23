@@ -8,6 +8,7 @@ import {
   MenuDisclosure,
   useMenuState,
 } from '@smooth-ui/core-sc'
+import configBrowser from 'configBrowser'
 import { FaGithub } from 'react-icons/fa'
 import {
   NavbarSecondary,
@@ -20,6 +21,8 @@ import { OwnerAvatar } from 'containers/OwnerAvatar'
 import { useLogout } from './Auth'
 import { useUser } from './User'
 
+delete MenuDisclosure.propTypes.children
+
 function UserMenu({ user }) {
   const logout = useLogout()
   const menu = useMenuState({
@@ -27,6 +30,7 @@ function UserMenu({ user }) {
     unstable_gutter: 4,
     unstable_animated: true,
   })
+  console.log(user)
 
   return (
     <>
@@ -36,14 +40,24 @@ function UserMenu({ user }) {
         )}
       </MenuDisclosure>
       <Menu aria-label="User settings" {...menu}>
+        {!user.privateSync && (
+          <MenuItem
+            {...menu}
+            forwardedAs="a"
+            href="/auth/github-private"
+            rel="noopener noreferrer"
+          >
+            Sync. private repos
+          </MenuItem>
+        )}
         <MenuItem
           {...menu}
           forwardedAs="a"
-          href={process.env.GITHUB_APP_URL}
+          href={configBrowser.get('github.applicationUrl')}
           target="_blank"
           rel="noopener noreferrer"
         >
-          Add repository
+          Manage permissions
         </MenuItem>
         <MenuItem {...menu} onClick={() => logout()}>
           Logout
