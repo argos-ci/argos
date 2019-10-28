@@ -44,7 +44,7 @@ export function RepositorySettings() {
                 application take a look at our{' '}
                 <FadeLink
                   color="white"
-                  to={`/${owner.login}/${repository.name}/getting-started`}
+                  href={`/${owner.login}/${repository.name}/getting-started`}
                   variant="primary"
                 >
                   documentation.
