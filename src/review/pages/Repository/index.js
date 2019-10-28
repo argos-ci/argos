@@ -1,7 +1,7 @@
 import React from 'react'
 import { Helmet } from 'react-helmet'
 import gql from 'graphql-tag'
-import { Route, Link, Switch } from 'react-router-dom'
+import { Route, Link, Switch, Redirect, useLocation } from 'react-router-dom'
 import styled, { Box } from '@xstyled/styled-components'
 import { GoRepo } from 'react-icons/go'
 import { FaGithub } from 'react-icons/fa'
@@ -22,10 +22,10 @@ import {
   RepositoryContextFragment,
   useRepository,
 } from './RepositoryContext'
-import { RepositoryOverview } from './Overview'
 import { RepositoryBuilds } from './Builds'
 import { RepositorySettings } from './Settings'
 import { BuildDetail } from './BuildDetail'
+import { GettingStarted } from './GettingStarted'
 import { NotFound } from '../NotFound'
 
 function hasWritePermission(repository) {
@@ -47,16 +47,14 @@ const RepoTitlePart = styled(Text)`
 function RepositoryHeader() {
   const repository = useRepository()
   const { match } = useRouter()
+
   return (
     <Header>
       <HeaderBody>
         <HeaderPrimary>
           <HeaderTitle>
             <Box forwardedAs={GoRepo} display="block" mt="6rpx" />
-            <RepoTitlePart
-              forwardedAs={Link}
-              to={`/gh/${repository.owner.login}`}
-            >
+            <RepoTitlePart forwardedAs={Link} to={`/${repository.owner.login}`}>
               {repository.owner.login}
             </RepoTitlePart>
             / <RepoTitlePart>{repository.name}</RepoTitlePart>
@@ -74,10 +72,9 @@ function RepositoryHeader() {
           </HeaderSecondaryLink>
         </HeaderPrimary>
         <TabList>
-          <RouterTabItem exact to={match.url}>
-            Overview
-          </RouterTabItem>
-          <RouterTabItem to={`${match.url}/builds`}>Builds</RouterTabItem>
+          {repository.enabled ? (
+            <RouterTabItem to={`${match.url}/builds`}>Builds</RouterTabItem>
+          ) : null}
           {hasWritePermission(repository) ? (
             <RouterTabItem to={`${match.url}/settings`}>Settings</RouterTabItem>
           ) : null}
@@ -93,23 +90,33 @@ export function Repository({
     params: { ownerLogin, repositoryName },
   },
 }) {
+  const location = useLocation()
+
   return (
     <Query
       query={gql`
-        query Repository($ownerLogin: String!, $name: String!) {
-          repository(ownerLogin: $ownerLogin, name: $name) {
+        query Repository($ownerLogin: String!, $repositoryName: String!) {
+          repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
             ...RepositoryContextFragment
           }
         }
 
         ${RepositoryContextFragment}
       `}
-      variables={{ ownerLogin, name: repositoryName }}
+      variables={{ ownerLogin, repositoryName }}
     >
       {({ repository }) => {
         if (!repository) {
           return <NotFound />
         }
+
+        if (
+          !repository.enabled &&
+          location.pathname.indexOf('settings') === -1
+        ) {
+          return <Redirect push to={`${url}/settings`} />
+        }
+
         return (
           <RepositoryProvider repository={repository}>
             <>
@@ -119,7 +126,6 @@ export function Repository({
               />
               <RepositoryHeader />
               <Switch>
-                <Route exact path={url} component={RepositoryOverview} />
                 <Route
                   exact
                   path={`${url}/builds/:buildNumber(\\d+)`}
@@ -129,6 +135,11 @@ export function Repository({
                   exact
                   path={`${url}/builds`}
                   component={RepositoryBuilds}
+                />
+                <Route
+                  exact
+                  path={`${url}/getting-started`}
+                  component={GettingStarted}
                 />
                 {hasWritePermission(repository) ? (
                   <Route

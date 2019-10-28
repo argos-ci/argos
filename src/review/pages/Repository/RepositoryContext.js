@@ -2,29 +2,34 @@ import React from 'react'
 import gql from 'graphql-tag'
 import { useMutation } from '@apollo/react-hooks'
 // eslint-disable-next-line import/no-cycle
-import { BuildDetailFragment } from './BuildDetail'
+// import { BuildDetailFragment } from './BuildDetail'
 
 export const RepositoryContextFragment = gql`
   fragment RepositoryContextFragment on Repository {
     id
     name
     token
+    enabled
     permissions
-    baselineBranch
-    archived
-    active
-    config
     owner {
-      id
-      name
       login
+      name
     }
-    overviewBuild {
-      ...BuildDetailFragment
+    sampleBuildId
+    builds(first: 5, after: 0) {
+      pageInfo {
+        totalCount
+        endCursor
+        hasNextPage
+      }
+      edges {
+        id
+        number
+        status
+        createdAt
+      }
     }
   }
-
-  ${BuildDetailFragment}
 `
 
 const RepositoryContext = React.createContext()
@@ -34,25 +39,30 @@ export function RepositoryProvider({
   children,
 }) {
   const [repository, setRepository] = React.useState(initialRepository)
-  const [updateRepository, { data: updateData }] = useMutation(gql`
-    mutation UpdateRepository($repository: RepositoryUpdate!) {
-      updateRepository(repository: $repository) {
+  const [
+    toggleRepository,
+    { loading: queryLoading, error: queryError, data: updateData },
+  ] = useMutation(gql`
+    mutation toggleRepository($enabled: Boolean!, $repositoryId: String!) {
+      toggleRepository(enabled: $enabled, repositoryId: $repositoryId) {
         ...RepositoryContextFragment
       }
     }
     ${RepositoryContextFragment}
   `)
   React.useEffect(() => {
-    if (updateData && updateData.updateRepository) {
-      setRepository(updateData.updateRepository)
+    if (updateData && updateData.toggleRepository) {
+      setRepository(updateData.toggleRepository)
     }
-  }, [updateData])
+  }, [queryError, queryLoading, updateData])
   const value = React.useMemo(
     () => ({
       repository,
-      updateRepository,
+      toggleRepository,
+      queryLoading,
+      queryError,
     }),
-    [repository, updateRepository],
+    [queryError, queryLoading, repository, toggleRepository],
   )
   return (
     <RepositoryContext.Provider value={value}>
@@ -66,7 +76,11 @@ export function useRepository() {
   return repository
 }
 
-export function useUpdateRepository() {
-  const { updateRepository } = React.useContext(RepositoryContext)
-  return updateRepository
+export function useToggleRepository() {
+  const {
+    toggleRepository,
+    queryLoading: loading,
+    queryError: error,
+  } = React.useContext(RepositoryContext)
+  return { toggleRepository, loading, error }
 }

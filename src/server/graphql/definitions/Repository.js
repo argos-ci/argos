@@ -20,7 +20,7 @@ export const typeDefs = gql`
     "Builds associated to the repository"
     builds(first: Int!, after: Int!): BuildResult!
     "Determine if the current user has write access to the repository"
-    authorization: Boolean!
+    permissions: [Permission]!
     "Owner of the repository"
     owner: Owner
     sampleBuildId: ID
@@ -39,13 +39,43 @@ export const typeDefs = gql`
 
 const generateRandomBytes = promisify(crypto.randomBytes)
 
+export async function getRepository({ ownerLogin, name, user }) {
+  const owner = await getOwner({ login: ownerLogin })
+  if (!owner) return null
+
+  const repository = await Repository.query()
+    .where({
+      [`${owner.type()}Id`]: owner.id,
+      name,
+    })
+    .limit(1)
+    .first()
+
+  if (!repository) return null
+
+  const hasReadPermission = await repository.$checkReadPermission(user)
+  if (!hasReadPermission) return null
+
+  return repository
+}
+
 export const resolvers = {
   Repository: {
     async token(repository, args, context) {
-      const authorized = await repository.authorization(context.user)
-      if (!authorized) return null
-
+      const hasWritePermission = await repository.$checkWritePermission(
+        context.user,
+      )
+      if (!hasWritePermission) return null
       return repository.token
+    },
+    async owner(repository) {
+      return repository.$relatedOwner()
+    },
+    async permissions(repository, args, context) {
+      const hasWritePermission = await repository.$checkWritePermission(
+        context.user,
+      )
+      return hasWritePermission ? ['read', 'write'] : ['read']
     },
     async builds(repository, args) {
       const result = await Build.query()
@@ -65,12 +95,6 @@ export const resolvers = {
         edges: result.results,
       }
     },
-    async authorization(repository, args, context) {
-      return repository.authorization(context.user)
-    },
-    async owner(repository) {
-      return repository.getOwner()
-    },
     async sampleBuildId(repository) {
       return Build.query()
         .where({
@@ -84,21 +108,11 @@ export const resolvers = {
   },
   Query: {
     async repository(rootObj, args, context) {
-      const owner = await getOwner({ login: args.ownerLogin })
-      if (!owner) return null
-
-      const repository = await Repository.query()
-        .where({
-          [`${owner.type}Id`]: owner.id,
-          name: args.repositoryName,
-        })
-        .limit(1)
-        .first()
-
-      const accessible = await Repository.isAccessible(repository, context.user)
-      if (!accessible) return null
-
-      return repository
+      return getRepository({
+        ownerLogin: args.ownerLogin,
+        name: args.repositoryName,
+        user: context.user,
+      })
     },
   },
   Mutation: {
@@ -108,6 +122,7 @@ export const resolvers = {
       }
 
       const { repositoryId, enabled } = args
+      console.log(repositoryId, enabled)
       const user = await Repository.getUsers(repositoryId).findById(
         context.user.id,
       )

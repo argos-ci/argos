@@ -52,6 +52,7 @@ async function getCommits({ user, repository, octokit, owner, sha, perPage }) {
 
   try {
     const response = await octokit.repos.listCommits(params)
+    console.log('response', response)
     return response.data
   } catch (error) {
     // Several things here:

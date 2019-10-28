@@ -30,7 +30,6 @@ function UserMenu({ user }) {
     unstable_gutter: 4,
     unstable_animated: true,
   })
-  console.log(user)
 
   return (
     <>

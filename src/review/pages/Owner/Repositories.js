@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import styled, { Box } from '@xstyled/styled-components'
 import { Query } from 'containers/Apollo'
 import { GoRepo } from 'react-icons/go'
-import { getTotalAssetsSize } from 'modules/stats'
+import moment from 'moment'
 import {
   Container,
   Card,
@@ -12,7 +12,6 @@ import {
   CardTitle,
   CardBody,
   FadeLink,
-  FileSize,
 } from 'components'
 import { useOwner } from './OwnerContext'
 
@@ -29,54 +28,62 @@ const StatValue = styled.span`
 `
 
 export function RepositorySummary({ repository }) {
-  if (!repository.overviewBuild) {
+  const owner = useOwner()
+  if (
+    !repository.builds ||
+    !repository.builds.edges ||
+    repository.builds.edges.length === 0
+  ) {
     return <div>No info to display</div>
   }
-  const {
-    bundle: { stats },
-  } = repository.overviewBuild
+  const { pageInfo, edges } = repository.builds
+  const [lastBuild] = edges
   return (
     <Box>
-      <Box row mx={-4}>
+      <Box row mx={-3}>
         <Box
-          col={{ xs: 1, md: 1 / 4 }}
-          px={4}
+          col={{ xs: 1, md: 1 / 3 }}
+          px={3}
           borderRight={1}
           borderColor="gray600"
         >
           <Stat>
-            <StatLabel>Total size</StatLabel>
-            <StatValue>
-              <FileSize>{getTotalAssetsSize(stats)}</FileSize>
-            </StatValue>
+            <StatLabel>Total builds</StatLabel>
+            <StatValue>{pageInfo.totalCount}</StatValue>
           </Stat>
         </Box>
         <Box
-          col={{ xs: 1, md: 1 / 4 }}
-          px={4}
+          col={{ xs: 1, md: 1 / 3 }}
+          px={3}
           borderRight={1}
           borderColor="gray600"
         >
           <Stat>
-            <StatLabel>Chunks</StatLabel>
-            <StatValue>{stats.chunksNumber}</StatValue>
+            <StatLabel>
+              <FadeLink
+                forwardedAs={Link}
+                color="inherit"
+                to={`/${owner.login}/${repository.name}/builds/${lastBuild.id}`}
+              >
+                Last build
+              </FadeLink>
+            </StatLabel>
+            <StatValue>{moment(lastBuild.createdAt).fromNow()}</StatValue>
           </Stat>
         </Box>
-        <Box
-          col={{ xs: 1, md: 1 / 4 }}
-          px={4}
-          borderRight={1}
-          borderColor="gray600"
-        >
+        <Box col={{ xs: 1, md: 1 / 3 }} px={3} borderColor="gray600">
           <Stat>
-            <StatLabel>Modules</StatLabel>
-            <StatValue>{stats.modulesNumber}</StatValue>
-          </Stat>
-        </Box>
-        <Box col={{ xs: 1, md: 1 / 4 }} px={4}>
-          <Stat>
-            <StatLabel>Assets</StatLabel>
-            <StatValue>{stats.assets.length}</StatValue>
+            <StatLabel>
+              <FadeLink
+                forwardedAs={Link}
+                color="inherit"
+                to={`/${owner.login}/${repository.name}/builds/${lastBuild.id}`}
+              >
+                Last build
+              </FadeLink>{' '}
+              status
+            </StatLabel>
+            <StatValue>{lastBuild.status}</StatValue>
           </Stat>
         </Box>
       </Box>
@@ -103,7 +110,7 @@ function PassiveRepositories({ title, repositories }) {
               <FadeLink
                 forwardedAs={Link}
                 color="white"
-                to={`/gh/${owner.login}/${repository.name}`}
+                to={`/${owner.login}/${repository.name}/builds`}
               >
                 {repository.name}
               </FadeLink>
@@ -127,23 +134,15 @@ export function OwnerRepositories() {
               repositories {
                 id
                 name
-                active
-                archived
-                overviewBuild {
-                  id
-                  bundle {
+                enabled
+                builds(first: 1, after: 0) {
+                  pageInfo {
+                    totalCount
+                  }
+                  edges {
                     id
-                    stats {
-                      assets {
-                        name
-                        size
-                        gzipSize
-                        brotliSize
-                        chunkNames
-                      }
-                      chunksNumber
-                      modulesNumber
-                    }
+                    createdAt
+                    status
                   }
                 }
               }
@@ -160,19 +159,16 @@ export function OwnerRepositories() {
               </Container>
             )
           }
-          const activeRepositories = repositories.filter(
-            repository => repository.active && !repository.archived,
+          const enabledRepositories = repositories.filter(
+            repository => repository.enabled,
           )
-          const inactiveRepositories = repositories.filter(
-            repository => !repository.active && !repository.archived,
-          )
-          const archivedRepositories = repositories.filter(
-            repository => repository.archived,
+          const unenabledRepositories = repositories.filter(
+            repository => !repository.enabled,
           )
           return (
             <Container my={4}>
               <Box row my={-2} justifyContent="center">
-                {activeRepositories.map(repository => (
+                {enabledRepositories.map(repository => (
                   <Box col={1} py={2} key={repository.id}>
                     <Card>
                       <CardHeader display="flex" alignItems="center">
@@ -180,7 +176,7 @@ export function OwnerRepositories() {
                         <FadeLink
                           forwardedAs={Link}
                           color="white"
-                          to={`/gh/${owner.login}/${repository.name}`}
+                          to={`/${owner.login}/${repository.name}/builds`}
                         >
                           <CardTitle>{repository.name}</CardTitle>
                         </FadeLink>
@@ -193,11 +189,7 @@ export function OwnerRepositories() {
                 ))}
                 <PassiveRepositories
                   title="Inactive repositories"
-                  repositories={inactiveRepositories}
-                />
-                <PassiveRepositories
-                  title="Archived repositories"
-                  repositories={archivedRepositories}
+                  repositories={unenabledRepositories}
                 />
               </Box>
             </Container>

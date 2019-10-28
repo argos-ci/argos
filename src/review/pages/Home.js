@@ -2,14 +2,11 @@
 import React from 'react'
 import gql from 'graphql-tag'
 import { Link } from 'react-router-dom'
-import { Button } from '@smooth-ui/core-sc'
 import styled, { Box } from '@xstyled/styled-components'
 import { Query } from 'containers/Apollo'
 import { GoRepo } from 'react-icons/go'
 import { useUser } from 'containers/User'
-import { AbsoluteRedirect } from 'containers/Router'
 import { OwnerAvatar } from 'containers/OwnerAvatar'
-import { isUserSyncing } from 'modules/user'
 import {
   Container,
   Card,

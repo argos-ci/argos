@@ -112,7 +112,7 @@ export function App() {
                               />
                               <Route
                                 exact
-                                path="/account/:ownerLogin"
+                                path="/:ownerLogin/settings"
                                 component={Owner}
                               />
                               <Route

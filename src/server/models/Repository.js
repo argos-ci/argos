@@ -1,6 +1,10 @@
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
 import UserRepositoryRight from 'server/models/UserRepositoryRight'
 import User from 'server/models/User'
+import { promisify } from 'util'
+import crypto from 'crypto'
+
+const generateRandomBytes = promisify(crypto.randomBytes)
 
 export default class Repository extends BaseModel {
   static tableName = 'repositories'
@@ -46,29 +50,16 @@ export default class Repository extends BaseModel {
     },
   }
 
-  static getUsers(repositoryId) {
-    return User.query()
-      .select('users.*')
-      .join(
-        'user_repository_rights',
-        'users.id',
-        '=',
-        'user_repository_rights.userId',
-      )
-      .join(
-        'repositories',
-        'user_repository_rights.repositoryId',
-        '=',
-        'repositories.id',
-      )
-      .where('repositories.id', repositoryId)
-  }
-
   getUsers() {
     return this.constructor.getUsers(this.id)
   }
 
-  async getOwner() {
+  async $beforeInsert(queryContext) {
+    await super.$beforeInsert(queryContext)
+    this.token = await Repository.generateToken()
+  }
+
+  async $relatedOwner() {
     if (this.userId) {
       if (!this.user) {
         this.user = await this.$relatedQuery('user')
@@ -88,28 +79,47 @@ export default class Repository extends BaseModel {
     return null
   }
 
-  async authorization(user) {
-    if (!user) {
-      return false
-    }
+  static getUsers(repositoryId) {
+    return User.query()
+      .select('users.*')
+      .join(
+        'user_repository_rights',
+        'users.id',
+        '=',
+        'user_repository_rights.userId',
+      )
+      .join(
+        'repositories',
+        'user_repository_rights.repositoryId',
+        '=',
+        'repositories.id',
+      )
+      .where('repositories.id', repositoryId)
+  }
 
+  async $checkWritePermission(user) {
+    return Repository.checkWritePermission(this, user)
+  }
+
+  async $checkReadPermission(user) {
+    return Repository.checkReadPermission(this, user)
+  }
+
+  static async checkWritePermission(repository, user) {
+    if (!user) return false
     const userRepositoryRight = await UserRepositoryRight.query()
-      .where({ userId: user.id, repositoryId: this.id })
-      .limit(1)
+      .where({ userId: user.id, repositoryId: repository.id })
       .first()
-
     return Boolean(userRepositoryRight)
   }
 
-  static isAccessible(repository, user) {
-    if (!repository) {
-      return false
-    }
+  static async checkReadPermission(repository, user) {
+    if (!repository.private) return true
+    return Repository.checkWritePermission(repository, user)
+  }
 
-    if (repository.private !== true) {
-      return true
-    }
-
-    return repository.authorization(user)
+  static async generateToken() {
+    const token = await generateRandomBytes(20)
+    return token.toString('hex')
   }
 }

@@ -1,6 +1,7 @@
 import gql from 'graphql-tag'
 import User from 'server/models/User'
 import Organization from 'server/models/Organization'
+import { OWNER_TYPES } from 'server/constants'
 
 export const typeDefs = gql`
   enum OwnerType {
@@ -33,13 +34,17 @@ export async function getOwner({ login }) {
     .where({ login })
     .first()
 
-  if (owner) return owner
+  if (owner) {
+    return owner
+  }
 
   owner = await User.query()
     .where({ login })
     .first()
 
-  if (owner) return owner
+  if (owner) {
+    return owner
+  }
 
   return null
 }

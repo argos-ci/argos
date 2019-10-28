@@ -41,11 +41,11 @@ function OwnerHeader() {
           </HeaderSecondaryLink>
         </HeaderPrimary>
         <TabList>
-          <RouterTabItem exact to={`/gh/${owner.login}`}>
+          <RouterTabItem exact to={`/${owner.login}`}>
             Repositories
           </RouterTabItem>
           {hasWritePermission(owner) ? (
-            <RouterTabItem to={`/account/gh/${owner.login}`}>
+            <RouterTabItem to={`/${owner.login}/settings`}>
               Settings
             </RouterTabItem>
           ) : null}
@@ -97,12 +97,12 @@ export function Owner({
               <OwnerHeader />
               <Route
                 exact
-                path={`/gh/${owner.login}`}
+                path={`/${owner.login}`}
                 component={OwnerRepositories}
               />
               {hasWritePermission(owner) ? (
                 <Route
-                  path={`/account/gh/${ownerLogin}`}
+                  path={`/${ownerLogin}/settings`}
                   component={OwnerSettings}
                 />
               ) : null}

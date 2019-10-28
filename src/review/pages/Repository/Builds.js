@@ -24,7 +24,7 @@ export function RepositoryBuilds() {
       <Query
         query={gql`
           query RepositoryBuilds($ownerLogin: String!, $name: String!) {
-            repository(ownerLogin: $ownerLogin, name: $name) {
+            repository(ownerLogin: $ownerLogin, repositoryName: $name) {
               id
               builds(first: 50, after: 0) {
                 pageInfo {
@@ -36,17 +36,22 @@ export function RepositoryBuilds() {
                   id
                   createdAt
                   number
-                  commit
-                  branch
-                  conclusion
-                  jobStatus
-                  commitInfo {
-                    message
-                    author {
-                      avatarUrl
-                      name
-                      login
-                    }
+                  status
+                  baseScreenshotBucket {
+                    id
+                    createdAt
+                    updatedAt
+                    name
+                    commit
+                    branch
+                  }
+                  compareScreenshotBucket {
+                    id
+                    createdAt
+                    updatedAt
+                    name
+                    commit
+                    branch
                   }
                 }
               }
@@ -76,50 +81,32 @@ export function RepositoryBuilds() {
                             <FadeLink
                               forwardedAs={Link}
                               color={buildColor}
-                              to={`/gh/${repository.owner.login}/${repository.name}/builds/${build.number}`}
+                              to={`/${repository.owner.login}/${repository.name}/builds/${build.number}`}
                               display="flex"
                               alignItems="center"
                             >
                               <StatusIcon status={buildStatus} mr={2} />
-                              {build.branch}
+                              {build.compareScreenshotBucket.branch}
                             </FadeLink>
-                            <Box mt={1} display="flex" alignItems="center">
-                              <Box
-                                forwardedAs="img"
-                                borderRadius="base"
-                                alt={build.commitInfo.author.name}
-                                src={build.commitInfo.author.avatarUrl}
-                                width={18}
-                                height={18}
-                                mr={2}
-                              />
-                              {build.commitInfo.author.name}
-                            </Box>
                           </Box>
-                          <Box
-                            col={3 / 6}
-                            display={{ xs: 'none', md: 'block' }}
-                          >
-                            {build.commitInfo.message}
-                          </Box>
-                          <Box col={{ xs: 2 / 6, md: 1 / 6 }}>
+                          <Box col={{ xs: 2 / 6, md: 4 / 6 }}>
                             <FadeLink
                               forwardedAs={Link}
                               color={buildColor}
-                              to={`/gh/${repository.owner.login}/${repository.name}/builds/${build.number}`}
+                              to={`/${repository.owner.login}/${repository.name}/builds/${build.number}`}
                             >
                               #{build.number} {buildStatus}
                             </FadeLink>
                             <FadeLink
                               target="_blank"
                               rel="noopener noreferer"
-                              href={`https://github.com/${repository.owner.login}/${repository.name}/commit/${build.commit}`}
+                              href={`https://github.com/${repository.owner.login}/${repository.name}/commit/${build.compareScreenshotBucket.commit}`}
                               color="white"
                               display="flex"
                               alignItems="center"
                             >
                               <Box forwardedAs={GoGitCommit} mr={2} />
-                              {build.commit.slice(0, 7)}
+                              {build.compareScreenshotBucket.commit.slice(0, 7)}
                             </FadeLink>
                           </Box>
                           <Box

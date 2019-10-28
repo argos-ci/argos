@@ -92,35 +92,6 @@ export const BuildDetailFragment = gql`
         modulesNumber
       }
     }
-    sizeLimitReport {
-      checks {
-        name
-        conclusion
-        compareSize
-        compareMaxSize
-        compareCompression
-      }
-    }
-    sizeDiffReport {
-      result
-      size
-      baseSize
-      comparisons {
-        name
-        asset {
-          name
-          size
-          gzipSize
-          brotliSize
-        }
-        baseAsset {
-          name
-          size
-          gzipSize
-          brotliSize
-        }
-      }
-    }
   }
 `
 
