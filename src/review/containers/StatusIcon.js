@@ -7,8 +7,11 @@ export function StatusIcon({ status, ...props }) {
   const buildColor = getStatusColor(status)
   switch (status) {
     case 'failure':
+    case 'error':
+    case 'aborted':
       return <Box forwardedAs={FaTimes} color={buildColor} {...props} />
     case 'success':
+    case 'complete':
       return <Box forwardedAs={FaCheck} color={buildColor} {...props} />
     case 'pending':
       return <Box forwardedAs={FaDotCircle} color={buildColor} {...props} />

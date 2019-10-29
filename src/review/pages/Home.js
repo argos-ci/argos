@@ -86,7 +86,7 @@ export function Home() {
                           <RepositoryItem key={repository.id}>
                             <FadeLink
                               forwardedAs={Link}
-                              to={`/${owner.login}/${repository.name}`}
+                              to={`/${owner.login}/${repository.name}/builds`}
                               color="white"
                               fontWeight="medium"
                               fontSize={16}

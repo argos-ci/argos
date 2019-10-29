@@ -6,6 +6,7 @@ import {
   Container,
   Card,
   CardBody,
+  CardHeader,
   CardTitle,
   CardText,
 } from '../../components'
@@ -18,8 +19,10 @@ export function OwnerSettings() {
       </Helmet>
       <Boxer my={4}>
         <Card>
-          <CardBody>
+          <CardHeader>
             <CardTitle>Manage permissions</CardTitle>
+          </CardHeader>
+          <CardBody>
             <CardText>You can manage your permissions using this link</CardText>
             <Button
               as="a"

@@ -1,10 +1,11 @@
 import React from 'react'
-import { Boxer, Button } from '@smooth-ui/core-sc'
+import { Boxer, Alert, Button } from '@smooth-ui/core-sc'
 import { Helmet } from 'react-helmet'
 import {
   Container,
   Card,
   CardBody,
+  CardHeader,
   CardTitle,
   CardText,
   Code,
@@ -24,8 +25,10 @@ export function RepositorySettings() {
       <Boxer my={4}>
         {enabled && (
           <Card>
-            <CardBody>
+            <CardHeader>
               <CardTitle>Environment Variables</CardTitle>
+            </CardHeader>
+            <CardBody>
               <CardText>
                 To send data to Argos-ci you will need to configure a{' '}
                 <FadeLink
@@ -55,12 +58,16 @@ export function RepositorySettings() {
           </Card>
         )}
         <Card>
-          <CardBody>
+          <CardHeader>
             <CardTitle>
               {enabled ? 'Deactivate' : 'Activate'} Repository
             </CardTitle>
+          </CardHeader>
+          <CardBody>
             {error && (
-              <CardText>Something went wrong. Please try again.</CardText>
+              <Alert variant="danger">
+                Something went wrong. Please try again.
+              </Alert>
             )}
 
             <CardText>

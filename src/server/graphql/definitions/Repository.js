@@ -122,7 +122,6 @@ export const resolvers = {
       }
 
       const { repositoryId, enabled } = args
-      console.log(repositoryId, enabled)
       const user = await Repository.getUsers(repositoryId).findById(
         context.user.id,
       )

@@ -1,8 +1,6 @@
 import React from 'react'
 import gql from 'graphql-tag'
 import { useMutation } from '@apollo/react-hooks'
-// eslint-disable-next-line import/no-cycle
-// import { BuildDetailFragment } from './BuildDetail'
 
 export const RepositoryContextFragment = gql`
   fragment RepositoryContextFragment on Repository {

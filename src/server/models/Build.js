@@ -117,6 +117,7 @@ export default class Build extends BaseModel {
             validationStatus === VALIDATION_STATUSES.rejected ||
             (validationStatus === VALIDATION_STATUSES.unknown && score > 0),
         )
+
         return isFailure ? 'failure' : 'success'
       }
       if (useScore) {

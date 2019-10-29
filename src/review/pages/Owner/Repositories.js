@@ -3,6 +3,7 @@ import gql from 'graphql-tag'
 import { Link } from 'react-router-dom'
 import styled, { Box } from '@xstyled/styled-components'
 import { Query } from 'containers/Apollo'
+import Tooltip from 'react-tooltip'
 import { GoRepo } from 'react-icons/go'
 import moment from 'moment'
 import {
@@ -68,7 +69,12 @@ export function RepositorySummary({ repository }) {
                 Last build
               </FadeLink>
             </StatLabel>
-            <StatValue>{moment(lastBuild.createdAt).fromNow()}</StatValue>
+            <StatValue
+              data-tip={moment(lastBuild.createdAt).format('DD-MM-YYYY HH:MM')}
+            >
+              {moment(lastBuild.createdAt).fromNow()}
+            </StatValue>
+            <Tooltip />
           </Stat>
         </Box>
         <Box col={{ xs: 1, md: 1 / 3 }} px={3} borderColor="gray600">

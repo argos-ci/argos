@@ -1,5 +1,5 @@
 import React from 'react'
-import { Container, Card, CardTitle, CardBody } from 'components'
+import { Container, Card, CardHeader, CardTitle, CardBody } from 'components'
 import { Button } from '@smooth-ui/core-sc'
 import MarkdownElement from 'modules/components/MarkdownElement'
 import gettingStarted from './getting-started.md'
@@ -12,9 +12,11 @@ export function GettingStarted() {
   return (
     <Container my={4}>
       <Card>
-        <CardTitle variant="headline" gutterBottom>
-          Getting started
-        </CardTitle>
+        <CardHeader>
+          <CardTitle variant="headline" gutterBottom>
+            Getting started
+          </CardTitle>
+        </CardHeader>
 
         <CardBody>
           <MarkdownElement text={text} disableAnchor />

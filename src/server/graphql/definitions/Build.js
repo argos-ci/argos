@@ -10,6 +10,7 @@ export const typeDefs = gql`
   enum BuildStatus {
     pending
     progress
+    complete
     failure
     success
     error
@@ -91,7 +92,7 @@ export const resolvers = {
 
       if (!build) return null
 
-      const repositoryAccessible = await Repository.isAccessible(
+      const repositoryAccessible = await Repository.checkReadPermission(
         build.repository,
         context.user,
       )
