@@ -104,6 +104,7 @@ export function Repository({
         ${RepositoryContextFragment}
       `}
       variables={{ ownerLogin, repositoryName }}
+      fetchPolicy="no-cache"
     >
       {({ repository }) => {
         if (!repository) {

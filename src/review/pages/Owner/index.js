@@ -73,6 +73,7 @@ export function Owner({
         }
       `}
       variables={{ login: ownerLogin }}
+      fetchPolicy="no-cache"
     >
       {({ owner }) => {
         if (!owner) {
@@ -87,6 +88,7 @@ export function Owner({
             </Container>
           )
         }
+
         return (
           <OwnerProvider owner={owner}>
             <>

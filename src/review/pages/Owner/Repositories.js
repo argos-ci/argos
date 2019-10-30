@@ -156,6 +156,7 @@ export function OwnerRepositories() {
           }
         `}
         variables={{ login: owner.login }}
+        fetchPolicy="no-cache"
       >
         {({ owner: { repositories } }) => {
           if (!repositories.length) {
