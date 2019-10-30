@@ -1,7 +1,5 @@
 import { useDatabase } from 'server/test/utils'
 import factory from 'server/test/factory'
-import Organization from 'server/models/Organization'
-import User from 'server/models/User'
 
 describe('Repository', () => {
   useDatabase()
