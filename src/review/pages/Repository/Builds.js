@@ -72,7 +72,7 @@ export function RepositoryBuilds() {
             <Container my={4}>
               {builds.edges.map(build => {
                 const { status } = build
-                console.log(status)
+
                 const buildColor = getStatusColor(status)
                 return (
                   <Box col={1} py={2} key={build.id}>

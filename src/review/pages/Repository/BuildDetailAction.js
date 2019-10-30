@@ -23,7 +23,6 @@ export default function BuildDetailAction({ build }) {
     default:
       return null
   }
-  console.log(loading, error)
 
   return (
     <Button
