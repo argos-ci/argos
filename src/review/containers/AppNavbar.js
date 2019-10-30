@@ -18,13 +18,11 @@ import {
   BrandLogo,
 } from 'components'
 import { OwnerAvatar } from 'containers/OwnerAvatar'
-import { useLogout } from './Auth'
 import { useUser } from './User'
 
 delete MenuDisclosure.propTypes.children
 
 function UserMenu({ user }) {
-  const logout = useLogout()
   const menu = useMenuState({
     placement: 'bottom-end',
     unstable_gutter: 4,

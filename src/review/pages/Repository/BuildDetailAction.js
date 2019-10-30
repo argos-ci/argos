@@ -4,7 +4,7 @@ import { VALIDATION_STATUSES } from 'server/constants'
 import { useValidationStatusBuild } from './BuildContext'
 
 export default function BuildDetailAction({ build }) {
-  const { setValidationStatus, loading, error } = useValidationStatusBuild()
+  const { setValidationStatus, loading } = useValidationStatusBuild()
   let actionMessage
   let variant
   let validationStatus

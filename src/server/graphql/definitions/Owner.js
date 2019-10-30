@@ -1,7 +1,6 @@
 import gql from 'graphql-tag'
 import User from 'server/models/User'
 import Organization from 'server/models/Organization'
-import { OWNER_TYPES } from 'server/constants'
 
 export const typeDefs = gql`
   enum OwnerType {

@@ -3,7 +3,6 @@ import React from 'react'
 import gql from 'graphql-tag'
 import Tooltip from 'react-tooltip'
 import styled, { Box } from '@xstyled/styled-components'
-import { Button } from '@smooth-ui/core-sc'
 import { Helmet } from 'react-helmet'
 import {
   Container,
