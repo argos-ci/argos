@@ -58,7 +58,7 @@ function UserMenu({ user }) {
         >
           Manage permissions
         </MenuItem>
-        <MenuItem {...menu} onClick={() => logout()}>
+        <MenuItem {...menu} forwardedAs="a" href="/auth/logout">
           Logout
         </MenuItem>
       </Menu>

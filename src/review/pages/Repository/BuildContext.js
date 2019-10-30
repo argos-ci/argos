@@ -68,14 +68,18 @@ export function BuildProvider({ build: initialBuild, children }) {
       setValidationStatus(
         buildId: $buildId
         validationStatus: $validationStatus
-      )
+      ) {
+        ...BuildContextFragment
+      }
     }
+    ${BuildContextFragment}
   `)
+
   React.useEffect(() => {
     if (data && data.setValidationStatus) {
-      setBuild({ ...build, validationStatus: data.setValidationStatus })
+      setBuild(data.setValidationStatus)
     }
-  }, [build, data, queryError, queryLoading])
+  }, [data])
   const value = React.useMemo(
     () => ({
       build,

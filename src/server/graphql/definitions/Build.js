@@ -54,7 +54,7 @@ export const typeDefs = gql`
     setValidationStatus(
       buildId: ID!
       validationStatus: ValidationStatus!
-    ): ValidationStatus!
+    ): Build!
   }
 `
 
@@ -132,7 +132,11 @@ export const resolvers = {
         })
       }
 
-      return validationStatus
+      const build = await Build.query()
+        .findById(buildId)
+        .eager('repository')
+
+      return build
     },
   },
 }
