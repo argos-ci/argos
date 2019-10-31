@@ -15,7 +15,6 @@ import { Owner } from 'pages/Owner'
 import { ErrorPage } from 'pages/ErrorPage'
 import { Repository } from 'pages/Repository'
 import { NotFound } from 'pages/NotFound'
-import { Documentation } from 'pages/Documentation'
 import Privacy from 'pages/Privacy.md'
 import Terms from 'pages/Terms.md'
 import Security from 'pages/Security.md'
@@ -83,11 +82,6 @@ export function App() {
                                     <Markdown title="Terms">{Terms}</Markdown>
                                   </>
                                 )}
-                              />
-                              <Route
-                                exact
-                                path="/documentation"
-                                component={Documentation}
                               />
                               <Route
                                 exact

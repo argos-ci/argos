@@ -32,9 +32,6 @@ export function AppFooter() {
           <FooterLink as={Link} to="/security">
             Security
           </FooterLink>
-          <FooterLink as={Link} to="/documentation">
-            Docs
-          </FooterLink>
         </FooterSecondary>
       </FooterBody>
     </Footer>
