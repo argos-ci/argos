@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
   CardText,
-} from '../../components'
+} from 'components'
 
 export function OwnerSettings() {
   return (
@@ -23,7 +23,11 @@ export function OwnerSettings() {
             <CardTitle>Manage permissions</CardTitle>
           </CardHeader>
           <CardBody>
-            <CardText>You can manage your permissions using this link</CardText>
+            <CardText mt={0}>
+              For now, Argos uses OAuth GitHub App, you can’t manage permission
+              per repository but you can block the entire access to Argos using
+              the following link.
+            </CardText>
             <Button
               as="a"
               target="_blank"

@@ -2,9 +2,11 @@ import React from 'react'
 import gql from 'graphql-tag'
 import { Link } from 'react-router-dom'
 import styled, { Box } from '@xstyled/styled-components'
+import { th } from '@xstyled/system'
 import { Query } from 'containers/Apollo'
 import Tooltip from 'react-tooltip'
 import { GoRepo } from 'react-icons/go'
+import { StatusIcon } from 'containers/StatusIcon'
 import moment from 'moment'
 import {
   Container,
@@ -14,6 +16,7 @@ import {
   CardBody,
   FadeLink,
 } from 'components'
+import { getStatusColor } from 'modules/build'
 import { useOwner } from './OwnerContext'
 
 const Stat = styled.div`
@@ -25,7 +28,7 @@ const StatLabel = styled.span`
 `
 const StatValue = styled.span`
   flex: 0 0 auto;
-  color: white;
+  color: ${p => th.color(p.color || 'darker')};
 `
 
 export function RepositorySummary({ repository }) {
@@ -38,7 +41,8 @@ export function RepositorySummary({ repository }) {
     return <div>No info to display</div>
   }
   const { pageInfo, edges } = repository.builds
-  const [lastBuild] = edges
+  const [latestBuild] = edges
+  const buildColor = getStatusColor(latestBuild.status)
   return (
     <Box>
       <Box row mx={-3}>
@@ -64,15 +68,17 @@ export function RepositorySummary({ repository }) {
               <FadeLink
                 forwardedAs={Link}
                 color="inherit"
-                to={`/${owner.login}/${repository.name}/builds/${lastBuild.id}`}
+                to={`/${owner.login}/${repository.name}/builds/${latestBuild.id}`}
               >
-                Last build
+                Latest build
               </FadeLink>
             </StatLabel>
             <StatValue
-              data-tip={moment(lastBuild.createdAt).format('DD-MM-YYYY HH:MM')}
+              data-tip={moment(latestBuild.createdAt).format(
+                'DD-MM-YYYY HH:MM',
+              )}
             >
-              {moment(lastBuild.createdAt).fromNow()}
+              {moment(latestBuild.createdAt).fromNow()}
             </StatValue>
             <Tooltip />
           </Stat>
@@ -81,15 +87,22 @@ export function RepositorySummary({ repository }) {
           <Stat>
             <StatLabel>
               <FadeLink
-                forwardedAs={Link}
                 color="inherit"
-                to={`/${owner.login}/${repository.name}/builds/${lastBuild.id}`}
+                forwardedAs={Link}
+                to={`/${owner.login}/${repository.name}/builds/${latestBuild.id}`}
               >
-                Last build
+                Latest build
               </FadeLink>{' '}
               status
             </StatLabel>
-            <StatValue>{lastBuild.status}</StatValue>
+            <StatValue color={buildColor}>
+              <StatusIcon
+                verticalAlign="text-bottom"
+                status={latestBuild.status}
+                mr={2}
+              />
+              {latestBuild.status}
+            </StatValue>
           </Stat>
         </Box>
       </Box>
