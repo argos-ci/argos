@@ -95,7 +95,7 @@ export function RepositoryBuilds() {
                             <FadeLink
                               forwardedAs={Link}
                               color={buildColor}
-                              to={`/${repository.owner.login}/${repository.name}/builds/${build.number}`}
+                              to={`/${repository.owner.login}/${repository.name}/builds/${build.id}`}
                             >
                               #{build.number} {status}
                             </FadeLink>

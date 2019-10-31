@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 import React from 'react'
 import gql from 'graphql-tag'
+import { useParams } from 'react-router-dom'
 import Tooltip from 'react-tooltip'
 import styled, { Box } from '@xstyled/styled-components'
 import { Helmet } from 'react-helmet'
@@ -150,20 +151,17 @@ const BUILD_QUERY = gql`
   ${BuildContextFragment}
 `
 
-export function BuildDetail({
-  match: {
-    params: { buildNumber },
-  },
-}) {
+export function BuildDetail() {
+  const { buildId } = useParams()
   const { loading, data: { build } = {} } = useQuery(BUILD_QUERY, {
     variables: {
-      id: Number(buildNumber),
+      id: Number(buildId),
     },
   })
   return (
     <>
       <Helmet>
-        <title>{`Build #${buildNumber}`}</title>
+        <title>{`Build #${buildId}`}</title>
       </Helmet>
       {build && !loading ? (
         <BuildProvider build={build}>

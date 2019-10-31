@@ -5,12 +5,12 @@ import { Button } from '@smooth-ui/core-sc'
 import { Card, CardHeader, CardTitle, CardBody, CardText } from 'components'
 import { useHiddenState, Hidden, HiddenDisclosure } from 'reakit/Hidden'
 import { getStatusColor } from 'modules/build'
+import configBrowser from 'configBrowser'
 
 function getS3Url(s3Id) {
-  return `https://argos-screenshots-us.s3.amazonaws.com/${s3Id}`
-  // return `https://${configBrowser.get(
-  //   's3.screenshotsBucket',
-  // )}.s3.amazonaws.com/${s3Id}`
+  return `https://${configBrowser.get(
+    's3.screenshotsBucket',
+  )}.s3.amazonaws.com/${s3Id}`
 }
 
 const StyledImg = styled.img`

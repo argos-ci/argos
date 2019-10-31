@@ -120,6 +120,7 @@ export default class Build extends BaseModel {
 
         return isFailure ? 'failure' : 'success'
       }
+
       if (useScore) {
         const hasDiffs = screenshotDiffs.some(({ score }) => score > 0)
         return hasDiffs ? 'failure' : 'success'

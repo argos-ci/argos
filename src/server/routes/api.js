@@ -15,9 +15,7 @@ import buildJob from 'server/jobs/build'
 import errorHandler from 'server/middlewares/errorHandler'
 
 const router = new express.Router()
-const s3 = new S3({
-  signatureVersion: 'v4',
-})
+const s3 = new S3({ signatureVersion: 'v4' })
 const upload = multer({
   storage: multerS3({
     s3,

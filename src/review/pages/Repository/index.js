@@ -129,7 +129,7 @@ export function Repository({
               <Switch>
                 <Route
                   exact
-                  path={`${url}/builds/:buildNumber(\\d+)`}
+                  path={`${url}/builds/:buildId(\\d+)`}
                   component={BuildDetail}
                 />
                 <Route
