@@ -1,7 +1,6 @@
 import React from 'react'
 
 export function BrandLogo({ colorMode, ...props }) {
-  console.log(colorMode)
   return colorMode === 'dark' ? (
     <BrandLogoLight {...props} />
   ) : (

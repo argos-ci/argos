@@ -29,7 +29,7 @@ const StyledBeast = styled(Beast)`
     css`
       &:hover {
         transform: rotate(180deg) translateY(5%);
-        fill: gray600;
+        fill: light400;
       }
       z-index: 3;
     `,
@@ -49,7 +49,7 @@ const StyledProductShowcaseContainer = styled.box`
   ${variant({
     variants: {
       gray: css`
-        background: ${th.color('gray200')};
+        background: light800;
       `,
       white: css`
         background: darker;

@@ -8,8 +8,10 @@ import {
   FooterLink,
   SmoothCodeLogo,
 } from 'components'
+import { useColorMode } from '@xstyled/styled-components'
 
 export function AppFooter() {
+  const [colorMode] = useColorMode()
   return (
     <Footer>
       <FooterBody>
@@ -19,7 +21,7 @@ export function AppFooter() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <SmoothCodeLogo height={30} width={148} />
+            <SmoothCodeLogo colorMode={colorMode} height={30} width={148} />
           </a>
         </FooterPrimary>
         <FooterSecondary>

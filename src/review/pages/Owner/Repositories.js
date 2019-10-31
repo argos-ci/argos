@@ -50,7 +50,7 @@ export function RepositorySummary({ repository }) {
           col={{ xs: 1, md: 1 / 3 }}
           px={3}
           borderRight={1}
-          borderColor="gray600"
+          borderColor="light400"
         >
           <Stat>
             <StatLabel>Total builds</StatLabel>
@@ -61,7 +61,7 @@ export function RepositorySummary({ repository }) {
           col={{ xs: 1, md: 1 / 3 }}
           px={3}
           borderRight={1}
-          borderColor="gray600"
+          borderColor="light400"
         >
           <Stat>
             <StatLabel>
@@ -83,7 +83,7 @@ export function RepositorySummary({ repository }) {
             <Tooltip />
           </Stat>
         </Box>
-        <Box col={{ xs: 1, md: 1 / 3 }} px={3} borderColor="gray600">
+        <Box col={{ xs: 1, md: 1 / 3 }} px={3} borderColor="light400">
           <Stat>
             <StatLabel>
               <FadeLink
