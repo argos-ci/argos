@@ -62,7 +62,7 @@ export function Home() {
                       <OwnerAvatar owner={owner} mr={2} />
                       <FadeLink
                         forwardedAs={Link}
-                        color="white"
+                        color="darker"
                         to={`/${owner.login}`}
                       >
                         <CardTitle>{owner.login}</CardTitle>
@@ -74,7 +74,7 @@ export function Home() {
                           <Box textAlign="center">
                             <FadeLink
                               forwardedAs={Link}
-                              color="white"
+                              color="darker"
                               fontSize={13}
                               to={`/${owner.login}`}
                             >
@@ -87,7 +87,7 @@ export function Home() {
                             <FadeLink
                               forwardedAs={Link}
                               to={`/${owner.login}/${repository.name}/builds`}
-                              color="white"
+                              color="darker"
                               fontWeight="medium"
                               fontSize={16}
                             >

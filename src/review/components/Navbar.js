@@ -14,7 +14,7 @@ export const NavbarBrandLink = styled(FadeLink)`
 
 export const NavbarBrand = styled.h1`
   font-size: 20;
-  color: white;
+  color: darker;
   display: flex;
   align-items: center;
   font-weight: normal;

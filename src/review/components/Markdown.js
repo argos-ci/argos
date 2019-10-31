@@ -7,7 +7,7 @@ import { Container } from './Container'
 export function Markdown({ children, title }) {
   return (
     <LayoutBody variant="marginBottom">
-      <Container p={0} my={4} color="gray300">
+      <Container p={0} my={4} color="light700">
         <Helmet>
           <title>{title}</title>
         </Helmet>

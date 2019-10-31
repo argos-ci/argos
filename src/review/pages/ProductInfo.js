@@ -52,7 +52,7 @@ const StyledProductShowcaseContainer = styled.box`
         background: ${th.color('gray200')};
       `,
       white: css`
-        background: white;
+        background: darker;
       `,
     },
   })}

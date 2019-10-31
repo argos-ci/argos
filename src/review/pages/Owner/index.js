@@ -14,6 +14,11 @@ import {
   RouterTabItem,
   Container,
   FadeLink,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardBody,
+  CardText,
 } from 'components'
 import { Query } from 'containers/Apollo'
 import { OwnerAvatar } from 'containers/OwnerAvatar'
@@ -79,12 +84,19 @@ export function Owner({
         if (!owner) {
           return (
             <Container textAlign="center" my={4}>
-              <p>Organization or user not found.</p>
-              <p>
-                <FadeLink forwardedAs={Link} color="white" to="/">
-                  Back to home
-                </FadeLink>
-              </p>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Not Found</CardTitle>
+                </CardHeader>
+                <CardBody>
+                  <CardText>Organization or user not found.</CardText>
+                  <CardText>
+                    <FadeLink forwardedAs={Link} color="darker" to="/">
+                      Back to home
+                    </FadeLink>
+                  </CardText>
+                </CardBody>
+              </Card>
             </Container>
           )
         }

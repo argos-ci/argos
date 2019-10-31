@@ -103,7 +103,7 @@ export function RepositoryBuilds() {
                               target="_blank"
                               rel="noopener noreferer"
                               href={`https://github.com/${repository.owner.login}/${repository.name}/commit/${build.compareScreenshotBucket.commit}`}
-                              color="white"
+                              color="darker"
                               display="flex"
                               alignItems="center"
                             >

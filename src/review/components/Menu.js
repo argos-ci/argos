@@ -10,7 +10,7 @@ import styled from '@xstyled/styled-components'
 export { useMenuState, MenuDisclosure }
 
 const InnerMenu = styled.div`
-  background-color: white;
+  background-color: darker;
   border-radius: base;
   padding: 2 1;
   min-width: 110;
@@ -62,7 +62,7 @@ const InnerMenuItem = styled.buttonBox`
   padding: 2;
   border: 0;
   border-radius: base;
-  color: gray700;
+  color: light300;
   font-size: 14;
   display: block;
   width: 100%;
@@ -76,7 +76,7 @@ const InnerMenuItem = styled.buttonBox`
   &:focus,
   &:hover {
     outline: none;
-    background-color: gray200;
+    background-color: light800;
   }
 `
 

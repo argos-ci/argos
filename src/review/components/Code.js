@@ -8,9 +8,9 @@ const Pre = styled.pre`
 
 const InnerCode = styled.code`
   padding: 2;
-  background-color: gray900;
+  background-color: light100;
   border-radius: base;
-  color: gray200;
+  color: light800;
 `
 
 export function Code(props) {

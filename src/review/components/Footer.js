@@ -5,10 +5,10 @@ import { Container } from './Container'
 import { FadeLink } from './Link'
 
 export const Footer = styled.div`
-  background-color: gray800;
-  color: white;
+  background-color: light200;
+  color: darker;
   border-top: 1;
-  border-color: gray700;
+  border-color: light300;
   font-size: 12;
 `
 
@@ -39,5 +39,5 @@ export const FooterSecondary = styled.div`
   margin: 0 -2;
 `
 export function FooterLink(props) {
-  return <FadeLink mx={2} color="white" {...props} />
+  return <FadeLink mx={2} color="darker" {...props} />
 }

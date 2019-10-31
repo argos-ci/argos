@@ -18,7 +18,6 @@ import { NotFound } from 'pages/NotFound'
 import Privacy from 'pages/Privacy.md'
 import Terms from 'pages/Terms.md'
 import Security from 'pages/Security.md'
-import ProductHeader from 'components/ProductHeader'
 
 import {
   GlobalStyle,
@@ -59,44 +58,23 @@ export function App() {
                                 exact
                                 path="/privacy"
                                 render={() => (
-                                  <>
-                                    <ProductHeader
-                                      display1="Privacy Policy"
-                                      headline="Argos CI is committed to protecting and respecting your privacy."
-                                    />
-                                    <Markdown title="Privacy">
-                                      {Privacy}
-                                    </Markdown>
-                                  </>
+                                  <Markdown title="Privacy">{Privacy}</Markdown>
                                 )}
                               />
                               <Route
                                 exact
                                 path="/terms"
                                 render={() => (
-                                  <>
-                                    <ProductHeader
-                                      display1="Terms and Conditions"
-                                      headline="License Agreement"
-                                    />
-                                    <Markdown title="Terms">{Terms}</Markdown>
-                                  </>
+                                  <Markdown title="Terms">{Terms}</Markdown>
                                 )}
                               />
                               <Route
                                 exact
                                 path="/security"
                                 render={() => (
-                                  <>
-                                    <ProductHeader
-                                      display1="Security Policy"
-                                      headline="We take security very seriously."
-                                    />
-
-                                    <Markdown title="Security">
-                                      {Security}
-                                    </Markdown>
-                                  </>
+                                  <Markdown title="Security">
+                                    {Security}
+                                  </Markdown>
                                 )}
                               />
                               <Route

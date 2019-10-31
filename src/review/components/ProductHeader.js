@@ -8,7 +8,7 @@ const HeaderContainer = styled.box`
   display: flex;
   align-items: center;
   overflow: hidden;
-  background-color: gray200;
+  background-color: light800;
 `
 
 const ProductHeader = props => {

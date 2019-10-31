@@ -9,10 +9,10 @@ import { rpxTransformers } from '@xstyled/system'
 
 const theme = {
   ...suiTheme,
-  useColorSchemeMediaQuery: false,
+  // useColorSchemeMediaQuery: false,
   useCustomProperties: false,
   initialColorModeName: 'light',
-  defaultColorModeName: 'dark',
+  // defaultColorModeName: 'dark',
   sizes: {
     ...suiTheme.sizes,
     container: 1040,

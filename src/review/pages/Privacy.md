@@ -1,3 +1,5 @@
+# Privacy
+
 Last motifided: May 13th, 2017.
 
 At Argos CI, we provide visual regression testing for your web apps, mobile apps and games, which gives developers the insight needed to quickly iterating on UIs.

@@ -46,7 +46,7 @@ export const CardFooter = styled(SUICardFooter)`
 
 export const CardStat = styled.box`
   font-size: 36;
-  color: white;
+  color: darker;
   text-align: center;
   padding: 4;
 `

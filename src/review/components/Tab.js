@@ -22,12 +22,12 @@ export const TabItem = styled.li`
   transition-property: border-color;
 
   &[aria-current='true'] {
-    border-color: white;
+    border-color: darker;
   }
 `
 
 export const TabItemLink = styled.a`
-  color: white;
+  color: darker;
   text-decoration: none;
   padding: 2 3;
   display: block;

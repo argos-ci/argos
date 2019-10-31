@@ -1,7 +1,15 @@
 import React from 'react'
 import { Helmet } from 'react-helmet'
 import { Link } from 'react-router-dom'
-import { Container, FadeLink } from 'components'
+import {
+  Container,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardBody,
+  CardText,
+  FadeLink,
+} from 'components'
 
 export function NotFound() {
   return (
@@ -9,12 +17,19 @@ export function NotFound() {
       <Helmet>
         <title>Not found</title>
       </Helmet>
-      <p>There is nothing to see here.</p>
-      <p>
-        <FadeLink forwardedAs={Link} color="white" to="/">
-          Back to home
-        </FadeLink>
-      </p>
+      <Card>
+        <CardHeader>
+          <CardTitle>Page not found</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <CardText>There is nothing to see here.</CardText>
+          <CardText>
+            <FadeLink forwardedAs={Link} color="darker" to="/">
+              Back to home
+            </FadeLink>
+          </CardText>
+        </CardBody>
+      </Card>
     </Container>
   )
 }

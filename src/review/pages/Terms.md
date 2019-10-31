@@ -1,3 +1,5 @@
+# Terms
+
 Last motifided: May 13th, 2017.
 
 ## 1. Services

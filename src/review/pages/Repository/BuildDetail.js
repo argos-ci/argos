@@ -69,7 +69,7 @@ export function Build() {
                           target="_blank"
                           rel="noopener noreferer"
                           href={`https://github.com/${build.repository.owner.login}/${build.repository.name}/commit/${build.compareScreenshotBucket.commit}`}
-                          color="white"
+                          color="darker"
                           display="flex"
                           alignItems="center"
                         >
@@ -81,7 +81,7 @@ export function Build() {
                           target="_blank"
                           rel="noopener noreferer"
                           href={`https://github.com/${build.repository.owner.login}/${build.repository.name}/tree/${build.compareScreenshotBucket.branch}`}
-                          color="white"
+                          color="darker"
                           display="flex"
                           alignItems="center"
                         >

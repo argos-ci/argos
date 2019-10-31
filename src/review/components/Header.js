@@ -4,11 +4,11 @@ import { Container } from './Container'
 import { FadeLink } from './Link'
 
 export const Header = styled.header`
-  background-color: gray800;
-  color: white;
+  background-color: light200;
+  color: darker;
   border-top: 1;
   border-bottom: 1;
-  border-color: gray700;
+  border-color: light300;
 `
 
 export const HeaderTitle = styled.h2`
@@ -49,7 +49,7 @@ export const HeaderSecondaryLink = styled(FadeLink)`
   font-size: 14;
   display: flex;
   align-items: center;
-  color: white;
+  color: darker;
 `
 
 export const HeaderBody = Container

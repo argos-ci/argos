@@ -1,3 +1,5 @@
+# Security
+
 ## Report
 
 If you would like to report a vulnerability, or have any security concerns with a Argos-CI product, please e-mail [julia@argos-ci.com](mailto:julia@argos-ci.com).

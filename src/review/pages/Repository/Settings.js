@@ -34,7 +34,7 @@ export function RepositorySettings() {
                 <FadeLink
                   href="https://github.com/argos-ci/argos-cli"
                   target="_blank"
-                  color="white"
+                  color="darker"
                 >
                   CLI
                 </FadeLink>{' '}
@@ -46,7 +46,7 @@ export function RepositorySettings() {
                 For more information on integrating Argos CI with your
                 application take a look at our{' '}
                 <FadeLink
-                  color="white"
+                  color="darker"
                   href={`/${owner.login}/${repository.name}/getting-started`}
                   variant="primary"
                 >

@@ -11,7 +11,7 @@ export function ErrorPage() {
       </Helmet>
       <p>Sorry an error occurs.</p>
       <p>
-        <FadeLink forwardedAs={Link} color="white" to="/">
+        <FadeLink forwardedAs={Link} color="darker" to="/">
           Back to home
         </FadeLink>
       </p>

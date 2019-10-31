@@ -125,10 +125,10 @@ function PassiveRepositories({ title, repositories }) {
         <Box col={1} py={2} key={repository.id}>
           <Card>
             <CardBody p={2} display="flex" alignItems="center">
-              <Box as={GoRepo} color="white" mr={2} />
+              <Box as={GoRepo} color="darker" mr={2} />
               <FadeLink
                 forwardedAs={Link}
-                color="white"
+                color="darker"
                 to={`/${owner.login}/${repository.name}/builds`}
               >
                 {repository.name}
@@ -192,10 +192,10 @@ export function OwnerRepositories() {
                   <Box col={1} py={2} key={repository.id}>
                     <Card>
                       <CardHeader display="flex" alignItems="center">
-                        <Box as={GoRepo} color="white" mr={2} />
+                        <Box as={GoRepo} color="darker" mr={2} />
                         <FadeLink
                           forwardedAs={Link}
-                          color="white"
+                          color="darker"
                           to={`/${owner.login}/${repository.name}/builds`}
                         >
                           <CardTitle>{repository.name}</CardTitle>

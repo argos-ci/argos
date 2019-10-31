@@ -11,7 +11,7 @@ export function Documentation() {
       </Helmet>
       <p>This is work in progress...</p>
       <p>
-        <FadeLink forwardedAs={Link} color="white" to="/">
+        <FadeLink forwardedAs={Link} color="darker" to="/">
           Back to home
         </FadeLink>
       </p>

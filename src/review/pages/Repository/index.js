@@ -34,7 +34,7 @@ function hasWritePermission(repository) {
 
 const RepoTitlePart = styled(Text)`
   margin: 0 2;
-  color: white;
+  color: darker;
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
