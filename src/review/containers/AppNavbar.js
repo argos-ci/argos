@@ -8,6 +8,7 @@ import {
   MenuDisclosure,
   useMenuState,
 } from '@smooth-ui/core-sc'
+import { useColorMode } from '@xstyled/styled-components'
 import configBrowser from 'configBrowser'
 import { FaGithub } from 'react-icons/fa'
 import {
@@ -66,11 +67,13 @@ function UserMenu({ user }) {
 
 export function AppNavbar() {
   const user = useUser()
+  const [colorMode] = useColorMode()
+
   return (
     <Navbar>
       <NavbarBrandLink as={Link} to="/">
         <NavbarBrand>
-          <BrandLogo width={200} />
+          <BrandLogo width={200} colorMode={colorMode} />
         </NavbarBrand>
       </NavbarBrandLink>
       <NavbarSecondary>
