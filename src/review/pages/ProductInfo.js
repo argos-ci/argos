@@ -1,7 +1,7 @@
 import React from 'react'
 import styled, { css } from '@xstyled/styled-components'
 import { Box, Text, Button } from '@smooth-ui/core-sc'
-import { up, down, variant, th } from '@xstyled/system'
+import { up, down, variant } from '@xstyled/system'
 
 import LayoutBody from 'components/LayoutBody'
 import ProductHeader from 'components/ProductHeader'
