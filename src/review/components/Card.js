@@ -2,7 +2,7 @@ import styled from '@xstyled/styled-components'
 
 export const Card = styled.box`
   border-radius: base;
-  background-color: gray800;
+  background-color: light200;
 `
 
 export const CardBody = styled.box`
@@ -17,18 +17,18 @@ export const CardTitle = styled.h3`
   font-size: 18;
   font-weight: medium;
   margin: 0;
-  color: white;
+  color: darker;
 `
 
 export const CardHeader = styled.headerBox`
   border-bottom: 1;
-  border-bottom-color: gray700;
+  border-bottom-color: light300;
   padding: 2;
 `
 
 export const CardFooter = styled.footerBox`
   border-top: 1;
-  border-top-color: gray700;
+  border-top-color: light300;
   padding: 2;
 `
 

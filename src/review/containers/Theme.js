@@ -1,10 +1,18 @@
 import React from 'react'
 import { theme as suiTheme } from '@smooth-ui/core-sc'
-import { css, ThemeProvider } from '@xstyled/styled-components'
+import {
+  css,
+  ThemeProvider,
+  ColorModeProvider,
+} from '@xstyled/styled-components'
 import { rpxTransformers } from '@xstyled/system'
 
 const theme = {
   ...suiTheme,
+  // useColorSchemeMediaQuery: false,
+  useCustomProperties: false,
+  initialColorModeName: 'light',
+  // defaultColorModeName: 'dark',
   sizes: {
     ...suiTheme.sizes,
     container: 1040,
@@ -23,5 +31,9 @@ const theme = {
 }
 
 export function ThemeInitializer({ children }) {
-  return <ThemeProvider theme={theme}>{children}</ThemeProvider>
+  return (
+    <ThemeProvider theme={theme}>
+      <ColorModeProvider>{children}</ColorModeProvider>
+    </ThemeProvider>
+  )
 }

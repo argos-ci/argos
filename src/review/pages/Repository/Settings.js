@@ -30,7 +30,7 @@ export function RepositorySettings() {
             </CardHeader>
             <CardBody>
               <CardText>
-                To send data to Argos-ci you will need to configure a{' '}
+                To send data to Argos CI you will need to configure a{' '}
                 <FadeLink
                   href="https://github.com/argos-ci/argos-cli"
                   target="_blank"
