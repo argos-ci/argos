@@ -24,8 +24,11 @@ function ScreenshotDiffItem({
   compareScreenshot,
   baseScreenshot,
   s3Id,
+  validationStatus,
 }) {
-  const hidden = useHiddenState()
+  const hidden = useHiddenState({
+    visible: validationStatus !== 'accepted',
+  })
   let status = jobStatus
   if (jobStatus === 'complete') {
     status = score === 0 ? 'success' : 'unknown'
@@ -90,6 +93,14 @@ function ScreenshotDiffItem({
 
 export default function BuildDetailScreenshots({ build }) {
   const { screenshotDiffs } = build
+  screenshotDiffs.sort((itemA, itemB) =>
+    itemA.validationStatus > itemB.validationStatus
+      ? -1
+      : itemA.validationStatus < itemB.validationStatus
+      ? 1
+      : 0,
+  )
+
   return (
     <Box row m={-2}>
       <Box col={1} p={2}>
