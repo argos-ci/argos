@@ -8,7 +8,7 @@ const HeaderContainer = styled.box`
   display: flex;
   align-items: center;
   overflow: hidden;
-  background-color: light800;
+  background-color: light200;
 `
 
 const ProductHeader = props => {
@@ -18,9 +18,7 @@ const ProductHeader = props => {
     <HeaderContainer>
       <LayoutBody variant="margin">
         <Box zIndex={1} position="relative">
-          <Text variant="h4" forwardedAs="h1">
-            {display1}
-          </Text>
+          <Text forwardedAs="h1">{display1}</Text>
           <Text variant="headline" forwardedAs="h2">
             {headline}
           </Text>

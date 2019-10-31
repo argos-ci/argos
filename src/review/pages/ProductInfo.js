@@ -1,7 +1,7 @@
 import React from 'react'
 import styled, { css } from '@xstyled/styled-components'
 import { Box, Text, Button } from '@smooth-ui/core-sc'
-import { up, down, variant } from '@xstyled/system'
+import { up, down, variant, th } from '@xstyled/system'
 
 import LayoutBody from 'components/LayoutBody'
 import ProductHeader from 'components/ProductHeader'
@@ -14,13 +14,13 @@ import ci from 'assets/ci.png'
 import perfect from 'assets/perfect.png'
 
 const StyledBeast = styled(Beast)`
-  padding: 24rpx;
+  padding: 40rpx;
   position: absolute;
   bottom: -60%;
   height: 100%;
   right: 0;
   transform: rotate(180deg);
-  fill: primary;
+  fill: light300;
   transition: fill 300ms, transform 300ms;
   z-index: 0;
 
@@ -49,7 +49,7 @@ const StyledProductShowcaseContainer = styled.box`
   ${variant({
     variants: {
       gray: css`
-        background: light800;
+        background: ${th.color('light200')};
       `,
       white: css`
         background: darker;

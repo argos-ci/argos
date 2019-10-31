@@ -81,7 +81,7 @@ export function AppNavbar() {
           <UserMenu user={user} />
         ) : (
           <Button
-            variant="dark"
+            variant="light200"
             as="a"
             href="/auth/github-public"
             display="flex"
