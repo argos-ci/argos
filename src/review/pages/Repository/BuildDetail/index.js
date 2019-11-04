@@ -20,11 +20,11 @@ import { FaRegClock } from 'react-icons/fa'
 import { GoGitCommit, GoGitBranch, GoPulse } from 'react-icons/go'
 import { getStatusColor } from 'modules/build'
 import { StatusIcon } from 'containers/StatusIcon'
-import BuildDetailScreenshots from './BuildDetailScreenshots'
-import BuildDetailAction from './BuildDetailAction'
-import { BuildProvider, BuildContextFragment, useBuild } from './BuildContext'
+import BuildDetailScreenshots from './Screenshots'
+import BuildDetailAction from './Action'
+import { BuildProvider, BuildContextFragment, useBuild } from './Context'
 // eslint-disable-next-line import/no-cycle
-import { NotFound } from '../NotFound'
+import { NotFound } from '../../NotFound'
 
 const StyledCardHeader = styled(CardHeader)`
   display: flex;

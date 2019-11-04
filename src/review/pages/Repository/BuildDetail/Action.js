@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button } from '@smooth-ui/core-sc'
 import { VALIDATION_STATUSES } from 'server/constants'
-import { useValidationStatusBuild } from './BuildContext'
+import { useValidationStatusBuild } from './Context'
 
 export default function BuildDetailAction({ build }) {
   const { setValidationStatus, loading } = useValidationStatusBuild()

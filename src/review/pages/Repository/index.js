@@ -22,9 +22,9 @@ import {
   RepositoryContextFragment,
   useRepository,
 } from './RepositoryContext'
-import { RepositoryBuilds } from './Builds'
+import { RepositoryBuilds } from './Builds/index'
 import { RepositorySettings } from './Settings'
-import { BuildDetail } from './BuildDetail'
+import { BuildDetail } from './BuildDetail/index'
 import { GettingStarted } from './GettingStarted'
 import { NotFound } from '../NotFound'
 

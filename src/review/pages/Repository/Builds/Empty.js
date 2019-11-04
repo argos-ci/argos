@@ -10,7 +10,7 @@ import {
   CardText,
   FadeLink,
 } from 'components'
-import { useRepository } from './RepositoryContext'
+import { useRepository } from '../RepositoryContext'
 
 const StyledLink = styled(FadeLink)`
   color: darker;
