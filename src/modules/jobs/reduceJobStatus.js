@@ -22,6 +22,9 @@ function reduceJobStatus(statuses) {
   if (stats.pending === statuses.length) {
     return 'pending'
   }
+  if (stats.error > 0) {
+    return 'error'
+  }
 
   return 'progress'
 }

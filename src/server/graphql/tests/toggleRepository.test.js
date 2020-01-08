@@ -39,7 +39,6 @@ describe('GraphQL', () => {
     })
 
     it('should mutate the repository', async () => {
-      expect(repository.token).toBe(undefined)
       const res = await request(createApolloServerApp(apolloServer, { user }))
         .post('/graphql')
         .send({

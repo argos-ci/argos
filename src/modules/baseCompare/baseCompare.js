@@ -105,7 +105,7 @@ async function baseCompare({
   }
 
   // Initialize GitHub API
-  const owner = await build.repository.getOwner()
+  const owner = await build.repository.$relatedOwner()
   const octokit = new Octokit({
     debug: config.get('env') === 'development',
     auth: user.accessToken,

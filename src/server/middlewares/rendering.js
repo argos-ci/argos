@@ -6,7 +6,6 @@ import path from 'path'
 import config from 'config'
 import { pick } from 'lodash'
 import getAuthorizationStatus from 'modules/authorizations/getAuthorizationStatus'
-import theme from 'modules/styles/theme'
 
 let htmlWebpackPlugin
 const indexString = fs.readFileSync(
@@ -60,7 +59,6 @@ export default additionalClientData => (req, res) => {
     isMediaBot: isMediaBot(req.headers['user-agent']),
     htmlWebpackPlugin,
     config,
-    theme,
     clientData: injectJSON({
       config: {
         s3: {

@@ -68,13 +68,22 @@ describe('GraphQL', () => {
               setValidationStatus(
                 buildId: "${build.id}",
                 validationStatus: ${VALIDATION_STATUSES.rejected}
-              )
+              ){
+                screenshotDiffs {
+                  validationStatus
+                }
+              }
             }
           `,
         })
-      expect(res.body.data).toEqual({
-        setValidationStatus: VALIDATION_STATUSES.rejected,
-      })
+      if (res.body && res.body.data && res.body.data.screenshotDiffs) {
+        res.body.data.screenshotDiffs.forEach(screenshotDiff => {
+          expect(screenshotDiff.validationStatus).toBe(
+            VALIDATION_STATUSES.rejected,
+          )
+        })
+      }
+
       noGraphqlError(res)
       expect(res.status).toBe(200)
       expect(notifications.pushBuildNotification).toBeCalledWith({
@@ -121,7 +130,11 @@ describe('GraphQL', () => {
               setValidationStatus(
                 buildId: "${build.id}",
                 validationStatus: ${VALIDATION_STATUSES.rejected}
-              )
+              ) {
+                screenshotDiffs {
+                  validationStatus
+                }
+              }
             }
           `,
         })

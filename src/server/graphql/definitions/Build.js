@@ -10,6 +10,7 @@ export const typeDefs = gql`
   enum BuildStatus {
     pending
     progress
+    complete
     failure
     success
     error
@@ -53,7 +54,7 @@ export const typeDefs = gql`
     setValidationStatus(
       buildId: ID!
       validationStatus: ValidationStatus!
-    ): ValidationStatus!
+    ): Build!
   }
 `
 
@@ -91,7 +92,7 @@ export const resolvers = {
 
       if (!build) return null
 
-      const repositoryAccessible = await Repository.isAccessible(
+      const repositoryAccessible = await Repository.checkReadPermission(
         build.repository,
         context.user,
       )
@@ -131,7 +132,11 @@ export const resolvers = {
         })
       }
 
-      return validationStatus
+      const build = await Build.query()
+        .findById(buildId)
+        .eager('repository')
+
+      return build
     },
   },
 }

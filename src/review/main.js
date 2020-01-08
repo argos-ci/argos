@@ -1,24 +1,20 @@
-/* eslint-env browser */
-
-import 'core-js/stable'
-import 'regenerator-runtime/runtime'
-
-import 'modules/rxjs'
+import 'core-js'
 import React from 'react'
 import { render } from 'react-dom'
 import * as Sentry from '@sentry/browser'
 import configBrowser from 'configBrowser'
-import Root from 'review/Root'
+import { App } from './App'
 
-// Initialize Sentry
-Sentry.init({
-  dsn: configBrowser.get('sentry.clientDsn'),
-  environment: configBrowser.get('sentry.environment'),
-  release: configBrowser.get('releaseVersion'),
-})
+if (process.env.NODE_ENV === 'production') {
+  Sentry.init({
+    dsn: configBrowser.get('sentry.clientDsn'),
+    environment: configBrowser.get('sentry.environment'),
+    release: configBrowser.get('releaseVersion'),
+  })
+}
 
 const renderRoot = () => {
-  render(<Root />, document.querySelector('#root'))
+  render(<App />, document.querySelector('#root'))
 }
 
 renderRoot()

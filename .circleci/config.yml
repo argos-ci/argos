@@ -1,7 +1,7 @@
 defaults: &defaults
   working_directory: /tmp/argos
   docker:
-    - image: circleci/node:10
+    - image: circleci/node:12
     - image: circleci/redis
       ports:
         - '6379:6379'

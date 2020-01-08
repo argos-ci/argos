@@ -6,5 +6,6 @@ export const typeDefs = gql`
     progress
     complete
     error
+    aborted
   }
 `

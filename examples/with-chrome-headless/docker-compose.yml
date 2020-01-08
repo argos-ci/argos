@@ -1,4 +1,0 @@
-chrome-headless:
-  image: yukinying/chrome-headless:61.0.3120.0
-  ports:
-    - 9222:9222

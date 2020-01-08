@@ -1,4 +1,5 @@
 import BaseModel, { mergeSchemas } from 'server/models/BaseModel'
+import { OWNER_TYPES } from 'server/constants'
 
 export default class User extends BaseModel {
   static tableName = 'users'
@@ -26,6 +27,17 @@ export default class User extends BaseModel {
   })
 
   static relationMappings = {
+    synchronizations: {
+      relation: BaseModel.HasManyRelation,
+      modelClass: 'Synchronization',
+      join: {
+        from: 'users.id',
+        to: 'synchronizations.userId',
+      },
+      modify(builder) {
+        return builder.orderBy('synchronizations.createdAt', 'desc')
+      },
+    },
     organizations: {
       relation: BaseModel.ManyToManyRelation,
       modelClass: 'Organization',
@@ -58,5 +70,18 @@ export default class User extends BaseModel {
         to: 'repositories.id',
       },
     },
+  }
+
+  type() {
+    return OWNER_TYPES.user
+  }
+
+  $checkWritePermission(user) {
+    return User.checkWritePermission(this, user)
+  }
+
+  static checkWritePermission(owner, user) {
+    if (!user) return false
+    return owner.id === user.id
   }
 }

@@ -6,5 +6,15 @@
     "react/forbid-prop-types": "off",
     "react/static-property-placement": "off",
     "import/no-cycle": "off"
+  },
+  "env": {
+    "browser": true
+  },
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "paths": ["src/review"]
+      }
+    }
   }
 }
