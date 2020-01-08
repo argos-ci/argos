@@ -13,6 +13,7 @@ import {
   CardBody,
   CardText,
   FadeLink,
+  Loader,
 } from 'components'
 import moment from 'moment'
 import { useQuery } from 'containers/Apollo'
@@ -161,14 +162,17 @@ export function BuildDetail() {
   return (
     <>
       <Helmet>
-        <title>{`Build #${buildId}`}</title>
+        <title>Build #{buildId}</title>
       </Helmet>
-      {build && !loading ? (
+      {!build && !loading ? <NotFound /> : null}
+      {build ? (
         <BuildProvider build={build}>
           <Build />
         </BuildProvider>
       ) : (
-        <NotFound />
+        <Container my={4} textAlign="center">
+          <Loader />
+        </Container>
       )}
     </>
   )

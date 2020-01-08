@@ -18,21 +18,22 @@ const StyledImg = styled.img`
   display: block;
 `
 
+function getStatus({ jobStatus, score }) {
+  if (jobStatus === 'complete') {
+    return score === 0 ? 'success' : 'unknown'
+  }
+  return jobStatus
+}
+
 function ScreenshotDiffItem({
   jobStatus,
   score,
   compareScreenshot,
   baseScreenshot,
   s3Id,
-  validationStatus,
 }) {
-  const hidden = useHiddenState({
-    visible: validationStatus !== 'accepted',
-  })
-  let status = jobStatus
-  if (jobStatus === 'complete') {
-    status = score === 0 ? 'success' : 'unknown'
-  }
+  const status = getStatus({ jobStatus, score })
+  const hidden = useHiddenState({ visible: status !== 'success' })
 
   return (
     <CardBody borderLeft={2} borderColor={getStatusColor(status)}>
