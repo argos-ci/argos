@@ -112,7 +112,7 @@ You agree, at your sole expense, to defend, indemnify and hold Argos (and its di
 
 ## 13. Support
 
-- 13.1 If you are subscribed to a paid Plan, Argos will provide you with email-based support – just write to our support desk at [julia@argos-ci.com](mailto:julia@argos-ci.com). While we work hard to respond to you and resolve your issues quickly, we do not warrant that we will respond within any particular timeframe, or that we will be able to resolve your issue. If you are subscribed to a free Plan, while you are welcome to email us your questions, we encourage you to visit our community forum which can provide valuable information to help answer your questions.
+- 13.1 If you are subscribed to a paid Plan, Argos will provide you with email-based support – just write to our support desk at [contact@smooth-code.com](mailto:contact@smooth-code.com). While we work hard to respond to you and resolve your issues quickly, we do not warrant that we will respond within any particular timeframe, or that we will be able to resolve your issue. If you are subscribed to a free Plan, while you are welcome to email us your questions, we encourage you to visit our community forum which can provide valuable information to help answer your questions.
 
 ## 14. Confidential information
 

@@ -71,8 +71,6 @@ Occasionally, at our discretion, we may include or offer third party products or
 
 If you are visiting our website or using our Services from outside the United States (US), please be aware that you are sending personal information to the US where our servers are located. The US may not have data protection laws that are as comprehensive or protective as those in your country of residence; however, our collection, storage and use of your personal information will at all times be in accordance with this Privacy Policy.
 
-<!-- ## EU-U.S. Privacy Shield -->
-
 ## Your Rights
 
 If you are from the EU, you may have the right to access a copy of the personal information we hold about you, or to request the correction, amendment or deletion of such information where it is inaccurate or processed in violation of the Privacy Shield Principles. To make such a request, please contact us at the contact details at the left.
@@ -88,8 +86,6 @@ You can also unsubscribe from our marketing communications at any time by follow
 We may retain your personal information as long as you continue to use the Services, have an account with us or for as long as is necessary to fulfil the purposes outlined in the policy. You can ask to close your account by contacting us at the details below and we will delete your personal information on request.
 
 We may however retain personal information for an additional period as is permitted or required under applicable laws, for legal, tax or regulatory reasons, or for legitimate and lawful business purposes.
-
-<!-- ## California Online Privacy Protection Act Compliance -->
 
 ## Changes to our Privacy Policy
 
