@@ -9,6 +9,7 @@ const HeaderContainer = styled.box`
   align-items: center;
   overflow: hidden;
   background-color: light200;
+  color: light900;
 `
 
 export function ProductHeader({ beast, children, display1, headline }) {

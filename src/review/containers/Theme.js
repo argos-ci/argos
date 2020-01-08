@@ -9,10 +9,10 @@ import {
 
 const theme = {
   ...suiTheme,
-  useColorSchemeMediaQuery: true,
+  useColorSchemeMediaQuery: false,
   useCustomProperties: false,
   initialColorModeName: 'light',
-  // defaultColorModeName: 'dark',
+  defaultColorModeName: 'dark',
   colors: {
     ...suiTheme.colors,
     gray900: '#242830',
@@ -23,7 +23,7 @@ const theme = {
     gray300: '#dce3f6',
     gray200: '#f2f4fb',
     gray100: '#FDFEFF',
-    primary: '#2F1868',
+    primary: '#6344CE',
   },
   sizes: {
     ...suiTheme.sizes,

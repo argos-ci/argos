@@ -1,5 +1,5 @@
 import React from 'react'
-import styled, { css, up, down, variant, th } from '@xstyled/styled-components'
+import styled, { css, up, down, variant } from '@xstyled/styled-components'
 import { Box, Text, Button } from '@smooth-ui/core-sc'
 
 import { LayoutBody } from 'components/LayoutBody'
@@ -46,10 +46,12 @@ const StyledProductShowcaseContainer = styled.box`
   ${variant({
     variants: {
       gray: css`
-        background-color: light200;
+        background-color: light100;
+        color: light800;
       `,
       white: css`
-        background-color: darker;
+        background-color: light900;
+        color: light200;
       `,
     },
   })}
@@ -146,7 +148,7 @@ const ProductInfo = () => (
       headline="Argos's visual regression system gives you high confidence in doing changes."
       beast={<StyledBeast />}
     >
-      <Button as="a" href="/auth/github/public">
+      <Button as="a" href="/auth/github-public" variant="darker">
         Try it
       </Button>
     </ProductHeader>
