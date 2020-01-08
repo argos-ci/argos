@@ -46,10 +46,10 @@ const StyledProductShowcaseContainer = styled.box`
   ${variant({
     variants: {
       gray: css`
-        background: ${th.color('light200')};
+        background-color: light200;
       `,
       white: css`
-        background: darker;
+        background-color: darker;
       `,
     },
   })}

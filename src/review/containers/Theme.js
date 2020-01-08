@@ -9,12 +9,20 @@ import {
 
 const theme = {
   ...suiTheme,
-  useColorSchemeMediaQuery: false,
+  useColorSchemeMediaQuery: true,
   useCustomProperties: false,
   initialColorModeName: 'light',
   // defaultColorModeName: 'dark',
   colors: {
     ...suiTheme.colors,
+    gray900: '#242830',
+    gray800: '#2c323e',
+    gray700: '#424752',
+    gray600: '#8A94A7',
+    gray400: '#E7E9F3',
+    gray300: '#dce3f6',
+    gray200: '#f2f4fb',
+    gray100: '#FDFEFF',
     primary: '#2F1868',
   },
   sizes: {
