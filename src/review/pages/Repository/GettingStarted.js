@@ -1,7 +1,7 @@
 import React from 'react'
+import ReactMarkdown from 'react-markdown'
 import { Container, Card, CardHeader, CardTitle, CardBody } from 'components'
 import { Button } from '@smooth-ui/core-sc'
-import MarkdownElement from 'modules/components/MarkdownElement'
 import gettingStarted from './getting-started.md'
 import { useRepository } from './RepositoryContext'
 
@@ -19,12 +19,12 @@ export function GettingStarted() {
         </CardHeader>
 
         <CardBody>
-          <MarkdownElement text={text} disableAnchor />
+          <ReactMarkdown>{text}</ReactMarkdown>
           <Button
             as="a"
             href={`/${repository.owner.login}/${repository.name}/builds`}
           >
-            {'Got it! Go to the Build Stream'}
+            Got it! Go to the Build Stream
           </Button>
         </CardBody>
       </Card>

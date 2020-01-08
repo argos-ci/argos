@@ -1,11 +1,9 @@
 import React from 'react'
-import styled, { css } from '@xstyled/styled-components'
-import {
-  space,
-  typography,
+import styled, {
+  css,
+  system,
   createSystemComponent,
-  compose,
-} from '@xstyled/system'
+} from '@xstyled/styled-components'
 
 function ellipsis({ lines, fontSize, lineHeight = 1.4 }) {
   if (lines === 'infinite') return null
@@ -19,18 +17,11 @@ function ellipsis({ lines, fontSize, lineHeight = 1.4 }) {
   `
 }
 
-const system = compose(
-  space,
-  typography,
-)
-system.meta.props = [...system.meta.props, 'lines']
-
 const InnerText = styled(createSystemComponent(React, 'div', system))`
   margin: 0;
   line-height: 1.4;
   ${ellipsis}
-  ${space}
-  ${typography}
+  ${system}
 `
 
 export function Text({ as, lines = 1, ...props }) {

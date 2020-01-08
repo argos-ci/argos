@@ -1,7 +1,7 @@
 import React from 'react'
 import styled from '@xstyled/styled-components'
 import { Text, Box } from '@smooth-ui/core-sc'
-import LayoutBody from 'components/LayoutBody'
+import { LayoutBody } from 'components/LayoutBody'
 
 const HeaderContainer = styled.box`
   min-height: 300;
@@ -11,9 +11,7 @@ const HeaderContainer = styled.box`
   background-color: light200;
 `
 
-const ProductHeader = props => {
-  const { beast, children, display1, headline } = props
-
+export function ProductHeader({ beast, children, display1, headline }) {
   return (
     <HeaderContainer>
       <LayoutBody variant="margin">
@@ -29,5 +27,3 @@ const ProductHeader = props => {
     </HeaderContainer>
   )
 }
-
-export default ProductHeader

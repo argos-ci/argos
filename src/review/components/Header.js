@@ -1,5 +1,4 @@
-import styled, { css } from '@xstyled/styled-components'
-import { up } from '@xstyled/system'
+import styled, { css, up } from '@xstyled/styled-components'
 import { Container } from './Container'
 import { FadeLink } from './Link'
 

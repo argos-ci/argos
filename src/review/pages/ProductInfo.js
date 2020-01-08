@@ -1,14 +1,11 @@
 import React from 'react'
-import styled, { css } from '@xstyled/styled-components'
+import styled, { css, up, down, variant, th } from '@xstyled/styled-components'
 import { Box, Text, Button } from '@smooth-ui/core-sc'
-import { up, down, variant, th } from '@xstyled/system'
 
-import LayoutBody from 'components/LayoutBody'
-import ProductHeader from 'components/ProductHeader'
-import GitHubStatus from 'components/GitHubStatus'
-import ScrollView from 'components/ScrollView'
-import Link from 'modules/components/Link'
-import Beast from 'components/Beast'
+import { LayoutBody } from 'components/LayoutBody'
+import { ProductHeader } from 'components/ProductHeader'
+import { ScrollView } from 'components/ScrollView'
+import { Beast } from 'components/Beast'
 import build from 'assets/build.png'
 import ci from 'assets/ci.png'
 import perfect from 'assets/perfect.png'
@@ -164,9 +161,9 @@ const ProductInfo = () => (
             You can review visual changes in one click as part of your code review process.
           "
       image={
-        <Link href="https://www.argos-ci.com/callemall/material-ui/builds/3176">
+        <a href="https://www.argos-ci.com/callemall/material-ui/builds/3176">
           <StyledShowcaseImg src={build} alt="build" variant="build" />
-        </Link>
+        </a>
       }
     />
     <ProductShowcase
@@ -178,7 +175,7 @@ const ProductInfo = () => (
             It comes with a GitHub integration.
             It will notify you on pull requests when something might be broken.
           "
-      image={<GitHubStatus />}
+      image={null}
     />
     <ProductShowcase
       title="Integrates in your development workflow"

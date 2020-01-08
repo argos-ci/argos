@@ -1,7 +1,6 @@
-import styled, { css } from '@xstyled/styled-components'
-import { breakpoints, variant } from '@xstyled/system'
+import styled, { css, breakpoints, variant } from '@xstyled/styled-components'
 
-const LayoutBody = styled.box`
+export const LayoutBody = styled.box`
   position: relative;
   width: auto;
   margin-left: 40;
@@ -35,5 +34,3 @@ const LayoutBody = styled.box`
     },
   })}
 `
-
-export default LayoutBody

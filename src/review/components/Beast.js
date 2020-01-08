@@ -2,7 +2,7 @@
 
 import React from 'react'
 
-function Beast(props) {
+export function Beast(props) {
   return (
     <svg width="400" height="250" viewBox="0 0 400 250" {...props}>
       <g fillRule="evenodd">
@@ -15,5 +15,3 @@ function Beast(props) {
     </svg>
   )
 }
-
-export default Beast

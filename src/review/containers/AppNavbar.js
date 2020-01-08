@@ -21,6 +21,7 @@ import {
 import { OwnerAvatar } from 'containers/OwnerAvatar'
 import { useUser } from './User'
 
+// eslint-disable-next-line react/forbid-foreign-prop-types
 delete MenuDisclosure.propTypes.children
 
 function UserMenu({ user }) {

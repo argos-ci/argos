@@ -4,15 +4,19 @@ import {
   css,
   ThemeProvider,
   ColorModeProvider,
+  rpxTransformers,
 } from '@xstyled/styled-components'
-import { rpxTransformers } from '@xstyled/system'
 
 const theme = {
   ...suiTheme,
-  // useColorSchemeMediaQuery: false,
+  useColorSchemeMediaQuery: false,
   useCustomProperties: false,
   initialColorModeName: 'light',
   // defaultColorModeName: 'dark',
+  colors: {
+    ...suiTheme.colors,
+    primary: '#2F1868',
+  },
   sizes: {
     ...suiTheme.sizes,
     container: 1040,

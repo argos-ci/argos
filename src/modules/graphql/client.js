@@ -1,5 +1,4 @@
 /* eslint-env browser */
-import 'isomorphic-fetch'
 import configBrowser from 'configBrowser'
 
 const graphQLClient = {
