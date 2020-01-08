@@ -96,14 +96,14 @@ export const resolvers = {
       }
     },
     async sampleBuildId(repository) {
-      return Build.query()
+      const build = await Build.query()
         .where({
           repositoryId: repository.id,
           number: 0,
         })
-        .pluck('id')
         .limit(1)
         .first()
+      return build ? build.id : null
     },
   },
   Query: {
@@ -149,7 +149,6 @@ export const resolvers = {
           repositoryId: repository.id,
           number: 0,
         })
-        .pluck('id')
         .limit(1)
         .first()
 

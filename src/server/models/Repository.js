@@ -56,7 +56,7 @@ export default class Repository extends BaseModel {
 
   async $beforeInsert(queryContext) {
     await super.$beforeInsert(queryContext)
-    this.token = await Repository.generateToken()
+    this.token = this.token || (await Repository.generateToken())
   }
 
   async $relatedOwner() {
