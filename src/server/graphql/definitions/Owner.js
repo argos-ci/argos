@@ -48,22 +48,12 @@ export async function getOwner({ login }) {
   return null
 }
 
-export function getOwnerRepositories(owner, { user, enabled } = {}) {
+function getOwnerRepositories(owner, { user, enabled } = {}) {
   if (!user) {
-    const repositoriesQuery = owner
-      .$relatedQuery('repositories')
-      .where({
-        private: false,
-        [`repositories.${owner.type()}Id`]: owner.id,
-      })
-      .whereExists(builder =>
-        builder
-          .select('*')
-          .from('installation_repository_rights')
-          .whereRaw(
-            'repositories.id = installation_repository_rights.repository_id',
-          ),
-      )
+    const repositoriesQuery = owner.$relatedQuery('repositories').where({
+      private: false,
+      [`repositories.${owner.type()}Id`]: owner.id,
+    })
 
     if (enabled !== undefined) {
       return repositoriesQuery.where({ enabled })
