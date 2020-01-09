@@ -9,11 +9,13 @@ import { handleKillSignals } from './handleKillSignals'
 
 export function setup() {
   // Initialize sentry
-  Sentry.init({
-    dsn: config.get('sentry.serverDsn'),
-    environment: config.get('sentry.environment'),
-    release: config.get('releaseVersion'),
-  })
+  if (config.get('env') === 'production') {
+    Sentry.init({
+      dsn: config.get('sentry.serverDsn'),
+      environment: config.get('sentry.environment'),
+      release: config.get('releaseVersion'),
+    })
+  }
 
   AWS.config.setPromisesDependency(Promise)
 
