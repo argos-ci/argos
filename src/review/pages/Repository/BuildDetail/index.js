@@ -162,7 +162,7 @@ export function BuildDetail() {
   return (
     <>
       <Helmet>
-        <title>Build #{buildId}</title>
+        <title>{`Build #${buildId}`}</title>
       </Helmet>
       {!build && !loading ? <NotFound /> : null}
       {build ? (

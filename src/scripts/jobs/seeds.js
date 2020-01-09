@@ -1,4 +1,3 @@
-import 'server/bootstrap/setup'
 // --- Post bootstrap -----
 import { promisify } from 'util'
 import config from 'config'

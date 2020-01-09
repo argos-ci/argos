@@ -29,7 +29,12 @@ export async function shutdown(signal) {
 
     for (let i = 0; i < teardownsSorted.length; i += 1) {
       const teardown = teardownsSorted[i]
-      await teardown.callback() // eslint-disable-line no-await-in-loop
+      try {
+        await teardown.callback() // eslint-disable-line no-await-in-loop
+      } catch (error) {
+        console.error(error)
+        process.exit(1)
+      }
     }
 
     clearTimeout(timer)
@@ -40,10 +45,10 @@ export async function shutdown(signal) {
   process.exit(1) // eslint-disable-line no-process-exit
 }
 
-function handleKillSignals() {
+export function handleKillSignals() {
   //  Process on exit and signals.
   process.on('exit', () => {
-    display.success('Node server stopped.')
+    display.success('Process successfully stopped')
   })
 
   // Removed 'SIGPIPE' from the list - bugz 852598.
@@ -70,5 +75,3 @@ function handleKillSignals() {
 export function addTeardown(teardown) {
   teardowns.push(teardown)
 }
-
-export default handleKillSignals
