@@ -1,5 +1,5 @@
 import React from 'react'
-import { Avatar } from 'components'
+import { Avatar } from '../components'
 
 export const OwnerAvatar = React.forwardRef(({ owner, ...props }, ref) => {
   return (

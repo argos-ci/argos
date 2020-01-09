@@ -14,6 +14,7 @@ import {
   CardTitle,
   CardBody,
   FadeLink,
+  Text,
 } from 'components'
 import { getStatusColor } from 'modules/build'
 import { useOwner } from './OwnerContext'
@@ -109,17 +110,12 @@ export function RepositorySummary({ repository }) {
   )
 }
 
-const Title = styled.h3`
-  font-size: 18;
-  font-weight: medium;
-`
-
 function PassiveRepositories({ title, repositories }) {
   const owner = useOwner()
   if (!repositories.length) return null
   return (
     <>
-      <Title>{title}</Title>
+      <Text variant="h2">{title}</Text>
       {repositories.map(repository => (
         <Box col={1} py={2} key={repository.id}>
           <Card>

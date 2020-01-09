@@ -1,6 +1,4 @@
-This is a quick getting started guide.
-
-## Installation
+You are ready to launch your first build, follow the following steps:
 
 ### Install the CLI with npm
 

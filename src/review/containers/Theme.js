@@ -13,6 +13,10 @@ const theme = {
   useCustomProperties: false,
   initialColorModeName: 'light',
   defaultColorModeName: 'dark',
+  space: {
+    ...suiTheme,
+    ...[0, 4, 8, 16, 24, 48, 96, 144, 192, 240],
+  },
   colors: {
     ...suiTheme.colors,
     gray900: '#242830',
@@ -37,6 +41,14 @@ const theme = {
       style: css`
         max-width: 500; // Don't use more space than the title.
         margin-bottom: 3;
+      `,
+    },
+    h2: {
+      defaultAs: 'h2',
+      style: css`
+        font-size: 18;
+        font-weight: normal;
+        margin: 3 0;
       `,
     },
   },

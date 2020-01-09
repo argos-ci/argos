@@ -1,7 +1,7 @@
 import React from 'react'
 import { Helmet } from 'react-helmet'
 import gql from 'graphql-tag'
-import { Route, Link, Switch, Redirect, useLocation } from 'react-router-dom'
+import { Route, Link, Switch } from 'react-router-dom'
 import styled, { Box } from '@xstyled/styled-components'
 import { GoRepo } from 'react-icons/go'
 import { FaGithub } from 'react-icons/fa'
@@ -22,7 +22,7 @@ import {
   RepositoryContextFragment,
   useRepository,
 } from './RepositoryContext'
-import { RepositoryBuilds } from './Builds/index'
+import { RepositoryBuilds } from './Builds'
 import { RepositorySettings } from './Settings'
 import { BuildDetail } from './BuildDetail/index'
 import { GettingStarted } from './GettingStarted'
@@ -72,9 +72,7 @@ function RepositoryHeader() {
           </HeaderSecondaryLink>
         </HeaderPrimary>
         <TabList>
-          {repository.enabled ? (
-            <RouterTabItem to={`${match.url}/builds`}>Builds</RouterTabItem>
-          ) : null}
+          <RouterTabItem to={`${match.url}/builds`}>Builds</RouterTabItem>
           {hasWritePermission(repository) ? (
             <RouterTabItem to={`${match.url}/settings`}>Settings</RouterTabItem>
           ) : null}
@@ -84,38 +82,31 @@ function RepositoryHeader() {
   )
 }
 
+const GET_REPOSITORY = gql`
+  query Repository($ownerLogin: String!, $repositoryName: String!) {
+    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+      ...RepositoryContextFragment
+    }
+  }
+
+  ${RepositoryContextFragment}
+`
+
 export function Repository({
   match: {
     url,
     params: { ownerLogin, repositoryName },
   },
 }) {
-  const location = useLocation()
-
   return (
     <Query
-      query={gql`
-        query Repository($ownerLogin: String!, $repositoryName: String!) {
-          repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
-            ...RepositoryContextFragment
-          }
-        }
-
-        ${RepositoryContextFragment}
-      `}
+      query={GET_REPOSITORY}
       variables={{ ownerLogin, repositoryName }}
       fetchPolicy="no-cache"
     >
       {({ repository }) => {
         if (!repository) {
           return <NotFound />
-        }
-
-        if (
-          !repository.enabled &&
-          location.pathname.indexOf('settings') === -1
-        ) {
-          return <Redirect push to={`${url}/settings`} />
         }
 
         return (

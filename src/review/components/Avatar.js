@@ -5,7 +5,6 @@ export const Avatar = styled.imgBox`
   width: 30;
   height: 30;
   transition: base;
-  transition-property: box-shadow;
 
   &:focus,
   &[aria-expanded='true'] {

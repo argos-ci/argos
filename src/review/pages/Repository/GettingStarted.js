@@ -1,9 +1,9 @@
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Container, Card, CardHeader, CardTitle, CardBody } from 'components'
-import { Button } from '@smooth-ui/core-sc'
 import gettingStarted from './getting-started.md'
 import { useRepository } from './RepositoryContext'
+import { ToggleButton } from './ToggleButton'
 
 export function GettingStarted() {
   const repository = useRepository()
@@ -13,20 +13,18 @@ export function GettingStarted() {
     <Container my={4}>
       <Card>
         <CardHeader>
-          <CardTitle variant="headline" gutterBottom>
-            Getting started
-          </CardTitle>
+          <CardTitle>Getting started</CardTitle>
         </CardHeader>
-
-        <CardBody>
-          <ReactMarkdown>{text}</ReactMarkdown>
-          <Button
-            as="a"
-            href={`/${repository.owner.login}/${repository.name}/builds`}
-          >
-            Got it! Go to the Build Stream
-          </Button>
-        </CardBody>
+        {!repository.enabled ? (
+          <CardBody pt={0}>
+            <p>To start, first activate your repository.</p>
+            <ToggleButton />
+          </CardBody>
+        ) : (
+          <CardBody py={0}>
+            <ReactMarkdown>{text}</ReactMarkdown>
+          </CardBody>
+        )}
       </Card>
     </Container>
   )

@@ -47,7 +47,7 @@ export function Build() {
               <CardTitle>Summary</CardTitle>
               <BuildDetailAction build={build} />
             </StyledCardHeader>
-            <CardBody>
+            <CardBody overflow="hidden">
               <Box row>
                 <Box col="auto">
                   <StatusIcon status={status} mt={1} mr={2} />

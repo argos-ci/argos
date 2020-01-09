@@ -7,4 +7,12 @@ export const GlobalStyle = createGlobalStyle`
     color: light700;
     line-height: 1.4;
   }
+
+  a {
+    color: inherit;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
 `
