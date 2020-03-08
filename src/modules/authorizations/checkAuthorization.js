@@ -7,7 +7,7 @@ async function checkAuthorization({ accessToken, privateSync }) {
   let authorization
 
   try {
-    authorization = await githubClient.oauthAuthorizations.checkAuthorization({
+    authorization = await githubClient.apps.checkToken({
       access_token: accessToken,
       client_id: config.get('github.clientId'),
     })

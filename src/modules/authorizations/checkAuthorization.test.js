@@ -14,9 +14,7 @@ jest.mock('modules/authorizations/githubClient')
 describe('checkAuthorization', () => {
   describe('with a "Not found error" (code: 404)', () => {
     beforeEach(() => {
-      githubClient.oauthAuthorizations.checkAuthorization.mockImplementation(
-        notFoundToken(),
-      )
+      githubClient.apps.checkToken.mockImplementation(notFoundToken())
     })
 
     it('should return status: INVALID_TOKEN with a 404 error', async () => {
@@ -31,7 +29,7 @@ describe('checkAuthorization', () => {
 
   describe('with a valid response', () => {
     beforeEach(() => {
-      githubClient.oauthAuthorizations.checkAuthorization.mockImplementation(
+      githubClient.apps.checkToken.mockImplementation(
         validToken({
           scopes: ['read:org', 'repo:status', 'user:email'],
         }),
