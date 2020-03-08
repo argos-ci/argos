@@ -1,6 +1,5 @@
 import gql from 'graphql-tag'
 import Build from 'server/models/Build'
-import Repository from 'server/models/Repository'
 import ScreenshotDiff from 'server/models/ScreenshotDiff'
 import { pushBuildNotification } from 'modules/build/notifications'
 import { VALIDATION_STATUSES } from 'server/constants'
@@ -44,11 +43,6 @@ export const typeDefs = gql`
     edges: [Build!]!
   }
 
-  extend type Query {
-    "Get a build"
-    build(id: ID!): Build
-  }
-
   extend type Mutation {
     "Change the validationStatus on a build"
     setValidationStatus(
@@ -82,24 +76,6 @@ export const resolvers = {
     },
     async status(build) {
       return build.getStatus({ useValidation: true })
-    },
-  },
-  Query: {
-    async build(rootObj, args, context) {
-      const build = await Build.query()
-        .findById(args.id)
-        .eager('repository')
-
-      if (!build) return null
-
-      const repositoryAccessible = await Repository.checkReadPermission(
-        build.repository,
-        context.user,
-      )
-
-      if (!repositoryAccessible) return null
-
-      return build
     },
   },
   Mutation: {

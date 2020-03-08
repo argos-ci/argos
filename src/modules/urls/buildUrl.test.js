@@ -10,7 +10,7 @@ describe('buildUrl', () => {
       const build = await factory.create('Build')
       const url = await formatUrlFromBuild(build)
       expect(url).toBe(
-        `http://www.test.argos-ci.com/orga-1/repo-1/builds/${build.id}`,
+        `http://www.test.argos-ci.com/orga-1/repo-1/builds/${build.number}`,
       )
     })
   })

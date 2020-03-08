@@ -10,7 +10,7 @@ export async function formatUrlFromBuild(build) {
   const owner = await repository.$relatedOwner()
 
   // const owner = await repository.getOwner()
-  const pathname = `/${owner.login}/${repository.name}/builds/${build.id}`
+  const pathname = `/${owner.login}/${repository.name}/builds/${build.number}`
 
   return `${config.get('server.url')}${pathname}`
 }

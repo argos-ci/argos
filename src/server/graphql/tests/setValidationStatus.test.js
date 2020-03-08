@@ -18,11 +18,12 @@ describe('GraphQL', () => {
   describe('validationStatus', () => {
     let build
     let user
+    let repository
     let screenshot2
 
     beforeEach(async () => {
       user = await factory.create('User')
-      const repository = await factory.create('Repository')
+      repository = await factory.create('Repository', { userId: user.id })
       await factory.create('UserRepositoryRight', {
         userId: user.id,
         repositoryId: repository.id,
@@ -91,20 +92,25 @@ describe('GraphQL', () => {
         type: 'diff-rejected',
       })
 
-      res = await request(createApolloServerApp(apolloServer))
+      res = await request(createApolloServerApp(apolloServer, { user }))
         .post('/graphql')
         .send({
           query: `{
-            build(id: ${build.id}) {
-              screenshotDiffs {
-                validationStatus
+            repository(
+              ownerLogin: "${user.login}",
+              repositoryName: "${repository.name}",
+            ) {
+              build(number: 1) {
+                screenshotDiffs {
+                  validationStatus
+                }
               }
             }
           }`,
         })
       noGraphqlError(res)
       expect(res.status).toBe(200)
-      const { screenshotDiffs } = res.body.data.build
+      const { screenshotDiffs } = res.body.data.repository.build
       expect(screenshotDiffs).toEqual([
         {
           validationStatus: VALIDATION_STATUSES.rejected,

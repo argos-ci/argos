@@ -19,6 +19,8 @@ export const typeDefs = gql`
     organizationId: ID!
     "Builds associated to the repository"
     builds(first: Int!, after: Int!): BuildResult!
+    "A single build linked to the repository"
+    build(number: Int!): Build
     "Determine if the current user has write access to the repository"
     permissions: [Permission]!
     "Owner of the repository"
@@ -94,6 +96,11 @@ export const resolvers = {
         },
         edges: result.results,
       }
+    },
+    async build(repository, { number }) {
+      return Build.query()
+        .where({ repositoryId: repository.id, number })
+        .first()
     },
     async sampleBuildId(repository) {
       const build = await Build.query()

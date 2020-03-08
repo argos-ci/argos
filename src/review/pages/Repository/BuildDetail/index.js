@@ -26,6 +26,7 @@ import BuildDetailAction from './Action'
 import { BuildProvider, BuildContextFragment, useBuild } from './Context'
 // eslint-disable-next-line import/no-cycle
 import { NotFound } from '../../NotFound'
+import { useRepository } from '../RepositoryContext'
 
 const StyledCardHeader = styled(CardHeader)`
   display: flex;
@@ -143,9 +144,18 @@ export function Build() {
 }
 
 const BUILD_QUERY = gql`
-  query Build($id: ID!) {
-    build(id: $id) {
-      ...BuildContextFragment
+  query Build(
+    $buildNumber: Int!
+    $ownerLogin: String!
+    $repositoryName: String!
+  ) {
+    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+      id
+      build(number: $buildNumber) {
+        id
+        number
+        ...BuildContextFragment
+      }
     }
   }
 
@@ -153,27 +163,32 @@ const BUILD_QUERY = gql`
 `
 
 export function BuildDetail() {
-  const { buildId } = useParams()
-  const { loading, data: { build } = {} } = useQuery(BUILD_QUERY, {
+  const repository = useRepository()
+  const { buildNumber } = useParams()
+  const { loading, data } = useQuery(BUILD_QUERY, {
     variables: {
-      id: Number(buildId),
+      ownerLogin: repository.owner.login,
+      repositoryName: repository.name,
+      buildNumber: Number(buildNumber),
     },
   })
+  if (loading)
+    return (
+      <Container my={4} textAlign="center">
+        <Loader />
+      </Container>
+    )
+  if (!data.repository || !data.repository.build) return <NotFound />
+
+  const { build } = data.repository
   return (
     <>
       <Helmet>
-        <title>{`Build #${buildId}`}</title>
+        <title>{`Build #${build.number}`}</title>
       </Helmet>
-      {!build && !loading ? <NotFound /> : null}
-      {build ? (
-        <BuildProvider build={build}>
-          <Build />
-        </BuildProvider>
-      ) : (
-        <Container my={4} textAlign="center">
-          <Loader />
-        </Container>
-      )}
+      <BuildProvider build={build}>
+        <Build />
+      </BuildProvider>
     </>
   )
 }

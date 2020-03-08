@@ -118,29 +118,23 @@ export function Repository({
               />
               <RepositoryHeader />
               <Switch>
-                <Route
-                  exact
-                  path={`${url}/builds/:buildId(\\d+)`}
-                  component={BuildDetail}
-                />
-                <Route
-                  exact
-                  path={`${url}/builds`}
-                  component={RepositoryBuilds}
-                />
-                <Route
-                  exact
-                  path={`${url}/getting-started`}
-                  component={GettingStarted}
-                />
+                <Route exact path={`${url}/builds/:buildNumber(\\d+)`}>
+                  <BuildDetail />
+                </Route>
+                <Route exact path={`${url}/builds`}>
+                  <RepositoryBuilds />
+                </Route>
+                <Route exact path={`${url}/getting-started`}>
+                  <GettingStarted />
+                </Route>
                 {hasWritePermission(repository) ? (
-                  <Route
-                    exact
-                    path={`${url}/settings`}
-                    component={RepositorySettings}
-                  />
+                  <Route exact path={`${url}/settings`}>
+                    <RepositorySettings />
+                  </Route>
                 ) : null}
-                <Route component={NotFound} />
+                <Route>
+                  <NotFound />
+                </Route>
               </Switch>
             </>
           </RepositoryProvider>

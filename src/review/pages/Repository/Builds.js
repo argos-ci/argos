@@ -133,7 +133,7 @@ function BuildsList({ repository }) {
                       <FadeLink
                         forwardedAs={Link}
                         color={buildColor}
-                        to={`/${repository.owner.login}/${repository.name}/builds/${build.id}`}
+                        to={`/${repository.owner.login}/${repository.name}/builds/${build.number}`}
                       >
                         #{build.number} {status}
                       </FadeLink>
