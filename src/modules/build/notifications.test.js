@@ -85,7 +85,7 @@ describe('notifications', () => {
         expect(result.data.description).toBe('Build in progress...')
         expect(result.data.state).toBe('pending')
         expect(result.data.target_url).toBe(
-          `http://www.test.argos-ci.com/argos-ci/test-repository/builds/${build.id}`,
+          `http://www.test.argos-ci.com/argos-ci/test-repository/builds/${build.number}`,
         )
       })
     })
@@ -127,7 +127,7 @@ describe('notifications', () => {
         expect(result.data.context).toBe('argos')
         expect(result.data.state).toBe('pending')
         expect(result.data.target_url).toBe(
-          `http://www.test.argos-ci.com/neoziro/argos-test-repository/builds/${build.id}`,
+          `http://www.test.argos-ci.com/neoziro/argos-test-repository/builds/${build.number}`,
         )
       })
     })

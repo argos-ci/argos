@@ -10,11 +10,12 @@ describe('GraphQL', () => {
   describe('resolveBuild', () => {
     let build
     let user
+    let repository
     let screenshot2
 
     beforeEach(async () => {
       user = await factory.create('User')
-      const repository = await factory.create('Repository')
+      repository = await factory.create('Repository', { userId: user.id })
       await factory.create('UserRepositoryRight', {
         userId: user.id,
         repositoryId: repository.id,
@@ -52,19 +53,24 @@ describe('GraphQL', () => {
     })
 
     it('should sort the diffs by score', async () => {
-      const res = await request(createApolloServerApp(apolloServer))
+      const res = await request(createApolloServerApp(apolloServer, { user }))
         .post('/graphql')
         .send({
           query: `{
-            build(id: ${build.id}) {
-              screenshotDiffs {
-                baseScreenshot {
-                  name
+            repository(
+              ownerLogin: "${user.login}",
+              repositoryName: "${repository.name}",
+            ) {
+              build(number: 1) {
+                screenshotDiffs {
+                  baseScreenshot {
+                    name
+                  }
+                  compareScreenshot {
+                    name
+                  }
+                  score
                 }
-                compareScreenshot {
-                  name
-                }
-                score
               }
             }
           }`,
@@ -72,7 +78,7 @@ describe('GraphQL', () => {
       noGraphqlError(res)
       expect(res.status).toBe(200)
 
-      const { screenshotDiffs } = res.body.data.build
+      const { screenshotDiffs } = res.body.data.repository.build
       expect(screenshotDiffs).toEqual([
         {
           baseScreenshot: {
@@ -112,26 +118,31 @@ describe('GraphQL', () => {
         score: null,
       })
 
-      await request(createApolloServerApp(apolloServer))
+      await request(createApolloServerApp(apolloServer, { user }))
         .post('/graphql')
         .send({
           query: `{
-            build(id: ${build.id}) {
-              screenshotDiffs {
-                baseScreenshot {
-                  name
+            repository(
+              ownerLogin: "${user.login}",
+              repositoryName: "${repository.name}",
+            ) {
+              build(number: 1) {
+                screenshotDiffs {
+                  baseScreenshot {
+                    name
+                  }
+                  compareScreenshot {
+                    name
+                  }
+                  score
                 }
-                compareScreenshot {
-                  name
-                }
-                score
               }
             }
           }`,
         })
         .expect(noGraphqlError)
         .expect(res => {
-          const { screenshotDiffs } = res.body.data.build
+          const { screenshotDiffs } = res.body.data.repository.build
           expect(screenshotDiffs).toEqual([
             {
               baseScreenshot: null,
