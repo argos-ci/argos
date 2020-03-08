@@ -6,6 +6,8 @@ defaults: &defaults
       ports:
         - '6379:6379'
     - image: postgres:9.6
+      environment:
+        POSTGRES_HOST_AUTH_METHOD: trust
       ports:
         - '5432:5432'
 restore_repo: &restore_repo
@@ -56,7 +58,7 @@ jobs:
             NODE_ENV: test
           command: |
             yarn api:db:reset
-            yarn test:unit
+            yarn test --ci
   test_misc:
     <<: *defaults
     steps:

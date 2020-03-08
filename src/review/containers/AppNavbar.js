@@ -27,8 +27,7 @@ delete MenuDisclosure.propTypes.children
 function UserMenu({ user }) {
   const menu = useMenuState({
     placement: 'bottom-end',
-    unstable_gutter: 4,
-    unstable_animated: true,
+    gutter: 4,
   })
 
   return (

@@ -1,4 +1,4 @@
-import Octokit from '@octokit/rest'
+import { Octokit } from '@octokit/rest'
 import config from 'config'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import removeUserRights from 'modules/authorizations/removeUserRights'

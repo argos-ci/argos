@@ -1,7 +1,7 @@
 {
   "googleAnalytics": "UA-89989315-1",
   "s3": {
-    "screenshotsBucket": "argos-screenshots-us"
+    "screenshotsBucket": "argos-ci-production"
   },
   "github": {
     "clientId": "8460535e1d4c40dfdf05"

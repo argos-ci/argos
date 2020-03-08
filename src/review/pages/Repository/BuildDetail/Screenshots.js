@@ -5,13 +5,6 @@ import { Button } from '@smooth-ui/core-sc'
 import { Card, CardHeader, CardTitle, CardBody, CardText } from 'components'
 import { useHiddenState, Hidden, HiddenDisclosure } from 'reakit/Hidden'
 import { getStatusColor } from 'modules/build'
-import configBrowser from 'configBrowser'
-
-function getS3Url(s3Id) {
-  return `https://${configBrowser.get(
-    's3.screenshotsBucket',
-  )}.s3.amazonaws.com/${s3Id}`
-}
 
 const StyledImg = styled.img`
   width: 100%;
@@ -26,11 +19,7 @@ function getStatus({ jobStatus, score }) {
 }
 
 function ScreenshotDiffItem({
-  jobStatus,
-  score,
-  compareScreenshot,
-  baseScreenshot,
-  s3Id,
+  screenshotDiff: { jobStatus, score, compareScreenshot, baseScreenshot, url },
 }) {
   const status = getStatus({ jobStatus, score })
   const hidden = useHiddenState({ visible: status !== 'success' })
@@ -50,37 +39,33 @@ function ScreenshotDiffItem({
               <Box col={1 / 3}>
                 {baseScreenshot ? (
                   <a
-                    href={getS3Url(baseScreenshot.s3Id)}
+                    href={baseScreenshot.url}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     <StyledImg
                       alt={baseScreenshot.name}
-                      src={getS3Url(baseScreenshot.s3Id)}
+                      src={baseScreenshot.url}
                     />
                   </a>
                 ) : null}
               </Box>
               <Box col={1 / 3}>
                 <a
-                  href={getS3Url(compareScreenshot.s3Id)}
+                  href={compareScreenshot.url}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <StyledImg
                     alt={compareScreenshot.name}
-                    src={getS3Url(compareScreenshot.s3Id)}
+                    src={compareScreenshot.url}
                   />
                 </a>
               </Box>
               <Box col={1 / 3}>
-                {s3Id && (
-                  <a
-                    href={getS3Url(s3Id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <StyledImg alt="diff" src={getS3Url(s3Id)} />
+                {url && (
+                  <a href={url} target="_blank" rel="noopener noreferrer">
+                    <StyledImg alt="diff" src={url} />
                   </a>
                 )}
               </Box>
@@ -110,7 +95,7 @@ export default function BuildDetailScreenshots({ build }) {
             <CardTitle>Screenshots</CardTitle>
           </CardHeader>
           {screenshotDiffs.map((screenshotDiff, index) => (
-            <ScreenshotDiffItem key={index} {...screenshotDiff} />
+            <ScreenshotDiffItem key={index} screenshotDiff={screenshotDiff} />
           ))}
         </Card>
       </Box>

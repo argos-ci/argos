@@ -39,7 +39,7 @@ describe('GitHubSynchronizer', () => {
     const [argosOrganization] = await Organization.query().where({
       login: 'argos-ci',
     })
-    expect(argosOrganization.githubId).toBe(24552866)
+    expect(argosOrganization.githubId).toBeDefined()
 
     const [argosOrganizationRight] = await UserOrganizationRight.query().where({
       organizationId: argosOrganization.id,
@@ -47,7 +47,7 @@ describe('GitHubSynchronizer', () => {
     expect(argosOrganizationRight.userId).toBe(user.id)
 
     const [argosRepository] = await Repository.query().where({ name: 'argos' })
-    expect(argosRepository.githubId).toBe(76593355)
+    expect(argosRepository.githubId).toBeDefined()
     expect(argosRepository.organizationId).toBe(argosOrganization.id)
 
     const [argosRepositoryRight] = await UserRepositoryRight.query().where({

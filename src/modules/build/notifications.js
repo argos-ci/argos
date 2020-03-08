@@ -1,4 +1,4 @@
-import Octokit from '@octokit/rest'
+import { Octokit } from '@octokit/rest'
 import config from 'config'
 import Build from 'server/models/Build'
 import BuildNotification from 'server/models/BuildNotification'

@@ -2,7 +2,6 @@ import { transaction, raw } from 'objection'
 import { HttpError, formatters } from 'express-err'
 import express from 'express'
 import multer from 'multer'
-import S3 from 'aws-sdk/clients/s3'
 import multerS3 from 'multer-s3'
 import config from 'config'
 import bodyParser from 'body-parser'
@@ -13,12 +12,13 @@ import Repository from 'server/models/Repository'
 import ScreenshotBucket from 'server/models/ScreenshotBucket'
 import buildJob from 'server/jobs/build'
 import errorHandler from 'server/middlewares/errorHandler'
+import { getS3Client } from 'server/services/s3'
 
 const router = new express.Router()
-const s3 = new S3({ signatureVersion: 'v4' })
+
 const upload = multer({
   storage: multerS3({
-    s3,
+    s3: getS3Client(),
     bucket: config.get('s3.screenshotsBucket'),
     contentType: multerS3.AUTO_CONTENT_TYPE,
   }),
