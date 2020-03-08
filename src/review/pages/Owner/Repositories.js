@@ -68,7 +68,7 @@ export function RepositorySummary({ repository }) {
               <FadeLink
                 forwardedAs={Link}
                 color="inherit"
-                to={`/${owner.login}/${repository.name}/builds/${latestBuild.id}`}
+                to={`/${owner.login}/${repository.name}/builds/${latestBuild.number}`}
               >
                 Latest build
               </FadeLink>
@@ -89,7 +89,7 @@ export function RepositorySummary({ repository }) {
               <FadeLink
                 color="inherit"
                 forwardedAs={Link}
-                to={`/${owner.login}/${repository.name}/builds/${latestBuild.id}`}
+                to={`/${owner.login}/${repository.name}/builds/${latestBuild.number}`}
               >
                 Latest build
               </FadeLink>{' '}
@@ -157,6 +157,7 @@ export function OwnerRepositories() {
                     id
                     createdAt
                     status
+                    number
                   }
                 }
               }
