@@ -34,19 +34,18 @@ export const BuildContextFragment = gql`
       id
       createdAt
       updatedAt
-      buildId
-      baseScreenshotId
       baseScreenshot {
+        id
         name
-        s3Id
+        url
       }
-      compareScreenshotId
       compareScreenshot {
+        id
         name
-        s3Id
+        url
       }
+      url
       score
-      s3Id
       jobStatus
       validationStatus
     }

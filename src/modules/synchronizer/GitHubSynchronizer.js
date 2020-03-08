@@ -1,4 +1,4 @@
-import Octokit from '@octokit/rest'
+import { Octokit } from '@octokit/rest'
 import config from 'config'
 import Organization from 'server/models/Organization'
 import Repository from 'server/models/Repository'

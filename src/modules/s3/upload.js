@@ -1,5 +1,5 @@
 import { createReadStream } from 'fs'
-import uuid from 'uuid/v4'
+import { v4 as uuid } from 'uuid'
 import mime from 'mime'
 
 function upload({ s3, inputPath, ...other }) {

@@ -61,9 +61,6 @@ export default additionalClientData => (req, res) => {
     config,
     clientData: injectJSON({
       config: {
-        s3: {
-          screenshotsBucket: config.get('s3.screenshotsBucket'),
-        },
         sentry: {
           environment: config.get('sentry.environment'),
           clientDsn: config.get('sentry.clientDsn'),

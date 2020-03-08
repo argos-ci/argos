@@ -4,6 +4,6 @@
     "url": "http://www.test.argos-ci.com"
   },
   "s3": {
-    "screenshotsBucket": "argos-screenshots-test"
+    "screenshotsBucket": "argos-ci-test"
   }
 }

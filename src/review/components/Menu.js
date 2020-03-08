@@ -18,26 +18,6 @@ const InnerMenu = styled.div`
   &:focus {
     outline: none;
   }
-
-  &[data-animated='true'] {
-    transition: 300ms;
-    transition-property: opacity;
-    display: block !important;
-
-    &[hidden][data-animating='false'] {
-      display: none !important;
-    }
-
-    &[hidden],
-    &[data-animating='true']:not([hidden]) {
-      opacity: 0;
-    }
-
-    &:not([hidden]),
-    &[hidden][data-animating='true'] {
-      opacity: 1;
-    }
-  }
 `
 
 export const Menu = React.forwardRef(function Menu(
@@ -45,12 +25,7 @@ export const Menu = React.forwardRef(function Menu(
   ref,
 ) {
   return (
-    <ReakitMenu
-      ref={ref}
-      data-animated={props.unstable_animated}
-      data-animating={props.unstable_animating}
-      {...props}
-    >
+    <ReakitMenu ref={ref} {...props}>
       {menuProps => <InnerMenu {...menuProps}>{children}</InnerMenu>}
     </ReakitMenu>
   )
