@@ -3,7 +3,7 @@ yarn api:db:migrate
 
 # Setup releases on Sentry
 export SENTRY_ORG=argos
-VERSION=$(sentry-cli releases propose-version)
+VERSION=$HEROKU_SLUG_COMMIT	
 
 # Create a release
 yarn sentry-cli releases new -p argos-browser -p argos-server $VERSION
