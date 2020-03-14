@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -e
 
 # Run migrations
@@ -16,5 +18,4 @@ if [ "$SENTRY_RELEASE_DISABLED" != "true" ]; then
 
   # Mark the deploy
   sentry-cli releases deploys $VERSION new -e production
-
 fi

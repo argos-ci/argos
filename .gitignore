@@ -1,7 +1,4 @@
-*.log
-.env
-.eslintcache
-/.volume
-/lib/
-/server/static/
+apps/*/lib/
+apps/*/dist/
 node_modules/
+/public/

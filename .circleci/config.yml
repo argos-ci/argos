@@ -5,7 +5,7 @@ defaults: &defaults
     - image: circleci/redis
       ports:
         - '6379:6379'
-    - image: postgres:9.6
+    - image: postgres:12
       environment:
         POSTGRES_HOST_AUTH_METHOD: trust
       ports:
@@ -35,6 +35,7 @@ jobs:
           name: Install js dependencies
           command: |
             yarn install --frozen-lockfile
+            yarn build
       - save_cache:
           key: yarn-sha-{{ checksum "yarn.lock" }}
           paths:
@@ -57,7 +58,7 @@ jobs:
           environment:
             NODE_ENV: test
           command: |
-            yarn api:db:reset
+            yarn setup
             yarn test --ci
   test_misc:
     <<: *defaults
@@ -71,14 +72,6 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install postgresql postgresql-contrib
-      - run:
-          name: Can run the seeds
-          environment:
-            NODE_ENV: test
-          command: |
-            yarn api:db:reset
-            yarn knex seed:run
-            yarn api:db:truncate
       - run:
           name: Can run argos
           command: yarn argos
