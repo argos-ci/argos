@@ -1,0 +1,42 @@
+{
+  "name": "@argos-ci/web",
+  "version": "2.0.0",
+  "private": true,
+  "main": "lib/index.js",
+  "scripts": {
+    "prebuild": "rm -rf lib/",
+    "build": "babel --config-file ../../babel.config.js -d lib --ignore \"**/*.test.js\" src",
+    "dev": "yarn build --watch"
+  },
+  "dependencies": {
+    "@argos-ci/build": "2.0.0",
+    "@argos-ci/config": "2.0.0",
+    "@argos-ci/database": "2.0.0",
+    "@argos-ci/github": "2.0.0",
+    "@argos-ci/graphql": "2.0.0",
+    "@argos-ci/storage": "2.0.0",
+    "@argos-ci/synchronize": "2.0.0",
+    "@octokit/auth": "^2.0.0",
+    "@octokit/rest": "^17.1.0",
+    "@sentry/node": "^5.14.2",
+    "body-parser": "^1.19.0",
+    "compression": "^1.7.4",
+    "connect-redis": "^4.0.4",
+    "ejs": "^3.0.1",
+    "express": "^4.17.1",
+    "express-err": "^3.0.0",
+    "express-session": "^1.17.0",
+    "express-subdomain": "^1.0.5",
+    "helmet": "^3.21.3",
+    "lodash": "^4.17.15",
+    "morgan": "^1.9.1",
+    "multer": "^1.4.2",
+    "multer-s3": "^2.9.0",
+    "passport": "^0.4.1",
+    "passport-github": "^1.1.0",
+    "redis": "^3.0.2"
+  },
+  "devDependencies": {
+    "supertest": "^4.0.2"
+  }
+}
