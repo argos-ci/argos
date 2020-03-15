@@ -147,7 +147,7 @@ const config = convict({
       directory: {
         doc: 'Migrations directory',
         format: String,
-        default: path.join(__dirname, '../migrations'),
+        default: path.join(__dirname, '../../database/migrations'),
       },
     },
     client: {
