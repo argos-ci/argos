@@ -7,7 +7,7 @@ yarn workspace @argos-ci/database db:migrate:latest
 
 if [ "$SENTRY_RELEASE_DISABLED" != "true" ]; then
   # Setup releases on Sentry
-  VERSION=$VERSION
+  VERSION=$HEROKU_SLUG_COMMIT
   export SENTRY_ORG=argos
 
   # Create a release
