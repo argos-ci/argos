@@ -1,4 +1,3 @@
 apps/*/lib/
 apps/*/dist/
 node_modules/
-/public/
