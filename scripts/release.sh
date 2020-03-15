@@ -3,7 +3,7 @@
 set -e
 
 # Run migrations
-yarn api:db:migrate
+yarn workspace @argos-ci/database db:migrate:latest
 
 if [ "$SENTRY_RELEASE_DISABLED" != "true" ]; then
   # Setup releases on Sentry

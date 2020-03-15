@@ -15,8 +15,8 @@
     "db:load": "yarn knex-scripts load",
     "db:seed": "yarn knex seed:run",
     "db:truncate": "yarn knex-scripts truncate",
-    "db:migrate": "yarn knex migrate:latest",
-    "db:rollback": "yarn knex migrate:rollback",
+    "db:migrate:latest": "yarn knex migrate:latest",
+    "db:migrate:rollback": "yarn knex migrate:rollback",
     "db:reset": "yarn db:drop && yarn db:create && yarn db:migrate"
   },
   "dependencies": {
