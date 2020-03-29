@@ -30,6 +30,7 @@ class AMQPToRedis {
     this.lpop = promisify(client.lpop).bind(client)
     this.quit = promisify(client.quit).bind(client)
     this.closed = false
+    this.ack_callback = null
     this.exec_message = promisify((content, message_callback, callback) => {
       this.ack_callback = callback
       message_callback({content: content})
