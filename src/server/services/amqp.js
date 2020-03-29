@@ -84,7 +84,7 @@ class AMQPToRedis {
     while(!this.closed) {
       const res = await this.lpop(this.queueName(queue))
       if (res === null) {
-        await sleep(200)
+        await sleep(2000)
       }
       else {
         await this.exec_message(res, message_callback)
