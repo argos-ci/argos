@@ -94,16 +94,15 @@ class AMQPToRedis {
 
 let channel
 export async function getChannel() {
-  if (config.get('amqp.url').startsWith('redis://')) {
-    const client = redis.createClient({ url: config.get('amqp.url') })
-    return new AMQPToRedis(client)
-  }
-  else {
-    if (!channel) {
+  if (!channel) {
+    if (config.get('amqp.url').startsWith('redis://')) {
+      const client = redis.createClient({ url: config.get('amqp.url') })
+      channel = new AMQPToRedis(client)
+    }
+    else {
       const connection = await connect()
       channel = await connection.createChannel()
     }
-
-    return channel
   }
+  return channel
 }
