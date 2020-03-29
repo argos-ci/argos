@@ -1,0 +1,27 @@
+{
+  "name": "@argos-ci/processes",
+  "version": "2.0.0",
+  "private": true,
+  "bin": {
+    "argos-web": "lib/bin/web.js",
+    "argos-build-and-synchronize": "lib/bin/build-and-synchronize.js",
+    "argos-screenshot-diff": "lib/bin/screenshot-diff.js"
+  },
+  "scripts": {
+    "prebuild": "rm -rf lib/",
+    "build": "babel --config-file ../../babel.config.js -d lib --ignore \"**/*.test.js\" src",
+    "dev": "yarn build --watch"
+  },
+  "dependencies": {
+    "@argos-ci/build": "2.0.0",
+    "@argos-ci/build-notification": "2.0.0",
+    "@argos-ci/config": "2.0.0",
+    "@argos-ci/job-core": "2.0.0",
+    "@argos-ci/logger": "2.0.0",
+    "@argos-ci/screenshot-diff": "2.0.0",
+    "@argos-ci/sentry-node": "2.0.0",
+    "@argos-ci/synchronize": "2.0.0",
+    "@argos-ci/web": "2.0.0",
+    "@sentry/node": "^5.14.2"
+  }
+}

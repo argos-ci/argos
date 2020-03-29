@@ -1,6 +1,3 @@
 {
-  "execMap": {
-    "js": "babel-node"
-  },
-  "ignore": ["src/review/**/*.js"]
+  "ignore": ["apps/app", "scripts", "apps/*/src"]
 }

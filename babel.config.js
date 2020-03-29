@@ -1,5 +1,3 @@
-const resolver = ['babel-plugin-module-resolver', { root: ['./src'] }]
-
 const nodeConfig = {
   presets: [
     '@babel/preset-react',
@@ -15,7 +13,7 @@ const nodeConfig = {
       },
     ],
   ],
-  plugins: [resolver, '@babel/plugin-proposal-class-properties'],
+  plugins: [['@babel/plugin-proposal-class-properties', { loose: true }]],
 }
 
 const webConfig = {
@@ -31,7 +29,7 @@ const webConfig = {
       },
     ],
   ],
-  plugins: [resolver, '@babel/plugin-proposal-class-properties'],
+  plugins: [['@babel/plugin-proposal-class-properties', { loose: true }]],
 }
 
 function isWebTarget(caller) {

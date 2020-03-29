@@ -1,9 +1,0 @@
-{
-  "server": {
-    "logFormat": "",
-    "url": "http://www.test.argos-ci.com"
-  },
-  "s3": {
-    "screenshotsBucket": "argos-ci-test"
-  }
-}
