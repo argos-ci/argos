@@ -2,15 +2,10 @@
   "name": "@argos-ci/build",
   "version": "2.0.0",
   "private": true,
-  "main": "lib/index.js",
+  "main": "src/index.js",
   "bin": {
-    "consume-build-queue": "lib/bin/consume-build-queue",
-    "queue-pending-builds": "lib/bin/queue-pending-builds"
-  },
-  "scripts": {
-    "prebuild": "rm -rf lib/",
-    "build": "babel --config-file ../../babel.config.js -d lib --ignore \"**/*.test.js\" src",
-    "dev": "yarn build --watch"
+    "consume-build-queue": "src/bin/consume-build-queue",
+    "queue-pending-builds": "src/bin/queue-pending-builds"
   },
   "dependencies": {
     "@argos-ci/build-notification": "2.0.0",
@@ -20,10 +15,10 @@
     "@argos-ci/job-core": "2.0.0",
     "@argos-ci/logger": "2.0.0",
     "@argos-ci/screenshot-diff": "2.0.0",
-    "@octokit/rest": "^17.1.0",
+    "@octokit/rest": "^17.1.4",
     "lodash": "^4.17.15"
   },
   "devDependencies": {
-    "nock": "^12.0.2"
+    "nock": "^12.0.3"
   }
 }

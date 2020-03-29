@@ -67,10 +67,12 @@ export class ScreenshotDiff extends Model {
     }
   }
 
-  static VALIDATION_STATUSES = {
-    unknown: 'unknown',
-    accepted: 'accepted',
-    rejected: 'rejected',
+  static get VALIDATION_STATUSES() {
+    return {
+      unknown: 'unknown',
+      accepted: 'accepted',
+      rejected: 'rejected',
+    }
   }
 
   $parseDatabaseJson(json) {

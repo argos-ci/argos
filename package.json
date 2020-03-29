@@ -10,6 +10,7 @@
     "setup": "lerna run setup",
     "procfile": "heroku local -f Procfile.dev -p 4001",
     "argos": "argos upload screenshots/samples --token $ARGOS_TOKEN || true",
+    "webhook-proxy": "smee --url https://smee.io/SmH89Dx2HZ89wK7T --target http://api.dev.argos-ci.com:4001/github/event-handler",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,json,md}\"",
     "heroku-postbuild": "yarn build"
@@ -19,33 +20,34 @@
     "node": "12"
   },
   "dependencies": {
-    "@sentry/cli": "^1.51.1"
+    "@sentry/cli": "^1.52.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
-    "@babel/core": "^7.8.7",
+    "@babel/core": "^7.9.0",
     "@babel/node": "^7.8.7",
     "@babel/plugin-proposal-class-properties": "^7.8.3",
-    "@babel/preset-env": "^7.8.7",
-    "@babel/preset-react": "^7.8.3",
+    "@babel/preset-env": "^7.9.0",
+    "@babel/preset-react": "^7.9.4",
     "argos-cli": "^0.1.3",
     "babel-eslint": "^10.1.0",
-    "babel-loader": "^8.0.6",
+    "babel-loader": "^8.1.0",
     "eslint": "^6.8.0",
     "eslint-config-airbnb": "^18.1.0",
-    "eslint-config-prettier": "^6.10.0",
+    "eslint-config-prettier": "^6.10.1",
     "eslint-config-smooth": "^2.1.1",
     "eslint-import-resolver-node": "^0.3.3",
     "eslint-plugin-babel": "^5.3.0",
-    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-import": "^2.20.2",
     "eslint-plugin-jest": "^23.8.2",
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-prettier": "^3.1.2",
     "eslint-plugin-react": "^7.19.0",
-    "eslint-plugin-react-hooks": "^2.5.0",
-    "jest": "^25.1.0",
+    "eslint-plugin-react-hooks": "^3.0.0",
+    "jest": "^25.2.3",
     "lerna": "^3.20.2",
     "nodemon": "^2.0.2",
-    "prettier": "^1.19.1"
+    "prettier": "^2.0.2",
+    "smee-client": "^1.1.0"
   }
 }

@@ -17,6 +17,13 @@ const UserQuery = gql`
         id
         jobStatus
       }
+      installations {
+        id
+        latestSynchronization {
+          id
+          jobStatus
+        }
+      }
     }
   }
 `

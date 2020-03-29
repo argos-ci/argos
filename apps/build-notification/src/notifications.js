@@ -1,33 +1,44 @@
-import { Octokit } from '@octokit/rest'
-import config from '@argos-ci/config'
-import {
-  Build,
-  BuildNotification,
-  UserRepositoryRight,
-} from '@argos-ci/database/models'
+import { getInstallationOctokit } from '@argos-ci/github'
+import { BuildNotification } from '@argos-ci/database/models'
 import { job as buildNotificationJob } from './job'
 
-const NOTIFICATIONS = {
-  progress: {
-    state: 'pending',
-    description: 'Build in progress...',
-  },
-  'no-diff-detected': {
-    state: 'success',
-    description: 'Everything good!',
-  },
-  'diff-detected': {
-    state: 'failure',
-    description: 'Difference detected.',
-  },
-  'diff-accepted': {
-    state: 'success',
-    description: 'Difference accepted.',
-  },
-  'diff-rejected': {
-    state: 'failure',
-    description: 'Difference rejected.',
-  },
+async function getNotificationPayload(buildNotification) {
+  switch (buildNotification.type) {
+    case 'progress':
+      return {
+        state: 'pending',
+        description: 'Build in progress...',
+      }
+    case 'no-diff-detected':
+      return {
+        state: 'success',
+        description: "Everything's good!",
+      }
+    case 'diff-detected': {
+      const diffsCount = await buildNotification.build
+        .$relatedQuery('screenshotDiffs')
+        .where('score', '>', 0)
+        .resultSize()
+      return {
+        state: 'failure',
+        description: `${diffsCount} difference${
+          diffsCount > 1 ? 's' : ''
+        } detected, waiting for your decision`,
+      }
+    }
+    case 'diff-accepted':
+      return {
+        state: 'success',
+        description: 'Difference accepted',
+      }
+    case 'diff-rejected':
+      return {
+        state: 'failure',
+        description: 'Difference rejected',
+      }
+    default:
+      throw new Error(`Unknown notification type: ${buildNotification.type}`)
+  }
 }
 
 export async function pushBuildNotification({ type, buildId }) {
@@ -41,11 +52,11 @@ export async function pushBuildNotification({ type, buildId }) {
 }
 
 export async function processBuildNotification(buildNotification) {
-  const build = await Build.query()
-    .withGraphFetched(
-      '[repository.[organization, user], compareScreenshotBucket]',
-    )
-    .findById(buildNotification.buildId)
+  await buildNotification.$fetchGraph(
+    `build.[repository.installations, compareScreenshotBucket]`,
+  )
+
+  const { build } = buildNotification
 
   if (!build) {
     throw new Error('Build not found')
@@ -56,66 +67,32 @@ export async function processBuildNotification(buildNotification) {
     return null
   }
 
-  const notification = NOTIFICATIONS[buildNotification.type]
-
-  if (!notification) {
-    throw new Error(
-      `Cannot find notification for type: "${buildNotification.type}"`,
-    )
-  }
-
-  const owner = build.repository.user || build.repository.organization
+  const notification = await getNotificationPayload(buildNotification)
+  const owner = await build.repository.$relatedOwner()
 
   if (!owner) {
     throw new Error('Owner not found')
   }
 
-  const user = await build.repository
-    .getUsers()
-    .orderBy('id', 'asc')
-    .limit(1)
-    .first()
-
-  if (!user) {
-    throw new Error('User not found')
+  const [installation] = build.repository.installations
+  if (!installation) {
+    throw new Error(
+      `Installation not found for repository "${build.repository.id}"`,
+    )
   }
 
-  const octokit = new Octokit({
-    debug: config.get('env') === 'development',
-    auth: user.accessToken,
-  })
+  const octokit = await getInstallationOctokit(installation.githubId)
 
   const buildUrl = await build.getUrl()
 
   // https://developer.github.com/v3/repos/statuses/
-  try {
-    return await octokit.repos.createStatus({
-      owner: owner.login,
-      repo: build.repository.name,
-      sha: build.compareScreenshotBucket.commit,
-      state: notification.state,
-      target_url: buildUrl,
-      description: notification.description, // Short description of the status.
-      context: 'argos',
-    })
-  } catch (error) {
-    // Several things here:
-    // - Token is no longer valid
-    // - The user lost access to the repository
-    // - The repository has been removed
-    if (error.status === 401 || error.status === 404) {
-      // We remove the rights for the user
-      await UserRepositoryRight.query()
-        .where({ userId: user.id, repositoryId: build.repository.id })
-        .delete()
-      // We push a new notification
-      await pushBuildNotification({
-        type: buildNotification.type,
-        buildId: build.id,
-      })
-      // The error should not be notified on Sentry
-      error.ignoreCapture = true
-    }
-    throw error
-  }
+  return octokit.repos.createStatus({
+    owner: owner.login,
+    repo: build.repository.name,
+    sha: build.compareScreenshotBucket.commit,
+    state: notification.state,
+    target_url: buildUrl,
+    description: notification.description, // Short description of the status.
+    context: 'argos',
+  })
 }

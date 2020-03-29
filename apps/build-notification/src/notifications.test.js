@@ -16,7 +16,7 @@ import {
 
 jest.mock('./job')
 
-describe('notifications', () => {
+xdescribe('notifications', () => {
   useDatabase()
   usePlayback({
     fixtures: path.join(__dirname, '../__fixtures__'),

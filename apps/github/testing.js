@@ -1,2 +1,1 @@
-/* eslint-disable import/no-unresolved */
-module.exports = require('./lib/testing')
+export * from './src/testing'

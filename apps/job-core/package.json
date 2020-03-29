@@ -2,16 +2,11 @@
   "name": "@argos-ci/job-core",
   "version": "2.0.0",
   "private": true,
-  "main": "lib/index.js",
-  "scripts": {
-    "prebuild": "rm -rf lib/",
-    "build": "babel --config-file ../../babel.config.js -d lib --ignore \"**/*.test.js\" src",
-    "dev": "yarn build --watch"
-  },
+  "main": "src/index.js",
   "dependencies": {
     "@argos-ci/config": "2.0.0",
     "@argos-ci/logger": "2.0.0",
-    "@sentry/node": "^5.14.2",
+    "@sentry/node": "^5.15.4",
     "amqplib": "^0.5.5"
   }
 }

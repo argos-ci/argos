@@ -7,6 +7,7 @@ export const typeDefs = gql`
     login: String!
     name: String
     privateSync: Boolean!
+    installations: [Installation!]!
     latestSynchronization: Synchronization
   }
 
@@ -23,6 +24,9 @@ export const resolvers = {
     },
   },
   User: {
+    async installations(user) {
+      return user.$relatedQuery('installations')
+    },
     async latestSynchronization(user) {
       return user.$relatedQuery('synchronizations').first()
     },

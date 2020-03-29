@@ -15,6 +15,7 @@ import { Owner } from './pages/Owner'
 import { ErrorPage } from './pages/ErrorPage'
 import { Repository } from './pages/Repository'
 import { NotFound } from './pages/NotFound'
+import { AuthCallback } from './pages/AuthCallback'
 import Privacy from './pages/Privacy.md'
 import Terms from './pages/Terms.md'
 import Security from './pages/Security.md'
@@ -43,64 +44,63 @@ export function App() {
             <ApolloInitializer>
               <UserInitializer>
                 <Switch>
-                  <Route
-                    render={() => (
-                      <Layout>
-                        <LayoutHeader>
-                          <AppNavbar />
-                        </LayoutHeader>
-                        <SyncAlertBar />
-                        <LayoutMain>
-                          <Catch fallback={<ErrorPage />}>
-                            <Switch>
-                              <Route exact path="/" component={Home} />
-                              <Route
-                                exact
-                                path="/privacy"
-                                render={() => (
-                                  <Markdown title="Privacy">{Privacy}</Markdown>
-                                )}
-                              />
-                              <Route
-                                exact
-                                path="/terms"
-                                render={() => (
-                                  <Markdown title="Terms">{Terms}</Markdown>
-                                )}
-                              />
-                              <Route
-                                exact
-                                path="/security"
-                                render={() => (
-                                  <Markdown title="Security">
-                                    {Security}
-                                  </Markdown>
-                                )}
-                              />
-                              <Route
-                                exact
-                                path="/:ownerLogin"
-                                component={Owner}
-                              />
-                              <Route
-                                exact
-                                path="/:ownerLogin/settings"
-                                component={Owner}
-                              />
-                              <Route
-                                path="/:ownerLogin/:repositoryName"
-                                component={Repository}
-                              />
-                              <Route component={NotFound} />
-                            </Switch>
-                          </Catch>
-                        </LayoutMain>
-                        <LayoutFooter>
-                          <AppFooter />
-                        </LayoutFooter>
-                      </Layout>
-                    )}
-                  />
+                  <Route exact path="/auth/github/callback">
+                    <AuthCallback />
+                  </Route>
+                  <Route>
+                    <Layout>
+                      <LayoutHeader>
+                        <AppNavbar />
+                      </LayoutHeader>
+                      <SyncAlertBar />
+                      <LayoutMain>
+                        <Catch fallback={<ErrorPage />}>
+                          <Switch>
+                            <Route exact path="/" component={Home} />
+                            <Route
+                              exact
+                              path="/privacy"
+                              render={() => (
+                                <Markdown title="Privacy">{Privacy}</Markdown>
+                              )}
+                            />
+                            <Route
+                              exact
+                              path="/terms"
+                              render={() => (
+                                <Markdown title="Terms">{Terms}</Markdown>
+                              )}
+                            />
+                            <Route
+                              exact
+                              path="/security"
+                              render={() => (
+                                <Markdown title="Security">{Security}</Markdown>
+                              )}
+                            />
+                            <Route
+                              exact
+                              path="/:ownerLogin"
+                              component={Owner}
+                            />
+                            <Route
+                              exact
+                              path="/:ownerLogin/settings"
+                              component={Owner}
+                            />
+                            <Route
+                              path="/:ownerLogin/:repositoryName"
+                              component={Repository}
+                            />
+                            <Route component={NotFound} />
+                          </Switch>
+                        </Catch>
+                      </LayoutMain>
+                      <LayoutFooter>
+                        <AppFooter />
+                      </LayoutFooter>
+                    </Layout>
+                  </Route>
                 </Switch>
               </UserInitializer>
             </ApolloInitializer>

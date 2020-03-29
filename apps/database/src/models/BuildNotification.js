@@ -13,6 +13,7 @@ export class BuildNotification extends Model {
         type: {
           type: 'string',
           enum: [
+            'queued',
             'progress',
             'no-diff-detected',
             'diff-detected',

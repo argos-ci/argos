@@ -1,12 +1,12 @@
-import { errorChecking } from './api'
+import { asyncHandler } from './util'
 
-describe('api', () => {
-  describe('errorChecking', () => {
+describe('util', () => {
+  describe('#asyncHandler', () => {
     it('should fall back to the code', () => {
       const status = 401
       const next = jest.fn()
 
-      errorChecking(() => {
+      asyncHandler(() => {
         const githubError = new Error('')
         githubError.code = status
         githubError.status = 'Unauthorized'

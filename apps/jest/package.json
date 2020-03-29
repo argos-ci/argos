@@ -2,10 +2,5 @@
   "name": "@argos-ci/jest",
   "version": "2.0.0",
   "private": true,
-  "main": "lib/index.js",
-  "scripts": {
-    "prebuild": "rm -rf lib/",
-    "build": "babel --config-file ../../babel.config.js -d lib --ignore \"**/*.test.js\" src",
-    "dev": "yarn build --watch"
-  }
+  "main": "src/index.js"
 }

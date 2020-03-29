@@ -4,10 +4,10 @@
     [
       "@babel/preset-env",
       {
+        "modules": false,
         "loose": true,
-        "targets": {
-          "node": "current"
-        }
+        "useBuiltIns": "entry",
+        "corejs": 3
       }
     ]
   ],

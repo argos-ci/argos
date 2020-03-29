@@ -3,11 +3,14 @@ import React from 'react'
 import gql from 'graphql-tag'
 import { partition } from 'lodash'
 import { Link } from 'react-router-dom'
+import { Button } from '@smooth-ui/core-sc'
 import styled, { Box } from '@xstyled/styled-components'
 import { GoRepo } from 'react-icons/go'
 import { Query } from '../containers/Apollo'
 import { useUser } from '../containers/User'
 import { OwnerAvatar } from '../containers/OwnerAvatar'
+import { isUserSyncing } from '../modules/user'
+import config from '../config'
 import {
   Container,
   Card,
@@ -53,14 +56,14 @@ function OwnerHeader({ owner, active }) {
 function Owners({ data: { owners } }) {
   const [activeOwners, inactiveOwners] = partition(
     owners,
-    owner => owner.repositories.length,
+    (owner) => owner.repositories.length,
   )
 
   return (
     <Container my={3}>
       {activeOwners.length > 0 && (
         <Box row mx={-2} mb={5} justifyContent="center">
-          {activeOwners.map(owner => (
+          {activeOwners.map((owner) => (
             <Box key={owner.login} col={{ xs: 1, md: 1 / 3 }} p={2}>
               <Card>
                 <CardHeader>
@@ -80,7 +83,7 @@ function Owners({ data: { owners } }) {
                         </FadeLink>
                       </Box>
                     )}
-                    {owner.repositories.map(repository => (
+                    {owner.repositories.map((repository) => (
                       <RepositoryItem key={repository.id}>
                         <FadeLink
                           forwardedAs={Link}
@@ -114,7 +117,7 @@ function Owners({ data: { owners } }) {
             Inactive owners
           </Text>
           <Box row m={-2}>
-            {inactiveOwners.map(owner => (
+            {inactiveOwners.map((owner) => (
               <Box key={owner.login} col={1} p={2}>
                 <Card>
                   <CardBody p={2}>
@@ -134,6 +137,17 @@ export function Home() {
   const user = useUser()
   if (!user) {
     return <ProductInfo />
+  }
+
+  if (!user.installations.length && !isUserSyncing(user)) {
+    return (
+      <Container textAlign="center" my={4}>
+        <p>Look like you don't have installed Argos GitHub App.</p>
+        <Button as="a" href={config.get('github.appUrl')}>
+          Install Argos GitHub App
+        </Button>
+      </Container>
+    )
   }
 
   return (
@@ -157,7 +171,7 @@ export function Home() {
         }
       `}
     >
-      {data => <Owners data={data} />}
+      {(data) => <Owners data={data} />}
     </Query>
   )
 }

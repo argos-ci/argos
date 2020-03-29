@@ -32,7 +32,7 @@ export function OwnerSettings() {
               as="a"
               target="_blank"
               rel="noopener noreferrer"
-              href={config.get('github.applicationUrl')}
+              href={config.get('github.appUrl')}
             >
               Manage permissions
             </Button>

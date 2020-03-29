@@ -8,12 +8,13 @@ export class Synchronization extends Model {
 
   static get jsonSchema() {
     return mergeSchemas(timestampsSchema, jobModelSchema, {
-      required: ['userId', 'type'],
+      required: ['type'],
       properties: {
         userId: { type: 'string' },
+        installationId: { type: 'string' },
         type: {
           type: 'string',
-          enum: ['github'],
+          enum: ['user', 'installation'],
         },
       },
     })

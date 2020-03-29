@@ -2,12 +2,13 @@
   "name": "@argos-ci/github",
   "version": "2.0.0",
   "private": true,
-  "scripts": {
-    "prebuild": "rm -rf lib/",
-    "build": "babel --config-file ../../babel.config.js -d lib --ignore \"**/*.test.js\" src",
-    "dev": "yarn build --watch"
+  "main": "src/index.js",
+  "dependencies": {
+    "@argos-ci/config": "^2.0.0",
+    "@octokit/auth": "^2.0.0",
+    "@octokit/rest": "^17.1.4"
   },
   "devDependencies": {
-    "nock": "^12.0.2"
+    "nock": "^12.0.3"
   }
 }

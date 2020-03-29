@@ -1,9 +1,5 @@
 #!/usr/bin/env node
 
-import '../setup'
-import { createJobWorker } from '@argos-ci/job-core'
-import { job as buildJob } from '@argos-ci/build'
-import { job as synchronizeJob } from '@argos-ci/synchronize'
-import { job as buildNotificationJob } from '@argos-ci/build-notification'
-
-createJobWorker(buildJob, synchronizeJob, buildNotificationJob)
+/* eslint-disable no-global-assign */
+require = require('esm')(module)
+module.exports = require('../proc/build-and-synchronize.js')
