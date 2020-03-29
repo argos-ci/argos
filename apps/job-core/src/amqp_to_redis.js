@@ -1,35 +1,14 @@
-import amqp from 'amqplib'
-import config from 'config'
-
 import redis from 'redis'
 import { v4 as uuid } from 'uuid'
 import { promisify } from 'util'
+
 const sleep = promisify(setTimeout)
 
-let amqpConnectionPromise
-
-export function connect() {
-  if (!amqpConnectionPromise) {
-    amqpConnectionPromise = amqp.connect(config.get('amqp.url'))
-  }
-
-  return amqpConnectionPromise
-}
-
-export async function disconnect() {
-  if (!amqpConnectionPromise) {
-    return
-  }
-
-  const connection = await amqpConnectionPromise
-  await connection.close()
-}
-
 class AMQPToRedis {
-  constructor(client) {
-    this.client = client
-    this.lpop = promisify(client.lpop).bind(client)
-    this.quit = promisify(client.quit).bind(client)
+  constructor(redis_url) {
+    this.client = redis.createClient({ url: redis_url })
+    this.lpop = promisify(this.client.lpop).bind(this.client)
+    this.quit = promisify(this.client.quit).bind(this.client)
     this.closed = false
     this.ack_callbacks = {}
     this.exec_message = promisify((content, message_callback, callback) => {
@@ -92,17 +71,6 @@ class AMQPToRedis {
   }
 }
 
-let channel
-export async function getChannel() {
-  if (!channel) {
-    if (config.get('amqp.url').startsWith('redis://')) {
-      const client = redis.createClient({ url: config.get('amqp.url') })
-      channel = new AMQPToRedis(client)
-    }
-    else {
-      const connection = await connect()
-      channel = await connection.createChannel()
-    }
-  }
-  return channel
+export const buildAMQPToRedis = (redis_url) => {
+  return new AMQPToRedis(redis_url)
 }

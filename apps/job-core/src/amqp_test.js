@@ -1,10 +1,9 @@
-import 'server/bootstrap/setup'
-import { getChannel, disconnect } from 'server/services/amqp'
+import { getAmqpChannel } from './amqp'
 const sleep = require('util').promisify(setTimeout)
 
 const run = async () => {
   const queue = 'queue_test'
-  const channel = await getChannel()
+  const channel = await getAmqpChannel()
   while(true) {
     const message = await channel.get(queue, { noAck: false })
     if (message === false) {
@@ -36,7 +35,6 @@ const run = async () => {
     counter += 1
     if (counter == 3) {
       await channel.close()
-      await disconnect()
     }
   })
 }
