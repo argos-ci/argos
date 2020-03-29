@@ -2,6 +2,7 @@ import amqp from 'amqplib'
 import config from 'config'
 
 import redis from 'redis'
+import { v4 as uuid } from 'uuid'
 import { promisify } from 'util'
 const sleep = promisify(setTimeout)
 
@@ -30,10 +31,11 @@ class AMQPToRedis {
     this.lpop = promisify(client.lpop).bind(client)
     this.quit = promisify(client.quit).bind(client)
     this.closed = false
-    this.ack_callback = null
+    this.ack_callbacks = {}
     this.exec_message = promisify((content, message_callback, callback) => {
-      this.ack_callback = callback
-      message_callback({content: content})
+      const id = uuid()
+      this.ack_callbacks[id] = callback
+      message_callback({id: id, content: content})
     }).bind(this)
   }
 
@@ -41,19 +43,16 @@ class AMQPToRedis {
     return 'queue_' + queue
   }
 
-  ack(_message) {
-    if (this.ack_callback) {
-      const callback = this.ack_callback
-      this.ack_callback = null
+  ack(message) {
+    const callback = this.ack_callbacks[message.id]
+    if (callback) {
+      this.ack_callbacks[message.id] = null
       callback()
     }
   }
-  nack(_message, _allUpTo = false, _requeue = false) {
-    if (this.ack_callback) {
-      const callback = this.ack_callback
-      this.ack_callback = null
-      callback()
-    }
+
+  nack(message, _allUpTo = false, _requeue = false) {
+    this.ack(message)
   }
 
   sendToQueue(queue, message, _opts) {
