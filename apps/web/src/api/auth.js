@@ -12,13 +12,8 @@ const router = new Router()
 
 export default router
 
-const url = new URL(config.get('server.url'))
-router.use(
-  cors({
-    origin: `${url.protocol}//${url.hostname}:${url.port}`,
-    methods: ['POST'],
-  }),
-)
+// @TODO be more restrictive on cors
+router.use(cors())
 
 function getDataFromProfile(profile) {
   return {
