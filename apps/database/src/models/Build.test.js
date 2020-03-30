@@ -99,7 +99,7 @@ describe('models/Build', () => {
           buildId: build.id,
           jobStatus: 'pending',
         })
-        expect(await build.getStatus()).toBe('pending')
+        expect(await build.$getStatus()).toBe('pending')
       })
     })
 
@@ -114,7 +114,7 @@ describe('models/Build', () => {
           buildId: build.id,
           jobStatus: 'progress',
         })
-        expect(await build.getStatus()).toBe('progress')
+        expect(await build.$getStatus()).toBe('progress')
       })
     })
 
@@ -131,7 +131,7 @@ describe('models/Build', () => {
           jobStatus: 'complete',
           score: 0,
         })
-        expect(await build.getStatus()).toBe('failure')
+        expect(await build.$getStatus()).toBe('failure')
       })
     })
 
@@ -167,7 +167,7 @@ describe('models/Build', () => {
           validationStatus: ScreenshotDiff.VALIDATION_STATUSES.rejected,
         })
         expect(
-          await build.getStatus({
+          await build.$getStatus({
             useValidation: true,
           }),
         ).toBe('failure')
@@ -181,7 +181,7 @@ describe('models/Build', () => {
           validationStatus: ScreenshotDiff.VALIDATION_STATUSES.unknown,
         })
         expect(
-          await build.getStatus({
+          await build.$getStatus({
             useValidation: true,
           }),
         ).toBe('failure')
@@ -195,7 +195,7 @@ describe('models/Build', () => {
           validationStatus: ScreenshotDiff.VALIDATION_STATUSES.accepted,
         })
         expect(
-          await build.getStatus({
+          await build.$getStatus({
             useValidation: true,
           }),
         ).toBe('success')
@@ -207,7 +207,7 @@ describe('models/Build', () => {
         build = await factory.create('Build', {
           jobStatus: 'error',
         })
-        expect(await build.getStatus()).toBe('error')
+        expect(await build.$getStatus()).toBe('error')
       })
     })
   })

@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-import '../setup'
-import { createJobWorker } from '@argos-ci/job-core'
-import { job as screenshotDiffJob } from '@argos-ci/screenshot-diff'
-
-createJobWorker(screenshotDiffJob)
+/* eslint-disable no-global-assign */
+require = require('esm')(module)
+module.exports = require('../proc/screenshot-diff.js')

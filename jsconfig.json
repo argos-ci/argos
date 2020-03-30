@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es2020"
-  }
+    "target": "es2020",
+    "module": "es2020"
+  },
+  "include": ["node_modules/@argos-ci/**/*"]
 }

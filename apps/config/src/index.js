@@ -88,23 +88,43 @@ const config = convict({
     },
   },
   github: {
+    appId: {
+      doc: 'App ID',
+      format: String,
+      default: '',
+      env: 'GITHUB_APP_ID',
+    },
+    privateKey: {
+      doc: 'Private key',
+      format: String,
+      default: '',
+      env: 'GITHUB_APP_PRIVATE_KEY',
+    },
     clientId: {
       doc: 'Client ID',
       format: String,
-      default: 'c4636449f2df59e6010d',
+      default: '',
       env: 'GITHUB_CLIENT_ID',
     },
     clientSecret: {
       doc: 'Client Secret',
       format: String,
-      default: '1781c9a3e1d57fdcfdf9c29c02abf7d37e1c0427',
+      default: '',
       env: 'GITHUB_CLIENT_SECRET',
     },
-    applicationUrl: {
+    appUrl: {
       format: String,
-      default:
-        'https://github.com/settings/connections/applications/8460535e1d4c40dfdf05',
-      env: 'GITHUB_APPLICATION_URL',
+      default: '',
+      env: 'GITHUB_APP_URL',
+    },
+    loginUrl: {
+      format: String,
+      default: `https://github.com/login/oauth/authorize?scope=user:email&client_id=${process.env.GITHUB_CLIENT_ID}`,
+    },
+    webhookSecret: {
+      format: String,
+      default: 'development',
+      env: 'GITHUB_WEBHOOK_SECRET',
     },
   },
   redis: {
@@ -192,6 +212,11 @@ const config = convict({
 const env = config.get('env')
 config.loadFile(path.join(__dirname, `../environments/${env}.json`))
 config.validate()
+
+config.set(
+  'github.privateKey',
+  config.get('github.privateKey').replace(/\\n/g, '\n'),
+)
 
 if (process.env.DATABASE_URL) {
   const urlParts = url.parse(process.env.DATABASE_URL)

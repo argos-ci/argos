@@ -2,12 +2,7 @@
   "name": "@argos-ci/screenshot-diff",
   "version": "2.0.0",
   "private": true,
-  "main": "lib/index.js",
-  "scripts": {
-    "prebuild": "rm -rf lib/",
-    "build": "babel --config-file ../../babel.config.js -d lib --ignore \"**/*.test.js\" src",
-    "dev": "yarn build --watch"
-  },
+  "main": "src/index.js",
   "dependencies": {
     "@argos-ci/build-notification": "2.0.0",
     "@argos-ci/config": "2.0.0",
@@ -15,7 +10,7 @@
     "@argos-ci/github": "2.0.0",
     "@argos-ci/job-core": "2.0.0",
     "@argos-ci/storage": "2.0.0",
-    "@octokit/rest": "^17.1.0",
+    "@octokit/rest": "^17.1.4",
     "image-difference": "^2.0.7",
     "tmp": "^0.1.0"
   },

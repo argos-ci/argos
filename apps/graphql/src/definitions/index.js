@@ -1,5 +1,6 @@
 import * as Build from './Build'
 import * as DateDefs from './Date'
+import * as Installation from './Installation'
 import * as JobStatus from './JobStatus'
 import * as Owner from './Owner'
 import * as PageInfo from './PageInfo'
@@ -16,6 +17,7 @@ import * as Permission from './Permission'
 export const definitions = [
   Build,
   DateDefs,
+  Installation,
   JobStatus,
   Owner,
   PageInfo,

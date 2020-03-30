@@ -19,12 +19,14 @@ import {
   BrandLogo,
 } from '../components'
 import { OwnerAvatar } from './OwnerAvatar'
+import { useLogout } from './Auth'
 import { useUser } from './User'
 
 // eslint-disable-next-line react/forbid-foreign-prop-types
 delete MenuDisclosure.propTypes.children
 
 function UserMenu({ user }) {
+  const logout = useLogout()
   const menu = useMenuState({
     placement: 'bottom-end',
     gutter: 4,
@@ -38,26 +40,16 @@ function UserMenu({ user }) {
         )}
       </MenuDisclosure>
       <Menu aria-label="User settings" {...menu}>
-        {!user.privateSync && (
-          <MenuItem
-            {...menu}
-            forwardedAs="a"
-            href="/auth/github-private"
-            rel="noopener noreferrer"
-          >
-            Sync. private repos
-          </MenuItem>
-        )}
         <MenuItem
           {...menu}
           forwardedAs="a"
-          href={config.get('github.applicationUrl')}
+          href={config.get('github.appUrl')}
           target="_blank"
           rel="noopener noreferrer"
         >
-          Manage permissions
+          Add repository
         </MenuItem>
-        <MenuItem {...menu} forwardedAs="a" href="/auth/logout">
+        <MenuItem {...menu} onClick={() => logout()}>
           Logout
         </MenuItem>
       </Menu>
@@ -83,7 +75,7 @@ export function AppNavbar() {
           <Button
             variant="light200"
             as="a"
-            href="/auth/github-public"
+            href={config.get('github.loginUrl')}
             display="flex"
             alignItems="center"
           >

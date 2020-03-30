@@ -1,7 +1,22 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import webpack from 'webpack'
-import AssetsPlugin from 'assets-webpack-plugin'
-import config from '@argos-ci/config'
+require('@babel/register')({
+  ignore: [],
+  presets: [
+    [
+      '@babel/preset-env',
+      {
+        loose: true,
+        targets: {
+          node: 'current',
+        },
+      },
+    ],
+  ],
+})
+
+const webpack = require('webpack')
+const AssetsPlugin = require('assets-webpack-plugin')
+const { default: config } = require('@argos-ci/config')
 
 const prod = process.env.NODE_ENV === 'production'
 module.exports = {
@@ -69,6 +84,7 @@ module.exports = {
     new webpack.EnvironmentPlugin({
       PLATFORM: 'browser',
       SENTRY_RELEASE: process.env.COMMIT_REF || '',
+      API_BASE_URL: 'http://api.dev.argos-ci.com:4001',
     }),
   ],
   devServer: {

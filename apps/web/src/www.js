@@ -1,13 +1,12 @@
 import express from 'express'
 import path from 'path'
-import passport from 'passport'
 import session from 'express-session'
 import connectRedis from 'connect-redis'
 import config from '@argos-ci/config'
 import { apolloServer } from '@argos-ci/graphql'
 import { errorHandler } from './middlewares/errorHandler'
 import { rendering } from './middlewares/rendering'
-import { configurePassport } from './passport-config'
+import { auth } from './middlewares/auth'
 import * as redis from './redis'
 
 const production = config.get('env') === 'production'
@@ -41,43 +40,10 @@ router.use(
     saveUninitialized: false,
   }),
 )
-router.use(passport.initialize())
-router.use(passport.session())
 
-configurePassport(passport)
+router.use(auth)
 
 apolloServer.applyMiddleware({ app: router })
-
-// GraphQL
-;['private', 'public'].forEach(type => {
-  router.get(
-    `/auth/github-${type}`,
-    (req, res, next) => {
-      // Save the referer to later redirect back to it.
-      // req.session can be undefined when Redis is down.
-      if (req.session) {
-        req.session.returnTo = req.header('Referer')
-      }
-      next()
-    },
-    passport.authenticate(`github-${type}`),
-  )
-  router.get(
-    `/auth/github/callback/${type}`,
-    // Public and private strategies have the same authenticate behavior,
-    // so we use public for both
-    passport.authenticate(`github-${type}`, { failureRedirect: '/login' }),
-    (req, res) => {
-      // Successful authentication
-      let returnTo = '/'
-      if (req.session.returnTo) {
-        ;({ returnTo } = req.session)
-        delete req.session.returnTo
-      }
-      res.redirect(returnTo)
-    },
-  )
-})
 
 router.get('/auth/logout', (req, res) => {
   req.logout()

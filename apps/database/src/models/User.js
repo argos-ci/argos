@@ -2,6 +2,7 @@ import { Model, mergeSchemas, timestampsSchema } from '../util'
 import { Synchronization } from './Synchronization'
 import { Organization } from './Organization'
 import { Repository } from './Repository'
+import { Installation } from './Installation'
 
 export class User extends Model {
   static get tableName() {
@@ -75,6 +76,18 @@ export class User extends Model {
             to: 'user_repository_rights.repositoryId',
           },
           to: 'repositories.id',
+        },
+      },
+      installations: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Installation,
+        join: {
+          from: 'users.id',
+          through: {
+            from: 'user_installation_rights.userId',
+            to: 'user_installation_rights.installationId',
+          },
+          to: 'installations.id',
         },
       },
     }

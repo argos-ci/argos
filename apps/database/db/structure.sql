@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.14
--- Dumped by pg_dump version 9.6.14
+-- Dumped from database version 12.2
+-- Dumped by pg_dump version 12.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -17,29 +17,16 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
---
 -- Name: build_notifications_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
 CREATE TYPE public.build_notifications_type AS ENUM (
-    'progress',
-    'no-diff-detected',
-    'diff-detected',
+    'diff-rejected',
     'diff-accepted',
-    'diff-rejected'
+    'diff-detected',
+    'no-diff-detected',
+    'progress',
+    'queued'
 );
 
 
@@ -53,7 +40,8 @@ CREATE TYPE public.job_status AS ENUM (
     'pending',
     'progress',
     'complete',
-    'error'
+    'error',
+    'aborted'
 );
 
 
@@ -70,9 +58,21 @@ CREATE TYPE public.service_type AS ENUM (
 
 ALTER TYPE public.service_type OWNER TO postgres;
 
+--
+-- Name: synchronization_type; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.synchronization_type AS ENUM (
+    'user',
+    'installation'
+);
+
+
+ALTER TYPE public.synchronization_type OWNER TO postgres;
+
 SET default_tablespace = '';
 
-SET default_with_oids = false;
+SET default_table_access_method = heap;
 
 --
 -- Name: build_notifications; Type: TABLE; Schema: public; Owner: postgres
@@ -153,6 +153,78 @@ ALTER SEQUENCE public.builds_id_seq OWNED BY public.builds.id;
 
 
 --
+-- Name: installation_repository_rights; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.installation_repository_rights (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "installationId" bigint NOT NULL,
+    "repositoryId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.installation_repository_rights OWNER TO postgres;
+
+--
+-- Name: installation_repository_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.installation_repository_rights_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.installation_repository_rights_id_seq OWNER TO postgres;
+
+--
+-- Name: installation_repository_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.installation_repository_rights_id_seq OWNED BY public.installation_repository_rights.id;
+
+
+--
+-- Name: installations; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.installations (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "githubId" integer NOT NULL,
+    deleted boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE public.installations OWNER TO postgres;
+
+--
+-- Name: installations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.installations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.installations_id_seq OWNER TO postgres;
+
+--
+-- Name: installations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.installations_id_seq OWNED BY public.installations.id;
+
+
+--
 -- Name: knex_migrations; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -171,6 +243,7 @@ ALTER TABLE public.knex_migrations OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.knex_migrations_id_seq
+    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -204,6 +277,7 @@ ALTER TABLE public.knex_migrations_lock OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.knex_migrations_lock_index_seq
+    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -422,11 +496,12 @@ ALTER SEQUENCE public.screenshots_id_seq OWNED BY public.screenshots.id;
 
 CREATE TABLE public.synchronizations (
     id bigint NOT NULL,
-    "userId" bigint NOT NULL,
+    "userId" bigint,
     "jobStatus" public.job_status,
-    type public.service_type,
     "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
+    "updatedAt" timestamp with time zone NOT NULL,
+    type public.synchronization_type NOT NULL,
+    "installationId" bigint
 );
 
 
@@ -451,6 +526,42 @@ ALTER TABLE public.synchronizations_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.synchronizations_id_seq OWNED BY public.synchronizations.id;
+
+
+--
+-- Name: user_installation_rights; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_installation_rights (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "userId" bigint NOT NULL,
+    "installationId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.user_installation_rights OWNER TO postgres;
+
+--
+-- Name: user_installation_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_installation_rights_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.user_installation_rights_id_seq OWNER TO postgres;
+
+--
+-- Name: user_installation_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_installation_rights_id_seq OWNED BY public.user_installation_rights.id;
 
 
 --
@@ -582,6 +693,20 @@ ALTER TABLE ONLY public.builds ALTER COLUMN id SET DEFAULT nextval('public.build
 
 
 --
+-- Name: installation_repository_rights id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.installation_repository_rights ALTER COLUMN id SET DEFAULT nextval('public.installation_repository_rights_id_seq'::regclass);
+
+
+--
+-- Name: installations id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.installations ALTER COLUMN id SET DEFAULT nextval('public.installations_id_seq'::regclass);
+
+
+--
 -- Name: knex_migrations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -638,6 +763,13 @@ ALTER TABLE ONLY public.synchronizations ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: user_installation_rights id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_installation_rights ALTER COLUMN id SET DEFAULT nextval('public.user_installation_rights_id_seq'::regclass);
+
+
+--
 -- Name: user_organization_rights id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -672,6 +804,22 @@ ALTER TABLE ONLY public.build_notifications
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: installation_repository_rights installation_repository_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.installation_repository_rights
+    ADD CONSTRAINT installation_repository_rights_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: installations installations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.installations
+    ADD CONSTRAINT installations_pkey PRIMARY KEY (id);
 
 
 --
@@ -736,6 +884,14 @@ ALTER TABLE ONLY public.screenshots
 
 ALTER TABLE ONLY public.synchronizations
     ADD CONSTRAINT synchronizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_installation_rights user_installation_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_installation_rights
+    ADD CONSTRAINT user_installation_rights_pkey PRIMARY KEY (id);
 
 
 --
@@ -811,6 +967,27 @@ CREATE INDEX builds_externalid_index ON public.builds USING btree ("externalId")
 --
 
 CREATE INDEX builds_number_index ON public.builds USING btree (number);
+
+
+--
+-- Name: installation_repository_rights_installationid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX installation_repository_rights_installationid_index ON public.installation_repository_rights USING btree ("installationId");
+
+
+--
+-- Name: installation_repository_rights_repositoryid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX installation_repository_rights_repositoryid_index ON public.installation_repository_rights USING btree ("repositoryId");
+
+
+--
+-- Name: installations_githubid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX installations_githubid_index ON public.installations USING btree ("githubId");
 
 
 --
@@ -905,6 +1082,13 @@ CREATE INDEX screenshots_screenshotbucketid_index ON public.screenshots USING bt
 
 
 --
+-- Name: synchronizations_installationid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX synchronizations_installationid_index ON public.synchronizations USING btree ("installationId");
+
+
+--
 -- Name: synchronizations_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -923,6 +1107,20 @@ CREATE INDEX synchronizations_type_index ON public.synchronizations USING btree 
 --
 
 CREATE INDEX synchronizations_userid_index ON public.synchronizations USING btree ("userId");
+
+
+--
+-- Name: user_installation_rights_installationid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX user_installation_rights_installationid_index ON public.user_installation_rights USING btree ("installationId");
+
+
+--
+-- Name: user_installation_rights_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX user_installation_rights_userid_index ON public.user_installation_rights USING btree ("userId");
 
 
 --
@@ -993,6 +1191,22 @@ ALTER TABLE ONLY public.builds
 
 
 --
+-- Name: installation_repository_rights installation_repository_rights_installationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.installation_repository_rights
+    ADD CONSTRAINT installation_repository_rights_installationid_foreign FOREIGN KEY ("installationId") REFERENCES public.installations(id);
+
+
+--
+-- Name: installation_repository_rights installation_repository_rights_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.installation_repository_rights
+    ADD CONSTRAINT installation_repository_rights_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES public.repositories(id);
+
+
+--
 -- Name: repositories repositories_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1049,11 +1263,35 @@ ALTER TABLE ONLY public.screenshots
 
 
 --
+-- Name: synchronizations synchronizations_installationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.synchronizations
+    ADD CONSTRAINT synchronizations_installationid_foreign FOREIGN KEY ("installationId") REFERENCES public.installations(id);
+
+
+--
 -- Name: synchronizations synchronizations_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.synchronizations
     ADD CONSTRAINT synchronizations_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+
+
+--
+-- Name: user_installation_rights user_installation_rights_installationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_installation_rights
+    ADD CONSTRAINT user_installation_rights_installationid_foreign FOREIGN KEY ("installationId") REFERENCES public.installations(id);
+
+
+--
+-- Name: user_installation_rights user_installation_rights_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_installation_rights
+    ADD CONSTRAINT user_installation_rights_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
 
 
 --
@@ -1092,37 +1330,40 @@ ALTER TABLE ONLY public.user_repository_rights
 -- PostgreSQL database dump complete
 --
 
+-- Knex migrations
 
-
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20161217154940_init.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128163909_screenshot_buckets_drop_column_jobStatus.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165351_builds_alter_column_baseScreenshotBucketId.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165352_screenshot_diffs_alter_column_score.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170128165353_screenshot_diffs_alter_column_score.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170129135917_link_repositories.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170129213906_screenshot_diffs_add_column_s3id.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170205204435_organization-repository.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211133332_add_table_synchronizations.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211153730_users_add_column_accessToken.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211165500_create_table_user_organization_rights.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170211165501_create_table_user_repository_rights.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212091412_users_email_remove_not_null.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212092004_add_column_userId_to_repositories.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170212102433_repositories_alter_column_organization_id.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000548_users_name_login.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222000549_builds_number.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170222222346_add_jobStatus_to_builds.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184220_add_constraints.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170304184221_remove_constraints.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170305095107_notifications.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170306205356_new-notifications.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312191852_users_add_private_enabled.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312202055_repositories_add_column_private.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170312230324_organizations_login.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170319114827_add_github_scopes_to_users.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170329213934_allow_null_baseScreenshotIds.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170402203440_repository_baseline_branch.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20170628232300_add_scopes_to_users.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20180323213911_screenshot_batches.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20181017110213_indexes.js', 1, NOW());
-INSERT INTO knex_migrations(name, batch, migration_time) VALUES ('20190919113147_bucket-status.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20161217154940_init.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170128163909_screenshot_buckets_drop_column_jobStatus.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170128165351_builds_alter_column_baseScreenshotBucketId.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170128165352_screenshot_diffs_alter_column_score.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170128165353_screenshot_diffs_alter_column_score.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170129135917_link_repositories.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170129213906_screenshot_diffs_add_column_s3id.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170205204435_organization-repository.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170211133332_add_table_synchronizations.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170211153730_users_add_column_accessToken.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170211165500_create_table_user_organization_rights.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170211165501_create_table_user_repository_rights.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170212091412_users_email_remove_not_null.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170212092004_add_column_userId_to_repositories.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170212102433_repositories_alter_column_organization_id.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170222000548_users_name_login.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170222000549_builds_number.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170222222346_add_jobStatus_to_builds.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170304184220_add_constraints.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170304184221_remove_constraints.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170305095107_notifications.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170306205356_new-notifications.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170312191852_users_add_private_enabled.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170312202055_repositories_add_column_private.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170312230324_organizations_login.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170319114827_add_github_scopes_to_users.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170329213934_allow_null_baseScreenshotIds.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170402203440_repository_baseline_branch.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20170628232300_add_scopes_to_users.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20180323213911_screenshot_batches.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20181017110213_indexes.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20190919113147_bucket-status.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20190919154131_job_status_aborted.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200329104003_github-app.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200329194617_build-notifications.js', 1, NOW());

@@ -5,6 +5,7 @@ import { UserRepositoryRight } from './UserRepositoryRight'
 import { User } from './User'
 import { Build } from './Build'
 import { Organization } from './Organization'
+import { Installation } from './Installation'
 
 const generateRandomBytes = promisify(crypto.randomBytes)
 
@@ -53,6 +54,21 @@ export class Repository extends Model {
         join: {
           from: 'repositories.userId',
           to: 'users.id',
+        },
+      },
+      installations: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Installation,
+        join: {
+          from: 'repositories.id',
+          through: {
+            from: 'installation_repository_rights.repositoryId',
+            to: 'installation_repository_rights.installationId',
+          },
+          to: 'installations.id',
+        },
+        modify(builder) {
+          return builder.where({ deleted: false })
         },
       },
     }

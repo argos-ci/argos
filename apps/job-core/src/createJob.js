@@ -1,8 +1,9 @@
+import logger from '@argos-ci/logger'
 import * as Sentry from '@sentry/node'
 import { getAmqpChannel } from './amqp'
 
-const serializeMessage = payload => Buffer.from(JSON.stringify(payload))
-const parseMessage = message => {
+const serializeMessage = (payload) => Buffer.from(JSON.stringify(payload))
+const parseMessage = (message) => {
   const payload = JSON.parse(message.toString())
   if (
     !payload ||
@@ -25,22 +26,23 @@ export function createJob(queue, consumer) {
       })
     },
     async process({ channel }) {
-      Sentry.configureScope(scope => {
+      Sentry.configureScope((scope) => {
         scope.setTag('jobQueue', queue)
       })
       await channel.prefetch(1)
       await channel.assertQueue(queue, { durable: true })
-      await channel.consume(queue, async msg => {
+      await channel.consume(queue, async (msg) => {
         let payload
 
         try {
           payload = parseMessage(msg.content)
-          Sentry.configureScope(scope => {
+          Sentry.configureScope((scope) => {
             scope.setExtra('jobArgs', payload.args)
           })
           await consumer.perform(...payload.args)
           await consumer.complete(...payload.args)
         } catch (error) {
+          logger.error(error)
           if (!error.ignoreCapture) {
             Sentry.captureException(error)
           }

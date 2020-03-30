@@ -73,7 +73,7 @@ export const resolvers = {
       return build.$relatedQuery('repository')
     },
     async status(build) {
-      return build.getStatus({ useValidation: true })
+      return build.$getStatus({ useValidation: true })
     },
   },
   Mutation: {

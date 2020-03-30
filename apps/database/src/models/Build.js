@@ -107,45 +107,56 @@ export class Build extends Model {
     return this.reload()
   }
 
-  static async getStatus(build, options = {}) {
-    const { useScore = true, useValidation = false } = options
-
+  static async getStatus(
+    build,
+    { useScore = true, useValidation = false } = {},
+  ) {
     // If something bad happened at the build level
     if (build.jobStatus !== 'complete') {
       return build.jobStatus
     }
 
-    const screenshotDiffs = await ScreenshotDiff.query().where({
-      buildId: build.id,
-    })
-    const jobStatus = reduceJobStatus(
-      screenshotDiffs.map(screenshotDiff => screenshotDiff.jobStatus),
-    )
-
-    if (jobStatus === 'complete') {
-      if (useValidation && useScore) {
-        const isFailure = screenshotDiffs.some(
-          ({ score, validationStatus }) =>
-            validationStatus === ScreenshotDiff.VALIDATION_STATUSES.rejected ||
-            (validationStatus === ScreenshotDiff.VALIDATION_STATUSES.unknown &&
-              score > 0),
-        )
-
-        return isFailure ? 'failure' : 'success'
-      }
-
-      if (useScore) {
-        const hasDiffs = screenshotDiffs.some(({ score }) => score > 0)
-        return hasDiffs ? 'failure' : 'success'
-      }
-
-      throw new Error('Those options are not supported', options)
+    if (!build.screenshotDiffs) {
+      await build.$fetchGraph('screenshotDiffs')
     }
 
-    return jobStatus
+    const { screenshotDiffs } = build
+
+    const jobStatus = reduceJobStatus(
+      screenshotDiffs.map((screenshotDiff) => screenshotDiff.jobStatus),
+    )
+
+    if (jobStatus !== 'complete') return jobStatus
+
+    if (useScore && useValidation) {
+      const hasRejectedOrDiffs = screenshotDiffs.some(
+        ({ score, validationStatus }) =>
+          validationStatus === ScreenshotDiff.VALIDATION_STATUSES.rejected ||
+          (validationStatus === ScreenshotDiff.VALIDATION_STATUSES.unknown &&
+            score > 0),
+      )
+
+      return hasRejectedOrDiffs ? 'failure' : 'success'
+    }
+
+    if (useScore) {
+      const hasDiffs = screenshotDiffs.some(({ score }) => score > 0)
+      return hasDiffs ? 'failure' : 'success'
+    }
+
+    if (useValidation) {
+      const hasRejected = screenshotDiffs.some(
+        ({ validationStatus }) =>
+          validationStatus === ScreenshotDiff.VALIDATION_STATUSES.rejected,
+      )
+
+      return hasRejected ? 'failure' : 'success'
+    }
+
+    throw new Error(`"useScore" or "useValidation" is required`)
   }
 
-  getStatus(options) {
+  $getStatus(options) {
     return this.constructor.getStatus(this, options)
   }
 

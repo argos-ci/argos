@@ -2,15 +2,10 @@
   "name": "@argos-ci/storage",
   "version": "2.0.0",
   "private": true,
-  "main": "lib/index.js",
-  "scripts": {
-    "prebuild": "rm -rf lib/",
-    "build": "babel --config-file ../../babel.config.js -d lib --ignore \"**/*.test.js\" src",
-    "dev": "yarn build --watch"
-  },
+  "main": "src/index.js",
   "dependencies": {
     "@argos-ci/config": "2.0.0",
-    "aws-sdk": "^2.639.0",
+    "aws-sdk": "^2.648.0",
     "mime": "^2.4.4",
     "tmp": "^0.1.0",
     "uuid": "^7.0.2"

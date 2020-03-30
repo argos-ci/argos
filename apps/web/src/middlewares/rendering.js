@@ -7,28 +7,34 @@ import { pick } from 'lodash'
 import config from '@argos-ci/config'
 import { getAuthorizationStatus } from '../authorizations'
 
-let htmlWebpackPlugin
 const indexString = fs.readFileSync(
   path.join(__dirname, '../../templates/index.ejs'),
   'UTF-8',
 )
 
-if (process.env.NODE_ENV === 'production') {
-  const assets = require('../../../app/dist/assets.json')
+function getHtmlWebpackPluginConfig() {
+  if (process.env.NODE_ENV === 'production') {
+    const rawAssets = fs.readFileSync(
+      path.join(__dirname, '../../../app/dist/assets.json'),
+      'UTF-8',
+    )
+    const assets = JSON.parse(rawAssets)
 
-  htmlWebpackPlugin = {
-    files: {
-      css: [assets.main.css],
-      js: [assets.main.js],
-    },
+    return {
+      files: {
+        css: [assets.main.css],
+        js: [assets.main.js],
+      },
+    }
   }
-} else {
-  htmlWebpackPlugin = {
+  return {
     files: {
       js: ['/static/app/main.js'],
     },
   }
 }
+
+const htmlWebpackPlugin = getHtmlWebpackPluginConfig()
 
 function isMediaBot(userAgent) {
   let output = false
@@ -68,7 +74,8 @@ export function rendering(additionalClientData) {
           },
           releaseVersion: config.get('releaseVersion'),
           github: {
-            applicationUrl: config.get('github.applicationUrl'),
+            appUrl: config.get('github.appUrl'),
+            loginUrl: config.get('github.loginUrl'),
           },
         },
         ...(req.user

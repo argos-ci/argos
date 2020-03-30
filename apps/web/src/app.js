@@ -6,7 +6,7 @@ import compress from 'compression'
 import morgan from 'morgan'
 import helmet from 'helmet'
 import ejs from 'ejs'
-import subdomain from 'express-subdomain'
+// import subdomain from 'express-subdomain'
 import config from '@argos-ci/config'
 import www from './www'
 import api from './api'
@@ -19,14 +19,14 @@ app.set('views', path.join(__dirname, '..'))
 
 app.use(function captureClientRelease(req, res, next) {
   if (req.headers['x-argos-release-version']) {
-    Sentry.configureScope(scope => {
+    Sentry.configureScope((scope) => {
       scope.setTag(
         'clientReleaseVersion',
         req.headers['x-argos-release-version'],
       )
     })
   } else if (req.headers['x-argos-cli-version']) {
-    Sentry.configureScope(scope => {
+    Sentry.configureScope((scope) => {
       scope.setTag('clientCliVersion', req.headers['x-argos-cli-version'])
     })
   }
@@ -58,7 +58,7 @@ app.use(
   express.static(path.join(__dirname, '../../../public'), {
     etag: true,
     lastModified: false,
-    setHeaders: res => {
+    setHeaders: (res) => {
       res.set('Cache-Control', 'no-cache')
     },
   }),
@@ -86,11 +86,13 @@ app.use(
   }),
 )
 
-if (config.get('www.subdomain') === config.get('api.subdomain')) {
-  app.use(api, www)
-} else {
-  app.use(subdomain(config.get('api.subdomain'), api))
-  app.use(subdomain(config.get('www.subdomain'), www))
-}
+app.use(api, www)
+
+// if (config.get('www.subdomain') === config.get('api.subdomain')) {
+//   app.use(api, www)
+// } else {
+//   app.use(subdomain(config.get('api.subdomain'), api))
+//   app.use(subdomain(config.get('www.subdomain'), www))
+// }
 
 export default app
