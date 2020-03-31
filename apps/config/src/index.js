@@ -213,10 +213,10 @@ const env = config.get('env')
 config.loadFile(path.join(__dirname, `../environments/${env}.json`))
 config.validate()
 
-config.set(
-  'github.privateKey',
-  config.get('github.privateKey').replace(/\\n/g, '\n'),
-)
+// config.set(
+//   'github.privateKey',
+//   config.get('github.privateKey').replace(/\\n/g, '\n'),
+// )
 
 if (process.env.DATABASE_URL) {
   const urlParts = url.parse(process.env.DATABASE_URL)
