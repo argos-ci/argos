@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 12.2
--- Dumped by pg_dump version 12.2
+-- Dumped by pg_dump version 12.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -125,7 +125,8 @@ CREATE TABLE public.builds (
     number integer NOT NULL,
     "jobStatus" public.job_status,
     "externalId" character varying(255),
-    "batchCount" integer
+    "batchCount" integer,
+    name character varying(255) DEFAULT 'default'::character varying NOT NULL
 );
 
 
@@ -1367,3 +1368,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2019091
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20190919154131_job_status_aborted.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200329104003_github-app.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200329194617_build-notifications.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200616135126_build-name.js', 1, NOW());

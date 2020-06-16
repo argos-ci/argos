@@ -31,7 +31,7 @@ async function createBuild({
   complete = true,
 }) {
   const bucket = await ScreenshotBucket.query().insertAndFetch({
-    name: 'default',
+    name: data.name,
     commit: data.commit,
     branch: data.branch,
     repositoryId: repository.id,
@@ -45,6 +45,7 @@ async function createBuild({
     jobStatus: 'pending',
     externalId: data.externalBuildId || null,
     batchCount: data.batchCount ? 1 : null,
+    name: data.name,
   })
 
   build.compareScreenshotBucket = bucket
@@ -58,6 +59,7 @@ async function useExistingBuild({ Build, ScreenshotBucket, data, repository }) {
     .findOne({
       'builds.repositoryId': repository.id,
       externalId: data.externalBuildId,
+      name: data.name,
     })
 
   // @TODO Throw an error if batchCount is superior to expected
@@ -93,6 +95,8 @@ router.post(
     if (!data.commit) {
       throw new HttpError(401, 'Missing commit')
     }
+
+    data.name = data.name || 'default'
 
     const repository = await Repository.query()
       .where({ token: data.token })

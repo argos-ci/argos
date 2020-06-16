@@ -93,6 +93,6 @@ export async function processBuildNotification(buildNotification) {
     state: notification.state,
     target_url: buildUrl,
     description: notification.description, // Short description of the status.
-    context: 'argos',
+    context: build.name === 'default' ? 'argos' : `argos/${build.name}`,
   })
 }
