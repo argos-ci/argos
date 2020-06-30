@@ -84,6 +84,9 @@ function ScreenshotDiffItem({
 }
 
 export default function BuildDetailScreenshots({ build }) {
+  const [showPassingScreenshots, setShowPassingScreenshots] = React.useState(
+    false,
+  )
   const { screenshotDiffs } = build
   screenshotDiffs.sort((itemA, itemB) =>
     itemA.validationStatus > itemB.validationStatus
@@ -100,10 +103,25 @@ export default function BuildDetailScreenshots({ build }) {
           <CardHeader>
             <CardTitle>Screenshots</CardTitle>
           </CardHeader>
-          {screenshotDiffs.map((screenshotDiff, index) => (
-            <ScreenshotDiffItem key={index} screenshotDiff={screenshotDiff} />
-          ))}
+          {screenshotDiffs.map(
+            (screenshotDiff, index) =>
+              (showPassingScreenshots || screenshotDiff.score !== 0) && (
+                <ScreenshotDiffItem
+                  key={index}
+                  screenshotDiff={screenshotDiff}
+                />
+              ),
+          )}
         </Card>
+        <Box mt={{ xs: 3 }}>
+          <Button
+            onClick={() => setShowPassingScreenshots(!showPassingScreenshots)}
+          >
+            {showPassingScreenshots
+              ? 'Hide passing screenshots'
+              : 'Show passing screenshots'}
+          </Button>
+        </Box>
       </Box>
     </Box>
   )
