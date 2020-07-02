@@ -68,6 +68,7 @@ AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_SCREENSHOTS_BUCKET=
 GITHUB_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
 TEST_GITHUB_USER_ACCESS_TOKEN=
 ```
 
@@ -82,7 +83,8 @@ TEST_GITHUB_USER_ACCESS_TOKEN=
 ### Set up database
 
 ```sh
-yarn db:reset
+docker-compose up -d
+yarn setup
 ```
 
 ### Use the seed
@@ -90,14 +92,14 @@ yarn db:reset
 You can fill the database with some development data with the following command:
 
 ```sh
-yarn db:truncate && yarn db:seed
+cd apps/database && yarn db:truncate && yarn db:seed
 ```
 
 ## Develop
 
 ```sh
-yarn web:dev # run server and workers
-yarn review:dev # run client assets
+yarn procfile
+yarn dev
 ```
 
 ### Jobs
