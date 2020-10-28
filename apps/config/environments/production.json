@@ -9,7 +9,8 @@
   "server": {
     "logFormat": "combined",
     "secure": true,
-    "url": "https://www.argos-ci.com"
+    "url": "https://www.argos-ci.com",
+    "httpsRedirect": true
   },
   "api": {
     "subdomain": "api"

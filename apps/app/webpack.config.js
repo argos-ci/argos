@@ -15,6 +15,8 @@ require('@babel/register')({
 })
 
 const webpack = require('webpack')
+const path = require('path')
+const fs = require('fs')
 const AssetsPlugin = require('assets-webpack-plugin')
 const { default: config } = require('@argos-ci/config')
 
@@ -84,31 +86,38 @@ module.exports = {
     new webpack.EnvironmentPlugin({
       PLATFORM: 'browser',
       SENTRY_RELEASE: process.env.COMMIT_REF || '',
-      API_BASE_URL: 'http://api.dev.argos-ci.com:4001',
+      API_BASE_URL: 'https://api.argos-ci.dev:4001',
     }),
   ],
-  devServer: {
-    historyApiFallback: true,
-    port: config.get('client.port'),
-    disableHostCheck: true, // For security checks, no need here.
-    // webpack-dev-middleware options.
-    stats: {
-      // Remove built modules information.
-      modules: false,
-      // Remove built modules information to chunk information.
-      chunkModules: false,
-      colors: true,
-    },
-    proxy: {
-      '**': {
-        target: {
-          host: 'www.dev.argos-ci.com',
-          protocol: 'http:',
-          port: config.get('server.port'),
+  ...(!prod
+    ? {
+        devServer: {
+          historyApiFallback: true,
+          https: true,
+          host: 'www.argos-ci.dev',
+          key: fs.readFileSync(
+            path.join(__dirname, '../../_wildcard.argos-ci.dev-key.pem'),
+          ),
+          cert: fs.readFileSync(
+            path.join(__dirname, '../../_wildcard.argos-ci.dev.pem'),
+          ),
+          port: config.get('client.port'),
+          disableHostCheck: true, // For security checks, no need here.
+          // webpack-dev-middleware options.
+          stats: {
+            // Remove built modules information.
+            modules: false,
+            // Remove built modules information to chunk information.
+            chunkModules: false,
+            colors: true,
+          },
+          proxy: {
+            '**': {
+              target: `https://www.argos-ci.dev:${config.get('server.port')}`,
+              secure: false,
+            },
+          },
         },
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
+      }
+    : {}),
 }

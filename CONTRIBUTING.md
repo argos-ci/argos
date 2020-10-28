@@ -76,9 +76,19 @@ TEST_GITHUB_USER_ACCESS_TOKEN=
 
 ```
 # Argos
-127.0.0.1 www.dev.argos-ci.com
-127.0.0.1 api.dev.argos-ci.com
+127.0.0.1 www.argos-ci.dev
+127.0.0.1 api.argos-ci.dev
 ```
+
+### Setup SSL
+
+Install [mkcert](https://github.com/FiloSottile/mkcert) and type the following command:
+
+```
+mkcert *.argos-ci.dev
+```
+
+Two files should be generated at the root of the project.
 
 ### Set up database
 
