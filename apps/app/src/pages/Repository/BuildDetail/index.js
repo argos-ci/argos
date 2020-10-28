@@ -27,6 +27,7 @@ import { BuildProvider, BuildContextFragment, useBuild } from './Context'
 // eslint-disable-next-line import/no-cycle
 import { NotFound } from '../../NotFound'
 import { useRepository } from '../RepositoryContext'
+import { hasWritePermission } from '../../../modules/permissions'
 
 const StyledCardHeader = styled(CardHeader)`
   display: flex;
@@ -38,6 +39,7 @@ export function Build() {
   const build = useBuild()
   const { status } = build
   const buildColor = getStatusColor(status)
+  const repository = useRepository()
 
   return (
     <Container my={4} position="relative">
@@ -46,7 +48,9 @@ export function Build() {
           <Card borderLeft={2} borderColor={buildColor}>
             <StyledCardHeader>
               <CardTitle>Summary</CardTitle>
-              <BuildDetailAction build={build} />
+              {hasWritePermission(repository) && (
+                <BuildDetailAction build={build} />
+              )}
             </StyledCardHeader>
             <CardBody overflow="hidden">
               <Box row>
