@@ -58,7 +58,6 @@ function UserMenu({ user }) {
 }
 
 export function AppNavbar() {
-
   const user = useUser()
   const [colorMode] = useColorMode()
 
