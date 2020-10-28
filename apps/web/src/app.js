@@ -43,7 +43,7 @@ if (config.get('server.logFormat')) {
 app.use(compress())
 
 // Redirect from http to https
-if (config.get('server.secure')) {
+if (config.get('server.secure') && config.get('server.httpsRedirect')) {
   app.use((req, res, next) => {
     if (req.headers['x-forwarded-proto'] !== 'https') {
       res.redirect(`https://${req.hostname}${req.url}`)

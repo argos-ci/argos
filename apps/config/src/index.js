@@ -49,7 +49,7 @@ const config = convict({
     url: {
       doc: 'The user public url',
       format: String,
-      default: 'http://www.dev.argos-ci.com:4002',
+      default: 'https://www.argos-ci.dev:4002',
       env: 'SERVER_URL',
     },
     sessionSecret: {
@@ -60,6 +60,11 @@ const config = convict({
     },
     secure: {
       doc: 'Specify if the server is using https or not.',
+      format: Boolean,
+      default: false,
+    },
+    httpsRedirect: {
+      doc: 'Specify if an https redirection should occur.',
       format: Boolean,
       default: false,
     },

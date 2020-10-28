@@ -22,7 +22,7 @@ describe('app routes', () => {
       it('should respond bad request', async () => {
         await request(app)
           .post('/builds')
-          .set('Host', 'api.dev.argos-ci.com')
+          .set('Host', 'api.argos-ci.dev')
           .attach(
             'screenshots[]',
             path.join(__dirname, '__fixtures__/screenshot_test.jpg'),
@@ -35,7 +35,7 @@ describe('app routes', () => {
               names: ['screenshot_test.jpg'],
             }),
           )
-          .expect(res => {
+          .expect((res) => {
             expect(res.body.error.message).toBe('Missing token')
           })
           .expect(401)
@@ -46,7 +46,7 @@ describe('app routes', () => {
       it('should respond bad request', async () => {
         await request(app)
           .post('/builds')
-          .set('Host', 'api.dev.argos-ci.com')
+          .set('Host', 'api.argos-ci.dev')
           .attach(
             'screenshots[]',
             path.join(__dirname, '__fixtures__/screenshot_test.jpg'),
@@ -60,7 +60,7 @@ describe('app routes', () => {
               names: ['screenshot_test.jpg'],
             }),
           )
-          .expect(res => {
+          .expect((res) => {
             expect(res.body.error.message).toBe(
               'Repository not found (token: "xx")',
             )
@@ -79,7 +79,7 @@ describe('app routes', () => {
 
         await request(app)
           .post('/builds')
-          .set('Host', 'api.dev.argos-ci.com')
+          .set('Host', 'api.argos-ci.dev')
           .attach(
             'screenshots[]',
             path.join(__dirname, '__fixtures__/screenshot_test.jpg'),
@@ -93,7 +93,7 @@ describe('app routes', () => {
               names: ['screenshot_test.jpg'],
             }),
           )
-          .expect(res => {
+          .expect((res) => {
             expect(res.body.error.message).toBe(
               'Repository not enabled (name: "foo")',
             )
@@ -131,7 +131,7 @@ describe('app routes', () => {
         const name = 'chrome/screenshot_test.jpg'
         const res = await request(app)
           .post('/builds')
-          .set('Host', 'api.dev.argos-ci.com')
+          .set('Host', 'api.argos-ci.dev')
           .attach(
             'screenshots[]',
             path.join(__dirname, '__fixtures__/screenshot_test.jpg'),
@@ -182,8 +182,8 @@ describe('app routes', () => {
     it('should returns buckets', () =>
       request(app)
         .get('/buckets')
-        .set('Host', 'api.dev.argos-ci.com')
-        .expect(res => {
+        .set('Host', 'api.argos-ci.dev')
+        .expect((res) => {
           expect(res.body[0].name).toBe('test-bucket')
           expect(res.body[0].commit).toBe('test-commit')
           expect(res.body[0].branch).toBe('test-branch')
@@ -195,16 +195,16 @@ describe('app routes', () => {
       it('should filter by branch', async () => {
         await request(app)
           .get('/buckets?branch=whatever')
-          .set('Host', 'api.dev.argos-ci.com')
-          .expect(res => {
+          .set('Host', 'api.argos-ci.dev')
+          .expect((res) => {
             expect(res.body).toHaveLength(0)
           })
           .expect(200)
 
         await request(app)
           .get('/buckets?branch=test-branch')
-          .set('Host', 'api.dev.argos-ci.com')
-          .expect(res => {
+          .set('Host', 'api.argos-ci.dev')
+          .expect((res) => {
             expect(res.body).toHaveLength(1)
           })
           .expect(200)
