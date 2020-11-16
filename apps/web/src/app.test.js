@@ -3,6 +3,7 @@ import request from 'supertest'
 import { usePlayback } from '@argos-ci/github/testing'
 import { useDatabase, factory } from '@argos-ci/database/testing'
 import { job as buildJob } from '@argos-ci/build'
+import * as notifications from '@argos-ci/build-notification'
 import { quitRedis } from './redis'
 import app from './app'
 
@@ -103,6 +104,10 @@ describe('app routes', () => {
     })
 
     describe('with valid repository', () => {
+      beforeAll(() => {
+        notifications.pushBuildNotification = jest.fn()
+      })
+
       usePlayback({
         fixtures: path.join(__dirname, '__fixtures__'),
         name: 'api.builds.json',
@@ -161,6 +166,87 @@ describe('app routes', () => {
         expect(
           repository.builds[0].compareScreenshotBucket.screenshots[0].name,
         ).toBe(name)
+      })
+
+      it('should upload screenshots, update database and return result, with an external id', async () => {
+        const accessToken = 'yyy'
+        const organization = await factory.create('Organization', {
+          login: 'callemall',
+        })
+        const user = await factory.create('User', {
+          accessToken,
+        })
+        let repository = await factory.create('Repository', {
+          name: 'material-ui',
+          organizationId: organization.id,
+          token,
+        })
+        await factory.create('UserRepositoryRight', {
+          userId: user.id,
+          repositoryId: repository.id,
+        })
+
+        const name = 'chrome/screenshot_test.jpg'
+        const res = await request(app)
+          .post('/builds')
+          .set('Host', 'api.dev.argos-ci.com')
+          .attach(
+            'screenshots[]',
+            path.join(__dirname, '__fixtures__/screenshot_test.jpg'),
+          )
+          .field(
+            'data',
+            JSON.stringify({
+              commit: '7abbb0e131ec5b3f6ab8e54a25b047705a013864',
+              branch: 'related-scrollable-tabs',
+              externalBuildId: 'foobar',
+              batchCount: 2,
+              token,
+              names: [name],
+            }),
+          )
+          .expect(200)
+
+        repository = await repository
+          .$query()
+          .withGraphFetched('[builds.compareScreenshotBucket.screenshots]')
+        expect(res.body.build.id).not.toBe(undefined)
+        expect(res.body.build.repository).toBe(undefined) // Not leaking private data
+        expect(res.body.build).toMatchObject({
+          jobStatus: 'pending',
+          number: 1,
+          repositoryId: repository.id,
+          batchCount: 1,
+          externalId: 'foobar',
+          buildUrl: `http://www.test.argos-ci.com/callemall/material-ui/builds/${res.body.build.number}`,
+        })
+        expect(
+          repository.builds[0].compareScreenshotBucket.screenshots[0].name,
+        ).toBe(name)
+
+        // Second call to complete the batch.
+        const res2 = await request(app)
+          .post('/builds')
+          .set('Host', 'api.dev.argos-ci.com')
+          .attach(
+            'screenshots[]',
+            path.join(__dirname, '__fixtures__/screenshot_test.jpg'),
+          )
+          .field(
+            'data',
+            JSON.stringify({
+              commit: '7abbb0e131ec5b3f6ab8e54a25b047705a013864',
+              branch: 'related-scrollable-tabs',
+              externalBuildId: 'foobar',
+              batchCount: 2,
+              token,
+              names: [name],
+            }),
+          )
+          .expect(200)
+        expect(res2.body.build.id).toBe(res.body.build.id)
+        expect(res2.body.build.externalId).toBe('foobar')
+        expect(res2.body.build.batchCount).toBe(2)
       })
     })
   })

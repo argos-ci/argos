@@ -41,8 +41,11 @@ async function getNotificationPayload(buildNotification) {
   }
 }
 
-export async function pushBuildNotification({ type, buildId }) {
-  const buildNotification = await BuildNotification.query().insert({
+export async function pushBuildNotification({ type, buildId, BuildNotificationInTransaction }) {
+  if (BuildNotificationInTransaction === undefined) {
+    BuildNotificationInTransaction = BuildNotification
+  }
+  const buildNotification = await BuildNotificationInTransaction.query().insert({
     buildId,
     type,
     jobStatus: 'pending',
