@@ -6,7 +6,7 @@ import multerS3 from 'multer-s3'
 import bodyParser from 'body-parser'
 import config from '@argos-ci/config'
 import { pushBuildNotification } from '@argos-ci/build-notification'
-import { Build, Repository, ScreenshotBucket } from '@argos-ci/database/models'
+import { Build, Repository, ScreenshotBucket, BuildNotification } from '@argos-ci/database/models'
 import { job as buildJob } from '@argos-ci/build'
 import { s3 as getS3 } from '@argos-ci/storage'
 import { getRedisLock } from '../redis'
@@ -53,7 +53,7 @@ async function createBuild({
   return build
 }
 
-async function useExistingBuild({ Build, ScreenshotBucket, data, repository }) {
+async function useExistingBuild({ Build, ScreenshotBucket, BuildNotification, data, repository }) {
   const existingBuild = await Build.query()
     .withGraphFetched('compareScreenshotBucket')
     .findOne({
@@ -77,7 +77,7 @@ async function useExistingBuild({ Build, ScreenshotBucket, data, repository }) {
     complete: false,
   })
 
-  await pushBuildNotification({ buildId: build.id, type: 'queued' })
+  await pushBuildNotification({ buildId: build.id, type: 'queued', BuildNotificationInTransaction: BuildNotification })
 
   return build
 }
@@ -121,10 +121,12 @@ router.post(
       let build = await transaction(
         Build,
         ScreenshotBucket,
-        async (Build, ScreenshotBucket) => {
+        BuildNotification,
+        async (Build, ScreenshotBucket, BuildNotification) => {
           const build = await strategy({
             Build,
             ScreenshotBucket,
+            BuildNotification,
             data,
             repository,
           })

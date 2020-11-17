@@ -44,6 +44,6 @@ export async function handleGitHubEvents({ name, payload }) {
       }
     }
   } catch (error) {
-    console.error(error)
+    logger.error(error)
   }
 }

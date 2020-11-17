@@ -21,7 +21,7 @@ export function AuthCallback() {
         history.push('/')
       })
       .catch(error => {
-        console.error(error)
+        console.error(error) // eslint-disable-line no-console
       })
   }, [code, history, setToken])
 
