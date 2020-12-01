@@ -111,10 +111,6 @@ export class GitHubSynchronizer {
           githubId: githubRepository.id,
         })
 
-        if (githubRepository.archived) {
-          data.archived = true
-        }
-
         if (repository) {
           await repository.$query().patchAndFetch(data)
         } else {
