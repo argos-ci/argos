@@ -4,6 +4,11 @@ import { job as buildNotificationJob } from './job'
 
 async function getNotificationPayload(buildNotification) {
   switch (buildNotification.type) {
+    case 'queued':
+      return {
+        state: 'pending',
+        description: 'Build is queued',
+      }
     case 'progress':
       return {
         state: 'pending',
