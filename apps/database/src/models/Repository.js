@@ -74,8 +74,8 @@ export class Repository extends Model {
     }
   }
 
-  getUsers() {
-    return this.constructor.getUsers(this.id)
+  getUsers(options) {
+    return this.constructor.getUsers(this.id, options)
   }
 
   async $beforeInsert(queryContext) {
@@ -83,10 +83,10 @@ export class Repository extends Model {
     this.token = this.token || (await Repository.generateToken())
   }
 
-  async $relatedOwner() {
+  async $relatedOwner({ trx } = {}) {
     if (this.userId) {
       if (!this.user) {
-        this.user = await this.$relatedQuery('user')
+        this.user = await this.$relatedQuery('user', trx)
       }
 
       return this.user
@@ -94,7 +94,7 @@ export class Repository extends Model {
 
     if (this.organizationId) {
       if (!this.organization) {
-        this.organization = await this.$relatedQuery('organization')
+        this.organization = await this.$relatedQuery('organization', trx)
       }
 
       return this.organization
@@ -103,8 +103,8 @@ export class Repository extends Model {
     return null
   }
 
-  static getUsers(repositoryId) {
-    return User.query()
+  static getUsers(repositoryId, { trx } = {}) {
+    return User.query(trx)
       .select('users.*')
       .join(
         'user_repository_rights',

@@ -21,8 +21,8 @@ export class Model extends ObjectionModel {
     this.updatedAt = new Date().toISOString()
   }
 
-  async reload() {
-    const model = await this.$query()
+  async reload(queryContext = {}) {
+    const model = await this.$query(queryContext.transaction)
     Object.assign(this, model)
     return this
   }

@@ -5,8 +5,6 @@ import { expectNoGraphQLError } from '../testing'
 import { apolloServer } from '../apollo'
 import { createApolloServerApp } from './util'
 
-jest.mock('@argos-ci/build-notification')
-
 describe('GraphQL', () => {
   useDatabase()
 
@@ -15,38 +13,43 @@ describe('GraphQL', () => {
   })
 
   describe('toggleRepository', () => {
-    let user
-    let organization
-    let repository
+    let ctx
 
     beforeEach(async () => {
-      user = await factory.create('User')
-      organization = await factory.create('Organization', {
-        name: 'bar',
-      })
-      repository = await factory.create('Repository', {
+      const [user, organization] = await Promise.all([
+        factory.create('User'),
+        factory.create('Organization', {
+          name: 'bar',
+        }),
+      ])
+      const repository = await factory.create('Repository', {
         name: 'foo',
         organizationId: organization.id,
       })
-      await factory.create('UserRepositoryRight', {
-        userId: user.id,
-        repositoryId: repository.id,
-      })
-      await factory.create('UserOrganizationRight', {
-        userId: user.id,
-        organizationId: organization.id,
-      })
+      await Promise.all([
+        factory.create('UserRepositoryRight', {
+          userId: user.id,
+          repositoryId: repository.id,
+        }),
+        factory.create('UserOrganizationRight', {
+          userId: user.id,
+          organizationId: organization.id,
+        }),
+      ])
+      ctx = { user, repository }
     })
 
     it('should mutate the repository', async () => {
-      const res = await request(createApolloServerApp(apolloServer, { user }))
+      const res = await request(
+        createApolloServerApp(apolloServer, { user: ctx.user }),
+      )
         .post('/graphql')
         .send({
           query: `
             mutation {
               toggleRepository(
                 enabled: true,
-                repositoryId: "${repository.id}"
+                repositoryId: "${ctx.repository.id}"
               ) {
                 enabled
                 token
