@@ -1,4 +1,5 @@
 import { getInstallationOctokit } from '@argos-ci/github'
+import { runAfterTransaction } from '@argos-ci/database'
 import { BuildNotification } from '@argos-ci/database/models'
 import { job as buildNotificationJob } from './job'
 
@@ -46,16 +47,15 @@ async function getNotificationPayload(buildNotification) {
   }
 }
 
-export async function pushBuildNotification({ type, buildId, BuildNotificationInTransaction }) {
-  if (BuildNotificationInTransaction === undefined) {
-    BuildNotificationInTransaction = BuildNotification
-  }
-  const buildNotification = await BuildNotificationInTransaction.query().insert({
+export async function pushBuildNotification({ type, buildId, trx }) {
+  const buildNotification = await BuildNotification.query(trx).insert({
     buildId,
     type,
     jobStatus: 'pending',
   })
-  buildNotificationJob.push(buildNotification.id)
+  runAfterTransaction(trx, () => {
+    buildNotificationJob.push(buildNotification.id)
+  })
   return buildNotification
 }
 

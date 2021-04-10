@@ -1,7 +1,8 @@
+import { transaction } from '@argos-ci/database'
 import { ScreenshotDiff } from '@argos-ci/database/models'
 import { baseCompare } from './baseCompare'
 
-async function getOrCreateBaseScreenshotBucket(build, trx) {
+async function getOrCreateBaseScreenshotBucket(build, { trx } = {}) {
   // It can already be present, for instance by the sample build feature.
   if (build.baseScreenshotBucket) {
     return build.baseScreenshotBucket
@@ -10,12 +11,13 @@ async function getOrCreateBaseScreenshotBucket(build, trx) {
     baseCommit: build.repository.baselineBranch,
     compareCommit: build.compareScreenshotBucket.commit,
     build,
+    trx,
   })
   if (baseScreenshotBucket) {
     await build
       .$query(trx)
       .patch({ baseScreenshotBucketId: baseScreenshotBucket.id })
-    return baseScreenshotBucket.$query().withGraphFetched('screenshots')
+    return baseScreenshotBucket.$query(trx).withGraphFetched('screenshots')
   }
   return null
 }
@@ -27,27 +29,27 @@ function getJobStatus({ compareWithBaseline, baseScreenshot }) {
 }
 
 export async function createBuildDiffs(build) {
-  build = await build
-    .$query()
-    .withGraphFetched(
-      '[repository, baseScreenshotBucket.screenshots, compareScreenshotBucket.screenshots]',
-    )
+  return transaction(async (trx) => {
+    const richBuild = await build
+      .$query(trx)
+      .withGraphFetched(
+        '[repository, baseScreenshotBucket.screenshots, compareScreenshotBucket.screenshots]',
+      )
 
-  return ScreenshotDiff.transaction(async trx => {
     const baseScreenshotBucket = await getOrCreateBaseScreenshotBucket(
-      build,
-      trx,
+      richBuild,
+      { trx },
     )
 
     const compareWithBaseline =
       baseScreenshotBucket &&
-      baseScreenshotBucket.commit === build.compareScreenshotBucket.commit
+      baseScreenshotBucket.commit === richBuild.compareScreenshotBucket.commit
     const sameBucket =
       baseScreenshotBucket &&
-      baseScreenshotBucket.id === build.compareScreenshotBucket.id
+      baseScreenshotBucket.id === richBuild.compareScreenshotBucket.id
 
-    const inserts = build.compareScreenshotBucket.screenshots.map(
-      compareScreenshot => {
+    const inserts = richBuild.compareScreenshotBucket.screenshots.map(
+      (compareScreenshot) => {
         const baseScreenshot =
           !sameBucket && baseScreenshotBucket
             ? baseScreenshotBucket.screenshots.find(
@@ -56,7 +58,7 @@ export async function createBuildDiffs(build) {
             : null
 
         return {
-          buildId: build.id,
+          buildId: richBuild.id,
           baseScreenshotId: baseScreenshot ? baseScreenshot.id : null,
           compareScreenshotId: compareScreenshot.id,
           jobStatus: getJobStatus({ compareWithBaseline, baseScreenshot }),

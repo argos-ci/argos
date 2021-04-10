@@ -104,7 +104,7 @@ export class Build extends Model {
 
   $afterInsert(queryContext) {
     super.$afterInsert(queryContext)
-    return this.reload()
+    return this.reload(queryContext)
   }
 
   static async getStatus(
@@ -160,8 +160,8 @@ export class Build extends Model {
     return this.constructor.getStatus(this, options)
   }
 
-  static getUsers(buildId) {
-    return User.query()
+  static getUsers(buildId, { trx } = {}) {
+    return User.query(trx)
       .select('users.*')
       .join(
         'user_repository_rights',
@@ -179,16 +179,16 @@ export class Build extends Model {
       .where('builds.id', buildId)
   }
 
-  getUsers() {
-    return this.constructor.getUsers(this.id)
+  getUsers(options) {
+    return this.constructor.getUsers(this.id, options)
   }
 
-  async getUrl() {
+  async getUrl({ trx } = {}) {
     if (!this.repository) {
-      await this.$fetchGraph('repository')
+      await this.$fetchGraph('repository', { transaction: trx })
     }
 
-    const owner = await this.repository.$relatedOwner()
+    const owner = await this.repository.$relatedOwner({ trx })
 
     // const owner = await repository.getOwner()
     const pathname = `/${owner.login}/${this.repository.name}/builds/${this.number}`

@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { promisify } from 'util'
 import gql from 'graphql-tag'
+import { transaction } from '@argos-ci/database'
 import { Build, Repository } from '@argos-ci/database/models'
 import { generateSample } from '../sample'
 import { APIError } from '../util'
@@ -127,50 +128,48 @@ export const resolvers = {
         throw new APIError('Invalid user identification')
       }
 
-      const { repositoryId, enabled } = args
-      const user = await Repository.getUsers(repositoryId).findById(
-        context.user.id,
-      )
+      return transaction(async (trx) => {
+        const { repositoryId, enabled } = args
+        const user = await Repository.getUsers(repositoryId, { trx }).findById(
+          context.user.id,
+        )
 
-      if (!user) {
-        throw new APIError('Invalid user authorization')
-      }
+        if (!user) {
+          throw new APIError('Invalid user authorization')
+        }
 
-      let repository = await Repository.query().patchAndFetchById(
-        repositoryId,
-        { enabled },
-      )
+        const repository = await Repository.query(
+          trx,
+        ).patchAndFetchById(repositoryId, { enabled })
 
-      if (!repository) {
-        throw new APIError('Repository not found')
-      }
+        if (!repository) {
+          throw new APIError('Repository not found')
+        }
 
-      // We can skip further work when disabling a repository
-      if (!enabled) {
-        return repository
-      }
+        // We can skip further work when disabling a repository
+        if (!enabled) {
+          return repository
+        }
 
-      const sample = await Build.query()
-        .where({
+        const sampleBuild = await Build.query(trx).findOne({
           repositoryId: repository.id,
           number: 0,
         })
-        .limit(1)
-        .first()
 
-      // No need to generate a sample if we find one.
-      if (!sample) {
-        await generateSample(repositoryId)
-      }
+        // No need to generate a sample if we find one.
+        if (!sampleBuild) {
+          await generateSample(repositoryId, { trx })
+        }
 
-      if (!repository.token) {
-        const token = await generateRandomBytes(20)
-        repository = await Repository.query().patchAndFetchById(repositoryId, {
-          token: token.toString('hex'),
-        })
-      }
+        if (!repository.token) {
+          const token = await generateRandomBytes(20)
+          return Repository.query(trx).patchAndFetchById(repositoryId, {
+            token: token.toString('hex'),
+          })
+        }
 
-      return repository
+        return repository
+      })
     },
   },
 }

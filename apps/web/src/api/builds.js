@@ -1,4 +1,4 @@
-import { transaction, raw } from '@argos-ci/database'
+import { transaction, raw, runAfterTransaction } from '@argos-ci/database'
 import { HttpError } from 'express-err'
 import express from 'express'
 import multer from 'multer'
@@ -6,7 +6,7 @@ import multerS3 from 'multer-s3'
 import bodyParser from 'body-parser'
 import config from '@argos-ci/config'
 import { pushBuildNotification } from '@argos-ci/build-notification'
-import { Build, Repository, ScreenshotBucket, BuildNotification } from '@argos-ci/database/models'
+import { Build, Repository, ScreenshotBucket } from '@argos-ci/database/models'
 import { job as buildJob } from '@argos-ci/build'
 import { s3 as getS3 } from '@argos-ci/storage'
 import { getRedisLock } from '../redis'
@@ -23,14 +23,8 @@ const upload = multer({
   }),
 })
 
-async function createBuild({
-  Build,
-  ScreenshotBucket,
-  data,
-  repository,
-  complete = true,
-}) {
-  const bucket = await ScreenshotBucket.query().insertAndFetch({
+async function createBuild({ data, repository, complete = true, trx }) {
+  const bucket = await ScreenshotBucket.query(trx).insertAndFetch({
     name: data.name,
     commit: data.commit,
     branch: data.branch,
@@ -38,7 +32,7 @@ async function createBuild({
     complete,
   })
 
-  const build = await Build.query().insertAndFetch({
+  const build = await Build.query(trx).insertAndFetch({
     baseScreenshotBucketId: null,
     compareScreenshotBucketId: bucket.id,
     repositoryId: repository.id,
@@ -53,8 +47,8 @@ async function createBuild({
   return build
 }
 
-async function useExistingBuild({ Build, ScreenshotBucket, BuildNotification, data, repository }) {
-  const existingBuild = await Build.query()
+async function useExistingBuild({ data, repository, trx }) {
+  const existingBuild = await Build.query(trx)
     .withGraphFetched('compareScreenshotBucket')
     .findOne({
       'builds.repositoryId': repository.id,
@@ -65,19 +59,24 @@ async function useExistingBuild({ Build, ScreenshotBucket, BuildNotification, da
   // @TODO Throw an error if batchCount is superior to expected
 
   if (existingBuild) {
-    await existingBuild.$query().patch({ batchCount: raw('"batchCount" + 1') })
+    await existingBuild
+      .$query(trx)
+      .patchAndFetch({ batchCount: raw('"batchCount" + 1') })
     return existingBuild
   }
 
   const build = await createBuild({
-    Build,
-    ScreenshotBucket,
     data,
     repository,
     complete: false,
+    trx,
   })
 
-  await pushBuildNotification({ buildId: build.id, type: 'queued', BuildNotificationInTransaction: BuildNotification })
+  await pushBuildNotification({
+    buildId: build.id,
+    type: 'queued',
+    trx,
+  })
 
   return build
 }
@@ -118,48 +117,41 @@ router.post(
     const lock = getRedisLock()
 
     async function task() {
-      let build = await transaction(
-        Build,
-        ScreenshotBucket,
-        BuildNotification,
-        async (Build, ScreenshotBucket, BuildNotification) => {
-          const build = await strategy({
-            Build,
-            ScreenshotBucket,
-            BuildNotification,
-            data,
-            repository,
+      const { build, buildUrl } = await transaction(async (trx) => {
+        const build = await strategy({
+          data,
+          repository,
+          trx,
+        })
+
+        if (build.jobStatus === 'aborted') {
+          throw new HttpError(400, 'Build is aborted')
+        }
+
+        await build.compareScreenshotBucket
+          .$relatedQuery('screenshots', trx)
+          .insert(
+            req.files.map((file, index) => ({
+              screenshotBucketId: build.compareScreenshotBucket.id,
+              name: data.names[index],
+              s3Id: file.key,
+            })),
+          )
+
+        const buildUrl = await build.getUrl({ trx })
+
+        if (!data.batchCount || Number(data.batchCount) === build.batchCount) {
+          await build
+            .$relatedQuery('compareScreenshotBucket', trx)
+            .patch({ complete: true })
+
+          await runAfterTransaction(trx, async () => {
+            await buildJob.push(build.id)
           })
+        }
 
-          if (build.jobStatus === 'aborted') {
-            throw new HttpError(400, 'Build is aborted')
-          }
-
-          await build.compareScreenshotBucket
-            .$relatedQuery('screenshots')
-            .insert(
-              req.files.map((file, index) => ({
-                screenshotBucketId: build.compareScreenshotBucket.id,
-                name: data.names[index],
-                s3Id: file.key,
-              })),
-            )
-
-          return build
-        },
-      )
-
-      // So we don't reuse the previous transaction
-      build = await Build.query().findById(build.id)
-
-      const buildUrl = await build.getUrl()
-
-      if (!data.batchCount || Number(data.batchCount) === build.batchCount) {
-        await build
-          .$relatedQuery('compareScreenshotBucket')
-          .patch({ complete: true })
-        await buildJob.push(build.id)
-      }
+        return { build, buildUrl }
+      })
 
       res.send({
         build: {
@@ -208,15 +200,15 @@ router.post(
       )
     }
 
-    const build = await transaction(Build, async (Build) => {
-      const build = await Build.query().findOne({
+    const build = await transaction(async (trx) => {
+      const build = await Build.query(trx).findOne({
         'builds.repositoryId': repository.id,
         externalId: req.body.externalBuildId,
       })
 
       if (!build) return null
 
-      await build.$query().patch({ jobStatus: 'aborted' })
+      await build.$query(trx).patch({ jobStatus: 'aborted' })
 
       return build
     })

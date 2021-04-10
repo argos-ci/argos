@@ -1,2 +1,3 @@
-export { transaction, raw } from 'objection'
+export { raw } from 'objection'
 export * from './knex'
+export * from './transaction'
