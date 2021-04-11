@@ -1,89 +1,68 @@
-defaults: &defaults
-  working_directory: /tmp/argos
-  docker:
-    - image: circleci/node:12
-    - image: circleci/redis
-      ports:
-        - '6379:6379'
-    - image: postgres:12
-      environment:
-        POSTGRES_HOST_AUTH_METHOD: trust
-      ports:
-        - '5432:5432'
-restore_repo: &restore_repo
-  restore_cache:
-    keys:
-      - v1-repo-{{ .Branch }}-{{ .Revision }}
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
 version: 2
 jobs:
-  checkout:
-    <<: *defaults
+  build:
+    docker:
+      - image: circleci/node:12
+      - image: circleci/redis
+        ports:
+          - '6379:6379'
+      - image: postgres:12
+        environment:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - '5432:5432'
+
+    working_directory: ~/repo
+
     steps:
-      - *restore_repo
       - checkout
+
       - run:
-          name: Check versions and env
-          command: |
-            yarn --version
-            node --version
-            docker --version
-            docker-compose --version
-            yarn cache dir
-      - restore_cache:
-          key: yarn-sha-{{ checksum "yarn.lock" }}
-      - run:
-          name: Install js dependencies
-          command: |
-            yarn install --frozen-lockfile
-            yarn build
-      - save_cache:
-          key: yarn-sha-{{ checksum "yarn.lock" }}
-          paths:
-            - ~/.cache/yarn/v1
-      - save_cache:
-          key: v1-repo-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - /tmp/argos
-  test_unit:
-    <<: *defaults
-    steps:
-      - *restore_repo
-      - run:
-          name: postgres
+          name: Installing pg dependencies
           command: |
             sudo apt-get update
             sudo apt-get install postgresql postgresql-contrib
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - yarn-cache-{{ checksum "yarn.lock" }}
+            # fallback to using the latest cache if no exact match is found
+            - yarn-cache
+
       - run:
-          name: Unit
+          name: Installing yarn dependencies
+          command: yarn install --frozen-lockfile
+
+      - save_cache:
+          paths:
+            - .yarn
+          key: yarn-cache-{{ checksum "yarn.lock" }}
+
+      - run:
+          name: Lint code
+          command: yarn lint
+
+      - run:
+          name: Build
+          command: yarn build
+
+      - run:
+          name: Setup
           environment:
             NODE_ENV: test
-          command: |
-            yarn setup
-            yarn test --ci
-  test_misc:
-    <<: *defaults
-    steps:
-      - *restore_repo
-      - run:
-          name: Lint
-          command: yarn lint
-      - run:
-          name: postgres
-          command: |
-            sudo apt-get update
-            sudo apt-get install postgresql postgresql-contrib
-      - run:
-          name: Can run argos
-          command: yarn argos
+          command: yarn setup
 
-workflows:
-  version: 2
-  pipeline:
-    jobs:
-      - checkout
-      - test_unit:
-          requires:
-            - checkout
-      - test_misc:
-          requires:
-            - checkout
+      - run:
+          name: Test
+          environment:
+            NODE_ENV: test
+          command: yarn test --ci
+
+      - run:
+          name: Run Argos
+          command: yarn argos
