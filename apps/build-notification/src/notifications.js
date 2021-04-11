@@ -91,6 +91,13 @@ export async function processBuildNotification(buildNotification) {
 
   const octokit = await getInstallationOctokit(installation.githubId)
 
+  // If we don't get an octokit, then the installation has been removed
+  // we deleted the installation
+  if (!octokit) {
+    await installation.$query().patch({ deleted: true })
+    return null
+  }
+
   const buildUrl = await build.getUrl()
 
   // https://developer.github.com/v3/repos/statuses/
