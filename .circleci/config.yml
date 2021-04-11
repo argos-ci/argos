@@ -40,7 +40,7 @@ jobs:
 
       - save_cache:
           paths:
-            - .yarn
+            - node_modules
           key: yarn-cache-{{ checksum "yarn.lock" }}
 
       - run:
