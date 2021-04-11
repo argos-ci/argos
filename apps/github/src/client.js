@@ -30,11 +30,26 @@ export function getOAuthOctokit() {
   })
 }
 
+/**
+ * @param {number} installationId
+ * @returns {Promise<Octokit | null>}
+ */
 export async function getInstallationOctokit(installationId) {
   const appOctokit = getAppOctokit()
-  const { token } = await appOctokit.auth({
-    type: 'installation',
-    installationId,
-  })
+  const token = await (async () => {
+    try {
+      const { token } = await appOctokit.auth({
+        type: 'installation',
+        installationId,
+      })
+      return token
+    } catch (error) {
+      if (error.status === 404) {
+        return null
+      }
+      throw error
+    }
+  })()
+  if (!token) return null
   return getTokenOctokit(token)
 }
