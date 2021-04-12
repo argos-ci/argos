@@ -5,7 +5,7 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-const workers = 3
+const workers = 5
 const maxConnectionsAllowed = 20
 const freeConnectionsForThirdTools = 2
 
