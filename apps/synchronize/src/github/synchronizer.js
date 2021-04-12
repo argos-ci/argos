@@ -406,7 +406,16 @@ export class GitHubSynchronizer {
       return
     }
 
-    this.octokit = await getInstallationOctokit(installation.githubId)
+    const octokit = await getInstallationOctokit(installation.githubId)
+
+    // If we don't get an octokit, then the installation has been removed
+    // we deleted the installation
+    if (!octokit) {
+      await installation.$query().patch({ deleted: true })
+      return
+    }
+
+    this.octokit = octokit
 
     await this.synchronizeAppRepositories(installationId)
 
