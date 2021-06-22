@@ -50,15 +50,14 @@ async function createBuild({ data, repository, complete = true, trx }) {
 async function useExistingBuild({ data, repository, trx }) {
   const existingBuild = await Build.query(trx)
     .withGraphFetched('compareScreenshotBucket')
+    .orderBy('createdAt', 'desc')
     .findOne({
       'builds.repositoryId': repository.id,
       externalId: data.externalBuildId,
       name: data.name,
     })
 
-  // @TODO Throw an error if batchCount is superior to expected
-
-  if (existingBuild) {
+  if (existingBuild && existingBuild.batchCount < data.batchCount) {
     await existingBuild
       .$query(trx)
       .patchAndFetch({ batchCount: raw('"batchCount" + 1') })
