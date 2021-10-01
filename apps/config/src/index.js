@@ -210,19 +210,6 @@ const config = convict({
         format: String,
         default: 'development',
       },
-      ssl: {
-        rejectUnauthorized: {
-          doc: 'Reject unauthorized SSL connection',
-          format: Boolean,
-          default: false,
-        },
-        ca: {
-          doc: 'Certificate',
-          format: '*',
-          env: 'POSTGRES_CA',
-          default: null,
-        },
-      },
     },
   },
 })
@@ -245,7 +232,9 @@ if (process.env.DATABASE_URL) {
   config.set('pg.connection.user', user)
   config.set('pg.connection.password', password)
   config.set('pg.connection.database', urlParts.path.substring(1))
-  config.set('pg.connection.ssl', true)
+  config.set('pg.connection.ssl', {
+    rejectUnauthorized: false,
+  })
   config.set('pg.connection.timezone', 'utc')
 }
 
