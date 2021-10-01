@@ -216,6 +216,12 @@ const config = convict({
           format: Boolean,
           default: false,
         },
+        ca: {
+          doc: 'Certificate',
+          format: String,
+          env: 'POSTGRES_CA',
+          default: null,
+        },
       },
     },
   },
