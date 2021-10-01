@@ -210,6 +210,13 @@ const config = convict({
         format: String,
         default: 'development',
       },
+      ssl: {
+        rejectUnauthorized: {
+          doc: 'Reject unauthorized SSL connection',
+          format: Boolean,
+          default: false,
+        },
+      },
     },
   },
 })
