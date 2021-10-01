@@ -218,7 +218,7 @@ const config = convict({
         },
         ca: {
           doc: 'Certificate',
-          format: String,
+          format: '*',
           env: 'POSTGRES_CA',
           default: null,
         },
