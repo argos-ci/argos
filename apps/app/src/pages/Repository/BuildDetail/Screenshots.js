@@ -48,6 +48,7 @@ function ScreenshotDiffItem({
                     href={baseScreenshot.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    title='Base screenshot'
                   >
                     <StyledImg
                       alt={baseScreenshot.name}
@@ -61,6 +62,7 @@ function ScreenshotDiffItem({
                   href={compareScreenshot.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  title='Current screenshot'
                 >
                   <StyledImg
                     alt={compareScreenshot.name}
@@ -70,7 +72,7 @@ function ScreenshotDiffItem({
               </Box>
               <Box col={1 / 3}>
                 {url && (
-                  <a href={url} target="_blank" rel="noopener noreferrer">
+                  <a href={url} target="_blank" rel="noopener noreferrer" title='Diff'>
                     <StyledImg alt="diff" src={url} />
                   </a>
                 )}
