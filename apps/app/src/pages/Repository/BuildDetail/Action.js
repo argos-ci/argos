@@ -35,6 +35,7 @@ export default function BuildDetailAction({ build }) {
   return (
     <Button
       disabled={loading}
+      loading={loading}
       variant={variant}
       onClick={() =>
         setValidationStatus({
