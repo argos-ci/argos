@@ -1,0 +1,27 @@
+{
+  "name": "argos-website",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "export": "next export",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@xstyled/styled-components": "^3.6.0",
+    "ariakit": "^2.0.0-next.31",
+    "cypress": "^10.0.3",
+    "next": "^12.1.5",
+    "react-dom": "^18.0.0",
+    "react-icons": "^4.4.0",
+    "react": "^18.0.0",
+    "styled-components": "^5.3.5"
+  },
+  "devDependencies": {
+    "@netlify/plugin-nextjs": "^4.11.1",
+    "eslint": "8.18.0",
+    "eslint-config-next": "12.2.0",
+    "eslint-config-prettier": "^8.5.0"
+  }
+}
