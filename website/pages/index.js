@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { x } from '@xstyled/styled-components'
 import {
   IoArrowForward,
-  IoCameraReverseOutline,
+  IoBug,
   IoLogoGithub,
   IoBeerOutline,
 } from 'react-icons/io5'
@@ -19,13 +20,10 @@ import {
 import { PageContainer } from 'components/PageContainer'
 import { Button } from 'components/Button'
 import { Subtitle, Title } from 'components/Titles'
-import { Image } from 'components/Image'
 import { Paragraph } from 'components/Paragraph'
-import { MuiLogo } from 'components/MuiLogo'
-import { MobileSlider } from 'components/Slider'
-import leMondeLogo from 'img/lemonde-logo.png'
-import doctolibLogo from 'img/doctolib-logo.png'
-import { Animation } from '../components/Animation'
+import { GithubClickableStatus } from '@components/GithubMergeStatus'
+import { BrandsSlider } from 'components/Slider'
+import { Animation } from 'containers/Animation'
 
 export default function Home() {
   return (
@@ -52,21 +50,19 @@ export default function Home() {
       </Navbar>
 
       <Section
-        py={0}
         backgroundImage="gradient-to-b"
         gradientFrom="black"
-        gradientTo="primary-a10"
+        gradientTo="body-background"
       >
         <PageContainer
           display="flex"
           flexDirection={{ _: 'column', md: 'row' }}
-          alignItems="center"
           gap={6}
         >
           <x.div
+            flex={{ _: 1, md: 1 / 2 }}
             display="flex"
             flexDirection={'column'}
-            flex={{ _: 1, md: 2 / 5 }}
             gap={10}
             mt={10}
             mb={14}
@@ -86,23 +82,13 @@ export default function Home() {
               </x.span>
             </Subtitle>
             <x.div display="flex" gap={10} alignItems="center">
-              <Link
-                href="http://www.google.fr"
-                display="flex"
-                alignItems="center"
-                gap={1}
-              >
-                Start Learn
-                <x.div as={IoArrowForward} />
-              </Link>
               <Button>
                 Try now <x.div as={IoArrowForward} />
               </Button>
             </x.div>
           </x.div>
-
-          <x.div flex={{ _: 1, md: 3 / 5 }} h={480}>
-            <Animation w={1} mt={10} />
+          <x.div>
+            <Animation />
           </x.div>
         </PageContainer>
       </Section>
@@ -110,52 +96,35 @@ export default function Home() {
       <Section>
         <PageContainer>
           <SectionHeader>
-            <SectionIcon icon={IoCameraReverseOutline} />
-            <SectionColoredTitle>Automate testing</SectionColoredTitle>
-            <SectionTitle>Catch bugs earlier.</SectionTitle>
+            <SectionIcon icon={IoBug} />
+            <SectionColoredTitle>
+              Prevent visual regression with automatic test coverage
+            </SectionColoredTitle>
+            <SectionTitle>Set the trap and catch the bugs</SectionTitle>
           </SectionHeader>
-
           <Paragraph>
-            No more manual testing; Argos CI does the job for you.
-          </Paragraph>
-          <Paragraph>
-            On each commit, screenshots diffs are detected and notified on
-            GitHub. Accepts or rejects changes in one click.
+            On each commit screenshots differences are detected and notified via
+            GitHub check status. Approve updates in one-click.
           </Paragraph>
 
-          <Paragraph color="red">TODO : Animation des github status</Paragraph>
+          <GithubClickableStatus mt={10} />
         </PageContainer>
       </Section>
 
-      <Section
-        backgroundImage="gradient-to-b"
-        gradientFrom="transparent"
-        gradientVia="indigo-900"
-        gradientTo="transparent"
-        py={20}
-      >
+      <Section>
         <PageContainer>
           <x.div
-            fontSize="xl"
+            fontSize={{ _: '4xl', md: '5xl' }}
             mb={8}
             mx="auto"
             textAlign="center"
             color="white"
+            fontWeight="semibold"
           >
-            <x.div color="primary" fontSize={{ _: '3xl', md: '6xl' }} mb={3}>
-              + 10 millions
-            </x.div>
-            screenshots / month
+            + 10M screenshots <x.div fontSize="4xl">/ month</x.div>
           </x.div>
 
-          <MobileSlider>
-            <x.div display="flex" gap={4} alignItems="center">
-              <x.div as={MuiLogo} h="50px" w="60px" />
-              <x.div fontSize="6xl">MUI</x.div>
-            </x.div>
-            <Image src={doctolibLogo} alt="Logo Doctolib" w={200} />
-            <Image src={leMondeLogo} alt="Logo Le Monde" w={200} />
-          </MobileSlider>
+          <BrandsSlider />
         </PageContainer>
       </Section>
 
@@ -163,8 +132,8 @@ export default function Home() {
         <PageContainer>
           <SectionHeader>
             <SectionIcon icon={IoBeerOutline} />
-            <SectionColoredTitle>Developer Friendly</SectionColoredTitle>
-            <SectionTitle>Save time, test more.</SectionTitle>
+            <SectionColoredTitle>poulet...</SectionColoredTitle>
+            <SectionTitle>Developer Friendly</SectionTitle>
           </SectionHeader>
 
           <Paragraph>
