@@ -1,11 +1,10 @@
 import { x } from '@xstyled/styled-components'
-import { useEffect, useRef, useState } from 'react'
-import { motion, useAnimationFrame, useTime, useTransform } from 'framer-motion'
-import { GithubMergeStatus } from './GithubMergeStatus'
+import { useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { GithubMergeStatus } from './GithubStatus'
 import { AnimateMouse } from './AnimateMouse'
 
 export function AnimateGithubStatus({
-  nextStatus,
   savedCode,
   onDetailsClick,
   status,
@@ -15,9 +14,9 @@ export function AnimateGithubStatus({
   useEffect(() => {
     if (!savedCode) return
     setStatus('pending')
-    const timer = setTimeout(() => setStatus(nextStatus), 2000)
+    const timer = setTimeout(() => setStatus('error'), 2000)
     return () => clearTimeout(timer)
-  }, [savedCode, setStatus, nextStatus])
+  }, [savedCode, setStatus])
 
   return (
     <x.div position="absolute" w="500px" as={motion.div} {...props}>
@@ -26,7 +25,7 @@ export function AnimateGithubStatus({
         {status === 'error' ? (
           <AnimateMouse
             from={{ opacity: 0, right: 0, top: 100 }}
-            to={{ opacity: 1, right: 20, top: 85 }}
+            to={{ opacity: 1, right: 30, top: 94 }}
             delay={0.3}
             velocity={1.2}
             callback={onDetailsClick}

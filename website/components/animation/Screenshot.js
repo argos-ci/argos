@@ -1,5 +1,4 @@
 import { x } from '@xstyled/styled-components'
-import { FaUmbrellaBeach } from 'react-icons/fa'
 import { IoCar, IoTrain } from 'react-icons/io5'
 
 const IconContainer = ({ size = '60px', ...props }) => (
@@ -37,7 +36,7 @@ const ParagraphPlaceholder = (props) => (
   <Placeholder borderRadius="4px" h="24px" bg="secondary" {...props} />
 )
 
-const PriceTag = ({ bg = 'blue-500', variant, ...props }) => (
+const PriceTag = ({ bg = 'blue-500', ...props }) => (
   <x.div
     fontSize="12px"
     px="10px"
@@ -108,7 +107,6 @@ export const DetailsScreenshotDiff = (props) => (
 const Mobile = (props) => (
   <x.div
     mx="auto"
-    w="160px"
     h="155px"
     border={1}
     borderColor="border"

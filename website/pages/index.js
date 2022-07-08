@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { x } from '@xstyled/styled-components'
 import {
   IoArrowForward,
@@ -21,13 +21,22 @@ import { PageContainer } from 'components/PageContainer'
 import { Button } from 'components/Button'
 import { Subtitle, Title } from 'components/Titles'
 import { Paragraph } from 'components/Paragraph'
-import { GithubClickableStatus } from '@components/GithubMergeStatus'
+import { GithubClickableStatus } from '@components/animation/GithubStatus'
 import { BrandsSlider } from 'components/Slider'
-import { Animation } from 'containers/Animation'
+import { Animation } from 'components/animation'
 
 export default function Home() {
+  const [animationScale, setAnimationScale] = useState(1)
+  const animationContainerRef = useRef()
+
+  useEffect(() => {
+    setAnimationScale(
+      Math.min(1, animationContainerRef.current.clientWidth / 550),
+    )
+  }, [])
+
   return (
-    <>
+    <x.div>
       <Head>
         <title>Argos CI</title>
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
@@ -87,8 +96,13 @@ export default function Home() {
               </Button>
             </x.div>
           </x.div>
-          <x.div>
-            <Animation />
+          <x.div
+            ref={animationContainerRef}
+            minH={400}
+            flex={{ _: 1, md: 1 / 2 }}
+            w={1}
+          >
+            <Animation transform scale={animationScale} mx="auto" />
           </x.div>
         </PageContainer>
       </Section>
@@ -182,6 +196,6 @@ export default function Home() {
           </Paragraph>
         </PageContainer>
       </Section>
-    </>
+    </x.div>
   )
 }

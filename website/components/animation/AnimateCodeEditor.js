@@ -1,8 +1,8 @@
 import { x } from '@xstyled/styled-components'
-import { useAnimationFrame, motion } from 'framer-motion'
+import { useAnimationFrame } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { AnimateMouse } from './AnimateMouse'
-import { ControlButton, ControlButtons } from './ControlButtons'
+import { ControlButtons } from './ControlButtons'
 
 const colors = {
   background: '#001320',
@@ -64,7 +64,7 @@ const Code = (props) => (
   <x.pre p="13px 12px 12px" color="white" flex="auto" {...props} />
 )
 
-const Button = ({ disabled, hover, ...props }) => (
+const Button = ({ disabled, ...props }) => (
   <x.div
     border={1}
     borderColor="border"
@@ -140,8 +140,8 @@ export const CodeEditor = ({
 
         {typedChars.length === children.length ? (
           <AnimateMouse
-            from={{ opacity: 0, x: 150, top: 200 }}
-            to={{ opacity: 1, x: 300, top: 15 }}
+            from={{ opacity: 0, right: 150, top: 200 }}
+            to={{ opacity: 1, right: 25, top: 24 }}
             delay={0}
             callback={() => callback(typedChars)}
           />

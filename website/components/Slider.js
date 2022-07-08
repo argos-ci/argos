@@ -40,7 +40,7 @@ export function Slider({ children, ...props }) {
 
 export function MobileSlider({ children, ...props }) {
   return (
-    <>
+    <x.div {...props}>
       <Slider display={{ xs: 'block', md: 'none' }}>
         {children.map((child, index) => (
           <Slide display="flex" justifyContent="center" key={index}>
@@ -58,12 +58,12 @@ export function MobileSlider({ children, ...props }) {
           <x.div key={index}>{child}</x.div>
         ))}
       </x.div>
-    </>
+    </x.div>
   )
 }
 
 export const BrandsSlider = (props) => (
-  <MobileSlider>
+  <MobileSlider {...props}>
     <x.div display="flex" gap={4} alignItems="center">
       <x.div as={MuiLogo} h="50px" w="60px" />
       <x.div fontSize="6xl">MUI</x.div>

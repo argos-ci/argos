@@ -1,6 +1,4 @@
 import { x } from '@xstyled/styled-components'
-import { useMotionValue } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
 import { IoReload } from 'react-icons/io5'
 import { AnimateMouse } from './AnimateMouse'
 import { ControlButtons } from './ControlButtons'
@@ -44,7 +42,7 @@ const SearchBar = ({ children, ...props }) => (
 
 const Body = (props) => <x.div p="12px" {...props} />
 
-export const Browser = ({ children, onClose, autoCloseDelay, ...props }) => {
+const Browser = ({ children, ...props }) => {
   return (
     <x.div
       borderRadius="md"
@@ -54,7 +52,7 @@ export const Browser = ({ children, onClose, autoCloseDelay, ...props }) => {
       overflow="hidden"
       position="absolute"
       zIndex={400}
-      w="600px"
+      w="550px"
       {...props}
     >
       <Header>
@@ -62,15 +60,28 @@ export const Browser = ({ children, onClose, autoCloseDelay, ...props }) => {
         <SearchBar>argos.com</SearchBar>
       </Header>
       <Body>{children}</Body>
+    </x.div>
+  )
+}
+
+export const AutoCloseBrowser = ({
+  children,
+  onClose,
+  autoCloseDelay,
+  ...props
+}) => {
+  return (
+    <Browser {...props}>
+      {children}
 
       {autoCloseDelay ? (
         <AnimateMouse
           from={{ left: 100, top: 130, opacity: 0 }}
-          to={{ left: 9, top: 14, opacity: 1 }}
+          to={{ left: 17, top: 19, opacity: 1 }}
           delay={autoCloseDelay + 3}
           callback={onClose}
         />
       ) : null}
-    </x.div>
+    </Browser>
   )
 }

@@ -1,4 +1,4 @@
-import styled, { x, box } from '@xstyled/styled-components'
+import styled from '@xstyled/styled-components'
 import NextLink from 'next/link'
 
 const InnerLink = styled.box`

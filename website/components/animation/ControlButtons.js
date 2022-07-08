@@ -1,14 +1,7 @@
 import { x } from '@xstyled/styled-components'
 
-const colors = {
-  danger: '#ff5f56',
-  warning: '#ffbd2e',
-  success: '#27c93f',
-}
-
-export const ControlButton = ({ variant, ...props }) => {
-  const color = colors[variant] || colors.success
-  return <x.div w="12px" h="12px" borderRadius="full" bg={color} {...props} />
+export const ControlButton = ({ variant = 'success', ...props }) => {
+  return <x.div w="12px" h="12px" borderRadius="full" bg={variant} {...props} />
 }
 
 export const ControlButtons = (props) => (

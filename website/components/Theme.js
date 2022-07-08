@@ -27,8 +27,8 @@ export const theme = {
     outline: defaultTheme.colors['light-blue-600'],
   },
 
-  animations: {
-    ...defaultTheme.animations,
-    ping: 'x-ping 1.3s linear infinite',
-  },
+  // animations: {
+  //   ...defaultTheme.animations,
+  //   ping: 'x-ping 1.3s linear infinite',
+  // },
 }

@@ -2,16 +2,11 @@ import { useState } from 'react'
 import { x } from '@xstyled/styled-components'
 import { IoCaretDownSharp } from 'react-icons/io5'
 import { FaCheck, FaTimes } from 'react-icons/fa'
-import { Image } from './Image'
-import logo from '../img/logo.png'
-import { Button } from './Button'
-import { AnimateMouse } from './AnimateMouse'
+import { Image } from '@components/Image'
+import logo from '@images/logo.png'
+import { Button } from '../Button'
 
 const colors = {
-  error: '#f85149',
-  pending: '#d29922',
-  success: '#2ea043',
-  border: '#30363d',
   link: '#58a6ff',
   text: '#c9d1d9',
   neutralTitle: '#f0f6fc',
@@ -19,21 +14,6 @@ const colors = {
   backgroundLight: '#161b22',
 }
 
-const RequireButton = (props) => (
-  <x.div
-    border="1px solid"
-    borderColor="#6e7681"
-    px="7px"
-    borderRadius="24px"
-    fontSize="12px"
-    fontWeight="500"
-    lineHeight="18px"
-    color={colors.text}
-    {...props}
-  />
-)
-
-const Link = (props) => <x.span color={colors.link} {...props} />
 const LinkButton = (props) => (
   <x.div
     color={colors.link}
@@ -55,8 +35,8 @@ const CheckRow = (props) => (
     display="flex"
     padding="8px 16px"
     border="solid"
-    borderWidth="1px 0"
-    borderColor={colors.border}
+    borderWidth="1px 0 0"
+    borderColor="border"
     bg={colors.backgroundLight}
     {...props}
   />
@@ -66,7 +46,13 @@ const CheckStatus = (props) => (
   <x.div mt="2px" w="30px" minW="30px" {...props} />
 )
 const CheckPicture = (props) => (
-  <x.div bg="white" borderRadius="6px" h="20px" w="20px" {...props} />
+  <x.div
+    backgroundColor="white"
+    borderRadius="6px"
+    h="20px"
+    w="20px"
+    {...props}
+  />
 )
 
 const BlackContainer = (props) => (
@@ -75,11 +61,11 @@ const BlackContainer = (props) => (
     display="flex"
     gap="10px"
     color={colors.text}
-    bg="black"
+    backgroundColor="black"
     {...props}
   />
 )
-const Circle = ({ color = colors.error, ...props }) => (
+const Circle = ({ color = 'error', ...props }) => (
   <x.div
     w="30px"
     h="30px"
@@ -119,7 +105,7 @@ const GreenCheckIcon = (props) => (
   <x.div
     w="30px"
     h="30px"
-    bg={colors.success}
+    backgroundColor="success"
     borderRadius="50%"
     display="flex"
     justifyContent="center"
@@ -139,7 +125,7 @@ const BaseButton = ({ status, ...props }) => (
     border="solid"
     borderWidth="1px 1px 1px 1px"
     color={status === 'success' ? 'white' : 'rgba(248, 81, 73, 0.5)'}
-    backgroundColor={status === 'success' ? colors.success : '#0d1117'}
+    backgroundColor={status === 'success' ? 'success' : '#0d1117'}
     borderColor="rgba(240, 246, 252, 0.1)"
     display="flex"
     alignItems="center"
@@ -151,19 +137,9 @@ const BaseButton = ({ status, ...props }) => (
 const LeftButton = (props) => (
   <x.div
     as={BaseButton}
-    borderWidth="1px 0px 1px 1px"
-    borderRadius="6px 0 0 6px"
-    {...props}
-  />
-)
-
-const RightButton = ({ status, ...props }) => (
-  <x.div
-    as={BaseButton}
-    borderRadius="0 6px 6px 0"
-    borderLeft={0}
-    backgroundColor={status === 'success' ? colors.success : '#21262d'}
-    color={status === 'success' ? 'white' : colors.error}
+    borderWidth="1px"
+    borderRadius="6px"
+    maxW="160px"
     {...props}
   />
 )
@@ -172,14 +148,16 @@ function getStatusProps(status) {
   switch (status) {
     case 'success':
       return {
-        color: colors.neutralTitle,
+        color: 'success',
+        titleColor: colors.neutralTitle,
         title: 'All check have passed',
         paragraph: '1 successful check',
         iconProps: {},
       }
     case 'pending':
       return {
-        color: colors.pending,
+        color: 'warning',
+        titleColor: 'warning',
         title: "Some checks haven't completed yet",
         paragraph: '1 pending check',
         iconProps: {
@@ -187,7 +165,7 @@ function getStatusProps(status) {
           w: '10px',
           h: '10px',
           mt: '2px',
-          backgroundColor: colors.pending,
+          backgroundColor: 'warning',
           ping: 'true',
         },
         checkParagraph: '— In Progress...',
@@ -195,15 +173,16 @@ function getStatusProps(status) {
 
     default:
       return {
-        color: colors.error,
+        color: 'danger',
+        titleColor: 'danger',
         title: 'Some checks were not successful',
         paragraph: '1 failing check',
         iconProps: {
           as: FaTimes,
-          color: colors.error,
+          color: 'danger',
           w: '10px',
         },
-        checkParagraph: '— 1 difference detected, waiting for your decision',
+        checkParagraph: '— 2 differences detected, waiting for your decision',
       }
   }
 }
@@ -223,7 +202,7 @@ const PingIcon = (props) => (
 )
 
 export const GithubMergeStatus = ({ status = 'pending', ...props }) => {
-  const { color, title, paragraph, iconProps, checkParagraph } =
+  const { color, title, paragraph, iconProps, checkParagraph, titleColor } =
     getStatusProps(status)
 
   const { ping, ...icon } = iconProps
@@ -232,7 +211,7 @@ export const GithubMergeStatus = ({ status = 'pending', ...props }) => {
     <x.div
       borderRadius="6px"
       border="1px solid"
-      borderColor={colors.border}
+      borderColor="border"
       zIndex={100}
       transition="opacity 800ms 300ms"
       boxShadow="md"
@@ -247,13 +226,10 @@ export const GithubMergeStatus = ({ status = 'pending', ...props }) => {
               <GreenCheckIcon />
             )}
             <div>
-              <Title color={color}>{title}</Title>
+              <Title color={titleColor}>{title}</Title>
               <Paragraph>{paragraph}</Paragraph>
             </div>
           </x.div>
-          {/* <LinkButton display={{ _: 'none', md: 'block' }}>
-            Hide all checks
-          </LinkButton> */}
         </x.div>
       </BlackContainer>
 
@@ -290,39 +266,14 @@ export const GithubMergeStatus = ({ status = 'pending', ...props }) => {
         </CheckRow>
       ) : null}
 
-      {/* <BlackContainer>
-        <GreenCheckIcon />
-        <x.div>
-          <Title color={colors.neutralTitle}>
-            This branch has no conflicts with the base branch
-          </Title>
-          <Paragraph>Merging can be performed automatically.</Paragraph>
-        </x.div>
-      </BlackContainer> */}
-
       <x.div
         p="16px"
         bg={colors.backgroundLight}
         borderRadius="0 0 6px 6px"
         borderTop={1}
-        borderColor={colors.border}
+        borderColor="border"
       >
-        <x.div display="flex" alignItems="center">
-          <LeftButton status={status}>Merge pull request</LeftButton>
-          <RightButton status={status}>
-            <x.div as={IoCaretDownSharp} mb="-3px" w="10px" />
-          </RightButton>
-        </x.div>
-        {/* <x.div
-          color={colors.text}
-          fontSize="12px"
-          lineHeight="18px"
-          mt="8px"
-          ml="4px"
-        >
-          You can also <Link>open this in GitHub Desktop</Link> or view{' '}
-          <Link>command line instructions</Link>.
-        </x.div> */}
+        <LeftButton status={status}>Merge pull request</LeftButton>
       </x.div>
     </x.div>
   )
