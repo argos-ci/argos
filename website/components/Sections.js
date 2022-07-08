@@ -1,12 +1,12 @@
 import { x } from '@xstyled/styled-components'
 
-export const Section = (props) => <x.div py={12} {...props} />
+export const Section = (props) => <x.div py={16} {...props} />
 
 export const SectionHeader = ({ children, ...props }) => (
   <x.div
     display="grid"
     gridTemplateColumns="auto 1fr"
-    columnGap={2}
+    columnGap={3}
     my={4}
     {...props}
   >
@@ -19,28 +19,25 @@ export const SectionIcon = ({ icon: Icon, props }) => (
       as={Icon}
       w={16}
       h={16}
-      backgroundColor="primary-a60"
-      color="white"
-      borderRadius="50%"
-      border="2px solid"
-      borderColor="white"
-      boxShadow="inner"
+      backgroundColor="black"
+      color="title"
+      borderRadius="10%"
+      boxShadow="md"
       px={3}
-      pb="2px"
       {...props}
     />
   </x.div>
 )
 
 export const SectionColoredTitle = (props) => (
-  <x.h2 fontSize="lg" color="primary" gridColumn="2" {...props} />
+  <x.h2 fontSize="lg" color="primary" gridColumn="2" mt="3px" {...props} />
 )
 
 export const SectionTitle = (props) => (
   <x.div
     fontSize="3xl"
     gridColumn="2"
-    color="white"
+    color="title"
     fontWeight="semibold"
     {...props}
   />

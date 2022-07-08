@@ -1,3 +1,4 @@
+import { x } from '@xstyled/styled-components'
 import styled, { th } from '@xstyled/styled-components'
 import { Button as AriakitButton } from 'ariakit/button'
 
@@ -41,7 +42,7 @@ const BaseButton = styled(AriakitButton)`
   }
 `
 
-export const Button = styled(BaseButton)``
+export const Button = (props) => <x.div as={BaseButton} {...props} />
 
 export const BlackButton = styled(BaseButton)`
   background: linear-gradient(${th.color('gray-600')}, ${th.color('gray-900')});

@@ -1,5 +1,9 @@
-import { x } from '@xstyled/styled-components'
 import { useEffect, useRef, useState } from 'react'
+import { x } from '@xstyled/styled-components'
+import { MuiLogo } from 'components/MuiLogo'
+import { Image } from './Image'
+import doctolibLogo from 'img/doctolib-logo.png'
+import leMondeLogo from 'img/lemonde-logo.png'
 
 export const Slide = (props) => <x.div minW="100%" {...props} />
 
@@ -57,3 +61,14 @@ export function MobileSlider({ children, ...props }) {
     </>
   )
 }
+
+export const BrandsSlider = (props) => (
+  <MobileSlider>
+    <x.div display="flex" gap={4} alignItems="center">
+      <x.div as={MuiLogo} h="50px" w="60px" />
+      <x.div fontSize="6xl">MUI</x.div>
+    </x.div>
+    <Image src={doctolibLogo} alt="Logo Doctolib" w={200} />
+    <Image src={leMondeLogo} alt="Logo Le Monde" w={200} />
+  </MobileSlider>
+)

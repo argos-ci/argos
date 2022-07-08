@@ -1,4 +1,4 @@
-import styled, { height, x } from '@xstyled/styled-components'
+import { x } from '@xstyled/styled-components'
 import NextImage from 'next/image'
 
 export const Image = ({ src, alt, width, height, ...props }) => (
