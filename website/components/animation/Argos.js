@@ -6,8 +6,9 @@ export const ArgosCard = (props) => (
   <x.div borderLeft="solid 2px" borderRadius="4px" bg="#2c323e" {...props} />
 )
 
-export const ArgosCardHeader = (props) => (
+export const ArgosCardHeader = forwardRef((props, ref) => (
   <x.div
+    ref={ref}
     display="flex"
     justifyContent="space-between"
     alignItems="center"
@@ -17,7 +18,7 @@ export const ArgosCardHeader = (props) => (
     borderColor="#424752"
     {...props}
   />
-)
+))
 
 export const ArgosCardTitle = (props) => <x.div fontSize="18px" {...props} />
 
@@ -25,41 +26,36 @@ export const ArgosCardBody = forwardRef((props, ref) => (
   <x.div px="16px" pb="8px" ref={ref} {...props} />
 ))
 
-export const ArgosButton = (props) => (
-  <x.div
-    bg="#28a745"
-    fontSize="16px"
-    px="16px"
-    py="4px"
-    display="flex"
-    gap="4px"
-    alignItems="center"
-    borderRadius="4px"
-    color="white"
-    {...props}
-  />
-)
-
-export const ArgosApproveButton = ({ variant = 'success', ...props }) => (
-  <ArgosButton
-    mr="8px"
-    bg={variant === 'success' ? 'success' : 'warning'}
-    {...props}
-  >
-    {variant === 'success' ? (
-      <>
-        <x.div as={IoCheckmark} />
-        Approved
-      </>
-    ) : (
-      'Mark as approved'
-    )}
-  </ArgosButton>
+export const ArgosApproveButton = forwardRef(
+  ({ variant = 'success', ...props }, ref) => (
+    <x.div
+      mr="8px"
+      bg={variant === 'success' ? 'success' : 'warning'}
+      ref={ref}
+      fontSize="16px"
+      px="16px"
+      py="4px"
+      display="flex"
+      gap="4px"
+      alignItems="center"
+      borderRadius="4px"
+      color="white"
+      {...props}
+    >
+      {variant === 'success' ? (
+        <>
+          <x.div as={IoCheckmark} />
+          Approved
+        </>
+      ) : (
+        'Mark as approved'
+      )}
+    </x.div>
+  ),
 )
 
 export const Screenshots = forwardRef((props, ref) => (
   <x.div
-    h={1}
     ref={ref}
     display="grid"
     gridTemplateColumns={3}

@@ -1,19 +1,13 @@
 import { x } from '@xstyled/styled-components'
 import { useAnimationFrame } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
-import { AnimateMouse } from './AnimateMouse'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 import { ControlButtons } from './ControlButtons'
-
-const colors = {
-  background: '#001320',
-  rowNumber: '#49657a',
-}
 
 const Tab = (props) => (
   <x.div
     borderRadius="5px 5px 0 0"
     borderColor="border"
-    borderBottomColor={colors.background}
+    borderBottomColor="editor-background"
     borderWidth={1}
     px="20px"
     py="10px"
@@ -44,7 +38,7 @@ const Body = (props) => (
 
 const RowNumbers = ({ length = 20, ...props }) => (
   <x.div
-    color={colors.rowNumber}
+    color="#49657a"
     display="flex"
     flexDirection="column"
     alignItems="center"
@@ -64,8 +58,9 @@ const Code = (props) => (
   <x.pre p="13px 12px 12px" color="white" flex="auto" {...props} />
 )
 
-const Button = ({ disabled, ...props }) => (
+const Button = forwardRef(({ disabled, ...props }, ref) => (
   <x.div
+    ref={ref}
     border={1}
     borderColor="border"
     color={disabled ? 'border' : 'white'}
@@ -78,42 +73,50 @@ const Button = ({ disabled, ...props }) => (
     transition="300ms"
     {...props}
   />
-)
+))
 
 const defaultCode = `button {
   border-radius: 6px;
   height: 30px;
 }`
 
-const useTyping = (text, speed = 50, delay = 0) => {
+const useTyping = (text, speed = 50, delay = 0, callback) => {
   const [textToType, setTextToType] = useState(text)
   let lastSavedTime = useRef(0)
-  const [textEnd, setTextEnd] = useState(0)
+  const [typedText, setTypedText] = useState('')
+  const callbackTriggered = useRef(false)
 
   useEffect(() => {
     setTextToType(text)
-    setTextEnd(0)
+    setTypedText('')
     lastSavedTime.current = 0
+    callbackTriggered.current = false
   }, [text])
 
   useAnimationFrame((time) => {
-    if (textEnd >= textToType.length) return
-    if (textEnd === 0 && time - lastSavedTime.current < delay) return
+    lastSavedTime.current ||= time
+    if (typedText === textToType && !callbackTriggered.current) {
+      callbackTriggered.current = true
+      if (callback) return callback(typedText)
+    }
+    if (typedText === textToType) return
+    if (typedText.length === 0 && time - lastSavedTime.current < delay) return
     if (time - lastSavedTime.current > speed) {
       lastSavedTime.current = time
-      setTextEnd((prev) => prev + 1)
+      setTypedText((prev) => `${prev}${textToType[prev.length]}`)
     }
   })
 
-  return textToType.slice(0, textEnd)
+  return typedText
 }
 export const CodeEditor = ({
   children = defaultCode,
   delayTyping = 0,
   callback,
+  saveButtonRef,
   ...props
 }) => {
-  const typedChars = useTyping(children, 90, delayTyping)
+  const typedChars = useTyping(children, 90, delayTyping, callback)
 
   return (
     <x.div position="absolute" {...props}>
@@ -122,7 +125,7 @@ export const CodeEditor = ({
         boxShadow="md"
         border={1}
         borderColor="border"
-        backgroundColor={colors.background}
+        backgroundColor="editor-background"
         overflow="hidden"
         position="relative"
         h="230px"
@@ -130,22 +133,13 @@ export const CodeEditor = ({
         <Header>
           <ControlButtons />
           <Tab>style.css</Tab>
-          <Button>Save</Button>
+          <Button ref={saveButtonRef}>Save</Button>
         </Header>
 
         <Body w={1}>
           <RowNumbers length={20} />
           <Code>{typedChars}</Code>
         </Body>
-
-        {typedChars.length === children.length ? (
-          <AnimateMouse
-            from={{ opacity: 0, right: 150, top: 200 }}
-            to={{ opacity: 1, right: 25, top: 24 }}
-            delay={0}
-            callback={() => callback(typedChars)}
-          />
-        ) : null}
       </x.div>
     </x.div>
   )

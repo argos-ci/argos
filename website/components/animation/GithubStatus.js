@@ -1,6 +1,5 @@
-import { useState } from 'react'
+import { forwardRef, useState } from 'react'
 import { x } from '@xstyled/styled-components'
-import { IoCaretDownSharp } from 'react-icons/io5'
 import { FaCheck, FaTimes } from 'react-icons/fa'
 import { Image } from '@components/Image'
 import logo from '@images/logo.png'
@@ -14,15 +13,16 @@ const colors = {
   backgroundLight: '#161b22',
 }
 
-const LinkButton = (props) => (
+const LinkButton = forwardRef((props, ref) => (
   <x.div
     color={colors.link}
     fontSize="13px"
     lineHeight="18.2px"
     whiteSpace="nowrap"
+    ref={ref}
     {...props}
   />
-)
+))
 
 const CheckRow = (props) => (
   <x.div
@@ -152,7 +152,12 @@ function getStatusProps(status) {
         titleColor: colors.neutralTitle,
         title: 'All check have passed',
         paragraph: '1 successful check',
-        iconProps: {},
+        iconProps: {
+          as: FaCheck,
+          color: 'success',
+          w: '10px',
+        },
+        checkParagraph: 'Everything’s good!',
       }
     case 'pending':
       return {
@@ -168,7 +173,7 @@ function getStatusProps(status) {
           backgroundColor: 'warning',
           ping: 'true',
         },
-        checkParagraph: '— In Progress...',
+        checkParagraph: 'In Progress...',
       }
 
     default:
@@ -182,7 +187,7 @@ function getStatusProps(status) {
           color: 'danger',
           w: '10px',
         },
-        checkParagraph: '— 2 differences detected, waiting for your decision',
+        checkParagraph: '2 differences detected, waiting for your decision',
       }
   }
 }
@@ -201,7 +206,11 @@ const PingIcon = (props) => (
   </x.div>
 )
 
-export const GithubMergeStatus = ({ status = 'pending', ...props }) => {
+export const GithubMergeStatus = ({
+  status = 'pending',
+  detailsButtonRef,
+  ...props
+}) => {
   const { color, title, paragraph, iconProps, checkParagraph, titleColor } =
     getStatusProps(status)
 
@@ -233,38 +242,38 @@ export const GithubMergeStatus = ({ status = 'pending', ...props }) => {
         </x.div>
       </BlackContainer>
 
-      {status !== 'success' ? (
-        <CheckRow>
-          <CheckPart>
-            <CheckStatus>
-              {ping ? (
-                <PingIcon {...icon} />
-              ) : (
-                <x.div mx="auto" transition="1000ms" {...icon} />
-              )}
-            </CheckStatus>
+      <CheckRow>
+        <CheckPart>
+          <CheckStatus>
+            {ping ? (
+              <PingIcon {...icon} />
+            ) : (
+              <x.div mx="auto" transition="1000ms" {...icon} />
+            )}
+          </CheckStatus>
 
-            <CheckPicture mr="8px">
-              <Image
-                src={logo}
-                width="20px"
-                minW="20px"
-                height="20px"
-                minH="20px"
-                alt="@argos-ci"
-              />
-            </CheckPicture>
+          <CheckPicture mr="8px">
+            <Image
+              src={logo}
+              width="20px"
+              minW="20px"
+              height="20px"
+              minH="20px"
+              alt="@argos-ci"
+            />
+          </CheckPicture>
 
-            <Paragraph>
-              <x.span color={colors.text}>argos</x.span> {checkParagraph}
-            </Paragraph>
-          </CheckPart>
+          <Paragraph>
+            <x.span color={colors.text}>argos</x.span> — {checkParagraph}
+          </Paragraph>
+        </CheckPart>
 
-          <CheckPart>
-            <LinkButton ml="10px">Details</LinkButton>
-          </CheckPart>
-        </CheckRow>
-      ) : null}
+        <CheckPart>
+          <LinkButton ml="10px" ref={detailsButtonRef}>
+            Details
+          </LinkButton>
+        </CheckPart>
+      </CheckRow>
 
       <x.div
         p="16px"

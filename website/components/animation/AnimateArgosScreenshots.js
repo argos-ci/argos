@@ -1,6 +1,5 @@
-import { motion, useAnimation } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
-import { AnimateMouse } from './AnimateMouse'
+import { motion } from 'framer-motion'
+import { useRef } from 'react'
 import {
   ArgosApproveButton,
   ArgosCard,
@@ -18,54 +17,44 @@ import {
 
 export const AnimateArgosScreenshots = ({
   approve,
-  callback,
-  mouseMoveDelay,
-  visible,
+  scrollAnimation,
+  approveButtonRef,
+  approved,
+  h = 340,
   ...props
 }) => {
-  const [check, setCheck] = useState(false)
-  const [showMouse, setShowMouse] = useState(false)
-  const scrollAnimation = useAnimation()
-  const cardBodyRef = useRef()
   const screenshotsContainerRef = useRef()
+  const headerRef = useRef()
 
-  useEffect(() => {
-    async function startAnimation() {
-      if (visible) {
-        console.log({ argosVisible: visible })
-        await scrollAnimation.start({
-          y:
-            screenshotsContainerRef.current.clientHeight -
-            cardBodyRef.current.clientHeight,
-          transition: { delay: 2, duration: 1.2 },
-        })
-
-        if (approve) setShowMouse(true)
-      } else {
-        scrollAnimation.start({ y: '0' })
-      }
-    }
-    startAnimation()
-  }, [approve, scrollAnimation, visible])
+  const bodyHeight = h - 43
+  const scrollToBottom =
+    bodyHeight - screenshotsContainerRef.current?.clientHeight - 40
 
   return (
     <ArgosCard
-      borderColor={check ? 'success' : 'warning'}
+      borderColor={approved ? 'success' : 'warning'}
       color="white"
       zIndex={100}
       transition="opacity 1200ms 700ms"
       position="relative"
       {...props}
     >
-      <ArgosCardHeader>
+      <ArgosCardHeader ref={headerRef}>
         <ArgosCardTitle>Screenshots</ArgosCardTitle>
-        <ArgosApproveButton variant={check ? 'success' : 'warning'} />
+        <ArgosApproveButton
+          ref={approveButtonRef}
+          variant={approved ? 'success' : 'warning'}
+        />
       </ArgosCardHeader>
 
-      <ArgosCardBody overflowY="scroll" h={300} ref={cardBodyRef} pb={10}>
+      <ArgosCardBody overflowY="scroll" h={bodyHeight} pb={10}>
         <Screenshots
           as={motion.div}
           animate={scrollAnimation}
+          variants={{
+            scrollTop: { y: 0 },
+            scrollBottom: { y: scrollToBottom },
+          }}
           ref={screenshotsContainerRef}
         >
           <DetailsScreenshot />
@@ -77,18 +66,6 @@ export const AnimateArgosScreenshots = ({
           <MobileScreenshotDiff variant={approve ? 'fixed' : 'bugged'} mb={4} />
         </Screenshots>
       </ArgosCardBody>
-
-      {showMouse ? (
-        <AnimateMouse
-          from={{ right: 300, top: 130, opacity: 0 }}
-          to={{ right: 70, top: 24, opacity: 1 }}
-          delay={mouseMoveDelay}
-          callback={() => {
-            setCheck(true)
-            callback()
-          }}
-        />
-      ) : null}
     </ArgosCard>
   )
 }

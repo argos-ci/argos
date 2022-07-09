@@ -25,10 +25,7 @@ export const theme = {
     'background-dark': defaultTheme.colors['gray-900'],
     border: defaultTheme.colors['gray-500'],
     outline: defaultTheme.colors['light-blue-600'],
-  },
 
-  // animations: {
-  //   ...defaultTheme.animations,
-  //   ping: 'x-ping 1.3s linear infinite',
-  // },
+    'editor-background': '#001320',
+  },
 }

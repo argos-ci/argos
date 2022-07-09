@@ -14,9 +14,35 @@ const Circle = (props) => (
   />
 )
 
+export const Mouse = ({ children, ...props }) => (
+  <x.div
+    opacity={0.4}
+    as={motion.div}
+    position="absolute"
+    zIndex={1000}
+    mt="-12px"
+    ml="-12px"
+    {...props}
+  >
+    {children}
+    <Circle />
+  </x.div>
+)
+
+export const MouseClick = (props) => (
+  <Circle
+    as={motion.div}
+    initial={{ opacity: 0 }}
+    position="absolute"
+    backgroundColor="black-a90"
+    borderColor="secondary"
+    {...props}
+  />
+)
+
 export function AnimateMouse({
-  from = { right: 130, top: 130 },
-  to = { right: 20, top: 90 },
+  initial = { right: 130, top: 130 },
+  to,
   delay = 1,
   velocity = 1.2,
   callback,
@@ -27,6 +53,7 @@ export function AnimateMouse({
 
   useEffectOnce(() => {
     async function startAnimations() {
+      if (!to) return
       await containerAnimation.start({
         ...to,
         transition: { delay, duration: velocity },
@@ -50,7 +77,7 @@ export function AnimateMouse({
       as={motion.div}
       animate={containerAnimation}
       position="absolute"
-      initial={from}
+      initial={initial}
       zIndex={1000}
       mt="-11px"
       ml="-11px"

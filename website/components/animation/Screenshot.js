@@ -1,4 +1,5 @@
 import { x } from '@xstyled/styled-components'
+import { forwardRef } from 'react'
 import { IoCar, IoTrain } from 'react-icons/io5'
 
 const IconContainer = ({ size = '60px', ...props }) => (
@@ -144,8 +145,8 @@ export const MobileScreenshot = ({ variant, ...props }) => (
   </x.div>
 )
 
-export const MobileScreenshotDiff = ({ variant, ...props }) => (
-  <x.div flex={1} {...props}>
+export const MobileScreenshotDiff = forwardRef(({ variant, ...props }, ref) => (
+  <x.div flex={1} ref={ref} {...props}>
     <Mobile>
       {variant === 'bugged' ? (
         <PriceTag
@@ -175,4 +176,4 @@ export const MobileScreenshotDiff = ({ variant, ...props }) => (
       </PriceTag>
     </Mobile>
   </x.div>
-)
+))

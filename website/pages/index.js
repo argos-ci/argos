@@ -66,7 +66,6 @@ export default function Home() {
         <PageContainer
           display="flex"
           flexDirection={{ _: 'column', md: 'row' }}
-          gap={6}
         >
           <x.div
             flex={{ _: 1, md: 1 / 2 }}
@@ -101,8 +100,9 @@ export default function Home() {
             minH={400}
             flex={{ _: 1, md: 1 / 2 }}
             w={1}
+            border={1}
           >
-            <Animation transform scale={animationScale} mx="auto" />
+            <Animation transform scale={animationScale} />
           </x.div>
         </PageContainer>
       </Section>
