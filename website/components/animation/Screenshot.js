@@ -145,35 +145,37 @@ export const MobileScreenshot = ({ variant, ...props }) => (
   </x.div>
 )
 
-export const MobileScreenshotDiff = forwardRef(({ variant, ...props }, ref) => (
-  <x.div flex={1} ref={ref} {...props}>
-    <Mobile>
-      {variant === 'bugged' ? (
+export const MobileScreenshotDiff = forwardRef(({ variant, ...props }, ref) => {
+  return (
+    <x.div flex={1} ref={ref} {...props}>
+      <Mobile>
+        {variant === 'bugged' ? (
+          <PriceTag
+            position="absolute"
+            right="10"
+            fontSize="21"
+            fontWeight="200"
+            h="13px"
+            float="right"
+            color="body-background"
+            bg="red"
+            mt="15px"
+          >
+            $$$
+          </PriceTag>
+        ) : null}
         <PriceTag
-          position="absolute"
-          right="10"
           fontSize="21"
           fontWeight="200"
-          h="13px"
+          h="24px"
           float="right"
           color="body-background"
-          bg="red"
+          bg={variant === 'bugged' ? 'red' : 'success'}
           mt="15px"
         >
           $$$
         </PriceTag>
-      ) : null}
-      <PriceTag
-        fontSize="21"
-        fontWeight="200"
-        h="24px"
-        float="right"
-        color="body-background"
-        bg={variant === 'bugged' ? 'red' : 'success'}
-        mt="15px"
-      >
-        $$$
-      </PriceTag>
-    </Mobile>
-  </x.div>
-))
+      </Mobile>
+    </x.div>
+  )
+})
