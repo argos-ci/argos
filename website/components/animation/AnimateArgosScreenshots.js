@@ -28,7 +28,7 @@ export const AnimateArgosScreenshots = ({
 
   const bodyHeight = h - 43
   const scrollToBottom =
-    bodyHeight - screenshotsContainerRef.current?.clientHeight - 40
+    bodyHeight - screenshotsContainerRef.current?.clientHeight - 50
 
   return (
     <ArgosCard
@@ -47,13 +47,16 @@ export const AnimateArgosScreenshots = ({
         />
       </ArgosCardHeader>
 
-      <ArgosCardBody overflowY="scroll" h={bodyHeight} pb={10}>
+      <ArgosCardBody overflowY="hidden" h={bodyHeight} pb={10}>
         <Screenshots
           as={motion.div}
           animate={scrollAnimation}
           variants={{
             scrollTop: { y: 0 },
-            scrollBottom: { y: scrollToBottom },
+            scrollBottom: {
+              y: scrollToBottom,
+              transition: { delay: 1.5, duration: 1 },
+            },
           }}
           ref={screenshotsContainerRef}
         >

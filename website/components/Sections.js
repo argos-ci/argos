@@ -1,6 +1,6 @@
 import { x } from '@xstyled/styled-components'
 
-export const Section = (props) => <x.div py={16} {...props} />
+export const Section = (props) => <x.div py={10} {...props} />
 
 export const SectionHeader = ({ children, ...props }) => (
   <x.div

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 import { x } from '@xstyled/styled-components'
 import {
   IoArrowForward,
@@ -24,16 +24,26 @@ import { Paragraph } from 'components/Paragraph'
 import { GithubClickableStatus } from '@components/animation/GithubStatus'
 import { BrandsSlider } from 'components/Slider'
 import { Animation } from 'components/animation'
+import { useWindowSize } from '@hooks/useWindowSize'
+
+const FlexSide = forwardRef((props, ref) => (
+  <x.div ref={ref} display="flex" flexDirection="column" gap={10} {...props} />
+))
 
 export default function Home() {
-  const [animationScale, setAnimationScale] = useState(1)
+  const [animationScale, setAnimationScale] = useState()
   const animationContainerRef = useRef()
+  const { width: windowWidth } = useWindowSize()
+  const animationDimensions = { width: 550, height: 410 }
 
   useEffect(() => {
     setAnimationScale(
-      Math.min(1, animationContainerRef.current.clientWidth / 550),
+      Math.min(
+        1,
+        animationContainerRef.current.clientWidth / animationDimensions.width,
+      ),
     )
-  }, [])
+  }, [animationDimensions.width, windowWidth])
 
   return (
     <x.div>
@@ -65,16 +75,12 @@ export default function Home() {
       >
         <PageContainer
           display="flex"
-          flexDirection={{ _: 'column', md: 'row' }}
+          flexDirection={{ _: 'column', lg: 'row' }}
+          justifyContent="flex-start"
+          alignItems="center"
+          gap={10}
         >
-          <x.div
-            flex={{ _: 1, md: 1 / 2 }}
-            display="flex"
-            flexDirection={'column'}
-            gap={10}
-            mt={10}
-            mb={14}
-          >
+          <FlexSide maxW={500} flex={{ _: 1, lg: 2 / 5 }}>
             <Title>
               Screenshot Testing
               <x.div color="primary">catch visual bugs</x.div>
@@ -94,16 +100,20 @@ export default function Home() {
                 Try now <x.div as={IoArrowForward} />
               </Button>
             </x.div>
-          </x.div>
-          <x.div
+          </FlexSide>
+
+          <FlexSide
             ref={animationContainerRef}
-            minH={400}
-            flex={{ _: 1, md: 1 / 2 }}
+            maxH={animationDimensions.height * animationScale}
+            alignItems="center"
+            justifyContent="center"
             w={1}
-            border={1}
+            flex={{ _: 1, lg: 3 / 5 }}
           >
-            <Animation transform scale={animationScale} />
-          </x.div>
+            {animationScale ? (
+              <Animation transform scale={animationScale} />
+            ) : null}
+          </FlexSide>
         </PageContainer>
       </Section>
 
