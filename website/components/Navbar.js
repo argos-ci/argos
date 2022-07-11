@@ -2,7 +2,7 @@ import { x } from '@xstyled/styled-components'
 import { PageContainer } from 'components/PageContainer'
 
 export const Navbar = ({ children, ...props }) => (
-  <x.div borderBottom="1px solid" borderColor="border">
+  <x.div>
     <PageContainer
       h="70px"
       display="flex"

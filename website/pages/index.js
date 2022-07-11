@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { x } from '@xstyled/styled-components'
 import {
   IoArrowForward,
@@ -26,15 +26,11 @@ import { BrandsSlider } from 'components/Slider'
 import { Animation } from 'components/animation'
 import { useWindowSize } from '@hooks/useWindowSize'
 
-const FlexSide = forwardRef((props, ref) => (
-  <x.div ref={ref} display="flex" flexDirection="column" gap={10} {...props} />
-))
-
 export default function Home() {
   const [animationScale, setAnimationScale] = useState()
   const animationContainerRef = useRef()
   const { width: windowWidth } = useWindowSize()
-  const animationDimensions = { width: 550, height: 410 }
+  const animationDimensions = { width: 600, height: 410 }
 
   useEffect(() => {
     setAnimationScale(
@@ -55,12 +51,7 @@ export default function Home() {
       <Navbar>
         <x.div as={HorizontalLogo} mt={1} ml={-2} />
         <NavbarSecondary>
-          <Link
-            href="http://www.google.fr"
-            display="flex"
-            alignItems="center"
-            gap={1}
-          >
+          <Link href="http://www.google.fr">
             Login
             <x.div as={IoLogoGithub} />
           </Link>
@@ -69,18 +60,26 @@ export default function Home() {
       </Navbar>
 
       <Section
-        backgroundImage="gradient-to-b"
-        gradientFrom="black"
+        backgroundImage="gradient-to-t"
         gradientTo="body-background"
+        gradientFrom="blue-gray-900"
       >
         <PageContainer
           display="flex"
-          flexDirection={{ _: 'column', lg: 'row' }}
+          flexDirection={{ _: 'column-reverse', lg: 'row' }}
           justifyContent="flex-start"
           alignItems="center"
           gap={10}
         >
-          <FlexSide maxW={500} flex={{ _: 1, lg: 2 / 5 }}>
+          <x.div
+            maxW={500}
+            flex={{ _: 1, lg: 2 / 5 }}
+            textAlign={{ _: 'center', lg: 'left' }}
+            alignItems={{ _: 'center', lg: 'flex-start' }}
+            display="flex"
+            flexDirection="column"
+            gap={10}
+          >
             <Title>
               Screenshot Testing
               <x.div color="primary">catch visual bugs</x.div>
@@ -100,12 +99,13 @@ export default function Home() {
                 Try now <x.div as={IoArrowForward} />
               </Button>
             </x.div>
-          </FlexSide>
+          </x.div>
 
-          <FlexSide
+          <x.div
+            display="flex"
             ref={animationContainerRef}
-            maxH={animationDimensions.height * animationScale}
-            alignItems="center"
+            minH={animationDimensions.height * animationScale}
+            alignItems={{ _: 'flex-start', lg: 'center' }}
             justifyContent="center"
             w={1}
             flex={{ _: 1, lg: 3 / 5 }}
@@ -113,7 +113,7 @@ export default function Home() {
             {animationScale ? (
               <Animation transform scale={animationScale} />
             ) : null}
-          </FlexSide>
+          </x.div>
         </PageContainer>
       </Section>
 

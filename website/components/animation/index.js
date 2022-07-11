@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 import { motion, useAnimation } from 'framer-motion'
 import { x } from '@xstyled/styled-components'
 import { CodeEditor } from '@components/animation/CodeEditor'
@@ -24,94 +24,91 @@ const Canvas = forwardRef(({ ...props }, ref) => {
   const browserAnimation = useAnimation()
   const argosScrollAnimation = useAnimation()
 
-  const [editorCode, setCode] = useState(CODE_BUG)
+  const [removeCodeLines, setRemoveCodeLines] = useState()
   const [savedCode, setSavedCode] = useState()
   const [githubStatus, setGithubStatus] = useState('pending')
 
-  const codeEditorButtonRef = useRef()
   const githubButtonRef = useRef()
   const closeBrowserButtonRef = useRef()
   const argosApproveButtonRef = useRef()
 
-  async function handleSaveCode(typedCode) {
-    console.log('handleSaveCode')
+  useEffect(() => {
+    switch (savedCode) {
+      case CODE_BUG:
+        failArgosAnimation()
+        break
 
-    // Sequence : code editor 1
-    await moveToRef(codeEditorButtonRef)
-    setSavedCode(typedCode)
-    codeEditorAnimation.start('hide')
+      case CODE_FIX:
+        successArgosAnimation()
+        break
 
-    // Sequence : Github
-    githubAnimation.start('show')
-    await moveToRef(githubButtonRef, { delay: 3 })
+      default:
+        break
+    }
+  }, [savedCode, failArgosAnimation, successArgosAnimation])
 
-    // Sequence : Argos
-    githubAnimation.start('hide')
-    await browserAnimation.start('show')
-
-    return typedCode === CODE_BUG
-      ? failArgosAnimation()
-      : successArgosAnimation()
-  }
-
-  async function failArgosAnimation() {
+  const failArgosAnimation = useCallback(async () => {
     console.log('failArgosAnimation')
-    await argosScrollAnimation.start('scrollBottom')
+
+    await githubAnimation.start('show')
+    await moveToRef(githubButtonRef, { delay: 1 })
+
+    await browserAnimation.start('show')
     await moveToRef(closeBrowserButtonRef, { delay: 2 })
-
-    // Sequence : code editor
+    await githubAnimation.start('background')
     browserAnimation.start('hide')
-    codeEditorAnimation.start('show')
-    await moveToRef(codeEditorButtonRef, { delay: 0, leftOffset: -60 })
-    setTimeout(() => setCode(CODE_FIX), 400)
-  }
+    setTimeout(() => setRemoveCodeLines([2]), 1500)
+  }, [browserAnimation, githubAnimation, moveToRef])
 
-  async function successArgosAnimation() {
+  const successArgosAnimation = useCallback(async () => {
     console.log('successArgosAnimation')
-    await githubAnimation.start('shrink')
+    await browserAnimation.start('show')
+    githubAnimation.start('shrink')
     await moveToRef(argosApproveButtonRef, { delay: 1 })
-
-    // Sequence Github
     setGithubStatus('success')
     await githubAnimation.start('showUp')
-  }
+  }, [browserAnimation, githubAnimation, moveToRef])
 
   return (
     <x.div position="relative" m={0} ref={ref} {...props}>
       <CodeEditor
-        delayTyping={500}
-        w="300px"
+        typingDelay={500}
+        w="400px"
         zIndex="100"
         as={motion.div}
-        initial={{ y: '10px', x: '25px' }}
+        initial={{ y: '10px', x: '10px', zIndex: -1 }}
         variants={{
           show: { opacity: 1, zIndex: 100, transition: { duration: 0.6 } },
-          hide: { opacity: 0.3, zIndex: -1 },
         }}
         animate={codeEditorAnimation}
-        callback={handleSaveCode}
-        saveButtonRef={codeEditorButtonRef}
+        onSave={setSavedCode}
+        removeCodeLines={removeCodeLines}
       >
-        {editorCode}
+        {CODE_BUG}
       </CodeEditor>
 
       <AnimateGithubStatus
         status={githubStatus}
         setStatus={setGithubStatus}
         animate={githubAnimation}
-        initial={{ y: '200px', x: '5px', opacity: 0.6 }}
-        savedCode={savedCode}
+        initial={{
+          y: '210px',
+          x: '60px',
+          width: '500px',
+          zIndex: -1,
+          opacity: 0,
+        }}
+        savedCode={savedCode === CODE_BUG}
         variants={{
           show: { opacity: 1 },
-          hide: { opacity: 0.6, zIndex: -1 },
-          shrink: { width: '380px', y: '5px' },
+          background: { zIndex: -2, opacity: 0.6 },
           showUp: { opacity: 1, zIndex: 2000 },
         }}
         detailsButtonRef={githubButtonRef}
       />
 
       <Browser
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 0, y: '0px', x: '0px' }}
         as={motion.div}
         animate={browserAnimation}
         closeButtonRef={closeBrowserButtonRef}
@@ -122,7 +119,7 @@ const Canvas = forwardRef(({ ...props }, ref) => {
       >
         <AnimateArgosScreenshots
           approve={savedCode === CODE_FIX}
-          scrollAnimation={argosScrollAnimation}
+          // scrollAnimation={argosScrollAnimation}
           approveButtonRef={argosApproveButtonRef}
           approved={githubStatus === 'success'}
         />

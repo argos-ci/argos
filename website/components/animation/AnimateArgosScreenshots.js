@@ -20,7 +20,7 @@ export const AnimateArgosScreenshots = ({
   scrollAnimation,
   approveButtonRef,
   approved,
-  h = 340,
+  h = 220,
   ...props
 }) => {
   const screenshotsContainerRef = useRef()
@@ -55,14 +55,14 @@ export const AnimateArgosScreenshots = ({
             scrollTop: { y: 0 },
             scrollBottom: {
               y: scrollToBottom,
-              transition: { delay: 1.5, duration: 1 },
+              transition: { delay: 0.5, duration: 1 },
             },
           }}
           ref={screenshotsContainerRef}
         >
+          {/* <DetailsScreenshot />
           <DetailsScreenshot />
-          <DetailsScreenshot variant />
-          <DetailsScreenshotDiff />
+          <DetailsScreenshotDiff /> */}
 
           <MobileScreenshot />
           <MobileScreenshot variant={approve ? 'fixed' : 'bugged'} />

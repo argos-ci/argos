@@ -1,23 +1,39 @@
 import { x } from '@xstyled/styled-components'
 import { useAnimationFrame } from 'framer-motion'
-import { forwardRef, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { FaTimes } from 'react-icons/fa'
 import { ControlButtons } from './ControlButtons'
 
-const Tab = (props) => (
-  <x.div
-    borderRadius="5px 5px 0 0"
-    borderColor="border"
-    borderBottomColor="editor-background"
-    borderWidth={1}
-    px="20px"
-    py="10px"
-    color="color"
-    fontSize="12px"
-    mb="-10px"
-    ml="80px"
-    {...props}
-  />
-)
+const Tab = ({ children, active, ...props }) => {
+  return (
+    <x.div
+      borderRadius="5px 5px 0 0"
+      borderColor="border"
+      borderBottomColor="editor-background"
+      display="flex"
+      justifyContent="space-between"
+      alignItems="center"
+      gap={3}
+      borderWidth={1}
+      px="16px"
+      py="10px"
+      fontSize="12px"
+      mb="-10px"
+      ml="80px"
+      transition="1000ms"
+      color={active ? 'border' : 'white'}
+      {...props}
+    >
+      {children}
+
+      {active ? (
+        <x.div as={FaTimes} w="8px" />
+      ) : (
+        <x.div borderRadius="full" backgroundColor="gray-100" w="8px" h="8px" />
+      )}
+    </x.div>
+  )
+}
 
 const Header = (props) => (
   <x.div
@@ -58,65 +74,100 @@ const Code = (props) => (
   <x.pre p="13px 12px 12px" color="white" flex="auto" {...props} />
 )
 
-const Button = forwardRef(({ disabled, ...props }, ref) => (
-  <x.div
-    ref={ref}
-    border={1}
-    borderColor="border"
-    color={disabled ? 'border' : 'white'}
-    borderRadius="md"
-    px="8px"
-    py="4px"
-    fontSize={12}
-    bg="gray-900"
-    boxShadow="md"
-    transition="300ms"
-    {...props}
-  />
-))
-
-const defaultCode = `button {
-  border-radius: 6px;
-  height: 30px;
-}`
-
-const useTyping = (text, speed = 50, delay = 0, callback) => {
-  const [textToType, setTextToType] = useState(text)
+const useTyping = ({
+  text,
+  removeCodeLines = [],
+  typingSpeed = 90,
+  typingDelay = 0,
+  onSave,
+}) => {
   let lastSavedTime = useRef(0)
-  const [typedText, setTypedText] = useState('')
   const callbackTriggered = useRef(false)
 
+  const [textToType, setTextToType] = useState(text)
+  const [typedText, setTypedText] = useState('')
+
   useEffect(() => {
-    setTextToType(text)
-    setTypedText('')
-    lastSavedTime.current = 0
-    callbackTriggered.current = false
-  }, [text])
+    if (removeCodeLines.length > 0) {
+      setTextToType((prev) =>
+        String(prev)
+          .split('\n')
+          .filter((_, index) => !removeCodeLines.includes(index))
+          .join('\n'),
+      )
+      lastSavedTime.current = 0
+      callbackTriggered.current = false
+    }
+  }, [removeCodeLines])
+
+  function removeChar() {
+    if (removeCodeLines.length === 0) return
+
+    const removeLineIndex = removeCodeLines[0]
+    const lines = typedText.split('\n')
+
+    if (lines[removeLineIndex].match(/^\s+$/)) {
+      removeCodeLines.shift()
+      setTypedText((prev) =>
+        prev
+          .split('\n')
+          .map((line, index) => (index === removeLineIndex ? '' : line))
+          .join('\n'),
+      )
+      return removeChar()
+    }
+
+    setTypedText((prev) =>
+      prev
+        .split('\n')
+        .map((line, index) =>
+          index === removeLineIndex ? line.slice(0, -1) : line,
+        )
+        .join('\n'),
+    )
+  }
 
   useAnimationFrame((time) => {
     lastSavedTime.current ||= time
-    if (typedText === textToType && !callbackTriggered.current) {
+    const formattedCode = typedText.replaceAll('\n\n', '\n')
+
+    if (formattedCode === textToType) {
+      if (callbackTriggered.current) return
       callbackTriggered.current = true
-      if (callback) return callback(typedText)
+      setTypedText(formattedCode)
+      return setTimeout(() => onSave(formattedCode), 800)
     }
-    if (typedText === textToType) return
-    if (typedText.length === 0 && time - lastSavedTime.current < delay) return
-    if (time - lastSavedTime.current > speed) {
-      lastSavedTime.current = time
-      setTypedText((prev) => `${prev}${textToType[prev.length]}`)
+
+    if (typedText.length === 0 && time - lastSavedTime.current < typingDelay) {
+      return
     }
+
+    if (time - lastSavedTime.current < typingSpeed) return
+
+    lastSavedTime.current = time
+    return removeCodeLines.length === 0
+      ? setTypedText((prev) => `${prev}${textToType[prev.length]}`)
+      : removeChar()
   })
 
   return typedText
 }
+
 export const CodeEditor = ({
-  children = defaultCode,
-  delayTyping = 0,
-  callback,
-  saveButtonRef,
+  children,
+  typingDelay = 0,
+  removeCodeLines = [],
+  typingSpeed = 90,
+  onSave,
   ...props
 }) => {
-  const typedChars = useTyping(children, 90, delayTyping, callback)
+  const typedText = useTyping({
+    text: children,
+    removeCodeLines,
+    typingSpeed,
+    typingDelay,
+    onSave,
+  })
 
   return (
     <x.div position="absolute" {...props}>
@@ -132,13 +183,12 @@ export const CodeEditor = ({
       >
         <Header>
           <ControlButtons />
-          <Tab>style.css</Tab>
-          <Button ref={saveButtonRef}>Save</Button>
+          <Tab active={false}>style.css</Tab>
         </Header>
 
         <Body w={1}>
           <RowNumbers length={20} />
-          <Code>{typedChars}</Code>
+          <Code>{typedText}</Code>
         </Body>
       </x.div>
     </x.div>

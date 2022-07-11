@@ -50,7 +50,7 @@ export const Browser = ({ children, closeButtonRef, ...props }) => {
       backgroundColor="editor-background"
       overflow="hidden"
       zIndex={400}
-      w="550px"
+      w="573px"
       {...props}
     >
       <Header>
