@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
+import { forwardRef, useRef, useState } from 'react'
 import { motion, useAnimation } from 'framer-motion'
 import { x } from '@xstyled/styled-components'
 import { CodeEditor } from '@components/animation/CodeEditor'
@@ -22,7 +22,12 @@ const Canvas = forwardRef(({ ...props }, ref) => {
   const codeEditorAnimation = useAnimation()
   const githubAnimation = useAnimation()
   const browserAnimation = useAnimation()
-  const argosScrollAnimation = useAnimation()
+  const argosAnimation = useAnimation()
+
+  const beforeScreenshotAnimation = useAnimation()
+  const afterScreenshotAnimation = useAnimation()
+  const diffScreenshotAnimation = useAnimation()
+  const fakeDiffScreenshotAnimation = useAnimation()
 
   const [removeCodeLines, setRemoveCodeLines] = useState()
   const [savedCode, setSavedCode] = useState()
@@ -32,45 +37,45 @@ const Canvas = forwardRef(({ ...props }, ref) => {
   const closeBrowserButtonRef = useRef()
   const argosApproveButtonRef = useRef()
 
-  useEffect(() => {
-    switch (savedCode) {
-      case CODE_BUG:
-        failArgosAnimation()
-        break
+  function handleSaveCode(savedCode) {
+    setSavedCode(savedCode)
+    if (savedCode === CODE_BUG) return failArgosAnimation()
+    if (savedCode === CODE_FIX) return successArgosAnimation()
+  }
 
-      case CODE_FIX:
-        successArgosAnimation()
-        break
-
-      default:
-        break
-    }
-  }, [savedCode, failArgosAnimation, successArgosAnimation])
-
-  const failArgosAnimation = useCallback(async () => {
+  async function failArgosAnimation() {
     console.log('failArgosAnimation')
-
     await githubAnimation.start('show')
     await moveToRef(githubButtonRef, { delay: 1 })
-
     await browserAnimation.start('show')
+    await animateScreenshots()
     await moveToRef(closeBrowserButtonRef, { delay: 2 })
     await githubAnimation.start('background')
     browserAnimation.start('hide')
     setTimeout(() => setRemoveCodeLines([2]), 1500)
-  }, [browserAnimation, githubAnimation, moveToRef])
+  }
 
-  const successArgosAnimation = useCallback(async () => {
+  async function successArgosAnimation() {
     console.log('successArgosAnimation')
     await browserAnimation.start('show')
     githubAnimation.start('shrink')
     await moveToRef(argosApproveButtonRef, { delay: 1 })
     setGithubStatus('success')
     await githubAnimation.start('showUp')
-  }, [browserAnimation, githubAnimation, moveToRef])
+  }
+
+  async function animateScreenshots() {
+    await beforeScreenshotAnimation.start('hide', { delay: 0.7, duration: 1 })
+    await afterScreenshotAnimation.start('hide', { delay: 0.7, duration: 1 })
+    await afterScreenshotAnimation.start('goBackground')
+    await beforeScreenshotAnimation.start('goUpfront')
+    await fakeDiffScreenshotAnimation.start('hide', { duration: 0.5 })
+    await diffScreenshotAnimation.start('move', { delay: 0.7, duration: 0.7 })
+    await beforeScreenshotAnimation.start('move', { delay: 0.3, duration: 0.7 })
+  }
 
   return (
-    <x.div position="relative" m={0} ref={ref} {...props}>
+    <x.div ref={ref} {...props}>
       <CodeEditor
         typingDelay={500}
         w="400px"
@@ -81,7 +86,7 @@ const Canvas = forwardRef(({ ...props }, ref) => {
           show: { opacity: 1, zIndex: 100, transition: { duration: 0.6 } },
         }}
         animate={codeEditorAnimation}
-        onSave={setSavedCode}
+        onSave={handleSaveCode}
         removeCodeLines={removeCodeLines}
       >
         {CODE_BUG}
@@ -108,7 +113,7 @@ const Canvas = forwardRef(({ ...props }, ref) => {
       />
 
       <Browser
-        initial={{ opacity: 0, y: '0px', x: '0px' }}
+        initial={{ opacity: 0 }}
         as={motion.div}
         animate={browserAnimation}
         closeButtonRef={closeBrowserButtonRef}
@@ -119,9 +124,13 @@ const Canvas = forwardRef(({ ...props }, ref) => {
       >
         <AnimateArgosScreenshots
           approve={savedCode === CODE_FIX}
-          // scrollAnimation={argosScrollAnimation}
+          animation={{ argosAnimation }}
           approveButtonRef={argosApproveButtonRef}
           approved={githubStatus === 'success'}
+          beforeScreenshotAnimation={beforeScreenshotAnimation}
+          afterScreenshotAnimation={afterScreenshotAnimation}
+          diffScreenshotAnimation={diffScreenshotAnimation}
+          fakeDiffScreenshotAnimation={fakeDiffScreenshotAnimation}
         />
       </Browser>
 

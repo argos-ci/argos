@@ -3,8 +3,8 @@ import { x } from '@xstyled/styled-components'
 export const GradientText = ({
   children,
   backgroundImage = 'gradient-to-l',
-  gradientFrom = '#6b21a8ff',
-  gradientTo = '#c084fcff',
+  gradientFrom = 'primary',
+  gradientTo = 'white',
   ...props
 }) => (
   <x.span {...props}>

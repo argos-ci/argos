@@ -23,13 +23,12 @@ export const ArgosCardHeader = forwardRef((props, ref) => (
 export const ArgosCardTitle = (props) => <x.div fontSize="18px" {...props} />
 
 export const ArgosCardBody = forwardRef((props, ref) => (
-  <x.div px="16px" pb="8px" ref={ref} {...props} />
+  <x.div px="16px" py="8px" ref={ref} {...props} />
 ))
 
 export const ArgosApproveButton = forwardRef(
   ({ variant = 'success', ...props }, ref) => (
     <x.div
-      mr="8px"
       bg={variant === 'success' ? 'success' : 'warning'}
       ref={ref}
       fontSize="16px"
@@ -53,15 +52,3 @@ export const ArgosApproveButton = forwardRef(
     </x.div>
   ),
 )
-
-export const Screenshots = forwardRef((props, ref) => (
-  <x.div
-    ref={ref}
-    display="grid"
-    gridTemplateColumns={3}
-    rowGap={3}
-    columnGap={2}
-    mt={3}
-    {...props}
-  />
-))

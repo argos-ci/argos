@@ -25,6 +25,7 @@ import { GithubClickableStatus } from '@components/animation/GithubStatus'
 import { BrandsSlider } from 'components/Slider'
 import { Animation } from 'components/animation'
 import { useWindowSize } from '@hooks/useWindowSize'
+import { GradientText } from '@components/GradientText'
 
 export default function Home() {
   const [animationScale, setAnimationScale] = useState()
@@ -67,24 +68,23 @@ export default function Home() {
         <PageContainer
           display="flex"
           flexDirection={{ _: 'column-reverse', lg: 'row' }}
-          justifyContent="flex-start"
+          justifyContent="space-between"
           alignItems="center"
-          gap={10}
+          gap={2}
         >
           <x.div
-            maxW={500}
-            flex={{ _: 1, lg: 2 / 5 }}
+            flex={{ _: 1, lg: 1 / 2 }}
             textAlign={{ _: 'center', lg: 'left' }}
             alignItems={{ _: 'center', lg: 'flex-start' }}
             display="flex"
             flexDirection="column"
-            gap={10}
+            gap={5}
           >
             <Title>
               Screenshot Testing
-              <x.div color="primary">catch visual bugs</x.div>
+              <GradientText as="div">catch visual bugs</GradientText>
             </Title>
-            <Subtitle>
+            <Subtitle maxW={500}>
               Argos CI adds screenshot updates review to developer’s routine.{' '}
               <x.span color="secondary">
                 Compare pull-requests screenshots and notify when{' '}
@@ -105,14 +105,21 @@ export default function Home() {
             display="flex"
             ref={animationContainerRef}
             minH={animationDimensions.height * animationScale}
-            alignItems={{ _: 'flex-start', lg: 'center' }}
             justifyContent="center"
+            alignItems="flex-start"
+            overflow="hidden"
+            flex={{ lg: 1 / 2 }}
             w={1}
-            flex={{ _: 1, lg: 3 / 5 }}
           >
-            {animationScale ? (
-              <Animation transform scale={animationScale} />
-            ) : null}
+            {animationScale
+              ? console.log(animationScale) || (
+                  <Animation
+                    transform
+                    transformOrigin="top"
+                    scale={animationScale}
+                  />
+                )
+              : null}
           </x.div>
         </PageContainer>
       </Section>

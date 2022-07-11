@@ -1,6 +1,8 @@
 import { x } from '@xstyled/styled-components'
 
-export const Title = (props) => <x.div fontSize="4xl" {...props} />
+export const Title = (props) => (
+  <x.div fontSize="5xl" fontWeight="700" {...props} />
+)
 
 export const Subtitle = (props) => (
   <x.div

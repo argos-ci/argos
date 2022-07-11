@@ -6,29 +6,23 @@ import {
   ArgosCardBody,
   ArgosCardHeader,
   ArgosCardTitle,
-  Screenshots,
 } from '@components/animation/Argos'
-import {
-  DetailsScreenshot,
-  DetailsScreenshotDiff,
-  MobileScreenshot,
-  MobileScreenshotDiff,
-} from './Screenshot'
+import { FakeScreenshotDiff, Screenshot, ScreenshotDiff } from './Screenshot'
 
 export const AnimateArgosScreenshots = ({
   approve,
-  scrollAnimation,
   approveButtonRef,
   approved,
   h = 220,
+
+  beforeScreenshotAnimation,
+  afterScreenshotAnimation,
+  diffScreenshotAnimation,
+  fakeDiffScreenshotAnimation,
   ...props
 }) => {
-  const screenshotsContainerRef = useRef()
   const headerRef = useRef()
-
-  const bodyHeight = h - 43
-  const scrollToBottom =
-    bodyHeight - screenshotsContainerRef.current?.clientHeight - 50
+  const bodyHeight = h - 54
 
   return (
     <ArgosCard
@@ -47,27 +41,43 @@ export const AnimateArgosScreenshots = ({
         />
       </ArgosCardHeader>
 
-      <ArgosCardBody overflowY="hidden" h={bodyHeight} pb={10}>
-        <Screenshots
+      <ArgosCardBody h={bodyHeight}>
+        <ScreenshotDiff
+          variant={approve ? 'fixed' : 'bugged'}
+          animate={diffScreenshotAnimation}
           as={motion.div}
-          animate={scrollAnimation}
-          variants={{
-            scrollTop: { y: 0 },
-            scrollBottom: {
-              y: scrollToBottom,
-              transition: { delay: 0.5, duration: 1 },
-            },
-          }}
-          ref={screenshotsContainerRef}
-        >
-          {/* <DetailsScreenshot />
-          <DetailsScreenshot />
-          <DetailsScreenshotDiff /> */}
+          variants={{ move: { left: '449px' } }}
+        />
 
-          <MobileScreenshot />
-          <MobileScreenshot variant={approve ? 'fixed' : 'bugged'} />
-          <MobileScreenshotDiff variant={approve ? 'fixed' : 'bugged'} mb={4} />
-        </Screenshots>
+        <FakeScreenshotDiff
+          animate={fakeDiffScreenshotAnimation}
+          as={motion.div}
+          variants={{ hide: { opacity: 0 } }}
+        />
+
+        <Screenshot
+          variant={approve ? 'fixed' : 'bugged'}
+          animate={afterScreenshotAnimation}
+          as={motion.div}
+          variants={{
+            hide: { opacity: 0 },
+            goBackground: { zIndex: -2, opacity: 1 },
+          }}
+          tagColor="primary-a80"
+          tagSize="sm"
+        />
+
+        <Screenshot
+          animate={beforeScreenshotAnimation}
+          as={motion.div}
+          initial={{ zIndex: 1 }}
+          variants={{
+            hide: { opacity: 0 },
+            move: { left: '96px' },
+            goUpfront: { zIndex: -1, opacity: 1 },
+          }}
+          tagColor="blue-500"
+        />
       </ArgosCardBody>
     </ArgosCard>
   )
