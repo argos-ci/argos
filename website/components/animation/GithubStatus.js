@@ -187,7 +187,7 @@ function getStatusProps(status) {
           color: 'danger',
           w: '10px',
         },
-        checkParagraph: '2 differences detected, waiting for your decision',
+        checkParagraph: '1 difference detected, waiting for your decision',
       }
   }
 }
@@ -292,7 +292,7 @@ export const GithubClickableStatus = (props) => {
   const [githubStatus, setGithubStatus] = useState('error')
 
   return (
-    <x.div h={260} {...props}>
+    <x.div {...props}>
       <Button
         mb={4}
         onClick={() => setGithubStatus('success')}
@@ -300,7 +300,7 @@ export const GithubClickableStatus = (props) => {
       >
         Approve screenshot diffs
       </Button>
-      <GithubMergeStatus status={githubStatus} mb={3} maxW={700} />
+      <GithubMergeStatus status={githubStatus} maxW={700} />
     </x.div>
   )
 }

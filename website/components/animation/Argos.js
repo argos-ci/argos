@@ -3,7 +3,12 @@ import { x } from '@xstyled/styled-components'
 import { IoCheckmark } from 'react-icons/io5'
 
 export const ArgosCard = (props) => (
-  <x.div borderLeft="solid 2px" borderRadius="4px" bg="#2c323e" {...props} />
+  <x.div
+    borderLeft="solid 2px"
+    borderRadius="4px"
+    backgroundColor="rgba(255, 255, 255, 0.04)"
+    {...props}
+  />
 )
 
 export const ArgosCardHeader = forwardRef((props, ref) => (
@@ -12,7 +17,6 @@ export const ArgosCardHeader = forwardRef((props, ref) => (
     display="flex"
     justifyContent="space-between"
     alignItems="center"
-    bg="rgba(255, 255, 255, 0.04)"
     p="8px"
     borderBottom="solid 1px"
     borderColor="#424752"
@@ -20,10 +24,12 @@ export const ArgosCardHeader = forwardRef((props, ref) => (
   />
 ))
 
-export const ArgosCardTitle = (props) => <x.div fontSize="18px" {...props} />
+export const ArgosCardTitle = (props) => (
+  <x.div fontSize="15px" color="secondary" {...props} />
+)
 
 export const ArgosCardBody = forwardRef((props, ref) => (
-  <x.div px="16px" py="8px" ref={ref} {...props} />
+  <x.div h="186px" position="relative" ref={ref} {...props} />
 ))
 
 export const ArgosApproveButton = forwardRef(
@@ -31,8 +37,8 @@ export const ArgosApproveButton = forwardRef(
     <x.div
       bg={variant === 'success' ? 'success' : 'warning'}
       ref={ref}
-      fontSize="16px"
-      px="16px"
+      fontSize="14px"
+      px="12px"
       py="4px"
       display="flex"
       gap="4px"

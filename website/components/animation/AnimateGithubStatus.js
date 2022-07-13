@@ -13,7 +13,7 @@ export function AnimateGithubStatus({
   useEffect(() => {
     if (!savedCode) return
     setStatus('pending')
-    const timer = setTimeout(() => setStatus('error'), 2800)
+    const timer = setTimeout(() => setStatus('error'), 2000)
     return () => clearTimeout(timer)
   }, [savedCode, setStatus])
 

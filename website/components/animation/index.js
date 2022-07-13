@@ -29,13 +29,14 @@ const Canvas = forwardRef(({ ...props }, ref) => {
   const diffScreenshotAnimation = useAnimation()
   const fakeDiffScreenshotAnimation = useAnimation()
 
-  const [removeCodeLines, setRemoveCodeLines] = useState()
+  const [linesToTrim, setLinesToTrim] = useState()
   const [savedCode, setSavedCode] = useState()
   const [githubStatus, setGithubStatus] = useState('pending')
 
   const githubButtonRef = useRef()
   const closeBrowserButtonRef = useRef()
   const argosApproveButtonRef = useRef()
+  const codeEditorRef = useRef()
 
   function handleSaveCode(savedCode) {
     setSavedCode(savedCode)
@@ -44,19 +45,18 @@ const Canvas = forwardRef(({ ...props }, ref) => {
   }
 
   async function failArgosAnimation() {
-    console.log('failArgosAnimation')
     await githubAnimation.start('show')
-    await moveToRef(githubButtonRef, { delay: 1 })
+    await moveToRef(githubButtonRef, { delay: 2.2 })
     await browserAnimation.start('show')
     await animateScreenshots()
     await moveToRef(closeBrowserButtonRef, { delay: 2 })
     await githubAnimation.start('background')
     browserAnimation.start('hide')
-    setTimeout(() => setRemoveCodeLines([2]), 1500)
+    await moveToRef(codeEditorRef)
+    setTimeout(() => setLinesToTrim([2]), 1500)
   }
 
   async function successArgosAnimation() {
-    console.log('successArgosAnimation')
     await browserAnimation.start('show')
     githubAnimation.start('shrink')
     await moveToRef(argosApproveButtonRef, { delay: 1 })
@@ -77,7 +77,6 @@ const Canvas = forwardRef(({ ...props }, ref) => {
   return (
     <x.div ref={ref} {...props}>
       <CodeEditor
-        typingDelay={500}
         w="400px"
         zIndex="100"
         as={motion.div}
@@ -87,7 +86,8 @@ const Canvas = forwardRef(({ ...props }, ref) => {
         }}
         animate={codeEditorAnimation}
         onSave={handleSaveCode}
-        removeCodeLines={removeCodeLines}
+        linesToTrim={linesToTrim}
+        ref={codeEditorRef}
       >
         {CODE_BUG}
       </CodeEditor>

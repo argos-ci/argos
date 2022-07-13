@@ -39,7 +39,7 @@ const SearchBar = ({ children, ...props }) => (
   </x.div>
 )
 
-const Body = (props) => <x.div p="12px" {...props} />
+const Body = (props) => <x.div p="8px" {...props} />
 
 export const Browser = ({ children, closeButtonRef, ...props }) => {
   return (
@@ -47,10 +47,10 @@ export const Browser = ({ children, closeButtonRef, ...props }) => {
       borderRadius="md"
       border={1}
       borderColor="border"
-      backgroundColor="editor-background"
+      backgroundColor="background-secondary"
       overflow="hidden"
       zIndex={400}
-      w="573px"
+      w="560px"
       {...props}
     >
       <Header>

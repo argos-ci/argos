@@ -13,8 +13,6 @@ export const AnimateArgosScreenshots = ({
   approve,
   approveButtonRef,
   approved,
-  h = 220,
-
   beforeScreenshotAnimation,
   afterScreenshotAnimation,
   diffScreenshotAnimation,
@@ -22,7 +20,6 @@ export const AnimateArgosScreenshots = ({
   ...props
 }) => {
   const headerRef = useRef()
-  const bodyHeight = h - 54
 
   return (
     <ArgosCard
@@ -34,19 +31,19 @@ export const AnimateArgosScreenshots = ({
       {...props}
     >
       <ArgosCardHeader ref={headerRef}>
-        <ArgosCardTitle>Screenshots</ArgosCardTitle>
+        <ArgosCardTitle>SCREENSHOTS DIFF</ArgosCardTitle>
         <ArgosApproveButton
           ref={approveButtonRef}
           variant={approved ? 'success' : 'warning'}
         />
       </ArgosCardHeader>
 
-      <ArgosCardBody h={bodyHeight}>
+      <ArgosCardBody>
         <ScreenshotDiff
           variant={approve ? 'fixed' : 'bugged'}
           animate={diffScreenshotAnimation}
           as={motion.div}
-          variants={{ move: { left: '449px' } }}
+          variants={{ move: { left: '452px' } }}
         />
 
         <FakeScreenshotDiff
@@ -65,6 +62,7 @@ export const AnimateArgosScreenshots = ({
           }}
           tagColor="primary-a80"
           tagSize="sm"
+          position="relative"
         />
 
         <Screenshot
@@ -73,7 +71,7 @@ export const AnimateArgosScreenshots = ({
           initial={{ zIndex: 1 }}
           variants={{
             hide: { opacity: 0 },
-            move: { left: '96px' },
+            move: { left: '88px' },
             goUpfront: { zIndex: -1, opacity: 1 },
           }}
           tagColor="blue-500"

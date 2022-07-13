@@ -19,18 +19,22 @@ const BaseButton = styled(AriakitButton)`
   &:focus,
   &:focus-visible,
   &[data-focus-visible] {
-    outline: 2px solid;
+    outline: 0;
     outline-color: outline;
   }
 
   background: linear-gradient(
     180deg,
-    ${th.color('primary')},
-    ${th.color('primary-a50')}
+    ${th.color('primary-a40')},
+    ${th.color('primary-a30')}
   );
 
   &:hover {
-    background-color: primary-a50;
+    background: linear-gradient(
+      180deg,
+      ${th.color('primary-a50')},
+      ${th.color('primary-a40')}
+    );
   }
 
   &:active {

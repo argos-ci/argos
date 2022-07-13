@@ -7,14 +7,15 @@ const IconContainer = ({ size = '60px', ...props }) => (
     h={size}
     w={size}
     maxW={size}
-    bg="black"
+    backgroundColor="white"
     boxShadow="md"
     border={1}
-    borderRadius="md"
-    borderColor="secondary"
+    borderRadius="full"
+    borderColor="border"
     display="flex"
     justifyContent="center"
     alignItems="center"
+    color="black"
     {...props}
   />
 )
@@ -37,13 +38,13 @@ const ParagraphPlaceholder = (props) => (
   <Placeholder borderRadius="4px" h="24px" bg="secondary" {...props} />
 )
 
-const PriceTag = ({ variant, bg = 'blue-500', ...props }) => (
+const PriceTag = ({ variant, backgroundColor = 'blue-500', ...props }) => (
   <x.div
     fontSize="12px"
     px="10px"
     borderRadius="22px"
     h="13px"
-    bg={bg}
+    backgroundColor={backgroundColor}
     w={variant === 'big' ? '58px' : 'auto'}
     {...props}
   />
@@ -57,9 +58,10 @@ const InnerScreenshot = ({ children, ...props }) => {
       borderColor="border"
       backgroundColor="body-background"
       borderRadius="md"
-      h="150px"
       w="160px"
+      h="170px"
       p={2}
+      top={8}
       position="absolute"
       left="50%"
       transform
@@ -71,13 +73,17 @@ const InnerScreenshot = ({ children, ...props }) => {
   )
 }
 
+const Header = (props) => (
+  <x.div display="flex" justifyContent="space-between" {...props} />
+)
+
 export const Screenshot = ({
   tagColor = 'blue-500',
   tagSize = 'md',
   ...props
 }) => (
   <InnerScreenshot {...props}>
-    <x.div display="flex" justifyContent="space-between" mb="20px">
+    <Header>
       <IconContainer size="50px">
         <Icon as={IoCar} size={7} />
       </IconContainer>
@@ -86,16 +92,16 @@ export const Screenshot = ({
         fontSize="21"
         fontWeight="200"
         h={tagSize === 'md' ? '24px' : '13px'}
-        bg={tagColor}
+        backgroundColor={tagColor}
       >
         $$$
       </PriceTag>
-    </x.div>
+    </Header>
 
-    <Placeholder active w={1 / 2} mt={5} />
-
-    <ParagraphPlaceholder mt={2} w={4 / 5} h="10px" />
-    <ParagraphPlaceholder mt={3} />
+    <Placeholder active w={1 / 2} mt="15px" />
+    <Placeholder mt={1} w={2 / 3} />
+    <ParagraphPlaceholder mt={3} h="20px" />
+    <ParagraphPlaceholder mt={1} h="30px" />
   </InnerScreenshot>
 )
 
@@ -106,11 +112,7 @@ export const ScreenshotDiff = ({ variant, ...props }) => {
         {variant === 'bugged' ? (
           <PriceTag position="absolute" h="13px" bg="danger" variant="big" />
         ) : null}
-        <PriceTag
-          h="24px"
-          bg={variant === 'bugged' ? 'danger' : 'success'}
-          variant="big"
-        />
+        <PriceTag h="24px" backgroundColor="danger" variant="big" />
       </x.div>
     </InnerScreenshot>
   )
@@ -119,7 +121,7 @@ export const ScreenshotDiff = ({ variant, ...props }) => {
 export const FakeScreenshotDiff = ({ color = 'danger', ...props }) => {
   return (
     <InnerScreenshot {...props}>
-      <x.div display="flex" justifyContent="space-between" mb="20px">
+      <Header>
         <IconContainer size="50px">
           <Icon as={IoCar} size={7} />
         </IconContainer>
@@ -127,10 +129,12 @@ export const FakeScreenshotDiff = ({ color = 'danger', ...props }) => {
           <PriceTag position="absolute" h="13px" bg={color} variant="big" />
           <PriceTag h="24px" bg="danger" variant="big" />
         </x.div>
-      </x.div>
-      <Placeholder active w={1 / 2} mt={5} />
-      <ParagraphPlaceholder mt={2} w={4 / 5} h="10px" />
-      <ParagraphPlaceholder mt={3} />
+      </Header>
+
+      <Placeholder active w={1 / 2} mt="15px" />
+      <Placeholder mt={1} w={2 / 3} />
+      <ParagraphPlaceholder mt={3} h="20px" />
+      <ParagraphPlaceholder mt={1} h="30px" />
     </InnerScreenshot>
   )
 }

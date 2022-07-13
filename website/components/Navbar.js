@@ -17,5 +17,5 @@ export const Navbar = ({ children, ...props }) => (
 )
 
 export const NavbarSecondary = (props) => (
-  <x.div display="flex" alignItems="center" gap={4} {...props} />
+  <x.div display="flex" alignItems="center" gap={{ _: 4, sm: 8 }} {...props} />
 )

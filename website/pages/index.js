@@ -22,10 +22,10 @@ import { Button } from 'components/Button'
 import { Subtitle, Title } from 'components/Titles'
 import { Paragraph } from 'components/Paragraph'
 import { GithubClickableStatus } from '@components/animation/GithubStatus'
-import { BrandsSlider } from 'components/Slider'
 import { Animation } from 'components/animation'
 import { useWindowSize } from '@hooks/useWindowSize'
 import { GradientText } from '@components/GradientText'
+import { Brands, BrandsTitle } from '@components/Brands'
 
 export default function Home() {
   const [animationScale, setAnimationScale] = useState()
@@ -89,7 +89,7 @@ export default function Home() {
               <x.span color="secondary">
                 Compare pull-requests screenshots and notify when{' '}
                 <x.span color="gray-200" top="-2px" position="relative">
-                  something{' '}
+                  something*{' '}
                 </x.span>
                 changes.
               </x.span>
@@ -111,15 +111,13 @@ export default function Home() {
             flex={{ lg: 1 / 2 }}
             w={1}
           >
-            {animationScale
-              ? console.log(animationScale) || (
-                  <Animation
-                    transform
-                    transformOrigin="top"
-                    scale={animationScale}
-                  />
-                )
-              : null}
+            {animationScale ? (
+              <Animation
+                transform
+                transformOrigin="top"
+                scale={animationScale}
+              />
+            ) : null}
           </x.div>
         </PageContainer>
       </Section>
@@ -127,35 +125,28 @@ export default function Home() {
       <Section>
         <PageContainer>
           <SectionHeader>
-            <SectionIcon icon={IoBug} />
-            <SectionColoredTitle>
-              Prevent visual regression with automatic test coverage
-            </SectionColoredTitle>
+            <SectionIcon icon={IoBug} backgroundColor="primary-a30" />
+            <SectionColoredTitle>Automatic test coverage</SectionColoredTitle>
             <SectionTitle>Set the trap and catch the bugs</SectionTitle>
           </SectionHeader>
           <Paragraph>
-            On each commit screenshots differences are detected and notified via
-            GitHub check status. Approve updates in one-click.
+            Add screenshots in your integrations tests to prevent future visuals
+            bugs. On each commit, screenshots differences are detected and
+            notified via GitHub check status.
+            <br />
+            Approve updates in one-click.
           </Paragraph>
-
-          <GithubClickableStatus mt={10} />
+          <GithubClickableStatus mt={8} />
         </PageContainer>
       </Section>
 
-      <Section>
+      <Section backgroundColor="background-secondary">
         <PageContainer>
-          <x.div
-            fontSize={{ _: '4xl', md: '5xl' }}
-            mb={8}
-            mx="auto"
-            textAlign="center"
-            color="white"
-            fontWeight="semibold"
-          >
-            + 10M screenshots <x.div fontSize="4xl">/ month</x.div>
-          </x.div>
-
-          <BrandsSlider />
+          <BrandsTitle mt={10}>
+            <GradientText>+ 10 000 000</GradientText>
+            <x.div fontSize="60%">screenshots / month</x.div>
+          </BrandsTitle>
+          <Brands />
         </PageContainer>
       </Section>
 
@@ -163,7 +154,7 @@ export default function Home() {
         <PageContainer>
           <SectionHeader>
             <SectionIcon icon={IoBeerOutline} />
-            <SectionColoredTitle>poulet...</SectionColoredTitle>
+            <SectionColoredTitle>Prevent visual regression</SectionColoredTitle>
             <SectionTitle>Developer Friendly</SectionTitle>
           </SectionHeader>
 
@@ -173,11 +164,7 @@ export default function Home() {
           </Paragraph>
           <Paragraph>Easy to code, free to maintain.</Paragraph>
 
-          <Button>
-            Get Started <x.div as={IoArrowForward} />
-          </Button>
-
-          <Paragraph color="red">
+          <Paragraph color="red" mt={8}>
             TODO : Animation <br />
             Code avant / après VS Code + Test d’intégration vs screenshot Argos
           </Paragraph>
