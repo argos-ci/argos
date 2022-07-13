@@ -1,9 +1,22 @@
 import { x } from '@xstyled/styled-components'
-import { forwardRef } from 'react'
 import { FaTimes } from 'react-icons/fa'
 import { ControlButtons } from './animation/ControlButtons'
 
-export const CodeEditorTab = ({ children, active = 'false', ...props }) => {
+export const CodeEditorCloseTabIcon = (props) => (
+  <x.div as={FaTimes} w="8px" {...props} />
+)
+
+export const CodeEditorEditingTabIcon = (props) => (
+  <x.div
+    borderRadius="full"
+    backgroundColor="gray-100"
+    w="8px"
+    h="8px"
+    {...props}
+  />
+)
+
+export const CodeEditorTab = ({ children, active = false, ...props }) => {
   return (
     <x.div
       borderRadius="5px 5px 0 0"
@@ -13,23 +26,17 @@ export const CodeEditorTab = ({ children, active = 'false', ...props }) => {
       justifyContent="space-between"
       alignItems="center"
       gap={3}
-      borderWidth={1}
+      borderWidth="1px 1px 3px 1px"
       px="16px"
       py="10px"
       fontSize="12px"
       mb="-10px"
       ml="80px"
       transition="1000ms"
-      color={active ? 'border' : 'white'}
+      color={active ? 'white' : 'border'}
       {...props}
     >
       {children}
-
-      {active ? (
-        <x.div as={FaTimes} w="8px" />
-      ) : (
-        <x.div borderRadius="full" backgroundColor="gray-100" w="8px" h="8px" />
-      )}
     </x.div>
   )
 }
@@ -69,31 +76,33 @@ const RowNumbers = ({ length = 20, ...props }) => (
 )
 
 export const CodeEditorBody = ({ children, ...props }) => (
-  <x.div display="flex" fontSize="15px" h={1} lineHeight="24px" {...props}>
-    <CodeEditorBody w={1}>
-      <RowNumbers length={20} />
-      <x.pre p="13px 12px 12px" color="white" flex="auto">
-        {children}
-      </x.pre>
-    </CodeEditorBody>
+  <x.div
+    display="flex"
+    fontSize="15px"
+    w={1}
+    h={1}
+    lineHeight="24px"
+    {...props}
+  >
+    <RowNumbers length={20} />
+    <x.pre p="13px 12px 12px" color="white" overflow="auto">
+      {children}
+    </x.pre>
   </x.div>
 )
 
-export const CodeEditor = forwardRef(({ children, ...props }, ref) => {
-  return (
-    <x.div
-      borderRadius="md"
-      boxShadow="md"
-      border={1}
-      borderColor="border"
-      backgroundColor="background-secondary"
-      overflow="hidden"
-      position="relative"
-      h="230px"
-      ref={ref}
-      {...props}
-    >
-      {children}
-    </x.div>
-  )
-})
+export const CodeEditor = ({ children, ...props }) => (
+  <x.div
+    borderRadius="md"
+    boxShadow="md"
+    border={1}
+    borderColor="border"
+    backgroundColor="background-secondary"
+    overflow="hidden"
+    position="relative"
+    h="230px"
+    {...props}
+  >
+    {children}
+  </x.div>
+)

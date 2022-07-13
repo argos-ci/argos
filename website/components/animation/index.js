@@ -1,8 +1,8 @@
 import { forwardRef, useRef, useState } from 'react'
 import { motion, useAnimation } from 'framer-motion'
 import { x } from '@xstyled/styled-components'
-import { CodeEditor } from '@components/animation/CodeEditor'
 import { Browser } from '@components/animation/Browser'
+import { AnimateCodeEditor } from '@components/animation/AnimateCodeEditor'
 import { AnimateGithubStatus } from '@components/animation/AnimateGithubStatus'
 import { AnimateArgosScreenshots } from '@components/animation/AnimateArgosScreenshots'
 import { Mouse, MouseClick } from './Mouse'
@@ -76,7 +76,7 @@ const Canvas = forwardRef(({ ...props }, ref) => {
 
   return (
     <x.div ref={ref} {...props}>
-      <CodeEditor
+      <AnimateCodeEditor
         w="400px"
         zIndex="100"
         as={motion.div}
@@ -90,7 +90,7 @@ const Canvas = forwardRef(({ ...props }, ref) => {
         ref={codeEditorRef}
       >
         {CODE_BUG}
-      </CodeEditor>
+      </AnimateCodeEditor>
 
       <AnimateGithubStatus
         status={githubStatus}

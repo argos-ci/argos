@@ -66,6 +66,8 @@ const InnerScreenshot = ({ children, ...props }) => {
       left="50%"
       transform
       translateX="-50%"
+      minWidth="140px"
+      maxW={1}
       {...props}
     >
       {children}
@@ -74,8 +76,16 @@ const InnerScreenshot = ({ children, ...props }) => {
 }
 
 const Header = (props) => (
-  <x.div display="flex" justifyContent="space-between" {...props} />
+  <x.div
+    display="flex"
+    maxW={200}
+    mx="auto"
+    justifyContent="space-between"
+    {...props}
+  />
 )
+
+const Body = (props) => <x.div maxW={200} mx="auto" {...props} />
 
 export const Screenshot = ({
   tagColor = 'blue-500',
@@ -98,22 +108,24 @@ export const Screenshot = ({
       </PriceTag>
     </Header>
 
-    <Placeholder active w={1 / 2} mt="15px" />
-    <Placeholder mt={1} w={2 / 3} />
-    <ParagraphPlaceholder mt={3} h="20px" />
-    <ParagraphPlaceholder mt={1} h="30px" />
+    <Body>
+      <Placeholder active w={1 / 2} mt="15px" />
+      <Placeholder mt={1} w={2 / 3} />
+      <ParagraphPlaceholder mt={3} h="20px" />
+      <ParagraphPlaceholder mt={1} h="30px" />
+    </Body>
   </InnerScreenshot>
 )
 
 export const ScreenshotDiff = ({ variant, ...props }) => {
   return (
     <InnerScreenshot {...props}>
-      <x.div display="flex" justifyContent="flex-end" mt="15px">
+      <Body display="flex" justifyContent="flex-end" mt="15px">
         {variant === 'bugged' ? (
           <PriceTag position="absolute" h="13px" bg="danger" variant="big" />
         ) : null}
         <PriceTag h="24px" backgroundColor="danger" variant="big" />
-      </x.div>
+      </Body>
     </InnerScreenshot>
   )
 }
@@ -131,10 +143,12 @@ export const FakeScreenshotDiff = ({ color = 'danger', ...props }) => {
         </x.div>
       </Header>
 
-      <Placeholder active w={1 / 2} mt="15px" />
-      <Placeholder mt={1} w={2 / 3} />
-      <ParagraphPlaceholder mt={3} h="20px" />
-      <ParagraphPlaceholder mt={1} h="30px" />
+      <Body>
+        <Placeholder active w={1 / 2} mt="15px" />
+        <Placeholder mt={1} w={2 / 3} />
+        <ParagraphPlaceholder mt={3} h="20px" />
+        <ParagraphPlaceholder mt={1} h="30px" />
+      </Body>
     </InnerScreenshot>
   )
 }

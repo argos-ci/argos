@@ -1,12 +1,12 @@
-import { x } from '@xstyled/styled-components'
-import { useAnimationFrame } from 'framer-motion'
 import { forwardRef, useEffect, useRef, useState } from 'react'
+import { useAnimationFrame } from 'framer-motion'
+import { x } from '@xstyled/styled-components'
 import {
   CodeEditor,
   CodeEditorBody,
   CodeEditorHeader,
   CodeEditorTab,
-} from './CodeEditor'
+} from '@components/CodeEditor'
 
 function trimLastChar(typedText, editableLines = []) {
   const lines = typedText.split('\n')
@@ -72,10 +72,10 @@ export const AnimateCodeEditor = forwardRef(
     const typedText = useTyping({ text: children, linesToTrim, onSave })
 
     return (
-      <x.div position="absolute">
-        <CodeEditor ref={ref} {...props}>
+      <x.div position="absolute" ref={ref} {...props}>
+        <CodeEditor>
           <CodeEditorHeader>
-            <CodeEditorTab active={'false'}>style.css</CodeEditorTab>
+            <CodeEditorTab active={false}>style.css</CodeEditorTab>
           </CodeEditorHeader>
           <CodeEditorBody>{typedText}</CodeEditorBody>
         </CodeEditor>

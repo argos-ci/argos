@@ -5,6 +5,7 @@ import {
   IoBug,
   IoLogoGithub,
   IoBeerOutline,
+  IoConstructOutline,
 } from 'react-icons/io5'
 import Head from 'next/head'
 import { HorizontalLogo } from 'components/HorizontalLogo'
@@ -26,6 +27,14 @@ import { Animation } from 'components/animation'
 import { useWindowSize } from '@hooks/useWindowSize'
 import { GradientText } from '@components/GradientText'
 import { Brands, BrandsTitle } from '@components/Brands'
+import {
+  CodeEditor,
+  CodeEditorBody,
+  CodeEditorHeader,
+  CodeEditorTab,
+} from '@components/CodeEditor'
+import { Versus } from '@components/Versus'
+import { ResizableArgosScreenshots } from '@components/ResizableArgosScreenshots'
 
 export default function Home() {
   const [animationScale, setAnimationScale] = useState()
@@ -85,9 +94,9 @@ export default function Home() {
               <GradientText as="div">catch visual bugs</GradientText>
             </Title>
             <Subtitle maxW={500}>
-              Argos CI adds screenshot updates review to developer’s routine.{' '}
+              Argos CI adds screenshot review to developer’s routine.{' '}
               <x.span color="secondary">
-                Compare pull-requests screenshots and notify when{' '}
+                Compare pull-requests screenshots and be notify when{' '}
                 <x.span color="gray-200" top="-2px" position="relative">
                   something*{' '}
                 </x.span>
@@ -125,7 +134,9 @@ export default function Home() {
       <Section>
         <PageContainer>
           <SectionHeader>
-            <SectionIcon icon={IoBug} backgroundColor="primary-a30" />
+            <SectionIcon pt="6px" pl="8px">
+              🦋
+            </SectionIcon>
             <SectionColoredTitle>Automatic test coverage</SectionColoredTitle>
             <SectionTitle>Set the trap and catch the bugs</SectionTitle>
           </SectionHeader>
@@ -133,9 +144,8 @@ export default function Home() {
             Add screenshots in your integrations tests to prevent future visuals
             bugs. On each commit, screenshots differences are detected and
             notified via GitHub check status.
-            <br />
-            Approve updates in one-click.
           </Paragraph>
+          <Paragraph>Approve updates in one-click.</Paragraph>
           <GithubClickableStatus mt={8} />
         </PageContainer>
       </Section>
@@ -153,51 +163,82 @@ export default function Home() {
       <Section>
         <PageContainer>
           <SectionHeader>
-            <SectionIcon icon={IoBeerOutline} />
+            <SectionIcon pb="7px">🫂</SectionIcon>
             <SectionColoredTitle>Prevent visual regression</SectionColoredTitle>
             <SectionTitle>Developer Friendly</SectionTitle>
           </SectionHeader>
 
           <Paragraph>
-            Argos integrates perfectly in your dev workflow. Replace complex
-            end-to-end test by a single-line screenshot test.
+            Argos fits perfectly in your development workflow. Replace complex
+            end-to-end tests by a single-line screenshot test.
           </Paragraph>
           <Paragraph>Easy to code, free to maintain.</Paragraph>
 
-          <Paragraph color="red" mt={8}>
-            TODO : Animation <br />
-            Code avant / après VS Code + Test d’intégration vs screenshot Argos
-          </Paragraph>
+          <x.div
+            display="flex"
+            gap={4}
+            justifyContent="space-between"
+            alignItems={{ _: 'center', md: 'flex-start' }}
+            flexDirection={{ _: 'column', md: 'row' }}
+            mt={8}
+          >
+            <CodeEditor flex={{ _: 'column', md: 1 }} w={1} h="auto">
+              <CodeEditorHeader>
+                <CodeEditorTab active="true">
+                  details-page.test.js
+                </CodeEditorTab>
+              </CodeEditorHeader>
+              <CodeEditorBody h="370px">
+                {`it('should list car details', () => {
+  cy.get('h1')
+    .contains('Lamborghini Aventador')
+
+  cy.get('div.color')
+    .contains('Verde Mantis')
+
+  cy.get('div.priceTag')
+    .contains('$$$')
+    
+  cy.get('div.seller-name')
+    .contains('Georges Abitbol')
+  ...
+})
+`}
+              </CodeEditorBody>
+            </CodeEditor>
+            <x.div as={Versus} w="100px" my="20px" color="white" />
+            <CodeEditor flex={{ _: 'auto', md: 1 }} w={1} h="160px">
+              <CodeEditorHeader>
+                <CodeEditorTab active="true">
+                  details-page.test.js
+                </CodeEditorTab>
+              </CodeEditorHeader>
+              <CodeEditorBody>{`it('should list car details', () => {
+  cy.argosScreenshot('details_page')
+})
+`}</CodeEditorBody>
+            </CodeEditor>
+          </x.div>
         </PageContainer>
       </Section>
 
       <Section>
         <PageContainer>
           <SectionHeader>
-            <SectionIcon icon={IoBeerOutline} />
+            <SectionIcon fontSize="40px" pb="2px">
+              📸
+            </SectionIcon>
             <SectionColoredTitle>Universal</SectionColoredTitle>
             <SectionTitle>Screenshot everything</SectionTitle>
           </SectionHeader>
 
           <Paragraph>
             Cover complete pages or individual components. No matter the
-            library, the framework, the browser or the resolution, Argos ensures
+            language, framework, browser or resolution, with Argos CI ensures
             you have no regression.
           </Paragraph>
 
-          <Paragraph color="red">
-            TODO : Animation <br />
-            Frame 1 : Composant button de Storybook
-            <br />
-            Frame 2 : Composant button de Storybook avec plus grand padding +
-            check Argos OK
-            <br />
-            Frame 3 : Fiche produit en desktop + check argos OK
-            <br />
-            Frame 4 : Fiche produit en mobile + bug UI
-            <br />
-            Frame 5 : Frame 4 + erreur en rouge + check Argos KO
-          </Paragraph>
+          <ResizableArgosScreenshots />
         </PageContainer>
       </Section>
     </x.div>

@@ -25,7 +25,7 @@ const BaseButton = styled(AriakitButton)`
 
   background: linear-gradient(
     180deg,
-    ${th.color('primary-a40')},
+    ${th.color('primary-a70')},
     ${th.color('primary-a30')}
   );
 
