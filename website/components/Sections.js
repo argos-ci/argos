@@ -1,13 +1,17 @@
 import { x } from '@xstyled/styled-components'
 
-export const Section = (props) => <x.div pt={10} pb={16} {...props} />
+export const Section = (props) => (
+  <x.div pt={{ _: 10, lg: 16 }} pb={16} {...props} />
+)
 
 export const SectionHeader = ({ children, ...props }) => (
   <x.div
     display="grid"
     gridTemplateColumns="auto 1fr"
+    gridTemplateRows={{ md: '26px 30px' }}
     columnGap={4}
     rowGap={{ xs: 4, md: 0 }}
+    alignItems="flex-start"
     my={4}
     {...props}
   >
@@ -20,9 +24,7 @@ export const SectionIcon = ({ children, icon: Icon, ...props }) => (
     gridRow={{ _: '1', sm: '1 / span 2' }}
     borderRadius="full"
     px={2}
-    backgroundImage="gradient-to-b"
-    gradientFrom="primary-a20"
-    gradientTo="primary-a60"
+    backgroundColor="black-a70"
     w={16}
     h={16}
     fontSize="45px"
@@ -30,6 +32,7 @@ export const SectionIcon = ({ children, icon: Icon, ...props }) => (
     justifyContent="center"
     alignItems="center"
     color="title"
+    mb={{ xs: 3 }}
     {...props}
   >
     {Icon ? <x.div as={Icon} w={1} h={1} /> : children}
@@ -39,6 +42,7 @@ export const SectionIcon = ({ children, icon: Icon, ...props }) => (
 export const SectionColoredTitle = (props) => (
   <x.h2
     fontSize="lg"
+    fontWeight="600"
     color="primary"
     gridColumn={{ _: '1', sm: '2' }}
     gridRow={{ _: '2', sm: '1' }}

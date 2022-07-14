@@ -6,7 +6,7 @@ export const ArgosCard = (props) => (
   <x.div
     borderLeft="solid 2px"
     borderRadius="4px"
-    backgroundColor="rgba(255, 255, 255, 0.04)"
+    backgroundColor="rgb(30, 41, 59)"
     {...props}
   />
 )

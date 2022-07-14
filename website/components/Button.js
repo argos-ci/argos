@@ -1,5 +1,4 @@
-import { x } from '@xstyled/styled-components'
-import styled, { th } from '@xstyled/styled-components'
+import styled, { th, x } from '@xstyled/styled-components'
 import { Button as AriakitButton } from 'ariakit/button'
 
 const BaseButton = styled(AriakitButton)`
@@ -9,7 +8,6 @@ const BaseButton = styled(AriakitButton)`
   white-space: nowrap;
   border-radius: md;
   border-style: none;
-  alignself: center;
   cursor: pointer;
   gap: 1;
   padding: 2 4;
@@ -19,15 +17,11 @@ const BaseButton = styled(AriakitButton)`
   &:focus,
   &:focus-visible,
   &[data-focus-visible] {
-    outline: 0;
+    outline: none;
     outline-color: outline;
   }
 
-  background: linear-gradient(
-    180deg,
-    ${th.color('primary-a70')},
-    ${th.color('primary-a30')}
-  );
+  background-color: primary;
 
   &:hover {
     background: linear-gradient(

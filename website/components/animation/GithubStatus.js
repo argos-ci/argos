@@ -300,7 +300,7 @@ export const GithubClickableStatus = (props) => {
       >
         Approve screenshot diffs
       </Button>
-      <GithubMergeStatus status={githubStatus} maxW={700} />
+      <GithubMergeStatus status={githubStatus} />
     </x.div>
   )
 }

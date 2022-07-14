@@ -10,7 +10,7 @@ export const theme = {
     ...defaultTheme.colors,
 
     ...generateHexAlphaVariants({
-      primary: defaultTheme.colors['purple-500'],
+      primary: defaultTheme.colors['purple-700'],
     }),
 
     danger: '#ff5f56',

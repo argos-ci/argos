@@ -68,6 +68,7 @@ const InnerScreenshot = ({ children, ...props }) => {
       translateX="-50%"
       minWidth="140px"
       maxW={1}
+      transition="800ms"
       {...props}
     >
       {children}

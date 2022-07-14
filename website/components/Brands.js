@@ -6,7 +6,7 @@ import leMondeLogo from 'img/lemonde-logo.png'
 
 export const BrandsTitle = (props) => (
   <x.div
-    fontSize={{ _: '4xl', md: '5xl' }}
+    fontSize={{ _: '5xl', md: '5xl' }}
     mx="auto"
     textAlign="center"
     color="white"

@@ -31,7 +31,7 @@ export const AnimateArgosScreenshots = ({
       {...props}
     >
       <ArgosCardHeader ref={headerRef}>
-        <ArgosCardTitle>SCREENSHOTS DIFF</ArgosCardTitle>
+        <ArgosCardTitle>Car details page</ArgosCardTitle>
         <ArgosApproveButton
           ref={approveButtonRef}
           variant={approved ? 'success' : 'warning'}
