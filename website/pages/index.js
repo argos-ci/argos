@@ -1,11 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
 import { x } from '@xstyled/styled-components'
-import { IoEyeOutline, IoLogoGithub } from 'react-icons/io5'
+import { IoEyeOutline } from 'react-icons/io5'
 import { GiFeather, GiWolfTrap } from 'react-icons/gi'
 import Head from 'next/head'
-import { HorizontalLogo } from 'components/HorizontalLogo'
-import { Link } from 'components/Link'
-import { Navbar, NavbarSecondary } from 'components/Navbar'
+import { AppNavbar } from 'components/Navbar'
 import {
   Section,
   SectionColoredTitle,
@@ -14,116 +11,32 @@ import {
   SectionTitle,
 } from 'components/Sections'
 import { PageContainer } from 'components/PageContainer'
-import { Button } from 'components/Button'
-import { Subtitle, Title } from 'components/Titles'
 import { Paragraph } from 'components/Paragraph'
-import { GithubClickableStatus } from '@components/animation/GithubStatus'
-import { Animation } from 'components/animation'
-import { useWindowSize } from '@hooks/useWindowSize'
 import { GradientText } from '@components/GradientText'
 import { Brands, BrandsTitle } from '@components/Brands'
 import { ResizableArgosScreenshots } from '@components/ResizableArgosScreenshots'
 import { CompareTestCode } from '@components/CompareTestCode'
-
-const MainTitle = (props) => (
-  <x.div
-    flex={{ _: 1, lg: 1 / 2 }}
-    alignItems={{ _: 'flex-start', sm: 'center', lg: 'flex-start' }}
-    maxW={{ sm: '500px' }}
-    display="flex"
-    flexDirection="column"
-    gap={8}
-  >
-    <Title {...props}>
-      Screenshot Testing
-      <GradientText as="div">catch visual bugs</GradientText>
-    </Title>
-    <Subtitle>
-      Adds screenshot review to your developer team’s routine.{' '}
-      <x.span color="secondary">
-        Compare pull-requests screenshots and be notified when{' '}
-        <x.span color="gray-200" top="-2px" position="relative">
-          something*{' '}
-        </x.span>
-        changes.
-      </x.span>
-    </Subtitle>
-    <Button
-      w={{ _: 1, sm: 200, lg: 'auto' }}
-      px={6}
-      h={12}
-      fontWeight="semibold"
-    >
-      Get started
-    </Button>
-  </x.div>
-)
+import { AboveTheFold } from '@components/AboveTheFold'
+import { GithubClickableStatus } from '@components/GithubClickableStatus'
+import { AppFooter } from '@components/Footer'
 
 export default function Home() {
-  const [animationScale, setAnimationScale] = useState()
-  const animationContainerRef = useRef()
-  const { width: windowWidth } = useWindowSize()
-  const animationDimensions = { width: 600, height: 410 }
-
-  useEffect(() => {
-    setAnimationScale(
-      Math.min(
-        1,
-        animationContainerRef.current.clientWidth / animationDimensions.width,
-      ),
-    )
-  }, [animationDimensions.width, windowWidth])
-
   return (
-    <x.div>
+    <>
       <Head>
         <title>Argos CI</title>
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
       </Head>
 
-      <Navbar>
-        <x.div as={HorizontalLogo} mt={1} ml={-2} />
-        <NavbarSecondary>
-          <Link href="http://www.google.fr">
-            Login
-            <x.div as={IoLogoGithub} />
-          </Link>
-          <Button>Try now</Button>
-        </NavbarSecondary>
-      </Navbar>
+      <AppNavbar />
 
       <Section
         backgroundImage="gradient-to-t"
         gradientTo="body-background"
         gradientFrom="blue-gray-900"
       >
-        <PageContainer
-          display="flex"
-          flexDirection={{ _: 'column', lg: 'row' }}
-          justifyContent="space-between"
-          alignItems="center"
-          columnGap={2}
-          rowGap={20}
-        >
-          <MainTitle />
-          <x.div
-            display="flex"
-            ref={animationContainerRef}
-            minH={animationDimensions.height * animationScale}
-            justifyContent="center"
-            alignItems="flex-start"
-            overflow="hidden"
-            flex={{ lg: 1 / 2 }}
-            w={1}
-          >
-            {animationScale ? (
-              <Animation
-                transform
-                transformOrigin="top"
-                scale={animationScale}
-              />
-            ) : null}
-          </x.div>
+        <PageContainer>
+          <AboveTheFold />
         </PageContainer>
       </Section>
 
@@ -195,6 +108,8 @@ export default function Home() {
           <ResizableArgosScreenshots mt={8} />
         </PageContainer>
       </Section>
-    </x.div>
+
+      <AppFooter />
+    </>
   )
 }

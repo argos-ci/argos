@@ -1,6 +1,7 @@
 import { x } from '@xstyled/styled-components'
 import { FaTimes } from 'react-icons/fa'
 import { ControlButtons } from './animation/ControlButtons'
+import { Code } from './Code'
 
 export const CodeEditorCloseTabIcon = (props) => (
   <x.div as={FaTimes} w="8px" {...props} />
@@ -85,9 +86,9 @@ export const CodeEditorBody = ({ children, ...props }) => (
     {...props}
   >
     <RowNumbers length={20} />
-    <x.pre p="13px 12px 12px" color="white" overflow="auto">
+    <Code p="13px 12px 12px" color="white" overflow="auto">
       {children}
-    </x.pre>
+    </Code>
   </x.div>
 )
 
