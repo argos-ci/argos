@@ -1,6 +1,8 @@
 import { forwardRef } from 'react'
 import { x } from '@xstyled/styled-components'
 import { FaCheck, FaTimes } from 'react-icons/fa'
+import { Image } from '@components/Image'
+import logo from '@images/logo.png'
 
 export const GITHUB_COLORS = {
   link: '#58a6ff',
@@ -38,9 +40,21 @@ export const GithubCheckRow = (props) => (
     {...props}
   />
 )
-export const GithubCheckPart = (props) => <x.div display="flex" {...props} />
+export const GithubCheckPart = (props) => (
+  <x.div display="flex" overflow="hidden" alignItems="center" {...props} />
+)
 export const GithubCheckStatus = (props) => (
   <x.div mt="2px" w="30px" minW="30px" {...props} />
+)
+export const GithubCheckText = (props) => (
+  <x.div
+    color="secondary"
+    fontSize="13px"
+    textOverflow="ellipsis"
+    whiteSpace="nowrap"
+    overflow="hidden"
+    {...props}
+  />
 )
 export const GithubCheckPicture = (props) => (
   <x.div
@@ -202,3 +216,83 @@ export const GithubPingIcon = (props) => (
     <x.div transition="1000ms" mx="auto" {...props} />
   </x.div>
 )
+
+export const GithubMergeStatus = ({
+  status = 'pending',
+  detailsButtonRef,
+  ...props
+}) => {
+  const { color, title, paragraph, iconProps, checkParagraph, titleColor } =
+    getGithubStatusProps(status)
+
+  const { ping, ...icon } = iconProps
+
+  return (
+    <x.div
+      borderRadius="6px"
+      border="1px solid"
+      borderColor="border"
+      zIndex={100}
+      transition="opacity 800ms 300ms"
+      boxShadow="md"
+      {...props}
+    >
+      <GithubBlackContainer borderRadius="6px 6px 0 0">
+        <x.div display="flex" justifyContent="space-between" w={1}>
+          <x.div display="flex" gap="10px">
+            {status !== 'success' ? (
+              <GithubCircle color={color} />
+            ) : (
+              <GithubGreenCheckIcon />
+            )}
+            <div>
+              <GithubTitle color={titleColor}>{title}</GithubTitle>
+              <GithubParagraph>{paragraph}</GithubParagraph>
+            </div>
+          </x.div>
+        </x.div>
+      </GithubBlackContainer>
+
+      <GithubCheckRow>
+        <GithubCheckPart>
+          <GithubCheckStatus>
+            {ping ? (
+              <GithubPingIcon {...icon} />
+            ) : (
+              <x.div mx="auto" transition="1000ms" {...icon} />
+            )}
+          </GithubCheckStatus>
+
+          <GithubCheckPicture mr="8px">
+            <Image
+              src={logo}
+              width="20px"
+              minW="20px"
+              height="20px"
+              minH="20px"
+              alt="@argos-ci"
+            />
+          </GithubCheckPicture>
+
+          <GithubCheckText>
+            <x.span color={GITHUB_COLORS.text}>argos</x.span> — {checkParagraph}
+          </GithubCheckText>
+        </GithubCheckPart>
+
+        <GithubLinkButton ml="10px" ref={detailsButtonRef}>
+          Details
+        </GithubLinkButton>
+      </GithubCheckRow>
+
+      <x.div
+        p="16px"
+        bg={GITHUB_COLORS.backgroundLight}
+        borderRadius="0 0 6px 6px"
+        borderTop={1}
+        borderColor="border"
+      >
+        <GithubLeftButton status={status}>Merge pull request</GithubLeftButton>
+      </x.div>
+    </x.div>
+  )
+}

@@ -25,21 +25,18 @@ const SearchBar = ({ children, ...props }) => (
     fontSize="12px"
     position="relative"
     mx="auto"
+    minW="130px"
+    display="flex"
+    justifyContent="space-between"
     {...props}
   >
+    <x.div w="14px" ml="12px" />
     {children}
-    <x.div
-      as={IoReload}
-      position="absolute"
-      right="12px"
-      top="6px"
-      w="14px"
-      h="14px"
-    />
+    <x.div as={IoReload} w="14px" h="14px" mr="12px" />
   </x.div>
 )
 
-const Body = (props) => <x.div p="8px" {...props} />
+const Body = (props) => <x.div p={2} {...props} />
 
 export const Browser = ({ children, closeButtonRef, ...props }) => {
   return (
@@ -50,7 +47,6 @@ export const Browser = ({ children, closeButtonRef, ...props }) => {
       backgroundColor="background-secondary"
       overflow="hidden"
       zIndex={400}
-      w="560px"
       {...props}
     >
       <Header>

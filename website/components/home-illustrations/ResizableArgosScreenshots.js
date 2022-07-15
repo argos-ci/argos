@@ -11,8 +11,8 @@ import {
   IoTabletPortraitOutline,
 } from 'react-icons/io5'
 
-import { ArgosCard } from './animation/Argos'
-import { Screenshot, ScreenshotDiff } from './animation/Screenshot'
+import { ArgosCard } from '../Argos'
+import { Screenshot, ScreenshotDiff } from '../Screenshot'
 
 const ButtonIcon = (props) => (
   <x.div w="auto" h="34px" position="absolute" top={0} {...props} />
@@ -49,7 +49,7 @@ export const ResizableArgosScreenshots = (props) => {
 
   return (
     <x.div w={1} {...props}>
-      <x.div overflowX="scroll" pb={1} ml={-2}>
+      <x.div overflowX="auto" pb={1} ml={-2}>
         <x.div mt={2} display="flex" gap={6} alignItems="center">
           <ScreenButton value={140} active={width === 140} onClick={setWidth}>
             <ButtonIcon as={IoPhonePortraitOutline} mt="8px" />
@@ -86,7 +86,7 @@ export const ResizableArgosScreenshots = (props) => {
         mt={3}
         display="flex"
         justifyContent={{ _: 'center', sm: 'flex-start' }}
-        overflowX="scroll"
+        overflowX="auto"
       >
         <ArgosCard
           as="span"

@@ -14,10 +14,10 @@ import { PageContainer } from 'components/PageContainer'
 import { Paragraph } from 'components/Paragraph'
 import { GradientText } from '@components/GradientText'
 import { Brands, BrandsTitle } from '@components/Brands'
-import { ResizableArgosScreenshots } from '@components/ResizableArgosScreenshots'
-import { CompareTestCode } from '@components/CompareTestCode'
+import { ResizableArgosScreenshots } from '@components/home-illustrations/ResizableArgosScreenshots'
+import { CompareTestCode } from '@components/home-illustrations/CompareTestCode'
 import { AboveTheFold } from '@components/AboveTheFold'
-import { GithubClickableStatus } from '@components/GithubClickableStatus'
+import { GithubClickableStatus } from '@components/home-illustrations/GithubClickableStatus'
 import { AppFooter } from '@components/Footer'
 
 export default function Home() {

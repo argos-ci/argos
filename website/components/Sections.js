@@ -24,7 +24,7 @@ export const SectionIcon = ({ children, icon: Icon, ...props }) => (
     gridRow={{ _: '1', sm: '1 / span 2' }}
     borderRadius="full"
     px={2}
-    backgroundColor="black-a70"
+    backgroundColor="background-secondary"
     w={16}
     h={16}
     fontSize="45px"

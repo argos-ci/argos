@@ -5,7 +5,7 @@ export const MouseContext = React.createContext()
 export function MouseInitializer({
   children,
   parentRef,
-  scale,
+  scale = 1,
   mouseAnimation,
   mouseClickAnimation,
 }) {
@@ -56,6 +56,7 @@ export function MouseInitializer({
       targetRef,
       options: { leftOffset, topOffset, scale: scale },
     })
+
     return move(targetPosition, moveOptions)
   }
 

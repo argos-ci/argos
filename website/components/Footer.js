@@ -6,9 +6,8 @@ import smoothCodeLogo from 'img/smooth-code-logo.png'
 
 export const AppFooter = (props) => (
   <x.footer backgroundColor="background-secondary" mt={24} {...props}>
-    <Navbar>
+    <Navbar overflowX="auto">
       <x.div display="flex" alignItems="center">
-        By
         <Image
           src={smoothCodeLogo}
           alt="Logo Smooth Code"

@@ -17,19 +17,28 @@ export const ArgosCardHeader = forwardRef((props, ref) => (
     display="flex"
     justifyContent="space-between"
     alignItems="center"
-    p="8px"
-    borderBottom="solid 1px"
-    borderColor="#424752"
+    px={2}
+    pt={2}
+    pb={1}
     {...props}
   />
 ))
 
 export const ArgosCardTitle = (props) => (
-  <x.div fontSize="15px" color="secondary" {...props} />
+  <x.div fontSize="15px" color="secondary" fontWeight="semibold" {...props} />
 )
 
 export const ArgosCardBody = forwardRef((props, ref) => (
-  <x.div h="186px" position="relative" ref={ref} {...props} />
+  <x.div
+    position="relative"
+    display="flex"
+    py={2}
+    px={2}
+    ref={ref}
+    justifyContent="flex-between"
+    gap={{ _: 2, sm: 4 }}
+    {...props}
+  />
 ))
 
 export const ArgosApproveButton = forwardRef(

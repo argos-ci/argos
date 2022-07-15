@@ -6,6 +6,7 @@ import { MDXProvider } from '@mdx-js/react'
 import { Image } from '@components/Image'
 import { Code } from '@components/Code'
 import { AppFooter } from './Footer'
+import { InlineCode } from './InlineCode'
 
 const components = {
   img: Image,
@@ -29,7 +30,7 @@ const components = {
 
   li: (props) => <x.li my={3} {...props} />,
   code: Code,
-  inlineCode: Code,
+  inlineCode: InlineCode,
 }
 
 const Markdown = ({ children, ...props }) => (

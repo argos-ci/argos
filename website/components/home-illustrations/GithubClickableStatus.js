@@ -1,7 +1,7 @@
-import { Button } from '@components/Button'
-import { x } from '@xstyled/styled-components'
 import { useState } from 'react'
-import { GithubMergeStatus } from './animation/GithubStatus'
+import { x } from '@xstyled/styled-components'
+import { Button } from '@components/Button'
+import { GithubMergeStatus } from '@components/Github'
 
 export const GithubClickableStatus = (props) => {
   const [githubStatus, setGithubStatus] = useState('error')

@@ -19,7 +19,7 @@ export const Mouse = ({ children, ...props }) => (
     opacity={0.4}
     as={motion.div}
     position="absolute"
-    zIndex={1000}
+    zIndex={10000}
     mt="-12px"
     ml="-12px"
     {...props}

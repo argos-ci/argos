@@ -36,7 +36,6 @@ export const Brands = (props) => (
     <Brand>
       <x.div as={MuiLogo} h="60%" w={{ _: '40%', md: 'auto' }} maxW="200px" />
     </Brand>
-
     <Brand pl={{ _: 5, sm: 10 }}>
       <Image src={leMondeLogo} alt="Logo Le Monde" maxW="200px" />
     </Brand>

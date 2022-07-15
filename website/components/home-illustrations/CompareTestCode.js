@@ -4,8 +4,8 @@ import {
   CodeEditorBody,
   CodeEditorHeader,
   CodeEditorTab,
-} from './CodeEditor'
-import { Versus } from './Versus'
+} from '../CodeEditor'
+import { Versus } from '../Versus'
 
 const oldCode = `it('should list car details', () => {
   cy.get('h1')
