@@ -93,8 +93,7 @@ export const ResizableArgosScreenshots = (props) => {
           borderColor="success"
           display="inline-flex"
           px={{ _: '2', md: '4' }}
-          pt={1}
-          pb={5}
+          py={2}
           gap={6}
           justifyContent="left"
           alignItems="center"
@@ -102,37 +101,16 @@ export const ResizableArgosScreenshots = (props) => {
           h="auto"
           w="auto"
         >
-          <Screenshot
-            tagColor="blue-500"
-            position="relative"
-            left={0}
-            transform
-            translateX={0}
-            w={width}
-            maxW={width}
-            minH="170px"
-          />
+          <Screenshot tagColor="blue-500" w={width} />
           <Screenshot
             tagColor="primary-a80"
             tagSize="md"
-            position="relative"
-            left={0}
-            transform
-            translateX={0}
             w={width}
-            maxW={width}
-            minH="170px"
             display={{ _: 'none', sm: 'block' }}
           />
-
           <ScreenshotDiff
-            position="relative"
-            left={0}
-            transform
-            translateX={0}
             w={width}
-            maxW={width}
-            minH="170px"
+            minH={1}
             display={{ _: 'none', sm: 'block' }}
           />
         </ArgosCard>

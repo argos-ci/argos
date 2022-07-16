@@ -42,6 +42,7 @@ const Canvas = forwardRef((props, ref) => {
 
   const githubAnimation = useAnimation()
   const browserAnimation = useAnimation()
+  const codeEditorAnimation = useAnimation()
 
   const codeEditorRef = useRef()
   const githubButtonRef = useRef()
@@ -54,25 +55,31 @@ const Canvas = forwardRef((props, ref) => {
   const fakeDiffScreenshotAnimation = useAnimation()
 
   const [linesToTrim, setLinesToTrim] = useState()
-  const [savedCode, setSavedCode] = useState()
   const [githubStatus, setGithubStatus] = useState('pending')
+  const [approvedScreenshots, setApprovedScreenshots] = useState(false)
+  const [showFixedScreenshots, setShowFixedScreenshots] = useState(false)
 
   const typedText = useTyping({
     text: CODE_BUG,
     linesToTrim,
+    // typingSpeed: 90,
+    typingSpeed: 30,
     onSave: handleSaveCode,
   })
   const isTyping = typedText !== CODE_BUG && typedText !== CODE_FIX
-  const approved = savedCode === CODE_FIX
 
   async function animateScreenshots() {
-    await beforeScreenshotAnimation.start('hide', { delay: 0.7, duration: 1 })
-    await afterScreenshotAnimation.start('hide', { delay: 0.7, duration: 1 })
-    await fakeDiffScreenshotAnimation.start('hide', { delay: 0.7, duration: 1 })
-    await afterScreenshotAnimation.start('showBackground')
-    await beforeScreenshotAnimation.start('showBackground')
-    await diffScreenshotAnimation.start('move', { delay: 0.7, duration: 0.7 })
-    await beforeScreenshotAnimation.start('move', { delay: 0.7, duration: 0.7 })
+    await beforeScreenshotAnimation.start('hide', { delay: 1, duration: 1 })
+    await afterScreenshotAnimation.start('hide', { delay: 1, duration: 1 })
+
+    await beforeScreenshotAnimation.start('goBackground')
+    await beforeScreenshotAnimation.start('show')
+    await afterScreenshotAnimation.start('goBackground')
+    await afterScreenshotAnimation.start('show')
+
+    await fakeDiffScreenshotAnimation.start('hide', { delay: 1, duration: 1 })
+    await diffScreenshotAnimation.start('move', { delay: 1, duration: 0.8 })
+    await beforeScreenshotAnimation.start('move', { duration: 0.8 })
   }
 
   async function failArgosAnimation() {
@@ -83,21 +90,23 @@ const Canvas = forwardRef((props, ref) => {
     await browserAnimation.start('show')
     await animateScreenshots()
     await moveToRef(closeBrowserButtonRef, { delay: 2 })
-    await githubAnimation.start('background')
-    browserAnimation.start('hide')
+    await codeEditorAnimation.start('goForeground')
+    await githubAnimation.start('goBackground')
+    await browserAnimation.start('hide')
     await moveToRef(codeEditorRef)
-    setTimeout(() => setLinesToTrim([2]), 1500)
+    await delay(1500)
+    setLinesToTrim([2])
   }
 
   async function successArgosAnimation() {
+    setShowFixedScreenshots(true)
     await browserAnimation.start('show')
     await moveToRef(argosApproveButtonRef, { delay: 1 })
+    setApprovedScreenshots(true)
     setGithubStatus('success')
-    await githubAnimation.start('showUp')
   }
 
   function handleSaveCode(savedCode) {
-    setSavedCode(savedCode)
     if (savedCode === CODE_BUG) return failArgosAnimation()
     if (savedCode === CODE_FIX) return successArgosAnimation()
   }
@@ -125,7 +134,7 @@ const Canvas = forwardRef((props, ref) => {
         }}
       >
         <ArgosCard
-          borderColor={approved ? 'success' : 'warning'}
+          borderColor={approvedScreenshots ? 'success' : 'warning'}
           color="white"
           transition="opacity 1200ms 700ms"
           position="relative"
@@ -134,7 +143,7 @@ const Canvas = forwardRef((props, ref) => {
             <ArgosCardTitle>Car details page</ArgosCardTitle>
             <ArgosApproveButton
               ref={argosApproveButtonRef}
-              variant={approved ? 'success' : 'warning'}
+              variant={approvedScreenshots ? 'success' : 'warning'}
             />
           </ArgosCardHeader>
           <ArgosCardBody>
@@ -148,24 +157,26 @@ const Canvas = forwardRef((props, ref) => {
               variants={{
                 hide: { opacity: 0 },
                 move: { translateX: 0 },
-                showBackground: { zIndex: 90, opacity: 1 },
+                goBackground: { zIndex: 90 },
+                show: { opacity: 1 },
               }}
             />
 
             <Screenshot
               tagColor="primary-a80"
-              tagSize="sm"
+              tagSize={showFixedScreenshots ? 'md' : 'sm'}
               as={motion.div}
               animate={afterScreenshotAnimation}
               initial={{ zIndex: 120 }}
               variants={{
                 hide: { opacity: 0 },
-                showBackground: { zIndex: 80, opacity: 1 },
+                goBackground: { zIndex: 80 },
+                show: { opacity: 1 },
               }}
             />
 
             <ScreenshotDiff
-              variant={githubStatus === 'success' ? 'fixed' : 'bugged'}
+              variant={showFixedScreenshots ? 'fixed' : 'bugged'}
               as={motion.div}
               animate={diffScreenshotAnimation}
               transform
@@ -177,21 +188,28 @@ const Canvas = forwardRef((props, ref) => {
             <FakeScreenshotDiff
               as={motion.div}
               animate={fakeDiffScreenshotAnimation}
-              left="50%"
-              transform
-              translateX="-50%"
-              zIndex={10}
+              mx="auto"
+              left={0}
+              right={0}
+              zIndex={110}
               position="absolute"
               w={{ _: 'calc(100% / 3 - 8px)', sm: 'calc(100% / 3 - 16px)' }}
               h="calc(100% - 16px)"
-              variants={{ hide: { opacity: 0 } }}
+              variants={{ hide: { display: 'none' } }}
             />
           </ArgosCardBody>
         </ArgosCard>
       </Browser>
 
       <x.div maxW={1} mr="40px" ref={codeEditorRef}>
-        <CodeEditor w="450px" maxW={1} zIndex={-1}>
+        <CodeEditor
+          w="450px"
+          maxW={1}
+          as={motion.div}
+          animate={codeEditorAnimation}
+          initial={{ zIndex: -1 }}
+          variants={{ goForeground: { zIndex: 1 } }}
+        >
           <CodeEditorHeader>
             <CodeEditorTab active={isTyping}>
               style.css
@@ -216,12 +234,10 @@ const Canvas = forwardRef((props, ref) => {
         initial={{ opacity: 0 }}
         variants={{
           show: { opacity: 1 },
-          background: { zIndex: -2, opacity: 0.6 },
-          showUp: { opacity: 1, zIndex: 2000 },
+          goBackground: { zIndex: -2, opacity: 0.6 },
         }}
       >
         <GithubMergeStatus
-          zIndex={120}
           status={githubStatus}
           setStatus={setGithubStatus}
           detailsButtonRef={githubButtonRef}

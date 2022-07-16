@@ -2,6 +2,7 @@ import { x } from '@xstyled/styled-components'
 import { useAnimationFrame } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { FaTimes } from 'react-icons/fa'
+import { Code } from './Code'
 import { ControlButtons } from './ControlButtons'
 
 function trimLastChar(text, linesToTrim = []) {
@@ -150,15 +151,9 @@ export const CodeEditorBody = ({ children, ...props }) => (
     {...props}
   >
     <RowNumbers length={20} />
-    <x.pre
-      fontSize="15px"
-      lineHeight="24px"
-      p="13px 12px 12px"
-      color="white"
-      overflow="auto"
-    >
+    <Code p="13px 12px 12px" color="white" overflow="auto">
       {children}
-    </x.pre>
+    </Code>
   </x.div>
 )
 

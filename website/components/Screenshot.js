@@ -42,10 +42,10 @@ const InnerScreenshot = ({ children, ...props }) => {
   return (
     <x.div
       flex={1}
-      border={1}
-      borderColor="border"
-      backgroundColor="body-background"
-      p={2}
+      backgroundColor="black"
+      pt={2}
+      px={3}
+      pb={4}
       w="160px"
       maxW={1}
       transition="800ms"
@@ -108,7 +108,12 @@ export const Screenshot = ({
   tagSize = 'md',
   ...props
 }) => (
-  <InnerScreenshot {...props}>
+  <InnerScreenshot
+    backgroundImage="gradient-to-t"
+    gradientFrom="gray-500-a20"
+    gradientTo="blue-500-a30"
+    {...props}
+  >
     <ScreenshotLayoutHeader />
     <Price>
       <PriceTag
@@ -138,7 +143,12 @@ export const ScreenshotDiff = ({ variant, ...props }) => {
 
 export const FakeScreenshotDiff = ({ color = 'danger', ...props }) => {
   return (
-    <InnerScreenshot {...props}>
+    <InnerScreenshot
+      backgroundImage="gradient-to-t"
+      gradientFrom="gray-500-a20"
+      gradientTo="blue-500-a30"
+      {...props}
+    >
       <ScreenshotLayoutHeader />
       <Price>
         <PriceTag position="absolute" h="13px" bg={color} />
