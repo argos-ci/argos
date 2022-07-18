@@ -1,6 +1,5 @@
 import { x } from '@xstyled/styled-components'
-import React from 'react'
-import { IoCar } from 'react-icons/io5'
+import { IoCar, IoThumbsDownOutline, IoThumbsUpOutline } from 'react-icons/io5'
 
 const IconContainer = ({ size = '60px', ...props }) => (
   <x.div
@@ -44,10 +43,8 @@ const InnerScreenshot = ({ children, ...props }) => {
       flex={1}
       backgroundColor="black"
       pt={2}
-      px={3}
+      px={{ _: 1, sm: 3 }}
       pb={4}
-      w="160px"
-      maxW={1}
       transition="800ms"
       {...props}
     >
@@ -73,9 +70,9 @@ const ScreenshotLayoutHeader = (props) => (
   </Header>
 )
 
-const Body = (props) => <x.div mx="auto" {...props} />
+const Body = (props) => <x.div mx="auto" h="62px" {...props} />
 const ScreenshotLayoutBody = (props) => (
-  <Body {...props}>
+  <Body border={1} borderColor="transparent" {...props}>
     <ParagraphPlaceholder mt={2} h="20px" />
     <ParagraphPlaceholder mt={1} h="30px" />
   </Body>
@@ -99,6 +96,31 @@ const PriceTag = ({ backgroundColor = 'blue-500', ...props }) => (
     h="13px"
     backgroundColor={backgroundColor}
     w="58px"
+    {...props}
+  />
+)
+
+export const ScreenshotLegend = (props) => (
+  <x.div
+    borderLeft={1}
+    borderColor="secondary"
+    color="secondary"
+    py={1}
+    pl={2}
+    ml={2}
+    flex={1}
+    maxH={26}
+    {...props}
+  />
+)
+
+export const ScreenshotContainer = (props) => (
+  <x.div
+    flex={1}
+    display="flex"
+    flexDirection="column"
+    overflow="hidden"
+    position="relative"
     {...props}
   />
 )
@@ -137,6 +159,7 @@ export const ScreenshotDiff = ({ variant, ...props }) => {
         ) : null}
         <PriceTag h="24px" backgroundColor="danger" />
       </Price>
+      <Body />
     </InnerScreenshot>
   )
 }
@@ -158,3 +181,27 @@ export const FakeScreenshotDiff = ({ color = 'danger', ...props }) => {
     </InnerScreenshot>
   )
 }
+
+export const ScreenshotThumb = ({ success, ...props }) => (
+  <x.div
+    position="absolute"
+    bottom="40px"
+    left="50%"
+    transform
+    translateX="-50%"
+    backgroundColor={success ? 'success' : 'danger'}
+    color="white"
+    borderRadius="full"
+    w="40px"
+    h="40px"
+    p="6px"
+    {...props}
+  >
+    <x.div
+      as={success ? IoThumbsUpOutline : IoThumbsDownOutline}
+      w={1}
+      h={1}
+      mt={success ? 0 : '2px'}
+    />
+  </x.div>
+)

@@ -11,7 +11,13 @@ import {
 import { Browser } from '../Browser'
 import { Mouse, MouseClick } from '../Mouse'
 import { MouseInitializer, useMouse } from '../MouseContext'
-import { FakeScreenshotDiff, Screenshot, ScreenshotDiff } from '../Screenshot'
+import {
+  Screenshot,
+  ScreenshotContainer,
+  ScreenshotDiff,
+  ScreenshotLegend,
+  ScreenshotThumb,
+} from '../Screenshot'
 import {
   CodeEditor,
   CodeEditorBody,
@@ -22,6 +28,8 @@ import {
   useTyping,
 } from '../CodeEditor'
 import { GithubMergeStatus } from '@components/Github'
+import { IoGitBranch } from 'react-icons/io5'
+import { TextIcon } from '@components/TextIcon'
 
 const CODE_BUG = `.priceTag {
   background: #7e22ce;
@@ -37,22 +45,42 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const Laser = (props) => (
+  <x.div
+    as={motion.div}
+    minH={2}
+    minW={1}
+    position="absolute"
+    backgroundImage="gradient-to-b"
+    gradientFrom="gray-500-a10"
+    gradientVia="white"
+    gradientTo="gray-500-a10"
+    initial={{ opacity: 0 }}
+    variants={{
+      show: { opacity: 1 },
+      scan: { top: '100%', transition: { duration: 2 } },
+      hide: { opacity: 0 },
+      reset: { opacity: 0, top: 0 },
+    }}
+    {...props}
+  />
+)
+
 const Canvas = forwardRef((props, ref) => {
   const { moveToRef, mouseAnimation, mouseClickAnimation } = useMouse()
 
   const githubAnimation = useAnimation()
   const browserAnimation = useAnimation()
   const codeEditorAnimation = useAnimation()
+  const laserAnimation = useAnimation()
+  const thumbAnimation = useAnimation()
 
   const codeEditorRef = useRef()
   const githubButtonRef = useRef()
   const closeBrowserButtonRef = useRef()
   const argosApproveButtonRef = useRef()
 
-  const beforeScreenshotAnimation = useAnimation()
-  const afterScreenshotAnimation = useAnimation()
   const diffScreenshotAnimation = useAnimation()
-  const fakeDiffScreenshotAnimation = useAnimation()
 
   const [linesToTrim, setLinesToTrim] = useState()
   const [githubStatus, setGithubStatus] = useState('pending')
@@ -62,24 +90,23 @@ const Canvas = forwardRef((props, ref) => {
   const typedText = useTyping({
     text: CODE_BUG,
     linesToTrim,
-    // typingSpeed: 90,
-    typingSpeed: 30,
+    typingSpeed: 90,
     onSave: handleSaveCode,
   })
   const isTyping = typedText !== CODE_BUG && typedText !== CODE_FIX
 
   async function animateScreenshots() {
-    await beforeScreenshotAnimation.start('hide', { delay: 1, duration: 1 })
-    await afterScreenshotAnimation.start('hide', { delay: 1, duration: 1 })
+    await laserAnimation.start('show')
+    await laserAnimation.start('scan')
+    await laserAnimation.start('hide')
+    await diffScreenshotAnimation.start('show')
+    await thumbAnimation.start('show', { delay: 1.5, duration: 0.3 })
+  }
 
-    await beforeScreenshotAnimation.start('goBackground')
-    await beforeScreenshotAnimation.start('show')
-    await afterScreenshotAnimation.start('goBackground')
-    await afterScreenshotAnimation.start('show')
-
-    await fakeDiffScreenshotAnimation.start('hide', { delay: 1, duration: 1 })
-    await diffScreenshotAnimation.start('move', { delay: 1, duration: 0.8 })
-    await beforeScreenshotAnimation.start('move', { duration: 0.8 })
+  async function resetScreenshotAnimation() {
+    await diffScreenshotAnimation.start('hide')
+    await laserAnimation.start('reset')
+    await thumbAnimation.start('hide')
   }
 
   async function failArgosAnimation() {
@@ -93,6 +120,7 @@ const Canvas = forwardRef((props, ref) => {
     await codeEditorAnimation.start('goForeground')
     await githubAnimation.start('goBackground')
     await browserAnimation.start('hide')
+    await resetScreenshotAnimation()
     await moveToRef(codeEditorRef)
     await delay(1500)
     setLinesToTrim([2])
@@ -101,9 +129,14 @@ const Canvas = forwardRef((props, ref) => {
   async function successArgosAnimation() {
     setShowFixedScreenshots(true)
     await browserAnimation.start('show')
+    await animateScreenshots()
+    await thumbAnimation.start('show', { delay: 1, duration: 0.3 })
     await moveToRef(argosApproveButtonRef, { delay: 1 })
     setApprovedScreenshots(true)
     setGithubStatus('success')
+    await codeEditorAnimation.start('hide')
+    await browserAnimation.start('goBackground', { delay: 1 })
+    await githubAnimation.start('goForeground')
   }
 
   function handleSaveCode(savedCode) {
@@ -131,6 +164,11 @@ const Canvas = forwardRef((props, ref) => {
         variants={{
           show: { opacity: 1, transition: { duration: 0.8 } },
           hide: { opacity: 0, transition: { duration: 0.6 } },
+          goBackground: {
+            zIndex: -1,
+            opacity: 0.9,
+            transition: { duration: 0.6 },
+          },
         }}
       >
         <ArgosCard
@@ -147,56 +185,58 @@ const Canvas = forwardRef((props, ref) => {
             />
           </ArgosCardHeader>
           <ArgosCardBody>
-            <Screenshot
-              tagColor="blue-500"
-              as={motion.div}
-              animate={beforeScreenshotAnimation}
-              transform
-              translateX={{ _: 'calc(100% + 8px)', sm: 'calc(100% + 16px)' }}
-              zIndex={130}
-              variants={{
-                hide: { opacity: 0 },
-                move: { translateX: 0 },
-                goBackground: { zIndex: 90 },
-                show: { opacity: 1 },
-              }}
-            />
+            <ScreenshotContainer>
+              <x.div display="flex" flexDirection="column" position="relative">
+                <Laser animate={laserAnimation} />
+                <Screenshot tagColor="blue-500" />
+              </x.div>
+              <ScreenshotLegend>
+                <TextIcon icon={IoGitBranch} my={0} iconStyle={{ mr: 1 }}>
+                  main
+                </TextIcon>
+              </ScreenshotLegend>
+            </ScreenshotContainer>
 
-            <Screenshot
-              tagColor="primary-a80"
-              tagSize={showFixedScreenshots ? 'md' : 'sm'}
-              as={motion.div}
-              animate={afterScreenshotAnimation}
-              initial={{ zIndex: 120 }}
-              variants={{
-                hide: { opacity: 0 },
-                goBackground: { zIndex: 80 },
-                show: { opacity: 1 },
-              }}
-            />
+            <ScreenshotContainer>
+              <x.div display="flex" flexDirection="column" position="relative">
+                <Laser animate={laserAnimation} />
+                <Screenshot
+                  tagColor="primary-a80"
+                  tagSize={showFixedScreenshots ? 'md' : 'sm'}
+                />
+              </x.div>
+              <ScreenshotLegend>
+                <TextIcon icon={IoGitBranch} my={0} iconStyle={{ mr: 1 }}>
+                  rework
+                </TextIcon>
+              </ScreenshotLegend>
+            </ScreenshotContainer>
 
-            <ScreenshotDiff
-              variant={showFixedScreenshots ? 'fixed' : 'bugged'}
+            <ScreenshotContainer
               as={motion.div}
               animate={diffScreenshotAnimation}
+              initial={{ opacity: 0 }}
               transform
-              translateX={{ _: 'calc(-100% - 8px)', sm: 'calc(-100% - 16px)' }}
-              zIndex={100}
-              variants={{ move: { translateX: 0 } }}
-            />
-
-            <FakeScreenshotDiff
-              as={motion.div}
-              animate={fakeDiffScreenshotAnimation}
-              mx="auto"
-              left={0}
-              right={0}
-              zIndex={110}
-              position="absolute"
-              w={{ _: 'calc(100% / 3 - 8px)', sm: 'calc(100% / 3 - 16px)' }}
-              h="calc(100% - 16px)"
-              variants={{ hide: { display: 'none' } }}
-            />
+              variants={{
+                show: { opacity: 1, transition: { delay: 0.2, duration: 0.3 } },
+                hide: { opacity: 0 },
+              }}
+            >
+              <ScreenshotDiff
+                variant={showFixedScreenshots ? 'fixed' : 'bugged'}
+              />
+              <ScreenshotThumb
+                as={motion.div}
+                initial={{ opacity: 0 }}
+                variants={{
+                  show: { opacity: 1 },
+                  hide: { opacity: 0 },
+                }}
+                animate={thumbAnimation}
+                success={showFixedScreenshots}
+              />
+              <ScreenshotLegend>argos diff</ScreenshotLegend>
+            </ScreenshotContainer>
           </ArgosCardBody>
         </ArgosCard>
       </Browser>
@@ -208,7 +248,10 @@ const Canvas = forwardRef((props, ref) => {
           as={motion.div}
           animate={codeEditorAnimation}
           initial={{ zIndex: -1 }}
-          variants={{ goForeground: { zIndex: 1 } }}
+          variants={{
+            goForeground: { zIndex: 1 },
+            hide: { opacity: 0 },
+          }}
         >
           <CodeEditorHeader>
             <CodeEditorTab active={isTyping}>
@@ -235,6 +278,7 @@ const Canvas = forwardRef((props, ref) => {
         variants={{
           show: { opacity: 1 },
           goBackground: { zIndex: -2, opacity: 0.6 },
+          goForeground: { zIndex: 200, opacity: 1 },
         }}
       >
         <GithubMergeStatus

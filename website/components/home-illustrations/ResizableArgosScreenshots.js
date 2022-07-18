@@ -4,9 +4,6 @@ import { forwardRef, useRef, useState } from 'react'
 import {
   IoDesktopOutline,
   IoLaptopOutline,
-  IoLogoChrome,
-  IoLogoEdge,
-  IoLogoFirefox,
   IoPhonePortraitOutline,
   IoTabletLandscapeOutline,
   IoTabletPortraitOutline,
@@ -16,16 +13,11 @@ import {
   ArgosCardBody,
   ArgosCardHeader,
   ArgosCardTitle,
-  ArgosSummaryCard,
 } from '../Argos'
 import { Screenshot, ScreenshotDiff } from '../Screenshot'
 
 const ButtonIcon = (props) => (
   <x.div w="auto" h="34px" position="absolute" top={0} {...props} />
-)
-
-const BrowserIcon = (props) => (
-  <x.div position="absolute" top="14px" w="12px" {...props} />
 )
 
 const ResolutionButton = ({ active, value, onClick, ...props }) => (
@@ -67,7 +59,6 @@ const ResolutionSelector = ({ resolution, onChange, ...props }) => (
         onClick={onChange}
       >
         <ButtonIcon as={IoTabletPortraitOutline} mt="8px" />
-        <BrowserIcon as={IoLogoEdge} />
         <x.div>Tablet</x.div>
       </ResolutionButton>
 
@@ -86,8 +77,6 @@ const ResolutionSelector = ({ resolution, onChange, ...props }) => (
         onClick={onChange}
       >
         <ButtonIcon as={IoLaptopOutline} h="50px" />
-        <BrowserIcon as={IoLogoChrome} top="16px" />
-
         <x.div>Desktop</x.div>
       </ResolutionButton>
 
@@ -98,7 +87,6 @@ const ResolutionSelector = ({ resolution, onChange, ...props }) => (
       >
         <ButtonIcon as={IoDesktopOutline} h="43px" mt="4px" />
         <x.div>Wide screen</x.div>
-        <BrowserIcon as={IoLogoFirefox} top="12px" />
       </ResolutionButton>
     </x.div>
   </x.div>
@@ -171,8 +159,7 @@ export const ResizableArgosScreenshots = (props) => {
         onChange={handleChange}
         mb={3}
       />
-      <Browser maxW="848">
-        <ArgosSummaryCard />
+      <Browser maxW="850">
         <ArgosCard
           borderColor="success"
           display="flex"
@@ -182,7 +169,6 @@ export const ResizableArgosScreenshots = (props) => {
           pb={10}
           maxH={250}
           ref={argosRef}
-          mt={2}
         >
           <ArgosScreenshots
             title="Mobile resolution"
@@ -190,7 +176,7 @@ export const ResizableArgosScreenshots = (props) => {
             ref={mobileScreenshotsRef}
           />
           <ArgosScreenshots
-            title="Tablet resolution on Edge"
+            title="Tablet resolution"
             screenshotWidth={180}
             ref={tabletScreenshotsRef}
           />
@@ -200,12 +186,12 @@ export const ResizableArgosScreenshots = (props) => {
             ref={landscapeTabletScreenshotsRef}
           />
           <ArgosScreenshots
-            title="Desktop resolution on Chrome"
+            title="Desktop resolution"
             screenshotWidth={200}
             ref={desktopScreenshotsRef}
           />
           <ArgosScreenshots
-            title="Wide resolution on Firefox"
+            title="Wide resolution"
             screenshotWidth={260}
             ref={wideScreenScreenshotsRef}
           />

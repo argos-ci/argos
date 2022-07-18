@@ -1,8 +1,14 @@
 import { forwardRef } from 'react'
 import { x } from '@xstyled/styled-components'
-import { IoCheckmark } from 'react-icons/io5'
-import { FaRegClock, FaTimes } from 'react-icons/fa'
-import { GoPulse, GoGitCommit, GoGitBranch } from 'react-icons/go'
+import {
+  IoCheckmark,
+  IoGitBranch,
+  IoGitCommit,
+  IoPulseOutline,
+  IoTimeOutline,
+} from 'react-icons/io5'
+import { FaTimes } from 'react-icons/fa'
+import { TextIcon } from './TextIcon'
 
 export const ArgosCard = forwardRef((props, ref) => (
   <x.div
@@ -10,7 +16,7 @@ export const ArgosCard = forwardRef((props, ref) => (
     borderLeft="solid 2px"
     color="white"
     borderRadius="4px"
-    backgroundColor="blue-gray-700-a90"
+    backgroundColor="blue-gray-700-a70"
     transition="opacity 1200ms 700ms"
     position="relative"
     {...props}
@@ -74,13 +80,6 @@ export const ArgosApproveButton = forwardRef(
   ),
 )
 
-const TextIcon = ({ icon: Icon, iconStyle = {}, children, ...props }) => (
-  <x.div display="flex" whiteSpace="nowrap" my={1} {...props}>
-    <x.div as={Icon} mr={2} mt={0.5} {...iconStyle} />
-    {children}
-  </x.div>
-)
-
 export const ArgosSummaryCard = (props) => (
   <ArgosCard borderColor="success" {...props}>
     <ArgosCardHeader>
@@ -100,20 +99,20 @@ export const ArgosSummaryCard = (props) => (
           rework-button
         </TextIcon>
         <x.div ml={6} fontSize="sm">
-          <TextIcon icon={GoGitCommit} color="secondary">
+          <TextIcon icon={IoGitCommit} color="secondary">
             Commit 517b9dc
           </TextIcon>
-          <TextIcon icon={GoGitBranch} color="secondary">
+          <TextIcon icon={IoGitBranch} color="secondary">
             Branch rework-button
           </TextIcon>
         </x.div>
       </x.div>
 
       <x.div display={{ _: 'none', sm: 'block' }} fontSize="sm">
-        <TextIcon icon={GoPulse} mt="1px" color="success">
+        <TextIcon icon={IoPulseOutline} mt="1px" color="success">
           #5 success
         </TextIcon>
-        <TextIcon icon={FaRegClock} color="secondary">
+        <TextIcon icon={IoTimeOutline} color="secondary">
           10 sec ago
         </TextIcon>
       </x.div>
