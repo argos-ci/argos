@@ -1,6 +1,10 @@
 import { x } from '@xstyled/styled-components'
-import { IoEyeOutline } from 'react-icons/io5'
-import { GiFeather, GiWolfTrap } from 'react-icons/gi'
+import {
+  IoBalloonOutline,
+  IoBugOutline,
+  IoCheckmarkDoneOutline,
+  IoShieldOutline,
+} from 'react-icons/io5'
 import Head from 'next/head'
 import { AppNavbar } from 'components/Navbar'
 import {
@@ -43,7 +47,10 @@ export default function Home() {
       <Section>
         <PageContainer>
           <SectionHeader>
-            <SectionIcon icon={GiWolfTrap} />
+            <SectionIcon>
+              <x.div as={IoShieldOutline} mt="4px" ml="2px" />
+              <x.div as={IoBugOutline} position="absolute" w="20px" />
+            </SectionIcon>
             <SectionColoredTitle>Automatic test coverage</SectionColoredTitle>
             <SectionTitle>Set the trap and catch the bugs.</SectionTitle>
           </SectionHeader>
@@ -72,7 +79,7 @@ export default function Home() {
       <Section>
         <PageContainer>
           <SectionHeader>
-            <SectionIcon icon={GiFeather} p={3} />
+            <SectionIcon icon={IoBalloonOutline} p={3} />
             <SectionColoredTitle>Lighter tests</SectionColoredTitle>
             <SectionTitle>Easy to test and no maintenance.</SectionTitle>
           </SectionHeader>
@@ -88,7 +95,7 @@ export default function Home() {
       <Section>
         <PageContainer>
           <SectionHeader>
-            <SectionIcon icon={IoEyeOutline} p={3} />
+            <SectionIcon icon={IoCheckmarkDoneOutline} p={3} />
             <SectionColoredTitle>
               Powerful and techno agnostic
             </SectionColoredTitle>

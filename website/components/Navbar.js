@@ -28,7 +28,7 @@ export const AppNavbar = () => (
   <x.div backgroundColor="background-secondary">
     <Navbar>
       <Link href="/">
-        <x.div as={HorizontalLogo} mt={1} ml={-2} width="100%" />
+        <x.div as={HorizontalLogo} mt={1} ml={-2} width="100%" maxH="40px" />
       </Link>
       <NavbarSecondary>
         <Link href="http://www.google.fr">
