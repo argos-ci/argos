@@ -1,5 +1,5 @@
-import styled from '@xstyled/styled-components'
-import NextLink from 'next/link'
+import styled from "@xstyled/styled-components";
+import NextLink from "next/link";
 
 const InnerLink = styled.box`
   cursor: pointer;
@@ -12,10 +12,10 @@ const InnerLink = styled.box`
   &:hover {
     color: secondary;
   }
-`
+`;
 
 export const Link = ({ children, href, ...props }) => (
   <NextLink href={href}>
     <InnerLink {...props}>{children}</InnerLink>
   </NextLink>
-)
+);

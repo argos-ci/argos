@@ -1,62 +1,54 @@
-import { x } from '@xstyled/styled-components'
+import { x } from "@xstyled/styled-components";
 
-export const Section = (props) => (
-  <x.div pt={{ _: 10, lg: 16 }} pb={16} {...props} />
-)
+export const Section = (props) => <x.div py={16} {...props} />;
 
 export const SectionHeader = ({ children, ...props }) => (
   <x.div
     display="grid"
-    gridTemplateColumns="auto 1fr"
-    gridTemplateRows={{ md: '26px 30px' }}
+    gridTemplateColumns="auto minmax(0, 1fr)"
     columnGap={4}
-    rowGap={{ xs: 4, md: 0 }}
-    alignItems="flex-start"
+    rowGap={1}
     my={4}
     {...props}
   >
     {children}
   </x.div>
-)
+);
 export const SectionIcon = ({ children, icon: Icon, ...props }) => (
   <x.div
-    gridColumn="1"
-    gridRow={{ _: '1', sm: '1 / span 2' }}
+    gridArea={{ sm: "span 2" }}
     borderRadius="full"
     px={2}
     backgroundColor="background-secondary"
     w={16}
     h={16}
-    fontSize="45px"
+    fontSize={44}
     display="flex"
     justifyContent="center"
     alignItems="center"
-    color="title"
-    mb={{ xs: 3 }}
     {...props}
   >
     {Icon ? <x.div as={Icon} w={1} h={1} /> : children}
   </x.div>
-)
+);
 
 export const SectionColoredTitle = (props) => (
   <x.h2
-    fontSize="lg"
-    fontWeight="600"
-    color="primary"
-    gridColumn={{ _: '1', sm: '2' }}
-    gridRow={{ _: '2', sm: '1' }}
+    gridArea={{ _: "3 / span 2", sm: "2 / 2" }}
+    fontSize="sm"
+    fontWeight="500"
+    color="purple-200"
+    textTransform="uppercase"
+    letterSpacing="wide"
     {...props}
   />
-)
+);
 
 export const SectionTitle = (props) => (
   <x.div
-    fontSize="3xl"
-    gridColumn={{ _: '1', sm: '2' }}
-    gridRow={{ _: '3', sm: '2' }}
-    color="title"
+    gridArea={{ _: "2 / span 2", sm: "initial" }}
+    text="4xl"
     fontWeight="semibold"
     {...props}
   />
-)
+);

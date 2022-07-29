@@ -1,6 +1,6 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { x } from '@xstyled/styled-components'
+import React from "react";
+import { motion } from "framer-motion";
+import { x } from "@xstyled/styled-components";
 
 const Circle = (props) => (
   <x.div
@@ -12,7 +12,7 @@ const Circle = (props) => (
     borderColor="white"
     {...props}
   />
-)
+);
 
 export const Mouse = ({ children, ...props }) => (
   <x.div
@@ -27,7 +27,7 @@ export const Mouse = ({ children, ...props }) => (
     {children}
     <Circle />
   </x.div>
-)
+);
 
 export const MouseClick = (props) => (
   <Circle
@@ -38,4 +38,4 @@ export const MouseClick = (props) => (
     borderColor="secondary"
     {...props}
   />
-)
+);

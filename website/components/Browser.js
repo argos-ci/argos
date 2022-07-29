@@ -1,6 +1,6 @@
-import { x } from '@xstyled/styled-components'
-import { IoReload } from 'react-icons/io5'
-import { ControlButtons } from './ControlButtons'
+import { x } from "@xstyled/styled-components";
+import { IoReload } from "react-icons/io5";
+import { ControlButtons } from "./ControlButtons";
 
 const Header = (props) => (
   <x.div
@@ -12,7 +12,7 @@ const Header = (props) => (
     position="relative"
     {...props}
   />
-)
+);
 
 const SearchBar = ({ children, ...props }) => (
   <x.div
@@ -34,9 +34,9 @@ const SearchBar = ({ children, ...props }) => (
     {children}
     <x.div as={IoReload} w="14px" h="14px" mr="12px" />
   </x.div>
-)
+);
 
-const Body = (props) => <x.div p={2} {...props} />
+const Body = (props) => <x.div p={2} {...props} />;
 
 export const Browser = ({ children, closeButtonRef, ...props }) => {
   return (
@@ -55,5 +55,5 @@ export const Browser = ({ children, closeButtonRef, ...props }) => {
       </Header>
       <Body>{children}</Body>
     </x.div>
-  )
-}
+  );
+};

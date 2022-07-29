@@ -1,23 +1,23 @@
-import { x } from '@xstyled/styled-components'
-import { motion, useAnimation } from 'framer-motion'
-import { forwardRef, useRef, useState } from 'react'
+import { x } from "@xstyled/styled-components";
+import { motion, useAnimation } from "framer-motion";
+import { forwardRef, useRef, useState } from "react";
 import {
   ArgosApproveButton,
   ArgosCard,
   ArgosCardBody,
   ArgosCardHeader,
   ArgosCardTitle,
-} from '../Argos'
-import { Browser } from '../Browser'
-import { Mouse, MouseClick } from '../Mouse'
-import { MouseInitializer, useMouse } from '../MouseContext'
+} from "../Argos";
+import { Browser } from "../Browser";
+import { Mouse, MouseClick } from "../Mouse";
+import { MouseInitializer, useMouse } from "../MouseContext";
 import {
   Screenshot,
   ScreenshotContainer,
   ScreenshotDiff,
   ScreenshotLegend,
   ScreenshotThumb,
-} from '../Screenshot'
+} from "../Screenshot";
 import {
   CodeEditor,
   CodeEditorBody,
@@ -26,23 +26,23 @@ import {
   CodeEditorHeader,
   CodeEditorTab,
   useTyping,
-} from '../CodeEditor'
-import { GithubMergeStatus } from '@components/Github'
-import { IoGitBranch } from 'react-icons/io5'
-import { TextIcon } from '@components/TextIcon'
+} from "../CodeEditor";
+import { GithubMergeStatus } from "@components/Github";
+import { IoGitBranch } from "react-icons/io5";
+import { TextIcon } from "@components/TextIcon";
 
 const CODE_BUG = `.priceTag {
   background: #7e22ce;
   height: 13px;
-}`
+}`;
 
 const CODE_FIX = `.priceTag {
   background: #7e22ce;
-}`
+}`;
 
 function delay(ms) {
   // eslint-disable-next-line no-undef
-  return new Promise((resolve) => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 const Laser = (props) => (
@@ -58,90 +58,90 @@ const Laser = (props) => (
     initial={{ opacity: 0 }}
     variants={{
       show: { opacity: 1 },
-      scan: { top: '100%', transition: { duration: 2 } },
+      scan: { top: "100%", transition: { duration: 2 } },
       hide: { opacity: 0 },
       reset: { opacity: 0, top: 0 },
     }}
     {...props}
   />
-)
+);
 
 const Canvas = forwardRef((props, ref) => {
-  const { moveToRef, mouseAnimation, mouseClickAnimation } = useMouse()
+  const { moveToRef, mouseAnimation, mouseClickAnimation } = useMouse();
 
-  const githubAnimation = useAnimation()
-  const browserAnimation = useAnimation()
-  const codeEditorAnimation = useAnimation()
-  const laserAnimation = useAnimation()
-  const thumbAnimation = useAnimation()
+  const githubAnimation = useAnimation();
+  const browserAnimation = useAnimation();
+  const codeEditorAnimation = useAnimation();
+  const laserAnimation = useAnimation();
+  const thumbAnimation = useAnimation();
 
-  const codeEditorRef = useRef()
-  const githubButtonRef = useRef()
-  const closeBrowserButtonRef = useRef()
-  const argosApproveButtonRef = useRef()
+  const codeEditorRef = useRef();
+  const githubButtonRef = useRef();
+  const closeBrowserButtonRef = useRef();
+  const argosApproveButtonRef = useRef();
 
-  const diffScreenshotAnimation = useAnimation()
+  const diffScreenshotAnimation = useAnimation();
 
-  const [linesToTrim, setLinesToTrim] = useState()
-  const [githubStatus, setGithubStatus] = useState('pending')
-  const [approvedScreenshots, setApprovedScreenshots] = useState(false)
-  const [showFixedScreenshots, setShowFixedScreenshots] = useState(false)
+  const [linesToTrim, setLinesToTrim] = useState();
+  const [githubStatus, setGithubStatus] = useState("pending");
+  const [approvedScreenshots, setApprovedScreenshots] = useState(false);
+  const [showFixedScreenshots, setShowFixedScreenshots] = useState(false);
 
   const typedText = useTyping({
     text: CODE_BUG,
     linesToTrim,
     typingSpeed: 90,
     onSave: handleSaveCode,
-  })
-  const isTyping = typedText !== CODE_BUG && typedText !== CODE_FIX
+  });
+  const isTyping = typedText !== CODE_BUG && typedText !== CODE_FIX;
 
   async function animateScreenshots() {
-    await laserAnimation.start('show')
-    await laserAnimation.start('scan')
-    await laserAnimation.start('hide')
-    await diffScreenshotAnimation.start('show')
-    await thumbAnimation.start('show', { delay: 1.5, duration: 0.3 })
+    await laserAnimation.start("show");
+    await laserAnimation.start("scan");
+    await laserAnimation.start("hide");
+    await diffScreenshotAnimation.start("show");
+    await thumbAnimation.start("show", { delay: 1.5, duration: 0.3 });
   }
 
   async function resetScreenshotAnimation() {
-    await diffScreenshotAnimation.start('hide')
-    await laserAnimation.start('reset')
-    await thumbAnimation.start('hide')
+    await diffScreenshotAnimation.start("hide");
+    await laserAnimation.start("reset");
+    await thumbAnimation.start("hide");
   }
 
   async function failArgosAnimation() {
-    await githubAnimation.start('show')
-    await delay(2000)
-    setGithubStatus('error')
-    await moveToRef(githubButtonRef, { delay: 1 })
-    await browserAnimation.start('show')
-    await animateScreenshots()
-    await moveToRef(closeBrowserButtonRef, { delay: 2 })
-    await codeEditorAnimation.start('goForeground')
-    await githubAnimation.start('goBackground')
-    await browserAnimation.start('hide')
-    await resetScreenshotAnimation()
-    await moveToRef(codeEditorRef)
-    await delay(1500)
-    setLinesToTrim([2])
+    await githubAnimation.start("show");
+    await delay(2000);
+    setGithubStatus("error");
+    await moveToRef(githubButtonRef, { delay: 1 });
+    await browserAnimation.start("show");
+    await animateScreenshots();
+    await moveToRef(closeBrowserButtonRef, { delay: 2 });
+    await codeEditorAnimation.start("goForeground");
+    await githubAnimation.start("goBackground");
+    await browserAnimation.start("hide");
+    await resetScreenshotAnimation();
+    await moveToRef(codeEditorRef);
+    await delay(1500);
+    setLinesToTrim([2]);
   }
 
   async function successArgosAnimation() {
-    setShowFixedScreenshots(true)
-    await browserAnimation.start('show')
-    await animateScreenshots()
-    await thumbAnimation.start('show', { delay: 1, duration: 0.3 })
-    await moveToRef(argosApproveButtonRef, { delay: 1 })
-    setApprovedScreenshots(true)
-    setGithubStatus('success')
-    await codeEditorAnimation.start('hide')
-    await browserAnimation.start('goBackground', { delay: 1 })
-    await githubAnimation.start('goForeground')
+    setShowFixedScreenshots(true);
+    await browserAnimation.start("show");
+    await animateScreenshots();
+    await thumbAnimation.start("show", { delay: 1, duration: 0.3 });
+    await moveToRef(argosApproveButtonRef, { delay: 1 });
+    setApprovedScreenshots(true);
+    setGithubStatus("success");
+    await codeEditorAnimation.start("hide");
+    await browserAnimation.start("goBackground", { delay: 1 });
+    await githubAnimation.start("goForeground");
   }
 
   function handleSaveCode(savedCode) {
-    if (savedCode === CODE_BUG) return failArgosAnimation()
-    if (savedCode === CODE_FIX) return successArgosAnimation()
+    if (savedCode === CODE_BUG) return failArgosAnimation();
+    if (savedCode === CODE_FIX) return successArgosAnimation();
   }
 
   return (
@@ -172,7 +172,7 @@ const Canvas = forwardRef((props, ref) => {
         }}
       >
         <ArgosCard
-          borderColor={approvedScreenshots ? 'success' : 'warning'}
+          borderColor={approvedScreenshots ? "success" : "warning"}
           color="white"
           transition="opacity 1200ms 700ms"
           position="relative"
@@ -181,7 +181,7 @@ const Canvas = forwardRef((props, ref) => {
             <ArgosCardTitle>Car details page</ArgosCardTitle>
             <ArgosApproveButton
               ref={argosApproveButtonRef}
-              variant={approvedScreenshots ? 'success' : 'warning'}
+              variant={approvedScreenshots ? "success" : "warning"}
             />
           </ArgosCardHeader>
           <ArgosCardBody>
@@ -202,7 +202,7 @@ const Canvas = forwardRef((props, ref) => {
                 <Laser animate={laserAnimation} />
                 <Screenshot
                   tagColor="primary-a80"
-                  tagSize={showFixedScreenshots ? 'md' : 'sm'}
+                  tagSize={showFixedScreenshots ? "md" : "sm"}
                 />
               </x.div>
               <ScreenshotLegend>
@@ -223,7 +223,7 @@ const Canvas = forwardRef((props, ref) => {
               }}
             >
               <ScreenshotDiff
-                variant={showFixedScreenshots ? 'fixed' : 'bugged'}
+                variant={showFixedScreenshots ? "fixed" : "bugged"}
               />
               <ScreenshotThumb
                 as={motion.div}
@@ -294,13 +294,13 @@ const Canvas = forwardRef((props, ref) => {
         <MouseClick animate={mouseClickAnimation} />
       </Mouse>
     </x.div>
-  )
-})
+  );
+});
 
 export const Animation = (props) => {
-  const mouseAnimation = useAnimation()
-  const mouseClickAnimation = useAnimation()
-  const canvasRef = useRef()
+  const mouseAnimation = useAnimation();
+  const mouseClickAnimation = useAnimation();
+  const canvasRef = useRef();
 
   return (
     <MouseInitializer
@@ -310,5 +310,5 @@ export const Animation = (props) => {
     >
       <Canvas ref={canvasRef} {...props} />
     </MouseInitializer>
-  )
-}
+  );
+};

@@ -1,14 +1,14 @@
-import { forwardRef } from 'react'
-import { x } from '@xstyled/styled-components'
+import { forwardRef } from "react";
+import { x } from "@xstyled/styled-components";
 import {
   IoCheckmark,
   IoGitBranch,
   IoGitCommit,
   IoPulseOutline,
   IoTimeOutline,
-} from 'react-icons/io5'
-import { FaTimes } from 'react-icons/fa'
-import { TextIcon } from './TextIcon'
+} from "react-icons/io5";
+import { FaTimes } from "react-icons/fa";
+import { TextIcon } from "./TextIcon";
 
 export const ArgosCard = forwardRef((props, ref) => (
   <x.div
@@ -21,7 +21,7 @@ export const ArgosCard = forwardRef((props, ref) => (
     position="relative"
     {...props}
   />
-))
+));
 
 export const ArgosCardHeader = forwardRef((props, ref) => (
   <x.div
@@ -34,11 +34,11 @@ export const ArgosCardHeader = forwardRef((props, ref) => (
     p={2}
     {...props}
   />
-))
+));
 
 export const ArgosCardTitle = (props) => (
   <x.div fontSize="15px" color="secondary" fontWeight="semibold" {...props} />
-)
+);
 
 export const ArgosCardBody = forwardRef((props, ref) => (
   <x.div
@@ -51,12 +51,12 @@ export const ArgosCardBody = forwardRef((props, ref) => (
     gap={{ _: 2, sm: 4 }}
     {...props}
   />
-))
+));
 
 export const ArgosApproveButton = forwardRef(
-  ({ variant = 'success', ...props }, ref) => (
+  ({ variant = "success", ...props }, ref) => (
     <x.div
-      bg={variant === 'success' ? 'success' : 'warning'}
+      bg={variant === "success" ? "success" : "warning"}
       ref={ref}
       fontSize="14px"
       px="12px"
@@ -68,17 +68,17 @@ export const ArgosApproveButton = forwardRef(
       color="white"
       {...props}
     >
-      {variant === 'success' ? (
+      {variant === "success" ? (
         <>
           <x.div as={IoCheckmark} />
           Approved
         </>
       ) : (
-        'Mark as approved'
+        "Mark as approved"
       )}
     </x.div>
-  ),
-)
+  )
+);
 
 export const ArgosSummaryCard = (props) => (
   <ArgosCard borderColor="success" {...props}>
@@ -92,7 +92,7 @@ export const ArgosSummaryCard = (props) => (
         <TextIcon
           icon={FaTimes}
           color="success"
-          iconStyle={{ w: 3, h: 3, minW: 3, minH: 3, mt: '5px' }}
+          iconStyle={{ w: 3, h: 3, minW: 3, minH: 3, mt: "5px" }}
           w={5}
           mt={0}
         >
@@ -108,7 +108,7 @@ export const ArgosSummaryCard = (props) => (
         </x.div>
       </x.div>
 
-      <x.div display={{ _: 'none', sm: 'block' }} fontSize="sm">
+      <x.div display={{ _: "none", sm: "block" }} fontSize="sm">
         <TextIcon icon={IoPulseOutline} mt="1px" color="success">
           #5 success
         </TextIcon>
@@ -118,4 +118,4 @@ export const ArgosSummaryCard = (props) => (
       </x.div>
     </ArgosCardBody>
   </ArgosCard>
-)
+);

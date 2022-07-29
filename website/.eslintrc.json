@@ -1,8 +1,6 @@
 {
-  "extends": ["next/core-web-vitals", "prettier"],
+  "extends": ["next/core-web-vitals"],
   "rules": {
-    "no-unused-vars": "error",
-    "react/display-name": "off",
-    "no-undef": "error"
+    "react/display-name": "off"
   }
 }

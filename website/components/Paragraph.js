@@ -1,12 +1,12 @@
-import { x } from '@xstyled/styled-components'
+import { x } from "@xstyled/styled-components";
 
 export const Paragraph = (props) => (
   <x.div
     color="secondary"
     lineHeight="normal"
-    maxW={650}
     my={2}
     fontSize="18px"
+    maxW="3xl"
     {...props}
   />
-)
+);

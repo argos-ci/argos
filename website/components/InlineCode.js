@@ -1,4 +1,4 @@
-import { x } from '@xstyled/styled-components'
+import { x } from "@xstyled/styled-components";
 
 export const InlineCode = (props) => (
   <x.span
@@ -11,4 +11,4 @@ export const InlineCode = (props) => (
     borderRadius="sm"
     {...props}
   />
-)
+);

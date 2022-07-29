@@ -1,8 +1,8 @@
-import { x } from '@xstyled/styled-components'
-import { Image } from './Image'
-import { Link } from './Link'
-import { Navbar, NavbarSecondary } from './Navbar'
-import smoothCodeLogo from 'img/smooth-code-logo.png'
+import { x } from "@xstyled/styled-components";
+import { Image } from "./Image";
+import { Link } from "./Link";
+import { Navbar, NavbarSecondary } from "./Navbar";
+import smoothCodeLogo from "img/smooth-code-logo.png";
 
 export const AppFooter = (props) => (
   <x.footer backgroundColor="background-secondary" mt={24} {...props}>
@@ -18,9 +18,9 @@ export const AppFooter = (props) => (
       </x.div>
       <NavbarSecondary>
         <Link href="/terms">Terms</Link>
-        <Link href="/terms">Privacy</Link>
+        <Link href="/privacy">Privacy</Link>
         <Link href="/security">Security</Link>
       </NavbarSecondary>
     </Navbar>
   </x.footer>
-)
+);
