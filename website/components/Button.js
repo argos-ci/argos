@@ -1,49 +1,43 @@
-import styled, { th, x } from '@xstyled/styled-components'
-import { Button as AriakitButton } from 'ariakit/button'
+import styled, { system, th } from "@xstyled/styled-components";
 
-const BaseButton = styled(AriakitButton)`
+export const Button = styled.buttonBox`
   display: flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
   border-radius: md;
-  border-style: none;
   cursor: pointer;
-  gap: 1;
+  border: 0;
   padding: 2 4;
   color: white;
-  transition: 300ms;
+  transition: default;
+  transition-duration: 300ms;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
 
-  &:focus,
-  &:focus-visible,
-  &[data-focus-visible] {
-    outline: none;
-    outline-color: outline;
-  }
+  background-color: primary-700;
 
-  background-color: primary;
-
-  &:hover {
-    background: linear-gradient(
-      180deg,
-      ${th.color('primary-a50')},
-      ${th.color('primary-a40')}
-    );
-  }
-
+  &:hover,
   &:active {
-    background-color: primary-a10;
+    background-color: primary-800;
   }
 
-  &[aria-disabled='true'] {
-    opacity: 0.5;
+  &:focus {
+    outline: 0;
   }
-`
 
-export const Button = (props) => <x.div as={BaseButton} {...props} />
+  &:focus-visible {
+    ${system.apply({ ring: 2, ringColor: "primary-300-a50" })}
+  }
 
-export const BlackButton = styled(BaseButton)`
-  background: linear-gradient(${th.color('gray-600')}, ${th.color('gray-900')});
+  &:disabled {
+    opacity: 0.66;
+  }
+`;
+
+export const BlackButton = styled(Button)`
+  background: linear-gradient(${th.color("gray-600")}, ${th.color("gray-900")});
 
   &:hover {
     background: none;
@@ -53,4 +47,4 @@ export const BlackButton = styled(BaseButton)`
   &:active {
     background-color: background-dark;
   }
-`
+`;

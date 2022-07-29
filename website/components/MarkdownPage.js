@@ -1,24 +1,24 @@
-import { x } from '@xstyled/styled-components'
-import Head from 'next/head'
-import { AppNavbar } from 'components/Navbar'
-import { PageContainer } from '@components/PageContainer'
-import { MDXProvider } from '@mdx-js/react'
-import { Image } from '@components/Image'
-import { Code } from '@components/Code'
-import { AppFooter } from './Footer'
-import { InlineCode } from './InlineCode'
+import { x } from "@xstyled/styled-components";
+import Head from "next/head";
+import { AppNavbar } from "components/Navbar";
+import { PageContainer } from "@components/PageContainer";
+import { MDXProvider } from "@mdx-js/react";
+import { Image } from "@components/Image";
+import { Code } from "@components/Code";
+import { AppFooter } from "./Footer";
+import { InlineCode } from "./InlineCode";
 
 const components = {
   img: Image,
-  h1: (props) => <x.h1 fontSize="3xl" fontWeight="bold" mt={2} {...props} />,
-  h2: (props) => <x.h2 fontSize="2xl" fontWeight="bold" mt={8} {...props} />,
-  h3: (props) => <x.h3 fontSize="xl" fontWeight="semibold" my={5} {...props} />,
+  h1: (props) => <x.h1 text="4xl" fontWeight="bold" mt={2} {...props} />,
+  h2: (props) => <x.h2 text="2xl" fontWeight="bold" mt={8} {...props} />,
+  h3: (props) => <x.h3 text="xl" fontWeight="semibold" my={5} {...props} />,
   p: (props) => (
-    <x.p fontSize="md" lineHeight="snug" color="secondary" my={4} {...props} />
+    <x.p text="md" lineHeight="snug" color="secondary" my={4} {...props} />
   ),
   ul: (props) => (
     <x.ul
-      fontSize="md"
+      text="md"
       lineHeight="snug"
       my={4}
       pl={10}
@@ -31,13 +31,13 @@ const components = {
   li: (props) => <x.li my={3} {...props} />,
   code: Code,
   inlineCode: InlineCode,
-}
+};
 
 const Markdown = ({ children, ...props }) => (
   <MDXProvider components={components} {...props}>
     {children}
   </MDXProvider>
-)
+);
 
 export default function MarkdownPage({ title, children }) {
   return (
@@ -48,9 +48,9 @@ export default function MarkdownPage({ title, children }) {
       </Head>
       <AppNavbar />
       <Markdown>
-        <PageContainer>{children}</PageContainer>
+        <PageContainer pt={16}>{children}</PageContainer>
       </Markdown>
       <AppFooter />
     </>
-  )
+  );
 }

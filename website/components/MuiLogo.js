@@ -1,4 +1,4 @@
-import * as React from 'react'
+import * as React from "react";
 
 export const MuiLogo = (props) => (
   <svg
@@ -17,4 +17,4 @@ export const MuiLogo = (props) => (
       fill="#007FFF"
     />
   </svg>
-)
+);

@@ -1,9 +1,9 @@
-import { x } from '@xstyled/styled-components'
-import { IoLogoGithub } from 'react-icons/io5'
-import { Link } from 'components/Link'
-import { PageContainer } from '@components/PageContainer'
-import { HorizontalLogo } from '@components/HorizontalLogo'
-import { Button } from '@components/Button'
+import { x } from "@xstyled/styled-components";
+import { IoLogoGithub } from "react-icons/io5";
+import { Link } from "components/Link";
+import { PageContainer } from "@components/PageContainer";
+import { ArgosLogo } from "@components/ArgosLogo";
+import { Button } from "@components/Button";
 
 export const Navbar = ({ children, ...props }) => (
   <x.div>
@@ -18,25 +18,27 @@ export const Navbar = ({ children, ...props }) => (
       {children}
     </PageContainer>
   </x.div>
-)
+);
 
 export const NavbarSecondary = (props) => (
   <x.div display="flex" alignItems="center" gap={{ _: 4, sm: 8 }} {...props} />
-)
+);
 
 export const AppNavbar = () => (
   <x.div backgroundColor="background-secondary">
     <Navbar>
       <Link href="/">
-        <x.div as={HorizontalLogo} mt={1} ml={-2} width="100%" maxH="40px" />
+        <ArgosLogo height={32} />
       </Link>
       <NavbarSecondary>
-        <Link href="http://www.google.fr">
+        <Button
+          as="a"
+          href="https://github.com/login/oauth/authorize?scope=user:email&client_id=Iv1.d1a5403395ac817e"
+        >
           Login
-          <x.div as={IoLogoGithub} />
-        </Link>
-        <Button>Try now</Button>
+          <x.svg as={IoLogoGithub} ml={2} />
+        </Button>
       </NavbarSecondary>
     </Navbar>
   </x.div>
-)
+);

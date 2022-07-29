@@ -1,8 +1,8 @@
-import { forwardRef } from 'react'
-import { x } from '@xstyled/styled-components'
+import { forwardRef } from "react";
+import { x } from "@xstyled/styled-components";
 
 export const ControlButton = forwardRef(
-  ({ variant = 'success', ...props }, ref) => (
+  ({ variant = "success", ...props }, ref) => (
     <x.div
       w="12px"
       h="12px"
@@ -11,8 +11,8 @@ export const ControlButton = forwardRef(
       ref={ref}
       {...props}
     />
-  ),
-)
+  )
+);
 
 export const ControlButtons = ({ closeButtonRef, ...props }) => (
   <x.div
@@ -28,4 +28,4 @@ export const ControlButtons = ({ closeButtonRef, ...props }) => (
     <ControlButton variant="warning" />
     <ControlButton variant="success" />
   </x.div>
-)
+);

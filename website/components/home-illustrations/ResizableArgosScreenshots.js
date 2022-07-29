@@ -1,28 +1,23 @@
-import { Browser } from '@components/Browser'
-import { x } from '@xstyled/styled-components'
-import { forwardRef, useRef, useState } from 'react'
+import { Browser } from "@components/Browser";
+import { x } from "@xstyled/styled-components";
+import { forwardRef, useRef, useState } from "react";
 import {
   IoDesktopOutline,
   IoLaptopOutline,
   IoPhonePortraitOutline,
   IoTabletLandscapeOutline,
   IoTabletPortraitOutline,
-} from 'react-icons/io5'
+} from "react-icons/io5";
 import {
   ArgosCard,
   ArgosCardBody,
   ArgosCardHeader,
   ArgosCardTitle,
-} from '../Argos'
-import { Screenshot, ScreenshotDiff } from '../Screenshot'
+} from "../Argos";
+import { Screenshot, ScreenshotDiff } from "../Screenshot";
 
-const ButtonIcon = (props) => (
-  <x.div w="auto" h="34px" position="absolute" top={0} {...props} />
-)
-
-const ResolutionButton = ({ active, value, onClick, ...props }) => (
-  <x.div
-    onClick={() => onClick(value)}
+const ResolutionButton = ({ active, label, icon: Icon, ...props }) => (
+  <x.button
     display="flex"
     flexDirection="column"
     alignItems="center"
@@ -31,66 +26,64 @@ const ResolutionButton = ({ active, value, onClick, ...props }) => (
     gap={3}
     position="relative"
     borderRadius="md"
-    h="80px"
     p={2}
     whiteSpace="nowrap"
-    color={active ? 'white' : 'secondary'}
-    transition="300ms"
+    transition
     cursor="pointer"
+    bg="transparent"
+    color={
+      active
+        ? "white"
+        : { _: "blue-gray-500", focus: "blue-gray-400", hover: "blue-gray-400" }
+    }
+    outline={{ focus: "none" }}
     {...props}
-  />
-)
+  >
+    <Icon size={44} />
+    <div>{label}</div>
+  </x.button>
+);
 
 const ResolutionSelector = ({ resolution, onChange, ...props }) => (
-  <x.div overflowX="auto" pb={1} ml={-2} {...props}>
-    <x.div mt={2} display="flex" gap={6} alignItems="center">
+  <x.div overflowX="auto" {...props}>
+    <x.div mt={2} display="flex" gap={8} alignItems="center">
       <ResolutionButton
-        value={140}
         active={resolution === 140}
-        onClick={onChange}
-      >
-        <ButtonIcon as={IoPhonePortraitOutline} mt="8px" />
-        <x.div>Mobile</x.div>
-      </ResolutionButton>
+        onClick={() => onChange(140)}
+        icon={IoPhonePortraitOutline}
+        label="Mobile"
+      />
 
       <ResolutionButton
-        value={180}
         active={resolution === 180}
-        onClick={onChange}
-      >
-        <ButtonIcon as={IoTabletPortraitOutline} mt="8px" />
-        <x.div>Tablet</x.div>
-      </ResolutionButton>
+        onClick={() => onChange(180)}
+        icon={IoTabletPortraitOutline}
+        label="Tablet"
+      />
 
       <ResolutionButton
-        value={190}
         active={resolution === 190}
-        onClick={onChange}
-      >
-        <ButtonIcon as={IoTabletLandscapeOutline} mt="4px" />
-        <x.div>Landscape tablet</x.div>
-      </ResolutionButton>
+        onClick={() => onChange(190)}
+        icon={IoTabletLandscapeOutline}
+        label="Landscape tablet"
+      />
 
       <ResolutionButton
-        value={200}
         active={resolution === 200}
-        onClick={onChange}
-      >
-        <ButtonIcon as={IoLaptopOutline} h="50px" />
-        <x.div>Desktop</x.div>
-      </ResolutionButton>
+        onClick={() => onChange(200)}
+        icon={IoLaptopOutline}
+        label="Desktop"
+      />
 
       <ResolutionButton
-        value={260}
         active={resolution === 260}
-        onClick={onChange}
-      >
-        <ButtonIcon as={IoDesktopOutline} h="43px" mt="4px" />
-        <x.div>Wide screen</x.div>
-      </ResolutionButton>
+        onClick={() => onChange(260)}
+        icon={IoDesktopOutline}
+        label="Wide screen"
+      />
     </x.div>
   </x.div>
-)
+);
 
 const ArgosScreenshots = forwardRef(
   ({ screenshotWidth, title, ...props }, ref) => (
@@ -106,50 +99,50 @@ const ArgosScreenshots = forwardRef(
         </ArgosCardBody>
       </x.div>
     </x.div>
-  ),
-)
+  )
+);
 
 export const ResizableArgosScreenshots = (props) => {
-  const [resolution, setResolution] = useState(140)
+  const [resolution, setResolution] = useState(140);
 
-  const argosRef = useRef()
-  const mobileScreenshotsRef = useRef()
-  const tabletScreenshotsRef = useRef()
-  const landscapeTabletScreenshotsRef = useRef()
-  const desktopScreenshotsRef = useRef()
-  const wideScreenScreenshotsRef = useRef()
+  const argosRef = useRef();
+  const mobileScreenshotsRef = useRef();
+  const tabletScreenshotsRef = useRef();
+  const landscapeTabletScreenshotsRef = useRef();
+  const desktopScreenshotsRef = useRef();
+  const wideScreenScreenshotsRef = useRef();
 
   function scrollToScreenshots(screenshotsRef) {
     argosRef.current.scrollTo({
       top: screenshotsRef.current.offsetTop,
-      behavior: 'smooth',
-    })
+      behavior: "smooth",
+    });
   }
 
   function getScreenshotsResolutionRef(resolution) {
     switch (resolution) {
       case 140:
-        scrollToScreenshots(mobileScreenshotsRef)
-        break
+        scrollToScreenshots(mobileScreenshotsRef);
+        break;
       case 180:
-        scrollToScreenshots(tabletScreenshotsRef)
-        break
+        scrollToScreenshots(tabletScreenshotsRef);
+        break;
       case 190:
-        scrollToScreenshots(landscapeTabletScreenshotsRef)
-        break
+        scrollToScreenshots(landscapeTabletScreenshotsRef);
+        break;
       case 200:
-        scrollToScreenshots(desktopScreenshotsRef)
-        break
+        scrollToScreenshots(desktopScreenshotsRef);
+        break;
       case 260:
-        scrollToScreenshots(wideScreenScreenshotsRef)
+        scrollToScreenshots(wideScreenScreenshotsRef);
       default:
-        break
+        break;
     }
   }
 
   function handleChange(resolution) {
-    getScreenshotsResolutionRef(resolution)
-    setResolution(resolution)
+    getScreenshotsResolutionRef(resolution);
+    setResolution(resolution);
   }
 
   return (
@@ -157,9 +150,9 @@ export const ResizableArgosScreenshots = (props) => {
       <ResolutionSelector
         resolution={resolution}
         onChange={handleChange}
-        mb={3}
+        mb={6}
       />
-      <Browser maxW="850">
+      <Browser maxW="3xl">
         <ArgosCard
           borderColor="success"
           display="flex"
@@ -198,5 +191,5 @@ export const ResizableArgosScreenshots = (props) => {
         </ArgosCard>
       </Browser>
     </x.div>
-  )
-}
+  );
+};

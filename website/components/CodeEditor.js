@@ -1,30 +1,30 @@
-import { x } from '@xstyled/styled-components'
-import { useAnimationFrame } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
-import { FaTimes } from 'react-icons/fa'
-import { Code } from './Code'
-import { ControlButtons } from './ControlButtons'
+import { x } from "@xstyled/styled-components";
+import { useAnimationFrame } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { FaTimes } from "react-icons/fa";
+import { Code } from "./Code";
+import { ControlButtons } from "./ControlButtons";
 
 function trimLastChar(text, linesToTrim = []) {
-  const lines = text.split('\n')
-  let lineIndex = lines.length - 1
+  const lines = text.split("\n");
+  let lineIndex = lines.length - 1;
 
   while (lineIndex > -1) {
     if (linesToTrim.includes(lineIndex) && !lines[lineIndex].match(/^\s+$/)) {
       return lines
         .map((line, index) => (index === lineIndex ? line.slice(0, -1) : line))
-        .join('\n')
+        .join("\n");
     }
-    lineIndex -= 1
+    lineIndex -= 1;
   }
-  return text
+  return text;
 }
 
 const trimLines = (text, lineIndexes) =>
   text
-    .split('\n')
+    .split("\n")
     .filter((_, index) => !lineIndexes.includes(index))
-    .join('\n')
+    .join("\n");
 
 export const useTyping = ({
   text,
@@ -32,45 +32,45 @@ export const useTyping = ({
   typingSpeed = 90,
   onSave,
 }) => {
-  let lastSavedTime = useRef(0)
-  const callbackTriggered = useRef(false)
+  let lastSavedTime = useRef(0);
+  const callbackTriggered = useRef(false);
 
-  const [typedText, setTypedText] = useState('')
+  const [typedText, setTypedText] = useState("");
 
   const isFinishTyping = (formattedCode) =>
-    formattedCode === trimLines(text, linesToTrim)
-  const isNextCharTime = (time) => time - lastSavedTime.current >= typingSpeed
+    formattedCode === trimLines(text, linesToTrim);
+  const isNextCharTime = (time) => time - lastSavedTime.current >= typingSpeed;
 
   useEffect(() => {
     if (linesToTrim.length > 0) {
-      callbackTriggered.current = false
+      callbackTriggered.current = false;
     }
-  }, [linesToTrim])
+  }, [linesToTrim]);
 
   useAnimationFrame((time) => {
-    lastSavedTime.current ||= time
-    const formattedCode = typedText.replaceAll(/\n\s*\n/g, '\n')
-    if (isFinishTyping(formattedCode) && callbackTriggered.current) return
+    lastSavedTime.current ||= time;
+    const formattedCode = typedText.replaceAll(/\n\s*\n/g, "\n");
+    if (isFinishTyping(formattedCode) && callbackTriggered.current) return;
     if (isFinishTyping(formattedCode) && !callbackTriggered.current) {
-      callbackTriggered.current = true
-      setTypedText(formattedCode)
-      return setTimeout(() => onSave(formattedCode), 800)
+      callbackTriggered.current = true;
+      setTypedText(formattedCode);
+      return setTimeout(() => onSave(formattedCode), 800);
     }
 
     if (isNextCharTime(time)) {
-      lastSavedTime.current = time
+      lastSavedTime.current = time;
       return linesToTrim.length === 0
         ? setTypedText((prev) => `${prev}${text[prev.length]}`)
-        : setTypedText((prev) => trimLastChar(prev, linesToTrim))
+        : setTypedText((prev) => trimLastChar(prev, linesToTrim));
     }
-  })
+  });
 
-  return typedText
-}
+  return typedText;
+};
 
 export const CodeEditorCloseTabIcon = (props) => (
   <x.div as={FaTimes} w="8px" {...props} />
-)
+);
 
 export const CodeEditorEditingTabIcon = (props) => (
   <x.div
@@ -80,7 +80,7 @@ export const CodeEditorEditingTabIcon = (props) => (
     h="8px"
     {...props}
   />
-)
+);
 
 export const CodeEditorTab = ({ children, active = false, ...props }) => {
   return (
@@ -99,13 +99,13 @@ export const CodeEditorTab = ({ children, active = false, ...props }) => {
       mb="-10px"
       ml="80px"
       transition="1000ms"
-      color={active ? 'white' : 'border'}
+      color={active ? "white" : "border"}
       {...props}
     >
       {children}
     </x.div>
-  )
-}
+  );
+};
 
 export const CodeEditorHeader = ({ children, ...props }) => (
   <x.div
@@ -121,7 +121,7 @@ export const CodeEditorHeader = ({ children, ...props }) => (
     <ControlButtons />
     {children}
   </x.div>
-)
+);
 
 const RowNumbers = ({ length = 20, ...props }) => (
   <x.div
@@ -139,7 +139,7 @@ const RowNumbers = ({ length = 20, ...props }) => (
       <div key={i}>{i + 1}</div>
     ))}
   </x.div>
-)
+);
 
 export const CodeEditorBody = ({ children, ...props }) => (
   <x.div
@@ -155,7 +155,7 @@ export const CodeEditorBody = ({ children, ...props }) => (
       {children}
     </Code>
   </x.div>
-)
+);
 
 export const CodeEditor = ({ children, ...props }) => (
   <x.div
@@ -171,4 +171,4 @@ export const CodeEditor = ({ children, ...props }) => (
   >
     {children}
   </x.div>
-)
+);
