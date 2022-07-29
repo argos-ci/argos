@@ -30,3 +30,7 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# E2E screenshots
+/screenshots/*
+

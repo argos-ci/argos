@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "export": "next export",
+    "start": "next start",
     "lint": "next lint",
+    "cypress": "cypress run --e2e --browser chrome",
     "format": "prettier --write ."
   },
   "dependencies": {
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^4.13.1",
+    "argos-cli": "^0.3.3",
     "cypress": "^10.3.1",
     "eslint": "^8.20.0",
     "eslint-config-next": "^12.2.3",
