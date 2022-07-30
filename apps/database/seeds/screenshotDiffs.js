@@ -1,4 +1,4 @@
-exports.seed = knex =>
+exports.seed = (knex) =>
   knex('screenshot_diffs')
     .delete()
     .then(() =>
@@ -77,7 +77,7 @@ exports.seed = knex =>
             score: 0.3,
             jobStatus: 'complete',
             validationStatus: 'unknown',
-            s3Id: 'diff6.png',
+            s3Id: '2beb2f76-6e25-45be-8d4d-45813583002c',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },

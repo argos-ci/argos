@@ -103,7 +103,7 @@ yarn setup
 You can fill the database with some development data with the following command:
 
 ```sh
-cd apps/database && yarn db:truncate && yarn db:seed
+yarn workspace @argos-ci/database db:truncate && yarn workspace @argos-ci/database db:seed
 ```
 
 ## Develop
@@ -147,7 +147,7 @@ yarn db:migrate:latest
 You can reset the test database using:
 
 ```sh
-NODE_ENV=test yarn db:reset
+NODE_ENV=test yarn workspace @argos-ci/database db:reset
 ```
 
 ## Coding style
