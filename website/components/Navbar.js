@@ -6,7 +6,7 @@ import { ArgosLogo } from "@components/ArgosLogo";
 import { Button } from "@components/Button";
 
 export const Navbar = ({ children, ...props }) => (
-  <x.div>
+  <x.nav>
     <PageContainer
       h="70px"
       display="flex"
@@ -17,7 +17,7 @@ export const Navbar = ({ children, ...props }) => (
     >
       {children}
     </PageContainer>
-  </x.div>
+  </x.nav>
 );
 
 export const NavbarSecondary = (props) => (
@@ -25,7 +25,7 @@ export const NavbarSecondary = (props) => (
 );
 
 export const AppNavbar = () => (
-  <x.div backgroundColor="background-secondary">
+  <x.div bg="background-secondary">
     <Navbar>
       <Link href="/">
         <ArgosLogo height={32} />

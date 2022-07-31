@@ -2,7 +2,7 @@
 
 ## Report
 
-If you would like to report a vulnerability, or have any security concerns with a Argos-CI product, please e-mail [contact@smooth-code.com](mailto:contact@smooth-code.com).
+If you would like to report a vulnerability, or have any security concerns with a Argos product, please e-mail [contact@argos-ci.com](mailto:contact@argos-ci.com).
 
 When disclosing a vulnerability, please include a proof of concept, a list of any tools used (including versions), and the output of any tools used.
 
