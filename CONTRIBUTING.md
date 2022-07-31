@@ -76,7 +76,7 @@ TEST_GITHUB_USER_ACCESS_TOKEN=
 
 ```
 # Argos
-127.0.0.1 www.argos-ci.dev
+127.0.0.1 app.argos-ci.dev
 127.0.0.1 api.argos-ci.dev
 ```
 

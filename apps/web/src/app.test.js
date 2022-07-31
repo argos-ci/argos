@@ -161,7 +161,7 @@ describe('app routes', () => {
           jobStatus: 'pending',
           number: 1,
           repositoryId: repository.id,
-          buildUrl: `http://www.test.argos-ci.com/callemall/material-ui/builds/${res.body.build.number}`,
+          buildUrl: `http://app.test.argos-ci.com/callemall/material-ui/builds/${res.body.build.number}`,
         })
         expect(
           repository.builds[0].compareScreenshotBucket.screenshots[0].name,
@@ -218,7 +218,7 @@ describe('app routes', () => {
           repositoryId: repository.id,
           batchCount: 1,
           externalId: 'foobar',
-          buildUrl: `http://www.test.argos-ci.com/callemall/material-ui/builds/${res.body.build.number}`,
+          buildUrl: `http://app.test.argos-ci.com/callemall/material-ui/builds/${res.body.build.number}`,
         })
         expect(
           repository.builds[0].compareScreenshotBucket.screenshots[0].name,

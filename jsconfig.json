@@ -3,5 +3,5 @@
     "target": "es2020",
     "module": "es2020"
   },
-  "include": ["node_modules/@argos-ci/**/*"]
+  "include": ["apps/**/*", "node_modules/@argos-ci/**/*"]
 }

@@ -94,7 +94,7 @@ module.exports = {
         devServer: {
           historyApiFallback: true,
           https: true,
-          host: 'www.argos-ci.dev',
+          host: 'app.argos-ci.dev',
           key: fs.readFileSync(
             path.join(__dirname, '../../_wildcard.argos-ci.dev-key.pem'),
           ),
@@ -113,7 +113,7 @@ module.exports = {
           },
           proxy: {
             '**': {
-              target: `https://www.argos-ci.dev:${config.get('server.port')}`,
+              target: `https://app.argos-ci.dev:${config.get('server.port')}`,
               secure: false,
             },
           },
