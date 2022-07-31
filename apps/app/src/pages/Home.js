@@ -21,7 +21,6 @@ import {
   FadeLink,
   Text,
 } from '../components'
-import ProductInfo from './ProductInfo'
 import { Loader } from '../components/Loader'
 
 const RepositoryList = styled.ul`
@@ -133,10 +132,25 @@ function Owners({ data: { owners } }) {
   )
 }
 
+const RedirectToWww = () => {
+  React.useEffect(() => {
+    window.location = 'https://www.argos-ci.com'
+  }, [])
+  return null
+}
+
 export function Home() {
   const user = useUser()
   if (!user) {
-    return <ProductInfo />
+    if (process.env.NODE_ENV !== 'production') {
+      return (
+        <Container textAlign="center" my={4}>
+          Not logged in, in production you would be redirected to
+          www.argos-ci.com.
+        </Container>
+      )
+    }
+    return <RedirectToWww />
   }
 
   if (!user.installations.length && !isUserSyncing(user)) {
