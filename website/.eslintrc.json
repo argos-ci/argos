@@ -1,6 +1,7 @@
 {
   "extends": ["next/core-web-vitals"],
   "rules": {
-    "react/display-name": "off"
+    "react/display-name": "off",
+    "no-unused-vars": "error"
   }
 }

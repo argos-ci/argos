@@ -1,11 +1,9 @@
-import { x } from "@xstyled/styled-components";
+import styled, { x } from "@xstyled/styled-components";
 import Head from "next/head";
-import { AppNavbar } from "components/Navbar";
 import { PageContainer } from "@components/PageContainer";
 import { MDXProvider } from "@mdx-js/react";
 import { Image } from "@components/Image";
 import { Code } from "@components/Code";
-import { AppFooter } from "./Footer";
 import { InlineCode } from "./InlineCode";
 
 const components = {
@@ -33,24 +31,28 @@ const components = {
   inlineCode: InlineCode,
 };
 
-const Markdown = ({ children, ...props }) => (
-  <MDXProvider components={components} {...props}>
-    {children}
-  </MDXProvider>
-);
+const MarkdownStyle = styled.div`
+  a {
+    color: primary-400;
+    text-decoration: none;
+
+    &:hover {
+      color: primary-100;
+    }
+  }
+`;
 
 export default function MarkdownPage({ title, children }) {
   return (
     <>
       <Head>
         <title>{title}</title>
-        <meta name="viewport" content="initial-scale=1.0, width=device-width" />
       </Head>
-      <AppNavbar />
-      <Markdown>
-        <PageContainer pt={16}>{children}</PageContainer>
-      </Markdown>
-      <AppFooter />
+      <MDXProvider components={components}>
+        <MarkdownStyle>
+          <PageContainer pt={16}>{children}</PageContainer>
+        </MarkdownStyle>
+      </MDXProvider>
     </>
   );
 }

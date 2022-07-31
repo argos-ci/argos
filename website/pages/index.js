@@ -5,8 +5,6 @@ import {
   IoCheckmarkDoneOutline,
   IoShieldOutline,
 } from "react-icons/io5";
-import Head from "next/head";
-import { AppNavbar } from "components/Navbar";
 import {
   Section,
   SectionColoredTitle,
@@ -21,39 +19,10 @@ import { ResizableArgosScreenshots } from "@components/home-illustrations/Resiza
 import { CompareTestCode } from "@components/home-illustrations/CompareTestCode";
 import { AboveTheFold } from "@components/AboveTheFold";
 import { GithubClickableStatus } from "@components/home-illustrations/GithubClickableStatus";
-import { AppFooter } from "@components/Footer";
 
 export default function Home() {
   return (
     <>
-      <Head>
-        <title>Argos - Automate visual testing in your CI</title>
-        <meta
-          name="description"
-          content="Argos is a visual testing solution that fits in your workflow to avoid visual regression."
-        />
-        <meta name="viewport" content="initial-scale=1.0, width=device-width" />
-        <link
-          rel="apple-touch-icon"
-          sizes="180x180"
-          href="/apple-touch-icon.png"
-        />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="32x32"
-          href="/favicon-32x32.png"
-        />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="16x16"
-          href="/favicon-16x16.png"
-        />
-      </Head>
-
-      <AppNavbar />
-
       <Section
         backgroundImage="gradient-to-t"
         gradientTo="body-background"
@@ -129,8 +98,6 @@ export default function Home() {
           <ResizableArgosScreenshots mt={8} />
         </PageContainer>
       </Section>
-
-      <AppFooter />
     </>
   );
 }
