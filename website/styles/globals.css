@@ -7,14 +7,11 @@ body {
   color: white;
   background-color: #151a2d;
   -webkit-font-smoothing: antialiased;
-  height: 100%;
 }
 
 #__next {
-  height: 100%;
   display: grid;
-  grid-template: 
-    "header"
-    "main" 1fr
-    "footer";
+  grid-template-rows: min-content auto min-content;
+  grid-template-columns: minmax(200px, 1fr);
+  height: 100vh;
 }
