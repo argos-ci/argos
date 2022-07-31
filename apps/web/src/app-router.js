@@ -47,7 +47,11 @@ apolloServer.applyMiddleware({ app: router })
 
 router.get('/auth/logout', (req, res) => {
   req.logout()
-  res.redirect('/')
+  if (config.get('env') !== 'production') {
+    res.redirect('/')
+  } else {
+    res.redirect('https://www.argos-ci.com/')
+  }
 })
 
 router.get('*', rendering())
