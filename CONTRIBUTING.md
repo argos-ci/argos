@@ -85,6 +85,7 @@ TEST_GITHUB_USER_ACCESS_TOKEN=
 Install [mkcert](https://github.com/FiloSottile/mkcert) and type the following command:
 
 ```
+mkcert -install
 mkcert *.argos-ci.dev
 ```
 
