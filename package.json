@@ -17,7 +17,7 @@
   },
   "repository": "github:argos-ci/argos",
   "engines": {
-    "node": "12"
+    "node": "16"
   },
   "dependencies": {
     "@sentry/cli": "^1.52.0"

@@ -1,8 +1,8 @@
 version: '3'
 services:
   postgres:
-    # Last time I have checked, production is running 9.6.8
-    image: postgres:12-alpine
+    # Last time I have checked, production is running 13.7
+    image: postgres:13-alpine
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
     ports:
@@ -10,7 +10,7 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
   rabbitmq:
-    # Last time I have checked, production is running 3.5.8
+    # Last time I have checked, production is running 3.9.16
     image: rabbitmq:3-alpine
     ports:
       - '15672:15672'
@@ -19,8 +19,8 @@ services:
       - './rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins'
   redis:
     command: redis-server --appendonly yes
-    # Last time I have checked, production is running 3.2.4
-    image: redis:3-alpine
+    # Last time I have checked, production is running 6.3.2
+    image: redis:6-alpine
     ports:
       - '6379:6379'
     volumes:

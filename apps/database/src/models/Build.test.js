@@ -217,7 +217,7 @@ describe('models/Build', () => {
       const build = await factory.create('Build')
       const url = await build.getUrl()
       expect(url).toMatch(
-        `http://www.test.argos-ci.com/${build.repository.organization.login}/${build.repository.name}/builds/${build.number}`,
+        `http://app.test.argos-ci.com/${build.repository.organization.login}/${build.repository.name}/builds/${build.number}`,
       )
     })
   })

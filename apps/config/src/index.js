@@ -27,11 +27,11 @@ const config = convict({
       env: 'API_SUBDOMAIN',
     },
   },
-  www: {
+  app: {
     subdomain: {
       format: String,
-      default: 'www.dev',
-      env: 'WWW_SUBDOMAIN',
+      default: 'app.dev',
+      env: 'APP_SUBDOMAIN',
     },
   },
   server: {
@@ -49,7 +49,7 @@ const config = convict({
     url: {
       doc: 'The user public url',
       format: String,
-      default: 'https://www.argos-ci.dev:4002',
+      default: 'https://app.argos-ci.dev:4002',
       env: 'SERVER_URL',
     },
     sessionSecret: {
@@ -198,7 +198,7 @@ const config = convict({
       host: {
         doc: 'Postgres user',
         format: String,
-        default: 'localhost',
+        default: '127.0.0.1',
       },
       user: {
         doc: 'Postgres user',

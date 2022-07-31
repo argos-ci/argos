@@ -6,9 +6,8 @@ import compress from 'compression'
 import morgan from 'morgan'
 import helmet from 'helmet'
 import ejs from 'ejs'
-// import subdomain from 'express-subdomain'
 import config from '@argos-ci/config'
-import www from './www'
+import appRouter from './app-router'
 import api from './api'
 
 const app = express()
@@ -86,13 +85,6 @@ app.use(
   }),
 )
 
-app.use(api, www)
-
-// if (config.get('www.subdomain') === config.get('api.subdomain')) {
-//   app.use(api, www)
-// } else {
-//   app.use(subdomain(config.get('api.subdomain'), api))
-//   app.use(subdomain(config.get('www.subdomain'), www))
-// }
+app.use(api, appRouter)
 
 export default app
