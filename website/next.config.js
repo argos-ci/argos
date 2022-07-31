@@ -22,7 +22,7 @@ module.exports = {
         source: "/:organization/:repository/builds/:path*",
         destination:
           "https://app.argos-ci.com/:organization/:repository/builds/:path*",
-        permanent: true,
+        permanent: false,
       },
     ];
   },
