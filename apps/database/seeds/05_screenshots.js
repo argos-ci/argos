@@ -1,4 +1,4 @@
-exports.seed = knex =>
+exports.seed = (knex) =>
   knex('screenshots')
     .delete()
     .then(() =>
@@ -56,7 +56,7 @@ exports.seed = knex =>
             id: '7',
             screenshotBucketId: '6',
             name: 'ListItem_PrimaryActionCheckboxListItem.png',
-            s3Id: '7.png',
+            s3Id: '05a852863ea417e63f0d8455c16f2add',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
@@ -64,7 +64,7 @@ exports.seed = knex =>
             id: '8',
             screenshotBucketId: '6',
             name: 'ListItem_PrimaryActionCheckboxListItem.png',
-            s3Id: '8.png',
+            s3Id: 'e533d40fea973a0e9a4d191073128118',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
