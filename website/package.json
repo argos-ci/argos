@@ -8,7 +8,8 @@
     "export": "next export",
     "start": "next start",
     "lint": "next lint",
-    "cypress": "cypress run --e2e --browser chrome",
+    "cypress:run": "cypress run --e2e --browser chrome",
+    "cypress:open": "cypress open --e2e --browser chrome",
     "format": "prettier --write ."
   },
   "dependencies": {
