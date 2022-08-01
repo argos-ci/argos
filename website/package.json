@@ -23,6 +23,7 @@
     "react": "^18.0.2",
     "react-dom": "^18.0.2",
     "react-icons": "^4.4.0",
+    "react-syntax-highlighter": "^15.5.0",
     "styled-components": "^5.3.5"
   },
   "devDependencies": {

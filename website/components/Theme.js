@@ -28,7 +28,7 @@ export const theme = {
     success: th.color("green-500"),
 
     "body-background": "#151a2d",
-    "background-secondary": "#001320",
+    "background-secondary": "#011627",
     "background-dark": th.color("gray-900"),
 
     title: th.color("blue-gray-100"),

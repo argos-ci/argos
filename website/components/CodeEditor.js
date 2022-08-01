@@ -141,7 +141,7 @@ const RowNumbers = ({ length = 20, ...props }) => (
   </x.div>
 );
 
-export const CodeEditorBody = ({ children, ...props }) => (
+export const CodeEditorBody = ({ children, language, ...props }) => (
   <x.div
     display="flex"
     fontSize="15px"
@@ -151,7 +151,7 @@ export const CodeEditorBody = ({ children, ...props }) => (
     {...props}
   >
     <RowNumbers length={20} />
-    <Code p="13px 12px 12px" color="white" overflow="auto">
+    <Code p="13px 12px 12px" overflow="auto" language={language}>
       {children}
     </Code>
   </x.div>

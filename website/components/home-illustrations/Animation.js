@@ -263,7 +263,7 @@ const Canvas = forwardRef((props, ref) => {
               )}
             </CodeEditorTab>
           </CodeEditorHeader>
-          <CodeEditorBody>{typedText}</CodeEditorBody>
+          <CodeEditorBody language="css">{typedText}</CodeEditorBody>
         </CodeEditor>
       </x.div>
 

@@ -42,14 +42,16 @@ export const CompareTestCode = (props) => (
       <CodeEditorHeader>
         <CodeEditorTab active="true">details-page-old.test.js</CodeEditorTab>
       </CodeEditorHeader>
-      <CodeEditorBody h="370px">{oldCode}</CodeEditorBody>
+      <CodeEditorBody h="370px" language="javascript">
+        {oldCode}
+      </CodeEditorBody>
     </CodeEditor>
     <x.div as={Versus} w="100px" my="20px" color="white" />
     <CodeEditor flex={{ _: "auto", md: 1 }} w={1} h="160px">
       <CodeEditorHeader>
         <CodeEditorTab active="true">details-page.test.js</CodeEditorTab>
       </CodeEditorHeader>
-      <CodeEditorBody>{newCode}</CodeEditorBody>
+      <CodeEditorBody language="javascript">{newCode}</CodeEditorBody>
     </CodeEditor>
   </x.div>
 );
