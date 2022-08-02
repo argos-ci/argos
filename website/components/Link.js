@@ -1,21 +1,19 @@
-import styled from "@xstyled/styled-components";
+import { x } from "@xstyled/styled-components";
 import NextLink from "next/link";
 
-const InnerLink = styled.box`
-  cursor: pointer;
-  color: white;
-  transition: 300ms;
-  display: flex;
-  align-items: center;
-  gap: 1;
-
-  &:hover {
-    color: secondary;
-  }
-`;
-
 export const Link = ({ children, href, ...props }) => (
-  <NextLink href={href}>
-    <InnerLink {...props}>{children}</InnerLink>
+  <NextLink href={href} passHref>
+    <x.a
+      cursor="pointer"
+      transition="300ms"
+      display="flex"
+      alignItems="center"
+      gap={1}
+      textDecoration="none"
+      color={{ _: "white", hover: "secondary" }}
+      {...props}
+    >
+      {children}
+    </x.a>
   </NextLink>
 );

@@ -2,7 +2,7 @@ import * as React from "react";
 import { x } from "@xstyled/styled-components";
 
 export const ArgosLogo = (props) => (
-  <x.svg viewBox="0 0 943 193" {...props}>
+  <x.svg viewBox="40 0 943 193" {...props}>
     <title>Argos</title>
     <defs>
       <radialGradient
