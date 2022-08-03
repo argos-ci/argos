@@ -6,11 +6,8 @@ export const Link = ({ children, href, ...props }) => (
     <x.a
       cursor="pointer"
       transition="300ms"
-      display="flex"
-      alignItems="center"
-      gap={1}
       textDecoration="none"
-      color={{ _: "white", hover: "secondary" }}
+      color={{ _: "white", hover: "on-light" }}
       {...props}
     >
       {children}

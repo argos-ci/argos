@@ -19,7 +19,7 @@ export const SectionIcon = ({ children, icon: Icon, ...props }) => (
     gridArea={{ sm: "span 2" }}
     borderRadius="full"
     px={2}
-    backgroundColor="background-secondary"
+    backgroundColor="accent-bg"
     w={16}
     h={16}
     fontSize={44}
@@ -37,9 +37,9 @@ export const SectionColoredTitle = (props) => (
     gridArea={{ _: "3 / span 2", sm: "2 / 2" }}
     fontSize="sm"
     fontWeight="500"
-    color="purple-200"
     textTransform="uppercase"
     letterSpacing="wide"
+    color="on-accent"
     {...props}
   />
 );

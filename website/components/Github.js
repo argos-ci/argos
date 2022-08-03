@@ -48,7 +48,7 @@ export const GithubCheckStatus = (props) => (
 );
 export const GithubCheckText = (props) => (
   <x.div
-    color="secondary"
+    color="on-light"
     fontSize="13px"
     textOverflow="ellipsis"
     whiteSpace="nowrap"
@@ -229,8 +229,8 @@ export const GithubMergeStatus = ({
 
   return (
     <x.div
-      borderRadius="6px"
-      border="1px solid"
+      borderRadius
+      border={1}
       borderColor="border"
       zIndex={100}
       transition="opacity 800ms 300ms"

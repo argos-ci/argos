@@ -11,9 +11,7 @@ const components = {
   h1: (props) => <x.h1 text="4xl" fontWeight="bold" mt={2} {...props} />,
   h2: (props) => <x.h2 text="2xl" fontWeight="bold" mt={8} {...props} />,
   h3: (props) => <x.h3 text="xl" fontWeight="semibold" my={5} {...props} />,
-  p: (props) => (
-    <x.p text="md" lineHeight="snug" color="secondary" my={4} {...props} />
-  ),
+  p: (props) => <x.p text="md" lineHeight="snug" my={4} {...props} />,
   ul: (props) => (
     <x.ul
       text="md"
@@ -21,7 +19,6 @@ const components = {
       my={4}
       pl={10}
       listStyleType="disc"
-      color="secondary"
       {...props}
     />
   ),

@@ -19,7 +19,8 @@ const oldCode = `it('should list car details', () => {
     
   cy.get('div.seller-name')
     .contains('Georges Abitbol')
-  ...
+    
+  // ...
 })
 `;
 
@@ -40,16 +41,14 @@ export const CompareTestCode = (props) => (
   >
     <CodeEditor flex={{ _: "column", md: 1 }} w={1} h="auto">
       <CodeEditorHeader>
-        <CodeEditorTab active="true">details-page-old.test.js</CodeEditorTab>
+        <CodeEditorTab>basic-e2e.test.js</CodeEditorTab>
       </CodeEditorHeader>
-      <CodeEditorBody h="370px" language="javascript">
-        {oldCode}
-      </CodeEditorBody>
+      <CodeEditorBody language="javascript">{oldCode}</CodeEditorBody>
     </CodeEditor>
     <x.div as={Versus} w="100px" my="20px" color="white" />
     <CodeEditor flex={{ _: "auto", md: 1 }} w={1} h="160px">
       <CodeEditorHeader>
-        <CodeEditorTab active="true">details-page.test.js</CodeEditorTab>
+        <CodeEditorTab>argos-e2e.test.js</CodeEditorTab>
       </CodeEditorHeader>
       <CodeEditorBody language="javascript">{newCode}</CodeEditorBody>
     </CodeEditor>

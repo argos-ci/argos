@@ -85,9 +85,9 @@ export const CodeEditorEditingTabIcon = (props) => (
 export const CodeEditorTab = ({ children, active = false, ...props }) => {
   return (
     <x.div
-      borderRadius="5px 5px 0 0"
+      borderRadius="default default 0 0"
       borderColor="border"
-      borderBottomColor="background-secondary"
+      borderBottomColor="editor-bg"
       display="flex"
       justifyContent="space-between"
       alignItems="center"
@@ -99,7 +99,7 @@ export const CodeEditorTab = ({ children, active = false, ...props }) => {
       mb="-10px"
       ml="80px"
       transition="1000ms"
-      color={active ? "white" : "border"}
+      color={active ? "on" : "on-light"}
       {...props}
     >
       {children}
@@ -123,23 +123,23 @@ export const CodeEditorHeader = ({ children, ...props }) => (
   </x.div>
 );
 
-const RowNumbers = ({ length = 20, ...props }) => (
-  <x.div
-    color="#49657a"
-    display="flex"
-    flexDirection="column"
-    alignItems="center"
-    px="6px"
-    w="24px"
-    backgroundColor="body-background"
-    pt="12px"
-    {...props}
-  >
-    {Array.from({ length }, (_, i) => (
-      <div key={i}>{i + 1}</div>
-    ))}
-  </x.div>
-);
+// const RowNumbers = ({ length = 20, ...props }) => (
+//   <x.div
+//     color="editor-line-number"
+//     display="flex"
+//     flexDirection="column"
+//     alignItems="center"
+//     pt="12px"
+//     w="24px"
+//     backgroundColor="editor-line-number-bg"
+//     fontSize="xs"
+//     {...props}
+//   >
+//     {Array.from({ length }, (_, i) => (
+//       <div key={i}>{i + 1}</div>
+//     ))}
+//   </x.div>
+// );
 
 export const CodeEditorBody = ({ children, language, ...props }) => (
   <x.div
@@ -150,8 +150,8 @@ export const CodeEditorBody = ({ children, language, ...props }) => (
     lineHeight="24px"
     {...props}
   >
-    <RowNumbers length={20} />
-    <Code p="13px 12px 12px" overflow="auto" language={language}>
+    {/* <RowNumbers length={20} /> */}
+    <Code p={3} overflow="auto" language={language}>
       {children}
     </Code>
   </x.div>
@@ -163,10 +163,10 @@ export const CodeEditor = ({ children, ...props }) => (
     boxShadow="md"
     border={1}
     borderColor="border"
-    backgroundColor="background-secondary"
+    bg="editor-bg"
     overflow="hidden"
     position="relative"
-    h="230px"
+    h={230}
     {...props}
   >
     {children}

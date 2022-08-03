@@ -30,14 +30,14 @@ export const ArgosCardHeader = forwardRef((props, ref) => (
     justifyContent="space-between"
     alignItems="center"
     borderBottom={1}
-    borderColor="secondary"
+    borderColor="border"
     p={2}
     {...props}
   />
 ));
 
 export const ArgosCardTitle = (props) => (
-  <x.div fontSize="15px" color="secondary" fontWeight="semibold" {...props} />
+  <x.div fontSize="15px" color="on-light" fontWeight="semibold" {...props} />
 );
 
 export const ArgosCardBody = forwardRef((props, ref) => (
@@ -99,10 +99,10 @@ export const ArgosSummaryCard = (props) => (
           rework-button
         </TextIcon>
         <x.div ml={6} fontSize="sm">
-          <TextIcon icon={IoGitCommit} color="secondary">
+          <TextIcon icon={IoGitCommit} color="on-light">
             Commit 517b9dc
           </TextIcon>
-          <TextIcon icon={IoGitBranch} color="secondary">
+          <TextIcon icon={IoGitBranch} color="on-light">
             Branch rework-button
           </TextIcon>
         </x.div>
@@ -112,7 +112,7 @@ export const ArgosSummaryCard = (props) => (
         <TextIcon icon={IoPulseOutline} mt="1px" color="success">
           #5 success
         </TextIcon>
-        <TextIcon icon={IoTimeOutline} color="secondary">
+        <TextIcon icon={IoTimeOutline} color="on-light">
           10 sec ago
         </TextIcon>
       </x.div>

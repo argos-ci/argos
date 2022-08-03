@@ -35,14 +35,18 @@ const SectionTitle = ({ children, ...props }) => (
 );
 
 const FooterLink = ({ children, ...props }) => (
-  <Link color={{ _: "secondary", hover: "white" }} {...props}>
-    {children}
-  </Link>
+  <div>
+    <Link color={{ _: "on-light", hover: "white" }} {...props}>
+      {children}
+    </Link>
+  </div>
 );
 
 export const AppFooter = (props) => (
   <x.footer
-    backgroundColor="background-secondary"
+    borderTop={1}
+    borderTopColor="border"
+    backgroundColor="alternate-bg"
     my={10}
     pt={20}
     pb={16}
@@ -90,7 +94,7 @@ export const AppFooter = (props) => (
         </Section>
       </Sections>
       <Divider mt={16} mb={10} />
-      <ArgosLogo w="190px" />
+      <ArgosLogo w="160px" />
     </PageContainer>
   </x.footer>
 );

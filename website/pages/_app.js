@@ -1,12 +1,33 @@
-import "../styles/globals.css";
 import { StrictMode } from "react";
 import Head from "next/head";
-import { ThemeProvider, Preflight } from "@xstyled/styled-components";
+import {
+  ThemeProvider,
+  Preflight,
+  createGlobalStyle,
+} from "@xstyled/styled-components";
 import { theme } from "@components/Theme";
 import { AppNavbar } from "@components/Navbar";
 import { AppFooter } from "@components/Footer";
 
-function MyApp({ Component, pageProps }) {
+const GlobalStyle = createGlobalStyle`
+  html,
+  body {
+    padding: 0;
+    margin: 0;
+    color: on;
+    background-color: bg;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #__next {
+    display: grid;
+    grid-template-rows: min-content auto min-content;
+    grid-template-columns: minmax(200px, 1fr);
+    height: 100vh;
+  }
+`;
+
+const App = ({ Component, pageProps }) => {
   return (
     <StrictMode>
       <Head>
@@ -35,6 +56,7 @@ function MyApp({ Component, pageProps }) {
         />
       </Head>
       <ThemeProvider theme={theme}>
+        <GlobalStyle />
         <Preflight />
         <AppNavbar />
         <main>
@@ -44,6 +66,6 @@ function MyApp({ Component, pageProps }) {
       </ThemeProvider>
     </StrictMode>
   );
-}
+};
 
-export default MyApp;
+export default App;

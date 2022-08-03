@@ -8,7 +8,12 @@ export const Code = ({ children, language, ...props }) => {
       <SyntaxHighlighter
         language={language}
         style={nightOwl}
-        customStyle={{ fontSize: "15px", lineHeight: "24px", padding: 0 }}
+        customStyle={{
+          fontSize: "15px",
+          lineHeight: "24px",
+          padding: 0,
+          background: "transparent",
+        }}
       >
         {children}
       </SyntaxHighlighter>

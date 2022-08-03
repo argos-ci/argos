@@ -23,11 +23,7 @@ import { GithubClickableStatus } from "@components/home-illustrations/GithubClic
 export default function Home() {
   return (
     <>
-      <Section
-        backgroundImage="gradient-to-t"
-        gradientTo="body-background"
-        gradientFrom="blue-gray-900"
-      >
+      <Section backgroundImage="gradient-to-b" gradientFrom="alternate-bg">
         <PageContainer>
           <AboveTheFold />
         </PageContainer>
@@ -52,16 +48,21 @@ export default function Home() {
         </PageContainer>
       </Section>
 
-      <Section bg="background-secondary" textAlign="center">
+      <Section
+        textAlign="center"
+        borderTop={1}
+        borderBottom={1}
+        borderColor="border"
+      >
         <x.div
           mt={10}
           text={{ _: "5xl", md: "6xl" }}
-          fontWeight="500"
+          fontWeight="800"
           whiteSpace="nowrap"
         >
           + 10 000 000
         </x.div>
-        <x.div text="2xl">screenshots / month</x.div>
+        <x.div text="3xl">screenshots / month</x.div>
         <PageContainer mt={10}>
           <Brands />
         </PageContainer>

@@ -2,6 +2,7 @@ import { x } from "@xstyled/styled-components";
 import { Subtitle, Title } from "components/Titles";
 import { Button } from "@components/Button";
 import { Animation } from "./home-illustrations/Animation";
+import { GradientText } from "./GradientText";
 
 export const AboveTheFold = (props) => {
   return (
@@ -23,21 +24,32 @@ export const AboveTheFold = (props) => {
         <Title {...props}>
           Automate Visual Testing
           <br />
-          <x.span color="primary-400">Catch visual bugs</x.span>
+          <GradientText fontSize="6xl" fontWeight="800">
+            Catch visual bugs
+          </GradientText>
         </Title>
         <Subtitle>
           Argos is a visual testing solution that fits in your workflow to avoid
           visual regression. Takes screenshots on each commit and be notified if
           something changes.
         </Subtitle>
-        <Button
-          as="a"
-          href="https://docs.argos-ci.com"
-          w={{ _: 1, sm: 200, lg: "auto" }}
-          h={10}
-        >
-          Get started
-        </Button>
+        <x.div display="flex" gap={4}>
+          <Button
+            as="a"
+            href="https://docs.argos-ci.com"
+            w={{ _: 1, sm: 200, lg: "auto" }}
+          >
+            Browse docs
+          </Button>
+          <Button
+            as="a"
+            href="https://app.argos-ci.com/mui/material-ui/builds/3915"
+            w={{ _: 1, sm: 200, lg: "auto" }}
+            $tint="cool-gray"
+          >
+            View a demo build
+          </Button>
+        </x.div>
       </x.div>
       <x.div
         display="flex"

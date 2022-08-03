@@ -17,7 +17,7 @@ const Header = (props) => (
 const SearchBar = ({ children, ...props }) => (
   <x.div
     textAlign="center"
-    bg="body-background"
+    bg="browser-bg"
     h="28px"
     pt="7px"
     borderRadius="sm"
@@ -44,7 +44,7 @@ export const Browser = ({ children, closeButtonRef, ...props }) => {
       borderRadius="md"
       border={1}
       borderColor="border"
-      backgroundColor="background-secondary"
+      backgroundColor="browser-bg"
       overflow="hidden"
       zIndex={400}
       {...props}

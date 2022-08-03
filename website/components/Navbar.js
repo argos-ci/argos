@@ -5,40 +5,27 @@ import { PageContainer } from "@components/PageContainer";
 import { ArgosLogo } from "@components/ArgosLogo";
 import { Button } from "@components/Button";
 
-export const Navbar = ({ children, ...props }) => (
-  <x.nav>
-    <PageContainer
-      h="70px"
-      display="flex"
-      justifyContent="space-between"
-      alignItems="center"
-      gap={6}
-      {...props}
-    >
-      {children}
-    </PageContainer>
-  </x.nav>
-);
-
-export const NavbarSecondary = (props) => (
-  <x.div display="flex" alignItems="center" gap={{ _: 4, sm: 8 }} {...props} />
-);
-
-export const AppNavbar = () => (
-  <x.div bg="background-secondary">
-    <Navbar>
-      <Link href="/">
-        <ArgosLogo height={32} />
-      </Link>
-      <NavbarSecondary>
+export const AppNavbar = () => {
+  return (
+    <x.nav borderBottom={1} borderBottomColor="border">
+      <PageContainer
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        gap={6}
+        py={4}
+      >
+        <Link href="/">
+          <ArgosLogo height={32} />
+        </Link>
         <Button
           as="a"
           href="https://github.com/login/oauth/authorize?scope=user:email&client_id=Iv1.d1a5403395ac817e"
+          $tint="blue-gray"
         >
-          Login
-          <x.svg as={IoLogoGithub} ml={2} />
+          <x.svg as={IoLogoGithub} mr={2} /> Login with GitHub
         </Button>
-      </NavbarSecondary>
-    </Navbar>
-  </x.div>
-);
+      </PageContainer>
+    </x.nav>
+  );
+};

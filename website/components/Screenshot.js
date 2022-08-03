@@ -26,7 +26,7 @@ const Icon = ({ size = 6, ...props }) => (
 const Placeholder = ({ active, ...props }) => (
   <x.div
     h="8px"
-    bg={active ? "white" : "secondary"}
+    bg={active ? "white" : "on-light"}
     borderRadius="20px"
     w={1}
     {...props}
@@ -34,7 +34,7 @@ const Placeholder = ({ active, ...props }) => (
 );
 
 const ParagraphPlaceholder = (props) => (
-  <Placeholder borderRadius="4px" h="24px" bg="secondary" {...props} />
+  <Placeholder borderRadius="4px" h="24px" bg="on-light" {...props} />
 );
 
 const InnerScreenshot = ({ children, ...props }) => {
@@ -103,8 +103,8 @@ const PriceTag = ({ backgroundColor = "blue-500", ...props }) => (
 export const ScreenshotLegend = (props) => (
   <x.div
     borderLeft={1}
-    borderColor="secondary"
-    color="secondary"
+    borderColor="border"
+    color="on-light"
     py={1}
     pl={2}
     ml={2}

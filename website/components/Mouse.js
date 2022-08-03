@@ -35,7 +35,7 @@ export const MouseClick = (props) => (
     initial={{ opacity: 0 }}
     position="absolute"
     backgroundColor="black-a90"
-    borderColor="secondary"
+    borderColor="on-light"
     {...props}
   />
 );
