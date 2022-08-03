@@ -33,7 +33,7 @@ export const theme = {
 
     title: th.color("blue-gray-100"),
     secondary: th.color("blue-gray-300"),
-    border: th.color("gray-500"),
+    border: th.color("blue-gray-600"),
     outline: th.color("light-blue-600"),
   },
   screens: {
