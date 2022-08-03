@@ -68,6 +68,10 @@ module.exports = {
         test: /\.html$/,
         loader: 'html-loader',
       },
+      {
+        test: /\.md$/,
+        loader: 'raw-loader',
+      },
     ],
   },
   plugins: [
