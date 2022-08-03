@@ -13,8 +13,7 @@ export const GradientText = ({
     backgroundImage={backgroundImage}
     gradientFrom={gradientFrom}
     gradientTo={gradientTo}
-    textShadow={`
-    0 0 64px #bc6deaea`}
+    textShadow="0 0 64px #bc6deaea"
     {...props}
   >
     {children}
