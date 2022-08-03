@@ -26,6 +26,7 @@ export function FooterBody(props) {
 
 export const FooterPrimary = styled.div`
   margin-bottom: 2;
+  display: flex;
 
   ${up(
     'md',

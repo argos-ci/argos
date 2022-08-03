@@ -16,9 +16,6 @@ import { ErrorPage } from './pages/ErrorPage'
 import { Repository } from './pages/Repository'
 import { NotFound } from './pages/NotFound'
 import { AuthCallback } from './pages/AuthCallback'
-import Privacy from './pages/Privacy.md'
-import Terms from './pages/Terms.md'
-import Security from './pages/Security.md'
 
 import {
   GlobalStyle,
@@ -26,7 +23,6 @@ import {
   LayoutHeader,
   LayoutMain,
   LayoutFooter,
-  Markdown,
   Catch,
 } from './components'
 
@@ -57,27 +53,6 @@ export function App() {
                         <Catch fallback={<ErrorPage />}>
                           <Switch>
                             <Route exact path="/" component={Home} />
-                            <Route
-                              exact
-                              path="/privacy"
-                              render={() => (
-                                <Markdown title="Privacy">{Privacy}</Markdown>
-                              )}
-                            />
-                            <Route
-                              exact
-                              path="/terms"
-                              render={() => (
-                                <Markdown title="Terms">{Terms}</Markdown>
-                              )}
-                            />
-                            <Route
-                              exact
-                              path="/security"
-                              render={() => (
-                                <Markdown title="Security">{Security}</Markdown>
-                              )}
-                            />
                             <Route
                               exact
                               path="/:ownerLogin"

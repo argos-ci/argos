@@ -1,5 +1,4 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
 import { useColorMode } from '@xstyled/styled-components'
 import {
   Footer,
@@ -7,7 +6,7 @@ import {
   FooterPrimary,
   FooterSecondary,
   FooterLink,
-  SmoothCodeLogo,
+  BrandLogo,
 } from '../components'
 
 export function AppFooter() {
@@ -16,22 +15,15 @@ export function AppFooter() {
     <Footer>
       <FooterBody>
         <FooterPrimary>
-          <a
-            href="https://www.smooth-code.com"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <SmoothCodeLogo colorMode={colorMode} height={30} width={148} />
-          </a>
+          <BrandLogo colorMode={colorMode} width={120} />
         </FooterPrimary>
         <FooterSecondary>
-          <FooterLink as={Link} to="/terms">
-            Terms
-          </FooterLink>
-          <FooterLink as={Link} to="/privacy">
+          <FooterLink href="https://docs.argos-ci.com">Docs</FooterLink>
+          <FooterLink href="https://www.argos-ci.com/terms">Terms</FooterLink>
+          <FooterLink href="https://www.argos-ci.com/privacy">
             Privacy
           </FooterLink>
-          <FooterLink as={Link} to="/security">
+          <FooterLink href="https://www.argos-ci.com/security">
             Security
           </FooterLink>
         </FooterSecondary>
