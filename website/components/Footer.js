@@ -48,7 +48,7 @@ export const AppFooter = (props) => (
     borderTopColor="border"
     backgroundColor="alternate-bg"
     my={10}
-    pt={20}
+    pt={{ _: 10, sm: 20 }}
     pb={16}
     lineHeight="24px"
     fontSize="14px"
