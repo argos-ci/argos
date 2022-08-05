@@ -7,10 +7,10 @@ export class Plan extends Model {
 
   static get jsonSchema() {
     return mergeSchemas(timestampsSchema, {
-      required: ['name', 'screenshotsQuota', 'githubId'],
+      required: ['name', 'screenshotsLimitPerMonth', 'githubId'],
       properties: {
         name: { type: 'string' },
-        screenshotsQuota: { type: 'number' },
+        screenshotsLimitPerMonth: { type: 'number' },
         githubId: { type: 'number' },
       },
     })

@@ -4,17 +4,19 @@ import { factory } from 'factory-girl'
 import crypto from 'crypto'
 import ObjectionAdapter from 'factory-girl-objection-adapter'
 import {
+  Account,
   Build,
   BuildNotification,
   Organization,
+  Plan,
   Repository,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
   Synchronization,
   User,
-  UserRepositoryRight,
   UserOrganizationRight,
+  UserRepositoryRight,
 } from '../models'
 
 factory.setAdapter(new ObjectionAdapter())
@@ -29,7 +31,7 @@ function bytesToString(bytes) {
 }
 
 factory.define('ScreenshotBucket', ScreenshotBucket, {
-  name: factory.sequence('repository.name', n => `bucket-${n}`),
+  name: factory.sequence('repository.name', (n) => `bucket-${n}`),
   commit: () => bytesToString(crypto.randomBytes(20)),
   branch: 'master',
   repositoryId: factory.assoc('Repository', 'id'),
@@ -69,21 +71,21 @@ factory.define('BuildNotification', BuildNotification, {
 })
 
 factory.define('User', User, {
-  githubId: factory.sequence('user.githubId', n => n),
+  githubId: factory.sequence('user.githubId', (n) => n),
   name: factory.chance('name'),
-  login: factory.sequence('user.login', n => `user-${n}`),
-  email: factory.sequence('user.email', n => `user-${n}@email.com`),
+  login: factory.sequence('user.login', (n) => `user-${n}`),
+  email: factory.sequence('user.email', (n) => `user-${n}@email.com`),
 })
 
 factory.define('Organization', Organization, {
-  githubId: factory.sequence('organization.githubId', n => n),
-  name: factory.sequence('organization.name', n => `Orga-${n}`),
-  login: factory.sequence('organization.login', n => `orga-${n}`),
+  githubId: factory.sequence('organization.githubId', (n) => n),
+  name: factory.sequence('organization.name', (n) => `Orga-${n}`),
+  login: factory.sequence('organization.login', (n) => `orga-${n}`),
 })
 
 factory.define('Repository', Repository, {
-  githubId: factory.sequence('repository.githubId', n => n),
-  name: factory.sequence('repository.name', n => `repo-${n}`),
+  githubId: factory.sequence('repository.githubId', (n) => n),
+  name: factory.sequence('repository.name', (n) => `repo-${n}`),
   enabled: true,
   baselineBranch: 'master',
   organizationId: factory.assoc('Organization', 'id'),
@@ -110,7 +112,7 @@ factory.define('ScreenshotDiff', ScreenshotDiff, {
 })
 
 factory.define('Screenshot', Screenshot, {
-  name: factory.sequence('repository.name', n => `screen-${n}`),
+  name: factory.sequence('repository.name', (n) => `screen-${n}`),
   s3Id: 'test-s3-id',
   screenshotBucketId: factory.assoc('ScreenshotBucket', 'id'),
 })
@@ -119,6 +121,17 @@ factory.define('Synchronization', Synchronization, {
   userId: factory.assoc('User', 'id'),
   jobStatus: 'complete',
   type: 'github',
+})
+
+factory.define('Plan', Plan, {
+  name: factory.chance('pickone', ['Free', 'Standard', 'Pro', 'Enterprise']),
+  screenshotsLimitPerMonth: factory.chance('pickone', [7000, 5e4, 1e5, 1e7]),
+  githubId: factory.sequence('plan.githubId', (n) => n),
+})
+
+factory.define('Account', Account, {
+  userId: factory.assoc('User', 'id'),
+  organizationId: factory.assoc('Organization', 'id'),
 })
 
 export { factory }

@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 12.2
--- Dumped by pg_dump version 12.3
+-- Dumped from database version 13.7
+-- Dumped by pg_dump version 13.7
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -73,6 +73,43 @@ ALTER TYPE public.synchronization_type OWNER TO postgres;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: accounts; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.accounts (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "userId" bigint,
+    "organizationId" bigint,
+    CONSTRAINT accounts_only_one_non_null CHECK ((("userId" IS NOT NULL) OR ("organizationId" IS NOT NULL)))
+);
+
+
+ALTER TABLE public.accounts OWNER TO postgres;
+
+--
+-- Name: accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.accounts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.accounts_id_seq OWNER TO postgres;
+
+--
+-- Name: accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.accounts_id_seq OWNED BY public.accounts.id;
+
 
 --
 -- Name: build_notifications; Type: TABLE; Schema: public; Owner: postgres
@@ -330,6 +367,79 @@ ALTER TABLE public.organizations_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.organizations_id_seq OWNED BY public.organizations.id;
+
+
+--
+-- Name: plans; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.plans (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    name character varying(255) NOT NULL,
+    "screenshotsLimitPerMonth" integer NOT NULL,
+    "githubId" character varying(255) NOT NULL
+);
+
+
+ALTER TABLE public.plans OWNER TO postgres;
+
+--
+-- Name: plans_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.plans_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.plans_id_seq OWNER TO postgres;
+
+--
+-- Name: plans_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.plans_id_seq OWNED BY public.plans.id;
+
+
+--
+-- Name: purchases; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.purchases (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "planId" bigint NOT NULL,
+    "accountId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.purchases OWNER TO postgres;
+
+--
+-- Name: purchases_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.purchases_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.purchases_id_seq OWNER TO postgres;
+
+--
+-- Name: purchases_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.purchases_id_seq OWNED BY public.purchases.id;
 
 
 --
@@ -680,6 +790,13 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
+-- Name: accounts id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts ALTER COLUMN id SET DEFAULT nextval('public.accounts_id_seq'::regclass);
+
+
+--
 -- Name: build_notifications id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -726,6 +843,20 @@ ALTER TABLE ONLY public.knex_migrations_lock ALTER COLUMN index SET DEFAULT next
 --
 
 ALTER TABLE ONLY public.organizations ALTER COLUMN id SET DEFAULT nextval('public.organizations_id_seq'::regclass);
+
+
+--
+-- Name: plans id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plans ALTER COLUMN id SET DEFAULT nextval('public.plans_id_seq'::regclass);
+
+
+--
+-- Name: purchases id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.purchases ALTER COLUMN id SET DEFAULT nextval('public.purchases_id_seq'::regclass);
 
 
 --
@@ -792,6 +923,14 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
+-- Name: accounts accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: build_notifications build_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -845,6 +984,22 @@ ALTER TABLE ONLY public.knex_migrations
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: plans plans_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plans
+    ADD CONSTRAINT plans_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: purchases purchases_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_pkey PRIMARY KEY (id);
 
 
 --
@@ -936,6 +1091,20 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: accounts_organizationid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX accounts_organizationid_index ON public.accounts USING btree ("organizationId");
+
+
+--
+-- Name: accounts_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX accounts_userid_index ON public.accounts USING btree ("userId");
+
+
+--
 -- Name: build_notifications_buildid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -996,6 +1165,20 @@ CREATE INDEX installations_githubid_index ON public.installations USING btree ("
 --
 
 CREATE INDEX organizations_githubid_index ON public.organizations USING btree ("githubId");
+
+
+--
+-- Name: purchases_accountid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX purchases_accountid_index ON public.purchases USING btree ("accountId");
+
+
+--
+-- Name: purchases_planid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX purchases_planid_index ON public.purchases USING btree ("planId");
 
 
 --
@@ -1160,6 +1343,22 @@ CREATE INDEX users_githubid_index ON public.users USING btree ("githubId");
 
 
 --
+-- Name: accounts accounts_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_organizationid_foreign FOREIGN KEY ("organizationId") REFERENCES public.organizations(id);
+
+
+--
+-- Name: accounts accounts_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+
+
+--
 -- Name: build_notifications build_notifications_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1205,6 +1404,22 @@ ALTER TABLE ONLY public.installation_repository_rights
 
 ALTER TABLE ONLY public.installation_repository_rights
     ADD CONSTRAINT installation_repository_rights_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES public.repositories(id);
+
+
+--
+-- Name: purchases purchases_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id);
+
+
+--
+-- Name: purchases purchases_planid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_planid_foreign FOREIGN KEY ("planId") REFERENCES public.plans(id);
 
 
 --
@@ -1369,3 +1584,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2019091
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200329104003_github-app.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200329194617_build-notifications.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200616135126_build-name.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220803095315_add_plans.js', 1, NOW());

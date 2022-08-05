@@ -9,6 +9,7 @@ export class Account extends Model {
 
   static get jsonSchema() {
     return mergeSchemas(timestampsSchema, {
+      required: [],
       properties: {
         userId: { type: ['string', null] },
         organizationId: { type: ['string', null] },
@@ -22,16 +23,16 @@ export class Account extends Model {
         relation: Model.HasOneRelation,
         modelClass: User,
         join: {
-          from: 'actions.userId',
-          to: 'user.id',
+          from: 'accounts.userId',
+          to: 'users.id',
         },
       },
       organization: {
         relation: Model.HasOneRelation,
         modelClass: Organization,
         join: {
-          from: 'actions.organizationId',
-          to: 'organization.id',
+          from: 'accounts.organizationId',
+          to: 'organizations.id',
         },
       },
     }
