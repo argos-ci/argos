@@ -10,7 +10,7 @@
     "setup": "lerna run setup",
     "procfile": "heroku local -f Procfile.dev -p 4001",
     "argos": "argos upload screenshots/samples --token $ARGOS_TOKEN || true",
-    "webhook-proxy": "smee --url https://smee.io/SmH89Dx2HZ89wK7T --target https://api.argos-ci.dev:4001/github/event-handler",
+    "webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/SmH89Dx2HZ89wK7T --target https://api.argos-ci.dev:4001/github/event-handler",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,json,md}\"",
     "heroku-postbuild": "yarn build"
@@ -48,6 +48,6 @@
     "lerna": "^3.20.2",
     "nodemon": "^2.0.2",
     "prettier": "^2.0.2",
-    "smee-client": "^1.1.0"
+    "smee-client": "^1.2.3"
   }
 }
