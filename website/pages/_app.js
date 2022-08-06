@@ -37,6 +37,7 @@ const App = ({ Component, pageProps }) => {
           content="Argos is a visual testing solution that fits in your workflow to avoid visual regression."
         />
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+        <meta name="format-detection" content="telephone=no" />
         <link
           rel="apple-touch-icon"
           sizes="180x180"
