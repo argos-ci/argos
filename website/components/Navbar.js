@@ -12,19 +12,33 @@ export const AppNavbar = () => {
         display="flex"
         justifyContent="space-between"
         alignItems="center"
-        gap={6}
+        gap={2}
         py={4}
       >
         <Link href="/">
-          <ArgosLogo height={32} />
+          <ArgosLogo width="100%" h="32px" />
         </Link>
-        <Button
-          as="a"
-          href="https://github.com/login/oauth/authorize?scope=user:email&client_id=Iv1.d1a5403395ac817e"
-          $tint="blue-gray"
+        <x.div
+          flex={1}
+          display="flex"
+          justifyContent="flex-end"
+          alignItems="center"
+          gap={2}
         >
-          <x.svg as={IoLogoGithub} mr={2} /> Login with GitHub
-        </Button>
+          <Button as="a" href="https://docs.argos-ci.com">
+            docs
+          </Button>
+          <Button
+            as="a"
+            href="https://github.com/login/oauth/authorize?scope=user:email&client_id=Iv1.d1a5403395ac817e"
+            $tint="blue-gray"
+            gap={1}
+          >
+            <x.svg as={IoLogoGithub} mr={2} />
+            Login
+            <x.div display={{ _: "none", sm: "block" }}> with GitHub</x.div>
+          </Button>
+        </x.div>
       </PageContainer>
     </x.nav>
   );
