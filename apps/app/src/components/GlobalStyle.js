@@ -1,4 +1,4 @@
-import { createGlobalStyle } from '@xstyled/styled-components'
+import { createGlobalStyle } from "@xstyled/styled-components";
 
 export const GlobalStyle = createGlobalStyle`
   html, body, #root {
@@ -15,4 +15,4 @@ export const GlobalStyle = createGlobalStyle`
       text-decoration: none;
     }
   }
-`
+`;

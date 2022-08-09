@@ -1,4 +1,4 @@
-import styled from '@xstyled/styled-components'
+import styled from "@xstyled/styled-components";
 
 export const FadeLink = styled.aBox`
   transition: base;
@@ -8,4 +8,4 @@ export const FadeLink = styled.aBox`
   &:hover {
     opacity: 0.75;
   }
-`
+`;

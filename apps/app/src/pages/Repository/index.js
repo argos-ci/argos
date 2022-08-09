@@ -1,10 +1,10 @@
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import gql from 'graphql-tag'
-import { Route, Link, Switch } from 'react-router-dom'
-import styled, { Box } from '@xstyled/styled-components'
-import { GoRepo } from 'react-icons/go'
-import { FaGithub } from 'react-icons/fa'
+import React from "react";
+import { Helmet } from "react-helmet";
+import { gql } from "graphql-tag";
+import { Route, Link, Switch } from "react-router-dom";
+import styled, { Box } from "@xstyled/styled-components";
+import { GoRepo } from "react-icons/go";
+import { FaGithub } from "react-icons/fa";
 import {
   Header,
   HeaderBody,
@@ -14,22 +14,22 @@ import {
   TabList,
   RouterTabItem,
   Text,
-} from '../../components'
-import { Query } from '../../containers/Apollo'
-import { useRouter } from '../../containers/Router'
+} from "../../components";
+import { Query } from "../../containers/Apollo";
+import { useRouter } from "../../containers/Router";
 import {
   RepositoryProvider,
   RepositoryContextFragment,
   useRepository,
-} from './RepositoryContext'
-import { RepositoryBuilds } from './Builds'
-import { RepositorySettings } from './Settings'
-import { BuildDetail } from './BuildDetail/index'
-import { GettingStarted } from './GettingStarted'
-import { NotFound } from '../NotFound'
+} from "./RepositoryContext";
+import { RepositoryBuilds } from "./Builds";
+import { RepositorySettings } from "./Settings";
+import { BuildDetail } from "./BuildDetail/index";
+import { GettingStarted } from "./GettingStarted";
+import { NotFound } from "../NotFound";
 
 function hasWritePermission(repository) {
-  return repository.permissions.includes('write')
+  return repository.permissions.includes("write");
 }
 
 const RepoTitlePart = styled(Text)`
@@ -42,11 +42,11 @@ const RepoTitlePart = styled(Text)`
   a&:hover {
     text-decoration: underline;
   }
-`
+`;
 
 function RepositoryHeader() {
-  const repository = useRepository()
-  const { match } = useRouter()
+  const repository = useRepository();
+  const { match } = useRouter();
 
   return (
     <Header>
@@ -79,7 +79,7 @@ function RepositoryHeader() {
         </TabList>
       </HeaderBody>
     </Header>
-  )
+  );
 }
 
 const GET_REPOSITORY = gql`
@@ -90,7 +90,7 @@ const GET_REPOSITORY = gql`
   }
 
   ${RepositoryContextFragment}
-`
+`;
 
 export function Repository({
   match: {
@@ -106,7 +106,7 @@ export function Repository({
     >
       {({ repository }) => {
         if (!repository) {
-          return <NotFound />
+          return <NotFound />;
         }
 
         return (
@@ -138,8 +138,8 @@ export function Repository({
               </Switch>
             </>
           </RepositoryProvider>
-        )
+        );
       }}
     </Query>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import gql from 'graphql-tag'
-import config from '@argos-ci/config'
-import { s3 as getS3 } from '@argos-ci/storage'
+import { gql } from "graphql-tag";
+import config from "@argos-ci/config";
+import { s3 as getS3 } from "@argos-ci/storage";
 
 export const typeDefs = gql`
   type ScreenshotDiff {
@@ -19,24 +19,24 @@ export const typeDefs = gql`
     "Represent the status given by the user"
     validationStatus: ValidationStatus!
   }
-`
+`;
 
 export const resolvers = {
   ScreenshotDiff: {
     async baseScreenshot(screenshotDiff) {
-      return screenshotDiff.$relatedQuery('baseScreenshot')
+      return screenshotDiff.$relatedQuery("baseScreenshot");
     },
     async compareScreenshot(screenshotDiff) {
-      return screenshotDiff.$relatedQuery('compareScreenshot')
+      return screenshotDiff.$relatedQuery("compareScreenshot");
     },
     url(screenshotDiff) {
-      if (!screenshotDiff.s3Id) return null
-      const s3 = getS3()
-      return s3.getSignedUrl('getObject', {
-        Bucket: config.get('s3.screenshotsBucket'),
+      if (!screenshotDiff.s3Id) return null;
+      const s3 = getS3();
+      return s3.getSignedUrl("getObject", {
+        Bucket: config.get("s3.screenshotsBucket"),
         Key: screenshotDiff.s3Id,
         Expires: 7200,
-      })
+      });
     },
   },
-}
+};

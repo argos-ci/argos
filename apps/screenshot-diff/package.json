@@ -13,8 +13,5 @@
     "@octokit/rest": "^17.1.4",
     "image-difference": "^2.0.7",
     "tmp": "^0.1.0"
-  },
-  "devDependencies": {
-    "@argos-ci/jest": "2.0.0"
   }
 }

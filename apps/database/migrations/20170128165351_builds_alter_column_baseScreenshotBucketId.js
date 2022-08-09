@@ -1,9 +1,9 @@
-exports.up = knex =>
+exports.up = (knex) =>
   knex.raw(
-    'ALTER TABLE builds ALTER COLUMN "baseScreenshotBucketId" DROP NOT NULL',
-  )
+    'ALTER TABLE builds ALTER COLUMN "baseScreenshotBucketId" DROP NOT NULL'
+  );
 
-exports.down = knex =>
+exports.down = (knex) =>
   knex.raw(
-    'ALTER TABLE builds ALTER COLUMN "baseScreenshotBucketId" SET NOT NULL',
-  )
+    'ALTER TABLE builds ALTER COLUMN "baseScreenshotBucketId" SET NOT NULL'
+  );

@@ -1,5 +1,5 @@
-import styled from '@xstyled/styled-components'
-import { Container } from './Container'
+import styled from "@xstyled/styled-components";
+import { Container } from "./Container";
 
 export const AlertBar = styled.div`
   background-color: light200;
@@ -7,6 +7,6 @@ export const AlertBar = styled.div`
   border-bottom: 1;
   border-color: light300;
   margin-bottom: 2;
-`
+`;
 
-export const AlertBarBody = Container
+export const AlertBarBody = Container;

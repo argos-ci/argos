@@ -1,4 +1,4 @@
-import gql from 'graphql-tag'
+import { gql } from "graphql-tag";
 
 export const typeDefs = gql`
   type Query {
@@ -13,17 +13,17 @@ export const typeDefs = gql`
     query: Query
     mutation: Mutation
   }
-`
+`;
 
 export const resolvers = {
   Query: {
     ping() {
-      return true
+      return true;
     },
   },
   Mutation: {
     ping() {
-      return true
+      return true;
     },
   },
-}
+};

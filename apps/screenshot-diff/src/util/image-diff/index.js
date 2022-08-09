@@ -1,4 +1,4 @@
-import imageDifference from 'image-difference'
+import imageDifference from "image-difference";
 
 // Generate an image diff result.
 //
@@ -12,20 +12,20 @@ export async function diffImages({
   actualFilename,
   expectedFilename,
   diffFilename,
-  fuzz = '10%',
+  fuzz = "10%",
 }) {
   const difference = await imageDifference({
     actualFilename,
     expectedFilename,
     diffFilename,
     fuzz,
-  })
+  });
 
-  const score = difference.value / (difference.width * difference.height)
+  const score = difference.value / (difference.width * difference.height);
 
   return {
     score: score < 0.00003 ? 0 : score,
     pixels: difference.value,
     scoreRaw: score,
-  }
+  };
 }

@@ -1,25 +1,26 @@
 // Taken from convict source code.
 function walk(obj, path, initializeMissing = false) {
-  let newObj = obj
+  let newObj = obj;
 
   if (path) {
-    const ar = path.split('.')
+    const ar = path.split(".");
     while (ar.length) {
-      const k = ar.shift()
+      const k = ar.shift();
       if (initializeMissing && obj[k] == null) {
-        newObj[k] = {}
-        newObj = newObj[k]
+        newObj[k] = {};
+        newObj = newObj[k];
       } else if (k in newObj) {
-        newObj = newObj[k]
+        newObj = newObj[k];
       } else {
-        throw new Error(`cannot find configuration param '${path}'`)
+        throw new Error(`cannot find configuration param '${path}'`);
       }
     }
   }
 
-  return newObj
+  return newObj;
 }
 
 export default {
-  get: key => (window.clientData ? walk(window.clientData.config, key) : null),
-}
+  get: (key) =>
+    window.clientData ? walk(window.clientData.config, key) : null,
+};

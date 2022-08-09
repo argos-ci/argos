@@ -1,9 +1,9 @@
-import { Octokit } from '@octokit/rest'
-import config from '@argos-ci/config'
+import { Octokit } from "@octokit/rest";
+import config from "@argos-ci/config";
 import {
   ScreenshotBucket,
   UserRepositoryRight,
-} from '@argos-ci/database/models'
+} from "@argos-ci/database/models";
 
 async function getLatestMasterBucket(build, { trx } = {}) {
   const bucket = await ScreenshotBucket.query(trx)
@@ -15,32 +15,32 @@ async function getLatestMasterBucket(build, { trx } = {}) {
     .whereNot({
       id: build.compareScreenshotBucket.id,
     })
-    .orderBy('id', 'desc')
+    .orderBy("id", "desc")
     .limit(1)
-    .first()
+    .first();
 
-  return bucket || null
+  return bucket || null;
 }
 
 async function getBaseScreenshotBucket({ commits, build, trx }) {
   // We hope we will have a build of Argos from the latest 5 commits
   // no need to ask for more, we will run out of memory
-  const shas = commits.map((commit) => commit.sha).slice(0, 5)
+  const shas = commits.map((commit) => commit.sha).slice(0, 5);
   const buckets = await ScreenshotBucket.query(trx)
     .where({
       repositoryId: build.repository.id,
       branch: build.repository.baselineBranch,
       complete: true,
     })
-    .whereIn('commit', shas)
+    .whereIn("commit", shas);
 
   // Sort buckets from the most recent commit to the oldest one
   buckets.sort(
     (bucketA, bucketB) =>
-      shas.indexOf(bucketA.commit) - shas.indexOf(bucketB.commit),
-  )
+      shas.indexOf(bucketA.commit) - shas.indexOf(bucketB.commit)
+  );
 
-  return buckets[0] || getLatestMasterBucket(build, { trx })
+  return buckets[0] || getLatestMasterBucket(build, { trx });
 }
 
 async function getCommits({
@@ -58,11 +58,11 @@ async function getCommits({
     sha,
     per_page: perPage,
     page: 1,
-  }
+  };
 
   try {
-    const response = await octokit.repos.listCommits(params)
-    return response.data
+    const response = await octokit.repos.listCommits(params);
+    return response.data;
   } catch (error) {
     // Several things here:
     // - Token is no longer valid
@@ -72,30 +72,28 @@ async function getCommits({
       // We remove the rights for the user
       await UserRepositoryRight.query(trx)
         .where({ userId: user.id, repositoryId: repository.id })
-        .delete()
+        .delete();
       // The error should not be notified on Sentry
-      error.ignoreCapture = true
-      return []
+      error.ignoreCapture = true;
+      return [];
     }
-    throw error
+    throw error;
   }
 }
 
 function getPotentialCommits({ baseCommits, compareCommits }) {
   // We take all commits included in base commit history and in compare commit history
   const potentialCommits = baseCommits.filter((baseCommit) =>
-    compareCommits.some(
-      (compareCommit) => baseCommit.sha === compareCommit.sha,
-    ),
-  )
+    compareCommits.some((compareCommit) => baseCommit.sha === compareCommit.sha)
+  );
 
   // If no commit is found, we will use all base commits
   // TODO: this case should not happen, we should always find a base commit to our branch
   if (!potentialCommits.length) {
-    return baseCommits
+    return baseCommits;
   }
 
-  return potentialCommits
+  return potentialCommits;
 }
 
 export async function baseCompare({
@@ -107,20 +105,20 @@ export async function baseCompare({
 }) {
   const richBuild = await build
     .$query(trx)
-    .withGraphFetched('[repository, compareScreenshotBucket]')
-  const user = await richBuild.repository.getUsers({ trx }).limit(1).first()
+    .withGraphFetched("[repository, compareScreenshotBucket]");
+  const user = await richBuild.repository.getUsers({ trx }).limit(1).first();
 
   // We can't use Github information without a user.
   if (!user) {
-    return getLatestMasterBucket(richBuild, { trx })
+    return getLatestMasterBucket(richBuild, { trx });
   }
 
   // Initialize GitHub API
-  const owner = await richBuild.repository.$relatedOwner({ trx })
+  const owner = await richBuild.repository.$relatedOwner({ trx });
   const octokit = new Octokit({
-    debug: config.get('env') === 'development',
+    debug: config.get("env") === "development",
     auth: user.accessToken,
-  })
+  });
 
   const baseCommits = await getCommits({
     user,
@@ -130,7 +128,7 @@ export async function baseCompare({
     sha: baseCommit,
     perPage,
     trx,
-  })
+  });
 
   const compareCommits = await getCommits({
     user,
@@ -140,16 +138,16 @@ export async function baseCompare({
     sha: compareCommit,
     perPage,
     trx,
-  })
+  });
 
   const potentialCommits = getPotentialCommits({
     baseCommits,
     compareCommits,
-  })
+  });
 
   return getBaseScreenshotBucket({
     commits: potentialCommits,
     build: richBuild,
     trx,
-  })
+  });
 }

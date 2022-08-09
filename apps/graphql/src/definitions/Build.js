@@ -1,7 +1,7 @@
-import gql from 'graphql-tag'
-import { Build, ScreenshotDiff } from '@argos-ci/database/models'
-import { pushBuildNotification } from '@argos-ci/build-notification'
-import { APIError } from '../util'
+import { gql } from "graphql-tag";
+import { Build, ScreenshotDiff } from "@argos-ci/database/models";
+import { pushBuildNotification } from "@argos-ci/build-notification";
+import { APIError } from "../util";
 
 export const typeDefs = gql`
   enum BuildStatus {
@@ -48,71 +48,71 @@ export const typeDefs = gql`
       validationStatus: ValidationStatus!
     ): Build!
   }
-`
+`;
 
 export const resolvers = {
   Build: {
     async screenshotDiffs(build) {
       return build
-        .$relatedQuery('screenshotDiffs')
+        .$relatedQuery("screenshotDiffs")
         .leftJoin(
-          'screenshots',
-          'screenshots.id',
-          'screenshot_diffs.baseScreenshotId',
+          "screenshots",
+          "screenshots.id",
+          "screenshot_diffs.baseScreenshotId"
         )
-        .orderBy('score', 'desc')
-        .orderBy('screenshots.name', 'asc')
+        .orderBy("score", "desc")
+        .orderBy("screenshots.name", "asc");
     },
     async compareScreenshotBucket(build) {
-      return build.$relatedQuery('compareScreenshotBucket')
+      return build.$relatedQuery("compareScreenshotBucket");
     },
     async baseScreenshotBucket(build) {
-      return build.$relatedQuery('baseScreenshotBucket')
+      return build.$relatedQuery("baseScreenshotBucket");
     },
     async repository(build) {
-      return build.$relatedQuery('repository')
+      return build.$relatedQuery("repository");
     },
     async status(build) {
-      return build.$getStatus({ useValidation: true })
+      return build.$getStatus({ useValidation: true });
     },
   },
   Mutation: {
     async setValidationStatus(source, args, context) {
       if (!context.user) {
-        throw new APIError('Invalid user identification')
+        throw new APIError("Invalid user identification");
       }
 
-      const { buildId, validationStatus } = args
-      const user = await Build.getUsers(buildId).findById(context.user.id)
+      const { buildId, validationStatus } = args;
+      const user = await Build.getUsers(buildId).findById(context.user.id);
 
       if (!user) {
-        throw new APIError('Invalid user authorization')
+        throw new APIError("Invalid user authorization");
       }
 
       await ScreenshotDiff.query()
         .where({ buildId })
-        .patch({ validationStatus })
+        .patch({ validationStatus });
 
       // That might be better suited into a $afterUpdate hook.
       if (validationStatus === ScreenshotDiff.VALIDATION_STATUSES.accepted) {
         await pushBuildNotification({
           buildId,
-          type: 'diff-accepted',
-        })
+          type: "diff-accepted",
+        });
       } else if (
         validationStatus === ScreenshotDiff.VALIDATION_STATUSES.rejected
       ) {
         await pushBuildNotification({
           buildId,
-          type: 'diff-rejected',
-        })
+          type: "diff-rejected",
+        });
       }
 
       const build = await Build.query()
         .findById(buildId)
-        .withGraphFetched('repository')
+        .withGraphFetched("repository");
 
-      return build
+      return build;
     },
   },
-}
+};

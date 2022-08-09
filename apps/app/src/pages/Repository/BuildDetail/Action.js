@@ -1,35 +1,35 @@
-import React from 'react'
-import { Button } from '@smooth-ui/core-sc'
-import { FaCheck, FaTimes } from 'react-icons/fa'
-import { useValidationStatusBuild } from './Context'
+import React from "react";
+import { Button } from "@smooth-ui/core-sc";
+import { FaCheck, FaTimes } from "react-icons/fa";
+import { useValidationStatusBuild } from "./Context";
 
 export default function BuildDetailAction({ build }) {
-  const { setValidationStatus, loading } = useValidationStatusBuild()
-  let actionMessage
-  let variant
-  let validationStatus
+  const { setValidationStatus, loading } = useValidationStatusBuild();
+  let actionMessage;
+  let variant;
+  let validationStatus;
 
   switch (build.status) {
-    case 'success':
+    case "success":
       actionMessage = (
         <>
-          <FaTimes style={{ fontSize: '0.8em' }} /> Mark as rejected
+          <FaTimes style={{ fontSize: "0.8em" }} /> Mark as rejected
         </>
-      )
-      variant = 'danger'
-      validationStatus = 'rejected'
-      break
-    case 'failure':
+      );
+      variant = "danger";
+      validationStatus = "rejected";
+      break;
+    case "failure":
       actionMessage = (
         <>
-          <FaCheck style={{ fontSize: '0.8em' }} /> Mark as approved
+          <FaCheck style={{ fontSize: "0.8em" }} /> Mark as approved
         </>
-      )
-      variant = 'success'
-      validationStatus = 'accepted'
-      break
+      );
+      variant = "success";
+      validationStatus = "accepted";
+      break;
     default:
-      return null
+      return null;
   }
 
   return (
@@ -47,5 +47,5 @@ export default function BuildDetailAction({ build }) {
     >
       {actionMessage}
     </Button>
-  )
+  );
 }

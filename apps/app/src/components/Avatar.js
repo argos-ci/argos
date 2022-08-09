@@ -1,4 +1,4 @@
-import styled from '@xstyled/styled-components'
+import styled from "@xstyled/styled-components";
 
 export const Avatar = styled.imgBox`
   border-radius: 50%;
@@ -7,12 +7,12 @@ export const Avatar = styled.imgBox`
   transition: base;
 
   &:focus,
-  &[aria-expanded='true'] {
+  &[aria-expanded="true"] {
     box-shadow: 0 0 1px 1px darker;
     outline: none;
   }
 
-  &[role='button'] {
+  &[role="button"] {
     cursor: pointer;
   }
-`
+`;

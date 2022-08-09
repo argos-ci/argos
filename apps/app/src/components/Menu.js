@@ -1,13 +1,13 @@
-import React from 'react'
+import React from "react";
 import {
   useMenuState,
   Menu as ReakitMenu,
   MenuItem as ReakitMenuItem,
   MenuDisclosure,
-} from 'reakit/Menu'
-import styled from '@xstyled/styled-components'
+} from "reakit/Menu";
+import styled from "@xstyled/styled-components";
 
-export { useMenuState, MenuDisclosure }
+export { useMenuState, MenuDisclosure };
 
 const InnerMenu = styled.div`
   background-color: darker;
@@ -18,18 +18,18 @@ const InnerMenu = styled.div`
   &:focus {
     outline: none;
   }
-`
+`;
 
 export const Menu = React.forwardRef(function Menu(
   { children, ...props },
-  ref,
+  ref
 ) {
   return (
     <ReakitMenu ref={ref} {...props}>
-      {menuProps => <InnerMenu {...menuProps}>{children}</InnerMenu>}
+      {(menuProps) => <InnerMenu {...menuProps}>{children}</InnerMenu>}
     </ReakitMenu>
-  )
-})
+  );
+});
 
 const InnerMenuItem = styled.buttonBox`
   appearance: none;
@@ -53,8 +53,8 @@ const InnerMenuItem = styled.buttonBox`
     outline: none;
     background-color: light800;
   }
-`
+`;
 
 export const MenuItem = React.forwardRef(function MenuItem(props, ref) {
-  return <ReakitMenuItem ref={ref} as={InnerMenuItem} {...props} />
-})
+  return <ReakitMenuItem ref={ref} as={InnerMenuItem} {...props} />;
+});

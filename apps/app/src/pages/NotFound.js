@@ -1,6 +1,6 @@
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import { Link } from 'react-router-dom'
+import React from "react";
+import { Helmet } from "react-helmet";
+import { Link } from "react-router-dom";
 import {
   Container,
   Card,
@@ -9,7 +9,7 @@ import {
   CardBody,
   CardText,
   FadeLink,
-} from '../components'
+} from "../components";
 
 export function NotFound() {
   return (
@@ -31,5 +31,5 @@ export function NotFound() {
         </CardBody>
       </Card>
     </Container>
-  )
+  );
 }

@@ -1,13 +1,13 @@
 /* eslint-disable react/no-unescaped-entities */
-import React from 'react'
-import gql from 'graphql-tag'
-import { useParams } from 'react-router-dom'
-import Tooltip from 'react-tooltip'
-import styled, { Box } from '@xstyled/styled-components'
-import { Helmet } from 'react-helmet'
-import { FaRegClock } from 'react-icons/fa'
-import { GoGitCommit, GoGitBranch, GoPulse } from 'react-icons/go'
-import moment from 'moment'
+import React from "react";
+import { gql } from "graphql-tag";
+import { useParams } from "react-router-dom";
+import Tooltip from "react-tooltip";
+import styled, { Box } from "@xstyled/styled-components";
+import { Helmet } from "react-helmet";
+import { FaRegClock } from "react-icons/fa";
+import { GoGitCommit, GoGitBranch, GoPulse } from "react-icons/go";
+import moment from "moment";
 import {
   Container,
   Card,
@@ -17,29 +17,29 @@ import {
   CardText,
   FadeLink,
   Loader,
-} from '../../../components'
-import { useQuery } from '../../../containers/Apollo'
-import { StatusIcon } from '../../../containers/StatusIcon'
-import { getStatusColor } from '../../../modules/build'
-import BuildDetailScreenshots from './Screenshots'
-import BuildDetailAction from './Action'
-import { BuildProvider, BuildContextFragment, useBuild } from './Context'
+} from "../../../components";
+import { useQuery } from "../../../containers/Apollo";
+import { StatusIcon } from "../../../containers/StatusIcon";
+import { getStatusColor } from "../../../modules/build";
+import BuildDetailScreenshots from "./Screenshots";
+import BuildDetailAction from "./Action";
+import { BuildProvider, BuildContextFragment, useBuild } from "./Context";
 // eslint-disable-next-line import/no-cycle
-import { NotFound } from '../../NotFound'
-import { useRepository } from '../RepositoryContext'
-import { hasWritePermission } from '../../../modules/permissions'
+import { NotFound } from "../../NotFound";
+import { useRepository } from "../RepositoryContext";
+import { hasWritePermission } from "../../../modules/permissions";
 
 const StyledCardHeader = styled(CardHeader)`
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-`
+`;
 
 export function Build() {
-  const build = useBuild()
-  const { status } = build
-  const buildColor = getStatusColor(status)
-  const repository = useRepository()
+  const build = useBuild();
+  const { status } = build;
+  const buildColor = getStatusColor(status);
+  const repository = useRepository();
 
   return (
     <Container my={4} position="relative">
@@ -80,7 +80,7 @@ export function Build() {
                           alignItems="center"
                         >
                           <Box forwardedAs={GoGitCommit} mr={2} />
-                          Commit{' '}
+                          Commit{" "}
                           {build.compareScreenshotBucket.commit.slice(0, 7)}
                         </FadeLink>
                         <FadeLink
@@ -96,7 +96,7 @@ export function Build() {
                         </FadeLink>
                       </Box>
                     </Box>
-                    <Box col={{ xs: 1, md: 'auto' }} mt={{ xs: 3, md: 0 }}>
+                    <Box col={{ xs: 1, md: "auto" }} mt={{ xs: 3, md: 0 }}>
                       <Box
                         color={buildColor}
                         display="flex"
@@ -112,7 +112,7 @@ export function Build() {
                         display="flex"
                         alignItems="center"
                         data-tip={moment(build.createdAt).format(
-                          'DD-MM-YYYY HH:MM',
+                          "DD-MM-YYYY HH:MM"
                         )}
                       >
                         <Box forwardedAs={FaRegClock} mr={2} />
@@ -144,7 +144,7 @@ export function Build() {
         <BuildDetailScreenshots build={build} />
       )}
     </Container>
-  )
+  );
 }
 
 const BUILD_QUERY = gql`
@@ -164,27 +164,27 @@ const BUILD_QUERY = gql`
   }
 
   ${BuildContextFragment}
-`
+`;
 
 export function BuildDetail() {
-  const repository = useRepository()
-  const { buildNumber } = useParams()
+  const repository = useRepository();
+  const { buildNumber } = useParams();
   const { loading, data } = useQuery(BUILD_QUERY, {
     variables: {
       ownerLogin: repository.owner.login,
       repositoryName: repository.name,
       buildNumber: Number(buildNumber),
     },
-  })
+  });
   if (loading)
     return (
       <Container my={4} textAlign="center">
         <Loader />
       </Container>
-    )
-  if (!data.repository || !data.repository.build) return <NotFound />
+    );
+  if (!data.repository || !data.repository.build) return <NotFound />;
 
-  const { build } = data.repository
+  const { build } = data.repository;
   return (
     <>
       <Helmet>
@@ -194,5 +194,5 @@ export function BuildDetail() {
         <Build />
       </BuildProvider>
     </>
-  )
+  );
 }

@@ -8,8 +8,8 @@ exports.up = (knex) =>
   ALTER TABLE build_notifications ALTER COLUMN "type" TYPE build_notifications_type USING "type"::text::build_notifications_type;
 
   DROP TYPE build_notifications_type_old;
-  `,
-  )
+  `
+  );
 
 exports.down = (knex) =>
   knex.schema.raw(
@@ -21,5 +21,5 @@ exports.down = (knex) =>
   ALTER TABLE build_notifications ALTER COLUMN "type" TYPE build_notifications_type USING "type"::text::build_notifications_type;
 
   DROP TYPE build_notifications_type_old;
-  `,
-  )
+  `
+  );

@@ -1,4 +1,4 @@
-import gql from 'graphql-tag'
+import { gql } from "graphql-tag";
 
 export const typeDefs = gql`
   type Synchronization {
@@ -6,4 +6,4 @@ export const typeDefs = gql`
     jobStatus: JobStatus!
     type: String!
   }
-`
+`;

@@ -1,5 +1,5 @@
-import React from 'react'
-import { useColorMode } from '@xstyled/styled-components'
+import React from "react";
+import { useColorMode } from "@xstyled/styled-components";
 import {
   Footer,
   FooterBody,
@@ -7,10 +7,10 @@ import {
   FooterSecondary,
   FooterLink,
   BrandLogo,
-} from '../components'
+} from "../components";
 
 export function AppFooter() {
-  const [colorMode] = useColorMode()
+  const [colorMode] = useColorMode();
   return (
     <Footer>
       <FooterBody>
@@ -29,5 +29,5 @@ export function AppFooter() {
         </FooterSecondary>
       </FooterBody>
     </Footer>
-  )
+  );
 }

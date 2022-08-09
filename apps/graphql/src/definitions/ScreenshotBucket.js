@@ -1,4 +1,4 @@
-import gql from 'graphql-tag'
+import { gql } from "graphql-tag";
 
 export const typeDefs = gql`
   type ScreenshotBucket {
@@ -9,4 +9,4 @@ export const typeDefs = gql`
     commit: String!
     branch: String!
   }
-`
+`;

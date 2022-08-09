@@ -1,20 +1,31 @@
 {
   "root": true,
-  "extends": ["smooth", "smooth/react"],
-  "rules": {
-    "react/no-unescaped-entities": "off",
-    "react/forbid-prop-types": "off",
-    "react/static-property-placement": "off",
-    "import/no-cycle": "off"
-  },
+  "plugins": ["import"],
+  "extends": ["eslint:recommended", "plugin:import/recommended"],
   "env": {
-    "browser": true
+    "node": true,
+    "es2022": true
   },
-  "settings": {
-    "import/resolver": {
-      "node": {
-        "paths": []
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "overrides": [
+    {
+      "files": ["*.test.?(m)js"],
+      "plugins": ["jest"],
+      "extends": ["plugin:jest/recommended"],
+      "env": {
+        "jest": true
+      },
+      "rules": {
+        "jest/no-conditional-expect": "off",
+        "no-import-assign": "off",
+        "import/namespace": "off"
       }
     }
+  ],
+  "rules": {
+    "no-unused-vars": ["error", { "ignoreRestSiblings": true }]
   }
 }

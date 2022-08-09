@@ -1,4 +1,4 @@
-import gql from 'graphql-tag'
+import { gql } from "graphql-tag";
 
 export const typeDefs = gql`
   type User {
@@ -15,20 +15,20 @@ export const typeDefs = gql`
     "Get the authenticated user"
     user: User
   }
-`
+`;
 
 export const resolvers = {
   Query: {
     async user(user, args, context) {
-      return context.user || null
+      return context.user || null;
     },
   },
   User: {
     async installations(user) {
-      return user.$relatedQuery('installations')
+      return user.$relatedQuery("installations");
     },
     async latestSynchronization(user) {
-      return user.$relatedQuery('synchronizations').first()
+      return user.$relatedQuery("synchronizations").first();
     },
   },
-}
+};

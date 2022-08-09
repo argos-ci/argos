@@ -1,11 +1,11 @@
 /* eslint-disable quotes */
 
-exports.up = knex =>
+exports.up = (knex) =>
   knex.schema.raw(
-    `ALTER TABLE screenshot_diffs ALTER COLUMN "score" DROP NOT NULL`,
-  )
+    `ALTER TABLE screenshot_diffs ALTER COLUMN "score" DROP NOT NULL`
+  );
 
-exports.down = knex =>
+exports.down = (knex) =>
   knex.schema.raw(
-    `ALTER TABLE screenshot_diffs ALTER COLUMN "score" SET NOT NULL`,
-  )
+    `ALTER TABLE screenshot_diffs ALTER COLUMN "score" SET NOT NULL`
+  );

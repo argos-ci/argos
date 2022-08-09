@@ -1,15 +1,15 @@
-import React from 'react'
-import { Button } from '@smooth-ui/core-sc'
-import { useRepository, useToggleRepository } from './RepositoryContext'
+import React from "react";
+import { Button } from "@smooth-ui/core-sc";
+import { useRepository, useToggleRepository } from "./RepositoryContext";
 
 export function ToggleButton() {
-  const repository = useRepository()
-  const { toggleRepository, loading } = useToggleRepository()
-  const { enabled } = repository
+  const repository = useRepository();
+  const { toggleRepository, loading } = useToggleRepository();
+  const { enabled } = repository;
   return (
     <Button
       disabled={loading}
-      variant={enabled ? 'danger' : 'success'}
+      variant={enabled ? "danger" : "success"}
       onClick={() =>
         toggleRepository({
           variables: {
@@ -19,7 +19,7 @@ export function ToggleButton() {
         })
       }
     >
-      {enabled ? 'Deactivate' : 'Activate'} Repository
+      {enabled ? "Deactivate" : "Activate"} Repository
     </Button>
-  )
+  );
 }

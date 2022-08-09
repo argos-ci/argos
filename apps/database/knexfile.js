@@ -1,6 +1,6 @@
 /* eslint-disable no-global-assign */
-require = require('esm')(module)
+require = require("esm")(module);
 
-const { default: config } = require('@argos-ci/config')
+const { default: config } = require("@argos-ci/config");
 
-module.exports = config.get('pg')
+module.exports = config.get("pg");

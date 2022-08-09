@@ -1,21 +1,21 @@
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import { BrowserRouter, Route, Switch } from 'react-router-dom'
-import { Normalize } from '@smooth-ui/core-sc'
-import { ScrollToTop, GoogleAnalytics } from './containers/Router'
-import { AuthInitializer } from './containers/Auth'
-import { ApolloInitializer } from './containers/Apollo'
-import { ThemeInitializer } from './containers/Theme'
-import { UserInitializer } from './containers/User'
-import { SyncAlertBar } from './containers/SyncAlertBar'
-import { AppNavbar } from './containers/AppNavbar'
-import { AppFooter } from './containers/AppFooter'
-import { Home } from './pages/Home'
-import { Owner } from './pages/Owner'
-import { ErrorPage } from './pages/ErrorPage'
-import { Repository } from './pages/Repository'
-import { NotFound } from './pages/NotFound'
-import { AuthCallback } from './pages/AuthCallback'
+import React from "react";
+import { Helmet } from "react-helmet";
+import { BrowserRouter, Route, Switch } from "react-router-dom";
+import { Normalize } from "@smooth-ui/core-sc";
+import { ScrollToTop, GoogleAnalytics } from "./containers/Router";
+import { AuthInitializer } from "./containers/Auth";
+import { ApolloInitializer } from "./containers/Apollo";
+import { ThemeInitializer } from "./containers/Theme";
+import { UserInitializer } from "./containers/User";
+import { SyncAlertBar } from "./containers/SyncAlertBar";
+import { AppNavbar } from "./containers/AppNavbar";
+import { AppFooter } from "./containers/AppFooter";
+import { Home } from "./pages/Home";
+import { Owner } from "./pages/Owner";
+import { ErrorPage } from "./pages/ErrorPage";
+import { Repository } from "./pages/Repository";
+import { NotFound } from "./pages/NotFound";
+import { AuthCallback } from "./pages/AuthCallback";
 
 import {
   GlobalStyle,
@@ -24,7 +24,7 @@ import {
   LayoutMain,
   LayoutFooter,
   Catch,
-} from './components'
+} from "./components";
 
 export function App() {
   return (
@@ -83,5 +83,5 @@ export function App() {
         </BrowserRouter>
       </>
     </ThemeInitializer>
-  )
+  );
 }

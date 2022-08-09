@@ -1,20 +1,20 @@
 /* eslint-disable react/no-unescaped-entities */
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import { Box } from '@xstyled/styled-components'
-import { Button } from '@smooth-ui/core-sc'
-import Tooltip from 'react-tooltip'
-import { Link } from 'react-router-dom'
-import { FaRegClock } from 'react-icons/fa'
-import { GoGitCommit } from 'react-icons/go'
-import moment from 'moment'
-import gql from 'graphql-tag'
-import { getStatusColor } from '../../modules/build'
-import { Container, Card, CardBody, FadeLink, Loader } from '../../components'
-import { StatusIcon } from '../../containers/StatusIcon'
-import { useRepository } from './RepositoryContext'
-import { useQuery } from '../../containers/Apollo'
-import { GettingStarted } from './GettingStarted'
+import React from "react";
+import { Helmet } from "react-helmet";
+import { Box } from "@xstyled/styled-components";
+import { Button } from "@smooth-ui/core-sc";
+import Tooltip from "react-tooltip";
+import { Link } from "react-router-dom";
+import { FaRegClock } from "react-icons/fa";
+import { GoGitCommit } from "react-icons/go";
+import moment from "moment";
+import { gql } from "graphql-tag";
+import { getStatusColor } from "../../modules/build";
+import { Container, Card, CardBody, FadeLink, Loader } from "../../components";
+import { StatusIcon } from "../../containers/StatusIcon";
+import { useRepository } from "./RepositoryContext";
+import { useQuery } from "../../containers/Apollo";
+import { GettingStarted } from "./GettingStarted";
 
 const REPOSITORY_BUILDS = gql`
   query RepositoryBuilds($ownerLogin: String!, $name: String!, $after: Int!) {
@@ -51,7 +51,7 @@ const REPOSITORY_BUILDS = gql`
       }
     }
   }
-`
+`;
 
 function BuildsList({ repository }) {
   const { loading, data, fetchMore } = useQuery(REPOSITORY_BUILDS, {
@@ -60,15 +60,15 @@ function BuildsList({ repository }) {
       name: repository.name,
       after: 0,
     },
-  })
-  const [moreLoading, setMoreLoading] = React.useState()
+  });
+  const [moreLoading, setMoreLoading] = React.useState();
 
   function loadNextPage() {
-    setMoreLoading(true)
+    setMoreLoading(true);
     fetchMore({
       variables: { after: data.repository.builds.pageInfo.endCursor },
       updateQuery: (prev, { fetchMoreResult }) => {
-        if (!fetchMoreResult) return prev
+        if (!fetchMoreResult) return prev;
         return {
           ...prev,
           repository: {
@@ -81,11 +81,11 @@ function BuildsList({ repository }) {
               ],
             },
           },
-        }
+        };
       },
     }).finally(() => {
-      setMoreLoading(false)
-    })
+      setMoreLoading(false);
+    });
   }
 
   if (loading) {
@@ -93,24 +93,24 @@ function BuildsList({ repository }) {
       <Container my={4} textAlign="center">
         <Loader />
       </Container>
-    )
+    );
   }
 
   const {
     repository: {
       builds: { pageInfo, edges: builds },
     },
-  } = data
+  } = data;
 
   if (!pageInfo.totalCount) {
-    return <GettingStarted />
+    return <GettingStarted />;
   }
 
   return (
     <Container my={4}>
-      {builds.map(build => {
-        const { status } = build
-        const buildColor = getStatusColor(status)
+      {builds.map((build) => {
+        const { status } = build;
+        const buildColor = getStatusColor(status);
         return (
           <Box key={build.id} col={1} py={2}>
             <Card borderLeft={2} borderColor={buildColor}>
@@ -159,7 +159,7 @@ function BuildsList({ repository }) {
                   >
                     <Box
                       data-tip={moment(build.createdAt).format(
-                        'DD-MM-YYYY HH:MM',
+                        "DD-MM-YYYY HH:MM"
                       )}
                     >
                       <Box forwardedAs={FaRegClock} mr={2} />
@@ -171,7 +171,7 @@ function BuildsList({ repository }) {
               </CardBody>
             </Card>
           </Box>
-        )
+        );
       })}
       {pageInfo.hasNextPage && !moreLoading ? (
         <Button
@@ -193,11 +193,11 @@ function BuildsList({ repository }) {
         </Box>
       )}
     </Container>
-  )
+  );
 }
 
 export function RepositoryBuilds() {
-  const repository = useRepository()
+  const repository = useRepository();
 
   return (
     <>
@@ -206,5 +206,5 @@ export function RepositoryBuilds() {
       </Helmet>
       <BuildsList repository={repository} />
     </>
-  )
+  );
 }

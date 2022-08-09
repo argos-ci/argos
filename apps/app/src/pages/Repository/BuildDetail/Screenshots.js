@@ -1,46 +1,50 @@
 /* eslint-disable react/no-unescaped-entities */
-import React from 'react'
-import styled, { Box } from '@xstyled/styled-components'
-import { Button } from '@smooth-ui/core-sc'
-import { useHiddenState, Hidden, HiddenDisclosure } from 'reakit/Hidden'
+import React from "react";
+import styled, { Box } from "@xstyled/styled-components";
+import { Button } from "@smooth-ui/core-sc";
+import {
+  useDisclosureState,
+  Disclosure,
+  DisclosureContent,
+} from "reakit/Disclosure";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardBody,
   CardText,
-} from '../../../components'
-import { getStatusColor } from '../../../modules/build'
+} from "../../../components";
+import { getStatusColor } from "../../../modules/build";
 
 const StyledImg = styled.img`
   width: 100%;
   display: block;
-`
+`;
 
 function getStatus({ jobStatus, score }) {
-  if (jobStatus === 'complete') {
-    return score === 0 ? 'success' : 'unknown'
+  if (jobStatus === "complete") {
+    return score === 0 ? "success" : "unknown";
   }
-  return jobStatus
+  return jobStatus;
 }
 
 function ScreenshotDiffItem({
   screenshotDiff: { jobStatus, score, compareScreenshot, baseScreenshot, url },
 }) {
-  const status = getStatus({ jobStatus, score })
-  const hidden = useHiddenState({ visible: status !== 'success' })
+  const status = getStatus({ jobStatus, score });
+  const disclosure = useDisclosureState({ visible: status !== "success" });
 
   return (
     <CardBody borderLeft={2} borderColor={getStatusColor(status)}>
       <CardText as="h4">
-        <HiddenDisclosure as={Button} {...hidden} mr={20}>
-          {hidden.visible ? 'Hide' : 'Show'}
-        </HiddenDisclosure>
+        <Disclosure as={Button} {...disclosure} mr={20}>
+          {disclosure.visible ? "Hide" : "Show"}
+        </Disclosure>
         {compareScreenshot.name}
       </CardText>
-      <Hidden {...hidden}>
+      <DisclosureContent {...disclosure}>
         {() =>
-          hidden.visible && (
+          disclosure.visible && (
             <Box row>
               <Box col={1 / 3}>
                 {baseScreenshot ? (
@@ -48,7 +52,7 @@ function ScreenshotDiffItem({
                     href={baseScreenshot.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title='Base screenshot'
+                    title="Base screenshot"
                   >
                     <StyledImg
                       alt={baseScreenshot.name}
@@ -62,7 +66,7 @@ function ScreenshotDiffItem({
                   href={compareScreenshot.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title='Current screenshot'
+                  title="Current screenshot"
                 >
                   <StyledImg
                     alt={compareScreenshot.name}
@@ -72,7 +76,12 @@ function ScreenshotDiffItem({
               </Box>
               <Box col={1 / 3}>
                 {url && (
-                  <a href={url} target="_blank" rel="noopener noreferrer" title='Diff'>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Diff"
+                  >
                     <StyledImg alt="diff" src={url} />
                   </a>
                 )}
@@ -80,23 +89,22 @@ function ScreenshotDiffItem({
             </Box>
           )
         }
-      </Hidden>
+      </DisclosureContent>
     </CardBody>
-  )
+  );
 }
 
 export default function BuildDetailScreenshots({ build }) {
-  const [showPassingScreenshots, setShowPassingScreenshots] = React.useState(
-    false,
-  )
-  const { screenshotDiffs } = build
+  const [showPassingScreenshots, setShowPassingScreenshots] =
+    React.useState(false);
+  const { screenshotDiffs } = build;
   screenshotDiffs.sort((itemA, itemB) =>
     itemA.validationStatus > itemB.validationStatus
       ? -1
       : itemA.validationStatus < itemB.validationStatus
       ? 1
-      : 0,
-  )
+      : 0
+  );
 
   return (
     <Box row m={-2}>
@@ -112,7 +120,7 @@ export default function BuildDetailScreenshots({ build }) {
                   key={index}
                   screenshotDiff={screenshotDiff}
                 />
-              ),
+              )
           )}
         </Card>
         <Box mt={{ xs: 3 }}>
@@ -120,11 +128,11 @@ export default function BuildDetailScreenshots({ build }) {
             onClick={() => setShowPassingScreenshots(!showPassingScreenshots)}
           >
             {showPassingScreenshots
-              ? 'Hide passing screenshots'
-              : 'Show passing screenshots'}
+              ? "Hide passing screenshots"
+              : "Show passing screenshots"}
           </Button>
         </Box>
       </Box>
     </Box>
-  )
+  );
 }

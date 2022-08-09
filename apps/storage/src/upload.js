@@ -1,6 +1,6 @@
-import { createReadStream } from 'fs'
-import { v4 as uuid } from 'uuid'
-import mime from 'mime'
+import { createReadStream } from "fs";
+import { v4 as uuid } from "uuid";
+import mime from "mime";
 
 export function upload({ s3, inputPath, ...other }) {
   return s3
@@ -10,5 +10,5 @@ export function upload({ s3, inputPath, ...other }) {
       Key: uuid(),
       ...other,
     })
-    .promise()
+    .promise();
 }

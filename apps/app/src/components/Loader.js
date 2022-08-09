@@ -1,7 +1,7 @@
-import React from 'react'
-import { Box } from '@xstyled/styled-components'
+import React from "react";
+import { Box } from "@xstyled/styled-components";
 
-export const Loader = props => (
+export const Loader = (props) => (
   <Box
     forwardedAs="svg"
     width="2rem"
@@ -101,4 +101,4 @@ export const Loader = props => (
       />
     </rect>
   </Box>
-)
+);

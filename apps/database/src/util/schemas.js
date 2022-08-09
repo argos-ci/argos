@@ -1,28 +1,28 @@
 export const timestampsSchema = {
-  type: 'object',
+  type: "object",
   required: [],
   properties: {
     id: {
-      type: ['integer', 'string'],
+      type: ["integer", "string"],
     },
     createdAt: {
-      type: 'string',
+      type: "string",
     },
     updatedAt: {
-      type: 'string',
+      type: "string",
     },
   },
-}
+};
 
 export const jobModelSchema = {
-  required: ['jobStatus'],
+  required: ["jobStatus"],
   properties: {
     jobStatus: {
-      type: 'string',
-      enum: ['pending', 'progress', 'complete', 'error', 'aborted'],
+      type: "string",
+      enum: ["pending", "progress", "complete", "error", "aborted"],
     },
   },
-}
+};
 
 export function mergeSchemas(...schemas) {
   return schemas.reduce(
@@ -38,6 +38,6 @@ export function mergeSchemas(...schemas) {
     {
       required: [],
       properties: {},
-    },
-  )
+    }
+  );
 }

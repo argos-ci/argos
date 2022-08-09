@@ -1,1 +1,1 @@
-export { Text } from '@smooth-ui/core-sc'
+export { Text } from "@smooth-ui/core-sc";

@@ -1,4 +1,4 @@
-exports.up = knex =>
+exports.up = (knex) =>
   knex.schema.raw(
     `
   ALTER TYPE job_status RENAME TO job_status_old;
@@ -11,10 +11,10 @@ exports.up = knex =>
   ALTER TABLE build_notifications ALTER COLUMN "jobStatus" TYPE job_status USING "jobStatus"::text::job_status;
 
   DROP TYPE job_status_old;
-  `,
-  )
+  `
+  );
 
-exports.down = knex =>
+exports.down = (knex) =>
   knex.schema.raw(
     `
   ALTER TYPE job_status RENAME TO job_status_old;
@@ -27,5 +27,5 @@ exports.down = knex =>
   ALTER TABLE build_notifications ALTER COLUMN "jobStatus" TYPE job_status USING "jobStatus"::text::job_status;
 
   DROP TYPE job_status_old;
-  `,
-  )
+  `
+  );

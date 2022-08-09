@@ -1,6 +1,6 @@
-import React from 'react'
-import { Boxer, Alert, Button } from '@smooth-ui/core-sc'
-import { Helmet } from 'react-helmet'
+import React from "react";
+import { Boxer, Alert, Button } from "@smooth-ui/core-sc";
+import { Helmet } from "react-helmet";
 import {
   Container,
   Card,
@@ -10,13 +10,13 @@ import {
   CardText,
   Code,
   FadeLink,
-} from '../../components'
-import { useRepository, useToggleRepository } from './RepositoryContext'
+} from "../../components";
+import { useRepository, useToggleRepository } from "./RepositoryContext";
 
 export function RepositorySettings() {
-  const repository = useRepository()
-  const { toggleRepository, loading, error } = useToggleRepository()
-  const { owner, enabled } = repository
+  const repository = useRepository();
+  const { toggleRepository, loading, error } = useToggleRepository();
+  const { owner, enabled } = repository;
   return (
     <Container>
       <Helmet>
@@ -30,21 +30,21 @@ export function RepositorySettings() {
             </CardHeader>
             <CardBody>
               <CardText>
-                To send data to Argos CI you will need to configure a{' '}
+                To send data to Argos CI you will need to configure a{" "}
                 <FadeLink
                   href="https://github.com/argos-ci/argos-cli"
                   target="_blank"
                   color="darker"
                 >
                   CLI
-                </FadeLink>{' '}
+                </FadeLink>{" "}
                 with a client key (usually referred to as the ARGOS_TOKEN
                 value).
                 <br />
                 ARGOS_TOKEN is a project-specific, it should be kept secret.
                 <br />
                 For more information on integrating Argos CI with your
-                application take a look at our{' '}
+                application take a look at our{" "}
                 <FadeLink
                   color="darker"
                   href={`/${owner.login}/${repository.name}/getting-started`}
@@ -60,7 +60,7 @@ export function RepositorySettings() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {enabled ? 'Deactivate' : 'Activate'} Repository
+              {enabled ? "Deactivate" : "Activate"} Repository
             </CardTitle>
           </CardHeader>
           <CardBody>
@@ -73,7 +73,7 @@ export function RepositorySettings() {
             <CardText>
               <Button
                 disabled={loading}
-                variant={enabled ? 'danger' : 'success'}
+                variant={enabled ? "danger" : "success"}
                 onClick={() =>
                   toggleRepository({
                     variables: {
@@ -83,12 +83,12 @@ export function RepositorySettings() {
                   })
                 }
               >
-                {enabled ? 'Deactivate' : 'Activate'} Repository
+                {enabled ? "Deactivate" : "Activate"} Repository
               </Button>
             </CardText>
           </CardBody>
         </Card>
       </Boxer>
     </Container>
-  )
+  );
 }

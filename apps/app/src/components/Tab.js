@@ -1,6 +1,6 @@
-import React from 'react'
-import { Link, Route } from 'react-router-dom'
-import styled, { css, up } from '@xstyled/styled-components'
+import React from "react";
+import { Link, Route } from "react-router-dom";
+import styled, { css, up } from "@xstyled/styled-components";
 
 export const TabList = styled.ul`
   padding: 0;
@@ -10,7 +10,7 @@ export const TabList = styled.ul`
   display: flex;
   font-weight: medium;
   font-size: 14;
-`
+`;
 
 export const TabItem = styled.li`
   padding: 0;
@@ -20,10 +20,10 @@ export const TabItem = styled.li`
   transition: base;
   transition-property: border-color;
 
-  &[aria-current='true'] {
+  &[aria-current="true"] {
     border-color: darker;
   }
-`
+`;
 
 export const TabItemLink = styled.a`
   color: darker;
@@ -33,13 +33,13 @@ export const TabItemLink = styled.a`
   overflow-x: auto;
 
   ${up(
-    'md',
+    "md",
     css`
       padding: 3;
       overflow-x: visible;
-    `,
+    `
   )}
-`
+`;
 
 export function RouterTabItem({ children, exact, to }) {
   return (
@@ -52,5 +52,5 @@ export function RouterTabItem({ children, exact, to }) {
         </TabItem>
       )}
     </Route>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import React from 'react'
-import gql from 'graphql-tag'
-import { useMutation } from '@apollo/react-hooks'
+import React from "react";
+import { gql } from "graphql-tag";
+import { useMutation } from "@apollo/react-hooks";
 
 export const RepositoryContextFragment = gql`
   fragment RepositoryContextFragment on Repository {
@@ -28,15 +28,15 @@ export const RepositoryContextFragment = gql`
       }
     }
   }
-`
+`;
 
-const RepositoryContext = React.createContext()
+const RepositoryContext = React.createContext();
 
 export function RepositoryProvider({
   repository: initialRepository,
   children,
 }) {
-  const [repository, setRepository] = React.useState(initialRepository)
+  const [repository, setRepository] = React.useState(initialRepository);
   const [
     toggleRepository,
     { loading: queryLoading, error: queryError, data: updateData },
@@ -47,12 +47,12 @@ export function RepositoryProvider({
       }
     }
     ${RepositoryContextFragment}
-  `)
+  `);
   React.useEffect(() => {
     if (updateData && updateData.toggleRepository) {
-      setRepository(updateData.toggleRepository)
+      setRepository(updateData.toggleRepository);
     }
-  }, [queryError, queryLoading, updateData])
+  }, [queryError, queryLoading, updateData]);
   const value = React.useMemo(
     () => ({
       repository,
@@ -60,18 +60,18 @@ export function RepositoryProvider({
       queryLoading,
       queryError,
     }),
-    [queryError, queryLoading, repository, toggleRepository],
-  )
+    [queryError, queryLoading, repository, toggleRepository]
+  );
   return (
     <RepositoryContext.Provider value={value}>
       {children}
     </RepositoryContext.Provider>
-  )
+  );
 }
 
 export function useRepository() {
-  const { repository } = React.useContext(RepositoryContext)
-  return repository
+  const { repository } = React.useContext(RepositoryContext);
+  return repository;
 }
 
 export function useToggleRepository() {
@@ -79,6 +79,6 @@ export function useToggleRepository() {
     toggleRepository,
     queryLoading: loading,
     queryError: error,
-  } = React.useContext(RepositoryContext)
-  return { toggleRepository, loading, error }
+  } = React.useContext(RepositoryContext);
+  return { toggleRepository, loading, error };
 }
