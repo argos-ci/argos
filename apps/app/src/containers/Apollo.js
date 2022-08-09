@@ -1,5 +1,5 @@
 import React from "react";
-import { ApolloClient } from "apollo-boost";
+import ApolloClient from "apollo-boost";
 import {
   useQuery as useApolloQuery,
   ApolloProvider as BaseApolloProvider,
