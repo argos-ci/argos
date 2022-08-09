@@ -6,6 +6,7 @@
   "dependencies": {
     "@argos-ci/config": "2.0.0",
     "@aws-sdk/client-s3": "^3.145.0",
+    "@aws-sdk/s3-request-presigner": "^3.145.0",
     "mime": "^3.0.0",
     "tmp": "^0.2.1"
   }
