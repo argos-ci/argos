@@ -1,5 +1,6 @@
 import { Octokit } from "@octokit/rest";
-import { createOAuthAppAuth, createAppAuth } from "@octokit/auth";
+import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
+import { createAppAuth } from "@octokit/auth-app";
 import config from "@argos-ci/config";
 
 export function getAppOctokit() {

@@ -3,3 +3,4 @@ apps/*/dist/
 node_modules/
 *.pem
 .env
+diff_tmp.png

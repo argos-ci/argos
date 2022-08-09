@@ -5,8 +5,9 @@
   "main": "src/index.js",
   "dependencies": {
     "@argos-ci/config": "^2.0.0",
-    "@octokit/auth": "^2.0.0",
-    "@octokit/rest": "^17.1.4"
+    "@octokit/auth-app": "^4.0.4",
+    "@octokit/auth-oauth-app": "^5.0.1",
+    "@octokit/rest": "^19.0.3"
   },
   "devDependencies": {
     "nock": "^12.0.3"
