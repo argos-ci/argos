@@ -64,4 +64,4 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Run Argos
-        run: yarn argos
+        run: npx argos-cli upload screenshots/samples --token ${{ secrets.ARGOS_TOKEN }}
