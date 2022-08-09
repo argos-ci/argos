@@ -1,6 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 import { factory } from 'factory-girl'
+import moment from 'moment'
 import crypto from 'crypto'
 import ObjectionAdapter from 'factory-girl-objection-adapter'
 import {
@@ -9,6 +10,7 @@ import {
   BuildNotification,
   Organization,
   Plan,
+  Purchase,
   Repository,
   Screenshot,
   ScreenshotBucket,
@@ -132,6 +134,12 @@ factory.define('Plan', Plan, {
 factory.define('Account', Account, {
   userId: factory.assoc('User', 'id'),
   organizationId: factory.assoc('Organization', 'id'),
+})
+
+factory.define('Purchase', Purchase, {
+  planId: factory.assoc('User', 'id'),
+  accountId: factory.assoc('Account', 'id'),
+  startDate: moment().subtract(10, 'days'),
 })
 
 export { factory }

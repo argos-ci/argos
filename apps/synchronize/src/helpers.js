@@ -28,14 +28,14 @@ export async function synchronizeFromUserId(userId) {
   await job.push(synchronization.id)
 }
 
-export async function getAccountUser(githubId) {
+async function getAccountUser(githubId) {
   return Account.query()
     .select('user.*', 'user.id as userId', 'accounts.id')
     .joinRelated('user')
     .findOne('user.githubId', githubId)
 }
 
-export async function getAccountOrganization(githubId) {
+async function getAccountOrganization(githubId) {
   return Account.query()
     .select(
       'organization.*',
@@ -46,7 +46,7 @@ export async function getAccountOrganization(githubId) {
     .findOne('organization.githubId', githubId)
 }
 
-export async function getOrCreateUser(payload) {
+async function getOrCreateUser(payload) {
   const { email } = payload.sender
   const { id: githubId, login } = payload.marketplace_purchase.account
   const user = await User.query().findOne({ githubId })
@@ -54,25 +54,25 @@ export async function getOrCreateUser(payload) {
   return User.query().insertAndFetch({ githubId, login, email })
 }
 
-export async function getOrCreateOrganization(payload) {
+async function getOrCreateOrganization(payload) {
   const { id: githubId, login } = payload.marketplace_purchase.account
   const organization = await Organization.query().findOne({ githubId })
   if (organization) return organization
   return Organization.query().insertAndFetch({ githubId, login })
 }
 
-export async function getAccount({ type, githubId }) {
+export async function getAccount(payload) {
+  const { type, id: githubId } = payload.marketplace_purchase.account
   return type.toLowerCase() === 'user'
     ? getAccountUser(githubId)
     : getAccountOrganization(githubId)
 }
 
 export async function getOrCreateAccount(payload) {
-  const { type, id: githubId } = payload.marketplace_purchase.account
-  const account = await getAccount({ type, githubId })
+  const account = await getAccount(payload)
   if (account) return account
 
-  if (type === 'User') {
+  if (payload.marketplace_purchase.account.type === 'User') {
     const user = await getOrCreateUser(payload)
     return Account.query().insertAndFetch({ userId: user.id })
   }
@@ -81,17 +81,77 @@ export async function getOrCreateAccount(payload) {
   return Account.query().insertAndFetch({ organizationId: organization.id })
 }
 
-export async function getOrCreatePurchase({ accountId, planId }) {
-  const purchase = await Purchase.query().findOne({ accountId, planId })
+export async function getOrCreatePurchase({ account, plan }) {
+  const purchase = await Purchase.query().findOne({
+    accountId: account.id,
+    planId: plan.id,
+  })
   if (purchase) return purchase
-  return Purchase.query().insertAndFetch({ accountId, planId })
+  return Purchase.query().insertAndFetch({
+    accountId: account.id,
+    planId: plan.id,
+  })
 }
 
-export async function getMatchingPlan(payload) {
-  const { id: planGithubId } = payload.marketplace_purchase.plan
-  const plan = await Plan.query().findOne({ githubId: planGithubId })
-  if (!plan) {
-    throw new Error(`Can’t find a plan with the githubId: "${planGithubId}".`)
-  }
+export async function throwMissingAccountError(payload) {
+  const { type, githubId } = payload.marketplace_purchase
+  throw new Error(
+    `missing ${
+      type ? type.toLowerCase() : ''
+    } account with githubId: '${githubId}'.`,
+  )
+}
+
+export async function throwMissingPlanError({ githubId }) {
+  throw new Error(`missing plan with githubId: '${githubId}'`)
+}
+
+async function getEventPlanOrThrow(marketplacePurchase) {
+  const {
+    plan: { id: githubId },
+  } = marketplacePurchase
+  const plan = await Plan.query().findOne({ githubId })
+  if (!plan) throwMissingPlanError({ githubId })
   return plan
+}
+
+export async function getPlanOrThrow(payload) {
+  return getEventPlanOrThrow(payload.marketplace_purchase)
+}
+
+export async function getPreviousPlanOrThrow(payload) {
+  return getEventPlanOrThrow(payload.previous_marketplace_purchase)
+}
+
+export async function getActivePurchaseOrThrow(payload) {
+  const { id: planGithubId } = payload.previous_marketplace_purchase.plan
+  const { id: accountGithubId } = payload.marketplace_purchase.account
+  const today = new Date().toISOString()
+
+  const purchaseQuery = Purchase.query()
+    .where('startDate', '<=', today)
+    .joinRelated('plan')
+    .where('plan.githubId', planGithubId)
+    .where((query) =>
+      query.whereNull('endDate').orWhere('endDate', '>=', today),
+    )
+  if (payload.marketplace_purchase.account.type === 'User') {
+    purchaseQuery.joinRelated('user').where('user.githubId', accountGithubId)
+  } else {
+    purchaseQuery
+      .joinRelated('organization')
+      .where('organization.githubId', accountGithubId)
+  }
+  const purchases = await purchaseQuery
+  if (purchases.length === 0) {
+    throw new Error(
+      `missing purchase with plan’s githubId: '${planGithubId}' and account’s githubId: '${accountGithubId}'`,
+    )
+  }
+  if (purchases.length > 1) {
+    throw new Error(
+      `multiple actives purchases for plan with githubId: '${planGithubId}' and account with githubId: '${accountGithubId}'`,
+    )
+  }
+  return purchases[0]
 }
