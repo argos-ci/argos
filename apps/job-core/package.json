@@ -6,7 +6,7 @@
   "dependencies": {
     "@argos-ci/config": "2.0.0",
     "@argos-ci/logger": "2.0.0",
-    "@sentry/node": "^5.15.4",
+    "@sentry/node": "^7.9.0",
     "amqplib": "^0.5.5"
   }
 }

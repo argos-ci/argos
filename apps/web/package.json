@@ -15,7 +15,7 @@
     "@octokit/auth-oauth-app": "^5.0.1",
     "@octokit/rest": "^19.0.3",
     "@octokit/webhooks": "^10.1.1",
-    "@sentry/node": "^5.15.4",
+    "@sentry/node": "^7.9.0",
     "axios": "^0.19.2",
     "body-parser": "^1.20.0",
     "compression": "^1.7.4",

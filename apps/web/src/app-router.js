@@ -3,6 +3,7 @@ import path from "path";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import config from "@argos-ci/config";
+import * as Sentry from "@sentry/node";
 import { apolloServer } from "@argos-ci/graphql";
 import { errorHandler } from "./middlewares/errorHandler";
 import { rendering } from "./middlewares/rendering";
@@ -65,6 +66,8 @@ const htmlErrorHandler = (err, req, res, next) => {
     },
   })(req, res, next);
 };
+
+router.use(Sentry.Handlers.errorHandler());
 
 router.use(
   errorHandler({
