@@ -1,13 +1,10 @@
-import AWS from "aws-sdk";
-import S3 from "aws-sdk/clients/s3";
-
-AWS.config.setPromisesDependency(Promise);
+import { S3Client } from "@aws-sdk/client-s3";
 
 let client;
 
 export function s3() {
   if (!client) {
-    client = new S3({ signatureVersion: "v4", region: "eu-west-1" });
+    client = new S3Client({ region: "eu-west-1" });
   }
   return client;
 }

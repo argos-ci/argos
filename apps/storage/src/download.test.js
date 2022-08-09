@@ -2,7 +2,7 @@ import path from "path";
 import tmp from "tmp";
 import { readFile } from "fs";
 import { promisify } from "util";
-import S3 from "aws-sdk/clients/s3";
+import { S3Client } from "@aws-sdk/client-s3";
 import config from "@argos-ci/config";
 import { upload } from "./upload";
 import { download } from "./download";
@@ -10,7 +10,7 @@ import { download } from "./download";
 const readFileAsync = promisify(readFile);
 
 describe("#download", () => {
-  const s3 = new S3({ signatureVersion: "v4" });
+  const s3 = new S3Client({ region: "eu-west-1" });
   let tmpDirectory;
 
   beforeAll(() => {
