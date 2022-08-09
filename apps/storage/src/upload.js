@@ -1,5 +1,5 @@
 import { createReadStream } from "fs";
-import { randomUuid } from "crypto";
+import { randomUUID } from "crypto";
 import mime from "mime";
 
 export function upload({ s3, inputPath, ...other }) {
@@ -7,7 +7,7 @@ export function upload({ s3, inputPath, ...other }) {
     .upload({
       Body: createReadStream(inputPath),
       ContentType: mime.getType(inputPath),
-      Key: randomUuid(),
+      Key: randomUUID(),
       ...other,
     })
     .promise();
