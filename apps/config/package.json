@@ -4,7 +4,7 @@
   "private": true,
   "main": "src/index.js",
   "dependencies": {
-    "convict": "^5.2.0",
-    "dotenv": "^8.2.0"
+    "convict": "^6.2.3",
+    "dotenv": "^16.0.1"
   }
 }

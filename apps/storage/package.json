@@ -6,7 +6,7 @@
   "dependencies": {
     "@argos-ci/config": "2.0.0",
     "aws-sdk": "^2.1191.0",
-    "mime": "^2.4.4",
+    "mime": "^3.0.0",
     "tmp": "^0.2.1"
   }
 }
