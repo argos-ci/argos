@@ -8,7 +8,7 @@ export function getAppOctokit() {
     debug: config.get("env") === "development",
     authStrategy: createAppAuth,
     auth: {
-      id: config.get("github.appId"),
+      appId: config.get("github.appId"),
       privateKey: config.get("github.privateKey"),
     },
   });
