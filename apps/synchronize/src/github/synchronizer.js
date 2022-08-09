@@ -102,8 +102,9 @@ export class GitHubSynchronizer {
         const data = {
           githubId: githubRepository.id,
           name: githubRepository.name,
-          organizationId: organizationIdByRepositoryId[githubRepository.id],
-          userId: userIdByRepositoryId[githubRepository.id],
+          organizationId:
+            organizationIdByRepositoryId[githubRepository.id] ?? null,
+          userId: userIdByRepositoryId[githubRepository.id] ?? null,
           private: githubRepository.private,
         }
 
