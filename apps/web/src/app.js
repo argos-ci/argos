@@ -71,6 +71,7 @@ app.use(
       directives: {
         // Blob for the upload page
         defaultSrc: ["*", "blob:"],
+        imgSrc: ["*", "data:"],
         styleSrc: ["*", "'unsafe-inline'"],
         scriptSrc: ["*", "'unsafe-inline'", "'unsafe-eval'"],
         frameAncestors: ["'none'"], // Disallow embedding of content
