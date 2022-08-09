@@ -15,6 +15,8 @@ export class Purchase extends Model {
       properties: {
         accountId: { type: ["string", null] },
         planId: { type: ["string", null] },
+        endDate: { type: ["string", null] },
+        startDate: { type: ["string", null] },
       },
     });
   }
@@ -26,31 +28,31 @@ export class Purchase extends Model {
         modelClass: Account,
         join: {
           from: "purchases.accountId",
-          to: "account.id",
+          to: "accounts.id",
         },
       },
       user: {
-        relation: Model.BelongsToOneRelation,
+        relation: Model.HasOneThroughRelation,
         modelClass: User,
         join: {
           from: "purchases.accountId",
           through: {
-            from: "account.id",
-            to: "account.userId",
+            from: "accounts.id",
+            to: "accounts.userId",
           },
-          to: "user.id",
+          to: "users.id",
         },
       },
       organization: {
-        relation: Model.BelongsToOneRelation,
+        relation: Model.HasOneThroughRelation,
         modelClass: Organization,
         join: {
           from: "purchases.accountId",
           through: {
-            from: "account.id",
-            to: "account.organizationId",
+            from: "accounts.id",
+            to: "accounts.organizationId",
           },
-          to: "organization.id",
+          to: "organizations.id",
         },
       },
       plan: {
@@ -58,7 +60,7 @@ export class Purchase extends Model {
         modelClass: Plan,
         join: {
           from: "purchases.planId",
-          to: "plan.id",
+          to: "plans.id",
         },
       },
     };
