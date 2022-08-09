@@ -101,7 +101,7 @@ export async function processBuildNotification(buildNotification) {
   const buildUrl = await build.getUrl();
 
   // https://developer.github.com/v3/repos/statuses/
-  return octokit.repos.createStatus({
+  return octokit.repos.createCommitStatus({
     owner: owner.login,
     repo: build.repository.name,
     sha: build.compareScreenshotBucket.commit,
