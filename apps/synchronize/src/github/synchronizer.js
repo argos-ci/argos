@@ -105,8 +105,8 @@ export class GitHubSynchronizer {
           githubId: githubRepository.id,
           name: githubRepository.name,
           organizationId:
-            organizationIdByRepositoryId[githubRepository.id] ?? null,
-          userId: userIdByRepositoryId[githubRepository.id] ?? null,
+            organizationIdByRepositoryId[githubRepository.id] || null,
+          userId: userIdByRepositoryId[githubRepository.id] || null,
           private: githubRepository.private,
         };
 
