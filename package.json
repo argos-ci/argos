@@ -19,7 +19,7 @@
     "node": "16"
   },
   "dependencies": {
-    "@sentry/cli": "^1.52.0"
+    "@sentry/cli": "^2.5.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.18.10",
