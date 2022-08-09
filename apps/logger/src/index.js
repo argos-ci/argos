@@ -9,7 +9,7 @@ const logger = {
   },
   error: (...args) => {
     if (process.env.NODE_ENV === "test") {
-      return;
+      throw new Error(args);
     }
 
     console.error(...args);

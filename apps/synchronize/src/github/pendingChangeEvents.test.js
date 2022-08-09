@@ -64,8 +64,8 @@ describe('marketplace "pending_change" event', () => {
     })
   })
 
-  xdescribe('updates to a missing plan', () => {
-    it('should missing plan ', async () => {
+  describe('updates to a missing plan', () => {
+    it('should throw an error', async () => {
       await expect(
         handleGitHubEvents({
           name: 'marketplace_purchase',
@@ -84,8 +84,8 @@ describe('marketplace "pending_change" event', () => {
     })
   })
 
-  xdescribe('updates on a missing purchase', () => {
-    it('should throw missing purchase error', async () => {
+  describe('updates on a missing purchase', () => {
+    it('should throw an error', async () => {
       await expect(
         handleGitHubEvents({
           name: 'marketplace_purchase',
