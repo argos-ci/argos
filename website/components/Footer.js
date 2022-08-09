@@ -58,20 +58,12 @@ export const AppFooter = (props) => (
       <Sections>
         <Section>
           <SectionTitle>Getting Started</SectionTitle>
-          <FooterLink href="https://docs.argos-ci.com/getting-started/">
+          <FooterLink href="https://docs.argos-ci.com/getting-started">
             Installation
           </FooterLink>
-          <FooterLink href="https://docs.argos-ci.com/about-argos-ci/">
-            About Argos
-          </FooterLink>
-          <FooterLink href="https://docs.argos-ci.com/visual-testing-routine/">
-            Visual testing
-          </FooterLink>
-          <FooterLink href="https://github.com/argos-ci/argos-cli">
-            Argos CLI
-          </FooterLink>
-          <FooterLink href="https://github.com/apps/argos-ci">
-            Argos App on GitHub
+          <FooterLink href="https://docs.argos-ci.com/usage">Usage</FooterLink>
+          <FooterLink href="https://github.com/marketplace/argos-ci">
+            View on GitHub Marketplace
           </FooterLink>
         </Section>
         <Section>

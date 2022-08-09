@@ -26,7 +26,7 @@ export const AppNavbar = () => {
           gap={2}
         >
           <Button as="a" href="https://docs.argos-ci.com">
-            docs
+            Docs
           </Button>
           <Button
             as="a"
