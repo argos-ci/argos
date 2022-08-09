@@ -1,13 +1,18 @@
 name: CI
 
-on: [push]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
 
       - name: Install dependencies and launch Cypress tests
         uses: cypress-io/github-action@v4
@@ -16,8 +21,7 @@ jobs:
           start: npm start
 
       - name: Argos screenshots upload
-        run: yarn argos upload screenshots
-          --branch $GITHUB_REF_NAME
-          --commit $GITHUB_SHA
-          --token ${{ secrets.ARGOS_TOKEN }}
         if: ${{ always() }}
+        run: npx argos-cli upload screenshots
+        env:
+          ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
