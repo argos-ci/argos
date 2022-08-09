@@ -66,17 +66,9 @@ app.use(
 app.use(
   helmet({
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
-    // TODO Should we restrict the policy ?
-    contentSecurityPolicy: {
-      directives: {
-        // Blob for the upload page
-        defaultSrc: ["*", "blob:"],
-        imgSrc: ["*", "data:"],
-        styleSrc: ["*", "'unsafe-inline'"],
-        scriptSrc: ["*", "'unsafe-inline'", "'unsafe-eval'"],
-        frameAncestors: ["'none'"], // Disallow embedding of content
-      },
-    },
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
     frameguard: {
       action: "deny", // Disallow embedded iframe
     },

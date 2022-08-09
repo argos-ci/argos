@@ -7,6 +7,7 @@ export const OwnerAvatar = React.forwardRef(({ owner, ...props }, ref) => {
       ref={ref}
       alt={owner.name}
       src={`https://github.com/${owner.login}.png?size=60`}
+      p={0}
       {...props}
     />
   );
