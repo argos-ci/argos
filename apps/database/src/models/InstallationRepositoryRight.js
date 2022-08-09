@@ -1,20 +1,20 @@
-import { Model, mergeSchemas, timestampsSchema } from '../util'
-import { Installation } from './Installation'
-import { Repository } from './Repository'
+import { Model, mergeSchemas, timestampsSchema } from "../util";
+import { Installation } from "./Installation";
+import { Repository } from "./Repository";
 
 export class InstallationRepositoryRight extends Model {
   static get tableName() {
-    return 'installation_repository_rights'
+    return "installation_repository_rights";
   }
 
   static get jsonSchema() {
     return mergeSchemas(timestampsSchema, {
-      required: ['installationId', 'repositoryId'],
+      required: ["installationId", "repositoryId"],
       properties: {
-        installationId: { type: 'string' },
-        repositoryId: { type: 'string' },
+        installationId: { type: "string" },
+        repositoryId: { type: "string" },
       },
-    })
+    });
   }
 
   static get relationMappings() {
@@ -23,18 +23,18 @@ export class InstallationRepositoryRight extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: Installation,
         join: {
-          from: 'installation_repository_rights.installationId',
-          to: 'installations.id',
+          from: "installation_repository_rights.installationId",
+          to: "installations.id",
         },
       },
       repository: {
         relation: Model.BelongsToOneRelation,
         modelClass: Repository,
         join: {
-          from: 'installation_repository_rights.repositoryId',
-          to: 'repositories.id',
+          from: "installation_repository_rights.repositoryId",
+          to: "repositories.id",
         },
       },
-    }
+    };
   }
 }

@@ -1,7 +1,7 @@
 export class APIError extends Error {
   constructor(...args) {
-    super(...args)
-    this.name = 'APIError'
-    Error.captureStackTrace(this, APIError)
+    super(...args);
+    this.name = "APIError";
+    Error.captureStackTrace(this, APIError);
   }
 }

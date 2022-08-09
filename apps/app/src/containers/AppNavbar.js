@@ -1,5 +1,5 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React from "react";
+import { Link } from "react-router-dom";
 import {
   Button,
   Box,
@@ -7,30 +7,30 @@ import {
   MenuItem,
   MenuDisclosure,
   useMenuState,
-} from '@smooth-ui/core-sc'
-import { useColorMode } from '@xstyled/styled-components'
-import { FaGithub } from 'react-icons/fa'
-import config from '../config'
+} from "@smooth-ui/core-sc";
+import { useColorMode } from "@xstyled/styled-components";
+import { FaGithub } from "react-icons/fa";
+import config from "../config";
 import {
   NavbarSecondary,
   NavbarBrandLink,
   Navbar,
   NavbarBrand,
   BrandLogo,
-} from '../components'
-import { OwnerAvatar } from './OwnerAvatar'
-import { useLogout } from './Auth'
-import { useUser } from './User'
+} from "../components";
+import { OwnerAvatar } from "./OwnerAvatar";
+import { useLogout } from "./Auth";
+import { useUser } from "./User";
 
 // eslint-disable-next-line react/forbid-foreign-prop-types
-delete MenuDisclosure.propTypes.children
+delete MenuDisclosure.propTypes.children;
 
 function UserMenu({ user }) {
-  const logout = useLogout()
+  const logout = useLogout();
   const menu = useMenuState({
-    placement: 'bottom-end',
+    placement: "bottom-end",
     gutter: 4,
-  })
+  });
 
   return (
     <>
@@ -43,7 +43,7 @@ function UserMenu({ user }) {
         <MenuItem
           {...menu}
           forwardedAs="a"
-          href={config.get('github.appUrl')}
+          href={config.get("github.appUrl")}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -54,12 +54,12 @@ function UserMenu({ user }) {
         </MenuItem>
       </Menu>
     </>
-  )
+  );
 }
 
 export function AppNavbar() {
-  const user = useUser()
-  const [colorMode] = useColorMode()
+  const user = useUser();
+  const [colorMode] = useColorMode();
 
   return (
     <Navbar>
@@ -75,7 +75,7 @@ export function AppNavbar() {
           <Button
             variant="light200"
             as="a"
-            href={config.get('github.loginUrl')}
+            href={config.get("github.loginUrl")}
             display="flex"
             alignItems="center"
           >
@@ -87,5 +87,5 @@ export function AppNavbar() {
         )}
       </NavbarSecondary>
     </Navbar>
-  )
+  );
 }

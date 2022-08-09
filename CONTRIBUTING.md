@@ -127,7 +127,7 @@ yarn dev
 #### Create a migration
 
 ```sh
-./node_modules/.bin/knex migrate:make my_migration
+yarn workspace @argos-ci/database knex migrate:make my_migration
 ```
 
 #### Dump database
@@ -139,7 +139,7 @@ yarn db:dump
 #### Execute the latest migration
 
 ```sh
-yarn db:migrate:latest
+yarn workspace @argos-ci/database db:migrate:latest
 ```
 
 ### Running the test suite

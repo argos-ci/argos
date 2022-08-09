@@ -1,6 +1,6 @@
-import React from 'react'
-import gql from 'graphql-tag'
-import { useMutation } from '@apollo/react-hooks'
+import React from "react";
+import { gql } from "graphql-tag";
+import { useMutation } from "@apollo/react-hooks";
 
 export const BuildContextFragment = gql`
   fragment BuildContextFragment on Build {
@@ -50,12 +50,12 @@ export const BuildContextFragment = gql`
       validationStatus
     }
   }
-`
+`;
 
-const BuildContext = React.createContext()
+const BuildContext = React.createContext();
 
 export function BuildProvider({ build: initialBuild, children }) {
-  const [build, setBuild] = React.useState(initialBuild)
+  const [build, setBuild] = React.useState(initialBuild);
   const [
     setValidationStatus,
     { loading: queryLoading, error: queryError, data },
@@ -72,13 +72,13 @@ export function BuildProvider({ build: initialBuild, children }) {
       }
     }
     ${BuildContextFragment}
-  `)
+  `);
 
   React.useEffect(() => {
     if (data && data.setValidationStatus) {
-      setBuild(data.setValidationStatus)
+      setBuild(data.setValidationStatus);
     }
-  }, [data])
+  }, [data]);
   const value = React.useMemo(
     () => ({
       build,
@@ -86,14 +86,16 @@ export function BuildProvider({ build: initialBuild, children }) {
       queryLoading,
       queryError,
     }),
-    [build, queryError, queryLoading, setValidationStatus],
-  )
-  return <BuildContext.Provider value={value}>{children}</BuildContext.Provider>
+    [build, queryError, queryLoading, setValidationStatus]
+  );
+  return (
+    <BuildContext.Provider value={value}>{children}</BuildContext.Provider>
+  );
 }
 
 export function useBuild() {
-  const { build } = React.useContext(BuildContext)
-  return build
+  const { build } = React.useContext(BuildContext);
+  return build;
 }
 
 export function useValidationStatusBuild() {
@@ -101,6 +103,6 @@ export function useValidationStatusBuild() {
     setValidationStatus,
     queryLoading: loading,
     queryError: error,
-  } = React.useContext(BuildContext)
-  return { setValidationStatus, loading, error }
+  } = React.useContext(BuildContext);
+  return { setValidationStatus, loading, error };
 }

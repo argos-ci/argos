@@ -1,17 +1,15 @@
 module.exports = {
   presets: [
-    '@babel/preset-react',
     [
-      '@babel/preset-env',
+      "@babel/preset-env",
       {
         loose: true,
-        useBuiltIns: 'entry',
+        useBuiltIns: "entry",
         corejs: 3,
         targets: {
-          node: 'current',
+          node: "current",
         },
       },
     ],
   ],
-  plugins: [['@babel/plugin-proposal-class-properties', { loose: true }]],
-}
+};

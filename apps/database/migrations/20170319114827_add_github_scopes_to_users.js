@@ -1,9 +1,9 @@
-exports.up = knex =>
-  knex.schema.table('users', table => {
-    table.jsonb('githubScopes')
-  })
+exports.up = (knex) =>
+  knex.schema.table("users", (table) => {
+    table.jsonb("githubScopes");
+  });
 
-exports.down = knex =>
-  knex.schema.table('users', table => {
-    table.dropColumn('githubScopes')
-  })
+exports.down = (knex) =>
+  knex.schema.table("users", (table) => {
+    table.dropColumn("githubScopes");
+  });

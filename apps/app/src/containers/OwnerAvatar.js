@@ -1,5 +1,5 @@
-import React from 'react'
-import { Avatar } from '../components'
+import React from "react";
+import { Avatar } from "../components";
 
 export const OwnerAvatar = React.forwardRef(({ owner, ...props }, ref) => {
   return (
@@ -9,5 +9,5 @@ export const OwnerAvatar = React.forwardRef(({ owner, ...props }, ref) => {
       src={`https://github.com/${owner.login}.png?size=60`}
       {...props}
     />
-  )
-})
+  );
+});

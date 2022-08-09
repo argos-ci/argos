@@ -1,4 +1,4 @@
-import styled, { css, breakpoints, variant } from '@xstyled/styled-components'
+import styled, { css, breakpoints, variant } from "@xstyled/styled-components";
 
 export const LayoutBody = styled.box`
   position: relative;
@@ -33,4 +33,4 @@ export const LayoutBody = styled.box`
       `,
     },
   })}
-`
+`;

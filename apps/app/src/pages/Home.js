@@ -1,16 +1,16 @@
 /* eslint-disable react/no-unescaped-entities */
-import React from 'react'
-import gql from 'graphql-tag'
-import { partition } from 'lodash'
-import { Link } from 'react-router-dom'
-import { Button } from '@smooth-ui/core-sc'
-import styled, { Box } from '@xstyled/styled-components'
-import { GoRepo } from 'react-icons/go'
-import { Query } from '../containers/Apollo'
-import { useUser } from '../containers/User'
-import { OwnerAvatar } from '../containers/OwnerAvatar'
-import { isUserSyncing } from '../modules/user'
-import config from '../config'
+import React from "react";
+import { gql } from "graphql-tag";
+import { partition } from "lodash";
+import { Link } from "react-router-dom";
+import { Button } from "@smooth-ui/core-sc";
+import styled, { Box } from "@xstyled/styled-components";
+import { GoRepo } from "react-icons/go";
+import { Query } from "../containers/Apollo";
+import { useUser } from "../containers/User";
+import { OwnerAvatar } from "../containers/OwnerAvatar";
+import { isUserSyncing } from "../modules/user";
+import config from "../config";
 import {
   Container,
   Card,
@@ -20,19 +20,19 @@ import {
   CardFooter,
   FadeLink,
   Text,
-} from '../components'
-import { Loader } from '../components/Loader'
+} from "../components";
+import { Loader } from "../components/Loader";
 
 const RepositoryList = styled.ul`
   margin: -1 0;
   padding: 0;
-`
+`;
 
 const RepositoryItem = styled.li`
   margin: 0;
   padding: 1 0;
   list-style-type: none;
-`
+`;
 
 function OwnerHeader({ owner, active }) {
   return (
@@ -43,20 +43,20 @@ function OwnerHeader({ owner, active }) {
         width={active ? 30 : 20}
         height={active ? 30 : 20}
       />
-      <CardTitle color={active ? 'darker' : 'light500'}>
+      <CardTitle color={active ? "darker" : "light500"}>
         <FadeLink forwardedAs={Link} to={`/${owner.login}`}>
           {owner.login}
         </FadeLink>
       </CardTitle>
     </Box>
-  )
+  );
 }
 
 function Owners({ data: { owners } }) {
   const [activeOwners, inactiveOwners] = partition(
     owners,
-    (owner) => owner.repositories.length,
-  )
+    (owner) => owner.repositories.length
+  );
 
   return (
     <Container my={3}>
@@ -101,7 +101,7 @@ function Owners({ data: { owners } }) {
                   <Box display="flex" alignItems="center" fontSize={12}>
                     <Box forwardedAs={GoRepo} mr={1} />
                     {owner.repositories.length} active repositor
-                    {owner.repositories.length > 1 ? 'ies' : 'y'}
+                    {owner.repositories.length > 1 ? "ies" : "y"}
                   </Box>
                 </CardFooter>
               </Card>
@@ -129,39 +129,39 @@ function Owners({ data: { owners } }) {
         </>
       )}
     </Container>
-  )
+  );
 }
 
 const RedirectToWww = () => {
   React.useEffect(() => {
-    window.location = 'https://www.argos-ci.com'
-  }, [])
-  return null
-}
+    window.location = "https://www.argos-ci.com";
+  }, []);
+  return null;
+};
 
 export function Home() {
-  const user = useUser()
+  const user = useUser();
   if (!user) {
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== "production") {
       return (
         <Container textAlign="center" my={4}>
           Not logged in, in production you would be redirected to
           www.argos-ci.com.
         </Container>
-      )
+      );
     }
-    return <RedirectToWww />
+    return <RedirectToWww />;
   }
 
   if (!user.installations.length && !isUserSyncing(user)) {
     return (
       <Container textAlign="center" my={4}>
         <p>Look like you don't have installed Argos GitHub App.</p>
-        <Button as="a" href={config.get('github.appUrl')}>
+        <Button as="a" href={config.get("github.appUrl")}>
           Install Argos GitHub App
         </Button>
       </Container>
-    )
+    );
   }
 
   return (
@@ -187,5 +187,5 @@ export function Home() {
     >
       {(data) => <Owners data={data} />}
     </Query>
-  )
+  );
 }

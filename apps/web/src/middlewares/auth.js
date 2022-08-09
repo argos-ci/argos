@@ -1,37 +1,37 @@
-import { User } from '@argos-ci/database/models'
+import { User } from "@argos-ci/database/models";
 
 function bearerToken(req, res, next) {
-  req.token = null
+  req.token = null;
 
   if (!req.headers || !req.headers.authorization) {
-    next()
-    return
+    next();
+    return;
   }
 
-  const parts = req.headers.authorization.split(' ')
-  if (parts.length === 2 && parts[0] === 'Bearer') {
-    ;[, req.token] = parts
+  const parts = req.headers.authorization.split(" ");
+  if (parts.length === 2 && parts[0] === "Bearer") {
+    [, req.token] = parts;
   }
 
-  next()
+  next();
 }
 
 function loggedUser(req, res, next) {
-  req.user = null
+  req.user = null;
 
   if (!req.token) {
-    next()
-    return
+    next();
+    return;
   }
 
   User.query()
     .where({ accessToken: req.token })
     .first()
     .then((user) => {
-      req.user = user
-      next()
+      req.user = user;
+      next();
     })
-    .catch(next)
+    .catch(next);
 }
 
-export const auth = [bearerToken, loggedUser]
+export const auth = [bearerToken, loggedUser];

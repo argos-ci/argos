@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "dependencies": {
     "@argos-ci/config": "2.0.0",
-    "aws-sdk": "^2.648.0",
+    "aws-sdk": "^2.1191.0",
     "mime": "^2.4.4",
     "tmp": "^0.1.0",
     "uuid": "^7.0.2"

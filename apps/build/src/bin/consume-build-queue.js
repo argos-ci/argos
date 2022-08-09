@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { callbackify } from 'util'
-import { getAmqpChannel } from '@argos-ci/job-core'
+import { callbackify } from "util";
+import { getAmqpChannel } from "@argos-ci/job-core";
 
 /**
  * Sometimes, the buildAndSynchronise job crashes (Out of Memory) because of a build message
@@ -9,37 +9,37 @@ import { getAmqpChannel } from '@argos-ci/job-core'
  * we can safely restart the job.
  */
 
-const queue = 'build'
+const queue = "build";
 
-const parseMessage = message => {
-  const payload = JSON.parse(message.toString())
+const parseMessage = (message) => {
+  const payload = JSON.parse(message.toString());
   if (
     !payload ||
     !Array.isArray(payload.args) ||
     !Number.isInteger(payload.attempts)
   ) {
-    throw new Error('Invalid payload')
+    throw new Error("Invalid payload");
   }
-  return payload
-}
+  return payload;
+};
 
 const main = callbackify(async () => {
-  const channel = await getAmqpChannel()
-  await channel.prefetch(1)
-  await channel.assertQueue(queue, { durable: true })
+  const channel = await getAmqpChannel();
+  await channel.prefetch(1);
+  await channel.assertQueue(queue, { durable: true });
   try {
-    const msg = await channel.get(queue, { noAck: false })
-    const payload = parseMessage(msg.content)
-    console.log(payload) // eslint-disable-line
-    channel.ack(msg)
+    const msg = await channel.get(queue, { noAck: false });
+    const payload = parseMessage(msg.content);
+    console.log(payload); // eslint-disable-line
+    channel.ack(msg);
   } catch (error) {
-    console.log('ERROR consuming', error) // eslint-disable-line
+    console.log("ERROR consuming", error); // eslint-disable-line
   }
 
-  await channel.close()
-})
+  await channel.close();
+});
 
-main(err => {
-  if (err) throw err
-  process.kill(process.pid)
-})
+main((err) => {
+  if (err) throw err;
+  process.kill(process.pid);
+});

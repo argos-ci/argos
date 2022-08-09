@@ -1,3 +1,3 @@
-import { setup } from '@argos-ci/sentry-node'
+import { setup } from "@argos-ci/sentry-node";
 
-setup()
+setup();

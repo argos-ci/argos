@@ -1,9 +1,11 @@
 export const notFoundToken = () => {
-  const notFoundError = new Error('Not found')
-  notFoundError.status = 404
+  const notFoundError = new Error("Not found");
+  notFoundError.status = 404;
   return async () => {
-    throw notFoundError
-  }
-}
+    throw notFoundError;
+  };
+};
 
-export const validToken = ({ scopes }) => async () => ({ data: { scopes } })
+export const validToken =
+  ({ scopes }) =>
+  async () => ({ data: { scopes } });

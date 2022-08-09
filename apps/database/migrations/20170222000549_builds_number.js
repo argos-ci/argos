@@ -1,7 +1,7 @@
-exports.up = async knex => {
-  await knex.schema.table('builds', table => {
-    table.integer('number').index()
-  })
+exports.up = async (knex) => {
+  await knex.schema.table("builds", (table) => {
+    table.integer("number").index();
+  });
   await knex.raw(`
     UPDATE builds SET number = numbers.number
     FROM (
@@ -9,12 +9,12 @@ exports.up = async knex => {
       FROM builds
     ) AS numbers
     WHERE builds.id = numbers.id
-  `)
-  await knex.raw('ALTER TABLE builds ALTER COLUMN "number" SET NOT NULL')
-}
+  `);
+  await knex.raw('ALTER TABLE builds ALTER COLUMN "number" SET NOT NULL');
+};
 
-exports.down = async knex => {
-  await knex.schema.table('builds', table => {
-    table.dropColumn('number')
-  })
-}
+exports.down = async (knex) => {
+  await knex.schema.table("builds", (table) => {
+    table.dropColumn("number");
+  });
+};

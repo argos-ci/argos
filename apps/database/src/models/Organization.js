@@ -1,21 +1,21 @@
-import { Model, mergeSchemas, timestampsSchema } from '../util'
-import { UserOrganizationRight } from './UserOrganizationRight'
-import { Repository } from './Repository'
+import { Model, mergeSchemas, timestampsSchema } from "../util";
+import { UserOrganizationRight } from "./UserOrganizationRight";
+import { Repository } from "./Repository";
 
 export class Organization extends Model {
   static get tableName() {
-    return 'organizations'
+    return "organizations";
   }
 
   static get jsonSchema() {
     return mergeSchemas(timestampsSchema, {
-      required: ['githubId', 'login'],
+      required: ["githubId", "login"],
       properties: {
-        githubId: { type: 'number' },
-        name: { type: ['string', null] },
-        login: { type: 'string' },
+        githubId: { type: "number" },
+        name: { type: ["string", null] },
+        login: { type: "string" },
       },
-    })
+    });
   }
 
   static get relationMappings() {
@@ -24,38 +24,38 @@ export class Organization extends Model {
         relation: Model.HasManyRelation,
         modelClass: Repository,
         join: {
-          from: 'organizations.id',
-          to: 'repositories.organizationId',
+          from: "organizations.id",
+          to: "repositories.organizationId",
         },
       },
       relatedRepositories: {
         relation: Model.ManyToManyRelation,
         modelClass: Repository,
         join: {
-          from: 'organizations.id',
+          from: "organizations.id",
           through: {
-            from: 'organization_repository_rights.organizationId',
-            to: 'organization_repository_rights.repositoryId',
+            from: "organization_repository_rights.organizationId",
+            to: "organization_repository_rights.repositoryId",
           },
-          to: 'repositories.id',
+          to: "repositories.id",
         },
       },
-    }
+    };
   }
 
   type() {
-    return 'organization'
+    return "organization";
   }
 
   async $checkWritePermission(user) {
-    return Organization.checkWritePermission(this, user)
+    return Organization.checkWritePermission(this, user);
   }
 
   static async checkWritePermission(owner, user) {
-    if (!user) return false
+    if (!user) return false;
     const userOrganizationRight = await UserOrganizationRight.query()
       .where({ userId: user.id, organizationId: owner.id })
-      .first()
-    return Boolean(userOrganizationRight)
+      .first();
+    return Boolean(userOrganizationRight);
   }
 }

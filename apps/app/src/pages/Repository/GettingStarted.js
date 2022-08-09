@@ -1,19 +1,19 @@
-import React from 'react'
-import ReactMarkdown from 'react-markdown'
+import React from "react";
+import ReactMarkdown from "react-markdown";
 import {
   Container,
   Card,
   CardHeader,
   CardTitle,
   CardBody,
-} from '../../components'
-import gettingStarted from './getting-started.md'
-import { useRepository } from './RepositoryContext'
-import { ToggleButton } from './ToggleButton'
+} from "../../components";
+import gettingStarted from "./getting-started.md";
+import { useRepository } from "./RepositoryContext";
+import { ToggleButton } from "./ToggleButton";
 
 export function GettingStarted() {
-  const repository = useRepository()
-  const text = gettingStarted.replace(/__ARGOS_TOKEN__/g, repository.token)
+  const repository = useRepository();
+  const text = gettingStarted.replace(/__ARGOS_TOKEN__/g, repository.token);
 
   return (
     <Container my={4}>
@@ -33,5 +33,5 @@ export function GettingStarted() {
         )}
       </Card>
     </Container>
-  )
+  );
 }

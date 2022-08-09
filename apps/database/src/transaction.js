@@ -3,7 +3,7 @@
  * @returns {maybeTrx is import('objection').TransactionOrKnex & { executionPromise: Promise<any> }}
  */
 export function checkIsTransaction(maybeTrx) {
-  return Boolean(maybeTrx && maybeTrx.executionPromise)
+  return Boolean(maybeTrx && maybeTrx.executionPromise);
 }
 
 /**
@@ -11,7 +11,7 @@ export function checkIsTransaction(maybeTrx) {
  * @param {import('objection').TransactionOrKnex} [trx]
  */
 export async function waitForTransaction(trx) {
-  return Promise.resolve(checkIsTransaction(trx) ? trx.executionPromise : null)
+  return Promise.resolve(checkIsTransaction(trx) ? trx.executionPromise : null);
 }
 
 /**
@@ -25,18 +25,18 @@ export function runAfterTransaction(trx, callback) {
       // If transaction success, then run action
       return Promise.resolve(callback()).catch((error) => {
         setTimeout(() => {
-          throw error
-        })
-      })
+          throw error;
+        });
+      });
     },
     () => {
       // Ignore transaction error
-    },
-  )
+    }
+  );
 }
 
 /** @type {import('knex') | null} */
-let transactionKnexInstance = null
+let transactionKnexInstance = null;
 
 /**
  * @param {import('objection').TransactionOrKnex | undefined | ((trx: import('objection').TransactionOrKnex) => Promise.<any>)} trxOrCallback
@@ -45,25 +45,25 @@ let transactionKnexInstance = null
  */
 export const transaction = (trxOrCallback, maybeCallback) => {
   if (!transactionKnexInstance) {
-    throw new Error(`transaction is not initialized`)
+    throw new Error(`transaction is not initialized`);
   }
 
   if (maybeCallback === undefined) {
-    if (typeof trxOrCallback !== 'function') {
-      throw new Error(`Invalid transaction call`)
+    if (typeof trxOrCallback !== "function") {
+      throw new Error(`Invalid transaction call`);
     }
-    return transactionKnexInstance.transaction(trxOrCallback)
+    return transactionKnexInstance.transaction(trxOrCallback);
   }
 
   if (checkIsTransaction(trxOrCallback)) {
-    return maybeCallback(trxOrCallback)
+    return maybeCallback(trxOrCallback);
   }
-  return transactionKnexInstance.transaction(maybeCallback)
-}
+  return transactionKnexInstance.transaction(maybeCallback);
+};
 /**
  *
  * @param {import('knex')} knexInstance
  */
 transaction.knex = (knexInstance) => {
-  transactionKnexInstance = knexInstance
-}
+  transactionKnexInstance = knexInstance;
+};

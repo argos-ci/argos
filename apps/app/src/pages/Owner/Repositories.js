@@ -1,12 +1,12 @@
-import React from 'react'
-import gql from 'graphql-tag'
-import { Link } from 'react-router-dom'
-import styled, { Box, th } from '@xstyled/styled-components'
-import Tooltip from 'react-tooltip'
-import { GoRepo } from 'react-icons/go'
-import moment from 'moment'
-import { Query } from '../../containers/Apollo'
-import { StatusIcon } from '../../containers/StatusIcon'
+import React from "react";
+import { gql } from "graphql-tag";
+import { Link } from "react-router-dom";
+import styled, { Box, th } from "@xstyled/styled-components";
+import Tooltip from "react-tooltip";
+import { GoRepo } from "react-icons/go";
+import moment from "moment";
+import { Query } from "../../containers/Apollo";
+import { StatusIcon } from "../../containers/StatusIcon";
 import {
   Container,
   Card,
@@ -15,34 +15,34 @@ import {
   CardBody,
   FadeLink,
   Text,
-} from '../../components'
-import { getStatusColor } from '../../modules/build'
-import { useOwner } from './OwnerContext'
+} from "../../components";
+import { getStatusColor } from "../../modules/build";
+import { useOwner } from "./OwnerContext";
 
 const Stat = styled.div`
   display: flex;
-`
+`;
 
 const StatLabel = styled.span`
   flex: 1;
-`
+`;
 const StatValue = styled.span`
   flex: 0 0 auto;
-  color: ${p => th.color(p.color || 'darker')};
-`
+  color: ${(p) => th.color(p.color || "darker")};
+`;
 
 export function RepositorySummary({ repository }) {
-  const owner = useOwner()
+  const owner = useOwner();
   if (
     !repository.builds ||
     !repository.builds.edges ||
     repository.builds.edges.length === 0
   ) {
-    return <div>No info to display</div>
+    return <div>No info to display</div>;
   }
-  const { pageInfo, edges } = repository.builds
-  const [latestBuild] = edges
-  const buildColor = getStatusColor(latestBuild.status)
+  const { pageInfo, edges } = repository.builds;
+  const [latestBuild] = edges;
+  const buildColor = getStatusColor(latestBuild.status);
   return (
     <Box>
       <Box row mx={-3}>
@@ -75,7 +75,7 @@ export function RepositorySummary({ repository }) {
             </StatLabel>
             <StatValue
               data-tip={moment(latestBuild.createdAt).format(
-                'DD-MM-YYYY HH:MM',
+                "DD-MM-YYYY HH:MM"
               )}
             >
               {moment(latestBuild.createdAt).fromNow()}
@@ -92,7 +92,7 @@ export function RepositorySummary({ repository }) {
                 to={`/${owner.login}/${repository.name}/builds/${latestBuild.number}`}
               >
                 Latest build
-              </FadeLink>{' '}
+              </FadeLink>{" "}
               status
             </StatLabel>
             <StatValue color={buildColor}>
@@ -107,16 +107,16 @@ export function RepositorySummary({ repository }) {
         </Box>
       </Box>
     </Box>
-  )
+  );
 }
 
 function PassiveRepositories({ title, repositories }) {
-  const owner = useOwner()
-  if (!repositories.length) return null
+  const owner = useOwner();
+  if (!repositories.length) return null;
   return (
     <>
       <Text variant="h2">{title}</Text>
-      {repositories.map(repository => (
+      {repositories.map((repository) => (
         <Box col={1} py={2} key={repository.id}>
           <Card>
             <CardBody p={2} display="flex" alignItems="center">
@@ -133,11 +133,11 @@ function PassiveRepositories({ title, repositories }) {
         </Box>
       ))}
     </>
-  )
+  );
 }
 
 export function OwnerRepositories() {
-  const owner = useOwner()
+  const owner = useOwner();
   return (
     <>
       <Query
@@ -173,18 +173,18 @@ export function OwnerRepositories() {
               <Container my={4} textAlign="center">
                 No repository found for {owner.login}.
               </Container>
-            )
+            );
           }
           const enabledRepositories = repositories.filter(
-            repository => repository.enabled,
-          )
+            (repository) => repository.enabled
+          );
           const unenabledRepositories = repositories.filter(
-            repository => !repository.enabled,
-          )
+            (repository) => !repository.enabled
+          );
           return (
             <Container my={4}>
               <Box row my={-2} justifyContent="center">
-                {enabledRepositories.map(repository => (
+                {enabledRepositories.map((repository) => (
                   <Box col={1} py={2} key={repository.id}>
                     <Card>
                       <CardHeader display="flex" alignItems="center">
@@ -209,9 +209,9 @@ export function OwnerRepositories() {
                 />
               </Box>
             </Container>
-          )
+          );
         }}
       </Query>
     </>
-  )
+  );
 }

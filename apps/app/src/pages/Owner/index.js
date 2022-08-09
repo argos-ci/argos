@@ -1,9 +1,9 @@
-import React from 'react'
-import gql from 'graphql-tag'
-import { Route, Link } from 'react-router-dom'
-import { Box } from '@xstyled/styled-components'
-import { FaGithub } from 'react-icons/fa'
-import { Helmet } from 'react-helmet'
+import React from "react";
+import { gql } from "graphql-tag";
+import { Route, Link } from "react-router-dom";
+import { Box } from "@xstyled/styled-components";
+import { FaGithub } from "react-icons/fa";
+import { Helmet } from "react-helmet";
 import {
   Header,
   HeaderBody,
@@ -19,16 +19,16 @@ import {
   CardTitle,
   CardBody,
   CardText,
-} from '../../components'
-import { Query } from '../../containers/Apollo'
-import { OwnerAvatar } from '../../containers/OwnerAvatar'
-import { hasWritePermission } from '../../modules/permissions'
-import { OwnerProvider, useOwner } from './OwnerContext'
-import { OwnerRepositories } from './Repositories'
-import { OwnerSettings } from './Settings'
+} from "../../components";
+import { Query } from "../../containers/Apollo";
+import { OwnerAvatar } from "../../containers/OwnerAvatar";
+import { hasWritePermission } from "../../modules/permissions";
+import { OwnerProvider, useOwner } from "./OwnerContext";
+import { OwnerRepositories } from "./Repositories";
+import { OwnerSettings } from "./Settings";
 
 function OwnerHeader() {
-  const owner = useOwner()
+  const owner = useOwner();
   return (
     <Header>
       <HeaderBody>
@@ -57,7 +57,7 @@ function OwnerHeader() {
         </TabList>
       </HeaderBody>
     </Header>
-  )
+  );
 }
 
 export function Owner({
@@ -98,7 +98,7 @@ export function Owner({
                 </CardBody>
               </Card>
             </Container>
-          )
+          );
         }
 
         return (
@@ -122,8 +122,8 @@ export function Owner({
               ) : null}
             </>
           </OwnerProvider>
-        )
+        );
       }}
     </Query>
-  )
+  );
 }

@@ -10,8 +10,5 @@
     "@argos-ci/job-core": "2.0.0",
     "@argos-ci/logger": "2.0.0",
     "@octokit/rest": "^17.1.4"
-  },
-  "devDependencies": {
-    "@argos-ci/jest": "2.0.0"
   }
 }

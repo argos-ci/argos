@@ -1,20 +1,20 @@
-import { Model, mergeSchemas, timestampsSchema } from '../util'
-import { Organization } from './Organization'
-import { User } from './User'
+import { Model, mergeSchemas, timestampsSchema } from "../util";
+import { Organization } from "./Organization";
+import { User } from "./User";
 
 export class Account extends Model {
   static get tableName() {
-    return 'accounts'
+    return "accounts";
   }
 
   static get jsonSchema() {
     return mergeSchemas(timestampsSchema, {
       required: [],
       properties: {
-        userId: { type: ['string', null] },
-        organizationId: { type: ['string', null] },
+        userId: { type: ["string", null] },
+        organizationId: { type: ["string", null] },
       },
-    })
+    });
   }
 
   static get relationMappings() {
@@ -23,18 +23,18 @@ export class Account extends Model {
         relation: Model.HasOneRelation,
         modelClass: User,
         join: {
-          from: 'accounts.userId',
-          to: 'users.id',
+          from: "accounts.userId",
+          to: "users.id",
         },
       },
       organization: {
         relation: Model.HasOneRelation,
         modelClass: Organization,
         join: {
-          from: 'accounts.organizationId',
-          to: 'organizations.id',
+          from: "accounts.organizationId",
+          to: "organizations.id",
         },
       },
-    }
+    };
   }
 }

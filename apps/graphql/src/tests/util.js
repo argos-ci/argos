@@ -1,13 +1,13 @@
-import express from 'express'
+import express from "express";
 
 export function createApolloServerApp(apolloServer, { user } = {}) {
-  const app = express()
+  const app = express();
   app.use((req, res, next) => {
-    req.user = user
-    next()
-  })
+    req.user = user;
+    next();
+  });
 
-  apolloServer.applyMiddleware({ app })
+  apolloServer.applyMiddleware({ app });
 
-  return app
+  return app;
 }

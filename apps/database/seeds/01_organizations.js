@@ -1,26 +1,26 @@
-exports.seed = knex =>
+exports.seed = (knex) =>
   knex
-    .raw('TRUNCATE organizations CASCADE')
-    .then(() => knex('organizations').delete())
+    .raw("TRUNCATE organizations CASCADE")
+    .then(() => knex("organizations").delete())
     .then(() =>
       Promise.all([
-        knex('organizations').insert([
+        knex("organizations").insert([
           {
-            id: '1',
+            id: "1",
             githubId: 1262264,
-            name: 'Call-Em-All',
-            login: 'callemall',
+            name: "Call-Em-All",
+            login: "callemall",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
           {
-            id: '2',
+            id: "2",
             githubId: 5823649,
-            name: 'Doctolib',
-            login: 'doctolib',
+            name: "Doctolib",
+            login: "doctolib",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
         ]),
-      ]),
-    )
+      ])
+    );

@@ -1,7 +1,7 @@
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import { Boxer, Button } from '@smooth-ui/core-sc'
-import config from '../../config'
+import React from "react";
+import { Helmet } from "react-helmet";
+import { Boxer, Button } from "@smooth-ui/core-sc";
+import config from "../../config";
 import {
   Container,
   Card,
@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
   CardText,
-} from '../../components'
+} from "../../components";
 
 export function OwnerSettings() {
   return (
@@ -32,7 +32,7 @@ export function OwnerSettings() {
               as="a"
               target="_blank"
               rel="noopener noreferrer"
-              href={config.get('github.appUrl')}
+              href={config.get("github.appUrl")}
             >
               Manage permissions
             </Button>
@@ -40,5 +40,5 @@ export function OwnerSettings() {
         </Card>
       </Boxer>
     </Container>
-  )
+  );
 }

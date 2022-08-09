@@ -1,11 +1,11 @@
-import crypto from 'crypto'
-import { promisify } from 'util'
-import gql from 'graphql-tag'
-import { transaction } from '@argos-ci/database'
-import { Build, Repository } from '@argos-ci/database/models'
-import { generateSample } from '../sample'
-import { APIError } from '../util'
-import { getOwner } from './Owner'
+import crypto from "crypto";
+import { promisify } from "util";
+import { gql } from "graphql-tag";
+import { transaction } from "@argos-ci/database";
+import { Build, Repository } from "@argos-ci/database/models";
+import { generateSample } from "../sample";
+import { APIError } from "../util";
+import { getOwner } from "./Owner";
 
 export const typeDefs = gql`
   type Repository {
@@ -37,13 +37,13 @@ export const typeDefs = gql`
     "Enable or disable a repository."
     toggleRepository(enabled: Boolean!, repositoryId: String!): Repository!
   }
-`
+`;
 
-const generateRandomBytes = promisify(crypto.randomBytes)
+const generateRandomBytes = promisify(crypto.randomBytes);
 
 export async function getRepository({ ownerLogin, name, user }) {
-  const owner = await getOwner({ login: ownerLogin })
-  if (!owner) return null
+  const owner = await getOwner({ login: ownerLogin });
+  if (!owner) return null;
 
   const repository = await Repository.query()
     .where({
@@ -51,42 +51,42 @@ export async function getRepository({ ownerLogin, name, user }) {
       name,
     })
     .limit(1)
-    .first()
+    .first();
 
-  if (!repository) return null
+  if (!repository) return null;
 
-  const hasReadPermission = await repository.$checkReadPermission(user)
-  if (!hasReadPermission) return null
+  const hasReadPermission = await repository.$checkReadPermission(user);
+  if (!hasReadPermission) return null;
 
-  return repository
+  return repository;
 }
 
 export const resolvers = {
   Repository: {
     async token(repository, args, context) {
       const hasWritePermission = await repository.$checkWritePermission(
-        context.user,
-      )
-      if (!hasWritePermission) return null
-      return repository.token
+        context.user
+      );
+      if (!hasWritePermission) return null;
+      return repository.token;
     },
     async owner(repository) {
-      return repository.$relatedOwner()
+      return repository.$relatedOwner();
     },
     async permissions(repository, args, context) {
       const hasWritePermission = await repository.$checkWritePermission(
-        context.user,
-      )
-      return hasWritePermission ? ['read', 'write'] : ['read']
+        context.user
+      );
+      return hasWritePermission ? ["read", "write"] : ["read"];
     },
     async builds(repository, args) {
       const result = await Build.query()
         .where({ repositoryId: repository.id })
         .whereNot({ number: 0 })
-        .orderBy('createdAt', 'desc')
-        .range(args.after, args.after + args.first - 1)
+        .orderBy("createdAt", "desc")
+        .range(args.after, args.after + args.first - 1);
 
-      const hasNextPage = args.after + args.first < result.total
+      const hasNextPage = args.after + args.first < result.total;
 
       return {
         pageInfo: {
@@ -95,12 +95,12 @@ export const resolvers = {
           endCursor: hasNextPage ? args.after + args.first : result.total,
         },
         edges: result.results,
-      }
+      };
     },
     async build(repository, { number }) {
       return Build.query()
         .where({ repositoryId: repository.id, number })
-        .first()
+        .first();
     },
     async sampleBuildId(repository) {
       const build = await Build.query()
@@ -109,8 +109,8 @@ export const resolvers = {
           number: 0,
         })
         .limit(1)
-        .first()
-      return build ? build.id : null
+        .first();
+      return build ? build.id : null;
     },
   },
   Query: {
@@ -119,57 +119,58 @@ export const resolvers = {
         ownerLogin: args.ownerLogin,
         name: args.repositoryName,
         user: context.user,
-      })
+      });
     },
   },
   Mutation: {
     async toggleRepository(source, args, context) {
       if (!context.user) {
-        throw new APIError('Invalid user identification')
+        throw new APIError("Invalid user identification");
       }
 
       return transaction(async (trx) => {
-        const { repositoryId, enabled } = args
+        const { repositoryId, enabled } = args;
         const user = await Repository.getUsers(repositoryId, { trx }).findById(
-          context.user.id,
-        )
+          context.user.id
+        );
 
         if (!user) {
-          throw new APIError('Invalid user authorization')
+          throw new APIError("Invalid user authorization");
         }
 
-        const repository = await Repository.query(
-          trx,
-        ).patchAndFetchById(repositoryId, { enabled })
+        const repository = await Repository.query(trx).patchAndFetchById(
+          repositoryId,
+          { enabled }
+        );
 
         if (!repository) {
-          throw new APIError('Repository not found')
+          throw new APIError("Repository not found");
         }
 
         // We can skip further work when disabling a repository
         if (!enabled) {
-          return repository
+          return repository;
         }
 
         const sampleBuild = await Build.query(trx).findOne({
           repositoryId: repository.id,
           number: 0,
-        })
+        });
 
         // No need to generate a sample if we find one.
         if (!sampleBuild) {
-          await generateSample(repositoryId, { trx })
+          await generateSample(repositoryId, { trx });
         }
 
         if (!repository.token) {
-          const token = await generateRandomBytes(20)
+          const token = await generateRandomBytes(20);
           return Repository.query(trx).patchAndFetchById(repositoryId, {
-            token: token.toString('hex'),
-          })
+            token: token.toString("hex"),
+          });
         }
 
-        return repository
-      })
+        return repository;
+      });
     },
   },
-}
+};

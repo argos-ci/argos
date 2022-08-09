@@ -1,7 +1,7 @@
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import { Link } from 'react-router-dom'
-import { Container, FadeLink } from '../components'
+import React from "react";
+import { Helmet } from "react-helmet";
+import { Link } from "react-router-dom";
+import { Container, FadeLink } from "../components";
 
 export function ErrorPage() {
   return (
@@ -16,5 +16,5 @@ export function ErrorPage() {
         </FadeLink>
       </p>
     </Container>
-  )
+  );
 }

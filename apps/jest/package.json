@@ -1,6 +1,0 @@
-{
-  "name": "@argos-ci/jest",
-  "version": "2.0.0",
-  "private": true,
-  "main": "src/index.js"
-}

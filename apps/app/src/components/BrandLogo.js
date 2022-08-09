@@ -1,14 +1,14 @@
-import React from 'react'
+import React from "react";
 
 export function BrandLogo({ colorMode, ...props }) {
-  return colorMode === 'dark' ? (
+  return colorMode === "dark" ? (
     <BrandLogoLight {...props} />
   ) : (
     <BrandLogoDark {...props} />
-  )
+  );
 }
 
-const BrandLogoLight = props => (
+const BrandLogoLight = (props) => (
   <svg viewBox="0 0 943 193" {...props}>
     <title>Argos CI</title>
     <defs>
@@ -118,9 +118,9 @@ const BrandLogoLight = props => (
       </g>
     </g>
   </svg>
-)
+);
 
-const BrandLogoDark = props => (
+const BrandLogoDark = (props) => (
   <svg viewBox="0 0 943 193" {...props}>
     <title>Argos CI</title>
     <defs>
@@ -232,4 +232,4 @@ const BrandLogoDark = props => (
       </g>
     </g>
   </svg>
-)
+);

@@ -1,36 +1,36 @@
-import express from 'express'
-import path from 'path'
-import session from 'express-session'
-import connectRedis from 'connect-redis'
-import config from '@argos-ci/config'
-import { apolloServer } from '@argos-ci/graphql'
-import { errorHandler } from './middlewares/errorHandler'
-import { rendering } from './middlewares/rendering'
-import { auth } from './middlewares/auth'
-import * as redis from './redis'
+import express from "express";
+import path from "path";
+import session from "express-session";
+import connectRedis from "connect-redis";
+import config from "@argos-ci/config";
+import { apolloServer } from "@argos-ci/graphql";
+import { errorHandler } from "./middlewares/errorHandler";
+import { rendering } from "./middlewares/rendering";
+import { auth } from "./middlewares/auth";
+import * as redis from "./redis";
 
-const production = config.get('env') === 'production'
+const production = config.get("env") === "production";
 
-const router = new express.Router()
-const RedisStore = connectRedis(session)
+const router = new express.Router();
+const RedisStore = connectRedis(session);
 
 // Static directory
 router.use(
-  '/static/app',
-  express.static(path.join(__dirname, '../../app/dist'), {
+  "/static/app",
+  express.static(path.join(__dirname, "../../app/dist"), {
     etag: true,
     lastModified: false,
-    maxAge: '1 year',
+    maxAge: "1 year",
     index: false,
-  }),
-)
+  })
+);
 
 router.use(
   session({
-    secret: config.get('server.sessionSecret'),
+    secret: config.get("server.sessionSecret"),
     store: new RedisStore({ client: redis.connect() }),
     cookie: {
-      secure: config.get('server.secure'),
+      secure: config.get("server.secure"),
       httpOnly: true,
       maxAge: 2592000000, // 30 days
     },
@@ -38,33 +38,33 @@ router.use(
     // No need to resave, we can avoid concurrency issues.
     resave: false,
     saveUninitialized: false,
-  }),
-)
+  })
+);
 
-router.use(auth)
+router.use(auth);
 
-apolloServer.applyMiddleware({ app: router })
+apolloServer.applyMiddleware({ app: router });
 
-router.get('/auth/logout', (req, res) => {
-  req.logout()
-  if (config.get('env') !== 'production') {
-    res.redirect('/')
+router.get("/auth/logout", (req, res) => {
+  req.logout();
+  if (config.get("env") !== "production") {
+    res.redirect("/");
   } else {
-    res.redirect('https://www.argos-ci.com/')
+    res.redirect("https://www.argos-ci.com/");
   }
-})
+});
 
-router.get('*', rendering())
+router.get("*", rendering());
 
 const htmlErrorHandler = (err, req, res, next) => {
   rendering({
     error: {
       statusCode: res.statusCode,
-      message: production ? '' : err.message,
-      stack: production ? '' : err.stack,
+      message: production ? "" : err.message,
+      stack: production ? "" : err.stack,
     },
-  })(req, res, next)
-}
+  })(req, res, next);
+};
 
 router.use(
   errorHandler({
@@ -72,7 +72,7 @@ router.use(
       html: htmlErrorHandler,
       default: htmlErrorHandler,
     },
-  }),
-)
+  })
+);
 
-export default router
+export default router;

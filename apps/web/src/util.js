@@ -6,12 +6,12 @@
 export function asyncHandler(routeHandler) {
   return async (req, res, next) => {
     try {
-      await routeHandler(req, res, next)
+      await routeHandler(req, res, next);
     } catch (err) {
       // Handle objection errors
-      const candidates = [err.status, err.statusCode, err.code, 500]
-      err.status = candidates.find(Number.isInteger)
-      next(err)
+      const candidates = [err.status, err.statusCode, err.code, 500];
+      err.status = candidates.find(Number.isInteger);
+      next(err);
     }
-  }
+  };
 }
