@@ -8,6 +8,6 @@
     "@argos-ci/database": "2.0.0",
     "@argos-ci/github": "2.0.0",
     "@argos-ci/job-core": "2.0.0",
-    "@octokit/rest": "^17.1.4"
+    "@octokit/rest": "^19.0.3"
   }
 }

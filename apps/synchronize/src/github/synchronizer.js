@@ -54,7 +54,8 @@ export class GitHubSynchronizer {
   }
 
   async synchronizeAppRepositories(installationId) {
-    const options = this.octokit.apps.listRepos.endpoint.DEFAULTS;
+    const options =
+      this.octokit.apps.listReposAccessibleToInstallation.endpoint.DEFAULTS;
     const githubRepositories = await this.octokit.paginate(options);
     const { repositories, organizations } = await this.synchronizeRepositories(
       githubRepositories

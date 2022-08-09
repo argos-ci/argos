@@ -10,7 +10,7 @@
     "@argos-ci/github": "2.0.0",
     "@argos-ci/job-core": "2.0.0",
     "@argos-ci/storage": "2.0.0",
-    "@octokit/rest": "^17.1.4",
+    "@octokit/rest": "^19.0.3",
     "image-difference": "^2.0.7",
     "tmp": "^0.1.0"
   }
