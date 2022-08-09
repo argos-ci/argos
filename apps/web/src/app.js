@@ -75,9 +75,6 @@ app.use(
         scriptSrc: ["*", "'unsafe-inline'", "'unsafe-eval'"],
         frameAncestors: ["'none'"], // Disallow embedding of content
       },
-      // Don't support old version and help with CDN
-      browserSniff: false,
-      disableAndroid: true,
     },
     frameguard: {
       action: "deny", // Disallow embedded iframe
