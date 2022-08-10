@@ -45,21 +45,21 @@ jobs:
           node-version: 16
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
 
       - name: Lint
-        run: yarn lint
+        run: npm run lint
 
       - name: Build
-        run: yarn build
-      
+        run: npm run build
+
       - name: Setup
-        run: yarn setup
+        run: npm run setup
         env:
           NODE_ENV: test
-          
+
       - name: Test
-        run: yarn test --ci
+        run: npm run test -- --ci
         env:
           NODE_ENV: test
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

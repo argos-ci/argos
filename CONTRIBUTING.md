@@ -57,7 +57,6 @@ npm install
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
 brew install imagemagick@6 graphicsmagick autoenv watchman
 nvm install
-npm install -g yarn
 nvm alias default "$(cat .nvmrc)"
 ```
 
@@ -95,7 +94,7 @@ Two files should be generated at the root of the project.
 
 ```sh
 docker-compose up -d
-yarn setup
+npm run setup
 ```
 
 ### Use the seed
@@ -103,43 +102,36 @@ yarn setup
 You can fill the database with some development data with the following command:
 
 ```sh
-yarn workspace @argos-ci/database db:truncate && yarn workspace @argos-ci/database db:seed
+npm run -w @argos-ci/database db:truncate && npm run -w @argos-ci/database db:seed
 ```
 
 ## Develop
 
 ```sh
-yarn procfile
-yarn dev
+npm run procfile
+npm run dev
 ```
 
 ### Jobs
-
-#### Recover pending or error jobs
-
-1. Run console on heroku: `heroku run yarn run console`
-2. Get all concerned objects (ex: `const builds = Build.query().whereNot({ jobStatus: 'complete' })`)
-3. Add a job for these objects (ex: `builds.then(builds => builds.forEach(build => buildJob.push(build.id)))`)
-4. Verify that jobs are correctly processed: `Build.query().whereNot({ jobStatus: 'complete' })`
 
 ### Migrations
 
 #### Create a migration
 
 ```sh
-yarn workspace @argos-ci/database knex migrate:make my_migration
+npm run -w @argos-ci/database db:migrate:make my_migration
 ```
 
 #### Dump database
 
 ```sh
-yarn db:dump
+npm run -w @argos-ci/database db:dump
 ```
 
 #### Execute the latest migration
 
 ```sh
-yarn workspace @argos-ci/database db:migrate:latest
+npm run -w @argos-ci/database  db:migrate:latest
 ```
 
 ### Running the test suite
@@ -147,7 +139,7 @@ yarn workspace @argos-ci/database db:migrate:latest
 You can reset the test database using:
 
 ```sh
-NODE_ENV=test yarn workspace @argos-ci/database db:reset
+NODE_ENV=test npm run -w @argos-ci/database db:reset
 ```
 
 ## Coding style
