@@ -19,6 +19,6 @@
     "merge-deep": "^3.0.3"
   },
   "devDependencies": {
-    "supertest": "^4.0.2"
+    "supertest": "^6.2.4"
   }
 }
