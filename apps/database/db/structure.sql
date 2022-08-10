@@ -379,7 +379,7 @@ CREATE TABLE public.plans (
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
     "screenshotsLimitPerMonth" integer NOT NULL,
-    "githubId" character varying(255) NOT NULL
+    "githubId" integer NOT NULL
 );
 
 
@@ -415,7 +415,9 @@ CREATE TABLE public.purchases (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "planId" bigint NOT NULL,
-    "accountId" bigint NOT NULL
+    "accountId" bigint NOT NULL,
+    "startDate" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    "endDate" timestamp with time zone
 );
 
 
@@ -1168,6 +1170,13 @@ CREATE INDEX organizations_githubid_index ON public.organizations USING btree ("
 
 
 --
+-- Name: plans_githubid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX plans_githubid_index ON public.plans USING btree ("githubId");
+
+
+--
 -- Name: purchases_accountid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1585,3 +1594,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2020032
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200329194617_build-notifications.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200616135126_build-name.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220803095315_add_plans.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220809113257_add_purchase_end_date.js', 1, NOW());

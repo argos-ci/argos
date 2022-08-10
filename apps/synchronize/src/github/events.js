@@ -1,12 +1,11 @@
 /* eslint-disable default-case */
 import logger from "@argos-ci/logger";
-import {
-  getMatchingPlan,
-  getOrCreateAccount,
-  getOrCreatePurchase,
-  synchronizeFromInstallationId,
-} from "../helpers";
 import { getOrCreateInstallation } from "./synchronizer";
+import { synchronizeFromInstallationId } from "../helpers";
+import { purchase } from "./marketplaceEvents/purchase";
+import { change } from "./marketplaceEvents/change";
+import { pendingChangeCancel } from "./marketplaceEvents/pendingChangeCancel";
+import { cancel } from "./marketplaceEvents/cancel";
 
 export async function handleGitHubEvents({ name, payload }) {
   logger.info("GitHub event", name);
@@ -15,12 +14,20 @@ export async function handleGitHubEvents({ name, payload }) {
       case "marketplace_purchase": {
         switch (payload.action) {
           case "purchased": {
-            const plan = await getMatchingPlan(payload);
-            const account = await getOrCreateAccount(payload);
-            await getOrCreatePurchase({
-              accountId: account.id,
-              planId: plan.id,
-            });
+            await purchase(payload);
+            return;
+          }
+          case "changed":
+          case "pending_change": {
+            await change(payload);
+            return;
+          }
+          case "cancelled": {
+            await cancel(payload);
+            return;
+          }
+          case "pending_change_cancelled": {
+            await pendingChangeCancel(payload);
             return;
           }
         }
