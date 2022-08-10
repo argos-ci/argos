@@ -5,7 +5,7 @@
   ],
   "scripts": {
     "dev": "npm run -ws dev",
-    "build": "npm run -ws build",
+    "build": "npm run -w @argos-ci/app build",
     "test": "jest --runInBand",
     "setup": "npm run -ws setup",
     "procfile": "heroku local -f Procfile.dev -p 4001",
