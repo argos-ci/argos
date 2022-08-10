@@ -15,7 +15,7 @@ const indexString = fs.readFileSync(
 function getHtmlWebpackPluginConfig() {
   if (process.env.NODE_ENV === "production") {
     const rawAssets = fs.readFileSync(
-      path.join(__dirname, "../../../app/dist/assets.json"),
+      path.join(__dirname, "../../../app/dist/webpack-assets.json"),
       "UTF-8"
     );
     const assets = JSON.parse(rawAssets);
