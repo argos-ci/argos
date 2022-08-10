@@ -4,17 +4,18 @@
   "private": true,
   "main": "src/index.js",
   "scripts": {
-    "setup": "yarn db:create && yarn db:load",
+    "setup": "npm run db:create && npm run db:load",
     "db:check-structure": "knex-scripts check-structure",
-    "db:create": "yarn knex-scripts create",
-    "db:drop": "yarn knex-scripts drop",
-    "db:dump": "yarn db:migrate:latest && yarn knex-scripts dump",
-    "db:load": "yarn knex-scripts load",
-    "db:seed": "yarn knex seed:run",
-    "db:truncate": "yarn knex-scripts truncate",
-    "db:migrate:latest": "yarn knex migrate:latest",
-    "db:migrate:rollback": "yarn knex migrate:rollback",
-    "db:reset": "yarn db:drop && yarn db:create && yarn db:migrate:latest"
+    "db:create": "npx knex-scripts create",
+    "db:drop": "npx knex-scripts drop",
+    "db:dump": "npm run db:migrate:latest && npx knex-scripts dump",
+    "db:load": "npx knex-scripts load",
+    "db:seed": "npx knex seed:run",
+    "db:truncate": "npx knex-scripts truncate",
+    "db:migrate:latest": "npx knex migrate:latest",
+    "db:migrate:rollback": "npx knex migrate:rollback",
+    "db:migrate:make": "npx knex migrate:make",
+    "db:reset": "npm run db:drop && npm run db:create && npm run db:migrate:latest"
   },
   "dependencies": {
     "@argos-ci/config": "2.0.0",

@@ -20,6 +20,7 @@
     "graphql-tag": "^2.12.6",
     "lodash-es": "^4.17.21",
     "moment": "^2.29.4",
+    "query-string": "^7.1.1",
     "raw-loader": "^4.0.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
