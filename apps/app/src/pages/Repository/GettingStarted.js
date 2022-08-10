@@ -1,5 +1,4 @@
 import React from "react";
-import ReactMarkdown from "react-markdown";
 import {
   Container,
   Card,
@@ -7,13 +6,11 @@ import {
   CardTitle,
   CardBody,
 } from "../../components";
-import gettingStarted from "./getting-started.md";
 import { useRepository } from "./RepositoryContext";
 import { ToggleButton } from "./ToggleButton";
 
 export function GettingStarted() {
   const repository = useRepository();
-  const text = gettingStarted.replace(/__ARGOS_TOKEN__/g, repository.token);
 
   return (
     <Container my={4}>
@@ -28,7 +25,17 @@ export function GettingStarted() {
           </CardBody>
         ) : (
           <CardBody py={0}>
-            <ReactMarkdown>{text}</ReactMarkdown>
+            <p>
+              You are ready to launch your first build, here is your Argos
+              token:
+            </p>
+            <pre>
+              <code>{repository.token}</code>
+            </pre>
+            <p>
+              Follow <a href="https://docs.argos-ci.com">documentation</a> to
+              know how to integrate quickly with frameworks.
+            </p>
           </CardBody>
         )}
       </Card>
