@@ -14,7 +14,7 @@ exports.down = async (knex) => {
     table.dropColumn("endDate");
   });
   await knex.schema.alterTable("plans", (table) => {
-    table.string("githubId");
+    table.dropIndex("githubId");
     table.string("githubId").notNullable().alter();
   });
 };
