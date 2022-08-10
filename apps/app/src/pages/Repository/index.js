@@ -1,7 +1,7 @@
 import React from "react";
 import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
-import { Route, Link, Switch } from "react-router-dom";
+import { Route, Link, Switch, useRouteMatch } from "react-router-dom";
 import styled, { Box } from "@xstyled/styled-components";
 import { GoRepo } from "react-icons/go";
 import { FaGithub } from "react-icons/fa";
@@ -16,7 +16,6 @@ import {
   Text,
 } from "../../components";
 import { Query } from "../../containers/Apollo";
-import { useRouter } from "../../containers/Router";
 import {
   RepositoryProvider,
   RepositoryContextFragment,
@@ -46,7 +45,7 @@ const RepoTitlePart = styled(Text)`
 
 function RepositoryHeader() {
   const repository = useRepository();
-  const { match } = useRouter();
+  const match = useRouteMatch();
 
   return (
     <Header>

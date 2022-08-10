@@ -40,9 +40,8 @@ describe("GraphQL", () => {
     });
 
     it("should mutate the repository", async () => {
-      const res = await request(
-        createApolloServerApp(apolloServer, { user: ctx.user })
-      )
+      const app = await createApolloServerApp(apolloServer, { user: ctx.user });
+      const res = await request(app)
         .post("/graphql")
         .send({
           query: `

@@ -42,7 +42,8 @@ describe("GraphQL", () => {
         repositoryId: repository.id,
         createdAt: "2017-02-05T17:14:28.167Z",
       });
-      const res = await request(createApolloServerApp(apolloServer, { user }))
+      const app = await createApolloServerApp(apolloServer, { user });
+      const res = await request(app)
         .post("/graphql")
         .send({
           query: `{

@@ -53,7 +53,8 @@ describe("GraphQL", () => {
     });
 
     it("should sort the diffs by score", async () => {
-      const res = await request(createApolloServerApp(apolloServer, { user }))
+      const app = await createApolloServerApp(apolloServer, { user });
+      const res = await request(app)
         .post("/graphql")
         .send({
           query: `{
@@ -118,7 +119,8 @@ describe("GraphQL", () => {
         score: null,
       });
 
-      await request(createApolloServerApp(apolloServer, { user }))
+      const app = await createApolloServerApp(apolloServer, { user });
+      await request(app)
         .post("/graphql")
         .send({
           query: `{

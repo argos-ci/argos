@@ -61,7 +61,8 @@ describe("GraphQL", () => {
     });
 
     it("should mutate all the validationStatus", async () => {
-      let res = await request(createApolloServerApp(apolloServer, { user }))
+      const app = await createApolloServerApp(apolloServer, { user });
+      let res = await request(app)
         .post("/graphql")
         .send({
           query: `
@@ -92,7 +93,10 @@ describe("GraphQL", () => {
         type: "diff-rejected",
       });
 
-      res = await request(createApolloServerApp(apolloServer, { user }))
+      const apolloServerApp = await createApolloServerApp(apolloServer, {
+        user,
+      });
+      res = await request(apolloServerApp)
         .post("/graphql")
         .send({
           query: `{
@@ -126,9 +130,8 @@ describe("GraphQL", () => {
 
     it("should not mutate when the user is unauthorized", async () => {
       const user2 = await factory.create("User");
-      const res = await request(
-        createApolloServerApp(apolloServer, { user: user2 })
-      )
+      const app = await createApolloServerApp(apolloServer, { user: user2 });
+      const res = await request(app)
         .post("/graphql")
         .send({
           query: `
