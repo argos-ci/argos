@@ -17,8 +17,14 @@ export async function getPlanOrThrow(payload) {
   return plan;
 }
 
+function getPayloadPlan(payload) {
+  return payload.previous_marketplace_purchase
+    ? payload.previous_marketplace_purchase.plan
+    : payload.marketplace_purchase.plan;
+}
+
 export async function getActivePurchaseOrThrow(payload) {
-  const { id: planGithubId } = payload.previous_marketplace_purchase.plan;
+  const { id: planGithubId } = getPayloadPlan(payload);
   const { id: accountGithubId } = payload.marketplace_purchase.account;
   const today = new Date().toISOString();
 

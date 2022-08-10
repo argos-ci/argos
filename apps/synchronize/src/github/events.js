@@ -4,7 +4,8 @@ import { getOrCreateInstallation } from "./synchronizer";
 import { synchronizeFromInstallationId } from "../helpers";
 import { purchase } from "./marketplaceEvents/purchase";
 import { change } from "./marketplaceEvents/change";
-import { pendingChangeCancelled } from "./marketplaceEvents/pendingChangeCancelled";
+import { pendingChangeCancel } from "./marketplaceEvents/pendingChangeCancel";
+import { cancel } from "./marketplaceEvents/cancel";
 
 export async function handleGitHubEvents({ name, payload }) {
   logger.info("GitHub event", name);
@@ -21,8 +22,12 @@ export async function handleGitHubEvents({ name, payload }) {
             await change(payload);
             return;
           }
+          case "cancelled": {
+            await cancel(payload);
+            return;
+          }
           case "pending_change_cancelled": {
-            await pendingChangeCancelled(payload);
+            await pendingChangeCancel(payload);
             return;
           }
         }
