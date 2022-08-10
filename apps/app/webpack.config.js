@@ -32,45 +32,20 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/,
-        use: "babel-loader",
-        exclude: /node_modules\/(?!material-ui)/,
-      },
-      {
-        test: /\.json$/,
-        exclude: /node_modules/,
-        use: "json-loader",
-      },
-      {
-        test: /\.woff$/,
-        use: "url-loader?limit=100000",
-      },
-      {
-        test: /\.(jpe?g|png|gif|svg)$/,
-        use: "file-loader", // Hash name by default
-      },
-      {
-        test: /\.svg$/,
-        loader: "image-webpack-loader",
-        query: {
-          svgo: {
-            plugins: [
-              {
-                convertPathData: {
-                  floatPrecision: 2,
-                },
-              },
-            ],
-          },
+        test: /\.m?js$/,
+        type: "javascript/auto",
+        resolve: {
+          fullySpecified: false,
         },
       },
       {
-        test: /\.html$/,
-        loader: "html-loader",
+        test: /\.m?js$/,
+        exclude: /node_modules/,
+        use: "babel-loader",
       },
       {
-        test: /\.md$/,
-        loader: "raw-loader",
+        test: /\.(jpe?g|png|gif|svg)$/,
+        type: "asset/resource",
       },
     ],
   },
@@ -93,24 +68,17 @@ module.exports = {
     ? {
         devServer: {
           historyApiFallback: true,
-          https: true,
-          host: "app.argos-ci.dev",
-          key: fs.readFileSync(
-            path.join(__dirname, "../../_wildcard.argos-ci.dev-key.pem")
-          ),
-          cert: fs.readFileSync(
-            path.join(__dirname, "../../_wildcard.argos-ci.dev.pem")
-          ),
-          port: config.get("client.port"),
-          disableHostCheck: true, // For security checks, no need here.
-          // webpack-dev-middleware options.
-          stats: {
-            // Remove built modules information.
-            modules: false,
-            // Remove built modules information to chunk information.
-            chunkModules: false,
-            colors: true,
+          allowedHosts: "all",
+          https: {
+            key: fs.readFileSync(
+              path.join(__dirname, "../../_wildcard.argos-ci.dev-key.pem")
+            ),
+            cert: fs.readFileSync(
+              path.join(__dirname, "../../_wildcard.argos-ci.dev.pem")
+            ),
           },
+          host: "app.argos-ci.dev",
+          port: config.get("client.port"),
           proxy: {
             "**": {
               target: `https://app.argos-ci.dev:${config.get("server.port")}`,

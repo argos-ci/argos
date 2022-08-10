@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 import React from "react";
 import { gql } from "graphql-tag";
-import { partition } from "lodash";
+import { partition } from "lodash-es";
 import { Link } from "react-router-dom";
 import { Button } from "@smooth-ui/core-sc";
 import styled, { Box } from "@xstyled/styled-components";
