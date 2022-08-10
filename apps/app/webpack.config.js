@@ -53,8 +53,7 @@ module.exports = {
     ...(prod
       ? [
           new AssetsPlugin({
-            filename: "dist/assets.json",
-            prettyPrint: true,
+            path: "dist",
           }),
         ]
       : []),
