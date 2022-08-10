@@ -139,7 +139,8 @@ factory.define("Account", Account, {
 factory.define("Purchase", Purchase, {
   planId: factory.assoc("User", "id"),
   accountId: factory.assoc("Account", "id"),
-  startDate: moment().subtract(10, "days"),
+  startDate: moment().subtract(10, "days").toISOString(),
+  endDate: null,
 });
 
 export { factory };

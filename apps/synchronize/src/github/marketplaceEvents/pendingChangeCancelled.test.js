@@ -1,7 +1,7 @@
 import { useDatabase, factory } from '@argos-ci/database/testing'
 import { Purchase } from '@argos-ci/database/models'
-import { handleGitHubEvents } from './events'
-import { CHANGE_EVENT_PAYLOAD } from '../fixtures/change-event-payload'
+import { CHANGE_EVENT_PAYLOAD } from '../../fixtures/change-event-payload'
+import { pendingChangeCancelled } from './pendingChangeCancelled'
 
 describe('marketplace "pending_change_cancelled" event', () => {
   useDatabase()
@@ -32,10 +32,7 @@ describe('marketplace "pending_change_cancelled" event', () => {
         accountId: account.id,
         planId: plan.id,
       })
-      await handleGitHubEvents({
-        name: 'marketplace_purchase',
-        payload: pendingChangeCancelPayload,
-      })
+      await pendingChangeCancelled(pendingChangeCancelPayload)
     })
 
     it('should remove end date', async () => {
@@ -51,10 +48,7 @@ describe('marketplace "pending_change_cancelled" event', () => {
     it('should throw an error', async () => {
       expect.assertions(1)
       try {
-        await handleGitHubEvents({
-          name: 'marketplace_purchase',
-          payload: pendingChangeCancelPayload,
-        })
+        await pendingChangeCancelled(pendingChangeCancelPayload)
       } catch (error) {
         expect(error.message).toMatch('missing purchase')
       }

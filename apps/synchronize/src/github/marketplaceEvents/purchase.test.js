@@ -1,9 +1,13 @@
 import { useDatabase, factory } from '@argos-ci/database/testing'
-import { Purchase, Plan, Organization, User } from '@argos-ci/database/models'
-import { handleGitHubEvents } from './events'
-import { PURCHASE_EVENT_PAYLOAD } from '../fixtures/purchase-event-payload'
-import { getAccount } from '../helpers'
-import { Account } from '../../../database/src/models/Account'
+import {
+  Purchase,
+  Plan,
+  Organization,
+  User,
+  Account,
+} from '@argos-ci/database/models'
+import { PURCHASE_EVENT_PAYLOAD } from '../../fixtures/purchase-event-payload'
+import { getAccount, purchase } from './purchase'
 
 describe('marketplace "purchase" event', () => {
   useDatabase()
@@ -17,10 +21,7 @@ describe('marketplace "purchase" event', () => {
   describe('from a new user', () => {
     beforeEach(async () => {
       await factory.create('Plan', { githubId: payloadPlan.id })
-      await handleGitHubEvents({
-        name: 'marketplace_purchase',
-        payload: purchasePayload,
-      })
+      await purchase(purchasePayload)
     })
 
     it('should create a user', async () => {
@@ -76,10 +77,7 @@ describe('marketplace "purchase" event', () => {
             },
           },
         }
-        await handleGitHubEvents({
-          name: 'marketplace_purchase',
-          payload: registeredUserPayload,
-        })
+        await purchase(registeredUserPayload)
       })
 
       it('should not create user', async () => {
@@ -123,16 +121,13 @@ describe('marketplace "purchase" event', () => {
           .where({ accountId: account.id })
           .resultSize()
         previousUserCount = await User.query().resultSize()
-        await handleGitHubEvents({
-          name: 'marketplace_purchase',
-          payload: {
-            ...purchasePayload,
-            marketplace_purchase: {
-              ...purchasePayload.marketplace_purchase,
-              account: {
-                ...purchasePayload.marketplace_purchase.account,
-                id: user.githubId,
-              },
+        await purchase({
+          ...purchasePayload,
+          marketplace_purchase: {
+            ...purchasePayload.marketplace_purchase,
+            account: {
+              ...purchasePayload.marketplace_purchase.account,
+              id: user.githubId,
             },
           },
         })
@@ -176,10 +171,7 @@ describe('marketplace "purchase" event', () => {
           },
         },
       }
-      await handleGitHubEvents({
-        name: 'marketplace_purchase',
-        payload: newOrganizationPayload,
-      })
+      await purchase(newOrganizationPayload)
     })
 
     it('should create an organization', async () => {
@@ -227,10 +219,7 @@ describe('marketplace "purchase" event', () => {
             },
           },
         }
-        await handleGitHubEvents({
-          name: 'marketplace_purchase',
-          payload: newOrganizationPayload,
-        })
+        await purchase(newOrganizationPayload)
       })
 
       it('should not create organization', async () => {
@@ -274,17 +263,14 @@ describe('marketplace "purchase" event', () => {
           .where({ accountId: account.id })
           .resultSize()
         previousOrganizationCount = await Organization.query().resultSize()
-        await handleGitHubEvents({
-          name: 'marketplace_purchase',
-          payload: {
-            ...purchasePayload,
-            marketplace_purchase: {
-              ...purchasePayload.marketplace_purchase,
-              account: {
-                ...purchasePayload.marketplace_purchase.account,
-                type: 'organization',
-                id: organization.githubId,
-              },
+        await purchase({
+          ...purchasePayload,
+          marketplace_purchase: {
+            ...purchasePayload.marketplace_purchase,
+            account: {
+              ...purchasePayload.marketplace_purchase.account,
+              type: 'organization',
+              id: organization.githubId,
             },
           },
         })
@@ -310,15 +296,15 @@ describe('marketplace "purchase" event', () => {
   })
 
   describe('of a missing plan', () => {
-    it.skip('should not create purchase', async () => {
-      await expect(
-        handleGitHubEvents({
-          name: 'marketplace_purchase',
-          payload: PURCHASE_EVENT_PAYLOAD,
-        }),
-      ).rejects.toThrow('missing plan')
-      const purchaseCount = await Purchase.query().resultSize()
-      expect(purchaseCount).toBe(0)
+    it('should not create purchase', async () => {
+      expect.assertions(2)
+      try {
+        await purchase(PURCHASE_EVENT_PAYLOAD)
+      } catch (error) {
+        expect(error.message).toMatch('missing plan')
+        const purchaseCount = await Purchase.query().resultSize()
+        expect(purchaseCount).toBe(0)
+      }
     })
   })
 })
