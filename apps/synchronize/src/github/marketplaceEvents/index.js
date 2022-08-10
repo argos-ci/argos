@@ -1,1 +1,0 @@
-export { change } from './change'
