@@ -14,7 +14,7 @@
     "@argos-ci/synchronize": "2.0.0",
     "@octokit/auth-oauth-app": "^5.0.1",
     "@octokit/rest": "^19.0.3",
-    "@octokit/webhooks": "^10.1.1",
+    "@octokit/webhooks": "^10.1.2",
     "@sentry/node": "^7.9.0",
     "axios": "^0.27.2",
     "body-parser": "^1.20.0",
