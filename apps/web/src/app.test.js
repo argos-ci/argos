@@ -5,12 +5,15 @@ import { useDatabase, factory } from "@argos-ci/database/testing";
 import { job as buildJob } from "@argos-ci/build";
 import * as notifications from "@argos-ci/build-notification";
 import { quitRedis } from "./redis";
-import app from "./app";
+import { createApp } from "./app";
 
 describe("app routes", () => {
   useDatabase();
 
-  beforeAll(() => {
+  let app;
+
+  beforeAll(async () => {
+    app = await createApp();
     buildJob.push = jest.fn();
   });
 

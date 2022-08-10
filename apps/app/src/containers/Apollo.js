@@ -1,9 +1,10 @@
 import React from "react";
-import ApolloClient from "apollo-boost";
 import {
+  ApolloClient,
+  InMemoryCache,
   useQuery as useApolloQuery,
   ApolloProvider as BaseApolloProvider,
-} from "@apollo/react-hooks";
+} from "@apollo/client";
 import { useAuthToken } from "./Auth";
 
 function ApolloProvider({ children, authToken }) {
@@ -12,6 +13,7 @@ function ApolloProvider({ children, authToken }) {
     () =>
       new ApolloClient({
         uri: `/graphql`,
+        cache: new InMemoryCache(),
         headers: {
           authorization,
         },

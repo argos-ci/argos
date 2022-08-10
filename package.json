@@ -4,7 +4,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run -ws dev",
+    "dev": "npm run -w @argos-ci/app dev",
     "build": "npm run -w @argos-ci/app build",
     "test": "jest --runInBand",
     "setup": "npm run -ws setup",

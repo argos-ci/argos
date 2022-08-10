@@ -50,7 +50,8 @@ describe("GraphQL", () => {
     });
 
     it("should filter the repositories (organization)", async () => {
-      const res = await request(createApolloServerApp(apolloServer, { user }))
+      const app = await createApolloServerApp(apolloServer, { user });
+      const res = await request(app)
         .post("/graphql")
         .send({
           query: `{
@@ -74,7 +75,8 @@ describe("GraphQL", () => {
     });
 
     it("should filter the repositories (user)", async () => {
-      const res = await request(createApolloServerApp(apolloServer, { user }))
+      const app = await createApolloServerApp(apolloServer, { user });
+      const res = await request(app)
         .post("/graphql")
         .send({
           query: `{

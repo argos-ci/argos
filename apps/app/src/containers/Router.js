@@ -1,14 +1,8 @@
 import React from "react";
-import { __RouterContext } from "react-router-dom";
-
-export function useRouter() {
-  return React.useContext(__RouterContext);
-}
+import { useLocation } from "react-router-dom";
 
 export function ScrollToTop({ children }) {
-  const {
-    location: { pathname },
-  } = useRouter();
+  const { pathname } = useLocation();
   React.useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
@@ -16,9 +10,7 @@ export function ScrollToTop({ children }) {
 }
 
 export function GoogleAnalytics({ children }) {
-  const {
-    location: { href, pathname },
-  } = useRouter();
+  const { href, pathname } = useLocation();
   const initializedRef = React.useRef(false);
   React.useEffect(() => {
     if (!initializedRef.current) {

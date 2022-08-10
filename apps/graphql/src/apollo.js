@@ -1,8 +1,17 @@
 import * as Sentry from "@sentry/node";
 import { ApolloServer } from "apollo-server-express";
 import { schema } from "./schema";
+import {
+  ApolloServerPluginLandingPageGraphQLPlayground,
+  ApolloServerPluginLandingPageDisabled,
+} from "apollo-server-core";
 
 export const apolloServer = new ApolloServer({
+  plugins: [
+    process.env.NODE_ENV === "production"
+      ? ApolloServerPluginLandingPageDisabled()
+      : ApolloServerPluginLandingPageGraphQLPlayground(),
+  ],
   schema,
   context: ({ req }) => ({ user: req.user || null }),
   formatError(error) {
