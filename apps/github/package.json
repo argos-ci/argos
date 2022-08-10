@@ -10,6 +10,6 @@
     "@octokit/rest": "^19.0.3"
   },
   "devDependencies": {
-    "nock": "^12.0.3"
+    "nock": "^13.2.9"
   }
 }

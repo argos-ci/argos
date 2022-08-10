@@ -22,7 +22,7 @@
     "esm": "^3.2.25",
     "knex": "^0.21.0",
     "objection": "^2.1.3",
-    "pg": "^8.0.0"
+    "pg": "^8.7.3"
   },
   "devDependencies": {
     "factory-girl": "^5.0.4",
