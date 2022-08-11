@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "module": "es2020"
+    "baseUrl": ".",
+    "paths": {
+      "@argos-ci/*": ["./apps/*"]
+    }
   },
-  "include": ["apps/**/*", "node_modules/@argos-ci/**/*"]
+  "exclude": ["node_modules"]
 }
