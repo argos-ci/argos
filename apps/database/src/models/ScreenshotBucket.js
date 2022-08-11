@@ -25,6 +25,21 @@ export class ScreenshotBucket extends Model {
     });
   }
 
+  /** @type {string} */
+  name;
+
+  /** @type {boolean} */
+  complete;
+
+  /** @type {string} */
+  commit;
+
+  /** @type {string} */
+  branch;
+
+  /** @type {string} */
+  repositoryId;
+
   static get relationMappings() {
     return {
       screenshots: {

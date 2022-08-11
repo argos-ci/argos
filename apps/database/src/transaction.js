@@ -39,9 +39,10 @@ export function runAfterTransaction(trx, callback) {
 let transactionKnexInstance = null;
 
 /**
- * @param {import('objection').TransactionOrKnex | undefined | ((trx: import('objection').TransactionOrKnex) => Promise.<any>)} trxOrCallback
- * @param {(trx: import('objection').TransactionOrKnex) => Promise.<any>} [maybeCallback]
- * @returns {Promise.<any>}
+ * @template T
+ * @param {import('objection').TransactionOrKnex | undefined | (trx: import('objection').TransactionOrKnex) => T} trxOrCallback
+ * @param {(trx: import('objection').TransactionOrKnex) => T} [maybeCallback]
+ * @returns {T}
  */
 export const transaction = (trxOrCallback, maybeCallback) => {
   if (!transactionKnexInstance) {

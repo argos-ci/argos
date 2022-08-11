@@ -1,5 +1,6 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
+/** @type {S3Client} */
 let client;
 
 export function s3() {
