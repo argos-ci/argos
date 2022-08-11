@@ -2,7 +2,7 @@ import express from "express";
 import { ScreenshotBucket } from "@argos-ci/database/models";
 import { asyncHandler } from "../util";
 
-const router = new express.Router();
+const router = express.Router();
 export default router;
 
 router.get(

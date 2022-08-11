@@ -8,7 +8,7 @@ import auth from "./auth";
 import webhooks from "./webhooks";
 
 export const createApi = () => {
-  const router = new express.Router();
+  const router = express.Router();
 
   router.use(buckets);
   router.use(builds);
