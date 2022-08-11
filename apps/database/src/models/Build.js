@@ -33,6 +33,33 @@ export class Build extends Model {
     });
   }
 
+  /** @type {string | null} */
+  baseScreenshotBucketId;
+
+  /** @type {import('./ScreenshotBucket').ScreenshotBucket | undefined | null} */
+  baseScreenshotBucket;
+
+  /** @type {string} */
+  compareScreenshotBucketId;
+
+  /** @type {import('./ScreenshotBucket').ScreenshotBucket | undefined} */
+  compareScreenshotBucket;
+
+  /** @type {string} */
+  repositoryId;
+
+  /** @type {import('./Repository').Repository | undefined} */
+  repository;
+
+  /** @type {number} */
+  number;
+
+  /** @type {string | null} */
+  externalId;
+
+  /** @type {number | null} */
+  batchCount;
+
   static get relationMappings() {
     return {
       baseScreenshotBucket: {
@@ -190,7 +217,6 @@ export class Build extends Model {
 
     const owner = await this.repository.$relatedOwner({ trx });
 
-    // const owner = await repository.getOwner()
     const pathname = `/${owner.login}/${this.repository.name}/builds/${this.number}`;
 
     return `${config.get("server.url")}${pathname}`;
