@@ -12,7 +12,7 @@ import { s3 as getS3 } from "@argos-ci/storage";
 import { getRedisLock } from "../redis";
 import { asyncHandler } from "../util";
 
-const router = new express.Router();
+const router = express.Router();
 export default router;
 
 const upload = multer({

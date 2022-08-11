@@ -13,7 +13,7 @@ import * as redis from "./redis";
 export const createAppRouter = async () => {
   const production = config.get("env") === "production";
 
-  const router = new express.Router();
+  const router = express.Router();
   const RedisStore = connectRedis(session);
 
   // Static directory
