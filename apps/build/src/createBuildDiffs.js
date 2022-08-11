@@ -1,5 +1,5 @@
 import { transaction } from "@argos-ci/database";
-import { ScreenshotDiff } from "@argos-ci/database/models";
+import { ScreenshotDiff, Build } from "@argos-ci/database/models";
 import { baseCompare } from "./baseCompare";
 
 async function getOrCreateBaseScreenshotBucket(build, { trx } = {}) {
@@ -14,8 +14,8 @@ async function getOrCreateBaseScreenshotBucket(build, { trx } = {}) {
     trx,
   });
   if (baseScreenshotBucket) {
-    await build
-      .$query(trx)
+    await Build.query(trx)
+      .findById(build.id)
       .patch({ baseScreenshotBucketId: baseScreenshotBucket.id });
     return baseScreenshotBucket.$query(trx).withGraphFetched("screenshots");
   }
