@@ -48,21 +48,22 @@ async function createBuild({ data, repository, complete = true, trx }) {
 }
 
 async function useExistingBuild({ data, repository, trx }) {
-  const existingBuild = await Build.query(trx)
-    .withGraphFetched("compareScreenshotBucket")
-    .findOne({
-      "builds.repositoryId": repository.id,
-      externalId: data.externalBuildId,
-      name: data.name,
-    });
+  const existingBuild = await Build.query(trx).findOne({
+    "builds.repositoryId": repository.id,
+    externalId: data.externalBuildId,
+    name: data.name,
+  });
 
   // @TODO Throw an error if batchCount is superior to expected
 
   if (existingBuild) {
     await existingBuild
       .$query(trx)
-      .patchAndFetch({ batchCount: raw('"batchCount" + 1') });
-    return existingBuild;
+      .patch({ batchCount: raw('"batchCount" + 1') });
+
+    return existingBuild
+      .$query(trx)
+      .withGraphFetched("compareScreenshotBucket");
   }
 
   const build = await createBuild({

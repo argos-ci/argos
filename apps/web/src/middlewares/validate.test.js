@@ -36,7 +36,7 @@ describe("validate", () => {
       .get("/")
       .expect((res) => {
         expect(res.text).toBe(
-          "Request query validation failed: data should have required property 'foo'"
+          "Request query validation failed: data must have required property 'foo'"
         );
       })
       .expect(400);
@@ -56,7 +56,7 @@ describe("validate", () => {
       .get("/")
       .expect((res) => {
         expect(res.text).toBe(
-          "Request URL parameters validation failed: data should have required property 'foo'"
+          "Request URL parameters validation failed: data must have required property 'foo'"
         );
       })
       .expect(400);
@@ -76,7 +76,7 @@ describe("validate", () => {
       .get("/")
       .expect((res) => {
         expect(res.text).toBe(
-          "Request body validation failed: data should be object"
+          "Request body validation failed: data must be object"
         );
       })
       .expect(400);
