@@ -1,10 +1,10 @@
 import { Plan, Purchase } from "@argos-ci/database/models";
 
-export async function getOrCreatePurchase({ accountId, planId, endDate }) {
+export async function getOrCreatePurchase({ accountId, planId }) {
   const purchase = await Purchase.query().findOne({
     accountId,
     planId,
-    ...(endDate !== undefined ? endDate : {}),
+    endDate: null,
   });
   if (purchase) return purchase;
   return Purchase.query().insertAndFetch({ accountId, planId });

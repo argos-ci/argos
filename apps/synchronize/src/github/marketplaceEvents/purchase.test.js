@@ -1,3 +1,4 @@
+import moment from "moment";
 import { useDatabase, factory } from "@argos-ci/database/testing";
 import {
   Purchase,
@@ -13,10 +14,8 @@ describe('marketplace "purchase" event', () => {
   useDatabase();
 
   const purchasePayload = PURCHASE_EVENT_PAYLOAD;
-  const {
-    account: payloadAccount,
-    plan: payloadPlan,
-  } = purchasePayload.marketplace_purchase;
+  const { account: payloadAccount, plan: payloadPlan } =
+    purchasePayload.marketplace_purchase;
 
   describe("from a new user", () => {
     beforeEach(async () => {
@@ -103,14 +102,13 @@ describe('marketplace "purchase" event', () => {
     });
 
     describe("with account", () => {
-      let user;
       let account;
       let previousAccountCount;
       let previousPurchasesCount;
       let previousUserCount;
 
       beforeEach(async () => {
-        user = await factory.create("User");
+        const user = await factory.create("User");
         account = await factory.create("Account", {
           userId: user.id,
           organizationId: null,
@@ -148,6 +146,49 @@ describe('marketplace "purchase" event', () => {
           .where({ accountId: account.id })
           .resultSize();
         expect(purchases).toBe(previousPurchasesCount + 1);
+      });
+    });
+
+    describe("with previous plan cancelled", () => {
+      let previousPurchase;
+      let purchases;
+
+      beforeEach(async () => {
+        const user = await factory.create("User");
+        const account = await factory.create("Account", {
+          userId: user.id,
+          organizationId: null,
+        });
+        const plan = await factory.create("Plan", { githubId: payloadPlan.id });
+        previousPurchase = await factory.create("Purchase", {
+          accountId: account.id,
+          planId: plan.id,
+          startDate: moment().subtract(60, "days").toISOString(),
+          endDate: moment().subtract(20, "days").toISOString(),
+        });
+        await purchase({
+          ...purchasePayload,
+          marketplace_purchase: {
+            ...purchasePayload.marketplace_purchase,
+            account: {
+              ...purchasePayload.marketplace_purchase.account,
+              id: user.githubId,
+            },
+          },
+        });
+        purchases = await Purchase.query();
+      });
+
+      it("should not update old purchase", async () => {
+        expect(purchases[0]).toMatchObject({
+          startDate: new Date(previousPurchase.startDate),
+          endDate: new Date(previousPurchase.endDate),
+        });
+      });
+
+      it("should create a new purchase", async () => {
+        expect(purchases).toHaveLength(2);
+        expect(purchases[1]).toMatchObject({ endDate: null });
       });
     });
   });

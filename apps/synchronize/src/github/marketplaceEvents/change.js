@@ -23,7 +23,6 @@ export async function change(payload) {
   const purchase = await getOrCreatePurchase({
     planId: nextPlan.id,
     accountId: activePurchase.accountId,
-    endDate: null,
   });
 
   await Purchase.query()
