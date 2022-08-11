@@ -1,22 +1,10 @@
 import request from "supertest";
-import express from "express";
 import { bearerAuth } from "./bearerAuth";
+import { createTestApp } from "../test-util";
 
-const app = express();
-app.use(
-  bearerAuth,
-  (req, res) => {
-    res.send({ bearerToken: req.bearerToken });
-  },
-  // eslint-disable-next-line no-unused-vars
-  (_err, _req, res, _next) => {
-    if (_err.statusCode) {
-      res.status(_err.statusCode);
-    }
-
-    res.send(_err.message);
-  }
-);
+const app = createTestApp(bearerAuth, (req, res) => {
+  res.send({ bearerToken: req.bearerToken });
+});
 
 describe("bearerAuth", () => {
   it("returns 400 without auth token", async () => {

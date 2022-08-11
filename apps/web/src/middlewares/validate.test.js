@@ -1,29 +1,10 @@
 import request from "supertest";
-import express from "express";
+import { createTestApp } from "../test-util";
 import { validate } from "./validate";
-
-const createApp = (...middlewares) => {
-  const app = express();
-  app.use(
-    ...middlewares,
-    (_req, res) => {
-      res.sendStatus(200);
-    },
-    // eslint-disable-next-line no-unused-vars
-    (_err, _req, res, _next) => {
-      if (_err.statusCode) {
-        res.status(_err.statusCode);
-      }
-
-      res.send(_err.message);
-    }
-  );
-  return app;
-};
 
 describe("validate", () => {
   it("validates query", async () => {
-    const app = createApp(
+    const app = createTestApp(
       validate({
         query: {
           type: "object",
@@ -43,7 +24,7 @@ describe("validate", () => {
   });
 
   it("validates params", async () => {
-    const app = createApp(
+    const app = createTestApp(
       validate({
         params: {
           type: "object",
@@ -63,7 +44,7 @@ describe("validate", () => {
   });
 
   it("validates body", async () => {
-    const app = createApp(
+    const app = createTestApp(
       validate({
         body: {
           type: "object",

@@ -1,23 +1,11 @@
 import request from "supertest";
-import express from "express";
 import { repoAuth } from "./repoAuth";
 import { useDatabase, factory } from "@argos-ci/database/testing";
+import { createTestApp } from "../test-util";
 
-const app = express();
-app.use(
-  repoAuth,
-  (req, res) => {
-    res.send({ authRepository: req.authRepository });
-  },
-  // eslint-disable-next-line no-unused-vars
-  (_err, _req, res, _next) => {
-    if (_err.statusCode) {
-      res.status(_err.statusCode);
-    }
-
-    res.send(_err.message);
-  }
-);
+const app = createTestApp(repoAuth, (req, res) => {
+  res.send({ authRepository: req.authRepository });
+});
 
 describe("repoAuth", () => {
   let repository;
