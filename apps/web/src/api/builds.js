@@ -49,7 +49,7 @@ async function createBuild({ data, repository, complete = true, trx }) {
 
 async function useExistingBuild({ data, repository, trx }) {
   const existingBuild = await Build.query(trx).findOne({
-    "builds.repositoryId": repository.id,
+    repositoryId: repository.id,
     externalId: data.externalBuildId,
     name: data.name,
   });
