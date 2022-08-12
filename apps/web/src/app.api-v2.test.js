@@ -9,7 +9,6 @@ import * as notifications from "@argos-ci/build-notification";
 import { quitRedis } from "./redis";
 import { createApp } from "./app";
 import axios from "axios";
-import { quitAmqp } from "@argos-ci/job-core";
 
 describe("api v2", () => {
   useDatabase();
@@ -23,7 +22,7 @@ describe("api v2", () => {
   });
 
   afterAll(async () => {
-    await Promise.all([quitRedis(), s3().destroy(), quitAmqp()]);
+    await Promise.all([quitRedis(), s3().destroy()]);
   });
 
   describe("POST /v2/builds", () => {
