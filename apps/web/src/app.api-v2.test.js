@@ -4,10 +4,12 @@ import fs from "fs/promises";
 import { useDatabase, factory } from "@argos-ci/database/testing";
 import { job as buildJob } from "@argos-ci/build";
 import { Build } from "@argos-ci/database/models";
+import { s3 } from "@argos-ci/storage";
 import * as notifications from "@argos-ci/build-notification";
 import { quitRedis } from "./redis";
 import { createApp } from "./app";
 import axios from "axios";
+import { quitAmqp } from "@argos-ci/job-core";
 
 describe("api v2", () => {
   useDatabase();
@@ -17,9 +19,12 @@ describe("api v2", () => {
   beforeAll(async () => {
     app = await createApp();
     buildJob.push = jest.fn();
+    notifications.pushBuildNotification = jest.fn();
   });
 
-  afterAll(quitRedis);
+  afterAll(async () => {
+    await Promise.all([quitRedis(), s3().destroy(), quitAmqp()]);
+  });
 
   describe("POST /v2/builds", () => {
     describe("with no valid token", () => {
@@ -128,10 +133,6 @@ describe("api v2", () => {
     });
 
     describe("complete workflow", () => {
-      beforeAll(() => {
-        notifications.pushBuildNotification = jest.fn();
-      });
-
       let ctx = {};
 
       beforeEach(async () => {
