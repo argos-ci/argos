@@ -45,8 +45,8 @@ function ScreenshotDiffItem({
       <DisclosureContent {...disclosure}>
         {() =>
           disclosure.visible && (
-            <Box row>
-              <Box col={1 / 3}>
+            <Box row mx={-1}>
+              <Box col={1 / 3} px={1}>
                 {baseScreenshot ? (
                   <a
                     href={baseScreenshot.url}
@@ -61,7 +61,7 @@ function ScreenshotDiffItem({
                   </a>
                 ) : null}
               </Box>
-              <Box col={1 / 3}>
+              <Box col={1 / 3} px={1}>
                 <a
                   href={compareScreenshot.url}
                   target="_blank"
@@ -74,7 +74,7 @@ function ScreenshotDiffItem({
                   />
                 </a>
               </Box>
-              <Box col={1 / 3}>
+              <Box col={1 / 3} px={1}>
                 {url && (
                   <a
                     href={url}
@@ -97,8 +97,8 @@ function ScreenshotDiffItem({
 export default function BuildDetailScreenshots({ build }) {
   const [showPassingScreenshots, setShowPassingScreenshots] =
     React.useState(false);
-  const { screenshotDiffs } = build;
-  screenshotDiffs.sort((itemA, itemB) =>
+
+  const screenshotDiffs = [...build.screenshotDiffs].sort((itemA, itemB) =>
     itemA.validationStatus > itemB.validationStatus
       ? -1
       : itemA.validationStatus < itemB.validationStatus

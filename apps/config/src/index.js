@@ -131,6 +131,12 @@ const config = convict({
       default: "development",
       env: "GITHUB_WEBHOOK_SECRET",
     },
+    marketplaceUrl: {
+      doc: "Github marketplace url",
+      format: String,
+      default: "https://github.com/marketplace/argos-ci-dev",
+      env: "GITHUB_MARKETPLACE_URL",
+    },
   },
   redis: {
     url: {

@@ -11,9 +11,9 @@ import {
   FadeLink,
 } from "../components";
 
-export function NotFound() {
+export function NotFound(props) {
   return (
-    <Container textAlign="center" my={4}>
+    <Container textAlign="center" my={4} {...props}>
       <Helmet>
         <title>Not found</title>
       </Helmet>

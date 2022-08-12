@@ -43,6 +43,14 @@ const theme = {
         margin-bottom: 3;
       `,
     },
+    h1: {
+      defaultAs: "h1",
+      style: css`
+        font-size: 24;
+        font-weight: medium;
+        margin: 0 0 3;
+      `,
+    },
     h2: {
       defaultAs: "h2",
       style: css`
