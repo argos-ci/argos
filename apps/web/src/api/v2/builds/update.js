@@ -112,14 +112,14 @@ const handleUpdateParallel = async ({ req, build, unknownKeys }) => {
   await transaction(async (trx) => {
     await insertFilesAndScreenshots({ req, build, unknownKeys, trx });
 
-    await build
-      .$query(trx)
-      .patchAndFetch({ batchCount: raw('"batchCount" + 1') });
+    await Build.query(trx)
+      .findById(build.id)
+      .patch({ batchCount: raw('"batchCount" + 1') });
 
-    if (parallelTotal === build.batchCount) {
-      await build.compareScreenshotBucket
-        .$query(trx)
-        .patchAndFetch({ complete: true });
+    if (parallelTotal === build.batchCount + 1) {
+      await build
+        .$relatedQuery("compareScreenshotBucket", trx)
+        .patch({ complete: true });
     }
   });
 

@@ -61,8 +61,8 @@ async function useExistingBuild({ data, repository, trx }) {
   // @TODO Throw an error if batchCount is superior to expected
 
   if (existingBuild) {
-    await existingBuild
-      .$query(trx)
+    await Build.query(trx)
+      .findById(existingBuild.id)
       .patch({ batchCount: raw('"batchCount" + 1') });
 
     return existingBuild
