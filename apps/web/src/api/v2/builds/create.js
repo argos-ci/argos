@@ -68,7 +68,7 @@ const getBuildData = (req) => {
   };
 };
 
-const getUploadUrls = async (keys) => {
+const getScreenshots = async (keys) => {
   const unknownKeys = await getUnknownScreenshotKeys(keys);
   const s3 = getS3();
   const screenshotsBucket = config.get("s3.screenshotsBucket");
@@ -82,10 +82,10 @@ const getUploadUrls = async (keys) => {
       })
     )
   );
-  return unknownKeys.reduce((urls, key, index) => {
-    urls[key] = signedUrls[index];
-    return urls;
-  }, {});
+  return unknownKeys.map((key, index) => ({
+    key,
+    putUrl: signedUrls[index],
+  }));
 };
 
 const createBuild = async ({ req, trx }) => {
@@ -111,9 +111,9 @@ const createBuild = async ({ req, trx }) => {
 };
 
 const handleCreateSingle = async ({ req }) => {
-  const urls = await getUploadUrls(req.body.screenshotKeys);
+  const screenshots = await getScreenshots(req.body.screenshotKeys);
   const build = await createBuild({ req });
-  return { build, urls };
+  return { build, screenshots };
 };
 
 const handleCreateParallel = async ({ req }) => {
@@ -123,7 +123,7 @@ const handleCreateParallel = async ({ req }) => {
       "`parallelNonce` is required when `parallel` is `true`"
     );
   }
-  const urls = await getUploadUrls(req.body.screenshotKeys);
+  const screenshots = await getScreenshots(req.body.screenshotKeys);
   const buildName = getBuildName(req);
   const parallelNonce = req.body.parallelNonce;
 
@@ -151,7 +151,7 @@ const handleCreateParallel = async ({ req }) => {
     });
   });
 
-  return { build, urls };
+  return { build, screenshots };
 };
 
 router.post(
@@ -161,7 +161,7 @@ router.post(
   express.json(),
   validateRoute,
   asyncHandler(async (req, res) => {
-    const { build, urls } = await (async () => {
+    const { build, screenshots } = await (async () => {
       const ctx = { req };
       if (req.body.parallel) {
         return handleCreateParallel(ctx);
@@ -172,6 +172,8 @@ router.post(
 
     const buildUrl = await build.getUrl();
 
-    res.send({ build, buildUrl, urls });
+    res
+      .status(201)
+      .send({ build: { id: build.id, url: buildUrl }, screenshots });
   })
 );

@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.7
--- Dumped by pg_dump version 13.7
+-- Dumped by pg_dump version 14.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -188,6 +188,41 @@ ALTER TABLE public.builds_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.builds_id_seq OWNED BY public.builds.id;
+
+
+--
+-- Name: files; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.files (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    key character varying(255) NOT NULL
+);
+
+
+ALTER TABLE public.files OWNER TO postgres;
+
+--
+-- Name: files_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.files_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.files_id_seq OWNER TO postgres;
+
+--
+-- Name: files_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.files_id_seq OWNED BY public.files.id;
 
 
 --
@@ -576,7 +611,8 @@ CREATE TABLE public.screenshots (
     name character varying(255) NOT NULL,
     "s3Id" character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
+    "updatedAt" timestamp with time zone NOT NULL,
+    "fileId" bigint
 );
 
 
@@ -813,6 +849,13 @@ ALTER TABLE ONLY public.builds ALTER COLUMN id SET DEFAULT nextval('public.build
 
 
 --
+-- Name: files id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.files ALTER COLUMN id SET DEFAULT nextval('public.files_id_seq'::regclass);
+
+
+--
 -- Name: installation_repository_rights id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -946,6 +989,22 @@ ALTER TABLE ONLY public.build_notifications
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: files files_key_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.files
+    ADD CONSTRAINT files_key_unique UNIQUE (key);
+
+
+--
+-- Name: files files_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.files
+    ADD CONSTRAINT files_pkey PRIMARY KEY (id);
 
 
 --
@@ -1254,6 +1313,13 @@ CREATE INDEX screenshot_diffs_buildid_index ON public.screenshot_diffs USING btr
 
 
 --
+-- Name: screenshots_fileid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshots_fileid_index ON public.screenshots USING btree ("fileId");
+
+
+--
 -- Name: screenshots_name_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1480,6 +1546,14 @@ ALTER TABLE ONLY public.screenshot_diffs
 
 
 --
+-- Name: screenshots screenshots_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.screenshots
+    ADD CONSTRAINT screenshots_fileid_foreign FOREIGN KEY ("fileId") REFERENCES public.files(id);
+
+
+--
 -- Name: screenshots screenshots_screenshotbucketid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1595,3 +1669,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2020032
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20200616135126_build-name.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220803095315_add_plans.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220809113257_add_purchase_end_date.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220812142703_files.js', 1, NOW());
