@@ -1,7 +1,7 @@
 import { HttpError } from "express-err";
 import express from "express";
 import { transaction, raw } from "@argos-ci/database";
-import { Build, Screenshot } from "@argos-ci/database/models";
+import { Build, Screenshot, File } from "@argos-ci/database/models";
 import { s3 as getS3, checkIfExists } from "@argos-ci/storage";
 import config from "@argos-ci/config";
 import { job as buildJob } from "@argos-ci/build";
@@ -56,9 +56,7 @@ const validateRoute = validate({
   },
 });
 
-const checkAllScreenshotKeysExist = async (keys) => {
-  const unknownKeys = await getUnknownScreenshotKeys(keys);
-
+const checkAllScreenshotKeysExist = async (unknownKeys) => {
   const s3 = getS3();
   const screenshotsBucket = config.get("s3.screenshotsBucket");
   const exists = await Promise.all(
@@ -79,17 +77,29 @@ const checkAllScreenshotKeysExist = async (keys) => {
   }
 };
 
-const insertScreenshots = async ({ req, build, trx }) => {
-  await Screenshot.query(trx).insert(
-    req.body.screenshots.map((screenshot) => ({
-      screenshotBucketId: build.compareScreenshotBucket.id,
-      name: screenshot.name,
-      s3Id: screenshot.key,
-    }))
-  );
+const insertFilesAndScreenshots = async ({ req, build, unknownKeys, trx }) => {
+  await transaction(trx, async (trx) => {
+    // Insert unknown files
+    await File.query(trx).insert(unknownKeys.map((key) => ({ key })));
+
+    // Retrieve all screenshot files
+    const screenshots = req.body.screenshots;
+    const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
+    const files = await File.query(trx).whereIn("key", screenshotKeys);
+
+    // Insert screenshots
+    await Screenshot.query(trx).insert(
+      screenshots.map((screenshot) => ({
+        screenshotBucketId: build.compareScreenshotBucket.id,
+        name: screenshot.name,
+        s3Id: screenshot.key,
+        fileId: files.find((file) => file.key === screenshot.key).id,
+      }))
+    );
+  });
 };
 
-const handleUpdateParallel = async ({ req, build }) => {
+const handleUpdateParallel = async ({ req, build, unknownKeys }) => {
   if (!req.body.parallelTotal) {
     throw new HttpError(
       400,
@@ -100,7 +110,7 @@ const handleUpdateParallel = async ({ req, build }) => {
   const parallelTotal = Number(req.body.parallelTotal);
 
   await transaction(async (trx) => {
-    await insertScreenshots({ req, build, trx });
+    await insertFilesAndScreenshots({ req, build, unknownKeys, trx });
 
     await build
       .$query(trx)
@@ -116,9 +126,9 @@ const handleUpdateParallel = async ({ req, build }) => {
   await buildJob.push(build.id);
 };
 
-const handleUpdateSingle = async ({ req, build }) => {
+const handleUpdateSingle = async ({ req, build, unknownKeys }) => {
   await transaction(async (trx) => {
-    await insertScreenshots({ req, build, trx });
+    await insertFilesAndScreenshots({ req, build, unknownKeys, trx });
 
     await build.compareScreenshotBucket
       .$query(trx)
@@ -161,10 +171,11 @@ router.put(
 
     const screenshots = req.body.screenshots;
     const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
-    await checkAllScreenshotKeysExist(screenshotKeys);
+    const unknownKeys = await getUnknownScreenshotKeys(screenshotKeys);
+    await checkAllScreenshotKeysExist(unknownKeys);
 
     await (async () => {
-      const ctx = { req, build };
+      const ctx = { req, build, unknownKeys };
       if (req.body.parallel) {
         return handleUpdateParallel(ctx);
       } else {
@@ -174,6 +185,6 @@ router.put(
 
     const buildUrl = await build.getUrl();
 
-    res.send({ build, buildUrl });
+    res.send({ build: { id: build.id, url: buildUrl } });
   })
 );

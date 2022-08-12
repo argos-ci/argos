@@ -1,5 +1,6 @@
 import { Model, mergeSchemas, timestampsSchema } from "../util";
 import { ScreenshotBucket } from "./ScreenshotBucket";
+import { File } from "./File";
 
 export class Screenshot extends Model {
   static get tableName() {
@@ -13,6 +14,7 @@ export class Screenshot extends Model {
         name: { type: "string" },
         s3Id: { type: "string" },
         screenshotBucketId: { type: "string" },
+        fileId: { type: "string" },
       },
     });
   }
@@ -25,6 +27,14 @@ export class Screenshot extends Model {
         join: {
           from: "screenshots.screenshotBucketId",
           to: "screenshot_buckets.id",
+        },
+      },
+      file: {
+        relation: Model.HasOneRelation,
+        modelClass: File,
+        join: {
+          from: "screenshots.fileId",
+          to: "files.id",
         },
       },
     };

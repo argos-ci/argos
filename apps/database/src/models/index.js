@@ -1,6 +1,7 @@
 export * from "./Account";
 export * from "./Build";
 export * from "./BuildNotification";
+export * from "./File";
 export * from "./Installation";
 export * from "./InstallationRepositoryRight";
 export * from "./Organization";

@@ -20,6 +20,10 @@ const upload = multer({
     s3: getS3(),
     bucket: config.get("s3.screenshotsBucket"),
     contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: function (req, file, cb) {
+      console.log(file);
+      cb(null, Date.now().toString());
+    },
   }),
 });
 
