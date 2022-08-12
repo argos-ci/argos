@@ -139,11 +139,11 @@ const handleCreateParallel = async ({ req }) => {
           name: getBuildName(req),
         });
 
-      if (existingBuild.compareScreenshotBucket.complete) {
-        throw new HttpError(409, `Build already finalized`);
-      }
-
       if (existingBuild) {
+        if (existingBuild.compareScreenshotBucket.complete) {
+          throw new HttpError(409, `Build already finalized`);
+        }
+
         return existingBuild;
       }
 
