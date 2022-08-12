@@ -21,7 +21,7 @@ export async function getAmqpChannel() {
   return channel;
 }
 
-async function quitAmqp() {
+export async function quitAmqp() {
   if (!promise) return;
   const connection = await promise;
   await connection.close();
