@@ -161,7 +161,7 @@ export function GeneralSettings() {
             <CardBody minHeight="220px">
               <CardTitle mb={2}>Screenshots used</CardTitle>
               <Text fontSize={20}>
-                {Number(owner.currentMonthUsedScreenshots).toLocaleString()}
+                {owner.currentMonthUsedScreenshots.toLocaleString()}
               </Text>{" "}
               <Text color="light500">/ {screenshotsLimitPerMonth}</Text>
               <ProgressBar
