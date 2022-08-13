@@ -17,7 +17,7 @@ describe("ScreenshotBucket", () => {
         });
       } catch (error) {
         expect(error.message).toBe(
-          'commit: should match pattern "^[a-zA-Z0-9]{40}$"'
+          'commit: should match pattern "^[0-9a-f]{40}$"'
         );
       }
     });
