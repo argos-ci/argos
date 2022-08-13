@@ -60,38 +60,36 @@ function ProgressBar({ score, total, ...props }) {
   );
 }
 
-const Plan = ({ name, screenshotsLimitPerMonth }) => {
-  return (
-    <React.Fragment>
-      <PlanName>
-        {name}&nbsp;
-        <Text fontSize={14} color="light700">
-          Beta
-        </Text>
-      </PlanName>
-      <List>
-        <Feature>
-          <FeatureIcon icon={FaCheckCircle} />
-          {screenshotsLimitPerMonth === Infinity
-            ? "Unlimited screenshots"
-            : `Up to ${screenshotsLimitPerMonth.toLocaleString()} screenshots`}
-        </Feature>
-        <Feature>
-          <FeatureIcon icon={FaCheckCircle} />
-          Unlimited users
-        </Feature>
-        <Feature>
-          <FeatureIcon icon={FaCheckCircle} />
-          Unlimited repositories
-        </Feature>
-      </List>
-    </React.Fragment>
-  );
-};
+const Plan = ({ name, screenshotsLimitPerMonth }) => (
+  <React.Fragment>
+    <PlanName>
+      {name}&nbsp;
+      <Text fontSize={14} color="light700">
+        Beta
+      </Text>
+    </PlanName>
+    <List>
+      <Feature>
+        <FeatureIcon icon={FaCheckCircle} />
+        {screenshotsLimitPerMonth === Infinity
+          ? "Unlimited screenshots"
+          : `Up to ${screenshotsLimitPerMonth.toLocaleString()} screenshots`}
+      </Feature>
+      <Feature>
+        <FeatureIcon icon={FaCheckCircle} />
+        Unlimited users
+      </Feature>
+      <Feature>
+        <FeatureIcon icon={FaCheckCircle} />
+        Unlimited repositories
+      </Feature>
+    </List>
+  </React.Fragment>
+);
 
 export function GeneralSettings() {
   const owner = useOwner();
-  const [currentPurchase, nextPurchase] = owner.purchases;
+  let [currentPurchase, nextPurchase] = owner.purchases;
   const screenshotsLimitPerMonth = Infinity;
 
   return (
@@ -101,7 +99,7 @@ export function GeneralSettings() {
       <Box
         display="flex"
         flexDirection={{ xs: "column", md: "row" }}
-        alignItems="flex-start"
+        alignItems={{ xs: "stretch", md: "flex-start" }}
         mx={-2}
       >
         <Card m={2} flex={1}>
@@ -148,34 +146,31 @@ export function GeneralSettings() {
             ) : null}
           </CardBody>
         </Card>
-
-        {currentPurchase ? (
-          <Card m={2} flex={1}>
-            <CardHeader>
-              <CardTitle>Usage</CardTitle>
-            </CardHeader>
-            <CardBody minHeight="220px">
-              <CardTitle mb={2}>Screenshots used</CardTitle>
-              <Text fontSize={20}>
-                {owner.currentMonthUsedScreenshots.toLocaleString()}
-              </Text>{" "}
-              <Text color="light500">/ {screenshotsLimitPerMonth}</Text>
-              <ProgressBar
-                score={owner.currentMonthUsedScreenshots}
-                total={screenshotsLimitPerMonth}
-                mt={2}
-              />
-              <CardTitle mt={4} mb={2}>
-                Reset date
-              </CardTitle>
-              {moment()
-                .add(1, "month")
-                .startOf("month")
-                .toDate()
-                .toLocaleDateString()}
-            </CardBody>
-          </Card>
-        ) : null}
+        <Card m={2} flex={1}>
+          <CardHeader>
+            <CardTitle>Usage</CardTitle>
+          </CardHeader>
+          <CardBody minHeight="220px">
+            <CardTitle mb={2}>Used screenshots / month</CardTitle>
+            <Text fontSize={20}>
+              {owner.currentMonthUsedScreenshots.toLocaleString()}
+            </Text>{" "}
+            <Text color="light500">/ {screenshotsLimitPerMonth}</Text>
+            <ProgressBar
+              score={owner.currentMonthUsedScreenshots}
+              total={screenshotsLimitPerMonth}
+              mt={2}
+            />
+            <CardTitle mt={4} mb={2}>
+              Next reset date
+            </CardTitle>
+            {moment()
+              .add(1, "month")
+              .startOf("month")
+              .toDate()
+              .toLocaleDateString()}
+          </CardBody>
+        </Card>
       </Box>
     </>
   );
