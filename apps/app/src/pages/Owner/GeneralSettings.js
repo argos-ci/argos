@@ -60,32 +60,37 @@ function ProgressBar({ score, total, ...props }) {
   );
 }
 
-const Plan = ({ name, screenshotsLimitPerMonth }) => (
-  <React.Fragment>
-    <PlanName>
-      {name}&nbsp;
-      <Text fontSize={14} color="light700">
-        Beta
-      </Text>
-    </PlanName>
-    <List>
-      <Feature>
-        <FeatureIcon icon={FaCheckCircle} />
-        {screenshotsLimitPerMonth === Infinity
-          ? "Unlimited screenshots"
-          : `Up to ${screenshotsLimitPerMonth.toLocaleString()} screenshots`}
-      </Feature>
-      <Feature>
-        <FeatureIcon icon={FaCheckCircle} />
-        Unlimited users
-      </Feature>
-      <Feature>
-        <FeatureIcon icon={FaCheckCircle} />
-        Unlimited repositories
-      </Feature>
-    </List>
-  </React.Fragment>
-);
+const Plan = ({ purchase }) => {
+  if (!purchase.plan) return <PlanName mb={2}>No plan</PlanName>;
+
+  const { name, screenshotsLimitPerMonth } = purchase.plan;
+  return (
+    <React.Fragment>
+      <PlanName>
+        {name}&nbsp;
+        <Text fontSize={14} color="light700">
+          Beta
+        </Text>
+      </PlanName>
+      <List>
+        <Feature>
+          <FeatureIcon icon={FaCheckCircle} />
+          {screenshotsLimitPerMonth === Infinity
+            ? "Unlimited screenshots"
+            : `Up to ${screenshotsLimitPerMonth.toLocaleString()} screenshots`}
+        </Feature>
+        <Feature>
+          <FeatureIcon icon={FaCheckCircle} />
+          Unlimited users
+        </Feature>
+        <Feature>
+          <FeatureIcon icon={FaCheckCircle} />
+          Unlimited repositories
+        </Feature>
+      </List>
+    </React.Fragment>
+  );
+};
 
 export function GeneralSettings() {
   const owner = useOwner();
@@ -107,22 +112,12 @@ export function GeneralSettings() {
             <CardTitle>Plan</CardTitle>
           </CardHeader>
           <CardBody>
-            {currentPurchase ? (
-              <Plan
-                {...currentPurchase.plan}
-                screenshotsLimitPerMonth={screenshotsLimitPerMonth}
-              />
-            ) : (
-              <>
-                <PlanName mb={2}>No plan</PlanName>
-                <Link
-                  target="_blank"
-                  href={config.get("github.marketplaceUrl")}
-                >
-                  Subscribe to Argos Plan to start →
-                </Link>
-              </>
-            )}
+            <Plan
+              purchase={{
+                ...currentPurchase,
+                screenshotsLimitPerMonth: screenshotsLimitPerMonth,
+              }}
+            />
 
             {nextPurchase ? (
               <Box mt={4}>
@@ -130,7 +125,7 @@ export function GeneralSettings() {
                 <Box mt={4} fontSize={14}>
                   From {new Date(nextPurchase.startDate).toLocaleDateString()}
                 </Box>
-                <Plan {...nextPurchase.plan} />
+                <Plan purchase={nextPurchase} />
               </Box>
             ) : null}
 
@@ -143,7 +138,11 @@ export function GeneralSettings() {
                   Manage plan →
                 </Link>
               </Box>
-            ) : null}
+            ) : (
+              <Link target="_blank" href={config.get("github.marketplaceUrl")}>
+                Subscribe to Argos Plan to start →
+              </Link>
+            )}
           </CardBody>
         </Card>
         <Card m={2} flex={1}>
