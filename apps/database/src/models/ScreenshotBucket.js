@@ -2,7 +2,7 @@ import { Model, mergeSchemas, timestampsSchema } from "../util";
 import { Screenshot } from "./Screenshot";
 import { Repository } from "./Repository";
 
-const SHA1_REGEXP = "^[a-zA-Z0-9]{40}$";
+const SHA1_REGEXP = "^[0-9a-f]{40}$";
 
 export class ScreenshotBucket extends Model {
   static get tableName() {
