@@ -98,7 +98,8 @@ export default function BuildDetailScreenshots({ build }) {
   const [showPassingScreenshots, setShowPassingScreenshots] =
     React.useState(false);
 
-  const screenshotDiffs = [...build.screenshotDiffs].sort((itemA, itemB) =>
+  const screenshotDiffs = Array.from(build.screenshotDiffs);
+  screenshotDiffs.sort((itemA, itemB) =>
     itemA.validationStatus > itemB.validationStatus
       ? -1
       : itemA.validationStatus < itemB.validationStatus
