@@ -9,6 +9,7 @@ export const RepositoryContextFragment = gql`
     token
     enabled
     permissions
+    baselineBranch
     owner {
       login
       name

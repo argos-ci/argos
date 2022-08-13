@@ -6,12 +6,14 @@ const Pre = styled.pre`
   overflow-x: auto;
 `;
 
-const InnerCode = styled.code`
+const InnerCode = styled.codeBox`
   padding: 2;
   background-color: light100;
   border-radius: base;
   color: light800;
 `;
+
+export const InlineCode = (props) => <InnerCode py={1} px={1} {...props} />;
 
 export function Code(props) {
   return (
