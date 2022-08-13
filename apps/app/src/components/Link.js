@@ -15,7 +15,7 @@ export const FadeLink = styled.aBox`
 const InnerLink = styled.aBox`
   transition: base;
   text-decoration: none;
-  color: #3291ff;
+  color: link;
 
   &:hover {
     text-decoration: underline;

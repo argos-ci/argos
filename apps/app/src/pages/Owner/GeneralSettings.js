@@ -29,10 +29,6 @@ const FeatureIcon = ({ icon, ...props }) => (
 
 const PlanName = styled.box`
   font-size: 36;
-
-  &::first-letter {
-    text-transform: uppercase;
-  }
 `;
 
 function ProgressBar({ score, total, ...props }) {
@@ -113,7 +109,7 @@ export function GeneralSettings() {
             <CardTitle>Plan</CardTitle>
           </CardHeader>
           <CardBody>
-            {currentPurchase?.plan ? (
+            {currentPurchase ? (
               <Plan
                 {...currentPurchase.plan}
                 screenshotsLimitPerMonth={screenshotsLimitPerMonth}
@@ -130,7 +126,7 @@ export function GeneralSettings() {
               </>
             )}
 
-            {nextPurchase?.plan ? (
+            {nextPurchase ? (
               <Box mt={4}>
                 <hr />
                 <Box mt={4} fontSize={14}>
@@ -140,7 +136,7 @@ export function GeneralSettings() {
               </Box>
             ) : null}
 
-            {currentPurchase?.plan ? (
+            {currentPurchase ? (
               <Box display="flex" justifyContent="flex-end">
                 <Link
                   target="_blank"
@@ -153,7 +149,7 @@ export function GeneralSettings() {
           </CardBody>
         </Card>
 
-        {currentPurchase?.plan ? (
+        {currentPurchase ? (
           <Card m={2} flex={1}>
             <CardHeader>
               <CardTitle>Usage</CardTitle>

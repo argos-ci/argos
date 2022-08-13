@@ -28,6 +28,7 @@ const theme = {
     gray200: "#f2f4fb",
     gray100: "#FDFEFF",
     primary: "#6344CE",
+    link: "#3291ff",
   },
   sizes: {
     ...suiTheme.sizes,
