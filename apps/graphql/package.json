@@ -16,7 +16,8 @@
     "express": "^4.18.1",
     "graphql": "^16.5.0",
     "graphql-iso-date": "^3.6.1",
-    "graphql-tag": "^2.12.6"
+    "graphql-tag": "^2.12.6",
+    "moment": "^2.29.4"
   },
   "devDependencies": {
     "supertest": "^6.2.4"
