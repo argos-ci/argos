@@ -132,7 +132,7 @@ const config = convict({
       env: "GITHUB_WEBHOOK_SECRET",
     },
     marketplaceUrl: {
-      doc: "Github marketplace url",
+      doc: "GitHub Marketplace URL",
       format: String,
       default: "https://github.com/marketplace/argos-ci-dev",
       env: "GITHUB_MARKETPLACE_URL",
