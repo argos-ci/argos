@@ -93,18 +93,13 @@ function getOwnerRepositories(owner, { user, enabled } = {}) {
 }
 
 async function getActivePurchases(owner) {
-  const today = new Date().toISOString();
-  const purchasesQuery = Purchase.query()
+  return Purchase.query()
+    .joinRelated(owner.type())
+    .where(`${owner.type()}.id`, owner.id)
     .where((query) =>
-      query.whereNull("endDate").orWhere("endDate", ">=", today)
+      query.whereNull("endDate").orWhere("endDate", ">=", moment())
     )
     .orderBy("endDate");
-
-  return owner.type() === "user"
-    ? purchasesQuery.joinRelated("user").where("user.id", owner.id)
-    : purchasesQuery
-        .joinRelated("organization")
-        .where("organization.id", owner.id);
 }
 
 export const resolvers = {
