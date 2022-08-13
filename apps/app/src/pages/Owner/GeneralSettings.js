@@ -115,7 +115,7 @@ export function GeneralSettings() {
           <CardBody>
             {currentPurchase?.plan ? (
               <Plan
-                {...currentPurchase?.plan}
+                {...currentPurchase.plan}
                 screenshotsLimitPerMonth={screenshotsLimitPerMonth}
               />
             ) : (
