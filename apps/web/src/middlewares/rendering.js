@@ -76,6 +76,7 @@ export function rendering(additionalClientData) {
           github: {
             appUrl: config.get("github.appUrl"),
             loginUrl: config.get("github.loginUrl"),
+            marketplaceUrl: config.get("github.marketplaceUrl"),
           },
         },
         ...(req.user

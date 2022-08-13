@@ -1,5 +1,11 @@
 import { gql } from "graphql-tag";
-import { User, Organization } from "@argos-ci/database/models";
+import moment from "moment";
+import {
+  User,
+  Organization,
+  Purchase,
+  Screenshot,
+} from "@argos-ci/database/models";
 
 export const typeDefs = gql`
   enum OwnerType {
@@ -15,6 +21,8 @@ export const typeDefs = gql`
     repositoriesNumber: Int!
     repositories(enabled: Boolean): [Repository!]!
     permissions: [Permission]!
+    purchases: [Purchase!]!
+    currentMonthUsedScreenshots: Int!
   }
 
   extend type Query {
@@ -84,6 +92,16 @@ function getOwnerRepositories(owner, { user, enabled } = {}) {
   return repositoriesQuery;
 }
 
+async function getActivePurchases(owner) {
+  return Purchase.query()
+    .joinRelated(owner.type())
+    .where(`${owner.type()}.id`, owner.id)
+    .where((query) =>
+      query.whereNull("endDate").orWhere("endDate", ">=", moment())
+    )
+    .orderBy("endDate");
+}
+
 export const resolvers = {
   Owner: {
     async repositories(owner, args, context) {
@@ -102,6 +120,20 @@ export const resolvers = {
         enabled: args.enabled,
       }).count("repositories.*");
       return count;
+    },
+    async purchases(owner) {
+      return getActivePurchases(owner);
+    },
+    async currentMonthUsedScreenshots(owner) {
+      return Screenshot.query()
+        .joinRelated("screenshotBucket.repository")
+        .where({ [`screenshotBucket:repository.${owner.type()}Id`]: owner.id })
+        .where(
+          "screenshots.createdAt",
+          ">=",
+          moment().startOf("month").toISOString()
+        )
+        .resultSize();
     },
   },
   Query: {

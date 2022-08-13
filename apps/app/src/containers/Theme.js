@@ -28,6 +28,7 @@ const theme = {
     gray200: "#f2f4fb",
     gray100: "#FDFEFF",
     primary: "#6344CE",
+    link: "#3291ff",
   },
   sizes: {
     ...suiTheme.sizes,
@@ -41,6 +42,14 @@ const theme = {
       style: css`
         max-width: 500; // Don't use more space than the title.
         margin-bottom: 3;
+      `,
+    },
+    h1: {
+      defaultAs: "h1",
+      style: css`
+        font-size: 24;
+        font-weight: medium;
+        margin: 0 0 3;
       `,
     },
     h2: {

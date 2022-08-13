@@ -22,7 +22,6 @@ import {
 } from "../../components";
 import { Query } from "../../containers/Apollo";
 import { OwnerAvatar } from "../../containers/OwnerAvatar";
-import { hasWritePermission } from "../../modules/permissions";
 import { OwnerProvider, useOwner } from "./OwnerContext";
 import { OwnerRepositories } from "./Repositories";
 import { OwnerSettings } from "./Settings";
@@ -49,11 +48,9 @@ function OwnerHeader() {
           <RouterTabItem exact to={`/${owner.login}`}>
             Repositories
           </RouterTabItem>
-          {hasWritePermission(owner) ? (
-            <RouterTabItem to={`/${owner.login}/settings`}>
-              Settings
-            </RouterTabItem>
-          ) : null}
+          <RouterTabItem to={`/${owner.login}/settings`}>
+            Settings
+          </RouterTabItem>
         </TabList>
       </HeaderBody>
     </Header>
@@ -74,6 +71,17 @@ export function Owner({
             name
             login
             permissions
+            purchases {
+              id
+              startDate
+              endDate
+              plan {
+                id
+                name
+                screenshotsLimitPerMonth
+              }
+            }
+            currentMonthUsedScreenshots
           }
         }
       `}
@@ -114,12 +122,10 @@ export function Owner({
                 path={`/${owner.login}`}
                 component={OwnerRepositories}
               />
-              {hasWritePermission(owner) ? (
-                <Route
-                  path={`/${ownerLogin}/settings`}
-                  component={OwnerSettings}
-                />
-              ) : null}
+              <Route
+                path={`/${owner.login}/settings`}
+                component={OwnerSettings}
+              />
             </>
           </OwnerProvider>
         );
