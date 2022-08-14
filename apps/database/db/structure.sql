@@ -1306,10 +1306,24 @@ CREATE INDEX screenshot_buckets_name_index ON public.screenshot_buckets USING bt
 
 
 --
+-- Name: screenshot_diffs_basescreenshotid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_basescreenshotid_index ON public.screenshot_diffs USING btree ("baseScreenshotId");
+
+
+--
 -- Name: screenshot_diffs_buildid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX screenshot_diffs_buildid_index ON public.screenshot_diffs USING btree ("buildId");
+
+
+--
+-- Name: screenshot_diffs_comparescreenshotid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_comparescreenshotid_index ON public.screenshot_diffs USING btree ("compareScreenshotId");
 
 
 --
@@ -1670,3 +1684,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2020061
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220803095315_add_plans.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220809113257_add_purchase_end_date.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220812142703_files.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220814071435_screenshot_diffs_indexes.js', 1, NOW());
