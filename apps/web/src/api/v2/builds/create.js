@@ -18,9 +18,9 @@ export default router;
 const validateRoute = validate({
   body: {
     type: "object",
-    required: ["sha", "screenshotKeys"],
+    required: ["commit", "screenshotKeys"],
     properties: {
-      sha: {
+      commit: {
         type: "string",
         pattern: SHA1_REGEX_STR,
       },
@@ -50,7 +50,7 @@ const getBuildName = (req) => req.body.name || "default";
 const getBucketData = (req) => {
   return {
     name: getBuildName(req),
-    commit: req.body.sha,
+    commit: req.body.commit,
     branch: req.body.branch || null,
     repositoryId: req.authRepository.id,
   };
@@ -127,7 +127,7 @@ const handleCreateParallel = async ({ req }) => {
   const buildName = getBuildName(req);
   const parallelNonce = req.body.parallelNonce;
 
-  const lockKey = `${req.authRepository.id}:${req.body.sha}:${buildName}:${parallelNonce}`;
+  const lockKey = `${req.authRepository.id}:${req.body.commit}:${buildName}:${parallelNonce}`;
   const lock = getRedisLock();
   const build = await lock(lockKey, async () => {
     return transaction(async (trx) => {
