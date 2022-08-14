@@ -26,6 +26,7 @@ export const typeDefs = gql`
     "Owner of the repository"
     owner: Owner
     sampleBuildId: ID
+    baselineBranch: String!
   }
 
   extend type Query {
@@ -36,6 +37,11 @@ export const typeDefs = gql`
   extend type Mutation {
     "Enable or disable a repository."
     toggleRepository(enabled: Boolean!, repositoryId: String!): Repository!
+    "Update repository baseline branch"
+    updateBaselineBranch(
+      repositoryId: String!
+      branchName: String!
+    ): Repository!
   }
 `;
 
@@ -59,6 +65,16 @@ export async function getRepository({ ownerLogin, name, user }) {
   if (!hasReadPermission) return null;
 
   return repository;
+}
+
+async function checkUserRepositoryAccess({ user, repositoryId }, { trx }) {
+  if (!user) throw new APIError("Invalid user identification");
+
+  const repositoryUser = await Repository.getUsers(repositoryId, {
+    trx,
+  }).findById(user.id);
+
+  if (!repositoryUser) throw new APIError("Invalid user authorization");
 }
 
 export const resolvers = {
@@ -123,20 +139,12 @@ export const resolvers = {
     },
   },
   Mutation: {
-    async toggleRepository(source, args, context) {
-      if (!context.user) {
-        throw new APIError("Invalid user identification");
-      }
-
+    async toggleRepository(source, { repositoryId, enabled }, context) {
       return transaction(async (trx) => {
-        const { repositoryId, enabled } = args;
-        const user = await Repository.getUsers(repositoryId, { trx }).findById(
-          context.user.id
+        await checkUserRepositoryAccess(
+          { user: context.user, repositoryId },
+          { trx }
         );
-
-        if (!user) {
-          throw new APIError("Invalid user authorization");
-        }
 
         const repository = await Repository.query(trx).patchAndFetchById(
           repositoryId,
@@ -168,6 +176,23 @@ export const resolvers = {
             token: token.toString("hex"),
           });
         }
+
+        return repository;
+      });
+    },
+    async updateBaselineBranch(source, { repositoryId, branchName }, context) {
+      return transaction(async (trx) => {
+        await checkUserRepositoryAccess(
+          { user: context.user, repositoryId },
+          { trx }
+        );
+
+        const repository = await Repository.query(trx).patchAndFetchById(
+          repositoryId,
+          { baselineBranch: branchName }
+        );
+
+        if (!repository) throw new APIError("Repository not found");
 
         return repository;
       });

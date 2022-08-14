@@ -17,7 +17,7 @@ export const CardBody = styled(SUICardBody)`
   padding: 3;
 `;
 
-export const CardText = styled.p`
+export const CardText = styled.pBox`
   font-size: 13;
 
   &:first-child {
