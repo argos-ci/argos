@@ -84,7 +84,7 @@ describe("api v2", () => {
           .set("Host", "api.argos-ci.dev")
           .set("Authorization", "Bearer awesome-token")
           .send({
-            sha: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
             screenshotKeys: [
               "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
               "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
@@ -163,7 +163,7 @@ describe("api v2", () => {
           .set("Host", "api.argos-ci.dev")
           .set("Authorization", "Bearer awesome-token")
           .send({
-            sha: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
             screenshotKeys: screenshots.map((screenshot) => screenshot.key),
             branch: "main",
             name: "current",
@@ -284,7 +284,7 @@ describe("api v2", () => {
               .set("Host", "api.argos-ci.dev")
               .set("Authorization", "Bearer awesome-token")
               .send({
-                sha: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+                commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
                 screenshotKeys: screenshots.map((screenshot) => screenshot.key),
                 branch: "main",
                 name: "current",
