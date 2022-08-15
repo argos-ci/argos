@@ -2,17 +2,19 @@ import React from "react";
 import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
 import { Route, Link, Switch, useRouteMatch } from "react-router-dom";
-import styled, { Box } from "@xstyled/styled-components";
-import { GoRepo } from "react-icons/go";
+import { Box } from "@xstyled/styled-components";
+import { GoRepo, GoHome } from "react-icons/go";
 import { FaGithub } from "react-icons/fa";
 import {
   Header,
   HeaderBody,
-  HeaderTitle,
+  HeaderBreadcrumb,
+  HeaderBreadcrumbItem,
+  HeaderBreadcrumbLink,
   HeaderPrimary,
   HeaderSecondaryLink,
-  TabList,
   RouterTabItem,
+  TabList,
   Text,
 } from "../../components";
 import { Query } from "../../containers/Apollo";
@@ -26,22 +28,11 @@ import { RepositorySettings } from "./Settings";
 import { BuildDetail } from "./BuildDetail/index";
 import { GettingStarted } from "./GettingStarted";
 import { NotFound } from "../NotFound";
+import { OwnerAvatar } from "../../containers/OwnerAvatar";
 
 function hasWritePermission(repository) {
   return repository.permissions.includes("write");
 }
-
-const RepoTitlePart = styled(Text)`
-  margin: 0 2;
-  color: darker;
-  text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  a&:hover {
-    text-decoration: underline;
-  }
-`;
 
 function RepositoryHeader() {
   const repository = useRepository();
@@ -51,13 +42,26 @@ function RepositoryHeader() {
     <Header>
       <HeaderBody>
         <HeaderPrimary>
-          <HeaderTitle>
-            <Box forwardedAs={GoRepo} display="block" mt="6rpx" />
-            <RepoTitlePart forwardedAs={Link} to={`/${repository.owner.login}`}>
-              {repository.owner.login}
-            </RepoTitlePart>
-            / <RepoTitlePart>{repository.name}</RepoTitlePart>
-          </HeaderTitle>
+          <HeaderBreadcrumb>
+            <HeaderBreadcrumbItem>
+              <HeaderBreadcrumbLink forwardedAs={Link} to={`/`}>
+                <Box as={GoHome} />
+              </HeaderBreadcrumbLink>
+            </HeaderBreadcrumbItem>
+            <HeaderBreadcrumbItem>
+              <HeaderBreadcrumbLink
+                forwardedAs={Link}
+                to={`/${repository.owner.login}`}
+              >
+                <OwnerAvatar owner={repository.owner} size="sm" />
+                {repository.owner.login}
+              </HeaderBreadcrumbLink>
+            </HeaderBreadcrumbItem>
+            <HeaderBreadcrumbItem>
+              <Box as={GoRepo} />
+              {repository.name}
+            </HeaderBreadcrumbItem>
+          </HeaderBreadcrumb>
           <HeaderSecondaryLink
             forwardedAs="a"
             target="_blank"

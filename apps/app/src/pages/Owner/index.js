@@ -3,22 +3,25 @@ import { gql } from "graphql-tag";
 import { Route, Link } from "react-router-dom";
 import { Box } from "@xstyled/styled-components";
 import { FaGithub } from "react-icons/fa";
+import { GoHome } from "react-icons/go";
 import { Helmet } from "react-helmet";
 import {
-  Header,
-  HeaderBody,
-  HeaderTitle,
-  HeaderPrimary,
-  HeaderSecondaryLink,
-  TabList,
-  RouterTabItem,
+  Card,
+  CardBody,
+  CardHeader,
+  CardText,
+  CardTitle,
   Container,
   FadeLink,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
-  CardText,
+  Header,
+  HeaderBody,
+  HeaderBreadcrumb,
+  HeaderBreadcrumbItem,
+  HeaderBreadcrumbLink,
+  HeaderPrimary,
+  HeaderSecondaryLink,
+  RouterTabItem,
+  TabList,
 } from "../../components";
 import { Query } from "../../containers/Apollo";
 import { OwnerAvatar } from "../../containers/OwnerAvatar";
@@ -32,10 +35,20 @@ function OwnerHeader() {
     <Header>
       <HeaderBody>
         <HeaderPrimary>
-          <HeaderTitle>
-            <OwnerAvatar owner={owner} mr={2} />
-            {owner.login}
-          </HeaderTitle>
+          <HeaderBreadcrumb>
+            <HeaderBreadcrumbItem>
+              <HeaderBreadcrumbLink forwardedAs={Link} to={`/`}>
+                <Box as={GoHome} />
+              </HeaderBreadcrumbLink>
+            </HeaderBreadcrumbItem>
+            <HeaderBreadcrumbItem>
+              <HeaderBreadcrumbLink forwardedAs={Link} to={`/${owner.login}`}>
+                <OwnerAvatar owner={owner} size="sm" />
+                {owner.login}
+              </HeaderBreadcrumbLink>
+            </HeaderBreadcrumbItem>
+          </HeaderBreadcrumb>
+
           <HeaderSecondaryLink
             target="_blank"
             rel="noopener noreferrer"

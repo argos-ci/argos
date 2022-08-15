@@ -40,6 +40,12 @@ function UserMenu({ user }) {
         )}
       </MenuDisclosure>
       <Menu aria-label="User settings" {...menu}>
+        <MenuItem {...menu} forwardedAs={Link} to={`/`}>
+          Home
+        </MenuItem>
+        <MenuItem {...menu} forwardedAs={Link} to={`/${user.login}/settings`}>
+          Settings
+        </MenuItem>
         <MenuItem
           {...menu}
           forwardedAs="a"
