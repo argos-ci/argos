@@ -1,13 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import {
-  Button,
-  Box,
-  Menu,
-  MenuItem,
-  MenuDisclosure,
-  useMenuState,
-} from "@smooth-ui/core-sc";
+import { Button, Box, MenuDisclosure } from "@smooth-ui/core-sc";
 import { useColorMode } from "@xstyled/styled-components";
 import { FaGithub } from "react-icons/fa";
 import config from "../config";
@@ -17,6 +10,9 @@ import {
   Navbar,
   NavbarBrand,
   BrandLogo,
+  Menu,
+  MenuItem,
+  useMenuState,
 } from "../components";
 import { OwnerAvatar } from "./OwnerAvatar";
 import { useLogout } from "./Auth";

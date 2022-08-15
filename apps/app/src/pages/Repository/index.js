@@ -1,16 +1,13 @@
 import React from "react";
 import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
-import { Route, Link, Switch, useRouteMatch } from "react-router-dom";
+import { Route, Switch, useRouteMatch } from "react-router-dom";
 import { Box } from "@xstyled/styled-components";
-import { GoRepo, GoHome } from "react-icons/go";
 import { FaGithub } from "react-icons/fa";
 import {
   Header,
   HeaderBody,
   HeaderBreadcrumb,
-  HeaderBreadcrumbItem,
-  HeaderBreadcrumbLink,
   HeaderPrimary,
   HeaderSecondaryLink,
   RouterTabItem,
@@ -28,7 +25,11 @@ import { RepositorySettings } from "./Settings";
 import { BuildDetail } from "./BuildDetail/index";
 import { GettingStarted } from "./GettingStarted";
 import { NotFound } from "../NotFound";
-import { OwnerAvatar } from "../../containers/OwnerAvatar";
+import {
+  HomeBreadcrumbItem,
+  OwnerBreadcrumbItem,
+  RepositoryBreadcrumbItem,
+} from "../Owner/HeaderBreadcrumb";
 
 function hasWritePermission(repository) {
   return repository.permissions.includes("write");
@@ -43,24 +44,9 @@ function RepositoryHeader() {
       <HeaderBody>
         <HeaderPrimary>
           <HeaderBreadcrumb>
-            <HeaderBreadcrumbItem>
-              <HeaderBreadcrumbLink forwardedAs={Link} to={`/`}>
-                <Box as={GoHome} />
-              </HeaderBreadcrumbLink>
-            </HeaderBreadcrumbItem>
-            <HeaderBreadcrumbItem>
-              <HeaderBreadcrumbLink
-                forwardedAs={Link}
-                to={`/${repository.owner.login}`}
-              >
-                <OwnerAvatar owner={repository.owner} size="sm" />
-                {repository.owner.login}
-              </HeaderBreadcrumbLink>
-            </HeaderBreadcrumbItem>
-            <HeaderBreadcrumbItem>
-              <Box as={GoRepo} />
-              {repository.name}
-            </HeaderBreadcrumbItem>
+            <HomeBreadcrumbItem />
+            <OwnerBreadcrumbItem owner={repository.owner} />
+            <RepositoryBreadcrumbItem repository={repository} />
           </HeaderBreadcrumb>
           <HeaderSecondaryLink
             forwardedAs="a"

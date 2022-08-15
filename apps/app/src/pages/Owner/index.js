@@ -3,7 +3,6 @@ import { gql } from "graphql-tag";
 import { Route, Link } from "react-router-dom";
 import { Box } from "@xstyled/styled-components";
 import { FaGithub } from "react-icons/fa";
-import { GoHome } from "react-icons/go";
 import { Helmet } from "react-helmet";
 import {
   Card,
@@ -16,18 +15,16 @@ import {
   Header,
   HeaderBody,
   HeaderBreadcrumb,
-  HeaderBreadcrumbItem,
-  HeaderBreadcrumbLink,
   HeaderPrimary,
   HeaderSecondaryLink,
   RouterTabItem,
   TabList,
 } from "../../components";
 import { Query } from "../../containers/Apollo";
-import { OwnerAvatar } from "../../containers/OwnerAvatar";
 import { OwnerProvider, useOwner } from "./OwnerContext";
 import { OwnerRepositories } from "./Repositories";
 import { OwnerSettings } from "./Settings";
+import { HomeBreadcrumbItem, OwnerBreadcrumbItem } from "./HeaderBreadcrumb";
 
 function OwnerHeader() {
   const owner = useOwner();
@@ -36,17 +33,8 @@ function OwnerHeader() {
       <HeaderBody>
         <HeaderPrimary>
           <HeaderBreadcrumb>
-            <HeaderBreadcrumbItem>
-              <HeaderBreadcrumbLink forwardedAs={Link} to={`/`}>
-                <Box as={GoHome} />
-              </HeaderBreadcrumbLink>
-            </HeaderBreadcrumbItem>
-            <HeaderBreadcrumbItem>
-              <HeaderBreadcrumbLink forwardedAs={Link} to={`/${owner.login}`}>
-                <OwnerAvatar owner={owner} size="sm" />
-                {owner.login}
-              </HeaderBreadcrumbLink>
-            </HeaderBreadcrumbItem>
+            <HomeBreadcrumbItem />
+            <OwnerBreadcrumbItem owner={owner} />
           </HeaderBreadcrumb>
 
           <HeaderSecondaryLink

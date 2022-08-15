@@ -3,27 +3,53 @@ import {
   useMenuState,
   Menu as ReakitMenu,
   MenuItem as ReakitMenuItem,
-  MenuDisclosure,
+  MenuDisclosure as ReakitMenuDisclosure,
 } from "reakit/Menu";
 import styled from "@xstyled/styled-components";
 
-export { useMenuState, MenuDisclosure };
+export { useMenuState };
+
+const InnerMenuDisclosure = styled.box`
+  display: flex;
+  align-items: center;
+  border-radius: base;
+  padding: 1 2;
+  cursor: pointer;
+
+  &:focus,
+  &:hover,
+  &[aria-expanded="true"] {
+    background-color: light300;
+    outline: none;
+  }
+`;
+
+export const MenuDisclosure = React.forwardRef(
+  ({ children, ...props }, ref) => {
+    return (
+      <ReakitMenuDisclosure ref={ref} {...props}>
+        {(menuProps) => (
+          <InnerMenuDisclosure {...menuProps}>{children}</InnerMenuDisclosure>
+        )}
+      </ReakitMenuDisclosure>
+    );
+  }
+);
 
 const InnerMenu = styled.div`
-  background-color: darker;
+  background-color: light100;
   border-radius: base;
   padding: 2 1;
   min-width: 110;
+  z-index: 1000;
+  border: solid 1px black;
 
   &:focus {
     outline: none;
   }
 `;
 
-export const Menu = React.forwardRef(function Menu(
-  { children, ...props },
-  ref
-) {
+export const Menu = React.forwardRef(({ children, ...props }, ref) => {
   return (
     <ReakitMenu ref={ref} {...props}>
       {(menuProps) => <InnerMenu {...menuProps}>{children}</InnerMenu>}
@@ -37,7 +63,7 @@ const InnerMenuItem = styled.buttonBox`
   padding: 2;
   border: 0;
   border-radius: base;
-  color: light300;
+  color: darker;
   font-size: 14;
   display: block;
   width: 100%;
@@ -45,13 +71,14 @@ const InnerMenuItem = styled.buttonBox`
   transition: base;
   transition-property: background-color;
   cursor: pointer;
-  /* For links */
   text-decoration: none;
+  display: flex;
+  grid-gap: 2;
 
   &:focus,
   &:hover {
     outline: none;
-    background-color: light800;
+    background-color: light200;
   }
 `;
 

@@ -39,6 +39,7 @@ export const HeaderBreadcrumbItem = styled.li`
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  line-height: 25px;
   grid-gap: 2;
 `;
 
@@ -50,7 +51,7 @@ export const HeaderBreadcrumb = ({ children, ...props }) => {
       {React.Children.map(children, (child, index) => (
         <>
           {index !== 0 && (
-            <Box color="light500" fontSize={25} mt={-1} mx={1}>
+            <Box color="light500" fontSize={25} mt={-1}>
               /
             </Box>
           )}
@@ -64,12 +65,14 @@ export const HeaderBreadcrumb = ({ children, ...props }) => {
 export const HeaderBreadcrumbLink = styled.aBox`
   display: flex;
   align-items: center;
-  grid-gap: 2;
   text-decoration: none;
   cursor: pointer;
+  border-radius: base;
+  padding: 1 2;
+  grid-gap: 2;
 
   &:hover {
-    text-decoration: underline;
+    background-color: light300;
   }
 `;
 
