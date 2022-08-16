@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Boxer, Alert, Button, Input } from "@smooth-ui/core-sc";
 import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
@@ -30,6 +30,7 @@ export function RepositorySettings() {
   const repository = useRepository();
   const { enabled } = repository;
   const { toggleRepository, loading, error } = useToggleRepository();
+  const [branchUpdateSuccess, setBranchUpdateSuccess] = useState(false);
 
   const [baselineBranch, setBaselineBranch] = useState(
     repository.baselineBranch
@@ -37,8 +38,20 @@ export function RepositorySettings() {
 
   const [
     updateBaselineBranch,
-    { loading: baseBranchMutationLoading, error: baseBranchMutationError },
-  ] = useMutation(UPDATE_BASELINE_BRANCH);
+    { loading: branchUpdateLoading, error: branchUpdateError },
+  ] = useMutation(UPDATE_BASELINE_BRANCH, {
+    onCompleted: () => setBranchUpdateSuccess(true),
+  });
+
+  useEffect(() => {
+    let timer;
+    if (branchUpdateSuccess) {
+      timer = setTimeout(() => {
+        setBranchUpdateSuccess(false);
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [branchUpdateSuccess]);
 
   return (
     <Container>
@@ -97,7 +110,7 @@ export function RepositorySettings() {
                   />
                   <Button
                     flex="0 0 auto"
-                    disabled={baseBranchMutationLoading}
+                    disabled={branchUpdateLoading}
                     onClick={() => {
                       updateBaselineBranch({
                         variables: {
@@ -110,7 +123,12 @@ export function RepositorySettings() {
                     Update Branch
                   </Button>
                 </Box>
-                {baseBranchMutationError && (
+                {branchUpdateSuccess && (
+                  <Alert variant="success" mt={2}>
+                    Reference branch updated
+                  </Alert>
+                )}
+                {branchUpdateError && (
                   <Alert variant="danger">
                     Something went wrong. Please try again.
                   </Alert>
