@@ -14,6 +14,7 @@ import {
   MenuDivider,
   MenuText,
   Link,
+  MenuTitle,
 } from "../../components";
 import { Query } from "../../containers/Apollo";
 import { OwnerAvatar } from "../../containers/OwnerAvatar";
@@ -66,7 +67,10 @@ export function OwnerBreadcrumbItem({ owner }) {
               <MenuDisclosure {...menu} ml={-1}>
                 <Box as={FaChevronDown} width="8px" />
               </MenuDisclosure>
+
               <Menu aria-label="Organizations list" {...menu} width="400px">
+                <MenuTitle>Organizations</MenuTitle>
+                <MenuDivider />
                 <MenuItem
                   {...menu}
                   forwardedAs={ReactRouterLink}

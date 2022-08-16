@@ -95,3 +95,10 @@ export const MenuText = styled.box`
   font-size: 14px;
   margin: 2 2 0;
 `;
+
+export const MenuTitle = styled.box`
+  font-size: 14px;
+  font-weight: 600;
+  color: light500;
+  margin: 0 2;
+`;
