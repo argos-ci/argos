@@ -4,10 +4,12 @@ import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
 import Tooltip from "react-tooltip";
 import styled, { Box } from "@xstyled/styled-components";
+import { Alert } from "@smooth-ui/core-sc";
 import { Helmet } from "react-helmet";
 import { FaRegClock } from "react-icons/fa";
 import { GoGitCommit, GoGitBranch, GoPulse } from "react-icons/go";
 import moment from "moment";
+import config from "@argos-ci/app/src/config";
 import {
   Container,
   Card,
@@ -17,6 +19,7 @@ import {
   CardText,
   FadeLink,
   Loader,
+  Link,
 } from "../../../components";
 import { useQuery } from "../../../containers/Apollo";
 import { StatusIcon } from "../../../containers/StatusIcon";
@@ -43,6 +46,21 @@ export function Build() {
 
   return (
     <Container my={4} position="relative">
+      {build.repository.owner.purchases.length === 0 ? (
+        <Alert variant="secondary">
+          Argos migrate to GitHub Marketplace 🎉
+          <br />
+          Please consider subscribing to{" "}
+          <Link
+            href={config.get("github.marketplaceUrl")}
+            target="_blank"
+            rel="noopener noreferer"
+          >
+            Argos Free Plan
+          </Link>{" "}
+          to maintain your unlimited screenshots privilege.
+        </Alert>
+      ) : null}
       <Box row m={-2}>
         <Box col={1} p={2}>
           <Card borderLeft={2} borderColor={buildColor}>

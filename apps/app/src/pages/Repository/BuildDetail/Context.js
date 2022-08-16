@@ -12,6 +12,9 @@ export const BuildContextFragment = gql`
       name
       owner {
         login
+        purchases {
+          id
+        }
       }
     }
     baseScreenshotBucket {
