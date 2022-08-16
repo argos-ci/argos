@@ -37,7 +37,7 @@ export const MenuDisclosure = React.forwardRef(
 );
 
 const InnerMenu = styled.div`
-  background-color: light100;
+  background-color: light200;
   border-radius: base;
   padding: 2 1;
   min-width: 110;
@@ -67,7 +67,6 @@ const InnerMenuItem = styled.buttonBox`
   font-size: 14;
   display: block;
   width: 100%;
-  text-align: left;
   transition: base;
   transition-property: background-color;
   cursor: pointer;
@@ -78,10 +77,21 @@ const InnerMenuItem = styled.buttonBox`
   &:focus,
   &:hover {
     outline: none;
-    background-color: light200;
+    background-color: light300;
   }
 `;
 
 export const MenuItem = React.forwardRef(function MenuItem(props, ref) {
   return <ReakitMenuItem ref={ref} as={InnerMenuItem} {...props} />;
 });
+
+export const MenuDivider = styled.hrBox`
+  border-color: light300;
+  border-top: 0;
+  margin: 2px -1;
+`;
+
+export const MenuText = styled.box`
+  font-size: 14px;
+  margin: 2 2 0;
+`;

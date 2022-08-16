@@ -1,8 +1,8 @@
 import React from "react";
 import { gql } from "graphql-tag";
-import { Link, useRouteMatch } from "react-router-dom";
+import { Link as ReactRouterLink, useRouteMatch } from "react-router-dom";
 import { Box } from "@xstyled/styled-components";
-import { FaChevronDown } from "react-icons/fa";
+import { FaChevronDown, FaExternalLinkAlt } from "react-icons/fa";
 import { GoHome, GoRepo } from "react-icons/go";
 import {
   HeaderBreadcrumbItem,
@@ -11,15 +11,19 @@ import {
   MenuItem,
   MenuDisclosure,
   useMenuState,
+  MenuDivider,
+  MenuText,
+  Link,
 } from "../../components";
 import { Query } from "../../containers/Apollo";
 import { OwnerAvatar } from "../../containers/OwnerAvatar";
 import { useUser } from "../../containers/User";
+import config from "../../config";
 
 export function HomeBreadcrumbItem() {
   return (
     <HeaderBreadcrumbItem>
-      <HeaderBreadcrumbLink forwardedAs={Link} to={`/`}>
+      <HeaderBreadcrumbLink forwardedAs={ReactRouterLink} to={`/`}>
         <Box as={GoHome} height={{ xs: 20, md: 25 }} />
       </HeaderBreadcrumbLink>
     </HeaderBreadcrumbItem>
@@ -32,7 +36,10 @@ export function OwnerBreadcrumbItem({ owner }) {
 
   return (
     <HeaderBreadcrumbItem>
-      <HeaderBreadcrumbLink forwardedAs={Link} to={`/${owner.login}`}>
+      <HeaderBreadcrumbLink
+        forwardedAs={ReactRouterLink}
+        to={`/${owner.login}`}
+      >
         <OwnerAvatar owner={owner} size="sm" />
         {owner.login}
       </HeaderBreadcrumbLink>
@@ -62,9 +69,8 @@ export function OwnerBreadcrumbItem({ owner }) {
               <Menu aria-label="Organizations list" {...menu} width="400px">
                 <MenuItem
                   {...menu}
-                  forwardedAs={Link}
+                  forwardedAs={ReactRouterLink}
                   to={`/${user.login}`}
-                  minWidth={200}
                 >
                   <OwnerAvatar owner={user} size="sm" />
                   {user.login}
@@ -73,13 +79,29 @@ export function OwnerBreadcrumbItem({ owner }) {
                   <MenuItem
                     key={owner.login}
                     {...menu}
-                    forwardedAs={Link}
+                    forwardedAs={ReactRouterLink}
                     to={`/${owner.login}`}
                   >
                     <OwnerAvatar owner={owner} size="sm" />
                     {owner.name}
                   </MenuItem>
                 ))}
+
+                <MenuDivider />
+                <MenuText minWidth={200} fontWeight={600}>
+                  Don’t see your org?
+                  <br />
+                  <Link
+                    forwardedAs="a"
+                    href={config.get("github.appUrl")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    fontWeight="normal"
+                  >
+                    Manage access restrictions{" "}
+                    <Box as={FaExternalLinkAlt} width={10} height={10} />
+                  </Link>
+                </MenuText>
               </Menu>
             </>
           );
@@ -138,7 +160,7 @@ export function RepositoryBreadcrumbItem({ repository }) {
                   <MenuItem
                     key={repositoryLogin}
                     {...menu}
-                    forwardedAs={Link}
+                    forwardedAs={ReactRouterLink}
                     to={`/${repositoryLogin}`}
                     minWidth="200px"
                   >
