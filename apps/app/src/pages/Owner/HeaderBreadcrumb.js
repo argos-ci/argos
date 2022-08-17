@@ -21,11 +21,12 @@ import { OwnerAvatar } from "../../containers/OwnerAvatar";
 import { useUser } from "../../containers/User";
 import config from "../../config";
 
-export function HomeBreadcrumbItem() {
+export function HomeBreadcrumbItem({ showTitle }) {
   return (
     <HeaderBreadcrumbItem>
       <HeaderBreadcrumbLink forwardedAs={ReactRouterLink} to={`/`}>
         <Box as={GoHome} height={{ xs: 20, md: 25 }} />
+        {showTitle ? "Home" : null}
       </HeaderBreadcrumbLink>
     </HeaderBreadcrumbItem>
   );

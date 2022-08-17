@@ -16,6 +16,7 @@ const InnerLink = styled.aBox`
   transition: base;
   text-decoration: none;
   color: link;
+  cursor: pointer;
 
   &:hover {
     text-decoration: underline;

@@ -1,134 +1,167 @@
 /* eslint-disable react/no-unescaped-entities */
-import React from "react";
+import React, { useState } from "react";
 import { gql } from "graphql-tag";
-import { partition } from "lodash-es";
-import { Link } from "react-router-dom";
+import { Group } from "reakit/Group";
 import { Button } from "@smooth-ui/core-sc";
-import styled, { Box } from "@xstyled/styled-components";
-import { GoRepo } from "react-icons/go";
+import { Box } from "@xstyled/styled-components";
 import { Query } from "../containers/Apollo";
 import { useUser } from "../containers/User";
-import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { isUserSyncing } from "../modules/user";
 import config from "../config";
 import {
   Container,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
-  CardFooter,
-  FadeLink,
-  Text,
+  HeaderBody,
+  HeaderPrimary,
+  HeaderBreadcrumb,
+  Header,
+  Link,
 } from "../components";
 import { Loader } from "../components/Loader";
+import { HomeBreadcrumbItem } from "./Owner/HeaderBreadcrumb";
+import { getStatusColor } from "../modules/build";
+import { FaCamera, FaExternalLinkAlt } from "react-icons/fa";
+import { Table, Tbody, Td, Th, Thead, Tr } from "../components/Table";
+import { Tag } from "../components/Tag";
 
-const RepositoryList = styled.ul`
-  margin: -1 0;
-  padding: 0;
-`;
-
-const RepositoryItem = styled.li`
-  margin: 0;
-  padding: 1 0;
-  list-style-type: none;
-`;
-
-function OwnerHeader({ owner, active }) {
+function AppHeader() {
   return (
-    <Box display="flex" alignItems="center">
-      <OwnerAvatar
-        owner={owner}
-        mr={2}
-        width={active ? 30 : 20}
-        height={active ? 30 : 20}
-      />
-      <CardTitle color={active ? "darker" : "light500"}>
-        <FadeLink forwardedAs={Link} to={`/${owner.login}`}>
-          {owner.login}
-        </FadeLink>
-      </CardTitle>
-    </Box>
+    <Header>
+      <HeaderBody>
+        <HeaderPrimary>
+          <HeaderBreadcrumb>
+            <HomeBreadcrumbItem showTitle />
+          </HeaderBreadcrumb>
+        </HeaderPrimary>
+      </HeaderBody>
+    </Header>
   );
 }
 
-function Owners({ data: { owners } }) {
-  const [activeOwners, inactiveOwners] = partition(
-    owners,
-    (owner) => owner.repositories.length
-  );
+function Owners({ data: { owners }, user }) {
+  const [activeFilter, setActiveFilter] = useState(true);
 
   return (
-    <Container my={3}>
-      {activeOwners.length > 0 && (
-        <Box row mx={-2} mb={5} justifyContent="center">
-          {activeOwners.map((owner) => (
-            <Box key={owner.login} col={{ xs: 1, md: 1 / 3 }} p={2}>
-              <Card>
-                <CardHeader>
-                  <OwnerHeader owner={owner} active />
-                </CardHeader>
-                <CardBody>
-                  <RepositoryList>
-                    {owner.repositories.length === 0 && (
-                      <Box textAlign="center">
-                        <FadeLink
-                          forwardedAs={Link}
-                          color="darker"
-                          fontSize={13}
-                          to={`/${owner.login}`}
-                        >
-                          Setup a repository
-                        </FadeLink>
-                      </Box>
-                    )}
-                    {owner.repositories.map((repository) => (
-                      <RepositoryItem key={repository.id}>
-                        <FadeLink
-                          forwardedAs={Link}
-                          to={`/${owner.login}/${repository.name}/builds`}
-                          color="darker"
-                          fontWeight="medium"
-                          fontSize={16}
-                        >
-                          {repository.name}
-                        </FadeLink>
-                      </RepositoryItem>
-                    ))}
-                  </RepositoryList>
-                </CardBody>
-                <CardFooter>
-                  <Box display="flex" alignItems="center" fontSize={12}>
-                    <Box forwardedAs={GoRepo} mr={1} />
-                    {owner.repositories.length} active repositor
-                    {owner.repositories.length > 1 ? "ies" : "y"}
-                  </Box>
-                </CardFooter>
-              </Card>
-            </Box>
-          ))}
-        </Box>
-      )}
+    <>
+      <AppHeader user={user} />
 
-      {inactiveOwners.length > 0 && (
-        <>
-          <Text variant="h2" textAlign="center">
-            Inactive owners
-          </Text>
-          <Box row m={-2}>
-            {inactiveOwners.map((owner) => (
-              <Box key={owner.login} col={1} p={2}>
-                <Card>
-                  <CardBody p={2}>
-                    <OwnerHeader owner={owner} active={false} />
-                  </CardBody>
-                </Card>
-              </Box>
-            ))}
+      <Container mt={1}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="baseline"
+          gridGap={4}
+        >
+          <Box my={3}>
+            Don’t see your repo?{" "}
+            <Link
+              forwardedAs="a"
+              href={config.get("github.appUrl")}
+              target="_blank"
+              rel="noopener noreferrer"
+              fontWeight="normal"
+            >
+              Manage access restrictions{" "}
+              <Box as={FaExternalLinkAlt} width={10} height={10} />
+            </Link>{" "}
+            or{" "}
+            <Link onClick={() => window.location.reload()}>
+              reload the page
+            </Link>
+            .
           </Box>
-        </>
-      )}
-    </Container>
+          <Box as={Group} display="flex">
+            <Button
+              borderRadius="base 0 0 base"
+              variant={activeFilter ? "dark" : "primary"}
+              disabled={activeFilter}
+              onClick={() => setActiveFilter(true)}
+            >
+              Active only
+            </Button>
+            <Button
+              borderRadius="0 base base 0"
+              variant={activeFilter ? "primary" : "dark"}
+              disabled={!activeFilter}
+              onClick={() => setActiveFilter(false)}
+            >
+              Display all
+            </Button>
+          </Box>
+        </Box>
+        <Table mt={1}>
+          <Thead>
+            <Tr>
+              <Th>Name</Th>
+              <Th width={120}>Last Build</Th>
+              <Th width={80}></Th>
+              <Th width={120}>Status</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {owners.map((owner) =>
+              owner.repositories
+                .filter(({ enabled }) => !activeFilter || enabled)
+                .map((repository) => (
+                  <Tr key={`${owner.login}-${repository.name}`}>
+                    <Td color="secondary">
+                      <Link color="secondary" to={`/${owner.login}`}>
+                        {owner.name || owner.login}
+                      </Link>{" "}
+                      /{" "}
+                      <Link
+                        color="darker"
+                        fontWeight={600}
+                        to={`/${owner.login}/${repository.name}/builds`}
+                      >
+                        {repository.name}
+                      </Link>
+                    </Td>
+                    <Td>
+                      {repository.lastBuild ? (
+                        <Box display="flex" gridGap={2} flexWrap="wrap">
+                          <Tag
+                            as={Link}
+                            to={`/${owner.login}/${repository.name}/build/${repository.lastBuild.number}`}
+                            color="darker"
+                          >
+                            <Box
+                              as={FaCamera}
+                              color={getStatusColor(
+                                repository.lastBuild.status
+                              )}
+                              width={16}
+                              height={16}
+                              mb="-2px"
+                              mr={2}
+                              ml="3px"
+                            />
+                            #{repository.lastBuild.number.toLocaleString()}
+                          </Tag>
+                        </Box>
+                      ) : (
+                        <Box pl={2}>-</Box>
+                      )}
+                    </Td>
+                    <Td>
+                      {repository.lastBuild
+                        ? new Date(
+                            repository.lastBuild.updatedAt
+                          ).toLocaleDateString(undefined, {
+                            day: "numeric",
+                            month: "short",
+                          })
+                        : null}
+                    </Td>
+                    <Td pr={20}>
+                      {repository.enabled ? "Active" : "Deactivated"}
+                    </Td>
+                  </Tr>
+                ))
+            )}
+          </Tbody>
+        </Table>
+      </Container>
+    </>
   );
 }
 
@@ -177,15 +210,22 @@ export function Home() {
             name
             login
             type
-            repositories(enabled: true) {
+            repositories {
               id
               name
+              enabled
+              lastBuild {
+                id
+                updatedAt
+                status
+                number
+              }
             }
           }
         }
       `}
     >
-      {(data) => <Owners data={data} />}
+      {(data) => <Owners data={data} user={user} />}
     </Query>
   );
 }
