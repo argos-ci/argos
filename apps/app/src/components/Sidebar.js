@@ -1,69 +1,83 @@
 import React from "react";
-import { Link, Route } from "react-router-dom";
-import styled, { css, up } from "@xstyled/styled-components";
+import { Link } from "react-router-dom";
+import styled, { x } from "@xstyled/styled-components";
+import { useIsMatchingTo } from "../containers/Router";
 
-export const SidebarList = styled.ulBox`
-  padding: 0;
-  margin: 0 0 3;
-  list-style-type: none;
-  display: flex;
-  flex-direction: column;
-  font-weight: medium;
-  font-size: 14;
-  width: 1;
+export const SidebarList = (props) => (
+  <x.ul
+    mt={0}
+    display="flex"
+    flexDirection="column"
+    fontWeight="medium"
+    fontSize="sm"
+    w={{ _: 1, md: 250 }}
+    gridColum={1}
+    gridRow={{ _: 2, md: "1 / span 2" }}
+    {...props}
+  />
+);
 
-  ${up(
-    "sm",
-    css`
-      width: 300px;
-    `
-  )}
-`;
+export const SidebarTitle = ({ children, ...props }) => (
+  <x.div fontSize="sm" color="secondary-text" mb={1} {...props}>
+    {children}
+    <x.hr mt={1} h="1px" bg="border" w={1} />
+  </x.div>
+);
 
 export const SidebarItem = styled.li`
   padding: 0;
   margin: 0;
   transition: base;
-  color: light500;
-  border-radius: base;
+  color: gray-200;
+  border-radius: md;
 
   &:hover {
-    color: darker;
-    background-color: light200;
+    color: white;
+    background-color: background-hover;
   }
 
   &[aria-current="true"] {
-    color: darker;
-    background-color: light300;
+    color: white;
+    background-color: background-active;
   }
 `;
 
-export const SidebarItemLink = styled.a`
-  text-decoration: none;
-  padding: 0;
-  display: block;
-  overflow-x: auto;
-  padding: 2 2 2;
+export const SidebarItemLink = (props) => (
+  <x.a
+    textDecoration="none"
+    display="block"
+    overflowX={{ _: "auto", md: "visible" }}
+    p={2}
+    {...props}
+  />
+);
 
-  ${up(
-    "md",
-    css`
-      padding: 2;
-      overflow-x: visible;
-    `
-  )}
-`;
+export function SidebarNavLink({ children, to, exact }) {
+  const isActive = useIsMatchingTo({ to, exact });
 
-export function RouterSidebarItem({ children, exact, to }) {
   return (
-    <Route exact={exact} path={to}>
-      {({ match }) => (
-        <SidebarItem aria-current={Boolean(match)}>
-          <SidebarItemLink as={Link} to={to}>
-            {children}
-          </SidebarItemLink>
-        </SidebarItem>
-      )}
-    </Route>
+    <SidebarItem aria-current={isActive}>
+      <SidebarItemLink as={Link} to={to}>
+        {children}
+      </SidebarItemLink>
+    </SidebarItem>
   );
 }
+
+export const SidebarLayout = (props) => (
+  <x.div
+    display="grid"
+    gridTemplateColumns={{ _: 1, md: "auto 1fr" }}
+    rowGap={6}
+    columnGap={12}
+    {...props}
+  />
+);
+
+SidebarLayout.PageTitle = (props) => (
+  <x.div gridColumn={{ _: 1, md: 2 }} mb={-4} {...props} />
+);
+
+SidebarLayout.PageContent = (props) => (
+  <x.div gridColumn={{ _: 1, md: 2 }} {...props} />
+);

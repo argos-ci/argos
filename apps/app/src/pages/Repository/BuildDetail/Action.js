@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "@smooth-ui/core-sc";
+import { Button } from "@argos-ci/app/src/components";
 import { FaCheck, FaTimes } from "react-icons/fa";
 import { useValidationStatusBuild } from "./Context";
 

@@ -2,7 +2,7 @@ import styled from "@xstyled/styled-components";
 import { FadeLink } from "./Link";
 
 export const Navbar = styled.nav`
-  padding: 20 3;
+  padding: 5 3;
   max-width: container;
   margin: 0 auto;
   display: flex;
@@ -13,8 +13,8 @@ export const NavbarBrandLink = styled(FadeLink)`
 `;
 
 export const NavbarBrand = styled.h1`
-  font-size: 20;
-  color: darker;
+  font-size: xl;
+  color: white;
   display: flex;
   align-items: center;
   font-weight: normal;

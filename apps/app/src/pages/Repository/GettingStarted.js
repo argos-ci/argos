@@ -5,39 +5,54 @@ import {
   CardHeader,
   CardTitle,
   CardBody,
-} from "../../components";
-import { useRepository } from "./RepositoryContext";
-import { ToggleButton } from "./ToggleButton";
+  CardText,
+  Tag,
+  Alert,
+  Code,
+  DocumentationLinkPhrase,
+} from "@argos-ci/app/src/components";
+import { x } from "@xstyled/styled-components";
+import { useRepository } from "../../containers/RepositoryContext";
+import { EnableRepositoryToggleButton } from "../../containers/EnableRepositoryToggleButton";
 
 export function GettingStarted() {
-  const repository = useRepository();
+  const { repository } = useRepository();
 
   return (
-    <Container my={4}>
+    <Container>
       <Card>
         <CardHeader>
           <CardTitle>Getting started</CardTitle>
         </CardHeader>
-        {!repository.enabled ? (
-          <CardBody pt={0}>
-            <p>To start, first activate your repository.</p>
-            <ToggleButton />
-          </CardBody>
-        ) : (
-          <CardBody py={0}>
-            <p>
-              You are ready to launch your first build, here is your Argos
-              token:
-            </p>
-            <pre>
-              <code>{repository.token}</code>
-            </pre>
-            <p>
-              Follow <a href="https://docs.argos-ci.com">documentation</a> to
-              know how to integrate quickly with frameworks.
-            </p>
-          </CardBody>
-        )}
+
+        <CardBody>
+          {!repository.enabled ? (
+            <>
+              <CardText>To start, first activate your repository.</CardText>
+              <EnableRepositoryToggleButton />
+            </>
+          ) : (
+            <x.div>
+              <CardText fontSize="md">
+                The repository is activated and ready to receive the first
+                build.
+              </CardText>
+
+              <CardText fontSize="md" mt={3}>
+                Use this <Tag>ARGOS_TOKEN</Tag> to authenticate your repository
+                when you send screenshots to Argos.
+              </CardText>
+
+              <Alert mt={4}>This token should be kept secret.</Alert>
+
+              <Code mt={2}>ARGOS_TOKEN={repository.token}</Code>
+
+              <CardText mt={4} fontWeight={400} fontSize="md">
+                <DocumentationLinkPhrase />
+              </CardText>
+            </x.div>
+          )}
+        </CardBody>
       </Card>
     </Container>
   );

@@ -1,31 +1,26 @@
 import React from "react";
-import styled from "@xstyled/styled-components";
+import { x } from "@xstyled/styled-components";
 import { Link as ReactRouterLink } from "react-router-dom";
 
-export const FadeLink = styled.aBox`
-  transition: base;
-  text-decoration: none;
-  color: inherit;
+export const BaseLink = (props) => (
+  <x.a
+    transition="base"
+    cursor="pointer"
+    textDecoration={{ _: "none", hover: "underline" }}
+    as={props.to ? ReactRouterLink : "a"}
+    {...props}
+  />
+);
 
-  &:hover {
-    opacity: 0.75;
-  }
-`;
+export const Link = ({ ...props }) => <BaseLink color="link" {...props} />;
 
-const InnerLink = styled.aBox`
-  transition: base;
-  text-decoration: none;
-  color: link;
+export const FadeLink = (props) => (
+  <BaseLink color="inherit" opacity={{ hover: 0.7 }} {...props} />
+);
 
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-export const Link = (props) => {
-  return props.to ? (
-    <InnerLink as={ReactRouterLink} {...props} />
-  ) : (
-    <InnerLink {...props} />
-  );
-};
+export const IconLink = ({ icon: Icon, children, ...props }) => (
+  <Link {...props}>
+    {children}
+    <x.svg as={Icon} mt="-3px" mx={1} display="inline-block" w={3} h={3} />
+  </Link>
+);

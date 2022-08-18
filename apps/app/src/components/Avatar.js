@@ -8,7 +8,7 @@ export const Avatar = styled.imgBox`
 
   &:focus,
   &[aria-expanded="true"] {
-    box-shadow: 0 0 1px 1px darker;
+    box-shadow: 0 0 1px 1px white;
     outline: none;
   }
 

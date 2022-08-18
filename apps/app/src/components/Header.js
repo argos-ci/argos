@@ -1,54 +1,37 @@
-import styled, { css, up } from "@xstyled/styled-components";
+import React from "react";
+import { x } from "@xstyled/styled-components";
 import { Container } from "./Container";
 import { FadeLink } from "./Link";
 
-export const Header = styled.header`
-  background-color: light200;
-  color: darker;
-  border-top: 1;
-  border-bottom: 1;
-  border-color: light300;
-`;
+export const Header = (props) => (
+  <x.header
+    backgroundColor="highlight-background"
+    borderTop={1}
+    borderBottom={1}
+    borderColor="border"
+    {...props}
+  />
+);
 
-export const HeaderTitle = styled.h2`
-  margin: 0;
-  font-weight: 300;
-  display: flex;
-  align-items: center;
-  flex: 1;
-  font-size: 18;
-  margin-bottom: 2;
+export const HeaderPrimary = (props) => (
+  <x.div
+    display="flex"
+    flexDirection={{ _: "column", md: "row" }}
+    alignItems={{ _: "inherit", md: "center" }}
+    my={{ _: 3, md: 4 }}
+    {...props}
+  />
+);
 
-  ${up(
-    "md",
-    css`
-      font-size: 24;
-      margin-bottom: 0;
-    `
-  )}
-`;
-
-export const HeaderPrimary = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin: 3 0;
-
-  ${up(
-    "md",
-    css`
-      flex-direction: row;
-      align-items: center;
-      margin: 4 0;
-    `
-  )}
-`;
-
-export const HeaderSecondaryLink = styled(FadeLink)`
-  margin-top: 2;
-  font-size: 14;
-  display: flex;
-  align-items: center;
-  color: darker;
-`;
+export const HeaderSecondaryLink = (props) => (
+  <x.a
+    as={FadeLink}
+    mt={2}
+    fontSize="sm"
+    display="flex"
+    alignItems="center"
+    {...props}
+  />
+);
 
 export const HeaderBody = Container;

@@ -2,8 +2,7 @@
 import React from "react";
 import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
-import Tooltip from "react-tooltip";
-import styled, { Box } from "@xstyled/styled-components";
+import styled, { x } from "@xstyled/styled-components";
 import { Helmet } from "react-helmet";
 import { FaRegClock } from "react-icons/fa";
 import { GoGitCommit, GoGitBranch, GoPulse } from "react-icons/go";
@@ -17,16 +16,17 @@ import {
   CardText,
   FadeLink,
   Loader,
-} from "../../../components";
+  Tooltip,
+} from "@argos-ci/app/src/components";
 import { useQuery } from "../../../containers/Apollo";
 import { StatusIcon } from "../../../containers/StatusIcon";
-import { getStatusColor } from "../../../modules/build";
+import { getVariantColor } from "../../../modules/utils";
 import BuildDetailScreenshots from "./Screenshots";
 import BuildDetailAction from "./Action";
 import { BuildProvider, BuildContextFragment, useBuild } from "./Context";
 // eslint-disable-next-line import/no-cycle
 import { NotFound } from "../../NotFound";
-import { useRepository } from "../RepositoryContext";
+import { useRepository } from "../../../containers/RepositoryContext";
 import { hasWritePermission } from "../../../modules/permissions";
 
 const StyledCardHeader = styled(CardHeader)`
@@ -38,13 +38,13 @@ const StyledCardHeader = styled(CardHeader)`
 export function Build() {
   const build = useBuild();
   const { status } = build;
-  const buildColor = getStatusColor(status);
-  const repository = useRepository();
+  const buildColor = getVariantColor(status);
+  const { repository } = useRepository();
 
   return (
     <Container my={4} position="relative">
-      <Box row m={-2}>
-        <Box col={1} p={2}>
+      <x.div row m={-2}>
+        <x.div col={1} p={2}>
           <Card borderLeft={2} borderColor={buildColor}>
             <StyledCardHeader>
               <CardTitle>Summary</CardTitle>
@@ -53,33 +53,33 @@ export function Build() {
               )}
             </StyledCardHeader>
             <CardBody overflow="hidden">
-              <Box row>
-                <Box col="auto">
+              <x.div row>
+                <x.div col="auto">
                   <StatusIcon status={status} mt={1} mr={2} />
-                </Box>
-                <Box col>
-                  <Box row>
-                    <Box col>
-                      <Box
+                </x.div>
+                <x.div col>
+                  <x.div row>
+                    <x.div col>
+                      <x.div
                         color={buildColor}
                         display="flex"
                         alignItems="center"
                       >
-                        <Box forwardedAs="strong" mr={2}>
+                        <x.div as="strong" mr={2}>
                           {build.compareScreenshotBucket.branch}
-                        </Box>
-                        <Box>{build.compareScreenshotBucket.commit}</Box>
-                      </Box>
-                      <Box mt={3}>
+                        </x.div>
+                        <x.div>{build.compareScreenshotBucket.commit}</x.div>
+                      </x.div>
+                      <x.div mt={3}>
                         <FadeLink
                           target="_blank"
                           rel="noopener noreferer"
                           href={`https://github.com/${build.repository.owner.login}/${build.repository.name}/commit/${build.compareScreenshotBucket.commit}`}
-                          color="darker"
+                          color="white"
                           display="flex"
                           alignItems="center"
                         >
-                          <Box forwardedAs={GoGitCommit} mr={2} />
+                          <x.svg as={GoGitCommit} mr={2} />
                           Commit{" "}
                           {build.compareScreenshotBucket.commit.slice(0, 7)}
                         </FadeLink>
@@ -87,27 +87,27 @@ export function Build() {
                           target="_blank"
                           rel="noopener noreferer"
                           href={`https://github.com/${build.repository.owner.login}/${build.repository.name}/tree/${build.compareScreenshotBucket.branch}`}
-                          color="darker"
+                          color="white"
                           display="flex"
                           alignItems="center"
                         >
-                          <Box forwardedAs={GoGitBranch} mr={2} />
+                          <x.svg as={GoGitBranch} mr={2} />
                           Branch {build.compareScreenshotBucket.branch}
                         </FadeLink>
-                      </Box>
-                    </Box>
-                    <Box col={{ xs: 1, md: "auto" }} mt={{ xs: 3, md: 0 }}>
-                      <Box
+                      </x.div>
+                    </x.div>
+                    <x.div col={{ xs: 1, md: "auto" }} mt={{ xs: 3, md: 0 }}>
+                      <x.div
                         color={buildColor}
                         display="flex"
                         alignItems="center"
                       >
-                        <Box forwardedAs={GoPulse} mr={2} />
+                        <x.svg as={GoPulse} mr={2} />
                         <span>
                           #{build.number} {status}
                         </span>
-                      </Box>
-                      <Box
+                      </x.div>
+                      <x.div
                         mt={3}
                         display="flex"
                         alignItems="center"
@@ -115,21 +115,21 @@ export function Build() {
                           "DD-MM-YYYY HH:MM"
                         )}
                       >
-                        <Box forwardedAs={FaRegClock} mr={2} />
+                        <x.svg as={FaRegClock} mr={2} />
                         {moment(build.createdAt).fromNow()}
-                      </Box>
+                      </x.div>
                       <Tooltip />
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
+                    </x.div>
+                  </x.div>
+                </x.div>
+              </x.div>
             </CardBody>
           </Card>
-        </Box>
-      </Box>
+        </x.div>
+      </x.div>
       {build.screenshotDiffs.length === 0 ? (
-        <Box row m={-2}>
-          <Box col={1} p={2}>
+        <x.div row m={-2}>
+          <x.div col={1} p={2}>
             <Card>
               <CardHeader>
                 <CardTitle>Screenshots</CardTitle>
@@ -138,8 +138,8 @@ export function Build() {
                 <CardText>No screenshot found.</CardText>
               </CardBody>
             </Card>
-          </Box>
-        </Box>
+          </x.div>
+        </x.div>
       ) : (
         <BuildDetailScreenshots build={build} />
       )}
@@ -167,7 +167,7 @@ const BUILD_QUERY = gql`
 `;
 
 export function BuildDetail() {
-  const repository = useRepository();
+  const { repository } = useRepository();
   const { buildNumber } = useParams();
   const { loading, data } = useQuery(BUILD_QUERY, {
     variables: {

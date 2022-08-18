@@ -1,60 +1,111 @@
 import React from "react";
 import {
   useMenuState,
-  Menu as ReakitMenu,
-  MenuItem as ReakitMenuItem,
-  MenuDisclosure,
-} from "reakit/Menu";
-import styled from "@xstyled/styled-components";
+  Menu as AriakitMenu,
+  MenuItem as AriakitMenuItem,
+  MenuButton as AriakitMenuButton,
+  MenuSeparator as AriakitMenuSeparator,
+  MenuButtonArrow as AriakitMenuButtonArrow,
+} from "ariakit/Menu";
+import styled, { x } from "@xstyled/styled-components";
 
-export { useMenuState, MenuDisclosure };
+export { useMenuState };
 
-const InnerMenu = styled.div`
-  background-color: darker;
-  border-radius: base;
-  padding: 2 1;
-  min-width: 110;
+const InnerMenuButton = styled.box`
+  display: flex;
+  align-items: center;
+  border-radius: md;
+  padding: 1 2;
+  cursor: pointer;
 
   &:focus {
+    background-color: background-focus;
+    outline: none;
+  }
+
+  &:hover,
+  &[aria-expanded="true"] {
+    background-color: background-hover;
     outline: none;
   }
 `;
 
-export const Menu = React.forwardRef(function Menu(
-  { children, ...props },
-  ref
-) {
+export const MenuButton = React.forwardRef(({ children, ...props }, ref) => {
   return (
-    <ReakitMenu ref={ref} {...props}>
-      {(menuProps) => <InnerMenu {...menuProps}>{children}</InnerMenu>}
-    </ReakitMenu>
+    <AriakitMenuButton ref={ref} {...props}>
+      {(menuProps) => (
+        <InnerMenuButton {...menuProps}>{children}</InnerMenuButton>
+      )}
+    </AriakitMenuButton>
   );
 });
 
-const InnerMenuItem = styled.buttonBox`
-  appearance: none;
-  background-color: transparent;
-  padding: 2;
-  border: 0;
-  border-radius: base;
-  color: light300;
-  font-size: 14;
-  display: block;
-  width: 100%;
-  text-align: left;
-  transition: base;
-  transition-property: background-color;
-  cursor: pointer;
-  /* For links */
-  text-decoration: none;
+export const MenuButtonArrow = (props) => (
+  <x.div as={AriakitMenuButtonArrow} {...props} />
+);
 
-  &:focus,
-  &:hover {
-    outline: none;
-    background-color: light800;
-  }
-`;
+export const Menu = (props) => (
+  <x.menu
+    as={AriakitMenu}
+    backgroundColor="background"
+    border={1}
+    borderColor="border"
+    borderRadius="md"
+    p={1}
+    minWidth="110"
+    zIndex="1000"
+    {...props}
+  />
+);
 
-export const MenuItem = React.forwardRef(function MenuItem(props, ref) {
-  return <ReakitMenuItem ref={ref} as={InnerMenuItem} {...props} />;
-});
+export const MenuItem = (props) => (
+  <x.div
+    as={AriakitMenuItem}
+    appearance="none"
+    backgroundColor={{ _: "transparent", hover: "gray-800" }}
+    border={0}
+    borderRadius="md"
+    color="white"
+    fontSize="sm"
+    w={1}
+    transition="md"
+    transitionProperty="background-color"
+    cursor="pointer"
+    textDecoration="none"
+    display="flex"
+    alignItems="center"
+    gap="8px"
+    outline={{ hover: "none", focus: "none" }}
+    p={2}
+    fontWeight={600}
+    pr={8}
+    {...props}
+  />
+);
+
+export const MenuSeparator = (props) => (
+  <x.div
+    as={AriakitMenuSeparator}
+    borderColor="border"
+    my={0.5}
+    height={0}
+    borderTopWidth="1px"
+    {...props}
+  />
+);
+
+export const MenuText = (props) => (
+  <x.div fontSize="sm" my={2} mx={2} fontWeight={600} pr={3} {...props} />
+);
+
+export const MenuTitle = (props) => (
+  <x.div
+    fontSize="sm"
+    fontWeight={600}
+    color="secondary-text"
+    mx={2}
+    {...props}
+  />
+);
+
+export const MenuIcon = (props) => <x.svg w={5} h={5} {...props} />;

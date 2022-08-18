@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Boxer, Alert, Button, Input } from "@smooth-ui/core-sc";
+import React from "react";
 import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
 import {
+  Alert,
   Container,
   Card,
   CardBody,
@@ -10,12 +10,24 @@ import {
   CardTitle,
   CardText,
   Code,
-  Link,
-  InlineCode,
-} from "../../components";
-import { useRepository, useToggleRepository } from "./RepositoryContext";
-import { Box } from "@xstyled/styled-components";
+  Button,
+  Form,
+  FormError,
+  FormInput,
+  FormLabel,
+  FormSubmit,
+  useFormState,
+  Toast,
+  useToast,
+  DocumentationLinkPhrase,
+} from "@argos-ci/app/src/components";
+import {
+  useRepository,
+  useToggleRepository,
+} from "../../containers/RepositoryContext";
+import { x } from "@xstyled/styled-components";
 import { useMutation } from "@apollo/client";
+import { Tag } from "../../components/Tag";
 
 const UPDATE_BASELINE_BRANCH = gql`
   mutation UpdateBaselineBranch($repositoryId: String!, $branchName: String!) {
@@ -26,150 +38,146 @@ const UPDATE_BASELINE_BRANCH = gql`
   }
 `;
 
-export function RepositorySettings() {
-  const repository = useRepository();
-  const { enabled } = repository;
-  const { toggleRepository, loading, error } = useToggleRepository();
-  const [branchUpdateSuccess, setBranchUpdateSuccess] = useState(false);
+function TokenCard({ repository }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Argos Token</CardTitle>
+      </CardHeader>
+      <CardBody>
+        <CardText fontSize="md">
+          Use this <Tag>ARGOS_TOKEN</Tag> to authenticate your repository when
+          you send screenshots to Argos.
+        </CardText>
+        <Alert my={3}>This token should be kept secret.</Alert>
+        <Code>ARGOS_TOKEN={repository.token}</Code>
+        <CardText fontSize="md" mt={4}>
+          <DocumentationLinkPhrase />
+        </CardText>
+      </CardBody>
+    </Card>
+  );
+}
 
-  const [baselineBranch, setBaselineBranch] = useState(
-    repository.baselineBranch
+function UpdateBranchForm({ repository }) {
+  const successToast = useToast();
+  const errorToast = useToast();
+
+  const [updateBaselineBranch, { loading: branchUpdateLoading }] = useMutation(
+    UPDATE_BASELINE_BRANCH,
+    {
+      onCompleted: () => successToast.show(),
+      onError: () => errorToast.show(),
+    }
   );
 
-  const [
-    updateBaselineBranch,
-    { loading: branchUpdateLoading, error: branchUpdateError },
-  ] = useMutation(UPDATE_BASELINE_BRANCH, {
-    onCompleted: () => setBranchUpdateSuccess(true),
+  const form = useFormState({
+    defaultValues: { name: repository.baselineBranch },
+  });
+  form.useSubmit(() => {
+    updateBaselineBranch({
+      variables: {
+        repositoryId: repository.id,
+        branchName: form.values.name,
+      },
+    });
   });
 
-  useEffect(() => {
-    let timer;
-    if (branchUpdateSuccess) {
-      timer = setTimeout(() => {
-        setBranchUpdateSuccess(false);
-      }, 3000);
-    }
-    return () => clearTimeout(timer);
-  }, [branchUpdateSuccess]);
+  return (
+    <Form state={form} mt={4}>
+      <FormLabel name={form.names.name}>Reference Branch</FormLabel>
+
+      <x.div display="flex" gap={2}>
+        <FormInput name={form.names.name} placeholder="Branch name" required />
+        <FormSubmit disabled={branchUpdateLoading}>Update Branch</FormSubmit>
+      </x.div>
+
+      <FormError name={form.names.name} />
+
+      <Toast state={successToast}>
+        <Alert severity="success">Reference branch updated.</Alert>
+      </Toast>
+
+      <Toast state={errorToast}>
+        <Alert severity="error">Something went wrong. Please try again.</Alert>
+      </Toast>
+    </Form>
+  );
+}
+
+function BranchUpdateCard({ repository }) {
+  console.log(repository.baselineBranch);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Reference branch</CardTitle>
+      </CardHeader>
+      <CardBody>
+        <CardText fontSize="md">
+          Argos uses this branch as the reference for screenshots comparison.
+        </CardText>
+        <UpdateBranchForm repository={repository} />
+      </CardBody>
+    </Card>
+  );
+}
+
+function EnableRepositoryCard({ repository }) {
+  const { toggleRepository, loading, error } = useToggleRepository();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          {repository.enabled ? "Deactivate" : "Activate"} Repository
+        </CardTitle>
+      </CardHeader>
+      <CardBody>
+        {error && (
+          <Alert variant="danger">
+            Something went wrong. Please try again.
+          </Alert>
+        )}
+
+        <CardText>
+          <Button
+            disabled={loading}
+            variant={repository.enabled ? "danger" : "success"}
+            onClick={() =>
+              toggleRepository({
+                variables: {
+                  enabled: !repository.enabled,
+                  repositoryId: repository.id,
+                },
+              })
+            }
+          >
+            {repository.enabled ? "Deactivate" : "Activate"} Repository
+          </Button>
+        </CardText>
+      </CardBody>
+    </Card>
+  );
+}
+
+export function RepositorySettings() {
+  const { repository } = useRepository();
 
   return (
     <Container>
       <Helmet>
         <title>Settings</title>
       </Helmet>
-      <Boxer my={4}>
-        {enabled && (
+      <x.div display="flex" rowGap={4} flexDirection="column">
+        {repository.enabled && (
           <>
-            <Card>
-              <CardHeader>
-                <CardTitle>Argos Token</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <CardText fontSize={16}>
-                  Use this <InlineCode>ARGOS_TOKEN</InlineCode> to authenticate
-                  your repository when you send screenshots to Argos.
-                </CardText>
-                <Alert variant="warning">
-                  This token should be kept secret.
-                </Alert>
-                <Code>ARGOS_TOKEN={repository.token}</Code>
-                <CardText fontSize={16}>
-                  Read our documentation for more information about
-                  <Link target="_blank" href="https://docs.argos-ci.com">
-                    installing
-                  </Link>
-                  Argos and
-                  <Link target="_blank" href="https://docs.argos-ci.com/usage">
-                    using it
-                  </Link>
-                  .
-                </CardText>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Reference branch</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <CardText fontSize={16}>
-                  Argos will consider this branch as the reference for
-                  screenshots comparison.
-                </CardText>
-                <Box fontSize={16} mb={1} fontWeight={600}>
-                  Reference Branch
-                </Box>
-                <Box display="flex" gridGap={2}>
-                  <Input
-                    placeholder="Branch name"
-                    border="base"
-                    value={baselineBranch}
-                    onChange={(e) => setBaselineBranch(e.target.value)}
-                    maxWidth={400}
-                  />
-                  <Button
-                    flex="0 0 auto"
-                    disabled={branchUpdateLoading}
-                    onClick={() => {
-                      updateBaselineBranch({
-                        variables: {
-                          repositoryId: repository.id,
-                          branchName: baselineBranch,
-                        },
-                      });
-                    }}
-                  >
-                    Update Branch
-                  </Button>
-                </Box>
-                {branchUpdateSuccess && (
-                  <Alert variant="success" mt={2}>
-                    Reference branch updated
-                  </Alert>
-                )}
-                {branchUpdateError && (
-                  <Alert variant="danger">
-                    Something went wrong. Please try again.
-                  </Alert>
-                )}
-              </CardBody>
-            </Card>
+            <TokenCard repository={repository} />
+            <BranchUpdateCard repository={repository} />
           </>
         )}
-
-        <Card key="repository-activation">
-          <CardHeader>
-            <CardTitle>
-              {enabled ? "Deactivate" : "Activate"} Repository
-            </CardTitle>
-          </CardHeader>
-          <CardBody>
-            {error && (
-              <Alert variant="danger">
-                Something went wrong. Please try again.
-              </Alert>
-            )}
-
-            <CardText>
-              <Button
-                disabled={loading}
-                variant={enabled ? "danger" : "success"}
-                onClick={() =>
-                  toggleRepository({
-                    variables: {
-                      enabled: !repository.enabled,
-                      repositoryId: repository.id,
-                    },
-                  })
-                }
-              >
-                {enabled ? "Deactivate" : "Activate"} Repository
-              </Button>
-            </CardText>
-          </CardBody>
-        </Card>
-      </Boxer>
+        <EnableRepositoryCard repository={repository} />
+      </x.div>
     </Container>
   );
 }

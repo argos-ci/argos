@@ -9,7 +9,7 @@ import {
   CardBody,
   CardText,
   FadeLink,
-} from "../components";
+} from "@argos-ci/app/src/components";
 
 export function NotFound(props) {
   return (
@@ -24,7 +24,7 @@ export function NotFound(props) {
         <CardBody>
           <CardText>There is nothing to see here.</CardText>
           <CardText>
-            <FadeLink forwardedAs={Link} color="darker" to="/">
+            <FadeLink as={Link} color="white" to="/">
               Back to home
             </FadeLink>
           </CardText>

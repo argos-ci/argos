@@ -1,35 +1,44 @@
 import React from "react";
-import { Helmet } from "react-helmet";
-import { Box, Button } from "@smooth-ui/core-sc";
 import config from "../../config";
-import { Card, CardBody, CardText } from "../../components";
-import { Text } from "../../components/Text";
+import {
+  Card,
+  CardBody,
+  CardText,
+  PrimaryTitle,
+  IconLink,
+  SidebarLayout,
+} from "@argos-ci/app/src/components";
+import { FaExternalLinkAlt } from "react-icons/fa";
 
 export function PermissionsSettings() {
   return (
-    <Box>
-      <Helmet>
-        <title>Repositories Permissions</title>
-      </Helmet>
+    <>
+      <SidebarLayout.PageTitle>
+        <PrimaryTitle>Repositories Permissions</PrimaryTitle>
+      </SidebarLayout.PageTitle>
 
-      <Text variant="h1">Repositories Permissions</Text>
-      <Card>
-        <CardBody>
-          <CardText mt={0}>
-            For now, Argos uses OAuth GitHub App, you can’t manage permission
-            per repository but you can block the entire access to Argos using
-            the following link.
-          </CardText>
-          <Button
-            as="a"
-            target="_blank"
-            rel="noopener noreferrer"
-            href={config.get("github.appUrl")}
-          >
-            Manage permissions
-          </Button>
-        </CardBody>
-      </Card>
-    </Box>
+      <SidebarLayout.PageContent>
+        <Card>
+          <CardBody>
+            <CardText fontSize="md" mb={3}>
+              Argos uses OAuth GitHub App.
+            </CardText>
+            <CardText fontSize="md">
+              Click on{" "}
+              <IconLink
+                href={config.get("github.appUrl")}
+                target="_blank"
+                rel="noopener noreferrer"
+                fontWeight="normal"
+                icon={FaExternalLinkAlt}
+              >
+                this link
+              </IconLink>
+              to manage the repositories’ access restrictions.
+            </CardText>
+          </CardBody>
+        </Card>
+      </SidebarLayout.PageContent>
+    </>
   );
 }

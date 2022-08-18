@@ -1,22 +1,22 @@
 import React from "react";
-import { Box } from "@xstyled/styled-components";
+import { x } from "@xstyled/styled-components";
 import { FaTimes, FaCheck, FaDotCircle } from "react-icons/fa";
-import { getStatusColor } from "../modules/build";
+import { getVariantColor } from "../modules/utils";
 
 export function StatusIcon({ status, ...props }) {
-  const buildColor = getStatusColor(status);
+  const buildColor = getVariantColor(status);
   switch (status) {
     case "failure":
     case "error":
     case "aborted":
-      return <Box forwardedAs={FaTimes} color={buildColor} {...props} />;
+      return <x.svg as={FaTimes} color={buildColor} {...props} />;
     case "success":
     case "complete":
-      return <Box forwardedAs={FaCheck} color={buildColor} {...props} />;
+      return <x.svg as={FaCheck} color={buildColor} {...props} />;
     case "pending":
-      return <Box forwardedAs={FaDotCircle} color={buildColor} {...props} />;
+      return <x.svg as={FaDotCircle} color={buildColor} {...props} />;
     case "neutral":
-      return <Box forwardedAs={FaDotCircle} color={buildColor} {...props} />;
+      return <x.svg as={FaDotCircle} color={buildColor} {...props} />;
     default:
       return null;
   }

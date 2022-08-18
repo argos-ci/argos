@@ -1,5 +1,4 @@
 import React from "react";
-import { useColorMode } from "@xstyled/styled-components";
 import {
   Footer,
   FooterBody,
@@ -7,15 +6,14 @@ import {
   FooterSecondary,
   FooterLink,
   BrandLogo,
-} from "../components";
+} from "@argos-ci/app/src/components";
 
 export function AppFooter() {
-  const [colorMode] = useColorMode();
   return (
     <Footer>
       <FooterBody>
         <FooterPrimary>
-          <BrandLogo colorMode={colorMode} width={120} />
+          <BrandLogo width={120} />
         </FooterPrimary>
         <FooterSecondary>
           <FooterLink href="https://docs.argos-ci.com">Docs</FooterLink>

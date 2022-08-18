@@ -1,9 +1,9 @@
 import React from "react";
-import { Button } from "@smooth-ui/core-sc";
+import { Button } from "@argos-ci/app/src/components";
 import { useRepository, useToggleRepository } from "./RepositoryContext";
 
-export function ToggleButton() {
-  const repository = useRepository();
+export function EnableRepositoryToggleButton() {
+  const { repository } = useRepository();
   const { toggleRepository, loading } = useToggleRepository();
   const { enabled } = repository;
   return (

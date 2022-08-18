@@ -38,6 +38,7 @@ export function RepositoryProvider({
   children,
 }) {
   const [repository, setRepository] = React.useState(initialRepository);
+
   const [
     toggleRepository,
     { loading: queryLoading, error: queryError, data: updateData },
@@ -49,20 +50,24 @@ export function RepositoryProvider({
     }
     ${RepositoryContextFragment}
   `);
+
   React.useEffect(() => {
     if (updateData && updateData.toggleRepository) {
       setRepository(updateData.toggleRepository);
     }
   }, [queryError, queryLoading, updateData]);
+
   const value = React.useMemo(
     () => ({
       repository,
       toggleRepository,
       queryLoading,
       queryError,
+      setRepository,
     }),
-    [queryError, queryLoading, repository, toggleRepository]
+    [queryError, queryLoading, repository, toggleRepository, setRepository]
   );
+
   return (
     <RepositoryContext.Provider value={value}>
       {children}
@@ -71,8 +76,7 @@ export function RepositoryProvider({
 }
 
 export function useRepository() {
-  const { repository } = React.useContext(RepositoryContext);
-  return repository;
+  return React.useContext(RepositoryContext);
 }
 
 export function useToggleRepository() {
