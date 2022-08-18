@@ -1,24 +1,16 @@
 import React from "react";
-import styled from "@xstyled/styled-components";
+import { x } from "@xstyled/styled-components";
 
-const Pre = styled.pre`
-  padding: 2 0;
-  overflow-x: auto;
-`;
+const InnerCode = (props) => (
+  <x.div p={2} backgroundColor="gray-800" borderRadius="md" {...props} />
+);
 
-const InnerCode = styled.codeBox`
-  padding: 2;
-  background-color: light100;
-  border-radius: base;
-  color: light800;
-`;
-
-export const InlineCode = (props) => <InnerCode py={1} px={1} {...props} />;
-
-export function Code(props) {
+export function Code({ children, ...props }) {
   return (
-    <Pre>
-      <InnerCode {...props} />
-    </Pre>
+    <InnerCode {...props}>
+      <x.pre pt={2} pb={1} px={2} overflowX="auto">
+        {children}
+      </x.pre>
+    </InnerCode>
   );
 }

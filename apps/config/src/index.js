@@ -119,7 +119,7 @@ const config = convict({
     },
     appUrl: {
       format: String,
-      default: "",
+      default: "https://github.com/apps/argos-ci-dev",
       env: "GITHUB_APP_URL",
     },
     loginUrl: {

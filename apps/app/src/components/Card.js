@@ -1,52 +1,42 @@
-import styled from "@xstyled/styled-components";
-import {
-  Card as SUICard,
-  CardHeader as SUICardHeader,
-  CardBody as SUICardBody,
-  CardTitle as SUICardTitle,
-  CardFooter as SUICardFooter,
-} from "@smooth-ui/core-sc";
+import React from "react";
+import { x } from "@xstyled/styled-components";
 
-export const Card = styled(SUICard)`
-  border-radius: base;
-  background-color: light200;
-  border: 0;
-`;
+export const Card = (props) => (
+  <x.div borderRadius="md" border={1} borderColor="border" {...props} />
+);
 
-export const CardBody = styled(SUICardBody)`
-  padding: 3;
-`;
+export const CardBody = (props) => <x.div p={3} {...props} />;
 
-export const CardText = styled.pBox`
-  font-size: 13;
+export const CardText = (props) => <x.p fontSize="sm" {...props} />;
 
-  &:first-child {
-    margin-top: 0;
-  }
-`;
+export const CardTitle = (props) => (
+  <x.div fontSize="lg" fontWeight="medium" m={0} {...props} />
+);
 
-export const CardTitle = styled(SUICardTitle)`
-  font-size: 18;
-  font-weight: medium;
-  margin: 0;
-  color: darker;
-`;
+export const CardHeader = (props) => (
+  <x.div
+    py={2}
+    px={3}
+    backgroundColor="highlight-background"
+    borderRadius="md md 0 0"
+    borderBottom={1}
+    borderColor="inherit"
+    display="flex"
+    justifyContent="space-between"
+    alignItems="center"
+    {...props}
+  />
+);
 
-export const CardHeader = styled(SUICardHeader)`
-  border-bottom: 1;
-  border-bottom-color: light300;
-  padding: 2;
-`;
-
-export const CardFooter = styled(SUICardFooter)`
-  border-top: 1;
-  border-top-color: light300;
-  padding: 2;
-`;
-
-export const CardStat = styled.box`
-  font-size: 36;
-  color: darker;
-  text-align: center;
-  padding: 4;
-`;
+export const CardFooter = (props) => (
+  <x.div
+    py={2}
+    px={3}
+    backgroundColor="highlight-background"
+    borderRadius="0 0 md md"
+    borderTop={1}
+    borderColor="inherit"
+    color="secondary-text"
+    {...props}
+  />
+);

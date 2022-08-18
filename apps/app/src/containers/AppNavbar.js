@@ -1,29 +1,41 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import {
-  Button,
-  Box,
-  Menu,
-  MenuItem,
-  MenuDisclosure,
-  useMenuState,
-} from "@smooth-ui/core-sc";
-import { useColorMode } from "@xstyled/styled-components";
+import { x } from "@xstyled/styled-components";
 import { FaGithub } from "react-icons/fa";
 import config from "../config";
+import { createTeleporter } from "react-teleporter";
 import {
   NavbarSecondary,
   NavbarBrandLink,
   Navbar,
   NavbarBrand,
   BrandLogo,
-} from "../components";
+  Button,
+  Menu,
+  MenuItem,
+  MenuButton,
+  useMenuState,
+  Header,
+  HeaderBody,
+  HeaderPrimary,
+  Breadcrumb,
+  MenuIcon,
+  MenuSeparator,
+  MenuTitle,
+} from "@argos-ci/app/src/components";
 import { OwnerAvatar } from "./OwnerAvatar";
 import { useLogout } from "./Auth";
 import { useUser } from "./User";
+import { OwnerBreadcrumbItem } from "./OwnerBreadcrumb";
+import { GoHome, GoRepo, GoGear, GoSignOut } from "react-icons/go";
+import { HomeBreadcrumbItem } from "./HomeBreadcrumb";
+import { RepositoryBreadcrumbItem } from "./RepositoryBreadcrumb";
 
-// eslint-disable-next-line react/forbid-foreign-prop-types
-delete MenuDisclosure.propTypes.children;
+const HeaderBodyTeleporter = createTeleporter();
+
+export function HeaderTeleporter({ children }) {
+  return <HeaderBodyTeleporter.Source>{children}</HeaderBodyTeleporter.Source>;
+}
 
 function UserMenu({ user }) {
   const logout = useLogout();
@@ -34,22 +46,34 @@ function UserMenu({ user }) {
 
   return (
     <>
-      <MenuDisclosure {...menu}>
-        {({ type, ...disclosureProps }) => (
-          <OwnerAvatar owner={user} {...disclosureProps} />
-        )}
-      </MenuDisclosure>
-      <Menu aria-label="User settings" {...menu}>
+      <MenuButton state={menu}>
+        <OwnerAvatar owner={user} />
+      </MenuButton>
+      <Menu aria-label="User settings" state={menu}>
+        <MenuTitle>User menu</MenuTitle>
+        <MenuSeparator />
+        <MenuItem state={menu} as={Link} to={`/`}>
+          <MenuIcon as={GoHome} />
+          Home
+        </MenuItem>
+        <MenuSeparator />
         <MenuItem
-          {...menu}
-          forwardedAs="a"
+          state={menu}
+          as="a"
           href={config.get("github.appUrl")}
           target="_blank"
           rel="noopener noreferrer"
         >
+          <MenuIcon as={GoRepo} />
           Add repository
         </MenuItem>
-        <MenuItem {...menu} onClick={() => logout()}>
+        <MenuItem state={menu} as={Link} to={`/${user.login}/settings`}>
+          <MenuIcon as={GoGear} />
+          Settings
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem state={menu} onClick={() => logout()}>
+          <MenuIcon as={GoSignOut} />
           Logout
         </MenuItem>
       </Menu>
@@ -59,33 +83,44 @@ function UserMenu({ user }) {
 
 export function AppNavbar() {
   const user = useUser();
-  const [colorMode] = useColorMode();
 
   return (
-    <Navbar>
-      <NavbarBrandLink as={Link} to="/">
-        <NavbarBrand>
-          <BrandLogo width={200} colorMode={colorMode} />
-        </NavbarBrand>
-      </NavbarBrandLink>
-      <NavbarSecondary>
-        {user ? (
-          <UserMenu user={user} />
-        ) : (
-          <Button
-            variant="light200"
-            as="a"
-            href={config.get("github.loginUrl")}
-            display="flex"
-            alignItems="center"
-          >
-            <Box as="span" mr={1}>
+    <>
+      <Navbar>
+        <NavbarBrandLink as={Link} to="/">
+          <NavbarBrand>
+            <BrandLogo width={200} />
+          </NavbarBrand>
+        </NavbarBrandLink>
+        <NavbarSecondary>
+          {user ? (
+            <UserMenu user={user} />
+          ) : (
+            <Button
+              as="a"
+              href={config.get("github.loginUrl")}
+              variant="blue-gray"
+              gap={2}
+            >
+              <x.svg as={FaGithub} />
               Login
-            </Box>
-            <FaGithub />
-          </Button>
-        )}
-      </NavbarSecondary>
-    </Navbar>
+            </Button>
+          )}
+        </NavbarSecondary>
+      </Navbar>
+
+      <Header>
+        <HeaderBody>
+          <HeaderPrimary>
+            <Breadcrumb>
+              <HomeBreadcrumbItem />
+              <OwnerBreadcrumbItem />
+              <RepositoryBreadcrumbItem />
+            </Breadcrumb>
+          </HeaderPrimary>
+          <HeaderBodyTeleporter.Target />
+        </HeaderBody>
+      </Header>
+    </>
   );
 }

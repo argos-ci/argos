@@ -1,86 +1,64 @@
 import React from "react";
 import { Helmet } from "react-helmet";
-import { BrowserRouter, Route, Switch } from "react-router-dom";
-import { Normalize } from "@smooth-ui/core-sc";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ScrollToTop, GoogleAnalytics } from "./containers/Router";
 import { AuthInitializer } from "./containers/Auth";
 import { ApolloInitializer } from "./containers/Apollo";
 import { ThemeInitializer } from "./containers/Theme";
 import { UserInitializer } from "./containers/User";
-import { SyncAlertBar } from "./containers/SyncAlertBar";
-import { AppNavbar } from "./containers/AppNavbar";
-import { AppFooter } from "./containers/AppFooter";
-import { Home } from "./pages/Home";
-import { Owner } from "./pages/Owner";
-import { ErrorPage } from "./pages/ErrorPage";
-import { Repository } from "./pages/Repository";
-import { NotFound } from "./pages/NotFound";
 import { AuthCallback } from "./pages/AuthCallback";
-
-import {
-  GlobalStyle,
-  Layout,
-  LayoutHeader,
-  LayoutMain,
-  LayoutFooter,
-  Catch,
-} from "./components";
+import { GlobalStyle } from "./components";
+import { Layout } from "./containers/Layout";
+import { OwnerProvider } from "./containers/OwnerContext";
+import { RepositoryProvider } from "./containers/RepositoryContext";
+import { Home } from "./pages/Home";
+import { Preflight } from "@xstyled/styled-components";
+import { Owner } from "./pages/Owner";
+import { NotFound } from "./pages/NotFound";
+import { Repository } from "./pages/Repository";
+import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 
 export function App() {
   return (
     <ThemeInitializer>
-      <>
-        <Helmet defaultTitle="Argos CI" />
-        <Normalize />
-        <GlobalStyle />
-        <BrowserRouter>
-          <ScrollToTop />
-          <GoogleAnalytics />
-          <AuthInitializer>
-            <ApolloInitializer>
-              <UserInitializer>
-                <Switch>
-                  <Route exact path="/auth/github/callback">
-                    <AuthCallback />
-                  </Route>
-                  <Route>
-                    <Layout>
-                      <LayoutHeader>
-                        <AppNavbar />
-                      </LayoutHeader>
-                      <SyncAlertBar />
-                      <LayoutMain>
-                        <Catch fallback={<ErrorPage />}>
-                          <Switch>
-                            <Route exact path="/" component={Home} />
-                            <Route
-                              exact
-                              path="/:ownerLogin"
-                              component={Owner}
-                            />
-                            <Route
-                              path="/:ownerLogin/settings"
-                              component={Owner}
-                            />
-                            <Route
-                              path="/:ownerLogin/:repositoryName"
-                              component={Repository}
-                            />
-                            <Route component={NotFound} />
-                          </Switch>
-                        </Catch>
-                      </LayoutMain>
-                      <LayoutFooter>
-                        <AppFooter />
-                      </LayoutFooter>
-                    </Layout>
-                  </Route>
-                </Switch>
-              </UserInitializer>
-            </ApolloInitializer>
-          </AuthInitializer>
-        </BrowserRouter>
-      </>
+      <Preflight />
+      <Helmet defaultTitle="Argos CI" />
+      <GlobalStyle />
+      <BrowserRouter>
+        <ScrollToTop />
+        <GoogleAnalytics />
+        <AuthInitializer>
+          <ApolloInitializer>
+            <UserInitializer>
+              <OwnerProvider>
+                <RepositoryProvider>
+                  <Routes>
+                    <Route
+                      exact
+                      path="/auth/github/callback"
+                      element={<AuthCallback />}
+                    />
+                    <Route path="/" element={<Layout />}>
+                      <Route index element={<Home />} />
+
+                      <Route
+                        path="/:ownerLogin/settings/*"
+                        element={<OwnerSettings />}
+                      />
+                      <Route
+                        path="/:ownerLogin/:repositoryName/*"
+                        element={<Repository />}
+                      />
+                      <Route path="/:ownerLogin" element={<Owner />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Route>
+                  </Routes>
+                </RepositoryProvider>
+              </OwnerProvider>
+            </UserInitializer>
+          </ApolloInitializer>
+        </AuthInitializer>
+      </BrowserRouter>
     </ThemeInitializer>
   );
 }

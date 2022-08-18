@@ -1,217 +1,269 @@
 import React from "react";
 import { gql } from "graphql-tag";
-import { Link } from "react-router-dom";
-import styled, { Box, th } from "@xstyled/styled-components";
-import Tooltip from "react-tooltip";
-import { GoRepo } from "react-icons/go";
+import { Link as ReactRouterLink } from "react-router-dom";
+import { x } from "@xstyled/styled-components";
+import { GoGear, GoRepo } from "react-icons/go";
 import moment from "moment";
 import { Query } from "../../containers/Apollo";
 import { StatusIcon } from "../../containers/StatusIcon";
+import {
+  useOwner,
+  OwnerRepositoriesFragment,
+} from "../../containers/OwnerContext";
 import {
   Container,
   Card,
   CardHeader,
   CardTitle,
   CardBody,
-  FadeLink,
-  Text,
-} from "../../components";
-import { getStatusColor } from "../../modules/build";
-import { useOwner } from "./OwnerContext";
+  SecondaryTitle,
+  Link,
+  PrimaryTitle,
+  TagButton,
+  SidebarList,
+  SidebarItemLink,
+  SidebarItem,
+  SidebarTitle,
+  CardText,
+  SidebarLayout,
+  DocumentationLinkPhrase,
+} from "@argos-ci/app/src/components";
+import { useUser } from "../../containers/User";
+import { Helmet } from "react-helmet";
+import config from "../../config";
 
-const Stat = styled.div`
-  display: flex;
-`;
-
-const StatLabel = styled.span`
-  flex: 1;
-`;
-const StatValue = styled.span`
-  flex: 0 0 auto;
-  color: ${(p) => th.color(p.color || "darker")};
-`;
-
-export function RepositorySummary({ repository }) {
-  const owner = useOwner();
-  if (
-    !repository.builds ||
-    !repository.builds.edges ||
-    repository.builds.edges.length === 0
-  ) {
-    return <div>No info to display</div>;
+const OWNER_REPOSITORIES_QUERY = gql`
+  query OwnerRepositories($login: String!) {
+    owner(login: $login) {
+      ...OwnerRepositoriesFragment
+    }
   }
-  const { pageInfo, edges } = repository.builds;
-  const [latestBuild] = edges;
-  const buildColor = getStatusColor(latestBuild.status);
+
+  ${OwnerRepositoriesFragment}
+`;
+
+const Stat = (props) => (
+  <x.div
+    display="flex"
+    flexDirection={{ _: "row", md: "column" }}
+    justifyContent="space-between"
+    alignItems="center"
+    {...props}
+  />
+);
+
+const StatLabel = (props) => (
+  <x.div
+    color="text-secondary"
+    fontWeight={600}
+    pl={3}
+    whiteSpace="nowrap"
+    flex={1}
+    {...props}
+  />
+);
+
+const StatValue = (props) => <x.div {...props} px={3} flex={1} />;
+
+const RepositoryStats = ({ buildCount, lastBuild, ...props }) => {
   return (
-    <Box>
-      <Box row mx={-3}>
-        <Box
-          col={{ xs: 1, md: 1 / 3 }}
-          px={3}
-          borderRight={1}
-          borderColor="light400"
-        >
-          <Stat>
-            <StatLabel>Total builds</StatLabel>
-            <StatValue>{pageInfo.totalCount}</StatValue>
-          </Stat>
-        </Box>
-        <Box
-          col={{ xs: 1, md: 1 / 3 }}
-          px={3}
-          borderRight={1}
-          borderColor="light400"
-        >
-          <Stat>
-            <StatLabel>
-              <FadeLink
-                forwardedAs={Link}
-                color="inherit"
-                to={`/${owner.login}/${repository.name}/builds/${latestBuild.number}`}
-              >
-                Latest build
-              </FadeLink>
-            </StatLabel>
-            <StatValue
-              data-tip={moment(latestBuild.createdAt).format(
-                "DD-MM-YYYY HH:MM"
-              )}
-            >
-              {moment(latestBuild.createdAt).fromNow()}
-            </StatValue>
-            <Tooltip />
-          </Stat>
-        </Box>
-        <Box col={{ xs: 1, md: 1 / 3 }} px={3} borderColor="light400">
-          <Stat>
-            <StatLabel>
-              <FadeLink
-                color="inherit"
-                forwardedAs={Link}
-                to={`/${owner.login}/${repository.name}/builds/${latestBuild.number}`}
-              >
-                Latest build
-              </FadeLink>{" "}
-              status
-            </StatLabel>
-            <StatValue color={buildColor}>
-              <StatusIcon
-                verticalAlign="text-bottom"
-                status={latestBuild.status}
-                mr={2}
-              />
-              {latestBuild.status}
-            </StatValue>
-          </Stat>
-        </Box>
-      </Box>
-    </Box>
+    <x.div {...props}>
+      <x.div
+        display="grid"
+        gridTemplateColumns={{ _: 1, md: 3 }}
+        divideX
+        divideColor="border"
+      >
+        <Stat>
+          <StatLabel>Build count</StatLabel>
+          <StatValue>{buildCount}</StatValue>
+        </Stat>
+        <Stat>
+          <StatLabel>Last build date</StatLabel>
+          <StatValue>{moment(lastBuild.updatedAt).fromNow()}</StatValue>
+        </Stat>
+        <Stat>
+          <StatLabel>Last build status</StatLabel>
+          <StatValue display="flex" gap={1}>
+            <StatusIcon
+              verticalAlign="text-bottom"
+              status={lastBuild.status}
+              mt={1}
+            />
+            {lastBuild.status}
+          </StatValue>
+        </Stat>
+      </x.div>
+    </x.div>
+  );
+};
+
+function ActiveRepositoryCard({ repository, url, ...props }) {
+  const {
+    pageInfo: { totalCount },
+    edges: [lastBuild],
+  } = repository.builds;
+
+  return (
+    <Card {...props}>
+      <CardHeader>
+        <CardTitle display="flex" alignItems="center" gap={2}>
+          <x.svg as={GoRepo} mt={1} />
+          <Link color="white" to={`${url}/builds`}>
+            {repository.name}
+          </Link>
+        </CardTitle>
+      </CardHeader>
+      <CardBody>
+        {!lastBuild ? (
+          <>
+            <CardText fontWeight={600} fontSize="md">
+              No Build found.
+            </CardText>
+            <CardText mt={1} fontWeight={400}>
+              <DocumentationLinkPhrase />
+            </CardText>
+          </>
+        ) : (
+          <RepositoryStats buildCount={totalCount} lastBuild={lastBuild} />
+        )}
+      </CardBody>
+    </Card>
   );
 }
 
-function PassiveRepositories({ title, repositories }) {
-  const owner = useOwner();
-  if (!repositories.length) return null;
+function InactiveRepositoryCard({ repository, url, ...props }) {
   return (
-    <>
-      <Text variant="h2">{title}</Text>
-      {repositories.map((repository) => (
-        <Box col={1} py={2} key={repository.id}>
-          <Card>
-            <CardBody p={2} display="flex" alignItems="center">
-              <Box as={GoRepo} color="darker" mr={2} />
-              <FadeLink
-                forwardedAs={Link}
-                color="darker"
-                to={`/${owner.login}/${repository.name}/builds`}
-              >
-                {repository.name}
-              </FadeLink>
-            </CardBody>
-          </Card>
-        </Box>
-      ))}
-    </>
+    <Card {...props}>
+      <CardHeader border={0}>
+        <CardTitle display="flex" alignItems="flex-start" gap={2}>
+          <x.svg as={GoRepo} mt={1} />
+          <Link color="secondary-text" to={`${url}/builds`}>
+            {repository.name}
+          </Link>
+        </CardTitle>
+        <TagButton
+          variant="neutral"
+          as={ReactRouterLink}
+          to={`${url}/settings`}
+        >
+          <x.svg as={GoGear} />
+          Settings
+        </TagButton>
+      </CardHeader>
+    </Card>
   );
 }
+
+function NoRepositoryCard() {
+  return (
+    <Card>
+      <CardHeader border={0}>
+        <CardTitle>No repository found</CardTitle>
+      </CardHeader>
+    </Card>
+  );
+}
+
+const getRepositoryUrl = (owner, repository) =>
+  `/${owner.login}/${repository.name}`;
 
 export function OwnerRepositories() {
-  const owner = useOwner();
+  const { owner } = useOwner();
+  const user = useUser();
+  if (!owner) return null;
+
   return (
-    <>
-      <Query
-        query={gql`
-          query OwnerRepositories($login: String!) {
-            owner(login: $login) {
-              id
-              repositories {
-                id
-                name
-                enabled
-                builds(first: 1, after: 0) {
-                  pageInfo {
-                    totalCount
-                  }
-                  edges {
-                    id
-                    createdAt
-                    status
-                    number
-                  }
-                }
-              }
-            }
-          }
-        `}
-        variables={{ login: owner.login }}
-        fetchPolicy="no-cache"
-      >
-        {({ owner: { repositories } }) => {
-          if (!repositories.length) {
-            return (
-              <Container my={4} textAlign="center">
-                No repository found for {owner.login}.
-              </Container>
-            );
-          }
-          const enabledRepositories = repositories.filter(
-            (repository) => repository.enabled
-          );
-          const unenabledRepositories = repositories.filter(
-            (repository) => !repository.enabled
-          );
-          return (
-            <Container my={4}>
-              <Box row my={-2} justifyContent="center">
-                {enabledRepositories.map((repository) => (
-                  <Box col={1} py={2} key={repository.id}>
-                    <Card>
-                      <CardHeader display="flex" alignItems="center">
-                        <Box as={GoRepo} color="darker" mr={2} />
-                        <FadeLink
-                          forwardedAs={Link}
-                          color="darker"
-                          to={`/${owner.login}/${repository.name}/builds`}
-                        >
-                          <CardTitle>{repository.name}</CardTitle>
-                        </FadeLink>
-                      </CardHeader>
-                      <CardBody>
-                        <RepositorySummary repository={repository} />
-                      </CardBody>
-                    </Card>
-                  </Box>
-                ))}
-                <PassiveRepositories
-                  title="Inactive repositories"
-                  repositories={unenabledRepositories}
-                />
-              </Box>
-            </Container>
-          );
-        }}
-      </Query>
-    </>
+    <Container>
+      <Helmet>
+        <title>Repositories • {owner.login}</title>
+      </Helmet>
+
+      <SidebarLayout>
+        <SidebarList>
+          <SidebarTitle>Repositories list</SidebarTitle>
+          <SidebarItem>
+            <SidebarItemLink href="#active-repositories">
+              Active
+            </SidebarItemLink>
+          </SidebarItem>
+          <SidebarItem>
+            <SidebarItemLink href="#inactive-repositories" exact>
+              Inactive
+            </SidebarItemLink>
+          </SidebarItem>
+        </SidebarList>
+
+        <SidebarLayout.PageTitle>
+          <PrimaryTitle>
+            {user.login === owner.login ? "Personal" : owner.name} repositories
+          </PrimaryTitle>
+        </SidebarLayout.PageTitle>
+
+        <SidebarLayout.PageContent>
+          <Query
+            query={OWNER_REPOSITORIES_QUERY}
+            variables={{ login: owner.login }}
+            fetchPolicy="no-cache"
+          >
+            {({ owner: { repositories } }) => {
+              const activeRepositories = repositories.filter(
+                (repository) => repository.enabled
+              );
+
+              const inactiveRepositories = repositories.filter(
+                (repository) => !repository.enabled
+              );
+
+              return (
+                <x.div display="flex" flexDirection="column" gap={3}>
+                  <SecondaryTitle id="active-repositories">
+                    Active repositories
+                  </SecondaryTitle>
+                  {activeRepositories.length === 0 ? (
+                    <NoRepositoryCard />
+                  ) : (
+                    activeRepositories.map((repository) => (
+                      <ActiveRepositoryCard
+                        key={repository.id}
+                        repository={repository}
+                        url={getRepositoryUrl(owner, repository)}
+                      />
+                    ))
+                  )}
+
+                  <SecondaryTitle id="inactive-repositories">
+                    Inactive repositories
+                  </SecondaryTitle>
+                  {inactiveRepositories.length === 0 ? (
+                    <NoRepositoryCard />
+                  ) : (
+                    inactiveRepositories.map((repository) => (
+                      <InactiveRepositoryCard
+                        key={repository.id}
+                        repository={repository}
+                        url={getRepositoryUrl(owner, repository)}
+                      />
+                    ))
+                  )}
+                </x.div>
+              );
+            }}
+          </Query>
+
+          <x.div mt={12}>
+            Don’t see your repo? Click here to{" "}
+            <Link
+              href={config.get("github.appUrl")}
+              target="_blank"
+              rel="noopener noreferrer"
+              fontWeight="normal"
+            >
+              manage access restrictions →
+            </Link>
+          </x.div>
+        </SidebarLayout.PageContent>
+      </SidebarLayout>
+    </Container>
   );
 }

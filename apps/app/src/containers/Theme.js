@@ -1,72 +1,37 @@
 import React from "react";
-import { theme as suiTheme } from "@smooth-ui/core-sc";
 import {
-  css,
+  defaultTheme,
   ThemeProvider,
-  ColorModeProvider,
-  rpxTransformers,
+  aliasColor,
 } from "@xstyled/styled-components";
 
-const theme = {
-  ...suiTheme,
-  useColorSchemeMediaQuery: false,
-  useCustomProperties: false,
-  initialColorModeName: "light",
-  defaultColorModeName: "dark",
-  space: {
-    ...suiTheme,
-    ...[0, 4, 8, 16, 24, 48, 96, 144, 192, 240],
-  },
+export const theme = {
+  ...defaultTheme,
   colors: {
-    ...suiTheme.colors,
-    gray900: "#242830",
-    gray800: "#2c323e",
-    gray700: "#424752",
-    gray600: "#8A94A7",
-    gray400: "#E7E9F3",
-    gray300: "#dce3f6",
-    gray200: "#f2f4fb",
-    gray100: "#FDFEFF",
-    primary: "#6344CE",
-    link: "#3291ff",
+    ...defaultTheme.colors,
+
+    ...aliasColor("primary", "violet"),
+    primary: defaultTheme.colors["violet-700"],
+
+    background: "black",
+    "highlight-background": defaultTheme.colors["gray-900-a80"],
+    "background-hover": defaultTheme.colors["gray-600-a30"],
+    "background-active": defaultTheme.colors["gray-700-a70"],
+    "background-focus": defaultTheme.colors["gray-800"],
+
+    border: defaultTheme.colors["gray-700-a80"],
+    "border-active": defaultTheme.colors["gray-300"],
+
+    link: defaultTheme.colors["blue-500"],
+    "primary-text": "white",
+    "secondary-text": defaultTheme.colors["gray-400"],
   },
   sizes: {
-    ...suiTheme.sizes,
+    ...defaultTheme.sizes,
     container: 1040,
-  },
-  transformers: {
-    ...rpxTransformers,
-  },
-  texts: {
-    headline: {
-      style: css`
-        max-width: 500; // Don't use more space than the title.
-        margin-bottom: 3;
-      `,
-    },
-    h1: {
-      defaultAs: "h1",
-      style: css`
-        font-size: 24;
-        font-weight: medium;
-        margin: 0 0 3;
-      `,
-    },
-    h2: {
-      defaultAs: "h2",
-      style: css`
-        font-size: 18;
-        font-weight: normal;
-        margin: 3 0;
-      `,
-    },
   },
 };
 
 export function ThemeInitializer({ children }) {
-  return (
-    <ThemeProvider theme={theme}>
-      <ColorModeProvider>{children}</ColorModeProvider>
-    </ThemeProvider>
-  );
+  return <ThemeProvider theme={theme}>{children}</ThemeProvider>;
 }

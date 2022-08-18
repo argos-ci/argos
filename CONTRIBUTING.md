@@ -85,7 +85,7 @@ Install [mkcert](https://github.com/FiloSottile/mkcert) and type the following c
 
 ```
 mkcert -install
-mkcert *.argos-ci.dev
+mkcert "*.argos-ci.dev"
 ```
 
 Two files should be generated at the root of the project.

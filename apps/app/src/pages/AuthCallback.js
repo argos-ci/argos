@@ -1,5 +1,5 @@
 import React from "react";
-import { useHistory, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import qs from "query-string";
 import axios from "axios";
 import { useAuth } from "../containers/Auth";
@@ -10,7 +10,7 @@ const api = axios.create({
 
 export function AuthCallback() {
   const location = useLocation();
-  const history = useHistory();
+  const navigate = useNavigate();
   const { code } = qs.parse(location.search);
   const { setToken } = useAuth();
   React.useEffect(() => {
@@ -18,12 +18,12 @@ export function AuthCallback() {
       .post("/auth/github", { code })
       .then((result) => {
         setToken(result.data.access_token);
-        history.push("/");
+        navigate("/");
       })
       .catch((error) => {
         console.error(error); // eslint-disable-line no-console
       });
-  }, [code, history, setToken]);
+  }, [code, navigate, setToken]);
 
   return null;
 }

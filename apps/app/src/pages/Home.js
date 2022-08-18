@@ -1,133 +1,273 @@
 /* eslint-disable react/no-unescaped-entities */
-import React from "react";
+import React, { useState } from "react";
 import { gql } from "graphql-tag";
-import { partition } from "lodash-es";
-import { Link } from "react-router-dom";
-import { Button } from "@smooth-ui/core-sc";
-import styled, { Box } from "@xstyled/styled-components";
-import { GoRepo } from "react-icons/go";
+import { Link as ReactRouterLink } from "react-router-dom";
+import { Group } from "ariakit/group";
+import { x } from "@xstyled/styled-components";
 import { Query } from "../containers/Apollo";
 import { useUser } from "../containers/User";
-import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { isUserSyncing } from "../modules/user";
 import config from "../config";
 import {
+  Button,
   Container,
+  Loader,
+  Table,
+  Thead,
+  Tr,
+  Th,
+  Tbody,
+  Td,
+  Link,
+  MenuButton,
+  useMenuState,
+  Menu,
+  MenuItem,
+  MenuIcon,
+  IconLink,
   Card,
   CardHeader,
   CardTitle,
   CardBody,
-  CardFooter,
-  FadeLink,
-  Text,
-} from "../components";
-import { Loader } from "../components/Loader";
+  CardText,
+} from "@argos-ci/app/src/components";
+import { Tag, TagButton } from "../components/Tag";
+import { FaCamera, FaEllipsisH, FaExternalLinkAlt } from "react-icons/fa";
+import { getVariantColor } from "../modules/utils";
+import { GoKey, GoGear } from "react-icons/go";
+import { OwnerAvatar } from "../containers/OwnerAvatar";
+import { OwnerRepositoriesFragment } from "../containers/OwnerContext";
 
-const RepositoryList = styled.ul`
-  margin: -1 0;
-  padding: 0;
+const OWNERS_REPOSITORIES_QUERY = gql`
+  query Owners {
+    owners {
+      ...OwnerRepositoriesFragment
+    }
+  }
+
+  ${OwnerRepositoriesFragment}
 `;
 
-const RepositoryItem = styled.li`
-  margin: 0;
-  padding: 1 0;
-  list-style-type: none;
-`;
-
-function OwnerHeader({ owner, active }) {
+function RepositoryNameCell({
+  owner,
+  repositoryName,
+  repositoryUrl,
+  ...props
+}) {
   return (
-    <Box display="flex" alignItems="center">
-      <OwnerAvatar
-        owner={owner}
-        mr={2}
-        width={active ? 30 : 20}
-        height={active ? 30 : 20}
-      />
-      <CardTitle color={active ? "darker" : "light500"}>
-        <FadeLink forwardedAs={Link} to={`/${owner.login}`}>
-          {owner.login}
-        </FadeLink>
-      </CardTitle>
-    </Box>
+    <Td color="secondary-text" {...props}>
+      <Link color="secondary-text" to={`/${owner.login}`}>
+        <OwnerAvatar
+          owner={owner}
+          size="sm"
+          display="inline-block"
+          mr={2}
+          mt={-0.5}
+        />
+        {owner.login}
+      </Link>{" "}
+      /{" "}
+      <Link color="white" fontWeight={600} to={`${repositoryUrl}/builds`}>
+        {repositoryName}
+      </Link>
+    </Td>
+  );
+}
+
+function ActionsMenuCell({ repositoryUrl }) {
+  const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
+  return (
+    <Td>
+      <TagButton as={MenuButton} state={menu}>
+        <x.svg as={FaEllipsisH} />
+      </TagButton>
+      <Menu aria-label="User settings" state={menu}>
+        <MenuItem
+          state={menu}
+          as={ReactRouterLink}
+          to={`${repositoryUrl}/setting`}
+        >
+          <MenuIcon as={GoKey} />
+          Get token
+        </MenuItem>
+        <MenuItem
+          state={menu}
+          as={ReactRouterLink}
+          to={`${repositoryUrl}/setting`}
+        >
+          <MenuIcon as={GoGear} />
+          Settings
+        </MenuItem>
+      </Menu>
+    </Td>
+  );
+}
+
+function BuildTagCell({ build, repositoryUrl, ...props }) {
+  if (!build) return <Td>-</Td>;
+
+  return (
+    <Td>
+      <TagButton
+        as={ReactRouterLink}
+        to={`${repositoryUrl}/builds/${build.number}`}
+        gap={2}
+        {...props}
+      >
+        {console.log(build)}
+        <x.svg
+          as={FaCamera}
+          color={getVariantColor(build.status)}
+          w={4}
+          h={4}
+        />
+        #{build.number.toLocaleString()}
+      </TagButton>
+    </Td>
+  );
+}
+
+function DateCell({ date }) {
+  if (!date) return <Td />;
+
+  return (
+    <Td fontSize="sm">
+      {new Date(date).toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "short",
+      })}
+    </Td>
+  );
+}
+
+function RepositoriesList({ repositories, ...props }) {
+  if (repositories.length === 0) {
+    return (
+      <Card mt={3}>
+        <CardHeader>
+          <CardTitle>No repository found</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <CardText fontSize="md" mb={3}>
+            Argos uses OAuth GitHub App.
+          </CardText>
+          <CardText fontSize="md">
+            Click on{" "}
+            <IconLink
+              href={config.get("github.appUrl")}
+              target="_blank"
+              rel="noopener noreferrer"
+              fontWeight="normal"
+              icon={FaExternalLinkAlt}
+            >
+              this link
+            </IconLink>
+            to manage the repositories’ access restrictions.
+          </CardText>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  return (
+    <Table {...props}>
+      <Thead>
+        <Tr>
+          <Th>Repository name</Th>
+          <Th width={120}>Last Build</Th>
+          <Th width={70}></Th>
+          <Th width={120}>Status</Th>
+          <Th width={80}>Actions</Th>
+        </Tr>
+      </Thead>
+      <Tbody>
+        {repositories.map(({ owner, ...repository }) => {
+          const repositoryUrl = `/${owner.login}/${repository.name}`;
+          const lastBuild = repository.builds?.edges?.[0];
+
+          return (
+            <Tr key={`${owner.login}-${repository.name}`}>
+              <RepositoryNameCell
+                owner={owner}
+                repositoryName={repository.name}
+                repositoryUrl={repositoryUrl}
+              />
+              <BuildTagCell build={lastBuild} repositoryUrl={repositoryUrl} />
+              <DateCell date={lastBuild?.updatedAt || repository.updatedAt} />
+              <Td>
+                <Tag color={repository.enabled ? "white" : "secondary-text"}>
+                  {repository.enabled ? "Active" : "Deactivated"}
+                </Tag>
+              </Td>
+              <ActionsMenuCell repositoryUrl={repositoryUrl} />
+            </Tr>
+          );
+        })}
+      </Tbody>
+    </Table>
   );
 }
 
 function Owners({ data: { owners } }) {
-  const [activeOwners, inactiveOwners] = partition(
-    owners,
-    (owner) => owner.repositories.length
+  const repositories = owners.flatMap((owner) =>
+    owner.repositories.map((repository) => ({ owner, ...repository }))
+  );
+
+  const activeRepositories = repositories.filter(({ enabled }) => enabled);
+
+  const [activeFilter, setActiveFilter] = useState(
+    activeRepositories.length !== 0
   );
 
   return (
-    <Container my={3}>
-      {activeOwners.length > 0 && (
-        <Box row mx={-2} mb={5} justifyContent="center">
-          {activeOwners.map((owner) => (
-            <Box key={owner.login} col={{ xs: 1, md: 1 / 3 }} p={2}>
-              <Card>
-                <CardHeader>
-                  <OwnerHeader owner={owner} active />
-                </CardHeader>
-                <CardBody>
-                  <RepositoryList>
-                    {owner.repositories.length === 0 && (
-                      <Box textAlign="center">
-                        <FadeLink
-                          forwardedAs={Link}
-                          color="darker"
-                          fontSize={13}
-                          to={`/${owner.login}`}
-                        >
-                          Setup a repository
-                        </FadeLink>
-                      </Box>
-                    )}
-                    {owner.repositories.map((repository) => (
-                      <RepositoryItem key={repository.id}>
-                        <FadeLink
-                          forwardedAs={Link}
-                          to={`/${owner.login}/${repository.name}/builds`}
-                          color="darker"
-                          fontWeight="medium"
-                          fontSize={16}
-                        >
-                          {repository.name}
-                        </FadeLink>
-                      </RepositoryItem>
-                    ))}
-                  </RepositoryList>
-                </CardBody>
-                <CardFooter>
-                  <Box display="flex" alignItems="center" fontSize={12}>
-                    <Box forwardedAs={GoRepo} mr={1} />
-                    {owner.repositories.length} active repositor
-                    {owner.repositories.length > 1 ? "ies" : "y"}
-                  </Box>
-                </CardFooter>
-              </Card>
-            </Box>
-          ))}
-        </Box>
-      )}
+    <Container>
+      <x.div
+        display="flex"
+        justifyContent="space-between"
+        alignItems="baseline"
+        gap={10}
+      >
+        <x.div my={3}>
+          Don’t see your repo?{" "}
+          <IconLink
+            href={config.get("github.appUrl")}
+            target="_blank"
+            rel="noopener noreferrer"
+            fontWeight="normal"
+            icon={FaExternalLinkAlt}
+          >
+            Manage access restrictions
+          </IconLink>
+          or{" "}
+          <Link onClick={() => window.location.reload()}>reload the page</Link>.
+        </x.div>
 
-      {inactiveOwners.length > 0 && (
-        <>
-          <Text variant="h2" textAlign="center">
-            Inactive owners
-          </Text>
-          <Box row m={-2}>
-            {inactiveOwners.map((owner) => (
-              <Box key={owner.login} col={1} p={2}>
-                <Card>
-                  <CardBody p={2}>
-                    <OwnerHeader owner={owner} active={false} />
-                  </CardBody>
-                </Card>
-              </Box>
-            ))}
-          </Box>
-        </>
-      )}
+        <x.div as={Group} display="flex">
+          <Button
+            borderRadius="md 0 0 md"
+            variant="primary"
+            py={2}
+            disabled={activeFilter}
+            onClick={() => setActiveFilter(true)}
+          >
+            Active only
+          </Button>
+          <Button
+            py={2}
+            borderRadius="0 md md 0"
+            variant="primary"
+            disabled={!activeFilter}
+            onClick={() => setActiveFilter(false)}
+          >
+            Display all
+          </Button>
+        </x.div>
+      </x.div>
+
+      <RepositoriesList
+        repositories={activeFilter ? activeRepositories : repositories}
+        mt={2}
+      />
     </Container>
   );
 }
@@ -141,6 +281,7 @@ const RedirectToWww = () => {
 
 export function Home() {
   const user = useUser();
+
   if (!user) {
     if (process.env.NODE_ENV !== "production") {
       return (
@@ -171,19 +312,7 @@ export function Home() {
           <Loader />
         </Container>
       }
-      query={gql`
-        query Owners {
-          owners {
-            name
-            login
-            type
-            repositories(enabled: true) {
-              id
-              name
-            }
-          }
-        }
-      `}
+      query={OWNERS_REPOSITORIES_QUERY}
     >
       {(data) => <Owners data={data} />}
     </Query>

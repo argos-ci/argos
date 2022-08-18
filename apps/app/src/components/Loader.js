@@ -1,9 +1,8 @@
 import React from "react";
-import { Box } from "@xstyled/styled-components";
+import { x } from "@xstyled/styled-components";
 
 export const Loader = (props) => (
-  <Box
-    forwardedAs="svg"
+  <x.svg
     width="2rem"
     height="2rem"
     viewBox="0 0 135 140"
@@ -100,5 +99,5 @@ export const Loader = (props) => (
         repeatCount="indefinite"
       />
     </rect>
-  </Box>
+  </x.svg>
 );

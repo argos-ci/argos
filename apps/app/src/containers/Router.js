@@ -1,5 +1,5 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useResolvedPath } from "react-router-dom";
 
 export function ScrollToTop({ children }) {
   const { pathname } = useLocation();
@@ -30,4 +30,16 @@ export function AbsoluteRedirect({ to }) {
     window.location = to;
   }, [to]);
   return null;
+}
+
+export function useIsMatchingTo({ to, exact }) {
+  let { pathname: locationPathname } = useLocation();
+  let { pathname: toPathname } = useResolvedPath(to);
+
+  return (
+    locationPathname === toPathname ||
+    (!exact &&
+      locationPathname.startsWith(toPathname) &&
+      locationPathname.charAt(toPathname.length) === "/")
+  );
 }

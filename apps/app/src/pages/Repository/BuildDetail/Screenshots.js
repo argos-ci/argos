@@ -1,20 +1,20 @@
 /* eslint-disable react/no-unescaped-entities */
 import React from "react";
-import styled, { Box } from "@xstyled/styled-components";
-import { Button } from "@smooth-ui/core-sc";
+import styled, { x } from "@xstyled/styled-components";
 import {
   useDisclosureState,
   Disclosure,
   DisclosureContent,
-} from "reakit/Disclosure";
+} from "ariakit/disclosure";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardBody,
   CardText,
-} from "../../../components";
-import { getStatusColor } from "../../../modules/build";
+  Button,
+} from "@argos-ci/app/src/components";
+import { getVariantColor } from "../../../modules/utils";
 
 const StyledImg = styled.img`
   width: 100%;
@@ -35,7 +35,7 @@ function ScreenshotDiffItem({
   const disclosure = useDisclosureState({ visible: status !== "success" });
 
   return (
-    <CardBody borderLeft={2} borderColor={getStatusColor(status)}>
+    <CardBody borderLeft={2} borderColor={getVariantColor(status)}>
       <CardText as="h4">
         <Disclosure as={Button} {...disclosure} mr={20}>
           {disclosure.visible ? "Hide" : "Show"}
@@ -45,8 +45,8 @@ function ScreenshotDiffItem({
       <DisclosureContent {...disclosure}>
         {() =>
           disclosure.visible && (
-            <Box row mx={-1}>
-              <Box col={1 / 3} px={1}>
+            <x.div row mx={-1}>
+              <x.div col={1 / 3} px={1}>
                 {baseScreenshot ? (
                   <a
                     href={baseScreenshot.url}
@@ -60,8 +60,8 @@ function ScreenshotDiffItem({
                     />
                   </a>
                 ) : null}
-              </Box>
-              <Box col={1 / 3} px={1}>
+              </x.div>
+              <x.div col={1 / 3} px={1}>
                 <a
                   href={compareScreenshot.url}
                   target="_blank"
@@ -73,8 +73,8 @@ function ScreenshotDiffItem({
                     src={compareScreenshot.url}
                   />
                 </a>
-              </Box>
-              <Box col={1 / 3} px={1}>
+              </x.div>
+              <x.div col={1 / 3} px={1}>
                 {url && (
                   <a
                     href={url}
@@ -85,8 +85,8 @@ function ScreenshotDiffItem({
                     <StyledImg alt="diff" src={url} />
                   </a>
                 )}
-              </Box>
-            </Box>
+              </x.div>
+            </x.div>
           )
         }
       </DisclosureContent>
@@ -108,8 +108,8 @@ export default function BuildDetailScreenshots({ build }) {
   );
 
   return (
-    <Box row m={-2}>
-      <Box col={1} p={2}>
+    <x.div row m={-2}>
+      <x.div col={1} p={2}>
         <Card>
           <CardHeader>
             <CardTitle>Screenshots</CardTitle>
@@ -124,7 +124,7 @@ export default function BuildDetailScreenshots({ build }) {
               )
           )}
         </Card>
-        <Box mt={{ xs: 3 }}>
+        <x.div mt={{ xs: 3 }}>
           <Button
             onClick={() => setShowPassingScreenshots(!showPassingScreenshots)}
           >
@@ -132,8 +132,8 @@ export default function BuildDetailScreenshots({ build }) {
               ? "Hide passing screenshots"
               : "Show passing screenshots"}
           </Button>
-        </Box>
-      </Box>
-    </Box>
+        </x.div>
+      </x.div>
+    </x.div>
   );
 }

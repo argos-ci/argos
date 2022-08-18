@@ -1,15 +1,16 @@
 import React from "react";
-import { Link, Route } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import styled, { css, up } from "@xstyled/styled-components";
+import { useIsMatchingTo } from "../containers/Router";
 
-export const TabList = styled.ul`
+export const TabList = styled.menu`
   padding: 0;
   margin: 0;
   margin-bottom: -1rpx;
   list-style-type: none;
   display: flex;
   font-weight: medium;
-  font-size: 14;
+  font-size: sm;
 `;
 
 export const TabItem = styled.li`
@@ -21,12 +22,12 @@ export const TabItem = styled.li`
   transition-property: border-color;
 
   &[aria-current="true"] {
-    border-color: darker;
+    border-color: white;
   }
 `;
 
-export const TabItemLink = styled.a`
-  color: darker;
+export const TabItemLink = styled(NavLink)`
+  color: white;
   text-decoration: none;
   padding: 2 3;
   display: block;
@@ -41,16 +42,14 @@ export const TabItemLink = styled.a`
   )}
 `;
 
-export function RouterTabItem({ children, exact, to }) {
+export function TabNavLink({ children, to, exact, ...props }) {
+  const isActive = useIsMatchingTo({ to, exact });
+
   return (
-    <Route exact={exact} path={to}>
-      {({ match }) => (
-        <TabItem aria-current={Boolean(match)}>
-          <TabItemLink as={Link} to={to}>
-            {children}
-          </TabItemLink>
-        </TabItem>
-      )}
-    </Route>
+    <TabItem aria-current={isActive}>
+      <TabItemLink as={Link} to={to} {...props}>
+        {children}
+      </TabItemLink>
+    </TabItem>
   );
 }
