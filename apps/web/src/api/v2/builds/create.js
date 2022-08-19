@@ -31,15 +31,19 @@ const validateRoute = validate({
       },
       branch: {
         type: "string",
+        nullable: true,
       },
       name: {
         type: "string",
+        nullable: true,
       },
       parallel: {
         type: "boolean",
+        nullable: true,
       },
       parallelNonce: {
         type: "string",
+        nullable: true,
       },
     },
   },

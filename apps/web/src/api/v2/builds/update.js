@@ -47,10 +47,12 @@ const validateRoute = validate({
       },
       parallel: {
         type: "boolean",
+        nullable: true,
       },
       parallelTotal: {
         type: "integer",
         minimum: 1,
+        nullable: true,
       },
     },
   },
