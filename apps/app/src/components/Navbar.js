@@ -1,5 +1,5 @@
 import styled from "@xstyled/styled-components";
-import { FadeLink } from "./Link";
+import { BaseLink } from "./Link";
 
 export const Navbar = styled.nav`
   padding: 5 3 4;
@@ -9,7 +9,7 @@ export const Navbar = styled.nav`
   align-items: center;
 `;
 
-export const NavbarBrandLink = styled(FadeLink)`
+export const NavbarBrandLink = styled(BaseLink)`
   flex: 1 0;
 `;
 

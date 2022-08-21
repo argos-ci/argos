@@ -1,7 +1,7 @@
 import React from "react";
 import styled, { css, up } from "@xstyled/styled-components";
 import { Container } from "./Container";
-import { FadeLink } from "./Link";
+import { BaseLink } from "./Link";
 
 export const Footer = styled.div`
   background-color: highlight-background;
@@ -39,5 +39,5 @@ export const FooterSecondary = styled.div`
   margin: 0 -2;
 `;
 export function FooterLink(props) {
-  return <FadeLink mx={2} color="white" {...props} />;
+  return <BaseLink mx={2} color="white" {...props} />;
 }

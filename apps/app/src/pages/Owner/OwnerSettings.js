@@ -13,7 +13,7 @@ import { GeneralSettings } from "./GeneralSettings";
 import { PermissionsSettings } from "./PermissionsSettings";
 import { hasWritePermission } from "../../modules/permissions";
 import { useOwner } from "../../containers/OwnerContext";
-import { OwnerNotFound, OwnerTabs } from ".";
+import { OwnerTabs } from ".";
 
 function SettingsSidebar({ owner }) {
   return (
@@ -33,7 +33,7 @@ function SettingsSidebar({ owner }) {
 
 export function OwnerSettings() {
   const { owner } = useOwner();
-  if (!owner) return <OwnerNotFound />;
+  if (!owner) return <NotFound />;
 
   return (
     <Container>

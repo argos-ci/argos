@@ -114,6 +114,7 @@ export default function BuildDetailScreenshots({ build }) {
           <CardHeader>
             <CardTitle>Screenshots</CardTitle>
           </CardHeader>
+
           {screenshotDiffs.map(
             (screenshotDiff, index) =>
               (showPassingScreenshots || screenshotDiff.score !== 0) && (
@@ -124,6 +125,7 @@ export default function BuildDetailScreenshots({ build }) {
               )
           )}
         </Card>
+
         <x.div mt={{ _: 3 }}>
           <Button
             onClick={() => setShowPassingScreenshots(!showPassingScreenshots)}

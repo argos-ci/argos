@@ -4,8 +4,8 @@ import styled, { css, system, th } from "@xstyled/styled-components";
 import { getVariantColor } from "../modules/utils";
 
 const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
-  const bgColor = th.color(`${$tint}-800`);
-  const hoverBgColor = th.color(`${$tint}-500`);
+  const bgColor = th.color(`${$tint}-800-a80`);
+  const hoverBgColor = th.color(`${$tint}-600-a20`);
 
   return css`
     display: flex;
