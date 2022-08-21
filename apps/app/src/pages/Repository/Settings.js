@@ -20,6 +20,12 @@ import {
   Toast,
   useToast,
   DocumentationLinkPhrase,
+  PrimaryTitle,
+  SidebarLayout,
+  SidebarList,
+  SidebarTitle,
+  SidebarItem,
+  SidebarItemLink,
 } from "@argos-ci/app/src/components";
 import {
   useRepository,
@@ -42,7 +48,7 @@ function TokenCard({ repository }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Argos Token</CardTitle>
+        <CardTitle id="argos-token">Argos Token</CardTitle>
       </CardHeader>
       <CardBody>
         <CardText fontSize="md">
@@ -106,12 +112,10 @@ function UpdateBranchForm({ repository }) {
 }
 
 function BranchUpdateCard({ repository }) {
-  console.log(repository.baselineBranch);
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Reference branch</CardTitle>
+        <CardTitle id="reference-branch">Reference branch</CardTitle>
       </CardHeader>
       <CardBody>
         <CardText fontSize="md">
@@ -129,7 +133,7 @@ function EnableRepositoryCard({ repository }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
+        <CardTitle id="enable-repository">
           {repository.enabled ? "Deactivate" : "Activate"} Repository
         </CardTitle>
       </CardHeader>
@@ -161,6 +165,32 @@ function EnableRepositoryCard({ repository }) {
   );
 }
 
+function SettingsSidebar({ repository }) {
+  return (
+    <SidebarList>
+      <SidebarTitle>Repository settings</SidebarTitle>
+      {repository.enabled ? (
+        <>
+          <SidebarItem>
+            <SidebarItemLink href="#argos-token">Argos Token</SidebarItemLink>
+          </SidebarItem>
+
+          <SidebarItem>
+            <SidebarItemLink href="#reference-branch">
+              Reference branch
+            </SidebarItemLink>
+          </SidebarItem>
+        </>
+      ) : null}
+      <SidebarItem>
+        <SidebarItemLink href="#enable-repository">
+          Enable repository
+        </SidebarItemLink>
+      </SidebarItem>
+    </SidebarList>
+  );
+}
+
 export function RepositorySettings() {
   const { repository } = useRepository();
 
@@ -169,15 +199,26 @@ export function RepositorySettings() {
       <Helmet>
         <title>Settings</title>
       </Helmet>
-      <x.div display="flex" rowGap={4} flexDirection="column">
-        {repository.enabled && (
-          <>
-            <TokenCard repository={repository} />
-            <BranchUpdateCard repository={repository} />
-          </>
-        )}
-        <EnableRepositoryCard repository={repository} />
-      </x.div>
+
+      <SidebarLayout>
+        <SettingsSidebar repository={repository} />
+
+        <SidebarLayout.PageTitle>
+          <PrimaryTitle>Repository settings</PrimaryTitle>
+        </SidebarLayout.PageTitle>
+
+        <SidebarLayout.PageContent>
+          <x.div display="flex" rowGap={4} flexDirection="column">
+            {repository.enabled && (
+              <>
+                <TokenCard repository={repository} />
+                <BranchUpdateCard repository={repository} />
+              </>
+            )}
+            <EnableRepositoryCard repository={repository} />
+          </x.div>
+        </SidebarLayout.PageContent>
+      </SidebarLayout>
     </Container>
   );
 }

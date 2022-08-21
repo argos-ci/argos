@@ -16,7 +16,7 @@ export function FooterBody(props) {
     <Container
       p={3}
       display="flex"
-      flexDirection={{ xs: "column", md: "row" }}
+      flexDirection={{ _: "column", md: "row" }}
       justifyContent="space-between"
       alignItems="center"
       {...props}

@@ -1,6 +1,6 @@
 import React from "react";
 import { gql } from "graphql-tag";
-import { Link as ReactRouterLink, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
 import { GoRepo } from "react-icons/go";
 import {
@@ -17,6 +17,7 @@ import {
   MenuSeparator,
   MenuText,
   Link,
+  BaseLink,
 } from "@argos-ci/app/src/components";
 import { Query, useQuery } from "./Apollo";
 import { useRepository, RepositoryContextFragment } from "./RepositoryContext";
@@ -60,7 +61,7 @@ export function RepositorySelect({ ...props }) {
 
         return (
           <>
-            <MenuButton state={menu} px={0} py={2} {...props}>
+            <MenuButton state={menu} px={0} pt={2} {...props}>
               <MenuButtonArrow />
             </MenuButton>
 
@@ -72,7 +73,7 @@ export function RepositorySelect({ ...props }) {
                 <MenuItem
                   key={repositoryLogin}
                   state={menu}
-                  as={ReactRouterLink}
+                  as={BaseLink}
                   to={`/${repositoryLogin}`}
                   minWidth="200px"
                 >
@@ -128,9 +129,9 @@ export function RepositoryBreadcrumbItem() {
         >
           <x.svg
             as={GoRepo}
-            ml={1}
-            width={{ xs: 20, md: 25 }}
-            height={{ xs: 20, md: 25 }}
+            mt={1}
+            width={{ _: 20, md: 25 }}
+            height={{ _: 20, md: 25 }}
           />
           {repository.name}
         </BreadcrumbLink>

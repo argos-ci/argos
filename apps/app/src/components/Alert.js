@@ -1,6 +1,7 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
 import { getVariantColor } from "../modules/utils";
+import { Loader } from "./Loader";
 
 export const Alert = React.forwardRef(
   ({ children, severity = "neutral", ...props }, ref) => {
@@ -26,3 +27,14 @@ export const Alert = React.forwardRef(
     );
   }
 );
+
+export function LoadingAlert({ children, ...props }) {
+  return (
+    <Alert w="fit-content" mx="auto" {...props}>
+      <x.div display="flex" gap={2} alignItems="center" w="fit-content">
+        {children || "Argos is fetching data..."}
+        <Loader />
+      </x.div>
+    </Alert>
+  );
+}

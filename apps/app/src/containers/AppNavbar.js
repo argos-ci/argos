@@ -37,7 +37,7 @@ export function HeaderTeleporter({ children }) {
   return <HeaderBodyTeleporter.Source>{children}</HeaderBodyTeleporter.Source>;
 }
 
-function UserMenu({ user }) {
+function UserMenu({ user, ...props }) {
   const logout = useLogout();
   const menu = useMenuState({
     placement: "bottom-end",
@@ -45,7 +45,7 @@ function UserMenu({ user }) {
   });
 
   return (
-    <>
+    <x.div {...props}>
       <MenuButton state={menu}>
         <OwnerAvatar owner={user} />
       </MenuButton>
@@ -77,7 +77,7 @@ function UserMenu({ user }) {
           Logout
         </MenuItem>
       </Menu>
-    </>
+    </x.div>
   );
 }
 
@@ -94,12 +94,12 @@ export function AppNavbar() {
         </NavbarBrandLink>
         <NavbarSecondary>
           {user ? (
-            <UserMenu user={user} />
+            <UserMenu user={user} mt={-1} />
           ) : (
             <Button
               as="a"
               href={config.get("github.loginUrl")}
-              variant="blue-gray"
+              variant="neutral"
               gap={2}
             >
               <x.svg as={FaGithub} />

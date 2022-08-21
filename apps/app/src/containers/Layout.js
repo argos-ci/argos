@@ -18,7 +18,7 @@ export const Layout = (props) => {
         <Outlet />
       </x.main>
 
-      <x.footer flex="0 0 auto" mt={5}>
+      <x.footer flex="0 0 auto" mt={16}>
         <AppFooter />
       </x.footer>
     </x.div>

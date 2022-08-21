@@ -1,8 +1,8 @@
 import React from "react";
 import { gql } from "graphql-tag";
-import { Link as ReactRouterLink } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
 import { GoGear, GoRepo } from "react-icons/go";
+import { FaRegImages } from "react-icons/fa";
 import moment from "moment";
 import { Query } from "../../containers/Apollo";
 import { StatusIcon } from "../../containers/StatusIcon";
@@ -27,10 +27,11 @@ import {
   CardText,
   SidebarLayout,
   DocumentationLinkPhrase,
+  BaseLink,
 } from "@argos-ci/app/src/components";
 import { useUser } from "../../containers/User";
-import { Helmet } from "react-helmet";
 import config from "../../config";
+import { getPossessiveForm } from "../../modules/utils";
 
 const OWNER_REPOSITORIES_QUERY = gql`
   query OwnerRepositories($login: String!) {
@@ -113,6 +114,11 @@ function ActiveRepositoryCard({ repository, url, ...props }) {
             {repository.name}
           </Link>
         </CardTitle>
+
+        <TagButton variant="neutral" as={BaseLink} to={`${url}/builds`}>
+          <x.svg as={FaRegImages} />
+          Builds
+        </TagButton>
       </CardHeader>
       <CardBody>
         {!lastBuild ? (
@@ -142,11 +148,7 @@ function InactiveRepositoryCard({ repository, url, ...props }) {
             {repository.name}
           </Link>
         </CardTitle>
-        <TagButton
-          variant="neutral"
-          as={ReactRouterLink}
-          to={`${url}/settings`}
-        >
+        <TagButton variant="neutral" as={BaseLink} to={`${url}/settings`}>
           <x.svg as={GoGear} />
           Settings
         </TagButton>
@@ -175,13 +177,9 @@ export function OwnerRepositories() {
 
   return (
     <Container>
-      <Helmet>
-        <title>Repositories • {owner.login}</title>
-      </Helmet>
-
       <SidebarLayout>
         <SidebarList>
-          <SidebarTitle>Repositories list</SidebarTitle>
+          <SidebarTitle>Organization repositories</SidebarTitle>
           <SidebarItem>
             <SidebarItemLink href="#active-repositories">
               Active
@@ -196,7 +194,10 @@ export function OwnerRepositories() {
 
         <SidebarLayout.PageTitle>
           <PrimaryTitle>
-            {user.login === owner.login ? "Personal" : owner.name} repositories
+            {user.login === owner.login
+              ? "Personal"
+              : getPossessiveForm(owner.name)}{" "}
+            repositories
           </PrimaryTitle>
         </SidebarLayout.PageTitle>
 
@@ -216,42 +217,48 @@ export function OwnerRepositories() {
               );
 
               return (
-                <x.div display="flex" flexDirection="column" gap={3}>
+                <x.div display="flex" flexDirection="column">
                   <SecondaryTitle id="active-repositories">
                     Active repositories
                   </SecondaryTitle>
-                  {activeRepositories.length === 0 ? (
-                    <NoRepositoryCard />
-                  ) : (
-                    activeRepositories.map((repository) => (
-                      <ActiveRepositoryCard
-                        key={repository.id}
-                        repository={repository}
-                        url={getRepositoryUrl(owner, repository)}
-                      />
-                    ))
-                  )}
 
-                  <SecondaryTitle id="inactive-repositories">
+                  <x.div display="flex" flexDirection="column" gap={4}>
+                    {activeRepositories.length === 0 ? (
+                      <NoRepositoryCard />
+                    ) : (
+                      activeRepositories.map((repository) => (
+                        <ActiveRepositoryCard
+                          key={repository.id}
+                          repository={repository}
+                          url={getRepositoryUrl(owner, repository)}
+                        />
+                      ))
+                    )}
+                  </x.div>
+
+                  <SecondaryTitle id="inactive-repositories" mt={8}>
                     Inactive repositories
                   </SecondaryTitle>
-                  {inactiveRepositories.length === 0 ? (
-                    <NoRepositoryCard />
-                  ) : (
-                    inactiveRepositories.map((repository) => (
-                      <InactiveRepositoryCard
-                        key={repository.id}
-                        repository={repository}
-                        url={getRepositoryUrl(owner, repository)}
-                      />
-                    ))
-                  )}
+
+                  <x.div display="flex" flexDirection="column" gap={3}>
+                    {inactiveRepositories.length === 0 ? (
+                      <NoRepositoryCard />
+                    ) : (
+                      inactiveRepositories.map((repository) => (
+                        <InactiveRepositoryCard
+                          key={repository.id}
+                          repository={repository}
+                          url={getRepositoryUrl(owner, repository)}
+                        />
+                      ))
+                    )}
+                  </x.div>
                 </x.div>
               );
             }}
           </Query>
 
-          <x.div mt={12}>
+          <x.div mt={14}>
             Don’t see your repo? Click here to{" "}
             <Link
               href={config.get("github.appUrl")}

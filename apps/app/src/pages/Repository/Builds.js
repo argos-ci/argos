@@ -1,28 +1,30 @@
 /* eslint-disable react/no-unescaped-entities */
 import React from "react";
-import { Helmet } from "react-helmet";
 import { x } from "@xstyled/styled-components";
-import { Link } from "react-router-dom";
+import { useInView } from "react-cool-inview";
 import { FaRegClock } from "react-icons/fa";
-import { GoGitCommit } from "react-icons/go";
+import { GoGitBranch, GoGitCommit } from "react-icons/go";
 import moment from "moment";
 import { gql } from "graphql-tag";
-import { getVariantColor } from "../../modules/utils";
+import { getPossessiveForm, getVariantColor } from "../../modules/utils";
 import {
   Container,
-  Card,
-  CardBody,
-  FadeLink,
-  Loader,
   Button,
-  Tooltip,
+  LoadingAlert,
+  Thead,
+  Th,
+  Table,
+  Tbody,
+  Td,
+  Tr,
+  BaseLink,
+  PrimaryTitle,
 } from "@argos-ci/app/src/components";
-import { StatusIcon } from "../../containers/StatusIcon";
 import { useRepository } from "../../containers/RepositoryContext";
 import { useQuery } from "../../containers/Apollo";
 import { GettingStarted } from "./GettingStarted";
 
-const REPOSITORY_BUILDS = gql`
+const REPOSITORY_BUILDS_QUERY = gql`
   query RepositoryBuilds($ownerLogin: String!, $name: String!, $after: Int!) {
     repository(ownerLogin: $ownerLogin, repositoryName: $name) {
       id
@@ -59,71 +61,40 @@ const REPOSITORY_BUILDS = gql`
   }
 `;
 
-function BuildCard({ repository, build, ...props }) {
-  const { status } = build;
-  const buildColor = getVariantColor(status);
+const TdLink = (props) => (
+  <x.a
+    as={BaseLink}
+    display="flex"
+    color="white"
+    gap={2}
+    py={4}
+    px={2}
+    borderRadius="md"
+    alignItems="center"
+    backgroundColor={{ hover: "background-hover" }}
+    border={1}
+    borderColor={{ _: "background", hover: "background-hover" }}
+    {...props}
+  />
+);
 
-  return (
-    <Card borderLeft={2} borderColor={buildColor} {...props}>
-      <CardBody p={2} fontSize="sm">
-        <x.div row>
-          <x.div col={{ xs: 2 / 6, md: 1 / 6 }}>
-            <FadeLink
-              as={Link}
-              color={buildColor}
-              to={`/${repository.owner.login}/${repository.name}/builds/${build.number}`}
-              display="flex"
-              alignItems="center"
-            >
-              <StatusIcon status={status} mr={2} />
-              {build.compareScreenshotBucket.branch}
-            </FadeLink>
-          </x.div>
-          <x.div col={{ xs: 2 / 6, md: 4 / 6 }}>
-            <div>
-              <FadeLink
-                as={Link}
-                color={buildColor}
-                to={`/${repository.owner.login}/${repository.name}/builds/${build.number}`}
-              >
-                #{build.number} {status}
-              </FadeLink>
-            </div>
-            <div>
-              <FadeLink
-                target="_blank"
-                rel="noopener noreferer"
-                href={`https://github.com/${repository.owner.login}/${repository.name}/commit/${build.compareScreenshotBucket.commit}`}
-                color="white"
-                display="inline-flex"
-                alignItems="center"
-              >
-                <x.div as={GoGitCommit} mr={2} />
-                {build.compareScreenshotBucket.commit.slice(0, 7)}
-              </FadeLink>
-            </div>
-          </x.div>
-          <x.div
-            col={{ xs: 2 / 6, md: 1 / 6 }}
-            display="flex"
-            alignItems="center"
-          >
-            <x.div
-              data-tip={moment(build.createdAt).format("DD-MM-YYYY HH:MM")}
-            >
-              <x.svg as={FaRegClock} mr={2} />
-              {moment(build.createdAt).fromNow()}
-            </x.div>
-            <Tooltip />
-          </x.div>
-        </x.div>
-      </CardBody>
-    </Card>
-  );
-}
+const EndOfList = (props) => (
+  <x.div
+    py={1}
+    w={250}
+    mx="auto"
+    borderTop={1}
+    textAlign="center"
+    mt={3}
+    color="secondary-text"
+    {...props}
+  >
+    End of list
+  </x.div>
+);
 
 function BuildsList({ repository }) {
-  const { loading, data, fetchMore } = useQuery(REPOSITORY_BUILDS, {
+  const { loading, data, fetchMore } = useQuery(REPOSITORY_BUILDS_QUERY, {
     variables: {
       ownerLogin: repository.owner.login,
       name: repository.name,
@@ -157,13 +128,21 @@ function BuildsList({ repository }) {
     });
   }
 
-  if (loading) {
+  const { observe } = useInView({
+    rootMargin: "50px 0px",
+    onEnter: ({ unobserve }) => {
+      unobserve();
+      loadNextPage();
+    },
+  });
+
+  if (loading)
     return (
-      <Container my={4} textAlign="center">
-        <Loader />
-      </Container>
+      <LoadingAlert>
+        Argos fetch <x.span fontWeight={700}>{repository.name}</x.span> builds.
+        It should not take long.
+      </LoadingAlert>
     );
-  }
 
   const {
     repository: {
@@ -176,34 +155,82 @@ function BuildsList({ repository }) {
   }
 
   return (
-    <Container my={4}>
-      {builds.map((build) => {
-        return (
-          <x.div key={build.id} col={1} py={2}>
-            <BuildCard repository={repository} build={build} />
-          </x.div>
-        );
-      })}
-      {pageInfo.hasNextPage && !moreLoading ? (
-        <Button
-          mt={3}
-          mx="auto"
-          variant="gray800"
-          textAlign="center"
-          display="block"
-          width={200}
-          fontSize="sm"
-          onClick={loadNextPage}
-        >
+    <>
+      <Table>
+        <Thead>
+          <Tr>
+            <Th>
+              <x.div ml={5}>Branch</x.div>
+            </Th>
+            <Th width={140}>Build</Th>
+            <Th width={130}>Commit</Th>
+            <Th width={150}>Date</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {builds.map((build, buildIndex) => {
+            const statusColor = getVariantColor(build.status);
+
+            return (
+              <tr
+                key={build.id}
+                ref={buildIndex === builds.length - 1 ? observe : null}
+              >
+                <Td py={2}>
+                  <TdLink
+                    borderRadius="0 md md 0"
+                    borderLeft={1}
+                    borderLeftColor={{ _: statusColor, hover: statusColor }}
+                    px={4}
+                    to={`${build.number}`}
+                  >
+                    <x.svg as={GoGitBranch} w={6} h={6} />
+                    {build.compareScreenshotBucket.branch}
+                  </TdLink>
+                </Td>
+                <Td>
+                  <TdLink to={`${build.number}`} color={statusColor}>
+                    #{build.number} {build.status}
+                  </TdLink>
+                </Td>
+                <Td>
+                  <TdLink
+                    color={{ _: "secondary-text", hover: "white" }}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    href={`https://github.com/${repository.owner.login}/${repository.name}/commit/${build.compareScreenshotBucket.commit}`}
+                  >
+                    <x.svg as={GoGitCommit} />
+                    {build.compareScreenshotBucket.commit.slice(0, 7)}
+                  </TdLink>
+                </Td>
+
+                <Td color="secondary-text">
+                  <x.div display="flex" gap={2} alignItems="center">
+                    <x.svg as={FaRegClock} />
+                    {moment(build.createdAt).fromNow()}
+                  </x.div>
+                </Td>
+              </tr>
+            );
+          })}
+        </Tbody>
+      </Table>
+
+      {pageInfo.hasNextPage && !moreLoading && (
+        <Button mt={3} mx="auto" onClick={loadNextPage}>
           Load More
         </Button>
-      ) : null}
-      {moreLoading && (
-        <x.div my={3} textAlign="center">
-          <Loader />
-        </x.div>
       )}
-    </Container>
+
+      {moreLoading && (
+        <LoadingAlert py={1} mt={4} severity="neutral">
+          Loading previous build
+        </LoadingAlert>
+      )}
+
+      {!pageInfo.hasNextPage && <EndOfList />}
+    </>
   );
 }
 
@@ -211,11 +238,9 @@ export function RepositoryBuilds() {
   const { repository } = useRepository();
 
   return (
-    <>
-      <Helmet>
-        <title>Builds</title>
-      </Helmet>
+    <Container>
+      <PrimaryTitle>{getPossessiveForm(repository.name)} Builds</PrimaryTitle>
       <BuildsList repository={repository} />
-    </>
+    </Container>
   );
 }

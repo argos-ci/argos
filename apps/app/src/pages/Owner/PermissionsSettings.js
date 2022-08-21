@@ -9,12 +9,17 @@ import {
   SidebarLayout,
 } from "@argos-ci/app/src/components";
 import { FaExternalLinkAlt } from "react-icons/fa";
+import { useOwner } from "../../containers/OwnerContext";
+import { getPossessiveForm } from "../../modules/utils";
 
 export function PermissionsSettings() {
+  const { owner } = useOwner();
   return (
     <>
       <SidebarLayout.PageTitle>
-        <PrimaryTitle>Repositories Permissions</PrimaryTitle>
+        <PrimaryTitle>
+          {getPossessiveForm(owner.name)} Repositories Permissions
+        </PrimaryTitle>
       </SidebarLayout.PageTitle>
 
       <SidebarLayout.PageContent>

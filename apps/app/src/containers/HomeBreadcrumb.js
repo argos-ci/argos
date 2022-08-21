@@ -10,7 +10,7 @@ export function HomeBreadcrumbItem() {
   return (
     <BreadcrumbItem>
       <BreadcrumbLink to={`/`}>
-        <x.svg as={GoHome} height={{ xs: 20, md: 25 }} />
+        <x.svg as={GoHome} height={{ _: 20, md: 25 }} />
         {match ? "Home" : null}
       </BreadcrumbLink>
     </BreadcrumbItem>

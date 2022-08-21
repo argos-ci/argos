@@ -100,6 +100,7 @@ export const resolvers = {
         .where({ repositoryId: repository.id })
         .whereNot({ number: 0 })
         .orderBy("createdAt", "desc")
+        .orderBy("number", "desc")
         .range(args.after, args.after + args.first - 1);
 
       const hasNextPage = args.after + args.first < result.total;
