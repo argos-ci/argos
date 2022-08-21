@@ -56,9 +56,10 @@ export function Owner() {
   return (
     <>
       <Helmet
-        titleTemplate={`%s - ${owner.login}`}
+        titleTemplate={`%s • ${owner.login}`}
         defaultTitle={owner.login}
       />
+
       <OwnerTabs owner={owner} />
 
       <OwnerRepositories />

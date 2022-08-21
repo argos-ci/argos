@@ -15,6 +15,7 @@ import {
 } from "@argos-ci/app/src/components";
 import config from "../../config";
 import { useOwner } from "../../containers/OwnerContext";
+import { getPossessiveForm } from "../../modules/utils";
 
 const Feature = (props) => (
   <x.li display="flex" alignItems="center" gap={2} {...props} />
@@ -134,14 +135,16 @@ export function GeneralSettings() {
   return (
     <>
       <SidebarLayout.PageTitle>
-        <PrimaryTitle>General Settings</PrimaryTitle>
+        <PrimaryTitle>
+          {getPossessiveForm(owner.name)} General Settings
+        </PrimaryTitle>
       </SidebarLayout.PageTitle>
 
       <SidebarLayout.PageContent>
         <x.div
           display="flex"
-          flexDirection={{ xs: "column", md: "row" }}
-          alignItems={{ xs: "stretch", md: "flex-start" }}
+          flexDirection={{ _: "column", md: "row" }}
+          alignItems={{ _: "stretch", md: "flex-start" }}
           gap={4}
         >
           <PlanCard

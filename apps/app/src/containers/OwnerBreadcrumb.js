@@ -1,8 +1,9 @@
 import React from "react";
 import { gql } from "graphql-tag";
-import { Link as ReactRouterLink, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { FaExternalLinkAlt } from "react-icons/fa";
 import {
+  BaseLink,
   BreadcrumbItem,
   BreadcrumbItemMenu,
   BreadcrumbLink,
@@ -69,11 +70,7 @@ function OwnerSelect(props) {
               <MenuSeparator />
 
               {user.login !== ownerLogin && (
-                <MenuItem
-                  state={menu}
-                  as={ReactRouterLink}
-                  to={`/${user.login}`}
-                >
+                <MenuItem state={menu} as={BaseLink} to={`/${user.login}`}>
                   <OwnerAvatar owner={user} size="sm" />
                   {user.login}
                 </MenuItem>
@@ -83,7 +80,7 @@ function OwnerSelect(props) {
                 <MenuItem
                   key={owner.login}
                   state={menu}
-                  as={ReactRouterLink}
+                  as={BaseLink}
                   to={`/${owner.login}`}
                 >
                   <OwnerAvatar owner={owner} size="sm" />

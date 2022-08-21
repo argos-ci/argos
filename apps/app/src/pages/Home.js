@@ -1,7 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 import React, { useState } from "react";
 import { gql } from "graphql-tag";
-import { Link as ReactRouterLink } from "react-router-dom";
 import { Group } from "ariakit/group";
 import { x } from "@xstyled/styled-components";
 import { Query } from "../containers/Apollo";
@@ -9,34 +8,39 @@ import { useUser } from "../containers/User";
 import { isUserSyncing } from "../modules/user";
 import config from "../config";
 import {
+  BaseLink,
   Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardText,
+  CardTitle,
   Container,
+  IconLink,
+  Link,
   Loader,
+  Menu,
+  MenuButton,
+  MenuIcon,
+  MenuItem,
+  MenuSeparator,
+  MenuTitle,
+  PrimaryTitle,
   Table,
-  Thead,
-  Tr,
-  Th,
   Tbody,
   Td,
-  Link,
-  MenuButton,
+  Th,
+  Thead,
+  Tr,
   useMenuState,
-  Menu,
-  MenuItem,
-  MenuIcon,
-  IconLink,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
-  CardText,
 } from "@argos-ci/app/src/components";
 import { Tag, TagButton } from "../components/Tag";
 import { FaCamera, FaEllipsisH, FaExternalLinkAlt } from "react-icons/fa";
 import { getVariantColor } from "../modules/utils";
-import { GoKey, GoGear } from "react-icons/go";
+import { GoKey, GoGear, GoLock } from "react-icons/go";
 import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { OwnerRepositoriesFragment } from "../containers/OwnerContext";
+import { hasWritePermission } from "../modules/permissions";
 
 const OWNERS_REPOSITORIES_QUERY = gql`
   query Owners {
@@ -74,27 +78,36 @@ function RepositoryNameCell({
   );
 }
 
-function ActionsMenuCell({ repositoryUrl }) {
+function ActionsMenuCell({ repository, repositoryUrl }) {
   const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
+  console.log({ repository });
+
+  if (!hasWritePermission(repository))
+    return (
+      <Td>
+        <Tag display="block" py={1} color="text-secondary">
+          <x.svg as={GoLock} />
+        </Tag>
+      </Td>
+    );
+
   return (
     <Td>
       <TagButton as={MenuButton} state={menu}>
         <x.svg as={FaEllipsisH} />
       </TagButton>
       <Menu aria-label="User settings" state={menu}>
+        <MenuTitle>Repositories actions</MenuTitle>
+        <MenuSeparator />
         <MenuItem
           state={menu}
-          as={ReactRouterLink}
-          to={`${repositoryUrl}/setting`}
+          as={BaseLink}
+          to={`${repositoryUrl}/settings#argos-token`}
         >
           <MenuIcon as={GoKey} />
           Get token
         </MenuItem>
-        <MenuItem
-          state={menu}
-          as={ReactRouterLink}
-          to={`${repositoryUrl}/setting`}
-        >
+        <MenuItem state={menu} as={BaseLink} to={`${repositoryUrl}/settings`}>
           <MenuIcon as={GoGear} />
           Settings
         </MenuItem>
@@ -109,12 +122,11 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
   return (
     <Td>
       <TagButton
-        as={ReactRouterLink}
+        as={BaseLink}
         to={`${repositoryUrl}/builds/${build.number}`}
         gap={2}
         {...props}
       >
-        {console.log(build)}
         <x.svg
           as={FaCamera}
           color={getVariantColor(build.status)}
@@ -199,7 +211,10 @@ function RepositoriesList({ repositories, ...props }) {
                   {repository.enabled ? "Active" : "Deactivated"}
                 </Tag>
               </Td>
-              <ActionsMenuCell repositoryUrl={repositoryUrl} />
+              <ActionsMenuCell
+                repository={repository}
+                repositoryUrl={repositoryUrl}
+              />
             </Tr>
           );
         })}
@@ -221,13 +236,15 @@ function Owners({ data: { owners } }) {
 
   return (
     <Container>
+      <PrimaryTitle>Organizations and repositories</PrimaryTitle>
+
       <x.div
         display="flex"
         justifyContent="space-between"
         alignItems="baseline"
         gap={10}
       >
-        <x.div my={3}>
+        <x.div>
           Don’t see your repo?{" "}
           <IconLink
             href={config.get("github.appUrl")}
@@ -266,7 +283,7 @@ function Owners({ data: { owners } }) {
 
       <RepositoriesList
         repositories={activeFilter ? activeRepositories : repositories}
-        mt={2}
+        mt={3}
       />
     </Container>
   );

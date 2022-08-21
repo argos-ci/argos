@@ -4,7 +4,7 @@ import { Link } from "./Link";
 
 export const DocumentationLinkPhrase = (props) => {
   return (
-    <x.div {...props}>
+    <x.span {...props}>
       {" "}
       Read our documentation for more information about{" "}
       <Link target="_blank" href="https://docs.argos-ci.com">
@@ -15,6 +15,6 @@ export const DocumentationLinkPhrase = (props) => {
         using it
       </Link>
       .
-    </x.div>
+    </x.span>
   );
 };

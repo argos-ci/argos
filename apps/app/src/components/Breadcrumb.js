@@ -1,6 +1,6 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
-import { Link as ReactRouterLink } from "react-router-dom";
+import { BaseLink } from "./Link";
 
 export const BreadcrumbSeparator = (props) => (
   <x.span color="secondary-text" fontSize="2xl" mt={-1} {...props}>
@@ -8,34 +8,25 @@ export const BreadcrumbSeparator = (props) => (
   </x.span>
 );
 
-export const BreadcrumbItemMenu = (props) => <x.div ml={-2} {...props} />;
+export const BreadcrumbItemMenu = (props) => <x.div {...props} />;
 
 export const BreadcrumbLink = (props) => (
   <x.a
-    as={ReactRouterLink}
+    as={BaseLink}
     display="flex"
     alignItems="center"
     textDecoration="none"
-    cursor="pointer"
     borderRadius="md"
-    px={2}
+    px={1}
     py={1}
     gap={2}
-    backgroundColor={{ hover: "background-hover" }}
+    backgroundColor={{ hover: "background-hover", focus: "background-focus" }}
     {...props}
   />
 );
 
 export const BreadcrumbItem = (props) => (
-  <x.li
-    mx={2}
-    display="flex"
-    alignItems="center"
-    flexShrink={0}
-    gap={2}
-    minH={{ _: "35px", md: "42px" }}
-    {...props}
-  />
+  <x.li mx={1} display="flex" alignItems="center" flexShrink={0} {...props} />
 );
 
 export const Breadcrumb = (props) => (

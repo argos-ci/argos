@@ -1,6 +1,6 @@
 import React from "react";
 import { Helmet } from "react-helmet";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import {
   TabList,
   TabNavLink,
@@ -11,11 +11,12 @@ import {
   CardBody,
   CardText,
   FadeLink,
+  LoadingAlert,
 } from "@argos-ci/app/src/components";
 import { useRepository } from "../../containers/RepositoryContext";
 import { RepositoryBuilds } from "./Builds";
 import { RepositorySettings } from "./Settings";
-import { BuildDetail } from "./BuildDetail/index";
+import { BuildDetail } from "../Build/index";
 import { GettingStarted } from "./GettingStarted";
 import { NotFound } from "../NotFound";
 import { HeaderTeleporter } from "../../containers/AppNavbar";
@@ -51,8 +52,8 @@ export function Repository() {
   return (
     <>
       <Helmet
-        titleTemplate={`%s - ${repository.owner.login}/${repository.name}`}
-        defaultTitle={`${repository.owner.login}/${repository.name}`}
+        titleTemplate={`%s • ${repository.owner.login} / ${repository.name}`}
+        defaultTitle={`${repository.owner.login} / ${repository.name}`}
       />
 
       <HeaderTeleporter>
@@ -65,8 +66,9 @@ export function Repository() {
       </HeaderTeleporter>
 
       <Routes>
-        <Route path={`builds/:buildNumber(\\d+)`} element={<BuildDetail />} />
-        <Route path={`builds`} element={<RepositoryBuilds />} />
+        <Route path={`builds/:buildNumber`} element={<BuildDetail />} />
+        <Route path={"builds"} element={<RepositoryBuilds />} />
+        <Route index element={<Navigate to="builds" replace />} />
         <Route path={`getting-started`} element={<GettingStarted />} />
         {hasWritePermission(repository) ? (
           <Route path={`settings`} element={<RepositorySettings />} />

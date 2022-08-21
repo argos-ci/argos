@@ -5,12 +5,11 @@ export const Table = (props) => (
   <x.table w={1} borderCollapse="collapse" textAlign="left" {...props} />
 );
 
-export const Tr = styled.tr`
-  border-bottom: 1px solid;
-  border-color: border;
-`;
+export const Tr = (props) => (
+  <x.tr borderBottom={1} borderColor="border" {...props} />
+);
 
-export const Thead = styled.thead`
+export const Thead = styled.theadBox`
   background-color: highlight-background;
 
   ${Tr} {
@@ -18,7 +17,7 @@ export const Thead = styled.thead`
   }
 `;
 
-export const Tbody = styled.tbody``;
+export const Tbody = (props) => <x.tbody {...props} />;
 
 export const Th = styled.thBox`
   padding: 2;

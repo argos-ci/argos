@@ -14,7 +14,7 @@ import {
   CardText,
   Button,
 } from "@argos-ci/app/src/components";
-import { getVariantColor } from "../../../modules/utils";
+import { getVariantColor } from "../../modules/utils";
 
 const StyledImg = styled.img`
   width: 100%;
@@ -124,7 +124,7 @@ export default function BuildDetailScreenshots({ build }) {
               )
           )}
         </Card>
-        <x.div mt={{ xs: 3 }}>
+        <x.div mt={{ _: 3 }}>
           <Button
             onClick={() => setShowPassingScreenshots(!showPassingScreenshots)}
           >

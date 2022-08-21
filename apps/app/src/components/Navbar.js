@@ -2,10 +2,11 @@ import styled from "@xstyled/styled-components";
 import { FadeLink } from "./Link";
 
 export const Navbar = styled.nav`
-  padding: 5 3;
+  padding: 5 3 4;
   max-width: container;
   margin: 0 auto;
   display: flex;
+  align-items: center;
 `;
 
 export const NavbarBrandLink = styled(FadeLink)`

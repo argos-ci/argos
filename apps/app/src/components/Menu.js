@@ -23,9 +23,13 @@ const InnerMenuButton = styled.box`
     outline: none;
   }
 
-  &:hover,
-  &[aria-expanded="true"] {
+  &:hover {
     background-color: background-hover;
+    outline: none;
+  }
+
+  &[aria-expanded="true"] {
+    background-color: background-active;
     outline: none;
   }
 `;
@@ -62,7 +66,11 @@ export const MenuItem = (props) => (
   <x.div
     as={AriakitMenuItem}
     appearance="none"
-    backgroundColor={{ _: "transparent", hover: "gray-800" }}
+    backgroundColor={{
+      _: "transparent",
+      hover: "background-hover",
+      focus: "background-focus",
+    }}
     border={0}
     borderRadius="md"
     color="white"
@@ -78,7 +86,7 @@ export const MenuItem = (props) => (
     outline={{ hover: "none", focus: "none" }}
     p={2}
     fontWeight={600}
-    pr={8}
+    pr={4}
     {...props}
   />
 );
@@ -104,6 +112,7 @@ export const MenuTitle = (props) => (
     fontWeight={600}
     color="secondary-text"
     mx={2}
+    pr={4}
     {...props}
   />
 );

@@ -5,7 +5,7 @@ import { useIsMatchingTo } from "../containers/Router";
 
 export const SidebarList = (props) => (
   <x.ul
-    mt={0}
+    mt={2}
     display="flex"
     flexDirection="column"
     fontWeight="medium"
@@ -13,12 +13,21 @@ export const SidebarList = (props) => (
     w={{ _: 1, md: 250 }}
     gridColum={1}
     gridRow={{ _: 2, md: "1 / span 2" }}
+    position={{ _: "relative", md: "sticky" }}
+    top={16}
+    alignSelf="flex-start"
     {...props}
   />
 );
 
 export const SidebarTitle = ({ children, ...props }) => (
-  <x.div fontSize="sm" color="secondary-text" mb={1} {...props}>
+  <x.div
+    fontSize="sm"
+    color="secondary-text"
+    mb={1}
+    textTransform="capitalize"
+    {...props}
+  >
     {children}
     <x.hr mt={1} h="1px" bg="border" w={1} />
   </x.div>
@@ -34,11 +43,13 @@ export const SidebarItem = styled.li`
   &:hover {
     color: white;
     background-color: background-hover;
+    outline: none;
   }
 
   &[aria-current="true"] {
     color: white;
     background-color: background-active;
+    outline: none;
   }
 `;
 
@@ -70,6 +81,8 @@ export const SidebarLayout = (props) => (
     gridTemplateColumns={{ _: 1, md: "auto 1fr" }}
     rowGap={6}
     columnGap={12}
+    position="relative"
+    h="100%"
     {...props}
   />
 );
@@ -79,5 +92,5 @@ SidebarLayout.PageTitle = (props) => (
 );
 
 SidebarLayout.PageContent = (props) => (
-  <x.div gridColumn={{ _: 1, md: 2 }} {...props} />
+  <x.div gridColumn={{ _: 1, md: 2 }} h={1} {...props} />
 );

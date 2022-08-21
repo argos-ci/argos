@@ -15,10 +15,10 @@ import { hasWritePermission } from "../../modules/permissions";
 import { useOwner } from "../../containers/OwnerContext";
 import { OwnerNotFound, OwnerTabs } from ".";
 
-function SettingSidebar({ owner }) {
+function SettingsSidebar({ owner }) {
   return (
     <SidebarList>
-      <SidebarTitle>Settings</SidebarTitle>
+      <SidebarTitle>Organization settings</SidebarTitle>
       <SidebarNavLink to="" exact>
         General
       </SidebarNavLink>
@@ -38,12 +38,13 @@ export function OwnerSettings() {
   return (
     <Container>
       <Helmet>
-        <title>Settings • {owner.login}</title>
+        <title>{`Settings • ${owner.login}`}</title>
       </Helmet>
+
       <OwnerTabs owner={owner} />
 
       <SidebarLayout>
-        <SettingSidebar owner={owner} />
+        <SettingsSidebar owner={owner} />
 
         <Routes>
           <Route index element={<GeneralSettings />} />

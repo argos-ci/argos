@@ -6,13 +6,20 @@ export const BaseLink = (props) => (
   <x.a
     transition="base"
     cursor="pointer"
-    textDecoration={{ _: "none", hover: "underline" }}
     as={props.to ? ReactRouterLink : "a"}
+    outline={{ focus: "none" }}
+    textDecoration={{ _: "none", hover: "none" }}
     {...props}
   />
 );
 
-export const Link = ({ ...props }) => <BaseLink color="link" {...props} />;
+export const Link = ({ ...props }) => (
+  <BaseLink
+    textDecoration={{ _: "none", hover: "underline", focus: "underline" }}
+    color="link"
+    {...props}
+  />
+);
 
 export const FadeLink = (props) => (
   <BaseLink color="inherit" opacity={{ hover: 0.7 }} {...props} />

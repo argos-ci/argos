@@ -32,6 +32,7 @@ export const OwnerRepositoriesFragment = gql`
       name
       updatedAt
       enabled
+      permissions
       builds(first: 1, after: 0) {
         pageInfo {
           totalCount

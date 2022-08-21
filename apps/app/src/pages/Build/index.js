@@ -15,19 +15,38 @@ import {
   CardBody,
   CardText,
   FadeLink,
-  Loader,
   Tooltip,
+  LoadingAlert,
 } from "@argos-ci/app/src/components";
-import { useQuery } from "../../../containers/Apollo";
-import { StatusIcon } from "../../../containers/StatusIcon";
-import { getVariantColor } from "../../../modules/utils";
+import { useQuery } from "../../containers/Apollo";
+import { StatusIcon } from "../../containers/StatusIcon";
+import { getVariantColor } from "../../modules/utils";
 import BuildDetailScreenshots from "./Screenshots";
 import BuildDetailAction from "./Action";
 import { BuildProvider, BuildContextFragment, useBuild } from "./Context";
 // eslint-disable-next-line import/no-cycle
-import { NotFound } from "../../NotFound";
-import { useRepository } from "../../../containers/RepositoryContext";
-import { hasWritePermission } from "../../../modules/permissions";
+import { NotFound } from "../NotFound";
+import { useRepository } from "../../containers/RepositoryContext";
+import { hasWritePermission } from "../../modules/permissions";
+
+const BUILD_QUERY = gql`
+  query Build(
+    $buildNumber: Int!
+    $ownerLogin: String!
+    $repositoryName: String!
+  ) {
+    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+      id
+      build(number: $buildNumber) {
+        id
+        number
+        ...BuildContextFragment
+      }
+    }
+  }
+
+  ${BuildContextFragment}
+`;
 
 const StyledCardHeader = styled(CardHeader)`
   display: flex;
@@ -96,7 +115,7 @@ export function Build() {
                         </FadeLink>
                       </x.div>
                     </x.div>
-                    <x.div col={{ xs: 1, md: "auto" }} mt={{ xs: 3, md: 0 }}>
+                    <x.div col={{ _: 1, md: "auto" }} mt={{ _: 3, md: 0 }}>
                       <x.div
                         color={buildColor}
                         display="flex"
@@ -147,25 +166,6 @@ export function Build() {
   );
 }
 
-const BUILD_QUERY = gql`
-  query Build(
-    $buildNumber: Int!
-    $ownerLogin: String!
-    $repositoryName: String!
-  ) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
-      id
-      build(number: $buildNumber) {
-        id
-        number
-        ...BuildContextFragment
-      }
-    }
-  }
-
-  ${BuildContextFragment}
-`;
-
 export function BuildDetail() {
   const { repository } = useRepository();
   const { buildNumber } = useParams();
@@ -176,12 +176,15 @@ export function BuildDetail() {
       buildNumber: Number(buildNumber),
     },
   });
-  if (loading)
+
+  if (loading) {
     return (
-      <Container my={4} textAlign="center">
-        <Loader />
+      <Container>
+        <LoadingAlert />
       </Container>
     );
+  }
+
   if (!data.repository || !data.repository.build) return <NotFound />;
 
   const { build } = data.repository;
