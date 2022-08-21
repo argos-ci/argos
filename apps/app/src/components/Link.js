@@ -21,13 +21,17 @@ export const Link = ({ ...props }) => (
   />
 );
 
-export const FadeLink = (props) => (
-  <BaseLink color="inherit" opacity={{ hover: 0.7 }} {...props} />
-);
-
 export const IconLink = ({ icon: Icon, children, ...props }) => (
   <Link {...props}>
     {children}
-    <x.svg as={Icon} mt="-3px" mx={1} display="inline-block" w={3} h={3} />
+    <x.svg
+      as={Icon}
+      mt="-3px"
+      mx={1}
+      display="inline-block"
+      w={3}
+      h={3}
+      flexShrink={0}
+    />
   </Link>
 );

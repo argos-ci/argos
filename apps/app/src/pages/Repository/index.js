@@ -1,22 +1,11 @@
 import React from "react";
 import { Helmet } from "react-helmet";
 import { Navigate, Route, Routes } from "react-router-dom";
-import {
-  TabList,
-  TabNavLink,
-  Container,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
-  CardText,
-  FadeLink,
-  LoadingAlert,
-} from "@argos-ci/app/src/components";
+import { TabList, TabNavLink } from "@argos-ci/app/src/components";
 import { useRepository } from "../../containers/RepositoryContext";
 import { RepositoryBuilds } from "./Builds";
 import { RepositorySettings } from "./Settings";
-import { BuildDetail } from "../Build/index";
+import { Build } from "../Build";
 import { GettingStarted } from "./GettingStarted";
 import { NotFound } from "../NotFound";
 import { HeaderTeleporter } from "../../containers/AppNavbar";
@@ -25,29 +14,9 @@ function hasWritePermission(repository) {
   return repository.permissions.includes("write");
 }
 
-export function RepositoryNotFound() {
-  return (
-    <Container textAlign="center" my={4}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Not Found</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <CardText>Repository not found.</CardText>
-          <CardText>
-            <FadeLink color="white" to="/">
-              Back to home
-            </FadeLink>
-          </CardText>
-        </CardBody>
-      </Card>
-    </Container>
-  );
-}
-
 export function Repository() {
   const { repository } = useRepository();
-  if (!repository) return <RepositoryNotFound />;
+  if (!repository) return <NotFound />;
 
   return (
     <>
@@ -66,7 +35,7 @@ export function Repository() {
       </HeaderTeleporter>
 
       <Routes>
-        <Route path={`builds/:buildNumber`} element={<BuildDetail />} />
+        <Route path={`builds/:buildNumber`} element={<Build />} />
         <Route path={"builds"} element={<RepositoryBuilds />} />
         <Route index element={<Navigate to="builds" replace />} />
         <Route path={`getting-started`} element={<GettingStarted />} />

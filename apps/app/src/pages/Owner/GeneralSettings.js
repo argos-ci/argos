@@ -136,7 +136,7 @@ export function GeneralSettings() {
     <>
       <SidebarLayout.PageTitle>
         <PrimaryTitle>
-          {getPossessiveForm(owner.name)} General Settings
+          {getPossessiveForm(owner.name)} general settings
         </PrimaryTitle>
       </SidebarLayout.PageTitle>
 

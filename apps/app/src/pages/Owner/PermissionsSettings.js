@@ -18,7 +18,7 @@ export function PermissionsSettings() {
     <>
       <SidebarLayout.PageTitle>
         <PrimaryTitle>
-          {getPossessiveForm(owner.name)} Repositories Permissions
+          {getPossessiveForm(owner.name)} repositories permissions
         </PrimaryTitle>
       </SidebarLayout.PageTitle>
 

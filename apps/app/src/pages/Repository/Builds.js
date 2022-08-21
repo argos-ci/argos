@@ -239,7 +239,7 @@ export function RepositoryBuilds() {
 
   return (
     <Container>
-      <PrimaryTitle>{getPossessiveForm(repository.name)} Builds</PrimaryTitle>
+      <PrimaryTitle>{getPossessiveForm(repository.name)} builds</PrimaryTitle>
       <BuildsList repository={repository} />
     </Container>
   );

@@ -1,7 +1,7 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
 import { Container } from "./Container";
-import { FadeLink } from "./Link";
+import { BaseLink } from "./Link";
 
 export const Header = (props) => (
   <x.header
@@ -25,7 +25,7 @@ export const HeaderPrimary = (props) => (
 
 export const HeaderSecondaryLink = (props) => (
   <x.a
-    as={FadeLink}
+    as={BaseLink}
     mt={2}
     fontSize="sm"
     display="flex"
