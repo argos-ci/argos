@@ -85,6 +85,7 @@ export function OwnerBreadcrumbMenu(props) {
                   reverse
                   fontWeight="medium"
                   mt={1}
+                  display="flex"
                 >
                   Manage access restrictions
                 </IllustratedText>

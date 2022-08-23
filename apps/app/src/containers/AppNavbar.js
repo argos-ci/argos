@@ -26,8 +26,9 @@ import {
   Breadcrumb,
   MenuIcon,
   MenuSeparator,
-  MenuTitle,
   Icon,
+  LinkBlock,
+  BaseLink,
 } from "@argos-ci/app/src/components";
 import config from "../config";
 import { OwnerAvatar } from "./OwnerAvatar";
@@ -56,9 +57,7 @@ function UserMenu({ user, ...props }) {
         <OwnerAvatar owner={user} />
       </MenuButton>
       <Menu aria-label="User settings" state={menu}>
-        <MenuTitle>User menu</MenuTitle>
-        <MenuSeparator />
-        <MenuItem state={menu} as={Link} to={`/`}>
+        <MenuItem state={menu} as={LinkBlock} to={`/`}>
           <MenuIcon as={GoHome} />
           Home
         </MenuItem>
@@ -73,7 +72,7 @@ function UserMenu({ user, ...props }) {
           <MenuIcon as={GoRepo} />
           Add repository
         </MenuItem>
-        <MenuItem state={menu} as={Link} to={`/${user.login}/settings`}>
+        <MenuItem state={menu} as={LinkBlock} to={`/${user.login}/settings`}>
           <MenuIcon as={GoGear} />
           Settings
         </MenuItem>
@@ -93,7 +92,7 @@ export function AppNavbar() {
   return (
     <>
       <Navbar>
-        <NavbarBrandLink as={Link} to="/">
+        <NavbarBrandLink as={BaseLink} to="/">
           <NavbarBrand>
             <BrandLogo width={200} />
           </NavbarBrand>

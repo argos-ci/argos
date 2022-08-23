@@ -73,7 +73,7 @@ export function RepositoryBreadcrumbMenu({ ...props }) {
                 <Link
                   to={`/${ownerLogin}`}
                   fontWeight="medium"
-                  display="block"
+                  display="flex"
                   mt={1}
                 >
                   Be sure to activate it →

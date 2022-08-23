@@ -17,6 +17,7 @@ export const Link = ({ ...props }) => (
   <BaseLink
     textDecoration={{ _: "none", hover: "underline", focus: "underline" }}
     color="link"
+    cursor="pointer"
     {...props}
   />
 );
