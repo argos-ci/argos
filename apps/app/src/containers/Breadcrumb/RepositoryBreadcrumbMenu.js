@@ -1,38 +1,23 @@
 import React from "react";
 import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
-import { x } from "@xstyled/styled-components";
 import { GoRepo } from "react-icons/go";
 import {
-  BreadcrumbItem,
   Menu,
   MenuItem,
   useMenuState,
   MenuButton,
-  BreadcrumbSeparator,
-  BreadcrumbItemMenu,
-  BreadcrumbLink,
   MenuButtonArrow,
   MenuTitle,
   MenuSeparator,
   MenuText,
   Link,
   BaseLink,
+  Icon,
 } from "@argos-ci/app/src/components";
-import { Query, useQuery } from "./Apollo";
-import { useRepository, RepositoryContextFragment } from "./RepositoryContext";
+import { Query } from "../Apollo";
 
-const GET_REPOSITORY = gql`
-  query Repository($ownerLogin: String!, $repositoryName: String!) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
-      ...RepositoryContextFragment
-    }
-  }
-
-  ${RepositoryContextFragment}
-`;
-
-export function RepositorySelect({ ...props }) {
+export function RepositoryBreadcrumbMenu({ ...props }) {
   const { ownerLogin, repositoryName } = useParams();
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
 
@@ -77,7 +62,7 @@ export function RepositorySelect({ ...props }) {
                   to={`/${repositoryLogin}`}
                   minWidth="200px"
                 >
-                  <x.svg as={GoRepo} w={5} h={5} mt={1} />
+                  <Icon as={GoRepo} w={5} h={5} mt={1} />
                   {repositoryLogin}
                 </MenuItem>
               ))}
@@ -99,46 +84,5 @@ export function RepositorySelect({ ...props }) {
         );
       }}
     </Query>
-  );
-}
-
-export function RepositoryBreadcrumbItem() {
-  const { ownerLogin, repositoryName } = useParams();
-  const { setRepository } = useRepository();
-  const { loading, data = {} } = useQuery(GET_REPOSITORY, {
-    variables: { ownerLogin, repositoryName },
-    fetchPolicy: "no-cache",
-    skip: !ownerLogin || !repositoryName,
-  });
-  const { repository } = data;
-
-  React.useEffect(() => {
-    if (!loading && !!repository) {
-      setRepository(repository);
-    }
-  }, [loading, repository, setRepository]);
-
-  if (!repository) return null;
-
-  return (
-    <>
-      <BreadcrumbSeparator />
-      <BreadcrumbItem>
-        <BreadcrumbLink
-          to={`${repository.owner.login}/${repository.name}/builds`}
-        >
-          <x.svg
-            as={GoRepo}
-            mt={1}
-            width={{ _: 20, md: 25 }}
-            height={{ _: 20, md: 25 }}
-          />
-          {repository.name}
-        </BreadcrumbLink>
-        <BreadcrumbItemMenu>
-          <RepositorySelect />
-        </BreadcrumbItemMenu>
-      </BreadcrumbItem>
-    </>
   );
 }

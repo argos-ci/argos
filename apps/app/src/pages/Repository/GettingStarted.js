@@ -8,11 +8,37 @@ import {
   Tag,
   Alert,
   Code,
-  DocumentationLinkPhrase,
+  Button,
 } from "@argos-ci/app/src/components";
 import { x } from "@xstyled/styled-components";
-import { useRepository } from "../../containers/RepositoryContext";
-import { EnableRepositoryToggleButton } from "../../containers/EnableRepositoryToggleButton";
+import {
+  useRepository,
+  useToggleRepository,
+} from "../../containers/RepositoryContext";
+import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
+
+function EnableToggleButton(props) {
+  const { repository } = useRepository();
+  const { toggleRepository, loading } = useToggleRepository();
+  const { enabled } = repository;
+  return (
+    <Button
+      disabled={loading}
+      variant={enabled ? "danger" : "success"}
+      onClick={() =>
+        toggleRepository({
+          variables: {
+            enabled: !repository.enabled,
+            repositoryId: repository.id,
+          },
+        })
+      }
+      {...props}
+    >
+      {enabled ? "Deactivate" : "Activate"} Repository
+    </Button>
+  );
+}
 
 export function GettingStarted() {
   const { repository } = useRepository();
@@ -26,8 +52,10 @@ export function GettingStarted() {
       <CardBody>
         {!repository.enabled ? (
           <>
-            <CardText>To start, first activate your repository.</CardText>
-            <EnableRepositoryToggleButton />
+            <CardText fontSize="md">
+              Active your repository to start using Argos.
+            </CardText>
+            <EnableToggleButton mt={2} />
           </>
         ) : (
           <x.div>
@@ -45,7 +73,7 @@ export function GettingStarted() {
             <Code mt={2}>ARGOS_TOKEN={repository.token}</Code>
 
             <CardText mt={4} fontWeight={400} fontSize="md">
-              <DocumentationLinkPhrase />
+              <DocumentationPhrase />
             </CardText>
           </x.div>
         )}

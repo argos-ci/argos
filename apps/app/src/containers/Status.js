@@ -1,7 +1,8 @@
 import React from "react";
-import { FaTimes, FaCheck, FaDotCircle } from "react-icons/fa";
+import { FaDotCircle } from "react-icons/fa";
 import { getVariantColor } from "../modules/utils";
-import { Icon } from "../components";
+import { Icon, Tag } from "../components";
+import { GoCheck, GoX } from "react-icons/go";
 
 export function StatusIcon({ status, ...props }) {
   const buildColor = getVariantColor(status);
@@ -9,10 +10,10 @@ export function StatusIcon({ status, ...props }) {
     case "failure":
     case "error":
     case "aborted":
-      return <Icon as={FaTimes} color={buildColor} {...props} />;
+      return <Icon as={GoX} color={buildColor} {...props} />;
     case "success":
     case "complete":
-      return <Icon as={FaCheck} color={buildColor} {...props} />;
+      return <Icon as={GoCheck} color={buildColor} {...props} />;
     case "pending":
       return <Icon as={FaDotCircle} color={buildColor} {...props} />;
     case "neutral":
@@ -22,17 +23,34 @@ export function StatusIcon({ status, ...props }) {
   }
 }
 
+export function StatusTag({ status, children, ...props }) {
+  return (
+    <Tag
+      display="flex"
+      textAlign="center"
+      gap={1}
+      borderColor={getVariantColor(status)}
+      {...props}
+    >
+      <StatusIcon status={status} mt={1} />
+      {children}
+    </Tag>
+  );
+}
+
 export function statusText(status) {
   switch (status) {
     case "failure":
     case "error":
     case "aborted":
-      return "rejected";
+      return "Changes Requested";
     case "success":
     case "complete":
-      return "approved";
+      return "Review Approved";
     case "pending":
-      return "In Progress";
+      return "Build In Progress";
+    case "unknown":
+      return "Differences detected";
     default:
       return null;
   }

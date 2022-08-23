@@ -10,6 +10,7 @@
   "devDependencies": {
     "@apollo/client": "^3.6.9",
     "@argos-ci/config": "2.0.0",
+    "@primer/octicons-react": "^17.4.1",
     "@sentry/browser": "^7.10.0",
     "@xstyled/styled-components": "^3.6.0",
     "ariakit": "^2.0.0-next.39",

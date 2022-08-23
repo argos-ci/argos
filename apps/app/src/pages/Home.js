@@ -1,7 +1,5 @@
-/* eslint-disable react/no-unescaped-entities */
 import React, { useState } from "react";
 import { gql } from "graphql-tag";
-import { Group } from "ariakit/group";
 import { x } from "@xstyled/styled-components";
 import { Query } from "../containers/Apollo";
 import { useUser } from "../containers/User";
@@ -16,7 +14,7 @@ import {
   CardText,
   CardTitle,
   Container,
-  IconLink,
+  Icon,
   Link,
   Loader,
   Menu,
@@ -33,11 +31,18 @@ import {
   Thead,
   Tr,
   useMenuState,
+  ToggleGroupButtons,
+  IllustratedText,
 } from "@argos-ci/app/src/components";
 import { Tag, TagButton } from "../components/Tag";
-import { FaCamera, FaEllipsisH, FaExternalLinkAlt } from "react-icons/fa";
+import {
+  GoThreeBars,
+  GoLinkExternal,
+  GoKey,
+  GoGear,
+  GoLock,
+} from "react-icons/go";
 import { getVariantColor } from "../modules/utils";
-import { GoKey, GoGear, GoLock } from "react-icons/go";
 import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { OwnerRepositoriesFragment } from "../containers/OwnerContext";
 import { hasWritePermission } from "../modules/permissions";
@@ -80,13 +85,12 @@ function RepositoryNameCell({
 
 function ActionsMenuCell({ repository, repositoryUrl }) {
   const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
-  console.log({ repository });
 
   if (!hasWritePermission(repository))
     return (
       <Td>
         <Tag display="block" py={1} color="text-secondary">
-          <x.svg as={GoLock} />
+          <Icon as={GoLock} />
         </Tag>
       </Td>
     );
@@ -94,7 +98,7 @@ function ActionsMenuCell({ repository, repositoryUrl }) {
   return (
     <Td>
       <TagButton as={MenuButton} state={menu}>
-        <x.svg as={FaEllipsisH} />
+        <Icon as={GoThreeBars} />
       </TagButton>
       <Menu aria-label="User settings" state={menu}>
         <MenuTitle>Repositories actions</MenuTitle>
@@ -125,14 +129,9 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
         as={BaseLink}
         to={`${repositoryUrl}/builds/${build.number}`}
         gap={2}
+        borderColor={getVariantColor(build.status)}
         {...props}
       >
-        <x.svg
-          as={FaCamera}
-          color={getVariantColor(build.status)}
-          w={4}
-          h={4}
-        />
         #{build.number.toLocaleString()}
       </TagButton>
     </Td>
@@ -165,15 +164,16 @@ function RepositoriesList({ repositories, ...props }) {
           </CardText>
           <CardText fontSize="md">
             Click on{" "}
-            <IconLink
+            <IllustratedText
+              as={Link}
+              reverse
               href={config.get("github.appUrl")}
               target="_blank"
-              rel="noopener noreferrer"
               fontWeight="normal"
-              icon={FaExternalLinkAlt}
+              icon={GoLinkExternal}
             >
               this link
-            </IconLink>
+            </IllustratedText>{" "}
             to manage the repositories’ access restrictions.
           </CardText>
         </CardBody>
@@ -246,41 +246,27 @@ function Owners({ data: { owners } }) {
       >
         <x.div>
           Don’t see your repo?{" "}
-          <IconLink
+          <IllustratedText
+            as={Link}
+            reverse
             href={config.get("github.appUrl")}
             target="_blank"
-            rel="noopener noreferrer"
             fontWeight="normal"
-            icon={FaExternalLinkAlt}
+            icon={GoLinkExternal}
           >
             Manage access restrictions
-          </IconLink>
+          </IllustratedText>{" "}
           or{" "}
           <Link onClick={() => window.location.reload()}>reload the page</Link>.
         </x.div>
 
-        <x.div as={Group} display="flex">
-          <Button
-            borderRadius="md 0 0 md"
-            variant="primary"
-            py={2}
-            disabled={activeFilter}
-            onClick={() => setActiveFilter(true)}
-          >
-            Active only
-          </Button>
-          <Button
-            py={2}
-            borderRadius="0 md md 0"
-            variant="primary"
-            disabled={!activeFilter}
-            onClick={() => setActiveFilter(false)}
-          >
-            Display all
-          </Button>
-        </x.div>
+        <ToggleGroupButtons
+          state={activeFilter}
+          setState={setActiveFilter}
+          switchOnText="Active only"
+          switchOffText="Display all"
+        />
       </x.div>
-
       <RepositoriesList
         repositories={activeFilter ? activeRepositories : repositories}
         mt={3}
@@ -314,7 +300,7 @@ export function Home() {
   if (!user.installations.length && !isUserSyncing(user)) {
     return (
       <Container textAlign="center" my={4}>
-        <p>Look like you don't have installed Argos GitHub App.</p>
+        <p>Look like you don’t have installed Argos GitHub App.</p>
         <Button as="a" href={config.get("github.appUrl")}>
           Install Argos GitHub App
         </Button>

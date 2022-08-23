@@ -1,6 +1,6 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
-import { BaseLink } from "./Link";
+import { LinkBlock } from "./Link";
 
 export const BreadcrumbSeparator = (props) => (
   <x.span color="secondary-text" fontSize="2xl" mt={-1} {...props}>
@@ -12,15 +12,13 @@ export const BreadcrumbItemMenu = (props) => <x.div {...props} />;
 
 export const BreadcrumbLink = (props) => (
   <x.a
-    as={BaseLink}
+    as={LinkBlock}
     display="flex"
     alignItems="center"
     textDecoration="none"
-    borderRadius="md"
     px={1}
     py={1}
     gap={2}
-    backgroundColor={{ hover: "background-hover", focus: "background-focus" }}
     {...props}
   />
 );

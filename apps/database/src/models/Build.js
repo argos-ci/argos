@@ -155,6 +155,10 @@ export class Build extends Model {
 
     if (jobStatus !== "complete") return jobStatus;
 
+    if (!useScore && !useValidation) {
+      throw new Error(`"useScore" or "useValidation" is required`);
+    }
+
     if (useScore && useValidation) {
       const hasRejectedOrDiffs = screenshotDiffs.some(
         ({ score, validationStatus }) =>
@@ -171,16 +175,11 @@ export class Build extends Model {
       return hasDiffs ? "failure" : "success";
     }
 
-    if (useValidation) {
-      const hasRejected = screenshotDiffs.some(
-        ({ validationStatus }) =>
-          validationStatus === ScreenshotDiff.VALIDATION_STATUSES.rejected
-      );
-
-      return hasRejected ? "failure" : "success";
-    }
-
-    throw new Error(`"useScore" or "useValidation" is required`);
+    const hasRejected = screenshotDiffs.some(
+      ({ validationStatus }) =>
+        validationStatus === ScreenshotDiff.VALIDATION_STATUSES.rejected
+    );
+    return hasRejected ? "failure" : "success";
   }
 
   $getStatus(options) {

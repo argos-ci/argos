@@ -2,10 +2,8 @@ import React from "react";
 import { gql } from "graphql-tag";
 import { x } from "@xstyled/styled-components";
 import { GoGear, GoRepo } from "react-icons/go";
-import { FaRegImages } from "react-icons/fa";
 import moment from "moment";
 import { Query } from "../../containers/Apollo";
-import { StatusIcon } from "../../containers/StatusIcon";
 import {
   useOwner,
   OwnerRepositoriesFragment,
@@ -26,12 +24,14 @@ import {
   SidebarTitle,
   CardText,
   SidebarLayout,
-  DocumentationLinkPhrase,
   BaseLink,
+  Icon,
 } from "@argos-ci/app/src/components";
 import { useUser } from "../../containers/User";
 import config from "../../config";
 import { getPossessiveForm } from "../../modules/utils";
+import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
+import { StatusIcon } from "../../containers/Status";
 
 const OWNER_REPOSITORIES_QUERY = gql`
   query OwnerRepositories($login: String!) {
@@ -109,16 +109,11 @@ function ActiveRepositoryCard({ repository, url, ...props }) {
     <Card {...props}>
       <CardHeader>
         <CardTitle display="flex" alignItems="center" gap={2}>
-          <x.svg as={GoRepo} mt={1} />
+          <Icon as={GoRepo} mt={1} />
           <Link color="white" to={`${url}/builds`}>
             {repository.name}
           </Link>
         </CardTitle>
-
-        <TagButton variant="neutral" as={BaseLink} to={`${url}/builds`}>
-          <x.svg as={FaRegImages} />
-          Builds
-        </TagButton>
       </CardHeader>
       <CardBody>
         {!lastBuild ? (
@@ -127,7 +122,7 @@ function ActiveRepositoryCard({ repository, url, ...props }) {
               No Build found.
             </CardText>
             <CardText mt={1} fontWeight={400}>
-              <DocumentationLinkPhrase />
+              <DocumentationPhrase />
             </CardText>
           </>
         ) : (
@@ -143,13 +138,13 @@ function InactiveRepositoryCard({ repository, url, ...props }) {
     <Card {...props}>
       <CardHeader border={0}>
         <CardTitle display="flex" alignItems="flex-start" gap={2}>
-          <x.svg as={GoRepo} mt={1} />
+          <Icon as={GoRepo} mt={1} />
           <Link color="secondary-text" to={`${url}/builds`}>
             {repository.name}
           </Link>
         </CardTitle>
         <TagButton variant="neutral" as={BaseLink} to={`${url}/settings`}>
-          <x.svg as={GoGear} />
+          <Icon as={GoGear} />
           Settings
         </TagButton>
       </CardHeader>

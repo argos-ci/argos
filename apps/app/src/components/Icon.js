@@ -1,4 +1,14 @@
 import React from "react";
-import { x } from "@xstyled/styled-components";
+import { x, useFontSize } from "@xstyled/styled-components";
 
-export const Icon = (props) => <x.svg flexShrink={0} {...props} />;
+export const Icon = ({ fontSize, ...props }) => {
+  const remFontSize = useFontSize(fontSize);
+
+  return (
+    <x.div
+      flexShrink={0}
+      {...(remFontSize ? { size: remFontSize.split("rem")[0] * 16 } : {})}
+      {...props}
+    />
+  );
+};

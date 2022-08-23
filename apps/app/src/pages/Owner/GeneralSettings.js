@@ -8,6 +8,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  Icon,
   Link,
   PrimaryTitle,
   ProgressBar,
@@ -20,7 +21,7 @@ import { getPossessiveForm } from "../../modules/utils";
 const Feature = (props) => (
   <x.li display="flex" alignItems="center" gap={2} {...props} />
 );
-const FeatureIcon = (props) => <x.svg mt="-1px" {...props} />;
+const FeatureIcon = (props) => <Icon mt="-1px" {...props} />;
 const PlanName = (props) => <x.div fontSize="4xl" mb={3} {...props} />;
 
 const Plan = ({ purchase }) => {

@@ -14,7 +14,7 @@ export const theme = {
     primary: defaultTheme.colors["violet-700"],
 
     background: "black",
-    "highlight-background": defaultTheme.colors["gray-900-a80"],
+    "highlight-background": defaultTheme.colors["gray-900"],
     "background-hover": defaultTheme.colors["gray-700-a50"],
     "background-active": defaultTheme.colors["gray-800"],
     "background-focus": defaultTheme.colors["blue-gray-700-a50"],

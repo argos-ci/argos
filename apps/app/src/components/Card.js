@@ -24,6 +24,7 @@ export const CardHeader = (props) => (
     display="flex"
     justifyContent="space-between"
     alignItems="center"
+    zIndex={100}
     {...props}
   />
 );
