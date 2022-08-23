@@ -26,6 +26,7 @@ import {
   SidebarLayout,
   BaseLink,
   Icon,
+  IllustratedText,
 } from "@argos-ci/app/src/components";
 import { useUser } from "../../containers/User";
 import config from "../../config";
@@ -109,10 +110,9 @@ function ActiveRepositoryCard({ repository, url, ...props }) {
     <Card {...props}>
       <CardHeader>
         <CardTitle display="flex" alignItems="center" gap={2}>
-          <Icon as={GoRepo} mt={1} />
-          <Link color="white" to={`${url}/builds`}>
-            {repository.name}
-          </Link>
+          <IllustratedText icon={GoRepo} gap={2}>
+            <Link to={`${url}/builds`}>{repository.name}</Link>
+          </IllustratedText>
         </CardTitle>
       </CardHeader>
       <CardBody>
@@ -138,10 +138,9 @@ function InactiveRepositoryCard({ repository, url, ...props }) {
     <Card {...props}>
       <CardHeader border={0}>
         <CardTitle display="flex" alignItems="flex-start" gap={2}>
-          <Icon as={GoRepo} mt={1} />
-          <Link color="secondary-text" to={`${url}/builds`}>
-            {repository.name}
-          </Link>
+          <IllustratedText icon={GoRepo} gap={2}>
+            <Link to={`${url}/builds`}>{repository.name}</Link>
+          </IllustratedText>
         </CardTitle>
         <TagButton variant="neutral" as={BaseLink} to={`${url}/settings`}>
           <Icon as={GoGear} />

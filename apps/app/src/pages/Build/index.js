@@ -154,11 +154,11 @@ export function StickyMenu({ children, build, ...props }) {
       <x.div
         display="flex"
         justifyContent="space-between"
-        px={2}
+        pl={2}
         py={1}
         gap={4}
       >
-        <IllustratedText icon={GoGitBranch}>
+        <IllustratedText icon={GoGitBranch} overflow="hidden">
           <Link
             href={`${githubRepoUrl}/${build.compareScreenshotBucket.branch}`}
             whiteSpace="nowrap"

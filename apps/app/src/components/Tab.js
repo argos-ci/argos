@@ -1,7 +1,8 @@
 import React from "react";
-import { Link, NavLink } from "react-router-dom";
-import styled, { css, up } from "@xstyled/styled-components";
+import { Link } from "react-router-dom";
+import styled, { x } from "@xstyled/styled-components";
 import { useIsMatchingTo } from "../containers/Router";
+import { LinkBlock } from "./Link";
 
 export const TabList = styled.menu`
   padding: 0;
@@ -26,28 +27,24 @@ export const TabItem = styled.li`
   }
 `;
 
-export const TabItemLink = styled(NavLink)`
-  color: white;
-  text-decoration: none;
-  padding: 2 3;
-  display: block;
-  overflow-x: auto;
-
-  ${up(
-    "md",
-    css`
-      padding: 3;
-      overflow-x: visible;
-    `
-  )}
-`;
+const TabItemLink = (props) => (
+  <x.a
+    as={Link}
+    textDecoration="none"
+    py={{ _: 2, md: 3 }}
+    px={3}
+    display="block"
+    overflowX={{ _: "auto", md: "visible" }}
+    {...props}
+  />
+);
 
 export function TabNavLink({ children, to, exact, ...props }) {
   const isActive = useIsMatchingTo({ to, exact });
 
   return (
     <TabItem aria-current={isActive}>
-      <TabItemLink as={Link} to={to} {...props}>
+      <TabItemLink to={to} {...props}>
         {children}
       </TabItemLink>
     </TabItem>

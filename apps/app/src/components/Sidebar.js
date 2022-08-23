@@ -1,7 +1,7 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import styled, { x } from "@xstyled/styled-components";
 import { useIsMatchingTo } from "../containers/Router";
+import { LinkBlock } from "./Link";
 
 export const SidebarList = (props) => (
   <x.ul
@@ -55,6 +55,7 @@ export const SidebarItem = styled.li`
 
 export const SidebarItemLink = (props) => (
   <x.a
+    as={LinkBlock}
     textDecoration="none"
     display="block"
     overflowX={{ _: "auto", md: "visible" }}
@@ -68,9 +69,7 @@ export function SidebarNavLink({ children, to, exact }) {
 
   return (
     <SidebarItem aria-current={isActive}>
-      <SidebarItemLink as={Link} to={to}>
-        {children}
-      </SidebarItemLink>
+      <SidebarItemLink to={to}>{children}</SidebarItemLink>
     </SidebarItem>
   );
 }
