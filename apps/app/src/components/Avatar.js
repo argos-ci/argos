@@ -13,6 +13,6 @@ export const Avatar = styled.imgBox`
   }
 
   &[role="button"] {
-    cursor: pointer;
+    cursor: default;
   }
 `;

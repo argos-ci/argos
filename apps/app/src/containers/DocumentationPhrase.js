@@ -1,8 +1,8 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
-import { Link } from "./Link";
+import { Link } from "../components/Link";
 
-export const DocumentationLinkPhrase = (props) => {
+export const DocumentationPhrase = (props) => {
   return (
     <x.span {...props}>
       {" "}

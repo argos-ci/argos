@@ -1,14 +1,10 @@
 import React from "react";
 import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
-import { FaExternalLinkAlt } from "react-icons/fa";
 import {
   BaseLink,
-  BreadcrumbItem,
-  BreadcrumbItemMenu,
-  BreadcrumbLink,
-  BreadcrumbSeparator,
-  IconLink,
+  IllustratedText,
+  Link,
   Menu,
   MenuButton,
   MenuButtonArrow,
@@ -18,23 +14,13 @@ import {
   MenuTitle,
   useMenuState,
 } from "@argos-ci/app/src/components";
-import { Query, useQuery } from "./Apollo";
-import { OwnerAvatar } from "./OwnerAvatar";
-import { useUser } from "./User";
-import { useOwner, OwnerContextFragment } from "./OwnerContext";
-import config from "../config";
+import { Query } from "../Apollo";
+import { OwnerAvatar } from "../OwnerAvatar";
+import { useUser } from "../User";
+import config from "../../config";
+import { GoLinkExternal } from "react-icons/go";
 
-const OWNER_QUERY = gql`
-  query Owner($login: String!) {
-    owner(login: $login) {
-      ...OwnerContextFragment
-    }
-  }
-
-  ${OwnerContextFragment}
-`;
-
-function OwnerSelect(props) {
+export function OwnerBreadcrumbMenu(props) {
   const { ownerLogin } = useParams();
   const user = useUser();
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
@@ -91,58 +77,22 @@ function OwnerSelect(props) {
               <MenuSeparator />
               <MenuText>
                 Don’t see your org?
-                <IconLink
+                <IllustratedText
+                  as={Link}
                   href={config.get("github.appUrl")}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  icon={GoLinkExternal}
+                  reverse
                   fontWeight="medium"
-                  icon={FaExternalLinkAlt}
-                  display="block"
                   mt={1}
                 >
                   Manage access restrictions
-                </IconLink>
+                </IllustratedText>
               </MenuText>
             </Menu>
           </>
         );
       }}
     </Query>
-  );
-}
-
-export function OwnerBreadcrumbItem() {
-  const { ownerLogin } = useParams();
-  const user = useUser();
-  const { setOwner } = useOwner();
-  const { loading, data = {} } = useQuery(OWNER_QUERY, {
-    variables: { login: ownerLogin },
-    fetchPolicy: "no-cache",
-    skip: !user || !ownerLogin,
-  });
-
-  const { owner } = data;
-
-  React.useEffect(() => {
-    if (!loading && !!owner) {
-      setOwner(owner);
-    }
-  }, [owner, loading, setOwner]);
-
-  if (!owner) return null;
-
-  return (
-    <>
-      <BreadcrumbSeparator />
-      <BreadcrumbItem>
-        <BreadcrumbLink to={`/${ownerLogin}`}>
-          <OwnerAvatar owner={owner} size="sm" />
-          {owner.login}
-        </BreadcrumbLink>
-        <BreadcrumbItemMenu>
-          <OwnerSelect />
-        </BreadcrumbItemMenu>
-      </BreadcrumbItem>
-    </>
   );
 }

@@ -1,113 +1,66 @@
-/* eslint-disable react/no-unescaped-entities */
 import React from "react";
 import { x } from "@xstyled/styled-components";
-import { FaExternalLinkAlt, FaRegClock } from "react-icons/fa";
-import { GoGitCommit, GoGitBranch } from "react-icons/go";
+import { GoGitCommit, GoClock, GoGitBranch } from "react-icons/go";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardBody,
-  BaseLink,
-  Icon,
+  Link,
+  IllustratedText,
 } from "@argos-ci/app/src/components";
-import { StatusIcon } from "../../containers/StatusIcon";
 import { getVariantColor } from "../../modules/utils";
 import { hasWritePermission } from "../../modules/permissions";
-import { UpdateBuildStatusButton } from "./UpdateBuildStatusButton";
+import { UpdateStatusButton } from "./UpdateStatusButton";
+import { StatusIcon, statusText } from "../../containers/Status";
 
-const Field = (props) => <x.div py={2} {...props} />;
-
-const FieldName = (props) => (
-  <x.div
-    display="flex"
-    alignItems="center"
-    gap="2"
-    px={2}
-    fontWeight={600}
-    color="secondary-text"
-    fontSize="sm"
-    {...props}
-  />
-);
-
-const FieldValue = (props) => (
-  <x.div
-    display="flex"
-    alignItems="center"
-    gap="2"
-    px={2}
-    borderRadius="md"
-    py={1}
-    {...props}
-  />
-);
-
-const FieldLinkValue = (props) => (
-  <FieldValue
-    as={BaseLink}
-    backgroundColor={{ _: "background", hover: "background-hover" }}
-    {...props}
-  />
-);
-
-export function SummaryCard({ repository, build }) {
+export const SummaryCard = React.forwardRef(({ repository, build }, ref) => {
   const statusColor = getVariantColor(build.status);
   const date = new Date(build.createdAt);
+  const githubRepoUrl = `https://github.com/${build.repository.owner.login}/${build.repository.name}`;
 
   return (
-    <Card borderLeft={2} borderLeftColor={statusColor} borderRadius="0 md md 0">
+    <Card
+      borderLeft={2}
+      borderLeftColor={statusColor}
+      borderRadius="0 md md 0"
+      ref={ref}
+    >
       <CardHeader>
         <CardTitle>Build Summary</CardTitle>
-        {(true || hasWritePermission(repository)) && (
-          <UpdateBuildStatusButton build={build} />
-        )}
+        {hasWritePermission(repository) && <UpdateStatusButton build={build} />}
       </CardHeader>
 
-      <CardBody display="grid" gridTemplateColumn={{ _: 1, md: 2 }}>
-        <Field>
-          <FieldName>
-            Branch <Icon as={FaExternalLinkAlt} w={3} h={3} />
-          </FieldName>
-          <FieldLinkValue
-            href={`https://github.com/${build.repository.owner.login}/${build.repository.name}/tree/${build.compareScreenshotBucket.branch}`}
+      <CardBody display="grid" gridTemplateColumn={{ _: 1, sm: 2 }} gap={1}>
+        <IllustratedText icon={GoGitBranch}>
+          <Link
+            href={`${githubRepoUrl}/${build.compareScreenshotBucket.branch}`}
           >
-            <Icon as={GoGitBranch} />
             {build.compareScreenshotBucket.branch}
-          </FieldLinkValue>
-        </Field>
+          </Link>
+        </IllustratedText>
 
-        <Field gridColumn={{ md: 2 }}>
-          <FieldName>Status</FieldName>
-          <FieldValue>
-            <StatusIcon status={build.status} />
-            {build.status}
-          </FieldValue>
-        </Field>
-
-        <Field>
-          <FieldName>
-            Commit
-            <Icon as={FaExternalLinkAlt} w={3} h={3} />
-          </FieldName>
-          <FieldLinkValue
-            href={`https://github.com/${build.repository.owner.login}/${build.repository.name}/commit/${build.compareScreenshotBucket.commit}`}
+        <x.div
+          display="flex"
+          alignItems="center"
+          gap={1}
+          gridColumn={{ sm: 2 }}
+        >
+          <StatusIcon status={build.status} />
+          {statusText(build.status)}
+        </x.div>
+        <IllustratedText icon={GoGitCommit}>
+          <Link
+            href={`${githubRepoUrl}/commit/${build.compareScreenshotBucket.commit}`}
           >
-            <Icon as={GoGitCommit} />
-            <x.div textOverflow="ellipsis" overflow="hidden">
-              {build.compareScreenshotBucket.commit}
-            </x.div>
-          </FieldLinkValue>
-        </Field>
+            {build.compareScreenshotBucket.commit.split("").slice(0, 7)}
+          </Link>
+        </IllustratedText>
 
-        <Field>
-          <FieldName>Date and time</FieldName>
-          <FieldValue>
-            <Icon as={FaRegClock} />
-            {date.toLocaleDateString()} at {date.toLocaleTimeString()}
-          </FieldValue>
-        </Field>
+        <IllustratedText icon={GoClock}>
+          {date.toLocaleDateString()} at {date.toLocaleTimeString()}
+        </IllustratedText>
       </CardBody>
     </Card>
   );
-}
+});

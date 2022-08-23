@@ -19,7 +19,6 @@ import {
   useFormState,
   Toast,
   useToast,
-  DocumentationLinkPhrase,
   PrimaryTitle,
   SidebarLayout,
   SidebarList,
@@ -34,6 +33,7 @@ import {
 import { x } from "@xstyled/styled-components";
 import { useMutation } from "@apollo/client";
 import { Tag } from "../../components/Tag";
+import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
 
 const UPDATE_BASELINE_BRANCH = gql`
   mutation UpdateBaselineBranch($repositoryId: String!, $branchName: String!) {
@@ -58,7 +58,7 @@ function TokenCard({ repository }) {
         <Alert my={3}>This token should be kept secret.</Alert>
         <Code>ARGOS_TOKEN={repository.token}</Code>
         <CardText fontSize="md" mt={4}>
-          <DocumentationLinkPhrase />
+          <DocumentationPhrase />
         </CardText>
       </CardBody>
     </Card>
@@ -80,8 +80,9 @@ function UpdateBranchForm({ repository }) {
   const form = useFormState({
     defaultValues: { name: repository.baselineBranch },
   });
-  form.useSubmit(() => {
-    updateBaselineBranch({
+
+  form.useSubmit(async () => {
+    await updateBaselineBranch({
       variables: {
         repositoryId: repository.id,
         branchName: form.values.name,

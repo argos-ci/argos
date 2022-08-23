@@ -8,6 +8,7 @@ import {
   MenuButtonArrow as AriakitMenuButtonArrow,
 } from "ariakit/Menu";
 import styled, { x } from "@xstyled/styled-components";
+import { Icon } from "./Icon";
 
 export { useMenuState };
 
@@ -16,7 +17,6 @@ const InnerMenuButton = styled.box`
   align-items: center;
   border-radius: md;
   padding: 1 2;
-  cursor: pointer;
 
   &:focus {
     background-color: background-focus;
@@ -78,7 +78,6 @@ export const MenuItem = (props) => (
     w={1}
     transition="md"
     transitionProperty="background-color"
-    cursor="pointer"
     textDecoration="none"
     display="flex"
     alignItems="center"
@@ -117,4 +116,4 @@ export const MenuTitle = (props) => (
   />
 );
 
-export const MenuIcon = (props) => <x.svg w={5} h={5} {...props} />;
+export const MenuIcon = (props) => <Icon w={5} h={5} {...props} />;

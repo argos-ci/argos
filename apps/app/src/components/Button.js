@@ -5,7 +5,8 @@ import { getVariantColor } from "../modules/utils";
 
 const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
   const bgColor = th.color(`${$tint}-800-a80`);
-  const hoverBgColor = th.color(`${$tint}-600-a20`);
+  const hoverBgColor = th.color(`${$tint}-700-a80`);
+  const borderColor = th.color(`${$tint}-400-a60`);
 
   return css`
     display: flex;
@@ -13,9 +14,9 @@ const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
     justify-content: center;
     white-space: nowrap;
     border-radius: md;
-    cursor: pointer;
+    cursor: default;
     border: 1;
-    border-color: ${bgColor};
+    border-color: ${borderColor};
     padding: 3 4;
     color: white;
     transition: default;

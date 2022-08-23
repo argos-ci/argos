@@ -5,10 +5,10 @@ import { Link as ReactRouterLink } from "react-router-dom";
 export const BaseLink = (props) => (
   <x.a
     transition="base"
-    cursor="pointer"
     as={props.to ? ReactRouterLink : "a"}
     outline={{ focus: "none" }}
     textDecoration={{ _: "none", hover: "none" }}
+    {...(props.target === "_blank" ? { rel: "noopener noreferrer" } : {})}
     {...props}
   />
 );
@@ -21,17 +21,16 @@ export const Link = ({ ...props }) => (
   />
 );
 
-export const IconLink = ({ icon: Icon, children, ...props }) => (
-  <Link {...props}>
-    {children}
-    <x.svg
-      as={Icon}
-      mt="-3px"
-      mx={1}
-      display="inline-block"
-      w={3}
-      h={3}
-      flexShrink={0}
+export function LinkBlock(props) {
+  return (
+    <BaseLink
+      borderRadius="md"
+      backgroundColor={{
+        _: "inherit",
+        hover: "background-hover",
+        focus: "background-focus",
+      }}
+      {...props}
     />
-  </Link>
-);
+  );
+}

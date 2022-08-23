@@ -1,9 +1,7 @@
-/* eslint-disable react/no-unescaped-entities */
 import React from "react";
 import { x } from "@xstyled/styled-components";
 import { useInView } from "react-cool-inview";
-import { FaRegClock } from "react-icons/fa";
-import { GoGitBranch, GoGitCommit } from "react-icons/go";
+import { GoGitBranch, GoGitCommit, GoClock } from "react-icons/go";
 import moment from "moment";
 import { gql } from "graphql-tag";
 import { getPossessiveForm, getVariantColor } from "../../modules/utils";
@@ -17,8 +15,9 @@ import {
   Tbody,
   Td,
   Tr,
-  BaseLink,
   PrimaryTitle,
+  Icon,
+  LinkBlock,
 } from "@argos-ci/app/src/components";
 import { useRepository } from "../../containers/RepositoryContext";
 import { useQuery } from "../../containers/Apollo";
@@ -63,15 +62,13 @@ const REPOSITORY_BUILDS_QUERY = gql`
 
 const TdLink = (props) => (
   <x.a
-    as={BaseLink}
+    as={LinkBlock}
     display="flex"
     color="white"
     gap={2}
     py={4}
     px={2}
-    borderRadius="md"
     alignItems="center"
-    backgroundColor={{ hover: "background-hover" }}
     border={1}
     borderColor={{ _: "background", hover: "background-hover" }}
     {...props}
@@ -184,7 +181,7 @@ function BuildsList({ repository }) {
                     px={4}
                     to={`${build.number}`}
                   >
-                    <x.svg as={GoGitBranch} w={6} h={6} />
+                    <Icon as={GoGitBranch} w={6} h={6} />
                     {build.compareScreenshotBucket.branch}
                   </TdLink>
                 </Td>
@@ -200,14 +197,14 @@ function BuildsList({ repository }) {
                     target="_blank"
                     href={`https://github.com/${repository.owner.login}/${repository.name}/commit/${build.compareScreenshotBucket.commit}`}
                   >
-                    <x.svg as={GoGitCommit} />
+                    <Icon as={GoGitCommit} />
                     {build.compareScreenshotBucket.commit.slice(0, 7)}
                   </TdLink>
                 </Td>
 
                 <Td color="secondary-text">
                   <x.div display="flex" gap={2} alignItems="center">
-                    <x.svg as={FaRegClock} />
+                    <Icon as={GoClock} />
                     {moment(build.createdAt).fromNow()}
                   </x.div>
                 </Td>

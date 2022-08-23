@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "@argos-ci/app/src/components";
-import { StatusIcon, statusText } from "../../containers/StatusIcon";
 import { gql, useMutation } from "@apollo/client";
 import { BuildContextFragment } from ".";
+import { statusText } from "../../containers/Status";
 
 function getNextStatus(status) {
   if (status === "success") return "failure";
@@ -10,7 +10,7 @@ function getNextStatus(status) {
   return null;
 }
 
-export function UpdateBuildStatusButton({ build }) {
+export function UpdateStatusButton({ build }) {
   const nextStatus = getNextStatus(build.status);
   const nextStatusText = statusText(nextStatus);
 
@@ -34,7 +34,7 @@ export function UpdateBuildStatusButton({ build }) {
   return (
     <Button
       disabled={loading}
-      variant={nextStatus}
+      variant="primary"
       py={2}
       onClick={() =>
         setValidationStatus({
@@ -42,8 +42,7 @@ export function UpdateBuildStatusButton({ build }) {
         })
       }
     >
-      <StatusIcon status={nextStatus} mt="1px" />
-      Mark as {nextStatusText}
+      Review changes
     </Button>
   );
 }

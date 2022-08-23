@@ -1,8 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
-import { FaGithub } from "react-icons/fa";
-import config from "../config";
+import {
+  GoHome,
+  GoRepo,
+  GoGear,
+  GoSignOut,
+  GoMarkGithub,
+} from "react-icons/go";
 import { createTeleporter } from "react-teleporter";
 import {
   NavbarSecondary,
@@ -22,14 +27,15 @@ import {
   MenuIcon,
   MenuSeparator,
   MenuTitle,
+  Icon,
 } from "@argos-ci/app/src/components";
+import config from "../config";
 import { OwnerAvatar } from "./OwnerAvatar";
 import { useLogout } from "./Auth";
 import { useUser } from "./User";
-import { OwnerBreadcrumbItem } from "./OwnerBreadcrumb";
-import { GoHome, GoRepo, GoGear, GoSignOut } from "react-icons/go";
-import { HomeBreadcrumbItem } from "./HomeBreadcrumb";
-import { RepositoryBreadcrumbItem } from "./RepositoryBreadcrumb";
+import { OwnerBreadcrumbItem } from "./Breadcrumb/OwnerBreadcrumb";
+import { HomeBreadcrumbItem } from "./Breadcrumb/HomeBreadcrumb";
+import { RepositoryBreadcrumbItem } from "./Breadcrumb/RepositoryBreadcrumb";
 
 const HeaderBodyTeleporter = createTeleporter();
 
@@ -102,7 +108,7 @@ export function AppNavbar() {
               variant="neutral"
               gap={2}
             >
-              <x.svg as={FaGithub} />
+              <Icon as={GoMarkGithub} />
               Login
             </Button>
           )}

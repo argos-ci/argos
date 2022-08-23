@@ -5,10 +5,11 @@ import {
   CardBody,
   CardText,
   PrimaryTitle,
-  IconLink,
   SidebarLayout,
+  IllustratedText,
+  Link,
 } from "@argos-ci/app/src/components";
-import { FaExternalLinkAlt } from "react-icons/fa";
+import { GoLinkExternal } from "react-icons/go";
 import { useOwner } from "../../containers/OwnerContext";
 import { getPossessiveForm } from "../../modules/utils";
 
@@ -30,15 +31,16 @@ export function PermissionsSettings() {
             </CardText>
             <CardText fontSize="md">
               Click on{" "}
-              <IconLink
+              <IllustratedText
+                as={Link}
+                reverse
                 href={config.get("github.appUrl")}
                 target="_blank"
-                rel="noopener noreferrer"
                 fontWeight="normal"
-                icon={FaExternalLinkAlt}
+                icon={GoLinkExternal}
               >
                 this link
-              </IconLink>
+              </IllustratedText>{" "}
               to manage the repositories’ access restrictions.
             </CardText>
           </CardBody>
