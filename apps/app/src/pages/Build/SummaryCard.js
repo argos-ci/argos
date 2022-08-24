@@ -1,7 +1,7 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
-import { GoGitCommit, GoClock, GoGitBranch } from "react-icons/go";
+import { CommitIcon, ClockIcon, GitBranchIcon } from "@primer/octicons-react";
 import {
   Card,
   CardHeader,
@@ -63,7 +63,7 @@ export function StickySummaryMenu({ repository, build, ...props }) {
         py={1}
         gap={4}
       >
-        <IllustratedText icon={GoGitBranch} overflow="hidden">
+        <IllustratedText icon={GitBranchIcon} overflow="hidden">
           <Link
             href={`${githubRepoUrl}/${build.compareScreenshotBucket.branch}`}
             whiteSpace="nowrap"
@@ -95,7 +95,7 @@ export function SummaryCard({ repository, build }) {
       </CardHeader>
 
       <CardBody display="grid" gridTemplateColumn={{ _: 1, sm: 2 }} gap={1}>
-        <IllustratedText icon={GoGitBranch}>
+        <IllustratedText icon={GitBranchIcon}>
           <Link
             href={`${githubRepoUrl}/${build.compareScreenshotBucket.branch}`}
           >
@@ -112,7 +112,7 @@ export function SummaryCard({ repository, build }) {
           <StatusIcon status={build.status} />
           {statusText(build.status)}
         </x.div>
-        <IllustratedText icon={GoGitCommit}>
+        <IllustratedText icon={CommitIcon}>
           <Link
             href={`${githubRepoUrl}/commit/${build.compareScreenshotBucket.commit}`}
           >
@@ -120,7 +120,7 @@ export function SummaryCard({ repository, build }) {
           </Link>
         </IllustratedText>
 
-        <IllustratedText icon={GoClock}>
+        <IllustratedText icon={ClockIcon}>
           {date.toLocaleDateString()} at {date.toLocaleTimeString()}
         </IllustratedText>
       </CardBody>

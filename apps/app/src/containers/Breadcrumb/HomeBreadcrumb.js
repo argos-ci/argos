@@ -1,6 +1,6 @@
 import React from "react";
 import { useMatch } from "react-router-dom";
-import { GoHome } from "react-icons/go";
+import { HomeIcon } from "@primer/octicons-react";
 import {
   BreadcrumbItem,
   BreadcrumbLink,
@@ -12,8 +12,8 @@ export function HomeBreadcrumbItem() {
 
   return (
     <BreadcrumbItem>
-      <BreadcrumbLink to={`/`}>
-        <Icon as={GoHome} height={{ _: 20, md: 25 }} />
+      <BreadcrumbLink to={`/`} py={1}>
+        <Icon as={HomeIcon} size={24} w={{ _: 5, md: 6 }} h={{ _: 5, md: 6 }} />
         {match ? "Home" : null}
       </BreadcrumbLink>
     </BreadcrumbItem>

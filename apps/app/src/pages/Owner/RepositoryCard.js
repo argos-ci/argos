@@ -1,7 +1,7 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
-import { GoGear, GoRepo } from "react-icons/go";
+import { GearIcon, RepoIcon } from "@primer/octicons-react";
 import {
   Card,
   CardHeader,
@@ -111,7 +111,7 @@ export function ActiveRepositoryCard({ repository, url, ...props }) {
     <Card {...props}>
       <CardHeader>
         <CardTitle display="flex" alignItems="center" gap={2}>
-          <IllustratedText icon={GoRepo} gap={2}>
+          <IllustratedText icon={RepoIcon} gap={2}>
             <Link to={`${url}/builds`}>{repository.name}</Link>
           </IllustratedText>
         </CardTitle>
@@ -139,12 +139,12 @@ export function InactiveRepositoryCard({ repository, url, ...props }) {
     <Card {...props}>
       <CardHeader border={0}>
         <CardTitle display="flex" alignItems="flex-start" gap={2}>
-          <IllustratedText icon={GoRepo} gap={2}>
+          <IllustratedText icon={RepoIcon} gap={2}>
             <Link to={`${url}/builds`}>{repository.name}</Link>
           </IllustratedText>
         </CardTitle>
         <TagButton variant="neutral" as={BaseLink} to={`${url}/settings`}>
-          <Icon as={GoGear} />
+          <Icon as={GearIcon} />
           Settings
         </TagButton>
       </CardHeader>

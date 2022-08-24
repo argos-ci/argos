@@ -1,7 +1,7 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
 import moment from "moment";
-import { FaCheckCircle } from "react-icons/fa";
+import { CheckCircleFillIcon } from "@primer/octicons-react";
 import { gql } from "graphql-tag";
 import {
   Card,
@@ -54,17 +54,17 @@ const Plan = ({ purchase }) => {
       </PlanName>
       <x.ul display="flex" flexDirection="column" gap={2} my={4} ml={4}>
         <Feature>
-          <FeatureIcon as={FaCheckCircle} />
+          <FeatureIcon as={(CheckCircleFillIcon, CheckCircleFillIcon)} />
           {screenshotsLimitPerMonth === Infinity
             ? "Unlimited screenshots"
             : `Up to ${screenshotsLimitPerMonth.toLocaleString()} screenshots`}
         </Feature>
         <Feature>
-          <FeatureIcon as={FaCheckCircle} />
+          <FeatureIcon as={CheckCircleFillIcon} />
           Unlimited users
         </Feature>
         <Feature>
-          <FeatureIcon as={FaCheckCircle} />
+          <FeatureIcon as={CheckCircleFillIcon} />
           Unlimited repositories
         </Feature>
       </x.ul>

@@ -19,7 +19,7 @@ import { Query } from "../Apollo";
 import { OwnerAvatar } from "../OwnerAvatar";
 import { useUser } from "../User";
 import config from "../../config";
-import { GoLinkExternal } from "react-icons/go";
+import { LinkExternalIcon } from "@primer/octicons-react";
 
 const OWNERS_QUERY = gql`
   query OWNERS_QUERY {
@@ -94,7 +94,7 @@ export function OwnerBreadcrumbMenu(props) {
                     as={Link}
                     href={config.get("github.appUrl")}
                     target="_blank"
-                    icon={GoLinkExternal}
+                    icon={LinkExternalIcon}
                     reverse
                     fontWeight="medium"
                     mt={1}

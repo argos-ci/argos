@@ -1,8 +1,7 @@
 import React from "react";
-import { FaDotCircle } from "react-icons/fa";
 import { getVariantColor } from "../modules/utils";
 import { Icon, Tag } from "../components";
-import { GoCheck, GoX } from "react-icons/go";
+import { CheckIcon, XIcon, DotIcon } from "@primer/octicons-react";
 
 export function StatusIcon({ status, ...props }) {
   const buildColor = getVariantColor(status);
@@ -10,14 +9,14 @@ export function StatusIcon({ status, ...props }) {
     case "failure":
     case "error":
     case "aborted":
-      return <Icon as={GoX} color={buildColor} {...props} />;
+      return <Icon as={XIcon} color={buildColor} {...props} />;
     case "success":
     case "complete":
-      return <Icon as={GoCheck} color={buildColor} {...props} />;
+      return <Icon as={CheckIcon} color={buildColor} {...props} />;
     case "pending":
-      return <Icon as={FaDotCircle} color={buildColor} {...props} />;
+      return <Icon as={DotIcon} color={buildColor} {...props} />;
     case "neutral":
-      return <Icon as={FaDotCircle} color={buildColor} {...props} />;
+      return <Icon as={DotIcon} color={buildColor} {...props} />;
     default:
       return null;
   }

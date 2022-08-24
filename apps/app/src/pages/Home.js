@@ -36,12 +36,12 @@ import {
 } from "@argos-ci/app/src/components";
 import { Tag, TagButton } from "../components/Tag";
 import {
-  GoThreeBars,
-  GoLinkExternal,
-  GoKey,
-  GoGear,
-  GoLock,
-} from "react-icons/go";
+  KebabHorizontalIcon,
+  LinkExternalIcon,
+  KeyIcon,
+  GearIcon,
+  LockIcon,
+} from "@primer/octicons-react";
 import { getVariantColor } from "../modules/utils";
 import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { hasWritePermission } from "../modules/permissions";
@@ -108,7 +108,7 @@ function ActionsMenuCell({ repository, repositoryUrl }) {
     return (
       <Td>
         <Tag display="block" py={1} color="text-secondary">
-          <Icon as={GoLock} />
+          <Icon as={LockIcon} />
         </Tag>
       </Td>
     );
@@ -116,7 +116,7 @@ function ActionsMenuCell({ repository, repositoryUrl }) {
   return (
     <Td>
       <TagButton as={MenuButton} state={menu}>
-        <Icon as={GoThreeBars} />
+        <Icon as={KebabHorizontalIcon} />
       </TagButton>
       <Menu aria-label="User settings" state={menu}>
         <MenuTitle>Repositories actions</MenuTitle>
@@ -126,11 +126,11 @@ function ActionsMenuCell({ repository, repositoryUrl }) {
           as={BaseLink}
           to={`${repositoryUrl}/settings#argos-token`}
         >
-          <MenuIcon as={GoKey} />
+          <MenuIcon as={KeyIcon} />
           Get token
         </MenuItem>
         <MenuItem state={menu} as={BaseLink} to={`${repositoryUrl}/settings`}>
-          <MenuIcon as={GoGear} />
+          <MenuIcon as={GearIcon} size={24} />
           Settings
         </MenuItem>
       </Menu>
@@ -188,7 +188,7 @@ function RepositoriesList({ repositories, ...props }) {
               href={config.get("github.appUrl")}
               target="_blank"
               fontWeight="normal"
-              icon={GoLinkExternal}
+              icon={LinkExternalIcon}
             >
               this link
             </IllustratedText>{" "}
@@ -270,7 +270,7 @@ function Owners({ owners }) {
             href={config.get("github.appUrl")}
             target="_blank"
             fontWeight="normal"
-            icon={GoLinkExternal}
+            icon={LinkExternalIcon}
           >
             Manage access restrictions
           </IllustratedText>{" "}

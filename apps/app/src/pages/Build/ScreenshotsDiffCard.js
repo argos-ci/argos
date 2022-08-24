@@ -14,7 +14,7 @@ import {
   Disclosure,
   CardText,
 } from "@argos-ci/app/src/components";
-import { GoChevronRight } from "react-icons/go";
+import { ChevronRightIcon } from "@primer/octicons-react";
 
 export const ScreenshotsDiffCardFragment = gql`
   fragment ScreenshotsDiffCardFragment on ScreenshotDiff {
@@ -73,7 +73,7 @@ export function ScreenshotsDiffCard({ screenshotDiff, open, ...props }) {
             color="secondary-text"
           >
             <Icon
-              as={GoChevronRight}
+              as={ChevronRightIcon}
               transform
               rotate={disclosure.open ? 90 : 0}
               transitionDuration={300}
