@@ -104,7 +104,7 @@ export function Build() {
   return (
     <Container>
       <Helmet>
-        <title>{`Build #${buildNumber}`}</title>
+        <title>{`Build #${buildNumber} • ${repositoryName}`}</title>
       </Helmet>
 
       <Query

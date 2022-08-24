@@ -6,7 +6,7 @@ import {
   MenuButton as AriakitMenuButton,
   MenuSeparator as AriakitMenuSeparator,
   MenuButtonArrow as AriakitMenuButtonArrow,
-} from "ariakit/Menu";
+} from "ariakit/menu";
 import styled, { x } from "@xstyled/styled-components";
 import { Icon } from "./Icon";
 

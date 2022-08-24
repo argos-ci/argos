@@ -20,7 +20,10 @@ export function App() {
   return (
     <ThemeInitializer>
       <Preflight />
-      <Helmet defaultTitle="Argos CI" />
+      <Helmet
+        titleTemplate={`%s • Argos CI`}
+        defaultTitle={`Home • Argos CI`}
+      />
       <GlobalStyle />
       <BrowserRouter>
         <ScrollToTop />

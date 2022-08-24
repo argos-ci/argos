@@ -51,7 +51,7 @@ export function Repository() {
   return (
     <>
       <Helmet
-        titleTemplate={`%s • ${ownerLogin} / ${repositoryName}`}
+        titleTemplate={`%s • ${repositoryName}`}
         defaultTitle={`${ownerLogin} / ${repositoryName}`}
       />
 
