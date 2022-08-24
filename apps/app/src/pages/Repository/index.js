@@ -76,7 +76,6 @@ export function Repository() {
               </HeaderTeleporter>
 
               <Routes>
-                <Route path={`builds/:buildNumber`} element={<Build />} />
                 <Route
                   path={"builds"}
                   element={<RepositoryBuilds repository={data.repository} />}

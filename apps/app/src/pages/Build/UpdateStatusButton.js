@@ -1,8 +1,14 @@
 import React from "react";
 import { Button } from "@argos-ci/app/src/components";
 import { gql, useMutation } from "@apollo/client";
-import { BuildContextFragment } from ".";
 import { statusText } from "../../containers/Status";
+
+export const UpdateStatusButtonFragment = gql`
+  fragment UpdateStatusButtonFragment on Build {
+    id
+    status
+  }
+`;
 
 function getNextStatus(status) {
   if (status === "success") return "failure";
@@ -10,8 +16,8 @@ function getNextStatus(status) {
   return null;
 }
 
-export function UpdateStatusButton({ build }) {
-  const nextStatus = getNextStatus(build.status);
+export function UpdateStatusButton({ build: { id, status } }) {
+  const nextStatus = getNextStatus(status);
   const nextStatusText = statusText(nextStatus);
 
   const [setValidationStatus, { loading }] = useMutation(gql`
@@ -22,11 +28,8 @@ export function UpdateStatusButton({ build }) {
       setValidationStatus(
         buildId: $buildId
         validationStatus: $validationStatus
-      ) {
-        ...BuildContextFragment
-      }
+      )
     }
-    ${BuildContextFragment}
   `);
 
   if (!nextStatus) return null;
@@ -38,7 +41,10 @@ export function UpdateStatusButton({ build }) {
       py={2}
       onClick={() =>
         setValidationStatus({
-          variables: { buildId: build.id, validationStatus: nextStatusText },
+          variables: {
+            buildId: id,
+            validationStatus: nextStatusText,
+          },
         })
       }
     >

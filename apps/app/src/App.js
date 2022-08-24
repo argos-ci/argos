@@ -14,6 +14,7 @@ import { Owner } from "./pages/Owner";
 import { NotFound } from "./pages/NotFound";
 import { Repository } from "./pages/Repository";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
+import { Build } from "./pages/Build";
 
 export function App() {
   return (
@@ -39,6 +40,11 @@ export function App() {
                   <Route
                     path="/:ownerLogin/settings/*"
                     element={<OwnerSettings />}
+                  />
+
+                  <Route
+                    path={`/:ownerLogin/:repositoryName/builds/:buildNumber`}
+                    element={<Build />}
                   />
                   <Route
                     path="/:ownerLogin/:repositoryName/*"
