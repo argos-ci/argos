@@ -33,8 +33,10 @@ import {
   useMenuState,
   ToggleGroupButtons,
   IllustratedText,
+  LinkBlock,
+  Tag,
+  TagButton,
 } from "@argos-ci/app/src/components";
-import { Tag, TagButton } from "../components/Tag";
 import {
   KebabHorizontalIcon,
   LinkExternalIcon,
@@ -45,6 +47,7 @@ import {
 import { getVariantColor } from "../modules/utils";
 import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { hasWritePermission } from "../modules/permissions";
+import { StatusIcon } from "../containers/Status";
 
 const OWNERS_REPOSITORIES_QUERY = gql`
   query Owners {
@@ -82,7 +85,7 @@ function RepositoryNameCell({
   ...props
 }) {
   return (
-    <Td color="secondary-text" {...props}>
+    <Td color="secondary-text" py={5} fontSize="lg" {...props}>
       <Link color="secondary-text" to={`/${owner.login}`}>
         <OwnerAvatar
           owner={owner}
@@ -144,13 +147,12 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
   return (
     <Td>
       <TagButton
-        as={BaseLink}
+        as={LinkBlock}
         to={`${repositoryUrl}/builds/${build.number}`}
-        gap={2}
-        borderColor={getVariantColor(build.status)}
+        borderColor={getVariantColor(status)}
         {...props}
       >
-        #{build.number.toLocaleString()}
+        <StatusIcon status={build.status} />#{build.number.toLocaleString()}
       </TagButton>
     </Td>
   );

@@ -6,18 +6,18 @@ import moment from "moment";
 import { gql } from "graphql-tag";
 import { getPossessiveForm, getVariantColor } from "../../modules/utils";
 import {
-  Container,
   Button,
+  Container,
+  IllustratedText,
   LoadingAlert,
-  Thead,
-  Th,
+  PrimaryTitle,
   Table,
   Tbody,
   Td,
+  TdLink,
+  Th,
+  Thead,
   Tr,
-  PrimaryTitle,
-  Icon,
-  LinkBlock,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { GettingStarted } from "./GettingStarted";
@@ -37,19 +37,8 @@ const REPOSITORY_BUILDS_QUERY = gql`
           createdAt
           number
           status
-          baseScreenshotBucket {
-            id
-            createdAt
-            updatedAt
-            name
-            commit
-            branch
-          }
           compareScreenshotBucket {
             id
-            createdAt
-            updatedAt
-            name
             commit
             branch
           }
@@ -58,21 +47,6 @@ const REPOSITORY_BUILDS_QUERY = gql`
     }
   }
 `;
-
-const TdLink = (props) => (
-  <x.a
-    as={LinkBlock}
-    display="flex"
-    color="white"
-    gap={2}
-    py={4}
-    px={2}
-    alignItems="center"
-    border={1}
-    borderColor={{ _: "background", hover: "background-hover" }}
-    {...props}
-  />
-);
 
 const EndOfList = (props) => (
   <x.div
@@ -156,7 +130,7 @@ function BuildsList({ repository }) {
         <Thead>
           <Tr>
             <Th>
-              <x.div ml={5}>Branch</x.div>
+              <x.div ml={18}>Branch</x.div>
             </Th>
             <Th width={140}>Build</Th>
             <Th width={130}>Commit</Th>
@@ -172,7 +146,7 @@ function BuildsList({ repository }) {
                 key={build.id}
                 ref={buildIndex === builds.length - 1 ? observe : null}
               >
-                <Td py={2}>
+                <Td>
                   <TdLink
                     borderRadius="0 md md 0"
                     borderLeft={1}
@@ -180,8 +154,9 @@ function BuildsList({ repository }) {
                     px={4}
                     to={`${build.number}`}
                   >
-                    <Icon as={GitBranchIcon} w={6} h={6} />
-                    {build.compareScreenshotBucket.branch}
+                    <IllustratedText icon={GitBranchIcon}>
+                      {build.compareScreenshotBucket.branch}
+                    </IllustratedText>
                   </TdLink>
                 </Td>
                 <Td>
@@ -192,20 +167,19 @@ function BuildsList({ repository }) {
                 <Td>
                   <TdLink
                     color={{ _: "secondary-text", hover: "white" }}
-                    rel="noopener noreferrer"
                     target="_blank"
                     href={`https://github.com/${repository.owner.login}/${repository.name}/commit/${build.compareScreenshotBucket.commit}`}
                   >
-                    <Icon as={(CommitIcon, CommitIcon)} />
-                    {build.compareScreenshotBucket.commit.slice(0, 7)}
+                    <IllustratedText icon={CommitIcon}>
+                      {build.compareScreenshotBucket.commit.slice(0, 7)}
+                    </IllustratedText>
                   </TdLink>
                 </Td>
 
-                <Td color="secondary-text">
-                  <x.div display="flex" gap={2} alignItems="center">
-                    <Icon as={ClockIcon} />
+                <Td color="secondary-text" px={4}>
+                  <IllustratedText icon={ClockIcon}>
                     {moment(build.createdAt).fromNow()}
-                  </x.div>
+                  </IllustratedText>
                 </Td>
               </tr>
             );

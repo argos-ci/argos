@@ -1,6 +1,6 @@
 import React from "react";
 import { getVariantColor } from "../modules/utils";
-import { Icon, Tag } from "../components";
+import { Icon } from "@argos-ci/app/src/components";
 import { CheckIcon, XIcon, DotIcon } from "@primer/octicons-react";
 
 export function StatusIcon({ status, ...props }) {
@@ -20,21 +20,6 @@ export function StatusIcon({ status, ...props }) {
     default:
       return null;
   }
-}
-
-export function StatusTag({ status, children, ...props }) {
-  return (
-    <Tag
-      display="flex"
-      textAlign="center"
-      gap={1}
-      borderColor={getVariantColor(status)}
-      {...props}
-    >
-      <StatusIcon status={status} mt={1} />
-      {children}
-    </Tag>
-  );
 }
 
 export function statusText(status) {
