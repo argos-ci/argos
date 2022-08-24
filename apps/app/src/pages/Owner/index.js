@@ -1,37 +1,16 @@
 import React from "react";
 import { Helmet } from "react-helmet";
-import { TabList, TabNavLink } from "@argos-ci/app/src/components";
 import { OwnerRepositories } from "./Repositories";
-import { useOwner } from "../../containers/OwnerContext";
-import { HeaderTeleporter } from "../../containers/AppNavbar";
-import { NotFound } from "../NotFound";
-
-export function OwnerTabs({ owner }) {
-  return (
-    <HeaderTeleporter>
-      <TabList>
-        <TabNavLink exact to={`/${owner.login}`}>
-          Repositories
-        </TabNavLink>
-        <TabNavLink to={`/${owner.login}/settings`}>Settings</TabNavLink>
-      </TabList>
-    </HeaderTeleporter>
-  );
-}
+import { useParams } from "react-router-dom";
+import { OwnerTabs } from "./OwnerTabs";
 
 export function Owner() {
-  const { owner } = useOwner();
-  if (!owner) return <NotFound />;
+  const { ownerLogin } = useParams();
 
   return (
     <>
-      <Helmet
-        titleTemplate={`%s • ${owner.login}`}
-        defaultTitle={owner.login}
-      />
-
-      <OwnerTabs owner={owner} />
-
+      <Helmet titleTemplate={`%s • ${ownerLogin}`} defaultTitle={ownerLogin} />
+      <OwnerTabs />
       <OwnerRepositories />
     </>
   );

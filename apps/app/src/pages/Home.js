@@ -44,17 +44,35 @@ import {
 } from "react-icons/go";
 import { getVariantColor } from "../modules/utils";
 import { OwnerAvatar } from "../containers/OwnerAvatar";
-import { OwnerRepositoriesFragment } from "../containers/OwnerContext";
 import { hasWritePermission } from "../modules/permissions";
 
 const OWNERS_REPOSITORIES_QUERY = gql`
   query Owners {
     owners {
-      ...OwnerRepositoriesFragment
+      id
+      name
+      login
+      type
+      repositories {
+        id
+        name
+        updatedAt
+        enabled
+        permissions
+        builds(first: 1, after: 0) {
+          pageInfo {
+            totalCount
+          }
+          edges {
+            id
+            updatedAt
+            status
+            number
+          }
+        }
+      }
     }
   }
-
-  ${OwnerRepositoriesFragment}
 `;
 
 function RepositoryNameCell({
@@ -223,7 +241,7 @@ function RepositoriesList({ repositories, ...props }) {
   );
 }
 
-function Owners({ data: { owners } }) {
+function Owners({ owners }) {
   const repositories = owners.flatMap((owner) =>
     owner.repositories.map((repository) => ({ owner, ...repository }))
   );
@@ -317,7 +335,7 @@ export function Home() {
       }
       query={OWNERS_REPOSITORIES_QUERY}
     >
-      {(data) => <Owners data={data} />}
+      {({ owners }) => <Owners owners={owners} />}
     </Query>
   );
 }

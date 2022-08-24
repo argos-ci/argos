@@ -8,7 +8,6 @@ import { UserInitializer } from "./containers/User";
 import { AuthCallback } from "./pages/AuthCallback";
 import { GlobalStyle, ThemeInitializer } from "./components";
 import { Layout } from "./containers/Layout";
-import { OwnerProvider } from "./containers/OwnerContext";
 import { RepositoryProvider } from "./containers/RepositoryContext";
 import { Home } from "./pages/Home";
 import { Preflight } from "@xstyled/styled-components";
@@ -29,31 +28,29 @@ export function App() {
         <AuthInitializer>
           <ApolloInitializer>
             <UserInitializer>
-              <OwnerProvider>
-                <RepositoryProvider>
-                  <Routes>
-                    <Route
-                      exact
-                      path="/auth/github/callback"
-                      element={<AuthCallback />}
-                    />
-                    <Route path="/" element={<Layout />}>
-                      <Route index element={<Home />} />
+              <RepositoryProvider>
+                <Routes>
+                  <Route
+                    exact
+                    path="/auth/github/callback"
+                    element={<AuthCallback />}
+                  />
+                  <Route path="/" element={<Layout />}>
+                    <Route index element={<Home />} />
 
-                      <Route
-                        path="/:ownerLogin/settings/*"
-                        element={<OwnerSettings />}
-                      />
-                      <Route
-                        path="/:ownerLogin/:repositoryName/*"
-                        element={<Repository />}
-                      />
-                      <Route path="/:ownerLogin" element={<Owner />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Route>
-                  </Routes>
-                </RepositoryProvider>
-              </OwnerProvider>
+                    <Route
+                      path="/:ownerLogin/settings/*"
+                      element={<OwnerSettings />}
+                    />
+                    <Route
+                      path="/:ownerLogin/:repositoryName/*"
+                      element={<Repository />}
+                    />
+                    <Route path="/:ownerLogin" element={<Owner />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Route>
+                </Routes>
+              </RepositoryProvider>
             </UserInitializer>
           </ApolloInitializer>
         </AuthInitializer>
