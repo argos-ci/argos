@@ -1,5 +1,6 @@
 import React from "react";
 import { Helmet } from "react-helmet";
+import { gql } from "graphql-tag";
 import {
   Container,
   SidebarNavLink,
@@ -7,13 +8,16 @@ import {
   SidebarTitle,
   SidebarLayout,
 } from "@argos-ci/app/src/components";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useParams } from "react-router-dom";
 import { NotFound } from "../NotFound";
-import { GeneralSettings } from "./GeneralSettings";
-import { PermissionsSettings } from "./PermissionsSettings";
+import { GeneralSettings, OwnerSettingsFragment } from "./GeneralSettings";
+import {
+  OwnerPermissionsSettingsFragment,
+  PermissionsSettings,
+} from "./PermissionsSettings";
 import { hasWritePermission } from "../../modules/permissions";
-import { useOwner } from "../../containers/OwnerContext";
-import { OwnerTabs } from ".";
+import { Query } from "../../containers/Apollo";
+import { OwnerTabs } from "./OwnerTabs";
 
 function SettingsSidebar({ owner }) {
   return (
@@ -32,28 +36,54 @@ function SettingsSidebar({ owner }) {
 }
 
 export function OwnerSettings() {
-  const { owner } = useOwner();
-  if (!owner) return <NotFound />;
+  const { ownerLogin } = useParams();
 
   return (
     <Container>
       <Helmet>
-        <title>{`Settings • ${owner.login}`}</title>
+        <title>{`Settings • ${ownerLogin}`}</title>
       </Helmet>
 
-      <OwnerTabs owner={owner} />
+      <Query
+        query={gql`
+          query Owner($login: String!) {
+            owner(login: $login) {
+              id
+              permissions
+              ...OwnerSettingsFragment
+              ...OwnerPermissionsSettingsFragment
+            }
+          }
 
-      <SidebarLayout>
-        <SettingsSidebar owner={owner} />
+          ${OwnerSettingsFragment}
+          ${OwnerPermissionsSettingsFragment}
+        `}
+        variables={{ login: ownerLogin }}
+      >
+        {({ owner }) => {
+          if (!owner) return null;
 
-        <Routes>
-          <Route index element={<GeneralSettings />} />
-          {hasWritePermission(owner) ? (
-            <Route path="permissions" element={<PermissionsSettings />} />
-          ) : null}
-          <Route path="*" element={<NotFound mx={-3} my={0} />} />
-        </Routes>
-      </SidebarLayout>
+          return (
+            <>
+              <OwnerTabs />
+              <SidebarLayout>
+                <SettingsSidebar owner={owner} />
+
+                <Routes>
+                  <Route index element={<GeneralSettings owner={owner} />} />
+                  {hasWritePermission(owner) ? (
+                    <Route
+                      path="permissions"
+                      element={<PermissionsSettings owner={owner} />}
+                    />
+                  ) : null}
+                  <Route path="*" element={<NotFound mx={-3} my={0} />} />
+                </Routes>
+              </SidebarLayout>
+            </>
+          );
+        }}
+      </Query>
     </Container>
   );
 }

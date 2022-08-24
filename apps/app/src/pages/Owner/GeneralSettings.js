@@ -2,7 +2,7 @@ import React from "react";
 import { x } from "@xstyled/styled-components";
 import moment from "moment";
 import { FaCheckCircle } from "react-icons/fa";
-
+import { gql } from "graphql-tag";
 import {
   Card,
   CardBody,
@@ -15,8 +15,24 @@ import {
   SidebarLayout,
 } from "@argos-ci/app/src/components";
 import config from "../../config";
-import { useOwner } from "../../containers/OwnerContext";
 import { getPossessiveForm } from "../../modules/utils";
+
+export const OwnerSettingsFragment = gql`
+  fragment OwnerSettingsFragment on Owner {
+    name
+    currentMonthUsedScreenshots
+    purchases {
+      id
+      startDate
+      endDate
+      plan {
+        id
+        name
+        screenshotsLimitPerMonth
+      }
+    }
+  }
+`;
 
 const Feature = (props) => (
   <x.li display="flex" alignItems="center" gap={2} {...props} />
@@ -56,8 +72,8 @@ const Plan = ({ purchase }) => {
   );
 };
 
-function PlanCard({ owner, screenshotsLimitPerMonth, ...props }) {
-  let [currentPurchase, nextPurchase] = owner.purchases;
+function PlanCard({ purchases, screenshotsLimitPerMonth, ...props }) {
+  let [currentPurchase, nextPurchase] = purchases;
 
   return (
     <Card {...props}>
@@ -98,7 +114,11 @@ function PlanCard({ owner, screenshotsLimitPerMonth, ...props }) {
   );
 }
 
-function UsageCard({ owner, screenshotsLimitPerMonth, ...props }) {
+function UsageCard({
+  currentMonthUsedScreenshots,
+  screenshotsLimitPerMonth,
+  ...props
+}) {
   return (
     <Card {...props}>
       <CardHeader>
@@ -107,11 +127,11 @@ function UsageCard({ owner, screenshotsLimitPerMonth, ...props }) {
       <CardBody minHeight="220px">
         <CardTitle mb={2}>Used screenshots</CardTitle>
         <x.span fontSize="xl">
-          {owner.currentMonthUsedScreenshots.toLocaleString()}
+          {currentMonthUsedScreenshots.toLocaleString()}
         </x.span>{" "}
         <x.span color="gray-500">/ {screenshotsLimitPerMonth}</x.span>
         <ProgressBar
-          score={owner.currentMonthUsedScreenshots}
+          score={currentMonthUsedScreenshots}
           total={screenshotsLimitPerMonth}
           mt={2}
         />
@@ -128,17 +148,15 @@ function UsageCard({ owner, screenshotsLimitPerMonth, ...props }) {
   );
 }
 
-export function GeneralSettings() {
-  const { owner } = useOwner();
-  if (!owner) return null;
+export function GeneralSettings({
+  owner: { name, purchases, currentMonthUsedScreenshots },
+}) {
   const screenshotsLimitPerMonth = Infinity;
 
   return (
     <>
       <SidebarLayout.PageTitle>
-        <PrimaryTitle>
-          {getPossessiveForm(owner.name)} general settings
-        </PrimaryTitle>
+        <PrimaryTitle>{getPossessiveForm(name)} general settings</PrimaryTitle>
       </SidebarLayout.PageTitle>
 
       <SidebarLayout.PageContent>
@@ -149,12 +167,12 @@ export function GeneralSettings() {
           gap={4}
         >
           <PlanCard
-            owner={owner}
             screenshotsLimitPerMonth={screenshotsLimitPerMonth}
+            purchases={purchases}
             flex={1}
           />
           <UsageCard
-            owner={owner}
+            currentMonthUsedScreenshots={currentMonthUsedScreenshots}
             screenshotsLimitPerMonth={screenshotsLimitPerMonth}
             flex={1}
           />

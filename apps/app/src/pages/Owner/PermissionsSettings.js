@@ -1,4 +1,5 @@
 import React from "react";
+import { gql } from "graphql-tag";
 import config from "../../config";
 import {
   Card,
@@ -10,16 +11,20 @@ import {
   Link,
 } from "@argos-ci/app/src/components";
 import { GoLinkExternal } from "react-icons/go";
-import { useOwner } from "../../containers/OwnerContext";
 import { getPossessiveForm } from "../../modules/utils";
 
-export function PermissionsSettings() {
-  const { owner } = useOwner();
+export const OwnerPermissionsSettingsFragment = gql`
+  fragment OwnerPermissionsSettingsFragment on Owner {
+    name
+  }
+`;
+
+export function PermissionsSettings({ owner: { name } }) {
   return (
     <>
       <SidebarLayout.PageTitle>
         <PrimaryTitle>
-          {getPossessiveForm(owner.name)} repositories permissions
+          {getPossessiveForm(name)} repositories permissions
         </PrimaryTitle>
       </SidebarLayout.PageTitle>
 

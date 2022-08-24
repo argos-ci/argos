@@ -1,5 +1,13 @@
 import React from "react";
 import { Avatar } from "@argos-ci/app/src/components";
+import { gql } from "graphql-tag";
+
+export const OwnerAvatarFragment = gql`
+  fragment OwnerAvatarFragment on Owner {
+    name
+    login
+  }
+`;
 
 export const OwnerAvatar = React.forwardRef(
   ({ owner, size, ...props }, ref) => {
