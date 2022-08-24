@@ -3,31 +3,31 @@ import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
 import {
   Alert,
-  Container,
   Card,
   CardBody,
   CardHeader,
-  CardTitle,
   CardText,
+  CardTitle,
   Code,
+  Container,
   Form,
   FormError,
   FormInput,
   FormLabel,
   FormSubmit,
-  useFormState,
-  Toast,
-  useToast,
   PrimaryTitle,
+  SidebarItem,
+  SidebarItemLink,
   SidebarLayout,
   SidebarList,
   SidebarTitle,
-  SidebarItem,
-  SidebarItemLink,
+  Tag,
+  Toast,
+  useFormState,
+  useToast,
 } from "@argos-ci/app/src/components";
 import { x } from "@xstyled/styled-components";
 import { useMutation } from "@apollo/client";
-import { Tag } from "../../components/Tag";
 import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
 import { EnableToggleButton } from "./EnableToggleButton";
 
@@ -64,7 +64,9 @@ function TokenCard({ repository }) {
 function UpdateBranchForm({ repository }) {
   const successToast = useToast();
   const errorToast = useToast();
-
+  const [baselineBranch, setBaselineBranch] = React.useState(
+    repository.baselineBranch
+  );
   const [updateBaselineBranch, { loading: branchUpdateLoading }] = useMutation(
     UPDATE_BASELINE_BRANCH,
     {
@@ -72,11 +74,7 @@ function UpdateBranchForm({ repository }) {
       onError: () => errorToast.show(),
     }
   );
-
-  const form = useFormState({
-    defaultValues: { name: repository.baselineBranch },
-  });
-
+  const form = useFormState();
   form.useSubmit(async () => {
     await updateBaselineBranch({
       variables: {
@@ -91,7 +89,13 @@ function UpdateBranchForm({ repository }) {
       <FormLabel name={form.names.name}>Reference Branch</FormLabel>
 
       <x.div display="flex" gap={2}>
-        <FormInput name={form.names.name} placeholder="Branch name" required />
+        <FormInput
+          name={form.names.name}
+          placeholder="Branch name"
+          required
+          value={baselineBranch}
+          onChange={(e) => setBaselineBranch(e.target.value)}
+        />
         <FormSubmit disabled={branchUpdateLoading}>Update Branch</FormSubmit>
       </x.div>
 
