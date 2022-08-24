@@ -13,7 +13,7 @@ export const Tr = (props) => (
 export const Thead = styled.theadBox`
   background-color: highlight-background;
 
-  ${Tr} {
+  tr {
     border-bottom: 0;
   }
 `;

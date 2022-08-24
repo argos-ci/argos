@@ -10,22 +10,14 @@ export const IllustratedText = ({
   ...props
 }) => {
   return (
-    <x.span
-      display="inline-flex"
-      columnGap={1}
-      alignItems="center"
-      fontSize={fontSize}
-      {...props}
-    >
+    <x.span columnGap={1} alignItems="center" fontSize={fontSize} {...props}>
       {reverse ? (
         <>
-          {children}
-          <Icon as={LocalIcon} fontSize={fontSize} />
+          {children} <Icon as={LocalIcon} fontSize={fontSize} />
         </>
       ) : (
         <>
-          <Icon as={LocalIcon} fontSize={fontSize} />
-          {children}
+          <Icon as={LocalIcon} fontSize={fontSize} /> {children}
         </>
       )}
     </x.span>
