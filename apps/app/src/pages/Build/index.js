@@ -15,7 +15,6 @@ import {
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
-import { useRepository } from "../../containers/RepositoryContext";
 import { UpdateStatusButton } from "./UpdateStatusButton";
 import { FileDiffIcon, ChecklistIcon } from "@primer/octicons-react";
 import { getVariantColor } from "../../modules/utils";
@@ -175,14 +174,10 @@ export function StickyMenu({ children, build, ...props }) {
 }
 
 export function Build() {
-  const { repository } = useRepository();
-  const { buildNumber } = useParams();
+  const { ownerLogin, repositoryName, buildNumber } = useParams();
   const { loading, data } = useQuery(BUILD_QUERY, {
-    variables: {
-      ownerLogin: repository.owner.login,
-      repositoryName: repository.name,
-      buildNumber: Number(buildNumber),
-    },
+    variables: { ownerLogin, repositoryName, buildNumber: Number(buildNumber) },
+    skip: !ownerLogin || !repositoryName || buildNumber === undefined,
   });
   const [showStableScreenshots, setShowStableScreenshots] = useState(false);
   const { observe, inView } = useInView();
@@ -195,7 +190,7 @@ export function Build() {
     );
   }
 
-  if (!data.repository || !data.repository.build) return <NotFound />;
+  if (!data?.repository?.build) return <NotFound />;
 
   const { build } = data.repository;
 
@@ -226,7 +221,7 @@ export function Build() {
         <BuildChanges build={build} />
       </x.div>
 
-      <SummaryCard repository={repository} build={build} />
+      <SummaryCard repository={data.repository} build={build} />
 
       <x.div
         display="flex"

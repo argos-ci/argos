@@ -19,7 +19,6 @@ import {
   Icon,
   LinkBlock,
 } from "@argos-ci/app/src/components";
-import { useRepository } from "../../containers/RepositoryContext";
 import { useQuery } from "../../containers/Apollo";
 import { GettingStarted } from "./GettingStarted";
 
@@ -148,7 +147,7 @@ function BuildsList({ repository }) {
   } = data;
 
   if (!pageInfo.totalCount) {
-    return <GettingStarted />;
+    return <GettingStarted repository={repository} />;
   }
 
   return (
@@ -231,9 +230,7 @@ function BuildsList({ repository }) {
   );
 }
 
-export function RepositoryBuilds() {
-  const { repository } = useRepository();
-
+export function RepositoryBuilds({ repository }) {
   return (
     <Container>
       <PrimaryTitle>{getPossessiveForm(repository.name)} builds</PrimaryTitle>

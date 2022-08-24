@@ -5,6 +5,7 @@ import {
   BaseLink,
   IllustratedText,
   Link,
+  Loader,
   Menu,
   MenuButton,
   MenuButtonArrow,
@@ -20,80 +21,93 @@ import { useUser } from "../User";
 import config from "../../config";
 import { GoLinkExternal } from "react-icons/go";
 
+const OWNERS_QUERY = gql`
+  query OWNERS_QUERY {
+    owners {
+      id
+      name
+      login
+    }
+  }
+`;
+
 export function OwnerBreadcrumbMenu(props) {
   const { ownerLogin } = useParams();
   const user = useUser();
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
 
   return (
-    <Query
-      query={gql`
-        query Owners {
-          owners {
-            id
-            name
-            login
-          }
-        }
-      `}
-    >
-      {({ owners }) => {
-        const ownersList = owners
-          .filter(({ login }) => login !== ownerLogin)
-          .sort((ownerA, ownerB) =>
-            String(ownerA.name).localeCompare(String(ownerB.name))
-          );
-        if (ownersList.length === 0) return null;
+    <>
+      <MenuButton state={menu} px={0} pt={2} {...props}>
+        <MenuButtonArrow />
+      </MenuButton>
 
-        return (
-          <>
-            <MenuButton state={menu} px={0} pt={2} {...props}>
-              <MenuButtonArrow />
-            </MenuButton>
+      <Menu aria-label="Organizations list" state={menu}>
+        <Query
+          query={OWNERS_QUERY}
+          fallback={<Loader />}
+          skip={!menu.open || !ownerLogin}
+        >
+          {(data) => {
+            if (!data?.owners) {
+              return <MenuText>No organization found</MenuText>;
+            }
 
-            <Menu aria-label="Organizations list" state={menu}>
-              <MenuTitle>Organizations</MenuTitle>
-              <MenuSeparator />
+            const ownersList = data.owners
+              .filter(({ login }) => login !== ownerLogin)
+              .sort((ownerA, ownerB) =>
+                String(ownerA.name).localeCompare(String(ownerB.name))
+              );
 
-              {user.login !== ownerLogin && (
-                <MenuItem state={menu} as={BaseLink} to={`/${user.login}`}>
-                  <OwnerAvatar owner={user} size="sm" />
-                  {user.login}
-                </MenuItem>
-              )}
+            if (ownersList.length === 0) {
+              return <MenuText>No organization found</MenuText>;
+            }
 
-              {ownersList.map((owner) => (
-                <MenuItem
-                  key={owner.login}
-                  state={menu}
-                  as={BaseLink}
-                  to={`/${owner.login}`}
-                >
-                  <OwnerAvatar owner={owner} size="sm" />
-                  {owner.name}
-                </MenuItem>
-              ))}
+            return (
+              <>
+                <MenuTitle>Organizations</MenuTitle>
+                <MenuSeparator />
 
-              <MenuSeparator />
-              <MenuText>
-                Don’t see your org?
-                <IllustratedText
-                  as={Link}
-                  href={config.get("github.appUrl")}
-                  target="_blank"
-                  icon={GoLinkExternal}
-                  reverse
-                  fontWeight="medium"
-                  mt={1}
-                  display="flex"
-                >
-                  Manage access restrictions
-                </IllustratedText>
-              </MenuText>
-            </Menu>
-          </>
-        );
-      }}
-    </Query>
+                {user.login !== ownerLogin && (
+                  <MenuItem state={menu} as={BaseLink} to={`/${user.login}`}>
+                    <OwnerAvatar owner={user} size="sm" />
+                    {user.login}
+                  </MenuItem>
+                )}
+
+                {ownersList.map((owner) => (
+                  <MenuItem
+                    key={owner.login}
+                    state={menu}
+                    as={BaseLink}
+                    to={`/${owner.login}`}
+                  >
+                    <OwnerAvatar owner={owner} size="sm" />
+                    {owner.name}
+                  </MenuItem>
+                ))}
+
+                <MenuSeparator />
+                <MenuText>
+                  Don’t see your org?
+                  <IllustratedText
+                    as={Link}
+                    href={config.get("github.appUrl")}
+                    target="_blank"
+                    icon={GoLinkExternal}
+                    reverse
+                    fontWeight="medium"
+                    mt={1}
+                    display="flex"
+                  >
+                    Manage access restrictions
+                  </IllustratedText>
+                </MenuText>
+              </>
+            );
+          }}
+        </Query>
+      </Menu>
+    </>
   );
 }

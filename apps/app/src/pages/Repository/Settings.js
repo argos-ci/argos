@@ -10,7 +10,6 @@ import {
   CardTitle,
   CardText,
   Code,
-  Button,
   Form,
   FormError,
   FormInput,
@@ -26,14 +25,11 @@ import {
   SidebarItem,
   SidebarItemLink,
 } from "@argos-ci/app/src/components";
-import {
-  useRepository,
-  useToggleRepository,
-} from "../../containers/RepositoryContext";
 import { x } from "@xstyled/styled-components";
 import { useMutation } from "@apollo/client";
 import { Tag } from "../../components/Tag";
 import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
+import { EnableToggleButton } from "./EnableToggleButton";
 
 const UPDATE_BASELINE_BRANCH = gql`
   mutation UpdateBaselineBranch($repositoryId: String!, $branchName: String!) {
@@ -129,8 +125,6 @@ function BranchUpdateCard({ repository }) {
 }
 
 function EnableRepositoryCard({ repository }) {
-  const { toggleRepository, loading, error } = useToggleRepository();
-
   return (
     <Card>
       <CardHeader>
@@ -139,28 +133,7 @@ function EnableRepositoryCard({ repository }) {
         </CardTitle>
       </CardHeader>
       <CardBody>
-        {error && (
-          <Alert variant="danger">
-            Something went wrong. Please try again.
-          </Alert>
-        )}
-
-        <CardText>
-          <Button
-            disabled={loading}
-            variant={repository.enabled ? "danger" : "success"}
-            onClick={() =>
-              toggleRepository({
-                variables: {
-                  enabled: !repository.enabled,
-                  repositoryId: repository.id,
-                },
-              })
-            }
-          >
-            {repository.enabled ? "Deactivate" : "Activate"} Repository
-          </Button>
-        </CardText>
+        <EnableToggleButton repository={repository} />
       </CardBody>
     </Card>
   );
@@ -192,9 +165,7 @@ function SettingsSidebar({ repository }) {
   );
 }
 
-export function RepositorySettings() {
-  const { repository } = useRepository();
-
+export function RepositorySettings({ repository }) {
   return (
     <Container>
       <Helmet>
