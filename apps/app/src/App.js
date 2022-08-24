@@ -10,11 +10,11 @@ import { GlobalStyle, ThemeInitializer } from "./components";
 import { Layout } from "./containers/Layout";
 import { Home } from "./pages/Home";
 import { Preflight } from "@xstyled/styled-components";
-import { Owner } from "./pages/Owner";
-import { NotFound } from "./pages/NotFound";
+import { NotFoundWithContainer } from "./pages/NotFound";
 import { Repository } from "./pages/Repository";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { Build } from "./pages/Build";
+import { OwnerRepositories } from "./pages/Owner/Repositories";
 
 export function App() {
   return (
@@ -51,8 +51,8 @@ export function App() {
                     path="/:ownerLogin/:repositoryName/*"
                     element={<Repository />}
                   />
-                  <Route path="/:ownerLogin" element={<Owner />} />
-                  <Route path="*" element={<NotFound />} />
+                  <Route path="/:ownerLogin" element={<OwnerRepositories />} />
+                  <Route path="*" element={<NotFoundWithContainer />} />
                 </Route>
               </Routes>
             </UserInitializer>

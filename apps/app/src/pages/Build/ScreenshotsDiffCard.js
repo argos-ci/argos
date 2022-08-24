@@ -12,7 +12,6 @@ import {
   useDisclosureState,
   DisclosureContent,
   Disclosure,
-  CardText,
 } from "@argos-ci/app/src/components";
 import { ChevronRightIcon } from "@primer/octicons-react";
 

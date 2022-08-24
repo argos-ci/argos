@@ -1,18 +1,19 @@
 import React from "react";
 import { Helmet } from "react-helmet";
+import { x } from "@xstyled/styled-components";
 import {
-  Container,
   Card,
   CardHeader,
   CardTitle,
   CardBody,
   CardText,
   Link,
+  Container,
 } from "@argos-ci/app/src/components";
 
 export function NotFound(props) {
   return (
-    <Container {...props}>
+    <x.div {...props}>
       <Helmet>
         <title>Not found</title>
       </Helmet>
@@ -28,6 +29,12 @@ export function NotFound(props) {
           </CardText>
         </CardBody>
       </Card>
-    </Container>
+    </x.div>
   );
+}
+
+export function NotFoundWithContainer(props) {
+  <Container>
+    <NotFound {...props} />
+  </Container>;
 }

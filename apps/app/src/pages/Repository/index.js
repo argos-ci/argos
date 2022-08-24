@@ -6,7 +6,7 @@ import { TabList, TabNavLink } from "@argos-ci/app/src/components";
 import { RepositoryBuilds } from "./Builds";
 import { RepositorySettings } from "./Settings";
 import { GettingStarted } from "./GettingStarted";
-import { NotFound } from "../NotFound";
+import { NotFoundWithContainer } from "../NotFound";
 import { HeaderTeleporter } from "../../containers/AppNavbar";
 import { Query } from "../../containers/Apollo";
 
@@ -61,7 +61,7 @@ export function Repository() {
         skip={!ownerLogin || !repositoryName}
       >
         {(data) => {
-          if (!data?.repository) return <NotFound />;
+          if (!data?.repository) return <NotFoundWithContainer />;
 
           return (
             <>
@@ -92,7 +92,7 @@ export function Repository() {
                     }
                   />
                 ) : null}
-                <Route path="*" element={<NotFound />} />
+                <Route path="*" element={<NotFoundWithContainer />} />
               </Routes>
             </>
           );
