@@ -1,5 +1,6 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
+import { gql } from "graphql-tag";
 import { GoGitCommit, GoClock, GoGitBranch } from "react-icons/go";
 import {
   Card,
@@ -11,21 +12,83 @@ import {
 } from "@argos-ci/app/src/components";
 import { getVariantColor } from "../../modules/utils";
 import { hasWritePermission } from "../../modules/permissions";
-import { UpdateStatusButton } from "./UpdateStatusButton";
+import {
+  UpdateStatusButton,
+  UpdateStatusButtonFragment,
+} from "./UpdateStatusButton";
 import { StatusIcon, statusText } from "../../containers/Status";
+import { useParams } from "react-router-dom";
 
-export const SummaryCard = React.forwardRef(({ repository, build }, ref) => {
-  const statusColor = getVariantColor(build.status);
-  const date = new Date(build.createdAt);
-  const githubRepoUrl = `https://github.com/${build.repository.owner.login}/${build.repository.name}`;
+export const SummaryCardRepositoryFragment = gql`
+  fragment SummaryCardRepositoryFragment on Repository {
+    permissions
+  }
+
+  ${UpdateStatusButtonFragment}
+`;
+
+export const SummaryCardBuildFragment = gql`
+  fragment SummaryCardBuildFragment on Build {
+    createdAt
+    compareScreenshotBucket {
+      id
+      branch
+      commit
+    }
+    status
+    ...UpdateStatusButtonFragment
+  }
+
+  ${UpdateStatusButtonFragment}
+`;
+
+export function StickySummaryMenu({ repository, build, ...props }) {
+  const { ownerLogin, repositoryName } = useParams();
+  const githubRepoUrl = `https://github.com/${ownerLogin}/${repositoryName}`;
 
   return (
-    <Card
-      borderLeft={2}
-      borderLeftColor={statusColor}
-      borderRadius="0 md md 0"
-      ref={ref}
+    <x.div
+      position="sticky"
+      top={0}
+      zIndex={200}
+      backgroundColor="background"
+      borderLeft={3}
+      borderColor={getVariantColor(build.status)}
+      {...props}
     >
+      <x.div
+        display="flex"
+        justifyContent="space-between"
+        pl={2}
+        py={1}
+        gap={4}
+      >
+        <IllustratedText icon={GoGitBranch} overflow="hidden">
+          <Link
+            href={`${githubRepoUrl}/${build.compareScreenshotBucket.branch}`}
+            whiteSpace="nowrap"
+            textOverflow="ellipsis"
+            overflow="hidden"
+          >
+            {build.compareScreenshotBucket.branch}
+          </Link>
+        </IllustratedText>
+        {hasWritePermission(repository) && (
+          <UpdateStatusButton build={build} flex={1} />
+        )}
+      </x.div>
+    </x.div>
+  );
+}
+
+export function SummaryCard({ repository, build }) {
+  const { ownerLogin, repositoryName } = useParams();
+  const statusColor = getVariantColor(build.status);
+  const date = new Date(build.createdAt);
+  const githubRepoUrl = `https://github.com/${ownerLogin}/${repositoryName}`;
+
+  return (
+    <Card borderLeft={2} borderLeftColor={statusColor} borderRadius="0 md md 0">
       <CardHeader>
         <CardTitle>Build Summary</CardTitle>
         {hasWritePermission(repository) && <UpdateStatusButton build={build} />}
@@ -63,4 +126,4 @@ export const SummaryCard = React.forwardRef(({ repository, build }, ref) => {
       </CardBody>
     </Card>
   );
-});
+}

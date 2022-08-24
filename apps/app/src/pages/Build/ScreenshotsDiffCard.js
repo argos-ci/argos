@@ -1,5 +1,6 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
+import { gql } from "graphql-tag";
 import {
   Card,
   CardHeader,
@@ -14,6 +15,22 @@ import {
   CardText,
 } from "@argos-ci/app/src/components";
 import { GoChevronRight } from "react-icons/go";
+
+export const ScreenshotsDiffCardFragment = gql`
+  fragment ScreenshotsDiffCardFragment on ScreenshotDiff {
+    url
+    compareScreenshot {
+      id
+      name
+      url
+    }
+    baseScreenshot {
+      id
+      name
+      url
+    }
+  }
+`;
 
 export function EmptyScreenshotCard() {
   return (

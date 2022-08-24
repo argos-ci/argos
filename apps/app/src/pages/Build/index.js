@@ -7,73 +7,30 @@ import { useInView } from "react-cool-inview";
 import {
   Container,
   IllustratedText,
-  Link,
   LoadingAlert,
   PrimaryTitle,
   SecondaryTitle,
   ToggleGroupButtons,
 } from "@argos-ci/app/src/components";
-import { useQuery } from "../../containers/Apollo";
+import { Query } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
-import { UpdateStatusButton } from "./UpdateStatusButton";
+import {
+  UpdateStatusButton,
+  UpdateStatusButtonFragment,
+} from "./UpdateStatusButton";
 import { FileDiffIcon, ChecklistIcon } from "@primer/octicons-react";
 import { getVariantColor } from "../../modules/utils";
-import { SummaryCard } from "./SummaryCard";
+import {
+  StickySummaryMenu,
+  SummaryCard,
+  SummaryCardBuildFragment,
+  SummaryCardRepositoryFragment,
+} from "./SummaryCard";
 import {
   EmptyScreenshotCard,
   ScreenshotsDiffCard,
+  ScreenshotsDiffCardFragment,
 } from "./ScreenshotsDiffCard";
-import { GoGitBranch } from "react-icons/go";
-
-export const BuildContextFragment = gql`
-  fragment BuildContextFragment on Build {
-    id
-    createdAt
-    number
-    status
-    repository {
-      name
-      owner {
-        login
-      }
-    }
-    baseScreenshotBucket {
-      id
-      createdAt
-      updatedAt
-      name
-      commit
-      branch
-    }
-    compareScreenshotBucket {
-      id
-      createdAt
-      updatedAt
-      name
-      commit
-      branch
-    }
-    screenshotDiffs {
-      id
-      createdAt
-      updatedAt
-      baseScreenshot {
-        id
-        name
-        url
-      }
-      compareScreenshot {
-        id
-        name
-        url
-      }
-      url
-      score
-      jobStatus
-      validationStatus
-    }
-  }
-`;
 
 const BUILD_QUERY = gql`
   query Build(
@@ -83,39 +40,41 @@ const BUILD_QUERY = gql`
   ) {
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
+      ...SummaryCardRepositoryFragment
       build(number: $buildNumber) {
         id
-        number
-        ...BuildContextFragment
+        screenshotDiffs {
+          id
+          score
+          ...ScreenshotsDiffCardFragment
+        }
+        ...SummaryCardBuildFragment
+        ...UpdateStatusButtonFragment
       }
     }
   }
 
-  ${BuildContextFragment}
+  ${SummaryCardRepositoryFragment}
+  ${SummaryCardBuildFragment}
+  ${UpdateStatusButtonFragment}
+  ${ScreenshotsDiffCardFragment}
 `;
 
-function BuildChanges({ build, ...props }) {
-  const passingScreenshotCount = build.screenshotDiffs.filter(
-    ({ score }) => score === 0
-  ).length;
-  const diffScreenshotCount = build.screenshotDiffs.filter(
-    ({ score }) => score !== 0
-  ).length;
-
+function BuildChanges({ updatedScreenshots, stableScreenshots, ...props }) {
   return (
     <x.div
       display="flex"
-      gap={3}
       alignItems="flex-start"
+      gap={3}
       pt="6px"
       flexShrink={0}
       {...props}
     >
       <IllustratedText icon={FileDiffIcon} color={getVariantColor("warning")}>
-        {diffScreenshotCount}
+        {updatedScreenshots.length}
       </IllustratedText>
       <IllustratedText icon={ChecklistIcon} color={getVariantColor("success")}>
-        {passingScreenshotCount}
+        {stableScreenshots.length}
       </IllustratedText>
     </x.div>
   );
@@ -137,121 +96,94 @@ export function ScreenshotCards({ screenshotsDiffs, open }) {
   );
 }
 
-export function StickyMenu({ children, build, ...props }) {
-  const githubRepoUrl = `https://github.com/${build.repository.owner.login}/${build.repository.name}`;
-
-  return (
-    <x.div
-      position="sticky"
-      top={0}
-      zIndex={200}
-      backgroundColor="background"
-      borderLeft={3}
-      borderColor={getVariantColor(build.status)}
-      {...props}
-    >
-      <x.div
-        display="flex"
-        justifyContent="space-between"
-        pl={2}
-        py={1}
-        gap={4}
-      >
-        <IllustratedText icon={GoGitBranch} overflow="hidden">
-          <Link
-            href={`${githubRepoUrl}/${build.compareScreenshotBucket.branch}`}
-            whiteSpace="nowrap"
-            textOverflow="ellipsis"
-            overflow="hidden"
-          >
-            {build.compareScreenshotBucket.branch}
-          </Link>
-        </IllustratedText>
-        <UpdateStatusButton build={build} flex={1} />
-      </x.div>
-    </x.div>
-  );
-}
-
 export function Build() {
   const { ownerLogin, repositoryName, buildNumber } = useParams();
-  const { loading, data } = useQuery(BUILD_QUERY, {
-    variables: { ownerLogin, repositoryName, buildNumber: Number(buildNumber) },
-    skip: !ownerLogin || !repositoryName || buildNumber === undefined,
-  });
   const [showStableScreenshots, setShowStableScreenshots] = useState(false);
   const { observe, inView } = useInView();
-
-  if (loading) {
-    return (
-      <Container>
-        <LoadingAlert />
-      </Container>
-    );
-  }
-
-  if (!data?.repository?.build) return <NotFound />;
-
-  const { build } = data.repository;
-
-  const updatedScreenshots = build.screenshotDiffs.filter(
-    ({ score }) => score !== 0
-  );
-  const stableScreenshots = build.screenshotDiffs.filter(
-    ({ score }) => score === 0
-  );
 
   return (
     <Container>
       <Helmet>
-        <title>{`Build #${build.number}`}</title>
+        <title>{`Build #${buildNumber}`}</title>
       </Helmet>
 
-      <x.div
-        display="flex"
-        justifyContent="space-between"
-        alignItems="baseline"
-        columnGap={10}
-        flexWrap="wrap"
-        mb={3}
+      <Query
+        query={BUILD_QUERY}
+        variables={{
+          ownerLogin,
+          repositoryName,
+          buildNumber: Number(buildNumber),
+        }}
+        fallback={<LoadingAlert />}
+        skip={!ownerLogin || !repositoryName || buildNumber === undefined}
       >
-        <PrimaryTitle mb={0}>
-          Build #{build.number.toLocaleString()}
-        </PrimaryTitle>
-        <BuildChanges build={build} />
-      </x.div>
+        {(data) => {
+          if (!data?.repository?.build) return <NotFound />;
 
-      <SummaryCard repository={data.repository} build={build} />
+          const { build } = data.repository;
+          const updatedScreenshots = build.screenshotDiffs.filter(
+            ({ score }) => score !== 0
+          );
+          const stableScreenshots = build.screenshotDiffs.filter(
+            ({ score }) => score === 0
+          );
 
-      <x.div
-        display="flex"
-        justifyContent="space-between"
-        columnGap={10}
-        rowGap={2}
-        flexWrap="wrap"
-        mt={5}
-        ref={observe}
-      >
-        <ToggleGroupButtons
-          state={showStableScreenshots}
-          setState={setShowStableScreenshots}
-          switchOnText="Show differences only"
-          switchOffText="Show all"
-        />
-        <UpdateStatusButton build={build} />
-      </x.div>
+          return (
+            <>
+              <x.div
+                display="flex"
+                justifyContent="space-between"
+                alignItems="baseline"
+                columnGap={10}
+                flexWrap="wrap"
+                mb={3}
+              >
+                <PrimaryTitle mb={0}>
+                  Build #{Number(buildNumber).toLocaleString()}
+                </PrimaryTitle>
+                <BuildChanges
+                  updatedScreenshots={updatedScreenshots}
+                  stableScreenshots={stableScreenshots}
+                />
+              </x.div>
 
-      {inView ? null : <StickyMenu build={build} />}
+              <SummaryCard repository={data.repository} build={build} />
 
-      <SecondaryTitle mt={4}>Updated screenshots</SecondaryTitle>
-      <ScreenshotCards screenshotsDiffs={updatedScreenshots} open />
+              <x.div
+                display="flex"
+                justifyContent="space-between"
+                columnGap={10}
+                rowGap={2}
+                flexWrap="wrap"
+                mt={5}
+                ref={observe}
+              >
+                <ToggleGroupButtons
+                  state={showStableScreenshots}
+                  setState={setShowStableScreenshots}
+                  switchOnText="Show differences only"
+                  switchOffText="Show all"
+                />
+                <UpdateStatusButton build={build} />
+              </x.div>
 
-      {showStableScreenshots ? (
-        <>
-          <SecondaryTitle mt={6}>Stable Screenshots</SecondaryTitle>
-          <ScreenshotCards screenshotsDiffs={stableScreenshots} />
-        </>
-      ) : null}
+              {inView ? null : (
+                <StickySummaryMenu repository={data.repository} build={build} />
+              )}
+
+              <SecondaryTitle mt={4}>Updated screenshots</SecondaryTitle>
+              <ScreenshotCards screenshotsDiffs={updatedScreenshots} open />
+
+              {showStableScreenshots ? (
+                <>
+                  <SecondaryTitle mt={6}>Stable Screenshots</SecondaryTitle>
+                  <ScreenshotCards screenshotsDiffs={stableScreenshots} />
+                </>
+              ) : null}
+            </>
+          );
+        }}
+      </Query>
     </Container>
   );
 }
