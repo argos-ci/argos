@@ -8,9 +8,7 @@ const InnerCode = (props) => (
 export function Code({ children, ...props }) {
   return (
     <InnerCode {...props}>
-      <x.pre pt={2} pb={1} px={2} overflowX="auto">
-        {children}
-      </x.pre>
+      <x.pre overflowX="auto">{children}</x.pre>
     </InnerCode>
   );
 }

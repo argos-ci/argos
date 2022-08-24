@@ -137,7 +137,9 @@ function EnableRepositoryCard({ repository }) {
         </CardTitle>
       </CardHeader>
       <CardBody>
-        <EnableToggleButton repository={repository} />
+        Click on this button to deactivate Argos on this repository. This action
+        doesn’t delete the screenshots.
+        <EnableToggleButton repository={repository} mt={2} />
       </CardBody>
     </Card>
   );
@@ -173,7 +175,7 @@ export function RepositorySettings({ repository }) {
   return (
     <Container>
       <Helmet>
-        <title>Settings</title>
+        <title>Repository Settings</title>
       </Helmet>
 
       <SidebarLayout>
