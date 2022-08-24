@@ -17,7 +17,6 @@ export const BreadcrumbLink = (props) => (
     alignItems="center"
     textDecoration="none"
     px={1}
-    py={1}
     gap={2}
     {...props}
   />

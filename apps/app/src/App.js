@@ -36,12 +36,10 @@ export function App() {
                 />
                 <Route path="/" element={<Layout />}>
                   <Route index element={<Home />} />
-
                   <Route
                     path="/:ownerLogin/settings/*"
                     element={<OwnerSettings />}
                   />
-
                   <Route
                     path={`/:ownerLogin/:repositoryName/builds/:buildNumber`}
                     element={<Build />}

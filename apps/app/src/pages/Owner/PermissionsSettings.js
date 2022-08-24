@@ -10,7 +10,7 @@ import {
   IllustratedText,
   Link,
 } from "@argos-ci/app/src/components";
-import { GoLinkExternal } from "react-icons/go";
+import { LinkExternalIcon } from "@primer/octicons-react";
 import { getPossessiveForm } from "../../modules/utils";
 
 export const OwnerPermissionsSettingsFragment = gql`
@@ -42,7 +42,7 @@ export function PermissionsSettings({ owner: { name } }) {
                 href={config.get("github.appUrl")}
                 target="_blank"
                 fontWeight="normal"
-                icon={GoLinkExternal}
+                icon={LinkExternalIcon}
               >
                 this link
               </IllustratedText>{" "}

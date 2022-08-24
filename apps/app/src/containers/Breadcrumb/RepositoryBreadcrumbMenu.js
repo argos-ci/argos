@@ -1,7 +1,7 @@
 import React from "react";
-import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
-import { GoRepo } from "react-icons/go";
+import { gql } from "graphql-tag";
+import { RepoIcon } from "@primer/octicons-react";
 import {
   Menu,
   MenuItem,
@@ -72,7 +72,7 @@ export function RepositoryBreadcrumbMenu({ ...props }) {
                     to={`/${repositoryLogin}`}
                     minWidth="200px"
                   >
-                    <Icon as={GoRepo} w={5} h={5} mt={1} />
+                    <Icon as={RepoIcon} w={5} h={5} mt={1} />
                     {repositoryLogin}
                   </MenuItem>
                 ))}

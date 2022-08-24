@@ -5,7 +5,6 @@ import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { TabList, TabNavLink } from "@argos-ci/app/src/components";
 import { RepositoryBuilds } from "./Builds";
 import { RepositorySettings } from "./Settings";
-import { Build } from "../Build";
 import { GettingStarted } from "./GettingStarted";
 import { NotFound } from "../NotFound";
 import { HeaderTeleporter } from "../../containers/AppNavbar";

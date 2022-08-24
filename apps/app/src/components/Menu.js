@@ -116,4 +116,4 @@ export const MenuTitle = (props) => (
   />
 );
 
-export const MenuIcon = (props) => <Icon w={5} h={5} {...props} />;
+export const MenuIcon = (props) => <Icon size={24} w={5} h={5} {...props} />;

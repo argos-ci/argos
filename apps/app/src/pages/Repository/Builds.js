@@ -1,7 +1,7 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
 import { useInView } from "react-cool-inview";
-import { GoGitBranch, GoGitCommit, GoClock } from "react-icons/go";
+import { GitBranchIcon, CommitIcon, ClockIcon } from "@primer/octicons-react";
 import moment from "moment";
 import { gql } from "graphql-tag";
 import { getPossessiveForm, getVariantColor } from "../../modules/utils";
@@ -180,7 +180,7 @@ function BuildsList({ repository }) {
                     px={4}
                     to={`${build.number}`}
                   >
-                    <Icon as={GoGitBranch} w={6} h={6} />
+                    <Icon as={GitBranchIcon} w={6} h={6} />
                     {build.compareScreenshotBucket.branch}
                   </TdLink>
                 </Td>
@@ -196,14 +196,14 @@ function BuildsList({ repository }) {
                     target="_blank"
                     href={`https://github.com/${repository.owner.login}/${repository.name}/commit/${build.compareScreenshotBucket.commit}`}
                   >
-                    <Icon as={GoGitCommit} />
+                    <Icon as={(CommitIcon, CommitIcon)} />
                     {build.compareScreenshotBucket.commit.slice(0, 7)}
                   </TdLink>
                 </Td>
 
                 <Td color="secondary-text">
                   <x.div display="flex" gap={2} alignItems="center">
-                    <Icon as={GoClock} />
+                    <Icon as={ClockIcon} />
                     {moment(build.createdAt).fromNow()}
                   </x.div>
                 </Td>

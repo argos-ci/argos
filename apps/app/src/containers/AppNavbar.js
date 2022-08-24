@@ -1,12 +1,12 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
 import {
-  GoHome,
-  GoRepo,
-  GoGear,
-  GoSignOut,
-  GoMarkGithub,
-} from "react-icons/go";
+  HomeIcon,
+  RepoIcon,
+  GearIcon,
+  SignOutIcon,
+  MarkGithubIcon,
+} from "@primer/octicons-react";
 import { createTeleporter } from "react-teleporter";
 import {
   NavbarSecondary,
@@ -57,7 +57,7 @@ function UserMenu({ user, ...props }) {
       </MenuButton>
       <Menu aria-label="User settings" state={menu}>
         <MenuItem state={menu} as={LinkBlock} to={`/`}>
-          <MenuIcon as={GoHome} />
+          <MenuIcon as={HomeIcon} />
           Home
         </MenuItem>
         <MenuSeparator />
@@ -68,16 +68,16 @@ function UserMenu({ user, ...props }) {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <MenuIcon as={GoRepo} />
+          <MenuIcon as={RepoIcon} />
           Add repository
         </MenuItem>
         <MenuItem state={menu} as={LinkBlock} to={`/${user.login}/settings`}>
-          <MenuIcon as={GoGear} />
+          <MenuIcon as={GearIcon} />
           Settings
         </MenuItem>
         <MenuSeparator />
         <MenuItem state={menu} onClick={() => logout()}>
-          <MenuIcon as={GoSignOut} />
+          <MenuIcon as={SignOutIcon} />
           Logout
         </MenuItem>
       </Menu>
@@ -106,7 +106,7 @@ export function AppNavbar() {
               variant="neutral"
               gap={2}
             >
-              <Icon as={GoMarkGithub} />
+              <Icon as={MarkGithubIcon} />
               Login
             </Button>
           )}
