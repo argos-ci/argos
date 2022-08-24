@@ -81,7 +81,7 @@ function BuildChanges({ updatedScreenshots, stableScreenshots, ...props }) {
 }
 
 export function ScreenshotCards({ screenshotsDiffs, open }) {
-  if (screenshotsDiffs.length === 0) <EmptyScreenshotCard />;
+  if (screenshotsDiffs.length === 0) return <EmptyScreenshotCard />;
 
   return (
     <x.div display="flex" flexDirection="column" gap={2}>

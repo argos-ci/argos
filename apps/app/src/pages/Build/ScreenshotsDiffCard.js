@@ -35,10 +35,9 @@ export const ScreenshotsDiffCardFragment = gql`
 export function EmptyScreenshotCard() {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>No screenshot found.</CardTitle>
+      <CardHeader border={0}>
+        <CardTitle>No screenshot found</CardTitle>
       </CardHeader>
-      <CardText>No screenshot found.</CardText>
     </Card>
   );
 }
