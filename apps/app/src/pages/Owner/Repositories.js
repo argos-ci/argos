@@ -25,6 +25,8 @@ import {
   OwnerRepositoryCardFragment,
 } from "./RepositoryCard";
 import { NotFound } from "../NotFound";
+import { OwnerTabs } from "./OwnerTabs";
+import { Helmet } from "react-helmet";
 
 const getRepositoryUrl = (owner, repository) =>
   `/${owner.login}/${repository.name}`;
@@ -35,56 +37,60 @@ export function OwnerRepositories() {
 
   return (
     <Container>
-      <SidebarLayout>
-        <SidebarList>
-          <SidebarTitle>Organization repositories</SidebarTitle>
-          <SidebarItem>
-            <SidebarItemLink href="#active-repositories">
-              Active
-            </SidebarItemLink>
-          </SidebarItem>
-          <SidebarItem>
-            <SidebarItemLink href="#inactive-repositories" exact>
-              Inactive
-            </SidebarItemLink>
-          </SidebarItem>
-        </SidebarList>
+      <Helmet titleTemplate={`%s • ${ownerLogin}`} defaultTitle={ownerLogin} />
 
-        <Query
-          query={gql`
-            query OwnerRepositories($login: String!) {
-              owner(login: $login) {
+      <Query
+        query={gql`
+          query OwnerRepositories($login: String!) {
+            owner(login: $login) {
+              id
+              name
+              login
+              repositories {
                 id
+                enabled
                 name
-                login
-                repositories {
-                  id
-                  enabled
-                  name
-                  ...OwnerRepositoryCardFragment
-                }
+                ...OwnerRepositoryCardFragment
               }
             }
+          }
 
-            ${OwnerRepositoryCardFragment}
-          `}
-          variables={{ login: ownerLogin }}
-          fetchPolicy="no-cache"
-          fallback={<Loader />}
-        >
-          {({ owner }) => {
-            if (!owner) return <NotFound />;
+          ${OwnerRepositoryCardFragment}
+        `}
+        variables={{ login: ownerLogin }}
+        fetchPolicy="no-cache"
+        fallback={<Loader />}
+      >
+        {({ owner }) => {
+          if (!owner) return <NotFound />;
 
-            const activeRepositories = owner.repositories.filter(
-              ({ enabled }) => enabled
-            );
+          const activeRepositories = owner.repositories.filter(
+            ({ enabled }) => enabled
+          );
 
-            const inactiveRepositories = owner.repositories.filter(
-              ({ enabled }) => !enabled
-            );
+          const inactiveRepositories = owner.repositories.filter(
+            ({ enabled }) => !enabled
+          );
 
-            return (
-              <>
+          return (
+            <>
+              <OwnerTabs />
+
+              <SidebarLayout>
+                <SidebarList>
+                  <SidebarTitle>Organization repositories</SidebarTitle>
+                  <SidebarItem>
+                    <SidebarItemLink href="#active-repositories">
+                      Active
+                    </SidebarItemLink>
+                  </SidebarItem>
+                  <SidebarItem>
+                    <SidebarItemLink href="#inactive-repositories" exact>
+                      Inactive
+                    </SidebarItemLink>
+                  </SidebarItem>
+                </SidebarList>
+
                 <SidebarLayout.PageTitle>
                   <PrimaryTitle>
                     {user.login === owner.login
@@ -145,11 +151,11 @@ export function OwnerRepositories() {
                     </Link>
                   </x.div>
                 </SidebarLayout.PageContent>
-              </>
-            );
-          }}
-        </Query>
-      </SidebarLayout>
+              </SidebarLayout>
+            </>
+          );
+        }}
+      </Query>
     </Container>
   );
 }

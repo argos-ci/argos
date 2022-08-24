@@ -98,17 +98,11 @@ function PlanCard({ purchases, screenshotsLimitPerMonth, ...props }) {
           </x.div>
         ) : null}
 
-        {currentPurchase ? (
-          <x.div display="flex" justifyContent="flex-end">
-            <Link target="_blank" href={config.get("github.marketplaceUrl")}>
-              Manage plan →
-            </Link>
-          </x.div>
-        ) : (
+        <x.div display="flex" justifyContent="flex-end">
           <Link target="_blank" href={config.get("github.marketplaceUrl")}>
-            Subscribe to Argos Plan to start →
+            Manage plan →
           </Link>
-        )}
+        </x.div>
       </CardBody>
     </Card>
   );
@@ -124,7 +118,7 @@ function UsageCard({
       <CardHeader>
         <CardTitle>Usage</CardTitle>
       </CardHeader>
-      <CardBody minHeight="220px">
+      <CardBody>
         <CardTitle mb={2}>Used screenshots</CardTitle>
         <x.span fontSize="xl">
           {currentMonthUsedScreenshots.toLocaleString()}

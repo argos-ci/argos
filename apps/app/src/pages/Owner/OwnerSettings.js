@@ -9,7 +9,7 @@ import {
   SidebarLayout,
 } from "@argos-ci/app/src/components";
 import { Route, Routes, useParams } from "react-router-dom";
-import { NotFound } from "../NotFound";
+import { NotFound, NotFoundWithContainer } from "../NotFound";
 import { GeneralSettings, OwnerSettingsFragment } from "./GeneralSettings";
 import {
   OwnerPermissionsSettingsFragment,
@@ -61,7 +61,7 @@ export function OwnerSettings() {
         variables={{ login: ownerLogin }}
       >
         {({ owner }) => {
-          if (!owner) return null;
+          if (!owner) return <NotFoundWithContainer />;
 
           return (
             <>
