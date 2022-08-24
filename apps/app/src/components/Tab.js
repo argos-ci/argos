@@ -2,7 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import styled, { x } from "@xstyled/styled-components";
 import { useIsMatchingTo } from "../containers/Router";
-import { LinkBlock } from "./Link";
 
 export const TabList = styled.menu`
   padding: 0;

@@ -14,75 +14,81 @@ import {
   Link,
   BaseLink,
   Icon,
+  Loader,
 } from "@argos-ci/app/src/components";
 import { Query } from "../Apollo";
+
+const OWNER_REPOSITORIES_QUERY = gql`
+  query OWNER_REPOSITORIES_QUERY($login: String!) {
+    owner(login: $login) {
+      id
+      repositories(enabled: true) {
+        id
+        name
+      }
+    }
+  }
+`;
 
 export function RepositoryBreadcrumbMenu({ ...props }) {
   const { ownerLogin, repositoryName } = useParams();
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
 
   return (
-    <Query
-      query={gql`
-        query Repositories($login: String!) {
-          owner(login: $login) {
-            id
-            repositories(enabled: true) {
-              id
-              name
+    <>
+      <MenuButton state={menu} px={0} pt={2} {...props}>
+        <MenuButtonArrow />
+      </MenuButton>
+
+      <Menu aria-label="Repositories list" state={menu}>
+        <Query
+          query={OWNER_REPOSITORIES_QUERY}
+          variables={{ login: ownerLogin }}
+          fallback={<Loader />}
+          skip={!menu.open || !repositoryName}
+        >
+          {(data) => {
+            if (!data?.owner) return <MenuText>No repository found</MenuText>;
+
+            const repositoryLogins = data.owner.repositories
+              .map(({ name }) => name)
+              .filter((repo) => repo !== repositoryName)
+              .sort();
+
+            if (repositoryLogins.length === 0) {
+              return <MenuText>No organization found</MenuText>;
             }
-          }
-        }
-      `}
-      variables={{ login: ownerLogin }}
-    >
-      {({ owner: { repositories } }) => {
-        const repositoryLogins = repositories
-          .map(({ name }) => name)
-          .filter((repo) => repo !== repositoryName)
-          .sort();
 
-        if (repositoryLogins.length === 0) return null;
+            return (
+              <>
+                <MenuTitle>Repositories list</MenuTitle>
+                <MenuSeparator />
 
-        return (
-          <>
-            <MenuButton state={menu} px={0} pt={2} {...props}>
-              <MenuButtonArrow />
-            </MenuButton>
+                {repositoryLogins.map((repositoryLogin) => (
+                  <MenuItem
+                    key={repositoryLogin}
+                    state={menu}
+                    as={BaseLink}
+                    to={`/${repositoryLogin}`}
+                    minWidth="200px"
+                  >
+                    <Icon as={GoRepo} w={5} h={5} mt={1} />
+                    {repositoryLogin}
+                  </MenuItem>
+                ))}
+              </>
+            );
+          }}
+        </Query>
 
-            <Menu aria-label="Repositories list" state={menu}>
-              <MenuTitle>Repositories list</MenuTitle>
-              <MenuSeparator />
-
-              {repositoryLogins.map((repositoryLogin) => (
-                <MenuItem
-                  key={repositoryLogin}
-                  state={menu}
-                  as={BaseLink}
-                  to={`/${repositoryLogin}`}
-                  minWidth="200px"
-                >
-                  <Icon as={GoRepo} w={5} h={5} mt={1} />
-                  {repositoryLogin}
-                </MenuItem>
-              ))}
-
-              <MenuSeparator />
-              <MenuText>
-                Don’t see your repo?
-                <Link
-                  to={`/${ownerLogin}`}
-                  fontWeight="medium"
-                  display="flex"
-                  mt={1}
-                >
-                  Be sure to activate it →
-                </Link>
-              </MenuText>
-            </Menu>
-          </>
-        );
-      }}
-    </Query>
+        <MenuSeparator />
+        <MenuText>
+          Don’t see your repo?
+          <Link to={`/${ownerLogin}`} fontWeight="medium" display="flex" mt={1}>
+            Be sure to activate it →
+          </Link>
+        </MenuText>
+      </Menu>
+    </>
   );
 }
