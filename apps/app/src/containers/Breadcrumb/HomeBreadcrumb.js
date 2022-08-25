@@ -12,7 +12,7 @@ export function HomeBreadcrumbItem() {
 
   return (
     <BreadcrumbItem>
-      <BreadcrumbLink to={`/`} py={1}>
+      <BreadcrumbLink to="/" py={1}>
         <Icon as={HomeIcon} size={24} w={{ _: 5, md: 6 }} h={{ _: 5, md: 6 }} />
         {match ? "Home" : null}
       </BreadcrumbLink>
