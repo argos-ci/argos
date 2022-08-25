@@ -157,6 +157,11 @@ describe("api v2", () => {
             name: "second",
             path: path.join(__dirname, "__fixtures__", "screenshot_test_2.jpg"),
           },
+          {
+            key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+            name: "second-twin",
+            path: path.join(__dirname, "__fixtures__", "screenshot_test_2.jpg"),
+          },
         ];
         const createResult = await request(app)
           .post("/v2/builds")
@@ -164,7 +169,9 @@ describe("api v2", () => {
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshotKeys: screenshots.map((screenshot) => screenshot.key),
+            screenshotKeys: Array.from(
+              new Set(screenshots.map((screenshot) => screenshot.key))
+            ),
             branch: "main",
             name: "current",
           })
