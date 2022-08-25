@@ -6,6 +6,9 @@
   "s3": {
     "screenshotsBucket": "argos-ci-test"
   },
+  "github": {
+    "appId": "57578"
+  },
   "pg": {
     "connection": {
       "database": "test"

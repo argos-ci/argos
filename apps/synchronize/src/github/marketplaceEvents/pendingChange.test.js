@@ -60,7 +60,7 @@ describe('marketplace "pending_change" event', () => {
   });
 
   describe("updates to a missing plan", () => {
-    it.skip("should throw an error", async () => {
+    it("should throw an error", async () => {
       const payload = {
         ...pendingChangePayload,
         marketplace_purchase: {

@@ -1,8 +1,12 @@
 import { useDatabase } from "@argos-ci/database/testing";
-import { Installation, Synchronization } from "@argos-ci/database/models";
+import {
+  Installation,
+  Synchronization,
+  Repository,
+} from "@argos-ci/database/models";
 import { synchronize } from "./synchronizer";
 
-describe.skip("synchronizer", () => {
+describe("synchronizer", () => {
   useDatabase();
 
   let synchronization;
@@ -23,6 +27,8 @@ describe.skip("synchronizer", () => {
 
     it("synchronizes", async () => {
       await synchronize(synchronization);
+      const repositories = await Repository.query().resultSize();
+      expect(repositories).toBeGreaterThan(0);
     });
   });
 });
