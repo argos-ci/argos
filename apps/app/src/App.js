@@ -21,8 +21,8 @@ export function App() {
     <ThemeInitializer>
       <Preflight />
       <Helmet
-        titleTemplate={`%s • Argos CI`}
-        defaultTitle={`Home • Argos CI`}
+        titleTemplate="%s • Argos"
+        defaultTitle="Argos - Automated visual testing"
       />
       <GlobalStyle />
       <BrowserRouter>
