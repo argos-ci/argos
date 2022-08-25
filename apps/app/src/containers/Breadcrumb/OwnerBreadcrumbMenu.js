@@ -1,4 +1,5 @@
-import React from "react";
+/* eslint-disable react/no-unescaped-entities */
+import * as React from "react";
 import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
 import {
@@ -16,7 +17,7 @@ import {
   useMenuState,
 } from "@argos-ci/app/src/components";
 import { Query } from "../Apollo";
-import { OwnerAvatar } from "../OwnerAvatar";
+import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
 import { useUser } from "../User";
 import config from "../../config";
 import { LinkExternalIcon } from "@primer/octicons-react";
@@ -27,8 +28,11 @@ const OWNERS_QUERY = gql`
       id
       name
       login
+
+      ...OwnerAvatarFragment
     }
   }
+  ${OwnerAvatarFragment}
 `;
 
 export function OwnerBreadcrumbMenu(props) {
@@ -89,7 +93,7 @@ export function OwnerBreadcrumbMenu(props) {
 
                 <MenuSeparator />
                 <MenuText>
-                  Don’t see your org?
+                  Don't see your org?
                   <IllustratedText
                     as={Link}
                     href={config.get("github.appUrl")}

@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
 import { GearIcon, RepoIcon } from "@primer/octicons-react";

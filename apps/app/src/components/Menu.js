@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import {
   useMenuState,
   Menu as AriakitMenu,
@@ -20,17 +20,14 @@ const InnerMenuButton = styled.box`
 
   &:focus {
     background-color: background-focus;
-    outline: none;
   }
 
   &:hover {
     background-color: background-hover;
-    outline: none;
   }
 
   &[aria-expanded="true"] {
     background-color: background-active;
-    outline: none;
   }
 `;
 
@@ -73,7 +70,7 @@ export const MenuItem = (props) => (
     }}
     border={0}
     borderRadius="md"
-    color="white"
+    color="primary-text"
     fontSize="sm"
     w={1}
     transition="md"
@@ -82,7 +79,6 @@ export const MenuItem = (props) => (
     display="flex"
     alignItems="center"
     gap="8px"
-    outline={{ hover: "none", focus: "none" }}
     p={2}
     fontWeight={600}
     pr={4}

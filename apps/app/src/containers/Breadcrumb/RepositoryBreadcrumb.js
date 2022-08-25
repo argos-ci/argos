@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { useParams } from "react-router-dom";
 import { RepoIcon } from "@primer/octicons-react";
 import {
@@ -19,7 +19,10 @@ export function RepositoryBreadcrumbItem() {
     <>
       <BreadcrumbSeparator />
       <BreadcrumbItem>
-        <BreadcrumbLink to={`${ownerLogin}/${repositoryName}/builds`}>
+        <BreadcrumbLink
+          to={`${ownerLogin}/${repositoryName}/builds`}
+          aria-current="page"
+        >
           <Icon
             as={RepoIcon}
             mt={1}

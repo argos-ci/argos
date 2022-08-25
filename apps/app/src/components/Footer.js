@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import { Container } from "./Container";
 import { BaseLink } from "./Link";
@@ -31,7 +31,7 @@ export const FooterPrimary = (props) => (
 );
 
 export const FooterSecondary = (props) => (
-  <x.div display="flex" gap={2} {...props} />
+  <x.div display="flex" gap={3} {...props} />
 );
 
 export function FooterLink(props) {

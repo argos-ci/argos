@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { gql } from "graphql-tag";
 import { useAuthToken, useLogout } from "./Auth";
 import { useQuery } from "./Apollo";

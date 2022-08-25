@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import styled, { x } from "@xstyled/styled-components";
 import { useIsMatchingTo } from "../containers/Router";
 import { LinkBlock } from "./Link";
@@ -37,19 +37,17 @@ export const SidebarItem = styled.li`
   padding: 0;
   margin: 0;
   transition: base;
-  color: gray-200;
+  color: secondary-text;
   border-radius: md;
 
   &:hover {
-    color: white;
+    color: primary-text;
     background-color: background-hover;
-    outline: none;
   }
 
   &[aria-current="true"] {
-    color: white;
+    color: primary-text;
     background-color: background-active;
-    outline: none;
   }
 `;
 

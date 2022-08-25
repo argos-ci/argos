@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { x } from "@xstyled/styled-components";
 
 export const Card = (props) => (

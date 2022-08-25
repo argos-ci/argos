@@ -1,6 +1,6 @@
-import React from "react";
+import * as React from "react";
 import { gql } from "graphql-tag";
-import { useParams } from "react-router-dom";
+import { useMatch, useParams } from "react-router-dom";
 import {
   BreadcrumbItem,
   BreadcrumbItemMenu,
@@ -27,6 +27,7 @@ const OWNER_QUERY = gql`
 
 export function OwnerBreadcrumbItem() {
   const { ownerLogin } = useParams();
+  const match = useMatch(`/${ownerLogin}`);
   const user = useUser();
 
   return (
@@ -44,7 +45,10 @@ export function OwnerBreadcrumbItem() {
           <>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink to={`/${ownerLogin}`}>
+              <BreadcrumbLink
+                to={`/${ownerLogin}`}
+                aria-current={match ? "page" : "false"}
+              >
                 <OwnerAvatar owner={data.owner} size="sm" />
                 {data.owner.login}
               </BreadcrumbLink>

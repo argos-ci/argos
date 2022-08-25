@@ -15,7 +15,7 @@ export const NavbarBrandLink = styled(BaseLink)`
 
 export const NavbarBrand = styled.h1`
   font-size: xl;
-  color: white;
+  color: primary-text;
   display: flex;
   align-items: center;
   font-weight: normal;

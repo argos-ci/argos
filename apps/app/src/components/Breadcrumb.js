@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import { LinkBlock } from "./Link";
 
@@ -27,16 +27,14 @@ export const BreadcrumbItem = (props) => (
 );
 
 export const Breadcrumb = (props) => (
-  <x.menu
-    mx={-2}
-    padding="0"
-    fontWeight={300}
-    display="flex"
-    alignItems="center"
-    flex={1}
-    fontSize={{ _: "lg", md: "2xl" }}
-    mb={{ _: 2, md: 0 }}
-    flexWrap="wrap"
-    {...props}
-  />
+  <nav aria-label="Breadcrumb" mx={-2} mb={{ _: 2, md: 0 }}>
+    <x.ol
+      fontSize={{ _: "lg", md: "2xl" }}
+      fontWeight={300}
+      display="flex"
+      flexWrap="wrap"
+      alignItems="center"
+      {...props}
+    />
+  </nav>
 );

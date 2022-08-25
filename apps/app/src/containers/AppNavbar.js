@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import {
   HomeIcon,
@@ -7,15 +7,10 @@ import {
   SignOutIcon,
   MarkGithubIcon,
 } from "@primer/octicons-react";
-import { createTeleporter } from "react-teleporter";
 import {
   BaseLink,
   BrandLogo,
-  Breadcrumb,
   Button,
-  Header,
-  HeaderBody,
-  HeaderPrimary,
   Icon,
   LinkBlock,
   Menu,
@@ -33,15 +28,6 @@ import config from "../config";
 import { OwnerAvatar } from "./OwnerAvatar";
 import { useLogout } from "./Auth";
 import { useUser } from "./User";
-import { OwnerBreadcrumbItem } from "./Breadcrumb/OwnerBreadcrumb";
-import { HomeBreadcrumbItem } from "./Breadcrumb/HomeBreadcrumb";
-import { RepositoryBreadcrumbItem } from "./Breadcrumb/RepositoryBreadcrumb";
-
-const HeaderBodyTeleporter = createTeleporter();
-
-export function HeaderTeleporter({ children }) {
-  return <HeaderBodyTeleporter.Source>{children}</HeaderBodyTeleporter.Source>;
-}
 
 function UserMenu({ user, ...props }) {
   const logout = useLogout();
@@ -112,19 +98,6 @@ export function AppNavbar() {
           )}
         </NavbarSecondary>
       </Navbar>
-
-      <Header>
-        <HeaderBody>
-          <HeaderPrimary>
-            <Breadcrumb>
-              <HomeBreadcrumbItem />
-              <OwnerBreadcrumbItem />
-              <RepositoryBreadcrumbItem />
-            </Breadcrumb>
-          </HeaderPrimary>
-          <HeaderBodyTeleporter.Target />
-        </HeaderBody>
-      </Header>
     </>
   );
 }

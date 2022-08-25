@@ -1,5 +1,5 @@
-import React from "react";
-import { Button } from "@argos-ci/app/src/components";
+import * as React from "react";
+import { Alert, Button } from "@argos-ci/app/src/components";
 import { gql, useMutation } from "@apollo/client";
 import { statusText } from "../../containers/Status";
 import { hasWritePermission } from "../../modules/permissions";
@@ -27,7 +27,7 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
   const nextStatus = getNextStatus(status);
   const nextStatusText = statusText(nextStatus);
 
-  const [setValidationStatus, { loading }] = useMutation(gql`
+  const [setValidationStatus, { loading, error }] = useMutation(gql`
     mutation setValidationStatus(
       $buildId: ID!
       $validationStatus: ValidationStatus!
@@ -44,20 +44,28 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
   }
 
   return (
-    <Button
-      disabled={loading}
-      variant="primary"
-      py={2}
-      onClick={() =>
-        setValidationStatus({
-          variables: {
-            buildId: id,
-            validationStatus: nextStatusText,
-          },
-        })
-      }
-    >
-      Review changes
-    </Button>
+    <>
+      <Button
+        disabled={loading}
+        variant="primary"
+        py={2}
+        onClick={() =>
+          setValidationStatus({
+            variables: {
+              buildId: id,
+              validationStatus: nextStatusText,
+            },
+          })
+        }
+      >
+        Review changes
+      </Button>
+
+      {error ? (
+        <Alert severity="error" mt={2}>
+          Something went wrong. Please try again.
+        </Alert>
+      ) : null}
+    </>
   );
 }

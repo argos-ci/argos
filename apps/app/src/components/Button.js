@@ -33,10 +33,6 @@ const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
       background-color: ${hoverBgColor};
     }
 
-    &:focus {
-      outline: 0;
-    }
-
     &:focus-visible {
       ${system.apply({ ring: 2, ringColor: "primary-300-a50" })}
     }
@@ -48,7 +44,15 @@ const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
   `;
 });
 
-export const Button = ({ variant = "primary", ...props }) => {
-  const baseColor = getStatusColor(variant);
-  return <InnerButton as={AriakitButton} $tint={baseColor} {...props} />;
-};
+export const Button = React.forwardRef(
+  ({ variant = "primary", children, ...props }, ref) => {
+    const baseColor = getStatusColor(variant);
+    return (
+      <AriakitButton ref={ref} $tint={baseColor} {...props}>
+        {(buttonProps) => (
+          <InnerButton {...buttonProps}>{children}</InnerButton>
+        )}
+      </AriakitButton>
+    );
+  }
+);

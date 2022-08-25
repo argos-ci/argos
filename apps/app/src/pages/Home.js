@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+/* eslint-disable react/no-unescaped-entities */
+import * as React from "react";
 import { gql } from "graphql-tag";
 import { x } from "@xstyled/styled-components";
+import { Group } from "ariakit/group";
 import { Query } from "../containers/Apollo";
 import { useUser } from "../containers/User";
 import { isUserSyncing } from "../modules/user";
@@ -31,7 +33,6 @@ import {
   Thead,
   Tr,
   useMenuState,
-  ToggleGroupButtons,
   IllustratedText,
   LinkBlock,
   Tag,
@@ -96,7 +97,11 @@ function RepositoryNameCell({
         {owner.login}
       </Link>{" "}
       /{" "}
-      <Link color="white" fontWeight={600} to={`${repositoryUrl}/builds`}>
+      <Link
+        color="primary-text"
+        fontWeight={600}
+        to={`${repositoryUrl}/builds`}
+      >
         {repositoryName}
       </Link>
     </Td>
@@ -193,7 +198,7 @@ function RepositoriesList({ repositories, ...props }) {
             >
               this link
             </IllustratedText>{" "}
-            to manage the repositories’ access restrictions.
+            to manage the repositories' access restrictions.
           </CardText>
         </CardBody>
       </Card>
@@ -226,7 +231,9 @@ function RepositoriesList({ repositories, ...props }) {
               <BuildTagCell build={lastBuild} repositoryUrl={repositoryUrl} />
               <DateCell date={lastBuild?.updatedAt || repository.updatedAt} />
               <Td>
-                <Tag color={repository.enabled ? "white" : "secondary-text"}>
+                <Tag
+                  color={repository.enabled ? "primary-text" : "secondary-text"}
+                >
                   {repository.enabled ? "Active" : "Deactivated"}
                 </Tag>
               </Td>
@@ -249,7 +256,7 @@ function Owners({ owners }) {
 
   const activeRepositories = repositories.filter(({ enabled }) => enabled);
 
-  const [activeFilter, setActiveFilter] = useState(
+  const [activeFilter, setActiveFilter] = React.useState(
     activeRepositories.length !== 0
   );
 
@@ -260,11 +267,11 @@ function Owners({ owners }) {
       <x.div
         display="flex"
         justifyContent="space-between"
-        alignItems="baseline"
+        alignItems="flex-end"
         gap={10}
       >
         <x.div>
-          Don’t see your repo?{" "}
+          Don't see your repo?{" "}
           <IllustratedText
             as={Link}
             reverse
@@ -279,12 +286,26 @@ function Owners({ owners }) {
           <Link onClick={() => window.location.reload()}>reload the page</Link>.
         </x.div>
 
-        <ToggleGroupButtons
-          state={activeFilter}
-          setState={setActiveFilter}
-          switchOnText="Active only"
-          switchOffText="Display all"
-        />
+        <x.div as={Group} display="flex">
+          <Button
+            borderRadius="md 0 0 md"
+            variant="neutral"
+            py={2}
+            disabled={activeFilter}
+            onClick={() => setActiveFilter(true)}
+          >
+            Active only
+          </Button>
+          <Button
+            py={2}
+            borderRadius="0 md md 0"
+            variant="neutral"
+            disabled={!activeFilter}
+            onClick={() => setActiveFilter(false)}
+          >
+            Show all
+          </Button>
+        </x.div>
       </x.div>
       <RepositoriesList
         repositories={activeFilter ? activeRepositories : repositories}
@@ -319,7 +340,7 @@ export function Home() {
   if (!user.installations.length && !isUserSyncing(user)) {
     return (
       <Container textAlign="center" my={4}>
-        <p>Look like you don’t have installed Argos GitHub App.</p>
+        <p>Look like you don't have installed Argos GitHub App.</p>
         <Button as="a" href={config.get("github.appUrl")}>
           Install Argos GitHub App
         </Button>

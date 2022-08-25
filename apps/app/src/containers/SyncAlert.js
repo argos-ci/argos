@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { Container, LoadingAlert } from "@argos-ci/app/src/components";
 import { isUserSyncing } from "../modules/user";
 import { useUser, useRefetchUser } from "./User";

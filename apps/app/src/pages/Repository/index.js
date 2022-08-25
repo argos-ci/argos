@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
@@ -7,8 +7,8 @@ import { RepositoryBuilds } from "./Builds";
 import { RepositorySettings } from "./Settings";
 import { GettingStarted } from "./GettingStarted";
 import { NotFoundWithContainer } from "../NotFound";
-import { HeaderTeleporter } from "../../containers/AppNavbar";
 import { Query } from "../../containers/Apollo";
+import { HeaderTeleporter } from "../../containers/AppHeader";
 
 const REPOSITORY_QUERY = gql`
   query repository($ownerLogin: String!, $repositoryName: String!) {

@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { Link } from "react-router-dom";
 import styled, { x } from "@xstyled/styled-components";
 import { useIsMatchingTo } from "../containers/Router";
@@ -22,7 +22,7 @@ export const TabItem = styled.li`
   transition-property: border-color;
 
   &[aria-current="true"] {
-    border-color: white;
+    border-color: primary-text;
   }
 `;
 

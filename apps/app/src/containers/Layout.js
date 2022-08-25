@@ -6,13 +6,15 @@ import { AppNavbar } from "./AppNavbar";
 import { SyncAlert } from "./SyncAlert";
 import { Catch } from "../components";
 import { ErrorPage } from "../pages/ErrorPage";
+import { AppHeader } from "./AppHeader";
 
 export const Layout = (props) => {
   return (
     <x.div minHeight="100%" display="flex" flexDirection="column" {...props}>
-      <x.header flex="0 0 auto">
+      <x.div flex="0 0 auto">
         <AppNavbar />
-      </x.header>
+        <AppHeader />
+      </x.div>
 
       <SyncAlert />
 

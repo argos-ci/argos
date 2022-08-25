@@ -1,4 +1,5 @@
-import React from "react";
+/* eslint-disable react/no-unescaped-entities */
+import * as React from "react";
 import { gql } from "graphql-tag";
 import { x } from "@xstyled/styled-components";
 import { Query } from "../../containers/Apollo";
@@ -140,7 +141,7 @@ export function OwnerRepositories() {
                   </x.div>
 
                   <x.div mt={14}>
-                    Don’t see your repo? Click here to{" "}
+                    Don't see your repo? Click here to{" "}
                     <Link
                       href={config.get("github.appUrl")}
                       target="_blank"

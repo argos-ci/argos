@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { captureException } from "@sentry/browser";
 
 export class Catch extends React.Component {

@@ -1,11 +1,14 @@
-import React from "react";
+import * as React from "react";
 import { Alert, Button } from "@argos-ci/app/src/components";
 import { gql, useMutation } from "@apollo/client";
 
 export function EnableToggleButton({ repository, ...props }) {
   const [toggleRepository, { loading, error }] = useMutation(gql`
     mutation toggleRepository($enabled: Boolean!, $repositoryId: String!) {
-      toggleRepository(enabled: $enabled, repositoryId: $repositoryId)
+      toggleRepository(enabled: $enabled, repositoryId: $repositoryId) {
+        id
+        enabled
+      }
     }
   `);
 
@@ -28,7 +31,9 @@ export function EnableToggleButton({ repository, ...props }) {
       </Button>
 
       {error && (
-        <Alert variant="danger">Something went wrong. Please try again.</Alert>
+        <Alert mt={3} severity="danger">
+          Something went wrong. Please try again.
+        </Alert>
       )}
     </>
   );

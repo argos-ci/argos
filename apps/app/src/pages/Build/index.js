@@ -1,16 +1,17 @@
-import React, { useState } from "react";
+import * as React from "react";
 import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
+import { Group } from "ariakit/group";
 import { Helmet } from "react-helmet";
 import { useInView } from "react-cool-inview";
 import {
+  Button,
   Container,
   IllustratedText,
   LoadingAlert,
   PrimaryTitle,
   SecondaryTitle,
-  ToggleGroupButtons,
 } from "@argos-ci/app/src/components";
 import { Query } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
@@ -98,11 +99,12 @@ export function ScreenshotCards({ screenshotsDiffs, open }) {
 
 export function Build() {
   const { ownerLogin, repositoryName, buildNumber } = useParams();
-  const [showStableScreenshots, setShowStableScreenshots] = useState(false);
+  const [showStableScreenshots, setShowStableScreenshots] =
+    React.useState(false);
   const { observe, inView } = useInView();
 
   return (
-    <Container pb={2000}>
+    <Container>
       <Helmet>
         <title>{`Build #${buildNumber} • ${repositoryName}`}</title>
       </Helmet>
@@ -163,12 +165,27 @@ export function Build() {
                     mt={5}
                     ref={observe}
                   >
-                    <ToggleGroupButtons
-                      state={showStableScreenshots}
-                      setState={setShowStableScreenshots}
-                      switchOnText="Updated screenshots only"
-                      switchOffText="Show all"
-                    />
+                    <x.div as={Group} display="flex" overflowX="scroll">
+                      <Button
+                        borderRadius="md 0 0 md"
+                        variant="neutral"
+                        py={2}
+                        disabled={!showStableScreenshots}
+                        onClick={() => setShowStableScreenshots(false)}
+                      >
+                        Updated screenshots only
+                      </Button>
+                      <Button
+                        py={2}
+                        borderRadius="0 md md 0"
+                        variant="neutral"
+                        disabled={showStableScreenshots}
+                        onClick={() => setShowStableScreenshots(true)}
+                      >
+                        Show all
+                      </Button>
+                    </x.div>
+
                     <UpdateStatusButton
                       repository={data.repository}
                       build={build}

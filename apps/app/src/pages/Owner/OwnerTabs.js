@@ -1,7 +1,7 @@
-import React from "react";
+import * as React from "react";
 import { TabList, TabNavLink } from "@argos-ci/app/src/components";
-import { HeaderTeleporter } from "../../containers/AppNavbar";
 import { useParams } from "react-router-dom";
+import { HeaderTeleporter } from "../../containers/AppHeader";
 
 export function OwnerTabs() {
   const { ownerLogin } = useParams();
