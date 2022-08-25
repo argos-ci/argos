@@ -15,5 +15,5 @@ export const mustBeEnabledAuthRepo = (req, _res, next) => {
 export const getUnknownScreenshotKeys = async (keys) => {
   const existingFiles = await File.query().select("key").whereIn("key", keys);
   const existingKeys = existingFiles.map((file) => file.key);
-  return keys.filter((key) => !existingKeys.includes(key));
+  return Array.from(new Set(keys.filter((key) => !existingKeys.includes(key))));
 };
