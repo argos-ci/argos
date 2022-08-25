@@ -44,7 +44,7 @@ export function App() {
                     element={<OwnerSettings />}
                   />
                   <Route
-                    path={`/:ownerLogin/:repositoryName/builds/:buildNumber`}
+                    path="/:ownerLogin/:repositoryName/builds/:buildNumber"
                     element={<Build />}
                   />
                   <Route
