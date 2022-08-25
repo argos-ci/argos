@@ -44,10 +44,9 @@ import {
   GearIcon,
   LockIcon,
 } from "@primer/octicons-react";
-import { getVariantColor } from "../modules/utils";
+import { getStatusColor, StatusIcon } from "../containers/Status";
 import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { hasWritePermission } from "../modules/permissions";
-import { StatusIcon } from "../containers/Status";
 
 const OWNERS_REPOSITORIES_QUERY = gql`
   query Owners {
@@ -149,7 +148,7 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
       <TagButton
         as={LinkBlock}
         to={`${repositoryUrl}/builds/${build.number}`}
-        borderColor={getVariantColor(status)}
+        borderColor={getStatusColor(status)}
         {...props}
       >
         <StatusIcon status={build.status} />#{build.number.toLocaleString()}
@@ -256,7 +255,7 @@ function Owners({ owners }) {
 
   return (
     <Container>
-      <PrimaryTitle>Organizations and repositories</PrimaryTitle>
+      <PrimaryTitle>Organizations and Repositories</PrimaryTitle>
 
       <x.div
         display="flex"

@@ -1,10 +1,15 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
 import { useInView } from "react-cool-inview";
-import { GitBranchIcon, CommitIcon, ClockIcon } from "@primer/octicons-react";
+import {
+  GitBranchIcon,
+  CommitIcon,
+  ClockIcon,
+  BookmarkIcon,
+} from "@primer/octicons-react";
 import moment from "moment";
 import { gql } from "graphql-tag";
-import { getPossessiveForm, getVariantColor } from "../../modules/utils";
+import { getStatusColor } from "../../containers/Status";
 import {
   Button,
   Container,
@@ -21,6 +26,7 @@ import {
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { GettingStarted } from "./GettingStarted";
+import { getPossessiveForm } from "../../modules/utils";
 
 const REPOSITORY_BUILDS_QUERY = gql`
   query RepositoryBuilds($ownerLogin: String!, $name: String!, $after: Int!) {
@@ -37,6 +43,7 @@ const REPOSITORY_BUILDS_QUERY = gql`
           createdAt
           number
           status
+          name
           compareScreenshotBucket {
             id
             commit
@@ -139,7 +146,7 @@ function BuildsList({ repository }) {
         </Thead>
         <Tbody>
           {builds.map((build, buildIndex) => {
-            const statusColor = getVariantColor(build.status);
+            const statusColor = getStatusColor(build.status);
 
             return (
               <tr
@@ -155,7 +162,17 @@ function BuildsList({ repository }) {
                     to={`${build.number}`}
                   >
                     <IllustratedText icon={GitBranchIcon}>
-                      {build.compareScreenshotBucket.branch}
+                      {build.compareScreenshotBucket.branch}{" "}
+                      {build.name !== "default" && (
+                        <IllustratedText
+                          ml={1}
+                          icon={BookmarkIcon}
+                          color="secondary-text"
+                          field
+                        >
+                          {build.name}
+                        </IllustratedText>
+                      )}
                     </IllustratedText>
                   </TdLink>
                 </Td>
@@ -207,7 +224,7 @@ function BuildsList({ repository }) {
 export function RepositoryBuilds({ repository }) {
   return (
     <Container>
-      <PrimaryTitle>{getPossessiveForm(repository.name)} builds</PrimaryTitle>
+      <PrimaryTitle>{getPossessiveForm(repository.name)} Builds</PrimaryTitle>
       <BuildsList repository={repository} />
     </Container>
   );

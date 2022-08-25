@@ -2,11 +2,18 @@ import React from "react";
 import { Button } from "@argos-ci/app/src/components";
 import { gql, useMutation } from "@apollo/client";
 import { statusText } from "../../containers/Status";
+import { hasWritePermission } from "../../modules/permissions";
 
-export const UpdateStatusButtonFragment = gql`
-  fragment UpdateStatusButtonFragment on Build {
+export const UpdateStatusButtonBuildFragment = gql`
+  fragment UpdateStatusButtonBuildFragment on Build {
     id
     status
+  }
+`;
+
+export const UpdateStatusButtonRepositoryFragment = gql`
+  fragment UpdateStatusButtonRepositoryFragment on Repository {
+    permissions
   }
 `;
 
@@ -16,7 +23,7 @@ function getNextStatus(status) {
   return null;
 }
 
-export function UpdateStatusButton({ build: { id, status } }) {
+export function UpdateStatusButton({ repository, build: { id, status } }) {
   const nextStatus = getNextStatus(status);
   const nextStatusText = statusText(nextStatus);
 
@@ -32,7 +39,9 @@ export function UpdateStatusButton({ build: { id, status } }) {
     }
   `);
 
-  if (!nextStatus) return null;
+  if (!hasWritePermission(repository) || !nextStatus) {
+    return null;
+  }
 
   return (
     <Button

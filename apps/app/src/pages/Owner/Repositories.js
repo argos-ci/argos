@@ -96,7 +96,7 @@ export function OwnerRepositories() {
                     {user.login === owner.login
                       ? "Personal"
                       : getPossessiveForm(owner.name)}{" "}
-                    repositories
+                    Repositories
                   </PrimaryTitle>
                 </SidebarLayout.PageTitle>
 

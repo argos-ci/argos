@@ -182,7 +182,7 @@ export function RepositorySettings({ repository }) {
         <SettingsSidebar repository={repository} />
 
         <SidebarLayout.PageTitle>
-          <PrimaryTitle>Repository settings</PrimaryTitle>
+          <PrimaryTitle>Repository Settings</PrimaryTitle>
         </SidebarLayout.PageTitle>
 
         <SidebarLayout.PageContent>

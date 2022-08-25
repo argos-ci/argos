@@ -65,15 +65,11 @@ const RepositoryStats = ({ buildCount, lastBuild, ...props }) => {
         display="grid"
         gridTemplateColumns={{ _: 1, md: 3 }}
         divideX
-        divideColor="border"
+        divideColor={{ _: "transparent", md: "border" }}
       >
         <Stat>
           <StatLabel>Build count</StatLabel>
           <StatValue>{buildCount}</StatValue>
-        </Stat>
-        <Stat>
-          <StatLabel>Last build date</StatLabel>
-          <StatValue>{moment(lastBuild.updatedAt).fromNow()}</StatValue>
         </Stat>
         <Stat>
           <StatLabel>Last build status</StatLabel>
@@ -85,6 +81,10 @@ const RepositoryStats = ({ buildCount, lastBuild, ...props }) => {
             />
             {lastBuild.status}
           </StatValue>
+        </Stat>
+        <Stat>
+          <StatLabel>Last build date</StatLabel>
+          <StatValue>{moment(lastBuild.updatedAt).fromNow()}</StatValue>
         </Stat>
       </x.div>
     </x.div>

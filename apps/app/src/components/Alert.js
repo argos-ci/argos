@@ -1,11 +1,11 @@
 import React from "react";
 import { x } from "@xstyled/styled-components";
-import { getVariantColor } from "../modules/utils";
 import { Loader } from "./Loader";
+import { getStatusColor } from "../containers/Status";
 
 export const Alert = React.forwardRef(
   ({ children, severity = "neutral", ...props }, ref) => {
-    const baseColor = getVariantColor(severity);
+    const baseColor = getStatusColor(severity);
 
     if (!children) return null;
 
