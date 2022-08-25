@@ -1,10 +1,31 @@
 import React from "react";
-import { getVariantColor } from "../modules/utils";
 import { Icon } from "@argos-ci/app/src/components";
 import { CheckIcon, XIcon, DotIcon } from "@primer/octicons-react";
 
+export function getStatusColor(status) {
+  switch (status) {
+    case "primary":
+      return "primary";
+
+    case "success":
+      return "green";
+
+    case "danger":
+    case "failure":
+    case "error":
+      return "red";
+
+    case "neutral":
+      return "gray";
+
+    case "pending":
+    default:
+      return "orange";
+  }
+}
+
 export function StatusIcon({ status, ...props }) {
-  const buildColor = getVariantColor(status);
+  const buildColor = getStatusColor(status);
   switch (status) {
     case "failure":
     case "error":
@@ -27,12 +48,12 @@ export function statusText(status) {
     case "failure":
     case "error":
     case "aborted":
-      return "Changes Requested";
+      return "Changes requested";
     case "success":
     case "complete":
-      return "Review Approved";
+      return "Review approved";
     case "pending":
-      return "Build In Progress";
+      return "Build in progress";
     case "unknown":
       return "Differences detected";
     default:

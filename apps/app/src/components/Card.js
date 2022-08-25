@@ -25,6 +25,7 @@ export const CardHeader = (props) => (
     justifyContent="space-between"
     alignItems="center"
     zIndex={100}
+    overflow="scroll"
     {...props}
   />
 );

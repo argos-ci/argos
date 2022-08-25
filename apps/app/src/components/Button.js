@@ -1,7 +1,7 @@
 import React from "react";
 import { Button as AriakitButton } from "ariakit/button";
 import styled, { css, system, th } from "@xstyled/styled-components";
-import { getVariantColor } from "../modules/utils";
+import { getStatusColor } from "../containers/Status";
 
 const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
   const bgColor = th.color(`${$tint}-800-a80`);
@@ -49,6 +49,6 @@ const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
 });
 
 export const Button = ({ variant = "primary", ...props }) => {
-  const baseColor = getVariantColor(variant);
+  const baseColor = getStatusColor(variant);
   return <InnerButton as={AriakitButton} $tint={baseColor} {...props} />;
 };

@@ -34,6 +34,8 @@ export const typeDefs = gql`
     number: Int!
     "The status of the job associated to the build"
     status: BuildStatus!
+    "Build name"
+    name: String!
   }
 
   type BuildResult {

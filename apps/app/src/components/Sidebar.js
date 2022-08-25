@@ -5,7 +5,8 @@ import { LinkBlock } from "./Link";
 
 export const SidebarList = (props) => (
   <x.ul
-    mt={2}
+    mt={{ _: 0, md: 2 }}
+    top={{ _: 0, md: 16 }}
     display="flex"
     flexDirection="column"
     fontWeight="medium"
@@ -14,7 +15,6 @@ export const SidebarList = (props) => (
     gridColum={1}
     gridRow={{ _: 2, md: "1 / span 2" }}
     position={{ _: "relative", md: "sticky" }}
-    top={16}
     alignSelf="flex-start"
     {...props}
   />
@@ -78,7 +78,7 @@ export const SidebarLayout = (props) => (
   <x.div
     display="grid"
     gridTemplateColumns={{ _: 1, md: "auto 1fr" }}
-    rowGap={6}
+    rowGap={4}
     columnGap={12}
     position="relative"
     h="100%"
@@ -87,9 +87,9 @@ export const SidebarLayout = (props) => (
 );
 
 SidebarLayout.PageTitle = (props) => (
-  <x.div gridColumn={{ _: 1, md: 2 }} mb={-4} {...props} />
+  <x.div gridColumn={{ _: 1, md: 2 }} {...props} />
 );
 
 SidebarLayout.PageContent = (props) => (
-  <x.div gridColumn={{ _: 1, md: 2 }} h={1} {...props} />
+  <x.div gridColumn={{ _: 1, md: 2 }} {...props} />
 );

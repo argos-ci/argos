@@ -7,10 +7,15 @@ export const IllustratedText = ({
   children,
   reverse,
   fontSize,
+  field,
   ...props
 }) => {
   return (
-    <x.span columnGap={1} alignItems="center" fontSize={fontSize} {...props}>
+    <x.span
+      fontSize={fontSize}
+      {...(field ? { display: "flex", alignItems: "center", gap: 2 } : {})}
+      {...props}
+    >
       {reverse ? (
         <>
           {children} <Icon as={LocalIcon} fontSize={fontSize} />

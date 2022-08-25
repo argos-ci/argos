@@ -10,7 +10,7 @@ export const ToggleGroupButtons = ({
   switchOffText,
   ...props
 }) => (
-  <x.div as={GroupLabel} display="flex" {...props}>
+  <x.div as={GroupLabel} display="flex" flexWrap="wrap" {...props}>
     <Button
       borderRadius="md 0 0 md"
       variant="neutral"
