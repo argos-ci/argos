@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import { Link as ReactRouterLink } from "react-router-dom";
 
@@ -6,7 +6,6 @@ export const BaseLink = (props) => (
   <x.a
     transition="base"
     as={props.to ? ReactRouterLink : "a"}
-    outline={{ focus: "none" }}
     textDecoration={{ _: "none", hover: "none" }}
     {...(props.target === "_blank" ? { rel: "noopener noreferrer" } : {})}
     {...props}

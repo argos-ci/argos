@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { Helmet } from "react-helmet";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ScrollToTop, GoogleAnalytics } from "./containers/Router";

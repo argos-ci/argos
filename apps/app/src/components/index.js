@@ -1,5 +1,4 @@
 export * from "./Alert";
-export * from "./Avatar";
 export * from "./BrandLogo";
 export * from "./Breadcrumb";
 export * from "./Button";
@@ -27,4 +26,3 @@ export * from "./Tag";
 export * from "./Theme";
 export * from "./Titles";
 export * from "./Toast";
-export * from "./ToggleGroupButtons";

@@ -1,4 +1,5 @@
-import React from "react";
+/* eslint-disable react/no-unescaped-entities */
+import * as React from "react";
 import { gql } from "graphql-tag";
 import config from "../../config";
 import {
@@ -46,7 +47,7 @@ export function PermissionsSettings({ owner: { name } }) {
               >
                 this link
               </IllustratedText>{" "}
-              to manage the repositories’ access restrictions.
+              to manage the repositories' access restrictions.
             </CardText>
           </CardBody>
         </Card>

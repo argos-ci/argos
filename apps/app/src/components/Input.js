@@ -1,11 +1,10 @@
-import React from "react";
 import styled from "@xstyled/styled-components";
 
-const InnerInput = styled.input`
+export const Input = styled.input`
   border-radius: md;
   line-height: 1.5;
   padding: 0 3;
-  color: white;
+  color: primary-text;
   border: 1;
   border-color: border;
   width: 100%;
@@ -17,10 +16,7 @@ const InnerInput = styled.input`
 
   &:focus-visible,
   [data-focus-visible] {
-    outline: none;
     border-color: border-active;
     background-color: black;
   }
 `;
-
-export const Input = (props) => <InnerInput {...props} />;

@@ -1,4 +1,5 @@
-import React from "react";
+/* eslint-disable react/no-unescaped-entities */
+import * as React from "react";
 import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
 import {
@@ -79,7 +80,7 @@ function UpdateBranchForm({ repository }) {
     await updateBaselineBranch({
       variables: {
         repositoryId: repository.id,
-        branchName: form.values.name,
+        branchName: baselineBranch,
       },
     });
   });
@@ -138,7 +139,7 @@ function EnableRepositoryCard({ repository }) {
       </CardHeader>
       <CardBody>
         Click on this button to deactivate Argos on this repository. This action
-        doesn’t delete the screenshots.
+        doesn't delete the screenshots.
         <EnableToggleButton repository={repository} mt={2} />
       </CardBody>
     </Card>

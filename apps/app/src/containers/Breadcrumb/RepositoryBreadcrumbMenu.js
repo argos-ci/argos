@@ -1,4 +1,5 @@
-import React from "react";
+/* eslint-disable react/no-unescaped-entities */
+import * as React from "react";
 import { useParams } from "react-router-dom";
 import { gql } from "graphql-tag";
 import { RepoIcon } from "@primer/octicons-react";
@@ -83,7 +84,7 @@ export function RepositoryBreadcrumbMenu({ ...props }) {
 
         <MenuSeparator />
         <MenuText>
-          Don’t see your repo?
+          Don't see your repo?
           <Link to={`/${ownerLogin}`} fontWeight="medium" display="flex" mt={1}>
             Be sure to activate it →
           </Link>

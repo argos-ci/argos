@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import { useInView } from "react-cool-inview";
 import {
@@ -183,7 +183,7 @@ function BuildsList({ repository }) {
                 </Td>
                 <Td>
                   <TdLink
-                    color={{ _: "secondary-text", hover: "white" }}
+                    color={{ _: "secondary-text", hover: "primary-text" }}
                     target="_blank"
                     href={`https://github.com/${repository.owner.login}/${repository.name}/commit/${build.compareScreenshotBucket.commit}`}
                   >

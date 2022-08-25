@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import {
   Form as AriakitForm,
@@ -39,6 +39,6 @@ export const FormReset = (props) => (
   <x.Button variant="gray" as={AriakitFormReset} {...props} />
 );
 
-export const FormSubmit = (props) => (
-  <Button variant="primary" as={AriakitFormSubmit} {...props} />
+export const FormSubmit = ({ ...props }) => (
+  <AriakitFormSubmit as={Button} {...props} />
 );

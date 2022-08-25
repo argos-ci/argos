@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { useLocation, useResolvedPath } from "react-router-dom";
 
 export function ScrollToTop({ children }) {

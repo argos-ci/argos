@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import moment from "moment";
 import { CheckCircleFillIcon } from "@primer/octicons-react";

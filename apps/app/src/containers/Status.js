@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { Icon } from "@argos-ci/app/src/components";
 import { CheckIcon, XIcon, DotIcon } from "@primer/octicons-react";
 

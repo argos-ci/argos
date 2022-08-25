@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import styled, { x } from "@xstyled/styled-components";
 import { LinkBlock } from "./Link";
 
