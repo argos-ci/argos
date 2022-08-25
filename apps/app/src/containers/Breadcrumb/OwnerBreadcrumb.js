@@ -17,6 +17,7 @@ const OWNER_QUERY = gql`
   query Owner($login: String!) {
     owner(login: $login) {
       id
+      login
       ...OwnerAvatarFragment
     }
   }
