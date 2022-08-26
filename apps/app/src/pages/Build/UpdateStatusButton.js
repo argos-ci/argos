@@ -35,8 +35,12 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
       setValidationStatus(
         buildId: $buildId
         validationStatus: $validationStatus
-      )
+      ) {
+        ...UpdateStatusButtonBuildFragment
+      }
     }
+
+    ${UpdateStatusButtonBuildFragment}
   `);
 
   if (!hasWritePermission(repository) || !nextStatus) {
