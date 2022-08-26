@@ -1,3 +1,4 @@
+/* eslint-disable jest/no-disabled-tests */
 import { useDatabase, factory } from "@argos-ci/database/testing";
 import { Purchase } from "@argos-ci/database/models";
 import { CHANGE_EVENT_PAYLOAD } from "../../fixtures/change-event-payload";

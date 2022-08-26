@@ -12,7 +12,9 @@
     "webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/SmH89Dx2HZ89wK7T --target https://api.argos-ci.dev:4001/github/event-handler",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "heroku-postbuild": "npm run build"
+    "heroku-postbuild": "npm run build",
+    "cypress:open": "cypress open --e2e --browser chrome",
+    "cypress:run": "cypress run --e2e --browser chrome"
   },
   "repository": "github:argos-ci/argos",
   "engines": {
@@ -27,7 +29,9 @@
     "@babel/preset-env": "^7.18.10",
     "@babel/preset-react": "^7.18.6",
     "babel-loader": "^8.2.5",
+    "cypress": "^10.6.0",
     "eslint": "^8.21.0",
+    "eslint-plugin-cypress": "^2.12.1",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-jest": "^26.8.2",
     "eslint-plugin-react": "^7.30.1",

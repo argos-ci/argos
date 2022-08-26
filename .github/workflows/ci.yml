@@ -65,6 +65,15 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+      - name: Cypress test
+        run: |
+          npm run -w @argos-ci/database db:truncate && npm run -w @argos-ci/database db:seed
+          npm run procfile
+          npm run dev
+          npm run cypress:run
+        env:
+          NODE_ENV: test
+
       - name: Run Argos
         continue-on-error: true
         env:

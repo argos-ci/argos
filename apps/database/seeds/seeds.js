@@ -35,6 +35,15 @@ exports.seed = async (knex) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
+    {
+      githubId: 15954562,
+      name: "Jeremy SFEZ",
+      login: "jsfez",
+      email: "berge.greg@gmail.com",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      accessToken: "jsfez-access-token",
+    },
   ]);
   const users = await knex("users");
 
@@ -72,6 +81,43 @@ exports.seed = async (knex) => {
     },
   ]);
   const repositories = await knex("repositories");
+
+  await knex("user_repository_rights").insert([
+    {
+      userId: users[2].id,
+      repositoryId: repositories[0].id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ]);
+
+  await knex("user_organization_rights").insert([
+    {
+      userId: users[2].id,
+      organizationId: organizations[0].id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ]);
+
+  await knex("installations").insert([
+    {
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      githubId: 7625677,
+      deleted: false,
+    },
+  ]);
+  const installations = await knex("installations");
+
+  await knex("user_installation_rights").insert([
+    {
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      userId: users[2].id,
+      installationId: installations[0].id,
+    },
+  ]);
 
   await knex("screenshot_buckets").insert([
     {

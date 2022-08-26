@@ -1,3 +1,4 @@
+/* eslint-disable jest/no-disabled-tests */
 import path from "path";
 import {
   UserRepositoryRight,
