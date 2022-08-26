@@ -5,7 +5,7 @@ import { useIsMatchingTo } from "../containers/Router";
 
 export const TabList = styled.menu`
   padding: 0;
-  margin: 0;
+  margin: 0 -2;
   margin-bottom: -1rpx;
   list-style-type: none;
   display: flex;
