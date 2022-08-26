@@ -7,7 +7,7 @@ export const BaseLink = React.forwardRef((props, ref) => {
     <x.a
       ref={ref}
       transition="base"
-      as={props.to ? ReactRouterLink : "a"}
+      as={props.to != undefined ? ReactRouterLink : "a"}
       textDecoration={{ _: "none", hover: "none" }}
       {...(props.target === "_blank" ? { rel: "noopener noreferrer" } : {})}
       {...props}
