@@ -59,32 +59,40 @@ export const Menu = (props) => (
   />
 );
 
-export const MenuItem = (props) => (
-  <x.div
-    as={AriakitMenuItem}
-    appearance="none"
-    backgroundColor={{
-      _: "transparent",
-      hover: "background-hover",
-      focus: "background-focus",
-    }}
-    border={0}
-    borderRadius="md"
-    color="primary-text"
-    fontSize="sm"
-    w={1}
-    transition="md"
-    transitionProperty="background-color"
-    textDecoration="none"
-    display="flex"
-    alignItems="center"
-    gap="8px"
-    p={2}
-    fontWeight={600}
-    pr={4}
-    {...props}
-  />
-);
+export const MenuItem = ({ as, children, ...props }) => {
+  return (
+    <AriakitMenuItem {...props}>
+      {(menuItemProps) => (
+        <x.div
+          as={as}
+          appearance="none"
+          backgroundColor={{
+            _: "transparent",
+            hover: "background-hover",
+            focus: "background-focus",
+          }}
+          border={0}
+          borderRadius="md"
+          color="primary-text"
+          fontSize="sm"
+          w={1}
+          transition="md"
+          transitionProperty="background-color"
+          textDecoration="none"
+          display="flex"
+          alignItems="center"
+          gap="8px"
+          p={2}
+          fontWeight={600}
+          pr={4}
+          {...menuItemProps}
+        >
+          {children}
+        </x.div>
+      )}
+    </AriakitMenuItem>
+  );
+};
 
 export const MenuSeparator = (props) => (
   <x.div
