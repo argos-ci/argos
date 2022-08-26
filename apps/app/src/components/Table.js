@@ -21,7 +21,7 @@ export const Thead = styled.theadBox`
 export const Tbody = (props) => <x.tbody {...props} />;
 
 export const Th = styled.thBox`
-  padding: 2 4;
+  padding: 2;
   font-weight: 500;
 
   &:first-of-type {
