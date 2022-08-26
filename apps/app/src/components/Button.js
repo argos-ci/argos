@@ -1,6 +1,6 @@
 import React from "react";
 import { Button as AriakitButton } from "ariakit/button";
-import styled, { css, system, th } from "@xstyled/styled-components";
+import styled, { css, th } from "@xstyled/styled-components";
 import { getStatusColor } from "../containers/Status";
 
 const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
@@ -17,7 +17,7 @@ const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
     cursor: default;
     border: 1;
     border-color: ${borderColor};
-    padding: 3 4;
+    padding: 2 4;
     color: white;
     transition: default;
     transition-duration: 300ms;
@@ -33,8 +33,8 @@ const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
       background-color: ${hoverBgColor};
     }
 
-    &:focus-visible {
-      ${system.apply({ ring: 2, ringColor: "primary-300-a50" })}
+    &:focus:active {
+      outline: none;
     }
 
     &:disabled {
