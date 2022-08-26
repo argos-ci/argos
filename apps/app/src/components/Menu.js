@@ -95,6 +95,7 @@ export const MenuItem = ({ as, children, ...props }) => {
           p={2}
           fontWeight={600}
           pr={4}
+          userSelect="none"
           {...menuItemProps}
         >
           {children}

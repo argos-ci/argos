@@ -1,7 +1,16 @@
 import * as React from "react";
-import { Alert, Button } from "@argos-ci/app/src/components";
+import { x } from "@xstyled/styled-components";
+import {
+  Alert,
+  Button,
+  LinkBlock,
+  Menu,
+  MenuButton,
+  MenuItem,
+  useMenuState,
+} from "@argos-ci/app/src/components";
 import { gql, useMutation } from "@apollo/client";
-import { statusText } from "../../containers/Status";
+import { StatusIcon } from "../../containers/Status";
 import { hasWritePermission } from "../../modules/permissions";
 
 export const UpdateStatusButtonBuildFragment = gql`
@@ -17,16 +26,8 @@ export const UpdateStatusButtonRepositoryFragment = gql`
   }
 `;
 
-function getNextStatus(status) {
-  if (status === "success") return "failure";
-  if (status === "failure") return "success";
-  return null;
-}
-
 export function UpdateStatusButton({ repository, build: { id, status } }) {
-  const nextStatus = getNextStatus(status);
-  const nextStatusText = statusText(nextStatus);
-
+  const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
   const [setValidationStatus, { loading, error }] = useMutation(gql`
     mutation setValidationStatus(
       $buildId: ID!
@@ -43,33 +44,61 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
     ${UpdateStatusButtonBuildFragment}
   `);
 
-  if (!hasWritePermission(repository) || !nextStatus) {
+  if (!hasWritePermission(repository)) {
     return null;
   }
 
   return (
-    <>
-      <Button
-        disabled={loading}
-        variant="primary"
-        py={2}
-        onClick={() =>
-          setValidationStatus({
-            variables: {
-              buildId: id,
-              validationStatus: nextStatusText,
-            },
-          })
-        }
-      >
+    <x.div display="flex" flexDirection="column" flex={1}>
+      <Button as={MenuButton} state={menu} alignSelf="end" disabled={loading}>
         Review changes
       </Button>
+      <Menu aria-label="Review changes" state={menu}>
+        <MenuItem
+          state={menu}
+          as={LinkBlock}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setValidationStatus({
+              variables: { buildId: id, validationStatus: "accepted" },
+            });
+            menu.hide();
+          }}
+          disabled={status === "success"}
+          backgroundColor={
+            status === "success" ? "background-active" : "inherit"
+          }
+        >
+          <StatusIcon status="success" />
+          Approve changes
+        </MenuItem>
+        <MenuItem
+          state={menu}
+          as={LinkBlock}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setValidationStatus({
+              variables: { buildId: id, validationStatus: "rejected" },
+            });
+            menu.hide();
+          }}
+          disabled={status === "failure"}
+          backgroundColor={
+            status === "failure" ? "background-active" : "inherit"
+          }
+        >
+          <StatusIcon status="error" />
+          Request changes
+        </MenuItem>
+      </Menu>
 
       {error ? (
-        <Alert severity="error" mt={2}>
+        <Alert severity="error" mt={2} w="fit-content" alignSelf="end">
           Something went wrong. Please try again.
         </Alert>
       ) : null}
-    </>
+    </x.div>
   );
 }

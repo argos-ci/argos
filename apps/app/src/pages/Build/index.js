@@ -160,12 +160,17 @@ export function Build() {
                     display="flex"
                     justifyContent="space-between"
                     columnGap={10}
-                    rowGap={2}
-                    flexWrap="wrap"
+                    rowGap={4}
+                    flexWrap="wrap-reverse"
                     mt={5}
                     ref={observe}
                   >
-                    <x.div as={Group} display="flex" overflowX="scroll">
+                    <x.div
+                      as={Group}
+                      display="flex"
+                      overflowX="scroll"
+                      alignItems="start"
+                    >
                       <Button
                         borderRadius="md 0 0 md"
                         variant="neutral"
