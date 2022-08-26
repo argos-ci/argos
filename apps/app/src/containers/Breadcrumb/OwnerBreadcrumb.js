@@ -3,7 +3,6 @@ import { gql } from "graphql-tag";
 import { useMatch, useParams } from "react-router-dom";
 import {
   BreadcrumbItem,
-  BreadcrumbItemMenu,
   BreadcrumbLink,
   BreadcrumbSeparator,
   Loader,
@@ -52,9 +51,7 @@ export function OwnerBreadcrumbItem() {
                 <OwnerAvatar owner={data.owner} size="sm" />
                 {data.owner.login}
               </BreadcrumbLink>
-              <BreadcrumbItemMenu>
-                <OwnerBreadcrumbMenu />
-              </BreadcrumbItemMenu>
+              <OwnerBreadcrumbMenu />
             </BreadcrumbItem>
           </>
         );

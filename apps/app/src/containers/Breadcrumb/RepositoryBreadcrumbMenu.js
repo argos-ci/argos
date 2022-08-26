@@ -37,7 +37,7 @@ export function RepositoryBreadcrumbMenu({ ...props }) {
 
   return (
     <>
-      <MenuButton state={menu} px={0} pt={2} {...props}>
+      <MenuButton state={menu} shape="square" {...props}>
         <MenuButtonArrow />
       </MenuButton>
 

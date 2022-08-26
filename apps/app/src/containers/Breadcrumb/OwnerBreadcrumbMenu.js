@@ -42,8 +42,8 @@ export function OwnerBreadcrumbMenu(props) {
 
   return (
     <>
-      <MenuButton state={menu} px={0} pt={2} {...props}>
-        <MenuButtonArrow />
+      <MenuButton state={menu} shape="square" {...props}>
+        <MenuButtonArrow state={menu} />
       </MenuButton>
 
       <Menu aria-label="Organizations list" state={menu}>

@@ -1,19 +1,15 @@
 import * as React from "react";
 import { useMatch } from "react-router-dom";
 import { HomeIcon } from "@primer/octicons-react";
-import {
-  BreadcrumbItem,
-  BreadcrumbLink,
-  Icon,
-} from "@argos-ci/app/src/components";
+import { BreadcrumbItem, BreadcrumbLink } from "@argos-ci/app/src/components";
 
 export function HomeBreadcrumbItem() {
   const match = useMatch("/");
 
   return (
-    <BreadcrumbItem>
-      <BreadcrumbLink to="/" py={1} aria-current={match ? "page" : "false"}>
-        <Icon as={HomeIcon} size={24} w={{ _: 5, md: 6 }} h={{ _: 5, md: 6 }} />
+    <BreadcrumbItem ml={-2}>
+      <BreadcrumbLink to="/" aria-current={match ? "page" : "false"}>
+        <HomeIcon size="1em" />
         {match ? "Home" : null}
       </BreadcrumbLink>
     </BreadcrumbItem>
