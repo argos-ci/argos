@@ -15,25 +15,26 @@ export const BreadcrumbLink = (props) => (
     as={LinkBlock}
     display="flex"
     alignItems="center"
-    textDecoration="none"
-    px={1}
+    px={2}
     gap={2}
+    minHeight="28px"
     {...props}
   />
 );
 
 export const BreadcrumbItem = (props) => (
-  <x.li mx={1} display="flex" alignItems="center" flexShrink={0} {...props} />
+  <x.li display="flex" alignItems="center" flexShrink={0} gap={1} {...props} />
 );
 
 export const Breadcrumb = (props) => (
-  <nav aria-label="Breadcrumb" mx={-2} mb={{ _: 2, md: 0 }}>
+  <nav aria-label="Breadcrumb">
     <x.ol
-      fontSize={{ _: "lg", md: "2xl" }}
+      text={{ _: "lg", md: "1xl" }}
       fontWeight={300}
       display="flex"
       flexWrap="wrap"
       alignItems="center"
+      gap={2}
       {...props}
     />
   </nav>
