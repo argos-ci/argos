@@ -98,7 +98,7 @@ export const MenuSeparator = (props) => (
   <x.div
     as={AriakitMenuSeparator}
     borderColor="border"
-    my={0.5}
+    my={1}
     height={0}
     borderTopWidth="1px"
     {...props}
