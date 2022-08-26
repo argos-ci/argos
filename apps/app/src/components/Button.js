@@ -45,12 +45,14 @@ const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
 });
 
 export const Button = React.forwardRef(
-  ({ variant = "primary", children, ...props }, ref) => {
+  ({ variant = "primary", children, as, ...props }, ref) => {
     const baseColor = getStatusColor(variant);
     return (
       <AriakitButton ref={ref} $tint={baseColor} {...props}>
         {(buttonProps) => (
-          <InnerButton {...buttonProps}>{children}</InnerButton>
+          <InnerButton {...buttonProps} as={as}>
+            {children}
+          </InnerButton>
         )}
       </AriakitButton>
     );
