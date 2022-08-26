@@ -1,5 +1,4 @@
 import * as React from "react";
-import { x } from "@xstyled/styled-components";
 import {
   HomeIcon,
   RepoIcon,
@@ -29,7 +28,7 @@ import { OwnerAvatar } from "./OwnerAvatar";
 import { useLogout } from "./Auth";
 import { useUser } from "./User";
 
-function UserMenu({ user, ...props }) {
+const UserMenu = ({ user }) => {
   const logout = useLogout();
   const menu = useMenuState({
     placement: "bottom-end",
@@ -37,12 +36,12 @@ function UserMenu({ user, ...props }) {
   });
 
   return (
-    <x.div {...props}>
+    <>
       <MenuButton state={menu}>
         <OwnerAvatar owner={user} />
       </MenuButton>
       <Menu aria-label="User settings" state={menu}>
-        <MenuItem state={menu} as={LinkBlock} to={`/`}>
+        <MenuItem state={menu} as={LinkBlock} to="/">
           <MenuIcon as={HomeIcon} />
           Home
         </MenuItem>
@@ -62,14 +61,14 @@ function UserMenu({ user, ...props }) {
           Settings
         </MenuItem>
         <MenuSeparator />
-        <MenuItem state={menu} onClick={() => logout()}>
+        <MenuItem state={menu} cursor="pointer" onClick={() => logout()}>
           <MenuIcon as={SignOutIcon} />
           Logout
         </MenuItem>
       </Menu>
-    </x.div>
+    </>
   );
-}
+};
 
 export function AppNavbar() {
   const user = useUser();
@@ -79,12 +78,12 @@ export function AppNavbar() {
       <Navbar>
         <NavbarBrandLink as={BaseLink} to="/">
           <NavbarBrand>
-            <BrandLogo width={200} />
+            <BrandLogo height={40} />
           </NavbarBrand>
         </NavbarBrandLink>
         <NavbarSecondary>
           {user ? (
-            <UserMenu user={user} mt={-1} />
+            <UserMenu user={user} />
           ) : (
             <Button
               as="a"
