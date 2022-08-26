@@ -1,7 +1,7 @@
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
 
-export const Loader = (props) => (
+const InnerLoader = (props) => (
   <x.svg
     width="2rem"
     height="2rem"
@@ -101,3 +101,22 @@ export const Loader = (props) => (
     </rect>
   </x.svg>
 );
+
+export const Loader = ({ delay = 300, ...props }) => {
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const timeout = setTimeout(() => {
+      setVisible(true);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [delay]);
+
+  return (
+    <InnerLoader
+      role="status"
+      aria-busy="true"
+      style={!visible ? { visibility: "hidden" } : undefined}
+      {...props}
+    />
+  );
+};
