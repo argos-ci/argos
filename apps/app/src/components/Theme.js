@@ -22,7 +22,7 @@ export const theme = {
     border: defaultTheme.colors["gray-700-a80"],
     "border-active": defaultTheme.colors["gray-300"],
 
-    link: defaultTheme.colors["blue-500"],
+    link: defaultTheme.colors["violet-300"],
     "primary-text": "white",
     "secondary-text": defaultTheme.colors["gray-400"],
   },
