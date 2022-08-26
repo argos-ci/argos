@@ -25,7 +25,7 @@ export function getStatusColor(status) {
 }
 
 export function StatusIcon({ status, ...props }) {
-  const buildColor = getStatusColor(status);
+  const buildColor = `${getStatusColor(status)}-500`;
   switch (status) {
     case "failure":
     case "error":
