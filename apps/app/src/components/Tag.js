@@ -1,6 +1,5 @@
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
-import { LinkBlock } from "./Link";
 
 export const Tag = (props) => (
   <x.span
@@ -16,12 +15,5 @@ export const Tag = (props) => (
 );
 
 export const TagButton = (props) => (
-  <Tag
-    as={LinkBlock}
-    display="flex"
-    gap={1}
-    alignItems="center"
-    cursor="default"
-    {...props}
-  />
+  <Tag display="flex" gap={1} alignItems="center" {...props} />
 );
