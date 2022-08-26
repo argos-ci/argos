@@ -187,7 +187,6 @@ function RepositoriesList({ repositories, ...props }) {
             Argos uses OAuth GitHub App.
           </CardText>
           <CardText fontSize="md">
-            Click on{" "}
             <IllustratedText
               as={Link}
               reverse
@@ -196,9 +195,8 @@ function RepositoriesList({ repositories, ...props }) {
               fontWeight="normal"
               icon={LinkExternalIcon}
             >
-              this link
-            </IllustratedText>{" "}
-            to manage the repositories' access restrictions.
+              Manage repositories' access restrictions from GitHub.
+            </IllustratedText>
           </CardText>
         </CardBody>
       </Card>
