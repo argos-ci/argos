@@ -7,7 +7,7 @@ import {
   MenuSeparator as AriakitMenuSeparator,
   MenuButtonArrow as AriakitMenuButtonArrow,
 } from "ariakit/menu";
-import styled, { x } from "@xstyled/styled-components";
+import styled, { x, css } from "@xstyled/styled-components";
 import { Icon } from "./Icon";
 
 export { useMenuState };
@@ -29,21 +29,31 @@ const InnerMenuButton = styled.box`
   &[aria-expanded="true"] {
     background-color: background-active;
   }
+
+  ${(p) =>
+    p.$shape === "square" &&
+    css`
+      padding: 1;
+    `}
 `;
 
-export const MenuButton = React.forwardRef(({ children, ...props }, ref) => {
-  return (
-    <AriakitMenuButton ref={ref} {...props}>
-      {(menuProps) => (
-        <InnerMenuButton {...menuProps}>{children}</InnerMenuButton>
-      )}
-    </AriakitMenuButton>
-  );
-});
-
-export const MenuButtonArrow = (props) => (
-  <x.div as={AriakitMenuButtonArrow} {...props} />
+export const MenuButton = React.forwardRef(
+  ({ children, shape, ...props }, ref) => {
+    return (
+      <AriakitMenuButton ref={ref} {...props}>
+        {(menuProps) => (
+          <InnerMenuButton {...menuProps} $shape={shape}>
+            {children}
+          </InnerMenuButton>
+        )}
+      </AriakitMenuButton>
+    );
+  }
 );
+
+export const MenuButtonArrow = ({ as, ...props }) => {
+  return <x.div as={AriakitMenuButtonArrow} {...props} />;
+};
 
 export const Menu = (props) => (
   <x.menu
