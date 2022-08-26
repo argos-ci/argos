@@ -9,7 +9,7 @@ export function HomeBreadcrumbItem() {
   return (
     <BreadcrumbItem ml={-2}>
       <BreadcrumbLink to="/" aria-current={match ? "page" : "false"}>
-        <HomeIcon size="1em" />
+        <HomeIcon size={18} />
         {match ? "Home" : null}
       </BreadcrumbLink>
     </BreadcrumbItem>
