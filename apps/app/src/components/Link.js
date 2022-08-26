@@ -18,7 +18,7 @@ export const BaseLink = React.forwardRef((props, ref) => {
 export const Link = React.forwardRef((props, ref) => (
   <BaseLink
     ref={ref}
-    textDecoration={{ _: "none", hover: "underline", focus: "underline" }}
+    textDecoration={{ _: "none", hover: "underline" }}
     color="link"
     cursor="pointer"
     {...props}
@@ -33,7 +33,6 @@ export const LinkBlock = React.forwardRef((props, ref) => {
       backgroundColor={{
         _: "inherit",
         hover: "background-hover",
-        focus: "background-focus",
       }}
       {...props}
     />
