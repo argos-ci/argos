@@ -169,14 +169,12 @@ export function Build() {
                       <Button
                         borderRadius="md 0 0 md"
                         variant="neutral"
-                        py={2}
                         disabled={!showStableScreenshots}
                         onClick={() => setShowStableScreenshots(false)}
                       >
                         Updated screenshots only
                       </Button>
                       <Button
-                        py={2}
                         borderRadius="0 md md 0"
                         variant="neutral"
                         disabled={showStableScreenshots}
