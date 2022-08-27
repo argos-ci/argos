@@ -70,7 +70,7 @@ export function RepositoryBreadcrumbMenu({ ...props }) {
                     key={repositoryLogin}
                     state={menu}
                     as={BaseLink}
-                    to={`/${repositoryLogin}`}
+                    to={`${ownerLogin}/${repositoryLogin}`}
                     minWidth="200px"
                   >
                     <Icon as={RepoIcon} w={5} h={5} mt={1} />

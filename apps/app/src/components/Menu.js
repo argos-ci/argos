@@ -18,10 +18,6 @@ const InnerMenuButton = styled.box`
   border-radius: md;
   padding: 1 2;
 
-  &:focus {
-    background-color: background-focus;
-  }
-
   &:hover {
     background-color: background-hover;
   }

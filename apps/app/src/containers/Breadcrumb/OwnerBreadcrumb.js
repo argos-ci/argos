@@ -5,12 +5,10 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbSeparator,
-  Loader,
 } from "@argos-ci/app/src/components";
-import { Query } from "../Apollo";
 import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
-import { useUser } from "../User";
 import { OwnerBreadcrumbMenu } from "./OwnerBreadcrumbMenu";
+import { useQuery } from "../Apollo";
 
 const OWNER_QUERY = gql`
   query Owner($login: String!) {
@@ -24,38 +22,29 @@ const OWNER_QUERY = gql`
   ${OwnerAvatarFragment}
 `;
 
-export function OwnerBreadcrumbItem() {
-  const { ownerLogin } = useParams();
+const InnerOwnerBreadcrumbItem = ({ ownerLogin }) => {
   const match = useMatch(`/${ownerLogin}`);
-  const user = useUser();
+  const { data } = useQuery(OWNER_QUERY, { variables: { login: ownerLogin } });
 
   return (
-    <Query
-      query={OWNER_QUERY}
-      variables={{ login: ownerLogin }}
-      fallback={<Loader />}
-      fetchPolicy="no-cache"
-      skip={!user || !ownerLogin}
-    >
-      {(data) => {
-        if (!data?.owner) return null;
-
-        return (
-          <>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink
-                to={`/${ownerLogin}`}
-                aria-current={match ? "page" : "false"}
-              >
-                <OwnerAvatar owner={data.owner} size="sm" />
-                {data.owner.login}
-              </BreadcrumbLink>
-              <OwnerBreadcrumbMenu />
-            </BreadcrumbItem>
-          </>
-        );
-      }}
-    </Query>
+    <>
+      <BreadcrumbSeparator />
+      <BreadcrumbItem>
+        <BreadcrumbLink
+          to={`/${ownerLogin}`}
+          aria-current={match ? "page" : undefined}
+        >
+          <OwnerAvatar owner={data?.owner ?? null} size="sm" />
+          {ownerLogin}
+        </BreadcrumbLink>
+        <OwnerBreadcrumbMenu />
+      </BreadcrumbItem>
+    </>
   );
+};
+
+export function OwnerBreadcrumbItem() {
+  const { ownerLogin } = useParams();
+  if (!ownerLogin) return null;
+  return <InnerOwnerBreadcrumbItem ownerLogin={ownerLogin} />;
 }
