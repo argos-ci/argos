@@ -39,9 +39,9 @@ export function useQuery(query, options) {
 }
 
 export function Query({ fallback = null, children, query, ...props }) {
-  const { loading, data } = useQuery(query, props);
+  const { data } = useQuery(query, props);
 
-  if (loading) {
+  if (!data) {
     return fallback;
   }
 
