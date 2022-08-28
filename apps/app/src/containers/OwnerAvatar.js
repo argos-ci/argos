@@ -13,8 +13,8 @@ export const OwnerAvatar = React.forwardRef(
   ({ owner, size, ...props }, ref) => {
     const commonProps = {
       ref,
-      w: size === "sm" ? { _: 5, md: 6 } : 10,
-      h: size === "sm" ? { _: 5, md: 6 } : 10,
+      w: size === "sm" ? { _: 5, md: 6 } : "32px",
+      h: size === "sm" ? { _: 5, md: 6 } : "32px",
       borderRadius: "50%",
       ...props,
     };
