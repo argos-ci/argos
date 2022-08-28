@@ -1,10 +1,8 @@
 /* eslint-disable react/no-unescaped-entities */
 import * as React from "react";
 import { gql } from "graphql-tag";
-import { useParams } from "react-router-dom";
 import {
   BaseLink,
-  IllustratedText,
   Link,
   Loader,
   Menu,
@@ -18,7 +16,6 @@ import {
 } from "@argos-ci/app/src/components";
 import { Query } from "../Apollo";
 import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
-import { useUser } from "../User";
 import config from "../../config";
 import { LinkExternalIcon } from "@primer/octicons-react";
 
@@ -36,8 +33,6 @@ const OWNERS_QUERY = gql`
 `;
 
 export function OwnerBreadcrumbMenu(props) {
-  const { ownerLogin } = useParams();
-  const user = useUser();
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
 
   return (
@@ -46,40 +41,24 @@ export function OwnerBreadcrumbMenu(props) {
         <MenuButtonArrow state={menu} />
       </MenuButton>
 
-      <Menu aria-label="Organizations list" state={menu}>
-        <Query
-          query={OWNERS_QUERY}
-          fallback={<Loader />}
-          skip={!menu.open || !ownerLogin}
-        >
-          {(data) => {
-            if (!data?.owners) {
-              return <MenuText>No organization found</MenuText>;
-            }
+      <Menu aria-label="Organizations" state={menu}>
+        <MenuTitle>Organizations</MenuTitle>
+        <MenuSeparator />
 
-            const ownersList = data.owners
-              .filter(({ login }) => login !== ownerLogin)
-              .sort((ownerA, ownerB) =>
-                String(ownerA.name).localeCompare(String(ownerB.name))
-              );
+        {menu.open && (
+          <Query query={OWNERS_QUERY} fallback={<Loader />}>
+            {(data) => {
+              const owners =
+                data.owners.sort((ownerA, ownerB) =>
+                  ownerA.name.localeCompare(ownerB.name)
+                ) ?? [];
 
-            if (ownersList.length === 0) {
-              return <MenuText>No organization found</MenuText>;
-            }
+              if (owners.length === 0) {
+                return <MenuText>No organization found</MenuText>;
+              }
 
-            return (
-              <>
-                <MenuTitle>Organizations</MenuTitle>
-                <MenuSeparator />
-
-                {user.login !== ownerLogin && (
-                  <MenuItem state={menu} as={BaseLink} to={`/${user.login}`}>
-                    <OwnerAvatar owner={user} size="sm" />
-                    {user.login}
-                  </MenuItem>
-                )}
-
-                {ownersList.map((owner) => (
+              return owners.map((owner) => {
+                return (
                   <MenuItem
                     key={owner.login}
                     state={menu}
@@ -89,28 +68,20 @@ export function OwnerBreadcrumbMenu(props) {
                     <OwnerAvatar owner={owner} size="sm" />
                     {owner.name}
                   </MenuItem>
-                ))}
+                );
+              });
+            }}
+          </Query>
+        )}
 
-                <MenuSeparator />
-                <MenuText>
-                  Don't see your org?
-                  <IllustratedText
-                    as={Link}
-                    href={config.get("github.appUrl")}
-                    target="_blank"
-                    icon={LinkExternalIcon}
-                    reverse
-                    fontWeight="medium"
-                    mt={1}
-                    display="flex"
-                  >
-                    Manage access restrictions
-                  </IllustratedText>
-                </MenuText>
-              </>
-            );
-          }}
-        </Query>
+        <MenuSeparator />
+        <MenuText>
+          Don't see your org?
+          <br />
+          <Link href={config.get("github.appUrl")} target="_blank">
+            Manage access restrictions <LinkExternalIcon />
+          </Link>
+        </MenuText>
       </Menu>
     </>
   );
