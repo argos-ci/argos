@@ -9,7 +9,7 @@ import {
 } from "@primer/octicons-react";
 import moment from "moment";
 import { gql } from "graphql-tag";
-import { getStatusColor } from "../../containers/Status";
+import { getStatusPrimaryColor } from "../../containers/Status";
 import {
   Button,
   Container,
@@ -146,7 +146,7 @@ function BuildsList({ repository }) {
         </Thead>
         <Tbody>
           {builds.map((build, buildIndex) => {
-            const statusColor = getStatusColor(build.status);
+            const statusColor = getStatusPrimaryColor(build.status);
 
             return (
               <tr
