@@ -24,8 +24,12 @@ export function getStatusColor(status) {
   }
 }
 
+export function getStatusPrimaryColor(status) {
+  return `${getStatusColor(status)}-500`;
+}
+
 export function StatusIcon({ status, ...props }) {
-  const buildColor = `${getStatusColor(status)}-500`;
+  const buildColor = `${getStatusPrimaryColor(status)}`;
   switch (status) {
     case "failure":
     case "error":
