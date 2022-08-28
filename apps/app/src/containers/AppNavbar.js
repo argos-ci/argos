@@ -78,7 +78,7 @@ export function AppNavbar() {
       <Navbar>
         <NavbarBrandLink as={BaseLink} to="/">
           <NavbarBrand>
-            <BrandLogo height={40} />
+            <BrandLogo height={32} />
           </NavbarBrand>
         </NavbarBrandLink>
         <NavbarSecondary>
