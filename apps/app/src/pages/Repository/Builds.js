@@ -1,6 +1,5 @@
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
-import { useInView } from "react-cool-inview";
 import {
   GitBranchIcon,
   CommitIcon,
@@ -32,7 +31,7 @@ const REPOSITORY_BUILDS_QUERY = gql`
   query RepositoryBuilds($ownerLogin: String!, $name: String!, $after: Int!) {
     repository(ownerLogin: $ownerLogin, repositoryName: $name) {
       id
-      builds(first: 5, after: $after) {
+      builds(first: 10, after: $after) {
         pageInfo {
           totalCount
           hasNextPage
@@ -105,14 +104,6 @@ function BuildsList({ repository }) {
     });
   }
 
-  const { observe } = useInView({
-    rootMargin: "50px 0px",
-    onEnter: ({ unobserve }) => {
-      unobserve();
-      loadNextPage();
-    },
-  });
-
   if (loading)
     return (
       <LoadingAlert>
@@ -145,14 +136,11 @@ function BuildsList({ repository }) {
           </Tr>
         </Thead>
         <Tbody>
-          {builds.map((build, buildIndex) => {
+          {builds.map((build) => {
             const statusColor = getStatusPrimaryColor(build.status);
 
             return (
-              <tr
-                key={build.id}
-                ref={buildIndex === builds.length - 1 ? observe : null}
-              >
+              <tr key={build.id}>
                 <Td>
                   <TdLink
                     borderRadius="0 md md 0"
@@ -204,16 +192,10 @@ function BuildsList({ repository }) {
         </Tbody>
       </Table>
 
-      {pageInfo.hasNextPage && !moreLoading && (
-        <Button mt={3} mx="auto" onClick={loadNextPage}>
+      {pageInfo.hasNextPage && (
+        <Button mt={3} mx="auto" onClick={loadNextPage} disabled={moreLoading}>
           Load More
         </Button>
-      )}
-
-      {moreLoading && (
-        <LoadingAlert py={1} mt={4} severity="neutral">
-          Loading previous build
-        </LoadingAlert>
       )}
 
       {!pageInfo.hasNextPage && <EndOfList />}
