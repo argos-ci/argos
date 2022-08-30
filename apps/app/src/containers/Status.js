@@ -48,7 +48,7 @@ export function StatusIcon({ status, ...props }) {
   }
 }
 
-export function statusText(status) {
+export function getStatusText(status) {
   switch (status) {
     case "failure":
     case "error":

@@ -138,19 +138,24 @@ export const resolvers = {
   },
   Query: {
     async owners(rootObj, args, context) {
-      const organizations = await context.user.$relatedQuery("organizations");
-      const users = await User.query()
-        .distinct("users.id")
-        .select("users.*")
-        .innerJoin("repositories", "repositories.userId", "users.id")
-        .innerJoin(
-          "user_repository_rights",
-          "user_repository_rights.repositoryId",
-          "repositories.id"
-        )
-        .where("user_repository_rights.userId", context.user.id);
+      const [organizations, users] = await Promise.all([
+        context.user.$relatedQuery("organizations"),
+        User.query()
+          .distinct("users.id")
+          .select("users.*")
+          .innerJoin("repositories", "repositories.userId", "users.id")
+          .innerJoin(
+            "user_repository_rights",
+            "user_repository_rights.repositoryId",
+            "repositories.id"
+          )
+          .where("user_repository_rights.userId", context.user.id)
+          .whereNot("users.id", context.user.id),
+      ]);
 
-      return [...organizations, ...users].sort(sortByLogin);
+      const owners = [...organizations, ...users].sort(sortByLogin);
+
+      return [context.user, ...owners];
     },
     async owner(rootObject, args) {
       return getOwner({ login: args.login });

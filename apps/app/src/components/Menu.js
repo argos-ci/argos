@@ -92,6 +92,7 @@ export const MenuItem = ({ as, children, ...props }) => {
           fontWeight={600}
           pr={4}
           userSelect="none"
+          opacity={{ '&[aria-disabled="true"]': 0.5 }}
           {...menuItemProps}
         >
           {children}

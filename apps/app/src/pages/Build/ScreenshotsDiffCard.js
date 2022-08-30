@@ -7,7 +7,6 @@ import {
   CardTitle,
   CardBody,
   BaseLink,
-  Icon,
   LinkBlock,
   useDisclosureState,
   DisclosureContent,
@@ -70,7 +69,7 @@ export function ScreenshotsDiffCard({ screenshotDiff, open, ...props }) {
             px={1}
             color="secondary-text"
           >
-            <Icon
+            <x.div
               as={ChevronRightIcon}
               transform
               rotate={disclosure.open ? 90 : 0}

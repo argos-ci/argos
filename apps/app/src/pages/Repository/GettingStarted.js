@@ -24,9 +24,9 @@ export function GettingStarted({ repository }) {
         {!repository.enabled ? (
           <>
             <CardText fontSize="md">
-              Active your repository to start using Argos.
+              Activate repository to start visual testing on this project.
             </CardText>
-            <EnableToggleButton repository={repository} mt={2} />
+            <EnableToggleButton repository={repository} mt={3} />
           </>
         ) : (
           <x.div>
