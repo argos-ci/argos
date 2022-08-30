@@ -41,7 +41,7 @@ export function OwnerSettings() {
   return (
     <Container>
       <Helmet>
-        <title>{`Settings • ${ownerLogin}`}</title>
+        <title>{ownerLogin} • Settings</title>
       </Helmet>
 
       <Query

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import moment from "moment";
-import { CheckCircleFillIcon } from "@primer/octicons-react";
+import { CheckCircleFillIcon, LinkExternalIcon } from "@primer/octicons-react";
 import { gql } from "graphql-tag";
 import {
   Card,
@@ -13,6 +13,7 @@ import {
   PrimaryTitle,
   ProgressBar,
   SidebarLayout,
+  Time,
 } from "@argos-ci/app/src/components";
 import config from "../../config";
 import { getPossessiveForm } from "../../modules/utils";
@@ -100,7 +101,7 @@ function PlanCard({ purchases, screenshotsLimitPerMonth, ...props }) {
 
         <x.div display="flex" justifyContent="flex-end">
           <Link target="_blank" href={config.get("github.marketplaceUrl")}>
-            Manage plan →
+            Manage plan on GitHub <LinkExternalIcon />
           </Link>
         </x.div>
       </CardBody>
@@ -132,11 +133,7 @@ function UsageCard({
         <CardTitle mt={4} mb={2}>
           Next reset date
         </CardTitle>
-        {moment()
-          .add(1, "month")
-          .startOf("month")
-          .toDate()
-          .toLocaleDateString()}
+        <Time date={moment().add(1, "month").startOf("month").toISOString()} />
       </CardBody>
     </Card>
   );

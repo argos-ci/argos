@@ -52,8 +52,10 @@ function TokenCard({ repository }) {
           Use this <Tag>ARGOS_TOKEN</Tag> to authenticate your repository when
           you send screenshots to Argos.
         </CardText>
-        <Alert my={3}>This token should be kept secret.</Alert>
-        <Code>ARGOS_TOKEN={repository.token}</Code>
+        <Code my={3}>ARGOS_TOKEN={repository.token}</Code>
+        <Alert my={3} severity="warning">
+          This token should be kept secret.
+        </Alert>
         <CardText fontSize="md" mt={4}>
           <DocumentationPhrase />
         </CardText>
@@ -138,8 +140,8 @@ function EnableRepositoryCard({ repository }) {
         </CardTitle>
       </CardHeader>
       <CardBody>
-        Click on this button to deactivate Argos on this repository. This action
-        doesn't delete the screenshots.
+        This action doesn't delete the screenshots. It only prevents new builds
+        to be pushed.
         <EnableToggleButton repository={repository} mt={2} />
       </CardBody>
     </Card>
@@ -176,7 +178,9 @@ export function RepositorySettings({ repository }) {
   return (
     <Container>
       <Helmet>
-        <title>Repository Settings</title>
+        <title>
+          {repository.owner.login} / {repository.name} • Settings
+        </title>
       </Helmet>
 
       <SidebarLayout>

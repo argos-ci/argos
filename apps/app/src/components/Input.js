@@ -13,10 +13,4 @@ export const Input = styled.input`
   &:hover {
     background-color: background-hover;
   }
-
-  &:focus-visible,
-  [data-focus-visible] {
-    border-color: border-active;
-    background-color: black;
-  }
 `;

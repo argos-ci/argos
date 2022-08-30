@@ -39,9 +39,11 @@ export function GettingStarted({ repository }) {
               when you send screenshots to Argos.
             </CardText>
 
-            <Alert mt={4}>This token should be kept secret.</Alert>
-
             <Code mt={2}>ARGOS_TOKEN={repository.token}</Code>
+
+            <Alert mt={4} severity="warning">
+              This token should be kept secret.
+            </Alert>
 
             <CardText mt={4} fontWeight={400} fontSize="md">
               <DocumentationPhrase />
