@@ -14,6 +14,7 @@ import {
   CardBody,
   Link,
   IllustratedText,
+  Time,
 } from "@argos-ci/app/src/components";
 import {
   UpdateStatusButton,
@@ -128,7 +129,6 @@ export function StickySummaryMenu({ repository, build, ...props }) {
 
 export function SummaryCard({ build }) {
   const statusColor = getStatusColor(build.status);
-  const date = new Date(build.createdAt);
 
   return (
     <Card borderLeft={2} borderLeftColor={statusColor} borderRadius="0 md md 0">
@@ -140,7 +140,7 @@ export function SummaryCard({ build }) {
 
       <CardBody display="grid" gridTemplateColumns={{ _: 1, sm: 2 }} gap={1}>
         <IllustratedText field icon={ClockIcon}>
-          {date.toLocaleDateString()} at {date.toLocaleTimeString()}
+          <Time date={build.createdAt} format="LLL" />
         </IllustratedText>
 
         <x.div display="flex" alignItems="center" gap={2}>
