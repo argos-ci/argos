@@ -162,19 +162,6 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
   );
 }
 
-function DateCell({ date }) {
-  if (!date) return <Td />;
-
-  return (
-    <Td fontSize="sm">
-      {new Date(date).toLocaleDateString(undefined, {
-        day: "numeric",
-        month: "short",
-      })}
-    </Td>
-  );
-}
-
 function RepositoriesList({ repositories, ...props }) {
   if (repositories.length === 0) {
     return (
@@ -203,7 +190,6 @@ function RepositoriesList({ repositories, ...props }) {
         <Tr>
           <Th>Repository name</Th>
           <Th width={120}>Last Build</Th>
-          <Th width={70}></Th>
           <Th width={120}>Status</Th>
           <Th width={80}>Actions</Th>
         </Tr>
@@ -221,7 +207,6 @@ function RepositoriesList({ repositories, ...props }) {
                 repositoryUrl={repositoryUrl}
               />
               <BuildTagCell build={lastBuild} repositoryUrl={repositoryUrl} />
-              <DateCell date={lastBuild?.updatedAt || repository.updatedAt} />
               <Td>
                 <Tag
                   color={repository.enabled ? "primary-text" : "secondary-text"}
@@ -242,9 +227,11 @@ function RepositoriesList({ repositories, ...props }) {
 }
 
 function Owners({ owners }) {
-  const repositories = owners.flatMap((owner) =>
-    owner.repositories.map((repository) => ({ owner, ...repository }))
-  );
+  const repositories = owners
+    .flatMap((owner) =>
+      owner.repositories.map((repository) => ({ owner, ...repository }))
+    )
+    .sort((a, b) => (b.enabled === a.enabled ? 0 : b.enabled ? 1 : -1));
 
   const activeRepositories = repositories.filter(({ enabled }) => enabled);
 
