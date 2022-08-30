@@ -13,6 +13,7 @@ import {
   Button,
   Container,
   IllustratedText,
+  Loader,
   LoadingAlert,
   PrimaryTitle,
   Table,
@@ -53,21 +54,6 @@ const REPOSITORY_BUILDS_QUERY = gql`
     }
   }
 `;
-
-const EndOfList = (props) => (
-  <x.div
-    py={1}
-    w={250}
-    mx="auto"
-    borderTop={1}
-    textAlign="center"
-    mt={3}
-    color="secondary-text"
-    {...props}
-  >
-    End of list
-  </x.div>
-);
 
 function BuildsList({ repository }) {
   const { loading, data, fetchMore } = useQuery(REPOSITORY_BUILDS_QUERY, {
@@ -194,11 +180,9 @@ function BuildsList({ repository }) {
 
       {pageInfo.hasNextPage && (
         <Button mt={3} mx="auto" onClick={loadNextPage} disabled={moreLoading}>
-          Load More
+          Load More {moreLoading && <Loader />}
         </Button>
       )}
-
-      {!pageInfo.hasNextPage && <EndOfList />}
     </>
   );
 }

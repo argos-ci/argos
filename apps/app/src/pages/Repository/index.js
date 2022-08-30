@@ -50,10 +50,11 @@ export function Repository() {
 
   return (
     <>
-      <Helmet
-        titleTemplate={`%s • ${repositoryName}`}
-        defaultTitle={`${ownerLogin} / ${repositoryName}`}
-      />
+      <Helmet>
+        <title>
+          {ownerLogin} / {repositoryName}
+        </title>
+      </Helmet>
 
       <Query
         query={REPOSITORY_QUERY}

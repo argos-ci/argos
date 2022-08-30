@@ -7,17 +7,9 @@ import {
   Container,
   SecondaryTitle,
   Link,
-  PrimaryTitle,
-  SidebarList,
-  SidebarItemLink,
-  SidebarItem,
-  SidebarTitle,
-  SidebarLayout,
   Loader,
 } from "@argos-ci/app/src/components";
-import { useUser } from "../../containers/User";
 import config from "../../config";
-import { getPossessiveForm } from "../../modules/utils";
 import { useParams } from "react-router-dom";
 import {
   ActiveRepositoryCard,
@@ -28,17 +20,19 @@ import {
 import { NotFound } from "../NotFound";
 import { OwnerTabs } from "./OwnerTabs";
 import { Helmet } from "react-helmet";
+import { LinkExternalIcon } from "@primer/octicons-react";
 
 const getRepositoryUrl = (owner, repository) =>
   `/${owner.login}/${repository.name}`;
 
 export function OwnerRepositories() {
   const { ownerLogin } = useParams();
-  const user = useUser();
 
   return (
     <Container>
-      <Helmet titleTemplate={`%s • ${ownerLogin}`} defaultTitle={ownerLogin} />
+      <Helmet>
+        <title>{ownerLogin}</title>
+      </Helmet>
 
       <Query
         query={gql`
@@ -77,82 +71,50 @@ export function OwnerRepositories() {
             <>
               <OwnerTabs />
 
-              <SidebarLayout>
-                <SidebarList>
-                  <SidebarTitle>Organization repositories</SidebarTitle>
-                  <SidebarItem>
-                    <SidebarItemLink href="#active-repositories">
-                      Active
-                    </SidebarItemLink>
-                  </SidebarItem>
-                  <SidebarItem>
-                    <SidebarItemLink href="#inactive-repositories" exact>
-                      Inactive
-                    </SidebarItemLink>
-                  </SidebarItem>
-                </SidebarList>
+              <x.div display="flex" flexDirection="column">
+                <SecondaryTitle id="active-repositories">
+                  Active repositories
+                </SecondaryTitle>
 
-                <SidebarLayout.PageTitle>
-                  <PrimaryTitle>
-                    {user.login === owner.login
-                      ? "Personal"
-                      : getPossessiveForm(owner.name)}{" "}
-                    Repositories
-                  </PrimaryTitle>
-                </SidebarLayout.PageTitle>
+                <x.div display="flex" flexDirection="column" gap={4}>
+                  {activeRepositories.length === 0 ? (
+                    <NoRepositoryCard />
+                  ) : (
+                    activeRepositories.map((repository) => (
+                      <ActiveRepositoryCard
+                        key={repository.id}
+                        repository={repository}
+                        url={getRepositoryUrl(owner, repository)}
+                      />
+                    ))
+                  )}
+                </x.div>
 
-                <SidebarLayout.PageContent>
-                  <x.div display="flex" flexDirection="column">
-                    <SecondaryTitle id="active-repositories">
-                      Active repositories
-                    </SecondaryTitle>
+                <SecondaryTitle id="inactive-repositories" mt={8}>
+                  Inactive repositories
+                </SecondaryTitle>
 
-                    <x.div display="flex" flexDirection="column" gap={4}>
-                      {activeRepositories.length === 0 ? (
-                        <NoRepositoryCard />
-                      ) : (
-                        activeRepositories.map((repository) => (
-                          <ActiveRepositoryCard
-                            key={repository.id}
-                            repository={repository}
-                            url={getRepositoryUrl(owner, repository)}
-                          />
-                        ))
-                      )}
-                    </x.div>
+                <x.div display="flex" flexDirection="column" gap={3}>
+                  {inactiveRepositories.length === 0 ? (
+                    <NoRepositoryCard />
+                  ) : (
+                    inactiveRepositories.map((repository) => (
+                      <InactiveRepositoryCard
+                        key={repository.id}
+                        repository={repository}
+                        url={getRepositoryUrl(owner, repository)}
+                      />
+                    ))
+                  )}
+                </x.div>
+              </x.div>
 
-                    <SecondaryTitle id="inactive-repositories" mt={8}>
-                      Inactive repositories
-                    </SecondaryTitle>
-
-                    <x.div display="flex" flexDirection="column" gap={3}>
-                      {inactiveRepositories.length === 0 ? (
-                        <NoRepositoryCard />
-                      ) : (
-                        inactiveRepositories.map((repository) => (
-                          <InactiveRepositoryCard
-                            key={repository.id}
-                            repository={repository}
-                            url={getRepositoryUrl(owner, repository)}
-                          />
-                        ))
-                      )}
-                    </x.div>
-                  </x.div>
-
-                  <x.div mt={14}>
-                    Don't see your repo? Click here to{" "}
-                    <Link
-                      href={config.get("github.appUrl")}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      fontWeight="normal"
-                    >
-                      manage access restrictions →
-                    </Link>
-                  </x.div>
-                </SidebarLayout.PageContent>
-              </SidebarLayout>
+              <x.div mt={14}>
+                Don't see your repo? Click here to{" "}
+                <Link href={config.get("github.appUrl")} target="_blank">
+                  manage access restrictions on GitHub <LinkExternalIcon />
+                </Link>
+              </x.div>
             </>
           );
         }}

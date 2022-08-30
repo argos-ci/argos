@@ -29,9 +29,23 @@ export const Alert = React.forwardRef(
   }
 );
 
-export function LoadingAlert({ children, ...props }) {
+export function LoadingAlert({ children, delay = 300, ...props }) {
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const timeout = setTimeout(() => {
+      setVisible(true);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [delay]);
+
   return (
-    <Alert w="fit-content" mx="auto" aria-busy {...props}>
+    <Alert
+      w="fit-content"
+      mx="auto"
+      aria-busy="true"
+      style={!visible ? { visibility: "hidden" } : undefined}
+      {...props}
+    >
       <x.div display="flex" gap={2} alignItems="center" w="fit-content">
         {children || "Argos is fetching data..."}
         <Loader />

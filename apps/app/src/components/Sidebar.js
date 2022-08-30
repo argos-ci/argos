@@ -36,6 +36,7 @@ export const SidebarTitle = ({ children, ...props }) => (
 export const SidebarItem = styled.li`
   padding: 0;
   margin: 0;
+  margin-bottom: 1;
   transition: base;
   color: secondary-text;
   border-radius: md;

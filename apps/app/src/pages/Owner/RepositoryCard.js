@@ -13,9 +13,9 @@ import {
   BaseLink,
   Icon,
   IllustratedText,
+  Time,
 } from "@argos-ci/app/src/components";
 import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
-import moment from "moment";
 import { StatusIcon } from "../../containers/Status";
 
 export const OwnerRepositoryCardFragment = gql`
@@ -84,7 +84,9 @@ const RepositoryStats = ({ buildCount, lastBuild, ...props }) => {
         </Stat>
         <Stat>
           <StatLabel>Last build date</StatLabel>
-          <StatValue>{moment(lastBuild.updatedAt).fromNow()}</StatValue>
+          <StatValue>
+            <Time date={lastBuild.updatedAt} />
+          </StatValue>
         </Stat>
       </x.div>
     </x.div>
@@ -120,7 +122,7 @@ export function ActiveRepositoryCard({ repository, url, ...props }) {
         {!lastBuild ? (
           <>
             <CardText fontWeight={600} fontSize="md">
-              No Build found.
+              No Build found
             </CardText>
             <CardText mt={1} fontWeight={400}>
               <DocumentationPhrase />

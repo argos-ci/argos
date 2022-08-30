@@ -19,6 +19,7 @@ export function getStatusColor(status) {
       return "gray";
 
     case "pending":
+    case "warning":
     default:
       return "orange";
   }
