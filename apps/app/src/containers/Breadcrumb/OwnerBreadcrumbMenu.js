@@ -47,12 +47,7 @@ export function OwnerBreadcrumbMenu(props) {
 
         {menu.open && (
           <Query query={OWNERS_QUERY} fallback={<Loader />}>
-            {(data) => {
-              const owners =
-                data.owners.sort((ownerA, ownerB) =>
-                  ownerA.name.localeCompare(ownerB.name)
-                ) ?? [];
-
+            {({ owners }) => {
               if (owners.length === 0) {
                 return <MenuText>No organization found</MenuText>;
               }

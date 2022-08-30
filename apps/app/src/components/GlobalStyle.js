@@ -59,4 +59,14 @@ export const GlobalStyle = createGlobalStyle`
       text-decoration: none;
     }
   }
+
+  /* Default outline on buttons */
+  button:focus {
+    outline: none;
+  }
+
+  button:focus-visible {
+    outline: 1px dotted;
+    outline: 5px auto -webkit-focus-ring-color;
+  }
 `;

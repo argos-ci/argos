@@ -3,7 +3,6 @@ import { x } from "@xstyled/styled-components";
 import {
   Alert,
   Button,
-  LinkBlock,
   Menu,
   MenuButton,
   MenuItem,
@@ -56,7 +55,6 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
       <Menu aria-label="Review changes" state={menu}>
         <MenuItem
           state={menu}
-          as={LinkBlock}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -66,16 +64,12 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
             menu.hide();
           }}
           disabled={status === "success"}
-          backgroundColor={
-            status === "success" ? "background-active" : "inherit"
-          }
         >
           <StatusIcon status="success" />
           Approve changes
         </MenuItem>
         <MenuItem
           state={menu}
-          as={LinkBlock}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -85,9 +79,6 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
             menu.hide();
           }}
           disabled={status === "failure"}
-          backgroundColor={
-            status === "failure" ? "background-active" : "inherit"
-          }
         >
           <StatusIcon status="error" />
           Request changes

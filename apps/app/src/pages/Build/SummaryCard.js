@@ -21,7 +21,7 @@ import {
 } from "./UpdateStatusButton";
 import {
   StatusIcon,
-  statusText,
+  getStatusText,
   getStatusColor,
 } from "../../containers/Status";
 import { useParams } from "react-router-dom";
@@ -145,7 +145,7 @@ export function SummaryCard({ build }) {
 
         <x.div display="flex" alignItems="center" gap={2}>
           <StatusIcon status={build.status} />
-          {statusText(build.status)}
+          {getStatusText(build.status)}
         </x.div>
 
         {build.name !== "default" ? (

@@ -17,11 +17,6 @@ import {
   FormLabel,
   FormSubmit,
   PrimaryTitle,
-  SidebarItem,
-  SidebarItemLink,
-  SidebarLayout,
-  SidebarList,
-  SidebarTitle,
   Tag,
   Toast,
   useFormState,
@@ -135,42 +130,20 @@ function EnableRepositoryCard({ repository }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle id="enable-repository">
-          {repository.enabled ? "Deactivate" : "Activate"} Repository
-        </CardTitle>
+        <CardTitle id="enable-repository">Repository activation</CardTitle>
       </CardHeader>
       <CardBody>
-        This action doesn't delete the screenshots. It only prevents new builds
-        to be pushed.
-        <EnableToggleButton repository={repository} mt={2} />
+        {repository.enabled ? (
+          <>
+            This action doesn't delete the screenshots. It only prevents new
+            builds to be pushed.
+          </>
+        ) : (
+          <>Activate repository to start visual testing on this project.</>
+        )}
+        <EnableToggleButton repository={repository} mt={3} />
       </CardBody>
     </Card>
-  );
-}
-
-function SettingsSidebar({ repository }) {
-  return (
-    <SidebarList>
-      <SidebarTitle>Repository settings</SidebarTitle>
-      {repository.enabled ? (
-        <>
-          <SidebarItem>
-            <SidebarItemLink href="#argos-token">Argos Token</SidebarItemLink>
-          </SidebarItem>
-
-          <SidebarItem>
-            <SidebarItemLink href="#reference-branch">
-              Reference branch
-            </SidebarItemLink>
-          </SidebarItem>
-        </>
-      ) : null}
-      <SidebarItem>
-        <SidebarItemLink href="#enable-repository">
-          Enable repository
-        </SidebarItemLink>
-      </SidebarItem>
-    </SidebarList>
   );
 }
 
@@ -183,25 +156,16 @@ export function RepositorySettings({ repository }) {
         </title>
       </Helmet>
 
-      <SidebarLayout>
-        <SettingsSidebar repository={repository} />
-
-        <SidebarLayout.PageTitle>
-          <PrimaryTitle>Repository Settings</PrimaryTitle>
-        </SidebarLayout.PageTitle>
-
-        <SidebarLayout.PageContent>
-          <x.div display="flex" rowGap={4} flexDirection="column">
-            {repository.enabled && (
-              <>
-                <TokenCard repository={repository} />
-                <BranchUpdateCard repository={repository} />
-              </>
-            )}
-            <EnableRepositoryCard repository={repository} />
-          </x.div>
-        </SidebarLayout.PageContent>
-      </SidebarLayout>
+      <PrimaryTitle>Repository Settings</PrimaryTitle>
+      <x.div display="flex" rowGap={4} flexDirection="column">
+        {repository.enabled && (
+          <>
+            <TokenCard repository={repository} />
+            <BranchUpdateCard repository={repository} />
+          </>
+        )}
+        <EnableRepositoryCard repository={repository} />
+      </x.div>
     </Container>
   );
 }

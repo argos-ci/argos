@@ -12,6 +12,7 @@ export const Alert = React.forwardRef(
     return (
       <x.div
         ref={ref}
+        role="alert"
         border={1}
         py={2}
         px={4}
@@ -20,7 +21,6 @@ export const Alert = React.forwardRef(
         borderColor={`${baseColor}-500-a60`}
         backgroundColor={`${baseColor}-900-a20`}
         color={`${baseColor}-400`}
-        role="alert"
         {...props}
       >
         {children}
@@ -40,16 +40,17 @@ export function LoadingAlert({ children, delay = 300, ...props }) {
 
   return (
     <Alert
-      w="fit-content"
       mx="auto"
       aria-busy="true"
       style={!visible ? { visibility: "hidden" } : undefined}
+      display="flex"
+      alignItems="center"
+      gap={2}
+      w="fit-content"
       {...props}
     >
-      <x.div display="flex" gap={2} alignItems="center" w="fit-content">
-        {children || "Argos is fetching data..."}
-        <Loader />
-      </x.div>
+      <div>{children || "Argos is fetching data"}</div>
+      <Loader />
     </Alert>
   );
 }

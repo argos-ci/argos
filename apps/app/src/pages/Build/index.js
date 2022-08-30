@@ -153,7 +153,9 @@ export function Build() {
               <SummaryCard repository={data.repository} build={build} />
 
               {build.status === "pending" ? (
-                <LoadingAlert my={5}>Build in progress...</LoadingAlert>
+                <LoadingAlert my={5} flexDirection="column">
+                  Build in progress
+                </LoadingAlert>
               ) : (
                 <>
                   <x.div
