@@ -1,7 +1,7 @@
 import { gql } from "graphql-tag";
 
 export const typeDefs = gql`
-  type User {
+  type User implements Owner {
     id: ID!
     email: String
     login: String!
@@ -9,6 +9,12 @@ export const typeDefs = gql`
     privateSync: Boolean!
     installations: [Installation!]!
     latestSynchronization: Synchronization
+    type: OwnerType!
+    repositoriesNumber: Int!
+    repositories(enabled: Boolean): [Repository!]!
+    permissions: [Permission]!
+    purchases: [Purchase!]!
+    currentMonthUsedScreenshots: Int!
   }
 
   extend type Query {
