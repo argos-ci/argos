@@ -9,8 +9,10 @@ import {
   Icon,
 } from "@argos-ci/app/src/components";
 import { RepositoryBreadcrumbMenu } from "./RepositoryBreadcrumbMenu";
+import { useUser } from "../User";
 
 export function RepositoryBreadcrumbItem() {
+  const user = useUser();
   const { ownerLogin, repositoryName } = useParams();
 
   if (!repositoryName) return null;
@@ -31,9 +33,11 @@ export function RepositoryBreadcrumbItem() {
           />
           {repositoryName}
         </BreadcrumbLink>
-        <BreadcrumbItemMenu>
-          <RepositoryBreadcrumbMenu />
-        </BreadcrumbItemMenu>
+        {user && (
+          <BreadcrumbItemMenu>
+            <RepositoryBreadcrumbMenu />
+          </BreadcrumbItemMenu>
+        )}
       </BreadcrumbItem>
     </>
   );
