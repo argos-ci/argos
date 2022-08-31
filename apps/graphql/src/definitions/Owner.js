@@ -138,6 +138,8 @@ export const resolvers = {
   },
   Query: {
     async owners(rootObj, args, context) {
+      if (!context.user) return [];
+
       const [organizations, users] = await Promise.all([
         context.user.$relatedQuery("organizations"),
         User.query()

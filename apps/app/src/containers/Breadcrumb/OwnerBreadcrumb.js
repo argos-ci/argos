@@ -9,6 +9,7 @@ import {
 import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
 import { OwnerBreadcrumbMenu } from "./OwnerBreadcrumbMenu";
 import { useQuery } from "../Apollo";
+import { useUser } from "../User";
 
 const OWNER_QUERY = gql`
   query Owner($login: String!) {
@@ -23,6 +24,7 @@ const OWNER_QUERY = gql`
 `;
 
 const InnerOwnerBreadcrumbItem = ({ ownerLogin }) => {
+  const user = useUser();
   const match = useMatch(`/${ownerLogin}`);
   const { data } = useQuery(OWNER_QUERY, { variables: { login: ownerLogin } });
 
@@ -37,7 +39,7 @@ const InnerOwnerBreadcrumbItem = ({ ownerLogin }) => {
           <OwnerAvatar owner={data?.owner ?? null} size="sm" />
           {ownerLogin}
         </BreadcrumbLink>
-        <OwnerBreadcrumbMenu />
+        {user && <OwnerBreadcrumbMenu />}
       </BreadcrumbItem>
     </>
   );
