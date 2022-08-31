@@ -1,16 +1,11 @@
 import request from "supertest";
 import { useDatabase, factory } from "@argos-ci/database/testing";
-import { job as buildJob } from "@argos-ci/build";
 import { expectNoGraphQLError } from "../testing";
 import { apolloServer } from "../apollo";
 import { createApolloServerApp } from "./util";
 
 describe("GraphQL", () => {
   useDatabase();
-
-  beforeEach(() => {
-    buildJob.push = jest.fn();
-  });
 
   describe("toggleRepository", () => {
     let ctx;
@@ -63,7 +58,6 @@ describe("GraphQL", () => {
           enabled: true,
         },
       });
-      expect(buildJob.push.mock.calls.length).toBe(1);
       expect(res.body.data.toggleRepository.token.length).toBe(40);
     });
   });
