@@ -3,7 +3,6 @@ import { promisify } from "util";
 import { gql } from "graphql-tag";
 import { transaction } from "@argos-ci/database";
 import { Build, Repository } from "@argos-ci/database/models";
-import { generateSample } from "../sample";
 import { APIError } from "../util";
 import { getOwner } from "./Owner";
 
@@ -159,16 +158,6 @@ export const resolvers = {
         // We can skip further work when disabling a repository
         if (!enabled) {
           return repository;
-        }
-
-        const sampleBuild = await Build.query(trx).findOne({
-          repositoryId: repository.id,
-          number: 0,
-        });
-
-        // No need to generate a sample if we find one.
-        if (!sampleBuild) {
-          await generateSample(repositoryId, { trx });
         }
 
         if (!repository.token) {
