@@ -97,128 +97,148 @@ export function ScreenshotCards({ screenshotsDiffs, open }) {
   );
 }
 
-export function Build() {
-  const { ownerLogin, repositoryName, buildNumber } = useParams();
+const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
   const [showStableScreenshots, setShowStableScreenshots] =
     React.useState(false);
   const { observe, inView } = useInView();
+
+  return (
+    <Query
+      query={BUILD_QUERY}
+      variables={{
+        ownerLogin,
+        repositoryName,
+        buildNumber,
+      }}
+      fallback={<LoadingAlert />}
+      skip={!ownerLogin || !repositoryName}
+    >
+      {(data) => {
+        if (!data?.repository?.build) return <NotFound />;
+
+        const { build } = data.repository;
+
+        const updatedScreenshots = build.screenshotDiffs.filter(
+          ({ score }) => score !== 0
+        );
+        const stableScreenshots = build.screenshotDiffs.filter(
+          ({ score }) => score === 0
+        );
+
+        return (
+          <>
+            <x.div
+              display="flex"
+              justifyContent="space-between"
+              alignItems="baseline"
+              columnGap={10}
+              flexWrap="wrap"
+              mb={3}
+            >
+              <PrimaryTitle mb={0}>
+                Build #{Number(buildNumber).toLocaleString()}
+              </PrimaryTitle>
+              <BuildChanges
+                updatedScreenshots={updatedScreenshots}
+                stableScreenshots={stableScreenshots}
+              />
+            </x.div>
+
+            <SummaryCard repository={data.repository} build={build} />
+
+            {build.status === "pending" ? (
+              <LoadingAlert my={5} flexDirection="column">
+                Build in progress
+              </LoadingAlert>
+            ) : (
+              <>
+                <x.div
+                  display="flex"
+                  justifyContent="space-between"
+                  columnGap={10}
+                  rowGap={4}
+                  flexWrap="wrap-reverse"
+                  mt={5}
+                  ref={observe}
+                >
+                  <x.div
+                    as={Group}
+                    display="flex"
+                    overflowX="scroll"
+                    alignItems="start"
+                  >
+                    <Button
+                      borderRadius="md 0 0 md"
+                      variant="neutral"
+                      disabled={!showStableScreenshots}
+                      onClick={() => setShowStableScreenshots(false)}
+                    >
+                      Updated screenshots only
+                    </Button>
+                    <Button
+                      borderRadius="0 md md 0"
+                      variant="neutral"
+                      disabled={showStableScreenshots}
+                      onClick={() => setShowStableScreenshots(true)}
+                    >
+                      Show all
+                    </Button>
+                  </x.div>
+
+                  <UpdateStatusButton
+                    repository={data.repository}
+                    build={build}
+                  />
+                </x.div>
+
+                {inView ? null : (
+                  <StickySummaryMenu
+                    repository={data.repository}
+                    build={build}
+                  />
+                )}
+
+                <SecondaryTitle mt={4}>Updated screenshots</SecondaryTitle>
+                <ScreenshotCards screenshotsDiffs={updatedScreenshots} open />
+
+                {showStableScreenshots ? (
+                  <>
+                    <SecondaryTitle mt={6}>Stable Screenshots</SecondaryTitle>
+                    <ScreenshotCards screenshotsDiffs={stableScreenshots} />
+                  </>
+                ) : null}
+              </>
+            )}
+          </>
+        );
+      }}
+    </Query>
+  );
+};
+
+export function Build() {
+  const {
+    ownerLogin,
+    repositoryName,
+    buildNumber: strBuildNumber,
+  } = useParams();
+
+  const buildNumber = parseInt(strBuildNumber, 10);
 
   return (
     <Container>
       <Helmet>
         <title>{`Build #${buildNumber} - ${repositoryName}`}</title>
       </Helmet>
-
-      <Query
-        query={BUILD_QUERY}
-        variables={{
-          ownerLogin,
-          repositoryName,
-          buildNumber: Number(buildNumber),
-        }}
-        fallback={<LoadingAlert />}
-        skip={!ownerLogin || !repositoryName || buildNumber === undefined}
-      >
-        {(data) => {
-          if (!data?.repository?.build) return <NotFound />;
-
-          const { build } = data.repository;
-
-          const updatedScreenshots = build.screenshotDiffs.filter(
-            ({ score }) => score !== 0
-          );
-          const stableScreenshots = build.screenshotDiffs.filter(
-            ({ score }) => score === 0
-          );
-
-          return (
-            <>
-              <x.div
-                display="flex"
-                justifyContent="space-between"
-                alignItems="baseline"
-                columnGap={10}
-                flexWrap="wrap"
-                mb={3}
-              >
-                <PrimaryTitle mb={0}>
-                  Build #{Number(buildNumber).toLocaleString()}
-                </PrimaryTitle>
-                <BuildChanges
-                  updatedScreenshots={updatedScreenshots}
-                  stableScreenshots={stableScreenshots}
-                />
-              </x.div>
-
-              <SummaryCard repository={data.repository} build={build} />
-
-              {build.status === "pending" ? (
-                <LoadingAlert my={5} flexDirection="column">
-                  Build in progress
-                </LoadingAlert>
-              ) : (
-                <>
-                  <x.div
-                    display="flex"
-                    justifyContent="space-between"
-                    columnGap={10}
-                    rowGap={4}
-                    flexWrap="wrap-reverse"
-                    mt={5}
-                    ref={observe}
-                  >
-                    <x.div
-                      as={Group}
-                      display="flex"
-                      overflowX="scroll"
-                      alignItems="start"
-                    >
-                      <Button
-                        borderRadius="md 0 0 md"
-                        variant="neutral"
-                        disabled={!showStableScreenshots}
-                        onClick={() => setShowStableScreenshots(false)}
-                      >
-                        Updated screenshots only
-                      </Button>
-                      <Button
-                        borderRadius="0 md md 0"
-                        variant="neutral"
-                        disabled={showStableScreenshots}
-                        onClick={() => setShowStableScreenshots(true)}
-                      >
-                        Show all
-                      </Button>
-                    </x.div>
-
-                    <UpdateStatusButton
-                      repository={data.repository}
-                      build={build}
-                    />
-                  </x.div>
-
-                  {inView ? null : (
-                    <StickySummaryMenu
-                      repository={data.repository}
-                      build={build}
-                    />
-                  )}
-
-                  <SecondaryTitle mt={4}>Updated screenshots</SecondaryTitle>
-                  <ScreenshotCards screenshotsDiffs={updatedScreenshots} open />
-
-                  {showStableScreenshots ? (
-                    <>
-                      <SecondaryTitle mt={6}>Stable Screenshots</SecondaryTitle>
-                      <ScreenshotCards screenshotsDiffs={stableScreenshots} />
-                    </>
-                  ) : null}
-                </>
-              )}
-            </>
-          );
-        }}
-      </Query>
+      {Number.isInteger(buildNumber) ? (
+        <BuildContent
+          ownerLogin={ownerLogin}
+          repositoryName={repositoryName}
+          buildNumber={buildNumber}
+        />
+      ) : (
+        <NotFound />
+      )}
     </Container>
   );
 }
