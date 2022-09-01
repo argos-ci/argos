@@ -13,7 +13,19 @@ export const typeDefs = gql`
     user
   }
 
-  type Owner {
+  interface Owner {
+    id: ID!
+    name: String
+    login: String!
+    type: OwnerType!
+    repositoriesNumber: Int!
+    repositories(enabled: Boolean): [Repository!]!
+    permissions: [Permission]!
+    purchases: [Purchase!]!
+    currentMonthUsedScreenshots: Int!
+  }
+
+  type Organization implements Owner {
     id: ID!
     name: String
     login: String!
@@ -104,6 +116,16 @@ async function getActivePurchases(owner) {
 
 export const resolvers = {
   Owner: {
+    __resolveType: (owner) => {
+      switch (owner.constructor.name) {
+        case "User":
+          return "User";
+        case "Organization":
+          return "Organization";
+        default:
+          throw new Error(`Unknown owner type "${owner.constructor.name}"`);
+      }
+    },
     async repositories(owner, args, context) {
       return getOwnerRepositories(owner, {
         user: context.user,

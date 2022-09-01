@@ -14,7 +14,7 @@ export const apolloServer = new ApolloServer({
   ],
   schema,
   context: ({ req }) => ({ user: req.user || null }),
-  formatError(error) {
+  formatError: (error) => {
     // We do want to report errors that are intentionally inside the resolvers.
     if (!error.originalError || error.originalError.name !== "APIError") {
       if (error.path || error.name !== "GraphQLError") {
