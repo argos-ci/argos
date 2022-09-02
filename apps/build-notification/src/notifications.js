@@ -84,9 +84,11 @@ export async function processBuildNotification(buildNotification) {
 
   const [installation] = build.repository.installations;
   if (!installation) {
-    throw new Error(
+    const error = new Error(
       `Installation not found for repository "${build.repository.id}"`
     );
+    error.retryable = false;
+    throw error;
   }
 
   const octokit = await getInstallationOctokit(installation.githubId);
