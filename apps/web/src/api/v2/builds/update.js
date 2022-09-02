@@ -82,7 +82,10 @@ const checkAllScreenshotKeysExist = async (unknownKeys) => {
 const insertFilesAndScreenshots = async ({ req, build, unknownKeys, trx }) => {
   await transaction(trx, async (trx) => {
     // Insert unknown files
-    await File.query(trx).insert(unknownKeys.map((key) => ({ key })));
+    await File.query(trx)
+      .insert(unknownKeys.map((key) => ({ key })))
+      .onConflict("key")
+      .ignore();
 
     // Retrieve all screenshot files
     const screenshots = req.body.screenshots;
