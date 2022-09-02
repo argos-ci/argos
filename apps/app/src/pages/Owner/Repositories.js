@@ -36,7 +36,7 @@ export function OwnerRepositories() {
 
       <Query
         query={gql`
-          query OwnerRepositories($login: String!) {
+          query OWNER_REPOSITORIES_QUERY($login: String!) {
             owner(login: $login) {
               id
               name

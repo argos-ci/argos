@@ -49,8 +49,8 @@ import { getStatusColor, StatusIcon } from "../containers/Status";
 import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { hasWritePermission } from "../modules/permissions";
 
-const OWNERS_REPOSITORIES_QUERY = gql`
-  query Owners {
+const HOME_OWNERS_REPOSITORIES_QUERY = gql`
+  query HOME_OWNERS_REPOSITORIES_QUERY {
     owners {
       id
       name
@@ -334,7 +334,7 @@ export function Home() {
           <Loader />
         </Container>
       }
-      query={OWNERS_REPOSITORIES_QUERY}
+      query={HOME_OWNERS_REPOSITORIES_QUERY}
     >
       {({ owners }) => <Owners owners={owners} />}
     </Query>

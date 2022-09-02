@@ -11,8 +11,8 @@ import { OwnerBreadcrumbMenu } from "./OwnerBreadcrumbMenu";
 import { useQuery } from "../Apollo";
 import { useUser } from "../User";
 
-const OWNER_QUERY = gql`
-  query Owner($login: String!) {
+const OWNER_BREADCRUMB_OWNER_QUERY = gql`
+  query OWNER_BREADCRUMB_OWNER_QUERY($login: String!) {
     owner(login: $login) {
       id
       login
@@ -26,7 +26,9 @@ const OWNER_QUERY = gql`
 const InnerOwnerBreadcrumbItem = ({ ownerLogin }) => {
   const user = useUser();
   const match = useMatch(`/${ownerLogin}`);
-  const { data } = useQuery(OWNER_QUERY, { variables: { login: ownerLogin } });
+  const { data } = useQuery(OWNER_BREADCRUMB_OWNER_QUERY, {
+    variables: { login: ownerLogin },
+  });
 
   return (
     <>

@@ -46,7 +46,7 @@ export function OwnerSettings() {
 
       <Query
         query={gql`
-          query Owner($login: String!) {
+          query OWNER_SETTINGS_QUERY($login: String!) {
             owner(login: $login) {
               id
               permissions
