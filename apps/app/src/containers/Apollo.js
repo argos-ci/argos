@@ -13,7 +13,11 @@ function ApolloProvider({ children, authToken }) {
     () =>
       new ApolloClient({
         uri: `/graphql`,
-        cache: new InMemoryCache(),
+        cache: new InMemoryCache({
+          possibleTypes: {
+            Owner: ["User", "Organization"],
+          },
+        }),
         headers: {
           authorization,
         },
