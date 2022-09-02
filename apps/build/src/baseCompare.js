@@ -74,7 +74,6 @@ async function getCommits({
         .where({ userId: user.id, repositoryId: repository.id })
         .delete();
       // The error should not be notified on Sentry
-      error.ignoreCapture = true;
       return [];
     }
     throw error;
