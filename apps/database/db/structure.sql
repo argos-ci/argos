@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 13.7
--- Dumped by pg_dump version 14.2
+-- Dumped from database version 13.8
+-- Dumped by pg_dump version 13.8
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -494,7 +494,9 @@ CREATE TABLE public.repositories (
     "organizationId" bigint,
     "userId" bigint,
     private boolean DEFAULT false NOT NULL,
-    "baselineBranch" character varying(255) NOT NULL
+    "baselineBranch" character varying(255),
+    "githubDefaultBranch" character varying(255),
+    CONSTRAINT repositories_one_branch_not_null CHECK ((((COALESCE("baselineBranch", ''::character varying))::text <> ''::text) OR ((COALESCE("githubDefaultBranch", ''::character varying))::text <> ''::text)))
 );
 
 
@@ -1685,3 +1687,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022080
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220809113257_add_purchase_end_date.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220812142703_files.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220814071435_screenshot_diffs_indexes.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220902165449_repository_github_default_branch.js', 1, NOW());

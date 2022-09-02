@@ -28,8 +28,14 @@ import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
 import { EnableToggleButton } from "./EnableToggleButton";
 
 const UPDATE_BASELINE_BRANCH = gql`
-  mutation UpdateBaselineBranch($repositoryId: String!, $branchName: String!) {
-    updateBaselineBranch(repositoryId: $repositoryId, branchName: $branchName) {
+  mutation UpdateBaselineBranch(
+    $repositoryId: String!
+    $baselineBranch: String!
+  ) {
+    updateBaselineBranch(
+      repositoryId: $repositoryId
+      baselineBranch: $baselineBranch
+    ) {
       id
       baselineBranch
     }
@@ -63,7 +69,7 @@ function UpdateBranchForm({ repository }) {
   const successToast = useToast();
   const errorToast = useToast();
   const [baselineBranch, setBaselineBranch] = React.useState(
-    repository.baselineBranch
+    repository.baselineBranch || repository.githubDefaultBranch
   );
   const [updateBaselineBranch, { loading: branchUpdateLoading }] = useMutation(
     UPDATE_BASELINE_BRANCH,
@@ -75,10 +81,7 @@ function UpdateBranchForm({ repository }) {
   const form = useFormState();
   form.useSubmit(async () => {
     await updateBaselineBranch({
-      variables: {
-        repositoryId: repository.id,
-        branchName: baselineBranch,
-      },
+      variables: { repositoryId: repository.id, baselineBranch },
     });
   });
 

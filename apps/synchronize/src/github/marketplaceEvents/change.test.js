@@ -18,10 +18,8 @@ describe('marketplace "change" event', () => {
   let previousPlan;
   let nextPlan;
   const changePayload = { ...CHANGE_EVENT_PAYLOAD, action: "changed" };
-  const {
-    account: payloadAccount,
-    plan: payloadPreviousPlan,
-  } = changePayload.previous_marketplace_purchase;
+  const { account: payloadAccount, plan: payloadPreviousPlan } =
+    changePayload.previous_marketplace_purchase;
   const { plan: payloadNextPlan } = changePayload.marketplace_purchase;
 
   beforeEach(async () => {

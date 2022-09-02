@@ -16,7 +16,13 @@ export class Repository extends Model {
 
   static get jsonSchema() {
     return mergeSchemas(timestampsSchema, {
-      required: ["githubId", "name", "enabled", "private", "baselineBranch"],
+      required: [
+        "githubId",
+        "name",
+        "enabled",
+        "private",
+        "githubDefaultBranch",
+      ],
       properties: {
         githubId: { type: "number" },
         name: { type: "string" },
@@ -25,7 +31,8 @@ export class Repository extends Model {
         organizationId: { type: ["string", null] },
         userId: { type: ["string", null] },
         private: { type: "boolean" },
-        baselineBranch: { type: "string" },
+        baselineBranch: { type: ["string", null] },
+        githubDefaultBranch: { type: ["string", null] },
       },
     });
   }

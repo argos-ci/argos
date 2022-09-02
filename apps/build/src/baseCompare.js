@@ -8,7 +8,8 @@ import {
 async function getLatestBaselineBucket(build, { trx } = {}) {
   const bucket = await ScreenshotBucket.query(trx)
     .where({
-      branch: build.repository.baselineBranch,
+      branch:
+        build.repository.baselineBranch || build.repository.githubDefaultBranch,
       repositoryId: build.repository.id,
       name: build.name,
       complete: true,

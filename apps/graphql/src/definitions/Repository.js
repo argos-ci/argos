@@ -25,7 +25,10 @@ export const typeDefs = gql`
     "Owner of the repository"
     owner: Owner
     sampleBuildId: ID
-    baselineBranch: String!
+    "Github default branch"
+    githubDefaultBranch: String
+    "Branch override"
+    baselineBranch: String
   }
 
   extend type Query {
@@ -39,7 +42,7 @@ export const typeDefs = gql`
     "Update repository baseline branch"
     updateBaselineBranch(
       repositoryId: String!
-      branchName: String!
+      baselineBranch: String!
     ): Repository!
   }
 `;
@@ -170,21 +173,27 @@ export const resolvers = {
         return repository;
       });
     },
-    async updateBaselineBranch(source, { repositoryId, branchName }, context) {
+    async updateBaselineBranch(
+      source,
+      { repositoryId, baselineBranch = "" },
+      context
+    ) {
       return transaction(async (trx) => {
         await checkUserRepositoryAccess(
           { user: context.user, repositoryId },
           { trx }
         );
 
-        const repository = await Repository.query(trx).patchAndFetchById(
-          repositoryId,
-          { baselineBranch: branchName }
-        );
-
+        const repository = await Repository.query(trx).findById(repositoryId);
         if (!repository) throw new APIError("Repository not found");
 
-        return repository;
+        const branchName = baselineBranch.trim();
+        return Repository.query(trx).patchAndFetchById(repositoryId, {
+          baselineBranch:
+            branchName && branchName !== repository.githubDefaultBranch
+              ? branchName
+              : "",
+        });
       });
     },
   },
