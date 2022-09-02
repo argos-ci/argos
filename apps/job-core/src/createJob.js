@@ -43,9 +43,6 @@ export function createJob(queue, consumer) {
           await consumer.complete(...payload.args);
         } catch (error) {
           logger.error(error);
-          if (!error.ignoreCapture) {
-            Sentry.captureException(error);
-          }
           channel.nack(msg, false, false);
           // Retry two times
           if (payload && payload.attempts < 2) {
@@ -58,6 +55,7 @@ export function createJob(queue, consumer) {
               { persistent: true }
             );
           } else {
+            Sentry.captureException(error);
             await consumer.error(...payload.args);
           }
           return;

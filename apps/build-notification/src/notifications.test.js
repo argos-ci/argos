@@ -176,11 +176,7 @@ describe.skip("notifications", () => {
           jobStatus: "pending",
         });
 
-        try {
-          await processBuildNotification(buildNotification);
-        } catch (error) {
-          expect(error.ignoreCapture).toBe(true);
-        }
+        await processBuildNotification(buildNotification);
 
         // Rights removed
         const userRepositoryRights = await UserRepositoryRight.query();
