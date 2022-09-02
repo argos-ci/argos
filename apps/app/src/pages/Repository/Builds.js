@@ -27,6 +27,7 @@ import {
 import { useQuery } from "../../containers/Apollo";
 import { GettingStarted } from "./GettingStarted";
 import { getPossessiveForm } from "../../modules/utils";
+import { useUser } from "../../containers/User";
 
 const REPOSITORY_BUILDS_QUERY = gql`
   query RepositoryBuilds($ownerLogin: String!, $name: String!, $after: Int!) {
@@ -56,6 +57,7 @@ const REPOSITORY_BUILDS_QUERY = gql`
 `;
 
 function BuildsList({ repository }) {
+  const user = useUser();
   const { loading, data, fetchMore } = useQuery(REPOSITORY_BUILDS_QUERY, {
     variables: {
       ownerLogin: repository.owner.login,
@@ -104,8 +106,11 @@ function BuildsList({ repository }) {
     },
   } = data;
 
-  if (!pageInfo.totalCount) {
-    return <GettingStarted repository={repository} />;
+  if (pageInfo.totalCount === 0) {
+    if (user) {
+      return <GettingStarted repository={repository} />;
+    }
+    return <p>No build found</p>;
   }
 
   return (
