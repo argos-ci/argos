@@ -69,12 +69,21 @@ export class GitHubSynchronizer {
     return { repositories, organizations };
   }
 
+  async getInstallationRepositories(options) {
+    try {
+      return await this.octokit.paginate(options);
+    } catch (error) {
+      if (error.response.status === 404) return [];
+      throw error;
+    }
+  }
+
   async synchronizeUserInstallationRepositories(installation) {
     const options =
       this.octokit.apps.listInstallationReposForAuthenticatedUser.endpoint.merge(
         { installation_id: installation.githubId }
       );
-    const githubRepositories = await this.octokit.paginate(options);
+    const githubRepositories = await this.getInstallationRepositories(options);
     const { repositories, organizations } = await this.synchronizeRepositories(
       githubRepositories
     );
