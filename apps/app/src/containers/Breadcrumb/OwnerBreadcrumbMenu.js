@@ -19,8 +19,8 @@ import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
 import config from "../../config";
 import { LinkExternalIcon } from "@primer/octicons-react";
 
-const OWNERS_QUERY = gql`
-  query OWNERS_QUERY {
+const BREADCRUMB_MENU_OWNERS_QUERY = gql`
+  query BREADCRUMB_MENU_OWNERS_QUERY {
     owners {
       id
       name
@@ -46,7 +46,7 @@ export function OwnerBreadcrumbMenu(props) {
         <MenuSeparator />
 
         {menu.open && (
-          <Query query={OWNERS_QUERY} fallback={<Loader />}>
+          <Query query={BREADCRUMB_MENU_OWNERS_QUERY} fallback={<Loader />}>
             {({ owners }) => {
               if (owners.length === 0) {
                 return <MenuText>No organization found</MenuText>;

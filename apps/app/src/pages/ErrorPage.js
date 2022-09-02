@@ -12,7 +12,7 @@ export function ErrorPage() {
 
       <x.p fontSize="md">Sorry an error occurs.</x.p>
       <x.p mt={2}>
-        <Link to="/">Back to home →</Link>
+        <Link href="/">Back to home →</Link>
       </x.p>
     </Container>
   );
