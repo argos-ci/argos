@@ -5,11 +5,12 @@ import {
   UserRepositoryRight,
 } from "@argos-ci/database/models";
 
-async function getLatestMasterBucket(build, { trx } = {}) {
+async function getLatestBaselineBucket(build, { trx } = {}) {
   const bucket = await ScreenshotBucket.query(trx)
     .where({
       branch: build.repository.baselineBranch,
       repositoryId: build.repository.id,
+      name: build.name,
       complete: true,
     })
     .whereNot({
@@ -30,6 +31,7 @@ async function getBaseScreenshotBucket({ commits, build, trx }) {
     .where({
       repositoryId: build.repository.id,
       branch: build.repository.baselineBranch,
+      name: build.name,
       complete: true,
     })
     .whereIn("commit", shas);
@@ -40,7 +42,7 @@ async function getBaseScreenshotBucket({ commits, build, trx }) {
       shas.indexOf(bucketA.commit) - shas.indexOf(bucketB.commit)
   );
 
-  return buckets[0] || getLatestMasterBucket(build, { trx });
+  return buckets[0] || getLatestBaselineBucket(build, { trx });
 }
 
 async function getCommits({
@@ -109,7 +111,7 @@ export async function baseCompare({
 
   // We can't use Github information without a user.
   if (!user) {
-    return getLatestMasterBucket(richBuild, { trx });
+    return getLatestBaselineBucket(richBuild, { trx });
   }
 
   // Initialize GitHub API

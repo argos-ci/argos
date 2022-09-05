@@ -33,7 +33,7 @@ function bytesToString(bytes) {
 }
 
 factory.define("ScreenshotBucket", ScreenshotBucket, {
-  name: factory.sequence("repository.name", (n) => `bucket-${n}`),
+  name: "default",
   commit: () => bytesToString(crypto.randomBytes(20)),
   branch: "master",
   repositoryId: factory.assoc("Repository", "id"),
@@ -87,7 +87,7 @@ factory.define("Organization", Organization, {
 
 factory.define("Repository", Repository, {
   githubId: factory.sequence("repository.githubId", (n) => n),
-  name: factory.sequence("repository.name", (n) => `repo-${n}`),
+  name: "default",
   enabled: true,
   baselineBranch: "master",
   organizationId: factory.assoc("Organization", "id"),
