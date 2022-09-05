@@ -29,7 +29,9 @@ export const FormError = (props) => {
   return <AriakitFormError as={Alert} severity="error" {...props} />;
 };
 
-export const FormInput = (props) => <Input as={AriakitFormInput} {...props} />;
+export const FormInput = React.forwardRef((props, ref) => (
+  <Input ref={ref} as={AriakitFormInput} {...props} />
+));
 
 export const FormLabel = ({ required, children, ...props }) => (
   <x.div as={AriakitFormLabel} fontWeight={600} {...props}>

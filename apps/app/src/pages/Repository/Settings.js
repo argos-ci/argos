@@ -32,16 +32,13 @@ const UPDATE_REFERENCE_BRANCH = gql`
   mutation updateReferenceBranch(
     $repositoryId: String!
     $baselineBranch: String
-    $useDefaultBranch: Boolean!
   ) {
     updateReferenceBranch(
       repositoryId: $repositoryId
       baselineBranch: $baselineBranch
-      useDefaultBranch: $useDefaultBranch
     ) {
       id
       baselineBranch
-      useDefaultBranch
       defaultBranch
     }
   }
@@ -75,10 +72,11 @@ function UpdateBranchForm({ repository }) {
   const errorToast = useToast();
 
   const [baselineBranch, setBaselineBranch] = React.useState(
-    repository.baselineBranch
+    repository.baselineBranch || repository.defaultBranch || ""
   );
+  const initialUseDefaultBranch = repository.baselineBranch === null;
   const [useDefaultBranch, setUseDefaultBranch] = React.useState(
-    repository.useDefaultBranch
+    initialUseDefaultBranch
   );
 
   const [updateReferenceBranch, { loading }] = useMutation(
@@ -92,7 +90,6 @@ function UpdateBranchForm({ repository }) {
     await updateReferenceBranch({
       variables: {
         repositoryId: repository.id,
-        useDefaultBranch,
         baselineBranch: useDefaultBranch ? null : baselineBranch,
       },
     });
@@ -110,34 +107,41 @@ function UpdateBranchForm({ repository }) {
           Use GitHub default branch{" "}
           <x.span color="secondary-text">({repository.defaultBranch})</x.span>
         </FormLabel>
-        <FormError name="defaultBranch" />
+        <FormError name="defaultBranch" mt={2} />
       </x.div>
 
       {useDefaultBranch ? null : (
         <x.div>
           <FormLabel name="name" required>
-            Other reference Branch
+            Custom reference branch
           </FormLabel>
           <FormInput
+            ref={(element) => {
+              if (!element) return;
+              // Just checked
+              if (
+                !useDefaultBranch &&
+                initialUseDefaultBranch !== useDefaultBranch
+              ) {
+                element.focus();
+              }
+            }}
             name="name"
             placeholder="Branch name"
             onChange={(event) => setBaselineBranch(event.target.value)}
             value={baselineBranch}
             required
           />
-          <FormError name="name" />
+          <FormError name="name" mt={2} />
         </x.div>
       )}
 
-      <FormSubmit
-        disabled={loading || (!useDefaultBranch && !baselineBranch)}
-        alignSelf="start"
-      >
-        Update Branch
+      <FormSubmit disabled={loading} alignSelf="start">
+        Save changes
       </FormSubmit>
 
       <Toast state={successToast}>
-        <Alert severity="success">Reference branch updated.</Alert>
+        <Alert severity="success">Changes saved</Alert>
       </Toast>
 
       <Toast state={errorToast}>

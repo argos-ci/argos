@@ -1,8 +1,9 @@
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
 
-export const Input = (props) => (
+export const Input = React.forwardRef((props, ref) => (
   <x.input
+    ref={ref}
     borderRadius="md"
     lineHeight="16px"
     color="primary-text"
@@ -16,4 +17,4 @@ export const Input = (props) => (
     backgroundColor={{ _: "background", hover: "background-hover" }}
     {...props}
   />
-);
+));
