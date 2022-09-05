@@ -27,8 +27,6 @@ export const typeDefs = gql`
     sampleBuildId: ID
     "Github default branch"
     defaultBranch: String
-    "Use default branch"
-    useDefaultBranch: Boolean!
     "Override branch name"
     baselineBranch: String
   }
@@ -45,7 +43,6 @@ export const typeDefs = gql`
     updateReferenceBranch(
       repositoryId: String!
       baselineBranch: String
-      useDefaultBranch: Boolean!
     ): Repository!
   }
 `;
@@ -178,7 +175,7 @@ export const resolvers = {
     },
     async updateReferenceBranch(
       source,
-      { repositoryId, baselineBranch, useDefaultBranch },
+      { repositoryId, baselineBranch },
       context
     ) {
       return transaction(async (trx) => {
@@ -186,13 +183,8 @@ export const resolvers = {
           { user: context.user, repositoryId },
           { trx }
         );
-        if (!baselineBranch && !useDefaultBranch)
-          throw new APIError(
-            "Baseline branch require to override the default branch"
-          );
         return Repository.query(trx).patchAndFetchById(repositoryId, {
-          useDefaultBranch,
-          baselineBranch: useDefaultBranch ? null : baselineBranch.trim(),
+          baselineBranch: (baselineBranch ? baselineBranch.trim() : "") || null,
         });
       });
     },

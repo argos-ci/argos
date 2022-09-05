@@ -25,8 +25,7 @@ export class Repository extends Model {
         organizationId: { type: ["string", null] },
         userId: { type: ["string", null] },
         private: { type: "boolean" },
-        defaultBranch: { type: ["string", null] },
-        useDefaultBranch: { type: "boolean" },
+        defaultBranch: { type: "string" },
         baselineBranch: { type: ["string", null] },
       },
     });
@@ -81,7 +80,7 @@ export class Repository extends Model {
   }
 
   get referenceBranch() {
-    return this.baselineBranch || this.defaultBranch
+    return this.baselineBranch || this.defaultBranch;
   }
 
   async $beforeInsert(queryContext) {

@@ -90,7 +90,6 @@ factory.define("Repository", Repository, {
   name: "default",
   enabled: true,
   defaultBranch: "master",
-  useDefaultBranch: true,
   baselineBranch: null,
   organizationId: factory.assoc("Organization", "id"),
   private: false,
