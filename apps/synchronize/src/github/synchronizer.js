@@ -117,6 +117,7 @@ export class GitHubSynchronizer {
             organizationIdByRepositoryId[githubRepository.id] || null,
           userId: userIdByRepositoryId[githubRepository.id] || null,
           private: githubRepository.private,
+          defaultBranch: githubRepository.default_branch,
         };
 
         let [repository] = await Repository.query().where({
@@ -124,16 +125,10 @@ export class GitHubSynchronizer {
         });
 
         if (repository) {
-          await repository.$query().patchAndFetch(data);
-        } else {
-          repository = await Repository.query().insert({
-            ...data,
-            enabled: false,
-            baselineBranch: "master",
-          });
+          return repository.$query().patchAndFetch(data);
         }
 
-        return repository;
+        return Repository.query().insertAndFetch({ ...data, enabled: false });
       })
     );
 

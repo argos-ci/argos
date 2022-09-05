@@ -8,7 +8,7 @@ async function getOrCreateBaseScreenshotBucket(build, { trx } = {}) {
     return build.baseScreenshotBucket;
   }
   const baseScreenshotBucket = await baseCompare({
-    baseCommit: build.repository.baselineBranch,
+    baseCommit: build.repository.referenceBranch,
     compareCommit: build.compareScreenshotBucket.commit,
     build,
     trx,

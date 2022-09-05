@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardText,
   CardTitle,
+  Checkbox,
   Code,
   Container,
   Form,
@@ -27,11 +28,21 @@ import { useMutation } from "@apollo/client";
 import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
 import { EnableToggleButton } from "./EnableToggleButton";
 
-const UPDATE_BASELINE_BRANCH = gql`
-  mutation UpdateBaselineBranch($repositoryId: String!, $branchName: String!) {
-    updateBaselineBranch(repositoryId: $repositoryId, branchName: $branchName) {
+const UPDATE_REFERENCE_BRANCH = gql`
+  mutation updateReferenceBranch(
+    $repositoryId: String!
+    $baselineBranch: String
+    $useDefaultBranch: Boolean!
+  ) {
+    updateReferenceBranch(
+      repositoryId: $repositoryId
+      baselineBranch: $baselineBranch
+      useDefaultBranch: $useDefaultBranch
+    ) {
       id
       baselineBranch
+      useDefaultBranch
+      defaultBranch
     }
   }
 `;
@@ -62,42 +73,68 @@ function TokenCard({ repository }) {
 function UpdateBranchForm({ repository }) {
   const successToast = useToast();
   const errorToast = useToast();
+
   const [baselineBranch, setBaselineBranch] = React.useState(
     repository.baselineBranch
   );
-  const [updateBaselineBranch, { loading: branchUpdateLoading }] = useMutation(
-    UPDATE_BASELINE_BRANCH,
-    {
-      onCompleted: () => successToast.show(),
-      onError: () => errorToast.show(),
-    }
+  const [useDefaultBranch, setUseDefaultBranch] = React.useState(
+    repository.useDefaultBranch
   );
+
+  const [updateReferenceBranch, { loading }] = useMutation(
+    UPDATE_REFERENCE_BRANCH,
+    { onCompleted: () => successToast.show(), onError: () => errorToast.show() }
+  );
+
   const form = useFormState();
+
   form.useSubmit(async () => {
-    await updateBaselineBranch({
+    await updateReferenceBranch({
       variables: {
         repositoryId: repository.id,
-        branchName: baselineBranch,
+        useDefaultBranch,
+        baselineBranch: useDefaultBranch ? null : baselineBranch,
       },
     });
   });
 
   return (
     <Form state={form} mt={4}>
-      <FormLabel name={form.names.name}>Reference Branch</FormLabel>
-
-      <x.div display="flex" gap={2}>
-        <FormInput
-          name={form.names.name}
-          placeholder="Branch name"
-          required
-          value={baselineBranch}
-          onChange={(e) => setBaselineBranch(e.target.value)}
-        />
-        <FormSubmit disabled={branchUpdateLoading}>Update Branch</FormSubmit>
+      <x.div>
+        <FormLabel name="defaultBranch">
+          <Checkbox
+            name="defaultBranch"
+            onChange={(event) => setUseDefaultBranch(event.target.checked)}
+            checked={useDefaultBranch}
+          />{" "}
+          Use GitHub default branch{" "}
+          <x.span color="secondary-text">({repository.defaultBranch})</x.span>
+        </FormLabel>
+        <FormError name="defaultBranch" />
       </x.div>
 
-      <FormError name={form.names.name} />
+      {useDefaultBranch ? null : (
+        <x.div>
+          <FormLabel name="name" required>
+            Other reference Branch
+          </FormLabel>
+          <FormInput
+            name="name"
+            placeholder="Branch name"
+            onChange={(event) => setBaselineBranch(event.target.value)}
+            value={baselineBranch}
+            required
+          />
+          <FormError name="name" />
+        </x.div>
+      )}
+
+      <FormSubmit
+        disabled={loading || (!useDefaultBranch && !baselineBranch)}
+        alignSelf="start"
+      >
+        Update Branch
+      </FormSubmit>
 
       <Toast state={successToast}>
         <Alert severity="success">Reference branch updated.</Alert>

@@ -16,7 +16,7 @@ export class Repository extends Model {
 
   static get jsonSchema() {
     return mergeSchemas(timestampsSchema, {
-      required: ["githubId", "name", "enabled", "private", "baselineBranch"],
+      required: ["githubId", "name", "enabled", "private", "defaultBranch"],
       properties: {
         githubId: { type: "number" },
         name: { type: "string" },
@@ -25,7 +25,9 @@ export class Repository extends Model {
         organizationId: { type: ["string", null] },
         userId: { type: ["string", null] },
         private: { type: "boolean" },
-        baselineBranch: { type: "string" },
+        defaultBranch: { type: ["string", null] },
+        useDefaultBranch: { type: "boolean" },
+        baselineBranch: { type: ["string", null] },
       },
     });
   }
@@ -76,6 +78,10 @@ export class Repository extends Model {
 
   getUsers(options) {
     return this.constructor.getUsers(this.id, options);
+  }
+
+  get referenceBranch() {
+    return this.baselineBranch || this.defaultBranch
   }
 
   async $beforeInsert(queryContext) {

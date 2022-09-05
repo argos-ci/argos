@@ -89,7 +89,9 @@ factory.define("Repository", Repository, {
   githubId: factory.sequence("repository.githubId", (n) => n),
   name: "default",
   enabled: true,
-  baselineBranch: "master",
+  defaultBranch: "master",
+  useDefaultBranch: true,
+  baselineBranch: null,
   organizationId: factory.assoc("Organization", "id"),
   private: false,
 });

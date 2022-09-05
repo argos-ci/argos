@@ -20,7 +20,7 @@ export const Form = (props) => (
     as={AriakitForm}
     display="flex"
     flexDirection="column"
-    gap={2}
+    gap={4}
     {...props}
   />
 );
@@ -31,14 +31,27 @@ export const FormError = (props) => {
 
 export const FormInput = (props) => <Input as={AriakitFormInput} {...props} />;
 
-export const FormLabel = (props) => (
-  <x.div as={AriakitFormLabel} fontWeight={600} {...props} />
+export const FormLabel = ({ required, children, ...props }) => (
+  <x.div as={AriakitFormLabel} fontWeight={600} {...props}>
+    {children}
+    {required ? <x.span color="red-500">*</x.span> : null}
+  </x.div>
 );
 
 export const FormReset = (props) => (
   <x.Button variant="gray" as={AriakitFormReset} {...props} />
 );
 
-export const FormSubmit = ({ ...props }) => (
-  <AriakitFormSubmit as={Button} {...props} />
+export const FormSubmit = React.forwardRef(
+  ({ children, as, disabled, ...props }, ref) => {
+    return (
+      <AriakitFormSubmit ref={ref} {...props}>
+        {(submitProps) => (
+          <Button {...submitProps} as={as} disabled={disabled}>
+            {children}
+          </Button>
+        )}
+      </AriakitFormSubmit>
+    );
+  }
 );

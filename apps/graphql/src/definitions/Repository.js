@@ -25,7 +25,12 @@ export const typeDefs = gql`
     "Owner of the repository"
     owner: Owner
     sampleBuildId: ID
-    baselineBranch: String!
+    "Github default branch"
+    defaultBranch: String
+    "Use default branch"
+    useDefaultBranch: Boolean!
+    "Override branch name"
+    baselineBranch: String
   }
 
   extend type Query {
@@ -37,9 +42,10 @@ export const typeDefs = gql`
     "Enable or disable a repository."
     toggleRepository(enabled: Boolean!, repositoryId: String!): Repository!
     "Update repository baseline branch"
-    updateBaselineBranch(
+    updateReferenceBranch(
       repositoryId: String!
-      branchName: String!
+      baselineBranch: String
+      useDefaultBranch: Boolean!
     ): Repository!
   }
 `;
@@ -170,21 +176,24 @@ export const resolvers = {
         return repository;
       });
     },
-    async updateBaselineBranch(source, { repositoryId, branchName }, context) {
+    async updateReferenceBranch(
+      source,
+      { repositoryId, baselineBranch, useDefaultBranch },
+      context
+    ) {
       return transaction(async (trx) => {
         await checkUserRepositoryAccess(
           { user: context.user, repositoryId },
           { trx }
         );
-
-        const repository = await Repository.query(trx).patchAndFetchById(
-          repositoryId,
-          { baselineBranch: branchName }
-        );
-
-        if (!repository) throw new APIError("Repository not found");
-
-        return repository;
+        if (!baselineBranch && !useDefaultBranch)
+          throw new APIError(
+            "Baseline branch require to override the default branch"
+          );
+        return Repository.query(trx).patchAndFetchById(repositoryId, {
+          useDefaultBranch,
+          baselineBranch: useDefaultBranch ? null : baselineBranch.trim(),
+        });
       });
     },
   },
