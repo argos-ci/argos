@@ -2,6 +2,7 @@
 import * as React from "react";
 import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
+import { Checkbox } from "ariakit/checkbox";
 import {
   Alert,
   Card,
@@ -9,7 +10,6 @@ import {
   CardHeader,
   CardText,
   CardTitle,
-  Checkbox,
   Code,
   Container,
   Form,
@@ -75,7 +75,7 @@ function UpdateBranchForm({ repository }) {
   const errorToast = useToast();
 
   const [baselineBranch, setBaselineBranch] = React.useState(
-    repository.baselineBranch
+    repository.baselineBranch || ""
   );
   const [useDefaultBranch, setUseDefaultBranch] = React.useState(
     repository.useDefaultBranch

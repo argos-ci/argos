@@ -26,7 +26,7 @@ export const Form = (props) => (
 );
 
 export const FormError = (props) => {
-  return <AriakitFormError as={Alert} severity="error" {...props} />;
+  return <AriakitFormError as={Alert} severity="error" mt={2} {...props} />;
 };
 
 export const FormInput = (props) => <Input as={AriakitFormInput} {...props} />;

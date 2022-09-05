@@ -4,7 +4,6 @@ export * from "./Breadcrumb";
 export * from "./Button";
 export * from "./Card";
 export * from "./Catch";
-export * from "./Checkbox";
 export * from "./Code";
 export * from "./Container";
 export * from "./Disclosure";
