@@ -81,9 +81,7 @@ export class Repository extends Model {
   }
 
   get referenceBranch() {
-    return !this.useDefaultBranch && this.baselineBranch
-      ? this.baselineBranch
-      : this.defaultBranch;
+    return this.baselineBranch || this.defaultBranch
   }
 
   async $beforeInsert(queryContext) {
