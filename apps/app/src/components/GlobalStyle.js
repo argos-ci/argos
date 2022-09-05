@@ -1,4 +1,4 @@
-import { createGlobalStyle } from "@xstyled/styled-components";
+import { createGlobalStyle, th } from "@xstyled/styled-components";
 
 // Source : https://www.joshwcomeau.com/css/custom-css-reset/
 export const GlobalStyle = createGlobalStyle`
@@ -11,6 +11,7 @@ export const GlobalStyle = createGlobalStyle`
 
   * {
     margin: 0;
+    accent-color: ${th.color("primary")};
   }
 
   html,

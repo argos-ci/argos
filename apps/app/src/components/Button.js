@@ -38,7 +38,6 @@ const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
     }
 
     &:disabled {
-      cursor: default;
       opacity: 0.38;
     }
   `;

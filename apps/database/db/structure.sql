@@ -495,8 +495,9 @@ CREATE TABLE public.repositories (
     "userId" bigint,
     private boolean DEFAULT false NOT NULL,
     "baselineBranch" character varying(255),
-    "githubDefaultBranch" character varying(255),
-    CONSTRAINT repositories_one_branch_not_null CHECK ((((COALESCE("baselineBranch", ''::character varying))::text <> ''::text) OR ((COALESCE("githubDefaultBranch", ''::character varying))::text <> ''::text)))
+    "useDefaultBranch" boolean DEFAULT true NOT NULL,
+    "defaultBranch" character varying(255),
+    CONSTRAINT repositories_one_branch_not_null CHECK ((((COALESCE("baselineBranch", ''::character varying))::text <> ''::text) OR ((COALESCE("defaultBranch", ''::character varying))::text <> ''::text)))
 );
 
 

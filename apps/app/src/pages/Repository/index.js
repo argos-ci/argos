@@ -19,7 +19,8 @@ const REPOSITORY_QUERY = gql`
       enabled
       permissions
       baselineBranch
-      githubDefaultBranch
+      useDefaultBranch
+      defaultBranch
       owner {
         login
         name
