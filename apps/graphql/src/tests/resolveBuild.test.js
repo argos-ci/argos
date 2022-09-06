@@ -63,14 +63,16 @@ describe("GraphQL", () => {
               repositoryName: "${repository.name}",
             ) {
               build(number: 1) {
-                screenshotDiffs {
-                  baseScreenshot {
-                    name
+                screenshotDiffs(offset: 0, limit: 10) {
+                  edges {
+                    baseScreenshot {
+                      name
+                    }
+                    compareScreenshot {
+                      name
+                    }
+                    score
                   }
-                  compareScreenshot {
-                    name
-                  }
-                  score
                 }
               }
             }
@@ -79,33 +81,22 @@ describe("GraphQL", () => {
       expectNoGraphQLError(res);
       expect(res.status).toBe(200);
 
-      const { screenshotDiffs } = res.body.data.repository.build;
+      const { edges: screenshotDiffs } =
+        res.body.data.repository.build.screenshotDiffs;
       expect(screenshotDiffs).toEqual([
         {
-          baseScreenshot: {
-            name: "email_deleted",
-          },
-          compareScreenshot: {
-            name: "email_deleted",
-          },
+          baseScreenshot: { name: "email_deleted" },
+          compareScreenshot: { name: "email_deleted" },
           score: 0.3,
         },
         {
-          baseScreenshot: {
-            name: "email_added",
-          },
-          compareScreenshot: {
-            name: "email_added",
-          },
+          baseScreenshot: { name: "email_added" },
+          compareScreenshot: { name: "email_added" },
           score: 0,
         },
         {
-          baseScreenshot: {
-            name: "email_deleted",
-          },
-          compareScreenshot: {
-            name: "email_deleted",
-          },
+          baseScreenshot: { name: "email_deleted" },
+          compareScreenshot: { name: "email_deleted" },
           score: 0,
         },
       ]);
@@ -129,14 +120,16 @@ describe("GraphQL", () => {
               repositoryName: "${repository.name}",
             ) {
               build(number: 1) {
-                screenshotDiffs {
-                  baseScreenshot {
-                    name
+                screenshotDiffs(offset: 0, limit: 10) {
+                  edges {
+                    baseScreenshot {
+                      name
+                    }
+                    compareScreenshot {
+                      name
+                    }
+                    score
                   }
-                  compareScreenshot {
-                    name
-                  }
-                  score
                 }
               }
             }
@@ -144,7 +137,8 @@ describe("GraphQL", () => {
         })
         .expect(expectNoGraphQLError)
         .expect((res) => {
-          const { screenshotDiffs } = res.body.data.repository.build;
+          const { edges: screenshotDiffs } =
+            res.body.data.repository.build.screenshotDiffs;
           expect(screenshotDiffs).toEqual([
             {
               baseScreenshot: null,

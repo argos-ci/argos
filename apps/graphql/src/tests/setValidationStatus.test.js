@@ -71,15 +71,17 @@ describe("GraphQL", () => {
                 buildId: "${build.id}",
                 validationStatus: ${ScreenshotDiff.VALIDATION_STATUSES.rejected}
               ){
-                screenshotDiffs {
-                  validationStatus
+                screenshotDiffs(offset: 0, limit: 10) {
+                  edges {
+                    validationStatus
+                  }
                 }
               }
             }
           `,
         });
       if (res.body && res.body.data && res.body.data.screenshotDiffs) {
-        res.body.data.screenshotDiffs.forEach((screenshotDiff) => {
+        res.body.data.screenshotDiffs.edges.forEach((screenshotDiff) => {
           expect(screenshotDiff.validationStatus).toBe(
             ScreenshotDiff.VALIDATION_STATUSES.rejected
           );
@@ -105,16 +107,19 @@ describe("GraphQL", () => {
               repositoryName: "${repository.name}",
             ) {
               build(number: 1) {
-                screenshotDiffs {
-                  validationStatus
-                }
+                screenshotDiffs(offset: 0, limit: 10) {
+                  edges {
+                    validationStatus
+                  }
+                } 
               }
             }
           }`,
         });
       expectNoGraphQLError(res);
       expect(res.status).toBe(200);
-      const { screenshotDiffs } = res.body.data.repository.build;
+      const { edges: screenshotDiffs } =
+        res.body.data.repository.build.screenshotDiffs;
       expect(screenshotDiffs).toEqual([
         {
           validationStatus: ScreenshotDiff.VALIDATION_STATUSES.rejected,
@@ -140,8 +145,10 @@ describe("GraphQL", () => {
                 buildId: "${build.id}",
                 validationStatus: ${ScreenshotDiff.VALIDATION_STATUSES.rejected}
               ) {
-                screenshotDiffs {
-                  validationStatus
+                screenshotDiffs(offset: 0, limit: 10) {
+                  edges {
+                    validationStatus
+                  }
                 }
               }
             }
