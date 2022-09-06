@@ -5,6 +5,7 @@ import { knex } from "@argos-ci/database/src";
 import { APIError } from "../util";
 import { RepositoryLoader, ScreenshotBucketLoader } from "../loaders";
 import { getRepository } from "./Repository";
+import { paginateResult } from "./PageInfo";
 
 export const typeDefs = gql`
   enum BuildStatus {
@@ -28,7 +29,13 @@ export const typeDefs = gql`
     createdAt: DateTime!
     updatedAt: DateTime!
     "The screenshot diffs between the base screenshot bucket of the compare screenshot bucket"
-    screenshotDiffs(showPassing: Boolean): [ScreenshotDiff!]!
+    screenshotDiffs(
+      filterPassing: Boolean
+      offset: Int!
+      limit: Int!
+    ): ScreenshotDiffResult!
+    "The passing screenshot diffs"
+    passingScreenshotDiffs(offset: Int!, limit: Int!): ScreenshotDiffResult!
     "The screenshot bucket ID of the baselineBranch"
     baseScreenshotBucketId: ID
     "The screenshot bucket of the baselineBranch"
@@ -68,20 +75,38 @@ export const typeDefs = gql`
   }
 `;
 
+function screenshotDiffsQuery(build) {
+  return build
+    .$relatedQuery("screenshotDiffs")
+    .leftJoin(
+      "screenshots",
+      "screenshots.id",
+      "screenshot_diffs.baseScreenshotId"
+    )
+    .orderBy("score", "desc")
+    .orderBy("screenshots.name", "asc");
+}
+
 export const resolvers = {
   Build: {
-    async screenshotDiffs(build, { showPassing = true }) {
-      const query = build
-        .$relatedQuery("screenshotDiffs")
-        .leftJoin(
-          "screenshots",
-          "screenshots.id",
-          "screenshot_diffs.baseScreenshotId"
-        )
-        .orderBy("score", "desc")
-        .orderBy("screenshots.name", "asc");
-
-      return showPassing ? query : query.whereNot("screenshot_diffs.score", 0);
+    async screenshotDiffs(
+      build,
+      { filterPassing = false, limit = 10, offset = 0 }
+    ) {
+      const query = screenshotDiffsQuery(build).range(
+        offset,
+        offset + limit - 1
+      );
+      const result = filterPassing
+        ? await query.whereNot("screenshot_diffs.score", 0)
+        : await query;
+      return paginateResult({ result, offset, limit });
+    },
+    async passingScreenshotDiffs(build, { limit = 10, offset = 0 }) {
+      const result = await screenshotDiffsQuery(build)
+        .range(offset, offset + limit - 1)
+        .where("screenshot_diffs.score", 0);
+      return paginateResult({ result, offset, limit });
     },
     compareScreenshotBucket: async (build) => {
       return ScreenshotBucketLoader.load(build.compareScreenshotBucketId);
