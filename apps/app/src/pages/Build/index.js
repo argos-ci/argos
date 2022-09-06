@@ -135,9 +135,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
               flexWrap="wrap"
               mb={3}
             >
-              <PrimaryTitle mb={0}>
-                Build #{Number(buildNumber).toLocaleString()}
-              </PrimaryTitle>
+              <PrimaryTitle mb={0}>Build #{buildNumber}</PrimaryTitle>
               <BuildChanges
                 updatedScreenshots={updatedScreenshots}
                 stableScreenshots={stableScreenshots}
