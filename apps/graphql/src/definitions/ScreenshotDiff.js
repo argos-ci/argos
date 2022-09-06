@@ -20,6 +20,11 @@ export const typeDefs = gql`
     "Represent the status given by the user"
     validationStatus: ValidationStatus!
   }
+
+  type ScreenshotDiffResult {
+    pageInfo: PageInfo!
+    edges: [ScreenshotDiff!]!
+  }
 `;
 
 export const resolvers = {
