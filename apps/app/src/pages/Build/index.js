@@ -20,7 +20,11 @@ import {
   UpdateStatusButtonBuildFragment,
   UpdateStatusButtonRepositoryFragment,
 } from "./UpdateStatusButton";
-import { FileDiffIcon, ChecklistIcon } from "@primer/octicons-react";
+import {
+  FileDiffIcon,
+  ChecklistIcon,
+  FileAddedIcon,
+} from "@primer/octicons-react";
 import { getStatusColor } from "../../containers/Status";
 import {
   StickySummaryMenu,
@@ -33,25 +37,61 @@ import {
   ScreenshotsDiffCardFragment,
 } from "./ScreenshotsDiffCard";
 
-const BUILD_QUERY = gql`
-  query Build(
-    $buildNumber: Int!
+const BUILD_PASSING_SCREENSHOT_DIFFS = gql`
+  query BUILD_PASSING_SCREENSHOT_DIFFS(
     $ownerLogin: String!
     $repositoryName: String!
+    $buildNumber: Int!
   ) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+    build(
+      ownerLogin: $ownerLogin
+      repositoryName: $repositoryName
+      number: $buildNumber
+    ) {
       id
-      ...UpdateStatusButtonRepositoryFragment
-      build(number: $buildNumber) {
+
+      screenshotDiffs {
         id
-        screenshotDiffs {
-          id
-          score
-          ...ScreenshotsDiffCardFragment
-        }
-        ...SummaryCardFragment
-        ...UpdateStatusButtonBuildFragment
+        score
+        ...ScreenshotsDiffCardFragment
       }
+    }
+  }
+
+  ${ScreenshotsDiffCardFragment}
+`;
+
+const BUILD_QUERY = gql`
+  query BUILD_QUERY(
+    $ownerLogin: String!
+    $repositoryName: String!
+    $buildNumber: Int!
+  ) {
+    build(
+      ownerLogin: $ownerLogin
+      repositoryName: $repositoryName
+      number: $buildNumber
+    ) {
+      id
+      stats {
+        createdScreenshotCount
+        updatedScreenshotCount
+        passingScreenshotCount
+      }
+
+      screenshotDiffs(showPassing: false) {
+        id
+        score
+        ...ScreenshotsDiffCardFragment
+      }
+
+      repository {
+        id
+        ...UpdateStatusButtonRepositoryFragment
+      }
+
+      ...SummaryCardFragment
+      ...UpdateStatusButtonBuildFragment
     }
   }
 
@@ -61,7 +101,13 @@ const BUILD_QUERY = gql`
   ${UpdateStatusButtonBuildFragment}
 `;
 
-function BuildChanges({ updatedScreenshots, stableScreenshots, ...props }) {
+function BuildStats({
+  stats: {
+    updatedScreenshotCount,
+    passingScreenshotCount,
+    createdScreenshotCount,
+  },
+}) {
   return (
     <x.div
       display="flex"
@@ -69,14 +115,22 @@ function BuildChanges({ updatedScreenshots, stableScreenshots, ...props }) {
       gap={3}
       pt="6px"
       flexShrink={0}
-      {...props}
     >
-      <IllustratedText icon={FileDiffIcon} color={getStatusColor("warning")}>
-        {updatedScreenshots.length}
-      </IllustratedText>
-      <IllustratedText icon={ChecklistIcon} color={getStatusColor("success")}>
-        {stableScreenshots.length}
-      </IllustratedText>
+      {createdScreenshotCount > 0 && (
+        <IllustratedText icon={FileAddedIcon} color={getStatusColor("neutral")}>
+          {createdScreenshotCount}
+        </IllustratedText>
+      )}
+      {updatedScreenshotCount > 0 && (
+        <IllustratedText icon={FileDiffIcon} color={getStatusColor("warning")}>
+          {updatedScreenshotCount}
+        </IllustratedText>
+      )}
+      {passingScreenshotCount > 0 && (
+        <IllustratedText icon={ChecklistIcon} color={getStatusColor("success")}>
+          {passingScreenshotCount}
+        </IllustratedText>
+      )}
     </x.div>
   );
 }
@@ -97,6 +151,28 @@ export function ScreenshotCards({ screenshotsDiffs, open }) {
   );
 }
 
+export function PassingScreenshots({
+  ownerLogin,
+  repositoryName,
+  buildNumber,
+}) {
+  return (
+    <Query
+      query={BUILD_PASSING_SCREENSHOT_DIFFS}
+      variables={{ ownerLogin, repositoryName, buildNumber }}
+      fallback={<LoadingAlert />}
+      skip={!ownerLogin || !repositoryName || !buildNumber}
+    >
+      {(data) => (
+        <ScreenshotCards
+          screenshotsDiffs={data.build.screenshotDiffs}
+          open={false}
+        />
+      )}
+    </Query>
+  );
+}
+
 const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
   const [showStableScreenshots, setShowStableScreenshots] =
     React.useState(false);
@@ -105,25 +181,14 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
   return (
     <Query
       query={BUILD_QUERY}
-      variables={{
-        ownerLogin,
-        repositoryName,
-        buildNumber,
-      }}
+      variables={{ ownerLogin, repositoryName, buildNumber }}
       fallback={<LoadingAlert />}
-      skip={!ownerLogin || !repositoryName}
+      skip={!ownerLogin || !repositoryName || !buildNumber}
     >
       {(data) => {
-        if (!data?.repository?.build) return <NotFound />;
+        if (!data?.build) return <NotFound />;
 
-        const { build } = data.repository;
-
-        const updatedScreenshots = build.screenshotDiffs.filter(
-          ({ score }) => score !== 0
-        );
-        const stableScreenshots = build.screenshotDiffs.filter(
-          ({ score }) => score === 0
-        );
+        const { build } = data;
 
         return (
           <>
@@ -136,13 +201,10 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
               mb={3}
             >
               <PrimaryTitle mb={0}>Build #{buildNumber}</PrimaryTitle>
-              <BuildChanges
-                updatedScreenshots={updatedScreenshots}
-                stableScreenshots={stableScreenshots}
-              />
+              <BuildStats stats={build.stats} />
             </x.div>
 
-            <SummaryCard repository={data.repository} build={build} />
+            <SummaryCard repository={build.repository} build={build} />
 
             {build.status === "pending" ? (
               <LoadingAlert my={5} flexDirection="column">
@@ -184,25 +246,29 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
                   </x.div>
 
                   <UpdateStatusButton
-                    repository={data.repository}
+                    repository={build.repository}
                     build={build}
                   />
                 </x.div>
 
                 {inView ? null : (
                   <StickySummaryMenu
-                    repository={data.repository}
+                    repository={build.repository}
                     build={build}
                   />
                 )}
 
                 <SecondaryTitle mt={4}>Updated screenshots</SecondaryTitle>
-                <ScreenshotCards screenshotsDiffs={updatedScreenshots} open />
+                <ScreenshotCards screenshotsDiffs={build.screenshotDiffs} />
 
                 {showStableScreenshots ? (
                   <>
                     <SecondaryTitle mt={6}>Stable Screenshots</SecondaryTitle>
-                    <ScreenshotCards screenshotsDiffs={stableScreenshots} />
+                    <PassingScreenshots
+                      ownerLogin={ownerLogin}
+                      repositoryName={repositoryName}
+                      buildNumber={buildNumber}
+                    />
                   </>
                 ) : null}
               </>

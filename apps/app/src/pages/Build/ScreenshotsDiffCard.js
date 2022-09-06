@@ -50,7 +50,11 @@ function Screenshot({ screenshot, title }) {
   );
 }
 
-export function ScreenshotsDiffCard({ screenshotDiff, open, ...props }) {
+export function ScreenshotsDiffCard({
+  screenshotDiff,
+  open = "true",
+  ...props
+}) {
   const { compareScreenshot, baseScreenshot, url } = screenshotDiff;
   const disclosure = useDisclosureState({ defaultOpen: open });
 
