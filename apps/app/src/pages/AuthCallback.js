@@ -8,22 +8,31 @@ const api = axios.create({
   baseURL: process.env.API_BASE_URL,
 });
 
+function getPathname(str) {
+  try {
+    const url = new URL(str);
+    return url.pathname;
+  } catch (e) {
+    return "";
+  }
+}
+
 export function AuthCallback() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { code } = qs.parse(location.search);
+  const { code, r } = qs.parse(location.search);
   const { setToken } = useAuth();
   React.useEffect(() => {
     api
       .post("/auth/github", { code })
       .then((result) => {
         setToken(result.data.access_token);
-        navigate("/");
+        navigate(getPathname(r) || "/");
       })
       .catch((error) => {
         console.error(error); // eslint-disable-line no-console
       });
-  }, [code, navigate, setToken]);
+  }, [code, navigate, r, setToken]);
 
   return null;
 }
