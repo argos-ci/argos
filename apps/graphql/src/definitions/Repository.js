@@ -53,13 +53,10 @@ export async function getRepository({ ownerLogin, name, user }) {
   const owner = await getOwner({ login: ownerLogin });
   if (!owner) return null;
 
-  const repository = await Repository.query()
-    .where({
-      [`${owner.type()}Id`]: owner.id,
-      name,
-    })
-    .limit(1)
-    .first();
+  const repository = await Repository.query().findOne({
+    [`${owner.type()}Id`]: owner.id,
+    name,
+  });
 
   if (!repository) return null;
 
@@ -117,9 +114,7 @@ export const resolvers = {
       };
     },
     async build(repository, { number }) {
-      return Build.query()
-        .where({ repositoryId: repository.id, number })
-        .first();
+      return Build.query().findOne({ repositoryId: repository.id, number });
     },
     async sampleBuildId(repository) {
       const build = await Build.query()
