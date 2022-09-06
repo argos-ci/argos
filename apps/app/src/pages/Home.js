@@ -156,7 +156,7 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
         borderColor={getStatusColor(status)}
         {...props}
       >
-        <StatusIcon status={build.status} />#{build.number.toLocaleString()}
+        <StatusIcon status={build.status} />#{build.number}
       </TagButton>
     </Td>
   );
