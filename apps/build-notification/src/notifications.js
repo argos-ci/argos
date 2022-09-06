@@ -102,14 +102,23 @@ export async function processBuildNotification(buildNotification) {
 
   const buildUrl = await build.getUrl();
 
-  // https://developer.github.com/v3/repos/statuses/
-  return octokit.repos.createCommitStatus({
-    owner: owner.login,
-    repo: build.repository.name,
-    sha: build.compareScreenshotBucket.commit,
-    state: notification.state,
-    target_url: buildUrl,
-    description: notification.description, // Short description of the status.
-    context: build.name === "default" ? "argos" : `argos/${build.name}`,
-  });
+  try {
+    // https://developer.github.com/v3/repos/statuses/
+    return await octokit.repos.createCommitStatus({
+      owner: owner.login,
+      repo: build.repository.name,
+      sha: build.compareScreenshotBucket.commit,
+      state: notification.state,
+      target_url: buildUrl,
+      description: notification.description, // Short description of the status.
+      context: build.name === "default" ? "argos" : `argos/${build.name}`,
+    });
+  } catch (error) {
+    // It happens if a push-force occurs before sending the notification, it is not considered as an error
+    // No commit found for SHA: xxx
+    if (error.status === 422) {
+      return null;
+    }
+    throw error;
+  }
 }
