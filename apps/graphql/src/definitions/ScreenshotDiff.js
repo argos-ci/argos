@@ -1,6 +1,7 @@
 import { gql } from "graphql-tag";
 import config from "@argos-ci/config";
 import { s3 as getS3, getSignedGetObjectUrl } from "@argos-ci/storage";
+import { ScreenshotLoader } from "../loaders";
 
 export const typeDefs = gql`
   type ScreenshotDiff {
@@ -23,11 +24,12 @@ export const typeDefs = gql`
 
 export const resolvers = {
   ScreenshotDiff: {
-    async baseScreenshot(screenshotDiff) {
-      return screenshotDiff.$relatedQuery("baseScreenshot");
+    baseScreenshot: async (screenshotDiff) => {
+      if (!screenshotDiff.baseScreenshotId) return null;
+      return ScreenshotLoader.load(screenshotDiff.baseScreenshotId);
     },
-    async compareScreenshot(screenshotDiff) {
-      return screenshotDiff.$relatedQuery("compareScreenshot");
+    compareScreenshot: async (screenshotDiff) => {
+      return ScreenshotLoader.load(screenshotDiff.compareScreenshotId);
     },
     url(screenshotDiff) {
       if (!screenshotDiff.s3Id) return null;

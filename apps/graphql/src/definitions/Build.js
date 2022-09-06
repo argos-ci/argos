@@ -2,6 +2,7 @@ import { gql } from "graphql-tag";
 import { Build, ScreenshotDiff } from "@argos-ci/database/models";
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { APIError } from "../util";
+import { RepositoryLoader, ScreenshotBucketLoader } from "../loaders";
 
 export const typeDefs = gql`
   enum BuildStatus {
@@ -65,14 +66,15 @@ export const resolvers = {
         .orderBy("score", "desc")
         .orderBy("screenshots.name", "asc");
     },
-    async compareScreenshotBucket(build) {
-      return build.$relatedQuery("compareScreenshotBucket");
+    compareScreenshotBucket: async (build) => {
+      return ScreenshotBucketLoader.load(build.compareScreenshotBucketId);
     },
-    async baseScreenshotBucket(build) {
-      return build.$relatedQuery("baseScreenshotBucket");
+    baseScreenshotBucket: async (build) => {
+      if (!build.baseScreenshotBucketId) return null;
+      return ScreenshotBucketLoader.load(build.baseScreenshotBucketId);
     },
     async repository(build) {
-      return build.$relatedQuery("repository");
+      return RepositoryLoader.load(build.repositoryId);
     },
     async status(build) {
       return build.$getStatus({ useValidation: true });
