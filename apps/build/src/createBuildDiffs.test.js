@@ -1,7 +1,7 @@
 import { sortBy } from "lodash";
 import * as notifications from "@argos-ci/build-notification";
 import { useDatabase, factory } from "@argos-ci/database/testing";
-import { ScreenshotDiff } from "@argos-ci/database/models";
+import { ScreenshotDiff, Screenshot } from "@argos-ci/database/models";
 import { createBuildDiffs } from "./createBuildDiffs";
 
 jest.mock("@argos-ci/build-notification");
@@ -79,6 +79,38 @@ describe("#createBuildDiffs", () => {
         compareScreenshotId: compareScreenshot2.id,
         jobStatus: "pending",
         validationStatus: ScreenshotDiff.VALIDATION_STATUSES.unknown,
+      });
+    });
+
+    describe("with two screenshots with the same fileId", () => {
+      beforeEach(async () => {
+        const file = await factory.create("File", { key: "file-key" });
+        await Screenshot.query()
+          .findByIds([baseScreenshot.id, compareScreenshot2.id])
+          .patch({ s3Id: "file-key", fileId: file.id });
+      });
+
+      it("puts a score of 0 and mark the jobStatus as complete", async () => {
+        const diffs = sortBy(await createBuildDiffs(build), (diff) =>
+          Number(diff.baseScreenshotId)
+        );
+        expect(diffs.length).toBe(2);
+        expect(diffs[0]).toMatchObject({
+          buildId: build.id,
+          baseScreenshotId: null,
+          compareScreenshotId: compareScreenshot1.id,
+          score: null,
+          jobStatus: "complete",
+          validationStatus: ScreenshotDiff.VALIDATION_STATUSES.unknown,
+        });
+        expect(diffs[1]).toMatchObject({
+          buildId: build.id,
+          baseScreenshotId: baseScreenshot.id,
+          compareScreenshotId: compareScreenshot2.id,
+          score: 0,
+          jobStatus: "complete",
+          validationStatus: ScreenshotDiff.VALIDATION_STATUSES.unknown,
+        });
       });
     });
 
