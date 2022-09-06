@@ -8,6 +8,7 @@ import {
   Account,
   Build,
   BuildNotification,
+  File,
   Organization,
   Plan,
   Purchase,
@@ -119,6 +120,8 @@ factory.define("Screenshot", Screenshot, {
   s3Id: "test-s3-id",
   screenshotBucketId: factory.assoc("ScreenshotBucket", "id"),
 });
+
+factory.define("File", File, {});
 
 factory.define("Synchronization", Synchronization, {
   userId: factory.assoc("User", "id"),

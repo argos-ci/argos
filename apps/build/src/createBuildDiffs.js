@@ -22,9 +22,10 @@ async function getOrCreateBaseScreenshotBucket(build, { trx } = {}) {
   return null;
 }
 
-function getJobStatus({ compareWithBaseline, baseScreenshot }) {
+function getJobStatus({ compareWithBaseline, baseScreenshot, sameFileId }) {
   if (compareWithBaseline) return "complete";
   if (!baseScreenshot) return "complete";
+  if (sameFileId) return "complete";
   return "pending";
 }
 
@@ -41,12 +42,14 @@ export async function createBuildDiffs(build) {
       { trx }
     );
 
-    const compareWithBaseline =
+    const compareWithBaseline = Boolean(
       baseScreenshotBucket &&
-      baseScreenshotBucket.commit === richBuild.compareScreenshotBucket.commit;
-    const sameBucket =
+        baseScreenshotBucket.commit === richBuild.compareScreenshotBucket.commit
+    );
+    const sameBucket = Boolean(
       baseScreenshotBucket &&
-      baseScreenshotBucket.id === richBuild.compareScreenshotBucket.id;
+        baseScreenshotBucket.id === richBuild.compareScreenshotBucket.id
+    );
 
     const inserts = richBuild.compareScreenshotBucket.screenshots.map(
       (compareScreenshot) => {
@@ -56,12 +59,23 @@ export async function createBuildDiffs(build) {
                 ({ name }) => name === compareScreenshot.name
               )
             : null;
+        const sameFileId = Boolean(
+          baseScreenshot &&
+            baseScreenshot.fileId &&
+            compareScreenshot.fileId &&
+            baseScreenshot.fileId === compareScreenshot.fileId
+        );
 
         return {
           buildId: richBuild.id,
           baseScreenshotId: baseScreenshot ? baseScreenshot.id : null,
           compareScreenshotId: compareScreenshot.id,
-          jobStatus: getJobStatus({ compareWithBaseline, baseScreenshot }),
+          jobStatus: getJobStatus({
+            compareWithBaseline,
+            baseScreenshot,
+            sameFileId,
+          }),
+          score: sameFileId ? 0 : null,
           validationStatus: ScreenshotDiff.VALIDATION_STATUSES.unknown,
         };
       },

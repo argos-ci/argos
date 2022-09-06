@@ -18,11 +18,11 @@ export class ScreenshotDiff extends Model {
       ],
       properties: {
         buildId: { type: "string" },
-        baseScreenshotId: { type: ["string", null] },
+        baseScreenshotId: { type: ["string", "null"] },
         compareScreenshotId: { type: "string" },
-        s3Id: { type: ["string", null] },
+        s3Id: { type: ["string", "null"] },
         score: {
-          type: "number",
+          type: ["number", "null"],
           minimum: 0,
           maximum: 1,
         },
