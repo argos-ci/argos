@@ -11,19 +11,19 @@ const api = axios.create({
 export function AuthCallback() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { code } = qs.parse(location.search);
+  const { code, r } = qs.parse(location.search);
   const { setToken } = useAuth();
   React.useEffect(() => {
     api
       .post("/auth/github", { code })
       .then((result) => {
         setToken(result.data.access_token);
-        navigate("/");
+        navigate(r || "/");
       })
       .catch((error) => {
         console.error(error); // eslint-disable-line no-console
       });
-  }, [code, navigate, setToken]);
+  }, [code, navigate, r, setToken]);
 
   return null;
 }
