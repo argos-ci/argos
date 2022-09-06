@@ -1,8 +1,10 @@
 import { gql } from "graphql-tag";
 import { Build, ScreenshotDiff } from "@argos-ci/database/models";
 import { pushBuildNotification } from "@argos-ci/build-notification";
+import { knex } from "@argos-ci/database/src";
 import { APIError } from "../util";
 import { RepositoryLoader, ScreenshotBucketLoader } from "../loaders";
+import { getRepository } from "./Repository";
 
 export const typeDefs = gql`
   enum BuildStatus {
@@ -15,12 +17,18 @@ export const typeDefs = gql`
     aborted
   }
 
+  type BuildStats {
+    createdScreenshotCount: Int!
+    updatedScreenshotCount: Int!
+    passingScreenshotCount: Int!
+  }
+
   type Build {
     id: ID!
     createdAt: DateTime!
     updatedAt: DateTime!
     "The screenshot diffs between the base screenshot bucket of the compare screenshot bucket"
-    screenshotDiffs: [ScreenshotDiff!]!
+    screenshotDiffs(showPassing: Boolean): [ScreenshotDiff!]!
     "The screenshot bucket ID of the baselineBranch"
     baseScreenshotBucketId: ID
     "The screenshot bucket of the baselineBranch"
@@ -37,11 +45,18 @@ export const typeDefs = gql`
     status: BuildStatus!
     "Build name"
     name: String!
+    "Build stats"
+    stats: BuildStats!
   }
 
   type BuildResult {
     pageInfo: PageInfo!
     edges: [Build!]!
+  }
+
+  extend type Query {
+    "Get a build"
+    build(ownerLogin: String!, repositoryName: String!, number: Int!): Build
   }
 
   extend type Mutation {
@@ -55,8 +70,8 @@ export const typeDefs = gql`
 
 export const resolvers = {
   Build: {
-    async screenshotDiffs(build) {
-      return build
+    async screenshotDiffs(build, { showPassing = true }) {
+      const query = build
         .$relatedQuery("screenshotDiffs")
         .leftJoin(
           "screenshots",
@@ -65,6 +80,8 @@ export const resolvers = {
         )
         .orderBy("score", "desc")
         .orderBy("screenshots.name", "asc");
+
+      return showPassing ? query : query.whereNot("screenshot_diffs.score", 0);
     },
     compareScreenshotBucket: async (build) => {
       return ScreenshotBucketLoader.load(build.compareScreenshotBucketId);
@@ -78,6 +95,43 @@ export const resolvers = {
     },
     async status(build) {
       return build.$getStatus({ useValidation: true });
+    },
+    async stats(build) {
+      const data = await build
+        .$relatedQuery("screenshotDiffs")
+        .select(
+          knex.raw(`CASE \
+            WHEN score IS NULL THEN 'created' \
+            WHEN score = 0 THEN 'passing' \
+            ELSE 'updated' \
+          END \
+          AS status`)
+        )
+        .count("*")
+        .groupBy(1);
+
+      const stats = data.reduce(
+        (res, { status, count }) => ({ ...res, [status]: count }),
+        {}
+      );
+
+      return {
+        createdScreenshotCount: stats.created || 0,
+        updatedScreenshotCount: stats.updated || 0,
+        passingScreenshotCount: stats.passing || 0,
+      };
+    },
+  },
+  Query: {
+    async build(rootObj, { ownerLogin, repositoryName, number }, context) {
+      const repository = await getRepository({
+        ownerLogin: ownerLogin,
+        name: repositoryName,
+        user: context.user,
+      });
+
+      if (!repository) return null;
+      return Build.query().findOne({ repositoryId: repository.id, number });
     },
   },
   Mutation: {
