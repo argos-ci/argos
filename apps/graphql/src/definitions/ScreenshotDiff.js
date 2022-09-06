@@ -4,6 +4,12 @@ import { s3 as getS3, getSignedGetObjectUrl } from "@argos-ci/storage";
 import { ScreenshotLoader } from "../loaders";
 
 export const typeDefs = gql`
+  enum ScreenshotDiffType {
+    new
+    passing
+    update
+  }
+
   type ScreenshotDiff {
     id: ID!
     createdAt: DateTime!
@@ -19,6 +25,7 @@ export const typeDefs = gql`
     jobStatus: JobStatus
     "Represent the status given by the user"
     validationStatus: ValidationStatus!
+    type: ScreenshotDiffType!
   }
 
   type ScreenshotDiffResult {
@@ -45,6 +52,16 @@ export const resolvers = {
         Key: screenshotDiff.s3Id,
         expiresIn: 7200,
       });
+    },
+    type(screenshotDiff) {
+      switch (screenshotDiff.score) {
+        case null:
+          return "new";
+        case 0:
+          return "passing";
+        default:
+          return "update";
+      }
     },
   },
 };

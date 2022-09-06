@@ -21,14 +21,8 @@ import {
   UpdateStatusButtonBuildFragment,
   UpdateStatusButtonRepositoryFragment,
 } from "./UpdateStatusButton";
-import {
-  FileDiffIcon,
-  ChecklistIcon,
-  FileAddedIcon,
-  EyeClosedIcon,
-  EyeIcon,
-} from "@primer/octicons-react";
-import { getStatusColor } from "../../containers/Status";
+import { EyeClosedIcon, EyeIcon } from "@primer/octicons-react";
+import { getStatusPrimaryColor } from "../../containers/Status";
 import {
   StickySummaryMenu,
   SummaryCard,
@@ -39,6 +33,7 @@ import {
   ScreenshotsDiffCard,
   ScreenshotsDiffCardFragment,
 } from "./ScreenshotsDiffCard";
+import { ScreenshotDiffTypeIcon } from "./ScreenshotDiffIcons";
 
 export const ScreenshotDiffsPageFragment = gql`
   fragment ScreenshotDiffsPageFragment on ScreenshotDiffResult {
@@ -121,37 +116,16 @@ const BUILD_QUERY = gql`
   ${UpdateStatusButtonBuildFragment}
 `;
 
-function BuildStats({
-  stats: {
-    updatedScreenshotCount,
-    passingScreenshotCount,
-    createdScreenshotCount,
-  },
-}) {
+function BuildStat({ type, count }) {
+  if (count === 0) return null;
+
   return (
-    <x.div
-      display="flex"
-      alignItems="flex-start"
-      gap={3}
-      pt="6px"
-      flexShrink={0}
+    <IllustratedText
+      icon={ScreenshotDiffTypeIcon(type)}
+      color={getStatusPrimaryColor(type)}
     >
-      {createdScreenshotCount > 0 && (
-        <IllustratedText icon={FileAddedIcon} color={getStatusColor("neutral")}>
-          {createdScreenshotCount}
-        </IllustratedText>
-      )}
-      {updatedScreenshotCount > 0 && (
-        <IllustratedText icon={FileDiffIcon} color={getStatusColor("warning")}>
-          {updatedScreenshotCount}
-        </IllustratedText>
-      )}
-      {passingScreenshotCount > 0 && (
-        <IllustratedText icon={ChecklistIcon} color={getStatusColor("success")}>
-          {passingScreenshotCount}
-        </IllustratedText>
-      )}
-    </x.div>
+      {count}
+    </IllustratedText>
   );
 }
 
@@ -297,6 +271,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
   const {
     build,
     build: {
+      stats,
       screenshotDiffs: { pageInfo, edges: screenshotDiffs },
     },
   } = data;
@@ -312,7 +287,18 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
         mb={3}
       >
         <PrimaryTitle mb={0}>Build #{buildNumber}</PrimaryTitle>
-        <BuildStats stats={build.stats} />
+
+        <x.div
+          display="flex"
+          alignItems="flex-start"
+          gap={3}
+          pt="6px"
+          flexShrink={0}
+        >
+          <BuildStat type="new" count={stats.createdScreenshotCount} />
+          <BuildStat type="update" count={stats.updatedScreenshotCount} />
+          <BuildStat type="passing" count={stats.passingScreenshotCount} />
+        </x.div>
       </x.div>
 
       <SummaryCard repository={build.repository} build={build} />
