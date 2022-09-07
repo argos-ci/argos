@@ -11,5 +11,4 @@ router.post("/builds", (req, res, next) => {
       "argos-cli is deprecated, use @argos-ci/cli instead. Check https://docs.argos-ci.com"
     )
   );
-  next();
 });
