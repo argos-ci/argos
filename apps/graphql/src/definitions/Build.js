@@ -85,14 +85,19 @@ export const resolvers = {
         .orderBy("screenshots.name", "asc")
         .range(offset, offset + limit - 1);
 
-      const result = !where
-        ? await query
-        : where.passing
-        ? await query.where("screenshot_diffs.score", 0)
-        : await query
-            .whereNot("screenshot_diffs.score", 0)
-            .orWhereNull("screenshot_diffs.score");
+      if (where) {
+        if (where.passing) {
+          query.where("screenshot_diffs.score", 0);
+        } else {
+          query.where((qb) => {
+            qb.whereNot("screenshot_diffs.score", 0).orWhereNull(
+              "screenshot_diffs.score"
+            );
+          });
+        }
+      }
 
+      const result = await query;
       return paginateResult({ result, offset, limit });
     },
     compareScreenshotBucket: async (build) => {
