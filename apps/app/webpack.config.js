@@ -1,18 +1,6 @@
 /* eslint-env node */
-require("@babel/register")({
-  ignore: [],
-  presets: [
-    [
-      "@babel/preset-env",
-      {
-        loose: true,
-        targets: {
-          node: "current",
-        },
-      },
-    ],
-  ],
-});
+// eslint-disable-next-line no-global-assign
+require = require("esm")(module);
 
 const webpack = require("webpack");
 const path = require("path");
@@ -28,7 +16,7 @@ module.exports = {
     filename: prod ? "[name]-bundle-[chunkhash:8].js" : "[name].js",
     publicPath: "/static/app/",
   },
-  devtool: prod ? "source-map" : false,
+  devtool: prod ? "source-map" : "eval-cheap-module-source-map",
   module: {
     rules: [
       {
@@ -41,7 +29,7 @@ module.exports = {
       {
         test: /\.m?js$/,
         exclude: /node_modules/,
-        use: "babel-loader",
+        use: "swc-loader",
       },
       {
         test: /\.(jpe?g|png|gif|svg)$/,
