@@ -47,6 +47,7 @@ const ScreenshotDiffsPageFragment = gql`
     edges {
       id
       score
+      status
       ...ScreenshotsDiffCardFragment
     }
   }
@@ -264,6 +265,18 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
     },
   } = data.repository;
 
+  const diffGroups = screenshotDiffs.reduce(
+    ({ added, updated }, screenshotDiff) => {
+      const group = screenshotDiff.status === "added" ? added : updated;
+      group.push(screenshotDiff);
+      return { added, updated };
+    },
+    {
+      added: [],
+      updated: [],
+    }
+  );
+
   return (
     <>
       <x.div
@@ -350,8 +363,19 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
             </>
           ) : null}
 
-          <SecondaryTitle mt={4}>Updated screenshots</SecondaryTitle>
-          <ScreenshotCards screenshotDiffs={screenshotDiffs} />
+          {diffGroups.added.length > 0 && (
+            <>
+              <SecondaryTitle mt={4}>Added Screenshots</SecondaryTitle>
+              <ScreenshotCards screenshotDiffs={diffGroups.added} />
+            </>
+          )}
+
+          {diffGroups.updated.length > 0 && (
+            <>
+              <SecondaryTitle mt={4}>Updated Screenshots</SecondaryTitle>
+              <ScreenshotCards screenshotDiffs={diffGroups.updated} />
+            </>
+          )}
 
           {pageInfo.hasNextPage && (
             <Button
