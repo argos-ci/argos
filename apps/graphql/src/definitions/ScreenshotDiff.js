@@ -4,6 +4,12 @@ import { s3 as getS3, getSignedGetObjectUrl } from "@argos-ci/storage";
 import { ScreenshotLoader } from "../loaders";
 
 export const typeDefs = gql`
+  enum ScreenshotDiffStatus {
+    added
+    stable
+    updated
+  }
+
   type ScreenshotDiff {
     id: ID!
     createdAt: DateTime!
@@ -19,6 +25,12 @@ export const typeDefs = gql`
     jobStatus: JobStatus
     "Represent the status given by the user"
     validationStatus: ValidationStatus!
+    status: ScreenshotDiffStatus!
+  }
+
+  type ScreenshotDiffResult {
+    pageInfo: PageInfo!
+    edges: [ScreenshotDiff!]!
   }
 `;
 
@@ -40,6 +52,16 @@ export const resolvers = {
         Key: screenshotDiff.s3Id,
         expiresIn: 7200,
       });
+    },
+    status(screenshotDiff) {
+      switch (screenshotDiff.score) {
+        case null:
+          return "added";
+        case 0:
+          return "stable";
+        default:
+          return "updated";
+      }
     },
   },
 };
