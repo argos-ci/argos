@@ -115,7 +115,7 @@ const handleUpdateParallel = async ({ req, build, unknownKeys }) => {
 
   const parallelTotal = Number(req.body.parallelTotal);
 
-  await transaction(async (trx) => {
+  const complete = await transaction(async (trx) => {
     await insertFilesAndScreenshots({ req, build, unknownKeys, trx });
 
     await Build.query(trx)
@@ -126,10 +126,15 @@ const handleUpdateParallel = async ({ req, build, unknownKeys }) => {
       await build
         .$relatedQuery("compareScreenshotBucket", trx)
         .patch({ complete: true });
+      return true;
     }
+
+    return false;
   });
 
-  await buildJob.push(build.id);
+  if (complete) {
+    await buildJob.push(build.id);
+  }
 };
 
 const handleUpdateSingle = async ({ req, build, unknownKeys }) => {
