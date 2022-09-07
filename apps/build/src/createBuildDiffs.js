@@ -44,7 +44,7 @@ export async function createBuildDiffs(build) {
 
     const compareWithBaseline = Boolean(
       baseScreenshotBucket &&
-        baseScreenshotBucket.commit === richBuild.compareScreenshotBucket.commit
+        baseScreenshotBucket.branch === richBuild.compareScreenshotBucket.branch
     );
     const sameBucket = Boolean(
       baseScreenshotBucket &&
