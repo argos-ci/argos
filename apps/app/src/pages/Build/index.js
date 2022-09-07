@@ -12,6 +12,9 @@ import {
   LoadingAlert,
   PrimaryTitle,
   SecondaryTitle,
+  useTooltipState,
+  TooltipAnchor,
+  Tooltip,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
@@ -113,16 +116,24 @@ const BUILD_QUERY = gql`
   ${UpdateStatusButtonBuildFragment}
 `;
 
-function BuildStat({ type, count }) {
+function BuildStat({ type, count, label }) {
+  const tooltip = useTooltipState();
+
   if (count === 0) return null;
 
   return (
-    <IllustratedText
-      icon={ScreenshotDiffStatusIcon(type)}
-      color={getStatusPrimaryColor(type)}
-    >
-      {count}
-    </IllustratedText>
+    <>
+      <TooltipAnchor state={tooltip}>
+        <IllustratedText
+          icon={ScreenshotDiffStatusIcon(type)}
+          color={getStatusPrimaryColor(type)}
+          cursor="default"
+        >
+          {count}
+        </IllustratedText>
+      </TooltipAnchor>
+      <Tooltip state={tooltip}>{label}</Tooltip>
+    </>
   );
 }
 
@@ -272,9 +283,21 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           pt="6px"
           flexShrink={0}
         >
-          <BuildStat type="added" count={stats.addedScreenshotCount} />
-          <BuildStat type="updated" count={stats.updatedScreenshotCount} />
-          <BuildStat type="stable" count={stats.stableScreenshotCount} />
+          <BuildStat
+            type="added"
+            count={stats.addedScreenshotCount}
+            label="Added screenshots"
+          />
+          <BuildStat
+            type="updated"
+            count={stats.updatedScreenshotCount}
+            label="Updated screenshots"
+          />
+          <BuildStat
+            type="stable"
+            count={stats.stableScreenshotCount}
+            label="Stable screenshots"
+          />
         </x.div>
       </x.div>
 

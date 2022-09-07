@@ -28,3 +28,4 @@ export * from "./Theme";
 export * from "./Time";
 export * from "./Titles";
 export * from "./Toast";
+export * from "./Tooltip";
