@@ -114,16 +114,16 @@ function BuildsList({ repository }) {
   }
 
   return (
-    <>
+    <x.div maxW={1} overflowX="scroll">
       <Table>
         <Thead>
           <Tr>
             <Th>
-              <x.div ml={18}>Branch</x.div>
+              <x.div ml={7}>Branch</x.div>
             </Th>
-            <Th width={140}>Build</Th>
-            <Th width={130}>Commit</Th>
-            <Th width={150}>Date</Th>
+            <Th pl={5}>Build</Th>
+            <Th pl={5}>Commit</Th>
+            <Th pl={3}>Date</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -137,8 +137,8 @@ function BuildsList({ repository }) {
                     borderRadius="0 md md 0"
                     borderLeft={1}
                     borderLeftColor={{ _: statusColor, hover: statusColor }}
-                    px={4}
                     to={`${build.number}`}
+                    pr={10}
                   >
                     <IllustratedText icon={GitBranchIcon}>
                       {build.compareScreenshotBucket.branch}{" "}
@@ -172,7 +172,7 @@ function BuildsList({ repository }) {
                   </TdLink>
                 </Td>
 
-                <Td color="secondary-text" px={4}>
+                <Td color="secondary-text" whiteSpace="nowrap" px={3}>
                   <IllustratedText icon={ClockIcon}>
                     {moment(build.createdAt).fromNow()}
                   </IllustratedText>
@@ -188,7 +188,7 @@ function BuildsList({ repository }) {
           Load More {moreLoading && <Loader />}
         </Button>
       )}
-    </>
+    </x.div>
   );
 }
 
