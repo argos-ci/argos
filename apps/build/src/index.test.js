@@ -12,8 +12,8 @@ describe("build", () => {
   useDatabase();
 
   beforeEach(() => {
-    notifications.pushBuildNotification = jest.fn();
-    screenshotDiffJob.push = jest.fn();
+    notifications.pushBuildNotification.mockReset();
+    screenshotDiffJob.push.mockReset();
   });
 
   describe("performBuild", () => {

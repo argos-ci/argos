@@ -12,7 +12,7 @@ describe("GraphQL", () => {
   useDatabase();
 
   beforeAll(() => {
-    notifications.pushBuildNotification = jest.fn();
+    notifications.pushBuildNotification.mockReset();
   });
 
   describe("validationStatus", () => {
