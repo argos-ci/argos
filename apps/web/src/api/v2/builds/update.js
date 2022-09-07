@@ -58,6 +58,7 @@ const validateRoute = validate({
   },
 });
 
+// eslint-disable-next-line no-unused-vars
 const checkAllScreenshotKeysExist = async (unknownKeys) => {
   const s3 = getS3();
   const screenshotsBucket = config.get("s3.screenshotsBucket");
@@ -177,7 +178,7 @@ router.put(
     const screenshots = req.body.screenshots;
     const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
     const unknownKeys = await getUnknownScreenshotKeys(screenshotKeys);
-    await checkAllScreenshotKeysExist(unknownKeys);
+    // await checkAllScreenshotKeysExist(unknownKeys);
 
     const ctx = { req, build, unknownKeys };
     if (req.body.parallel) {
