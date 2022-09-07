@@ -5,15 +5,15 @@ import {
   FileRemovedIcon,
 } from "@primer/octicons-react";
 
-export function ScreenshotDiffTypeIcon(type) {
+export function ScreenshotDiffStatusIcon(type) {
   switch (type) {
-    case "new":
+    case "added":
       return FileAddedIcon;
-    case "update":
+    case "updated":
       return FileDiffIcon;
-    case "delete":
+    case "deleted":
       return FileRemovedIcon;
-    case "passing":
+    case "stable":
       return ChecklistIcon;
     default:
       return null;

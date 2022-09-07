@@ -8,8 +8,8 @@ export function getStatusColor(status) {
       return "primary";
 
     case "success":
-    case "new":
-    case "passing":
+    case "added":
+    case "stable":
       return "green";
 
     case "danger":
@@ -22,7 +22,7 @@ export function getStatusColor(status) {
 
     case "pending":
     case "warning":
-    case "update":
+    case "updated":
     default:
       return "orange";
   }

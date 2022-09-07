@@ -2,7 +2,6 @@ import * as React from "react";
 import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
-import { Group } from "ariakit/group";
 import { Helmet } from "react-helmet";
 import { useInView } from "react-cool-inview";
 import {
@@ -33,9 +32,9 @@ import {
   ScreenshotsDiffCard,
   ScreenshotsDiffCardFragment,
 } from "./ScreenshotsDiffCard";
-import { ScreenshotDiffTypeIcon } from "./ScreenshotDiffIcons";
+import { ScreenshotDiffStatusIcon } from "./ScreenshotDiffStatusIcons";
 
-export const ScreenshotDiffsPageFragment = gql`
+const ScreenshotDiffsPageFragment = gql`
   fragment ScreenshotDiffsPageFragment on ScreenshotDiffResult {
     pageInfo {
       totalCount
@@ -52,23 +51,24 @@ export const ScreenshotDiffsPageFragment = gql`
   ${ScreenshotsDiffCardFragment}
 `;
 
-const BUILD_PASSING_SCREENSHOT_DIFFS = gql`
-  query BUILD_PASSING_SCREENSHOT_DIFFS(
+const BUILD_STABLE_SCREENSHOT_DIFFS_QUERY = gql`
+  query BUILD_STABLE_SCREENSHOT_DIFFS_QUERY(
     $ownerLogin: String!
     $repositoryName: String!
     $buildNumber: Int!
     $offset: Int!
     $limit: Int!
   ) {
-    build(
-      ownerLogin: $ownerLogin
-      repositoryName: $repositoryName
-      number: $buildNumber
-    ) {
+    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
-
-      passingScreenshotDiffs(offset: $offset, limit: $limit) {
-        ...ScreenshotDiffsPageFragment
+      build(number: $buildNumber) {
+        screenshotDiffs(
+          offset: $offset
+          limit: $limit
+          where: { passing: true }
+        ) {
+          ...ScreenshotDiffsPageFragment
+        }
       }
     }
   }
@@ -78,35 +78,32 @@ const BUILD_PASSING_SCREENSHOT_DIFFS = gql`
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
+    $buildNumber: Int!
     $ownerLogin: String!
     $repositoryName: String!
-    $buildNumber: Int!
     $offset: Int!
     $limit: Int!
   ) {
-    build(
-      ownerLogin: $ownerLogin
-      repositoryName: $repositoryName
-      number: $buildNumber
-    ) {
+    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
-      stats {
-        createdScreenshotCount
-        updatedScreenshotCount
-        passingScreenshotCount
-      }
-
-      screenshotDiffs(filterPassing: true, offset: $offset, limit: $limit) {
-        ...ScreenshotDiffsPageFragment
-      }
-
-      repository {
+      ...UpdateStatusButtonRepositoryFragment
+      build(number: $buildNumber) {
         id
-        ...UpdateStatusButtonRepositoryFragment
+        ...SummaryCardFragment
+        ...UpdateStatusButtonBuildFragment
+        screenshotDiffs(
+          where: { passing: false }
+          offset: $offset
+          limit: $limit
+        ) {
+          ...ScreenshotDiffsPageFragment
+        }
+        stats {
+          addedScreenshotCount
+          stableScreenshotCount
+          updatedScreenshotCount
+        }
       }
-
-      ...SummaryCardFragment
-      ...UpdateStatusButtonBuildFragment
     }
   }
 
@@ -121,7 +118,7 @@ function BuildStat({ type, count }) {
 
   return (
     <IllustratedText
-      icon={ScreenshotDiffTypeIcon(type)}
+      icon={ScreenshotDiffStatusIcon(type)}
       color={getStatusPrimaryColor(type)}
     >
       {count}
@@ -129,8 +126,8 @@ function BuildStat({ type, count }) {
   );
 }
 
-export function ScreenshotCards({ pageInfo, screenshotDiffs, open }) {
-  if (pageInfo.totalCount === 0) return <EmptyScreenshotCard />;
+export function ScreenshotCards({ screenshotDiffs, open }) {
+  if (screenshotDiffs.length === 0) return <EmptyScreenshotCard />;
 
   return (
     <x.div display="flex" flexDirection="column" gap={2}>
@@ -138,20 +135,44 @@ export function ScreenshotCards({ pageInfo, screenshotDiffs, open }) {
         <ScreenshotsDiffCard
           screenshotDiff={screenshotDiff}
           key={index}
-          open={open}
+          opened={open}
         />
       ))}
     </x.div>
   );
 }
 
-export function PassingScreenshots({
-  ownerLogin,
-  repositoryName,
-  buildNumber,
-}) {
+function fetchMoreScreenshotDiffs({ data, fetchMore }) {
+  return fetchMore({
+    variables: {
+      offset: data.repository.build.screenshotDiffs.pageInfo.endCursor,
+    },
+    updateQuery: (prev, { fetchMoreResult }) => {
+      if (!fetchMoreResult) return prev;
+
+      return {
+        ...prev,
+        repository: {
+          ...prev.repository,
+          build: {
+            ...prev.repository.build,
+            screenshotDiffs: {
+              ...fetchMoreResult.repository.build.screenshotDiffs,
+              edges: [
+                ...prev.repository.build.screenshotDiffs.edges,
+                ...fetchMoreResult.repository.build.screenshotDiffs.edges,
+              ],
+            },
+          },
+        },
+      };
+    },
+  });
+}
+
+export function StableScreenshots({ ownerLogin, repositoryName, buildNumber }) {
   const { loading, data, fetchMore } = useQuery(
-    BUILD_PASSING_SCREENSHOT_DIFFS,
+    BUILD_STABLE_SCREENSHOT_DIFFS_QUERY,
     {
       variables: {
         ownerLogin,
@@ -165,30 +186,9 @@ export function PassingScreenshots({
   );
   const [moreLoading, setMoreLoading] = React.useState();
 
-  function loadMorePassingScreenshotDiffs() {
+  function loadNextPage() {
     setMoreLoading(true);
-    fetchMore({
-      variables: {
-        offset: data.build.passingScreenshotDiffs.pageInfo.endCursor,
-      },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (!fetchMoreResult) return prev;
-
-        return {
-          ...prev,
-          build: {
-            ...prev.build,
-            passingScreenshotDiffs: {
-              ...fetchMoreResult.build.passingScreenshotDiffs,
-              edges: [
-                ...prev.build.passingScreenshotDiffs.edges,
-                ...fetchMoreResult.build.passingScreenshotDiffs.edges,
-              ],
-            },
-          },
-        };
-      },
-    }).finally(() => {
+    fetchMoreScreenshotDiffs({ data, fetchMore }).finally(() => {
       setMoreLoading(false);
     });
   }
@@ -197,23 +197,19 @@ export function PassingScreenshots({
 
   const {
     build: {
-      passingScreenshotDiffs: { pageInfo, edges: screenshotDiffs },
+      screenshotDiffs: { pageInfo, edges: screenshotDiffs },
     },
-  } = data;
+  } = data.repository;
 
   return (
     <>
-      <ScreenshotCards
-        pageInfo={pageInfo}
-        screenshotDiffs={screenshotDiffs}
-        open={false}
-      />
+      <ScreenshotCards screenshotDiffs={screenshotDiffs} open={false} />
 
       {pageInfo.hasNextPage && (
         <Button
           mt={4}
           mx="auto"
-          onClick={() => loadMorePassingScreenshotDiffs()}
+          onClick={() => loadNextPage()}
           disabled={moreLoading}
         >
           Load More {moreLoading && <Loader maxH={4} />}
@@ -224,7 +220,7 @@ export function PassingScreenshots({
 }
 
 const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
-  const [showPassingScreenshots, setShowPassingScreenshots] =
+  const [showStableScreenshots, setShowStableScreenshots] =
     React.useState(false);
   const { observe, inView } = useInView();
 
@@ -240,41 +236,22 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
   });
   const [moreLoading, setMoreLoading] = React.useState();
 
-  function loadMoreScreenshotDiffs() {
+  function loadNextPage() {
     setMoreLoading(true);
-    fetchMore({
-      variables: { offset: data.build.screenshotDiffs.pageInfo.endCursor },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (!fetchMoreResult) return prev;
-
-        return {
-          ...prev,
-          build: {
-            ...prev.build,
-            screenshotDiffs: {
-              ...fetchMoreResult.build.screenshotDiffs,
-              edges: [
-                ...prev.build.screenshotDiffs.edges,
-                ...fetchMoreResult.build.screenshotDiffs.edges,
-              ],
-            },
-          },
-        };
-      },
-    }).finally(() => {
+    fetchMoreScreenshotDiffs({ data, fetchMore }).finally(() => {
       setMoreLoading(false);
     });
   }
 
   if (loading) return <LoadingAlert />;
-  if (!data?.build) return <NotFound />;
+  if (!data?.repository?.build) return <NotFound />;
   const {
     build,
     build: {
       stats,
       screenshotDiffs: { pageInfo, edges: screenshotDiffs },
     },
-  } = data;
+  } = data.repository;
 
   return (
     <>
@@ -295,13 +272,13 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           pt="6px"
           flexShrink={0}
         >
-          <BuildStat type="new" count={stats.createdScreenshotCount} />
-          <BuildStat type="update" count={stats.updatedScreenshotCount} />
-          <BuildStat type="passing" count={stats.passingScreenshotCount} />
+          <BuildStat type="added" count={stats.addedScreenshotCount} />
+          <BuildStat type="updated" count={stats.updatedScreenshotCount} />
+          <BuildStat type="stable" count={stats.stableScreenshotCount} />
         </x.div>
       </x.div>
 
-      <SummaryCard repository={build.repository} build={build} />
+      <SummaryCard repository={data.repository} build={build} />
 
       {build.status === "pending" ? (
         <LoadingAlert my={5} flexDirection="column">
@@ -318,39 +295,31 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
             mt={5}
             ref={observe}
           >
-            <x.div
-              as={Group}
-              display="flex"
-              overflowX="scroll"
-              alignItems="start"
+            <Button
+              borderRadius="md"
+              variant="neutral"
+              onClick={() => setShowStableScreenshots((prev) => !prev)}
+              justifyContent="start"
             >
-              <Button
-                borderRadius="md"
-                variant="neutral"
-                onClick={() => setShowPassingScreenshots((prev) => !prev)}
-                w={260}
-                justifyContent="start"
+              <IllustratedText
+                icon={showStableScreenshots ? EyeClosedIcon : EyeIcon}
+                field
               >
-                <IllustratedText
-                  icon={showPassingScreenshots ? EyeClosedIcon : EyeIcon}
-                  field
-                >
-                  {showPassingScreenshots ? "Hide" : "Show"} passing screenshots
-                </IllustratedText>
-              </Button>
-            </x.div>
+                {showStableScreenshots ? "Hide" : "Show"} stable screenshots
+              </IllustratedText>
+            </Button>
 
-            <UpdateStatusButton repository={build.repository} build={build} />
+            <UpdateStatusButton repository={data.repository} build={build} />
           </x.div>
 
           {inView ? null : (
-            <StickySummaryMenu repository={build.repository} build={build} />
+            <StickySummaryMenu repository={data.repository} build={build} />
           )}
 
-          {showPassingScreenshots ? (
+          {showStableScreenshots ? (
             <>
-              <SecondaryTitle mt={4}>Passing Screenshots</SecondaryTitle>
-              <PassingScreenshots
+              <SecondaryTitle mt={4}>Stable Screenshots</SecondaryTitle>
+              <StableScreenshots
                 ownerLogin={ownerLogin}
                 repositoryName={repositoryName}
                 buildNumber={buildNumber}
@@ -359,16 +328,13 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           ) : null}
 
           <SecondaryTitle mt={4}>Updated screenshots</SecondaryTitle>
-          <ScreenshotCards
-            pageInfo={pageInfo}
-            screenshotDiffs={screenshotDiffs}
-          />
+          <ScreenshotCards screenshotDiffs={screenshotDiffs} />
 
           {pageInfo.hasNextPage && (
             <Button
               mt={4}
               mx="auto"
-              onClick={() => loadMoreScreenshotDiffs()}
+              onClick={() => loadNextPage()}
               disabled={moreLoading}
             >
               Load More {moreLoading && <Loader maxH={4} />}

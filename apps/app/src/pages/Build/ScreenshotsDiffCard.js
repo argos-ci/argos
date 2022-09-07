@@ -15,12 +15,12 @@ import {
 } from "@argos-ci/app/src/components";
 import { ChevronRightIcon } from "@primer/octicons-react";
 import { getStatusPrimaryColor } from "../../containers/Status";
-import { ScreenshotDiffTypeIcon } from "./ScreenshotDiffIcons";
+import { ScreenshotDiffStatusIcon } from "./ScreenshotDiffStatusIcons";
 
 export const ScreenshotsDiffCardFragment = gql`
   fragment ScreenshotsDiffCardFragment on ScreenshotDiff {
     url
-    type
+    status
     compareScreenshot {
       id
       name
@@ -56,11 +56,11 @@ function Screenshot({ screenshot, title }) {
 
 export function ScreenshotsDiffCard({
   screenshotDiff,
-  open = "true",
+  opened = true,
   ...props
 }) {
   const { compareScreenshot, baseScreenshot, url } = screenshotDiff;
-  const disclosure = useDisclosureState({ defaultOpen: open });
+  const disclosure = useDisclosureState({ defaultOpen: opened });
 
   return (
     <Card {...props}>
@@ -88,8 +88,8 @@ export function ScreenshotsDiffCard({
           </LinkBlock>
 
           <Icon
-            as={ScreenshotDiffTypeIcon(screenshotDiff.type)}
-            color={getStatusPrimaryColor(screenshotDiff.type)}
+            as={ScreenshotDiffStatusIcon(screenshotDiff.status)}
+            color={getStatusPrimaryColor(screenshotDiff.status)}
           />
 
           {compareScreenshot.name}

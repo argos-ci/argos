@@ -80,13 +80,16 @@ describe("GraphQL", () => {
             }
           `,
         });
-      if (res.body && res.body.data && res.body.data.screenshotDiffs) {
-        res.body.data.screenshotDiffs.edges.forEach((screenshotDiff) => {
+      expect(
+        res.body.data.setValidationStatus.screenshotDiffs.edges
+      ).toHaveLength(3);
+      res.body.data.setValidationStatus.screenshotDiffs.edges.forEach(
+        (screenshotDiff) => {
           expect(screenshotDiff.validationStatus).toBe(
             ScreenshotDiff.VALIDATION_STATUSES.rejected
           );
-        });
-      }
+        }
+      );
 
       expectNoGraphQLError(res);
       expect(res.status).toBe(200);

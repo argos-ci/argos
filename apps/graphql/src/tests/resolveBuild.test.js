@@ -32,24 +32,26 @@ describe("GraphQL", () => {
       const screenshot3 = await factory.create("Screenshot", {
         name: "email_added",
       });
-      await factory.create("ScreenshotDiff", {
-        buildId: build.id,
-        baseScreenshotId: screenshot1.id,
-        compareScreenshotId: screenshot2.id,
-        score: 0,
-      });
-      await factory.create("ScreenshotDiff", {
-        buildId: build.id,
-        baseScreenshotId: screenshot1.id,
-        compareScreenshotId: screenshot2.id,
-        score: 0.3,
-      });
-      await factory.create("ScreenshotDiff", {
-        buildId: build.id,
-        baseScreenshotId: screenshot3.id,
-        compareScreenshotId: screenshot3.id,
-        score: 0,
-      });
+      await factory.createMany("ScreenshotDiff", [
+        {
+          buildId: build.id,
+          baseScreenshotId: screenshot1.id,
+          compareScreenshotId: screenshot2.id,
+          score: 0,
+        },
+        {
+          buildId: build.id,
+          baseScreenshotId: screenshot1.id,
+          compareScreenshotId: screenshot2.id,
+          score: 0.3,
+        },
+        {
+          buildId: build.id,
+          baseScreenshotId: screenshot3.id,
+          compareScreenshotId: screenshot3.id,
+          score: 0,
+        },
+      ]);
     });
 
     it("should sort the diffs by score", async () => {
@@ -120,7 +122,7 @@ describe("GraphQL", () => {
               repositoryName: "${repository.name}",
             ) {
               build(number: 1) {
-                screenshotDiffs(offset: 0, limit: 10) {
+                screenshotDiffs(where: {passing: false}, offset: 0, limit: 10) {
                   edges {
                     baseScreenshot {
                       name
@@ -139,6 +141,7 @@ describe("GraphQL", () => {
         .expect((res) => {
           const { edges: screenshotDiffs } =
             res.body.data.repository.build.screenshotDiffs;
+          expect(screenshotDiffs).toHaveLength(2);
           expect(screenshotDiffs).toEqual([
             {
               baseScreenshot: null,
@@ -155,24 +158,6 @@ describe("GraphQL", () => {
                 name: "email_deleted",
               },
               score: 0.3,
-            },
-            {
-              baseScreenshot: {
-                name: "email_added",
-              },
-              compareScreenshot: {
-                name: "email_added",
-              },
-              score: 0,
-            },
-            {
-              baseScreenshot: {
-                name: "email_deleted",
-              },
-              compareScreenshot: {
-                name: "email_deleted",
-              },
-              score: 0,
             },
           ]);
         })
