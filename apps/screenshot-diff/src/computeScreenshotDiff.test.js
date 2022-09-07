@@ -19,7 +19,6 @@ describe("#computeScreenshotDiff", () => {
   let screenshotDiff;
 
   beforeAll(async () => {
-    notifications.pushBuildNotification = jest.fn();
     s3 = getS3();
     await upload({
       s3,
@@ -36,6 +35,8 @@ describe("#computeScreenshotDiff", () => {
   });
 
   beforeEach(async () => {
+    notifications.pushBuildNotification.mockReset();
+
     const repository = await factory.create("Repository", {
       enabled: true,
       token: "xx",

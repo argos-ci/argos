@@ -10,7 +10,7 @@ describe("#createBuildDiffs", () => {
   useDatabase();
 
   beforeAll(() => {
-    notifications.pushBuildNotification = jest.fn();
+    notifications.pushBuildNotification.mockReset();
   });
 
   let build;
