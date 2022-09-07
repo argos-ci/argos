@@ -1,6 +1,6 @@
 import { HttpError } from "express-err";
 import express from "express";
-import { raw } from "@argos-ci/database";
+import { transaction, raw } from "@argos-ci/database";
 import { Build, Screenshot, File } from "@argos-ci/database/models";
 import { s3 as getS3, checkIfExists } from "@argos-ci/storage";
 import config from "@argos-ci/config";
@@ -79,27 +79,29 @@ const checkAllScreenshotKeysExist = async (unknownKeys) => {
   }
 };
 
-const insertFilesAndScreenshots = async ({ req, build, unknownKeys }) => {
-  // Insert unknown files
-  await File.query()
-    .insert(unknownKeys.map((key) => ({ key })))
-    .onConflict("key")
-    .ignore();
+const insertFilesAndScreenshots = async ({ req, build, unknownKeys, trx }) => {
+  await transaction(trx, async (trx) => {
+    // Insert unknown files
+    await File.query(trx)
+      .insert(unknownKeys.map((key) => ({ key })))
+      .onConflict("key")
+      .ignore();
 
-  // Retrieve all screenshot files
-  const screenshots = req.body.screenshots;
-  const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
-  const files = await File.query().whereIn("key", screenshotKeys);
+    // Retrieve all screenshot files
+    const screenshots = req.body.screenshots;
+    const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
+    const files = await File.query(trx).whereIn("key", screenshotKeys);
 
-  // Insert screenshots
-  await Screenshot.query().insert(
-    screenshots.map((screenshot) => ({
-      screenshotBucketId: build.compareScreenshotBucket.id,
-      name: screenshot.name,
-      s3Id: screenshot.key,
-      fileId: files.find((file) => file.key === screenshot.key).id,
-    }))
-  );
+    // Insert screenshots
+    await Screenshot.query(trx).insert(
+      screenshots.map((screenshot) => ({
+        screenshotBucketId: build.compareScreenshotBucket.id,
+        name: screenshot.name,
+        s3Id: screenshot.key,
+        fileId: files.find((file) => file.key === screenshot.key).id,
+      }))
+    );
+  });
 };
 
 const handleUpdateParallel = async ({ req, build, unknownKeys }) => {
@@ -112,28 +114,31 @@ const handleUpdateParallel = async ({ req, build, unknownKeys }) => {
 
   const parallelTotal = Number(req.body.parallelTotal);
 
-  await insertFilesAndScreenshots({ req, build, unknownKeys });
+  await transaction(async (trx) => {
+    await insertFilesAndScreenshots({ req, build, unknownKeys, trx });
 
-  await Build.query()
-    .findById(build.id)
-    .patch({ batchCount: raw('"batchCount" + 1') });
+    await Build.query(trx)
+      .findById(build.id)
+      .patch({ batchCount: raw('"batchCount" + 1') });
 
-  if (parallelTotal === build.batchCount + 1) {
-    await build
-      .$relatedQuery("compareScreenshotBucket")
-      .patch({ complete: true });
-  }
+    if (parallelTotal === build.batchCount + 1) {
+      await build
+        .$relatedQuery("compareScreenshotBucket", trx)
+        .patch({ complete: true });
+    }
+  });
 
   await buildJob.push(build.id);
 };
 
 const handleUpdateSingle = async ({ req, build, unknownKeys }) => {
-  await insertFilesAndScreenshots({ req, build, unknownKeys });
+  await transaction(async (trx) => {
+    await insertFilesAndScreenshots({ req, build, unknownKeys, trx });
 
-  await build.compareScreenshotBucket
-    .$query()
-    .patchAndFetch({ complete: true });
-
+    await build.compareScreenshotBucket
+      .$query(trx)
+      .patchAndFetch({ complete: true });
+  });
   await buildJob.push(build.id);
 };
 
