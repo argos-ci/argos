@@ -1,7 +1,8 @@
 import { HttpError } from "express-err";
 import { File } from "@argos-ci/database/models";
+import { asyncHandler } from "../../../util";
 
-export const mustBeEnabledAuthRepo = (req, _res, next) => {
+export const mustBeEnabledAuthRepo = asyncHandler((req, _res, next) => {
   if (!req.authRepository.enabled) {
     throw new HttpError(
       403,
@@ -10,7 +11,7 @@ export const mustBeEnabledAuthRepo = (req, _res, next) => {
   }
 
   next();
-};
+});
 
 export const getUnknownScreenshotKeys = async (keys) => {
   const existingFiles = await File.query().select("key").whereIn("key", keys);
