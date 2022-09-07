@@ -179,14 +179,12 @@ router.put(
     const unknownKeys = await getUnknownScreenshotKeys(screenshotKeys);
     await checkAllScreenshotKeysExist(unknownKeys);
 
-    await (async () => {
-      const ctx = { req, build, unknownKeys };
-      if (req.body.parallel) {
-        return handleUpdateParallel(ctx);
-      } else {
-        return handleUpdateSingle(ctx);
-      }
-    })();
+    const ctx = { req, build, unknownKeys };
+    if (req.body.parallel) {
+      await handleUpdateParallel(ctx);
+    } else {
+      await handleUpdateSingle(ctx);
+    }
 
     const buildUrl = await build.getUrl();
 

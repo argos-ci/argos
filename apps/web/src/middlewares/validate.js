@@ -1,5 +1,6 @@
 import Ajv from "ajv";
 import { HttpError } from "express-err";
+import { asyncHandler } from "../util";
 
 /**
  * Returns a middleware with compiled ajv validators
@@ -31,7 +32,7 @@ export const validate = (routeSchema) => {
 
   // The actual middleware that gets loaded by express
   // has already-compiled validators
-  return (req, _res, next) => {
+  return asyncHandler((req, _res, next) => {
     let validation = null;
 
     if (Object.prototype.hasOwnProperty.call(validators, "params")) {
@@ -71,5 +72,5 @@ export const validate = (routeSchema) => {
     }
 
     next();
-  };
+  });
 };
