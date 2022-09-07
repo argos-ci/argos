@@ -49,9 +49,10 @@ export const TdLink = (props) => (
     as={LinkBlock}
     display="flex"
     py={4}
-    px={2}
+    px={3}
     border={1}
     borderColor={{ _: "background", hover: "background-hover" }}
+    whiteSpace="nowrap"
     {...props}
   />
 );
