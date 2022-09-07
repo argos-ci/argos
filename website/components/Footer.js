@@ -71,9 +71,7 @@ export const AppFooter = (props) => (
           <FooterLink href="https://github.com/argos-ci/argos">
             GitHub
           </FooterLink>
-          <FooterLink href="https://discord.com/channels/1001395848489484288/1001427173254627349">
-            Discord
-          </FooterLink>
+          <FooterLink href="https://discord.gg/pK79sv85Vg">Discord</FooterLink>
           <FooterLink href="https://twitter.com/argos_ci?s=20&t=lOyYmPfhjDeHIKiGdNMTMw">
             Twitter
           </FooterLink>
