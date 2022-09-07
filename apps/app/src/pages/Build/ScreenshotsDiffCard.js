@@ -44,8 +44,12 @@ export function EmptyScreenshotCard() {
   );
 }
 
+function EmptyScreenshot() {
+  return <x.div flex={1 / 3} />;
+}
+
 function Screenshot({ screenshot, title }) {
-  if (!screenshot?.url) return <x.div flex={1 / 3} />;
+  if (!screenshot?.url) return <EmptyScreenshot />;
 
   return (
     <BaseLink href={screenshot.url} target="_blank" title={title} flex={1 / 3}>
@@ -59,7 +63,7 @@ export function ScreenshotsDiffCard({
   opened = true,
   ...props
 }) {
-  const { compareScreenshot, baseScreenshot, url } = screenshotDiff;
+  const { compareScreenshot, baseScreenshot, url, status } = screenshotDiff;
   const disclosure = useDisclosureState({ defaultOpen: opened });
 
   return (
@@ -86,12 +90,10 @@ export function ScreenshotsDiffCard({
               h={4}
             />
           </LinkBlock>
-
           <Icon
             as={ScreenshotDiffStatusIcon(screenshotDiff.status)}
             color={getStatusPrimaryColor(screenshotDiff.status)}
           />
-
           {compareScreenshot.name}
         </CardTitle>
       </CardHeader>
@@ -99,11 +101,21 @@ export function ScreenshotsDiffCard({
       <DisclosureContent state={disclosure}>
         <CardBody display="flex" gap={1} p={1}>
           <Screenshot screenshot={baseScreenshot} title="Base screenshot" />
-          <Screenshot
-            screenshot={compareScreenshot}
-            title="Current screenshot"
-          />
-          <Screenshot screenshot={{ url, name: "diff" }} title="Diff" />
+
+          {status === "updated" ? (
+            <>
+              <Screenshot
+                screenshot={compareScreenshot}
+                title="Current screenshot"
+              />
+              <Screenshot screenshot={{ url, name: "diff" }} title="Diff" />
+            </>
+          ) : (
+            <>
+              <EmptyScreenshot />
+              <EmptyScreenshot />
+            </>
+          )}
         </CardBody>
       </DisclosureContent>
     </Card>
