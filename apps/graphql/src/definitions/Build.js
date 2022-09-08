@@ -117,13 +117,13 @@ export const resolvers = {
       const data = await build
         .$relatedQuery("screenshotDiffs")
         .select(
-          knex.raw(`
+          knex.raw(`\
             CASE \
               WHEN score IS NULL THEN 'added' \
               WHEN score = 0 THEN 'stable' \
               ELSE 'updated' \
             END \
-            AS status
+            AS status \
           `)
         )
         .count("*")
@@ -135,7 +135,7 @@ export const resolvers = {
       );
 
       return {
-        addedScreenshotCount: stats.created || 0,
+        addedScreenshotCount: stats.added || 0,
         stableScreenshotCount: stats.stable || 0,
         updatedScreenshotCount: stats.updated || 0,
       };
