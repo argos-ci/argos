@@ -8,13 +8,16 @@ export function getStatusColor(status) {
       return "primary";
 
     case "success":
-    case "added":
     case "stable":
       return "green";
+
+    case "added":
+      return "blue";
 
     case "danger":
     case "failure":
     case "error":
+    case "failed":
       return "red";
 
     case "neutral":

@@ -18,6 +18,7 @@ export const typeDefs = gql`
   }
 
   type BuildStats {
+    failedScreenshotCount: Int!
     addedScreenshotCount: Int!
     stableScreenshotCount: Int!
     updatedScreenshotCount: Int!
@@ -114,11 +115,13 @@ export const resolvers = {
       return build.$getStatus({ useValidation: true });
     },
     async stats(build) {
-      const data = await build
-        .$relatedQuery("screenshotDiffs")
+      const data = await ScreenshotDiff.query()
+        .where("buildId", build.id)
+        .joinRelated("compareScreenshot")
         .select(
           knex.raw(`\
             CASE \
+              WHEN name ~ '(failed)' THEN 'failed' \
               WHEN score IS NULL THEN 'added' \
               WHEN score = 0 THEN 'stable' \
               ELSE 'updated' \
@@ -135,6 +138,7 @@ export const resolvers = {
       );
 
       return {
+        failedScreenshotCount: stats.failed || 0,
         addedScreenshotCount: stats.added || 0,
         stableScreenshotCount: stats.stable || 0,
         updatedScreenshotCount: stats.updated || 0,
