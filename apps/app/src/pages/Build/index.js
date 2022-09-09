@@ -66,6 +66,7 @@ const BUILD_STABLE_SCREENSHOT_DIFFS_QUERY = gql`
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
       build(number: $buildNumber) {
+        id
         screenshotDiffs(
           offset: $offset
           limit: $limit
@@ -103,6 +104,7 @@ const BUILD_QUERY = gql`
           ...ScreenshotDiffsPageFragment
         }
         stats {
+          failedScreenshotCount
           addedScreenshotCount
           stableScreenshotCount
           updatedScreenshotCount
@@ -117,7 +119,7 @@ const BUILD_QUERY = gql`
   ${UpdateStatusButtonBuildFragment}
 `;
 
-function BuildStat({ type, count, label }) {
+function BuildStat({ status, count, label }) {
   const tooltip = useTooltipState();
 
   if (count === 0) return null;
@@ -126,8 +128,8 @@ function BuildStat({ type, count, label }) {
     <>
       <TooltipAnchor state={tooltip}>
         <IllustratedText
-          icon={ScreenshotDiffStatusIcon(type)}
-          color={getStatusPrimaryColor(type)}
+          icon={ScreenshotDiffStatusIcon(status)}
+          color={getStatusPrimaryColor(status)}
           cursor="default"
         >
           {count}
@@ -138,7 +140,7 @@ function BuildStat({ type, count, label }) {
   );
 }
 
-export function ScreenshotCards({ screenshotDiffs, open }) {
+function ScreenshotCards({ screenshotDiffs, open }) {
   if (screenshotDiffs.length === 0) return <EmptyScreenshotCard />;
 
   return (
@@ -151,6 +153,24 @@ export function ScreenshotCards({ screenshotDiffs, open }) {
         />
       ))}
     </x.div>
+  );
+}
+
+function ScreenshotSection({
+  title,
+  screenshotDiffs,
+  color = "primary-text",
+  openedCard = "true",
+}) {
+  if (screenshotDiffs.length === 0) return null;
+
+  return (
+    <>
+      <SecondaryTitle mt={6} color={color}>
+        {title}
+      </SecondaryTitle>
+      <ScreenshotCards screenshotDiffs={screenshotDiffs} opened={openedCard} />
+    </>
   );
 }
 
@@ -182,7 +202,7 @@ function fetchMoreScreenshotDiffs({ data, fetchMore }) {
   });
 }
 
-export function StableScreenshots({ ownerLogin, repositoryName, buildNumber }) {
+function StableScreenshots({ ownerLogin, repositoryName, buildNumber }) {
   const { loading, data, fetchMore } = useQuery(
     BUILD_STABLE_SCREENSHOT_DIFFS_QUERY,
     {
@@ -215,7 +235,11 @@ export function StableScreenshots({ ownerLogin, repositoryName, buildNumber }) {
 
   return (
     <>
-      <ScreenshotCards screenshotDiffs={screenshotDiffs} open={false} />
+      <ScreenshotSection
+        title="Stable Screenshots"
+        screenshotDiffs={screenshotDiffs}
+        openedCard={false}
+      />
 
       {pageInfo.hasNextPage && (
         <Button
@@ -266,15 +290,14 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
   } = data.repository;
 
   const diffGroups = screenshotDiffs.reduce(
-    ({ added, updated }, screenshotDiff) => {
-      const group = screenshotDiff.status === "added" ? added : updated;
-      group.push(screenshotDiff);
-      return { added, updated };
-    },
-    {
-      added: [],
-      updated: [],
-    }
+    (groups, screenshotDiff) => ({
+      ...groups,
+      [screenshotDiff.status]: [
+        ...groups[screenshotDiff.status],
+        screenshotDiff,
+      ],
+    }),
+    { added: [], updated: [], failed: [] }
   );
 
   return (
@@ -297,17 +320,22 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           flexShrink={0}
         >
           <BuildStat
-            type="added"
+            status="failed"
+            count={stats.failedScreenshotCount}
+            label="Failed screenshots"
+          />
+          <BuildStat
+            status="added"
             count={stats.addedScreenshotCount}
             label="Added screenshots"
           />
           <BuildStat
-            type="updated"
+            status="updated"
             count={stats.updatedScreenshotCount}
             label="Updated screenshots"
           />
           <BuildStat
-            type="stable"
+            status="stable"
             count={stats.stableScreenshotCount}
             label="Stable screenshots"
           />
@@ -353,29 +381,26 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           )}
 
           {showStableScreenshots ? (
-            <>
-              <SecondaryTitle mt={4}>Stable Screenshots</SecondaryTitle>
-              <StableScreenshots
-                ownerLogin={ownerLogin}
-                repositoryName={repositoryName}
-                buildNumber={buildNumber}
-              />
-            </>
+            <StableScreenshots
+              ownerLogin={ownerLogin}
+              repositoryName={repositoryName}
+              buildNumber={buildNumber}
+            />
           ) : null}
 
-          {diffGroups.added.length > 0 && (
-            <>
-              <SecondaryTitle mt={4}>Added Screenshots</SecondaryTitle>
-              <ScreenshotCards screenshotDiffs={diffGroups.added} />
-            </>
-          )}
-
-          {diffGroups.updated.length > 0 && (
-            <>
-              <SecondaryTitle mt={4}>Updated Screenshots</SecondaryTitle>
-              <ScreenshotCards screenshotDiffs={diffGroups.updated} />
-            </>
-          )}
+          <ScreenshotSection
+            title="Failed Screenshots"
+            screenshotDiffs={diffGroups.failed}
+            color={getStatusPrimaryColor("danger")}
+          />
+          <ScreenshotSection
+            title="Added Screenshots"
+            screenshotDiffs={diffGroups.added}
+          />
+          <ScreenshotSection
+            title="Updated Screenshots"
+            screenshotDiffs={diffGroups.updated}
+          />
 
           {pageInfo.hasNextPage && (
             <Button

@@ -8,6 +8,7 @@ export const typeDefs = gql`
     added
     stable
     updated
+    failed
   }
 
   type ScreenshotDiff {
@@ -53,10 +54,15 @@ export const resolvers = {
         expiresIn: 7200,
       });
     },
-    status(screenshotDiff) {
+    async status(screenshotDiff) {
       switch (screenshotDiff.score) {
-        case null:
-          return "added";
+        case null: {
+          const { name } = await ScreenshotLoader.load(
+            screenshotDiff.compareScreenshotId
+          );
+
+          return name.match("(failed)") ? "failed" : "added";
+        }
         case 0:
           return "stable";
         default:
