@@ -8,10 +8,8 @@ import {
   Button,
   Container,
   IllustratedText,
-  Loader,
   LoadingAlert,
   PrimaryTitle,
-  SecondaryTitle,
   useTooltipState,
   TooltipAnchor,
   Tooltip,
@@ -30,56 +28,14 @@ import {
   SummaryCard,
   SummaryCardFragment,
 } from "./SummaryCard";
-import {
-  EmptyScreenshotCard,
-  ScreenshotsDiffCard,
-  ScreenshotsDiffCardFragment,
-} from "./ScreenshotsDiffCard";
 import { ScreenshotDiffStatusIcon } from "./ScreenshotDiffStatusIcons";
-
-const ScreenshotDiffsPageFragment = gql`
-  fragment ScreenshotDiffsPageFragment on ScreenshotDiffResult {
-    pageInfo {
-      totalCount
-      hasNextPage
-      endCursor
-    }
-    edges {
-      id
-      score
-      status
-      ...ScreenshotsDiffCardFragment
-    }
-  }
-
-  ${ScreenshotsDiffCardFragment}
-`;
-
-const BUILD_STABLE_SCREENSHOT_DIFFS_QUERY = gql`
-  query BUILD_STABLE_SCREENSHOT_DIFFS_QUERY(
-    $ownerLogin: String!
-    $repositoryName: String!
-    $buildNumber: Int!
-    $offset: Int!
-    $limit: Int!
-  ) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
-      id
-      build(number: $buildNumber) {
-        id
-        screenshotDiffs(
-          offset: $offset
-          limit: $limit
-          where: { passing: true }
-        ) {
-          ...ScreenshotDiffsPageFragment
-        }
-      }
-    }
-  }
-
-  ${ScreenshotDiffsPageFragment}
-`;
+import { StableScreenshots } from "./StableScreenshotDiffs";
+import {
+  fetchMoreScreenshotDiffs,
+  LoadMoreButton,
+  ScreenshotDiffsPageFragment,
+  ScreenshotDiffsSection,
+} from "./PaginateScreenshotDiffsSection";
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
@@ -92,10 +48,12 @@ const BUILD_QUERY = gql`
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
       ...UpdateStatusButtonRepositoryFragment
+
       build(number: $buildNumber) {
         id
         ...SummaryCardFragment
         ...UpdateStatusButtonBuildFragment
+
         screenshotDiffs(
           where: { passing: false }
           offset: $offset
@@ -103,6 +61,7 @@ const BUILD_QUERY = gql`
         ) {
           ...ScreenshotDiffsPageFragment
         }
+
         stats {
           failedScreenshotCount
           addedScreenshotCount
@@ -136,121 +95,6 @@ function BuildStat({ status, count, label }) {
         </IllustratedText>
       </TooltipAnchor>
       <Tooltip state={tooltip}>{label}</Tooltip>
-    </>
-  );
-}
-
-function ScreenshotCards({ screenshotDiffs, open }) {
-  if (screenshotDiffs.length === 0) return <EmptyScreenshotCard />;
-
-  return (
-    <x.div display="flex" flexDirection="column" gap={2}>
-      {screenshotDiffs.map((screenshotDiff, index) => (
-        <ScreenshotsDiffCard
-          screenshotDiff={screenshotDiff}
-          key={index}
-          opened={open}
-        />
-      ))}
-    </x.div>
-  );
-}
-
-function ScreenshotSection({
-  title,
-  screenshotDiffs,
-  color = "primary-text",
-  openedCard = "true",
-}) {
-  if (screenshotDiffs.length === 0) return null;
-
-  return (
-    <>
-      <SecondaryTitle mt={6} color={color}>
-        {title}
-      </SecondaryTitle>
-      <ScreenshotCards screenshotDiffs={screenshotDiffs} opened={openedCard} />
-    </>
-  );
-}
-
-function fetchMoreScreenshotDiffs({ data, fetchMore }) {
-  return fetchMore({
-    variables: {
-      offset: data.repository.build.screenshotDiffs.pageInfo.endCursor,
-    },
-    updateQuery: (prev, { fetchMoreResult }) => {
-      if (!fetchMoreResult) return prev;
-
-      return {
-        ...prev,
-        repository: {
-          ...prev.repository,
-          build: {
-            ...prev.repository.build,
-            screenshotDiffs: {
-              ...fetchMoreResult.repository.build.screenshotDiffs,
-              edges: [
-                ...prev.repository.build.screenshotDiffs.edges,
-                ...fetchMoreResult.repository.build.screenshotDiffs.edges,
-              ],
-            },
-          },
-        },
-      };
-    },
-  });
-}
-
-function StableScreenshots({ ownerLogin, repositoryName, buildNumber }) {
-  const { loading, data, fetchMore } = useQuery(
-    BUILD_STABLE_SCREENSHOT_DIFFS_QUERY,
-    {
-      variables: {
-        ownerLogin,
-        repositoryName,
-        buildNumber,
-        offset: 0,
-        limit: 10,
-      },
-      skip: !ownerLogin || !repositoryName || !buildNumber,
-    }
-  );
-  const [moreLoading, setMoreLoading] = React.useState();
-
-  function loadNextPage() {
-    setMoreLoading(true);
-    fetchMoreScreenshotDiffs({ data, fetchMore }).finally(() => {
-      setMoreLoading(false);
-    });
-  }
-
-  if (loading || !data) return <LoadingAlert />;
-
-  const {
-    build: {
-      screenshotDiffs: { pageInfo, edges: screenshotDiffs },
-    },
-  } = data.repository;
-
-  return (
-    <>
-      <ScreenshotSection
-        title="Stable Screenshots"
-        screenshotDiffs={screenshotDiffs}
-        openedCard={false}
-      />
-
-      {pageInfo.hasNextPage && (
-        <Button
-          mt={4}
-          mx="auto"
-          onClick={() => loadNextPage()}
-          disabled={moreLoading}
-        >
-          Load More {moreLoading && <Loader maxH={4} />}
-        </Button>
-      )}
     </>
   );
 }
@@ -372,7 +216,6 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
                 {showStableScreenshots ? "Hide" : "Show"} stable screenshots
               </IllustratedText>
             </Button>
-
             <UpdateStatusButton repository={data.repository} build={build} />
           </x.div>
 
@@ -380,37 +223,30 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
             <StickySummaryMenu repository={data.repository} build={build} />
           )}
 
-          {showStableScreenshots ? (
+          {showStableScreenshots && (
             <StableScreenshots
               ownerLogin={ownerLogin}
               repositoryName={repositoryName}
               buildNumber={buildNumber}
             />
-          ) : null}
+          )}
 
-          <ScreenshotSection
+          <ScreenshotDiffsSection
             title="Failed Screenshots"
             screenshotDiffs={diffGroups.failed}
             color={getStatusPrimaryColor("danger")}
           />
-          <ScreenshotSection
+          <ScreenshotDiffsSection
             title="Added Screenshots"
             screenshotDiffs={diffGroups.added}
           />
-          <ScreenshotSection
+          <ScreenshotDiffsSection
             title="Updated Screenshots"
             screenshotDiffs={diffGroups.updated}
           />
 
           {pageInfo.hasNextPage && (
-            <Button
-              mt={4}
-              mx="auto"
-              onClick={() => loadNextPage()}
-              disabled={moreLoading}
-            >
-              Load More {moreLoading && <Loader maxH={4} />}
-            </Button>
+            <LoadMoreButton onClick={loadNextPage} moreLoading={moreLoading} />
           )}
         </>
       )}
