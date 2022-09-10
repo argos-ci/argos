@@ -45,9 +45,13 @@ import {
   GearIcon,
   LockIcon,
 } from "@primer/octicons-react";
-import { getStatusColor, StatusIcon } from "../containers/Status";
 import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { hasWritePermission } from "../modules/permissions";
+import {
+  BuildStatusBadge,
+  BuildStatusBadgeFragment,
+} from "../containers/BuildStatusBadge";
+import { BuildStatusIcon, getBuildStatusLabel } from "../containers/Status";
 
 const HOME_OWNERS_REPOSITORIES_QUERY = gql`
   query HOME_OWNERS_REPOSITORIES_QUERY {
@@ -69,13 +73,15 @@ const HOME_OWNERS_REPOSITORIES_QUERY = gql`
           edges {
             id
             updatedAt
-            status
             number
+            ...BuildStatusBadgeFragment
           }
         }
       }
     }
   }
+
+  ${BuildStatusBadgeFragment}
 `;
 
 function RepositoryNameCell({
@@ -150,14 +156,15 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
 
   return (
     <Td>
-      <TagButton
+      <BuildStatusBadge
         as={LinkBlock}
         to={`${repositoryUrl}/builds/${build.number}`}
-        borderColor={getStatusColor(status)}
+        build={build}
         {...props}
       >
-        <StatusIcon status={build.status} />#{build.number}
-      </TagButton>
+        <BuildStatusIcon build={build} />#{build.number}{" "}
+        {getBuildStatusLabel(build.status)}
+      </BuildStatusBadge>
     </Td>
   );
 }
@@ -189,9 +196,9 @@ function RepositoriesList({ repositories, ...props }) {
       <Thead>
         <Tr>
           <Th>Repository name</Th>
-          <Th width={120}>Last Build</Th>
-          <Th width={120}>Status</Th>
-          <Th width={80}>Actions</Th>
+          <Th>Last Build</Th>
+          <Th>Status</Th>
+          <Th>Actions</Th>
         </Tr>
       </Thead>
       <Tbody>

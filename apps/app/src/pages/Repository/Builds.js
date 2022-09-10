@@ -8,7 +8,11 @@ import {
 } from "@primer/octicons-react";
 import moment from "moment";
 import { gql } from "graphql-tag";
-import { getStatusPrimaryColor } from "../../containers/Status";
+import {
+  BuildStatusIcon,
+  getBuildStatusLabel,
+  getStatusPrimaryColor,
+} from "../../containers/Status";
 import {
   Button,
   Container,
@@ -25,6 +29,7 @@ import {
   Tr,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
+import { BuildStatusBadge } from "../../containers/BuildStatusBadge";
 import { GettingStarted } from "./GettingStarted";
 import { getPossessiveForm } from "../../modules/utils";
 import { hasWritePermission } from "../../modules/permissions";
@@ -156,8 +161,11 @@ function BuildsList({ repository }) {
                   </TdLink>
                 </Td>
                 <Td>
-                  <TdLink to={`${build.number}`} color={statusColor}>
-                    #{build.number} {build.status}
+                  <TdLink to={`${build.number}`}>
+                    <BuildStatusBadge build={build}>
+                      <BuildStatusIcon build={build} />
+                      {getBuildStatusLabel(build.status)}
+                    </BuildStatusBadge>
                   </TdLink>
                 </Td>
                 <Td>

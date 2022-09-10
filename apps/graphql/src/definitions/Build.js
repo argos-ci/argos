@@ -7,13 +7,31 @@ import { RepositoryLoader, ScreenshotBucketLoader } from "../loaders";
 import { paginateResult } from "./PageInfo";
 
 export const typeDefs = gql`
+  enum BuildType {
+    "Build on reference branch"
+    reference
+    "Comparison build"
+    check
+    "No reference build to compare"
+    orphan
+  }
+
   enum BuildStatus {
+    "reviewStatus: accepted"
+    accepted
+    "reviewStatus: rejected"
+    rejected
+    "conclusion: stable"
+    stable
+    "conclusion: diffDetected"
+    diffDetected
+    "job status: pending"
     pending
+    "job status: progress"
     progress
-    complete
-    failure
-    success
+    "job status: complete"
     error
+    "job status: aborted"
     aborted
   }
 
@@ -50,12 +68,14 @@ export const typeDefs = gql`
     repository: Repository!
     "Continuous number. It is incremented after each build"
     number: Int!
-    "The status of the job associated to the build"
+    "Review status, conclusion or job status"
     status: BuildStatus!
     "Build name"
     name: String!
     "Build stats"
     stats: BuildStats!
+    "Build type"
+    type: BuildType
   }
 
   type BuildResult {
@@ -112,7 +132,14 @@ export const resolvers = {
       return RepositoryLoader.load(build.repositoryId);
     },
     async status(build) {
-      return build.$getStatus({ useValidation: true });
+      const [reviewStatus] = await Build.getReviewStatuses([build]);
+      if (reviewStatus) return reviewStatus;
+
+      const [conclusion] = await Build.getConclusions([build]);
+      if (conclusion) return conclusion;
+
+      const [status] = await Build.getStatuses([build]);
+      return status;
     },
     async stats(build) {
       const data = await ScreenshotDiff.query()

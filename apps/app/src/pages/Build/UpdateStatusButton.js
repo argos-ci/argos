@@ -63,9 +63,9 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
             });
             menu.hide();
           }}
-          disabled={status === "success"}
+          disabled={status === "accepted"}
         >
-          <StatusIcon status="success" />
+          <StatusIcon status="accepted" />
           Approve changes
         </MenuItem>
         <MenuItem
@@ -80,7 +80,7 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
           }}
           disabled={status === "rejected"}
         >
-          <StatusIcon status="error" />
+          <StatusIcon status="rejected" />
           Request changes
         </MenuItem>
       </Menu>
