@@ -1,6 +1,7 @@
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
+import { ChevronRightIcon } from "@primer/octicons-react";
 import {
   Card,
   CardHeader,
@@ -13,7 +14,6 @@ import {
   Disclosure,
   Icon,
 } from "@argos-ci/app/src/components";
-import { ChevronRightIcon } from "@primer/octicons-react";
 import { getStatusPrimaryColor } from "../../containers/Status";
 import { ScreenshotDiffStatusIcon } from "./ScreenshotDiffStatusIcons";
 
@@ -48,12 +48,13 @@ function EmptyScreenshot() {
   return <x.div flex={1 / 3} />;
 }
 
-function Screenshot({ screenshot, title }) {
+function Screenshot({ screenshot, title, visible }) {
   if (!screenshot?.url) return <EmptyScreenshot />;
+  const url = visible ? screenshot.url : "";
 
   return (
-    <BaseLink href={screenshot.url} target="_blank" title={title} flex={1 / 3}>
-      <img alt={screenshot.name} src={screenshot.url} />
+    <BaseLink href={url} target="_blank" title={title} flex={1 / 3}>
+      <img alt={screenshot.name} src={url} />
     </BaseLink>
   );
 }
@@ -100,17 +101,32 @@ export function ScreenshotsDiffCard({
 
       <DisclosureContent state={disclosure}>
         <CardBody display="flex" gap={1} p={1}>
-          <Screenshot screenshot={baseScreenshot} title="Base screenshot" />
-          {compareScreenshot ? (
+          {!["stable", "added"].includes(screenshotDiff.status) ? (
             <Screenshot
-              screenshot={compareScreenshot}
-              title="Current screenshot"
+              screenshot={baseScreenshot}
+              title="Base screenshot"
+              visible={disclosure.open}
             />
           ) : (
             <EmptyScreenshot />
           )}
+
+          {compareScreenshot ? (
+            <Screenshot
+              screenshot={compareScreenshot}
+              title="Current screenshot"
+              visible={disclosure.open}
+            />
+          ) : (
+            <EmptyScreenshot />
+          )}
+
           {url ? (
-            <Screenshot screenshot={{ url, name: "diff" }} title="Diff" />
+            <Screenshot
+              screenshot={{ url, name: "diff" }}
+              title="Diff"
+              visible={disclosure.open}
+            />
           ) : (
             <EmptyScreenshot />
           )}
