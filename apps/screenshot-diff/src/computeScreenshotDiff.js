@@ -80,14 +80,14 @@ export async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
     s3Id: uploadResult ? uploadResult.Key : null,
   });
 
-  const buildStatus = await Build.getStatus(screenshotDiff.build);
+  const [conclusion] = await Build.getConclusions([screenshotDiff.build]);
 
-  if (buildStatus === "success") {
+  if (conclusion === "stable") {
     await pushBuildNotification({
       buildId: screenshotDiff.buildId,
       type: "no-diff-detected",
     });
-  } else if (buildStatus === "failure") {
+  } else if (conclusion === "diffDetected") {
     await pushBuildNotification({
       buildId: screenshotDiff.buildId,
       type: "diff-detected",

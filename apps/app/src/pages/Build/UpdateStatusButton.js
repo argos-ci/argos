@@ -78,7 +78,7 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
             });
             menu.hide();
           }}
-          disabled={status === "failure"}
+          disabled={status === "rejected"}
         >
           <StatusIcon status="error" />
           Request changes

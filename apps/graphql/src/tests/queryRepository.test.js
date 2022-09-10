@@ -38,9 +38,12 @@ describe("GraphQL", () => {
         repositoryId: repository.id,
         createdAt: "2017-02-04T17:14:28.167Z",
       });
-      await factory.create("Build", {
+      const build = await factory.create("Build", {
         repositoryId: repository.id,
         createdAt: "2017-02-05T17:14:28.167Z",
+      });
+      await factory.create("ScreenshotDiff", {
+        buildId: build.id,
       });
       const app = await createApolloServerApp(apolloServer, { user });
       const res = await request(app)
@@ -82,12 +85,12 @@ describe("GraphQL", () => {
         edges: [
           {
             number: 2,
-            status: "success",
+            status: "stable",
             createdAt: "2017-02-05T17:14:28.167Z",
           },
           {
             number: 1,
-            status: "success",
+            status: "progress",
             createdAt: "2017-02-04T17:14:28.167Z",
           },
         ],

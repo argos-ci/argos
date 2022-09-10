@@ -1,6 +1,5 @@
 import { useDatabase, factory } from "../testing";
 import { Build } from "./Build";
-import { ScreenshotDiff } from "./ScreenshotDiff";
 
 const baseData = {
   repositoryId: "1",
@@ -88,127 +87,178 @@ describe("models/Build", () => {
   describe("#getStatus", () => {
     let build;
 
-    describe("with all in pending", () => {
-      it("should be pending", async () => {
-        build = await factory.create("Build");
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "pending",
-        });
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "pending",
-        });
+    describe("with in progress job", () => {
+      it("should be error", async () => {
+        build = await factory.create("Build", { jobStatus: "progress" });
         expect(await build.$getStatus()).toBe("pending");
       });
     });
 
-    describe("with one in progress", () => {
-      it("should be progress", async () => {
-        build = await factory.create("Build");
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "pending",
-        });
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "progress",
-        });
-        expect(await build.$getStatus()).toBe("progress");
+    describe("with pending job", () => {
+      it("should be pending", async () => {
+        build = await factory.create("Build", { jobStatus: "pending" });
+        expect(await build.$getStatus()).toBe("pending");
       });
     });
 
-    describe("with all in complete, some score > 0", () => {
-      it("should be failure", async () => {
-        build = await factory.create("Build");
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "complete",
-          score: 10,
+    describe("with complete job", () => {
+      describe("and one in error screenshot diff", () => {
+        it("should be error", async () => {
+          build = await factory.create("Build");
+          await factory.createMany("ScreenshotDiff", [
+            { buildId: build.id, jobStatus: "complete" },
+            { buildId: build.id, jobStatus: "error" },
+          ]);
+          expect(await build.$getStatus()).toBe("error");
         });
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "complete",
-          score: 0,
+      });
+
+      describe("and one pending screenshot diff", () => {
+        it("should be pending", async () => {
+          build = await factory.create("Build");
+          await factory.createMany("ScreenshotDiff", [
+            { buildId: build.id, jobStatus: "complete" },
+            { buildId: build.id, jobStatus: "pending" },
+          ]);
+          expect(await build.$getStatus()).toBe("progress");
         });
-        expect(await build.$getStatus()).toBe("failure");
+      });
+
+      describe("and one in progress screenshot diff", () => {
+        it("should be progress", async () => {
+          build = await factory.create("Build");
+          await factory.createMany("ScreenshotDiff", [
+            { buildId: build.id, jobStatus: "complete" },
+            { buildId: build.id, jobStatus: "progress" },
+          ]);
+          expect(await build.$getStatus()).toBe("progress");
+        });
+      });
+
+      describe("with complete screenshot diffs", () => {
+        it("should be error", async () => {
+          build = await factory.create("Build");
+          await factory.createMany("ScreenshotDiff", [
+            { buildId: build.id, jobStatus: "complete" },
+            { buildId: build.id, jobStatus: "complete" },
+          ]);
+          expect(await build.$getStatus()).toBe("complete");
+        });
       });
     });
 
-    describe("with all in complete, every score == 0", () => {
-      it("should be success", async () => {
-        build = await factory.create("Build", {
-          jobStatus: "complete",
-        });
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "complete",
-          score: 0,
-        });
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "complete",
-          score: 0,
-        });
-        expect(await Build.getStatus(build)).toBe("success");
+    describe("with aborted job", () => {
+      it("should be aborted", async () => {
+        build = await factory.create("Build", { jobStatus: "aborted" });
+        expect(await build.$getStatus()).toBe("aborted");
       });
     });
 
-    describe("with the validationStatus", () => {
-      beforeEach(async () => {
-        build = await factory.create("Build");
-      });
-
-      it("should be failure n°1", async () => {
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "complete",
-          score: 0,
-          validationStatus: ScreenshotDiff.VALIDATION_STATUSES.rejected,
-        });
-        expect(
-          await build.$getStatus({
-            useValidation: true,
-          })
-        ).toBe("failure");
-      });
-
-      it("should be failure n°2", async () => {
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "complete",
-          score: 1,
-          validationStatus: ScreenshotDiff.VALIDATION_STATUSES.unknown,
-        });
-        expect(
-          await build.$getStatus({
-            useValidation: true,
-          })
-        ).toBe("failure");
-      });
-
-      it("should be success", async () => {
-        await factory.create("ScreenshotDiff", {
-          buildId: build.id,
-          jobStatus: "complete",
-          score: 0.2,
-          validationStatus: ScreenshotDiff.VALIDATION_STATUSES.accepted,
-        });
-        expect(
-          await build.$getStatus({
-            useValidation: true,
-          })
-        ).toBe("success");
-      });
-    });
-
-    describe("with an error build", () => {
+    describe("with error job", () => {
       it("should be error", async () => {
-        build = await factory.create("Build", {
-          jobStatus: "error",
-        });
+        build = await factory.create("Build", { jobStatus: "error" });
         expect(await build.$getStatus()).toBe("error");
       });
+    });
+  });
+
+  describe("#getStatuses", () => {
+    it("should return ordered build statuses", async () => {
+      const builds = await factory.createMany("Build", [
+        { jobStatus: "pending" },
+        { jobStatus: "progress" },
+        { jobStatus: "complete" },
+        { jobStatus: "error" },
+        { jobStatus: "aborted" },
+      ]);
+      const statuses = await Build.getStatuses(builds);
+      expect(statuses).toEqual([
+        "pending",
+        "pending",
+        "progress",
+        "error",
+        "aborted",
+      ]);
+    });
+  });
+
+  describe("#getConclusions", () => {
+    it("should return null for uncompleted jobs", async () => {
+      const builds = await factory.createMany("Build", [
+        { jobStatus: "pending" },
+        { jobStatus: "progress" },
+        { jobStatus: "complete" },
+        { jobStatus: "error" },
+        { jobStatus: "aborted" },
+      ]);
+      const conclusions = await Build.getConclusions(builds);
+      expect(conclusions).toEqual([null, null, null, null, null]);
+    });
+
+    it("should return 'stable' when no diff detected", async () => {
+      const build = await factory.create("Build");
+      await factory.createMany("ScreenshotDiff", [
+        { buildId: build.id },
+        { buildId: build.id },
+      ]);
+      const conclusions = await Build.getConclusions([build]);
+      expect(conclusions).toEqual(["stable"]);
+    });
+
+    it("should return 'diff-detected' when diff are detected", async () => {
+      const build = await factory.create("Build");
+      await factory.createMany("ScreenshotDiff", [
+        { buildId: build.id },
+        { buildId: build.id, score: 1.3 },
+      ]);
+      const conclusions = await Build.getConclusions([build]);
+      expect(conclusions).toEqual(["diffDetected"]);
+    });
+  });
+
+  describe("#reviewStatuses", () => {
+    it("should return null for uncompleted jobs", async () => {
+      const build = await factory.create("Build", { jobStatus: "pending" });
+      const conclusions = await Build.getReviewStatuses([build]);
+      expect(conclusions).toEqual([null]);
+    });
+
+    it("should return null for stable build", async () => {
+      const builds = await factory.createMany("Build", 2);
+      await factory.createMany("ScreenshotDiff", 2, { buildId: builds[0].id });
+      await factory.createMany("ScreenshotDiff", 2, { buildId: builds[1].id });
+      const reviewStatuses = await Build.getReviewStatuses(builds);
+      expect(reviewStatuses).toEqual([null, null]);
+    });
+
+    it("should return 'accepted' when all diff are accepted", async () => {
+      const build = await factory.create("Build");
+      await factory.createMany("ScreenshotDiff", [
+        { buildId: build.id, score: "1.3", validationStatus: "accepted" },
+        { buildId: build.id, score: "0.4", validationStatus: "accepted" },
+      ]);
+      const reviewStatuses = await Build.getReviewStatuses([build]);
+      expect(reviewStatuses).toEqual(["accepted"]);
+    });
+
+    it("should return 'rejected' when one diff is rejected", async () => {
+      const build = await factory.create("Build");
+      await factory.createMany("ScreenshotDiff", [
+        { buildId: build.id, score: "1.3", validationStatus: "accepted" },
+        { buildId: build.id, score: "0.4", validationStatus: "rejected" },
+      ]);
+      const reviewStatuses = await Build.getReviewStatuses([build]);
+      expect(reviewStatuses).toEqual(["rejected"]);
+    });
+
+    it("should return null in other case", async () => {
+      const build = await factory.create("Build");
+      await factory.createMany("ScreenshotDiff", [
+        { buildId: build.id, score: "1.3", validationStatus: "accepted" },
+        { buildId: build.id, score: "0.4", validationStatus: "" },
+      ]);
+      const reviewStatuses = await Build.getReviewStatuses([build]);
+      expect(reviewStatuses).toEqual([null]);
     });
   });
 
