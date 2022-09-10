@@ -2,7 +2,13 @@ import * as React from "react";
 import { x } from "@xstyled/styled-components";
 
 export const Card = (props) => (
-  <x.div borderRadius="md" border={1} borderColor="border" {...props} />
+  <x.div
+    borderRadius="md"
+    border={1}
+    borderColor="border"
+    overflow="clip"
+    {...props}
+  />
 );
 
 export const CardBody = (props) => <x.div p={3} {...props} />;
