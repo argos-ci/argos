@@ -176,7 +176,7 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
   );
 }
 
-function RepositoriesList({ repositories }) {
+function RepositoriesList({ repositories, ...props }) {
   if (repositories.length === 0) {
     return (
       <Container>
@@ -201,7 +201,7 @@ function RepositoriesList({ repositories }) {
   }
 
   return (
-    <Container overflowX="scroll">
+    <Container overflowX="scroll" {...props}>
       <Table>
         <Thead>
           <Tr>
@@ -255,6 +255,7 @@ function Owners({ owners }) {
     .sort((a, b) => (b.enabled === a.enabled ? 0 : b.enabled ? 1 : -1));
 
   const activeRepositories = repositories.filter(({ enabled }) => enabled);
+  const showFilterButton = repositories.length > activeRepositories.length;
 
   const [activeFilter, setActiveFilter] = React.useState(
     activeRepositories.length !== 0
@@ -292,18 +293,20 @@ function Owners({ owners }) {
             .
           </x.div>
 
-          <Button
-            variant="neutral"
-            onClick={() => setActiveFilter((prev) => !prev)}
-            alignSelf="end"
-          >
-            <IllustratedText
-              icon={activeFilter ? EyeClosedIcon : EyeIcon}
-              field
+          {showFilterButton ? (
+            <Button
+              variant="neutral"
+              onClick={() => setActiveFilter((prev) => !prev)}
+              alignSelf="end"
             >
-              {!activeFilter ? "Hide" : "Show"} deactivated repositories
-            </IllustratedText>
-          </Button>
+              <IllustratedText
+                icon={activeFilter ? EyeClosedIcon : EyeIcon}
+                field
+              >
+                {!activeFilter ? "Hide" : "Show"} deactivated repositories
+              </IllustratedText>
+            </Button>
+          ) : null}
         </x.div>
       </Container>
       <RepositoriesList
