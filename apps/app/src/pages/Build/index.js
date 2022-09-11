@@ -285,9 +285,8 @@ const BuildDetails = ({
 
   const { observe, inView } = useInView();
 
-  const [showStableScreenshots, setShowStableScreenshots] = React.useState(
-    pageInfo.totalCount === 0
-  );
+  const [showStableScreenshots, setShowStableScreenshots] =
+    React.useState(false);
 
   const diffGroups = screenshotDiffs.reduce(
     (groups, screenshotDiff) => ({
@@ -364,8 +363,7 @@ const BuildDetails = ({
             mt={5}
             ref={observe}
           >
-            {stats.stableScreenshotCount > 0 &&
-            stats.stableScreenshotCount < pageInfo.totalCount ? (
+            {stats.stableScreenshotCount > 0 ? (
               <Button
                 variant="neutral"
                 onClick={() => setShowStableScreenshots((prev) => !prev)}
