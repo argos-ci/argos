@@ -131,21 +131,26 @@ function BuildsList({ repository }) {
           </Tr>
         </Thead>
         <Tbody>
-          {builds.map((build, index) => {
+          {builds.map((build) => {
             return (
               <Tr
                 key={build.id}
-                backgroundColor={{
-                  _: index % 2 ? "highlight-background" : "background",
-                  hover: "background-hover",
-                }}
+                backgroundColor={{ hover: "background-hover" }}
                 as={BaseLink}
                 to={`${build.number}`}
               >
-                <Td>
+                <Td
+                  as="div"
+                  textOverflow="ellipsis"
+                  overflow="hidden"
+                  maxW={200}
+                >
                   #{build.number}
                   {build.name !== "default" && (
-                    <x.span color="secondary-text"> - {build.name}</x.span>
+                    <x.span color="secondary-text">
+                      {" "}
+                      - <x.span whiteSpace="nowrap">{build.name}</x.span>
+                    </x.span>
                   )}
                 </Td>
 
@@ -157,7 +162,14 @@ function BuildsList({ repository }) {
 
                 <Td>
                   <x.div display="flex" flexDirection="column">
-                    <IllustratedText icon={GitBranchIcon} whiteSpace="nowrap">
+                    <IllustratedText
+                      icon={GitBranchIcon}
+                      as="div"
+                      textOverflow="ellipsis"
+                      overflow="hidden"
+                      whiteSpace="nowrap"
+                      maxW={300}
+                    >
                       {build.compareScreenshotBucket.branch}
                     </IllustratedText>
                     <IllustratedText icon={CommitIcon} color="secondary-text">
