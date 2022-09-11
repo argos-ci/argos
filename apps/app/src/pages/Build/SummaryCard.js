@@ -49,7 +49,7 @@ const BranchNameField = ({ build, ...props }) => {
   return (
     <IllustratedText field icon={GitBranchIcon} {...props}>
       <Link
-        href={`https://github.com/${ownerLogin}/${repositoryName}/${build.compareScreenshotBucket.branch}`}
+        href={`https://github.com/${ownerLogin}/${repositoryName}/tree/${build.compareScreenshotBucket.branch}`}
       >
         {build.compareScreenshotBucket.branch}
       </Link>
