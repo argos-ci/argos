@@ -23,7 +23,9 @@ export function App() {
       <Helmet
         titleTemplate="%s • Argos"
         defaultTitle="Argos - Automated visual testing"
-      />
+      >
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <GlobalStyle />
       <BrowserRouter>
         <ScrollToTop />
