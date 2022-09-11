@@ -15,11 +15,9 @@ export const Tooltip = React.forwardRef(({ children, ...props }, ref) => {
       {(tooltipProps) => (
         <x.div
           {...tooltipProps}
-          border={1}
-          borderColor="border-active"
           px={3}
           py={1}
-          backgroundColor="background"
+          backgroundColor="tooltip"
           borderRadius="md"
           fontWeight="500"
         >

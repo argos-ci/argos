@@ -24,7 +24,10 @@ import {
   UpdateStatusButtonRepositoryFragment,
 } from "./UpdateStatusButton";
 import { EyeClosedIcon, EyeIcon } from "@primer/octicons-react";
-import { getStatusPrimaryColor } from "../../containers/Status";
+import {
+  getBuildStatusLabel,
+  getStatusPrimaryColor,
+} from "../../containers/Status";
 import {
   StickySummaryMenu,
   SummaryCard,
@@ -36,6 +39,10 @@ import {
   ScreenshotsDiffCardFragment,
 } from "./ScreenshotsDiffCard";
 import { ScreenshotDiffStatusIcon } from "./ScreenshotDiffStatusIcons";
+import {
+  BuildStatusBadge,
+  BuildStatusBadgeFragment,
+} from "../../containers/BuildStatusBadge";
 
 const ScreenshotDiffsPageFragment = gql`
   fragment ScreenshotDiffsPageFragment on ScreenshotDiffResult {
@@ -48,10 +55,10 @@ const ScreenshotDiffsPageFragment = gql`
       id
       score
       status
+
       ...ScreenshotsDiffCardFragment
     }
   }
-
   ${ScreenshotsDiffCardFragment}
 `;
 
@@ -92,10 +99,13 @@ const BUILD_QUERY = gql`
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
       ...UpdateStatusButtonRepositoryFragment
+
       build(number: $buildNumber) {
         id
         ...SummaryCardFragment
         ...UpdateStatusButtonBuildFragment
+        ...BuildStatusBadgeFragment
+
         screenshotDiffs(
           where: { passing: false }
           offset: $offset
@@ -103,6 +113,7 @@ const BUILD_QUERY = gql`
         ) {
           ...ScreenshotDiffsPageFragment
         }
+
         stats {
           failedScreenshotCount
           addedScreenshotCount
@@ -117,6 +128,7 @@ const BUILD_QUERY = gql`
   ${SummaryCardFragment}
   ${ScreenshotDiffsPageFragment}
   ${UpdateStatusButtonBuildFragment}
+  ${BuildStatusBadgeFragment}
 `;
 
 function BuildStat({ status, count, label }) {
@@ -310,7 +322,12 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
         flexWrap="wrap"
         mb={3}
       >
-        <PrimaryTitle mb={0}>Build #{buildNumber}</PrimaryTitle>
+        <x.div display="flex" alignItems="center" gap={3}>
+          <PrimaryTitle mb={0}>Build #{buildNumber}</PrimaryTitle>
+          <BuildStatusBadge build={build}>
+            {getBuildStatusLabel(build.status)}
+          </BuildStatusBadge>
+        </x.div>
 
         <x.div
           display="flex"
@@ -344,9 +361,9 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
 
       <SummaryCard repository={data.repository} build={build} />
 
-      {build.status === "pending" ? (
+      {["pending", "progress"].includes(build.status) ? (
         <LoadingAlert my={5} flexDirection="column">
-          Build in progress
+          {getBuildStatusLabel(build.status)}
         </LoadingAlert>
       ) : (
         <>
@@ -360,7 +377,6 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
             ref={observe}
           >
             <Button
-              borderRadius="md"
               variant="neutral"
               onClick={() => setShowStableScreenshots((prev) => !prev)}
               justifyContent="start"

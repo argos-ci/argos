@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useParams } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
 import {
@@ -9,8 +10,6 @@ import {
 } from "@primer/octicons-react";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardBody,
   Link,
   IllustratedText,
@@ -21,22 +20,23 @@ import {
   UpdateStatusButtonBuildFragment,
 } from "./UpdateStatusButton";
 import {
-  StatusIcon,
-  getStatusText,
-  getStatusColor,
+  getBuildStatusLabel,
+  getStatusPrimaryColor,
 } from "../../containers/Status";
-import { useParams } from "react-router-dom";
+import { BuildStatusBadge } from "../../containers/BuildStatusBadge";
 
 export const SummaryCardFragment = gql`
   fragment SummaryCardFragment on Build {
     createdAt
     name
+    number
+    status
+    type
     compareScreenshotBucket {
       id
       branch
       commit
     }
-    status
     ...UpdateStatusButtonBuildFragment
   }
 
@@ -72,9 +72,6 @@ const CommitFields = ({ build, ...props }) => {
 };
 
 export function StickySummaryMenu({ repository, build, ...props }) {
-  const { ownerLogin, repositoryName } = useParams();
-  const githubRepoUrl = `https://github.com/${ownerLogin}/${repositoryName}`;
-
   return (
     <x.div
       position="sticky"
@@ -82,7 +79,7 @@ export function StickySummaryMenu({ repository, build, ...props }) {
       zIndex={200}
       backgroundColor="highlight-background"
       borderLeft={3}
-      borderColor={getStatusColor(build.status)}
+      borderColor={getStatusPrimaryColor(build.status)}
       borderBottom={1}
       borderBottomColor="border"
       display="flex"
@@ -92,34 +89,11 @@ export function StickySummaryMenu({ repository, build, ...props }) {
       gap={4}
       {...props}
     >
-      <x.div display="flex" gap={2}>
-        <IllustratedText
-          icon={GitBranchIcon}
-          field
-          overflow="hidden"
-          fontSize="lg"
-          lineHeight={8}
-        >
-          <Link
-            href={`${githubRepoUrl}/${build.compareScreenshotBucket.branch}`}
-            whiteSpace="nowrap"
-            textOverflow="ellipsis"
-            overflow="hidden"
-          >
-            {build.compareScreenshotBucket.branch}
-          </Link>
-        </IllustratedText>
-        {build.name === "default" && (
-          <IllustratedText
-            icon={BookmarkIcon}
-            color="secondary-text"
-            field
-            gap={1}
-            fontSize="sm"
-          >
-            {build.name}
-          </IllustratedText>
-        )}
+      <x.div display="flex" gap={3} alignItems="center">
+        Build #{build.number}
+        <BuildStatusBadge build={build} py={0.5}>
+          {getBuildStatusLabel(build.status)}
+        </BuildStatusBadge>
       </x.div>
 
       <UpdateStatusButton repository={repository} build={build} flex={1} />
@@ -128,25 +102,14 @@ export function StickySummaryMenu({ repository, build, ...props }) {
 }
 
 export function SummaryCard({ build }) {
-  const statusColor = getStatusColor(build.status);
-
   return (
-    <Card borderLeft={2} borderLeftColor={statusColor} borderRadius="0 md md 0">
-      <CardHeader>
-        <CardTitle>
-          <BranchNameField build={build} />
-        </CardTitle>
-      </CardHeader>
-
+    <Card>
       <CardBody display="grid" gridTemplateColumns={{ _: 1, sm: 2 }} gap={1}>
         <IllustratedText field icon={ClockIcon}>
           <Time date={build.createdAt} format="LLL" />
         </IllustratedText>
 
-        <x.div display="flex" alignItems="center" gap={2}>
-          <StatusIcon status={build.status} />
-          {getStatusText(build.status)}
-        </x.div>
+        <BranchNameField build={build} />
 
         {build.name !== "default" ? (
           <IllustratedText field icon={BookmarkIcon}>

@@ -1,18 +1,33 @@
 import { ValidationError } from "objection";
 import config from "@argos-ci/config";
-import {
-  Model,
-  mergeSchemas,
-  timestampsSchema,
-  jobModelSchema,
-  reduceJobStatus,
-} from "../util";
+import { Model, mergeSchemas, timestampsSchema, jobModelSchema } from "../util";
 import { User } from "./User";
 import { ScreenshotBucket } from "./ScreenshotBucket";
 import { ScreenshotDiff } from "./ScreenshotDiff";
 import { Repository } from "./Repository";
 
 const NEXT_NUMBER = Symbol("nextNumber");
+
+function reduceBuildStatuses(buildStatuses) {
+  const diffStatuses = buildStatuses.map(({ jobStatus }) => jobStatus);
+
+  if (diffStatuses.includes("error")) {
+    return "error";
+  }
+
+  if (diffStatuses.length === 1 && diffStatuses[0] === "complete") {
+    return "complete";
+  }
+
+  return "progress";
+}
+
+function buildStatusesQuery(buildIds) {
+  return ScreenshotDiff.query()
+    .select("buildId", "jobStatus")
+    .whereIn("buildId", buildIds)
+    .groupBy("buildId", "jobStatus");
+}
 
 export class Build extends Model {
   static get tableName() {
@@ -29,6 +44,7 @@ export class Build extends Model {
         number: { type: "integer" },
         externalId: { type: ["string", null] },
         batchCount: { type: ["integer", null] },
+        type: { type: ["string", null] },
       },
     });
   }
@@ -134,56 +150,82 @@ export class Build extends Model {
     return this.reload(queryContext);
   }
 
-  static async getStatus(
-    build,
-    { useScore = true, useValidation = false } = {}
-  ) {
-    // If something bad happened at the build level
-    if (build.jobStatus !== "complete") {
-      return build.jobStatus;
-    }
-
-    if (!build.screenshotDiffs) {
-      await build.$fetchGraph("screenshotDiffs");
-    }
-
-    const { screenshotDiffs } = build;
-
-    const jobStatus = reduceJobStatus(
-      screenshotDiffs.map((screenshotDiff) => screenshotDiff.jobStatus)
+  /** State of Argos processing builds
+   * build.status: pending | progress | complete | error | aborted
+   */
+  static async getStatuses(builds) {
+    const buildStatuses = await buildStatusesQuery(
+      builds
+        .filter(({ jobStatus }) => jobStatus === "complete")
+        .map(({ id }) => id)
     );
 
-    if (jobStatus !== "complete") return jobStatus;
-
-    if (!useScore && !useValidation) {
-      throw new Error(`"useScore" or "useValidation" is required`);
-    }
-
-    if (useScore && useValidation) {
-      const hasRejectedOrDiffs = screenshotDiffs.some(
-        ({ score, validationStatus }) =>
-          validationStatus === ScreenshotDiff.VALIDATION_STATUSES.rejected ||
-          (validationStatus === ScreenshotDiff.VALIDATION_STATUSES.unknown &&
-            score > 0)
+    return builds.map((build) => {
+      if (["error", "aborted"].includes(build.jobStatus)) {
+        return build.jobStatus;
+      }
+      if (build.jobStatus !== "complete") {
+        return "pending";
+      }
+      return reduceBuildStatuses(
+        buildStatuses.filter(({ buildId }) => buildId === build.id)
       );
-
-      return hasRejectedOrDiffs ? "failure" : "success";
-    }
-
-    if (useScore) {
-      const hasDiffs = screenshotDiffs.some(({ score }) => score > 0);
-      return hasDiffs ? "failure" : "success";
-    }
-
-    const hasRejected = screenshotDiffs.some(
-      ({ validationStatus }) =>
-        validationStatus === ScreenshotDiff.VALIDATION_STATUSES.rejected
-    );
-    return hasRejected ? "failure" : "success";
+    });
   }
 
-  $getStatus(options) {
-    return this.constructor.getStatus(this, options);
+  async $getStatus(options) {
+    const statuses = await this.constructor.getStatuses([this], options);
+    return statuses[0];
+  }
+
+  /** Builds conclusions
+   * build.conclusion: null | stable | diffDetected
+   */
+  static async getConclusions(builds) {
+    const buildIds = builds.map(({ id }) => id);
+    const [buildStatuses, buildsDiffCount] = await Promise.all([
+      this.getStatuses(builds),
+      ScreenshotDiff.query()
+        .select("buildId")
+        .count()
+        .where("score", ">", 0)
+        .whereIn("buildId", buildIds)
+        .groupBy("buildId"),
+    ]);
+    return builds.map((build, index) => {
+      if (buildStatuses[index] !== "complete") return null;
+      const buildDiffCount = buildsDiffCount.find(
+        ({ buildId }) => buildId === build.id
+      );
+      return buildDiffCount && buildDiffCount.count > 0
+        ? "diffDetected"
+        : "stable";
+    });
+  }
+
+  /** Build review status
+   * build.reviewStatus: null | accepted | rejected
+   */
+  static async getReviewStatuses(builds) {
+    const buildConclusions = await this.getConclusions(builds);
+    const buildIds = builds
+      .filter((build, index) => buildConclusions[index] === "diffDetected")
+      .map(({ id }) => id);
+
+    const buildStatuses = await ScreenshotDiff.query()
+      .select("buildId", "validationStatus")
+      .whereIn("buildId", buildIds)
+      .groupBy("buildId", "validationStatus");
+
+    return builds.map((build, index) => {
+      if (buildConclusions[index] !== "diffDetected") return null;
+      const status = buildStatuses
+        .filter(({ buildId }) => buildId === build.id)
+        .map(({ validationStatus }) => validationStatus);
+      if (status.includes("rejected")) return "rejected";
+      if (status.length === 1 && status[0] === "accepted") return "accepted";
+      return null;
+    });
   }
 
   static getUsers(buildId, { trx } = {}) {

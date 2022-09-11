@@ -25,6 +25,7 @@ export const theme = {
     link: defaultTheme.colors["violet-300"],
     "primary-text": "white",
     "secondary-text": defaultTheme.colors["gray-400"],
+    tooltip: defaultTheme.colors["gray-700"],
   },
   sizes: {
     ...defaultTheme.sizes,

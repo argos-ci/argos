@@ -1,28 +1,33 @@
 import * as React from "react";
 import styled, { x } from "@xstyled/styled-components";
-import { LinkBlock } from "./Link";
 
 export const Table = (props) => (
-  <x.table w={1} borderCollapse="collapse" textAlign="left" {...props} />
+  <x.div w={1} borderCollapse="collapse" display="table" {...props} />
 );
 
-export const Tr = (props) => (
-  <x.tr borderBottom={1} borderColor="border" {...props} />
-);
+export const Tr = styled.box`
+  border-bottom: 1;
+  border-color: border;
+  display: table-row;
+`;
 
-export const Thead = styled.theadBox`
+export const Thead = styled.box`
   background-color: highlight-background;
+  display: table-header-group;
 
-  tr {
+  ${Tr} {
     border-bottom: 0;
   }
 `;
 
-export const Tbody = (props) => <x.tbody {...props} />;
+export const Tbody = styled.box`
+  display: table-row-group;
+`;
 
-export const Th = styled.thBox`
-  padding: 2;
+export const Th = styled.box`
+  padding: 5;
   font-weight: 500;
+  display: table-cell;
 
   &:first-of-type {
     padding-left: 4;
@@ -32,9 +37,10 @@ export const Th = styled.thBox`
   }
 `;
 
-export const Td = styled.tdBox`
-  padding: 2;
+export const Td = styled.box`
+  padding: 3 5;
   font-weight: 500;
+  display: table-cell;
 
   &:first-of-type {
     padding-left: 4;
@@ -43,16 +49,3 @@ export const Td = styled.tdBox`
     padding-right: 4;
   }
 `;
-
-export const TdLink = (props) => (
-  <x.a
-    as={LinkBlock}
-    display="flex"
-    py={4}
-    px={3}
-    border={1}
-    borderColor={{ _: "background", hover: "background-hover" }}
-    whiteSpace="nowrap"
-    {...props}
-  />
-);

@@ -1,15 +1,11 @@
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
-import {
-  GitBranchIcon,
-  CommitIcon,
-  ClockIcon,
-  BookmarkIcon,
-} from "@primer/octicons-react";
+import { GitBranchIcon, CommitIcon } from "@primer/octicons-react";
 import moment from "moment";
 import { gql } from "graphql-tag";
-import { getStatusPrimaryColor } from "../../containers/Status";
+import { getBuildStatusLabel } from "../../containers/Status";
 import {
+  BaseLink,
   Button,
   Container,
   IllustratedText,
@@ -19,12 +15,12 @@ import {
   Table,
   Tbody,
   Td,
-  TdLink,
   Th,
   Thead,
   Tr,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
+import { BuildStatusBadge } from "../../containers/BuildStatusBadge";
 import { GettingStarted } from "./GettingStarted";
 import { getPossessiveForm } from "../../modules/utils";
 import { hasWritePermission } from "../../modules/permissions";
@@ -94,10 +90,12 @@ function BuildsList({ repository }) {
 
   if (loading)
     return (
-      <LoadingAlert>
-        Argos fetch <x.span fontWeight={700}>{repository.name}</x.span> builds.
-        It should not take long.
-      </LoadingAlert>
+      <Container>
+        <LoadingAlert>
+          Argos fetch <x.span fontWeight={700}>{repository.name}</x.span>{" "}
+          builds. It should not take long.
+        </LoadingAlert>
+      </Container>
     );
 
   const {
@@ -108,76 +106,68 @@ function BuildsList({ repository }) {
 
   if (pageInfo.totalCount === 0) {
     if (hasWritePermission(data.repository)) {
-      return <GettingStarted repository={repository} />;
+      return (
+        <Container>
+          <GettingStarted repository={repository} />
+        </Container>
+      );
     }
-    return <p>No build found</p>;
+    return (
+      <Container>
+        <p>No build found</p>
+      </Container>
+    );
   }
 
   return (
-    <x.div maxW={1} overflowX="scroll">
+    <Container overflowX="scroll">
       <Table>
         <Thead>
           <Tr>
-            <Th>
-              <x.div ml={7}>Branch</x.div>
-            </Th>
-            <Th pl={5}>Build</Th>
-            <Th pl={5}>Commit</Th>
-            <Th pl={3}>Date</Th>
+            <Th>Build</Th>
+            <Th>Status</Th>
+            <Th>Branch / Commit</Th>
+            <Th>Date</Th>
           </Tr>
         </Thead>
         <Tbody>
-          {builds.map((build) => {
-            const statusColor = getStatusPrimaryColor(build.status);
-
+          {builds.map((build, index) => {
             return (
-              <tr key={build.id}>
+              <Tr
+                key={build.id}
+                backgroundColor={{
+                  _: index % 2 ? "highlight-background" : "background",
+                  hover: "background-hover",
+                }}
+                as={BaseLink}
+                to={`${build.number}`}
+              >
                 <Td>
-                  <TdLink
-                    borderRadius="0 md md 0"
-                    borderLeft={1}
-                    borderLeftColor={{ _: statusColor, hover: statusColor }}
-                    to={`${build.number}`}
-                    pr={10}
-                  >
-                    <IllustratedText icon={GitBranchIcon}>
-                      {build.compareScreenshotBucket.branch}{" "}
-                      {build.name !== "default" && (
-                        <IllustratedText
-                          ml={1}
-                          icon={BookmarkIcon}
-                          color="secondary-text"
-                          field
-                        >
-                          {build.name}
-                        </IllustratedText>
-                      )}
+                  #{build.number}
+                  {build.name !== "default" && (
+                    <x.span color="secondary-text"> - {build.name}</x.span>
+                  )}
+                </Td>
+
+                <Td verticalAlign="top">
+                  <BuildStatusBadge build={build}>
+                    {getBuildStatusLabel(build.status)}
+                  </BuildStatusBadge>
+                </Td>
+
+                <Td>
+                  <x.div display="flex" flexDirection="column">
+                    <IllustratedText icon={GitBranchIcon} whiteSpace="nowrap">
+                      {build.compareScreenshotBucket.branch}
                     </IllustratedText>
-                  </TdLink>
-                </Td>
-                <Td>
-                  <TdLink to={`${build.number}`} color={statusColor}>
-                    #{build.number} {build.status}
-                  </TdLink>
-                </Td>
-                <Td>
-                  <TdLink
-                    color={{ _: "secondary-text", hover: "primary-text" }}
-                    target="_blank"
-                    href={`https://github.com/${repository.owner.login}/${repository.name}/commit/${build.compareScreenshotBucket.commit}`}
-                  >
-                    <IllustratedText icon={CommitIcon}>
+                    <IllustratedText icon={CommitIcon} color="secondary-text">
                       {build.compareScreenshotBucket.commit.slice(0, 7)}
                     </IllustratedText>
-                  </TdLink>
+                  </x.div>
                 </Td>
 
-                <Td color="secondary-text" whiteSpace="nowrap" px={3}>
-                  <IllustratedText icon={ClockIcon}>
-                    {moment(build.createdAt).fromNow()}
-                  </IllustratedText>
-                </Td>
-              </tr>
+                <Td whiteSpace="nowrap">{moment(build.createdAt).fromNow()}</Td>
+              </Tr>
             );
           })}
         </Tbody>
@@ -188,15 +178,17 @@ function BuildsList({ repository }) {
           Load More {moreLoading && <Loader />}
         </Button>
       )}
-    </x.div>
+    </Container>
   );
 }
 
 export function RepositoryBuilds({ repository }) {
   return (
-    <Container>
-      <PrimaryTitle>{getPossessiveForm(repository.name)} Builds</PrimaryTitle>
+    <>
+      <Container>
+        <PrimaryTitle>{getPossessiveForm(repository.name)} Builds</PrimaryTitle>
+      </Container>
       <BuildsList repository={repository} />
-    </Container>
+    </>
   );
 }

@@ -2,7 +2,6 @@
 import * as React from "react";
 import { gql } from "graphql-tag";
 import { x } from "@xstyled/styled-components";
-import { Group } from "ariakit/group";
 import { Query } from "../containers/Apollo";
 import { useUser } from "../containers/User";
 import { isUserSyncing } from "../modules/user";
@@ -44,10 +43,16 @@ import {
   KeyIcon,
   GearIcon,
   LockIcon,
+  EyeClosedIcon,
+  EyeIcon,
 } from "@primer/octicons-react";
-import { getStatusColor, StatusIcon } from "../containers/Status";
 import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { hasWritePermission } from "../modules/permissions";
+import {
+  BuildStatusBadge,
+  BuildStatusBadgeFragment,
+} from "../containers/BuildStatusBadge";
+import { getBuildStatusLabel } from "../containers/Status";
 
 const HOME_OWNERS_REPOSITORIES_QUERY = gql`
   query HOME_OWNERS_REPOSITORIES_QUERY {
@@ -69,13 +74,15 @@ const HOME_OWNERS_REPOSITORIES_QUERY = gql`
           edges {
             id
             updatedAt
-            status
             number
+            ...BuildStatusBadgeFragment
           }
         }
       }
     }
   }
+
+  ${BuildStatusBadgeFragment}
 `;
 
 function RepositoryNameCell({
@@ -86,7 +93,7 @@ function RepositoryNameCell({
 }) {
   return (
     <Td color="secondary-text" py={5} fontSize="lg" {...props}>
-      <Link color="secondary-text" to={`/${owner.login}`}>
+      <Link color="secondary-text" to={`/${owner.login}`} whiteSpace="nowrap">
         <OwnerAvatar
           owner={owner}
           size="sm"
@@ -96,14 +103,16 @@ function RepositoryNameCell({
         />
         {owner.login}
       </Link>{" "}
-      /{" "}
-      <Link
-        color="primary-text"
-        fontWeight={600}
-        to={`${repositoryUrl}/builds`}
-      >
-        {repositoryName}
-      </Link>
+      <x.span whiteSpace="nowrap">
+        /{" "}
+        <Link
+          color="primary-text"
+          fontWeight={600}
+          to={`${repositoryUrl}/builds`}
+        >
+          {repositoryName}
+        </Link>
+      </x.span>
     </Td>
   );
 }
@@ -111,36 +120,41 @@ function RepositoryNameCell({
 function ActionsMenuCell({ repository, repositoryUrl }) {
   const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
 
-  if (!hasWritePermission(repository))
-    return (
-      <Td>
-        <Tag display="block" py={1} color="text-secondary">
-          <Icon as={LockIcon} />
-        </Tag>
-      </Td>
-    );
-
   return (
-    <Td>
-      <TagButton as={MenuButton} state={menu}>
-        <Icon as={KebabHorizontalIcon} />
-      </TagButton>
-      <Menu aria-label="User settings" state={menu}>
-        <MenuTitle>Repositories actions</MenuTitle>
-        <MenuSeparator />
-        <MenuItem
-          state={menu}
-          as={BaseLink}
-          to={`${repositoryUrl}/settings#argos-token`}
-        >
-          <MenuIcon as={KeyIcon} />
-          Get token
-        </MenuItem>
-        <MenuItem state={menu} as={BaseLink} to={`${repositoryUrl}/settings`}>
-          <MenuIcon as={GearIcon} size={24} />
-          Settings
-        </MenuItem>
-      </Menu>
+    <Td verticalAlign="middle">
+      {hasWritePermission(repository) ? (
+        <>
+          <TagButton as={MenuButton} state={menu} py={2}>
+            <Icon as={KebabHorizontalIcon} />
+          </TagButton>
+          <Menu aria-label="User settings" state={menu}>
+            <MenuTitle>Repositories actions</MenuTitle>
+            <MenuSeparator />
+            <MenuItem
+              state={menu}
+              as={BaseLink}
+              to={`${repositoryUrl}/settings#argos-token`}
+            >
+              <MenuIcon as={KeyIcon} />
+              Get token
+            </MenuItem>
+            <MenuItem
+              state={menu}
+              as={BaseLink}
+              to={`${repositoryUrl}/settings`}
+            >
+              <MenuIcon as={GearIcon} size={24} />
+              Settings
+            </MenuItem>
+          </Menu>
+        </>
+      ) : (
+        <>
+          <Tag display="block" py={1} color="text-secondary">
+            <Icon as={LockIcon} />
+          </Tag>
+        </>
+      )}
     </Td>
   );
 }
@@ -149,15 +163,15 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
   if (!build) return <Td>-</Td>;
 
   return (
-    <Td>
-      <TagButton
+    <Td verticalAlign="middle">
+      <BuildStatusBadge
         as={LinkBlock}
         to={`${repositoryUrl}/builds/${build.number}`}
-        borderColor={getStatusColor(status)}
+        build={build}
         {...props}
       >
-        <StatusIcon status={build.status} />#{build.number}
-      </TagButton>
+        #{build.number} {getBuildStatusLabel(build.status)}
+      </BuildStatusBadge>
     </Td>
   );
 }
@@ -185,44 +199,49 @@ function RepositoriesList({ repositories, ...props }) {
   }
 
   return (
-    <Table {...props}>
-      <Thead>
-        <Tr>
-          <Th>Repository name</Th>
-          <Th width={120}>Last Build</Th>
-          <Th width={120}>Status</Th>
-          <Th width={80}>Actions</Th>
-        </Tr>
-      </Thead>
-      <Tbody>
-        {repositories.map(({ owner, ...repository }) => {
-          const repositoryUrl = `/${owner.login}/${repository.name}`;
-          const lastBuild = repository.builds?.edges?.[0];
+    <Container overflowX="scroll">
+      <Table {...props}>
+        <Thead>
+          <Tr>
+            <Th>Organization / Repository</Th>
+            <Th>Last Build</Th>
+            <Th>Status</Th>
+            <Th>Actions</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {repositories.map(({ owner, ...repository }) => {
+            const repositoryUrl = `/${owner.login}/${repository.name}`;
+            const lastBuild = repository.builds?.edges?.[0];
 
-          return (
-            <Tr key={`${owner.login}-${repository.name}`}>
-              <RepositoryNameCell
-                owner={owner}
-                repositoryName={repository.name}
-                repositoryUrl={repositoryUrl}
-              />
-              <BuildTagCell build={lastBuild} repositoryUrl={repositoryUrl} />
-              <Td>
-                <Tag
-                  color={repository.enabled ? "primary-text" : "secondary-text"}
-                >
-                  {repository.enabled ? "Active" : "Deactivated"}
-                </Tag>
-              </Td>
-              <ActionsMenuCell
-                repository={repository}
-                repositoryUrl={repositoryUrl}
-              />
-            </Tr>
-          );
-        })}
-      </Tbody>
-    </Table>
+            return (
+              <Tr key={`${owner.login}-${repository.name}`}>
+                <RepositoryNameCell
+                  owner={owner}
+                  repositoryName={repository.name}
+                  repositoryUrl={repositoryUrl}
+                />
+                <BuildTagCell build={lastBuild} repositoryUrl={repositoryUrl} />
+                <Td verticalAlign="middle">
+                  <Tag
+                    color={
+                      repository.enabled ? "primary-text" : "secondary-text"
+                    }
+                    py={1}
+                  >
+                    {repository.enabled ? "Active" : "Deactivated"}
+                  </Tag>
+                </Td>
+                <ActionsMenuCell
+                  repository={repository}
+                  repositoryUrl={repositoryUrl}
+                />
+              </Tr>
+            );
+          })}
+        </Tbody>
+      </Table>
+    </Container>
   );
 }
 
@@ -240,57 +259,56 @@ function Owners({ owners }) {
   );
 
   return (
-    <Container>
-      <PrimaryTitle>Organizations and Repositories</PrimaryTitle>
+    <>
+      <Container>
+        <PrimaryTitle>Organizations and Repositories</PrimaryTitle>
 
-      <x.div
-        display="flex"
-        justifyContent="space-between"
-        alignItems="flex-end"
-        gap={10}
-      >
-        <x.div>
-          Don't see your repo?{" "}
-          <IllustratedText
-            as={Link}
-            reverse
-            href={config.get("github.appUrl")}
-            target="_blank"
-            fontWeight="normal"
-            icon={LinkExternalIcon}
-          >
-            Manage access restrictions
-          </IllustratedText>{" "}
-          or{" "}
-          <Link onClick={() => window.location.reload()}>reload the page</Link>.
-        </x.div>
+        <x.div
+          display="flex"
+          justifyContent="space-between"
+          alignItems="flex-end"
+          flexWrap="wrap"
+          columnGap={10}
+          rowGap={3}
+        >
+          <x.div flex="1 0 300px">
+            Don't see your repo?{" "}
+            <IllustratedText
+              as={Link}
+              reverse
+              href={config.get("github.appUrl")}
+              target="_blank"
+              fontWeight="normal"
+              icon={LinkExternalIcon}
+            >
+              Manage access restrictions
+            </IllustratedText>{" "}
+            or{" "}
+            <Link onClick={() => window.location.reload()}>
+              reload the page
+            </Link>
+            .
+          </x.div>
 
-        <x.div as={Group} display="flex">
           <Button
-            borderRadius="md 0 0 md"
             variant="neutral"
-            py={2}
-            disabled={activeFilter}
-            onClick={() => setActiveFilter(true)}
+            onClick={() => setActiveFilter((prev) => !prev)}
+            alignSelf="end"
           >
-            Active only
-          </Button>
-          <Button
-            py={2}
-            borderRadius="0 md md 0"
-            variant="neutral"
-            disabled={!activeFilter}
-            onClick={() => setActiveFilter(false)}
-          >
-            Show all
+            <IllustratedText
+              icon={activeFilter ? EyeClosedIcon : EyeIcon}
+              field
+            >
+              {!activeFilter ? "Hide" : "Show"} deactivated repositories
+            </IllustratedText>
           </Button>
         </x.div>
-      </x.div>
+      </Container>
       <RepositoriesList
         repositories={activeFilter ? activeRepositories : repositories}
         mt={3}
       />
-    </Container>
+    </>
   );
 }
 

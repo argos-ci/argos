@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 13.7
--- Dumped by pg_dump version 14.2
+-- Dumped from database version 13.8
+-- Dumped by pg_dump version 13.8
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -163,7 +163,9 @@ CREATE TABLE public.builds (
     "jobStatus" public.job_status,
     "externalId" character varying(255),
     "batchCount" integer,
-    name character varying(255) DEFAULT 'default'::character varying NOT NULL
+    name character varying(255) DEFAULT 'default'::character varying NOT NULL,
+    type text,
+    CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
 
 
@@ -1689,3 +1691,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220814071435_screenshot_diffs_indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220902165449_repository_github_default_branch.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220905174153_remove_use_default_branch.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220909111750_add_build_type.js', 1, NOW());

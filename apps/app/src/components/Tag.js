@@ -6,10 +6,11 @@ export const Tag = (props) => (
     border={1}
     borderColor="border"
     borderRadius="md"
-    py={0.5}
+    py={1}
     px={2}
     w="fit-content"
     fontSize="sm"
+    fontWeight={500}
     {...props}
   />
 );
