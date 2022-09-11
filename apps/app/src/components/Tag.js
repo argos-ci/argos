@@ -1,7 +1,7 @@
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
 
-export const Tag = ({ ...props }) => (
+export const Tag = (props) => (
   <x.span
     border={1}
     borderColor="border"

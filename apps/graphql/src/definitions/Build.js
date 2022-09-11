@@ -3,7 +3,11 @@ import { Build, ScreenshotDiff } from "@argos-ci/database/models";
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { knex } from "@argos-ci/database";
 import { APIError } from "../util";
-import { RepositoryLoader, ScreenshotBucketLoader } from "../loaders";
+import {
+  buildLoader,
+  RepositoryLoader,
+  ScreenshotBucketLoader,
+} from "../loaders";
 import { paginateResult } from "./PageInfo";
 
 export const typeDefs = gql`
@@ -132,14 +136,7 @@ export const resolvers = {
       return RepositoryLoader.load(build.repositoryId);
     },
     async status(build) {
-      const [reviewStatus] = await Build.getReviewStatuses([build]);
-      if (reviewStatus) return reviewStatus;
-
-      const [conclusion] = await Build.getConclusions([build]);
-      if (conclusion) return conclusion;
-
-      const [status] = await Build.getStatuses([build]);
-      return status;
+      return buildLoader.load(build);
     },
     async stats(build) {
       const data = await ScreenshotDiff.query()

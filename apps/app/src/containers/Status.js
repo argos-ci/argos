@@ -9,8 +9,8 @@ import {
   ThumbsupIcon,
   ThumbsdownIcon,
   AlertIcon,
-  AccessibilityIcon,
   VerifiedIcon,
+  SkipIcon,
 } from "@primer/octicons-react";
 
 export function getStatusColor(status) {
@@ -67,7 +67,7 @@ export function StatusIcon({ status, ...props }) {
     case "rejected":
       return <Icon as={ThumbsdownIcon} color={buildColor} {...props} />;
     case "orphan":
-      return <Icon as={AccessibilityIcon} color={buildColor} {...props} />;
+      return <Icon as={SkipIcon} color={buildColor} {...props} />;
     case "reference":
       return <Icon as={VerifiedIcon} color={buildColor} {...props} />;
     case "neutral":
@@ -88,12 +88,13 @@ export function getBuildStatusLabel(status) {
     case "progress":
       return "Build in progress";
     case "error":
-      return "An error appended";
+      return "An error happened";
     case "aborted":
       return "Build aborted";
     case "rejected":
+      return "Changes approved";
     case "accepted":
-      return status;
+      return "Changes rejected";
     default:
       return null;
   }

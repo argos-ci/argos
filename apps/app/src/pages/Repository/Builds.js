@@ -90,10 +90,12 @@ function BuildsList({ repository }) {
 
   if (loading)
     return (
-      <LoadingAlert>
-        Argos fetch <x.span fontWeight={700}>{repository.name}</x.span> builds.
-        It should not take long.
-      </LoadingAlert>
+      <Container>
+        <LoadingAlert>
+          Argos fetch <x.span fontWeight={700}>{repository.name}</x.span>{" "}
+          builds. It should not take long.
+        </LoadingAlert>
+      </Container>
     );
 
   const {
@@ -104,9 +106,17 @@ function BuildsList({ repository }) {
 
   if (pageInfo.totalCount === 0) {
     if (hasWritePermission(data.repository)) {
-      return <GettingStarted repository={repository} />;
+      return (
+        <Container>
+          <GettingStarted repository={repository} />
+        </Container>
+      );
     }
-    return <p>No build found</p>;
+    return (
+      <Container>
+        <p>No build found</p>
+      </Container>
+    );
   }
 
   return (

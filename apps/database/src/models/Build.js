@@ -182,20 +182,21 @@ export class Build extends Model {
    * build.conclusion: null | stable | diffDetected
    */
   static async getConclusions(builds) {
-    const buildStatuses = await this.getStatuses(builds);
-    const buildDiffCount = await ScreenshotDiff.query()
-      .select("buildId")
-      .count()
-      .where("score", ">", 0)
-      .whereIn(
-        "buildId",
-        builds.map(({ id }) => id)
-      )
-      .groupBy("buildId")
-      .first();
-
+    const buildIds = builds.map(({ id }) => id);
+    const [buildStatuses, buildsDiffCount] = await Promise.all([
+      this.getStatuses(builds),
+      ScreenshotDiff.query()
+        .select("buildId")
+        .count()
+        .where("score", ">", 0)
+        .whereIn("buildId", buildIds)
+        .groupBy("buildId"),
+    ]);
     return builds.map((build, index) => {
       if (buildStatuses[index] !== "complete") return null;
+      const buildDiffCount = buildsDiffCount.find(
+        ({ buildId }) => buildId === build.id
+      );
       return buildDiffCount && buildDiffCount.count > 0
         ? "diffDetected"
         : "stable";
