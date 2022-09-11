@@ -7,6 +7,7 @@ import {
   MenuButton,
   MenuItem,
   useMenuState,
+  MenuButtonArrow,
 } from "@argos-ci/app/src/components";
 import { gql, useMutation } from "@apollo/client";
 import { StatusIcon } from "../../containers/Status";
@@ -51,6 +52,7 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
     <x.div display="flex" flexDirection="column" flex={1}>
       <Button as={MenuButton} state={menu} alignSelf="end" disabled={loading}>
         Review changes
+        <MenuButtonArrow state={menu} />
       </Button>
       <Menu aria-label="Review changes" state={menu}>
         <MenuItem
