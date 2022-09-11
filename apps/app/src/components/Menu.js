@@ -8,6 +8,7 @@ import {
   MenuButtonArrow as AriakitMenuButtonArrow,
 } from "ariakit/menu";
 import styled, { x, css } from "@xstyled/styled-components";
+import { ChevronDownIcon } from "@primer/octicons-react";
 import { Icon } from "./Icon";
 
 export { useMenuState };
@@ -48,7 +49,11 @@ export const MenuButton = React.forwardRef(
 );
 
 export const MenuButtonArrow = ({ as, ...props }) => {
-  return <x.div as={AriakitMenuButtonArrow} {...props} />;
+  return (
+    <AriakitMenuButtonArrow {...props}>
+      {(arrowProps) => <Icon as={ChevronDownIcon} {...arrowProps} />}
+    </AriakitMenuButtonArrow>
+  );
 };
 
 export const Menu = (props) => (
