@@ -176,31 +176,33 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
   );
 }
 
-function RepositoriesList({ repositories, ...props }) {
+function RepositoriesList({ repositories }) {
   if (repositories.length === 0) {
     return (
-      <Card mt={3}>
-        <CardHeader>
-          <CardTitle>No repository found</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <CardText fontSize="md" mb={3}>
-            Argos uses OAuth GitHub App.
-          </CardText>
-          <CardText fontSize="md">
-            <Link href={config.get("github.appUrl")} target="_blank">
-              Manage repositories' access restrictions from GitHub{" "}
-              <LinkExternalIcon />
-            </Link>
-          </CardText>
-        </CardBody>
-      </Card>
+      <Container>
+        <Card mt={3}>
+          <CardHeader>
+            <CardTitle>No repository found</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <CardText fontSize="md" mb={3}>
+              Argos uses OAuth GitHub App.
+            </CardText>
+            <CardText fontSize="md">
+              <Link href={config.get("github.appUrl")} target="_blank">
+                Manage repositories' access restrictions from GitHub{" "}
+                <LinkExternalIcon />
+              </Link>
+            </CardText>
+          </CardBody>
+        </Card>
+      </Container>
     );
   }
 
   return (
     <Container overflowX="scroll">
-      <Table {...props}>
+      <Table>
         <Thead>
           <Tr>
             <Th>Organization / Repository</Th>

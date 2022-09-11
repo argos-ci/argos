@@ -267,39 +267,27 @@ function StableScreenshots({ ownerLogin, repositoryName, buildNumber }) {
   );
 }
 
-const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
-  const [showStableScreenshots, setShowStableScreenshots] =
-    React.useState(false);
-  const { observe, inView } = useInView();
-
-  const { loading, data, fetchMore } = useQuery(BUILD_QUERY, {
-    variables: {
-      ownerLogin,
-      repositoryName,
-      buildNumber,
-      offset: 0,
-      limit: 10,
-    },
-    skip: !ownerLogin || !repositoryName || !buildNumber,
-  });
-  const [moreLoading, setMoreLoading] = React.useState();
-
-  function loadNextPage() {
-    setMoreLoading(true);
-    fetchMoreScreenshotDiffs({ data, fetchMore }).finally(() => {
-      setMoreLoading(false);
-    });
-  }
-
-  if (loading) return <LoadingAlert />;
-  if (!data?.repository?.build) return <NotFound />;
+const BuildDetails = ({
+  repository,
+  moreLoading,
+  loadNextPage,
+  ownerLogin,
+  repositoryName,
+  buildNumber,
+}) => {
   const {
     build,
     build: {
       stats,
       screenshotDiffs: { pageInfo, edges: screenshotDiffs },
     },
-  } = data.repository;
+  } = repository;
+
+  const { observe, inView } = useInView();
+
+  const [showStableScreenshots, setShowStableScreenshots] = React.useState(
+    pageInfo.totalCount === 0
+  );
 
   const diffGroups = screenshotDiffs.reduce(
     (groups, screenshotDiff) => ({
@@ -359,7 +347,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
         </x.div>
       </x.div>
 
-      <SummaryCard repository={data.repository} build={build} />
+      <SummaryCard repository={repository} build={build} />
 
       {["pending", "progress"].includes(build.status) ? (
         <LoadingAlert my={5} flexDirection="column">
@@ -376,24 +364,27 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
             mt={5}
             ref={observe}
           >
-            <Button
-              variant="neutral"
-              onClick={() => setShowStableScreenshots((prev) => !prev)}
-              justifyContent="start"
-            >
-              <IllustratedText
-                icon={showStableScreenshots ? EyeClosedIcon : EyeIcon}
-                field
+            {stats.stableScreenshotCount > 0 &&
+            stats.stableScreenshotCount < pageInfo.totalCount ? (
+              <Button
+                variant="neutral"
+                onClick={() => setShowStableScreenshots((prev) => !prev)}
+                justifyContent="start"
               >
-                {showStableScreenshots ? "Hide" : "Show"} stable screenshots
-              </IllustratedText>
-            </Button>
+                <IllustratedText
+                  icon={showStableScreenshots ? EyeClosedIcon : EyeIcon}
+                  field
+                >
+                  {showStableScreenshots ? "Hide" : "Show"} stable screenshots
+                </IllustratedText>
+              </Button>
+            ) : null}
 
-            <UpdateStatusButton repository={data.repository} build={build} />
+            <UpdateStatusButton repository={repository} build={build} />
           </x.div>
 
           {inView ? null : (
-            <StickySummaryMenu repository={data.repository} build={build} />
+            <StickySummaryMenu repository={repository} build={build} />
           )}
 
           {showStableScreenshots ? (
@@ -405,7 +396,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           ) : null}
 
           <ScreenshotSection
-            title="Failed Screenshots"
+            title="Failure Screenshots"
             screenshotDiffs={diffGroups.failed}
             color={getStatusPrimaryColor("danger")}
           />
@@ -431,6 +422,41 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
         </>
       )}
     </>
+  );
+};
+
+const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
+  const { loading, data, fetchMore } = useQuery(BUILD_QUERY, {
+    variables: {
+      ownerLogin,
+      repositoryName,
+      buildNumber,
+      offset: 0,
+      limit: 10,
+    },
+    skip: !ownerLogin || !repositoryName || !buildNumber,
+  });
+  const [moreLoading, setMoreLoading] = React.useState();
+
+  function loadNextPage() {
+    setMoreLoading(true);
+    fetchMoreScreenshotDiffs({ data, fetchMore }).finally(() => {
+      setMoreLoading(false);
+    });
+  }
+
+  if (loading) return <LoadingAlert />;
+  if (!data?.repository?.build) return <NotFound />;
+
+  return (
+    <BuildDetails
+      repository={data.repository}
+      moreLoading={moreLoading}
+      loadNextPage={loadNextPage}
+      ownerLogin={ownerLogin}
+      repositoryName={repositoryName}
+      buildNumber={buildNumber}
+    />
   );
 };
 

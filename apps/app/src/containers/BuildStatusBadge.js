@@ -34,7 +34,6 @@ export function BuildStatusBadge({ build, children, ...props }) {
       borderColor={`${baseColor}-500-a40`}
       backgroundColor={{ _: bgColor, hover: bgHoverColor }}
       whiteSpace="nowrap"
-      cursor="default"
       {...props}
     >
       <StatusIcon
