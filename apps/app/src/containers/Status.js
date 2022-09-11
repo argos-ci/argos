@@ -92,9 +92,9 @@ export function getBuildStatusLabel(status) {
     case "aborted":
       return "Build aborted";
     case "rejected":
-      return "Changes approved";
-    case "accepted":
       return "Changes rejected";
+    case "accepted":
+      return "Changes approved";
     default:
       return null;
   }

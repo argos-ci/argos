@@ -81,7 +81,7 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
           disabled={status === "rejected"}
         >
           <StatusIcon status="rejected" />
-          Request changes
+          Reject changes
         </MenuItem>
       </Menu>
 
