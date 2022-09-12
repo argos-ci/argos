@@ -8,27 +8,6 @@ import { Repository } from "./Repository";
 
 const NEXT_NUMBER = Symbol("nextNumber");
 
-function reduceBuildStatuses(buildStatuses) {
-  const diffStatuses = buildStatuses.map(({ jobStatus }) => jobStatus);
-
-  if (diffStatuses.includes("error")) {
-    return "error";
-  }
-
-  if (diffStatuses.length === 1 && diffStatuses[0] === "complete") {
-    return "complete";
-  }
-
-  return "progress";
-}
-
-function buildStatusesQuery(buildIds) {
-  return ScreenshotDiff.query()
-    .select("buildId", "jobStatus")
-    .whereIn("buildId", buildIds)
-    .groupBy("buildId", "jobStatus");
-}
-
 export class Build extends Model {
   static get tableName() {
     return "builds";
@@ -48,6 +27,12 @@ export class Build extends Model {
       },
     });
   }
+
+  /** @type {string} */
+  id;
+
+  /** @type {'pending' | 'progress' | 'complete' | 'error' | 'aborted'} */
+  jobStatus;
 
   /** @type {string | null} */
   baseScreenshotBucketId;
@@ -150,36 +135,64 @@ export class Build extends Model {
     return this.reload(queryContext);
   }
 
-  /** State of Argos processing builds
-   * build.status: pending | progress | complete | error | aborted
+  /**
+   * Get status of the build.
+   * Aggregate statuses from screenshot diffs.
+   * @param {Build[]} builds
    */
   static async getStatuses(builds) {
-    const buildStatuses = await buildStatusesQuery(
-      builds
-        .filter(({ jobStatus }) => jobStatus === "complete")
-        .map(({ id }) => id)
-    );
+    const completeBuildIds = builds
+      .filter(({ jobStatus }) => jobStatus === "complete")
+      .map(({ id }) => id);
+
+    const screenshotDiffs = await ScreenshotDiff.query()
+      .select("buildId", "jobStatus")
+      .whereIn("buildId", completeBuildIds)
+      .groupBy("buildId", "jobStatus");
 
     return builds.map((build) => {
-      if (["error", "aborted"].includes(build.jobStatus)) {
-        return build.jobStatus;
+      switch (build.jobStatus) {
+        case "pending":
+        case "progress":
+          return "pending";
+        case "error":
+        case "aborted":
+          return build.jobStatus;
+        case "complete": {
+          const diffJobStatuses = screenshotDiffs
+            .filter(({ buildId }) => build.id === buildId)
+            .map(({ jobStatus }) => jobStatus);
+
+          if (diffJobStatuses.includes("error")) {
+            return "error";
+          }
+
+          if (
+            diffJobStatuses.length === 1 &&
+            diffJobStatuses[0] === "complete"
+          ) {
+            return "complete";
+          }
+
+          return "progress";
+        }
+        default:
+          throw new Error(`Unknown job status: ${build.jobStatus}`);
       }
-      if (build.jobStatus !== "complete") {
-        return "pending";
-      }
-      return reduceBuildStatuses(
-        buildStatuses.filter(({ buildId }) => buildId === build.id)
-      );
     });
   }
 
-  async $getStatus(options) {
-    const statuses = await this.constructor.getStatuses([this], options);
+  /**
+   * Get status of the current build.
+   */
+  async $getStatus() {
+    const statuses = await Build.getStatuses([this]);
     return statuses[0];
   }
 
-  /** Builds conclusions
-   * build.conclusion: null | stable | diffDetected
+  /**
+   * Get the conclusion of builds.
+   * @param {Build[]} builds
    */
   static async getConclusions(builds) {
     const buildIds = builds.map(({ id }) => id);
@@ -203,23 +216,24 @@ export class Build extends Model {
     });
   }
 
-  /** Build review status
-   * build.reviewStatus: null | accepted | rejected
+  /**
+   * Get the review status of builds.
+   * @param {Build[]} builds
    */
   static async getReviewStatuses(builds) {
     const buildConclusions = await this.getConclusions(builds);
-    const buildIds = builds
-      .filter((build, index) => buildConclusions[index] === "diffDetected")
+    const diffDetectedBuildIds = builds
+      .filter((_build, index) => buildConclusions[index] === "diffDetected")
       .map(({ id }) => id);
 
-    const buildStatuses = await ScreenshotDiff.query()
+    const screenshotDiffs = await ScreenshotDiff.query()
       .select("buildId", "validationStatus")
-      .whereIn("buildId", buildIds)
+      .whereIn("buildId", diffDetectedBuildIds)
       .groupBy("buildId", "validationStatus");
 
     return builds.map((build, index) => {
       if (buildConclusions[index] !== "diffDetected") return null;
-      const status = buildStatuses
+      const status = screenshotDiffs
         .filter(({ buildId }) => buildId === build.id)
         .map(({ validationStatus }) => validationStatus);
       if (status.includes("rejected")) return "rejected";
@@ -248,7 +262,7 @@ export class Build extends Model {
   }
 
   getUsers(options) {
-    return this.constructor.getUsers(this.id, options);
+    return Build.getUsers(this.id, options);
   }
 
   async getUrl({ trx } = {}) {

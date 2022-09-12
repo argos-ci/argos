@@ -8,6 +8,27 @@ export class ScreenshotDiff extends Model {
     return "screenshot_diffs";
   }
 
+  /** @type {string} */
+  id;
+
+  /** @type {string} */
+  buildId;
+
+  /** @type {string | null} */
+  baseScreenshotId;
+
+  /** @type {string} */
+  compareScreenshotId;
+
+  /** @type {number | null} */
+  score;
+
+  /** @type {'pending' | 'progress' | 'complete' | 'error' | 'aborted'} */
+  jobStatus;
+
+  /** @type {'unknown' | 'accepted' | 'rejected'} */
+  validationStatus;
+
   static get jsonSchema() {
     return mergeSchemas(timestampsSchema, jobModelSchema, {
       required: [
