@@ -33,7 +33,7 @@ describe("models/Build", () => {
     it("should not add a build number", async () => {
       const build = await factory.create("Build");
       expect(build.number).toBe(1);
-      await build.$query().patch({ jobStatus: "complete" });
+      await build.$query().patch({ jobStatus: "complete" }).returning("*");
       await build.reload();
       expect(build.number).toBe(1);
       expect(build.jobStatus).toBe("complete");

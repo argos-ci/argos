@@ -74,11 +74,14 @@ export async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
 
   await rmdirAsync(tmpDir);
 
-  await screenshotDiff.$query().patch({
-    score: difference.score,
-    jobStatus: "complete",
-    s3Id: uploadResult ? uploadResult.Key : null,
-  });
+  await screenshotDiff
+    .$query()
+    .patch({
+      score: difference.score,
+      jobStatus: "complete",
+      s3Id: uploadResult ? uploadResult.Key : null,
+    })
+    .returning("*");
 
   const [conclusion] = await Build.getConclusions([screenshotDiff.build]);
 

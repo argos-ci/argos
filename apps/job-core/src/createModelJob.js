@@ -9,7 +9,7 @@ export function createModelJob(queue, Model, perform) {
         throw new Error(`${Model.name} not found`);
       }
 
-      await model.$query().patch({ jobStatus: "progress" });
+      await model.$query().patch({ jobStatus: "progress" }).returning("*");
       await perform(model);
     },
     async error(id) {
