@@ -23,6 +23,7 @@ export class Build extends Model {
         number: { type: "integer" },
         externalId: { type: ["string", null] },
         batchCount: { type: ["integer", null] },
+        totalBatch: { type: ["integer", null] },
         type: { type: ["string", null] },
       },
     });
@@ -60,6 +61,9 @@ export class Build extends Model {
 
   /** @type {number | null} */
   batchCount;
+
+  /** @type {number | null} */
+  totalBatch;
 
   static get relationMappings() {
     return {

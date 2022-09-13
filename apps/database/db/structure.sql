@@ -165,6 +165,7 @@ CREATE TABLE public.builds (
     "batchCount" integer,
     name character varying(255) DEFAULT 'default'::character varying NOT NULL,
     type text,
+    "totalBatch" integer,
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
 
@@ -1692,3 +1693,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022081
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220902165449_repository_github_default_branch.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220905174153_remove_use_default_branch.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220909111750_add_build_type.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220912221410_add_build_parallel_total.js', 1, NOW());

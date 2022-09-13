@@ -7,6 +7,7 @@ import {
   ClockIcon,
   GitBranchIcon,
   BookmarkIcon,
+  FileZipIcon,
 } from "@primer/octicons-react";
 import {
   Card,
@@ -14,6 +15,10 @@ import {
   Link,
   IllustratedText,
   Time,
+  Icon,
+  Tooltip,
+  TooltipAnchor,
+  useTooltipState,
 } from "@argos-ci/app/src/components";
 import {
   UpdateStatusButton,
@@ -32,6 +37,8 @@ export const SummaryCardFragment = gql`
     number
     status
     type
+    batchCount
+    totalBatch
     compareScreenshotBucket {
       id
       branch
@@ -101,6 +108,32 @@ export function StickySummaryMenu({ repository, build, ...props }) {
   );
 }
 
+function ExpectedBatch() {
+  const tooltip = useTooltipState();
+
+  return (
+    <>
+      <TooltipAnchor state={tooltip}>
+        <Icon as={FileZipIcon} color="secondary-text" title="received batch" />
+      </TooltipAnchor>
+      <Tooltip state={tooltip}>Expected batch</Tooltip>
+    </>
+  );
+}
+
+function ReceivedBatch() {
+  const tooltip = useTooltipState();
+
+  return (
+    <>
+      <TooltipAnchor state={tooltip}>
+        <Icon as={FileZipIcon} color="primary-text" title="received batch" />
+      </TooltipAnchor>
+      <Tooltip state={tooltip}>Received batch</Tooltip>
+    </>
+  );
+}
+
 export function SummaryCard({ build }) {
   return (
     <Card>
@@ -118,6 +151,29 @@ export function SummaryCard({ build }) {
         ) : null}
 
         <CommitFields build={build} />
+
+        {build.totalBatch ? (
+          <x.div whiteSpace="nowrap" gridColumn="1 / span 2">
+            {build.batchCount === build.totalBatch ? (
+              <>
+                <IllustratedText field icon={FileZipIcon} color="primary-text">
+                  All batches received
+                </IllustratedText>
+              </>
+            ) : (
+              <x.div display="flex" gap={2} flexWrap="wrap">
+                Batch received:
+                {Array.from({ length: build.totalBatch }, (_, index) =>
+                  index < build.batchCount ? (
+                    <ReceivedBatch key={index} />
+                  ) : (
+                    <ExpectedBatch key={index} />
+                  )
+                )}
+              </x.div>
+            )}
+          </x.div>
+        ) : null}
       </CardBody>
     </Card>
   );

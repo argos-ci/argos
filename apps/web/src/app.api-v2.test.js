@@ -250,6 +250,22 @@ describe("api v2", () => {
 
     describe("complete workflow — parallel", () => {
       let ctx = {};
+      const screenshotGroups = [
+        [
+          {
+            key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            name: "first",
+            path: path.join(__dirname, "__fixtures__", "screenshot_test.jpg"),
+          },
+        ],
+        [
+          {
+            key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+            name: "second",
+            path: path.join(__dirname, "__fixtures__", "screenshot_test_2.jpg"),
+          },
+        ],
+      ];
 
       beforeEach(async () => {
         const organization = await factory.create("Organization", {
@@ -263,27 +279,6 @@ describe("api v2", () => {
       });
 
       it("create a complete build", async () => {
-        const screenshotGroups = [
-          [
-            {
-              key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-              name: "first",
-              path: path.join(__dirname, "__fixtures__", "screenshot_test.jpg"),
-            },
-          ],
-          [
-            {
-              key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
-              name: "second",
-              path: path.join(
-                __dirname,
-                "__fixtures__",
-                "screenshot_test_2.jpg"
-              ),
-            },
-          ],
-        ];
-
         const updateResults = await Promise.all(
           screenshotGroups.map(async (screenshots) => {
             const createResult = await request(app)
@@ -351,6 +346,7 @@ describe("api v2", () => {
         expect(build.repositoryId).toBe(ctx.repository.id);
         expect(build.externalId).toBe("unique-build-id");
         expect(build.batchCount).toBe(2);
+        expect(build.totalBatch).toBe(2);
 
         expect(
           build.compareScreenshotBucket.screenshots.map((s) => ({
@@ -385,6 +381,68 @@ describe("api v2", () => {
             },
           });
         });
+      });
+
+      it("inconsistent parallel count return an error", async () => {
+        const updateResults = await Promise.all(
+          screenshotGroups.map(async (screenshots, groupIndex) => {
+            const createResult = await request(app)
+              .post("/v2/builds")
+              .set("Host", "api.argos-ci.dev")
+              .set("Authorization", "Bearer awesome-token")
+              .send({
+                commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+                screenshotKeys: screenshots.map((screenshot) => screenshot.key),
+                branch: "main",
+                name: "current",
+                parallel: true,
+                parallelNonce: "other-build-id",
+              })
+              .expect(201);
+
+            // Upload screenshots
+            await Promise.all(
+              createResult.body.screenshots.map(async (resScreenshot) => {
+                const path = screenshots.find(
+                  (s) => s.key === resScreenshot.key
+                ).path;
+                const file = await fs.readFile(path);
+
+                const axiosResponse = await axios({
+                  method: "PUT",
+                  url: resScreenshot.putUrl,
+                  data: file,
+                  headers: {
+                    "Content-Type": "image/jpeg",
+                  },
+                });
+
+                expect(axiosResponse.status).toBe(200);
+              })
+            );
+
+            const updateResult = await request(app)
+              .put(`/v2/builds/${createResult.body.build.id}`)
+              .set("Host", "api.argos-ci.dev")
+              .set("Authorization", "Bearer awesome-token")
+              .send({
+                screenshots: screenshots.map((screenshot) => ({
+                  key: screenshot.key,
+                  name: screenshot.name,
+                })),
+                parallel: true,
+                parallelTotal: 2 + groupIndex,
+              });
+
+            return updateResult;
+          })
+        );
+
+        expect(updateResults[0].statusCode).toBe(200);
+        expect(updateResults[1].statusCode).toBe(400);
+        expect(JSON.parse(updateResults[1].error.text).error.message).toBe(
+          "`parallelTotal` must be the same on every batch"
+        );
       });
     });
   });

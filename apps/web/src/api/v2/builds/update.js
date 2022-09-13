@@ -115,12 +115,19 @@ const handleUpdateParallel = async ({ req, build, unknownKeys }) => {
 
   const parallelTotal = Number(req.body.parallelTotal);
 
+  if (build.totalBatch && build.totalBatch !== parallelTotal) {
+    throw new HttpError(400, "`parallelTotal` must be the same on every batch");
+  }
+
   const complete = await transaction(async (trx) => {
     await insertFilesAndScreenshots({ req, build, unknownKeys, trx });
 
     await Build.query(trx)
       .findById(build.id)
-      .patch({ batchCount: raw('"batchCount" + 1') });
+      .patch({
+        batchCount: raw('"batchCount" + 1'),
+        totalBatch: parallelTotal,
+      });
 
     if (parallelTotal === build.batchCount + 1) {
       await build
