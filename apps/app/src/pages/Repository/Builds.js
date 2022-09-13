@@ -1,6 +1,10 @@
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
-import { GitBranchIcon, CommitIcon } from "@primer/octicons-react";
+import {
+  GitBranchIcon,
+  CommitIcon,
+  BookmarkIcon,
+} from "@primer/octicons-react";
 import moment from "moment";
 import { gql } from "graphql-tag";
 import { getBuildStatusLabel } from "../../containers/Status";
@@ -139,18 +143,20 @@ function BuildsList({ repository }) {
                 as={BaseLink}
                 to={`${build.number}`}
               >
-                <Td
-                  as="div"
-                  textOverflow="ellipsis"
-                  overflow="hidden"
-                  maxW={200}
-                >
+                <Td maxW={200}>
                   #{build.number}
                   {build.name !== "default" && (
-                    <x.span color="secondary-text">
-                      {" "}
-                      - <x.span whiteSpace="nowrap">{build.name}</x.span>
-                    </x.span>
+                    <IllustratedText
+                      icon={BookmarkIcon}
+                      color="secondary-text"
+                      as="div"
+                      whiteSpace="nowrap"
+                      ml="-3px"
+                      textOverflow="ellipsis"
+                      overflow="hidden"
+                    >
+                      {build.name}
+                    </IllustratedText>
                   )}
                 </Td>
 
@@ -160,7 +166,7 @@ function BuildsList({ repository }) {
                   </BuildStatusBadge>
                 </Td>
 
-                <Td>
+                <Td maxW={300}>
                   <x.div display="flex" flexDirection="column">
                     <IllustratedText
                       icon={GitBranchIcon}
@@ -168,7 +174,6 @@ function BuildsList({ repository }) {
                       textOverflow="ellipsis"
                       overflow="hidden"
                       whiteSpace="nowrap"
-                      maxW={300}
                     >
                       {build.compareScreenshotBucket.branch}
                     </IllustratedText>
