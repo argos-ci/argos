@@ -80,6 +80,10 @@ export const typeDefs = gql`
     stats: BuildStats!
     "Build type"
     type: BuildType
+    "Received batch count "
+    batchCount: Int
+    "Expected batch count"
+    totalBatch: Int
   }
 
   type BuildResult {
