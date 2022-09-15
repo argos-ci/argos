@@ -18,6 +18,12 @@ export function getStatusColor(status) {
     case "primary":
       return "primary";
 
+    case "reference":
+      return "indigo";
+
+    case "orphan":
+      return "teal";
+
     case "success":
     case "accepted":
     case "stable":
@@ -79,26 +85,39 @@ export function StatusIcon({ status, ...props }) {
   }
 }
 
-export function getBuildStatusLabel(status) {
-  switch (status) {
-    case "stable":
-      return "No change detected";
-    case "diffDetected":
-      return "Changes detected";
-    case "pending":
-      return "Build scheduled";
-    case "progress":
-      return "Build in progress";
-    case "error":
-      return "An error happened";
-    case "aborted":
-      return "Build aborted";
-    case "expired":
-      return "Build expired";
-    case "rejected":
-      return "Changes rejected";
-    case "accepted":
-      return "Changes approved";
+export function getBuildStatusLabel({ type, status }) {
+  switch (type) {
+    case "orphan":
+      return "Orphan build";
+
+    case "reference":
+      return "Reference build";
+
+    case "check": {
+      switch (status) {
+        case "stable":
+          return "No change detected";
+        case "diffDetected":
+          return "Changes detected";
+        case "pending":
+          return "Build scheduled";
+        case "progress":
+          return "Build in progress";
+        case "error":
+          return "An error happened";
+        case "aborted":
+          return "Build aborted";
+        case "expired":
+          return "Build expired";
+        case "rejected":
+          return "Changes rejected";
+        case "accepted":
+          return "Changes approved";
+        default:
+          return null;
+      }
+    }
+
     default:
       return null;
   }

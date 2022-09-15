@@ -21,10 +21,7 @@ import {
   UpdateStatusButton,
   UpdateStatusButtonBuildFragment,
 } from "./UpdateStatusButton";
-import {
-  getBuildStatusLabel,
-  getStatusPrimaryColor,
-} from "../../containers/Status";
+import { getStatusPrimaryColor } from "../../containers/Status";
 import { BuildStatusBadge } from "../../containers/BuildStatusBadge";
 
 export const SummaryCardFragment = gql`
@@ -95,9 +92,7 @@ export function StickySummaryMenu({ repository, build, ...props }) {
     >
       <x.div display="flex" gap={3} alignItems="center">
         Build #{build.number}
-        <BuildStatusBadge build={build} py={0.5}>
-          {getBuildStatusLabel(build.status)}
-        </BuildStatusBadge>
+        <BuildStatusBadge build={build} py={0.5} />
       </x.div>
 
       <UpdateStatusButton repository={repository} build={build} flex={1} />

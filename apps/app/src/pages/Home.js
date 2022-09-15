@@ -52,7 +52,6 @@ import {
   BuildStatusBadge,
   BuildStatusBadgeFragment,
 } from "../containers/BuildStatusBadge";
-import { getBuildStatusLabel } from "../containers/Status";
 
 const HOME_OWNERS_REPOSITORIES_QUERY = gql`
   query HOME_OWNERS_REPOSITORIES_QUERY {
@@ -169,9 +168,7 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
         to={`${repositoryUrl}/builds/${build.number}`}
         build={build}
         {...props}
-      >
-        #{build.number} {getBuildStatusLabel(build.status)}
-      </BuildStatusBadge>
+      />
     </Td>
   );
 }

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { gql } from "graphql-tag";
-import { getStatusColor, StatusIcon } from "./Status";
+import { getBuildStatusLabel, getStatusColor, StatusIcon } from "./Status";
 import { Tag } from "@argos-ci/app/src/components";
 
 export const BuildStatusBadgeFragment = gql`
@@ -10,29 +10,20 @@ export const BuildStatusBadgeFragment = gql`
   }
 `;
 
-function getColor({ type, status }) {
-  switch (type) {
-    case "orphan":
-      return "blue";
-
-    case "reference":
-      return "emerald";
-
-    default:
-      return getStatusColor(status);
-  }
-}
-
 export function BuildStatusBadge({ build, children, ...props }) {
-  const baseColor = getColor(build);
+  const baseColor = getStatusColor(
+    build.type !== "check" ? build.type : build.status
+  );
   const bgColor = `${baseColor}-500-a30`;
-  const bgHoverColor =
+  const hoverBgColor =
     props.to || props.href ? `${baseColor}-500-a50` : bgColor;
+
+  const statusLabel = getBuildStatusLabel(build);
 
   return (
     <Tag
       borderColor={`${baseColor}-500-a40`}
-      backgroundColor={{ _: bgColor, hover: bgHoverColor }}
+      backgroundColor={{ _: bgColor, hover: hoverBgColor }}
       whiteSpace="nowrap"
       {...props}
     >
@@ -42,7 +33,7 @@ export function BuildStatusBadge({ build, children, ...props }) {
         }
         mr={2}
       />
-      {children}
+      {statusLabel}
     </Tag>
   );
 }

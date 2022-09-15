@@ -7,7 +7,6 @@ import {
 } from "@primer/octicons-react";
 import moment from "moment";
 import { gql } from "graphql-tag";
-import { getBuildStatusLabel } from "../../containers/Status";
 import {
   BaseLink,
   Button,
@@ -24,7 +23,10 @@ import {
   Tr,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
-import { BuildStatusBadge } from "../../containers/BuildStatusBadge";
+import {
+  BuildStatusBadge,
+  BuildStatusBadgeFragment,
+} from "../../containers/BuildStatusBadge";
 import { GettingStarted } from "./GettingStarted";
 import { getPossessiveForm } from "../../modules/utils";
 import { hasWritePermission } from "../../modules/permissions";
@@ -51,10 +53,14 @@ const REPOSITORY_BUILDS_QUERY = gql`
             commit
             branch
           }
+
+          ...BuildStatusBadgeFragment
         }
       }
     }
   }
+
+  ${BuildStatusBadgeFragment}
 `;
 
 function BuildsList({ repository }) {
@@ -161,9 +167,7 @@ function BuildsList({ repository }) {
                 </Td>
 
                 <Td verticalAlign="top">
-                  <BuildStatusBadge build={build}>
-                    {getBuildStatusLabel(build.status)}
-                  </BuildStatusBadge>
+                  <BuildStatusBadge build={build} />
                 </Td>
 
                 <Td maxW={300}>

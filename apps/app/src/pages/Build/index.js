@@ -166,9 +166,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
       >
         <x.div display="flex" alignItems="center" gap={3}>
           <PrimaryTitle mb={0}>Build #{buildNumber}</PrimaryTitle>
-          <BuildStatusBadge build={build}>
-            {getBuildStatusLabel(build.status)}
-          </BuildStatusBadge>
+          <BuildStatusBadge build={build} />
         </x.div>
 
         <x.div
@@ -205,7 +203,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
 
       {["pending", "progress"].includes(build.status) ? (
         <LoadingAlert my={5} flexDirection="column">
-          {getBuildStatusLabel(build.status)}
+          {getBuildStatusLabel({ build })}
         </LoadingAlert>
       ) : (
         <>
