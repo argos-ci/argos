@@ -1,9 +1,21 @@
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
 
-export function ProgressBar({ score, total, ...props }) {
+export function ProgressBar({
+  score,
+  total,
+  progressColor = "primary",
+  updateColor = false,
+  ...props
+}) {
   const progression = Math.min(1, score / total);
   const value = Math.floor(progression * 100);
+  const progressiveColor =
+    progression === 1
+      ? "danger"
+      : progression > 0.75
+      ? "warning"
+      : progressColor;
 
   return (
     <x.div
@@ -23,13 +35,7 @@ export function ProgressBar({ score, total, ...props }) {
         minW={2}
         h={1}
         borderRadius="md"
-        backgroundColor={
-          progression === 1
-            ? "danger"
-            : progression > 0.75
-            ? "warning"
-            : "primary"
-        }
+        backgroundColor={updateColor ? progressiveColor : progressColor}
       />
     </x.div>
   );

@@ -128,6 +128,7 @@ function UsageCard({
         <ProgressBar
           score={currentMonthUsedScreenshots}
           total={screenshotsLimitPerMonth}
+          updateColor
           mt={2}
         />
         <CardTitle mt={4} mb={2}>

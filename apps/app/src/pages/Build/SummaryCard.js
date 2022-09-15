@@ -15,10 +15,7 @@ import {
   Link,
   IllustratedText,
   Time,
-  Icon,
-  Tooltip,
-  TooltipAnchor,
-  useTooltipState,
+  ProgressBar,
 } from "@argos-ci/app/src/components";
 import {
   UpdateStatusButton,
@@ -108,29 +105,27 @@ export function StickySummaryMenu({ repository, build, ...props }) {
   );
 }
 
-function ExpectedBatch() {
-  const tooltip = useTooltipState();
+function ProgressField({ build: { batchCount, totalBatch } }) {
+  if (batchCount === totalBatch) {
+    return (
+      <IllustratedText field icon={FileZipIcon} color="primary-text">
+        All batches received
+      </IllustratedText>
+    );
+  }
 
   return (
-    <>
-      <TooltipAnchor state={tooltip}>
-        <Icon as={FileZipIcon} color="secondary-text" title="received batch" />
-      </TooltipAnchor>
-      <Tooltip state={tooltip}>Expected batch</Tooltip>
-    </>
-  );
-}
-
-function ReceivedBatch() {
-  const tooltip = useTooltipState();
-
-  return (
-    <>
-      <TooltipAnchor state={tooltip}>
-        <Icon as={FileZipIcon} color="primary-text" title="received batch" />
-      </TooltipAnchor>
-      <Tooltip state={tooltip}>Received batch</Tooltip>
-    </>
+    <x.div maxW={250}>
+      <x.div display="flex" justifyContent="space-between">
+        <IllustratedText field icon={FileZipIcon}>
+          Batch received
+        </IllustratedText>
+        <div>
+          {batchCount} / {totalBatch}
+        </div>
+      </x.div>
+      <ProgressBar score={batchCount} total={totalBatch} mt={1} />
+    </x.div>
   );
 }
 
@@ -152,28 +147,7 @@ export function SummaryCard({ build }) {
 
         <CommitFields build={build} />
 
-        {build.totalBatch ? (
-          <x.div whiteSpace="nowrap" gridColumn="1 / span 2">
-            {build.batchCount === build.totalBatch ? (
-              <>
-                <IllustratedText field icon={FileZipIcon} color="primary-text">
-                  All batches received
-                </IllustratedText>
-              </>
-            ) : (
-              <x.div display="flex" gap={2} flexWrap="wrap">
-                Batch received:
-                {Array.from({ length: build.totalBatch }, (_, index) =>
-                  index < build.batchCount ? (
-                    <ReceivedBatch key={index} />
-                  ) : (
-                    <ExpectedBatch key={index} />
-                  )
-                )}
-              </x.div>
-            )}
-          </x.div>
-        ) : null}
+        {build.totalBatch ? <ProgressField build={build} /> : null}
       </CardBody>
     </Card>
   );

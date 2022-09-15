@@ -26,6 +26,9 @@ export const theme = {
     "primary-text": "white",
     "secondary-text": defaultTheme.colors["gray-400"],
     tooltip: defaultTheme.colors["gray-700"],
+
+    warning: defaultTheme.colors["orange-500"],
+    danger: defaultTheme.colors["red-500"],
   },
   sizes: {
     ...defaultTheme.sizes,
