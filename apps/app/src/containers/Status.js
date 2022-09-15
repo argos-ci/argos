@@ -28,6 +28,7 @@ export function getStatusColor(status) {
     case "failed":
     case "error":
     case "rejected":
+    case "expired":
       return "red";
 
     case "neutral":
@@ -56,6 +57,7 @@ export function StatusIcon({ status, ...props }) {
       return <Icon as={IssueReopenedIcon} color={buildColor} {...props} />;
     case "error":
     case "aborted":
+    case "expired":
       return <Icon as={XCircleIcon} color={buildColor} {...props} />;
     case "stable":
       return <Icon as={IssueClosedIcon} color={buildColor} {...props} />;
@@ -91,6 +93,8 @@ export function getBuildStatusLabel(status) {
       return "An error happened";
     case "aborted":
       return "Build aborted";
+    case "expired":
+      return "Build expired";
     case "rejected":
       return "Changes rejected";
     case "accepted":

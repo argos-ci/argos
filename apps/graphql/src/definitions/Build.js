@@ -37,6 +37,8 @@ export const typeDefs = gql`
     error
     "job status: aborted"
     aborted
+    "job status: expired"
+    expired
   }
 
   type BuildStats {
