@@ -113,16 +113,34 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
     React.useState(false);
   const { observe, inView } = useInView();
 
-  const { loading, data, fetchMore } = useQuery(BUILD_QUERY, {
-    variables: {
-      ownerLogin,
-      repositoryName,
-      buildNumber,
-      offset: 0,
-      limit: 10,
-    },
-    skip: !ownerLogin || !repositoryName || !buildNumber,
-  });
+  const { loading, data, fetchMore, startPolling, stopPolling } = useQuery(
+    BUILD_QUERY,
+    {
+      variables: {
+        ownerLogin,
+        repositoryName,
+        buildNumber,
+        offset: 0,
+        limit: 10,
+      },
+      skip: !ownerLogin || !repositoryName || !buildNumber,
+      pollInterval: 1000,
+    }
+  );
+
+  const inProgress =
+    data?.repository?.build?.status &&
+    (data.repository.build.status === "pending" ||
+      data.repository.build.status === "progress");
+
+  React.useEffect(() => {
+    if (inProgress) {
+      startPolling(1000);
+    } else {
+      stopPolling();
+    }
+  }, [stopPolling, startPolling, inProgress]);
+
   const [moreLoading, setMoreLoading] = React.useState();
 
   function loadNextPage() {
@@ -201,7 +219,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
 
       <SummaryCard repository={data.repository} build={build} />
 
-      {["pending", "progress"].includes(build.status) ? (
+      {inProgress ? (
         <LoadingAlert my={5} flexDirection="column">
           {getBuildStatusLabel({ build })}
         </LoadingAlert>
