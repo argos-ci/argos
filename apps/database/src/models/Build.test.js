@@ -88,7 +88,7 @@ describe("models/Build", () => {
     let build;
 
     describe("with in progress job", () => {
-      it("should be error", async () => {
+      it("should be pending", async () => {
         build = await factory.create("Build", { jobStatus: "progress" });
         expect(await build.$getStatus()).toBe("pending");
       });
@@ -98,6 +98,26 @@ describe("models/Build", () => {
       it("should be pending", async () => {
         build = await factory.create("Build", { jobStatus: "pending" });
         expect(await build.$getStatus()).toBe("pending");
+      });
+    });
+
+    describe("with old in progress job", () => {
+      it("should be expired", async () => {
+        build = await factory.create("Build", {
+          jobStatus: "progress",
+          createdAt: new Date(new Date().valueOf() - 3 * 3600 * 1000),
+        });
+        expect(await build.$getStatus()).toBe("expired");
+      });
+    });
+
+    describe("with old pending job", () => {
+      it("should be expired", async () => {
+        build = await factory.create("Build", {
+          jobStatus: "pending",
+          createdAt: new Date(new Date().valueOf() - 3 * 3600 * 1000),
+        });
+        expect(await build.$getStatus()).toBe("expired");
       });
     });
 

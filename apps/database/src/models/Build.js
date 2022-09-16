@@ -158,10 +158,15 @@ export class Build extends Model {
       switch (build.jobStatus) {
         case "pending":
         case "progress":
-          return "pending";
+          return Date.now() - new Date(build.createdAt).getTime() >
+            2 * 3600 * 1000
+            ? "expired"
+            : "pending";
+
         case "error":
         case "aborted":
           return build.jobStatus;
+
         case "complete": {
           const diffJobStatuses = screenshotDiffs
             .filter(({ buildId }) => build.id === buildId)
