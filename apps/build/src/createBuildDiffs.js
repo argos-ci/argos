@@ -2,23 +2,35 @@ import { transaction } from "@argos-ci/database";
 import { ScreenshotDiff, Build } from "@argos-ci/database/models";
 import { baseCompare } from "./baseCompare";
 
-async function getOrCreateBaseScreenshotBucket(build, { trx } = {}) {
+export async function getOrCreateBaseScreenshotBucket(build, { trx } = {}) {
   // It can already be present, for instance by the sample build feature.
   if (build.baseScreenshotBucket) {
     return build.baseScreenshotBucket;
   }
+
   const baseScreenshotBucket = await baseCompare({
     baseCommit: build.repository.referenceBranch,
     compareCommit: build.compareScreenshotBucket.commit,
     build,
     trx,
   });
+
   if (baseScreenshotBucket) {
     await Build.query(trx)
       .findById(build.id)
-      .patch({ baseScreenshotBucketId: baseScreenshotBucket.id });
+      .patch({
+        baseScreenshotBucketId: baseScreenshotBucket.id,
+        type:
+          build.compareScreenshotBucket.branch ===
+          build.repository.referenceBranch
+            ? "reference"
+            : "check",
+      });
+
     return baseScreenshotBucket.$query(trx).withGraphFetched("screenshots");
   }
+
+  await Build.query(trx).findById(build.id).patch({ type: "orphan" });
   return null;
 }
 
