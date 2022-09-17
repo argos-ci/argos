@@ -18,16 +18,14 @@ export function getStatusColor(status) {
     case "primary":
       return "primary";
 
-    case "reference":
-      return "indigo";
-
     case "orphan":
-      return "teal";
+      return "blue";
 
     case "success":
     case "accepted":
     case "stable":
     case "added":
+    case "reference":
       return "green";
 
     case "danger":
@@ -41,9 +39,11 @@ export function getStatusColor(status) {
     case "aborted":
       return "gray";
 
-    case "warning":
-    case "pending":
     case "progress":
+    case "pending":
+      return "yellow";
+
+    case "warning":
     case "diffDetected":
     default:
       return "orange";
