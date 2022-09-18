@@ -109,9 +109,8 @@ describe('marketplace "purchase" event', () => {
 
       beforeEach(async () => {
         const user = await factory.create("User");
-        account = await factory.create("Account", {
+        account = await factory.create("UserAccount", {
           userId: user.id,
-          organizationId: null,
         });
         await factory.create("Plan", { githubId: payloadPlan.id });
         previousAccountCount = await Account.query().resultSize();
@@ -155,9 +154,8 @@ describe('marketplace "purchase" event', () => {
 
       beforeEach(async () => {
         const user = await factory.create("User");
-        const account = await factory.create("Account", {
+        const account = await factory.create("UserAccount", {
           userId: user.id,
-          organizationId: null,
         });
         const plan = await factory.create("Plan", { githubId: payloadPlan.id });
         previousPurchase = await factory.create("Purchase", {
@@ -294,9 +292,8 @@ describe('marketplace "purchase" event', () => {
 
       beforeEach(async () => {
         organization = await factory.create("Organization");
-        account = await factory.create("Account", {
+        account = await factory.create("OrganizationAccount", {
           organizationId: organization.id,
-          userId: null,
         });
         await factory.create("Plan", { githubId: payloadPlan.id });
         previousAccountCount = await Account.query().resultSize();

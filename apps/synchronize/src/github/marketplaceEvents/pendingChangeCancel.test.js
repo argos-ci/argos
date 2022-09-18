@@ -20,9 +20,8 @@ describe('marketplace "pending_change_cancelled" event', () => {
         githubId:
           pendingChangeCancelPayload.previous_marketplace_purchase.account.id,
       });
-      account = await factory.create("Account", {
+      account = await factory.create("OrganizationAccount", {
         organizationId: organization.id,
-        userId: null,
       });
       plan = await factory.create("Plan", {
         githubId:
