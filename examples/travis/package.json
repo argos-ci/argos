@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "devDependencies": {
+    "@argos-ci/cli": "latest"
+  }
+}

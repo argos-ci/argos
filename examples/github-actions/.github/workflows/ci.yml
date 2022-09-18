@@ -33,7 +33,7 @@ jobs:
       # Find integrations on https://docs.argos-ci.com/
       # -----
 
-      - name: Run Argos
+      - name: Upload screenshots to argos-ci.com
         continue-on-error: true
         env:
           ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}

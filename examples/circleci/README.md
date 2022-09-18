@@ -8,6 +8,11 @@
 
 This example showcases Argos Visual Testing running on [CircleCI](https://circleci.com/).
 
+## Setup
+
+- Follow [Argos getting started guide](https://docs.argos-ci.com/getting-started) to obtain a Argos token.
+- Add `ARGOS_TOKEN` as an [masked environment variable on CircleCI](https://circleci.com/docs/env-vars)
+
 ## Links
 
 - [Official Argos Docs](https://docs.argos-ci.com/)

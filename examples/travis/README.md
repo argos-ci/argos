@@ -4,14 +4,14 @@
   </a>
 </p>
 
-# Example of Argos running on GitHub Actions
+# Example of Argos running on Travis
 
-This example showcases Argos Visual Testing running on [GitHub Actions](https://github.com/features/actions).
+This example showcases Argos Visual Testing running on [Travis](https://www.travis-ci.com/).
 
 ## Setup
 
 - Follow [Argos getting started guide](https://docs.argos-ci.com/getting-started) to obtain a Argos token.
-- Add `ARGOS_TOKEN` as a [GitHub Actions Secret](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
+- Add `ARGOS_TOKEN` as an [encrypted environment variable on TravisCI](https://docs.travis-ci.com/user/environment-variables/#defining-encrypted-variables-in-travisyml)
 
 ## Links
 
