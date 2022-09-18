@@ -338,11 +338,25 @@ export function Home() {
 
   if (!user.installations.length && !isUserSyncing(user)) {
     return (
-      <Container textAlign="center" my={4}>
-        <p>Look like you don't have installed Argos GitHub App.</p>
-        <Button as="a" href={config.get("github.appUrl")}>
-          Install Argos GitHub App
-        </Button>
+      <Container>
+        <Card>
+          <CardHeader>
+            <CardTitle>Missing installation</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <CardText fontSize="md">
+              Look like you don't have installed Argos GitHub App.
+            </CardText>
+            <Button
+              as="a"
+              href={config.get("github.appUrl")}
+              w="fit-content"
+              mt={3}
+            >
+              Install Argos GitHub App
+            </Button>
+          </CardBody>
+        </Card>
       </Container>
     );
   }
