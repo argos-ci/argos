@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "scripts": {
+    "cypress:open": "cypress open"
+  },
+  "devDependencies": {
+    "@argos-ci/cypress": "latest",
+    "cypress": "^10.8.0"
+  }
+}
