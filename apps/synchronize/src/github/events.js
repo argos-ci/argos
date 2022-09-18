@@ -33,6 +33,19 @@ export async function handleGitHubEvents({ name, payload }) {
         }
         return;
       }
+      case "repository": {
+        switch (payload.action) {
+          case "renamed": {
+            const installation = await getOrCreateInstallation({
+              githubId: payload.installation.id,
+              deleted: false,
+            });
+            await synchronizeFromInstallationId(installation.id);
+            return;
+          }
+        }
+        return;
+      }
       case "installation_repositories": {
         switch (payload.action) {
           case "removed":
