@@ -4,3 +4,4 @@ node_modules/
 *.pem
 .env
 diff_tmp.png
+examples/*/package-lock.json

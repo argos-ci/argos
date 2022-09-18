@@ -1,0 +1,27 @@
+version: 2.1
+orbs:
+  node: circleci/node@5.0.2
+
+jobs:
+  upload_screenshots:
+    executor: node/default
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+        
+      # -----
+      # Insert here your steps required to take screenshots of
+      # your components or of your application.
+      # 
+      # Find integrations on https://docs.argos-ci.com/
+      # -----
+
+      - run:
+          name: Argos screenshots upload
+          command: npx @argos-ci/cli upload screenshots
+
+workflows:
+  ci:
+    jobs:
+      - upload_screenshots

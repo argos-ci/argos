@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          # A minimal fetch-depth of 2 is required
+          # to automatically detect branch in @argos-ci/cli
+          fetch-depth: 2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm ci
+
+      # -----
+      # Insert here your steps required to take screenshots of
+      # your components or of your application.
+      # 
+      # Find integrations on https://docs.argos-ci.com/
+      # -----
+
+      - name: Run Argos
+        continue-on-error: true
+        env:
+          ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
+        run: npx @argos-ci/cli upload screenshots/samples
