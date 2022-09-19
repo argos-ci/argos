@@ -1,11 +1,14 @@
 import * as React from "react";
 import { gql } from "graphql-tag";
 import { useMatch, useParams } from "react-router-dom";
+import { x } from "@xstyled/styled-components";
 import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbSeparator,
+  Icon,
 } from "@argos-ci/app/src/components";
+import { OrganizationIcon } from "@primer/octicons-react";
 import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
 import { OwnerBreadcrumbMenu } from "./OwnerBreadcrumbMenu";
 import { useQuery } from "../Apollo";
@@ -26,7 +29,7 @@ const OWNER_BREADCRUMB_OWNER_QUERY = gql`
 const InnerOwnerBreadcrumbItem = ({ ownerLogin }) => {
   const user = useUser();
   const match = useMatch(`/${ownerLogin}`);
-  const { data } = useQuery(OWNER_BREADCRUMB_OWNER_QUERY, {
+  const { data, loading } = useQuery(OWNER_BREADCRUMB_OWNER_QUERY, {
     variables: { login: ownerLogin },
   });
 
@@ -38,7 +41,18 @@ const InnerOwnerBreadcrumbItem = ({ ownerLogin }) => {
           to={`/${ownerLogin}`}
           aria-current={match ? "page" : undefined}
         >
-          <OwnerAvatar owner={data?.owner ?? null} size="sm" />
+          <x.div
+            minW={6}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            {loading ? null : data?.owner ? (
+              <OwnerAvatar owner={data.owner} size="sm" />
+            ) : (
+              <Icon as={OrganizationIcon} />
+            )}
+          </x.div>
           {ownerLogin}
         </BreadcrumbLink>
         {user && <OwnerBreadcrumbMenu />}
