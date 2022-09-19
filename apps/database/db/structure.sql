@@ -573,7 +573,7 @@ CREATE TABLE public.screenshot_diffs (
     id bigint NOT NULL,
     "buildId" bigint NOT NULL,
     "baseScreenshotId" bigint,
-    "compareScreenshotId" bigint NOT NULL,
+    "compareScreenshotId" bigint,
     score numeric(10,5),
     "jobStatus" public.job_status,
     "validationStatus" character varying(255) NOT NULL,
@@ -1696,3 +1696,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022090
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220912221410_add_build_parallel_total.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220918102241_fix_accounts_only_one_non_null_constraint.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220918153730_add_old_build_type.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220919175105_nullable_compare_screenshot_id.js', 1, NOW());

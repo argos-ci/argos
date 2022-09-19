@@ -47,42 +47,53 @@ describe("createBuildDiffs", () => {
 
     describe("with existing ScreenshotBucket", () => {
       let compareScreenshot2;
+      let removedScreenshot;
 
       beforeEach(async () => {
         baseBucket = await factory.create("ScreenshotBucket", {
           branch: "master",
           repositoryId: repository.id,
         });
-        baseScreenshot = await factory.create("Screenshot", {
-          name: "a",
-          s3Id: "a",
-          screenshotBucketId: baseBucket.id,
-        });
-        compareScreenshot2 = await factory.create("Screenshot", {
-          name: "a",
-          s3Id: "a",
-          screenshotBucketId: compareBucket.id,
-        });
+        [baseScreenshot, compareScreenshot2, removedScreenshot] =
+          await factory.createMany("Screenshot", [
+            { name: "a", s3Id: "a", screenshotBucketId: baseBucket.id },
+            { name: "a", s3Id: "a", screenshotBucketId: compareBucket.id },
+            {
+              name: "removed-screenshot",
+              s3Id: "a",
+              screenshotBucketId: baseBucket.id,
+            },
+          ]);
       });
 
       it("should return the build", async () => {
-        const diffs = sortBy(await createBuildDiffs(build), (diff) =>
-          Number(diff.baseScreenshotId)
+        const diffs = await createBuildDiffs(build);
+        const [addedDiff, updatedDiff, removedDiff] = diffs.sort(
+          (a, b) => a.id - b.id
         );
-        expect(diffs.length).toBe(2);
-        expect(diffs[0]).toMatchObject({
+
+        expect(diffs.length).toBe(3);
+        expect(addedDiff).toMatchObject({
           buildId: build.id,
           baseScreenshotId: null,
           compareScreenshotId: compareScreenshot1.id,
           jobStatus: "complete",
           validationStatus: ScreenshotDiff.VALIDATION_STATUSES.unknown,
         });
-        expect(diffs[1]).toMatchObject({
+        expect(updatedDiff).toMatchObject({
           buildId: build.id,
           baseScreenshotId: baseScreenshot.id,
           compareScreenshotId: compareScreenshot2.id,
           jobStatus: "pending",
           validationStatus: ScreenshotDiff.VALIDATION_STATUSES.unknown,
+        });
+        expect(removedDiff).toMatchObject({
+          buildId: build.id,
+          baseScreenshotId: removedScreenshot.id,
+          compareScreenshotId: null,
+          jobStatus: "complete",
+          validationStatus: ScreenshotDiff.VALIDATION_STATUSES.unknown,
+          score: null,
         });
       });
 
@@ -98,7 +109,7 @@ describe("createBuildDiffs", () => {
           const diffs = sortBy(await createBuildDiffs(build), (diff) =>
             Number(diff.baseScreenshotId)
           );
-          expect(diffs.length).toBe(2);
+          expect(diffs.length).toBe(3);
           expect(diffs[0]).toMatchObject({
             buildId: build.id,
             baseScreenshotId: null,
@@ -123,7 +134,7 @@ describe("createBuildDiffs", () => {
         const diffs = sortBy(await createBuildDiffs(build), (diff) =>
           Number(diff.baseScreenshotId)
         );
-        expect(diffs.length).toBe(2);
+        expect(diffs.length).toBe(3);
         expect(diffs[0]).toMatchObject({
           buildId: build.id,
           baseScreenshotId: null,

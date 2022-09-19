@@ -94,6 +94,26 @@ export async function createBuildDiffs(build) {
       []
     );
 
-    return ScreenshotDiff.query(trx).insert(inserts);
+    const compareScreenshotNames =
+      richBuild.compareScreenshotBucket.screenshots.map(({ name }) => name);
+
+    const removedScreenshots =
+      baseScreenshotBucket && baseScreenshotBucket.screenshots
+        ? baseScreenshotBucket.screenshots
+            .filter(({ name }) => !compareScreenshotNames.includes(name))
+            .map((baseScreenshot) => ({
+              buildId: richBuild.id,
+              baseScreenshotId: baseScreenshot.id,
+              compareScreenshotId: null,
+              jobStatus: "complete",
+              score: null,
+              validationStatus: ScreenshotDiff.VALIDATION_STATUSES.unknown,
+            }))
+        : [];
+
+    return ScreenshotDiff.query(trx).insert([
+      ...inserts,
+      ...removedScreenshots,
+    ]);
   });
 }

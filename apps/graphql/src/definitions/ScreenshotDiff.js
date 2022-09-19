@@ -18,8 +18,8 @@ export const typeDefs = gql`
     buildId: ID!
     baseScreenshotId: ID
     baseScreenshot: Screenshot
-    compareScreenshotId: ID!
-    compareScreenshot: Screenshot!
+    compareScreenshotId: ID
+    compareScreenshot: Screenshot
     score: Float
     url: String
     "Represent the state of the job generating the diffs"
@@ -42,6 +42,7 @@ export const resolvers = {
       return ScreenshotLoader.load(screenshotDiff.baseScreenshotId);
     },
     compareScreenshot: async (screenshotDiff) => {
+      if (!screenshotDiff.compareScreenshotId) return null;
       return ScreenshotLoader.load(screenshotDiff.compareScreenshotId);
     },
     url(screenshotDiff) {

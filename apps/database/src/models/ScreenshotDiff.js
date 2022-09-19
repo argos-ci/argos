@@ -17,7 +17,7 @@ export class ScreenshotDiff extends Model {
   /** @type {string | null} */
   baseScreenshotId;
 
-  /** @type {string} */
+  /** @type {string | null} */
   compareScreenshotId;
 
   /** @type {number | null} */
@@ -40,7 +40,7 @@ export class ScreenshotDiff extends Model {
       properties: {
         buildId: { type: "string" },
         baseScreenshotId: { type: ["string", "null"] },
-        compareScreenshotId: { type: "string" },
+        compareScreenshotId: { type: ["string", "null"] },
         s3Id: { type: ["string", "null"] },
         score: {
           type: ["number", "null"],
