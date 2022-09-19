@@ -3,7 +3,6 @@ import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
 import { Button, Loader, SecondaryTitle } from "@argos-ci/app/src/components";
 import {
-  EmptyScreenshotCard,
   ScreenshotsDiffCard,
   ScreenshotsDiffCardFragment,
 } from "./ScreenshotsDiffCard";
@@ -76,17 +75,13 @@ export function ScreenshotDiffsSection({
         {title}
       </SecondaryTitle>
       <x.div display="flex" flexDirection="column" gap={2}>
-        {screenshotDiffs.length === 0 ? (
-          <EmptyScreenshotCard />
-        ) : (
-          screenshotDiffs.map((screenshotDiff, index) => (
-            <ScreenshotsDiffCard
-              key={index}
-              screenshotDiff={screenshotDiff}
-              opened={opened}
-            />
-          ))
-        )}
+        {screenshotDiffs.map((screenshotDiff, index) => (
+          <ScreenshotsDiffCard
+            key={index}
+            screenshotDiff={screenshotDiff}
+            opened={opened}
+          />
+        ))}
       </x.div>
     </>
   );

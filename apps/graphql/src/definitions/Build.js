@@ -46,6 +46,7 @@ export const typeDefs = gql`
     addedScreenshotCount: Int!
     stableScreenshotCount: Int!
     updatedScreenshotCount: Int!
+    screenshotCount: Int!
   }
 
   input ScreenshotDiffWhere {
@@ -164,14 +165,16 @@ export const resolvers = {
 
       const stats = data.reduce(
         (res, { status, count }) => ({ ...res, [status]: count }),
-        {}
+        { failed: 0, added: 0, stable: 0, updated: 0 }
       );
 
       return {
-        failedScreenshotCount: stats.failed || 0,
-        addedScreenshotCount: stats.added || 0,
-        stableScreenshotCount: stats.stable || 0,
-        updatedScreenshotCount: stats.updated || 0,
+        failedScreenshotCount: stats.failed,
+        addedScreenshotCount: stats.added,
+        stableScreenshotCount: stats.stable,
+        updatedScreenshotCount: stats.updated,
+        screenshotCount:
+          stats.failed + stats.added + stats.stable + stats.updated,
       };
     },
   },

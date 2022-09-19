@@ -177,8 +177,8 @@ export class Build extends Model {
           }
 
           if (
-            diffJobStatuses.length === 1 &&
-            diffJobStatuses[0] === "complete"
+            diffJobStatuses.length === 0 ||
+            (diffJobStatuses.length === 1 && diffJobStatuses[0] === "complete")
           ) {
             return "complete";
           }

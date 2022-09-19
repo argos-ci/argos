@@ -90,7 +90,7 @@ describe("GraphQL", () => {
           },
           {
             number: 1,
-            status: "progress",
+            status: "stable",
             createdAt: "2017-02-04T17:14:28.167Z",
           },
         ],
