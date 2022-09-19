@@ -22,6 +22,6 @@ jobs:
 
       - name: Argos screenshots upload
         if: ${{ always() }}
-        run: npx argos-cli upload screenshots
+        run: npx @argos-ci/cli upload screenshots
         env:
           ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
