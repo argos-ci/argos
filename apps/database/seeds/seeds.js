@@ -166,6 +166,7 @@ exports.seed = async (knex) => {
     inProgressBuildId,
     failBuildId,
     stableBuildId,
+    ,
   ] = await knex("builds")
     .returning("id")
     .insert([
@@ -181,6 +182,7 @@ exports.seed = async (knex) => {
       { ...build, ...timeStamps, number: 10 }, // Progress
       { ...build, ...timeStamps, number: 11 }, // Fail
       { ...build, ...timeStamps, number: 12 }, // Stable
+      { ...build, ...timeStamps, number: 13 }, // Empty
     ]);
 
   const defaultScreenshotDiff = {

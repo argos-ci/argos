@@ -72,7 +72,12 @@ const CommitFields = ({ build, ...props }) => {
   );
 };
 
-export function StickySummaryMenu({ repository, build, ...props }) {
+export function StickySummaryMenu({
+  repository,
+  build,
+  screenshotDiffsCount,
+  ...props
+}) {
   return (
     <x.div
       position="sticky"
@@ -95,7 +100,9 @@ export function StickySummaryMenu({ repository, build, ...props }) {
         <BuildStatusBadge build={build} py={0.5} />
       </x.div>
 
-      <UpdateStatusButton repository={repository} build={build} flex={1} />
+      {screenshotDiffsCount !== 0 ? (
+        <UpdateStatusButton repository={repository} build={build} flex={1} />
+      ) : null}
     </x.div>
   );
 }

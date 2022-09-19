@@ -13,6 +13,11 @@ import {
   useTooltipState,
   TooltipAnchor,
   Tooltip,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardBody,
+  CardText,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
@@ -67,6 +72,9 @@ const BUILD_QUERY = gql`
           offset: $offset
           limit: $limit
         ) {
+          pageInfo {
+            totalCount
+          }
           ...ScreenshotDiffsPageFragment
         }
 
@@ -75,6 +83,7 @@ const BUILD_QUERY = gql`
           addedScreenshotCount
           stableScreenshotCount
           updatedScreenshotCount
+          screenshotCount
         }
       }
     }
@@ -86,6 +95,25 @@ const BUILD_QUERY = gql`
   ${UpdateStatusButtonBuildFragment}
   ${BuildStatusBadgeFragment}
 `;
+
+function NoChangeCard({ totalScreenshotCount }) {
+  return (
+    <Card mt={4}>
+      <CardHeader>
+        <CardTitle>
+          {totalScreenshotCount === 0 ? "Empty build" : "Stable build"}
+        </CardTitle>
+      </CardHeader>
+      <CardBody>
+        <CardText fontSize="md">
+          {totalScreenshotCount === 0
+            ? "This build does not have any screenshot to compare."
+            : "This build is stable. No change detected."}
+        </CardText>
+      </CardBody>
+    </Card>
+  );
+}
 
 function BuildStat({ status, count, label }) {
   const tooltip = useTooltipState();
@@ -249,11 +277,17 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
               </Button>
             ) : null}
 
-            <UpdateStatusButton repository={data.repository} build={build} />
+            {pageInfo.totalCount !== 0 ? (
+              <UpdateStatusButton repository={data.repository} build={build} />
+            ) : null}
           </x.div>
 
           {inView ? null : (
-            <StickySummaryMenu repository={data.repository} build={build} />
+            <StickySummaryMenu
+              repository={data.repository}
+              build={build}
+              screenshotDiffsCount={pageInfo.totalCount}
+            />
           )}
 
           {showStableScreenshots ? (
@@ -262,6 +296,10 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
               repositoryName={repositoryName}
               buildNumber={buildNumber}
             />
+          ) : null}
+
+          {pageInfo.totalCount === 0 ? (
+            <NoChangeCard totalScreenshotCount={stats.screenshotCount} />
           ) : null}
 
           <ScreenshotDiffsSection

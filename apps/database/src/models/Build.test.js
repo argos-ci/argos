@@ -195,7 +195,7 @@ describe("models/Build", () => {
       expect(statuses).toEqual([
         "pending",
         "pending",
-        "progress",
+        "complete",
         "error",
         "aborted",
       ]);
@@ -207,12 +207,18 @@ describe("models/Build", () => {
       const builds = await factory.createMany("Build", [
         { jobStatus: "pending" },
         { jobStatus: "progress" },
-        { jobStatus: "complete" },
         { jobStatus: "error" },
         { jobStatus: "aborted" },
       ]);
+
       const conclusions = await Build.getConclusions(builds);
-      expect(conclusions).toEqual([null, null, null, null, null]);
+      expect(conclusions).toEqual([null, null, null, null]);
+    });
+
+    it("should return 'stable' when empty", async () => {
+      const build = await factory.create("Build", { jobStatus: "complete" });
+      const conclusions = await Build.getConclusions([build]);
+      expect(conclusions).toEqual(["stable"]);
     });
 
     it("should return 'stable' when no diff detected", async () => {
