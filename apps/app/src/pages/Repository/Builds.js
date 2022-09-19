@@ -32,7 +32,11 @@ import { getPossessiveForm } from "../../modules/utils";
 import { hasWritePermission } from "../../modules/permissions";
 
 const REPOSITORY_BUILDS_QUERY = gql`
-  query RepositoryBuilds($ownerLogin: String!, $name: String!, $after: Int!) {
+  query REPOSITORY_BUILDS_QUERY(
+    $ownerLogin: String!
+    $name: String!
+    $after: Int!
+  ) {
     repository(ownerLogin: $ownerLogin, repositoryName: $name) {
       id
       permissions
