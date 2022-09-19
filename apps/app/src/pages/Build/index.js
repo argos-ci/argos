@@ -139,7 +139,7 @@ function BuildStat({ status, count, label }) {
 const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
   const [showStableScreenshots, setShowStableScreenshots] =
     React.useState(false);
-  const { observe, inView } = useInView();
+  const { observe, inView, scrollDirection } = useInView({});
 
   const { loading, data, fetchMore, startPolling, stopPolling } = useQuery(
     BUILD_QUERY,
@@ -247,6 +247,14 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
 
       <SummaryCard repository={data.repository} build={build} />
 
+      {!inView && scrollDirection.vertical === "up" ? (
+        <StickySummaryMenu
+          repository={data.repository}
+          build={build}
+          screenshotDiffsCount={pageInfo.totalCount}
+        />
+      ) : null}
+
       {inProgress ? (
         <LoadingAlert my={5} flexDirection="column">
           {getBuildStatusLabel({ build })}
@@ -281,14 +289,6 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
               <UpdateStatusButton repository={data.repository} build={build} />
             ) : null}
           </x.div>
-
-          {inView ? null : (
-            <StickySummaryMenu
-              repository={data.repository}
-              build={build}
-              screenshotDiffsCount={pageInfo.totalCount}
-            />
-          )}
 
           {showStableScreenshots ? (
             <StableScreenshots

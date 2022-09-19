@@ -93,6 +93,7 @@ export function StickySummaryMenu({
       pl={2}
       py={1}
       gap={4}
+      minH={10}
       {...props}
     >
       <x.div display="flex" gap={3} alignItems="center">
@@ -131,26 +132,24 @@ function ProgressField({ build: { batchCount, totalBatch } }) {
   );
 }
 
-export function SummaryCard({ build }) {
-  return (
-    <Card>
-      <CardBody display="grid" gridTemplateColumns={{ _: 1, sm: 2 }} gap={1}>
-        <IllustratedText field icon={ClockIcon}>
-          <Time date={build.createdAt} format="LLL" />
+export const SummaryCard = React.forwardRef(({ build }, ref) => (
+  <Card ref={ref}>
+    <CardBody display="grid" gridTemplateColumns={{ _: 1, sm: 2 }} gap={1}>
+      <IllustratedText field icon={ClockIcon}>
+        <Time date={build.createdAt} format="LLL" />
+      </IllustratedText>
+
+      <BranchNameField build={build} />
+
+      {build.name !== "default" ? (
+        <IllustratedText field icon={BookmarkIcon}>
+          {build.name}
         </IllustratedText>
+      ) : null}
 
-        <BranchNameField build={build} />
+      <CommitFields build={build} />
 
-        {build.name !== "default" ? (
-          <IllustratedText field icon={BookmarkIcon}>
-            {build.name}
-          </IllustratedText>
-        ) : null}
-
-        <CommitFields build={build} />
-
-        {build.totalBatch ? <ProgressField build={build} /> : null}
-      </CardBody>
-    </Card>
-  );
-}
+      {build.totalBatch ? <ProgressField build={build} /> : null}
+    </CardBody>
+  </Card>
+));
