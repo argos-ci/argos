@@ -11,7 +11,7 @@ describe("#diffImages", () => {
     });
 
     expect(result.score).toBeCloseTo(0.306, 2);
-    expect(result.pixels).toBeCloseTo(501e3, -3);
+    expect(result.pixels).toBeCloseTo(50e4, -4);
   });
 
   it("simple with enough fuzz", async () => {
@@ -125,7 +125,8 @@ describe("#diffImages", () => {
       ),
     });
 
-    expect(result).toMatchSnapshot();
+    expect(result.score).toBe(0);
+    expect(result.scoreRaw).toBeLessThan(1e-5);
   });
 
   it("imageCompression3", async () => {
@@ -144,7 +145,7 @@ describe("#diffImages", () => {
       ),
     });
 
-    expect(result.pixels).toBeCloseTo(35, -1);
+    expect(result.pixels).toBeCloseTo(35, -2);
     expect(result.score).toBeCloseTo(0, 3);
   });
 });

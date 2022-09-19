@@ -24,14 +24,6 @@ Object {
 }
 `;
 
-exports[`#diffImages imageCompression2 1`] = `
-Object {
-  "pixels": 0,
-  "score": 0,
-  "scoreRaw": 0,
-}
-`;
-
 exports[`#diffImages simple with enough fuzz 1`] = `
 Object {
   "pixels": 0,
