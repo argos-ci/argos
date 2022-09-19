@@ -181,8 +181,14 @@ export const resolvers = {
 
       return [context.user, ...owners];
     },
-    async owner(rootObject, args) {
-      return getOwner({ login: args.login });
+    async owner(rootObject, args, context) {
+      const owner = await getOwner({ login: args.login });
+      if (!owner) return null;
+      const ownerRepositories = await getOwnerRepositories(owner, {
+        user: context.user,
+        enabled: true,
+      });
+      return ownerRepositories.length === 0 ? null : owner;
     },
   },
 };

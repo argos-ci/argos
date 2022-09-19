@@ -34,7 +34,9 @@ export function NotFound(props) {
 }
 
 export function NotFoundWithContainer(props) {
-  <Container>
-    <NotFound {...props} />
-  </Container>;
+  return (
+    <Container>
+      <NotFound {...props} />
+    </Container>
+  );
 }

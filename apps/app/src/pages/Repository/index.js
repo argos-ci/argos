@@ -11,7 +11,7 @@ import { Query } from "../../containers/Apollo";
 import { HeaderTeleporter } from "../../containers/AppHeader";
 
 const REPOSITORY_QUERY = gql`
-  query repository($ownerLogin: String!, $repositoryName: String!) {
+  query REPOSITORY_QUERY($ownerLogin: String!, $repositoryName: String!) {
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
       name
