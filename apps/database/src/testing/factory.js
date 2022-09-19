@@ -135,14 +135,17 @@ factory.define("Plan", Plan, {
   githubId: factory.sequence("plan.githubId", (n) => n),
 });
 
-factory.define("Account", Account, {
-  userId: factory.assoc("User", "id"),
+factory.define("OrganizationAccount", Account, {
   organizationId: factory.assoc("Organization", "id"),
+});
+
+factory.define("UserAccount", Account, {
+  userId: factory.assoc("User", "id"),
 });
 
 factory.define("Purchase", Purchase, {
   planId: factory.assoc("User", "id"),
-  accountId: factory.assoc("Account", "id"),
+  accountId: factory.assoc("UserAccount", "id"),
   startDate: moment().subtract(10, "days").toISOString(),
   endDate: null,
 });

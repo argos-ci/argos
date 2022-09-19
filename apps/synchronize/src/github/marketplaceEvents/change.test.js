@@ -26,7 +26,7 @@ describe('marketplace "change" event', () => {
     const organization = await factory.create("Organization", {
       githubId: payloadAccount.id,
     });
-    account = await factory.create("Account", {
+    account = await factory.create("OrganizationAccount", {
       organizationId: organization.id,
     });
     previousPlan = await factory.create("Plan", {

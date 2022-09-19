@@ -18,9 +18,8 @@ describe('marketplace "pending_change" event', () => {
     const organization = await factory.create("Organization", {
       githubId: pendingChangePayload.previous_marketplace_purchase.account.id,
     });
-    account = await factory.create("Account", {
+    account = await factory.create("OrganizationAccount", {
       organizationId: organization.id,
-      userId: null,
     });
     previousPlan = await factory.create("Plan", {
       githubId: pendingChangePayload.previous_marketplace_purchase.plan.id,

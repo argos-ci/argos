@@ -84,7 +84,7 @@ CREATE TABLE public.accounts (
     "updatedAt" timestamp with time zone NOT NULL,
     "userId" bigint,
     "organizationId" bigint,
-    CONSTRAINT accounts_only_one_non_null CHECK ((("userId" IS NOT NULL) OR ("organizationId" IS NOT NULL)))
+    CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "organizationId") = 1))
 );
 
 
@@ -1694,3 +1694,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022090
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220905174153_remove_use_default_branch.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220909111750_add_build_type.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220912221410_add_build_parallel_total.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220918102241_fix_accounts_only_one_non_null_constraint.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220918153730_add_old_build_type.js', 1, NOW());
