@@ -9,6 +9,7 @@ export const typeDefs = gql`
     stable
     updated
     failed
+    removed
   }
 
   type ScreenshotDiff {
@@ -56,6 +57,8 @@ export const resolvers = {
       });
     },
     async status(screenshotDiff) {
+      if (!screenshotDiff.compareScreenshotId) return "removed";
+
       switch (screenshotDiff.score) {
         case null: {
           const { name } = await ScreenshotLoader.load(

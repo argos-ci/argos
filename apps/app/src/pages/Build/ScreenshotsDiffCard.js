@@ -95,7 +95,7 @@ export function ScreenshotsDiffCard({
             as={ScreenshotDiffStatusIcon(screenshotDiff.status)}
             color={getStatusPrimaryColor(screenshotDiff.status)}
           />
-          {compareScreenshot.name || baseScreenshot.name}
+          {compareScreenshot?.name || baseScreenshot.name}
         </CardTitle>
       </CardHeader>
 

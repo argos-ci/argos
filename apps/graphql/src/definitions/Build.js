@@ -46,6 +46,7 @@ export const typeDefs = gql`
     addedScreenshotCount: Int!
     stableScreenshotCount: Int!
     updatedScreenshotCount: Int!
+    removedScreenshotCount: Int!
     screenshotCount: Int!
   }
 
@@ -148,10 +149,15 @@ export const resolvers = {
     async stats(build) {
       const data = await ScreenshotDiff.query()
         .where("buildId", build.id)
-        .joinRelated("compareScreenshot")
+        .leftJoin(
+          "screenshots",
+          "screenshot_diffs.compareScreenshotId",
+          "screenshots.id"
+        )
         .select(
           knex.raw(`\
             CASE \
+              WHEN "compareScreenshotId" IS NULL THEN 'removed' \
               WHEN name ~ '(failed)' THEN 'failed' \
               WHEN score IS NULL THEN 'added' \
               WHEN score = 0 THEN 'stable' \
@@ -165,7 +171,7 @@ export const resolvers = {
 
       const stats = data.reduce(
         (res, { status, count }) => ({ ...res, [status]: count }),
-        { failed: 0, added: 0, stable: 0, updated: 0 }
+        { failed: 0, added: 0, stable: 0, updated: 0, removed: 0 }
       );
 
       return {
@@ -173,8 +179,11 @@ export const resolvers = {
         addedScreenshotCount: stats.added,
         stableScreenshotCount: stats.stable,
         updatedScreenshotCount: stats.updated,
-        screenshotCount:
-          stats.failed + stats.added + stats.stable + stats.updated,
+        removedScreenshotCount: stats.removed,
+        screenshotCount: Object.values(stats).reduce(
+          (sum, count) => parseInt(sum, 10) + count,
+          0
+        ),
       };
     },
   },
