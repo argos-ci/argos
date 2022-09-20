@@ -14,7 +14,7 @@ export function ScreenshotDiffStatusIcon(type) {
       return FileIcon;
     case "updated":
       return FileDiffIcon;
-    case "deleted":
+    case "removed":
       return FileRemovedIcon;
     case "stable":
       return ChecklistIcon;

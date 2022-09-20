@@ -33,6 +33,7 @@ export function getStatusColor(status) {
     case "error":
     case "rejected":
     case "expired":
+    case "removed":
       return "red";
 
     case "neutral":

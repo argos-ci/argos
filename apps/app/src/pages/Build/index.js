@@ -83,6 +83,7 @@ const BUILD_QUERY = gql`
           addedScreenshotCount
           stableScreenshotCount
           updatedScreenshotCount
+          removedScreenshotCount
           screenshotCount
         }
       }
@@ -192,12 +193,11 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
   const diffGroups = screenshotDiffs.reduce(
     (groups, screenshotDiff) => ({
       ...groups,
-      [screenshotDiff.status]: [
-        ...groups[screenshotDiff.status],
-        screenshotDiff,
-      ],
+      [screenshotDiff.status]: groups[screenshotDiff.status]
+        ? [...groups[screenshotDiff.status], screenshotDiff]
+        : [screenshotDiff],
     }),
-    { added: [], updated: [], failed: [] }
+    { added: [], updated: [], failed: [], removed: [] }
   );
 
   return (
@@ -231,6 +231,11 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
             status="added"
             count={stats.addedScreenshotCount}
             label="Added screenshots"
+          />
+          <BuildStat
+            status="removed"
+            count={stats.removedScreenshotCount}
+            label="Removed screenshots"
           />
           <BuildStat
             status="updated"
@@ -310,6 +315,11 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           <ScreenshotDiffsSection
             title="Added Screenshots"
             screenshotDiffs={diffGroups.added}
+          />
+          <ScreenshotDiffsSection
+            title="Removed Screenshots"
+            screenshotDiffs={diffGroups.removed}
+            opened={false}
           />
           <ScreenshotDiffsSection
             title="Updated Screenshots"

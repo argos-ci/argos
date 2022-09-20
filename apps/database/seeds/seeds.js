@@ -167,6 +167,7 @@ exports.seed = async (knex) => {
     failBuildId,
     stableBuildId,
     ,
+    removedBuildId,
   ] = await knex("builds")
     .returning("id")
     .insert([
@@ -183,6 +184,7 @@ exports.seed = async (knex) => {
       { ...build, ...timeStamps, number: 11 }, // Fail
       { ...build, ...timeStamps, number: 12 }, // Stable
       { ...build, ...timeStamps, number: 13 }, // Empty
+      { ...build, ...timeStamps, number: 14 }, // Removed
     ]);
 
   const defaultScreenshotDiff = {
@@ -212,6 +214,11 @@ exports.seed = async (knex) => {
   const updatedScreenshotDiff = {
     ...defaultScreenshotDiff,
     score: 0.3,
+  };
+
+  const removedScreenshotDiff = {
+    ...defaultScreenshotDiff,
+    compareScreenshotId: null,
   };
 
   const buildScreenshotDiffs = {
@@ -252,6 +259,10 @@ exports.seed = async (knex) => {
       { ...addedScreenshotDiff, compareScreenshotId: screenshots[2] },
     ],
     [stableBuildId]: duplicate(stableScreenshotDiff, 3),
+    [removedBuildId]: [
+      ...duplicate(stableScreenshotDiff, 3),
+      ...duplicate(removedScreenshotDiff, 2),
+    ],
   };
 
   await knex("screenshot_diffs").insert(
