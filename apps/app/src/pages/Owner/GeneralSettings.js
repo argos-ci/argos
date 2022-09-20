@@ -44,21 +44,18 @@ const PlanName = (props) => <x.div fontSize="4xl" mb={3} {...props} />;
 const Plan = ({ purchase }) => {
   if (!purchase.plan) return <PlanName mb={2}>No plan</PlanName>;
 
-  const { name, screenshotsLimitPerMonth } = purchase.plan;
   return (
     <React.Fragment>
       <PlanName>
-        {name}{" "}
+        {purchase.plan.name}{" "}
         <x.span text="xs" color="primary-500" fontWeight={800}>
           Beta
         </x.span>
       </PlanName>
       <x.ul display="flex" flexDirection="column" gap={2} my={4} ml={4}>
         <Feature>
-          <FeatureIcon as={(CheckCircleFillIcon, CheckCircleFillIcon)} />
-          {screenshotsLimitPerMonth === Infinity
-            ? "Unlimited screenshots"
-            : `Up to ${screenshotsLimitPerMonth.toLocaleString()} screenshots`}
+          <FeatureIcon as={CheckCircleFillIcon} />
+          Unlimited screenshots
         </Feature>
         <Feature>
           <FeatureIcon as={CheckCircleFillIcon} />
