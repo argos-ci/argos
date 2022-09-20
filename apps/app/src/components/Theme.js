@@ -18,6 +18,7 @@ export const theme = {
     "background-hover": defaultTheme.colors["gray-700-a60"],
     "background-active": defaultTheme.colors["gray-800-a60"],
     "background-focus": defaultTheme.colors["blue-gray-700-a50"],
+    "code-background": defaultTheme.colors["gray-700-a60"],
 
     border: defaultTheme.colors["gray-700-a80"],
     "border-active": defaultTheme.colors["gray-300"],

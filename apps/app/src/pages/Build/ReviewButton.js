@@ -13,20 +13,22 @@ import { gql, useMutation } from "@apollo/client";
 import { StatusIcon } from "../../containers/Status";
 import { hasWritePermission } from "../../modules/permissions";
 
-export const UpdateStatusButtonBuildFragment = gql`
-  fragment UpdateStatusButtonBuildFragment on Build {
+export const ReviewButtonBuildFragment = gql`
+  fragment ReviewButtonBuildFragment on Build {
     id
     status
+    type
   }
 `;
 
-export const UpdateStatusButtonRepositoryFragment = gql`
-  fragment UpdateStatusButtonRepositoryFragment on Repository {
+export const ReviewButtonRepositoryFragment = gql`
+  fragment ReviewButtonRepositoryFragment on Repository {
     permissions
   }
 `;
 
-export function UpdateStatusButton({ repository, build: { id, status } }) {
+export function ReviewButtonContent({ repository }) {
+  const { id, status } = repository.build;
   const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
   const [setValidationStatus, { loading, error }] = useMutation(gql`
     mutation setValidationStatus(
@@ -37,11 +39,12 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
         buildId: $buildId
         validationStatus: $validationStatus
       ) {
-        ...UpdateStatusButtonBuildFragment
+        id
+        ...ReviewButtonBuildFragment
       }
     }
 
-    ${UpdateStatusButtonBuildFragment}
+    ${ReviewButtonBuildFragment}
   `);
 
   if (!hasWritePermission(repository)) {
@@ -94,4 +97,12 @@ export function UpdateStatusButton({ repository, build: { id, status } }) {
       ) : null}
     </x.div>
   );
+}
+
+export function ReviewButton({ repository }) {
+  return ["accepted", "rejected", "diffDetected"].includes(
+    repository.build.status
+  ) ? (
+    <ReviewButtonContent repository={repository} />
+  ) : null;
 }

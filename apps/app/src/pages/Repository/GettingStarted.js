@@ -5,9 +5,9 @@ import {
   CardTitle,
   CardBody,
   CardText,
-  Tag,
   Alert,
   Code,
+  InlineCode,
 } from "@argos-ci/app/src/components";
 import { x } from "@xstyled/styled-components";
 import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
@@ -26,8 +26,8 @@ export function GettingStarted({ repository }) {
           </CardText>
 
           <CardText fontSize="md" mt={3}>
-            Use this <Tag>ARGOS_TOKEN</Tag> to authenticate your repository when
-            you send screenshots to Argos.
+            Use this <InlineCode>ARGOS_TOKEN</InlineCode> to authenticate your
+            repository when you send screenshots to Argos.
           </CardText>
 
           <Code mt={2}>ARGOS_TOKEN={repository.token}</Code>

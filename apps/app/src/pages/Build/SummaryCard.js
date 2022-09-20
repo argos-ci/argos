@@ -18,14 +18,15 @@ import {
   ProgressBar,
 } from "@argos-ci/app/src/components";
 import {
-  UpdateStatusButton,
-  UpdateStatusButtonBuildFragment,
-} from "./UpdateStatusButton";
+  ReviewButton,
+  ReviewButtonBuildFragment,
+  ReviewButtonRepositoryFragment,
+} from "./ReviewButton";
 import { getStatusPrimaryColor } from "../../containers/Status";
 import { BuildStatusBadge } from "../../containers/BuildStatusBadge";
 
-export const SummaryCardFragment = gql`
-  fragment SummaryCardFragment on Build {
+export const SummaryCardBuildFragment = gql`
+  fragment SummaryCardBuildFragment on Build {
     createdAt
     name
     number
@@ -38,10 +39,17 @@ export const SummaryCardFragment = gql`
       branch
       commit
     }
-    ...UpdateStatusButtonBuildFragment
+    ...ReviewButtonBuildFragment
   }
+  ${ReviewButtonBuildFragment}
+`;
 
-  ${UpdateStatusButtonBuildFragment}
+export const SummaryCardRepositoryFragment = gql`
+  fragment SummaryCardRepositoryFragment on Repository {
+    id
+    ...ReviewButtonRepositoryFragment
+  }
+  ${ReviewButtonRepositoryFragment}
 `;
 
 const BranchNameField = ({ build, ...props }) => {
@@ -100,10 +108,7 @@ export function StickySummaryMenu({
         Build #{build.number}
         <BuildStatusBadge build={build} py={0.5} />
       </x.div>
-
-      {screenshotDiffsCount !== 0 ? (
-        <UpdateStatusButton repository={repository} build={build} flex={1} />
-      ) : null}
+      <ReviewButton repository={repository} />
     </x.div>
   );
 }
