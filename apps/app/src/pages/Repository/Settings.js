@@ -26,7 +26,6 @@ import {
 import { x } from "@xstyled/styled-components";
 import { useMutation } from "@apollo/client";
 import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
-import { EnableToggleButton } from "./EnableToggleButton";
 
 const UPDATE_REFERENCE_BRANCH = gql`
   mutation updateReferenceBranch(
@@ -167,27 +166,6 @@ function BranchUpdateCard({ repository }) {
   );
 }
 
-function EnableRepositoryCard({ repository }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle id="enable-repository">Repository activation</CardTitle>
-      </CardHeader>
-      <CardBody>
-        {repository.enabled ? (
-          <>
-            This action doesn't delete the screenshots. It only prevents new
-            builds to be pushed.
-          </>
-        ) : (
-          <>Activate repository to start visual testing on this project.</>
-        )}
-        <EnableToggleButton repository={repository} mt={3} />
-      </CardBody>
-    </Card>
-  );
-}
-
 export function RepositorySettings({ repository }) {
   return (
     <Container>
@@ -199,13 +177,8 @@ export function RepositorySettings({ repository }) {
 
       <PrimaryTitle>Repository Settings</PrimaryTitle>
       <x.div display="flex" rowGap={4} flexDirection="column">
-        {repository.enabled && (
-          <>
-            <TokenCard repository={repository} />
-            <BranchUpdateCard repository={repository} />
-          </>
-        )}
-        <EnableRepositoryCard repository={repository} />
+        <TokenCard repository={repository} />
+        <BranchUpdateCard repository={repository} />
       </x.div>
     </Container>
   );

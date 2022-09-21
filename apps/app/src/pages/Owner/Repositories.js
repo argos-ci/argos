@@ -2,7 +2,7 @@
 import * as React from "react";
 import { gql } from "graphql-tag";
 import { x } from "@xstyled/styled-components";
-import { Query } from "../../containers/Apollo";
+import { useParams } from "react-router-dom";
 import {
   Container,
   SecondaryTitle,
@@ -10,7 +10,8 @@ import {
   Loader,
 } from "@argos-ci/app/src/components";
 import config from "../../config";
-import { useParams } from "react-router-dom";
+import { useUser } from "../../containers/User";
+import { Query } from "../../containers/Apollo";
 import {
   ActiveRepositoryCard,
   InactiveRepositoryCard,
@@ -27,6 +28,7 @@ const getRepositoryUrl = (owner, repository) =>
 
 export function OwnerRepositories() {
   const { ownerLogin } = useParams();
+  const user = useUser();
 
   return (
     <Container>
@@ -71,49 +73,69 @@ export function OwnerRepositories() {
             <>
               <OwnerTabs />
 
-              <x.div display="flex" flexDirection="column">
-                <SecondaryTitle id="active-repositories">
-                  Active repositories
-                </SecondaryTitle>
+              <SecondaryTitle id="active-repositories">
+                Repositories
+              </SecondaryTitle>
 
-                <x.div display="flex" flexDirection="column" gap={4}>
-                  {activeRepositories.length === 0 ? (
-                    <NoRepositoryCard />
-                  ) : (
-                    activeRepositories.map((repository) => (
-                      <ActiveRepositoryCard
-                        key={repository.id}
-                        repository={repository}
-                        url={getRepositoryUrl(owner, repository)}
-                      />
-                    ))
-                  )}
-                </x.div>
-
-                <SecondaryTitle id="inactive-repositories" mt={8}>
-                  Inactive repositories
-                </SecondaryTitle>
-
-                <x.div display="flex" flexDirection="column" gap={3}>
-                  {inactiveRepositories.length === 0 ? (
-                    <NoRepositoryCard />
-                  ) : (
-                    inactiveRepositories.map((repository) => (
-                      <InactiveRepositoryCard
-                        key={repository.id}
-                        repository={repository}
-                        url={getRepositoryUrl(owner, repository)}
-                      />
-                    ))
-                  )}
-                </x.div>
+              <x.div display="flex" flexDirection="column" gap={4}>
+                {activeRepositories.length === 0 ? (
+                  <NoRepositoryCard />
+                ) : (
+                  activeRepositories.map((repository) => (
+                    <ActiveRepositoryCard
+                      key={repository.id}
+                      repository={repository}
+                      url={getRepositoryUrl(owner, repository)}
+                    />
+                  ))
+                )}
               </x.div>
 
-              <x.div mt={14}>
-                Don't see your repo? Click here to{" "}
-                <Link href={config.get("github.appUrl")} target="_blank">
-                  manage access restrictions on GitHub <LinkExternalIcon />
-                </Link>
+              {user ? (
+                <>
+                  <SecondaryTitle id="inactive-repositories" mt={8}>
+                    Inactive repositories
+                  </SecondaryTitle>
+
+                  <x.div display="flex" flexDirection="column" gap={3}>
+                    {inactiveRepositories.length === 0 ? (
+                      <NoRepositoryCard />
+                    ) : (
+                      inactiveRepositories.map((repository) => (
+                        <InactiveRepositoryCard
+                          key={repository.id}
+                          repository={repository}
+                          url={getRepositoryUrl(owner, repository)}
+                        />
+                      ))
+                    )}
+                  </x.div>
+                </>
+              ) : null}
+
+              <x.div mt={10}>
+                Don't see your repo?{" "}
+                {user ? (
+                  <>
+                    Click here to{" "}
+                    <Link href={config.get("github.appUrl")} target="_blank">
+                      manage access restrictions on GitHub <LinkExternalIcon />
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href={`${config.get("github.loginUrl")}&redirect_uri=${
+                        window.location.origin
+                      }/auth/github/callback?r=${encodeURIComponent(
+                        window.location.pathname
+                      )}`}
+                    >
+                      Login
+                    </Link>{" "}
+                    to show the inactive repositories.
+                  </>
+                )}
               </x.div>
             </>
           );

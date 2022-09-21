@@ -25,9 +25,7 @@ describe("createBuildDiffs", () => {
     let repository;
 
     beforeEach(async () => {
-      repository = await factory.create("Repository", {
-        enabled: true,
-      });
+      repository = await factory.create("Repository");
       compareBucket = await factory.create("ScreenshotBucket", {
         branch: "BUGS-123",
         repositoryId: repository.id,
@@ -169,9 +167,7 @@ describe("createBuildDiffs", () => {
     let repository;
 
     beforeEach(async () => {
-      repository = await factory.create("Repository", {
-        enabled: true,
-      });
+      repository = await factory.create("Repository");
     });
 
     describe("without base screenshot bucket", () => {

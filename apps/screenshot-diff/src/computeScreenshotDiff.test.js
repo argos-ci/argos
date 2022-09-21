@@ -37,10 +37,7 @@ describe("#computeScreenshotDiff", () => {
   beforeEach(async () => {
     notifications.pushBuildNotification.mockReset();
 
-    const repository = await factory.create("Repository", {
-      enabled: true,
-      token: "xx",
-    });
+    const repository = await factory.create("Repository", { token: "xx" });
     compareBucket = await factory.create("ScreenshotBucket", {
       name: "test-bucket",
       branch: "test-branch",

@@ -10,7 +10,7 @@ import { repoAuth } from "../../../middlewares/repoAuth";
 import { getRedisLock } from "../../../redis";
 import { validate } from "../../../middlewares/validate";
 import { SHA1_REGEX_STR, SHA256_REGEX_STR } from "../../../constants";
-import { mustBeEnabledAuthRepo, getUnknownScreenshotKeys } from "./util";
+import { getUnknownScreenshotKeys } from "./util";
 
 const router = express.Router();
 export default router;
@@ -161,7 +161,6 @@ const handleCreateParallel = async ({ req }) => {
 router.post(
   "/builds",
   repoAuth,
-  mustBeEnabledAuthRepo,
   express.json(),
   validateRoute,
   asyncHandler(async (req, res) => {

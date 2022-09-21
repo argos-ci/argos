@@ -16,11 +16,10 @@ export class Repository extends Model {
 
   static get jsonSchema() {
     return mergeSchemas(timestampsSchema, {
-      required: ["githubId", "name", "enabled", "private", "defaultBranch"],
+      required: ["githubId", "name", "private", "defaultBranch"],
       properties: {
         githubId: { type: "number" },
         name: { type: "string" },
-        enabled: { type: "boolean" },
         token: { type: "string" },
         organizationId: { type: ["string", null] },
         userId: { type: ["string", null] },
