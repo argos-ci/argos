@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import { x } from "@xstyled/styled-components";
 import {
   IoBalloonOutline,
@@ -54,16 +55,10 @@ export default function Home() {
         borderBottom={1}
         borderColor="border"
       >
-        <x.div
-          mt={10}
-          text={{ _: "5xl", md: "6xl" }}
-          fontWeight="800"
-          whiteSpace="nowrap"
-        >
-          + 10 000 000
-        </x.div>
-        <x.div text="3xl">screenshots / month</x.div>
-        <PageContainer mt={10}>
+        <PageContainer>
+          <SectionTitle>
+            The best product teams trust Argos to avoid visual regression
+          </SectionTitle>
           <Brands />
         </PageContainer>
       </Section>

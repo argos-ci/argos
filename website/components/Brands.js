@@ -12,6 +12,7 @@ const Brand = (props) => (
     flex={1}
     h={{ _: "150px", md: 24 }}
     borderStyle="dashed"
+    mt={10}
     {...props}
   />
 );
