@@ -128,7 +128,7 @@ export class GitHubSynchronizer {
           return repository.$query().patchAndFetch(data);
         }
 
-        return Repository.query().insertAndFetch({ ...data, enabled: false });
+        return Repository.query().insertAndFetch({ ...data });
       })
     );
 

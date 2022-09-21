@@ -41,29 +41,6 @@ describe("api v2", () => {
       });
     });
 
-    describe("with repository not enabled", () => {
-      beforeEach(async () => {
-        await factory.create("Repository", {
-          enabled: false,
-          name: "my-repo",
-          token: "awesome-token",
-        });
-      });
-
-      it("should respond 403", async () => {
-        await request(app)
-          .post("/v2/builds")
-          .set("Host", "api.argos-ci.dev")
-          .set("Authorization", "Bearer awesome-token")
-          .expect((res) => {
-            expect(res.body.error.message).toBe(
-              `Repository not enabled (name: "my-repo")`
-            );
-          })
-          .expect(403);
-      });
-    });
-
     describe("with valid repository", () => {
       let ctx = {};
 

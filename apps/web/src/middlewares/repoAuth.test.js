@@ -14,7 +14,6 @@ describe("repoAuth", () => {
 
   beforeEach(async () => {
     repository = await factory.create("Repository", {
-      enabled: false,
       name: "foo",
       token: "the-awesome-token",
     });

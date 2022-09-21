@@ -89,7 +89,6 @@ factory.define("Organization", Organization, {
 factory.define("Repository", Repository, {
   githubId: factory.sequence("repository.githubId", (n) => n),
   name: "default",
-  enabled: true,
   defaultBranch: "master",
   baselineBranch: null,
   organizationId: factory.assoc("Organization", "id"),

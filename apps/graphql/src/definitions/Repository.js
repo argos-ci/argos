@@ -1,5 +1,3 @@
-import crypto from "crypto";
-import { promisify } from "util";
 import { gql } from "graphql-tag";
 import { transaction } from "@argos-ci/database";
 import { Build, Repository } from "@argos-ci/database/models";
@@ -37,8 +35,6 @@ export const typeDefs = gql`
   }
 
   extend type Mutation {
-    "Enable or disable a repository."
-    toggleRepository(enabled: Boolean!, repositoryId: String!): Repository!
     "Update repository baseline branch"
     updateReferenceBranch(
       repositoryId: String!
@@ -46,8 +42,6 @@ export const typeDefs = gql`
     ): Repository!
   }
 `;
-
-const generateRandomBytes = promisify(crypto.randomBytes);
 
 export async function getRepository({ ownerLogin, name, user }) {
   const owner = await getOwner({ login: ownerLogin });
@@ -78,6 +72,10 @@ async function checkUserRepositoryAccess({ user, repositoryId }, { trx }) {
 
 export const resolvers = {
   Repository: {
+    async enabled(repository) {
+      const buildCount = await repository.$relatedQuery("builds").resultSize();
+      return buildCount > 0;
+    },
     async token(repository, args, context) {
       const hasWritePermission = await repository.$checkWritePermission(
         context.user
@@ -137,37 +135,6 @@ export const resolvers = {
     },
   },
   Mutation: {
-    async toggleRepository(source, { repositoryId, enabled }, context) {
-      return transaction(async (trx) => {
-        await checkUserRepositoryAccess(
-          { user: context.user, repositoryId },
-          { trx }
-        );
-
-        const repository = await Repository.query(trx).patchAndFetchById(
-          repositoryId,
-          { enabled }
-        );
-
-        if (!repository) {
-          throw new APIError("Repository not found");
-        }
-
-        // We can skip further work when disabling a repository
-        if (!enabled) {
-          return repository;
-        }
-
-        if (!repository.token) {
-          const token = await generateRandomBytes(20);
-          return Repository.query(trx).patchAndFetchById(repositoryId, {
-            token: token.toString("hex"),
-          });
-        }
-
-        return repository;
-      });
-    },
     async updateReferenceBranch(
       source,
       { repositoryId, baselineBranch },

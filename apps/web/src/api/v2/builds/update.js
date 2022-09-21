@@ -7,7 +7,7 @@ import config from "@argos-ci/config";
 import { job as buildJob } from "@argos-ci/build";
 import { asyncHandler } from "../../../util";
 import { repoAuth } from "../../../middlewares/repoAuth";
-import { mustBeEnabledAuthRepo, getUnknownScreenshotKeys } from "./util";
+import { getUnknownScreenshotKeys } from "./util";
 import { validate } from "../../../middlewares/validate";
 import { SHA256_REGEX_STR } from "../../../constants";
 
@@ -158,7 +158,6 @@ const handleUpdateSingle = async ({ req, build, unknownKeys }) => {
 router.put(
   "/builds/:buildId",
   repoAuth,
-  mustBeEnabledAuthRepo,
   express.json(),
   validateRoute,
   asyncHandler(async (req, res) => {

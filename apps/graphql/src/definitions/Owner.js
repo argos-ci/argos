@@ -63,15 +63,28 @@ export async function getOwner({ login }) {
   return null;
 }
 
+function addEnableFilter({ enabled, query }) {
+  const enabledQuery = query
+    .leftJoin("builds", "repositories.id", "builds.repositoryId")
+    .groupBy("repositories.id");
+
+  return enabled
+    ? enabledQuery.havingRaw("count(builds.id) > 0")
+    : enabledQuery.havingRaw("count(builds.id) = 0");
+}
+
 function getOwnerRepositories(owner, { user, enabled } = {}) {
   if (!user) {
-    const repositoriesQuery = owner.$relatedQuery("repositories").where({
-      private: false,
-      [`repositories.${owner.type()}Id`]: owner.id,
-    });
+    const repositoriesQuery = owner
+      .$relatedQuery("repositories")
+      .where({
+        private: false,
+        [`repositories.${owner.type()}Id`]: owner.id,
+      })
+      .orderBy("repositories.name", "asc");
 
     if (enabled !== undefined) {
-      return repositoriesQuery.where({ enabled });
+      return addEnableFilter({ enabled, query: repositoriesQuery });
     }
 
     return repositoriesQuery;
@@ -79,6 +92,7 @@ function getOwnerRepositories(owner, { user, enabled } = {}) {
 
   const repositoriesQuery = owner
     .$relatedQuery("repositories")
+    .select("repositories.*")
     .whereIn("repositories.id", (builder) =>
       builder
         .select("repositories.id")
@@ -95,10 +109,11 @@ function getOwnerRepositories(owner, { user, enabled } = {}) {
             [`repositories.${owner.type()}Id`]: owner.id,
           });
         })
-    );
+    )
+    .orderBy("repositories.name", "asc");
 
   if (enabled !== undefined) {
-    return repositoriesQuery.where({ enabled });
+    return addEnableFilter({ enabled, query: repositoriesQuery }).debug();
   }
 
   return repositoriesQuery;
@@ -186,7 +201,7 @@ export const resolvers = {
       if (!owner) return null;
       const ownerRepositories = await getOwnerRepositories(owner, {
         user: context.user,
-        enabled: true,
+        enabled: context.user ? undefined : true,
       });
       return ownerRepositories.length === 0 ? null : owner;
     },

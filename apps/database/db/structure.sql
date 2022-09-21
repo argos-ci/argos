@@ -490,7 +490,6 @@ CREATE TABLE public.repositories (
     id bigint NOT NULL,
     "githubId" integer NOT NULL,
     name character varying(255) NOT NULL,
-    enabled boolean DEFAULT false NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     token character varying(255),
@@ -1255,13 +1254,6 @@ CREATE INDEX purchases_planid_index ON public.purchases USING btree ("planId");
 
 
 --
--- Name: repositories_enabled_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX repositories_enabled_index ON public.repositories USING btree (enabled);
-
-
---
 -- Name: repositories_githubid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1697,3 +1689,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022091
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220918102241_fix_accounts_only_one_non_null_constraint.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220918153730_add_old_build_type.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220919175105_nullable_compare_screenshot_id.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220921142914_remove.js', 1, NOW());
