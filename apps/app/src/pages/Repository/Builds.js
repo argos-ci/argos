@@ -200,7 +200,7 @@ function BuildsList({ repository }) {
 
       {pageInfo.hasNextPage && (
         <Button mt={3} mx="auto" onClick={loadNextPage} disabled={moreLoading}>
-          Load More {moreLoading && <Loader />}
+          Load More {moreLoading && <Loader maxH={4} />}
         </Button>
       )}
     </Container>

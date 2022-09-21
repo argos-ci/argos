@@ -19,6 +19,7 @@ export function getStatusColor(status) {
       return "primary";
 
     case "orphan":
+    case "info":
       return "blue";
 
     case "success":

@@ -27,6 +27,8 @@ export const typeDefs = gql`
     defaultBranch: String
     "Override branch name"
     baselineBranch: String
+    "Reference branch"
+    referenceBranch: String
   }
 
   extend type Query {

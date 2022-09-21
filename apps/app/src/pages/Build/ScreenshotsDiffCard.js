@@ -5,15 +5,14 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardBody,
   BaseLink,
-  LinkBlock,
   useDisclosureState,
-  DisclosureContent,
-  Disclosure,
   Icon,
+  CollapseCardHeader,
+  CollapseCardTitle,
+  CollapseCardBody,
+  CollapseCard,
 } from "@argos-ci/app/src/components";
-import { ChevronRightIcon } from "@primer/octicons-react";
 import { getStatusPrimaryColor } from "../../containers/Status";
 import { ScreenshotDiffStatusIcon } from "./ScreenshotDiffStatusIcons";
 
@@ -64,70 +63,53 @@ export function ScreenshotsDiffCard({
   opened = true,
   ...props
 }) {
-  const { compareScreenshot, baseScreenshot, url } = screenshotDiff;
   const disclosure = useDisclosureState({ defaultOpen: opened });
+  const { compareScreenshot, baseScreenshot, url } = screenshotDiff;
 
   return (
-    <Card {...props}>
-      <CardHeader
+    <CollapseCard {...props}>
+      <CollapseCardHeader
+        state={disclosure}
         position="sticky"
         top={40}
         alignSelf="flex-start"
-        borderBottom={disclosure.open ? 1 : 0}
       >
-        <CardTitle display="flex" alignItems="center" gap={1} fontSize="sm">
-          <LinkBlock
-            as={Disclosure}
-            state={disclosure}
-            px={1}
-            color="secondary-text"
-          >
-            <x.div
-              as={ChevronRightIcon}
-              transform
-              rotate={disclosure.open ? 90 : 0}
-              transitionDuration={300}
-              w={4}
-              h={4}
-            />
-          </LinkBlock>
+        <CollapseCardTitle state={disclosure}>
           <Icon
             as={ScreenshotDiffStatusIcon(screenshotDiff.status)}
             color={getStatusPrimaryColor(screenshotDiff.status)}
           />
           {compareScreenshot?.name || baseScreenshot.name}
-        </CardTitle>
-      </CardHeader>
+        </CollapseCardTitle>
+      </CollapseCardHeader>
 
-      <DisclosureContent state={disclosure}>
-        <CardBody display="flex" gap={1} p={1}>
+      <CollapseCardBody state={disclosure} display="flex" gap={1} p={1}>
+        <Screenshot
+          screenshot={baseScreenshot}
+          title="Base screenshot"
+          visible={disclosure.open}
+        />
+
+        {compareScreenshot && screenshotDiff.status !== "stable" ? (
           <Screenshot
-            screenshot={baseScreenshot}
-            title="Base screenshot"
+            screenshot={compareScreenshot}
+            title="Current screenshot"
             visible={disclosure.open}
           />
+        ) : (
+          <EmptyScreenshot />
+        )}
 
-          {compareScreenshot && screenshotDiff.status !== "stable" ? (
-            <Screenshot
-              screenshot={compareScreenshot}
-              title="Current screenshot"
-              visible={disclosure.open}
-            />
-          ) : (
-            <EmptyScreenshot />
-          )}
-
-          {url ? (
-            <Screenshot
-              screenshot={{ url, name: "diff" }}
-              title="Diff"
-              visible={disclosure.open}
-            />
-          ) : (
-            <EmptyScreenshot />
-          )}
-        </CardBody>
-      </DisclosureContent>
-    </Card>
+        {url ? (
+          <Screenshot
+            screenshot={{ url, name: "diff" }}
+            title="Diff"
+            visible={disclosure.open}
+          />
+        ) : (
+          <EmptyScreenshot />
+        )}
+      </CollapseCardBody>
+    </CollapseCard>
   );
 }

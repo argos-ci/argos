@@ -13,19 +13,14 @@ import {
   useTooltipState,
   TooltipAnchor,
   Tooltip,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
-  CardText,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
 import {
-  UpdateStatusButton,
-  UpdateStatusButtonBuildFragment,
-  UpdateStatusButtonRepositoryFragment,
-} from "./UpdateStatusButton";
+  ReviewButton,
+  ReviewButtonBuildFragment,
+  ReviewButtonRepositoryFragment,
+} from "./ReviewButton";
 import { EyeClosedIcon, EyeIcon } from "@primer/octicons-react";
 import {
   getBuildStatusLabel,
@@ -34,7 +29,8 @@ import {
 import {
   StickySummaryMenu,
   SummaryCard,
-  SummaryCardFragment,
+  SummaryCardBuildFragment,
+  SummaryCardRepositoryFragment,
 } from "./SummaryCard";
 import { ScreenshotDiffStatusIcon } from "./ScreenshotDiffStatusIcons";
 import {
@@ -48,6 +44,12 @@ import {
   ScreenshotDiffsSection,
 } from "./ScreenshotDiffsSection";
 import { StableScreenshots } from "./StableScreenshotDiffs";
+import {
+  BuildStatusInfo,
+  BuildStatusInfoBuildFragment,
+  BuildStatusInfoRepositoryFragment,
+  BuildStatusInfoScreenshotDiffResultFragment,
+} from "./BuildStatusInfo";
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
@@ -59,13 +61,16 @@ const BUILD_QUERY = gql`
   ) {
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
-      ...UpdateStatusButtonRepositoryFragment
+      ...BuildStatusInfoRepositoryFragment
+      ...ReviewButtonRepositoryFragment
+      ...SummaryCardRepositoryFragment
 
       build(number: $buildNumber) {
         id
-        ...SummaryCardFragment
-        ...UpdateStatusButtonBuildFragment
+        ...SummaryCardBuildFragment
+        ...ReviewButtonBuildFragment
         ...BuildStatusBadgeFragment
+        ...BuildStatusInfoBuildFragment
 
         screenshotDiffs(
           where: { passing: false }
@@ -76,6 +81,7 @@ const BUILD_QUERY = gql`
             totalCount
           }
           ...ScreenshotDiffsPageFragment
+          ...BuildStatusInfoScreenshotDiffResultFragment
         }
 
         stats {
@@ -90,31 +96,16 @@ const BUILD_QUERY = gql`
     }
   }
 
-  ${UpdateStatusButtonRepositoryFragment}
-  ${SummaryCardFragment}
+  ${ReviewButtonRepositoryFragment}
+  ${SummaryCardBuildFragment}
+  ${SummaryCardRepositoryFragment}
   ${ScreenshotDiffsPageFragment}
-  ${UpdateStatusButtonBuildFragment}
+  ${ReviewButtonBuildFragment}
   ${BuildStatusBadgeFragment}
+  ${BuildStatusInfoRepositoryFragment}
+  ${BuildStatusInfoBuildFragment}
+  ${BuildStatusInfoScreenshotDiffResultFragment}
 `;
-
-function NoChangeCard({ totalScreenshotCount }) {
-  return (
-    <Card mt={4}>
-      <CardHeader>
-        <CardTitle>
-          {totalScreenshotCount === 0 ? "Empty build" : "Stable build"}
-        </CardTitle>
-      </CardHeader>
-      <CardBody>
-        <CardText fontSize="md">
-          {totalScreenshotCount === 0
-            ? "This build does not have any screenshot to compare."
-            : "This build is stable. No change detected."}
-        </CardText>
-      </CardBody>
-    </Card>
-  );
-}
 
 function BuildStat({ status, count, label }) {
   const tooltip = useTooltipState();
@@ -266,6 +257,11 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
         </LoadingAlert>
       ) : (
         <>
+          <BuildStatusInfo
+            build={build}
+            referenceBranch={data.repository.referenceBranch}
+          />
+
           <x.div
             display="flex"
             justifyContent="space-between"
@@ -289,10 +285,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
                 </IllustratedText>
               </Button>
             ) : null}
-
-            {pageInfo.totalCount !== 0 ? (
-              <UpdateStatusButton repository={data.repository} build={build} />
-            ) : null}
+            <ReviewButton repository={data.repository} />
           </x.div>
 
           {showStableScreenshots ? (
@@ -301,10 +294,6 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
               repositoryName={repositoryName}
               buildNumber={buildNumber}
             />
-          ) : null}
-
-          {pageInfo.totalCount === 0 ? (
-            <NoChangeCard totalScreenshotCount={stats.screenshotCount} />
           ) : null}
 
           <ScreenshotDiffsSection
