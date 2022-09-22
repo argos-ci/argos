@@ -7,7 +7,6 @@ import { useUser } from "../containers/User";
 import { isUserSyncing } from "../modules/user";
 import config from "../config";
 import {
-  BaseLink,
   Button,
   Card,
   CardBody,
@@ -18,12 +17,6 @@ import {
   Icon,
   Link,
   Loader,
-  Menu,
-  MenuButton,
-  MenuIcon,
-  MenuItem,
-  MenuSeparator,
-  MenuTitle,
   PrimaryTitle,
   Table,
   Tbody,
@@ -31,16 +24,16 @@ import {
   Th,
   Thead,
   Tr,
-  useMenuState,
   IllustratedText,
   LinkBlock,
   Tag,
   TagButton,
+  useTooltipState,
+  TooltipAnchor,
+  Tooltip,
 } from "@argos-ci/app/src/components";
 import {
-  KebabHorizontalIcon,
   LinkExternalIcon,
-  KeyIcon,
   GearIcon,
   LockIcon,
   EyeClosedIcon,
@@ -116,45 +109,18 @@ function RepositoryNameCell({
   );
 }
 
-function ActionsMenuCell({ repository, repositoryUrl }) {
-  const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
+function RestrictedAccess() {
+  const tooltip = useTooltipState();
 
   return (
-    <Td verticalAlign="middle">
-      {hasWritePermission(repository) ? (
-        <>
-          <TagButton as={MenuButton} state={menu} py={2}>
-            <Icon as={KebabHorizontalIcon} />
-          </TagButton>
-          <Menu aria-label="User settings" state={menu}>
-            <MenuTitle>Repositories actions</MenuTitle>
-            <MenuSeparator />
-            <MenuItem
-              state={menu}
-              as={BaseLink}
-              to={`${repositoryUrl}/settings#argos-token`}
-            >
-              <MenuIcon as={KeyIcon} />
-              Get token
-            </MenuItem>
-            <MenuItem
-              state={menu}
-              as={BaseLink}
-              to={`${repositoryUrl}/settings`}
-            >
-              <MenuIcon as={GearIcon} size={24} />
-              Settings
-            </MenuItem>
-          </Menu>
-        </>
-      ) : (
-        <>
-          <Tag display="block" py={1} color="text-secondary">
-            <Icon as={LockIcon} />
-          </Tag>
-        </>
-      )}
-    </Td>
+    <>
+      <TooltipAnchor state={tooltip} style={{ width: "fit-content" }}>
+        <Tag display="block" py={1} color="text-secondary">
+          <Icon as={LockIcon} />
+        </Tag>
+      </TooltipAnchor>
+      <Tooltip state={tooltip}>Restricted access</Tooltip>
+    </>
   );
 }
 
@@ -205,7 +171,7 @@ function RepositoriesList({ repositories, ...props }) {
             <Th>Organization / Repository</Th>
             <Th>Last Build</Th>
             <Th>Status</Th>
-            <Th>Actions</Th>
+            <Th>Settings</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -221,20 +187,22 @@ function RepositoriesList({ repositories, ...props }) {
                   repositoryUrl={repositoryUrl}
                 />
                 <BuildTagCell build={lastBuild} repositoryUrl={repositoryUrl} />
-                <Td verticalAlign="middle">
-                  <Tag
-                    color={
-                      repository.enabled ? "primary-text" : "secondary-text"
-                    }
-                    py={1}
-                  >
-                    {repository.enabled ? "Active" : "Deactivated"}
-                  </Tag>
+                <Td
+                  verticalAlign="middle"
+                  color={repository.enabled ? "primary-text" : "secondary-text"}
+                >
+                  {repository.enabled ? "Active" : "Deactivated"}
                 </Td>
-                <ActionsMenuCell
-                  repository={repository}
-                  repositoryUrl={repositoryUrl}
-                />
+
+                <Td verticalAlign="middle">
+                  {hasWritePermission(repository) ? (
+                    <TagButton as={LinkBlock} to={`${repositoryUrl}/settings`}>
+                      <Icon as={GearIcon} />
+                    </TagButton>
+                  ) : (
+                    <RestrictedAccess />
+                  )}
+                </Td>
               </Tr>
             );
           })}

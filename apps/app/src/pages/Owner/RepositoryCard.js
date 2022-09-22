@@ -7,9 +7,9 @@ import {
   CardTitle,
   Link,
   TagButton,
-  BaseLink,
   Icon,
   IllustratedText,
+  LinkBlock,
 } from "@argos-ci/app/src/components";
 
 export const OwnerRepositoryCardFragment = gql`
@@ -51,7 +51,7 @@ export function InactiveRepositoryCard({ repository, url, ...props }) {
             <Link to={`${url}/builds`}>{repository.name}</Link>
           </IllustratedText>
         </CardTitle>
-        <TagButton variant="neutral" as={BaseLink} to={`${url}/settings`}>
+        <TagButton as={LinkBlock} to={`${url}/settings`}>
           <Icon as={GearIcon} />
           Settings
         </TagButton>
