@@ -1,5 +1,6 @@
-import moment from "moment";
 import * as React from "react";
+import moment from "moment";
+import { x } from "@xstyled/styled-components";
 import { Children, forwardRef, useCallback, useEffect, useState } from "react";
 
 export const Time = forwardRef(({ date, format, children, ...props }, ref) => {
@@ -19,7 +20,7 @@ export const Time = forwardRef(({ date, format, children, ...props }, ref) => {
     return () => clearInterval(id);
   }, [getFormattedDate]);
   return (
-    <time
+    <x.time
       ref={ref}
       data-test-hidden
       dateTime={moment(date).toISOString()}
@@ -27,6 +28,6 @@ export const Time = forwardRef(({ date, format, children, ...props }, ref) => {
       {...props}
     >
       {children ?? fromNow}
-    </time>
+    </x.time>
   );
 });

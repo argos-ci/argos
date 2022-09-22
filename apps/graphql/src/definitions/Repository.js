@@ -1,6 +1,7 @@
 import { gql } from "graphql-tag";
+import moment from "moment";
 import { transaction } from "@argos-ci/database";
-import { Build, Repository } from "@argos-ci/database/models";
+import { Build, Repository, Screenshot } from "@argos-ci/database/models";
 import { APIError } from "../util";
 import { getOwner } from "./Owner";
 
@@ -29,6 +30,10 @@ export const typeDefs = gql`
     baselineBranch: String
     "Reference branch"
     referenceBranch: String
+    "Current month used screenshots"
+    currentMonthUsedScreenshots: Int!
+    "Private repository on GitHub"
+    private: Boolean!
   }
 
   extend type Query {
@@ -125,6 +130,17 @@ export const resolvers = {
         .limit(1)
         .first();
       return build ? build.id : null;
+    },
+    async currentMonthUsedScreenshots(repository) {
+      return Screenshot.query()
+        .joinRelated("screenshotBucket")
+        .where("screenshotBucket.repositoryId", repository.id)
+        .where(
+          "screenshots.createdAt",
+          ">=",
+          moment().startOf("month").toISOString()
+        )
+        .resultSize();
     },
   },
   Query: {

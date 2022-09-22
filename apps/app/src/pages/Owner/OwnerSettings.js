@@ -19,6 +19,20 @@ import { hasWritePermission } from "../../modules/permissions";
 import { Query } from "../../containers/Apollo";
 import { OwnerTabs } from "./OwnerTabs";
 
+const OWNER_SETTINGS_QUERY = gql`
+  query OWNER_SETTINGS_QUERY($login: String!) {
+    owner(login: $login) {
+      id
+      permissions
+      ...OwnerSettingsFragment
+      ...OwnerPermissionsSettingsFragment
+    }
+  }
+
+  ${OwnerSettingsFragment}
+  ${OwnerPermissionsSettingsFragment}
+`;
+
 function SettingsSidebar({ owner }) {
   return (
     <SidebarList>
@@ -44,22 +58,7 @@ export function OwnerSettings() {
         <title>{ownerLogin} • Settings</title>
       </Helmet>
 
-      <Query
-        query={gql`
-          query OWNER_SETTINGS_QUERY($login: String!) {
-            owner(login: $login) {
-              id
-              permissions
-              ...OwnerSettingsFragment
-              ...OwnerPermissionsSettingsFragment
-            }
-          }
-
-          ${OwnerSettingsFragment}
-          ${OwnerPermissionsSettingsFragment}
-        `}
-        variables={{ login: ownerLogin }}
-      >
+      <Query query={OWNER_SETTINGS_QUERY} variables={{ login: ownerLogin }}>
         {({ owner }) => {
           if (!owner) return <NotFoundWithContainer />;
 

@@ -14,7 +14,7 @@ export const typeDefs = gql`
     repositories(enabled: Boolean): [Repository!]!
     permissions: [Permission]!
     purchases: [Purchase!]!
-    currentMonthUsedScreenshots: Int!
+    screenshotsLimitPerMonth: Int!
   }
 
   extend type Query {

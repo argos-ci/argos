@@ -1,11 +1,9 @@
 import { gql } from "graphql-tag";
 import moment from "moment";
-import {
-  User,
-  Organization,
-  Purchase,
-  Screenshot,
-} from "@argos-ci/database/models";
+import { User, Organization, Purchase } from "@argos-ci/database/models";
+
+// TODO: update this value when paid plan are released
+const NO_PLAN_SCREENSHOTS_LIMIT = -1;
 
 export const typeDefs = gql`
   enum OwnerType {
@@ -22,7 +20,7 @@ export const typeDefs = gql`
     repositories(enabled: Boolean): [Repository!]!
     permissions: [Permission]!
     purchases: [Purchase!]!
-    currentMonthUsedScreenshots: Int!
+    screenshotsLimitPerMonth: Int!
   }
 
   type Organization implements Owner {
@@ -34,7 +32,7 @@ export const typeDefs = gql`
     repositories(enabled: Boolean): [Repository!]!
     permissions: [Permission]!
     purchases: [Purchase!]!
-    currentMonthUsedScreenshots: Int!
+    screenshotsLimitPerMonth: Int!
   }
 
   extend type Query {
@@ -113,7 +111,7 @@ function getOwnerRepositories(owner, { user, enabled } = {}) {
     .orderBy("repositories.name", "asc");
 
   if (enabled !== undefined) {
-    return addEnableFilter({ enabled, query: repositoriesQuery }).debug();
+    return addEnableFilter({ enabled, query: repositoriesQuery });
   }
 
   return repositoriesQuery;
@@ -161,16 +159,12 @@ export const resolvers = {
     async purchases(owner) {
       return getActivePurchases(owner);
     },
-    async currentMonthUsedScreenshots(owner) {
-      return Screenshot.query()
-        .joinRelated("screenshotBucket.repository")
-        .where({ [`screenshotBucket:repository.${owner.type()}Id`]: owner.id })
-        .where(
-          "screenshots.createdAt",
-          ">=",
-          moment().startOf("month").toISOString()
-        )
-        .resultSize();
+    async screenshotsLimitPerMonth(owner) {
+      const purchases = await getActivePurchases(owner);
+      if (purchases.length === 0) return NO_PLAN_SCREENSHOTS_LIMIT;
+
+      const plan = await purchases[0].$relatedQuery("plan");
+      return plan.screenshotsLimitPerMonth;
     },
   },
   Query: {
