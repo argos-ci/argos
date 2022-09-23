@@ -1,5 +1,5 @@
 import { gql } from "graphql-tag";
-import { Build, ScreenshotDiff } from "@argos-ci/database/models";
+import { Account, Build, ScreenshotDiff } from "@argos-ci/database/models";
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { knex } from "@argos-ci/database";
 import { APIError } from "../util";
@@ -200,6 +200,20 @@ export const resolvers = {
         throw new APIError("Invalid user authorization");
       }
 
+      const build = await Build.query()
+        .findById(buildId)
+        .withGraphFetched("repository");
+
+      if (build.repository.private) {
+        const account = await Account.getAccount(build.repository);
+        const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
+        if (hasExceedLimit) {
+          throw new APIError(
+            "Insufficient credit. Please upgrade Argos plan to unlock build reviews."
+          );
+        }
+      }
+
       await ScreenshotDiff.query()
         .where({ buildId })
         .patch({ validationStatus });
@@ -218,10 +232,6 @@ export const resolvers = {
           type: "diff-rejected",
         });
       }
-
-      const build = await Build.query()
-        .findById(buildId)
-        .withGraphFetched("repository");
 
       return build;
     },

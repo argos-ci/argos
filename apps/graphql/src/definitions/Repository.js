@@ -29,6 +29,8 @@ export const typeDefs = gql`
     baselineBranch: String
     "Reference branch"
     referenceBranch: String
+    "Private repository on GitHub"
+    private: Boolean!
   }
 
   extend type Query {

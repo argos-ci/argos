@@ -4,7 +4,7 @@ import {
   User,
   Organization,
   Purchase,
-  Screenshot,
+  Account,
 } from "@argos-ci/database/models";
 
 export const typeDefs = gql`
@@ -20,9 +20,11 @@ export const typeDefs = gql`
     type: OwnerType!
     repositoriesNumber: Int!
     repositories(enabled: Boolean): [Repository!]!
+    consumptionRatio: Float
     permissions: [Permission]!
     purchases: [Purchase!]!
     currentMonthUsedScreenshots: Int!
+    plan: Plan
   }
 
   type Organization implements Owner {
@@ -32,9 +34,11 @@ export const typeDefs = gql`
     type: OwnerType!
     repositoriesNumber: Int!
     repositories(enabled: Boolean): [Repository!]!
+    consumptionRatio: Float
     permissions: [Permission]!
     purchases: [Purchase!]!
     currentMonthUsedScreenshots: Int!
+    plan: Plan
   }
 
   extend type Query {
@@ -129,6 +133,10 @@ async function getActivePurchases(owner) {
     .orderBy("endDate");
 }
 
+async function getOwnerAccount(owner) {
+  return Account.getAccount({ [`${owner.type()}Id`]: owner.id });
+}
+
 export const resolvers = {
   Owner: {
     __resolveType: (owner) => {
@@ -151,6 +159,10 @@ export const resolvers = {
       const hasWritePermission = owner.$checkWritePermission(context.user);
       return hasWritePermission ? ["read", "write"] : ["read"];
     },
+    async consumptionRatio(owner) {
+      const account = await getOwnerAccount(owner);
+      return account.getScreenshotsConsumptionRatio();
+    },
     async repositoriesNumber(owner, args, context) {
       const [{ count }] = await getOwnerRepositories(owner, {
         user: context.user,
@@ -162,15 +174,12 @@ export const resolvers = {
       return getActivePurchases(owner);
     },
     async currentMonthUsedScreenshots(owner) {
-      return Screenshot.query()
-        .joinRelated("screenshotBucket.repository")
-        .where({ [`screenshotBucket:repository.${owner.type()}Id`]: owner.id })
-        .where(
-          "screenshots.createdAt",
-          ">=",
-          moment().startOf("month").toISOString()
-        )
-        .resultSize();
+      const account = await getOwnerAccount(owner);
+      return account.getScreenshotsCurrentConsumption();
+    },
+    async plan(owner) {
+      const account = await getOwnerAccount(owner);
+      return account.getPlan();
     },
   },
   Query: {

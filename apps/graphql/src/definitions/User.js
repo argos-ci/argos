@@ -12,9 +12,11 @@ export const typeDefs = gql`
     type: OwnerType!
     repositoriesNumber: Int!
     repositories(enabled: Boolean): [Repository!]!
+    consumptionRatio: Float
     permissions: [Permission]!
     purchases: [Purchase!]!
     currentMonthUsedScreenshots: Int!
+    plan: Plan
   }
 
   extend type Query {

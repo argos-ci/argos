@@ -63,6 +63,8 @@ export class Account extends Model {
   }
 
   async getActivePurchase() {
+    if (!this.id) return null;
+
     const purchase = await Purchase.query()
       .where("accountId", this.id)
       .where("startDate", "<", "now()")
@@ -75,14 +77,16 @@ export class Account extends Model {
     return purchase || null;
   }
 
-  async screenshotsMonthlyLimit() {
-    const purchase = await this.getActivePurchase();
-    if (purchase) {
-      return purchase.plan.screenshotsMonthlyLimit;
-    }
-
+  async getPlan() {
+    const activePurchase = await this.getActivePurchase();
+    if (activePurchase) return activePurchase.plan;
     const freePlan = await Plan.getFreePlan();
-    return freePlan.screenshotsMonthlyLimit;
+    return freePlan || null;
+  }
+
+  async getScreenshotsMonthlyLimit() {
+    const plan = await this.getPlan();
+    return plan ? plan.screenshotsMonthlyLimit : null;
   }
 
   async getCurrentConsumptionStartDate() {
@@ -117,7 +121,41 @@ export class Account extends Model {
       );
     }
 
-    // console.log(query.toKnexQuery().toString());
     return query.resultSize();
+  }
+
+  async getScreenshotsConsumptionRatio() {
+    const screenshotsCurrentConsumption =
+      await this.getScreenshotsCurrentConsumption();
+    const screenshotsMonthlyLimit = await this.getScreenshotsMonthlyLimit();
+    return screenshotsMonthlyLimit
+      ? screenshotsCurrentConsumption / screenshotsMonthlyLimit
+      : null;
+  }
+
+  async hasExceedScreenshotsMonthlyLimit() {
+    const screenshotsConsumptionRatio =
+      await this.getScreenshotsConsumptionRatio();
+    if (!screenshotsConsumptionRatio) return false;
+    return screenshotsConsumptionRatio >= 1.1;
+  }
+
+  static async getAccount({ userId, organizationId }) {
+    if (userId) {
+      const userAccount = await Account.query()
+        .findOne("userId", userId)
+        .withGraphFetched("user");
+      return userAccount || Account.fromJson({ userId });
+    }
+
+    if (organizationId) {
+      const organizationAccount = await Account.query()
+        .findOne("organizationId", organizationId)
+        .withGraphFetched("organization")
+        .first();
+      return organizationAccount || Account.fromJson({ organizationId });
+    }
+
+    throw new Error("Can't get account without userId or organizationId");
   }
 }

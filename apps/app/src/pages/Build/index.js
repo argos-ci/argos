@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import * as React from "react";
 import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
@@ -13,12 +14,15 @@ import {
   useTooltipState,
   TooltipAnchor,
   Tooltip,
+  Alert,
+  Link,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
 import {
   ReviewButton,
   ReviewButtonBuildFragment,
+  ReviewButtonOwnerFragment,
   ReviewButtonRepositoryFragment,
 } from "./ReviewButton";
 import { EyeClosedIcon, EyeIcon } from "@primer/octicons-react";
@@ -65,6 +69,18 @@ const BUILD_QUERY = gql`
       ...ReviewButtonRepositoryFragment
       ...SummaryCardRepositoryFragment
 
+      owner {
+        id
+        ...ReviewButtonOwnerFragment
+        name
+        login
+        consumptionRatio
+        plan {
+          id
+          name
+        }
+      }
+
       build(number: $buildNumber) {
         id
         ...SummaryCardBuildFragment
@@ -101,6 +117,7 @@ const BUILD_QUERY = gql`
   ${SummaryCardRepositoryFragment}
   ${ScreenshotDiffsPageFragment}
   ${ReviewButtonBuildFragment}
+  ${ReviewButtonOwnerFragment}
   ${BuildStatusBadgeFragment}
   ${BuildStatusInfoRepositoryFragment}
   ${BuildStatusInfoBuildFragment}
@@ -125,6 +142,25 @@ function BuildStat({ status, count, label }) {
       </TooltipAnchor>
       <Tooltip state={tooltip}>{label}</Tooltip>
     </>
+  );
+}
+
+function OvercapacityBanner({ owner: { plan, consumptionRatio, login } }) {
+  if (!plan || !consumptionRatio || consumptionRatio < 0.9) {
+    return null;
+  }
+
+  return (
+    <Alert
+      severity={consumptionRatio >= 1 ? "danger" : "warning"}
+      mt={-3}
+      mb={3}
+      w="fit-content"
+      mx="auto"
+    >
+      You've hit {Math.floor(consumptionRatio * 100)}% of the {plan.name} plan
+      limit. <Link to={`/${login}/settings`}>Upgrade plan</Link>
+    </Alert>
   );
 }
 
@@ -174,6 +210,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
   if (!data?.repository?.build) return <NotFound />;
 
   const {
+    owner,
     build,
     build: {
       stats,
@@ -193,6 +230,8 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
 
   return (
     <>
+      <OvercapacityBanner owner={owner} />
+
       <x.div
         display="flex"
         justifyContent="space-between"
@@ -277,6 +316,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
                 variant="neutral"
                 onClick={() => setShowStableScreenshots((prev) => !prev)}
                 justifyContent="start"
+                alignSelf="start"
               >
                 <IllustratedText
                   icon={showStableScreenshots ? EyeClosedIcon : EyeIcon}
