@@ -161,7 +161,9 @@ const handleCreateParallel = async ({ req }) => {
 router.post(
   "/builds",
   repoAuth,
-  express.json(),
+  // Temporary increase the limit
+  // we should find a way to split the upload in several requests
+  express.json({ limit: "1mb" }),
   validateRoute,
   asyncHandler(async (req, res) => {
     const { build, screenshots } = await (async () => {

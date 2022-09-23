@@ -158,7 +158,9 @@ const handleUpdateSingle = async ({ req, build, unknownKeys }) => {
 router.put(
   "/builds/:buildId",
   repoAuth,
-  express.json(),
+  // Temporary increase the limit
+  // we should find a way to split the upload in several requests
+  express.json({ limit: "1mb" }),
   validateRoute,
   asyncHandler(async (req, res) => {
     const buildId = Number(req.params.buildId);
