@@ -260,6 +260,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           <BuildStatusInfo
             build={build}
             referenceBranch={data.repository.referenceBranch}
+            screenshotCount={stats.screenshotCount}
           />
 
           <x.div
