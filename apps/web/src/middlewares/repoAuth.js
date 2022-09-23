@@ -17,6 +17,20 @@ export const repoAuth = [
       );
     }
 
+    if (repository.private) {
+      const account = await repository.getAccount();
+      const currentConsumption =
+        await account.getScreenshotsCurrentConsumption();
+      const maxConsumption = await account.screenshotsMonthlyLimit();
+
+      if (currentConsumption / maxConsumption >= 1.1) {
+        throw new HttpError(
+          402,
+          `Build refused for insufficient credit. Thank to upgrade Argos plan`
+        );
+      }
+    }
+
     req.authRepository = repository;
     next();
   }),

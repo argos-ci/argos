@@ -15,4 +15,22 @@ export class Plan extends Model {
       },
     });
   }
+
+  static get virtualAttributes() {
+    return ["screenshotsMonthlyLimit"];
+  }
+
+  get screenshotsMonthlyLimit() {
+    return this.screenshotsLimitPerMonth === -1
+      ? Infinity
+      : this.screenshotsLimitPerMonth;
+  }
+
+  static async getFreePlan() {
+    const freePlan = await Plan.query()
+      .whereRaw(`"name" ILIKE '%free%'`)
+      .first();
+    if (freePlan) return freePlan;
+    throw new Error(`Can't find free plan in database`);
+  }
 }
