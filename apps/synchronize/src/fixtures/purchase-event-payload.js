@@ -1,6 +1,6 @@
-export const PURCHASE_EVENT_PAYLOAD = {
+export const USER_PURCHASE_EVENT_PAYLOAD = {
   action: "purchased",
-  effective_date: "2022-08-04T00:00:00+00:00",
+  effective_date: "2022-08-10T00:00:00+00:00",
   sender: {
     login: "jsfez",
     id: 15954562,
@@ -34,7 +34,7 @@ export const PURCHASE_EVENT_PAYLOAD = {
     unit_count: 1,
     on_free_trial: false,
     free_trial_ends_on: null,
-    next_billing_date: null,
+    next_billing_date: "2022-09-05T00:00:00+00:00",
     plan: {
       id: 7766,
       name: "Free",
@@ -45,6 +45,23 @@ export const PURCHASE_EVENT_PAYLOAD = {
       has_free_trial: false,
       unit_name: null,
       bullets: [],
+    },
+  },
+};
+
+const ORGANIZATION_ACCOUNT = {
+  type: "Organization",
+  id: 777888999,
+  login: "smooth-code",
+};
+
+export const ORGANIZATION_PURCHASE_EVENT_PAYLOAD = {
+  ...USER_PURCHASE_EVENT_PAYLOAD,
+  marketplace_purchase: {
+    ...USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase,
+    account: {
+      ...USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account,
+      ...ORGANIZATION_ACCOUNT,
     },
   },
 };
