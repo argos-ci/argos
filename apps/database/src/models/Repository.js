@@ -6,6 +6,7 @@ import { User } from "./User";
 import { Build } from "./Build";
 import { Organization } from "./Organization";
 import { Installation } from "./Installation";
+import { Account } from "./Account";
 
 const generateRandomBytes = promisify(crypto.randomBytes);
 
@@ -80,6 +81,14 @@ export class Repository extends Model {
 
   get referenceBranch() {
     return this.baselineBranch || this.defaultBranch;
+  }
+
+  async getAccount() {
+    const account = await Account.query()
+      .where("userId", this.userId)
+      .orWhere("organizationId", this.organizationId)
+      .first();
+    return account || null;
   }
 
   async $beforeInsert(queryContext) {
