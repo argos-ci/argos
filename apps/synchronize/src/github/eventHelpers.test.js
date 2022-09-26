@@ -18,12 +18,16 @@ describe("event helpers", () => {
 
   describe("#getAccount", () => {
     it("of missing user should return null", async () => {
-      const account = await getAccount(USER_PURCHASE_EVENT_PAYLOAD);
+      const account = await getAccount(
+        USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account
+      );
       expect(account).toBeNull();
     });
 
     it("of missing organization should return null", async () => {
-      const account = await getAccount(ORGANIZATION_PURCHASE_EVENT_PAYLOAD);
+      const account = await getAccount(
+        ORGANIZATION_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account
+      );
       expect(account).toBeNull();
     });
 
@@ -32,7 +36,9 @@ describe("event helpers", () => {
         USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account;
       const user = await factory.create("User", { githubId });
       await factory.create("UserAccount", { userId: user.id });
-      const account = await getAccountOrThrow(USER_PURCHASE_EVENT_PAYLOAD);
+      const account = await getAccountOrThrow(
+        USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account
+      );
       expect(account).toMatchObject({ userId: user.id, organizationId: null });
     });
 
@@ -44,7 +50,7 @@ describe("event helpers", () => {
         organizationId: organization.id,
       });
       const account = await getAccountOrThrow(
-        ORGANIZATION_PURCHASE_EVENT_PAYLOAD
+        ORGANIZATION_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account
       );
       expect(account).toMatchObject({
         userId: null,
@@ -56,7 +62,9 @@ describe("event helpers", () => {
   describe("#getAccountOrThrow", () => {
     it("of missing user should return null", async () => {
       await expect(
-        getAccountOrThrow(USER_PURCHASE_EVENT_PAYLOAD)
+        getAccountOrThrow(
+          USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account
+        )
       ).rejects.toThrow(
         "missing account with type 'User' and githubId: '15954562'"
       );
@@ -64,7 +72,9 @@ describe("event helpers", () => {
 
     it("of missing organization should return null", async () => {
       await expect(
-        getAccountOrThrow(ORGANIZATION_PURCHASE_EVENT_PAYLOAD)
+        getAccountOrThrow(
+          ORGANIZATION_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account
+        )
       ).rejects.toThrow(
         "missing account with type 'Organization' and githubId: '777888999'"
       );
@@ -75,7 +85,9 @@ describe("event helpers", () => {
         USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account;
       const user = await factory.create("User", { githubId });
       await factory.create("UserAccount", { userId: user.id });
-      const account = await getAccountOrThrow(USER_PURCHASE_EVENT_PAYLOAD);
+      const account = await getAccountOrThrow(
+        USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account
+      );
       expect(account).toMatchObject({ userId: user.id, organizationId: null });
     });
 
@@ -87,7 +99,7 @@ describe("event helpers", () => {
         organizationId: organization.id,
       });
       const account = await getAccountOrThrow(
-        ORGANIZATION_PURCHASE_EVENT_PAYLOAD
+        ORGANIZATION_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account
       );
       expect(account).toMatchObject({
         userId: null,
@@ -97,12 +109,13 @@ describe("event helpers", () => {
   });
 
   describe("#getOrCreateAccount", () => {
-    let account;
-
     it("should create new user and account", async () => {
       const usersCount = await User.query().resultSize();
       const accountsCount = await Account.query().resultSize();
-      const account = await getOrCreateAccount(USER_PURCHASE_EVENT_PAYLOAD);
+      const account = await getOrCreateAccount(
+        USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account,
+        USER_PURCHASE_EVENT_PAYLOAD.sender
+      );
       const createdUser = await account.$relatedQuery("user");
       expect(createdUser.githubId).toBe(
         USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account.id
@@ -119,7 +132,7 @@ describe("event helpers", () => {
       const organizationsCount = await Organization.query().resultSize();
       const accountsCount = await Account.query().resultSize();
       const account = await getOrCreateAccount(
-        ORGANIZATION_PURCHASE_EVENT_PAYLOAD
+        ORGANIZATION_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account
       );
       const createdOrganization = await account.$relatedQuery("organization");
       expect(createdOrganization.githubId).toBe(
@@ -138,7 +151,10 @@ describe("event helpers", () => {
         USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account;
       const user = await factory.create("User", { githubId });
       await factory.create("UserAccount", { userId: user.id });
-      const account = await getOrCreateAccount(USER_PURCHASE_EVENT_PAYLOAD);
+      const account = await getOrCreateAccount(
+        USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account,
+        USER_PURCHASE_EVENT_PAYLOAD.sender
+      );
       expect(account.userId).toBe(user.id);
     });
 
@@ -149,7 +165,13 @@ describe("event helpers", () => {
       await factory.create("OrganizationAccount", {
         organizationId: organization.id,
       });
-      account = await getOrCreateAccount(ORGANIZATION_PURCHASE_EVENT_PAYLOAD);
+      const accountCountBeforeUpdate = await Account.query().resultSize();
+      const account = await getOrCreateAccount(
+        ORGANIZATION_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account,
+        ORGANIZATION_PURCHASE_EVENT_PAYLOAD.sender
+      );
+      const accountCountAfterUpdate = await Account.query().resultSize();
+      expect(accountCountAfterUpdate).toBe(accountCountBeforeUpdate);
       expect(account).toMatchObject({ organizationId: organization.id });
     });
   });
@@ -194,6 +216,7 @@ describe("event helpers", () => {
       expect(purchase.accountId).toBe(account.id);
     });
   });
+
   describe("#getNewPlanOrThrow", () => {
     it("should throw when missing plan", async () => {
       await expect(

@@ -49,19 +49,15 @@ export const USER_PURCHASE_EVENT_PAYLOAD = {
   },
 };
 
-const ORGANIZATION_ACCOUNT = {
-  type: "Organization",
-  id: 777888999,
-  login: "smooth-code",
-};
-
 export const ORGANIZATION_PURCHASE_EVENT_PAYLOAD = {
   ...USER_PURCHASE_EVENT_PAYLOAD,
   marketplace_purchase: {
     ...USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase,
     account: {
       ...USER_PURCHASE_EVENT_PAYLOAD.marketplace_purchase.account,
-      ...ORGANIZATION_ACCOUNT,
+      type: "Organization",
+      id: 777888999,
+      login: "smooth-code",
     },
   },
 };

@@ -19,7 +19,9 @@ export async function handleGitHubEvents({ name, payload }) {
         switch (payload.action) {
           case "purchased": {
             const plan = await getNewPlanOrThrow(payload);
-            const account = await getOrCreateAccount(payload);
+            const account = await getOrCreateAccount(
+              payload.marketplace_purchase.account
+            );
             await Purchase.query().insert({
               accountId: account.id,
               planId: plan.id,
@@ -29,7 +31,9 @@ export async function handleGitHubEvents({ name, payload }) {
           }
           case "changed": {
             const newPlan = await getNewPlanOrThrow(payload);
-            const account = await getAccountOrThrow(payload);
+            const account = await getAccountOrThrow(
+              payload.marketplace_purchase.account
+            );
             const purchase = await getActivePurchaseOrThrow(account);
             transaction(async (trx) => {
               await Promise.all(() => [
@@ -46,7 +50,9 @@ export async function handleGitHubEvents({ name, payload }) {
             return;
           }
           case "cancelled": {
-            const account = await getAccountOrThrow(payload);
+            const account = await getAccountOrThrow(
+              payload.marketplace_purchase.account
+            );
             const purchase = await getActivePurchaseOrThrow(account);
             await Purchase.query()
               .findById(purchase.id)
@@ -59,10 +65,13 @@ export async function handleGitHubEvents({ name, payload }) {
       case "repository": {
         switch (payload.action) {
           case "renamed": {
-            const installation = await getOrCreateInstallation({
-              githubId: payload.installation.id,
-              deleted: false,
-            });
+            const [installation] = await Promise.all([
+              getOrCreateInstallation({
+                githubId: payload.installation.id,
+                deleted: false,
+              }),
+              getOrCreateAccount(payload.installation.account),
+            ]);
             await synchronizeFromInstallationId(installation.id);
             return;
           }
@@ -73,10 +82,13 @@ export async function handleGitHubEvents({ name, payload }) {
         switch (payload.action) {
           case "removed":
           case "added": {
-            const installation = await getOrCreateInstallation({
-              githubId: payload.installation.id,
-              deleted: false,
-            });
+            const [installation] = await Promise.all([
+              getOrCreateInstallation({
+                githubId: payload.installation.id,
+                deleted: false,
+              }),
+              getOrCreateAccount(payload.installation.account),
+            ]);
             await synchronizeFromInstallationId(installation.id);
             return;
           }
@@ -86,18 +98,24 @@ export async function handleGitHubEvents({ name, payload }) {
       case "installation": {
         switch (payload.action) {
           case "created": {
-            const installation = await getOrCreateInstallation({
-              githubId: payload.installation.id,
-              deleted: false,
-            });
+            const [installation] = await Promise.all([
+              getOrCreateInstallation({
+                githubId: payload.installation.id,
+                deleted: false,
+              }),
+              getOrCreateAccount(payload.installation.account),
+            ]);
             await synchronizeFromInstallationId(installation.id);
             return;
           }
           case "deleted": {
-            const installation = await getOrCreateInstallation({
-              githubId: payload.installation.id,
-              deleted: true,
-            });
+            const [installation] = await Promise.all([
+              getOrCreateInstallation({
+                githubId: payload.installation.id,
+                deleted: true,
+              }),
+              getOrCreateAccount(payload.installation.account),
+            ]);
             await synchronizeFromInstallationId(installation.id);
             return;
           }

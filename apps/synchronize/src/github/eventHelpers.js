@@ -1,8 +1,6 @@
 import { Account, Plan, Organization, User } from "@argos-ci/database/models";
 
-export async function getAccount(payload) {
-  const { type, id: githubId } = payload.marketplace_purchase.account;
-
+export async function getAccount({ type, id: githubId }) {
   if (!type) throw new Error(`can't find account without account type`);
   if (!githubId) throw new Error(`can't find account without githubId`);
   if (type.toLowerCase() === "user") {
@@ -20,56 +18,52 @@ export async function getAccount(payload) {
   throw new Error(`can't find account of type : ${type}`);
 }
 
-export async function getAccountOrThrow(payload) {
-  const account = await getAccount(payload);
+export async function getAccountOrThrow({ id: githubId, type }) {
+  const account = await getAccount({ id: githubId, type });
   if (account) return account;
-
-  const { id, type } = payload.marketplace_purchase.account;
-  throw new Error(`missing account with type '${type}' and githubId: '${id}'`);
+  throw new Error(
+    `missing account with type '${type}' and githubId: '${githubId}'`
+  );
 }
 
-async function getOrCreateUser(payload) {
-  const { email } = payload.sender;
-  const { id: githubId, login } = payload.marketplace_purchase.account;
+async function getOrCreateUser({ id: githubId, login }, { email }) {
+  if (!email) throw new Error(`can't create a user without email`);
   const user = await User.query().findOne({ githubId });
   if (user) return user;
   return User.query().insertAndFetch({ githubId, login, email });
 }
 
-async function getOrCreateOrganization(payload) {
-  const { id: githubId, login } = payload.marketplace_purchase.account;
+async function getOrCreateOrganization({ id: githubId, login }) {
   const organization = await Organization.query().findOne({ githubId });
   if (organization) return organization;
   return Organization.query().insertAndFetch({ githubId, login });
 }
 
-export async function getOrCreateAccount(payload) {
-  const account = await getAccount(payload);
+export async function getOrCreateAccount(payloadAccount, sender) {
+  const account = await getAccount(payloadAccount);
   if (account) return account;
 
-  if (payload.marketplace_purchase.account.type === "User") {
-    const user = await getOrCreateUser(payload);
+  if (payloadAccount.type.toLowerCase() === "user") {
+    const user = await getOrCreateUser(payloadAccount, sender);
     return Account.query().insertAndFetch({ userId: user.id });
   }
 
-  const organization = await getOrCreateOrganization(payload);
+  const organization = await getOrCreateOrganization(payloadAccount);
   return Account.query().insertAndFetch({ organizationId: organization.id });
 }
 
 export async function getActivePurchaseOrThrow(account) {
   if (!account) throw new Error(`can't find purchase of missing account`);
   const activePurchase = await account.getActivePurchase();
-  if (!activePurchase) {
-    throw new Error(
-      `can't find purchase for account with type: '${account.type}' and githubId: '${account.id}'`
-    );
-  }
-  return activePurchase;
+  if (activePurchase) return activePurchase;
+  throw new Error(
+    `can't find purchase for account with type: '${account.type}' and githubId: '${account.id}'`
+  );
 }
 
 export async function getNewPlanOrThrow(payload) {
   const { id: githubId } = payload.marketplace_purchase.plan;
   const plan = await Plan.query().findOne({ githubId });
-  if (!plan) throw new Error(`missing plan with githubId: '${githubId}'`);
-  return plan;
+  if (plan) return plan;
+  throw new Error(`missing plan with githubId: '${githubId}'`);
 }
