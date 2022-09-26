@@ -38,7 +38,28 @@ export class Account extends Model {
           to: "organizations.id",
         },
       },
+      purchases: {
+        relation: Model.HasManyRelation,
+        modelClass: Purchase,
+        join: {
+          from: "accounts.id",
+          to: "purchases.accountId",
+        },
+      },
     };
+  }
+
+  static get virtualAttributes() {
+    return ["type"];
+  }
+
+  get type() {
+    if (this.userId && this.organizationId) {
+      throw new Error(`Invariant incoherent account type`);
+    }
+    if (this.userId) return "user";
+    if (this.organizationId) return "organization";
+    throw new Error(`Invariant incoherent account type`);
   }
 
   async getActivePurchase() {
