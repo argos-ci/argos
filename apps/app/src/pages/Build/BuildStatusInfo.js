@@ -102,15 +102,12 @@ function ExpiredStatusInfo({ batchCount, totalBatch }) {
 }
 
 function CheckTypeInfo({
-  build: { status, screenshotDiffs, batchCount, totalBatch },
+  build: { status, batchCount, totalBatch },
+  screenshotCount,
 }) {
   switch (status) {
     case "stable":
-      return (
-        <StableStatusInfo
-          screenshotsTotalCount={screenshotDiffs.pageInfo.totalCount}
-        />
-      );
+      return <StableStatusInfo screenshotsTotalCount={screenshotCount} />;
 
     case "error":
       return (
@@ -138,7 +135,7 @@ function CheckTypeInfo({
   }
 }
 
-export function BuildStatusInfo({ build, referenceBranch }) {
+export function BuildStatusInfo({ build, referenceBranch, screenshotCount }) {
   const buildIsFirst = build.number === 1;
 
   switch (build.type) {
@@ -154,7 +151,7 @@ export function BuildStatusInfo({ build, referenceBranch }) {
       return <ReferenceTypeInfo firstBuild={buildIsFirst} />;
 
     case "check":
-      return <CheckTypeInfo build={build} />;
+      return <CheckTypeInfo build={build} screenshotCount={screenshotCount} />;
 
     default:
       return null;
