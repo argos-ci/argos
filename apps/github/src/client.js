@@ -35,8 +35,10 @@ export function getOAuthOctokit() {
  * @param {number} installationId
  * @returns {Promise<Octokit | null>}
  */
-export async function getInstallationOctokit(installationId) {
-  const appOctokit = getAppOctokit();
+export async function getInstallationOctokit(
+  installationId,
+  appOctokit = getAppOctokit()
+) {
   const token = await (async () => {
     try {
       const { token } = await appOctokit.auth({

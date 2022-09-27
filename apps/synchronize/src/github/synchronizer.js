@@ -3,6 +3,7 @@ import {
   getOAuthOctokit,
   getTokenOctokit,
   getInstallationOctokit,
+  getAppOctokit,
 } from "@argos-ci/github";
 import {
   Installation,
@@ -13,9 +14,10 @@ import {
   UserRepositoryRight,
   UserInstallationRight,
   InstallationRepositoryRight,
-  Account,
 } from "@argos-ci/database/models";
 import config from "@argos-ci/config";
+import { cancelPurchase, createAccountPayload } from "./eventHelpers";
+import { updatePurchase } from "./updatePurchase";
 
 export async function getOrCreateInstallation(payload) {
   const installation = await Installation.query()
@@ -136,6 +138,22 @@ export class GitHubSynchronizer {
     return { repositories, organizations };
   }
 
+  async synchronizePurchase({ type, githubId }) {
+    try {
+      const { data } = await this.appOctokit.apps.getSubscriptionPlanForAccount(
+        { account_id: githubId }
+      );
+      await updatePurchase(data);
+    } catch (error) {
+      if (error.status === 404) {
+        await cancelPurchase(createAccountPayload({ id: githubId, type }));
+        return;
+      }
+
+      throw error;
+    }
+  }
+
   async synchronizeOwners(githubRepositories, type) {
     const githubOwners = githubRepositories.reduce(
       (githubOwners, githubRepository) => {
@@ -214,12 +232,10 @@ export class GitHubSynchronizer {
       organization = await Organization.query().insert(data);
     }
 
-    const account = await Account.query().findOne({
-      organizationId: organization.id,
+    await this.synchronizePurchase({
+      type: "organization",
+      githubId: organization.githubId,
     });
-    if (!account) {
-      await Account.query().insert({ organizationId: organization.id });
-    }
 
     return organization;
   }
@@ -235,10 +251,7 @@ export class GitHubSynchronizer {
       user = await User.query().insert(data);
     }
 
-    const account = await Account.query().findOne({ userId: user.id });
-    if (!account) {
-      await Account.query().insert({ userId: user.id });
-    }
+    await this.synchronizePurchase({ type: "user", githubId: user.githubId });
 
     return user;
   }
@@ -425,7 +438,13 @@ export class GitHubSynchronizer {
       return;
     }
 
-    const octokit = await getInstallationOctokit(installation.githubId);
+    const appOctokit = getAppOctokit();
+    this.appOctokit = appOctokit;
+
+    const octokit = await getInstallationOctokit(
+      installation.githubId,
+      appOctokit
+    );
 
     // If we don't get an octokit, then the installation has been removed
     // we deleted the installation
@@ -455,6 +474,9 @@ export class GitHubSynchronizer {
       ]);
       return;
     }
+
+    const appOctokit = getAppOctokit();
+    this.appOctokit = appOctokit;
 
     this.octokit = getTokenOctokit(user.accessToken);
 
