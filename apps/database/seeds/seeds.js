@@ -76,6 +76,12 @@ exports.seed = async (knex) => {
       },
     ]);
 
+  await knex("accounts").insert([
+    { ...timeStamps, organizationId: organizations[0], userId: null },
+    { ...timeStamps, organizationId: organizations[1], userId: null },
+    { ...timeStamps, organizationId: null, userId: users[0] },
+  ]);
+
   const screenshotBucket = {
     name: "default",
     commit: "029b662f3ae57bae7a215301067262c1e95bbc95",

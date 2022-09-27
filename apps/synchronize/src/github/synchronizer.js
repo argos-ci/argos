@@ -13,6 +13,7 @@ import {
   UserRepositoryRight,
   UserInstallationRight,
   InstallationRepositoryRight,
+  Account,
 } from "@argos-ci/database/models";
 import config from "@argos-ci/config";
 
@@ -213,6 +214,13 @@ export class GitHubSynchronizer {
       organization = await Organization.query().insert(data);
     }
 
+    const account = await Account.query().findOne({
+      organizationId: organization.id,
+    });
+    if (!account) {
+      await Account.query().insert({ organizationId: organization.id });
+    }
+
     return organization;
   }
 
@@ -225,6 +233,11 @@ export class GitHubSynchronizer {
       await user.$query().patchAndFetch(data);
     } else {
       user = await User.query().insert(data);
+    }
+
+    const account = await Account.query().findOne({ userId: user.id });
+    if (!account) {
+      await Account.query().insert({ userId: user.id });
     }
 
     return user;
