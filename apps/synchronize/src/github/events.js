@@ -3,13 +3,12 @@ import logger from "@argos-ci/logger";
 import { getOrCreateInstallation } from "./synchronizer";
 import { synchronizeFromInstallationId } from "../helpers";
 import {
-  getAccountOrThrow,
-  getActivePurchaseOrThrow,
   getOrCreateAccount,
   getNewPlanOrThrow,
+  cancelPurchase,
 } from "./eventHelpers";
 import { Purchase } from "@argos-ci/database/models";
-import { transaction } from "@argos-ci/database";
+import { updatePurchase } from "./updatePurchase";
 
 export async function handleGitHubEvents({ name, payload }) {
   logger.info("GitHub event", name);
@@ -18,39 +17,23 @@ export async function handleGitHubEvents({ name, payload }) {
       case "marketplace_purchase": {
         switch (payload.action) {
           case "purchased": {
-            const plan = await getNewPlanOrThrow(payload);
-            const account = await getOrCreateAccount(payload);
+            const [newPlan, account] = await Promise.all([
+              getNewPlanOrThrow(payload),
+              getOrCreateAccount(payload),
+            ]);
             await Purchase.query().insert({
               accountId: account.id,
-              planId: plan.id,
+              planId: newPlan.id,
               startDate: payload.effective_date,
             });
             return;
           }
           case "changed": {
-            const newPlan = await getNewPlanOrThrow(payload);
-            const account = await getAccountOrThrow(payload);
-            const purchase = await getActivePurchaseOrThrow(account);
-            transaction(async (trx) => {
-              await Promise.all(() => [
-                Purchase.query(trx)
-                  .patch({ endDate: payload.effective_date })
-                  .findById(purchase.id),
-                Purchase.query(trx).insert({
-                  accountId: account.id,
-                  planId: newPlan.id,
-                  startDate: payload.effective_date,
-                }),
-              ]);
-            });
+            await updatePurchase(payload);
             return;
           }
           case "cancelled": {
-            const account = await getAccountOrThrow(payload);
-            const purchase = await getActivePurchaseOrThrow(account);
-            await Purchase.query()
-              .findById(purchase.id)
-              .patch({ endDate: payload.effective_date });
+            await cancelPurchase(payload);
             return;
           }
         }

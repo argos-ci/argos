@@ -1,4 +1,10 @@
-import { Account, Plan, Organization, User } from "@argos-ci/database/models";
+import {
+  Account,
+  Plan,
+  Organization,
+  User,
+  Purchase,
+} from "@argos-ci/database/models";
 
 export async function getAccount(payload) {
   const { type, id: githubId } = payload.marketplace_purchase.account;
@@ -18,14 +24,6 @@ export async function getAccount(payload) {
     return account || null;
   }
   throw new Error(`can't find account of type : ${type}`);
-}
-
-export async function getAccountOrThrow(payload) {
-  const account = await getAccount(payload);
-  if (account) return account;
-
-  const { id, type } = payload.marketplace_purchase.account;
-  throw new Error(`missing account with type '${type}' and githubId: '${id}'`);
 }
 
 async function getOrCreateUser(payload) {
@@ -56,20 +54,23 @@ export async function getOrCreateAccount(payload) {
   return Account.query().insertAndFetch({ organizationId: organization.id });
 }
 
-export async function getActivePurchaseOrThrow(account) {
-  if (!account) throw new Error(`can't find purchase of missing account`);
-  const activePurchase = await account.getActivePurchase();
-  if (!activePurchase) {
-    throw new Error(
-      `can't find purchase for account with type: '${account.type}' and githubId: '${account.id}'`
-    );
-  }
-  return activePurchase;
-}
-
 export async function getNewPlanOrThrow(payload) {
   const { id: githubId } = payload.marketplace_purchase.plan;
   const plan = await Plan.query().findOne({ githubId });
   if (!plan) throw new Error(`missing plan with githubId: '${githubId}'`);
   return plan;
+}
+
+export function createAccountPayload(data) {
+  return { marketplace_purchase: { account: { ...data } } };
+}
+
+export async function cancelPurchase(payload) {
+  const account = await getOrCreateAccount(payload);
+  const activePurchase = await account.getActivePurchase();
+  if (activePurchase) {
+    await Purchase.query()
+      .findById(activePurchase.id)
+      .patch({ endDate: payload.effective_date });
+  }
 }
