@@ -4,13 +4,13 @@ import {
   Alert,
   Button,
   Menu,
-  MenuButton,
   MenuItem,
   useMenuState,
   MenuButtonArrow,
   useTooltipState,
   TooltipAnchor,
   Tooltip,
+  HeadlessMenuButton,
 } from "@argos-ci/app/src/components";
 import { gql, useMutation } from "@apollo/client";
 import { StatusIcon } from "../../containers/Status";
@@ -63,7 +63,7 @@ export function ReviewButtonContent({ repository, disabled }) {
 
   return (
     <x.div display="flex" flexDirection="column" flex={1}>
-      <MenuButton
+      <HeadlessMenuButton
         as={Button}
         state={menu}
         disabled={disabled || loading}
@@ -71,7 +71,7 @@ export function ReviewButtonContent({ repository, disabled }) {
       >
         Review changes
         <MenuButtonArrow state={menu} />
-      </MenuButton>
+      </HeadlessMenuButton>
       <Menu aria-label="Review changes" state={menu}>
         <MenuItem
           state={menu}
