@@ -1,5 +1,5 @@
 import React from "react";
-import { Button as AriakitButton } from "ariakit/button";
+import { Button as HeadlessButton } from "ariakit/button";
 import styled, { css, th } from "@xstyled/styled-components";
 import { getStatusColor } from "../containers/Status";
 
@@ -43,17 +43,19 @@ const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
   `;
 });
 
+export { HeadlessButton };
+
 export const Button = React.forwardRef(
   ({ variant = "primary", children, as, ...props }, ref) => {
     const baseColor = getStatusColor(variant);
     return (
-      <AriakitButton ref={ref} $tint={baseColor} {...props}>
+      <HeadlessButton ref={ref} $tint={baseColor} {...props}>
         {(buttonProps) => (
           <InnerButton {...buttonProps} as={as}>
             {children}
           </InnerButton>
         )}
-      </AriakitButton>
+      </HeadlessButton>
     );
   }
 );

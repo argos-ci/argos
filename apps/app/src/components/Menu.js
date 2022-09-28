@@ -1,17 +1,25 @@
 import * as React from "react";
 import {
   useMenuState,
-  Menu as AriakitMenu,
-  MenuItem as AriakitMenuItem,
-  MenuButton as AriakitMenuButton,
-  MenuSeparator as AriakitMenuSeparator,
-  MenuButtonArrow as AriakitMenuButtonArrow,
+  Menu as HeadlessMenu,
+  MenuItem as HeadlessMenuItem,
+  MenuButton as HeadlessMenuButton,
+  MenuSeparator as HeadlessMenuSeparator,
+  MenuButtonArrow as HeadlessMenuButtonArrow,
 } from "ariakit/menu";
 import styled, { x, css } from "@xstyled/styled-components";
 import { ChevronDownIcon } from "@primer/octicons-react";
 import { Icon } from "./Icon";
 
 export { useMenuState };
+
+export {
+  HeadlessMenu,
+  HeadlessMenuItem,
+  HeadlessMenuButton,
+  HeadlessMenuSeparator,
+  HeadlessMenuButtonArrow,
+};
 
 const InnerMenuButton = styled.box`
   display: flex;
@@ -37,28 +45,28 @@ const InnerMenuButton = styled.box`
 export const MenuButton = React.forwardRef(
   ({ children, shape, ...props }, ref) => {
     return (
-      <AriakitMenuButton ref={ref} {...props}>
+      <HeadlessMenuButton ref={ref} {...props}>
         {(menuProps) => (
           <InnerMenuButton {...menuProps} $shape={shape}>
             {children}
           </InnerMenuButton>
         )}
-      </AriakitMenuButton>
+      </HeadlessMenuButton>
     );
   }
 );
 
 export const MenuButtonArrow = ({ as, ...props }) => {
   return (
-    <AriakitMenuButtonArrow {...props}>
+    <HeadlessMenuButtonArrow {...props}>
       {(arrowProps) => <Icon as={ChevronDownIcon} {...arrowProps} />}
-    </AriakitMenuButtonArrow>
+    </HeadlessMenuButtonArrow>
   );
 };
 
 export const Menu = (props) => (
   <x.menu
-    as={AriakitMenu}
+    as={HeadlessMenu}
     backgroundColor="background"
     border={1}
     borderColor="border"
@@ -72,7 +80,7 @@ export const Menu = (props) => (
 
 export const MenuItem = ({ as, children, ...props }) => {
   return (
-    <AriakitMenuItem {...props}>
+    <HeadlessMenuItem {...props}>
       {(menuItemProps) => (
         <x.div
           as={as}
@@ -103,13 +111,13 @@ export const MenuItem = ({ as, children, ...props }) => {
           {children}
         </x.div>
       )}
-    </AriakitMenuItem>
+    </HeadlessMenuItem>
   );
 };
 
 export const MenuSeparator = (props) => (
   <x.div
-    as={AriakitMenuSeparator}
+    as={HeadlessMenuSeparator}
     borderColor="border"
     my={1}
     height={0}
