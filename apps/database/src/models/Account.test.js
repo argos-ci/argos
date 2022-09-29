@@ -64,7 +64,7 @@ describe("Account", () => {
   describe("#screenshotsMonthlyLimit", () => {
     it("without purchase returns free plan limit", async () => {
       const screenshotsLimit = await account.getScreenshotsMonthlyLimit();
-      expect(screenshotsLimit).toBe(Infinity);
+      expect(screenshotsLimit).toBe(-1);
     });
 
     it("with purchase returns plan limit", async () => {

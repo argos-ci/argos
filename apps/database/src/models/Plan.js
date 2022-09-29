@@ -16,16 +16,6 @@ export class Plan extends Model {
     });
   }
 
-  static get virtualAttributes() {
-    return ["screenshotsMonthlyLimit"];
-  }
-
-  get screenshotsMonthlyLimit() {
-    return this.screenshotsLimitPerMonth === -1
-      ? Infinity
-      : this.screenshotsLimitPerMonth;
-  }
-
   static async getFreePlan() {
     const freePlan = await Plan.query().findOne({ name: "free" });
     return freePlan || null;
