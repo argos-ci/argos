@@ -24,32 +24,4 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
-function injectStyles(document) {
-  const cssText = `
-  /* Hide scrollbars */
-  ::-webkit-scrollbar {
-    display: none !important;
-  }
-
-  /* Generic hide */
-  [data-test-hidden] {
-    opacity: 0 !important;
-  }
-
-  /* Generic hide */
-  [data-test-no-radius] {
-    border-radius: 0 !important;
-  }
-  `;
-  const css = document.createElement("style");
-  css.type = "text/css";
-  css.textContent = cssText;
-  document.body.appendChild(css);
-}
-
-/* Cypress command example */
-Cypress.Commands.add("argosScreenshot", (name, options = {}) => {
-  cy.document().then((doc) => injectStyles(doc));
-  cy.document().its("fonts.status").should("equal", "loaded");
-  cy.screenshot(name, options);
-});
+import "@argos-ci/cypress/support";

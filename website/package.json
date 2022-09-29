@@ -1,6 +1,4 @@
 {
-  "name": "argos-website",
-  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,30 +6,48 @@
     "export": "next export",
     "start": "next start",
     "lint": "next lint",
+    "storybook": "start-storybook -p 6006 -s ./public",
+    "build-storybook": "build-storybook -s public",
     "cypress:run": "cypress run --e2e --browser chrome",
     "cypress:open": "cypress open --e2e --browser chrome",
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@heroicons/react": "^2.0.11",
     "@mdx-js/loader": "^2.1.2",
     "@mdx-js/react": "^2.1.2",
     "@next/mdx": "^12.2.3",
     "@xstyled/styled-components": "^3.6.0",
-    "ariakit": "^2.0.0-next.36",
-    "framer-motion": "^6.5.1",
+    "ariakit": "^2.0.0-next.41",
     "next": "^12.1.5",
     "react": "^18.0.2",
     "react-dom": "^18.0.2",
-    "react-icons": "^4.4.0",
     "react-syntax-highlighter": "^15.5.0",
     "styled-components": "^5.3.5"
   },
   "devDependencies": {
     "@argos-ci/cli": "^0.2.3",
+    "@argos-ci/cypress": "^0.0.4",
+    "@babel/core": "^7.19.3",
     "@netlify/plugin-nextjs": "^4.13.1",
+    "@storybook/addon-actions": "^6.5.12",
+    "@storybook/addon-essentials": "^6.5.12",
+    "@storybook/addon-interactions": "^6.5.12",
+    "@storybook/addon-links": "^6.5.12",
+    "@storybook/builder-webpack5": "^6.5.12",
+    "@storybook/manager-webpack5": "^6.5.12",
+    "@storybook/react": "^6.5.12",
+    "@storybook/testing-library": "^0.0.13",
+    "@types/node": "^18.7.23",
+    "@types/react": "^18.0.21",
+    "@types/react-dom": "^18.0.6",
+    "@types/styled-components": "^5.1.26",
+    "babel-loader": "^8.2.5",
     "cypress": "^10.3.1",
     "eslint": "^8.20.0",
     "eslint-config-next": "^12.2.3",
-    "prettier": "^2.7.1"
+    "eslint-plugin-storybook": "^0.6.4",
+    "prettier": "^2.7.1",
+    "typescript": "^4.8.4"
   }
 }

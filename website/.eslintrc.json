@@ -1,7 +1,6 @@
 {
-  "extends": ["next/core-web-vitals"],
+  "extends": ["next/core-web-vitals", "plugin:storybook/recommended"],
   "rules": {
-    "react/display-name": "off",
-    "no-unused-vars": "error"
+    "react/display-name": "off"
   }
 }
