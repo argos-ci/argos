@@ -280,13 +280,13 @@ exports.seed = async (knex) => {
   await knex("plans").insert([
     {
       ...timeStamps,
-      name: "free plan",
+      name: "free",
       screenshotsLimitPerMonth: 7000,
       githubId: 7772,
     },
     {
       ...timeStamps,
-      name: "standard plan",
+      name: "standard",
       screenshotsLimitPerMonth: 100000,
       githubId: 7787,
     },

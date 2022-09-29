@@ -63,7 +63,7 @@ describe("Account", () => {
 
   describe("#screenshotsMonthlyLimit", () => {
     it("without purchase returns free plan limit", async () => {
-      const screenshotsLimit = await account.screenshotsMonthlyLimit();
+      const screenshotsLimit = await account.getScreenshotsMonthlyLimit();
       expect(screenshotsLimit).toBe(Infinity);
     });
 
@@ -72,7 +72,7 @@ describe("Account", () => {
         planId: plans[1].id,
         accountId: account.id,
       });
-      const screenshotsLimit = await account.screenshotsMonthlyLimit();
+      const screenshotsLimit = await account.getScreenshotsMonthlyLimit();
       expect(screenshotsLimit).toBe(10);
     });
   });

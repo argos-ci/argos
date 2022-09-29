@@ -4,10 +4,13 @@ import {
   Alert,
   Button,
   Menu,
-  MenuButton,
   MenuItem,
   useMenuState,
   MenuButtonArrow,
+  useTooltipState,
+  TooltipAnchor,
+  Tooltip,
+  HeadlessMenuButton,
 } from "@argos-ci/app/src/components";
 import { gql, useMutation } from "@apollo/client";
 import { StatusIcon } from "../../containers/Status";
@@ -24,10 +27,17 @@ export const ReviewButtonBuildFragment = gql`
 export const ReviewButtonRepositoryFragment = gql`
   fragment ReviewButtonRepositoryFragment on Repository {
     permissions
+    private
   }
 `;
 
-export function ReviewButtonContent({ repository }) {
+export const ReviewButtonOwnerFragment = gql`
+  fragment ReviewButtonOwnerFragment on Owner {
+    consumptionRatio
+  }
+`;
+
+export function ReviewButtonContent({ repository, disabled }) {
   const { id, status } = repository.build;
   const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
   const [setValidationStatus, { loading, error }] = useMutation(gql`
@@ -53,10 +63,15 @@ export function ReviewButtonContent({ repository }) {
 
   return (
     <x.div display="flex" flexDirection="column" flex={1}>
-      <Button as={MenuButton} state={menu} alignSelf="end" disabled={loading}>
+      <HeadlessMenuButton
+        as={Button}
+        state={menu}
+        disabled={disabled || loading}
+        alignSelf="end"
+      >
         Review changes
         <MenuButtonArrow state={menu} />
-      </Button>
+      </HeadlessMenuButton>
       <Menu aria-label="Review changes" state={menu}>
         <MenuItem
           state={menu}
@@ -99,10 +114,32 @@ export function ReviewButtonContent({ repository }) {
   );
 }
 
+function DisabledReviewButton({ repository }) {
+  const tooltip = useTooltipState();
+
+  return (
+    <>
+      <TooltipAnchor state={tooltip}>
+        <ReviewButtonContent repository={repository} disabled />
+      </TooltipAnchor>
+      <Tooltip state={tooltip}>
+        You have hit 100% of your screenshots usage. Please upgrade to unlock
+        build reviews.
+      </Tooltip>
+    </>
+  );
+}
+
 export function ReviewButton({ repository }) {
-  return ["accepted", "rejected", "diffDetected"].includes(
-    repository.build.status
-  ) ? (
-    <ReviewButtonContent repository={repository} />
-  ) : null;
+  if (
+    !["accepted", "rejected", "diffDetected"].includes(repository.build.status)
+  ) {
+    return null;
+  }
+
+  if (repository.private && repository.owner.consumptionRatio >= 1) {
+    return <DisabledReviewButton repository={repository} />;
+  }
+
+  return <ReviewButtonContent repository={repository} />;
 }

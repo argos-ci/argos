@@ -16,7 +16,7 @@ module.exports = {
     filename: prod ? "[name]-bundle-[chunkhash:8].js" : "[name].js",
     publicPath: "/static/app/",
   },
-  devtool: prod ? "source-map" : "eval-cheap-module-source-map",
+  devtool: prod ? "source-map" : "eval-source-map",
   module: {
     rules: [
       {

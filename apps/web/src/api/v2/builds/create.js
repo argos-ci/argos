@@ -1,7 +1,7 @@
 import { HttpError } from "express-err";
 import express from "express";
 import { transaction } from "@argos-ci/database";
-import { Build, ScreenshotBucket } from "@argos-ci/database/models";
+import { Account, Build, ScreenshotBucket } from "@argos-ci/database/models";
 import { s3 as getS3, getSignedPutObjectUrl } from "@argos-ci/storage";
 import config from "@argos-ci/config";
 import { pushBuildNotification } from "@argos-ci/build-notification";
@@ -93,6 +93,17 @@ const getScreenshots = async (keys) => {
 };
 
 const createBuild = async ({ req, trx }) => {
+  if (req.authRepository.private) {
+    const account = await Account.getAccount(req.authRepository);
+    const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
+    if (hasExceedLimit) {
+      throw new HttpError(
+        402,
+        `Build rejected for insufficient credit. Please upgrade Argos plan.`
+      );
+    }
+  }
+
   return transaction(trx, async (trx) => {
     const bucket = await ScreenshotBucket.query(trx).insertAndFetch({
       ...getBucketData(req),
