@@ -86,13 +86,14 @@ export class Account extends Model {
 
   async getScreenshotsMonthlyLimit() {
     const plan = await this.getPlan();
-    return plan ? plan.screenshotsMonthlyLimit : null;
+    return plan ? plan.screenshotsLimitPerMonth : null;
   }
 
   async getCurrentConsumptionStartDate() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const activePurchase = await this.getActivePurchase();
+
     if (!activePurchase) {
       return startOfMonth;
     }
@@ -125,12 +126,12 @@ export class Account extends Model {
   }
 
   async getScreenshotsConsumptionRatio() {
+    const screenshotsMonthlyLimit = await this.getScreenshotsMonthlyLimit();
+    if (!screenshotsMonthlyLimit) return null;
+    if (screenshotsMonthlyLimit === -1) return 0;
     const screenshotsCurrentConsumption =
       await this.getScreenshotsCurrentConsumption();
-    const screenshotsMonthlyLimit = await this.getScreenshotsMonthlyLimit();
-    return screenshotsMonthlyLimit
-      ? screenshotsCurrentConsumption / screenshotsMonthlyLimit
-      : null;
+    return screenshotsCurrentConsumption / screenshotsMonthlyLimit;
   }
 
   async hasExceedScreenshotsMonthlyLimit() {

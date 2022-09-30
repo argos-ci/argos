@@ -1,11 +1,5 @@
 import { gql } from "graphql-tag";
-import moment from "moment";
-import {
-  User,
-  Organization,
-  Purchase,
-  Account,
-} from "@argos-ci/database/models";
+import { User, Organization, Account } from "@argos-ci/database/models";
 
 export const typeDefs = gql`
   enum OwnerType {
@@ -22,9 +16,9 @@ export const typeDefs = gql`
     repositories(enabled: Boolean): [Repository!]!
     consumptionRatio: Float
     permissions: [Permission]!
-    purchases: [Purchase!]!
     currentMonthUsedScreenshots: Int!
     plan: Plan
+    screenshotsLimitPerMonth: Int
   }
 
   type Organization implements Owner {
@@ -36,9 +30,9 @@ export const typeDefs = gql`
     repositories(enabled: Boolean): [Repository!]!
     consumptionRatio: Float
     permissions: [Permission]!
-    purchases: [Purchase!]!
     currentMonthUsedScreenshots: Int!
     plan: Plan
+    screenshotsLimitPerMonth: Int
   }
 
   extend type Query {
@@ -123,16 +117,6 @@ function getOwnerRepositories(owner, { user, enabled } = {}) {
   return repositoriesQuery;
 }
 
-async function getActivePurchases(owner) {
-  return Purchase.query()
-    .joinRelated(owner.type())
-    .where(`${owner.type()}.id`, owner.id)
-    .where((query) =>
-      query.whereNull("endDate").orWhere("endDate", ">=", moment())
-    )
-    .orderBy("endDate");
-}
-
 async function getOwnerAccount(owner) {
   return Account.getAccount({ [`${owner.type()}Id`]: owner.id });
 }
@@ -170,9 +154,6 @@ export const resolvers = {
       }).count("repositories.*");
       return count;
     },
-    async purchases(owner) {
-      return getActivePurchases(owner);
-    },
     async currentMonthUsedScreenshots(owner) {
       const account = await getOwnerAccount(owner);
       return account.getScreenshotsCurrentConsumption();
@@ -180,6 +161,10 @@ export const resolvers = {
     async plan(owner) {
       const account = await getOwnerAccount(owner);
       return account.getPlan();
+    },
+    async screenshotsLimitPerMonth(owner) {
+      const account = await getOwnerAccount(owner);
+      return account.getScreenshotsMonthlyLimit();
     },
   },
   Query: {
