@@ -29,11 +29,13 @@ export async function handleGitHubEvents({ name, payload }) {
             return;
           }
           case "changed": {
-            await updatePurchase(payload);
+            const account = await getOrCreateAccount(payload);
+            await updatePurchase(payload, account);
             return;
           }
           case "cancelled": {
-            await cancelPurchase(payload);
+            const account = await getOrCreateAccount(payload);
+            await cancelPurchase(payload, account);
             return;
           }
         }

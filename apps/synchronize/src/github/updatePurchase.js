@@ -1,18 +1,15 @@
 import { Purchase } from "@argos-ci/database/models";
 import { transaction } from "@argos-ci/database";
-import { getNewPlanOrThrow, getOrCreateAccount } from "./eventHelpers";
+import { getNewPlanOrThrow } from "./eventHelpers";
 
-export async function updatePurchase(payload) {
-  const [newPlan, account] = await Promise.all([
-    getNewPlanOrThrow(payload),
-    getOrCreateAccount(payload),
-  ]);
+export async function updatePurchase(payload, account) {
+  const plan = await getNewPlanOrThrow(payload);
   const activePurchase = await account.getActivePurchase();
 
   if (!activePurchase) {
     Purchase.query().insert({
       accountId: account.id,
-      planId: newPlan.id,
+      planId: plan.id,
       startDate: payload.effective_date,
     });
     return;
@@ -29,7 +26,7 @@ export async function updatePurchase(payload) {
         .findById(activePurchase.id),
       Purchase.query(trx).insert({
         accountId: account.id,
-        planId: newPlan.id,
+        planId: plan.id,
         startDate: payload.effective_date,
       }),
     ]);

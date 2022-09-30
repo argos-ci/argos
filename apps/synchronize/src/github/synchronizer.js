@@ -6,6 +6,7 @@ import {
   getAppOctokit,
 } from "@argos-ci/github";
 import {
+  Account,
   Installation,
   Organization,
   Repository,
@@ -16,7 +17,7 @@ import {
   InstallationRepositoryRight,
 } from "@argos-ci/database/models";
 import config from "@argos-ci/config";
-import { cancelPurchase, createAccountPayload } from "./eventHelpers";
+import { cancelPurchase } from "./eventHelpers";
 import { updatePurchase } from "./updatePurchase";
 
 export async function getOrCreateInstallation(payload) {
@@ -138,7 +139,7 @@ export class GitHubSynchronizer {
     return { repositories, organizations };
   }
 
-  async synchronizePurchase({ type, githubId }) {
+  async synchronizePurchase({ githubId, account }) {
     try {
       const { data } = await this.appOctokit.apps.getSubscriptionPlanForAccount(
         { account_id: githubId }
@@ -146,7 +147,10 @@ export class GitHubSynchronizer {
       await updatePurchase(data);
     } catch (error) {
       if (error.status === 404) {
-        await cancelPurchase(createAccountPayload({ id: githubId, type }));
+        await cancelPurchase(
+          { effective_date: new Date().toISOString() },
+          account
+        );
         return;
       }
 
@@ -232,9 +236,13 @@ export class GitHubSynchronizer {
       organization = await Organization.query().insert(data);
     }
 
+    const account = await Account.getOrCreateAccount({
+      organizationId: organization.id,
+    });
+
     await this.synchronizePurchase({
-      type: "organization",
       githubId: organization.githubId,
+      account,
     });
 
     return organization;
@@ -251,7 +259,14 @@ export class GitHubSynchronizer {
       user = await User.query().insert(data);
     }
 
-    await this.synchronizePurchase({ type: "user", githubId: user.githubId });
+    const account = await Account.getOrCreateAccount({
+      userId: user.id,
+    });
+
+    await this.synchronizePurchase({
+      githubId: user.githubId,
+      account,
+    });
 
     return user;
   }

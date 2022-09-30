@@ -61,12 +61,7 @@ export async function getNewPlanOrThrow(payload) {
   return plan;
 }
 
-export function createAccountPayload(data) {
-  return { marketplace_purchase: { account: { ...data } } };
-}
-
-export async function cancelPurchase(payload) {
-  const account = await getOrCreateAccount(payload);
+export async function cancelPurchase(payload, account) {
   const activePurchase = await account.getActivePurchase();
   if (activePurchase) {
     await Purchase.query()
