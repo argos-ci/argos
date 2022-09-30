@@ -141,21 +141,33 @@ export class Account extends Model {
   }
 
   static async getAccount({ userId, organizationId }) {
+    if (userId && organizationId) {
+      throw new Error(
+        `Can't call getAccount with both userId and organizationId`
+      );
+    }
     if (userId) {
       const userAccount = await Account.query()
-        .findOne("userId", userId)
-        .withGraphFetched("user");
+        .withGraphFetched("user")
+        .findOne("userId", userId);
       return userAccount || Account.fromJson({ userId });
     }
 
     if (organizationId) {
       const organizationAccount = await Account.query()
-        .findOne("organizationId", organizationId)
         .withGraphFetched("organization")
-        .first();
+        .findOne("organizationId", organizationId);
       return organizationAccount || Account.fromJson({ organizationId });
     }
 
     throw new Error("Can't get account without userId or organizationId");
+  }
+
+  static async getOrCreateAccount({ userId, organizationId }) {
+    const account = await this.getAccount({ userId, organizationId });
+
+    if (account.id) return account;
+
+    return account.$query().insertAndFetch();
   }
 }
