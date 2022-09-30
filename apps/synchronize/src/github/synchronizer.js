@@ -144,7 +144,7 @@ export class GitHubSynchronizer {
       const { data } = await this.appOctokit.apps.getSubscriptionPlanForAccount(
         { account_id: githubId }
       );
-      await updatePurchase(data);
+      await updatePurchase(data, account);
     } catch (error) {
       if (error.status === 404) {
         await cancelPurchase(
