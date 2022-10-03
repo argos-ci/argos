@@ -1,0 +1,4 @@
+node_modules/
+
+# Ignore Playwright screenshots
+playwright/screenshots/
