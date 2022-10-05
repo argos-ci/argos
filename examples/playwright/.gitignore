@@ -1,4 +1,7 @@
 node_modules/
 
-# Ignore Playwright screenshots
-playwright/screenshots/
+# Ignore screenshots
+screenshots/*
+
+# Add screenshots folder (empty)
+!screenshots/.gitkeep
