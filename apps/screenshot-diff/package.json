@@ -11,7 +11,10 @@
     "@argos-ci/job-core": "2.0.0",
     "@argos-ci/storage": "2.0.0",
     "@octokit/rest": "^19.0.3",
-    "image-difference": "^2.0.7",
+    "gm": "^1.25.0",
     "tmp": "^0.2.1"
+  },
+  "devDependencies": {
+    "get-pixels": "^3.3.3"
   }
 }

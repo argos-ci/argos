@@ -1,4 +1,4 @@
-import imageDifference from "image-difference";
+import imageDifference from "./imageDifference";
 
 // Generate an image diff result.
 //
