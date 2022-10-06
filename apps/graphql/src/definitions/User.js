@@ -5,7 +5,7 @@ export const typeDefs = gql`
     id: ID!
     email: String
     login: String!
-    name: String
+    name: String!
     privateSync: Boolean!
     installations: [Installation!]!
     latestSynchronization: Synchronization
