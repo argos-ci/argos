@@ -9,7 +9,7 @@ export const typeDefs = gql`
 
   interface Owner {
     id: ID!
-    name: String
+    name: String!
     login: String!
     type: OwnerType!
     repositoriesNumber: Int!
@@ -23,7 +23,7 @@ export const typeDefs = gql`
 
   type Organization implements Owner {
     id: ID!
-    name: String
+    name: String!
     login: String!
     type: OwnerType!
     repositoriesNumber: Int!
@@ -133,6 +133,7 @@ export const resolvers = {
           throw new Error(`Unknown owner type "${owner.constructor.name}"`);
       }
     },
+    name: (owner) => owner.name || owner.login,
     async repositories(owner, args, context) {
       return getOwnerRepositories(owner, {
         user: context.user,
