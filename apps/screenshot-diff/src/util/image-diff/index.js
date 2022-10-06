@@ -24,7 +24,7 @@ export async function diffImages({
   const score = difference.value / (difference.width * difference.height);
 
   return {
-    score: score < 0.00003 ? 0 : score,
+    score,
     pixels: difference.value,
     scoreRaw: score,
   };

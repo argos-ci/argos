@@ -67,7 +67,7 @@ describe("#diffImages", () => {
       diffFilename: path.join(__dirname, "__fixtures__/border/diff_tmp.png"),
     });
 
-    expect(result.score).toBe(0);
+    expect(result.score).toBeLessThan(1e-4);
   });
 
   it("fontAliasing", async () => {
@@ -125,7 +125,7 @@ describe("#diffImages", () => {
       ),
     });
 
-    expect(result.score).toBe(0);
+    expect(result.score).toBeLessThan(1e-5);
     expect(result.scoreRaw).toBeLessThan(1e-5);
   });
 
