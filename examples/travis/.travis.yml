@@ -1,13 +1,12 @@
 language: node_js
 
 script:
-  
   # -----
   # Insert here your steps required to take screenshots of
   # your components or of your application.
-  # 
+  #
   # Find integrations on https://docs.argos-ci.com/
   # -----
 
   # Upload screenshots to argos-ci.com
-  - npx @argos-ci/cli upload screenshots 
+  - npx @argos-ci/cli upload ./screenshots

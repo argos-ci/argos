@@ -2,4 +2,7 @@ node_modules/
 cypress/videos/
 
 # Ignore Cypress screenshots
-cypress/screenshots/
+cypress/screenshots/*
+
+# Add Cypress screenshots folder (empty)
+!cypress/screenshots/.gitkeep

@@ -1,4 +1,4 @@
-node_modules/
+examples/webdriverIO/.gitignorenode_modules/
 
 # Ignore screenshots
 screenshots/*

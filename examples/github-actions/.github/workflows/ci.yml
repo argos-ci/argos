@@ -29,7 +29,7 @@ jobs:
       # -----
       # Insert here your steps required to take screenshots of
       # your components or of your application.
-      # 
+      #
       # Find integrations on https://docs.argos-ci.com/
       # -----
 
@@ -37,4 +37,4 @@ jobs:
         continue-on-error: true
         env:
           ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
-        run: npx @argos-ci/cli upload screenshots/samples
+        run: npx @argos-ci/cli upload ./screenshots
