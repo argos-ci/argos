@@ -40,7 +40,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <>
+    <x.div display="flex" flexDirection="column" gap={{ _: 176, md: 240 }}>
       <RotateBackground
         backgroundImage="gradient-to-b"
         gradientFrom="lighter"
@@ -87,99 +87,97 @@ export default function Home() {
         </Container>
       </RotateBackground>
 
-      <Container>
-        <x.section
-          display="flex"
-          flexDirection="column"
-          gap={6}
-          alignItems="center"
-          textAlign="center"
-          mt={300}
-        >
-          <Chip icon={EyeIcon}>What is Argos?</Chip>
-          <x.h2 text="h2">Get instant value from a simple screenshot</x.h2>
-          <x.p text="teaser" mb={8}>
-            Take screenshots, upload them and get instant value by being
-            notified of changes.
+      <Container
+        as="section"
+        display="flex"
+        flexDirection="column"
+        gap={6}
+        alignItems="center"
+        textAlign="center"
+      >
+        <Chip icon={EyeIcon}>What is Argos?</Chip>
+        <x.h2 text="h2">Get instant value from a simple screenshot</x.h2>
+        <x.p text="teaser">
+          Take screenshots, upload them and get instant value by being notified
+          of changes.
+        </x.p>
+        <FeatureList>
+          <Feature>
+            <FeatureIcon icon={CameraIcon} color="primary" />
+            <FeatureTitle>Take screenshots</FeatureTitle>
+            <FeatureText>
+              Use one of Argos’ many integrations to take screenshots or do it
+              yourself.
+            </FeatureText>
+          </Feature>
+          <Feature>
+            <FeatureIcon icon={ArrowUpOnSquareStackIcon} color="orange" />
+            <FeatureTitle>Upload screenshots</FeatureTitle>
+            <FeatureText>
+              Add one command in your CI to upload screenshots to Argos.
+            </FeatureText>
+          </Feature>
+          <Feature>
+            <FeatureIcon icon={CheckCircleIcon} color="green" />
+            <FeatureTitle>Review changes</FeatureTitle>
+            <FeatureText>
+              Get status on your pull-requests and use Argos to review and
+              approve changes.
+            </FeatureText>
+          </Feature>
+        </FeatureList>
+      </Container>
+
+      <Container
+        as="section"
+        display="flex"
+        flexDirection={{ _: "column", md: "row" }}
+        alignItems="center"
+        gap={16}
+      >
+        <x.div flex={1} display="flex" justifyContent="center">
+          <Image src={integrationImage} alt="Argos Integrations" />
+        </x.div>
+        <x.div display="flex" flexDirection="column" gap={6} flex={1}>
+          <Chip icon={Square3Stack3DIcon}>Easy integration</Chip>
+          <x.h2 text="h2">Compatible with your stack</x.h2>
+          <x.p text="teaser">
+            Argos offers SDK for most frameworks, testing libraries and CI
+            providers. This is not mandatory, as long as you can take
+            screenshots, you can use Argos.
           </x.p>
-          <FeatureList>
-            <Feature>
-              <FeatureIcon icon={CameraIcon} color="primary" />
-              <FeatureTitle>Take screenshots</FeatureTitle>
-              <FeatureText>
-                Use one of Argos’ many integrations to take screenshots or do it
-                yourself.
-              </FeatureText>
-            </Feature>
-            <Feature>
-              <FeatureIcon icon={ArrowUpOnSquareStackIcon} color="orange" />
-              <FeatureTitle>Upload screenshots</FeatureTitle>
-              <FeatureText>
-                Add one command in your CI to upload screenshots to Argos.
-              </FeatureText>
-            </Feature>
-            <Feature>
-              <FeatureIcon icon={CheckCircleIcon} color="green" />
-              <FeatureTitle>Review changes</FeatureTitle>
-              <FeatureText>
-                Get status on your pull-requests and use Argos to review and
-                approve changes.
-              </FeatureText>
-            </Feature>
-          </FeatureList>
-        </x.section>
+        </x.div>
+      </Container>
 
-        <x.section
-          display="flex"
-          flexDirection={{ _: "column", md: "row" }}
-          alignItems="center"
-          gap={16}
-          mt={200}
+      <Container
+        as="section"
+        display="flex"
+        flexDirection={{ _: "column", md: "row" }}
+        gap={20}
+        alignItems="center"
+      >
+        <x.div
+          flex={1}
+          display={{ _: "flex", md: "none" }}
+          justifyContent="center"
+          w={1}
         >
-          <x.div flex={1} display="flex" justifyContent="center">
-            <Image src={integrationImage} alt="Argos Integrations" />
-          </x.div>
-          <x.div display="flex" flexDirection="column" gap={6} flex={1}>
-            <Chip icon={Square3Stack3DIcon}>Easy integration</Chip>
-            <x.h2 text="h2">Compatible with your stack</x.h2>
-            <x.p text="teaser">
-              Argos offers SDK for most frameworks, testing libraries and CI
-              providers. This is not mandatory, as long as you can take
-              screenshots, you can use Argos.
-            </x.p>
-          </x.div>
-        </x.section>
+          <Image src={unifiedMobileImage} alt="Unified platform" />
+        </x.div>
 
-        <x.section
-          display="flex"
-          flexDirection={{ _: "column", md: "row" }}
-          gap={20}
-          mt={250}
-          alignItems="center"
-        >
-          <x.div
-            flex={1}
-            display={{ _: "flex", md: "none" }}
-            justifyContent="center"
-            w={1}
-          >
-            <Image src={unifiedMobileImage} alt="Unified platform" />
-          </x.div>
+        <x.div flex={1} display="flex" flexDirection="column" gap={6}>
+          <Chip icon={RocketLaunchIcon}>Unified platform</Chip>
+          <x.h2 text="h2">Review websites, apps and components together</x.h2>
+          <x.p text="teaser">
+            Argos has no limit. Whether it's a single component or a website in
+            multiple resolutions, everything is possible. Use a single tool for
+            Visual Testing.
+          </x.p>
+        </x.div>
 
-          <x.div flex={1} display="flex" flexDirection="column" gap={6}>
-            <Chip icon={RocketLaunchIcon}>Unified platform</Chip>
-            <x.h2 text="h2">Review websites, apps and components together</x.h2>
-            <x.p text="teaser">
-              Argos has no limit. Whether it's a single component or a website
-              in multiple resolutions, everything is possible. Use a single tool
-              for Visual Testing.
-            </x.p>
-          </x.div>
-
-          <x.div flex={1} display={{ _: "none", md: "block" }}>
-            <Image src={unifiedDesktopImage} alt="Unified platform" />
-          </x.div>
-        </x.section>
+        <x.div flex={1} display={{ _: "none", md: "block" }}>
+          <Image src={unifiedDesktopImage} alt="Unified platform" />
+        </x.div>
       </Container>
 
       <RotateBackground
@@ -189,7 +187,6 @@ export default function Home() {
         gradientTo="testimonials-bg-bottom"
         pt={120}
         pb={150}
-        mt={200}
       >
         <Container
           display="flex"
@@ -238,7 +235,6 @@ export default function Home() {
           alignItems="center"
           gap={6}
           textAlign="center"
-          mt={200}
           mb={200}
         >
           <Chip icon={HeartIcon}>Open source</Chip>
@@ -255,6 +251,6 @@ export default function Home() {
           </Link>
         </x.section>
       </Container>
-    </>
+    </x.div>
   );
 }

@@ -69,7 +69,7 @@ export const AppFooter: React.FC = () => (
   <x.footer
     borderTop={1}
     borderTopColor="layout-border"
-    my={10}
+    mb={10}
     pt={{ _: 10, sm: 20 }}
     pb={16}
     lineHeight="24px"
