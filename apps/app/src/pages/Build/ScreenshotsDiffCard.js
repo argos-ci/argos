@@ -43,24 +43,10 @@ export function EmptyScreenshotCard() {
   );
 }
 
-function EmptyScreenshot() {
-  return <x.div flex={1 / 3} />;
-}
-
-function Screenshot({ screenshot, title, visible }) {
-  if (!screenshot?.url) return <EmptyScreenshot />;
-  const url = visible ? screenshot.url : "";
-
-  return (
-    <BaseLink href={url} target="_blank" title={title} flex={1 / 3}>
-      <img alt={screenshot.name} src={url} />
-    </BaseLink>
-  );
-}
-
 export function ScreenshotsDiffCard({
   screenshotDiff,
   opened = true,
+  showChanges = true,
   ...props
 }) {
   const disclosure = useDisclosureState({ defaultOpen: opened });
@@ -84,31 +70,45 @@ export function ScreenshotsDiffCard({
       </CollapseCardHeader>
 
       <CollapseCardBody state={disclosure} display="flex" gap={1} p={1}>
-        <Screenshot
-          screenshot={baseScreenshot}
-          title="Base screenshot"
-          visible={disclosure.open}
-        />
+        <x.div flex={1 / 2}>
+          {baseScreenshot?.url ? (
+            <BaseLink
+              href={baseScreenshot.url}
+              target="_blank"
+              title="Base screenshot"
+            >
+              <img
+                alt={baseScreenshot.name}
+                src={disclosure.open ? baseScreenshot.url : ""}
+              />
+            </BaseLink>
+          ) : null}
+        </x.div>
 
-        {compareScreenshot && screenshotDiff.status !== "stable" ? (
-          <Screenshot
-            screenshot={compareScreenshot}
-            title="Current screenshot"
-            visible={disclosure.open}
-          />
-        ) : (
-          <EmptyScreenshot />
-        )}
+        <x.div flex={1 / 2}>
+          {compareScreenshot?.url && screenshotDiff.status !== "stable" ? (
+            <BaseLink
+              href={compareScreenshot.url}
+              target="_blank"
+              title="Current screenshot"
+              position="relative"
+            >
+              {showChanges && url ? (
+                <x.img
+                  src={url}
+                  position="absolute"
+                  opacity={0.5}
+                  backgroundColor="rgba(255, 255, 255, 0.9)"
+                />
+              ) : null}
 
-        {url ? (
-          <Screenshot
-            screenshot={{ url, name: "diff" }}
-            title="Diff"
-            visible={disclosure.open}
-          />
-        ) : (
-          <EmptyScreenshot />
-        )}
+              <img
+                alt={compareScreenshot.name}
+                src={disclosure.open ? compareScreenshot.url : ""}
+              />
+            </BaseLink>
+          ) : null}
+        </x.div>
       </CollapseCardBody>
     </CollapseCard>
   );

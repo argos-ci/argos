@@ -66,6 +66,7 @@ export function ScreenshotDiffsSection({
   screenshotDiffs,
   color = "primary-text",
   opened = "true",
+  showChanges,
 }) {
   if (screenshotDiffs.length === 0) return null;
 
@@ -80,6 +81,7 @@ export function ScreenshotDiffsSection({
             key={index}
             screenshotDiff={screenshotDiff}
             opened={opened}
+            showChanges={showChanges}
           />
         ))}
       </x.div>
