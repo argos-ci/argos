@@ -101,9 +101,7 @@ export const AppFooter: React.FC = () => (
             GitHub
           </FooterLink>
           <FooterLink href="https://discord.gg/pK79sv85Vg">Discord</FooterLink>
-          <FooterLink href="https://twitter.com/argos_ci?s=20&t=lOyYmPfhjDeHIKiGdNMTMw">
-            Twitter
-          </FooterLink>
+          <FooterLink href="https://twitter.com/argos_ci">Twitter</FooterLink>
         </FooterSection>
       </FooterSections>
 
