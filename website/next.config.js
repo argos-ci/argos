@@ -11,7 +11,6 @@ const withMDX = require("@next/mdx")({
 const nextConfig = withMDX({
   reactStrictMode: true,
   swcMinify: true,
-  images: {},
   i18n: {
     locales: ["en"],
     defaultLocale: "en",
