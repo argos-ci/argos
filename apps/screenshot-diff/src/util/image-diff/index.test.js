@@ -148,4 +148,23 @@ describe("#diffImages", () => {
     expect(result.pixels).toBeCloseTo(35, -2);
     expect(result.score).toBeCloseTo(0, 3);
   });
+
+  it("big images", async () => {
+    const result = await diffImages({
+      actualFilename: path.join(
+        __dirname,
+        "__fixtures__/big-images/compare.png"
+      ),
+      expectedFilename: path.join(
+        __dirname,
+        "__fixtures__/big-images/base.png"
+      ),
+      diffFilename: path.join(
+        __dirname,
+        "__fixtures__/big-images/diff_tmp.png"
+      ),
+    });
+
+    expect(result.score).toBeGreaterThan(0.95);
+  });
 });
