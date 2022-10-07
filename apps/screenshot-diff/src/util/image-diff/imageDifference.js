@@ -1,8 +1,8 @@
 /* eslint-disable import/namespace */
-import { stat, mkdir, unlink } from "node:fs/promises";
-import { dirname } from "node:path";
-import { spawn } from "node:child_process";
-import { promisify } from "node:util";
+import { stat, mkdir, unlink } from "fs/promises";
+import { dirname } from "path";
+import { spawn } from "child_process";
+import { promisify } from "util";
 import gm from "gm";
 import { tmpName as cbTmpName } from "tmp";
 
