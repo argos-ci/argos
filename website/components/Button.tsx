@@ -49,7 +49,7 @@ const InnerButton = styled.buttonBox(
       &:focus-visible {
         ${system.apply({
           ring: 3,
-          ringColor: `${$color}-300`,
+          ringColor: `${$color}-focus-ring`,
         })}
       }
 

@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
-import styled, { x, useColorMode } from "@xstyled/styled-components";
+import { x, useColorMode } from "@xstyled/styled-components";
 import { Container } from "@/components/Container";
 import { ArgosLogo } from "@/components/ArgosLogo";
+import { Select, SelectIcon } from "@/components/Select";
+import {
+  MoonIcon,
+  SunIcon,
+  ComputerDesktopIcon,
+  ChevronDownIcon,
+} from "@heroicons/react/24/solid";
 import {
   FooterSections,
   FooterSection,
@@ -9,17 +16,13 @@ import {
   FooterLink,
 } from "@/components/Footer";
 
-const Select = styled.select`
-  appearance: none;
-  border: 1px solid;
-  border-color: layout-border;
-  border-radius: default;
-  padding: 2 4;
-  background-color: transparent;
-  color: on-light;
-`;
-
 const STORAGE_KEY = "xstyled-color-mode";
+
+const colorModeIcons = {
+  system: ComputerDesktopIcon,
+  dark: MoonIcon,
+  default: SunIcon,
+};
 
 const ColorModeSelector = () => {
   const [visible, setVisible] = useState(false);
@@ -27,25 +30,37 @@ const ColorModeSelector = () => {
     setVisible(true);
   }, []);
   const [_colorMode, setColorMode] = useColorMode();
-  const [mode, setMode] = useState(() =>
+  const [mode, setMode] = useState<"dark" | "default" | null>(() =>
     typeof window === "undefined"
       ? null
-      : window.localStorage.getItem(STORAGE_KEY) ?? null
+      : (window.localStorage.getItem(STORAGE_KEY) as "dark" | "default") ?? null
   );
+  const realMode: "system" | "dark" | "default" = mode ?? "system";
   if (!visible) return null;
+  const Icon = colorModeIcons[realMode];
   return (
-    <Select
-      value={mode ?? "system"}
-      onChange={(event) => {
-        const mode =
-          event.target.value === "system" ? null : event.target.value;
-        setMode(mode);
-        setColorMode(mode);
-      }}
-    >
-      <option value="system">System</option>
-      <option value="dark">Dark</option>
-      <option value="default">Light</option>
+    <Select>
+      <SelectIcon>
+        <Icon />
+      </SelectIcon>
+      <select
+        value={realMode}
+        onChange={(event) => {
+          const mode =
+            event.target.value === "system"
+              ? null
+              : (event.target.value as "dark" | "default");
+          setMode(mode);
+          setColorMode(mode);
+        }}
+      >
+        <option value="system">System</option>
+        <option value="dark">Dark</option>
+        <option value="default">Light</option>
+      </select>
+      <SelectIcon>
+        <ChevronDownIcon />
+      </SelectIcon>
     </Select>
   );
 };

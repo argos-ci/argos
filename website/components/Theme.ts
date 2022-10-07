@@ -151,6 +151,9 @@ export const theme: Theme = {
     "feature-orange-icon": th.color("orange-600"),
     "feature-green-icon": th.color("green-600"),
 
+    "primary-focus-ring": th.color("primary-300"),
+    "secondary-focus-ring": th.color("secondary-300"),
+
     "button-primary-bg": th.color("primary-600"),
     "button-primary-bg-hover": th.color("primary-700"),
     "button-primary-outline": th.color("primary-600"),
@@ -182,7 +185,10 @@ export const theme: Theme = {
 
         link: th.color("primary-400"),
 
-        "button-primary-bg": th.color("primary-700"),
+        "primary-focus-ring": th.color("primary-700"),
+        "secondary-focus-ring": th.color("secondary-700"),
+
+        "button-primary-bg": th.color("primary-600"),
         "button-primary-bg-hover": th.color("primary-600"),
         "button-primary-outline": th.color("primary-400"),
         "button-primary-outline-hover": th.color("primary-200"),
