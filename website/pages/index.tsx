@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unescaped-entities */
-import Image from "next/image";
+import Image from "next/future/image";
 import { x } from "@xstyled/styled-components";
 import {
   SparklesIcon,
@@ -79,9 +79,7 @@ export default function Home() {
             <Image
               src={heroIllustration}
               alt="Visual Testing"
-              width={1016}
-              height={678}
-              layout="responsive"
+              style={{ maxWidth: "100%", height: "auto" }}
             />
           </x.div>
         </Container>
@@ -136,7 +134,11 @@ export default function Home() {
         gap={16}
       >
         <x.div flex={1} display="flex" justifyContent="center">
-          <Image src={integrationImage} alt="Argos Integrations" />
+          <Image
+            src={integrationImage}
+            alt="Argos Integrations"
+            style={{ maxWidth: "100%", height: "auto" }}
+          />
         </x.div>
         <x.div display="flex" flexDirection="column" gap={6} flex={1}>
           <Chip icon={Square3Stack3DIcon}>Easy integration</Chip>
@@ -162,7 +164,11 @@ export default function Home() {
           justifyContent="center"
           w={1}
         >
-          <Image src={unifiedMobileImage} alt="Unified platform" />
+          <Image
+            src={unifiedMobileImage}
+            alt="Unified platform"
+            style={{ maxWidth: "100%", height: "auto" }}
+          />
         </x.div>
 
         <x.div flex={1} display="flex" flexDirection="column" gap={6}>
@@ -176,7 +182,11 @@ export default function Home() {
         </x.div>
 
         <x.div flex={1} display={{ _: "none", md: "block" }}>
-          <Image src={unifiedDesktopImage} alt="Unified platform" />
+          <Image
+            src={unifiedDesktopImage}
+            alt="Unified platform"
+            style={{ maxWidth: "100%", height: "auto" }}
+          />
         </x.div>
       </Container>
 
@@ -200,8 +210,13 @@ export default function Home() {
             "Argos helps us every day to avoid regression on all MUI
             components."
           </x.div>
-          <x.div w={20} h={20} borderRadius="full" overflow="hidden">
-            <Image src={tassinariProfile} alt="Olivier Tassinari" />
+          <x.div borderRadius="full" overflow="hidden">
+            <Image
+              src={tassinariProfile}
+              alt="Olivier Tassinari"
+              height={80}
+              width={80}
+            />
           </x.div>
           <x.div lineHeight={1.5} fontWeight="semibold">
             Olivier Tassinari
@@ -220,11 +235,31 @@ export default function Home() {
           </x.div>
         </Container>
         <Testimonials gap={10}>
-          <Image className="testimonial" src={antDesign} alt="Ant Design" />
-          <Image className="testimonial" src={mui} alt="MUI" />
-          <Image className="testimonial" src={doctolib} alt="Doctolib" />
-          <Image className="testimonial" src={lemonde} alt="Le Monde" />
-          <Image className="testimonial" src={gitbook} alt="GitBook" />
+          <Image
+            className="testimonial"
+            priority={true}
+            src={antDesign}
+            alt="Ant Design"
+          />
+          <Image className="testimonial" priority={true} src={mui} alt="MUI" />
+          <Image
+            className="testimonial"
+            priority={true}
+            src={doctolib}
+            alt="Doctolib"
+          />
+          <Image
+            className="testimonial"
+            priority={true}
+            src={lemonde}
+            alt="Le Monde"
+          />
+          <Image
+            className="testimonial"
+            priority={true}
+            src={gitbook}
+            alt="GitBook"
+          />
         </Testimonials>
       </RotateBackground>
 
