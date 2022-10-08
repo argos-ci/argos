@@ -10,9 +10,6 @@ export interface Theme extends DefaultTheme {
     default: string;
   };
   colors: any;
-  animations: DefaultTheme["animations"] & {
-    slide: string;
-  };
   texts: DefaultTheme["texts"] & {
     h1: any;
     h2: any;
@@ -214,10 +211,6 @@ export const theme: Theme = {
         "testimonials-bg-bottom": th.color("blue-800-a30"),
       },
     },
-  },
-  animations: {
-    ...defaultTheme.animations,
-    slide: "slide 50s linear infinite",
   },
   radii: {
     ...defaultTheme.radii,

@@ -1,16 +1,24 @@
-import { x } from "@xstyled/styled-components";
+import styled, { x } from "@xstyled/styled-components";
 import { Container } from "./Container";
 
 export interface TestimonialsProps {
   children: React.ReactNode;
   gap: number;
-  repeat: number;
 }
+
+const Slider = styled.box`
+  overflow: hidden;
+  position: relative;
+
+  [data-slide-track] {
+    animation: slide 20s linear infinite;
+    width: max-content;
+  }
+`;
 
 export const Testimonials: React.FC<TestimonialsProps> = ({
   children,
   gap,
-  repeat,
 }) => {
   return (
     <>
@@ -20,22 +28,12 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
       >
         {children}
       </Container>
-      <x.div w={1} overflow="hidden" display={{ _: "block", lg: "none" }}>
-        <x.div display="flex" justifyContent="center" w="fit-content">
-          {Array.from({ length: repeat }).map((_, index) => (
-            <x.div
-              key={index}
-              display="flex"
-              w="max-content"
-              animation="slide"
-              gap={gap}
-              pr={gap}
-            >
-              {children}
-            </x.div>
-          ))}
+      <Slider display={{ _: "block", lg: "none" }}>
+        <x.div data-slide-track="" display="flex" gap={gap} pr={gap}>
+          {children}
+          {children}
         </x.div>
-      </x.div>
+      </Slider>
     </>
   );
 };

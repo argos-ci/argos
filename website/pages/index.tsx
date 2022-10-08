@@ -219,7 +219,7 @@ export default function Home() {
             TRUSTED BY THE BEST FRONT-END TEAMS
           </x.div>
         </Container>
-        <Testimonials gap={10} repeat={4}>
+        <Testimonials gap={10}>
           <Image className="testimonial" src={antDesign} alt="Ant Design" />
           <Image className="testimonial" src={mui} alt="MUI" />
           <Image className="testimonial" src={doctolib} alt="Doctolib" />
