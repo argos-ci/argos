@@ -61,12 +61,12 @@ export default function Home() {
               applications and notifies in pull-requests.
             </x.p>
             <x.div display="flex" gap={{ _: 4, sm: 6 }}>
-              <Link
-                href="https://app.argos-ci.com/mui/material-ui/builds/3915"
-                passHref
+              <Button
+                as="a"
+                href="https://app.argos-ci.com/argos-ci/www.argos-ci.com/builds/66"
               >
-                <Button as="a">View a demo build</Button>
-              </Link>
+                View a demo build
+              </Button>
               <Link href="https://docs.argos-ci.com" passHref>
                 <Button color="secondary" variant="outline">
                   Documentation
