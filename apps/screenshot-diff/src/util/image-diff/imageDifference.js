@@ -69,6 +69,8 @@ const getDiffArgs = ({
     highlightColor,
     "-lowlight-color",
     lowlightColor,
+    "-compose",
+    "src",
     // http://legacy.imagemagick.org/script/command-line-options.php#metric
     // http://www.imagemagick.org/Usage/compare/
     // https://github.com/ImageMagick/ImageMagick/blob/master/MagickCore/compare.c
@@ -178,7 +180,7 @@ export default async function imageDifference(optionsWithoutDefault) {
     actualFilename,
     expectedFilename,
     highlightColor = "red",
-    lowlightColor = "white",
+    lowlightColor = "none",
     fuzz = 0,
     ...other
   } = optionsWithoutDefault;
