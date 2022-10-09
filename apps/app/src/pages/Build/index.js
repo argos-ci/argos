@@ -389,28 +389,30 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
             </x.div>
           </x.div>
 
-          <x.div display="flex" mt={10}>
-            <x.div flex={1} textAlign="center">
-              Baseline from{" "}
-              <InlineCode mx={1}>
-                {build.baseScreenshotBucket.branch}
-              </InlineCode>
-              <Icon as={ArrowDownIcon} />
-              <x.div color="secondary-text">
-                {moment(build.baseScreenshotBucket.createdAt).fromNow()}
+          {pageInfo.totalCount > 0 ? (
+            <x.div display="flex" mt={10}>
+              <x.div flex={1} textAlign="center">
+                Baseline from{" "}
+                <InlineCode mx={1}>
+                  {build.baseScreenshotBucket.branch}
+                </InlineCode>
+                <Icon as={ArrowDownIcon} />
+                <x.div color="secondary-text">
+                  {moment(build.baseScreenshotBucket.createdAt).fromNow()}
+                </x.div>
+              </x.div>
+              <x.div flex={1} textAlign="center">
+                Changes from{" "}
+                <InlineCode mx={1}>
+                  {build.compareScreenshotBucket.branch}
+                </InlineCode>
+                <Icon as={ArrowDownIcon} />
+                <x.div color="secondary-text">
+                  {moment(build.compareScreenshotBucket.createdAt).fromNow()}
+                </x.div>
               </x.div>
             </x.div>
-            <x.div flex={1} textAlign="center">
-              Changes from{" "}
-              <InlineCode mx={1}>
-                {build.compareScreenshotBucket.branch}
-              </InlineCode>
-              <Icon as={ArrowDownIcon} />
-              <x.div color="secondary-text">
-                {moment(build.compareScreenshotBucket.createdAt).fromNow()}
-              </x.div>
-            </x.div>
-          </x.div>
+          ) : null}
 
           {showStableScreenshots ? (
             <StableScreenshots
