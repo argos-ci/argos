@@ -62,7 +62,7 @@ export function ReviewButtonContent({ repository, disabled }) {
   }
 
   return (
-    <x.div display="flex" flexDirection="column" flex={1}>
+    <x.div display="flex" flexDirection="column">
       <HeadlessMenuButton
         as={Button}
         state={menu}

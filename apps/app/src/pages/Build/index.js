@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
 import { Helmet } from "react-helmet";
 import { useInView } from "react-cool-inview";
+import moment from "moment";
 import {
   Button,
   Container,
@@ -16,6 +17,8 @@ import {
   Tooltip,
   Alert,
   Link,
+  Icon,
+  InlineCode,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
@@ -25,7 +28,12 @@ import {
   ReviewButtonOwnerFragment,
   ReviewButtonRepositoryFragment,
 } from "./ReviewButton";
-import { EyeClosedIcon, EyeIcon } from "@primer/octicons-react";
+import {
+  ArrowDownIcon,
+  EyeClosedIcon,
+  EyeIcon,
+  ImageIcon,
+} from "@primer/octicons-react";
 import {
   getBuildStatusLabel,
   getStatusPrimaryColor,
@@ -100,6 +108,18 @@ const BUILD_QUERY = gql`
           ...BuildStatusInfoScreenshotDiffResultFragment
         }
 
+        baseScreenshotBucket {
+          id
+          createdAt
+          branch
+        }
+
+        compareScreenshotBucket {
+          id
+          createdAt
+          branch
+        }
+
         stats {
           failedScreenshotCount
           addedScreenshotCount
@@ -164,9 +184,37 @@ function OvercapacityBanner({ owner: { plan, consumptionRatio, login } }) {
   );
 }
 
+export function ShowChangesButton({ setShowChanges, showChanges }) {
+  return (
+    <Button
+      variant="neutral"
+      onClick={() => setShowChanges((prev) => !prev)}
+      alignSelf="center"
+    >
+      <x.div position="relative" mr={2}>
+        <Icon as={ImageIcon} minW={4} />
+        <Icon
+          minW={4}
+          as={ImageIcon}
+          color={getStatusPrimaryColor(showChanges ? "neutral" : "danger")}
+          left={0}
+          ml="3px"
+          mt="-1px"
+          position="absolute"
+          backgroundColor="gray-900-a80"
+          borderRadius="15%"
+          borderColor="black"
+        />
+      </x.div>
+      {showChanges ? "Hide" : "Show"} changes
+    </Button>
+  );
+}
+
 const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
   const [showStableScreenshots, setShowStableScreenshots] =
     React.useState(false);
+  const [showChanges, setShowChanges] = React.useState(true);
   const { observe, inView, scrollDirection } = useInView({});
 
   const { loading, data, fetchMore, startPolling, stopPolling } = useQuery(
@@ -287,6 +335,9 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           repository={data.repository}
           build={build}
           screenshotDiffsCount={pageInfo.totalCount}
+          showChanges={showChanges}
+          setShowChanges={setShowChanges}
+          updatedScreenshotCount={stats.updatedScreenshotCount}
         />
       ) : null}
 
@@ -305,28 +356,60 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           <x.div
             display="flex"
             justifyContent="space-between"
-            columnGap={10}
-            rowGap={4}
+            gap={4}
             flexWrap="wrap-reverse"
             mt={5}
             ref={observe}
           >
-            {stats.stableScreenshotCount > 0 ? (
-              <Button
-                variant="neutral"
-                onClick={() => setShowStableScreenshots((prev) => !prev)}
-                justifyContent="start"
-                alignSelf="start"
-              >
-                <IllustratedText
-                  icon={showStableScreenshots ? EyeClosedIcon : EyeIcon}
-                  field
+            <x.div display="flex" flexWrap="wrap" gap={4}>
+              {stats.stableScreenshotCount > 0 ? (
+                <Button
+                  variant="neutral"
+                  onClick={() => setShowStableScreenshots((prev) => !prev)}
+                  justifyContent="start"
+                  alignSelf="start"
                 >
-                  {showStableScreenshots ? "Hide" : "Show"} stable screenshots
-                </IllustratedText>
-              </Button>
-            ) : null}
-            <ReviewButton repository={data.repository} />
+                  <IllustratedText
+                    icon={showStableScreenshots ? EyeClosedIcon : EyeIcon}
+                    field
+                  >
+                    {showStableScreenshots ? "Hide" : "Show"} stable screenshots
+                  </IllustratedText>
+                </Button>
+              ) : null}
+              {stats.updatedScreenshotCount > 0 ? (
+                <ShowChangesButton
+                  setShowChanges={setShowChanges}
+                  showChanges={showChanges}
+                />
+              ) : null}
+            </x.div>
+            <x.div flex={1}>
+              <ReviewButton repository={data.repository} />
+            </x.div>
+          </x.div>
+
+          <x.div display="flex" mt={10}>
+            <x.div flex={1} textAlign="center">
+              Baseline from{" "}
+              <InlineCode mx={1}>
+                {build.baseScreenshotBucket.branch}
+              </InlineCode>
+              <Icon as={ArrowDownIcon} />
+              <x.div color="secondary-text">
+                {moment(build.baseScreenshotBucket.createdAt).fromNow()}
+              </x.div>
+            </x.div>
+            <x.div flex={1} textAlign="center">
+              Changes from{" "}
+              <InlineCode mx={1}>
+                {build.compareScreenshotBucket.branch}
+              </InlineCode>
+              <Icon as={ArrowDownIcon} />
+              <x.div color="secondary-text">
+                {moment(build.compareScreenshotBucket.createdAt).fromNow()}
+              </x.div>
+            </x.div>
           </x.div>
 
           {showStableScreenshots ? (
@@ -341,19 +424,23 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
             title="Failure Screenshots"
             screenshotDiffs={diffGroups.failed}
             color={getStatusPrimaryColor("danger")}
+            showChanges={showChanges}
           />
           <ScreenshotDiffsSection
             title="Added Screenshots"
             screenshotDiffs={diffGroups.added}
+            showChanges={showChanges}
           />
           <ScreenshotDiffsSection
             title="Removed Screenshots"
             screenshotDiffs={diffGroups.removed}
             opened={false}
+            showChanges={showChanges}
           />
           <ScreenshotDiffsSection
             title="Updated Screenshots"
             screenshotDiffs={diffGroups.updated}
+            showChanges={showChanges}
           />
 
           {pageInfo.hasNextPage && (

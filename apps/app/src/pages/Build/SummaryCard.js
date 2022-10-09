@@ -24,6 +24,7 @@ import {
 } from "./ReviewButton";
 import { getStatusPrimaryColor } from "../../containers/Status";
 import { BuildStatusBadge } from "../../containers/BuildStatusBadge";
+import { ShowChangesButton } from ".";
 
 export const SummaryCardBuildFragment = gql`
   fragment SummaryCardBuildFragment on Build {
@@ -84,6 +85,9 @@ export function StickySummaryMenu({
   repository,
   build,
   screenshotDiffsCount,
+  showChanges,
+  setShowChanges,
+  updatedScreenshotCount,
   ...props
 }) {
   return (
@@ -102,12 +106,19 @@ export function StickySummaryMenu({
       py={1}
       gap={4}
       minH={10}
+      overflowX="auto"
       {...props}
     >
-      <x.div display="flex" gap={3} alignItems="center">
+      <x.div display="flex" gap={3} alignItems="center" flexShrink={0}>
         Build #{build.number}
         <BuildStatusBadge build={build} py={0.5} />
       </x.div>
+      {updatedScreenshotCount > 0 ? (
+        <ShowChangesButton
+          showChanges={showChanges}
+          setShowChanges={setShowChanges}
+        />
+      ) : null}
       <ReviewButton repository={repository} />
     </x.div>
   );
