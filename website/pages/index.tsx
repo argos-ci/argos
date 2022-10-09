@@ -241,7 +241,13 @@ export default function Home() {
             src={antDesign}
             alt="Ant Design"
           />
-          <Image className="testimonial" priority={true} src={mui} alt="MUI" />
+          <Image
+            className="testimonial"
+            priority={true}
+            src={mui}
+            alt="MUI"
+            style={{ marginTop: -5 }}
+          />
           <Image
             className="testimonial"
             priority={true}
