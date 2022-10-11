@@ -95,7 +95,7 @@ export function getBuildStatusLabel({ type, status }) {
     case "reference":
       return "Reference build";
 
-    case "check": {
+    default:
       switch (status) {
         case "stable":
           return "No change detected";
@@ -118,9 +118,5 @@ export function getBuildStatusLabel({ type, status }) {
         default:
           return null;
       }
-    }
-
-    default:
-      return null;
   }
 }

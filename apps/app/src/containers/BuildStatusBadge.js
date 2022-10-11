@@ -11,9 +11,9 @@ export const BuildStatusBadgeFragment = gql`
 `;
 
 export function BuildStatusBadge({ build, children, ...props }) {
-  const baseColor = getStatusColor(
-    build.type !== "check" ? build.type : build.status
-  );
+  const compositeStatus =
+    build.type && build.type !== "check" ? build.type : build.status;
+  const baseColor = getStatusColor(compositeStatus);
   const bgColor = `${baseColor}-500-a30`;
   const hoverBgColor =
     props.to || props.href ? `${baseColor}-500-a50` : bgColor;
@@ -27,12 +27,7 @@ export function BuildStatusBadge({ build, children, ...props }) {
       whiteSpace="nowrap"
       {...props}
     >
-      <StatusIcon
-        status={
-          build.type && build.type !== "check" ? build.type : build.status
-        }
-        mr={2}
-      />
+      <StatusIcon status={compositeStatus} mr={2} />
       {statusLabel}
     </Tag>
   );
