@@ -92,6 +92,7 @@ export function ScreenshotsDiffCard({
               target="_blank"
               title="Current screenshot"
               position="relative"
+              display="inline-block" // fix Firefox bug on "position: relative"
             >
               {showChanges && url ? (
                 <x.img
