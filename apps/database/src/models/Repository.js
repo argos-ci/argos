@@ -71,6 +71,21 @@ export class Repository extends Model {
           return builder.where({ deleted: false });
         },
       },
+      activeInstallation: {
+        relation: Model.HasOneThroughRelation,
+        modelClass: Installation,
+        join: {
+          from: "repositories.id",
+          through: {
+            from: "installation_repository_rights.repositoryId",
+            to: "installation_repository_rights.installationId",
+          },
+          to: "installations.id",
+        },
+        modify(builder) {
+          return builder.where({ deleted: false }).first();
+        },
+      },
     };
   }
 
