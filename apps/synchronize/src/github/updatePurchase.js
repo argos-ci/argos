@@ -5,7 +5,7 @@ import { getNewPlanOrThrow } from "./eventHelpers";
 export async function updatePurchase(payload, account) {
   const plan = await getNewPlanOrThrow(payload);
   const activePurchase = await account.getActivePurchase();
-  const effectiveDate = payload.effective_date || new Date();
+  const effectiveDate = payload.effective_date || new Date().toISOString();
 
   if (!activePurchase) {
     Purchase.query().insert({
