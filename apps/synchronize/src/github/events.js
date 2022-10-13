@@ -21,6 +21,8 @@ export async function handleGitHubEvents({ name, payload }) {
               getNewPlanOrThrow(payload),
               getOrCreateAccount(payload),
             ]);
+            const currentPlan = await account.getPlan();
+            if (currentPlan && currentPlan.id === newPlan.id) return;
             await Purchase.query().insert({
               accountId: account.id,
               planId: newPlan.id,
