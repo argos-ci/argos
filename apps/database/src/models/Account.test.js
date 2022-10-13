@@ -1,8 +1,10 @@
 import { factory, useDatabase } from "../testing";
+import { Account } from "./Account";
+import { Plan } from "./Plan";
 
 describe("Account", () => {
   let plans;
-  let account;
+  let account, vipAccount;
   let bucket1, bucket2, bucket3, bucketOtherOrga;
 
   useDatabase();
@@ -14,9 +16,9 @@ describe("Account", () => {
       { name: "standard", screenshotsLimitPerMonth: 10 },
       { name: "pro", screenshotsLimitPerMonth: 100 },
     ]);
-    [account] = await factory.createMany("OrganizationAccount", [
+    [account, vipAccount] = await factory.createMany("OrganizationAccount", [
       { organizationId: organizations[0].id },
-      { organizationId: organizations[1].id },
+      { organizationId: organizations[1].id, forcedPlanId: plans[2].id },
     ]);
     const repositories = await factory.createMany("Repository", [
       { organizationId: organizations[0].id, private: true },
@@ -155,6 +157,48 @@ describe("Account", () => {
       });
       const consumption = await account.getScreenshotsCurrentConsumption();
       expect(consumption).toBe(0);
+    });
+  });
+
+  describe("#getPlan", () => {
+    describe("with purchase", () => {
+      it("returns purchased plan", async () => {
+        await factory.create("Purchase", {
+          planId: plans[1].id,
+          accountId: account.id,
+        });
+        const plan = await account.getPlan();
+        expect(plan.id).toBe(plans[1].id);
+      });
+
+      it("with forced plan returns forced plan", async () => {
+        await factory.create("Purchase", {
+          planId: plans[1].id,
+          accountId: vipAccount.id,
+        });
+
+        const plan = await vipAccount.getPlan();
+        expect(plan.id).toBe(plans[2].id);
+      });
+    });
+
+    describe("without purchase", () => {
+      it("with free plan in database returns free plan", async () => {
+        const plan = await account.getPlan();
+        expect(plan.id).toBe(plans[0].id);
+      });
+
+      it("with forced plan returns forced plan", async () => {
+        const plan = await vipAccount.getPlan();
+        expect(plan.id).toBe(plans[2].id);
+      });
+
+      it("without free plan in database returns null", async () => {
+        await Account.query().delete().where("id", vipAccount.id);
+        await Plan.query().delete();
+        const plan = await account.getPlan();
+        expect(plan).toBeNull();
+      });
     });
   });
 });

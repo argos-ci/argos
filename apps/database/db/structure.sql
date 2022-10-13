@@ -84,6 +84,7 @@ CREATE TABLE public.accounts (
     "updatedAt" timestamp with time zone NOT NULL,
     "userId" bigint,
     "organizationId" bigint,
+    "forcedPlanId" bigint,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "organizationId") = 1))
 );
 
@@ -1172,6 +1173,13 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: accounts_forcedplanid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX accounts_forcedplanid_index ON public.accounts USING btree ("forcedPlanId");
+
+
+--
 -- Name: accounts_organizationid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1445,6 +1453,14 @@ CREATE INDEX users_githubid_index ON public.users USING btree ("githubId");
 
 
 --
+-- Name: accounts accounts_forcedplanid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_forcedplanid_foreign FOREIGN KEY ("forcedPlanId") REFERENCES public.plans(id);
+
+
+--
 -- Name: accounts accounts_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1707,3 +1723,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022091
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220919175105_nullable_compare_screenshot_id.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220921142914_remove.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220927074934_add_missing_accounts.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221013113904_add_forced_plan.js', 1, NOW());
