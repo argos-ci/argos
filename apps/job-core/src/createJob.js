@@ -15,7 +15,7 @@ const parseMessage = (message) => {
   return payload;
 };
 
-export function createJob(queue, consumer) {
+export function createJob(queue, consumer, { prefetch = 1 } = {}) {
   return {
     queue,
     async push(...args) {
@@ -29,7 +29,7 @@ export function createJob(queue, consumer) {
       Sentry.configureScope((scope) => {
         scope.setTag("jobQueue", queue);
       });
-      await channel.prefetch(1);
+      await channel.prefetch(prefetch);
       await channel.assertQueue(queue, { durable: true });
       await channel.consume(queue, async (msg) => {
         let payload;
