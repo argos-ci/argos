@@ -181,7 +181,7 @@ export const resolvers = {
         updatedScreenshotCount: stats.updated,
         removedScreenshotCount: stats.removed,
         screenshotCount: Object.values(stats).reduce(
-          (sum, count) => parseInt(sum, 10) + count,
+          (sum, count) => parseInt(count, 10) + sum,
           0
         ),
       };
