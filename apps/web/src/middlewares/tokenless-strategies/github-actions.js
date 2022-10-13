@@ -66,7 +66,7 @@ const strategy = {
     }
 
     if (githubJob.data.status !== "in_progress") {
-      throw new HttpError(401, `Expired GitHub job (token: "${bearerToken}")`);
+      throw new HttpError(401, `GitHub job is not in progress (token: "${bearerToken}")`);
     }
 
     return repository;
