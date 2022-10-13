@@ -16,6 +16,7 @@ export class Account extends Model {
       properties: {
         userId: { type: ["string", null] },
         organizationId: { type: ["string", null] },
+        forcedPlanId: { type: ["string", null] },
       },
     });
   }
@@ -78,6 +79,10 @@ export class Account extends Model {
   }
 
   async getPlan() {
+    if (this.forcedPlanId) {
+      return Plan.query().findById(this.forcedPlanId);
+    }
+
     const activePurchase = await this.getActivePurchase();
     if (activePurchase) return activePurchase.plan;
     const freePlan = await Plan.getFreePlan();
@@ -92,6 +97,11 @@ export class Account extends Model {
   async getCurrentConsumptionStartDate() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    if (this.forcedPlanId) {
+      return startOfMonth;
+    }
+
     const activePurchase = await this.getActivePurchase();
 
     if (!activePurchase) {
