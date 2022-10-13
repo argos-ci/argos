@@ -37,41 +37,6 @@ function FirstBuildMessage({ firstBuild }) {
   ) : null;
 }
 
-function OrphanTypeInfo({ firstBuild, referenceBranch }) {
-  return (
-    <Alert mt={2} severity="info">
-      <FirstBuildMessage firstBuild={firstBuild} />
-      Comparing screenshot is not possible because no reference build was found.
-      <x.div my={4}>
-        It may happens because:
-        <x.ul listStyleType="disc" ml={8} mt={2}>
-          <x.li my={1}>
-            There is no Argos build on the{" "}
-            <InlineCode>{referenceBranch}</InlineCode> branch yet
-          </x.li>
-          <x.li my={1}>
-            Your pull-request is not rebased on{" "}
-            <InlineCode>{referenceBranch}</InlineCode> branch
-          </x.li>
-        </x.ul>
-      </x.div>
-      To perform comparison, make sure that you have an Argos build on{" "}
-      <InlineCode>{referenceBranch}</InlineCode> branch and that your
-      pull-request is rebased.
-    </Alert>
-  );
-}
-
-function ReferenceTypeInfo({ firstBuild }) {
-  return (
-    <Alert mt={2} severity="info">
-      <FirstBuildMessage firstBuild={firstBuild} />
-      This build was performed on the reference branch. Screenshots will be used
-      as a comparison baseline in next Argos builds.
-    </Alert>
-  );
-}
-
 function StableStatusInfo({ screenshotsTotalCount }) {
   return screenshotsTotalCount === 0 ? (
     <Alert mt={2} severity="danger">
@@ -90,7 +55,7 @@ function ExpiredStatusInfo({ batchCount, totalBatch }) {
     <Alert mt={2} severity="danger">
       Build has been killed because it took too much time to receive all
       batches. Be sure that argos upload is called up to the number specified in
-      parallel total. <a>Read more about parallel troubleshooting</a>.
+      parallel total.
     </Alert>
   ) : (
     <Alert mt={2} severity="danger">
@@ -101,11 +66,46 @@ function ExpiredStatusInfo({ batchCount, totalBatch }) {
   );
 }
 
-function CheckTypeInfo({
-  build: { status, batchCount, totalBatch },
-  screenshotCount,
-}) {
-  switch (status) {
+export function BuildStatusInfo({ build, referenceBranch, screenshotCount }) {
+  const firstBuild = build.number === 1;
+
+  if (build.type === "orphan") {
+    return (
+      <Alert mt={2} severity="info">
+        <FirstBuildMessage firstBuild={firstBuild} />
+        Comparing screenshot is not possible because no reference build was
+        found.
+        <x.div my={4}>
+          It may happens because:
+          <x.ul listStyleType="disc" ml={8} mt={2}>
+            <x.li my={1}>
+              There is no Argos build on the{" "}
+              <InlineCode>{referenceBranch}</InlineCode> branch yet
+            </x.li>
+            <x.li my={1}>
+              Your pull-request is not rebased on{" "}
+              <InlineCode>{referenceBranch}</InlineCode> branch
+            </x.li>
+          </x.ul>
+        </x.div>
+        To perform comparison, make sure that you have an Argos build on{" "}
+        <InlineCode>{referenceBranch}</InlineCode> branch and that your
+        pull-request is rebased.
+      </Alert>
+    );
+  }
+
+  if (build.type === "reference") {
+    return (
+      <Alert mt={2} severity="info">
+        <FirstBuildMessage firstBuild={firstBuild} />
+        This build was performed on the reference branch. Screenshots will be
+        used as a comparison baseline in next Argos builds.
+      </Alert>
+    );
+  }
+
+  switch (build.status) {
     case "stable":
       return <StableStatusInfo screenshotsTotalCount={screenshotCount} />;
 
@@ -127,31 +127,11 @@ function CheckTypeInfo({
 
     case "expired":
       return (
-        <ExpiredStatusInfo batchCount={batchCount} totalBatch={totalBatch} />
-      );
-
-    default:
-      return null;
-  }
-}
-
-export function BuildStatusInfo({ build, referenceBranch, screenshotCount }) {
-  const buildIsFirst = build.number === 1;
-
-  switch (build.type) {
-    case "orphan":
-      return (
-        <OrphanTypeInfo
-          firstBuild={buildIsFirst}
-          referenceBranch={referenceBranch}
+        <ExpiredStatusInfo
+          batchCount={build.batchCount}
+          totalBatch={build.totalBatch}
         />
       );
-
-    case "reference":
-      return <ReferenceTypeInfo firstBuild={buildIsFirst} />;
-
-    case "check":
-      return <CheckTypeInfo build={build} screenshotCount={screenshotCount} />;
 
     default:
       return null;

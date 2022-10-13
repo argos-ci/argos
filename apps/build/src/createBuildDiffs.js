@@ -2,6 +2,20 @@ import { transaction } from "@argos-ci/database";
 import { ScreenshotDiff, Build } from "@argos-ci/database/models";
 import { baseCompare } from "./baseCompare";
 
+function getBuildType({
+  baseScreenshotBucket,
+  compareScreenshotBucket,
+  repository,
+}) {
+  if (!baseScreenshotBucket) {
+    return "orphan";
+  }
+  if (compareScreenshotBucket.branch === repository.referenceBranch) {
+    return "reference";
+  }
+  return "check";
+}
+
 export async function getOrCreateBaseScreenshotBucket(build, { trx } = {}) {
   // It can already be present, for instance by the sample build feature.
   if (build.baseScreenshotBucket) {
@@ -18,19 +32,11 @@ export async function getOrCreateBaseScreenshotBucket(build, { trx } = {}) {
   if (baseScreenshotBucket) {
     await Build.query(trx)
       .findById(build.id)
-      .patch({
-        baseScreenshotBucketId: baseScreenshotBucket.id,
-        type:
-          build.compareScreenshotBucket.branch ===
-          build.repository.referenceBranch
-            ? "reference"
-            : "check",
-      });
+      .patch({ baseScreenshotBucketId: baseScreenshotBucket.id });
 
     return baseScreenshotBucket.$query(trx).withGraphFetched("screenshots");
   }
 
-  await Build.query(trx).findById(build.id).patch({ type: "orphan" });
   return null;
 }
 
@@ -53,6 +59,10 @@ export async function createBuildDiffs(build) {
       richBuild,
       { trx }
     );
+
+    await Build.query(trx)
+      .findById(build.id)
+      .patch({ type: getBuildType({ ...richBuild, baseScreenshotBucket }) });
 
     const compareWithBaseline = Boolean(
       baseScreenshotBucket &&
