@@ -16,8 +16,8 @@ function decodeToken(bearerToken, marker) {
   }
 }
 
-function validateToken({ owner, repository, jobId }) {
-  return Boolean(owner && repository && jobId);
+function validateToken({ owner, repository, jobId, runId }) {
+  return Boolean(owner && repository && jobId && runId);
 }
 
 const strategy = {
@@ -52,11 +52,23 @@ const strategy = {
       return null;
     }
 
-    const githubJob = await octokit.actions.getJobForWorkflowRun({
+    const githubRun = await octokit.actions.listJobsForWorkflowRun({
       owner: token.owner,
       repo: token.repository,
-      job_id: token.jobId,
+      run_id: token.runId,
+      filter: "latest",
     });
+
+    if (!githubRun) {
+      throw new HttpError(
+        401,
+        `GitHub run not found (token: "${bearerToken}")`
+      );
+    }
+
+    const githubJob = githubRun.data.jobs.find(
+      (job) => job.name === token.jobId
+    );
 
     if (!githubJob) {
       throw new HttpError(
@@ -65,8 +77,11 @@ const strategy = {
       );
     }
 
-    if (githubJob.data.status !== "in_progress") {
-      throw new HttpError(401, `GitHub job is not in progress (token: "${bearerToken}")`);
+    if (githubJob.status !== "in_progress") {
+      throw new HttpError(
+        401,
+        `GitHub job is not in progress (token: "${bearerToken}")`
+      );
     }
 
     return repository;
