@@ -98,8 +98,7 @@ export function ScreenshotsDiffCard({
                 <x.img
                   src={url}
                   position="absolute"
-                  opacity={0.5}
-                  backgroundColor="rgba(255, 255, 255, 0.9)"
+                  backgroundColor="rgba(255, 255, 255, 0.8)"
                 />
               ) : null}
 
