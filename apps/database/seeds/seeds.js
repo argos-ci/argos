@@ -196,7 +196,7 @@ exports.seed = async (knex) => {
     score: null,
     jobStatus: "complete",
     validationStatus: "unknown",
-    s3Id: "penelope-diff.jpg",
+    s3Id: "penelope-diff-transparent.png",
     createdAt: now,
     updatedAt: now,
   };
