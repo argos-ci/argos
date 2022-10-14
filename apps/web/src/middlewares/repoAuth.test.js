@@ -7,10 +7,11 @@ const app = createTestApp(repoAuth, (req, res) => {
   res.send({ authRepository: req.authRepository });
 });
 
-const encodeToken = ({ owner, repository, jobId }) =>
-  Buffer.from(JSON.stringify({ owner, repository, jobId }), "utf8").toString(
-    "base64"
-  );
+const encodeToken = ({ owner, repository, jobId, runId }) =>
+  Buffer.from(
+    JSON.stringify({ owner, repository, jobId, runId }),
+    "utf8"
+  ).toString("base64");
 
 describe("repoAuth", () => {
   let repository;
@@ -79,7 +80,8 @@ describe("repoAuth", () => {
       const encodedToken = encodeToken({
         owner: "argos-ci",
         repository: "unknown-repo",
-        jobId: "5286066124",
+        jobId: "job-name",
+        runId: "5286066124",
       });
 
       await request(app)
@@ -97,7 +99,8 @@ describe("repoAuth", () => {
       const encodedToken = encodeToken({
         owner: "argos-ci",
         repository: "argos",
-        jobId: "XX",
+        jobId: "unknown-job-name",
+        runId: "12345",
       });
 
       await request(app)

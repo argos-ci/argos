@@ -10,6 +10,9 @@ import { Installation } from "./Installation";
 const generateRandomBytes = promisify(crypto.randomBytes);
 
 export class Repository extends Model {
+  /** @type {Installation | undefined} */
+  activeInstallation;
+
   static get tableName() {
     return "repositories";
   }
