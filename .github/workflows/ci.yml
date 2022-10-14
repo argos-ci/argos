@@ -65,6 +65,29 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+      - name: Truncate and seed database
+        run: npm run -w @argos-ci/database db:truncate && npm run -w @argos-ci/database db:seed
+        env:
+          NODE_ENV: test
+
+      - name: Add hosts to /etc/hosts
+        run: |
+          sudo echo "127.0.0.1 app.argos-ci.dev" | sudo tee -a /etc/hosts
+          sudo echo "127.0.0.1 api.argos-ci.dev" | sudo tee -a /etc/hosts
+
+      - name: Launch app
+        run: npx argos-web > /dev/null 2>&1 &
+        env:
+          NODE_ENV: test
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        env:
+          NODE_ENV: test
+
       - name: Run Argos
         continue-on-error: true
-        run: npx @argos-ci/cli upload screenshots/samples
+        run: npx @argos-ci/cli upload screenshots

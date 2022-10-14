@@ -7,6 +7,7 @@
     "dev": "npm run -w @argos-ci/app dev",
     "build": "npm run -w @argos-ci/app build",
     "test": "jest --runInBand",
+    "e2e:start": "playwright test",
     "setup": "npm run -ws setup",
     "procfile": "heroku local -f Procfile.dev -p 4001",
     "webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/SmH89Dx2HZ89wK7T --target https://api.argos-ci.dev:4001/github/event-handler",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@argos-ci/cli": "latest",
+    "@playwright/test": "^1.27.1",
     "@swc/jest": "^0.2.22",
     "eslint": "^8.21.0",
     "eslint-plugin-import": "^2.26.0",
