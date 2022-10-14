@@ -17,6 +17,12 @@ export class Installation extends Model {
     });
   }
 
+  /** @type {string} */
+  githubId;
+
+  /** @type {boolean} */
+  deleted;
+
   static get relationMappings() {
     return {
       users: {
