@@ -115,16 +115,11 @@ jobs:
       - name: Truncate and seed database
         run: npm run -w @argos-ci/database db:truncate && npm run -w @argos-ci/database db:seed
 
-      - name: Add hosts to /etc/hosts
-        run: |
-          sudo echo "127.0.0.1 app.argos-ci.dev" | sudo tee -a /etc/hosts
-          sudo echo "127.0.0.1 api.argos-ci.dev" | sudo tee -a /etc/hosts
-
       - name: Launch app
         run: npx argos-web > /dev/null 2>&1 &
 
       - name: Wait for app to be ready
-        run: npx wait-on -t 5000 http://app.argos-ci.dev:4001
+        run: npx wait-on -t 5000 http://localhost:4001
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps

@@ -1,7 +1,7 @@
 {
   "server": {
     "logFormat": "",
-    "url": "http://app.argos-ci.dev:4001",
+    "url": "http://localhost:4001",
     "secure": false
   },
   "s3": {
