@@ -26,27 +26,22 @@ const config = {
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
+  forbidOnly: Boolean(process.env.CI),
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 2 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
-    actionTimeout: 0,
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: argosConfig.get("server.url"),
-
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
-
     /* Capture screenshot after each test */
     screenshot: "on",
   },
-
   /* Configure projects for major browsers */
   projects: [
     {
@@ -106,10 +101,12 @@ const config = {
   outputDir: "screenshots",
 
   /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   port: 3000,
-  // },
+  webServer: {
+    command: "npx argos-web",
+    port: 4001,
+    timeout: 10 * 1000,
+    reuseExistingServer: !process.env.CI,
+  },
 };
 
 module.exports = config;

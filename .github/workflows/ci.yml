@@ -115,12 +115,6 @@ jobs:
       - name: Truncate and seed database
         run: npm run -w @argos-ci/database db:truncate && npm run -w @argos-ci/database db:seed
 
-      - name: Launch app
-        run: npx argos-web > /dev/null 2>&1 &
-
-      - name: Wait for app to be ready
-        run: npx wait-on -t 5000 http://localhost:4001
-
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
@@ -130,5 +124,3 @@ jobs:
       - name: Run Argos
         continue-on-error: true
         run: npx @argos-ci/cli upload screenshots
-        env:
-          ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
