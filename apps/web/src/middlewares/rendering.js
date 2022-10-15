@@ -13,7 +13,10 @@ const indexString = fs.readFileSync(
 );
 
 function getHtmlWebpackPluginConfig() {
-  if (process.env.NODE_ENV === "production") {
+  if (
+    process.env.NODE_ENV === "production" ||
+    process.env.NODE_ENV === "test"
+  ) {
     const rawAssets = fs.readFileSync(
       path.join(__dirname, "../../../app/dist/webpack-assets.json"),
       "UTF-8"

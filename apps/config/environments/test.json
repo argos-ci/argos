@@ -1,7 +1,8 @@
 {
   "server": {
     "logFormat": "",
-    "url": "http://app.test.argos-ci.com"
+    "url": "http://localhost:4001",
+    "secure": false
   },
   "s3": {
     "screenshotsBucket": "argos-ci-test"
