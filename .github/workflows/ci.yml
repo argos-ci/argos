@@ -7,8 +7,11 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  unit:
     runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
 
     services:
       redis:
@@ -36,10 +39,8 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 16
@@ -55,20 +56,64 @@ jobs:
 
       - name: Setup
         run: npm run setup
-        env:
-          NODE_ENV: test
 
       - name: Test
         run: npm run test -- --ci
         env:
-          NODE_ENV: test
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:6-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      postgres:
+        image: postgres:13-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Setup
+        run: npm run setup
+
       - name: Truncate and seed database
         run: npm run -w @argos-ci/database db:truncate && npm run -w @argos-ci/database db:seed
-        env:
-          NODE_ENV: test
 
       - name: Add hosts to /etc/hosts
         run: |
@@ -77,17 +122,18 @@ jobs:
 
       - name: Launch app
         run: npx argos-web > /dev/null 2>&1 &
-        env:
-          NODE_ENV: test
+
+      - name: Wait for app to be ready
+        run: wait-on -t 5000 https://app.argos-ci.dev:4001
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
         run: npx playwright test
-        env:
-          NODE_ENV: test
 
       - name: Run Argos
         continue-on-error: true
         run: npx @argos-ci/cli upload screenshots
+        env:
+          ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}

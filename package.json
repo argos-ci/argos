@@ -33,6 +33,7 @@
     "prettier": "^2.7.1",
     "react-teleporter": "^3.0.2",
     "smee-client": "^1.2.3",
-    "turborepo": "^0.0.1"
+    "turborepo": "^0.0.1",
+    "wait-on": "^6.0.1"
   }
 }
