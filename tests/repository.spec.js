@@ -1,5 +1,8 @@
-const { test } = require("@playwright/test");
+const { test, expect } = require("@playwright/test");
+const { goto, argosScreenshot } = require("./utils");
 
-test("repository list", async ({ page }) => {
-  await page.goto("/callemall/material-ui/builds");
+test("build list", async ({ page, browserName }) => {
+  await goto({ page, link: "/callemall/material-ui/builds" });
+  await expect(page.getByText("#12")).toBeVisible();
+  await argosScreenshot({ page, name: `owner-repository-list-${browserName}` });
 });

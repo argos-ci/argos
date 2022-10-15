@@ -1,9 +1,26 @@
-const { test } = require("@playwright/test");
+const { test, expect } = require("@playwright/test");
+const { argosScreenshot, goto } = require("./utils");
 
-test("removed screenshots", async ({ page }) => {
-  await page.goto("/callemall/material-ui/builds/14");
-});
+const buildExamples = [
+  { name: "orphan", number: 1 },
+  { name: "reference", number: 2 },
+  { name: "expired", number: 3 },
+  { name: "aborted", number: 4 },
+  { name: "error", number: 5 },
+  { name: "changes detected", number: 6 },
+  { name: "rejected", number: 8 },
+  { name: "scheduled", number: 9 },
+  { name: "in progress", number: 10 },
+  { name: "empty", number: 13 },
+  { name: "stable", number: 12 },
+  { name: "stable with fail screenshots", number: 11 },
+  { name: "stable with removed screenshots", number: 14 },
+];
 
-test("empty build", async ({ page }) => {
-  await page.goto("/callemall/material-ui/builds/13");
+buildExamples.forEach((build) => {
+  test(build.name, async ({ page, browserName }) => {
+    await goto({ page, link: `/callemall/material-ui/builds/${build.number}` });
+    await expect(page.getByText(`Build #${build.number}`)).toBeVisible();
+    await argosScreenshot({ page, name: `build-${build.name}-${browserName}` });
+  });
 });
