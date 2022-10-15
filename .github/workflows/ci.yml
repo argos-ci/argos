@@ -67,6 +67,4 @@ jobs:
 
       - name: Run Argos
         continue-on-error: true
-        env:
-          ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
         run: npx @argos-ci/cli upload screenshots/samples

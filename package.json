@@ -19,7 +19,7 @@
     "node": "16"
   },
   "devDependencies": {
-    "@argos-ci/cli": "^0.1.2",
+    "@argos-ci/cli": "latest",
     "@swc/jest": "^0.2.22",
     "eslint": "^8.21.0",
     "eslint-plugin-import": "^2.26.0",
