@@ -9,7 +9,7 @@ import { createApp } from "@argos-ci/web";
 import logger from "@argos-ci/logger";
 
 const createHttpServer = (requestListener) => {
-  if (config.get("env") === "development" || config.get("env") === "test") {
+  if (config.get("env") === "development") {
     return https.createServer(
       {
         key: fs.readFileSync(

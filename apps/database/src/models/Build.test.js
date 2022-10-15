@@ -293,7 +293,7 @@ describe("models/Build", () => {
       const build = await factory.create("Build");
       const url = await build.getUrl();
       expect(url).toMatch(
-        `https://app.argos-ci.dev:4001/${build.repository.organization.login}/${build.repository.name}/builds/${build.number}`
+        `http://app.argos-ci.dev:4001/${build.repository.organization.login}/${build.repository.name}/builds/${build.number}`
       );
     });
   });

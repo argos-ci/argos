@@ -124,7 +124,7 @@ jobs:
         run: npx argos-web > /dev/null 2>&1 &
 
       - name: Wait for app to be ready
-        run: npx wait-on -t 5000 https://app.argos-ci.dev:4001
+        run: npx wait-on -t 5000 http://app.argos-ci.dev:4001
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
