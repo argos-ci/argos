@@ -100,26 +100,33 @@ export function StickySummaryMenu({
       borderColor={getStatusPrimaryColor(build.status)}
       borderBottom={1}
       borderBottomColor="border"
-      display="flex"
-      justifyContent="space-between"
-      pl={2}
-      py={1}
-      gap={4}
       minH={10}
-      overflowX="auto"
       {...props}
     >
-      <x.div display="flex" gap={3} alignItems="center" flexShrink={0}>
-        Build #{build.number}
-        <BuildStatusBadge build={build} py={0.5} />
+      <x.div
+        display="flex"
+        justifyContent="space-between"
+        gap={4}
+        pl={2}
+        py={1}
+        overflowX="auto"
+      >
+        <x.div display="flex" gap={3} alignItems="center" flexShrink={0}>
+          Build #{build.number}
+          <BuildStatusBadge build={build} py={0.5} />
+        </x.div>
+        <x.div flex={1}>
+          {updatedScreenshotCount > 0 ? (
+            <ShowChangesButton
+              showChanges={showChanges}
+              setShowChanges={setShowChanges}
+            />
+          ) : null}
+        </x.div>
+        <x.div flex={1}>
+          <ReviewButton repository={repository} />
+        </x.div>
       </x.div>
-      {updatedScreenshotCount > 0 ? (
-        <ShowChangesButton
-          showChanges={showChanges}
-          setShowChanges={setShowChanges}
-        />
-      ) : null}
-      <ReviewButton repository={repository} />
     </x.div>
   );
 }
