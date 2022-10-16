@@ -8,5 +8,6 @@ export async function argosScreenshot({ page, name }) {
   await page.screenshot({
     path: `${screenshotFolder}/${name}.png`,
     fullPage: true,
+    mask: [page.locator('[data-visual-test="blackout"]')],
   });
 }

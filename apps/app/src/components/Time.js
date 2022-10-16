@@ -25,6 +25,7 @@ export const Time = forwardRef(({ date, format, children, ...props }, ref) => {
       data-test-hidden
       dateTime={moment(date).toISOString()}
       title={moment(date).format("LLLL")}
+      data-visual-test="blackout"
       {...props}
     >
       {children ?? fromNow}
