@@ -25,6 +25,7 @@ export const GlobalStyle = createGlobalStyle`
   body {
     line-height: 1.4;
     -webkit-font-smoothing: antialiased;
+    font-family: default;
   }
 
   img,

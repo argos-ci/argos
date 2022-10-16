@@ -7,6 +7,11 @@ import {
 
 export const theme = {
   ...defaultTheme,
+  fonts: {
+    ...defaultTheme.fonts,
+    default:
+      '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif',
+  },
   colors: {
     ...defaultTheme.colors,
 
