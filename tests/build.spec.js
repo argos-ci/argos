@@ -21,6 +21,6 @@ buildExamples.forEach((build) => {
   test(build.name, async ({ page, browserName }) => {
     await goto({ page, link: `/callemall/material-ui/builds/${build.number}` });
     await expect(page.getByText(`Build #${build.number}`)).toBeVisible();
-    await argosScreenshot({ page, name: `build-${build.name}-${browserName}` });
+    await argosScreenshot(page, `build-${build.name}-${browserName}`);
   });
 });

@@ -4,7 +4,8 @@
   "extends": ["eslint:recommended", "plugin:import/recommended"],
   "env": {
     "node": true,
-    "es2022": true
+    "es2022": true,
+    "browser": true
   },
   "parserOptions": {
     "ecmaVersion": "latest",
