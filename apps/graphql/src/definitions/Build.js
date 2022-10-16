@@ -109,13 +109,14 @@ export const resolvers = {
     async screenshotDiffs(build, { where, limit = 10, offset = 0 }) {
       const query = build
         .$relatedQuery("screenshotDiffs")
-        .leftJoin(
-          "screenshots",
-          "screenshots.id",
-          "screenshot_diffs.baseScreenshotId"
-        )
-        .orderBy("score", "desc")
-        .orderBy("screenshots.name", "asc")
+        .leftJoinRelated("[baseScreenshot, compareScreenshot]")
+        // sort updated screenshot at the end
+        .orderByRaw('CASE WHEN "score" IS NULL THEN 0 ELSE 1 END ASC')
+        // then, sort "updated", "failure" and "stable" screenshots by name
+        // then, sort "added" and "failure" screenshots first followed by "removed" screenshots
+        .orderBy("compareScreenshot.name", "asc", "last")
+        // then, sort "added", "removed" and "failure" screenshots by name
+        .orderBy("baseScreenshot.name", "asc")
         .range(offset, offset + limit - 1);
 
       if (where) {
