@@ -164,7 +164,7 @@ function RepositoriesList({ repositories, ...props }) {
   }
 
   return (
-    <Container overflowX="scroll" {...props}>
+    <Container overflowX="auto" {...props}>
       <Table>
         <Thead>
           <Tr>

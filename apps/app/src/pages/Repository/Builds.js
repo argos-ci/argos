@@ -134,7 +134,7 @@ function BuildsList({ repository }) {
   }
 
   return (
-    <Container overflowX="scroll">
+    <Container overflowX="auto">
       <Table>
         <Thead>
           <Tr>
