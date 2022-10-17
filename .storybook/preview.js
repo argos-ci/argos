@@ -1,10 +1,17 @@
 import * as React from "react";
 import {
-  ThemeProvider,
-  ColorModeProvider,
   useColorMode,
+  Preflight,
+  ColorModeProvider,
 } from "@xstyled/styled-components";
-import { GlobalStyle, theme } from "../apps/app/src/components";
+import { GlobalStyle, ThemeInitializer } from "../apps/app/src/components";
+
+const THEMES = {
+  light: "default",
+  dark: "dark",
+};
+
+const defaultTheme = "dark";
 
 export const parameters = {
   actions: { argTypesRegex: "^on[A-Z].*" },
@@ -15,13 +22,6 @@ export const parameters = {
     },
   },
 };
-
-const THEMES = {
-  light: "default",
-  dark: "dark",
-};
-
-const defaultTheme = "dark";
 
 // Add button to select theme mode
 export const globalTypes = {
@@ -58,11 +58,12 @@ const ColorModeDecorator = (Story, context) => {
 export const decorators = [
   ColorModeDecorator,
   (Story) => (
-    <ThemeProvider theme={theme}>
+    <ThemeInitializer>
+      <Preflight />
       <ColorModeProvider>
         <GlobalStyle />
         <Story />
       </ColorModeProvider>
-    </ThemeProvider>
+    </ThemeInitializer>
   ),
 ];

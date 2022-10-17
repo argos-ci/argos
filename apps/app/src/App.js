@@ -9,7 +9,7 @@ import { AuthCallback } from "./pages/AuthCallback";
 import { GlobalStyle, ThemeInitializer } from "./components";
 import { Layout } from "./containers/Layout";
 import { Home } from "./pages/Home";
-import { Preflight } from "@xstyled/styled-components";
+import { Preflight, ColorModeProvider } from "@xstyled/styled-components";
 import { NotFoundWithContainer } from "./pages/NotFound";
 import { Repository } from "./pages/Repository";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
@@ -19,48 +19,54 @@ import { OwnerRepositories } from "./pages/Owner/Repositories";
 export function App() {
   return (
     <ThemeInitializer>
-      <Preflight />
       <Helmet
         titleTemplate="%s • Argos"
         defaultTitle="Argos - Automated visual testing"
       >
         <meta name="robots" content="noindex" />
       </Helmet>
-      <GlobalStyle />
-      <BrowserRouter>
-        <ScrollToTop />
-        <GoogleAnalytics />
-        <AuthInitializer>
-          <ApolloInitializer>
-            <UserInitializer>
-              <Routes>
-                <Route
-                  exact
-                  path="/auth/github/callback"
-                  element={<AuthCallback />}
-                />
-                <Route path="/" element={<Layout />}>
-                  <Route index element={<Home />} />
+      <ColorModeProvider>
+        <Preflight />
+        <GlobalStyle />
+
+        <BrowserRouter>
+          <ScrollToTop />
+          <GoogleAnalytics />
+          <AuthInitializer>
+            <ApolloInitializer>
+              <UserInitializer>
+                <Routes>
                   <Route
-                    path="/:ownerLogin/settings/*"
-                    element={<OwnerSettings />}
+                    exact
+                    path="/auth/github/callback"
+                    element={<AuthCallback />}
                   />
-                  <Route
-                    path="/:ownerLogin/:repositoryName/builds/:buildNumber"
-                    element={<Build />}
-                  />
-                  <Route
-                    path="/:ownerLogin/:repositoryName/*"
-                    element={<Repository />}
-                  />
-                  <Route path="/:ownerLogin" element={<OwnerRepositories />} />
-                  <Route path="*" element={<NotFoundWithContainer />} />
-                </Route>
-              </Routes>
-            </UserInitializer>
-          </ApolloInitializer>
-        </AuthInitializer>
-      </BrowserRouter>
+                  <Route path="/" element={<Layout />}>
+                    <Route index element={<Home />} />
+                    <Route
+                      path="/:ownerLogin/settings/*"
+                      element={<OwnerSettings />}
+                    />
+                    <Route
+                      path="/:ownerLogin/:repositoryName/builds/:buildNumber"
+                      element={<Build />}
+                    />
+                    <Route
+                      path="/:ownerLogin/:repositoryName/*"
+                      element={<Repository />}
+                    />
+                    <Route
+                      path="/:ownerLogin"
+                      element={<OwnerRepositories />}
+                    />
+                    <Route path="*" element={<NotFoundWithContainer />} />
+                  </Route>
+                </Routes>
+              </UserInitializer>
+            </ApolloInitializer>
+          </AuthInitializer>
+        </BrowserRouter>
+      </ColorModeProvider>
     </ThemeInitializer>
   );
 }
