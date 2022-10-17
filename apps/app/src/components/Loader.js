@@ -7,7 +7,7 @@ const InnerLoader = (props) => (
     height="2rem"
     viewBox="0 0 135 140"
     fill="currentColor"
-    data-visual-test="blackout"
+    data-visual-test="transparent"
     {...props}
   >
     <rect y={10} width={15} height={120} rx={6}>

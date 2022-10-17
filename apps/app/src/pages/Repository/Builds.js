@@ -191,7 +191,11 @@ function BuildsList({ repository }) {
                   </x.div>
                 </Td>
 
-                <Td whiteSpace="nowrap">{moment(build.createdAt).fromNow()}</Td>
+                <Td>
+                  <x.div whiteSpace="nowrap" data-visual-test="transparent">
+                    {moment(build.createdAt).fromNow()}
+                  </x.div>
+                </Td>
               </Tr>
             );
           })}

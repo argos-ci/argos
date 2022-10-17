@@ -10,4 +10,3 @@ apps/screenshot-diff/src/util/image-diff/test/actual-files/*
 /playwright-report/
 /playwright/.cache/
 screenshots/*
-!screenshots/.gitkeep
