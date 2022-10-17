@@ -41,6 +41,20 @@ function waitForFontLoading() {
   return document.fonts.status === "loaded";
 }
 
+// Check if the images are loaded
+function waitForImagesLoading() {
+  return Promise.all(
+    Array.from(document.images)
+      .filter((img) => !img.complete)
+      .map(
+        (img) =>
+          new Promise((resolve) => {
+            img.onload = img.onerror = resolve;
+          })
+      )
+  );
+}
+
 export async function argosScreenshot(
   page,
   name,
@@ -49,24 +63,14 @@ export async function argosScreenshot(
   if (!page) throw new Error("A Playwright `page` object is required.");
   if (!name) throw new Error("The `name` argument is required.");
 
-  if (typeof element === "string") {
-    await page.waitForSelector(element);
-    element = await page.$(element);
-  }
-
   mkdir(screenshotFolder, { recursive: true });
 
   const [resolvedElement] = await Promise.all([
-    (async () => {
-      if (typeof element === "string") {
-        await page.waitForSelector(element);
-        return page.$(element);
-      }
-      return element;
-    })(),
+    typeof element === "string" ? page.locator(element) : element,
     page.addStyleTag({ content: GLOBAL_STYLES }),
     page.waitForFunction(ensureNoBusy),
     page.waitForFunction(waitForFontLoading),
+    page.waitForFunction(waitForImagesLoading),
   ]);
 
   await resolvedElement.screenshot({
