@@ -1,7 +1,12 @@
 {
   "root": true,
   "plugins": ["import"],
-  "extends": ["eslint:recommended", "plugin:import/recommended"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:import/recommended",
+    "plugin:storybook/recommended",
+    "plugin:react/recommended"
+  ],
   "env": {
     "node": true,
     "es2022": true,
@@ -9,7 +14,10 @@
   },
   "parserOptions": {
     "ecmaVersion": "latest",
-    "sourceType": "module"
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
   },
   "overrides": [
     {
