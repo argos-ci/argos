@@ -25,5 +25,16 @@ export const Primary = () => (
         Outline
       </Button>
     </div>
+
+    <div>
+      <Button color="secondary" disabled>
+        Contained disabled
+      </Button>
+    </div>
+    <div>
+      <Button color="secondary" variant="outline" disabled>
+        Outline disabled
+      </Button>
+    </div>
   </x.div>
 );
