@@ -11,7 +11,6 @@ const oldColors = {
   ...aliasColor("primary", "violet"),
   primary: defaultTheme.colors["violet-700"],
 
-  background: "black",
   "highlight-background": defaultTheme.colors["gray-900"],
   "background-hover": defaultTheme.colors["gray-700-a60"],
   "background-active": defaultTheme.colors["gray-800-a60"],
@@ -25,9 +24,6 @@ const oldColors = {
   "primary-text": "white",
   "secondary-text": defaultTheme.colors["gray-400"],
   tooltip: defaultTheme.colors["gray-700"],
-
-  warning: defaultTheme.colors["orange-500"],
-  danger: defaultTheme.colors["red-500"],
 };
 
 const newColors = {
@@ -52,6 +48,28 @@ const newColors = {
   "purple-700": "#7e22ce",
   "purple-800": "#6b21a8",
   "purple-900": "#581c87",
+
+  "red-50": "#fef2f2",
+  "red-100": "#fee2e2",
+  "red-200": "#fecaca",
+  "red-300": "#fca5a5",
+  "red-400": "#f87171",
+  "red-500": "#ef4444",
+  "red-600": "#dc2626",
+  "red-700": "#b91c1c",
+  "red-800": "#991b1b",
+  "red-900": "#7f1d1d",
+
+  "orange-50": "#fff7ed",
+  "orange-100": "#ffedd5",
+  "orange-200": "#fed7aa",
+  "orange-300": "#fdba74",
+  "orange-400": "#fb923c",
+  "orange-500": "#f97316",
+  "orange-600": "#ea580c",
+  "orange-700": "#c2410c",
+  "orange-800": "#9a3412",
+  "orange-900": "#7c2d12",
 
   "primary-50": th.color("purple-50"),
   "primary-100": th.color("purple-100"),
@@ -99,6 +117,9 @@ const newColors = {
     "sky-800": "#075985",
     "sky-900": "#0c4a6e",
   }),
+
+  warning: th.color("orange-500"),
+  danger: th.color("red-500"),
 
   "on-dark": th.color("black"),
   on: th.color("slate-900"),
