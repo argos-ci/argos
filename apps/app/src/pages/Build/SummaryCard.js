@@ -107,7 +107,7 @@ export function StickySummaryMenu({
         display="flex"
         justifyContent="space-between"
         gap={4}
-        pl={2}
+        px={2}
         py={1}
         overflowX="auto"
       >

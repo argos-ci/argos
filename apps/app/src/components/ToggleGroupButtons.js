@@ -13,7 +13,7 @@ export const ToggleGroupButtons = ({
   <x.div as={GroupLabel} display="flex" flexWrap="wrap" {...props}>
     <Button
       borderRadius="md 0 0 md"
-      variant="neutral"
+      color="secondary"
       py={2}
       disabled={!state}
       onClick={() => setState(false)}
@@ -23,7 +23,7 @@ export const ToggleGroupButtons = ({
     <Button
       py={2}
       borderRadius="0 md md 0"
-      variant="neutral"
+      color="secondary"
       disabled={state}
       onClick={() => setState(true)}
     >

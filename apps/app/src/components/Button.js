@@ -1,61 +1,87 @@
-import React from "react";
-import { Button as HeadlessButton } from "ariakit/button";
-import styled, { css, th } from "@xstyled/styled-components";
-import { getStatusColor } from "../containers/Status";
+import * as React from "react";
+import { Button as AriakitButton } from "ariakit/button";
+import styled, { css, system } from "@xstyled/styled-components";
 
-const InnerButton = styled.buttonBox(({ $tint = "primary" }) => {
-  const bgColor = th.color(`${$tint}-800-a80`);
-  const hoverBgColor = th.color(`${$tint}-700-a80`);
-  const borderColor = th.color(`${$tint}-400-a60`);
+const InnerButton = styled.buttonBox(({ $color = "primary", $variant }) => {
+  const bgColor = `button-${$color}-bg`;
+  const bgHoverColor = `button-${$color}-bg-hover`;
+  const outlineColor = `button-${$color}-outline`;
+  const outlineHoverColor = `button-${$color}-outline-hover`;
 
   return css`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-    border-radius: md;
-    cursor: default;
-    border: 1;
-    border-color: ${borderColor};
     padding: 2 4;
-    color: white;
-    transition: default;
-    transition-duration: 300ms;
-    font-weight: 600;
+    font-family: default;
+    font-size: sm;
+    font-weight: 500;
     line-height: 1;
+    transition: default;
+    transition-duration: instant;
     text-decoration: none;
+    white-space: nowrap;
+    border-radius: lg;
+    text-align: center;
+    border: 1;
+    display: flex;
     gap: 1;
-
-    background-color: ${bgColor};
-
-    &:hover:not(:disabled),
-    &:active:not(:disabled) {
-      background-color: ${hoverBgColor};
-    }
-
-    &:focus:active {
-      outline: none;
-    }
 
     &:disabled {
       opacity: 0.38;
     }
+
+    &:focus {
+      outline: 0;
+    }
+
+    &:focus-visible {
+      ${system.apply({
+        ring: 3,
+        ringColor: `${$color}-focus-ring`,
+      })}
+    }
+
+    ${$variant === "contained" &&
+    css`
+      color: button-contained-text;
+      background-color: ${bgColor};
+      border-color: ${bgColor};
+
+      &:hover:not(:disabled) {
+        background-color: ${bgHoverColor};
+      }
+    `}
+
+    ${$variant === "outline" &&
+    css`
+      color: ${outlineColor};
+      background-color: transparent;
+      border-color: ${outlineColor};
+
+      &:hover:not(:disabled) {
+        color: ${outlineHoverColor};
+        border-color: ${outlineHoverColor};
+      }
+    `}
   `;
 });
 
-export { HeadlessButton };
-
 export const Button = React.forwardRef(
-  ({ variant = "primary", children, as, ...props }, ref) => {
-    const baseColor = getStatusColor(variant);
+  (
+    { color = "primary", variant = "contained", children, as, ...props },
+    ref
+  ) => {
     return (
-      <HeadlessButton ref={ref} $tint={baseColor} {...props}>
+      <AriakitButton ref={ref} {...props}>
         {(buttonProps) => (
-          <InnerButton {...buttonProps} as={as}>
+          <InnerButton
+            {...buttonProps}
+            $color={color}
+            $variant={variant}
+            as={as}
+          >
             {children}
           </InnerButton>
         )}
-      </HeadlessButton>
+      </AriakitButton>
     );
   }
 );

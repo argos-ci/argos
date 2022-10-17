@@ -130,6 +130,7 @@ const newColors = {
   darker: th.color("black"),
 
   link: th.color("primary-600"),
+  bg: th.color("lighter"),
 
   "feature-primary-bg": th.color("primary-50"),
   "feature-orange-bg": th.color("orange-50"),

@@ -14,7 +14,7 @@ export const Layout = (props) => {
       minHeight="100%"
       display="flex"
       flexDirection="column"
-      backgroundColor="lighter"
+      backgroundColor="bg"
       {...props}
     >
       <x.div flex="0 0 auto">

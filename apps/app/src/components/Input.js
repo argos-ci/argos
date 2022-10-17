@@ -14,7 +14,7 @@ export const Input = React.forwardRef((props, ref) => (
     px={4}
     mt={1}
     h={9}
-    backgroundColor={{ _: "lighter", hover: "background-hover" }}
+    backgroundColor={{ _: "bg", hover: "background-hover" }}
     {...props}
   />
 ));

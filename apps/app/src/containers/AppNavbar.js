@@ -92,7 +92,7 @@ export function AppNavbar() {
               }/auth/github/callback?r=${encodeURIComponent(
                 window.location.pathname
               )}`}
-              variant="neutral"
+              color="secondary"
               gap={2}
             >
               <Icon as={MarkGithubIcon} />
