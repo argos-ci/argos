@@ -1,4 +1,5 @@
 export * from "./Alert";
+export * from "./Badge";
 export * from "./Banner";
 export * from "./BrandLogo";
 export * from "./Breadcrumb";

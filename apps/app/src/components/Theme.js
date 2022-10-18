@@ -206,6 +206,12 @@ const newColors = {
   "icon-button-danger-bg-hover": th.color("red-50"),
   "icon-button-danger-bg-active": th.color("red-100"),
 
+  "badge-primary-on": th.color("white"),
+  "badge-primary-bg": th.color("slate-600"),
+
+  "badge-secondary-on": th.color("on"),
+  "badge-secondary-bg": th.color("lighter"),
+
   modes: {
     dark: {
       "on-dark": th.color("white"),
