@@ -3,13 +3,7 @@ import { x } from "@xstyled/styled-components";
 import { SparklesIcon } from "@heroicons/react/24/solid";
 import { Chip } from "@argos-ci/app/src/components";
 
-const main = {
-  title: "Chip",
-};
-
-export default main;
-
-export const Primary = () => (
+export const Chips = () => (
   <x.div display="flex" gap={10} flexDirection="column">
     <x.div display="flex" gap={3}>
       <x.div display="flex" flexDirection="column" gap={3}>
@@ -82,3 +76,5 @@ export const Primary = () => (
     </x.div>
   </x.div>
 );
+
+export default { title: "Chip" };
