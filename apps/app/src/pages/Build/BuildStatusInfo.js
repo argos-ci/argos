@@ -39,12 +39,12 @@ function FirstBuildMessage({ firstBuild }) {
 
 function StableStatusInfo({ screenshotsTotalCount }) {
   return screenshotsTotalCount === 0 ? (
-    <Alert mt={2} severity="danger">
+    <Alert mt={2} color="danger">
       This build is empty: no screenshot has been uploaded. It may result of a
       configuration issue.
     </Alert>
   ) : (
-    <Alert mt={2} severity="success">
+    <Alert mt={2} color="success">
       This build is stable: no screenshot change detected.
     </Alert>
   );
@@ -52,13 +52,13 @@ function StableStatusInfo({ screenshotsTotalCount }) {
 
 function ExpiredStatusInfo({ batchCount, totalBatch }) {
   return totalBatch > 0 && batchCount < totalBatch ? (
-    <Alert mt={2} severity="danger">
+    <Alert mt={2} color="danger">
       Build has been killed because it took too much time to receive all
       batches. Be sure that argos upload is called up to the number specified in
       parallel total.
     </Alert>
   ) : (
-    <Alert mt={2} severity="danger">
+    <Alert mt={2} color="danger">
       Build has been killed because it took too much time. If you are having
       trouble with this issue, reach us on{" "}
       <Link href="https://discord.gg/pK79sv85Vg">Discord</Link>.
@@ -71,7 +71,7 @@ export function BuildStatusInfo({ build, referenceBranch, screenshotCount }) {
 
   if (build.type === "orphan") {
     return (
-      <Alert mt={2} severity="info">
+      <Alert mt={2} color="info">
         <FirstBuildMessage firstBuild={firstBuild} />
         Comparing screenshot is not possible because no reference build was
         found.
@@ -97,7 +97,7 @@ export function BuildStatusInfo({ build, referenceBranch, screenshotCount }) {
 
   if (build.type === "reference") {
     return (
-      <Alert mt={2} severity="info">
+      <Alert mt={2} color="info">
         <FirstBuildMessage firstBuild={firstBuild} />
         This build was performed on the reference branch. Screenshots will be
         used as a comparison baseline in next Argos builds.
@@ -111,7 +111,7 @@ export function BuildStatusInfo({ build, referenceBranch, screenshotCount }) {
 
     case "error":
       return (
-        <Alert mt={2} severity="danger">
+        <Alert mt={2} color="danger">
           The build failed to be processed. If you are having trouble with this
           issue, reach us on{" "}
           <Link href="https://discord.gg/pK79sv85Vg">Discord</Link>.
@@ -120,7 +120,7 @@ export function BuildStatusInfo({ build, referenceBranch, screenshotCount }) {
 
     case "aborted":
       return (
-        <Alert mt={2} severity="neutral">
+        <Alert mt={2} color="neutral">
           This build has been voluntarily aborted.
         </Alert>
       );

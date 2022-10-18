@@ -24,9 +24,9 @@ import {
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import {
-  BuildStatusBadge,
-  BuildStatusBadgeFragment,
-} from "../../containers/BuildStatusBadge";
+  BuildStatusChip,
+  BuildStatusChipFragment,
+} from "../../containers/BuildStatusChip";
 import { GettingStarted } from "./GettingStarted";
 import { getPossessiveForm } from "../../modules/utils";
 import { hasWritePermission } from "../../modules/permissions";
@@ -58,13 +58,13 @@ const REPOSITORY_BUILDS_QUERY = gql`
             branch
           }
 
-          ...BuildStatusBadgeFragment
+          ...BuildStatusChipFragment
         }
       }
     }
   }
 
-  ${BuildStatusBadgeFragment}
+  ${BuildStatusChipFragment}
 `;
 
 function BuildsList({ repository }) {
@@ -171,7 +171,7 @@ function BuildsList({ repository }) {
                 </Td>
 
                 <Td verticalAlign="top">
-                  <BuildStatusBadge build={build} />
+                  <BuildStatusChip build={build} />
                 </Td>
 
                 <Td maxW={300}>

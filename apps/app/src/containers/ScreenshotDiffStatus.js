@@ -6,7 +6,24 @@ import {
   FileIcon,
 } from "@primer/octicons-react";
 
-export function ScreenshotDiffStatusIcon(type) {
+export function getDiffStatusColor(status) {
+  switch (status) {
+    case "added":
+      return "success";
+    case "stable":
+      return "success";
+    case "updated":
+      return "warning";
+    case "failed":
+      return "danger";
+    case "removed":
+      return "danger";
+    default:
+      return "neutral";
+  }
+}
+
+export function getDiffStatusIcon(type) {
   switch (type) {
     case "added":
       return FileAddedIcon;

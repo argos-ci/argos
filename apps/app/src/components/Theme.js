@@ -71,6 +71,28 @@ const newColors = {
   "orange-800": "#9a3412",
   "orange-900": "#7c2d12",
 
+  "green-50": "#f0fdf4",
+  "green-100": "#dcfce7",
+  "green-200": "#bbf7d0",
+  "green-300": "#86efac",
+  "green-400": "#4ade80",
+  "green-500": "#22c55e",
+  "green-600": "#16a34a",
+  "green-700": "#15803d",
+  "green-800": "#166534",
+  "green-900": "#14532d",
+
+  "yellow-50": "#fefce8",
+  "yellow-100": "#fef9c3",
+  "yellow-200": "#fef08a",
+  "yellow-300": "#fde047",
+  "yellow-400": "#facc15",
+  "yellow-500": "#eab308",
+  "yellow-600": "#ca8a04",
+  "yellow-700": "#a16207",
+  "yellow-800": "#854d0e",
+  "yellow-900": "#713f12",
+
   "primary-50": th.color("purple-50"),
   "primary-100": th.color("purple-100"),
   "primary-200": th.color("purple-200"),
@@ -120,6 +142,10 @@ const newColors = {
 
   warning: th.color("orange-500"),
   danger: th.color("red-500"),
+  info: th.color("sky-500"),
+  success: th.color("green-500"),
+  neutral: th.color("slate-500"),
+  pending: th.color("yellow-500"),
 
   "on-dark": th.color("black"),
   on: th.color("slate-900"),
@@ -152,9 +178,33 @@ const newColors = {
   "button-secondary-outline-hover": th.color("secondary-800"),
   "button-contained-text": th.color("white"),
 
-  "chip-on": th.color("primary-600"),
-  "chip-bg": th.color("primary-50"),
-  "chip-bg-hover": th.color("primary-100"),
+  "chip-primary-on": th.color("primary-700"),
+  "chip-primary-bg": th.color("primary-50"),
+  "chip-primary-bg-hover": th.color("primary-100"),
+
+  "chip-info-on": th.color("sky-700"),
+  "chip-info-bg": th.color("sky-50"),
+  "chip-info-bg-hover": th.color("sky-100"),
+
+  "chip-success-on": th.color("green-700"),
+  "chip-success-bg": th.color("green-50"),
+  "chip-success-bg-hover": th.color("green-100"),
+
+  "chip-danger-on": th.color("red-700"),
+  "chip-danger-bg": th.color("red-50"),
+  "chip-danger-bg-hover": th.color("red-100"),
+
+  "chip-neutral-on": th.color("slate-700"),
+  "chip-neutral-bg": th.color("slate-50"),
+  "chip-neutral-bg-hover": th.color("slate-100"),
+
+  "chip-pending-on": th.color("yellow-700"),
+  "chip-pending-bg": th.color("yellow-50"),
+  "chip-pending-bg-hover": th.color("yellow-100"),
+
+  "chip-warning-on": th.color("orange-700"),
+  "chip-warning-bg": th.color("orange-50"),
+  "chip-warning-bg-hover": th.color("orange-100"),
 
   modes: {
     dark: {
@@ -187,9 +237,33 @@ const newColors = {
       "feature-orange-icon": th.color("orange-300"),
       "feature-green-icon": th.color("green-300"),
 
-      "chip-on": th.color("primary-300"),
-      "chip-bg": th.color("primary-900-a50"),
-      "chip-bg-hover": th.color("primary-900"),
+      "chip-primary-on": th.color("primary-200"),
+      "chip-primary-bg": th.color("primary-900-a50"),
+      "chip-primary-bg-hover": th.color("primary-900-a80"),
+
+      "chip-info-on": th.color("sky-200"),
+      "chip-info-bg": th.color("sky-900-a50"),
+      "chip-info-bg-hover": th.color("sky-900-a80"),
+
+      "chip-success-on": th.color("green-200"),
+      "chip-success-bg": th.color("green-900-a50"),
+      "chip-success-bg-hover": th.color("green-900-a80"),
+
+      "chip-danger-on": th.color("red-200"),
+      "chip-danger-bg": th.color("red-900-a50"),
+      "chip-danger-bg-hover": th.color("red-900-a80"),
+
+      "chip-neutral-on": th.color("slate-200"),
+      "chip-neutral-bg": th.color("slate-800"),
+      "chip-neutral-bg-hover": th.color("slate-700"),
+
+      "chip-pending-on": th.color("yellow-200"),
+      "chip-pending-bg": th.color("yellow-900-a50"),
+      "chip-pending-bg-hover": th.color("yellow-900-a80"),
+
+      "chip-warning-on": th.color("orange-200"),
+      "chip-warning-bg": th.color("orange-900-a50"),
+      "chip-warning-bg-hover": th.color("orange-900-a80"),
     },
   },
 };
@@ -202,10 +276,15 @@ export const theme = {
       '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif',
   },
   defaultColorModeName: "dark",
+  useCustomProperties: false,
   colors: {
     ...defaultTheme.colors,
     ...oldColors,
     ...newColors,
+  },
+  radii: {
+    ...defaultTheme.radii,
+    chip: "20px",
   },
   sizes: {
     ...defaultTheme.sizes,

@@ -78,6 +78,8 @@ export const typeDefs = gql`
     number: Int!
     "Review status, conclusion or job status"
     status: BuildStatus!
+    "Merge build type and status"
+    compositeStatus: String!
     "Build name"
     name: String!
     "Build stats"
@@ -136,6 +138,12 @@ export const resolvers = {
     },
     compareScreenshotBucket: async (build) => {
       return ScreenshotBucketLoader.load(build.compareScreenshotBucketId);
+    },
+    compositeStatus: async (build) => {
+      if (build.type && build.type !== "check") {
+        return build.type;
+      }
+      return buildLoader.load(build);
     },
     baseScreenshotBucket: async (build) => {
       if (!build.baseScreenshotBucketId) return null;
