@@ -10,7 +10,13 @@ import { AppHeader } from "./AppHeader";
 
 export const Layout = (props) => {
   return (
-    <x.div minHeight="100%" display="flex" flexDirection="column" {...props}>
+    <x.div
+      minHeight="100%"
+      display="flex"
+      flexDirection="column"
+      backgroundColor="bg"
+      {...props}
+    >
       <x.div flex="0 0 auto">
         <AppNavbar />
         <AppHeader />

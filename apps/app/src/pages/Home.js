@@ -260,7 +260,7 @@ function Owners({ owners }) {
 
           {showFilterButton ? (
             <Button
-              variant="neutral"
+              color="secondary"
               onClick={() => setActiveFilter((prev) => !prev)}
               alignSelf="end"
             >

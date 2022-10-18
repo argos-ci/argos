@@ -67,7 +67,7 @@ export const MenuButtonArrow = ({ as, ...props }) => {
 export const Menu = (props) => (
   <x.menu
     as={HeadlessMenu}
-    backgroundColor="background"
+    backgroundColor="bg"
     border={1}
     borderColor="border"
     borderRadius="md"

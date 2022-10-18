@@ -39,7 +39,7 @@ export function getStatusColor(status) {
 
     case "neutral":
     case "aborted":
-      return "gray";
+      return "slate";
 
     case "progress":
     case "pending":

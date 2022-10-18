@@ -187,7 +187,7 @@ function OvercapacityBanner({ owner: { plan, consumptionRatio, login } }) {
 export function ShowChangesButton({ setShowChanges, showChanges }) {
   return (
     <Button
-      variant="neutral"
+      color="secondary"
       onClick={() => setShowChanges((prev) => !prev)}
       alignSelf="center"
     >
@@ -196,7 +196,7 @@ export function ShowChangesButton({ setShowChanges, showChanges }) {
         <Icon
           minW={4}
           as={ImageIcon}
-          color={getStatusPrimaryColor(showChanges ? "neutral" : "danger")}
+          color="danger"
           left={0}
           ml="3px"
           mt="-1px"
@@ -364,7 +364,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
             <x.div display="flex" flexWrap="wrap" gap={4}>
               {stats.stableScreenshotCount > 0 ? (
                 <Button
-                  variant="neutral"
+                  color="secondary"
                   onClick={() => setShowStableScreenshots((prev) => !prev)}
                   justifyContent="start"
                   alignSelf="start"

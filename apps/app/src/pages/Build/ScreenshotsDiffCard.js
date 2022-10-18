@@ -57,7 +57,7 @@ export function ScreenshotsDiffCard({
       <CollapseCardHeader
         state={disclosure}
         position="sticky"
-        top={44}
+        top={42}
         alignSelf="flex-start"
       >
         <CollapseCardTitle state={disclosure}>
