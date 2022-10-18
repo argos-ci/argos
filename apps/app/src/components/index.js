@@ -16,6 +16,7 @@ export * from "./Form";
 export * from "./GlobalStyle";
 export * from "./Header";
 export * from "./Icon";
+export * from "./IconButton";
 export * from "./IllustratedText";
 export * from "./Input";
 export * from "./Link";

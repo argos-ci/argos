@@ -20,8 +20,6 @@ const oldColors = {
   border: defaultTheme.colors["gray-700-a80"],
   "border-active": defaultTheme.colors["gray-300"],
 
-  link: defaultTheme.colors["violet-300"],
-  "primary-text": "white",
   "secondary-text": defaultTheme.colors["gray-400"],
   tooltip: defaultTheme.colors["gray-700"],
 };
@@ -148,8 +146,9 @@ const newColors = {
   lighter: th.color("white"),
   darker: th.color("black"),
 
-  link: th.color("sky-400"),
+  link: th.color("sky-600"),
   bg: th.color("lighter"),
+  "primary-text": th.color("on"),
 
   "primary-on": th.color("primary-700"),
   "primary-bg": th.color("primary-50"),
@@ -195,6 +194,18 @@ const newColors = {
   "button-secondary-outline-hover": th.color("secondary-800"),
   "button-contained-text": th.color("white"),
 
+  "icon-button-primary-on": th.color("slate-500"),
+  "icon-button-primary-bg": "transparent",
+  "icon-button-primary-on-hover": th.color("slate-700"),
+  "icon-button-primary-bg-hover": th.color("slate-50"),
+  "icon-button-primary-bg-active": th.color("slate-100"),
+
+  "icon-button-danger-on": th.color("slate-700"),
+  "icon-button-danger-bg": th.color("slate-100"),
+  "icon-button-danger-on-hover": th.color("red-700"),
+  "icon-button-danger-bg-hover": th.color("red-50"),
+  "icon-button-danger-bg-active": th.color("red-100"),
+
   modes: {
     dark: {
       "on-dark": th.color("white"),
@@ -205,7 +216,7 @@ const newColors = {
       lighter: th.color("black"),
       darker: th.color("white"),
 
-      link: th.color("primary-400"),
+      link: th.color("sky-600-a90"),
 
       "primary-on": th.color("primary-200"),
       "primary-bg": th.color("primary-900-a50"),
@@ -243,6 +254,18 @@ const newColors = {
       "button-secondary-bg-hover": th.color("secondary-600"),
       "button-secondary-outline": th.color("secondary-400"),
       "button-secondary-outline-hover": th.color("secondary-200"),
+
+      "icon-button-primary-on": th.color("slate-300"),
+      "icon-button-primary-bg": "transparent",
+      "icon-button-primary-on-hover": th.color("slate-100"),
+      "icon-button-primary-bg-hover": th.color("slate-900"),
+      "icon-button-primary-bg-active": th.color("slate-800"),
+
+      "icon-button-danger-on": th.color("slate-300"),
+      "icon-button-danger-bg": th.color("slate-800"),
+      "icon-button-danger-on-hover": th.color("red-800"),
+      "icon-button-danger-bg-hover": th.color("slate-900"),
+      "icon-button-danger-bg-active": th.color("slate-800"),
     },
   },
 };
