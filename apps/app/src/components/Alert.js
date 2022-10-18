@@ -4,8 +4,8 @@ import { Loader } from "./Loader";
 
 export const Alert = React.forwardRef(
   ({ children, color = "neutral", ...props }, ref) => {
-    const onColor = `chip-${color}-on`;
-    const bgColor = `chip-${color}-bg`;
+    const onColor = `${color}-on`;
+    const bgColor = `${color}-bg`;
 
     if (!children) return null;
 
