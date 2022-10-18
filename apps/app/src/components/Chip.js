@@ -3,9 +3,9 @@ import styled, { css } from "@xstyled/styled-components";
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
 
 const InnerChip = styled.box(({ $color = "primary", $clickable }) => {
-  const onColor = `chip-${$color}-on`;
-  const bgColor = `chip-${$color}-bg`;
-  const bgHoverColor = `chip-${$color}-bg-hover`;
+  const onColor = `${$color}-on`;
+  const bgColor = `${$color}-bg`;
+  const bgHoverColor = `${$color}-bg-hover`;
 
   return css`
     display: inline-flex;
@@ -20,10 +20,12 @@ const InnerChip = styled.box(({ $color = "primary", $clickable }) => {
     font-weight: 500;
     text-decoration: none;
     cursor: default;
+    white-space: nowrap;
 
     > [data-chip-icon] {
       width: 1em;
       height: 1em;
+      flex-shrink: 0;
     }
 
     ${$clickable &&

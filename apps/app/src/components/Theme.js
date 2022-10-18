@@ -140,13 +140,6 @@ const newColors = {
     "sky-900": "#0c4a6e",
   }),
 
-  warning: th.color("orange-500"),
-  danger: th.color("red-500"),
-  info: th.color("sky-500"),
-  success: th.color("green-500"),
-  neutral: th.color("slate-500"),
-  pending: th.color("yellow-500"),
-
   "on-dark": th.color("black"),
   on: th.color("slate-900"),
   "on-light": th.color("slate-500"),
@@ -155,18 +148,42 @@ const newColors = {
   lighter: th.color("white"),
   darker: th.color("black"),
 
-  link: th.color("primary-600"),
+  link: th.color("sky-400"),
   bg: th.color("lighter"),
 
-  "feature-primary-bg": th.color("primary-50"),
-  "feature-orange-bg": th.color("orange-50"),
-  "feature-green-bg": th.color("green-50"),
-  "feature-primary-icon": th.color("primary-600"),
-  "feature-orange-icon": th.color("orange-600"),
-  "feature-green-icon": th.color("green-600"),
+  "primary-on": th.color("primary-700"),
+  "primary-bg": th.color("primary-50"),
+  "primary-bg-hover": th.color("primary-100"),
 
-  "primary-focus-ring": th.color("primary-300"),
-  "secondary-focus-ring": th.color("secondary-300"),
+  info: th.color("sky-500"),
+  "info-on": th.color("sky-700"),
+  "info-bg": th.color("sky-50"),
+  "info-bg-hover": th.color("sky-100"),
+
+  success: th.color("green-500"),
+  "success-on": th.color("green-700"),
+  "success-bg": th.color("green-50"),
+  "success-bg-hover": th.color("green-100"),
+
+  neutral: th.color("slate-500"),
+  "neutral-on": th.color("slate-700"),
+  "neutral-bg": th.color("slate-50"),
+  "neutral-bg-hover": th.color("slate-100"),
+
+  pending: th.color("yellow-500"),
+  "pending-on": th.color("yellow-700"),
+  "pending-bg": th.color("yellow-50"),
+  "pending-bg-hover": th.color("yellow-100"),
+
+  warning: th.color("orange-500"),
+  "warning-on": th.color("orange-700"),
+  "warning-bg": th.color("orange-50"),
+  "warning-bg-hover": th.color("orange-100"),
+
+  danger: th.color("red-500"),
+  "danger-on": th.color("red-700"),
+  "danger-bg": th.color("red-50"),
+  "danger-bg-hover": th.color("red-100"),
 
   "button-primary-bg": th.color("primary-600"),
   "button-primary-bg-hover": th.color("primary-700"),
@@ -177,34 +194,6 @@ const newColors = {
   "button-secondary-outline": th.color("secondary-600"),
   "button-secondary-outline-hover": th.color("secondary-800"),
   "button-contained-text": th.color("white"),
-
-  "chip-primary-on": th.color("primary-700"),
-  "chip-primary-bg": th.color("primary-50"),
-  "chip-primary-bg-hover": th.color("primary-100"),
-
-  "chip-info-on": th.color("sky-700"),
-  "chip-info-bg": th.color("sky-50"),
-  "chip-info-bg-hover": th.color("sky-100"),
-
-  "chip-success-on": th.color("green-700"),
-  "chip-success-bg": th.color("green-50"),
-  "chip-success-bg-hover": th.color("green-100"),
-
-  "chip-danger-on": th.color("red-700"),
-  "chip-danger-bg": th.color("red-50"),
-  "chip-danger-bg-hover": th.color("red-100"),
-
-  "chip-neutral-on": th.color("slate-700"),
-  "chip-neutral-bg": th.color("slate-50"),
-  "chip-neutral-bg-hover": th.color("slate-100"),
-
-  "chip-pending-on": th.color("yellow-700"),
-  "chip-pending-bg": th.color("yellow-50"),
-  "chip-pending-bg-hover": th.color("yellow-100"),
-
-  "chip-warning-on": th.color("orange-700"),
-  "chip-warning-bg": th.color("orange-50"),
-  "chip-warning-bg-hover": th.color("orange-100"),
 
   modes: {
     dark: {
@@ -218,8 +207,33 @@ const newColors = {
 
       link: th.color("primary-400"),
 
-      "primary-focus-ring": th.color("primary-700"),
-      "secondary-focus-ring": th.color("secondary-700"),
+      "primary-on": th.color("primary-200"),
+      "primary-bg": th.color("primary-900-a50"),
+      "primary-bg-hover": th.color("primary-900-a80"),
+
+      "info-on": th.color("sky-200"),
+      "info-bg": th.color("sky-900-a50"),
+      "info-bg-hover": th.color("sky-900-a80"),
+
+      "success-on": th.color("green-200"),
+      "success-bg": th.color("green-900-a50"),
+      "success-bg-hover": th.color("green-900-a80"),
+
+      "neutral-on": th.color("slate-200"),
+      "neutral-bg": th.color("slate-800"),
+      "neutral-bg-hover": th.color("slate-700"),
+
+      "pending-on": th.color("yellow-200"),
+      "pending-bg": th.color("yellow-900-a50"),
+      "pending-bg-hover": th.color("yellow-900-a80"),
+
+      "warning-on": th.color("orange-200"),
+      "warning-bg": th.color("orange-900-a50"),
+      "warning-bg-hover": th.color("orange-900-a80"),
+
+      "danger-on": th.color("red-200"),
+      "danger-bg": th.color("red-900-a50"),
+      "danger-bg-hover": th.color("red-900-a80"),
 
       "button-primary-bg": th.color("primary-600"),
       "button-primary-bg-hover": th.color("primary-600"),
@@ -229,41 +243,6 @@ const newColors = {
       "button-secondary-bg-hover": th.color("secondary-600"),
       "button-secondary-outline": th.color("secondary-400"),
       "button-secondary-outline-hover": th.color("secondary-200"),
-
-      "feature-primary-bg": th.color("primary-900"),
-      "feature-orange-bg": th.color("orange-900"),
-      "feature-green-bg": th.color("green-900"),
-      "feature-primary-icon": th.color("primary-300"),
-      "feature-orange-icon": th.color("orange-300"),
-      "feature-green-icon": th.color("green-300"),
-
-      "chip-primary-on": th.color("primary-200"),
-      "chip-primary-bg": th.color("primary-900-a50"),
-      "chip-primary-bg-hover": th.color("primary-900-a80"),
-
-      "chip-info-on": th.color("sky-200"),
-      "chip-info-bg": th.color("sky-900-a50"),
-      "chip-info-bg-hover": th.color("sky-900-a80"),
-
-      "chip-success-on": th.color("green-200"),
-      "chip-success-bg": th.color("green-900-a50"),
-      "chip-success-bg-hover": th.color("green-900-a80"),
-
-      "chip-danger-on": th.color("red-200"),
-      "chip-danger-bg": th.color("red-900-a50"),
-      "chip-danger-bg-hover": th.color("red-900-a80"),
-
-      "chip-neutral-on": th.color("slate-200"),
-      "chip-neutral-bg": th.color("slate-800"),
-      "chip-neutral-bg-hover": th.color("slate-700"),
-
-      "chip-pending-on": th.color("yellow-200"),
-      "chip-pending-bg": th.color("yellow-900-a50"),
-      "chip-pending-bg-hover": th.color("yellow-900-a80"),
-
-      "chip-warning-on": th.color("orange-200"),
-      "chip-warning-bg": th.color("orange-900-a50"),
-      "chip-warning-bg-hover": th.color("orange-900-a80"),
     },
   },
 };
