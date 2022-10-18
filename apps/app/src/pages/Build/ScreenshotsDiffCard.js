@@ -13,8 +13,10 @@ import {
   CollapseCardBody,
   CollapseCard,
 } from "@argos-ci/app/src/components";
-import { getStatusPrimaryColor } from "../../containers/Status";
-import { ScreenshotDiffStatusIcon } from "./ScreenshotDiffStatusIcons";
+import {
+  getDiffStatusIcon,
+  getDiffStatusColor,
+} from "../../containers/ScreenshotDiffStatus";
 
 export const ScreenshotsDiffCardFragment = gql`
   fragment ScreenshotsDiffCardFragment on ScreenshotDiff {
@@ -62,8 +64,8 @@ export function ScreenshotsDiffCard({
       >
         <CollapseCardTitle state={disclosure}>
           <Icon
-            as={ScreenshotDiffStatusIcon(screenshotDiff.status)}
-            color={getStatusPrimaryColor(screenshotDiff.status)}
+            as={getDiffStatusIcon(screenshotDiff.status)}
+            color={getDiffStatusColor(screenshotDiff.status)}
           />
           {compareScreenshot?.name || baseScreenshot.name}
         </CollapseCardTitle>

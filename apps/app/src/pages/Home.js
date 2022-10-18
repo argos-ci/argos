@@ -42,9 +42,9 @@ import {
 import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { hasWritePermission } from "../modules/permissions";
 import {
-  BuildStatusBadge,
-  BuildStatusBadgeFragment,
-} from "../containers/BuildStatusBadge";
+  BuildStatusChip,
+  BuildStatusChipFragment,
+} from "../containers/BuildStatusChip";
 
 const HOME_OWNERS_REPOSITORIES_QUERY = gql`
   query HOME_OWNERS_REPOSITORIES_QUERY {
@@ -67,14 +67,14 @@ const HOME_OWNERS_REPOSITORIES_QUERY = gql`
             id
             updatedAt
             number
-            ...BuildStatusBadgeFragment
+            ...BuildStatusChipFragment
           }
         }
       }
     }
   }
 
-  ${BuildStatusBadgeFragment}
+  ${BuildStatusChipFragment}
 `;
 
 function RepositoryNameCell({
@@ -129,7 +129,7 @@ function BuildTagCell({ build, repositoryUrl, ...props }) {
 
   return (
     <Td verticalAlign="middle">
-      <BuildStatusBadge
+      <BuildStatusChip
         as={LinkBlock}
         to={`${repositoryUrl}/builds/${build.number}`}
         build={build}

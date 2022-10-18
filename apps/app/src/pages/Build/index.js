@@ -34,21 +34,21 @@ import {
   EyeIcon,
   ImageIcon,
 } from "@primer/octicons-react";
-import {
-  getBuildStatusLabel,
-  getStatusPrimaryColor,
-} from "../../containers/Status";
+import { getBuildStatusLabel } from "../../containers/BuildStatus";
 import {
   StickySummaryMenu,
   SummaryCard,
   SummaryCardBuildFragment,
   SummaryCardRepositoryFragment,
 } from "./SummaryCard";
-import { ScreenshotDiffStatusIcon } from "./ScreenshotDiffStatusIcons";
 import {
-  BuildStatusBadge,
-  BuildStatusBadgeFragment,
-} from "../../containers/BuildStatusBadge";
+  getDiffStatusIcon,
+  getDiffStatusColor,
+} from "../../containers/ScreenshotDiffStatus";
+import {
+  BuildStatusChip,
+  BuildStatusChipFragment,
+} from "../../containers/BuildStatusChip";
 import {
   fetchMoreScreenshotDiffs,
   LoadMoreButton,
@@ -93,7 +93,7 @@ const BUILD_QUERY = gql`
         id
         ...SummaryCardBuildFragment
         ...ReviewButtonBuildFragment
-        ...BuildStatusBadgeFragment
+        ...BuildStatusChipFragment
         ...BuildStatusInfoBuildFragment
 
         screenshotDiffs(
@@ -138,7 +138,7 @@ const BUILD_QUERY = gql`
   ${ScreenshotDiffsPageFragment}
   ${ReviewButtonBuildFragment}
   ${ReviewButtonOwnerFragment}
-  ${BuildStatusBadgeFragment}
+  ${BuildStatusChipFragment}
   ${BuildStatusInfoRepositoryFragment}
   ${BuildStatusInfoBuildFragment}
   ${BuildStatusInfoScreenshotDiffResultFragment}
@@ -153,8 +153,8 @@ function BuildStat({ status, count, label }) {
     <>
       <TooltipAnchor state={tooltip}>
         <IllustratedText
-          icon={ScreenshotDiffStatusIcon(status)}
-          color={getStatusPrimaryColor(status)}
+          icon={getDiffStatusIcon(status)}
+          color={getDiffStatusColor(status)}
           cursor="default"
         >
           {count}
@@ -172,7 +172,7 @@ function OvercapacityBanner({ owner: { plan, consumptionRatio, login } }) {
 
   return (
     <Alert
-      severity={consumptionRatio >= 1 ? "danger" : "warning"}
+      color={consumptionRatio >= 1 ? "danger" : "warning"}
       mt={-3}
       mb={3}
       w="fit-content"
@@ -290,7 +290,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
       >
         <x.div display="flex" alignItems="center" gap={3}>
           <PrimaryTitle mb={0}>Build #{buildNumber}</PrimaryTitle>
-          <BuildStatusBadge build={build} />
+          <BuildStatusChip build={build} />
         </x.div>
 
         <x.div
@@ -425,7 +425,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           <ScreenshotDiffsSection
             title="Failure Screenshots"
             screenshotDiffs={diffGroups.failed}
-            color={getStatusPrimaryColor("danger")}
+            color="danger"
             showChanges={showChanges}
           />
           <ScreenshotDiffsSection

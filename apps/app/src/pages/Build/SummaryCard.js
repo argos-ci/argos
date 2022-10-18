@@ -22,8 +22,8 @@ import {
   ReviewButtonBuildFragment,
   ReviewButtonRepositoryFragment,
 } from "./ReviewButton";
-import { getStatusPrimaryColor } from "../../containers/Status";
-import { BuildStatusBadge } from "../../containers/BuildStatusBadge";
+import { getBuildStatusColor } from "../../containers/BuildStatus";
+import { BuildStatusChip } from "../../containers/BuildStatusChip";
 import { ShowChangesButton } from ".";
 
 export const SummaryCardBuildFragment = gql`
@@ -31,8 +31,7 @@ export const SummaryCardBuildFragment = gql`
     createdAt
     name
     number
-    status
-    type
+    compositeStatus
     batchCount
     totalBatch
     compareScreenshotBucket {
@@ -97,7 +96,7 @@ export function StickySummaryMenu({
       zIndex={200}
       backgroundColor="highlight-background"
       borderLeft={3}
-      borderColor={getStatusPrimaryColor(build.status)}
+      borderColor={getBuildStatusColor(build.compositeStatus)}
       borderBottom={1}
       borderBottomColor="border"
       minH={10}
@@ -113,7 +112,7 @@ export function StickySummaryMenu({
       >
         <x.div display="flex" gap={3} alignItems="center" flexShrink={0}>
           Build #{build.number}
-          <BuildStatusBadge build={build} py={0.5} />
+          <BuildStatusChip build={build} py={0.5} />
         </x.div>
         <x.div flex={1}>
           {updatedScreenshotCount > 0 ? (

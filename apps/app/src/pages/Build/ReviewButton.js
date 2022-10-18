@@ -11,10 +11,11 @@ import {
   TooltipAnchor,
   Tooltip,
   HeadlessMenuButton,
+  Icon,
 } from "@argos-ci/app/src/components";
 import { gql, useMutation } from "@apollo/client";
-import { StatusIcon } from "../../containers/Status";
 import { hasWritePermission } from "../../modules/permissions";
+import { getBuildStatusIcon } from "../../containers/BuildStatus";
 
 export const ReviewButtonBuildFragment = gql`
   fragment ReviewButtonBuildFragment on Build {
@@ -85,7 +86,7 @@ export function ReviewButtonContent({ repository, disabled }) {
           }}
           disabled={status === "accepted"}
         >
-          <StatusIcon status="accepted" />
+          <Icon as={getBuildStatusIcon("accepted")} color="success" />
           Approve changes
         </MenuItem>
         <MenuItem
@@ -100,13 +101,13 @@ export function ReviewButtonContent({ repository, disabled }) {
           }}
           disabled={status === "rejected"}
         >
-          <StatusIcon status="rejected" />
+          <Icon as={getBuildStatusIcon("rejected")} color="danger" />
           Reject changes
         </MenuItem>
       </Menu>
 
       {error ? (
-        <Alert severity="error" mt={2} w="fit-content" alignSelf="end">
+        <Alert color="danger" mt={2} w="fit-content" alignSelf="end">
           Something went wrong. Please try again.
         </Alert>
       ) : null}

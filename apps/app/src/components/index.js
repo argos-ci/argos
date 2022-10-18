@@ -5,6 +5,7 @@ export * from "./Button";
 export * from "./Card";
 export * from "./Catch";
 export * from "./Checkbox";
+export * from "./Chip";
 export * from "./Code";
 export * from "./CollapseCard";
 export * from "./Container";

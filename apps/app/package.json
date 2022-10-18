@@ -10,6 +10,7 @@
   "devDependencies": {
     "@apollo/client": "^3.6.9",
     "@argos-ci/config": "2.0.0",
+    "@heroicons/react": "^2.0.12",
     "@primer/octicons-react": "^17.4.1",
     "@sentry/browser": "^7.10.0",
     "@swc/core": "^1.2.248",
@@ -28,9 +29,9 @@
     "react-helmet": "^6.1.0",
     "react-router-dom": "^6.3.0",
     "react-teleporter": "^3.0.2",
-    "swc-loader": "^0.2.3",
     "store": "^2.0.12",
     "styled-components": "^5.3.5",
+    "swc-loader": "^0.2.3",
     "webpack": "^5.74.0",
     "webpack-cli": "^4.10.0",
     "webpack-dev-server": "^4.10.0"
