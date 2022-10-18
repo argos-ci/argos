@@ -55,7 +55,7 @@ function TokenCard({ repository }) {
           you send screenshots to Argos.
         </CardText>
         <Code my={3}>ARGOS_TOKEN={repository.token}</Code>
-        <Alert my={3} severity="warning">
+        <Alert my={3} color="warning">
           This token should be kept secret.
         </Alert>
         <CardText fontSize="md" mt={4}>
@@ -140,11 +140,11 @@ function UpdateBranchForm({ repository }) {
       </FormSubmit>
 
       <Toast state={successToast}>
-        <Alert severity="success">Changes saved</Alert>
+        <Alert color="success">Changes saved</Alert>
       </Toast>
 
       <Toast state={errorToast}>
-        <Alert severity="error">Something went wrong. Please try again.</Alert>
+        <Alert color="danger">Something went wrong. Please try again.</Alert>
       </Toast>
     </Form>
   );

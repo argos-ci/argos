@@ -32,7 +32,7 @@ export function GettingStarted({ repository }) {
 
           <Code mt={2}>ARGOS_TOKEN={repository.token}</Code>
 
-          <Alert mt={4} severity="warning">
+          <Alert mt={4} color="warning">
             This token should be kept secret.
           </Alert>
 

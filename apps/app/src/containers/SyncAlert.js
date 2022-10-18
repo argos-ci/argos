@@ -24,7 +24,7 @@ export function SyncAlert() {
 
   return (
     <Container>
-      <LoadingAlert severity="neutral" mt={3}>
+      <LoadingAlert color="neutral" mt={3}>
         Argos fetch your repositories from GitHub. It should not take long.
       </LoadingAlert>
     </Container>
