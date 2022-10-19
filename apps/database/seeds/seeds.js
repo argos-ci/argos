@@ -174,7 +174,7 @@ exports.seed = async (knex) => {
   ] = await knex("builds")
     .returning("id")
     .insert([
-      { ...build, number: 1, type: "orphan" },
+      { ...build, number: 1, type: "orphan", baseScreenshotBucketId: null },
       { ...build, number: 2, type: "reference" },
       { ...build, number: 3, jobStatus: "progress" }, // Expired
       { ...build, number: 4, jobStatus: "aborted" },
