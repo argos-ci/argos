@@ -2,6 +2,7 @@ export * from "./Alert";
 export * from "./Badge";
 export * from "./Banner";
 export * from "./BrandLogo";
+export * from "./BrandShield";
 export * from "./Breadcrumb";
 export * from "./Button";
 export * from "./Card";

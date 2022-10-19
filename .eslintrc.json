@@ -35,6 +35,8 @@
     }
   ],
   "rules": {
-    "no-unused-vars": ["error", { "ignoreRestSiblings": true }]
+    "no-unused-vars": ["error", { "ignoreRestSiblings": true }],
+    "react/prop-types": "off",
+    "react/display-name": "off"
   }
 }
