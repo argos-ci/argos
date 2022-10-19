@@ -392,14 +392,22 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           {pageInfo.totalCount > 0 ? (
             <x.div display="flex" mt={10}>
               <x.div flex={1} textAlign="center">
-                Baseline from{" "}
-                <InlineCode mx={1}>
-                  {build.baseScreenshotBucket.branch}
-                </InlineCode>
-                <Icon as={ArrowDownIcon} />
-                <x.div color="secondary-text">
-                  {moment(build.baseScreenshotBucket.createdAt).fromNow()}
-                </x.div>
+                {build.baseScreenshotBucket ? (
+                  <>
+                    Baseline from{" "}
+                    <InlineCode mx={1}>
+                      {build.baseScreenshotBucket.branch}
+                    </InlineCode>
+                    <Icon as={ArrowDownIcon} />
+                    <x.div color="secondary-text">
+                      {moment(build.baseScreenshotBucket.createdAt).fromNow()}
+                    </x.div>
+                  </>
+                ) : (
+                  <>
+                    No baseline to compare <Icon as={ArrowDownIcon} />
+                  </>
+                )}
               </x.div>
               <x.div flex={1} textAlign="center">
                 Changes from{" "}
