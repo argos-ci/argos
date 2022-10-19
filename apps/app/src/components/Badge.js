@@ -11,8 +11,8 @@ export const Badge = React.forwardRef(
     return (
       <x.div
         ref={ref}
-        px={2}
-        py={1}
+        px={1}
+        py={0.5}
         border={1}
         fontWeight={600}
         color={onColor}

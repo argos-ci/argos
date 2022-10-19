@@ -11,7 +11,7 @@ const THEMES = {
   dark: "dark",
 };
 
-const defaultTheme = "dark";
+const defaultTheme = "light";
 
 export const parameters = {
   actions: { argTypesRegex: "^on[A-Z].*" },
@@ -29,7 +29,7 @@ export const globalTypes = {
     name: "Theme",
     title: "Theme",
     description: "Theme for your components",
-    defaultValue: defaultTheme,
+    defaultValue: THEMES[defaultTheme],
     toolbar: {
       icon: "paintbrush",
       dynamicTitle: true,
@@ -44,7 +44,7 @@ export const globalTypes = {
 // Apply selected theme mode
 const ColorModeDecorator = (Story, context) => {
   const { theme: themeKey } = context.globals;
-  const theme = THEMES[themeKey] || defaultTheme;
+  const theme = THEMES[themeKey] || THEMES[defaultTheme];
 
   const [, setColorMode] = useColorMode();
 

@@ -293,6 +293,7 @@ export const theme = {
   radii: {
     ...defaultTheme.radii,
     chip: "20px",
+    thumbnail: 4,
   },
   sizes: {
     ...defaultTheme.sizes,

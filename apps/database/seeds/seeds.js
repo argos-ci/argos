@@ -224,6 +224,11 @@ exports.seed = async (knex) => {
     compareScreenshotId: null,
   };
 
+  const failedScreenshotDiff = {
+    ...addedScreenshotDiff,
+    compareScreenshotId: screenshots[2],
+  };
+
   const buildScreenshotDiffs = {
     [orphanBuildId]: duplicate(addedScreenshotDiff, 3),
     [referenceBuildId]: [
@@ -231,8 +236,11 @@ exports.seed = async (knex) => {
       ...duplicate(stableScreenshotDiff, 3),
     ],
     [diffDetectedBuildId]: [
-      ...duplicate(stableScreenshotDiff, 3),
-      ...duplicate(updatedScreenshotDiff, 2),
+      ...duplicate(stableScreenshotDiff, 4),
+      ...duplicate(updatedScreenshotDiff, 30),
+      ...duplicate(removedScreenshotDiff, 4),
+      ...duplicate(addedScreenshotDiff, 4),
+      ...duplicate(failedScreenshotDiff, 4),
     ],
     [acceptedBuildId]: [
       { ...addedScreenshotDiff, validationStatus: "accepted" },
@@ -259,7 +267,7 @@ exports.seed = async (knex) => {
     [inProgressBuildId]: [{ ...updatedScreenshotDiff, jobStatus: "pending" }],
     [failBuildId]: [
       ...duplicate(stableScreenshotDiff, 3),
-      { ...addedScreenshotDiff, compareScreenshotId: screenshots[2] },
+      failedScreenshotDiff,
     ],
     [stableBuildId]: duplicate(stableScreenshotDiff, 3),
     [removedBuildId]: [
