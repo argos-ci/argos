@@ -110,8 +110,6 @@ export function ThumbnailsList({
   fetchNextPage,
   stats,
 }) {
-  const itemEstimateSize = imageHeight + gap;
-
   const parentRef = React.useRef();
   const activeStickyIndexRef = React.useRef(0);
 
@@ -124,12 +122,12 @@ export function ThumbnailsList({
 
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? rows.length + 1 : rows.length,
-    estimateSize: (i) => (isSticky(i) ? headerSize : itemEstimateSize),
+    estimateSize: (i) => (isSticky(i) ? headerSize : imageHeight + gap),
     getScrollElement: () => parentRef.current,
     overscan: 5,
     rangeExtractor: React.useCallback(
       (range) => {
-        activeStickyIndexRef.current = [...stickyIndexes]
+        activeStickyIndexRef.current = Array.from(stickyIndexes)
           .reverse()
           .find((index) => range.startIndex >= index);
 
@@ -138,35 +136,25 @@ export function ThumbnailsList({
           ...defaultRangeExtractor(range),
         ]);
 
-        return [...next].sort((a, b) => a - b);
+        return Array.from(next).sort((a, b) => a - b);
       },
       [stickyIndexes]
     ),
   });
 
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const lastItem = virtualItems[virtualItems.length - 1];
+  const shouldFetch =
+    hasNextPage &&
+    !isFetchingNextPage &&
+    lastItem &&
+    lastItem.index === rows.length - 1;
+
   React.useEffect(() => {
-    const [lastItem] = [...rowVirtualizer.getVirtualItems()].reverse();
-
-    if (!lastItem) {
-      return;
-    }
-
-    if (
-      lastItem.index >= rows.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
+    if (shouldFetch) {
       fetchNextPage();
     }
-  }, [
-    hasNextPage,
-    fetchNextPage,
-    rows.length,
-    isFetchingNextPage,
-    rowVirtualizer,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    rowVirtualizer.getVirtualItems(),
-  ]);
+  }, [shouldFetch, fetchNextPage]);
 
   return (
     <x.div ref={parentRef} h="calc(100vh - 154px)" w={1} overflowY="auto">

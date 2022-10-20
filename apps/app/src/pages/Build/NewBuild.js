@@ -40,6 +40,7 @@ import {
 import { ArrowUpIcon, ArrowDownIcon, EyeIcon } from "@heroicons/react/24/solid";
 import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import { ThumbnailsList } from "../../components/ThumbnailsList";
+import { useLiveRef } from "../../utils/useLiveRef";
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
@@ -135,17 +136,26 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
     skip: !ownerLogin || !repositoryName || !buildNumber,
   });
 
-  const [moreLoading, setMoreLoading] = React.useState();
+  const dataRef = useLiveRef(data);
 
-  function fetchNextPage() {
+  const [moreLoading, setMoreLoading] = React.useState(false);
+
+  const fetchNextPage = React.useCallback(() => {
     setMoreLoading(true);
-    fetchMoreScreenshotDiffs({ data, fetchMore }).finally(() => {
-      setMoreLoading(false);
-    });
+    fetchMoreScreenshotDiffs({ data: dataRef.current, fetchMore }).finally(
+      () => {
+        setMoreLoading(false);
+      }
+    );
+  }, [fetchMore, dataRef]);
+
+  if (!data || loading) {
+    return <LoadingAlert />;
   }
 
-  if (loading) return <LoadingAlert />;
-  if (!data?.repository?.build) return <NotFound />;
+  if (!data.repository?.build) {
+    return <NotFound />;
+  }
 
   const {
     build,
