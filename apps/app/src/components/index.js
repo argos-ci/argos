@@ -31,6 +31,7 @@ export * from "./Tab";
 export * from "./Table";
 export * from "./Tag";
 export * from "./Theme";
+export * from "./ThumbnailsList";
 export * from "./Time";
 export * from "./Titles";
 export * from "./Toast";

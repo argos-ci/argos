@@ -236,11 +236,10 @@ exports.seed = async (knex) => {
       ...duplicate(stableScreenshotDiff, 3),
     ],
     [diffDetectedBuildId]: [
-      ...duplicate(stableScreenshotDiff, 4),
+      ...duplicate(stableScreenshotDiff, 2),
+      ...duplicate(removedScreenshotDiff, 2),
+      ...duplicate(addedScreenshotDiff, 2),
       ...duplicate(updatedScreenshotDiff, 30),
-      ...duplicate(removedScreenshotDiff, 4),
-      ...duplicate(addedScreenshotDiff, 4),
-      ...duplicate(failedScreenshotDiff, 4),
     ],
     [acceptedBuildId]: [
       { ...addedScreenshotDiff, validationStatus: "accepted" },

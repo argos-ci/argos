@@ -141,7 +141,7 @@ function BuildsList({ repository }) {
             <Th>Build</Th>
             <Th>Status</Th>
             <Th>Branch / Commit</Th>
-            <Th>Date</Th>
+            <Th w={{ md: 230 }}>Date</Th>
           </Tr>
         </Thead>
         <Tbody>

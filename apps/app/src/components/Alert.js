@@ -47,6 +47,7 @@ export function LoadingAlert({ children, delay = 300, ...props }) {
       alignItems="center"
       gap={2}
       w="fit-content"
+      data-visual-test="transparent"
       {...props}
     >
       <div>{children || "Argos is fetching data"}</div>

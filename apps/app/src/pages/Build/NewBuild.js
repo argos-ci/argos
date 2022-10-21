@@ -12,6 +12,7 @@ import {
   Banner,
   IconButton,
   BrandShield,
+  ThumbnailsList,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
@@ -39,7 +40,6 @@ import {
 } from "./BuildStatusInfo";
 import { ArrowUpIcon, ArrowDownIcon, EyeIcon } from "@heroicons/react/24/solid";
 import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
-import { ThumbnailsList } from "../../components/ThumbnailsList";
 import { useLiveRef } from "../../utils/useLiveRef";
 
 const BUILD_QUERY = gql`
