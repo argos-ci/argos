@@ -12,7 +12,7 @@ const oldColors = {
   primary: defaultTheme.colors["violet-700"],
 
   "highlight-background": defaultTheme.colors["gray-900"],
-  "background-hover": defaultTheme.colors["gray-700-a60"],
+  "background-hover": defaultTheme.colors["gray-700"],
   "background-active": defaultTheme.colors["gray-800-a60"],
   "background-focus": defaultTheme.colors["blue-gray-700-a50"],
   "code-background": defaultTheme.colors["gray-700-a80"],
@@ -218,7 +218,7 @@ const newColors = {
       on: th.color("slate-100"),
       "on-light": th.color("slate-400"),
       "primary-border": th.color("primary-800"),
-      "layout-border": th.color("slate-800"),
+      "layout-border": th.color("slate-700"),
       lighter: th.color("black"),
       darker: th.color("white"),
 
@@ -244,12 +244,12 @@ const newColors = {
       "pending-bg": th.color("yellow-900-a50"),
       "pending-bg-hover": th.color("yellow-900-a80"),
 
-      "warning-on": th.color("orange-200"),
-      "warning-bg": th.color("orange-900-a50"),
+      "warning-on": th.color("orange-400"),
+      "warning-bg": th.color("orange-600-a30"),
       "warning-bg-hover": th.color("orange-900-a80"),
 
-      "danger-on": th.color("red-200"),
-      "danger-bg": th.color("red-900-a50"),
+      "danger-on": th.color("red-400"),
+      "danger-bg": th.color("red-800-a40"),
       "danger-bg-hover": th.color("red-900-a80"),
 
       "button-primary-bg": th.color("primary-600"),
@@ -293,6 +293,7 @@ export const theme = {
   radii: {
     ...defaultTheme.radii,
     chip: "20px",
+    thumbnail: 4,
   },
   sizes: {
     ...defaultTheme.sizes,

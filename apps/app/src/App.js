@@ -14,6 +14,7 @@ import { NotFoundWithContainer } from "./pages/NotFound";
 import { Repository } from "./pages/Repository";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { Build } from "./pages/Build";
+import { NewBuild } from "./pages/Build/NewBuild";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
 
 export function App() {
@@ -41,6 +42,10 @@ export function App() {
                     path="/auth/github/callback"
                     element={<AuthCallback />}
                   />
+                  <Route
+                    path="/:ownerLogin/:repositoryName/builds/:buildNumber/new"
+                    element={<NewBuild />}
+                  />
                   <Route path="/" element={<Layout />}>
                     <Route index element={<Home />} />
                     <Route
@@ -51,6 +56,7 @@ export function App() {
                       path="/:ownerLogin/:repositoryName/builds/:buildNumber"
                       element={<Build />}
                     />
+
                     <Route
                       path="/:ownerLogin/:repositoryName/*"
                       element={<Repository />}
