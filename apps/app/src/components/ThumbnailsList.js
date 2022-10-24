@@ -111,7 +111,7 @@ const StickyItem = ({ active, ...props }) => (
   />
 );
 
-const Header = (props) => (
+const Header = ({ nextIsHeader, ...props }) => (
   <x.div
     w={1}
     as={LinkBlock}
@@ -123,7 +123,7 @@ const Header = (props) => (
     textTransform="capitalize"
     cursor="default"
     borderTop={1}
-    borderBottom={1}
+    borderBottom={nextIsHeader ? 0 : 1}
     borderColor="layout-border"
     borderRadius={0}
     backgroundColor="bg"
@@ -235,7 +235,7 @@ export function ThumbnailsList({
                     }));
                   }}
                 >
-                  <Header>
+                  <Header nextIsHeader={isLast(virtualRow.index)}>
                     <x.div
                       display="flex"
                       alignItems="center"
