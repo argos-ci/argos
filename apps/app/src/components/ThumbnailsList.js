@@ -199,7 +199,7 @@ export function ThumbnailsList({
     hasNextPage &&
     !isFetchingNextPage &&
     lastItem &&
-    lastItem.index === rows.length - 1;
+    lastItem.index >= rows.length - 1;
 
   React.useEffect(() => {
     if (shouldFetch) {
