@@ -168,7 +168,7 @@ function RepositoriesList({ repositories, ...props }) {
       <Table>
         <Thead>
           <Tr>
-            <Th>Organization / Repository</Th>
+            <Th>Organization / </Th>
             <Th>Last Build</Th>
             <Th>Status</Th>
             <Th>Settings</Th>
