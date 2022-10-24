@@ -79,12 +79,13 @@ export async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
     .findById(screenshotDiff.id)
     .patch({
       score: difference.score,
+      jobStatus: "complete",
       s3Id: uploadResult ? uploadResult.Key : null,
     });
 
   const [{ complete, diff }] = await ScreenshotDiff.query()
     .select(
-      raw("bool_and(score is not null) as complete"),
+      raw(`bool_and("jobStatus" = 'complete') as complete`),
       raw("bool_or(score > 0) as diff")
     )
     .where("buildId", screenshotDiff.buildId)
