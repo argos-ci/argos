@@ -106,7 +106,7 @@ function BuildsList({ repository }) {
     return (
       <Container>
         <LoadingAlert>
-          Argos fetch <x.span fontWeight={700}>{repository.name}</x.span>{" "}
+          Argos fetch <x.span fontWeight="bold">{repository.name}</x.span>{" "}
           builds. It should not take long.
         </LoadingAlert>
       </Container>

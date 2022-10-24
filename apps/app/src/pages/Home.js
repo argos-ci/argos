@@ -99,7 +99,7 @@ function RepositoryNameCell({
         /{" "}
         <Link
           color="primary-text"
-          fontWeight={600}
+          fontWeight="semibold"
           to={`${repositoryUrl}/builds`}
         >
           {repositoryName}

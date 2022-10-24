@@ -1,6 +1,7 @@
 import * as React from "react";
-import { x } from "@xstyled/styled-components";
+import styled, { x } from "@xstyled/styled-components";
 import { useVirtualizer, defaultRangeExtractor } from "@tanstack/react-virtual";
+import { Button as AriakitButton } from "ariakit/button";
 import { Badge } from "./Badge";
 import { Alert } from "./Alert";
 import { ChevronRightIcon } from "@primer/octicons-react";
@@ -17,6 +18,34 @@ const ThumbnailImage = ({ image, ...props }) => {
     />
   );
 };
+
+const InnerThumbnail = styled.button`
+  background-color: bg;
+  position: relative;
+  display: inline-block;
+  border-radius: thumbnail;
+  padding: 0;
+
+  &:focus {
+    outline: solid 4px;
+    outline-color: sky-900-a60;
+  }
+
+  &[data-selected="true"] {
+    outline: solid 4px;
+    outline-color: sky-900;
+  }
+`;
+
+const Thumbnail = React.forwardRef(({ children, ...props }, ref) => {
+  return (
+    <AriakitButton ref={ref} {...props}>
+      {(buttonProps) => (
+        <InnerThumbnail {...buttonProps}>{children}</InnerThumbnail>
+      )}
+    </AriakitButton>
+  );
+});
 
 function groupByStatus(data) {
   const statusGroups = data.reduce(
@@ -47,9 +76,11 @@ function mergeGroups(groups = [], groupCollapseStatuses = {}) {
 }
 
 function getRows(groups) {
-  return groups.flatMap(({ diffs, collapsed, ...group }) => [
-    { type: "listHeader", collapsed, ...group },
-    ...diffs.map((diff) => ({ type: "listItem", diff })),
+  let itemIndex = 0;
+
+  return groups.flatMap(({ diffs, collapsed, ...group }, groupIndex) => [
+    { type: "listHeader", collapsed, ...group, index: groupIndex },
+    ...diffs.map((diff) => ({ type: "listItem", diff, index: itemIndex++ })),
   ]);
 }
 
@@ -58,6 +89,7 @@ const ListItem = ({ virtualRow, ...props }) => (
     top={0}
     left={0}
     w={1}
+    px={5}
     virtualRow={virtualRow}
     h={`${virtualRow.size}px`}
     position="absolute"
@@ -71,21 +103,32 @@ const ListItem = ({ virtualRow, ...props }) => (
 
 const StickyItem = ({ active, ...props }) => (
   <ListItem
-    as={LinkBlock}
     zIndex={1}
+    p={0}
+    alignItems="flex-start"
     {...(active ? { position: "sticky", transform: "none" } : {})}
-    backgroundColor="bg"
-    borderTop={1}
-    borderBottom={1}
-    borderColor="layout-border"
-    pr={4}
-    py={2}
+    {...props}
+  />
+);
+
+const Header = (props) => (
+  <x.div
+    w={1}
+    as={LinkBlock}
+    display="flex"
+    alignItems="center"
     justifyContent="space-between"
-    fontSize="md"
+    fontSize="xs"
     lineHeight={1}
     textTransform="capitalize"
     cursor="default"
-    borderRadius="0"
+    borderTop={1}
+    borderBottom={1}
+    borderColor="layout-border"
+    borderRadius={0}
+    backgroundColor="bg"
+    pr={4}
+    h={1}
     {...props}
   />
 );
@@ -93,12 +136,15 @@ const StickyItem = ({ active, ...props }) => (
 export function ThumbnailsList({
   imageHeight = 200,
   gap = 20,
-  headerSize = 32,
+  headerSize = 36,
+  height = 400,
   data,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
   stats,
+  activeDiffIndex = 0,
+  setActiveDiffIndex,
 }) {
   const parentRef = React.useRef();
   const activeStickyIndexRef = React.useRef(0);
@@ -153,7 +199,7 @@ export function ThumbnailsList({
   }, [shouldFetch, fetchNextPage]);
 
   return (
-    <x.div ref={parentRef} h="calc(100vh - 154px)" w={1} overflowY="auto">
+    <x.div ref={parentRef} h={height} w={1} overflowY="auto">
       {rows.length === 0 ? (
         <Alert m={4} color="info">
           Empty build: no screenshot detected
@@ -180,25 +226,37 @@ export function ThumbnailsList({
                     }));
                   }}
                 >
-                  <x.div display="flex" alignItems="center">
-                    <x.svg
-                      as={ChevronRightIcon}
-                      transform
-                      rotate={item.collapsed ? 0 : 90}
-                      transitionDuration={300}
-                      w={4}
-                      h={4}
-                    />
-                    {item.title}
-                  </x.div>
-                  {count ? <Badge variant="secondary">{count}</Badge> : null}
+                  <Header>
+                    <x.div
+                      display="flex"
+                      alignItems="center"
+                      fontWeight="medium"
+                    >
+                      <x.svg
+                        as={ChevronRightIcon}
+                        transform
+                        rotate={item.collapsed ? 0 : 90}
+                        transitionDuration={300}
+                        w={3}
+                        h={3}
+                        color="secondary-color"
+                        mx={0.5}
+                      />
+                      {item.title}
+                    </x.div>
+
+                    {count ? <Badge variant="secondary">{count}</Badge> : null}
+                  </Header>
                 </StickyItem>
               );
             }
 
             return (
               <ListItem key={virtualRow.index} virtualRow={virtualRow}>
-                <x.div position="relative" display="inline-block">
+                <Thumbnail
+                  onClick={() => setActiveDiffIndex(item.index)}
+                  data-selected={activeDiffIndex === item.index}
+                >
                   {item.diff.status === "updated" && (
                     <ThumbnailImage
                       image={item.diff}
@@ -213,7 +271,7 @@ export function ThumbnailsList({
                     }
                     h={imageHeight}
                   />
-                </x.div>
+                </Thumbnail>
               </ListItem>
             );
           })}

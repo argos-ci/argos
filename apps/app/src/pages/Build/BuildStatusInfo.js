@@ -31,7 +31,7 @@ export const BuildStatusInfoScreenshotDiffResultFragment = gql`
 
 function FirstBuildMessage({ firstBuild }) {
   return firstBuild ? (
-    <x.div mb={3} fontWeight={600}>
+    <x.div mb={3} fontWeight="semibold">
       Congratulation for your first build!
     </x.div>
   ) : null;

@@ -64,7 +64,7 @@ function PlanCard({ plan: { name, screenshotsLimitPerMonth }, ...props }) {
       <CardBody>
         <x.div fontSize="4xl" mb={3}>
           {name}{" "}
-          <x.span text="xs" color="primary-500" fontWeight={800}>
+          <x.span text="xs" color="primary" fontWeight="extrabold">
             Beta
           </x.span>
         </x.div>

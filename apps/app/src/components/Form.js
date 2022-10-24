@@ -34,7 +34,7 @@ export const FormInput = React.forwardRef((props, ref) => (
 ));
 
 export const FormLabel = ({ required, children, ...props }) => (
-  <x.div as={AriakitFormLabel} fontWeight={600} {...props}>
+  <x.div as={AriakitFormLabel} fontWeight="semibold" {...props}>
     {children}
     {required ? <x.span color="red-500">*</x.span> : null}
   </x.div>

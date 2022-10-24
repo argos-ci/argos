@@ -2,25 +2,19 @@ import * as React from "react";
 import {
   defaultTheme,
   ThemeProvider,
-  aliasColor,
   th,
   generateHexAlphaVariants,
 } from "@xstyled/styled-components";
 
 const oldColors = {
-  ...aliasColor("primary", "violet"),
-  primary: defaultTheme.colors["violet-700"],
-
   "highlight-background": defaultTheme.colors["gray-900"],
   "background-hover": defaultTheme.colors["gray-700"],
   "background-active": defaultTheme.colors["gray-800-a60"],
   "background-focus": defaultTheme.colors["blue-gray-700-a50"],
-  "code-background": defaultTheme.colors["gray-700-a80"],
 
   border: defaultTheme.colors["gray-700-a80"],
   "border-active": defaultTheme.colors["gray-300"],
 
-  "secondary-text": defaultTheme.colors["gray-400"],
   tooltip: defaultTheme.colors["gray-700"],
 };
 
@@ -149,7 +143,11 @@ const newColors = {
   link: th.color("sky-600"),
   bg: th.color("lighter"),
   "primary-text": th.color("on"),
+  "secondary-text": th.color("on-light"),
 
+  "code-background": th.color("slate-200"),
+
+  primary: th.color("primary-600"),
   "primary-on": th.color("primary-700"),
   "primary-bg": th.color("primary-50"),
   "primary-bg-hover": th.color("primary-100"),
@@ -222,7 +220,10 @@ const newColors = {
       lighter: th.color("black"),
       darker: th.color("white"),
 
-      link: th.color("sky-600-a90"),
+      "primary-text": th.color("slate-50"),
+      link: th.color("sky-400-a90"),
+
+      "code-background": th.color("slate-700"),
 
       "primary-on": th.color("primary-200"),
       "primary-bg": th.color("primary-900-a50"),
@@ -269,9 +270,9 @@ const newColors = {
 
       "icon-button-danger-on": th.color("slate-300"),
       "icon-button-danger-bg": th.color("slate-800"),
-      "icon-button-danger-on-hover": th.color("red-800"),
+      "icon-button-danger-on-hover": th.color("red-300"),
       "icon-button-danger-bg-hover": th.color("slate-900"),
-      "icon-button-danger-bg-active": th.color("slate-800"),
+      "icon-button-danger-bg-active": th.color("red-900"),
     },
   },
 };
@@ -294,6 +295,7 @@ export const theme = {
     ...defaultTheme.radii,
     chip: "20px",
     thumbnail: 4,
+    inlineCode: "4px",
   },
   sizes: {
     ...defaultTheme.sizes,

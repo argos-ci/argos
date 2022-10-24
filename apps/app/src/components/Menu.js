@@ -102,7 +102,7 @@ export const MenuItem = ({ as, children, ...props }) => {
           alignItems="center"
           gap="8px"
           p={2}
-          fontWeight={600}
+          fontWeight="semibold"
           pr={4}
           userSelect="none"
           opacity={{ '&[aria-disabled="true"]': 0.5 }}
@@ -127,13 +127,13 @@ export const MenuSeparator = (props) => (
 );
 
 export const MenuText = (props) => (
-  <x.div fontSize="sm" my={2} mx={2} fontWeight={600} pr={3} {...props} />
+  <x.div fontSize="sm" my={2} mx={2} fontWeight="semibold" pr={3} {...props} />
 );
 
 export const MenuTitle = (props) => (
   <x.div
     fontSize="sm"
-    fontWeight={600}
+    fontWeight="semibold"
     color="secondary-text"
     mx={2}
     pr={4}
