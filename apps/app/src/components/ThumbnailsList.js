@@ -19,7 +19,7 @@ const ThumbnailImage = ({ image, ...props }) => {
   );
 };
 
-const InnerThumbnail = styled.button`
+const InnerThumbnail = styled.buttonBox`
   background-color: bg;
   position: relative;
   display: inline-block;
@@ -161,12 +161,21 @@ export function ThumbnailsList({
 
   const isSticky = (index) => stickyIndexes.includes(index);
   const isActiveSticky = (index) => activeStickyIndexRef.current === index;
+  const isFirst = (index) => isSticky(index - 1);
+  const isLast = (index) => isSticky(index + 1);
 
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? rows.length + 1 : rows.length,
-    estimateSize: (i) => (isSticky(i) ? headerSize : imageHeight + gap),
+    estimateSize: (i) =>
+      isSticky(i)
+        ? headerSize
+        : imageHeight +
+          gap +
+          (isFirst(i) ? gap / 2 : 0) +
+          (isLast(i) ? gap / 2 : 0),
     getScrollElement: () => parentRef.current,
     overscan: 5,
+    paddingEnd: 20,
     rangeExtractor: React.useCallback(
       (range) => {
         activeStickyIndexRef.current = Array.from(stickyIndexes)
@@ -256,6 +265,8 @@ export function ThumbnailsList({
                 <Thumbnail
                   onClick={() => setActiveDiffIndex(item.index)}
                   data-selected={activeDiffIndex === item.index}
+                  mt={isFirst(virtualRow.index) ? "10px" : 0}
+                  mb={isLast(virtualRow.index) ? "10px" : 0}
                 >
                   {item.diff.status === "updated" && (
                     <ThumbnailImage
