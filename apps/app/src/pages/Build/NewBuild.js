@@ -3,7 +3,7 @@ import * as React from "react";
 import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
 import styled, { x } from "@xstyled/styled-components";
-import { Tab as AriakitTab, TabList, TabPanel, useTabState } from "ariakit/tab";
+import { Tab, TabList, TabPanel, useTabState } from "ariakit/tab";
 import { Helmet } from "react-helmet";
 import {
   Button,
@@ -17,6 +17,7 @@ import {
   InlineCode,
   BaseLink,
   Alert,
+  Time,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
@@ -133,19 +134,19 @@ const OvercapacityBanner = ({ plan, consumptionRatio, ownerLogin }) => (
   </Banner>
 );
 
-const RepositoryLink = ({ ownerLogin, repositoryName, repositoryUrl }) => (
+const RepositoryLink = ({ ownerLogin, repositoryName }) => (
   <x.div whiteSpace="nowrap" fontWeight="normal" lineHeight={1} fontSize="sm">
     <Link color="secondary-text" to={`/${ownerLogin}`}>
       {ownerLogin}
     </Link>{" "}
     /{" "}
-    <Link color="primary-text" to={`/${ownerLogin}/${repositoryUrl}/builds`}>
+    <Link color="primary-text" to={`/${ownerLogin}/${repositoryName}/builds`}>
       {repositoryName}
     </Link>
   </x.div>
 );
 
-const Tab = styled(AriakitTab)`
+const SidebarTab = styled(Tab)`
   background-color: transparent;
   color: secondary-text;
   padding: 1;
@@ -172,9 +173,19 @@ const Tab = styled(AriakitTab)`
   }
 `;
 
-const BuildInfo = (props) => {
-  return <x.div {...props}>That's real info !</x.div>;
-};
+const BuildInfo = (props) => (
+  <x.div
+    fontSize="md"
+    color="primary-text"
+    fontWeight="medium"
+    lineHeight="snug"
+    {...props}
+  />
+);
+
+const BuildInfoTitle = (props) => (
+  <x.div fontSize="xs" color="secondary-text" mb={0.5} {...props} />
+);
 
 const BranchInfo = ({ bucket, baseline, ...props }) => {
   return (
@@ -272,7 +283,6 @@ const BuildWithData = ({
             <RepositoryLink
               ownerLogin={ownerLogin}
               repositoryName={repositoryName}
-              repositoryUrl={data.repository.url}
             />
           </div>
           <BuildStatusChip build={build} />
@@ -291,8 +301,8 @@ const BuildWithData = ({
         <Sidebar>
           <TabList state={tab} aria-label="sidebar">
             <x.div display="flex" py="7px" px={3} gap={2}>
-              <Tab>Screenshots</Tab>
-              <Tab>Info</Tab>
+              <SidebarTab>Screenshots</SidebarTab>
+              <SidebarTab>Info</SidebarTab>
             </x.div>
           </TabList>
 
@@ -309,7 +319,40 @@ const BuildWithData = ({
             />
           </TabPanel>
           <TabPanel state={tab}>
-            <BuildInfo />
+            <x.div display="flex" gap={6} flexDirection="column" p={4}>
+              <BuildInfo>
+                <BuildInfoTitle>Created</BuildInfoTitle>
+                <Time date={build.createdAt} format="LLL" />
+              </BuildInfo>
+
+              <BuildInfo>
+                <BuildInfoTitle>Baseline build</BuildInfoTitle>
+                Build {build.number}
+              </BuildInfo>
+
+              <BuildInfo>
+                <BuildInfoTitle>Total screenshots count</BuildInfoTitle>
+                {stats.screenshotCount}
+              </BuildInfo>
+
+              <BuildInfo>
+                <BuildInfoTitle>Head commit</BuildInfoTitle>
+                <Link
+                  href={`https://github.com/${ownerLogin}/${repositoryName}/commit/${compareScreenshotBucket.commit}`}
+                >
+                  {compareScreenshotBucket.commit.split("").slice(0, 7)}
+                </Link>
+              </BuildInfo>
+
+              <BuildInfo>
+                <BuildInfoTitle>Base commit</BuildInfoTitle>
+                <Link
+                  href={`https://github.com/${ownerLogin}/${repositoryName}/commit/${compareScreenshotBucket.commit}`}
+                >
+                  {compareScreenshotBucket.commit.split("").slice(0, 7)}
+                </Link>
+              </BuildInfo>
+            </x.div>
           </TabPanel>
         </Sidebar>
 
