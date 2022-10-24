@@ -36,7 +36,7 @@ export function GettingStarted({ repository }) {
             This token should be kept secret.
           </Alert>
 
-          <CardText mt={4} fontWeight={400} fontSize="md">
+          <CardText mt={4} fontWeight="normal" fontSize="md">
             <DocumentationPhrase />
           </CardText>
         </x.div>

@@ -144,6 +144,28 @@ exports.seed = async (knex) => {
       },
     ]);
 
+  const bearImages = [
+    "bear-1280x1224.jpg",
+    "bear-1440x1224.jpg",
+    "bear-1920x1224.jpg",
+    "bear-2560x1224.jpg",
+    "bear-320x1224.jpg",
+    "bear-375x1224.jpg",
+    "bear-425x1224.jpg",
+    "bear-768x1224.jpg",
+  ];
+
+  const bearScreenshotIds = await await knex("screenshots")
+    .returning("id")
+    .insert(
+      bearImages.map((bearImage) => ({
+        ...timeStamps,
+        screenshotBucketId: screenshotBuckets[1],
+        name: bearImage,
+        s3Id: bearImage,
+      }))
+    );
+
   const build = {
     number: 1,
     name: "main",
@@ -238,7 +260,10 @@ exports.seed = async (knex) => {
     [diffDetectedBuildId]: [
       ...duplicate(stableScreenshotDiff, 2),
       ...duplicate(removedScreenshotDiff, 2),
-      ...duplicate(addedScreenshotDiff, 2),
+      ...bearScreenshotIds.map((id) => ({
+        ...addedScreenshotDiff,
+        compareScreenshotId: id,
+      })),
       ...duplicate(updatedScreenshotDiff, 30),
     ],
     [acceptedBuildId]: [

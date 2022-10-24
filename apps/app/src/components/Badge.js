@@ -11,10 +11,10 @@ export const Badge = React.forwardRef(
     return (
       <x.div
         ref={ref}
-        px={1}
         py={0.5}
+        px={2}
         border={1}
-        fontWeight={600}
+        fontWeight="semibold"
         color={onColor}
         backgroundColor={bgColor}
         borderColor={variant === "secondary" ? "layout-border" : bgColor}

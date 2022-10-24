@@ -2,7 +2,7 @@ import * as React from "react";
 
 export function BrandShield({ ...props }) {
   return (
-    <svg viewBox="0 0 900 900" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <svg viewBox="0 150 900 590" xmlns="http://www.w3.org/2000/svg" {...props}>
       <linearGradient id="a" x1="80.12%" x2="35.629%" y1="36.832%" y2="66.909%">
         <stop offset={0} stopColor="#804fce" />
         <stop offset={1} stopColor="#2d3383" />

@@ -30,7 +30,7 @@ export const Breadcrumb = (props) => (
   <nav aria-label="Breadcrumb">
     <x.ol
       text={{ _: "lg", md: "1xl" }}
-      fontWeight={300}
+      fontWeight="light"
       display="flex"
       flexWrap="wrap"
       alignItems="center"

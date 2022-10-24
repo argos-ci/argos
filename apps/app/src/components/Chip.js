@@ -21,6 +21,7 @@ const InnerChip = styled.box(({ $color = "primary", $clickable }) => {
     text-decoration: none;
     cursor: default;
     white-space: nowrap;
+    line-height: 1;
 
     > [data-chip-icon] {
       width: 1em;

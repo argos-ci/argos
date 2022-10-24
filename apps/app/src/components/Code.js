@@ -8,12 +8,14 @@ const InnerCode = (props) => (
 export const InlineCode = (props) => (
   <x.pre
     backgroundColor="code-background"
-    borderRadius="md"
-    fontWeight={500}
-    px={1}
+    color="primary-text"
+    borderRadius="inlineCode"
+    fontWeight="normal"
+    fontSize="xs"
+    lineHeight={1}
+    p={1}
     w="fit-content"
     display="inline-block"
-    fontSize="sm"
     {...props}
   />
 );

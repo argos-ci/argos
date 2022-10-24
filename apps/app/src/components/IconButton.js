@@ -41,9 +41,11 @@ const InnerButton = styled.buttonBox(({ $color = "primary", $toggle }) => {
     > [data-button-icon] {
       width: 1em;
       height: 1em;
+      min-width: 1em;
+      min-height: 1em;
     }
 
-    ${$toggle === "on" &&
+    ${$toggle === true &&
     css`
       color: ${onHoverColor};
       background-color: ${bgActiveColor};

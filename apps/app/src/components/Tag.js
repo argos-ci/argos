@@ -10,7 +10,7 @@ export const Tag = (props) => (
     px={2}
     w="fit-content"
     fontSize="sm"
-    fontWeight={500}
+    fontWeight="medium"
     {...props}
   />
 );
