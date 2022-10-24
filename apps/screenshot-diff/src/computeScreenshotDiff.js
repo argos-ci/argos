@@ -3,9 +3,10 @@ import { promisify } from "util";
 import { rmdir, unlink } from "fs";
 import tmp from "tmp";
 import { pushBuildNotification } from "@argos-ci/build-notification";
-import { Build } from "@argos-ci/database/models";
+import { ScreenshotDiff } from "@argos-ci/database/models";
 import { download, upload } from "@argos-ci/storage";
 import { diffImages } from "./util/image-diff";
+import { raw } from "../../database/src";
 
 const rmdirAsync = promisify(rmdir);
 const unlinkAsync = promisify(unlink);
@@ -74,26 +75,32 @@ export async function computeScreenshotDiff(screenshotDiff, { s3, bucket }) {
 
   await rmdirAsync(tmpDir);
 
-  await screenshotDiff
-    .$query()
+  await ScreenshotDiff.query()
+    .findById(screenshotDiff.id)
     .patch({
       score: difference.score,
-      jobStatus: "complete",
       s3Id: uploadResult ? uploadResult.Key : null,
-    })
-    .returning("*");
-
-  const [conclusion] = await Build.getConclusions([screenshotDiff.build]);
-
-  if (conclusion === "stable") {
-    await pushBuildNotification({
-      buildId: screenshotDiff.buildId,
-      type: "no-diff-detected",
     });
-  } else if (conclusion === "diffDetected") {
-    await pushBuildNotification({
-      buildId: screenshotDiff.buildId,
-      type: "diff-detected",
-    });
+
+  const [{ complete, diff }] = await ScreenshotDiff.query()
+    .select(
+      raw("bool_and(score is not null) as complete"),
+      raw("bool_or(score > 0) as diff")
+    )
+    .where("buildId", screenshotDiff.buildId)
+    .groupBy("buildId");
+
+  if (complete) {
+    if (diff) {
+      await pushBuildNotification({
+        buildId: screenshotDiff.buildId,
+        type: "diff-detected",
+      });
+    } else {
+      await pushBuildNotification({
+        buildId: screenshotDiff.buildId,
+        type: "no-diff-detected",
+      });
+    }
   }
 }
