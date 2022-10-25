@@ -1,7 +1,8 @@
-import { createGlobalStyle } from "@xstyled/styled-components";
+import * as React from "react";
+import { createGlobalStyle, Preflight } from "@xstyled/styled-components";
 
 // Source : https://www.joshwcomeau.com/css/custom-css-reset/
-export const GlobalStyle = createGlobalStyle`
+export const ArgosGlobalStyle = createGlobalStyle`
   *,
   *::before,
   *::after {
@@ -19,6 +20,7 @@ export const GlobalStyle = createGlobalStyle`
     height: 100%;
     background-color: bg;
     color: primary-text;
+    font-family: default;
   }
 
   body {
@@ -71,3 +73,10 @@ export const GlobalStyle = createGlobalStyle`
     outline: 5px auto -webkit-focus-ring-color;
   }
 `;
+
+export const GlobalStyle = () => (
+  <>
+    <ArgosGlobalStyle />
+    <Preflight />
+  </>
+);

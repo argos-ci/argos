@@ -1,9 +1,5 @@
 import * as React from "react";
-import {
-  useColorMode,
-  Preflight,
-  ColorModeProvider,
-} from "@xstyled/styled-components";
+import { useColorMode, ColorModeProvider } from "@xstyled/styled-components";
 import { GlobalStyle, ThemeInitializer } from "../apps/app/src/components";
 
 const THEMES = {
@@ -59,7 +55,6 @@ export const decorators = [
   ColorModeDecorator,
   (Story) => (
     <ThemeInitializer>
-      <Preflight />
       <ColorModeProvider>
         <GlobalStyle />
         <Story />
