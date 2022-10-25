@@ -74,7 +74,7 @@ const HeaderChevron = (props) => (
   </x.div>
 );
 
-const Header = ({ previousIsHeader, ...props }) => (
+const Header = ({ ...props }) => (
   <x.div
     w={1}
     as={LinkBlock}
@@ -88,7 +88,6 @@ const Header = ({ previousIsHeader, ...props }) => (
     borderTop={1}
     borderBottom={1}
     borderColor="layout-border"
-    borderTopColor={previousIsHeader ? "transparent" : "layout-border"}
     borderRadius={0}
     backgroundColor="bg"
     userSelect="none"
@@ -260,7 +259,13 @@ export function ThumbnailsList({
                     }));
                   }}
                 >
-                  <Header previousIsHeader={isFirst(virtualRow.index)}>
+                  <Header
+                    borderTopColor={
+                      virtualRow.index === 0 || isFirst(virtualRow.index)
+                        ? "transparent"
+                        : "layout-border"
+                    }
+                  >
                     <x.div
                       display="flex"
                       alignItems="center"
