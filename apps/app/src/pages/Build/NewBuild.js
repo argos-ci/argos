@@ -150,17 +150,18 @@ const SidebarTab = styled(Tab)`
   background-color: transparent;
   color: secondary-text;
   padding: 1;
-  line-height: 1;
-  font-size: sm;
-  border-radius: lg;
+  font-size: xs;
+  line-height: 16px;
   font-weight: medium;
+  border-radius: lg;
+  cursor: default;
 
   &:focus {
     outline: 0;
   }
 
-  &:focus-visible {
-    text-decoration: underline;
+  &:hover {
+    color: secondary-text-hover;
   }
 
   &[aria-selected="true"] {
@@ -301,7 +302,14 @@ const BuildWithData = ({
       >
         <Sidebar>
           <TabList state={tab} aria-label="sidebar">
-            <x.div display="flex" py="7px" px={3} gap={2}>
+            <x.div
+              display="flex"
+              py="7px"
+              px={3}
+              gap={2}
+              borderBottom={1}
+              borderColor="layout-border"
+            >
               <SidebarTab>Screenshots</SidebarTab>
               <SidebarTab>Info</SidebarTab>
             </x.div>

@@ -8,7 +8,6 @@ import {
 
 const oldColors = {
   "highlight-background": defaultTheme.colors["gray-900"],
-  "background-hover": defaultTheme.colors["gray-700"],
   "background-active": defaultTheme.colors["gray-800-a60"],
   "background-focus": defaultTheme.colors["blue-gray-700-a50"],
 
@@ -145,6 +144,7 @@ const newColors = {
   "bg-hover": th.color("slate-50"),
   "primary-text": th.color("on"),
   "secondary-text": th.color("on-light"),
+  "secondary-text-hover": th.color("slate-700"),
 
   "code-background": th.color("slate-200"),
 
@@ -221,6 +221,7 @@ const newColors = {
 
       link: th.color("sky-400-a90"),
       "bg-hover": th.color("slate-900"),
+      "secondary-text-hover": th.color("slate-200"),
 
       "code-background": th.color("slate-700"),
 
