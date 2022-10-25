@@ -19,7 +19,7 @@ import { OwnerRepositories } from "./pages/Owner/Repositories";
 
 export function App() {
   return (
-    <React.StrictMode>
+    <>
       <Helmet
         titleTemplate="%s • Argos"
         defaultTitle="Argos - Automated visual testing"
@@ -76,6 +76,6 @@ export function App() {
           </BrowserRouter>
         </ColorModeProvider>
       </ThemeInitializer>
-    </React.StrictMode>
+    </>
   );
 }
