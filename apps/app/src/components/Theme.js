@@ -245,11 +245,11 @@ const newColors = {
       "pending-bg-hover": th.color("yellow-900-a80"),
 
       "warning-on": th.color("orange-400"),
-      "warning-bg": th.color("orange-600-a30"),
+      "warning-bg": th.color("orange-500-a30"),
       "warning-bg-hover": th.color("orange-900-a80"),
 
       "danger-on": th.color("red-400"),
-      "danger-bg": th.color("red-800-a40"),
+      "danger-bg": th.color("red-500-a20"),
       "danger-bg-hover": th.color("red-900-a80"),
 
       "button-primary-bg": th.color("primary-600"),

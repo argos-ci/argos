@@ -18,6 +18,7 @@ import {
   BaseLink,
   Alert,
   Time,
+  LinkBlock,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
@@ -132,18 +133,6 @@ const OvercapacityBanner = ({ plan, consumptionRatio, ownerLogin }) => (
     You've hit {Math.floor(consumptionRatio * 100)}% of the {plan.name} plan
     limit. <Link to={`/${ownerLogin}/settings`}>Upgrade plan</Link>
   </Banner>
-);
-
-const RepositoryLink = ({ ownerLogin, repositoryName }) => (
-  <x.div whiteSpace="nowrap" fontWeight="normal" lineHeight={1} fontSize="sm">
-    <Link color="secondary-text" to={`/${ownerLogin}`}>
-      {ownerLogin}
-    </Link>{" "}
-    /{" "}
-    <Link color="primary-text" to={`/${ownerLogin}/${repositoryName}/builds`}>
-      {repositoryName}
-    </Link>
-  </x.div>
 );
 
 const SidebarTab = styled(Tab)`
@@ -276,15 +265,22 @@ const BuildWithData = ({
         flex="0 0 auto"
       >
         <ToolbarSection gap={4}>
-          <x.svg as={BrandShield} w={10} h={7} minW={10} />
+          <LinkBlock to={`/${ownerLogin}/${repositoryName}`}>
+            <x.svg as={BrandShield} w={10} h={7} minW={10} />
+          </LinkBlock>
           <div>
-            <x.div fontWeight="medium" fontSize="sm" lineHeight={1} mb={1}>
+            <x.div fontWeight="medium" fontSize="xs" lineHeight={1} mb={1}>
               Build {buildNumber}
             </x.div>
-            <RepositoryLink
-              ownerLogin={ownerLogin}
-              repositoryName={repositoryName}
-            />
+            <x.div
+              whiteSpace="nowrap"
+              fontWeight="normal"
+              lineHeight={1}
+              fontSize={10}
+              color="secondary-text"
+            >
+              {ownerLogin}/{repositoryName}
+            </x.div>
           </div>
           <BuildStatusChip build={build} />
         </ToolbarSection>
