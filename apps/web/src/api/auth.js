@@ -1,5 +1,5 @@
 import { Router } from "express";
-import axios from "axios";
+import axios from "axios-0.x";
 import bodyParser from "body-parser";
 import cors from "cors";
 import { getTokenOctokit } from "@argos-ci/github";
