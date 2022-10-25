@@ -32,7 +32,7 @@ export const LinkBlock = React.forwardRef((props, ref) => {
       borderRadius="md"
       backgroundColor={{
         _: "inherit",
-        hover: "background-hover",
+        hover: "bg-hover",
       }}
       {...props}
     />

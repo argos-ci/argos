@@ -142,6 +142,7 @@ const newColors = {
 
   link: th.color("sky-600"),
   bg: th.color("lighter"),
+  "bg-hover": th.color("slate-50"),
   "primary-text": th.color("on"),
   "secondary-text": th.color("on-light"),
 
@@ -204,24 +205,22 @@ const newColors = {
   "icon-button-danger-bg-hover": th.color("red-50"),
   "icon-button-danger-bg-active": th.color("red-100"),
 
-  "badge-primary-on": th.color("white"),
-  "badge-primary-bg": th.color("slate-600"),
-
-  "badge-secondary-on": th.color("on"),
-  "badge-secondary-bg": th.color("lighter"),
+  "thumbnail-list-outline-hover": th.color("slate-200"),
+  "thumbnail-list-outline-focus": th.color("slate-200-a70"),
+  "thumbnail-list-outline-active": th.color("sky-200"),
 
   modes: {
     dark: {
       "on-dark": th.color("white"),
-      on: th.color("slate-100"),
+      on: th.color("slate-50"),
       "on-light": th.color("slate-400"),
       "primary-border": th.color("primary-800"),
       "layout-border": th.color("slate-700"),
       lighter: th.color("black"),
       darker: th.color("white"),
 
-      "primary-text": th.color("slate-50"),
       link: th.color("sky-400-a90"),
+      "bg-hover": th.color("slate-900"),
 
       "code-background": th.color("slate-700"),
 
@@ -273,6 +272,10 @@ const newColors = {
       "icon-button-danger-on-hover": th.color("red-300"),
       "icon-button-danger-bg-hover": th.color("slate-900"),
       "icon-button-danger-bg-active": th.color("red-900"),
+
+      "thumbnail-list-outline-hover": th.color("slate-700"),
+      "thumbnail-list-outline-focus": th.color("slate-700-a70"),
+      "thumbnail-list-outline-active": th.color("sky-900"),
     },
   },
 };

@@ -234,11 +234,11 @@ const BuildWithData = ({
   ownerLogin,
   buildNumber,
   repositoryName,
+  activeDiffId,
   moreLoading,
   fetchNextPage,
 }) => {
   const tab = useTabState();
-  const [activeDiffIndex, setActiveDiffIndex] = React.useState(0);
   const [showChanges, setShowChanges] = React.useState(true);
 
   const {
@@ -255,7 +255,8 @@ const BuildWithData = ({
     },
   } = data.repository;
 
-  const activeDiff = screenshotDiffs[activeDiffIndex];
+  const activeDiff =
+    screenshotDiffs.find(({ id }) => id === activeDiffId) || screenshotDiffs[0];
   const showBanner = plan && consumptionRatio && consumptionRatio >= 0.9;
 
   return (
@@ -314,8 +315,6 @@ const BuildWithData = ({
               fetchNextPage={fetchNextPage}
               stats={stats}
               height={`calc(100vh - ${showBanner ? 48 + 65 + 36 : 65 + 36}px)`}
-              activeDiffIndex={activeDiffIndex}
-              setActiveDiffIndex={setActiveDiffIndex}
             />
           </TabPanel>
           <TabPanel state={tab}>
@@ -431,7 +430,12 @@ const BuildWithData = ({
   );
 };
 
-const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
+const BuildContent = ({
+  ownerLogin,
+  repositoryName,
+  buildNumber,
+  activeDiffId,
+}) => {
   const { loading, data, fetchMore } = useQuery(BUILD_QUERY, {
     variables: {
       ownerLogin,
@@ -464,6 +468,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
       buildNumber={buildNumber}
       repositoryName={repositoryName}
       moreLoading={moreLoading}
+      activeDiffId={activeDiffId}
       fetchNextPage={fetchNextPage}
     />
   );
@@ -474,6 +479,7 @@ export function NewBuild() {
     ownerLogin,
     repositoryName,
     buildNumber: strBuildNumber,
+    diffId: activeDiffId,
   } = useParams();
 
   const buildNumber = parseInt(strBuildNumber, 10);
@@ -488,6 +494,7 @@ export function NewBuild() {
           ownerLogin={ownerLogin}
           repositoryName={repositoryName}
           buildNumber={buildNumber}
+          activeDiffId={activeDiffId}
         />
       ) : (
         <NotFound />

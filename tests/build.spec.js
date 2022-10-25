@@ -24,3 +24,9 @@ buildExamples.forEach((build) => {
     await argosScreenshot(page, `build-${build.name}-${browserName}`);
   });
 });
+
+test("new build", async ({ page, browserName }) => {
+  await goto({ page, link: "/callemall/material-ui/builds/6/new" });
+  await expect(page.getByText("Baseline from")).toBeVisible();
+  await argosScreenshot(page, `new-build-${browserName}`);
+});

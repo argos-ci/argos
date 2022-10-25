@@ -149,7 +149,7 @@ function BuildsList({ repository }) {
             return (
               <Tr
                 key={build.id}
-                backgroundColor={{ hover: "background-hover" }}
+                backgroundColor={{ hover: "bg-hover" }}
                 as={BaseLink}
                 to={`${build.number}`}
               >
