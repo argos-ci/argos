@@ -43,7 +43,7 @@ export const SidebarItem = styled.li`
 
   &:hover {
     color: primary-text;
-    background-color: background-hover;
+    background-color: bg-hover;
   }
 
   &[aria-current="true"] {

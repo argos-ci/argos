@@ -28,7 +28,7 @@ const InnerMenuButton = styled.box`
   padding: 1 2;
 
   &:hover {
-    background-color: background-hover;
+    background-color: bg-hover;
   }
 
   &[aria-expanded="true"] {
@@ -87,7 +87,7 @@ export const MenuItem = ({ as, children, ...props }) => {
           appearance="none"
           backgroundColor={{
             _: "transparent",
-            hover: "background-hover",
+            hover: "bg-hover",
             focus: "background-focus",
           }}
           border={0}

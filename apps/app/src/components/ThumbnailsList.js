@@ -1,11 +1,11 @@
 import * as React from "react";
 import styled, { x } from "@xstyled/styled-components";
 import { useVirtualizer, defaultRangeExtractor } from "@tanstack/react-virtual";
-import { Button as AriakitButton } from "ariakit/button";
 import { Badge } from "./Badge";
 import { Alert } from "./Alert";
 import { ChevronRightIcon } from "@primer/octicons-react";
-import { LinkBlock } from "./Link";
+import { BaseLink, LinkBlock } from "./Link";
+import { useParams } from "react-router-dom";
 
 const ThumbnailImage = ({ image, ...props }) => {
   if (!image?.url) return null;
@@ -19,33 +19,108 @@ const ThumbnailImage = ({ image, ...props }) => {
   );
 };
 
-const InnerThumbnail = styled.buttonBox`
+const Thumbnail = styled(BaseLink)`
   background-color: bg;
   position: relative;
   display: inline-block;
   border-radius: thumbnail;
   padding: 0;
+  cursor: default;
+
+  &:hover {
+    outline: solid 4px;
+    outline-color: slate-700;
+  }
 
   &:focus {
     outline: solid 4px;
-    outline-color: sky-900-a60;
+    outline-color: sky-900-a70;
   }
 
-  &[data-selected="true"] {
+  &[data-active="true"] {
     outline: solid 4px;
     outline-color: sky-900;
   }
 `;
 
-const Thumbnail = React.forwardRef(({ children, ...props }, ref) => {
-  return (
-    <AriakitButton ref={ref} {...props}>
-      {(buttonProps) => (
-        <InnerThumbnail {...buttonProps}>{children}</InnerThumbnail>
-      )}
-    </AriakitButton>
-  );
-});
+const ListItem = ({ virtualRow, ...props }) => (
+  <x.div
+    top={0}
+    left={0}
+    w={1}
+    virtualRow={virtualRow}
+    h={`${virtualRow.size}px`}
+    position="absolute"
+    transform={`translateY(${virtualRow.start}px)`}
+    display="flex"
+    alignItems="center"
+    justifyContent="center"
+    px={5}
+    {...props}
+  />
+);
+
+const HeaderChevron = (props) => (
+  <x.div
+    w={4}
+    display="inline-flex"
+    alignItems="center"
+    justifyContent="center"
+    color="secondary-text"
+    data-header-chevron=""
+    {...props}
+  >
+    <x.svg as={ChevronRightIcon} w={3} h={3} />
+  </x.div>
+);
+
+const Header = ({ previousIsHeader, ...props }) => (
+  <x.div
+    w={1}
+    as={LinkBlock}
+    display="flex"
+    alignItems="center"
+    justifyContent="space-between"
+    fontSize="xs"
+    lineHeight="16px"
+    textTransform="capitalize"
+    cursor="default"
+    borderTop={1}
+    borderBottom={1}
+    borderColor="layout-border"
+    borderTopColor={previousIsHeader ? "transparent" : "layout-border"}
+    borderRadius={0}
+    backgroundColor="bg"
+    userSelect="none"
+    pr={4}
+    h={1}
+    {...props}
+  />
+);
+
+const StickyItem = ({ active, ...props }) => (
+  <ListItem
+    zIndex={1}
+    p={0}
+    {...(active ? { position: "sticky", transform: "none" } : {})}
+    {...props}
+  />
+);
+
+const List = styled.box`
+  width: 100%;
+  overflow-y: auto;
+
+  [data-header-chevron] {
+    opacity: 0;
+  }
+
+  &:hover {
+    [data-header-chevron] {
+      opacity: 1;
+    }
+  }
+`;
 
 function groupByStatus(data) {
   const statusGroups = data.reduce(
@@ -84,55 +159,6 @@ function getRows(groups) {
   ]);
 }
 
-const ListItem = ({ virtualRow, ...props }) => (
-  <x.div
-    top={0}
-    left={0}
-    w={1}
-    px={5}
-    virtualRow={virtualRow}
-    h={`${virtualRow.size}px`}
-    position="absolute"
-    transform={`translateY(${virtualRow.start}px)`}
-    display="flex"
-    alignItems="center"
-    justifyContent="center"
-    {...props}
-  />
-);
-
-const StickyItem = ({ active, ...props }) => (
-  <ListItem
-    zIndex={1}
-    p={0}
-    alignItems="flex-start"
-    {...(active ? { position: "sticky", transform: "none" } : {})}
-    {...props}
-  />
-);
-
-const Header = ({ nextIsHeader, ...props }) => (
-  <x.div
-    w={1}
-    as={LinkBlock}
-    display="flex"
-    alignItems="center"
-    justifyContent="space-between"
-    fontSize="xs"
-    lineHeight={1}
-    textTransform="capitalize"
-    cursor="default"
-    borderTop={1}
-    borderBottom={nextIsHeader ? 0 : 1}
-    borderColor="layout-border"
-    borderRadius={0}
-    backgroundColor="bg"
-    pr={4}
-    h={1}
-    {...props}
-  />
-);
-
 export function ThumbnailsList({
   imageHeight = 200,
   gap = 20,
@@ -143,9 +169,8 @@ export function ThumbnailsList({
   isFetchingNextPage,
   fetchNextPage,
   stats,
-  activeDiffIndex = 0,
-  setActiveDiffIndex,
 }) {
+  const { ownerLogin, repositoryName, buildNumber, diffId } = useParams();
   const parentRef = React.useRef();
   const activeStickyIndexRef = React.useRef(0);
 
@@ -208,7 +233,7 @@ export function ThumbnailsList({
   }, [shouldFetch, fetchNextPage]);
 
   return (
-    <x.div ref={parentRef} h={height} w={1} overflowY="auto">
+    <List ref={parentRef} h={height}>
       {rows.length === 0 ? (
         <Alert m={4} color="info">
           Empty build: no screenshot detected
@@ -235,21 +260,15 @@ export function ThumbnailsList({
                     }));
                   }}
                 >
-                  <Header nextIsHeader={isLast(virtualRow.index)}>
+                  <Header previousIsHeader={isFirst(virtualRow.index)}>
                     <x.div
                       display="flex"
                       alignItems="center"
                       fontWeight="medium"
                     >
-                      <x.svg
-                        as={ChevronRightIcon}
+                      <HeaderChevron
                         transform
                         rotate={item.collapsed ? 0 : 90}
-                        transitionDuration={300}
-                        w={3}
-                        h={3}
-                        color="secondary-color"
-                        mx={0.5}
                       />
                       {item.title}
                     </x.div>
@@ -263,8 +282,8 @@ export function ThumbnailsList({
             return (
               <ListItem key={virtualRow.index} virtualRow={virtualRow}>
                 <Thumbnail
-                  onClick={() => setActiveDiffIndex(item.index)}
-                  data-selected={activeDiffIndex === item.index}
+                  to={`/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new/${item.diff.id}`}
+                  data-active={diffId === item.diff.id}
                   mt={isFirst(virtualRow.index) ? "10px" : 0}
                   mb={isLast(virtualRow.index) ? "10px" : 0}
                 >
@@ -288,6 +307,6 @@ export function ThumbnailsList({
           })}
         </x.div>
       )}
-    </x.div>
+    </List>
   );
 }

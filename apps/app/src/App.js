@@ -43,7 +43,11 @@ export function App() {
                     element={<AuthCallback />}
                   />
                   <Route
-                    path="/:ownerLogin/:repositoryName/builds/:buildNumber/new"
+                    path="/:ownerLogin/:repositoryName/builds/:buildNumber/new/:diffId"
+                    element={<NewBuild />}
+                  />
+                  <Route
+                    path="/:ownerLogin/:repositoryName/builds/:buildNumber/new/"
                     element={<NewBuild />}
                   />
                   <Route path="/" element={<Layout />}>
