@@ -267,7 +267,9 @@ export function ThumbnailsList({
                 >
                   <Header
                     borderTopColor={
-                      virtualRow.index === 0 || isFirst(virtualRow.index)
+                      virtualRow.index === 0 ||
+                      isFirst(virtualRow.index) ||
+                      isActiveSticky(virtualRow.index)
                         ? "transparent"
                         : "layout-border"
                     }
