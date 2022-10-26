@@ -163,18 +163,25 @@ const SidebarTab = styled(Tab)`
   }
 `;
 
-const BuildInfo = (props) => (
+const BuildInfoTitle = (props) => (
   <x.div
-    fontSize="md"
-    color="primary-text"
-    fontWeight="medium"
-    lineHeight="snug"
+    fontSize="xs"
+    lineHeight="16px"
+    color="secondary-text"
+    mb={1}
     {...props}
   />
 );
 
-const BuildInfoTitle = (props) => (
-  <x.div fontSize="xs" color="secondary-text" mb={0.5} {...props} />
+const BuildInfo = (props) => (
+  <x.div
+    fontSize="sm"
+    color="primary-text"
+    fontWeight="medium"
+    lineHeight="16px"
+    mb={6}
+    {...props}
+  />
 );
 
 const BranchInfo = ({ bucket, baseline, ...props }) => {
@@ -193,7 +200,7 @@ const BranchInfo = ({ bucket, baseline, ...props }) => {
         <>
           {baseline ? "Baseline" : "Changes"} from{" "}
           <InlineCode mx={1}>{bucket.branch}</InlineCode>
-          <x.div fontSize={11} mt={0.5}>
+          <x.div fontSize={11} mt={0.5} fontWeight="normal">
             {moment(bucket.createdAt).fromNow()}
           </x.div>
         </>
@@ -271,7 +278,7 @@ const BuildWithData = ({
           </LinkBlock>
           <div>
             <x.div fontWeight="medium" fontSize="xs" lineHeight={1} mb={1}>
-              Build {buildNumber}
+              Build #{buildNumber}
             </x.div>
             <x.div
               whiteSpace="nowrap"
@@ -322,24 +329,20 @@ const BuildWithData = ({
             />
           </TabPanel>
           <TabPanel state={tab}>
-            <x.div display="flex" gap={6} flexDirection="column" p={4}>
+            <x.div display="flex" flexDirection="column" p={4}>
+              <BuildInfoTitle>Created</BuildInfoTitle>
               <BuildInfo>
-                <BuildInfoTitle>Created</BuildInfoTitle>
                 <Time date={build.createdAt} format="LLL" />
               </BuildInfo>
 
-              <BuildInfo>
-                <BuildInfoTitle>Baseline build</BuildInfoTitle>
-                Build {build.number}
-              </BuildInfo>
+              <BuildInfoTitle>Baseline build</BuildInfoTitle>
+              <BuildInfo>Build {build.number}</BuildInfo>
 
-              <BuildInfo>
-                <BuildInfoTitle>Total screenshots count</BuildInfoTitle>
-                {stats.screenshotCount}
-              </BuildInfo>
+              <BuildInfoTitle>Total screenshots count</BuildInfoTitle>
+              <BuildInfo>{stats.screenshotCount}</BuildInfo>
 
+              <BuildInfoTitle>Head commit</BuildInfoTitle>
               <BuildInfo>
-                <BuildInfoTitle>Head commit</BuildInfoTitle>
                 <Link
                   href={`https://github.com/${ownerLogin}/${repositoryName}/commit/${compareScreenshotBucket.commit}`}
                 >
@@ -347,8 +350,8 @@ const BuildWithData = ({
                 </Link>
               </BuildInfo>
 
+              <BuildInfoTitle>Base commit</BuildInfoTitle>
               <BuildInfo>
-                <BuildInfoTitle>Base commit</BuildInfoTitle>
                 <Link
                   href={`https://github.com/${ownerLogin}/${repositoryName}/commit/${compareScreenshotBucket.commit}`}
                 >
