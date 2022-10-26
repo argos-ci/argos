@@ -2,7 +2,7 @@ import * as React from "react";
 import styled, { x } from "@xstyled/styled-components";
 import { useVirtualizer, defaultRangeExtractor } from "@tanstack/react-virtual";
 import { Badge } from "./Badge";
-import { Alert } from "./Alert";
+import { Alert, LoadingAlert } from "./Alert";
 import { ChevronRightIcon } from "@primer/octicons-react";
 import { BaseLink, LinkBlock } from "./Link";
 import { useParams } from "react-router-dom";
@@ -233,6 +233,12 @@ export function ThumbnailsList({
 
   return (
     <List ref={parentRef} h={height}>
+      {isFetchingNextPage ? (
+        <LoadingAlert position="fixed" left="16px" bottom="20px" zIndex="200">
+          Screenshots fetching
+        </LoadingAlert>
+      ) : null}
+
       {rows.length === 0 ? (
         <Alert m={4} color="info">
           Empty build: no screenshot detected

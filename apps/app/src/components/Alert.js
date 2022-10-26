@@ -51,7 +51,7 @@ export function LoadingAlert({ children, delay = 300, ...props }) {
       {...props}
     >
       <div>{children || "Argos is fetching data"}</div>
-      <Loader />
+      <Loader maxH={4} maxW={4} />
     </Alert>
   );
 }
