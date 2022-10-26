@@ -170,7 +170,6 @@ const BuildContent = ({
   buildNumber,
   activeDiffId,
 }) => {
-  const dataRef = useLiveRef(data);
   const [showChanges, setShowChanges] = React.useState(true);
   const [moreLoading, setMoreLoading] = React.useState(false);
 
@@ -185,6 +184,7 @@ const BuildContent = ({
     skip: !ownerLogin || !repositoryName || !buildNumber,
   });
 
+  const dataRef = useLiveRef(data);
   const fetchNextPage = React.useCallback(() => {
     setMoreLoading(true);
     fetchMoreScreenshotDiffs({ data: dataRef.current, fetchMore }).finally(
