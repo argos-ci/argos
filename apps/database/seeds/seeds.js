@@ -259,6 +259,7 @@ exports.seed = async (knex) => {
     ],
     [diffDetectedBuildId]: [
       ...duplicate(stableScreenshotDiff, 2),
+      ...duplicate(failedScreenshotDiff, 2),
       ...duplicate(removedScreenshotDiff, 2),
       ...bearScreenshotIds.map((id) => ({
         ...addedScreenshotDiff,

@@ -123,30 +123,33 @@ const List = styled.box`
 
 function groupByStatus(data) {
   const statusGroups = data.reduce(
-    (res, item) => ({
-      ...res,
-      [item.status]: res[item.status] ? [...res[item.status], item] : [item],
-    }),
-    []
+    (res, item) => {
+      res[item.status].diffs.push(item);
+      return res;
+    },
+    {
+      failed: { label: "failures", status: "failed", diffs: [] },
+      updated: { label: "changes", status: "updated", diffs: [] },
+      added: { label: "additions", status: "added", diffs: [] },
+      removed: { label: "deletions", status: "removed", diffs: [] },
+      stable: { label: "stables", status: "stable", diffs: [] },
+    }
   );
-
-  return Object.keys(statusGroups).map((key) => ({
-    title: key,
-    diffs: statusGroups[key],
-    collapsed: false,
-  }));
+  return Object.values(statusGroups);
 }
 
 function mergeGroups(groups = [], groupCollapseStatuses = {}) {
   let nextGroupIndex = 0;
 
-  return groups.map((group) => {
-    const index = nextGroupIndex;
-    const collapsed = groupCollapseStatuses[group.title];
-    const diffs = collapsed ? [] : group.diffs;
-    nextGroupIndex += diffs.length + 1;
-    return { ...group, index, collapsed, diffs };
-  });
+  return groups
+    .filter((group) => group.diffs.length !== 0)
+    .map((group) => {
+      const index = nextGroupIndex;
+      const collapsed = groupCollapseStatuses[group.status];
+      const diffs = collapsed ? [] : group.diffs;
+      nextGroupIndex += diffs.length + 1;
+      return { ...group, index, collapsed, diffs };
+    });
 }
 
 function getRows(groups) {
@@ -176,7 +179,10 @@ export function ThumbnailsList({
   const groups = groupByStatus(data);
 
   const [groupCollapseStatuses, setGroupCollapseStatuses] = React.useState(
-    groups.reduce((acc, group) => ({ ...acc, [group.title]: false }), {})
+    groups.reduce(
+      (acc, group) => ({ ...acc, [group.status]: acc[group.status] ?? false }),
+      { stable: true }
+    )
   );
 
   const mergedGroups = mergeGroups(groups, groupCollapseStatuses);
@@ -251,7 +257,7 @@ export function ThumbnailsList({
             if (!item) return null;
 
             if (item.type === "listHeader") {
-              const count = stats[`${item.title}ScreenshotCount`];
+              const count = stats[`${item.status}ScreenshotCount`];
 
               return (
                 <StickyItem
@@ -261,7 +267,7 @@ export function ThumbnailsList({
                   onClick={() => {
                     setGroupCollapseStatuses((prev) => ({
                       ...prev,
-                      [item.title]: !prev[item.title],
+                      [item.status]: !prev[item.status],
                     }));
                   }}
                 >
@@ -283,7 +289,7 @@ export function ThumbnailsList({
                         transform
                         rotate={item.collapsed ? 0 : 90}
                       />
-                      {item.title}
+                      {item.label}
                     </x.div>
 
                     {count ? <Badge variant="secondary">{count}</Badge> : null}
