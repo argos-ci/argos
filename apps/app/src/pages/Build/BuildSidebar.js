@@ -99,7 +99,7 @@ export function BuildSidebar({
           isFetchingNextPage={moreLoading}
           fetchNextPage={fetchNextPage}
           stats={stats}
-          height={`calc(100vh - ${
+          height={`calc(100vh - 38px - ${
             sidebarTabRect?.top + sidebarTabRect?.height || 0
           }px)`}
         />
