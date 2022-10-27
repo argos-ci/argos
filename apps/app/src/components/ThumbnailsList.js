@@ -224,7 +224,6 @@ export function ThumbnailsList({
   const richGroups = enrichGroups(filledGroups, groupCollapseStatuses, stats);
   const stickyIndexes = richGroups.map(({ index }) => index);
   const rows = getRows(richGroups);
-  console.log(stickyIndexes);
 
   const isSticky = (index) => stickyIndexes.includes(index);
   const isActiveSticky = (index) => activeStickyIndexRef.current === index;
@@ -289,6 +288,7 @@ export function ThumbnailsList({
         justifyContent="flex-start"
         gap={3}
         fontSize="sm"
+        h="38px"
       >
         <BuildStatLink
           status="failed"

@@ -133,7 +133,7 @@ export function BuildDiff({
   }, []);
 
   return (
-    <x.div flex="1 1 auto">
+    <x.div flex="1 1 auto" minW={400}>
       <DiffHeader
         ref={headerRef}
         activeDiff={activeDiff}

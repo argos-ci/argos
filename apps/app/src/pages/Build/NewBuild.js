@@ -135,6 +135,7 @@ const BuildHeader = ({ ownerLogin, repositoryName, buildNumber, build }) => (
     alignItems="center"
     borderBottom={1}
     borderColor="layout-border"
+    minW={700}
     p={4}
     flex="0 0 auto"
   >
@@ -204,7 +205,12 @@ const BuildContent = ({
   const showBanner = plan && consumptionRatio && consumptionRatio >= 0.9;
 
   return (
-    <x.div minHeight="100%" display="flex" flexDirection="column">
+    <x.div
+      minHeight="100%"
+      display="flex"
+      flexDirection="column"
+      minW="fit-content"
+    >
       {showBanner ? (
         <OvercapacityBanner
           plan={plan}
