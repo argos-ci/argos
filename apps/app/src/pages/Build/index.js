@@ -12,13 +12,11 @@ import {
   IllustratedText,
   LoadingAlert,
   PrimaryTitle,
-  useTooltipState,
-  TooltipAnchor,
-  Tooltip,
   Alert,
   Link,
   Icon,
   InlineCode,
+  BuildStat,
 } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
@@ -42,10 +40,6 @@ import {
   SummaryCardRepositoryFragment,
 } from "./SummaryCard";
 import {
-  getDiffStatusIcon,
-  getDiffStatusColor,
-} from "../../containers/ScreenshotDiffStatus";
-import {
   BuildStatusChip,
   BuildStatusChipFragment,
 } from "../../containers/BuildStatusChip";
@@ -62,6 +56,10 @@ import {
   BuildStatusInfoRepositoryFragment,
   BuildStatusInfoScreenshotDiffResultFragment,
 } from "./BuildStatusInfo";
+import {
+  getDiffStatusColor,
+  getDiffStatusIcon,
+} from "../../containers/ScreenshotDiffStatus";
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
@@ -143,27 +141,6 @@ const BUILD_QUERY = gql`
   ${BuildStatusInfoBuildFragment}
   ${BuildStatusInfoScreenshotDiffResultFragment}
 `;
-
-function BuildStat({ status, count, label }) {
-  const tooltip = useTooltipState();
-
-  if (count === 0) return null;
-
-  return (
-    <>
-      <TooltipAnchor state={tooltip}>
-        <IllustratedText
-          icon={getDiffStatusIcon(status)}
-          color={getDiffStatusColor(status)}
-          cursor="default"
-        >
-          {count}
-        </IllustratedText>
-      </TooltipAnchor>
-      <Tooltip state={tooltip}>{label}</Tooltip>
-    </>
-  );
-}
 
 function OvercapacityBanner({ owner: { plan, consumptionRatio, login } }) {
   if (!plan || !consumptionRatio || consumptionRatio < 0.9) {
@@ -301,27 +278,32 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           flexShrink={0}
         >
           <BuildStat
-            status="failed"
+            icon={getDiffStatusIcon("failed")}
+            color={getDiffStatusColor("failed")}
             count={stats.failedScreenshotCount}
-            label="Failed screenshots"
+            label="Failure screenshots"
           />
           <BuildStat
-            status="added"
+            icon={getDiffStatusIcon("added")}
+            color={getDiffStatusColor("added")}
             count={stats.addedScreenshotCount}
-            label="Added screenshots"
+            label="Additional screenshots"
           />
           <BuildStat
-            status="removed"
+            icon={getDiffStatusIcon("removed")}
+            color={getDiffStatusColor("removed")}
             count={stats.removedScreenshotCount}
-            label="Removed screenshots"
+            label="Deleted screenshots"
           />
           <BuildStat
-            status="updated"
+            icon={getDiffStatusIcon("updated")}
+            color={getDiffStatusColor("updated")}
             count={stats.updatedScreenshotCount}
-            label="Updated screenshots"
+            label="Change screenshots"
           />
           <BuildStat
-            status="stable"
+            icon={getDiffStatusIcon("stable")}
+            color={getDiffStatusColor("stable")}
             count={stats.stableScreenshotCount}
             label="Stable screenshots"
           />

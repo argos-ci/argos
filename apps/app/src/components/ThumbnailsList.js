@@ -2,10 +2,23 @@ import * as React from "react";
 import styled, { x } from "@xstyled/styled-components";
 import { useVirtualizer, defaultRangeExtractor } from "@tanstack/react-virtual";
 import { Badge } from "./Badge";
-import { Alert, LoadingAlert } from "./Alert";
+import { Alert } from "./Alert";
 import { ChevronRightIcon } from "@primer/octicons-react";
 import { BaseLink, LinkBlock } from "./Link";
 import { useParams } from "react-router-dom";
+import { BuildStat } from "./BuildStat";
+import {
+  getDiffStatusColor,
+  getDiffStatusIcon,
+} from "../containers/ScreenshotDiffStatus";
+
+const DIFFS_GROUPS = {
+  failed: { diffs: [], label: "failures", collapsed: false },
+  updated: { diffs: [], label: "changes", collapsed: false },
+  added: { diffs: [], label: "additions", collapsed: false },
+  removed: { diffs: [], label: "deletions", collapsed: false },
+  stable: { diffs: [], label: "stables", collapsed: true },
+};
 
 const ThumbnailImage = ({ image, ...props }) => {
   if (!image?.url) return null;
@@ -121,44 +134,67 @@ const List = styled.box`
   }
 `;
 
-function groupByStatus(data) {
-  const statusGroups = data.reduce(
-    (res, item) => {
-      res[item.status].diffs.push(item);
-      return res;
-    },
-    {
-      failed: { label: "failures", status: "failed", diffs: [] },
-      updated: { label: "changes", status: "updated", diffs: [] },
-      added: { label: "additions", status: "added", diffs: [] },
-      removed: { label: "deletions", status: "removed", diffs: [] },
-      stable: { label: "stables", status: "stable", diffs: [] },
-    }
-  );
-  return Object.values(statusGroups);
+function fillGroups(groups, data) {
+  return data.reduce((res, item) => {
+    res[item.status].diffs.push(item);
+    return res;
+  }, groups);
 }
 
-function mergeGroups(groups = [], groupCollapseStatuses = {}) {
+function enrichGroups(groups, groupCollapseStatuses, stats) {
   let nextGroupIndex = 0;
 
-  return groups
-    .filter((group) => group.diffs.length !== 0)
-    .map((group) => {
+  const richGroups = Object.keys(groups)
+    .filter((status) => groups[status].count !== 0)
+    .reduce((acc, status) => {
       const index = nextGroupIndex;
-      const collapsed = groupCollapseStatuses[group.status];
-      const diffs = collapsed ? [] : group.diffs;
-      nextGroupIndex += diffs.length + 1;
-      return { ...group, index, collapsed, diffs };
-    });
+      const count = stats[`${status}ScreenshotCount`];
+      const collapsed = groupCollapseStatuses[status];
+      nextGroupIndex += collapsed ? 1 : count + 1;
+
+      return {
+        ...acc,
+        [status]: {
+          ...groups[status],
+          count,
+          index,
+          status,
+          collapsed,
+        },
+      };
+    }, {});
+
+  return Object.values(richGroups);
 }
 
 function getRows(groups) {
-  let itemIndex = 0;
+  return groups.flatMap(({ collapsed, ...group }) => {
+    return [
+      { type: "listHeader", ...group },
 
-  return groups.flatMap(({ diffs, collapsed, ...group }, groupIndex) => [
-    { type: "listHeader", collapsed, ...group, index: groupIndex },
-    ...diffs.map((diff) => ({ type: "listItem", diff, index: itemIndex++ })),
-  ]);
+      ...(collapsed
+        ? []
+        : Array.from({ length: group.count }, (e, i) => ({
+            type: "listItem",
+            diff: group.diffs[i] || null,
+          }))),
+    ];
+  });
+}
+
+function BuildStatLink({ status, count, label, onClick }) {
+  if (count === 0) return null;
+
+  return (
+    <BaseLink onClick={() => onClick(status)}>
+      <BuildStat
+        icon={getDiffStatusIcon(status)}
+        color={getDiffStatusColor(status)}
+        count={count}
+        label={label}
+      />
+    </BaseLink>
+  );
 }
 
 export function ThumbnailsList({
@@ -176,23 +212,28 @@ export function ThumbnailsList({
   const parentRef = React.useRef();
   const activeStickyIndexRef = React.useRef(0);
 
-  const groups = groupByStatus(data);
+  const filledGroups = fillGroups(DIFFS_GROUPS, data);
 
   const [groupCollapseStatuses, setGroupCollapseStatuses] = React.useState(
-    groups.reduce(
-      (acc, group) => ({ ...acc, [group.status]: acc[group.status] ?? false }),
-      { stable: true }
+    Object.keys(DIFFS_GROUPS).reduce(
+      (acc, status) => ({ ...acc, [status]: filledGroups[status].collapsed }),
+      {}
     )
   );
 
-  const mergedGroups = mergeGroups(groups, groupCollapseStatuses);
-  const rows = getRows(mergedGroups);
-  const stickyIndexes = mergedGroups.map(({ index }) => index);
+  const richGroups = enrichGroups(filledGroups, groupCollapseStatuses, stats);
+  const stickyIndexes = richGroups.map(({ index }) => index);
+  const rows = getRows(richGroups);
+  console.log(stickyIndexes);
 
   const isSticky = (index) => stickyIndexes.includes(index);
   const isActiveSticky = (index) => activeStickyIndexRef.current === index;
   const isFirst = (index) => isSticky(index - 1);
   const isLast = (index) => isSticky(index + 1);
+  const handleClick = (status) => {
+    const index = richGroups.find((group) => group.status === status).index;
+    rowVirtualizer.scrollToIndex(index, { align: "start", smoothScroll: true });
+  };
 
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? rows.length + 1 : rows.length,
@@ -204,7 +245,7 @@ export function ThumbnailsList({
           (isFirst(i) ? gap / 2 : 0) +
           (isLast(i) ? gap / 2 : 0),
     getScrollElement: () => parentRef.current,
-    overscan: 5,
+    overscan: 40,
     paddingEnd: 20,
     rangeExtractor: React.useCallback(
       (range) => {
@@ -238,94 +279,133 @@ export function ThumbnailsList({
   }, [shouldFetch, fetchNextPage]);
 
   return (
-    <List ref={parentRef} h={height}>
-      {isFetchingNextPage ? (
-        <LoadingAlert position="fixed" left="16px" bottom="20px" zIndex="200">
-          Screenshots fetching
-        </LoadingAlert>
-      ) : null}
+    <>
+      <x.div
+        display="flex"
+        px={4}
+        py={2}
+        borderBottom={1}
+        borderColor="layout-border"
+        justifyContent="flex-start"
+        gap={3}
+        fontSize="sm"
+      >
+        <BuildStatLink
+          status="failed"
+          count={stats.failedScreenshotCount}
+          label="Failure screenshots"
+          onClick={handleClick}
+        />
+        <BuildStatLink
+          status="updated"
+          count={stats.updatedScreenshotCount}
+          label="Change screenshots"
+          onClick={handleClick}
+        />
+        <BuildStatLink
+          status="added"
+          count={stats.addedScreenshotCount}
+          label="Additional screenshots"
+          onClick={handleClick}
+        />
+        <BuildStatLink
+          status="removed"
+          count={stats.removedScreenshotCount}
+          label="Deleted screenshots"
+          onClick={handleClick}
+        />
+        <BuildStatLink
+          status="stable"
+          count={stats.stableScreenshotCount}
+          label="Stable screenshots"
+          onClick={handleClick}
+        />
+      </x.div>
 
-      {rows.length === 0 ? (
-        <Alert m={4} color="info">
-          Empty build: no screenshot detected
-        </Alert>
-      ) : (
-        <x.div w={1} position="relative" h={rowVirtualizer.getTotalSize()}>
-          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const item = rows[virtualRow.index];
+      <List ref={parentRef} h={height}>
+        {rows.length === 0 ? (
+          <Alert m={4} color="info">
+            Empty build: no screenshot detected
+          </Alert>
+        ) : (
+          <x.div w={1} position="relative" h={rowVirtualizer.getTotalSize()}>
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const item = rows[virtualRow.index];
 
-            if (!item) return null;
+              if (!item) return null;
 
-            if (item.type === "listHeader") {
-              const count = stats[`${item.status}ScreenshotCount`];
+              if (item.type === "listHeader") {
+                return (
+                  <StickyItem
+                    key={virtualRow.index}
+                    virtualRow={virtualRow}
+                    active={isActiveSticky(virtualRow.index)}
+                    onClick={() => {
+                      setGroupCollapseStatuses((prev) => ({
+                        ...prev,
+                        [item.status]: !prev[item.status],
+                      }));
+                    }}
+                  >
+                    <Header
+                      borderTopColor={
+                        virtualRow.index === 0 ||
+                        isFirst(virtualRow.index) ||
+                        isActiveSticky(virtualRow.index)
+                          ? "transparent"
+                          : "layout-border"
+                      }
+                    >
+                      <x.div
+                        display="flex"
+                        alignItems="center"
+                        fontWeight="medium"
+                      >
+                        <HeaderChevron
+                          transform
+                          rotate={item.collapsed ? 0 : 90}
+                        />
+                        {item.label}
+                      </x.div>
+
+                      <Badge variant="secondary">{item.count}</Badge>
+                    </Header>
+                  </StickyItem>
+                );
+              }
 
               return (
-                <StickyItem
-                  key={virtualRow.index}
-                  virtualRow={virtualRow}
-                  active={isActiveSticky(virtualRow.index)}
-                  onClick={() => {
-                    setGroupCollapseStatuses((prev) => ({
-                      ...prev,
-                      [item.status]: !prev[item.status],
-                    }));
-                  }}
-                >
-                  <Header
-                    borderTopColor={
-                      virtualRow.index === 0 ||
-                      isFirst(virtualRow.index) ||
-                      isActiveSticky(virtualRow.index)
-                        ? "transparent"
-                        : "layout-border"
-                    }
-                  >
-                    <x.div
-                      display="flex"
-                      alignItems="center"
-                      fontWeight="medium"
+                <ListItem key={virtualRow.index} virtualRow={virtualRow}>
+                  {item.diff ? (
+                    <Thumbnail
+                      to={`/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new/${item.diff.id}`}
+                      data-active={diffId === item.diff.id}
+                      mt={isFirst(virtualRow.index) ? "10px" : 0}
+                      mb={isLast(virtualRow.index) ? "10px" : 0}
                     >
-                      <HeaderChevron
-                        transform
-                        rotate={item.collapsed ? 0 : 90}
+                      {item.diff.status === "updated" && (
+                        <ThumbnailImage
+                          image={item.diff}
+                          h={imageHeight}
+                          position="absolute"
+                          backgroundColor="rgba(255, 255, 255, 0.8)"
+                        />
+                      )}
+                      <ThumbnailImage
+                        image={
+                          item.diff.compareScreenshot ||
+                          item.diff.baseScreenshot
+                        }
+                        h={imageHeight}
                       />
-                      {item.label}
-                    </x.div>
-
-                    {count ? <Badge variant="secondary">{count}</Badge> : null}
-                  </Header>
-                </StickyItem>
+                    </Thumbnail>
+                  ) : null}
+                </ListItem>
               );
-            }
-
-            return (
-              <ListItem key={virtualRow.index} virtualRow={virtualRow}>
-                <Thumbnail
-                  to={`/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new/${item.diff.id}`}
-                  data-active={diffId === item.diff.id}
-                  mt={isFirst(virtualRow.index) ? "10px" : 0}
-                  mb={isLast(virtualRow.index) ? "10px" : 0}
-                >
-                  {item.diff.status === "updated" && (
-                    <ThumbnailImage
-                      image={item.diff}
-                      h={imageHeight}
-                      position="absolute"
-                      backgroundColor="rgba(255, 255, 255, 0.8)"
-                    />
-                  )}
-                  <ThumbnailImage
-                    image={
-                      item.diff.compareScreenshot || item.diff.baseScreenshot
-                    }
-                    h={imageHeight}
-                  />
-                </Thumbnail>
-              </ListItem>
-            );
-          })}
-        </x.div>
-      )}
-    </List>
+            })}
+          </x.div>
+        )}
+      </List>
+    </>
   );
 }

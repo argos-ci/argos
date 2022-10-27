@@ -81,7 +81,7 @@ export function BuildSidebar({
         <x.div
           ref={sidebarTabsRef}
           display="flex"
-          py="7px"
+          py="5px"
           px={3}
           gap={2}
           borderBottom={1}

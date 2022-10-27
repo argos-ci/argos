@@ -4,6 +4,7 @@ export * from "./Banner";
 export * from "./BrandLogo";
 export * from "./BrandShield";
 export * from "./Breadcrumb";
+export * from "./BuildStat";
 export * from "./Button";
 export * from "./Card";
 export * from "./Catch";
