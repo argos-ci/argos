@@ -41,7 +41,8 @@ import {
 } from "./SummaryCard";
 import {
   BuildStatusChip,
-  BuildStatusChipFragment,
+  BuildStatusChipBuildFragment,
+  BuildStatusChipRepositoryFragment,
 } from "../../containers/BuildStatusChip";
 import {
   fetchMoreScreenshotDiffs,
@@ -51,10 +52,9 @@ import {
 } from "./ScreenshotDiffsSection";
 import { StableScreenshots } from "./StableScreenshotDiffs";
 import {
-  BuildStatusInfo,
+  BuildStatusInfoAlert,
   BuildStatusInfoBuildFragment,
   BuildStatusInfoRepositoryFragment,
-  BuildStatusInfoScreenshotDiffResultFragment,
 } from "./BuildStatusInfo";
 import {
   getDiffStatusColor,
@@ -74,6 +74,7 @@ const BUILD_QUERY = gql`
       ...BuildStatusInfoRepositoryFragment
       ...ReviewButtonRepositoryFragment
       ...SummaryCardRepositoryFragment
+      ...BuildStatusChipRepositoryFragment
 
       owner {
         id
@@ -91,7 +92,7 @@ const BUILD_QUERY = gql`
         id
         ...SummaryCardBuildFragment
         ...ReviewButtonBuildFragment
-        ...BuildStatusChipFragment
+        ...BuildStatusChipBuildFragment
         ...BuildStatusInfoBuildFragment
 
         screenshotDiffs(
@@ -103,7 +104,6 @@ const BUILD_QUERY = gql`
             totalCount
           }
           ...ScreenshotDiffsPageFragment
-          ...BuildStatusInfoScreenshotDiffResultFragment
         }
 
         baseScreenshotBucket {
@@ -130,16 +130,20 @@ const BUILD_QUERY = gql`
     }
   }
 
-  ${ReviewButtonRepositoryFragment}
   ${SummaryCardBuildFragment}
   ${SummaryCardRepositoryFragment}
+
   ${ScreenshotDiffsPageFragment}
+
   ${ReviewButtonBuildFragment}
+  ${ReviewButtonRepositoryFragment}
   ${ReviewButtonOwnerFragment}
-  ${BuildStatusChipFragment}
-  ${BuildStatusInfoRepositoryFragment}
+
+  ${BuildStatusChipBuildFragment}
+  ${BuildStatusChipRepositoryFragment}
+
   ${BuildStatusInfoBuildFragment}
-  ${BuildStatusInfoScreenshotDiffResultFragment}
+  ${BuildStatusInfoRepositoryFragment}
 `;
 
 function OvercapacityBanner({ owner: { plan, consumptionRatio, login } }) {
@@ -267,7 +271,10 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
       >
         <x.div display="flex" alignItems="center" gap={3}>
           <PrimaryTitle mb={0}>Build #{buildNumber}</PrimaryTitle>
-          <BuildStatusChip build={build} />
+          <BuildStatusChip
+            build={build}
+            referenceBranch={data.repository.referenceBranch}
+          />
         </x.div>
 
         <x.div display="flex" alignItems="flex-start" pt="6px" flexShrink={0}>
@@ -323,10 +330,9 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
         </LoadingAlert>
       ) : (
         <>
-          <BuildStatusInfo
+          <BuildStatusInfoAlert
             build={build}
             referenceBranch={data.repository.referenceBranch}
-            screenshotCount={stats.screenshotCount}
           />
 
           <x.div

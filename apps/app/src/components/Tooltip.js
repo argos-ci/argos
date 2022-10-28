@@ -10,11 +10,7 @@ import {
 export { TooltipAnchor, TooltipArrow };
 
 export function useTooltipState(props) {
-  return ariakitUseTooltipState({
-    placement: "bottom",
-    visible: true,
-    ...props,
-  });
+  return ariakitUseTooltipState({ placement: "bottom", ...props });
 }
 
 export const Hotkey = (props) => (

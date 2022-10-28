@@ -43,7 +43,8 @@ import { OwnerAvatar } from "../containers/OwnerAvatar";
 import { hasWritePermission } from "../modules/permissions";
 import {
   BuildStatusChip,
-  BuildStatusChipFragment,
+  BuildStatusChipBuildFragment,
+  BuildStatusChipRepositoryFragment,
 } from "../containers/BuildStatusChip";
 
 const HOME_OWNERS_REPOSITORIES_QUERY = gql`
@@ -59,6 +60,8 @@ const HOME_OWNERS_REPOSITORIES_QUERY = gql`
         updatedAt
         enabled
         permissions
+        ...BuildStatusChipRepositoryFragment
+
         builds(first: 1, after: 0) {
           pageInfo {
             totalCount
@@ -67,14 +70,15 @@ const HOME_OWNERS_REPOSITORIES_QUERY = gql`
             id
             updatedAt
             number
-            ...BuildStatusChipFragment
+            ...BuildStatusChipBuildFragment
           }
         }
       }
     }
   }
 
-  ${BuildStatusChipFragment}
+  ${BuildStatusChipBuildFragment}
+  ${BuildStatusChipRepositoryFragment}
 `;
 
 function RepositoryNameCell({
@@ -124,15 +128,14 @@ function RestrictedAccess() {
   );
 }
 
-function BuildTagCell({ build, repositoryUrl, ...props }) {
+function BuildTagCell({ build, repository, ...props }) {
   if (!build) return <Td>-</Td>;
 
   return (
     <Td verticalAlign="middle">
       <BuildStatusChip
-        as={LinkBlock}
-        to={`${repositoryUrl}/builds/${build.number}`}
         build={build}
+        referenceBranch={repository.referenceBranch}
         {...props}
       />
     </Td>
@@ -179,6 +182,8 @@ function RepositoriesList({ repositories, ...props }) {
             const repositoryUrl = `/${owner.login}/${repository.name}`;
             const lastBuild = repository.builds?.edges?.[0];
 
+            console.log({ repository });
+
             return (
               <Tr key={`${owner.login}-${repository.name}`}>
                 <RepositoryNameCell
@@ -186,7 +191,11 @@ function RepositoriesList({ repositories, ...props }) {
                   repositoryName={repository.name}
                   repositoryUrl={repositoryUrl}
                 />
-                <BuildTagCell build={lastBuild} repositoryUrl={repositoryUrl} />
+                <BuildTagCell
+                  build={lastBuild}
+                  repositoryUrl={repositoryUrl}
+                  repository={repository}
+                />
                 <Td
                   verticalAlign="middle"
                   color={repository.enabled ? "primary-text" : "secondary-text"}

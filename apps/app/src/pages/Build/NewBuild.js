@@ -27,17 +27,13 @@ import {
 } from "./SummaryCard";
 import {
   BuildStatusChip,
-  BuildStatusChipFragment,
+  BuildStatusChipBuildFragment,
+  BuildStatusChipRepositoryFragment,
 } from "../../containers/BuildStatusChip";
 import {
   fetchMoreScreenshotDiffs,
   ScreenshotDiffsPageFragment,
 } from "./ScreenshotDiffsSection";
-import {
-  BuildStatusInfoBuildFragment,
-  BuildStatusInfoRepositoryFragment,
-  BuildStatusInfoScreenshotDiffResultFragment,
-} from "./BuildStatusInfo";
 import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import { useLiveRef } from "../../utils/useLiveRef";
 import { BuildSidebar } from "./BuildSidebar";
@@ -57,6 +53,7 @@ const BUILD_QUERY = gql`
       ...BuildStatusInfoRepositoryFragment
       ...ReviewButtonRepositoryFragment
       ...SummaryCardRepositoryFragment
+      ...BuildStatusChipRepositoryFragment
 
       owner {
         id
@@ -74,8 +71,7 @@ const BUILD_QUERY = gql`
         id
         ...SummaryCardBuildFragment
         ...ReviewButtonBuildFragment
-        ...BuildStatusChipFragment
-        ...BuildStatusInfoBuildFragment
+        ...BuildStatusChipBuildFragment
 
         screenshotDiffs(offset: $offset, limit: $limit) {
           pageInfo {
@@ -83,7 +79,6 @@ const BUILD_QUERY = gql`
             hasNextPage
           }
           ...ScreenshotDiffsPageFragment
-          ...BuildStatusInfoScreenshotDiffResultFragment
         }
 
         baseScreenshotBucket {
@@ -110,16 +105,17 @@ const BUILD_QUERY = gql`
     }
   }
 
-  ${ReviewButtonRepositoryFragment}
+  ${ScreenshotDiffsPageFragment}
+
   ${SummaryCardBuildFragment}
   ${SummaryCardRepositoryFragment}
-  ${ScreenshotDiffsPageFragment}
+
+  ${ReviewButtonRepositoryFragment}
   ${ReviewButtonBuildFragment}
   ${ReviewButtonOwnerFragment}
-  ${BuildStatusChipFragment}
-  ${BuildStatusInfoRepositoryFragment}
-  ${BuildStatusInfoBuildFragment}
-  ${BuildStatusInfoScreenshotDiffResultFragment}
+
+  ${BuildStatusChipBuildFragment}
+  ${BuildStatusChipRepositoryFragment}
 `;
 
 const OvercapacityBanner = ({ plan, consumptionRatio, ownerLogin }) => (
@@ -170,7 +166,10 @@ const BuildHeader = ({
             {ownerLogin}/{repositoryName}
           </Link>
         </div>
-        <BuildStatusChip build={build} />
+        <BuildStatusChip
+          build={build}
+          referenceBranch={repository.referenceBranch}
+        />
       </x.div>
       <x.div display="flex" alignItems="center" gap={2}>
         {user ? (
