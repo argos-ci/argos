@@ -144,35 +144,37 @@ function fillGroups(groups, data) {
 function enrichGroups(groups, groupCollapseStatuses, stats) {
   let nextGroupIndex = 0;
 
-  const richGroups = Object.keys(groups)
-    .filter((status) => groups[status].count !== 0)
-    .reduce((acc, status) => {
-      const index = nextGroupIndex;
-      const count = stats[`${status}ScreenshotCount`];
-      const collapsed = groupCollapseStatuses[status];
-      nextGroupIndex += collapsed ? 1 : count + 1;
+  const richGroups = Object.keys(groups).reduce((acc, status) => {
+    const count = stats[`${status}ScreenshotCount`];
+    if (count === 0) {
+      return acc;
+    }
 
-      return {
-        ...acc,
-        [status]: {
-          ...groups[status],
-          count,
-          index,
-          status,
-          collapsed,
-        },
-      };
-    }, {});
+    const index = nextGroupIndex;
+    const collapsed = groupCollapseStatuses[status];
+    nextGroupIndex += collapsed ? 1 : count + 1;
+
+    return {
+      ...acc,
+      [status]: {
+        ...groups[status],
+        count,
+        index,
+        status,
+        collapsed,
+      },
+    };
+  }, {});
 
   return Object.values(richGroups);
 }
 
 function getRows(groups) {
-  return groups.flatMap(({ collapsed, ...group }) => {
+  return groups.flatMap((group) => {
     return [
       { type: "listHeader", ...group },
 
-      ...(collapsed
+      ...(group.collapsed
         ? []
         : Array.from({ length: group.count }, (e, i) => ({
             type: "listItem",
@@ -245,7 +247,7 @@ export function ThumbnailsList({
           (isLast(i) ? gap / 2 : 0),
     getScrollElement: () => parentRef.current,
     overscan: 40,
-    paddingEnd: 20,
+    paddingEnd: 32,
     rangeExtractor: React.useCallback(
       (range) => {
         activeStickyIndexRef.current = Array.from(stickyIndexes)
