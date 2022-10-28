@@ -10,9 +10,9 @@ import {
   MenuButtonArrow,
   useTooltipState,
   TooltipAnchor,
-  Tooltip,
   HeadlessMenuButton,
   Icon,
+  ParagraphTooltip,
 } from "@argos-ci/app/src/components";
 import { gql, useMutation } from "@apollo/client";
 import { hasWritePermission } from "../../modules/permissions";
@@ -124,9 +124,9 @@ function DisabledReviewButton({ repository, children }) {
       <TooltipAnchor state={tooltip}>
         <ReviewButtonContent repository={repository} disabled />
       </TooltipAnchor>
-      <Tooltip state={tooltip} zIndex={200}>
+      <ParagraphTooltip state={tooltip} zIndex={200}>
         {children}
-      </Tooltip>
+      </ParagraphTooltip>
     </>
   );
 }

@@ -62,3 +62,28 @@ export const Tooltip = React.forwardRef(({ children, ...props }, ref) => {
     </AriakitTooltip>
   );
 });
+
+export const ParagraphTooltip = React.forwardRef(
+  ({ children, ...props }, ref) => {
+    return (
+      <AriakitTooltip ref={ref} {...props}>
+        {(tooltipProps) => (
+          <x.div
+            {...tooltipProps}
+            maxW={416}
+            p={2}
+            borderRadius="md"
+            boxShadow="paragraphTooltip"
+            fontSize="sm"
+            lineHeight="16px"
+            border={1}
+            borderColor="tooltip-border"
+            backgroundColor="tooltip-bg"
+          >
+            {children}
+          </x.div>
+        )}
+      </AriakitTooltip>
+    );
+  }
+);
