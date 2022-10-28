@@ -19,7 +19,7 @@
   },
   "repository": "github:argos-ci/argos",
   "engines": {
-    "node": "16"
+    "node": "18"
   },
   "devDependencies": {
     "@argos-ci/cli": "latest",
