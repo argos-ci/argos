@@ -270,13 +270,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
           <BuildStatusChip build={build} />
         </x.div>
 
-        <x.div
-          display="flex"
-          alignItems="flex-start"
-          gap={3}
-          pt="6px"
-          flexShrink={0}
-        >
+        <x.div display="flex" alignItems="flex-start" pt="6px" flexShrink={0}>
           <BuildStat
             icon={getDiffStatusIcon("failed")}
             color={getDiffStatusColor("failed")}

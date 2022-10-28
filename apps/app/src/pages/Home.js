@@ -114,8 +114,8 @@ function RestrictedAccess() {
 
   return (
     <>
-      <TooltipAnchor state={tooltip} style={{ width: "fit-content" }}>
-        <Tag display="block" py={1} color="text-secondary">
+      <TooltipAnchor state={tooltip}>
+        <Tag as={LinkBlock} display="block" py={1} color="text-secondary">
           <Icon as={LockIcon} />
         </Tag>
       </TooltipAnchor>
@@ -194,7 +194,11 @@ function RepositoriesList({ repositories, ...props }) {
                   {repository.enabled ? "Active" : "Deactivated"}
                 </Td>
 
-                <Td verticalAlign="middle">
+                <Td
+                  verticalAlign="middle"
+                  display="flex"
+                  justifyContent="flex-start"
+                >
                   {hasWritePermission(repository) ? (
                     <TagButton as={LinkBlock} to={`${repositoryUrl}/settings`}>
                       <Icon as={GearIcon} />

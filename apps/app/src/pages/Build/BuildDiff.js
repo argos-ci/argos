@@ -7,6 +7,10 @@ import {
   InlineCode,
   BaseLink,
   Alert,
+  TooltipAnchor,
+  useTooltipState,
+  Tooltip,
+  TooltipHotkey,
 } from "@argos-ci/app/src/components";
 import { ArrowUpIcon, ArrowDownIcon, EyeIcon } from "@heroicons/react/24/solid";
 
@@ -37,6 +41,58 @@ const BranchInfo = ({ bucket, baseline, ...props }) => {
   );
 };
 
+const ArrowUpButton = (props) => {
+  const tooltip = useTooltipState();
+
+  return (
+    <>
+      <TooltipAnchor state={tooltip}>
+        <IconButton icon={ArrowUpIcon} {...props} />
+      </TooltipAnchor>
+      <Tooltip state={tooltip}>
+        Previous screenshot
+        <TooltipHotkey>
+          <ArrowUpIcon />
+        </TooltipHotkey>
+      </Tooltip>
+    </>
+  );
+};
+
+const ArrowDownButton = (props) => {
+  const tooltip = useTooltipState();
+
+  return (
+    <>
+      <TooltipAnchor state={tooltip}>
+        <IconButton icon={ArrowDownIcon} {...props} />
+      </TooltipAnchor>
+      <Tooltip state={tooltip}>
+        Next screenshot
+        <TooltipHotkey>
+          <ArrowDownIcon />
+        </TooltipHotkey>
+      </Tooltip>
+    </>
+  );
+};
+
+const ToggleChangesButton = (props) => {
+  const tooltip = useTooltipState({ placement: "left" });
+
+  return (
+    <>
+      <TooltipAnchor state={tooltip}>
+        <IconButton icon={EyeIcon} color="danger" {...props} />
+      </TooltipAnchor>
+      <Tooltip state={tooltip}>
+        Hide changes overlay
+        <TooltipHotkey>D</TooltipHotkey>
+      </Tooltip>
+    </>
+  );
+};
+
 const DiffHeader = React.forwardRef(
   ({ activeDiff, setShowChanges, showChanges }, ref) => (
     <x.div
@@ -47,8 +103,8 @@ const DiffHeader = React.forwardRef(
       p={4}
     >
       <x.div display="flex" alignItems="center">
-        <IconButton icon={ArrowUpIcon} />
-        <IconButton icon={ArrowDownIcon} />
+        <ArrowUpButton />
+        <ArrowDownButton />
         <x.div ml={3} fontSize="sm" fontWeight="medium" lineHeight={1.2}>
           {activeDiff.compareScreenshot?.name ||
             activeDiff.baseScreenshot?.name}
@@ -56,9 +112,7 @@ const DiffHeader = React.forwardRef(
       </x.div>
 
       <x.div display="flex" alignItems="center">
-        <IconButton
-          icon={EyeIcon}
-          color="danger"
+        <ToggleChangesButton
           onClick={() => setShowChanges((prev) => !prev)}
           toggle={showChanges}
         />

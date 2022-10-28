@@ -2,14 +2,14 @@ import * as React from "react";
 import { x } from "@xstyled/styled-components";
 
 const InnerCode = (props) => (
-  <x.div p={2} backgroundColor="code-background" borderRadius="md" {...props} />
+  <x.div p={2} backgroundColor="code-bg" borderRadius="md" {...props} />
 );
 
 export const InlineCode = (props) => (
   <x.pre
-    backgroundColor="code-background"
+    backgroundColor="code-bg"
     color="primary-text"
-    borderRadius="inlineCode"
+    borderRadius="base"
     fontWeight="normal"
     fontSize="xs"
     lineHeight={1}
