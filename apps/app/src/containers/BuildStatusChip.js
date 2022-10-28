@@ -9,20 +9,26 @@ import { Chip } from "@argos-ci/app/src/components";
 
 export const BuildStatusChipFragment = gql`
   fragment BuildStatusChipFragment on Build {
-    compositeStatus
+    type
+    status
   }
 `;
 
 export function BuildStatusChip({ build, ...props }) {
-  if (!build?.compositeStatus) return null;
+  const compositeStatus =
+    build.type && build.type !== "check" ? build.type : build.status;
+
+  if (!compositeStatus) {
+    return null;
+  }
 
   return (
     <Chip
-      icon={getBuildStatusIcon(build.compositeStatus)}
-      color={getBuildStatusColor(build.compositeStatus)}
+      icon={getBuildStatusIcon(compositeStatus)}
+      color={getBuildStatusColor(compositeStatus)}
       {...props}
     >
-      {getBuildStatusLabel(build.compositeStatus)}
+      {getBuildStatusLabel(compositeStatus)}
     </Chip>
   );
 }

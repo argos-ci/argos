@@ -16,6 +16,7 @@ import {
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
 import {
+  ReviewButton,
   ReviewButtonBuildFragment,
   ReviewButtonOwnerFragment,
   ReviewButtonRepositoryFragment,
@@ -41,6 +42,9 @@ import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import { useLiveRef } from "../../utils/useLiveRef";
 import { BuildSidebar } from "./BuildSidebar";
 import { BuildDiff } from "./BuildDiff";
+import { useUser } from "../../containers/User";
+import externalLinks from "../../utils/externalLinks";
+import { MarkGithubIcon } from "@primer/octicons-react";
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
@@ -128,44 +132,66 @@ const OvercapacityBanner = ({ plan, consumptionRatio, ownerLogin }) => (
   </Banner>
 );
 
-const BuildHeader = ({ ownerLogin, repositoryName, buildNumber, build }) => (
-  <x.div
-    display="flex"
-    justifyContent="space-between"
-    alignItems="center"
-    borderBottom={1}
-    borderColor="layout-border"
-    minW={700}
-    p={4}
-    flex="0 0 auto"
-  >
-    <x.div display="flex" alignItems="center" gap={4}>
-      <LinkBlock to="/">
-        <x.svg as={BrandShield} w={10} h={7} minW={10} />
-      </LinkBlock>
-      <div>
-        <x.div fontWeight="medium" fontSize="sm" lineHeight={1} mb={1}>
-          Build #{buildNumber}
-        </x.div>
-        <Link
-          to={`/${ownerLogin}/${repositoryName}`}
-          whiteSpace="nowrap"
-          fontWeight="normal"
-          lineHeight={1}
-          fontSize="xs"
-          color="secondary-text"
-          display="block"
-        >
-          {ownerLogin}/{repositoryName}
-        </Link>
-      </div>
-      <BuildStatusChip build={build} />
+const BuildHeader = ({
+  repository,
+  ownerLogin,
+  repositoryName,
+  buildNumber,
+  build,
+}) => {
+  const user = useUser();
+
+  return (
+    <x.div
+      display="flex"
+      justifyContent="space-between"
+      alignItems="center"
+      borderBottom={1}
+      borderColor="layout-border"
+      minW={700}
+      p={4}
+      flex="0 0 auto"
+    >
+      <x.div display="flex" alignItems="center" gap={4}>
+        <LinkBlock to="/">
+          <x.svg as={BrandShield} w={10} h={7} minW={10} />
+        </LinkBlock>
+        <div>
+          <x.div fontWeight="medium" fontSize="sm" lineHeight={1} mb={1}>
+            Build #{buildNumber}
+          </x.div>
+          <Link
+            to={`/${ownerLogin}/${repositoryName}`}
+            whiteSpace="nowrap"
+            fontWeight="normal"
+            lineHeight={1}
+            fontSize="xs"
+            color="secondary-text"
+            display="block"
+          >
+            {ownerLogin}/{repositoryName}
+          </Link>
+        </div>
+        <BuildStatusChip build={build} />
+      </x.div>
+      <x.div display="flex" alignItems="center" gap={2}>
+        {user ? (
+          <ReviewButton repository={repository} />
+        ) : (
+          <Button
+            as="a"
+            href={externalLinks.githubLogin}
+            color="secondary"
+            gap={2}
+          >
+            <Icon as={MarkGithubIcon} />
+            Login
+          </Button>
+        )}
+      </x.div>
     </x.div>
-    <x.div display="flex" alignItems="center">
-      <Button>Review changes</Button>
-    </x.div>
-  </x.div>
-);
+  );
+};
 
 const BuildContent = ({
   ownerLogin,
@@ -226,6 +252,7 @@ const BuildContent = ({
         repositoryName={repositoryName}
         buildNumber={buildNumber}
         build={build}
+        repository={data.repository}
       />
 
       <x.div

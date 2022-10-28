@@ -24,6 +24,7 @@ import {
   useMenuState,
 } from "@argos-ci/app/src/components";
 import config from "../config";
+import externalLinks from "../utils/externalLinks";
 import { OwnerAvatar } from "./OwnerAvatar";
 import { useLogout } from "./Auth";
 import { useUser } from "./User";
@@ -87,11 +88,7 @@ export function AppNavbar() {
           ) : (
             <Button
               as="a"
-              href={`${config.get("github.loginUrl")}&redirect_uri=${
-                window.location.origin
-              }/auth/github/callback?r=${encodeURIComponent(
-                window.location.pathname
-              )}`}
+              href={externalLinks.githubLogin}
               color="secondary"
               gap={2}
             >

@@ -112,7 +112,7 @@ export function StickySummaryMenu({
       >
         <x.div display="flex" gap={3} alignItems="center" flexShrink={0}>
           Build #{build.number}
-          <BuildStatusChip build={build} py={0.5} />
+          <BuildStatusChip build={build} />
         </x.div>
         <x.div flex={1}>
           {updatedScreenshotCount > 0 ? (
@@ -122,7 +122,7 @@ export function StickySummaryMenu({
             />
           ) : null}
         </x.div>
-        <x.div flex={1}>
+        <x.div display="flex" flex="1 0 auto" justifyContent="flex-end">
           <ReviewButton repository={repository} />
         </x.div>
       </x.div>
