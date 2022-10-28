@@ -5,7 +5,6 @@ import { useParams } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
 import { Helmet } from "react-helmet";
 import {
-  Button,
   LoadingAlert,
   Link,
   Icon,
@@ -13,6 +12,7 @@ import {
   BrandShield,
   LinkBlock,
 } from "@argos-ci/app/src/components";
+import { GitHubLoginButton } from "@argos-ci/app/src/containers/GitHub";
 import { useQuery } from "../../containers/Apollo";
 import { NotFound } from "../NotFound";
 import {
@@ -43,8 +43,6 @@ import { useLiveRef } from "../../utils/useLiveRef";
 import { BuildSidebar } from "./BuildSidebar";
 import { BuildDiff } from "./BuildDiff";
 import { useUser } from "../../containers/User";
-import externalLinks from "../../utils/externalLinks";
-import { MarkGithubIcon } from "@primer/octicons-react";
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
@@ -178,15 +176,7 @@ const BuildHeader = ({
         {user ? (
           <ReviewButton repository={repository} />
         ) : (
-          <Button
-            as="a"
-            href={externalLinks.githubLogin}
-            color="secondary"
-            gap={2}
-          >
-            <Icon as={MarkGithubIcon} />
-            Login
-          </Button>
+          <GitHubLoginButton />
         )}
       </x.div>
     </x.div>
