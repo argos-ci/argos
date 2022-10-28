@@ -4,13 +4,10 @@ import {
   RepoIcon,
   GearIcon,
   SignOutIcon,
-  MarkGithubIcon,
 } from "@primer/octicons-react";
 import {
   BaseLink,
   BrandLogo,
-  Button,
-  Icon,
   LinkBlock,
   Menu,
   MenuButton,
@@ -23,8 +20,8 @@ import {
   NavbarSecondary,
   useMenuState,
 } from "@argos-ci/app/src/components";
+import { GitHubLoginButton } from "@argos-ci/app/src/containers/GitHub";
 import config from "../config";
-import externalLinks from "../utils/externalLinks";
 import { OwnerAvatar } from "./OwnerAvatar";
 import { useLogout } from "./Auth";
 import { useUser } from "./User";
@@ -83,19 +80,7 @@ export function AppNavbar() {
           </NavbarBrand>
         </NavbarBrandLink>
         <NavbarSecondary>
-          {user ? (
-            <UserMenu user={user} />
-          ) : (
-            <Button
-              as="a"
-              href={externalLinks.githubLogin}
-              color="secondary"
-              gap={2}
-            >
-              <Icon as={MarkGithubIcon} />
-              Login
-            </Button>
-          )}
+          {user ? <UserMenu user={user} /> : <GitHubLoginButton />}
         </NavbarSecondary>
       </Navbar>
     </>
