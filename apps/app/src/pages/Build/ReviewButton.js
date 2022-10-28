@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import {
@@ -16,10 +17,12 @@ import {
 import { gql, useMutation } from "@apollo/client";
 import { hasWritePermission } from "../../modules/permissions";
 import { getBuildStatusIcon } from "../../containers/BuildStatus";
+import { useUser } from "../../containers/User";
 
 export const ReviewButtonBuildFragment = gql`
   fragment ReviewButtonBuildFragment on Build {
     id
+    name
     status
     type
   }
@@ -27,6 +30,7 @@ export const ReviewButtonBuildFragment = gql`
 
 export const ReviewButtonRepositoryFragment = gql`
   fragment ReviewButtonRepositoryFragment on Repository {
+    name
     permissions
     private
   }
@@ -38,8 +42,9 @@ export const ReviewButtonOwnerFragment = gql`
   }
 `;
 
-export function ReviewButtonContent({ repository, disabled }) {
+function ReviewButtonContent({ repository, disabled }) {
   const { id, status } = repository.build;
+  let disabledButton = disabled;
   const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
   const [setValidationStatus, { loading, error }] = useMutation(gql`
     mutation setValidationStatus(
@@ -58,16 +63,12 @@ export function ReviewButtonContent({ repository, disabled }) {
     ${ReviewButtonBuildFragment}
   `);
 
-  if (!hasWritePermission(repository)) {
-    return null;
-  }
-
   return (
     <x.div display="flex" flexDirection="column">
       <HeadlessMenuButton
         as={Button}
         state={menu}
-        disabled={disabled || loading}
+        disabled={disabledButton || loading}
         alignSelf="end"
       >
         Review changes
@@ -115,7 +116,7 @@ export function ReviewButtonContent({ repository, disabled }) {
   );
 }
 
-function DisabledReviewButton({ repository }) {
+function DisabledReviewButton({ repository, children }) {
   const tooltip = useTooltipState();
 
   return (
@@ -123,23 +124,42 @@ function DisabledReviewButton({ repository }) {
       <TooltipAnchor state={tooltip}>
         <ReviewButtonContent repository={repository} disabled />
       </TooltipAnchor>
-      <Tooltip state={tooltip}>
-        You have hit 100% of your screenshots usage. Please upgrade to unlock
-        build reviews.
+      <Tooltip state={tooltip} zIndex={200}>
+        {children}
       </Tooltip>
     </>
   );
 }
 
 export function ReviewButton({ repository }) {
+  const user = useUser();
+
   if (
+    !user ||
     !["accepted", "rejected", "diffDetected"].includes(repository.build.status)
   ) {
     return null;
   }
 
+  if (!hasWritePermission(repository)) {
+    return (
+      <DisabledReviewButton repository={repository}>
+        You must have access to{" "}
+        <x.span fontWeight="medium">
+          {repository.name}/{repository.build.name}
+        </x.span>{" "}
+        repository on GitHub to review changes.
+      </DisabledReviewButton>
+    );
+  }
+
   if (repository.private && repository.owner.consumptionRatio >= 1) {
-    return <DisabledReviewButton repository={repository} />;
+    return (
+      <DisabledReviewButton repository={repository}>
+        You have hit 100% of your screenshots usage. Please upgrade to unlock
+        build reviews.
+      </DisabledReviewButton>
+    );
   }
 
   return <ReviewButtonContent repository={repository} />;

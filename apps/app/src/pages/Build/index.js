@@ -366,7 +366,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
                 />
               ) : null}
             </x.div>
-            <x.div flex={1}>
+            <x.div flex={1} display="flex" justifyContent="flex-end">
               <ReviewButton repository={data.repository} />
             </x.div>
           </x.div>
