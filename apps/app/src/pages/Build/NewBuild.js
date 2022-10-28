@@ -140,22 +140,24 @@ const BuildHeader = ({ ownerLogin, repositoryName, buildNumber, build }) => (
     flex="0 0 auto"
   >
     <x.div display="flex" alignItems="center" gap={4}>
-      <LinkBlock to={`/${ownerLogin}/${repositoryName}`}>
+      <LinkBlock to="/">
         <x.svg as={BrandShield} w={10} h={7} minW={10} />
       </LinkBlock>
       <div>
-        <x.div fontWeight="medium" fontSize="xs" lineHeight={1} mb={1}>
-          Build {buildNumber}
+        <x.div fontWeight="medium" fontSize="sm" lineHeight={1} mb={1}>
+          Build #{buildNumber}
         </x.div>
-        <x.div
+        <Link
+          to={`/${ownerLogin}/${repositoryName}`}
           whiteSpace="nowrap"
           fontWeight="normal"
           lineHeight={1}
-          fontSize={10}
+          fontSize="xs"
           color="secondary-text"
+          display="block"
         >
           {ownerLogin}/{repositoryName}
-        </x.div>
+        </Link>
       </div>
       <BuildStatusChip build={build} />
     </x.div>
