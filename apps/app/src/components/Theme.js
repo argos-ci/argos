@@ -13,8 +13,6 @@ const oldColors = {
 
   border: defaultTheme.colors["gray-700-a80"],
   "border-active": defaultTheme.colors["gray-300"],
-
-  tooltip: defaultTheme.colors["gray-700"],
 };
 
 const newColors = {
@@ -146,7 +144,13 @@ const newColors = {
   "secondary-text": th.color("on-light"),
   "secondary-text-hover": th.color("slate-700"),
 
-  "code-background": th.color("slate-200"),
+  "code-bg": th.color("slate-200"),
+
+  "tooltip-bg": th.color("slate-50"),
+  "tooltip-border": th.color("slate-200"),
+
+  "hotkey-on": th.color("slate-700"),
+  "hotkey-bg": th.color("slate-200"),
 
   primary: th.color("primary-600"),
   "primary-on": th.color("primary-700"),
@@ -223,7 +227,13 @@ const newColors = {
       "bg-hover": th.color("slate-900"),
       "secondary-text-hover": th.color("slate-200"),
 
-      "code-background": th.color("slate-700"),
+      "code-bg": th.color("slate-700"),
+
+      "tooltip-bg": th.color("slate-900"),
+      "tooltip-border": th.color("slate-800"),
+
+      "hotkey-on": th.color("slate-300"),
+      "hotkey-bg": th.color("slate-800"),
 
       "primary-on": th.color("primary-200"),
       "primary-bg": th.color("primary-900-a50"),
@@ -298,12 +308,14 @@ export const theme = {
   radii: {
     ...defaultTheme.radii,
     chip: "20px",
-    thumbnail: 4,
-    inlineCode: "4px",
+    base: 4,
   },
   sizes: {
     ...defaultTheme.sizes,
     container: 1040,
+  },
+  shadows: {
+    paragraphTooltip: "0px 0px 4px rgba(0, 0, 0, 0.1)",
   },
 };
 

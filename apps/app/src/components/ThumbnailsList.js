@@ -23,12 +23,7 @@ const DIFFS_GROUPS = {
 const ThumbnailImage = ({ image, ...props }) => {
   if (!image?.url) return null;
   return (
-    <x.img
-      src={image.url}
-      borderRadius="thumbnail"
-      objectFit="contain"
-      {...props}
-    />
+    <x.img src={image.url} borderRadius="base" objectFit="contain" {...props} />
   );
 };
 
@@ -36,7 +31,7 @@ const Thumbnail = styled(BaseLink)`
   background-color: bg;
   position: relative;
   display: inline-block;
-  border-radius: thumbnail;
+  border-radius: base;
   padding: 0;
   cursor: default;
 
@@ -188,14 +183,13 @@ function BuildStatLink({ status, count, label, onClick }) {
   if (count === 0) return null;
 
   return (
-    <BaseLink onClick={() => onClick(status)}>
-      <BuildStat
-        icon={getDiffStatusIcon(status)}
-        color={getDiffStatusColor(status)}
-        count={count}
-        label={label}
-      />
-    </BaseLink>
+    <BuildStat
+      icon={getDiffStatusIcon(status)}
+      color={getDiffStatusColor(status)}
+      count={count}
+      label={label}
+      onClick={() => onClick(status)}
+    />
   );
 }
 
@@ -288,9 +282,9 @@ export function ThumbnailsList({
         borderBottom={1}
         borderColor="layout-border"
         justifyContent="flex-start"
-        gap={3}
         fontSize="sm"
         h="38px"
+        ml="-10px"
       >
         <BuildStatLink
           status="failed"

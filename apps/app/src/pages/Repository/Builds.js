@@ -25,7 +25,8 @@ import {
 import { useQuery } from "../../containers/Apollo";
 import {
   BuildStatusChip,
-  BuildStatusChipFragment,
+  BuildStatusChipBuildFragment,
+  BuildStatusChipRepositoryFragment,
 } from "../../containers/BuildStatusChip";
 import { GettingStarted } from "./GettingStarted";
 import { getPossessiveForm } from "../../modules/utils";
@@ -40,6 +41,8 @@ const REPOSITORY_BUILDS_QUERY = gql`
     repository(ownerLogin: $ownerLogin, repositoryName: $name) {
       id
       permissions
+      ...BuildStatusChipRepositoryFragment
+
       builds(first: 10, after: $after) {
         pageInfo {
           totalCount
@@ -52,19 +55,20 @@ const REPOSITORY_BUILDS_QUERY = gql`
           number
           status
           name
+          ...BuildStatusChipBuildFragment
+
           compareScreenshotBucket {
             id
             commit
             branch
           }
-
-          ...BuildStatusChipFragment
         }
       }
     }
   }
 
-  ${BuildStatusChipFragment}
+  ${BuildStatusChipBuildFragment}
+  ${BuildStatusChipRepositoryFragment}
 `;
 
 function BuildsList({ repository }) {
@@ -171,7 +175,10 @@ function BuildsList({ repository }) {
                 </Td>
 
                 <Td verticalAlign="top">
-                  <BuildStatusChip build={build} />
+                  <BuildStatusChip
+                    build={build}
+                    referenceBranch={data.repository.referenceBranch}
+                  />
                 </Td>
 
                 <Td maxW={300}>
