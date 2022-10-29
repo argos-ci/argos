@@ -1,15 +1,16 @@
-import {
-  useMenuState,
-  Menu as HeadlessMenu,
-  MenuItem as HeadlessMenuItem,
-  MenuButton as HeadlessMenuButton,
-  MenuSeparator as HeadlessMenuSeparator,
-  MenuButtonArrow as HeadlessMenuButtonArrow,
-} from "ariakit/menu";
-import styled, { x, css } from "@xstyled/styled-components";
 import { ChevronDownIcon } from "@primer/octicons-react";
-import { Icon } from "./Icon";
+import styled, { css, x } from "@xstyled/styled-components";
+import {
+  Menu as HeadlessMenu,
+  MenuButton as HeadlessMenuButton,
+  MenuButtonArrow as HeadlessMenuButtonArrow,
+  MenuItem as HeadlessMenuItem,
+  MenuSeparator as HeadlessMenuSeparator,
+  useMenuState,
+} from "ariakit/menu";
 import { forwardRef } from "react";
+
+import { Icon } from "./Icon";
 
 export { useMenuState };
 

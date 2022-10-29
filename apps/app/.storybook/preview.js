@@ -1,5 +1,6 @@
+import { ColorModeProvider, useColorMode } from "@xstyled/styled-components";
 import * as React from "react";
-import { useColorMode, ColorModeProvider } from "@xstyled/styled-components";
+
 import { GlobalStyle, ThemeInitializer } from "@argos-ci/app/src/components";
 
 const THEMES = {

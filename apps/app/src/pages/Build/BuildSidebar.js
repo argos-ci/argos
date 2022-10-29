@@ -1,8 +1,9 @@
 /* eslint-disable react/no-unescaped-entities */
 import styled, { x } from "@xstyled/styled-components";
 import { Tab, TabList, TabPanel, useTabState } from "ariakit/tab";
-import { Link, ThumbnailsList, Time } from "@argos-ci/app/src/components";
 import { useRef } from "react";
+
+import { Link, ThumbnailsList, Time } from "@argos-ci/app/src/components";
 
 const SidebarTab = styled(Tab)`
   background-color: transparent;

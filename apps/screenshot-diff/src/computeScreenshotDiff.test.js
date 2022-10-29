@@ -1,9 +1,11 @@
 import path from "path";
-import config from "@argos-ci/config";
+
 import * as notifications from "@argos-ci/build-notification";
-import { useDatabase, factory } from "@argos-ci/database/testing";
+import config from "@argos-ci/config";
 import { ScreenshotDiff } from "@argos-ci/database/models";
-import { upload, s3 as getS3 } from "@argos-ci/storage";
+import { factory, useDatabase } from "@argos-ci/database/testing";
+import { s3 as getS3, upload } from "@argos-ci/storage";
+
 import { computeScreenshotDiff } from "./computeScreenshotDiff";
 
 jest.mock("@argos-ci/build-notification");

@@ -1,4 +1,4 @@
-import { PUBLIC_SCOPES, PRIVATE_SCOPES, expandScopes } from "./scopes";
+import { PRIVATE_SCOPES, PUBLIC_SCOPES, expandScopes } from "./scopes";
 
 describe("expandScopes", () => {
   it("should expand scopes", () => {

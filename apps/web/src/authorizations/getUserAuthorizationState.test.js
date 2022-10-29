@@ -1,7 +1,7 @@
-import { PRIVATE_SCOPES, PUBLIC_SCOPES } from "./scopes";
-import { githubClient } from "./githubClient";
 import { getUserAuthorizationState } from "./getUserAuthorizationState";
+import { githubClient } from "./githubClient";
 import { notFoundToken, validToken } from "./githubClientFixtures";
+import { PRIVATE_SCOPES, PUBLIC_SCOPES } from "./scopes";
 
 jest.mock("./githubClient");
 

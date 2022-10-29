@@ -1,13 +1,15 @@
 import { gql } from "graphql-tag";
-import { Account, Build, ScreenshotDiff } from "@argos-ci/database/models";
+
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { knex } from "@argos-ci/database";
-import { APIError } from "../util";
+import { Account, Build, ScreenshotDiff } from "@argos-ci/database/models";
+
 import {
-  buildLoader,
   RepositoryLoader,
   ScreenshotBucketLoader,
+  buildLoader,
 } from "../loaders";
+import { APIError } from "../util";
 import { paginateResult } from "./PageInfo";
 
 export const typeDefs = gql`

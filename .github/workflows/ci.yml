@@ -51,6 +51,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check Prettier
+        run: npx prettier --check .
+
       - name: Build
         run: npm run build
 

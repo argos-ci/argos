@@ -1,12 +1,14 @@
-import "../setup";
-import { callbackify } from "util";
+import fs from "fs";
 import http from "http";
 import https from "https";
-import fs from "fs";
 import path from "path";
+import { callbackify } from "util";
+
 import config from "@argos-ci/config";
-import { createApp } from "@argos-ci/web";
 import logger from "@argos-ci/logger";
+import { createApp } from "@argos-ci/web";
+
+import "../setup";
 
 const createHttpServer = (requestListener) => {
   if (config.get("env") === "development") {

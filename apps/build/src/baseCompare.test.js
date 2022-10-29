@@ -1,10 +1,12 @@
-import path from "path";
 import nock from "nock";
+import path from "path";
+
+import { factory, useDatabase } from "@argos-ci/database/testing";
 import {
   TEST_GITHUB_USER_ACCESS_TOKEN,
   usePlayback,
 } from "@argos-ci/github/testing";
-import { useDatabase, factory } from "@argos-ci/database/testing";
+
 import { baseCompare } from "./baseCompare";
 
 function nockGithub(branch) {

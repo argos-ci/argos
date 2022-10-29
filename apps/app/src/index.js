@@ -1,8 +1,9 @@
+import { init as initSentry } from "@sentry/browser";
 import "core-js";
 import { createRoot } from "react-dom/client";
-import { init as initSentry } from "@sentry/browser";
-import config from "./config";
+
 import { App } from "./App";
+import config from "./config";
 
 if (process.env.NODE_ENV === "production") {
   initSentry({

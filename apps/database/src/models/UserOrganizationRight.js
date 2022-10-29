@@ -1,6 +1,6 @@
 import { Model, mergeSchemas, timestampsSchema } from "../util";
-import { User } from "./User";
 import { Organization } from "./Organization";
+import { User } from "./User";
 
 export class UserOrganizationRight extends Model {
   static get tableName() {

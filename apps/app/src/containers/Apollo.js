@@ -1,10 +1,11 @@
 import {
   ApolloClient,
+  ApolloProvider as BaseApolloProvider,
   InMemoryCache,
   useQuery as useApolloQuery,
-  ApolloProvider as BaseApolloProvider,
 } from "@apollo/client";
 import { useMemo } from "react";
+
 import { useAuthToken } from "./Auth";
 
 function ApolloProvider({ children, authToken }) {

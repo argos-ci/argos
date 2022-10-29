@@ -1,20 +1,22 @@
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
+
 import {
+  BaseLink,
   Card,
   CardHeader,
   CardTitle,
-  BaseLink,
-  useDisclosureState,
-  Icon,
+  CollapseCard,
+  CollapseCardBody,
   CollapseCardHeader,
   CollapseCardTitle,
-  CollapseCardBody,
-  CollapseCard,
+  Icon,
+  useDisclosureState,
 } from "@argos-ci/app/src/components";
+
 import {
-  getDiffStatusIcon,
   getDiffStatusColor,
+  getDiffStatusIcon,
 } from "../../containers/ScreenshotDiffStatus";
 
 export const ScreenshotsDiffCardFragment = gql`

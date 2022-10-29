@@ -1,11 +1,13 @@
+import { S3Client } from "@aws-sdk/client-s3";
+import { readFile } from "fs";
 import path from "path";
 import tmp from "tmp";
-import { readFile } from "fs";
 import { promisify } from "util";
-import { S3Client } from "@aws-sdk/client-s3";
+
 import config from "@argos-ci/config";
-import { upload } from "./upload";
+
 import { download } from "./download";
+import { upload } from "./upload";
 
 const readFileAsync = promisify(readFile);
 

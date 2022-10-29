@@ -1,6 +1,7 @@
-import { getInstallationOctokit } from "@argos-ci/github";
 import { runAfterTransaction } from "@argos-ci/database";
 import { BuildNotification } from "@argos-ci/database/models";
+import { getInstallationOctokit } from "@argos-ci/github";
+
 import { job as buildNotificationJob } from "./job";
 
 async function getNotificationPayload(buildNotification) {

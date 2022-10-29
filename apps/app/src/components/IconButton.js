@@ -1,5 +1,5 @@
-import { Button as AriakitButton } from "ariakit/button";
 import styled, { css, system } from "@xstyled/styled-components";
+import { Button as AriakitButton } from "ariakit/button";
 import { forwardRef } from "react";
 
 const InnerButton = styled.buttonBox(({ $color = "primary", $toggle }) => {

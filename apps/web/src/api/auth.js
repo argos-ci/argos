@@ -1,11 +1,13 @@
-import { Router } from "express";
 import axios from "axios-0.x";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { getTokenOctokit } from "@argos-ci/github";
-import { User } from "@argos-ci/database/models";
+import { Router } from "express";
+
 import config from "@argos-ci/config";
+import { User } from "@argos-ci/database/models";
+import { getTokenOctokit } from "@argos-ci/github";
 import { synchronizeFromUserId } from "@argos-ci/synchronize";
+
 import { asyncHandler } from "../util";
 
 const router = new Router();

@@ -1,6 +1,8 @@
-import path from "path";
 import { S3Client } from "@aws-sdk/client-s3";
+import path from "path";
+
 import config from "@argos-ci/config";
+
 import { upload } from "./upload";
 
 describe("#upload", () => {

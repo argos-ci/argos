@@ -1,4 +1,5 @@
 import { Model as ObjectionModel } from "objection";
+
 import { knex } from "../knex";
 
 ObjectionModel.knex(knex);

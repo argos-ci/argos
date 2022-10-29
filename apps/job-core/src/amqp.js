@@ -1,5 +1,6 @@
-import { callbackify } from "util";
 import amqp from "amqplib";
+import { callbackify } from "util";
+
 import config from "@argos-ci/config";
 
 let promise;

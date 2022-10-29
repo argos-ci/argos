@@ -1,14 +1,16 @@
+import { x } from "@xstyled/styled-components";
+
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
-  CardText,
   Alert,
+  Card,
+  CardBody,
+  CardHeader,
+  CardText,
+  CardTitle,
   Code,
   InlineCode,
 } from "@argos-ci/app/src/components";
-import { x } from "@xstyled/styled-components";
+
 import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
 
 export function GettingStarted({ repository }) {

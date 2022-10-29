@@ -1,4 +1,5 @@
 import { makeExecutableSchema } from "@graphql-tools/schema";
+
 import { definitions } from "./definitions";
 
 export const schema = makeExecutableSchema({

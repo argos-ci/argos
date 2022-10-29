@@ -1,5 +1,6 @@
 import { transaction } from "@argos-ci/database";
-import { ScreenshotDiff, Build } from "@argos-ci/database/models";
+import { Build, ScreenshotDiff } from "@argos-ci/database/models";
+
 import { baseCompare } from "./baseCompare";
 
 function getBuildType({

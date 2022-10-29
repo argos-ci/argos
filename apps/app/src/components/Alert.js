@@ -1,5 +1,6 @@
 import { x } from "@xstyled/styled-components";
 import { forwardRef, useEffect, useState } from "react";
+
 import { Loader } from "./Loader";
 
 export const Alert = forwardRef(

@@ -1,14 +1,16 @@
-import { useParams } from "react-router-dom";
 import { RepoIcon } from "@primer/octicons-react";
+import { useParams } from "react-router-dom";
+
 import {
   BreadcrumbItem,
-  BreadcrumbSeparator,
   BreadcrumbItemMenu,
   BreadcrumbLink,
+  BreadcrumbSeparator,
   Icon,
 } from "@argos-ci/app/src/components";
-import { RepositoryBreadcrumbMenu } from "./RepositoryBreadcrumbMenu";
+
 import { useUser } from "../User";
+import { RepositoryBreadcrumbMenu } from "./RepositoryBreadcrumbMenu";
 
 export function RepositoryBreadcrumbItem() {
   const user = useUser();

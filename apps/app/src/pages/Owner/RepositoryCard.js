@@ -1,14 +1,15 @@
-import { gql } from "graphql-tag";
 import { GearIcon, RepoIcon } from "@primer/octicons-react";
+import { gql } from "graphql-tag";
+
 import {
   Card,
   CardHeader,
   CardTitle,
-  Link,
-  TagButton,
   Icon,
   IllustratedText,
+  Link,
   LinkBlock,
+  TagButton,
 } from "@argos-ci/app/src/components";
 
 export const OwnerRepositoryCardFragment = gql`

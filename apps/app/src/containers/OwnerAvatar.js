@@ -1,5 +1,5 @@
-import { gql } from "graphql-tag";
 import { x } from "@xstyled/styled-components";
+import { gql } from "graphql-tag";
 import { forwardRef } from "react";
 
 export const OwnerAvatarFragment = gql`

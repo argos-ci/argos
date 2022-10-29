@@ -1,22 +1,23 @@
 /* eslint-disable no-await-in-loop */
-import {
-  getOAuthOctokit,
-  getTokenOctokit,
-  getInstallationOctokit,
-  getAppOctokit,
-} from "@argos-ci/github";
+import config from "@argos-ci/config";
 import {
   Account,
   Installation,
+  InstallationRepositoryRight,
   Organization,
   Repository,
   User,
+  UserInstallationRight,
   UserOrganizationRight,
   UserRepositoryRight,
-  UserInstallationRight,
-  InstallationRepositoryRight,
 } from "@argos-ci/database/models";
-import config from "@argos-ci/config";
+import {
+  getAppOctokit,
+  getInstallationOctokit,
+  getOAuthOctokit,
+  getTokenOctokit,
+} from "@argos-ci/github";
+
 import { cancelPurchase } from "./eventHelpers";
 import { updatePurchase } from "./updatePurchase";
 

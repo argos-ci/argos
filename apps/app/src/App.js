@@ -1,20 +1,21 @@
+import { ColorModeProvider } from "@xstyled/styled-components";
 import { Helmet } from "react-helmet";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { ScrollToTop, GoogleAnalytics } from "./containers/Router";
-import { AuthInitializer } from "./containers/Auth";
+
+import { GlobalStyle, ThemeInitializer } from "./components";
 import { ApolloInitializer } from "./containers/Apollo";
+import { AuthInitializer } from "./containers/Auth";
+import { Layout } from "./containers/Layout";
+import { GoogleAnalytics, ScrollToTop } from "./containers/Router";
 import { UserInitializer } from "./containers/User";
 import { AuthCallback } from "./pages/AuthCallback";
-import { GlobalStyle, ThemeInitializer } from "./components";
-import { Layout } from "./containers/Layout";
-import { Home } from "./pages/Home";
-import { ColorModeProvider } from "@xstyled/styled-components";
-import { NotFoundWithContainer } from "./pages/NotFound";
-import { Repository } from "./pages/Repository";
-import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { Build } from "./pages/Build";
 import { NewBuild } from "./pages/Build/NewBuild";
+import { Home } from "./pages/Home";
+import { NotFoundWithContainer } from "./pages/NotFound";
+import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
+import { Repository } from "./pages/Repository";
 
 export function App() {
   return (

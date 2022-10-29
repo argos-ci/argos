@@ -1,10 +1,11 @@
 /* eslint-disable global-require, no-console, import/no-unresolved */
-
 import ejs from "ejs";
 import fs from "fs";
-import path from "path";
 import { pick } from "lodash";
+import path from "path";
+
 import config from "@argos-ci/config";
+
 import { getAuthorizationStatus } from "../authorizations";
 
 const indexString = fs.readFileSync(

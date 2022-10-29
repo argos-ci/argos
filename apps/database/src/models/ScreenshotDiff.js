@@ -1,5 +1,6 @@
 import { ValidationError } from "objection";
-import { Model, mergeSchemas, timestampsSchema, jobModelSchema } from "../util";
+
+import { Model, jobModelSchema, mergeSchemas, timestampsSchema } from "../util";
 import { Build } from "./Build";
 import { Screenshot } from "./Screenshot";
 

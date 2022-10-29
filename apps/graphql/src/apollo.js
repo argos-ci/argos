@@ -1,10 +1,11 @@
 import * as Sentry from "@sentry/node";
-import { ApolloServer } from "apollo-server-express";
-import { schema } from "./schema";
 import {
-  ApolloServerPluginLandingPageGraphQLPlayground,
   ApolloServerPluginLandingPageDisabled,
+  ApolloServerPluginLandingPageGraphQLPlayground,
 } from "apollo-server-core";
+import { ApolloServer } from "apollo-server-express";
+
+import { schema } from "./schema";
 
 export const apolloServer = new ApolloServer({
   plugins: [

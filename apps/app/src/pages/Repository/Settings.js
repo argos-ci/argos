@@ -1,6 +1,10 @@
 /* eslint-disable react/no-unescaped-entities */
-import { Helmet } from "react-helmet";
+import { useMutation } from "@apollo/client";
+import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
+import { useState } from "react";
+import { Helmet } from "react-helmet";
+
 import {
   Alert,
   Card,
@@ -22,10 +26,8 @@ import {
   useFormState,
   useToast,
 } from "@argos-ci/app/src/components";
-import { x } from "@xstyled/styled-components";
-import { useMutation } from "@apollo/client";
+
 import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
-import { useState } from "react";
 
 const UPDATE_REFERENCE_BRANCH = gql`
   mutation updateReferenceBranch(

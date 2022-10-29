@@ -1,30 +1,32 @@
-import { useParams } from "react-router-dom";
+import {
+  BookmarkIcon,
+  ClockIcon,
+  CommitIcon,
+  FileZipIcon,
+  GitBranchIcon,
+} from "@primer/octicons-react";
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
-import {
-  CommitIcon,
-  ClockIcon,
-  GitBranchIcon,
-  BookmarkIcon,
-  FileZipIcon,
-} from "@primer/octicons-react";
+import { forwardRef } from "react";
+import { useParams } from "react-router-dom";
+
 import {
   Card,
   CardBody,
-  Link,
   IllustratedText,
-  Time,
+  Link,
   ProgressBar,
+  Time,
 } from "@argos-ci/app/src/components";
+
+import { ShowChangesButton } from ".";
+import { getBuildStatusColor } from "../../containers/BuildStatus";
+import { BuildStatusChip } from "../../containers/BuildStatusChip";
 import {
   ReviewButton,
   ReviewButtonBuildFragment,
   ReviewButtonRepositoryFragment,
 } from "./ReviewButton";
-import { getBuildStatusColor } from "../../containers/BuildStatus";
-import { BuildStatusChip } from "../../containers/BuildStatusChip";
-import { ShowChangesButton } from ".";
-import { forwardRef } from "react";
 
 export const SummaryCardBuildFragment = gql`
   fragment SummaryCardBuildFragment on Build {

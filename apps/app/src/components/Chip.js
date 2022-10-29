@@ -1,5 +1,5 @@
-import styled, { css } from "@xstyled/styled-components";
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
+import styled, { css } from "@xstyled/styled-components";
 import { forwardRef } from "react";
 
 const InnerChip = styled.box(({ $color = "primary", $clickable }) => {

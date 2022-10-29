@@ -1,13 +1,14 @@
 /* eslint-disable default-case */
+import { Purchase } from "@argos-ci/database/models";
 import logger from "@argos-ci/logger";
-import { getOrCreateInstallation } from "./synchronizer";
+
 import { synchronizeFromInstallationId } from "../helpers";
 import {
-  getOrCreateAccount,
-  getNewPlanOrThrow,
   cancelPurchase,
+  getNewPlanOrThrow,
+  getOrCreateAccount,
 } from "./eventHelpers";
-import { Purchase } from "@argos-ci/database/models";
+import { getOrCreateInstallation } from "./synchronizer";
 import { updatePurchase } from "./updatePurchase";
 
 export async function handleGitHubEvents({ name, payload }) {

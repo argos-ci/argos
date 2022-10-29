@@ -1,12 +1,13 @@
+import { x } from "@xstyled/styled-components";
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { x } from "@xstyled/styled-components";
-import { AppFooter } from "./AppFooter";
-import { AppNavbar } from "./AppNavbar";
-import { SyncAlert } from "./SyncAlert";
+
 import { Catch } from "../components";
 import { ErrorPage } from "../pages/ErrorPage";
+import { AppFooter } from "./AppFooter";
 import { AppHeader } from "./AppHeader";
+import { AppNavbar } from "./AppNavbar";
+import { SyncAlert } from "./SyncAlert";
 
 export const Layout = (props) => {
   return (

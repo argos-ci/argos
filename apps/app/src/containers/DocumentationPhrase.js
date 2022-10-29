@@ -1,4 +1,5 @@
 import { x } from "@xstyled/styled-components";
+
 import { Link } from "@argos-ci/app/src/components";
 
 export const DocumentationPhrase = (props) => {

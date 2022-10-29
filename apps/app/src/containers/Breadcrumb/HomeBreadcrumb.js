@@ -1,5 +1,6 @@
-import { useMatch } from "react-router-dom";
 import { HomeIcon } from "@primer/octicons-react";
+import { useMatch } from "react-router-dom";
+
 import { BreadcrumbItem, BreadcrumbLink } from "@argos-ci/app/src/components";
 
 export function HomeBreadcrumbItem() {

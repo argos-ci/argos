@@ -1,5 +1,6 @@
-import { Helmet } from "react-helmet";
 import { x } from "@xstyled/styled-components";
+import { Helmet } from "react-helmet";
+
 import { Container, Link } from "@argos-ci/app/src/components";
 
 export function ErrorPage() {

@@ -1,5 +1,6 @@
-import { HttpError } from "express-err";
 import express from "express";
+import { HttpError } from "express-err";
+
 import { asyncHandler } from "../util";
 
 const router = express.Router();

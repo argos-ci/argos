@@ -1,5 +1,6 @@
-import { Purchase } from "@argos-ci/database/models";
 import { transaction } from "@argos-ci/database";
+import { Purchase } from "@argos-ci/database/models";
+
 import { getNewPlanOrThrow } from "./eventHelpers";
 
 export async function updatePurchase(payload, account) {

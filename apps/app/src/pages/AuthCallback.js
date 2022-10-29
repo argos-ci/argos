@@ -1,8 +1,9 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import qs from "query-string";
 import axios from "axios";
-import { useAuth } from "../containers/Auth";
+import qs from "query-string";
 import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import { useAuth } from "../containers/Auth";
 
 const api = axios.create({
   baseURL: process.env.API_BASE_URL,

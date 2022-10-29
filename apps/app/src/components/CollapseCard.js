@@ -1,8 +1,9 @@
-import { x } from "@xstyled/styled-components";
 import { ChevronRightIcon } from "@primer/octicons-react";
+import { x } from "@xstyled/styled-components";
+
+import { Card, CardBody, CardHeader, CardTitle } from "./Card";
 import { Disclosure, DisclosureContent } from "./Disclosure";
 import { LinkBlock } from "./Link";
-import { Card, CardBody, CardHeader, CardTitle } from "./Card";
 
 export const CollapseCardHeader = ({ state, ...props }) => (
   <CardHeader borderBottom={state.open ? 1 : 0} {...props} />

@@ -1,4 +1,4 @@
-import { x, useFontSize } from "@xstyled/styled-components";
+import { useFontSize, x } from "@xstyled/styled-components";
 
 export const Icon = ({ fontSize, ...props }) => {
   const remFontSize = useFontSize(fontSize);

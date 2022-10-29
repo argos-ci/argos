@@ -1,6 +1,6 @@
-import { createReadStream } from "fs";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
+import { createReadStream } from "fs";
 import mime from "mime";
 
 export async function upload({ s3, inputPath, Key: KeyArg, ...other }) {

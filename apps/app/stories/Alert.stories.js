@@ -1,5 +1,6 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
+import * as React from "react";
+
 import { Alert } from "@argos-ci/app/src/components";
 
 export const Alerts = () => (

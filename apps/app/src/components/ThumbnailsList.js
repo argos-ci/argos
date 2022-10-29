@@ -1,16 +1,17 @@
-import styled, { x } from "@xstyled/styled-components";
-import { useVirtualizer, defaultRangeExtractor } from "@tanstack/react-virtual";
-import { Badge } from "./Badge";
-import { Alert } from "./Alert";
 import { ChevronRightIcon } from "@primer/octicons-react";
-import { BaseLink, LinkBlock } from "./Link";
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
+import styled, { x } from "@xstyled/styled-components";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { BuildStat } from "./BuildStat";
+
 import {
   getDiffStatusColor,
   getDiffStatusIcon,
 } from "../containers/ScreenshotDiffStatus";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert } from "./Alert";
+import { Badge } from "./Badge";
+import { BuildStat } from "./BuildStat";
+import { BaseLink, LinkBlock } from "./Link";
 
 const DIFFS_GROUPS = {
   failed: { diffs: [], label: "failures", collapsed: false },

@@ -8,13 +8,13 @@ import * as Permission from "./Permission";
 import * as Plan from "./Plan";
 import * as Purchase from "./Purchase";
 import * as Repository from "./Repository";
-import * as schema from "./schema";
 import * as Screenshot from "./Screenshot";
 import * as ScreenshotBucket from "./ScreenshotBucket";
 import * as ScreenshotDiff from "./ScreenshotDiff";
 import * as Synchronization from "./Synchronization";
 import * as User from "./User";
 import * as ValidationStatus from "./ValidationStatus";
+import * as schema from "./schema";
 
 export const definitions = [
   Build,

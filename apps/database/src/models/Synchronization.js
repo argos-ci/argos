@@ -1,4 +1,4 @@
-import { Model, mergeSchemas, timestampsSchema, jobModelSchema } from "../util";
+import { Model, jobModelSchema, mergeSchemas, timestampsSchema } from "../util";
 import { User } from "./User";
 
 export class Synchronization extends Model {

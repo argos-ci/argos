@@ -1,5 +1,5 @@
-import { Component } from "react";
 import { captureException } from "@sentry/browser";
+import { Component } from "react";
 
 export class Catch extends Component {
   constructor(props) {

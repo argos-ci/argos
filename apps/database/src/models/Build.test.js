@@ -1,4 +1,4 @@
-import { useDatabase, factory } from "../testing";
+import { factory, useDatabase } from "../testing";
 import { Build } from "./Build";
 
 const baseData = {

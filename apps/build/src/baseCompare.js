@@ -1,4 +1,5 @@
 import { Octokit } from "@octokit/rest";
+
 import config from "@argos-ci/config";
 import {
   ScreenshotBucket,

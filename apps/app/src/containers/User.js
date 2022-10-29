@@ -1,7 +1,8 @@
 import { gql } from "graphql-tag";
-import { useAuthToken, useLogout } from "./Auth";
-import { useQuery } from "./Apollo";
 import { createContext, useContext, useEffect, useMemo } from "react";
+
+import { useQuery } from "./Apollo";
+import { useAuthToken, useLogout } from "./Auth";
 
 const UserContext = createContext();
 

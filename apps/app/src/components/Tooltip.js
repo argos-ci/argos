@@ -2,8 +2,8 @@ import { x } from "@xstyled/styled-components";
 import {
   Tooltip as AriakitTooltip,
   TooltipAnchor,
-  useTooltipState as ariakitUseTooltipState,
   TooltipArrow,
+  useTooltipState as ariakitUseTooltipState,
 } from "ariakit/tooltip";
 import { forwardRef } from "react";
 

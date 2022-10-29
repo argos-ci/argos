@@ -12,6 +12,5 @@
 // You can read more here:
 // https://on.cypress.io/configuration
 // ***********************************************************
-
 // Add support of `argosScreenshot` command
 import "@argos-ci/cypress/support";

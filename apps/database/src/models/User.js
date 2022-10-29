@@ -1,8 +1,8 @@
 import { Model, mergeSchemas, timestampsSchema } from "../util";
-import { Synchronization } from "./Synchronization";
+import { Installation } from "./Installation";
 import { Organization } from "./Organization";
 import { Repository } from "./Repository";
-import { Installation } from "./Installation";
+import { Synchronization } from "./Synchronization";
 
 export class User extends Model {
   static get tableName() {

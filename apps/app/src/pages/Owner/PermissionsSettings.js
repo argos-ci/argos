@@ -1,15 +1,17 @@
 /* eslint-disable react/no-unescaped-entities */
+import { LinkExternalIcon } from "@primer/octicons-react";
 import { gql } from "graphql-tag";
-import config from "../../config";
+
 import {
   Card,
   CardBody,
   CardText,
+  Link,
   PrimaryTitle,
   SidebarLayout,
-  Link,
 } from "@argos-ci/app/src/components";
-import { LinkExternalIcon } from "@primer/octicons-react";
+
+import config from "../../config";
 import { getPossessiveForm } from "../../modules/utils";
 
 export const OwnerPermissionsSettingsFragment = gql`

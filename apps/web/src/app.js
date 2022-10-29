@@ -1,14 +1,16 @@
 /* eslint-disable no-console */
 import * as Sentry from "@sentry/node";
-import path from "path";
-import express from "express";
 import compress from "compression";
-import morgan from "morgan";
-import helmet from "helmet";
 import ejs from "ejs";
+import express from "express";
+import helmet from "helmet";
+import morgan from "morgan";
+import path from "path";
+
 import config from "@argos-ci/config";
-import { createAppRouter } from "./app-router";
+
 import { createApi } from "./api";
+import { createAppRouter } from "./app-router";
 
 export const createApp = async () => {
   const app = express();

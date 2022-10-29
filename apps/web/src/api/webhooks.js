@@ -1,4 +1,5 @@
 import { Webhooks, createNodeMiddleware } from "@octokit/webhooks";
+
 import config from "@argos-ci/config";
 import { handleGitHubEvents } from "@argos-ci/synchronize";
 

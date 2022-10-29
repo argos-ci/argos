@@ -1,5 +1,4 @@
 /* eslint-disable no-console */
-
 import * as Sentry from "@sentry/node";
 import expressErr from "express-err";
 

@@ -1,4 +1,5 @@
 import { x } from "@xstyled/styled-components";
+
 import { Icon } from "./Icon";
 
 export const IllustratedText = ({

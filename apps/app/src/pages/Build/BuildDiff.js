@@ -1,18 +1,19 @@
 /* eslint-disable react/no-unescaped-entities */
+import { ArrowDownIcon, ArrowUpIcon, EyeIcon } from "@heroicons/react/24/solid";
 import { x } from "@xstyled/styled-components";
 import moment from "moment";
+import { forwardRef, useLayoutEffect, useRef, useState } from "react";
+
 import {
+  Alert,
+  BaseLink,
   IconButton,
   InlineCode,
-  BaseLink,
-  Alert,
-  TooltipAnchor,
-  useTooltipState,
   Tooltip,
+  TooltipAnchor,
   TooltipHotkey,
+  useTooltipState,
 } from "@argos-ci/app/src/components";
-import { ArrowUpIcon, ArrowDownIcon, EyeIcon } from "@heroicons/react/24/solid";
-import { forwardRef, useLayoutEffect, useRef, useState } from "react";
 
 const BranchInfo = ({ bucket, baseline, ...props }) => {
   return (

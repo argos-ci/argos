@@ -1,13 +1,15 @@
 import { gql } from "graphql-tag";
+import { useState } from "react";
+
 import { LoadingAlert } from "@argos-ci/app/src/components";
+
 import { useQuery } from "../../containers/Apollo";
 import {
-  fetchMoreScreenshotDiffs,
   LoadMoreButton,
   ScreenshotDiffsPageFragment,
   ScreenshotDiffsSection,
+  fetchMoreScreenshotDiffs,
 } from "./ScreenshotDiffsSection";
-import { useState } from "react";
 
 const BUILD_STABLE_SCREENSHOT_DIFFS_QUERY = gql`
   query BUILD_STABLE_SCREENSHOT_DIFFS_QUERY(

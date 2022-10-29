@@ -1,10 +1,12 @@
 import { ValidationError } from "objection";
+
 import config from "@argos-ci/config";
-import { Model, mergeSchemas, timestampsSchema, jobModelSchema } from "../util";
-import { User } from "./User";
+
+import { Model, jobModelSchema, mergeSchemas, timestampsSchema } from "../util";
+import { Repository } from "./Repository";
 import { ScreenshotBucket } from "./ScreenshotBucket";
 import { ScreenshotDiff } from "./ScreenshotDiff";
-import { Repository } from "./Repository";
+import { User } from "./User";
 
 const NEXT_NUMBER = Symbol("nextNumber");
 

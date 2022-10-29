@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-
 import { callbackify } from "util";
+
 import { getAmqpChannel } from "@argos-ci/job-core";
 
 /**

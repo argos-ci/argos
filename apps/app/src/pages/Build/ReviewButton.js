@@ -1,22 +1,24 @@
 /* eslint-disable react/no-unescaped-entities */
+import { gql, useMutation } from "@apollo/client";
 import { x } from "@xstyled/styled-components";
+
 import {
   Alert,
   Button,
-  Menu,
-  MenuItem,
-  useMenuState,
-  MenuButtonArrow,
-  useTooltipState,
-  TooltipAnchor,
   HeadlessMenuButton,
   Icon,
+  Menu,
+  MenuButtonArrow,
+  MenuItem,
   ParagraphTooltip,
+  TooltipAnchor,
+  useMenuState,
+  useTooltipState,
 } from "@argos-ci/app/src/components";
-import { gql, useMutation } from "@apollo/client";
-import { hasWritePermission } from "../../modules/permissions";
+
 import { getBuildStatusIcon } from "../../containers/BuildStatus";
 import { useUser } from "../../containers/User";
+import { hasWritePermission } from "../../modules/permissions";
 
 export const ReviewButtonBuildFragment = gql`
   fragment ReviewButtonBuildFragment on Build {

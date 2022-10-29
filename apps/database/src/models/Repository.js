@@ -1,11 +1,12 @@
 import crypto from "crypto";
 import { promisify } from "util";
+
 import { Model, mergeSchemas, timestampsSchema } from "../util";
-import { UserRepositoryRight } from "./UserRepositoryRight";
-import { User } from "./User";
 import { Build } from "./Build";
-import { Organization } from "./Organization";
 import { Installation } from "./Installation";
+import { Organization } from "./Organization";
+import { User } from "./User";
+import { UserRepositoryRight } from "./UserRepositoryRight";
 
 const generateRandomBytes = promisify(crypto.randomBytes);
 

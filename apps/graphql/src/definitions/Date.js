@@ -1,5 +1,5 @@
-import { gql } from "graphql-tag";
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from "graphql-iso-date";
+import { gql } from "graphql-tag";
 
 export const typeDefs = gql`
   scalar Date

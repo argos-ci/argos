@@ -1,4 +1,5 @@
 import config from "@argos-ci/config";
+
 import { INVALID_TOKEN } from "./authorizationStatuses";
 import { getAuthorizationStatus } from "./getAuthorizationStatus";
 import { githubClient } from "./githubClient";

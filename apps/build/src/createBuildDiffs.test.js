@@ -1,12 +1,14 @@
 import { sortBy } from "lodash";
+
 import * as notifications from "@argos-ci/build-notification";
-import { useDatabase, factory } from "@argos-ci/database/testing";
 import {
-  ScreenshotDiff,
-  Screenshot,
   Build,
+  Screenshot,
   ScreenshotBucket,
+  ScreenshotDiff,
 } from "@argos-ci/database/models";
+import { factory, useDatabase } from "@argos-ci/database/testing";
+
 import { createBuildDiffs } from "./createBuildDiffs";
 
 jest.mock("@argos-ci/build-notification");
