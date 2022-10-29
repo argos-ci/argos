@@ -228,6 +228,9 @@ export function ThumbnailsList({
   const isLast = (index) => isSticky(index + 1);
   const handleClick = (status) => {
     const index = richGroups.find((group) => group.status === status).index;
+    if (groupCollapseStatuses[status]) {
+      setGroupCollapseStatuses((prev) => ({ ...prev, [status]: false }));
+    }
     rowVirtualizer.scrollToIndex(index, { align: "start", smoothScroll: true });
   };
 
