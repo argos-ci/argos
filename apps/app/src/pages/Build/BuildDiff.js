@@ -1,5 +1,13 @@
 /* eslint-disable react/no-unescaped-entities */
-import { ArrowDownIcon, ArrowUpIcon, EyeIcon } from "@heroicons/react/24/solid";
+import {
+  ArchiveBoxXMarkIcon,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  DocumentCheckIcon,
+  EyeIcon,
+  PhotoIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/solid";
 import { x } from "@xstyled/styled-components";
 import moment from "moment";
 import { forwardRef, useLayoutEffect, useRef, useState } from "react";
@@ -126,45 +134,89 @@ const FullWidthImage = (props) => (
   <x.img w={1} objectFit="contain" mb={8} {...props} />
 );
 
-const Baseline = ({ activeDiff }) => {
-  return activeDiff.baseScreenshot?.url ? (
-    <BaseLink href={activeDiff.baseScreenshot.url} target="_blank">
-      <FullWidthImage
-        src={activeDiff.baseScreenshot.url}
-        alt={activeDiff.baseScreenshot.name}
-      />
-    </BaseLink>
-  ) : (
-    <Alert color="info">
-      No compare baseline for {activeDiff.status} screenshot.
-    </Alert>
-  );
-};
+const ScreenshotAlert = (props) => (
+  <Alert color="info" py={8} textAlign="center" {...props} />
+);
+const AlertIcon = (props) => <x.svg w={16} mb={5} mx="auto" {...props} />;
+const AlertTitle = (props) => <x.div fontWeight="semibold" mb={2} {...props} />;
+const AlertBody = (props) => <x.div fontSize="sm" {...props} />;
 
-const Changes = ({ activeDiff, showChanges }) => {
-  return activeDiff.compareScreenshot?.url && activeDiff.status !== "stable" ? (
-    <BaseLink
-      href={activeDiff.compareScreenshot?.url}
-      target="_blank"
-      position="relative"
-      display="inline-block" // fix Firefox bug on "position: relative"
-    >
-      {showChanges && activeDiff.url ? (
-        <FullWidthImage
-          src={activeDiff.url}
-          position="absolute"
-          backgroundColor="rgba(255, 255, 255, 0.8)"
-        />
-      ) : null}
+const AddedDiffAlert = () => (
+  <ScreenshotAlert>
+    <AlertIcon as={PhotoIcon} />
+    <AlertTitle>New screenshot</AlertTitle>
+    <AlertBody>
+      Nothing to compare yet. The baseline build does not contain a screenshot
+      with this name.
+    </AlertBody>
+  </ScreenshotAlert>
+);
+
+const FailDiffAlert = () => (
+  <ScreenshotAlert>
+    <AlertIcon as={XMarkIcon} />
+    <AlertTitle>Failure screenshot</AlertTitle>
+    <AlertBody>
+      <x.div>
+        Nothing to compare yet. The baseline build does not contain a screenshot
+        with this name.
+      </x.div>
+      <x.div mt={4} fontSize="xs">
+        Failure screenshots are automatically captured when a test fail and
+        their filepath end by "failed".
+      </x.div>
+    </AlertBody>
+  </ScreenshotAlert>
+);
+
+const RemovedDiffAlert = () => (
+  <ScreenshotAlert>
+    <AlertIcon as={ArchiveBoxXMarkIcon} />
+    <AlertTitle>Screenshot deletion</AlertTitle>
+    <AlertBody>
+      Nothing to compare. The new build does not contain a screenshot with this
+      name.
+    </AlertBody>
+  </ScreenshotAlert>
+);
+
+const StableDiffAlert = () => (
+  <ScreenshotAlert>
+    <AlertIcon as={DocumentCheckIcon} />
+    <AlertTitle>Stable Screenshot</AlertTitle>
+    <AlertBody>No visual changes</AlertBody>
+  </ScreenshotAlert>
+);
+
+const BaselineScreenshot = ({ activeDiff }) => (
+  <BaseLink href={activeDiff.baseScreenshot.url} target="_blank">
+    <FullWidthImage
+      src={activeDiff.baseScreenshot.url}
+      alt={activeDiff.baseScreenshot.name}
+    />
+  </BaseLink>
+);
+
+const ChangesScreenshot = ({ activeDiff, showChanges }) => (
+  <BaseLink
+    href={activeDiff.compareScreenshot?.url}
+    target="_blank"
+    position="relative"
+    display="inline-block" // fix Firefox bug on "position: relative"
+  >
+    {showChanges && activeDiff.url ? (
       <FullWidthImage
-        alt={activeDiff.compareScreenshot.name}
-        src={activeDiff.compareScreenshot.url}
+        src={activeDiff.url}
+        position="absolute"
+        backgroundColor="rgba(255, 255, 255, 0.8)"
       />
-    </BaseLink>
-  ) : (
-    <Alert color="info">No change for {activeDiff.status} screenshot.</Alert>
-  );
-};
+    ) : null}
+    <FullWidthImage
+      alt={activeDiff.compareScreenshot.name}
+      src={activeDiff.compareScreenshot.url}
+    />
+  </BaseLink>
+);
 
 export function BuildDiff({
   build,
@@ -207,18 +259,31 @@ export function BuildDiff({
       >
         <x.div display="flex" flex={1} flexDirection="column">
           <BranchInfo bucket={baseScreenshotBucket} baseline />
-          <Baseline
-            activeDiff={activeDiff}
-            baseScreenshotBucket={baseScreenshotBucket}
-          />
+          {activeDiff.status === "added" ? (
+            <AddedDiffAlert />
+          ) : activeDiff.status === "failed" ? (
+            <FailDiffAlert />
+          ) : (
+            <BaselineScreenshot
+              activeDiff={activeDiff}
+              baseScreenshotBucket={baseScreenshotBucket}
+            />
+          )}
         </x.div>
+
         <x.div display="flex" flex={1} flexDirection="column">
           <BranchInfo bucket={compareScreenshotBucket} />
-          <Changes
-            activeDiff={activeDiff}
-            showChanges={showChanges}
-            compareScreenshotBucket={compareScreenshotBucket}
-          />
+          {activeDiff.status === "stable" ? (
+            <StableDiffAlert />
+          ) : activeDiff.status === "removed" ? (
+            <RemovedDiffAlert />
+          ) : (
+            <ChangesScreenshot
+              activeDiff={activeDiff}
+              showChanges={showChanges}
+              compareScreenshotBucket={compareScreenshotBucket}
+            />
+          )}
         </x.div>
       </x.div>
     </x.div>
