@@ -1,11 +1,20 @@
-exports.up = (knex) =>
-  knex.schema
-    .table("repositories", (table) => {
-      table.string("baselineBranch").defaultTo("master").notNullable();
-    })
-    .raw('ALTER TABLE repositories ALTER COLUMN "baselineBranch" DROP DEFAULT');
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
+  await knex.schema.table("repositories", (table) => {
+    table.string("baselineBranch").defaultTo("master").notNullable();
+  });
+  await knex.schema.raw(
+    'ALTER TABLE repositories ALTER COLUMN "baselineBranch" DROP DEFAULT'
+  );
+};
 
-exports.down = (knex) =>
-  knex.schema.table("repositories", (table) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
+  await knex.schema.table("repositories", (table) => {
     table.dropColumn("baselineBranch");
   });
+};

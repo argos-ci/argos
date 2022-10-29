@@ -1,4 +1,7 @@
-exports.up = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
   await await knex.raw(
     "ALTER TABLE accounts DROP CONSTRAINT accounts_only_one_non_null"
   );
@@ -7,7 +10,10 @@ exports.up = async (knex) => {
   );
 };
 
-exports.down = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
   await await knex.raw(
     "ALTER TABLE accounts DROP CONSTRAINT accounts_only_one_owner"
   );

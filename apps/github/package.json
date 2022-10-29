@@ -2,14 +2,28 @@
   "name": "@argos-ci/github",
   "version": "2.0.0",
   "private": true,
-  "main": "src/index.js",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./src/index.ts"
+    },
+    "./testing": {
+      "import": "./dist/testing.js",
+      "types": "./src/testing.ts"
+    }
+  },
   "dependencies": {
-    "@argos-ci/config": "^2.0.0",
+    "@argos-ci/config": "*",
     "@octokit/auth-app": "^4.0.4",
     "@octokit/auth-oauth-app": "^5.0.1",
     "@octokit/rest": "^19.0.3"
   },
   "devDependencies": {
     "nock": "^13.2.9"
+  },
+  "scripts": {
+    "build": "swc src --config-file ../../.swcrc -d dist",
+    "dev": "npm run build -- --watch"
   }
 }

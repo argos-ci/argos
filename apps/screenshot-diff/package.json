@@ -2,19 +2,26 @@
   "name": "@argos-ci/screenshot-diff",
   "version": "2.0.0",
   "private": true,
-  "main": "src/index.js",
+  "type": "module",
+  "exports": "./dist/index.js",
   "dependencies": {
-    "@argos-ci/build-notification": "2.0.0",
-    "@argos-ci/config": "2.0.0",
-    "@argos-ci/database": "2.0.0",
-    "@argos-ci/github": "2.0.0",
-    "@argos-ci/job-core": "2.0.0",
-    "@argos-ci/storage": "2.0.0",
+    "@argos-ci/build-notification": "*",
+    "@argos-ci/config": "*",
+    "@argos-ci/database": "*",
+    "@argos-ci/github": "*",
+    "@argos-ci/job-core": "*",
+    "@argos-ci/storage": "*",
     "@octokit/rest": "^19.0.3",
     "gm": "^1.25.0",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
+    "@types/gm": "^1.18.12",
+    "@types/tmp": "^0.2.3",
     "get-pixels": "^3.3.3"
+  },
+  "scripts": {
+    "build": "swc src --config-file ../../.swcrc -d dist",
+    "dev": "npm run build -- --watch"
   }
 }

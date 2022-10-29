@@ -1,4 +1,7 @@
-exports.up = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
   await knex.raw(
     `create index concurrently if not exists screenshot_diffs_baseScreenshotId_index on screenshot_diffs ("baseScreenshotId");`
   );
@@ -7,11 +10,14 @@ exports.up = async (knex) => {
   );
 };
 
-exports.down = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
   await knex.raw(`
     drop index screenshot_diffs_baseScreenshotId_index;;
     drop index screenshot_diffs_compareScreenshotId_index;
   `);
 };
 
-exports.config = { transaction: false };
+export const config = { transaction: false };

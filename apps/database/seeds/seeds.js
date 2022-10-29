@@ -5,7 +5,7 @@ function duplicate(obj, count) {
   return Array.from({ length: count }, () => obj);
 }
 
-exports.seed = async (knex) => {
+export const seed = async (knex) => {
   const organizations = await knex("organizations")
     .returning("id")
     .insert([

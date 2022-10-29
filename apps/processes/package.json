@@ -1,23 +1,27 @@
 {
   "name": "@argos-ci/processes",
-  "version": "2.0.0",
+  "version": "*",
   "private": true,
+  "type": "module",
   "bin": {
-    "argos-web": "./src/bin/web.js",
-    "argos-build-and-synchronize": "./src/bin/build-and-synchronize.js",
-    "argos-screenshot-diff": "./src/bin/screenshot-diff.js"
+    "argos-web": "./dist/bin/web.js",
+    "argos-build-and-synchronize": "./dist/bin/build-and-synchronize.js",
+    "argos-screenshot-diff": "./dist/bin/screenshot-diff.js"
+  },
+  "scripts": {
+    "build": "swc src --config-file ../../.swcrc -d dist",
+    "dev": "npm run build -- --watch"
   },
   "dependencies": {
-    "@argos-ci/build": "2.0.0",
-    "@argos-ci/build-notification": "2.0.0",
-    "@argos-ci/config": "2.0.0",
-    "@argos-ci/job-core": "2.0.0",
-    "@argos-ci/logger": "2.0.0",
-    "@argos-ci/screenshot-diff": "2.0.0",
-    "@argos-ci/sentry-node": "2.0.0",
-    "@argos-ci/synchronize": "2.0.0",
-    "@argos-ci/web": "2.0.0",
-    "@sentry/node": "^7.9.0",
-    "esm": "^3.2.25"
+    "@argos-ci/build": "*",
+    "@argos-ci/build-notification": "*",
+    "@argos-ci/config": "*",
+    "@argos-ci/job-core": "*",
+    "@argos-ci/logger": "*",
+    "@argos-ci/screenshot-diff": "*",
+    "@argos-ci/sentry-node": "*",
+    "@argos-ci/synchronize": "*",
+    "@argos-ci/web": "*",
+    "@sentry/node": "^7.9.0"
   }
 }

@@ -1,7 +1,10 @@
 /* eslint-disable quotes */
 
-exports.up = (knex) =>
-  knex.schema
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
+  await knex.schema
     .raw(
       `CREATE TYPE job_status AS ENUM ('pending', 'progress', 'complete', 'error')`
     )
@@ -20,9 +23,13 @@ exports.up = (knex) =>
     .table("repositories", (table) => {
       table.foreign("organizationId").references("organizations.id");
     });
+};
 
-exports.down = (knex) =>
-  knex.schema
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
+  await knex.schema
     .alterTable("builds", (table) => {
       table.string("jobStatus").alter();
     })
@@ -37,5 +44,7 @@ exports.down = (knex) =>
     .raw(`DROP TYPE job_status`)
     .raw(`DROP TYPE service_type`)
     .table("repositories", (table) => {
+      // @ts-ignore
       table.dropForeign("organizationId");
     });
+};

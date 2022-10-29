@@ -1,6 +1,9 @@
-exports.up = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
   await knex.schema.createTable("files", (table) => {
-    table.bigincrements("id").primary();
+    table.bigIncrements("id").primary();
     table.dateTime("createdAt").notNullable();
     table.dateTime("updatedAt").notNullable();
     table.string("key").notNullable().unique();
@@ -12,7 +15,10 @@ exports.up = async (knex) => {
   });
 };
 
-exports.down = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
   await knex.schema.table("screenshots", (table) => {
     table.dropColumn("fileId");
   });

@@ -1,4 +1,7 @@
-exports.up = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
   const referenceBuildIds = knex("builds")
     .select("builds.id")
     .innerJoin("repositories", "builds.repositoryId", "repositories.id")
@@ -29,4 +32,4 @@ exports.up = async (knex) => {
   await knex("builds").whereNull("type").update("type", "check");
 };
 
-exports.down = async () => {};
+export const down = async () => {};

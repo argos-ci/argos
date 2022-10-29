@@ -2,23 +2,28 @@
   "name": "@argos-ci/build",
   "version": "2.0.0",
   "private": true,
-  "main": "src/index.js",
+  "type": "module",
+  "exports": "./dist/index.js",
   "bin": {
-    "consume-build-queue": "src/bin/consume-build-queue",
-    "queue-pending-builds": "src/bin/queue-pending-builds"
+    "consume-build-queue": "./dist/bin/consume-build-queue.js",
+    "queue-pending-builds": "./dist/bin/queue-pending-builds.js"
   },
   "dependencies": {
-    "@argos-ci/build-notification": "2.0.0",
-    "@argos-ci/config": "2.0.0",
-    "@argos-ci/database": "2.0.0",
-    "@argos-ci/github": "2.0.0",
-    "@argos-ci/job-core": "2.0.0",
-    "@argos-ci/logger": "2.0.0",
-    "@argos-ci/screenshot-diff": "2.0.0",
+    "@argos-ci/build-notification": "*",
+    "@argos-ci/config": "*",
+    "@argos-ci/database": "*",
+    "@argos-ci/github": "*",
+    "@argos-ci/job-core": "*",
+    "@argos-ci/logger": "*",
+    "@argos-ci/screenshot-diff": "*",
     "@octokit/rest": "^19.0.3",
-    "lodash": "^4.17.21"
+    "lodash-es": "^4.17.21"
   },
   "devDependencies": {
     "nock": "^13.2.9"
+  },
+  "scripts": {
+    "build": "swc src --config-file ../../.swcrc -d dist",
+    "dev": "npm run build -- --watch"
   }
 }

@@ -5,12 +5,7 @@ import { useStoreState } from "./Store";
 const AuthContext = createContext();
 
 function AuthProvider({ children }) {
-  const { user } = window.clientData;
-  let email = null;
-  if (user) {
-    email = user.email;
-  }
-  const [token, setToken] = useStoreState("token", email);
+  const [token, setToken] = useStoreState("token", null);
   const value = useMemo(() => ({ token, setToken }), [token, setToken]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

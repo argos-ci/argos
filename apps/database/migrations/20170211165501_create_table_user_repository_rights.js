@@ -1,6 +1,9 @@
-exports.up = (knex) =>
-  knex.schema.createTable("user_repository_rights", (table) => {
-    table.bigincrements("id").primary();
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
+  await knex.schema.createTable("user_repository_rights", (table) => {
+    table.bigIncrements("id").primary();
     table.bigInteger("userId").notNullable().index();
     table.foreign("userId").references("users.id");
     table.bigInteger("repositoryId").notNullable().index();
@@ -9,6 +12,11 @@ exports.up = (knex) =>
     table.dateTime("updatedAt").notNullable();
     table.unique(["userId", "repositoryId"]);
   });
+};
 
-exports.down = (knex) =>
-  knex.schema.dropTableIfExists("user_repository_rights");
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
+  await knex.schema.dropTableIfExists("user_repository_rights");
+};
