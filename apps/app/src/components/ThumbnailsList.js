@@ -21,9 +21,23 @@ const DIFFS_GROUPS = {
   stable: { diffs: [], label: "stables", collapsed: true },
 };
 
+const ThumbnailName = styled.box`
+  font-size: sm;
+  white-space: nowrap;
+  overflow: hidden;
+  direction: rtl;
+  text-align: left;
+  color: secondary-text;
+  width: 100%;
+  line-height: 20px;
+  margin-bottom: 2;
+`;
+
 const ThumbnailImage = ({ image, ...props }) => {
   if (!image?.url) return null;
-  return <x.img src={image.url} objectFit="contain" {...props} />;
+  return (
+    <x.img src={image.url} borderRadius="base" objectFit="contain" {...props} />
+  );
 };
 
 const Thumbnail = styled(BaseLink)`
@@ -61,10 +75,8 @@ const ListItem = ({ virtualRow, ...props }) => (
     h={`${virtualRow.size}px`}
     position="absolute"
     transform={`translateY(${virtualRow.start}px)`}
-    display="flex"
-    alignItems="center"
-    justifyContent="center"
     px={5}
+    py={2}
     {...props}
   />
 );
@@ -181,7 +193,7 @@ function BuildStatLink({ status, count, label, onClick }) {
 
 export function ThumbnailsList({
   imageHeight = 350,
-  gap = 20,
+  gap = 32,
   headerSize = 36,
   height = 400,
   data,
@@ -226,6 +238,7 @@ export function ThumbnailsList({
         ? headerSize
         : imageHeight +
           gap +
+          (!isSticky(i) ? 12 : 0) +
           (isFirst(i) ? gap / 2 : 0) +
           (isLast(i) ? gap / 2 : 0),
     getScrollElement: () => parentRef.current,
@@ -360,14 +373,28 @@ export function ThumbnailsList({
               }
 
               return (
-                <ListItem key={virtualRow.index} virtualRow={virtualRow}>
+                <ListItem
+                  key={virtualRow.index}
+                  virtualRow={virtualRow}
+                  pt={isFirst(virtualRow.index) ? 5 : 2}
+                  pb={isLast(virtualRow.index) ? 5 : 2}
+                >
+                  <ThumbnailName>
+                    {(
+                      item.diff?.compareScreenshot?.name ||
+                      item.diff?.baseScreenshot?.name ||
+                      ""
+                    )
+                      .split(".")
+                      .slice(0, -1)
+                      .join(".")}
+                  </ThumbnailName>
+
                   {item.diff ? (
                     <Thumbnail
                       replace
                       to={`/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new/${item.diff.id}`}
                       data-active={diffId === item.diff.id}
-                      mt={isFirst(virtualRow.index) ? "10px" : 0}
-                      mb={isLast(virtualRow.index) ? "10px" : 0}
                     >
                       {item.diff.status === "updated" && (
                         <ThumbnailImage
