@@ -1,6 +1,8 @@
-import { callbackify } from "util";
 import redis from "redis";
+import { callbackify } from "util";
+
 import config from "@argos-ci/config";
+
 import { createRedisLock } from "./lock";
 
 let redisClient;

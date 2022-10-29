@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/node";
+
 import config from "@argos-ci/config";
 
 export function setup() {

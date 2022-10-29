@@ -1,9 +1,9 @@
-import * as React from "react";
+import { MarkGithubIcon } from "@primer/octicons-react";
 import { memo } from "react";
 import { useLocation } from "react-router-dom";
-import { MarkGithubIcon } from "@primer/octicons-react";
-import config from "../config";
+
 import { Button, Icon } from "../components";
+import config from "../config";
 
 const useLoginUrl = () => {
   const { pathname, origin } = useLocation();

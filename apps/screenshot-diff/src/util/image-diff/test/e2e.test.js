@@ -1,5 +1,6 @@
-import rimraf from "rimraf";
 import getPixels from "get-pixels";
+import rimraf from "rimraf";
+
 import imageDifference from "../imageDifference";
 
 function getPixelsAsync(filename) {

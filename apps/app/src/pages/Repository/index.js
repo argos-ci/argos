@@ -1,14 +1,15 @@
-import * as React from "react";
-import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
+import { Helmet } from "react-helmet";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
+
 import { TabList, TabNavLink } from "@argos-ci/app/src/components";
-import { RepositoryBuilds } from "./Builds";
-import { RepositorySettings } from "./Settings";
-import { GettingStarted } from "./GettingStarted";
-import { NotFoundWithContainer } from "../NotFound";
+
 import { Query } from "../../containers/Apollo";
 import { HeaderTeleporter } from "../../containers/AppHeader";
+import { NotFoundWithContainer } from "../NotFound";
+import { RepositoryBuilds } from "./Builds";
+import { GettingStarted } from "./GettingStarted";
+import { RepositorySettings } from "./Settings";
 
 const REPOSITORY_QUERY = gql`
   query REPOSITORY_QUERY($ownerLogin: String!, $repositoryName: String!) {

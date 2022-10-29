@@ -1,8 +1,9 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
-import { x } from "@xstyled/styled-components";
-import { Banner, Icon, Link } from "@argos-ci/app/src/components";
 import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
+import { x } from "@xstyled/styled-components";
+import * as React from "react";
+
+import { Banner, Icon, Link } from "@argos-ci/app/src/components";
 
 export const Banners = () => (
   <x.div display="flex" flexDirection="column" gap={3} maxW={1000}>

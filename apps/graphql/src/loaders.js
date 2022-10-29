@@ -1,10 +1,11 @@
 import DataLoader from "dataloader";
+
 import {
   Build,
+  Repository,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
-  Repository,
 } from "@argos-ci/database/models";
 
 const createModelLoader = (Model) => {

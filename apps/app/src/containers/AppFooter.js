@@ -1,11 +1,10 @@
-import * as React from "react";
 import {
+  BrandLogo,
   Footer,
   FooterBody,
+  FooterLink,
   FooterPrimary,
   FooterSecondary,
-  FooterLink,
-  BrandLogo,
 } from "@argos-ci/app/src/components";
 
 export function AppFooter() {

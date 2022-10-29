@@ -1,15 +1,17 @@
-import { HttpError } from "express-err";
 import express from "express";
+import { HttpError } from "express-err";
+
+import { pushBuildNotification } from "@argos-ci/build-notification";
+import config from "@argos-ci/config";
 import { transaction } from "@argos-ci/database";
 import { Account, Build, ScreenshotBucket } from "@argos-ci/database/models";
 import { s3 as getS3, getSignedPutObjectUrl } from "@argos-ci/storage";
-import config from "@argos-ci/config";
-import { pushBuildNotification } from "@argos-ci/build-notification";
-import { asyncHandler } from "../../../util";
-import { repoAuth } from "../../../middlewares/repoAuth";
-import { getRedisLock } from "../../../redis";
-import { validate } from "../../../middlewares/validate";
+
 import { SHA1_REGEX_STR, SHA256_REGEX_STR } from "../../../constants";
+import { repoAuth } from "../../../middlewares/repoAuth";
+import { validate } from "../../../middlewares/validate";
+import { getRedisLock } from "../../../redis";
+import { asyncHandler } from "../../../util";
 import { getUnknownScreenshotKeys } from "./util";
 
 const router = express.Router();

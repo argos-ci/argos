@@ -1,6 +1,6 @@
 import { Model, mergeSchemas, timestampsSchema } from "../util";
-import { ScreenshotBucket } from "./ScreenshotBucket";
 import { File } from "./File";
+import { ScreenshotBucket } from "./ScreenshotBucket";
 
 export class Screenshot extends Model {
   static get tableName() {

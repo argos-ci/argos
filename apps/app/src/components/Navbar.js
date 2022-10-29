@@ -1,4 +1,5 @@
 import styled from "@xstyled/styled-components";
+
 import { BaseLink } from "./Link";
 
 export const Navbar = styled.nav`

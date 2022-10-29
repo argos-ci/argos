@@ -1,12 +1,12 @@
-import * as React from "react";
+import { useEffect, useState } from "react";
 import store from "store";
 
 export function useStoreState(name, initialValue = null) {
-  const [state, setState] = React.useState(() => {
+  const [state, setState] = useState(() => {
     const value = store.get(name);
     return value === undefined ? initialValue : value;
   });
-  React.useEffect(() => {
+  useEffect(() => {
     if (state === null) {
       store.remove(name);
     } else {

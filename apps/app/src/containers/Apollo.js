@@ -1,15 +1,16 @@
-import * as React from "react";
 import {
   ApolloClient,
+  ApolloProvider as BaseApolloProvider,
   InMemoryCache,
   useQuery as useApolloQuery,
-  ApolloProvider as BaseApolloProvider,
 } from "@apollo/client";
+import { useMemo } from "react";
+
 import { useAuthToken } from "./Auth";
 
 function ApolloProvider({ children, authToken }) {
   const authorization = authToken ? `Bearer ${authToken}` : null;
-  const apolloClient = React.useMemo(
+  const apolloClient = useMemo(
     () =>
       new ApolloClient({
         uri: `/graphql`,

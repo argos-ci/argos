@@ -1,4 +1,5 @@
 import logger from "@argos-ci/logger";
+
 import { getAmqpChannel } from "./amqp";
 
 export async function createJobWorker(...jobs) {

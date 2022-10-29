@@ -1,14 +1,15 @@
-import * as React from "react";
-import {
-  useMenuState,
-  Menu as HeadlessMenu,
-  MenuItem as HeadlessMenuItem,
-  MenuButton as HeadlessMenuButton,
-  MenuSeparator as HeadlessMenuSeparator,
-  MenuButtonArrow as HeadlessMenuButtonArrow,
-} from "ariakit/menu";
-import styled, { x, css } from "@xstyled/styled-components";
 import { ChevronDownIcon } from "@primer/octicons-react";
+import styled, { css, x } from "@xstyled/styled-components";
+import {
+  Menu as HeadlessMenu,
+  MenuButton as HeadlessMenuButton,
+  MenuButtonArrow as HeadlessMenuButtonArrow,
+  MenuItem as HeadlessMenuItem,
+  MenuSeparator as HeadlessMenuSeparator,
+  useMenuState,
+} from "ariakit/menu";
+import { forwardRef } from "react";
+
 import { Icon } from "./Icon";
 
 export { useMenuState };
@@ -42,19 +43,17 @@ const InnerMenuButton = styled.box`
     `}
 `;
 
-export const MenuButton = React.forwardRef(
-  ({ children, shape, ...props }, ref) => {
-    return (
-      <HeadlessMenuButton ref={ref} {...props}>
-        {(menuProps) => (
-          <InnerMenuButton {...menuProps} $shape={shape}>
-            {children}
-          </InnerMenuButton>
-        )}
-      </HeadlessMenuButton>
-    );
-  }
-);
+export const MenuButton = forwardRef(({ children, shape, ...props }, ref) => {
+  return (
+    <HeadlessMenuButton ref={ref} {...props}>
+      {(menuProps) => (
+        <InnerMenuButton {...menuProps} $shape={shape}>
+          {children}
+        </InnerMenuButton>
+      )}
+    </HeadlessMenuButton>
+  );
+});
 
 export const MenuButtonArrow = ({ as, ...props }) => {
   return (

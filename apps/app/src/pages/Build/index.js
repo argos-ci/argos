@@ -1,25 +1,48 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
-import { gql } from "graphql-tag";
-import { useParams } from "react-router-dom";
-import { x } from "@xstyled/styled-components";
-import { Helmet } from "react-helmet";
-import { useInView } from "react-cool-inview";
-import moment from "moment";
 import {
+  ArrowDownIcon,
+  EyeClosedIcon,
+  EyeIcon,
+  ImageIcon,
+} from "@primer/octicons-react";
+import { x } from "@xstyled/styled-components";
+import { gql } from "graphql-tag";
+import moment from "moment";
+import { useEffect, useState } from "react";
+import { useInView } from "react-cool-inview";
+import { Helmet } from "react-helmet";
+import { useParams } from "react-router-dom";
+
+import {
+  Alert,
+  BuildStat,
   Button,
   Container,
+  Icon,
   IllustratedText,
+  InlineCode,
+  Link,
   LoadingAlert,
   PrimaryTitle,
-  Alert,
-  Link,
-  Icon,
-  InlineCode,
-  BuildStat,
 } from "@argos-ci/app/src/components";
+
 import { useQuery } from "../../containers/Apollo";
+import { getBuildStatusLabel } from "../../containers/BuildStatus";
+import {
+  BuildStatusChip,
+  BuildStatusChipBuildFragment,
+  BuildStatusChipRepositoryFragment,
+} from "../../containers/BuildStatusChip";
+import {
+  getDiffStatusColor,
+  getDiffStatusIcon,
+} from "../../containers/ScreenshotDiffStatus";
 import { NotFound } from "../NotFound";
+import {
+  BuildStatusInfoAlert,
+  BuildStatusInfoBuildFragment,
+  BuildStatusInfoRepositoryFragment,
+} from "./BuildStatusInfo";
 import {
   ReviewButton,
   ReviewButtonBuildFragment,
@@ -27,39 +50,18 @@ import {
   ReviewButtonRepositoryFragment,
 } from "./ReviewButton";
 import {
-  ArrowDownIcon,
-  EyeClosedIcon,
-  EyeIcon,
-  ImageIcon,
-} from "@primer/octicons-react";
-import { getBuildStatusLabel } from "../../containers/BuildStatus";
+  LoadMoreButton,
+  ScreenshotDiffsPageFragment,
+  ScreenshotDiffsSection,
+  fetchMoreScreenshotDiffs,
+} from "./ScreenshotDiffsSection";
+import { StableScreenshots } from "./StableScreenshotDiffs";
 import {
   StickySummaryMenu,
   SummaryCard,
   SummaryCardBuildFragment,
   SummaryCardRepositoryFragment,
 } from "./SummaryCard";
-import {
-  BuildStatusChip,
-  BuildStatusChipBuildFragment,
-  BuildStatusChipRepositoryFragment,
-} from "../../containers/BuildStatusChip";
-import {
-  fetchMoreScreenshotDiffs,
-  LoadMoreButton,
-  ScreenshotDiffsPageFragment,
-  ScreenshotDiffsSection,
-} from "./ScreenshotDiffsSection";
-import { StableScreenshots } from "./StableScreenshotDiffs";
-import {
-  BuildStatusInfoAlert,
-  BuildStatusInfoBuildFragment,
-  BuildStatusInfoRepositoryFragment,
-} from "./BuildStatusInfo";
-import {
-  getDiffStatusColor,
-  getDiffStatusIcon,
-} from "../../containers/ScreenshotDiffStatus";
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
@@ -193,9 +195,8 @@ export function ShowChangesButton({ setShowChanges, showChanges }) {
 }
 
 const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
-  const [showStableScreenshots, setShowStableScreenshots] =
-    React.useState(false);
-  const [showChanges, setShowChanges] = React.useState(true);
+  const [showStableScreenshots, setShowStableScreenshots] = useState(false);
+  const [showChanges, setShowChanges] = useState(true);
   const { observe, inView, scrollDirection } = useInView({});
 
   const { loading, data, fetchMore, startPolling, stopPolling } = useQuery(
@@ -218,7 +219,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
     (data.repository.build.status === "pending" ||
       data.repository.build.status === "progress");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (inProgress) {
       startPolling(1000);
     } else {
@@ -226,7 +227,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
     }
   }, [stopPolling, startPolling, inProgress]);
 
-  const [moreLoading, setMoreLoading] = React.useState();
+  const [moreLoading, setMoreLoading] = useState();
 
   function loadNextPage() {
     setMoreLoading(true);

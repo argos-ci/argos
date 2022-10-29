@@ -1,12 +1,13 @@
-import * as React from "react";
-import { x } from "@xstyled/styled-components";
 import {
-  GitBranchIcon,
-  CommitIcon,
   BookmarkIcon,
+  CommitIcon,
+  GitBranchIcon,
 } from "@primer/octicons-react";
-import moment from "moment";
+import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
+import moment from "moment";
+import { useState } from "react";
+
 import {
   BaseLink,
   Button,
@@ -22,15 +23,16 @@ import {
   Thead,
   Tr,
 } from "@argos-ci/app/src/components";
+
 import { useQuery } from "../../containers/Apollo";
 import {
   BuildStatusChip,
   BuildStatusChipBuildFragment,
   BuildStatusChipRepositoryFragment,
 } from "../../containers/BuildStatusChip";
-import { GettingStarted } from "./GettingStarted";
-import { getPossessiveForm } from "../../modules/utils";
 import { hasWritePermission } from "../../modules/permissions";
+import { getPossessiveForm } from "../../modules/utils";
+import { GettingStarted } from "./GettingStarted";
 
 const REPOSITORY_BUILDS_QUERY = gql`
   query REPOSITORY_BUILDS_QUERY(
@@ -79,7 +81,7 @@ function BuildsList({ repository }) {
       after: 0,
     },
   });
-  const [moreLoading, setMoreLoading] = React.useState();
+  const [moreLoading, setMoreLoading] = useState();
 
   function loadNextPage() {
     setMoreLoading(true);

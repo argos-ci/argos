@@ -1,7 +1,6 @@
-import * as React from "react";
-import { Tooltip, TooltipAnchor, useTooltipState } from "./Tooltip";
 import { IllustratedText } from "./IllustratedText";
 import { LinkBlock } from "./Link";
+import { Tooltip, TooltipAnchor, useTooltipState } from "./Tooltip";
 
 export function BuildStat({ icon, color, count, label, ...props }) {
   const tooltip = useTooltipState();

@@ -1,4 +1,5 @@
 import { gql } from "graphql-tag";
+
 import config from "@argos-ci/config";
 import { s3 as getS3, getSignedGetObjectUrl } from "@argos-ci/storage";
 

@@ -1,6 +1,8 @@
-import { promisify } from "util";
 import redis from "redis";
+import { promisify } from "util";
+
 import config from "@argos-ci/config";
+
 import { createRedisLock } from "./lock";
 
 function delay(time) {

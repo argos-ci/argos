@@ -1,12 +1,14 @@
-import path from "path";
-import { promisify } from "util";
 import { rmdir, unlink } from "fs";
+import path from "path";
 import tmp from "tmp";
+import { promisify } from "util";
+
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { ScreenshotDiff } from "@argos-ci/database/models";
 import { download, upload } from "@argos-ci/storage";
-import { diffImages } from "./util/image-diff";
+
 import { raw } from "../../database/src";
+import { diffImages } from "./util/image-diff";
 
 const rmdirAsync = promisify(rmdir);
 const unlinkAsync = promisify(unlink);

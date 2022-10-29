@@ -1,4 +1,5 @@
 import { Synchronization } from "@argos-ci/database/models";
+
 import { job } from "./job";
 
 export async function synchronizeFromInstallationId(installationId) {

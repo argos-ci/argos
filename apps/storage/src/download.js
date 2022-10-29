@@ -1,5 +1,5 @@
-import { createWriteStream } from "fs";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { createWriteStream } from "fs";
 
 export async function download({ s3, outputPath, ...other }) {
   const result = await s3.send(new GetObjectCommand(other));

@@ -1,5 +1,6 @@
-import { Octokit } from "@octokit/rest";
 import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
+import { Octokit } from "@octokit/rest";
+
 import config from "@argos-ci/config";
 
 export const githubClient = new Octokit({

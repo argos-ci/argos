@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
+import { LinkExternalIcon } from "@primer/octicons-react";
 import { gql } from "graphql-tag";
+
 import {
   BaseLink,
   Link,
@@ -14,10 +15,10 @@ import {
   MenuTitle,
   useMenuState,
 } from "@argos-ci/app/src/components";
+
+import config from "../../config";
 import { Query } from "../Apollo";
 import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
-import config from "../../config";
-import { LinkExternalIcon } from "@primer/octicons-react";
 
 const BREADCRUMB_MENU_OWNERS_QUERY = gql`
   query BREADCRUMB_MENU_OWNERS_QUERY {

@@ -1,22 +1,23 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
-import { useParams } from "react-router-dom";
-import { gql } from "graphql-tag";
 import { RepoIcon } from "@primer/octicons-react";
+import { gql } from "graphql-tag";
+import { useParams } from "react-router-dom";
+
 import {
-  Menu,
-  MenuItem,
-  useMenuState,
-  MenuButton,
-  MenuButtonArrow,
-  MenuSeparator,
-  MenuText,
-  Link,
   BaseLink,
   Icon,
+  Link,
   Loader,
+  Menu,
+  MenuButton,
+  MenuButtonArrow,
+  MenuItem,
+  MenuSeparator,
+  MenuText,
   MenuTitle,
+  useMenuState,
 } from "@argos-ci/app/src/components";
+
 import { Query } from "../Apollo";
 
 const OWNER_REPOSITORIES_QUERY = gql`

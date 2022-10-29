@@ -1,7 +1,8 @@
-import { createModelJob } from "@argos-ci/job-core";
-import { Build } from "@argos-ci/database/models";
 import { pushBuildNotification } from "@argos-ci/build-notification";
+import { Build } from "@argos-ci/database/models";
+import { createModelJob } from "@argos-ci/job-core";
 import { job as screenshotDiffJob } from "@argos-ci/screenshot-diff";
+
 import { createBuildDiffs } from "./createBuildDiffs";
 
 export async function performBuild(build) {

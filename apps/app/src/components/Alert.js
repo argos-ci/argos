@@ -1,8 +1,9 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
+import { forwardRef, useEffect, useState } from "react";
+
 import { Loader } from "./Loader";
 
-export const Alert = React.forwardRef(
+export const Alert = forwardRef(
   ({ children, color = "neutral", ...props }, ref) => {
     const onColor = `${color}-on`;
     const bgColor = `${color}-bg`;
@@ -30,8 +31,8 @@ export const Alert = React.forwardRef(
 );
 
 export function LoadingAlert({ children, delay = 300, ...props }) {
-  const [visible, setVisible] = React.useState(false);
-  React.useEffect(() => {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
     const timeout = setTimeout(() => {
       setVisible(true);
     }, delay);

@@ -1,5 +1,7 @@
-import logger from "@argos-ci/logger";
 import * as Sentry from "@sentry/node";
+
+import logger from "@argos-ci/logger";
+
 import { getAmqpChannel } from "./amqp";
 
 const serializeMessage = (payload) => Buffer.from(JSON.stringify(payload));

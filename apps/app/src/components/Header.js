@@ -1,5 +1,5 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
+
 import { Container } from "./Container";
 import { BaseLink } from "./Link";
 

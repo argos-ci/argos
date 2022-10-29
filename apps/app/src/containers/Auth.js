@@ -1,7 +1,8 @@
-import * as React from "react";
+import { createContext, useCallback, useContext, useMemo } from "react";
+
 import { useStoreState } from "./Store";
 
-const AuthContext = React.createContext();
+const AuthContext = createContext();
 
 function AuthProvider({ children }) {
   const { user } = window.clientData;
@@ -10,14 +11,14 @@ function AuthProvider({ children }) {
     email = user.email;
   }
   const [token, setToken] = useStoreState("token", email);
-  const value = React.useMemo(() => ({ token, setToken }), [token, setToken]);
+  const value = useMemo(() => ({ token, setToken }), [token, setToken]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const AuthInitializer = AuthProvider;
 
 export function useAuth() {
-  return React.useContext(AuthContext);
+  return useContext(AuthContext);
 }
 
 export function useAuthToken() {
@@ -27,5 +28,5 @@ export function useAuthToken() {
 
 export function useLogout() {
   const { setToken } = useAuth();
-  return React.useCallback(() => setToken(null), [setToken]);
+  return useCallback(() => setToken(null), [setToken]);
 }

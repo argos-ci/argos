@@ -1,9 +1,8 @@
-import * as React from "react";
 import {
-  defaultTheme,
   ThemeProvider,
-  th,
+  defaultTheme,
   generateHexAlphaVariants,
+  th,
 } from "@xstyled/styled-components";
 
 const oldColors = {

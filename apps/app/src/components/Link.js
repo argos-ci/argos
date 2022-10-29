@@ -1,8 +1,8 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
+import { forwardRef } from "react";
 import { Link as ReactRouterLink } from "react-router-dom";
 
-export const BaseLink = React.forwardRef((props, ref) => {
+export const BaseLink = forwardRef((props, ref) => {
   return (
     <x.a
       ref={ref}
@@ -15,7 +15,7 @@ export const BaseLink = React.forwardRef((props, ref) => {
   );
 });
 
-export const Link = React.forwardRef((props, ref) => (
+export const Link = forwardRef((props, ref) => (
   <BaseLink
     ref={ref}
     textDecoration={{ _: "none", hover: "underline" }}
@@ -25,7 +25,7 @@ export const Link = React.forwardRef((props, ref) => (
   />
 ));
 
-export const LinkBlock = React.forwardRef((props, ref) => {
+export const LinkBlock = forwardRef((props, ref) => {
   return (
     <BaseLink
       ref={ref}

@@ -1,7 +1,10 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
-import { Helmet } from "react-helmet";
+import { useMutation } from "@apollo/client";
+import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
+import { useState } from "react";
+import { Helmet } from "react-helmet";
+
 import {
   Alert,
   Card,
@@ -23,8 +26,7 @@ import {
   useFormState,
   useToast,
 } from "@argos-ci/app/src/components";
-import { x } from "@xstyled/styled-components";
-import { useMutation } from "@apollo/client";
+
 import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
 
 const UPDATE_REFERENCE_BRANCH = gql`
@@ -70,11 +72,11 @@ function UpdateBranchForm({ repository }) {
   const successToast = useToast();
   const errorToast = useToast();
 
-  const [baselineBranch, setBaselineBranch] = React.useState(
+  const [baselineBranch, setBaselineBranch] = useState(
     repository.baselineBranch || repository.defaultBranch || ""
   );
   const initialUseDefaultBranch = repository.baselineBranch === null;
-  const [useDefaultBranch, setUseDefaultBranch] = React.useState(
+  const [useDefaultBranch, setUseDefaultBranch] = useState(
     initialUseDefaultBranch
   );
 

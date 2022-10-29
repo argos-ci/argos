@@ -1,6 +1,6 @@
-import { PRIVATE_SCOPES, PUBLIC_SCOPES } from "./scopes";
 import { CONSISTENT, INCONSISTENT } from "./authorizationStatuses";
 import { getAuthorizationStatus } from "./getAuthorizationStatus";
+import { PRIVATE_SCOPES, PUBLIC_SCOPES } from "./scopes";
 
 describe("getAuthorizationStatus", () => {
   it("should be consistent with privateSync: true and private scopes", () => {

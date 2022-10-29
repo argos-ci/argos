@@ -1,10 +1,10 @@
 /* eslint-disable import/namespace */
-import { stat, mkdir, unlink } from "fs/promises";
-import { dirname } from "path";
 import { spawn } from "child_process";
-import { promisify } from "util";
+import { mkdir, stat, unlink } from "fs/promises";
 import gm from "gm";
+import { dirname } from "path";
 import { tmpName as cbTmpName } from "tmp";
+import { promisify } from "util";
 
 const tmpName = promisify(cbTmpName);
 

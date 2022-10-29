@@ -1,23 +1,24 @@
-import * as React from "react";
-import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
+import { Helmet } from "react-helmet";
+import { Route, Routes, useParams } from "react-router-dom";
+
 import {
   Container,
-  SidebarNavLink,
-  SidebarList,
-  SidebarTitle,
   SidebarLayout,
+  SidebarList,
+  SidebarNavLink,
+  SidebarTitle,
 } from "@argos-ci/app/src/components";
-import { Route, Routes, useParams } from "react-router-dom";
+
+import { Query } from "../../containers/Apollo";
+import { hasWritePermission } from "../../modules/permissions";
 import { NotFound, NotFoundWithContainer } from "../NotFound";
 import { GeneralSettings, OwnerSettingsFragment } from "./GeneralSettings";
+import { OwnerTabs } from "./OwnerTabs";
 import {
   OwnerPermissionsSettingsFragment,
   PermissionsSettings,
 } from "./PermissionsSettings";
-import { hasWritePermission } from "../../modules/permissions";
-import { Query } from "../../containers/Apollo";
-import { OwnerTabs } from "./OwnerTabs";
 
 function SettingsSidebar({ owner }) {
   return (

@@ -1,27 +1,28 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
-import { gql } from "graphql-tag";
+import { LinkExternalIcon } from "@primer/octicons-react";
 import { x } from "@xstyled/styled-components";
+import { gql } from "graphql-tag";
+import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
+
 import {
   Container,
-  SecondaryTitle,
   Link,
   Loader,
+  SecondaryTitle,
 } from "@argos-ci/app/src/components";
+
 import config from "../../config";
-import { useUser } from "../../containers/User";
 import { Query } from "../../containers/Apollo";
+import { useUser } from "../../containers/User";
+import { NotFound } from "../NotFound";
+import { OwnerTabs } from "./OwnerTabs";
 import {
   ActiveRepositoryCard,
   InactiveRepositoryCard,
   NoRepositoryCard,
   OwnerRepositoryCardFragment,
 } from "./RepositoryCard";
-import { NotFound } from "../NotFound";
-import { OwnerTabs } from "./OwnerTabs";
-import { Helmet } from "react-helmet";
-import { LinkExternalIcon } from "@primer/octicons-react";
 
 const getRepositoryUrl = (owner, repository) =>
   `/${owner.login}/${repository.name}`;

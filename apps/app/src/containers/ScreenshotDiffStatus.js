@@ -1,9 +1,9 @@
 import {
-  FileDiffIcon,
   ChecklistIcon,
   FileAddedIcon,
-  FileRemovedIcon,
+  FileDiffIcon,
   FileIcon,
+  FileRemovedIcon,
 } from "@primer/octicons-react";
 
 export function getDiffStatusColor(status) {

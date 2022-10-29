@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-
 import { callbackify } from "util";
-import logger from "@argos-ci/logger";
+
 import { Build } from "@argos-ci/database/models";
+import logger from "@argos-ci/logger";
+
 import { job as buildJob } from "../job";
 
 const main = callbackify(async () => {

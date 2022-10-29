@@ -1,5 +1,6 @@
 // @ts-check
 import argosConfig from "@argos-ci/config";
+
 const { devices } = require("@playwright/test");
 
 /**

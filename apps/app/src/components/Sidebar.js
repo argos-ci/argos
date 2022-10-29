@@ -1,5 +1,5 @@
-import * as React from "react";
 import styled, { x } from "@xstyled/styled-components";
+
 import { useIsMatchingTo } from "../containers/Router";
 import { LinkBlock } from "./Link";
 

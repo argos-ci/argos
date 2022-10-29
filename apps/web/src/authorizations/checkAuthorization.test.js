@@ -1,7 +1,7 @@
 import { CONSISTENT, INVALID_TOKEN } from "./authorizationStatuses";
+import { checkAuthorization } from "./checkAuthorization";
 import { githubClient } from "./githubClient";
 import { notFoundToken, validToken } from "./githubClientFixtures";
-import { checkAuthorization } from "./checkAuthorization";
 
 jest.mock("./githubClient");
 

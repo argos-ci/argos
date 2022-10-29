@@ -1,4 +1,5 @@
 import { gql } from "graphql-tag";
+
 import { transaction } from "@argos-ci/database";
 import {
   Account,
@@ -6,6 +7,7 @@ import {
   Repository,
   Screenshot,
 } from "@argos-ci/database/models";
+
 import { APIError } from "../util";
 import { getOwner } from "./Owner";
 

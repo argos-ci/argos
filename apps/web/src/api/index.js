@@ -1,12 +1,13 @@
-import { formatters } from "express-err";
-import express from "express";
 import * as Sentry from "@sentry/node";
+import express from "express";
+import { formatters } from "express-err";
+
 import { errorHandler } from "../middlewares/errorHandler";
+import auth from "./auth";
 import buckets from "./buckets";
 import builds from "./builds";
-import auth from "./auth";
-import webhooks from "./webhooks";
 import v2 from "./v2";
+import webhooks from "./webhooks";
 
 export const createApi = () => {
   const router = express.Router();

@@ -1,8 +1,10 @@
-import path from "path";
 import { S3Client } from "@aws-sdk/client-s3";
+import path from "path";
+
 import config from "@argos-ci/config";
-import { upload } from "./upload";
+
 import { checkIfExists } from "./checkIfExists";
+import { upload } from "./upload";
 
 describe("#download", () => {
   const s3 = new S3Client({ region: "eu-west-1" });

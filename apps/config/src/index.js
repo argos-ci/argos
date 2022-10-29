@@ -1,7 +1,7 @@
-import url from "url";
-import path from "path";
 import convict from "convict";
 import dotenv from "dotenv";
+import path from "path";
+import url from "url";
 
 dotenv.config();
 

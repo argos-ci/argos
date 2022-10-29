@@ -1,4 +1,5 @@
 import path from "path";
+
 import { diffImages } from "./index";
 
 describe("#diffImages", () => {

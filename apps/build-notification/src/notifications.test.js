@@ -1,14 +1,16 @@
 /* eslint-disable jest/no-disabled-tests */
 import path from "path";
+
 import {
-  UserRepositoryRight,
   BuildNotification,
+  UserRepositoryRight,
 } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 import {
   TEST_GITHUB_USER_ACCESS_TOKEN,
   usePlayback,
 } from "@argos-ci/github/testing";
+
 import { job as buildNotificationJob } from "./job";
 import {
   processBuildNotification,

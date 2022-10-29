@@ -1,9 +1,9 @@
-import * as React from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation, useResolvedPath } from "react-router-dom";
 
 export function ScrollToTop({ children }) {
   const { pathname } = useLocation();
-  React.useEffect(() => {
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
   return children || null;
@@ -11,8 +11,8 @@ export function ScrollToTop({ children }) {
 
 export function GoogleAnalytics({ children }) {
   const { href, pathname } = useLocation();
-  const initializedRef = React.useRef(false);
-  React.useEffect(() => {
+  const initializedRef = useRef(false);
+  useEffect(() => {
     if (!initializedRef.current) {
       initializedRef.current = true;
     } else {
@@ -26,7 +26,7 @@ export function GoogleAnalytics({ children }) {
 }
 
 export function AbsoluteRedirect({ to }) {
-  React.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     window.location = to;
   }, [to]);
   return null;

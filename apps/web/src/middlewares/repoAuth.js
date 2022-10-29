@@ -1,7 +1,9 @@
 import { HttpError } from "express-err";
+
 import { Repository } from "@argos-ci/database/models";
-import { bearerAuth } from "./bearerAuth";
+
 import { asyncHandler } from "../util";
+import { bearerAuth } from "./bearerAuth";
 import githubActions from "./tokenless-strategies/github-actions";
 
 const tokenlessStrategies = [githubActions];

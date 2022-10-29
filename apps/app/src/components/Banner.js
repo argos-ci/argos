@@ -1,7 +1,7 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
+import { forwardRef } from "react";
 
-export const Banner = React.forwardRef(
+export const Banner = forwardRef(
   ({ children, color = "neutral", ...props }, ref) => {
     const onColor = `${color}-on`;
     const bgColor = `${color}-bg`;

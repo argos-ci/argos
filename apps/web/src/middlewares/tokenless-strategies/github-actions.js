@@ -1,7 +1,8 @@
 // @ts-check
 import { HttpError } from "express-err";
-import { getInstallationOctokit } from "@argos-ci/github/src";
+
 import { Repository } from "@argos-ci/database/models";
+import { getInstallationOctokit } from "@argos-ci/github/src";
 
 const marker = "tokenless-github-";
 

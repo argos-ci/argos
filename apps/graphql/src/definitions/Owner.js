@@ -1,5 +1,6 @@
 import { gql } from "graphql-tag";
-import { User, Organization, Account } from "@argos-ci/database/models";
+
+import { Account, Organization, User } from "@argos-ci/database/models";
 
 export const typeDefs = gql`
   enum OwnerType {

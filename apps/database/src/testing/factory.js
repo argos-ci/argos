@@ -1,9 +1,9 @@
 /* eslint-disable import/no-extraneous-dependencies */
-
-import { factory } from "factory-girl";
-import moment from "moment";
 import crypto from "crypto";
+import { factory } from "factory-girl";
 import ObjectionAdapter from "factory-girl-objection-adapter";
+import moment from "moment";
+
 import {
   Account,
   Build,

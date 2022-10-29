@@ -1,6 +1,7 @@
 import * as notifications from "@argos-ci/build-notification";
+import { factory, useDatabase } from "@argos-ci/database/testing";
 import { job as screenshotDiffJob } from "@argos-ci/screenshot-diff";
-import { useDatabase, factory } from "@argos-ci/database/testing";
+
 import { createBuildDiffs } from "./createBuildDiffs";
 import { performBuild } from "./index";
 

@@ -1,13 +1,15 @@
+import axios from "axios";
+import fs from "fs/promises";
 import path from "path";
 import request from "supertest";
-import fs from "fs/promises";
-import { useDatabase, factory } from "@argos-ci/database/testing";
+
 import { job as buildJob } from "@argos-ci/build";
 import { Build } from "@argos-ci/database/models";
+import { factory, useDatabase } from "@argos-ci/database/testing";
 import { s3 } from "@argos-ci/storage";
-import { quitRedis } from "./redis";
+
 import { createApp } from "./app";
-import axios from "axios";
+import { quitRedis } from "./redis";
 
 jest.mock("@argos-ci/build-notification");
 

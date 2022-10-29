@@ -1,9 +1,10 @@
-import * as React from "react";
 import { gql } from "graphql-tag";
-import { useAuthToken, useLogout } from "./Auth";
-import { useQuery } from "./Apollo";
+import { createContext, useContext, useEffect, useMemo } from "react";
 
-const UserContext = React.createContext();
+import { useQuery } from "./Apollo";
+import { useAuthToken, useLogout } from "./Auth";
+
+const UserContext = createContext();
 
 const UserQuery = gql`
   query User {
@@ -34,30 +35,30 @@ export function UserInitializer({ children }) {
   const { loading, data, refetch } = useQuery(UserQuery, { skip: !token });
 
   // Remove token if outdated
-  React.useEffect(() => {
+  useEffect(() => {
     if (!loading && token && data.user === null) {
       logout();
     }
   }, [loading, token, data, logout]);
   const user = token && !loading ? data.user : null;
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       window.gtag("set", { user_id: user.id });
     } else {
       window.gtag("set", { user_id: null });
     }
   }, [user]);
-  const value = React.useMemo(() => ({ user, refetch }), [user, refetch]);
+  const value = useMemo(() => ({ user, refetch }), [user, refetch]);
   if (loading && token) return null;
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
 export function useUser() {
-  const { user } = React.useContext(UserContext);
+  const { user } = useContext(UserContext);
   return user;
 }
 
 export function useRefetchUser() {
-  const { refetch } = React.useContext(UserContext);
+  const { refetch } = useContext(UserContext);
   return refetch;
 }

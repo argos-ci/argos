@@ -1,6 +1,6 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import { GroupLabel } from "ariakit/group";
+
 import { Button } from "./Button";
 
 export const ToggleGroupButtons = ({

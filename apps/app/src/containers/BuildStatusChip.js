@@ -1,22 +1,23 @@
-import * as React from "react";
 import { gql } from "graphql-tag";
-import {
-  getBuildStatusColor,
-  getBuildStatusIcon,
-  getBuildStatusLabel,
-} from "./BuildStatus";
+
 import {
   Chip,
   ParagraphTooltip,
   TooltipAnchor,
   useTooltipState,
 } from "@argos-ci/app/src/components";
+
 import {
   BuildStatusInfo,
   BuildStatusInfoBuildFragment,
   BuildStatusInfoRepositoryFragment,
   getStatusInfoType,
 } from "../pages/Build/BuildStatusInfo";
+import {
+  getBuildStatusColor,
+  getBuildStatusIcon,
+  getBuildStatusLabel,
+} from "./BuildStatus";
 
 export const BuildStatusChipBuildFragment = gql`
   fragment BuildStatusChipBuildFragment on Build {

@@ -1,7 +1,9 @@
 import request from "supertest";
-import { repoAuth } from "./repoAuth";
-import { useDatabase, factory } from "@argos-ci/database/testing";
+
+import { factory, useDatabase } from "@argos-ci/database/testing";
+
 import { createTestApp } from "../test-util";
+import { repoAuth } from "./repoAuth";
 
 const app = createTestApp(repoAuth, (req, res) => {
   res.send({ authRepository: req.authRepository });

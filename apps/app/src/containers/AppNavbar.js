@@ -1,10 +1,10 @@
-import * as React from "react";
 import {
+  GearIcon,
   HomeIcon,
   RepoIcon,
-  GearIcon,
   SignOutIcon,
 } from "@primer/octicons-react";
+
 import {
   BaseLink,
   BrandLogo,
@@ -21,9 +21,10 @@ import {
   useMenuState,
 } from "@argos-ci/app/src/components";
 import { GitHubLoginButton } from "@argos-ci/app/src/containers/GitHub";
+
 import config from "../config";
-import { OwnerAvatar } from "./OwnerAvatar";
 import { useLogout } from "./Auth";
+import { OwnerAvatar } from "./OwnerAvatar";
 import { useUser } from "./User";
 
 const UserMenu = ({ user }) => {

@@ -1,5 +1,3 @@
-import * as React from "react";
-
 export function BrandLogo({ colorMode, ...props }) {
   return (
     <svg viewBox="0 0 943 193" {...props}>

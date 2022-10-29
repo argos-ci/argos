@@ -1,6 +1,6 @@
 import { Model, mergeSchemas, timestampsSchema } from "../util";
-import { Screenshot } from "./Screenshot";
 import { Repository } from "./Repository";
+import { Screenshot } from "./Screenshot";
 
 const SHA1_REGEXP = "^[0-9a-f]{40}$";
 

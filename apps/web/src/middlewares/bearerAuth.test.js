@@ -1,6 +1,7 @@
 import request from "supertest";
-import { bearerAuth } from "./bearerAuth";
+
 import { createTestApp } from "../test-util";
+import { bearerAuth } from "./bearerAuth";
 
 const app = createTestApp(bearerAuth, (req, res) => {
   res.send({ bearerToken: req.bearerToken });

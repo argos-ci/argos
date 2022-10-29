@@ -1,13 +1,15 @@
-import express from "express";
-import path from "path";
-import session from "express-session";
-import connectRedis from "connect-redis";
-import config from "@argos-ci/config";
 import * as Sentry from "@sentry/node";
+import connectRedis from "connect-redis";
+import express from "express";
+import session from "express-session";
+import path from "path";
+
+import config from "@argos-ci/config";
 import { apolloServer } from "@argos-ci/graphql";
+
+import { auth } from "./middlewares/auth";
 import { errorHandler } from "./middlewares/errorHandler";
 import { rendering } from "./middlewares/rendering";
-import { auth } from "./middlewares/auth";
 import * as redis from "./redis";
 
 export const createAppRouter = async () => {

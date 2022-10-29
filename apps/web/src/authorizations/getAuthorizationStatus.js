@@ -1,5 +1,5 @@
-import { expandScopes, PRIVATE_SCOPES, PUBLIC_SCOPES } from "./scopes";
 import { CONSISTENT, INCONSISTENT } from "./authorizationStatuses";
+import { PRIVATE_SCOPES, PUBLIC_SCOPES, expandScopes } from "./scopes";
 
 export function getAuthorizationStatus({ privateSync, githubScopes }) {
   const scopes = expandScopes(githubScopes || []);

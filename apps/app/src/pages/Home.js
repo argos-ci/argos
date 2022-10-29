@@ -1,11 +1,15 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
-import { gql } from "graphql-tag";
+import {
+  EyeClosedIcon,
+  EyeIcon,
+  GearIcon,
+  LinkExternalIcon,
+  LockIcon,
+} from "@primer/octicons-react";
 import { x } from "@xstyled/styled-components";
-import { Query } from "../containers/Apollo";
-import { useUser } from "../containers/User";
-import { isUserSyncing } from "../modules/user";
-import config from "../config";
+import { gql } from "graphql-tag";
+import { useEffect, useState } from "react";
+
 import {
   Button,
   Card,
@@ -15,37 +19,35 @@ import {
   CardTitle,
   Container,
   Icon,
+  IllustratedText,
   Link,
+  LinkBlock,
   Loader,
   PrimaryTitle,
   Table,
+  Tag,
+  TagButton,
   Tbody,
   Td,
   Th,
   Thead,
-  Tr,
-  IllustratedText,
-  LinkBlock,
-  Tag,
-  TagButton,
-  useTooltipState,
-  TooltipAnchor,
   Tooltip,
+  TooltipAnchor,
+  Tr,
+  useTooltipState,
 } from "@argos-ci/app/src/components";
-import {
-  LinkExternalIcon,
-  GearIcon,
-  LockIcon,
-  EyeClosedIcon,
-  EyeIcon,
-} from "@primer/octicons-react";
-import { OwnerAvatar } from "../containers/OwnerAvatar";
-import { hasWritePermission } from "../modules/permissions";
+
+import config from "../config";
+import { Query } from "../containers/Apollo";
 import {
   BuildStatusChip,
   BuildStatusChipBuildFragment,
   BuildStatusChipRepositoryFragment,
 } from "../containers/BuildStatusChip";
+import { OwnerAvatar } from "../containers/OwnerAvatar";
+import { useUser } from "../containers/User";
+import { hasWritePermission } from "../modules/permissions";
+import { isUserSyncing } from "../modules/user";
 
 const HOME_OWNERS_REPOSITORIES_QUERY = gql`
   query HOME_OWNERS_REPOSITORIES_QUERY {
@@ -235,7 +237,7 @@ function Owners({ owners }) {
   const activeRepositories = repositories.filter(({ enabled }) => enabled);
   const showFilterButton = repositories.length > activeRepositories.length;
 
-  const [activeFilter, setActiveFilter] = React.useState(
+  const [activeFilter, setActiveFilter] = useState(
     activeRepositories.length !== 0
   );
 
@@ -296,7 +298,7 @@ function Owners({ owners }) {
 }
 
 const RedirectToWww = () => {
-  React.useEffect(() => {
+  useEffect(() => {
     window.location = "https://www.argos-ci.com";
   }, []);
   return null;

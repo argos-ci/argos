@@ -1,12 +1,12 @@
-import * as React from "react";
-import { x } from "@xstyled/styled-components";
-import moment from "moment";
 import {
   CheckCircleFillIcon,
-  LinkExternalIcon,
   ChevronRightIcon,
+  LinkExternalIcon,
 } from "@primer/octicons-react";
+import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
+import moment from "moment";
+
 import {
   Card,
   CardBody,
@@ -23,6 +23,7 @@ import {
   Time,
   useDisclosureState,
 } from "@argos-ci/app/src/components";
+
 import config from "../../config";
 import { getPossessiveForm, pluralize } from "../../modules/utils";
 

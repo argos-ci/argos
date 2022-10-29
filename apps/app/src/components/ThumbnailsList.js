@@ -1,16 +1,17 @@
-import * as React from "react";
-import styled, { x } from "@xstyled/styled-components";
-import { useVirtualizer, defaultRangeExtractor } from "@tanstack/react-virtual";
-import { Badge } from "./Badge";
-import { Alert } from "./Alert";
 import { ChevronRightIcon } from "@primer/octicons-react";
-import { BaseLink, LinkBlock } from "./Link";
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
+import styled, { x } from "@xstyled/styled-components";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { BuildStat } from "./BuildStat";
+
 import {
   getDiffStatusColor,
   getDiffStatusIcon,
 } from "../containers/ScreenshotDiffStatus";
+import { Alert } from "./Alert";
+import { Badge } from "./Badge";
+import { BuildStat } from "./BuildStat";
+import { BaseLink, LinkBlock } from "./Link";
 
 const DIFFS_GROUPS = {
   failed: { diffs: [], label: "failures", collapsed: false },
@@ -205,12 +206,12 @@ export function ThumbnailsList({
   stats,
 }) {
   const { ownerLogin, repositoryName, buildNumber, diffId } = useParams();
-  const parentRef = React.useRef();
-  const activeStickyIndexRef = React.useRef(0);
+  const parentRef = useRef();
+  const activeStickyIndexRef = useRef(0);
 
   const filledGroups = fillGroups(DIFFS_GROUPS, data);
 
-  const [groupCollapseStatuses, setGroupCollapseStatuses] = React.useState(
+  const [groupCollapseStatuses, setGroupCollapseStatuses] = useState(
     Object.keys(DIFFS_GROUPS).reduce(
       (acc, status) => ({ ...acc, [status]: filledGroups[status].collapsed }),
       {}
@@ -242,7 +243,7 @@ export function ThumbnailsList({
     getScrollElement: () => parentRef.current,
     overscan: 40,
     paddingEnd: 32,
-    rangeExtractor: React.useCallback(
+    rangeExtractor: useCallback(
       (range) => {
         activeStickyIndexRef.current = Array.from(stickyIndexes)
           .reverse()
@@ -267,7 +268,7 @@ export function ThumbnailsList({
     lastItem &&
     lastItem.index >= rows.length - 1;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (shouldFetch) {
       fetchNextPage();
     }

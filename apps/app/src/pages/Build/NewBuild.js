@@ -1,20 +1,32 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
-import { gql } from "graphql-tag";
-import { useParams } from "react-router-dom";
+import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import { x } from "@xstyled/styled-components";
+import { gql } from "graphql-tag";
+import { useCallback, useState } from "react";
 import { Helmet } from "react-helmet";
+import { useParams } from "react-router-dom";
+
 import {
-  LoadingAlert,
-  Link,
-  Icon,
   Banner,
   BrandShield,
+  Icon,
+  Link,
   LinkBlock,
+  LoadingAlert,
 } from "@argos-ci/app/src/components";
 import { GitHubLoginButton } from "@argos-ci/app/src/containers/GitHub";
+
 import { useQuery } from "../../containers/Apollo";
+import {
+  BuildStatusChip,
+  BuildStatusChipBuildFragment,
+  BuildStatusChipRepositoryFragment,
+} from "../../containers/BuildStatusChip";
+import { useUser } from "../../containers/User";
+import { useLiveRef } from "../../utils/useLiveRef";
 import { NotFound } from "../NotFound";
+import { BuildDiff } from "./BuildDiff";
+import { BuildSidebar } from "./BuildSidebar";
 import {
   ReviewButton,
   ReviewButtonBuildFragment,
@@ -22,23 +34,13 @@ import {
   ReviewButtonRepositoryFragment,
 } from "./ReviewButton";
 import {
+  ScreenshotDiffsPageFragment,
+  fetchMoreScreenshotDiffs,
+} from "./ScreenshotDiffsSection";
+import {
   SummaryCardBuildFragment,
   SummaryCardRepositoryFragment,
 } from "./SummaryCard";
-import {
-  BuildStatusChip,
-  BuildStatusChipBuildFragment,
-  BuildStatusChipRepositoryFragment,
-} from "../../containers/BuildStatusChip";
-import {
-  fetchMoreScreenshotDiffs,
-  ScreenshotDiffsPageFragment,
-} from "./ScreenshotDiffsSection";
-import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
-import { useLiveRef } from "../../utils/useLiveRef";
-import { BuildSidebar } from "./BuildSidebar";
-import { BuildDiff } from "./BuildDiff";
-import { useUser } from "../../containers/User";
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
@@ -188,8 +190,8 @@ const BuildContent = ({
   buildNumber,
   activeDiffId,
 }) => {
-  const [showChanges, setShowChanges] = React.useState(true);
-  const [moreLoading, setMoreLoading] = React.useState(false);
+  const [showChanges, setShowChanges] = useState(true);
+  const [moreLoading, setMoreLoading] = useState(false);
 
   const { loading, data, fetchMore } = useQuery(BUILD_QUERY, {
     variables: {
@@ -203,7 +205,7 @@ const BuildContent = ({
   });
 
   const dataRef = useLiveRef(data);
-  const fetchNextPage = React.useCallback(() => {
+  const fetchNextPage = useCallback(() => {
     setMoreLoading(true);
     fetchMoreScreenshotDiffs({ data: dataRef.current, fetchMore }).finally(
       () => {

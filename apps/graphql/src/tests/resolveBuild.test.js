@@ -1,7 +1,9 @@
 import request from "supertest";
-import { useDatabase, factory } from "@argos-ci/database/testing";
-import { expectNoGraphQLError } from "../testing";
+
+import { factory, useDatabase } from "@argos-ci/database/testing";
+
 import { apolloServer } from "../apollo";
+import { expectNoGraphQLError } from "../testing";
 import { createApolloServerApp } from "./util";
 
 describe("GraphQL", () => {

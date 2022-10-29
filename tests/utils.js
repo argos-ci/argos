@@ -1,5 +1,5 @@
-import { resolve } from "path";
 import { mkdir } from "fs/promises";
+import { resolve } from "path";
 
 const screenshotFolder = "./screenshots";
 

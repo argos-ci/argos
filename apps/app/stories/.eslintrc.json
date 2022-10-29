@@ -1,0 +1,4 @@
+{
+  "plugins": ["storybook"],
+  "extends": ["plugin:storybook/recommended"]
+}

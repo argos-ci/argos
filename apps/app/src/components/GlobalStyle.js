@@ -1,5 +1,4 @@
-import * as React from "react";
-import { createGlobalStyle, Preflight } from "@xstyled/styled-components";
+import { Preflight, createGlobalStyle } from "@xstyled/styled-components";
 
 // Source : https://www.joshwcomeau.com/css/custom-css-reset/
 export const ArgosGlobalStyle = createGlobalStyle`

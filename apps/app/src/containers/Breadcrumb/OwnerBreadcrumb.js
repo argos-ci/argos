@@ -1,18 +1,19 @@
-import * as React from "react";
+import { OrganizationIcon } from "@primer/octicons-react";
+import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
 import { useMatch, useParams } from "react-router-dom";
-import { x } from "@xstyled/styled-components";
+
 import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbSeparator,
   Icon,
 } from "@argos-ci/app/src/components";
-import { OrganizationIcon } from "@primer/octicons-react";
-import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
-import { OwnerBreadcrumbMenu } from "./OwnerBreadcrumbMenu";
+
 import { useQuery } from "../Apollo";
+import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
 import { useUser } from "../User";
+import { OwnerBreadcrumbMenu } from "./OwnerBreadcrumbMenu";
 
 const OWNER_BREADCRUMB_OWNER_QUERY = gql`
   query OWNER_BREADCRUMB_OWNER_QUERY($login: String!) {

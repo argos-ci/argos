@@ -1,8 +1,10 @@
-import axios from "axios";
-import path from "path";
-import fs from "fs/promises";
 import { S3Client } from "@aws-sdk/client-s3";
+import axios from "axios";
+import fs from "fs/promises";
+import path from "path";
+
 import config from "@argos-ci/config";
+
 import { getSignedPutObjectUrl } from "./signed-url";
 
 describe("#getSignedPutObjectUrl", () => {

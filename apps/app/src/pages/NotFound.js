@@ -1,14 +1,14 @@
-import * as React from "react";
-import { Helmet } from "react-helmet";
 import { x } from "@xstyled/styled-components";
+import { Helmet } from "react-helmet";
+
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardBody,
+  CardHeader,
   CardText,
-  Link,
+  CardTitle,
   Container,
+  Link,
 } from "@argos-ci/app/src/components";
 
 export function NotFound(props) {

@@ -1,30 +1,32 @@
-import * as React from "react";
-import { useParams } from "react-router-dom";
+import {
+  BookmarkIcon,
+  ClockIcon,
+  CommitIcon,
+  FileZipIcon,
+  GitBranchIcon,
+} from "@primer/octicons-react";
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
-import {
-  CommitIcon,
-  ClockIcon,
-  GitBranchIcon,
-  BookmarkIcon,
-  FileZipIcon,
-} from "@primer/octicons-react";
+import { forwardRef } from "react";
+import { useParams } from "react-router-dom";
+
 import {
   Card,
   CardBody,
-  Link,
   IllustratedText,
-  Time,
+  Link,
   ProgressBar,
+  Time,
 } from "@argos-ci/app/src/components";
+
+import { ShowChangesButton } from ".";
+import { getBuildStatusColor } from "../../containers/BuildStatus";
+import { BuildStatusChip } from "../../containers/BuildStatusChip";
 import {
   ReviewButton,
   ReviewButtonBuildFragment,
   ReviewButtonRepositoryFragment,
 } from "./ReviewButton";
-import { getBuildStatusColor } from "../../containers/BuildStatus";
-import { BuildStatusChip } from "../../containers/BuildStatusChip";
-import { ShowChangesButton } from ".";
 
 export const SummaryCardBuildFragment = gql`
   fragment SummaryCardBuildFragment on Build {
@@ -157,7 +159,7 @@ function ProgressField({ build: { batchCount, totalBatch } }) {
   );
 }
 
-export const SummaryCard = React.forwardRef(({ build }, ref) => (
+export const SummaryCard = forwardRef(({ build }, ref) => (
   <Card ref={ref}>
     <CardBody display="grid" gridTemplateColumns={{ _: 1, sm: 2 }} gap={1}>
       <IllustratedText field icon={ClockIcon}>

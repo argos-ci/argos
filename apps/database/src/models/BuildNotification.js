@@ -1,4 +1,4 @@
-import { Model, mergeSchemas, timestampsSchema, jobModelSchema } from "../util";
+import { Model, jobModelSchema, mergeSchemas, timestampsSchema } from "../util";
 import { Build } from "./Build";
 
 export class BuildNotification extends Model {
