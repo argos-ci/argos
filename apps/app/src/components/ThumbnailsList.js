@@ -244,7 +244,7 @@ export function ThumbnailsList({
           (isFirst(i) ? gap / 2 : 0) +
           (isLast(i) ? gap / 2 : 0),
     getScrollElement: () => parentRef.current,
-    overscan: 40,
+    overscan: 20,
     paddingEnd: 32,
     rangeExtractor: useCallback(
       (range) => {
