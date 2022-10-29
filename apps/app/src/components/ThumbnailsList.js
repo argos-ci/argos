@@ -115,21 +115,6 @@ const StickyItem = ({ active, ...props }) => (
   />
 );
 
-const List = styled.box`
-  width: 100%;
-  overflow-y: auto;
-
-  [data-header-chevron] {
-    opacity: 0;
-  }
-
-  &:hover {
-    [data-header-chevron] {
-      opacity: 1;
-    }
-  }
-`;
-
 function fillGroups(groups, data) {
   return data.reduce((res, item) => {
     res[item.status].diffs.push(item);
@@ -322,7 +307,7 @@ export function ThumbnailsList({
         />
       </x.div>
 
-      <List ref={parentRef} h={height}>
+      <x.div ref={parentRef} h={height} w={1} overflowY="auto">
         {rows.length === 0 ? (
           <Alert m={4} color="info">
             Empty build: no screenshot detected
@@ -406,7 +391,7 @@ export function ThumbnailsList({
             })}
           </x.div>
         )}
-      </List>
+      </x.div>
     </>
   );
 }

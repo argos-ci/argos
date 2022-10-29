@@ -54,6 +54,18 @@ const BuildInfo = (props) => (
   />
 );
 
+const Sidebar = styled.box`
+  [data-header-chevron] {
+    opacity: 0;
+  }
+
+  &:hover {
+    [data-header-chevron] {
+      opacity: 1;
+    }
+  }
+`;
+
 export function BuildSidebar({
   moreLoading,
   fetchNextPage,
@@ -77,7 +89,7 @@ export function BuildSidebar({
   const sidebarTabRect = sidebarTabsRef.current?.getBoundingClientRect();
 
   return (
-    <x.div {...props}>
+    <Sidebar {...props}>
       <TabList state={tab} aria-label="sidebar">
         <x.div
           ref={sidebarTabsRef}
@@ -134,6 +146,6 @@ export function BuildSidebar({
           </BuildInfo>
         </x.div>
       </TabPanel>
-    </x.div>
+    </Sidebar>
   );
 }
