@@ -375,6 +375,7 @@ export function ThumbnailsList({
                 <ListItem key={virtualRow.index} virtualRow={virtualRow}>
                   {item.diff ? (
                     <Thumbnail
+                      replace
                       to={`/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new/${item.diff.id}`}
                       data-active={diffId === item.diff.id}
                       mt={isFirst(virtualRow.index) ? "10px" : 0}
