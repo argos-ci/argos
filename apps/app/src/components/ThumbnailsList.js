@@ -21,6 +21,18 @@ const DIFFS_GROUPS = {
   stable: { diffs: [], label: "stables", collapsed: true },
 };
 
+const ThumbnailName = styled.box`
+  font-size: sm;
+  white-space: nowrap;
+  overflow: hidden;
+  direction: rtl;
+  text-align: left;
+  color: secondary-text;
+  width: 100%;
+  line-height: 20px;
+  margin-bottom: 2;
+`;
+
 const ThumbnailImage = ({ image, ...props }) => {
   if (!image?.url) return null;
   return (
@@ -31,10 +43,12 @@ const ThumbnailImage = ({ image, ...props }) => {
 const Thumbnail = styled(BaseLink)`
   background-color: bg;
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  justify-content: center;
   border-radius: base;
   padding: 0;
   cursor: default;
+  width: 100%;
 
   &:hover {
     outline: solid 4px;
@@ -61,10 +75,8 @@ const ListItem = ({ virtualRow, ...props }) => (
     h={`${virtualRow.size}px`}
     position="absolute"
     transform={`translateY(${virtualRow.start}px)`}
-    display="flex"
-    alignItems="center"
-    justifyContent="center"
     px={5}
+    py={2}
     {...props}
   />
 );
@@ -114,21 +126,6 @@ const StickyItem = ({ active, ...props }) => (
     {...props}
   />
 );
-
-const List = styled.box`
-  width: 100%;
-  overflow-y: auto;
-
-  [data-header-chevron] {
-    opacity: 0;
-  }
-
-  &:hover {
-    [data-header-chevron] {
-      opacity: 1;
-    }
-  }
-`;
 
 function fillGroups(groups, data) {
   return data.reduce((res, item) => {
@@ -195,8 +192,8 @@ function BuildStatLink({ status, count, label, onClick }) {
 }
 
 export function ThumbnailsList({
-  imageHeight = 200,
-  gap = 20,
+  imageHeight = 350,
+  gap = 32,
   headerSize = 36,
   height = 400,
   data,
@@ -228,6 +225,9 @@ export function ThumbnailsList({
   const isLast = (index) => isSticky(index + 1);
   const handleClick = (status) => {
     const index = richGroups.find((group) => group.status === status).index;
+    if (groupCollapseStatuses[status]) {
+      setGroupCollapseStatuses((prev) => ({ ...prev, [status]: false }));
+    }
     rowVirtualizer.scrollToIndex(index, { align: "start", smoothScroll: true });
   };
 
@@ -238,10 +238,11 @@ export function ThumbnailsList({
         ? headerSize
         : imageHeight +
           gap +
+          (!isSticky(i) ? 12 : 0) +
           (isFirst(i) ? gap / 2 : 0) +
           (isLast(i) ? gap / 2 : 0),
     getScrollElement: () => parentRef.current,
-    overscan: 40,
+    overscan: 20,
     paddingEnd: 32,
     rangeExtractor: useCallback(
       (range) => {
@@ -319,7 +320,7 @@ export function ThumbnailsList({
         />
       </x.div>
 
-      <List ref={parentRef} h={height}>
+      <x.div ref={parentRef} h={height} w={1} overflowY="auto">
         {rows.length === 0 ? (
           <Alert m={4} color="info">
             Empty build: no screenshot detected
@@ -372,13 +373,28 @@ export function ThumbnailsList({
               }
 
               return (
-                <ListItem key={virtualRow.index} virtualRow={virtualRow}>
+                <ListItem
+                  key={virtualRow.index}
+                  virtualRow={virtualRow}
+                  pt={isFirst(virtualRow.index) ? 5 : 2}
+                  pb={isLast(virtualRow.index) ? 5 : 2}
+                >
+                  <ThumbnailName>
+                    {(
+                      item.diff?.compareScreenshot?.name ||
+                      item.diff?.baseScreenshot?.name ||
+                      ""
+                    )
+                      .split(".")
+                      .slice(0, -1)
+                      .join(".")}
+                  </ThumbnailName>
+
                   {item.diff ? (
                     <Thumbnail
+                      replace
                       to={`/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new/${item.diff.id}`}
                       data-active={diffId === item.diff.id}
-                      mt={isFirst(virtualRow.index) ? "10px" : 0}
-                      mb={isLast(virtualRow.index) ? "10px" : 0}
                     >
                       {item.diff.status === "updated" && (
                         <ThumbnailImage
@@ -402,7 +418,7 @@ export function ThumbnailsList({
             })}
           </x.div>
         )}
-      </List>
+      </x.div>
     </>
   );
 }
