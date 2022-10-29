@@ -1,5 +1,4 @@
 import "core-js";
-import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { init as initSentry } from "@sentry/browser";
 import config from "./config";

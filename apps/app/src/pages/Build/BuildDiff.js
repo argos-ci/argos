@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import moment from "moment";
 import {
@@ -13,6 +12,7 @@ import {
   TooltipHotkey,
 } from "@argos-ci/app/src/components";
 import { ArrowUpIcon, ArrowDownIcon, EyeIcon } from "@heroicons/react/24/solid";
+import { forwardRef, useLayoutEffect, useRef, useState } from "react";
 
 const BranchInfo = ({ bucket, baseline, ...props }) => {
   return (
@@ -93,7 +93,7 @@ const ToggleChangesButton = (props) => {
   );
 };
 
-const DiffHeader = React.forwardRef(
+const DiffHeader = forwardRef(
   ({ activeDiff, setShowChanges, showChanges }, ref) => (
     <x.div
       ref={ref}
@@ -180,9 +180,9 @@ export function BuildDiff({
   const activeDiff =
     screenshotDiffs.find(({ id }) => id === activeDiffId) || screenshotDiffs[0];
 
-  const headerRef = React.useRef();
-  const [headerRect, setHeaderRect] = React.useState(null);
-  React.useLayoutEffect(() => {
+  const headerRef = useRef();
+  const [headerRect, setHeaderRect] = useState(null);
+  useLayoutEffect(() => {
     setHeaderRect(headerRef.current?.getBoundingClientRect());
   }, []);
 

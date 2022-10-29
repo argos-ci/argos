@@ -1,4 +1,3 @@
-import * as React from "react";
 import { x, useFontSize } from "@xstyled/styled-components";
 
 export const Icon = ({ fontSize, ...props }) => {

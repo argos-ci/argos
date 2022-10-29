@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";

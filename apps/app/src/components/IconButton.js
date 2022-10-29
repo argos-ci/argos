@@ -1,6 +1,6 @@
-import * as React from "react";
 import { Button as AriakitButton } from "ariakit/button";
 import styled, { css, system } from "@xstyled/styled-components";
+import { forwardRef } from "react";
 
 const InnerButton = styled.buttonBox(({ $color = "primary", $toggle }) => {
   const onColor = `icon-button-${$color}-on`;
@@ -53,7 +53,7 @@ const InnerButton = styled.buttonBox(({ $color = "primary", $toggle }) => {
   `;
 });
 
-export const IconButton = React.forwardRef(
+export const IconButton = forwardRef(
   ({ color = "primary", icon: Icon, as, toggle, ...props }, ref) => {
     if (!Icon) return null;
 

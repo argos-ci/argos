@@ -1,5 +1,4 @@
 import moment from "moment";
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import { Children, forwardRef, useCallback, useEffect, useState } from "react";
 

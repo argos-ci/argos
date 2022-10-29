@@ -1,4 +1,3 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import {
   Tooltip as AriakitTooltip,
@@ -6,6 +5,7 @@ import {
   useTooltipState as ariakitUseTooltipState,
   TooltipArrow,
 } from "ariakit/tooltip";
+import { forwardRef } from "react";
 
 export { TooltipAnchor, TooltipArrow };
 
@@ -33,7 +33,7 @@ export const TooltipHotkey = ({ children, ...props }) => (
   </>
 );
 
-export const Tooltip = React.forwardRef(({ children, ...props }, ref) => {
+export const Tooltip = forwardRef(({ children, ...props }, ref) => {
   return (
     <AriakitTooltip ref={ref} {...props}>
       {(tooltipProps) => (
@@ -59,27 +59,25 @@ export const Tooltip = React.forwardRef(({ children, ...props }, ref) => {
   );
 });
 
-export const ParagraphTooltip = React.forwardRef(
-  ({ children, ...props }, ref) => {
-    return (
-      <AriakitTooltip ref={ref} {...props}>
-        {(tooltipProps) => (
-          <x.div
-            {...tooltipProps}
-            maxW={416}
-            p={2}
-            borderRadius="md"
-            boxShadow="paragraphTooltip"
-            fontSize="sm"
-            lineHeight="16px"
-            border={1}
-            borderColor="tooltip-border"
-            backgroundColor="tooltip-bg"
-          >
-            {children}
-          </x.div>
-        )}
-      </AriakitTooltip>
-    );
-  }
-);
+export const ParagraphTooltip = forwardRef(({ children, ...props }, ref) => {
+  return (
+    <AriakitTooltip ref={ref} {...props}>
+      {(tooltipProps) => (
+        <x.div
+          {...tooltipProps}
+          maxW={416}
+          p={2}
+          borderRadius="md"
+          boxShadow="paragraphTooltip"
+          fontSize="sm"
+          lineHeight="16px"
+          border={1}
+          borderColor="tooltip-border"
+          backgroundColor="tooltip-bg"
+        >
+          {children}
+        </x.div>
+      )}
+    </AriakitTooltip>
+  );
+});

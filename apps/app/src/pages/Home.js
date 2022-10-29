@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
 import { gql } from "graphql-tag";
 import { x } from "@xstyled/styled-components";
 import { Query } from "../containers/Apollo";
@@ -46,6 +45,7 @@ import {
   BuildStatusChipBuildFragment,
   BuildStatusChipRepositoryFragment,
 } from "../containers/BuildStatusChip";
+import { useEffect, useState } from "react";
 
 const HOME_OWNERS_REPOSITORIES_QUERY = gql`
   query HOME_OWNERS_REPOSITORIES_QUERY {
@@ -235,7 +235,7 @@ function Owners({ owners }) {
   const activeRepositories = repositories.filter(({ enabled }) => enabled);
   const showFilterButton = repositories.length > activeRepositories.length;
 
-  const [activeFilter, setActiveFilter] = React.useState(
+  const [activeFilter, setActiveFilter] = useState(
     activeRepositories.length !== 0
   );
 
@@ -296,7 +296,7 @@ function Owners({ owners }) {
 }
 
 const RedirectToWww = () => {
-  React.useEffect(() => {
+  useEffect(() => {
     window.location = "https://www.argos-ci.com";
   }, []);
   return null;

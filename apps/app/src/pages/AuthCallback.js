@@ -1,8 +1,8 @@
-import * as React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import qs from "query-string";
 import axios from "axios";
 import { useAuth } from "../containers/Auth";
+import { useEffect } from "react";
 
 const api = axios.create({
   baseURL: process.env.API_BASE_URL,
@@ -13,7 +13,7 @@ export function AuthCallback() {
   const navigate = useNavigate();
   const { code, r } = qs.parse(location.search);
   const { setToken } = useAuth();
-  React.useEffect(() => {
+  useEffect(() => {
     api
       .post("/auth/github", { code })
       .then((result) => {

@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Link } from "react-router-dom";
 import styled, { x } from "@xstyled/styled-components";
 import { useIsMatchingTo } from "../containers/Router";

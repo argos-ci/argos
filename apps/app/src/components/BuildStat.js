@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Tooltip, TooltipAnchor, useTooltipState } from "./Tooltip";
 import { IllustratedText } from "./IllustratedText";
 import { LinkBlock } from "./Link";

@@ -1,4 +1,3 @@
-import * as React from "react";
 import { createTeleporter } from "react-teleporter";
 import {
   Breadcrumb,

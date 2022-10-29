@@ -1,4 +1,3 @@
-import * as React from "react";
 import { gql } from "graphql-tag";
 import { GearIcon, RepoIcon } from "@primer/octicons-react";
 import {

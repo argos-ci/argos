@@ -1,4 +1,3 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import {
   GitBranchIcon,
@@ -31,6 +30,7 @@ import {
 import { GettingStarted } from "./GettingStarted";
 import { getPossessiveForm } from "../../modules/utils";
 import { hasWritePermission } from "../../modules/permissions";
+import { useState } from "react";
 
 const REPOSITORY_BUILDS_QUERY = gql`
   query REPOSITORY_BUILDS_QUERY(
@@ -79,7 +79,7 @@ function BuildsList({ repository }) {
       after: 0,
     },
   });
-  const [moreLoading, setMoreLoading] = React.useState();
+  const [moreLoading, setMoreLoading] = useState();
 
   function loadNextPage() {
     setMoreLoading(true);

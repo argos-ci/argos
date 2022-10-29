@@ -1,4 +1,3 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import {
   Form as AriakitForm,
@@ -12,6 +11,7 @@ import {
 import { Input } from "./Input";
 import { Button } from "./Button";
 import { Alert } from "./Alert";
+import { forwardRef } from "react";
 
 export { useFormState };
 
@@ -29,7 +29,7 @@ export const FormError = (props) => {
   return <AriakitFormError as={Alert} severity="error" {...props} />;
 };
 
-export const FormInput = React.forwardRef((props, ref) => (
+export const FormInput = forwardRef((props, ref) => (
   <Input ref={ref} as={AriakitFormInput} {...props} />
 ));
 
@@ -44,7 +44,7 @@ export const FormReset = (props) => (
   <x.Button variant="gray" as={AriakitFormReset} {...props} />
 );
 
-export const FormSubmit = React.forwardRef(
+export const FormSubmit = forwardRef(
   ({ children, as, disabled, ...props }, ref) => {
     return (
       <AriakitFormSubmit ref={ref} {...props}>

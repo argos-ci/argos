@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   useMenuState,
   Menu as HeadlessMenu,
@@ -10,6 +9,7 @@ import {
 import styled, { x, css } from "@xstyled/styled-components";
 import { ChevronDownIcon } from "@primer/octicons-react";
 import { Icon } from "./Icon";
+import { forwardRef } from "react";
 
 export { useMenuState };
 
@@ -42,19 +42,17 @@ const InnerMenuButton = styled.box`
     `}
 `;
 
-export const MenuButton = React.forwardRef(
-  ({ children, shape, ...props }, ref) => {
-    return (
-      <HeadlessMenuButton ref={ref} {...props}>
-        {(menuProps) => (
-          <InnerMenuButton {...menuProps} $shape={shape}>
-            {children}
-          </InnerMenuButton>
-        )}
-      </HeadlessMenuButton>
-    );
-  }
-);
+export const MenuButton = forwardRef(({ children, shape, ...props }, ref) => {
+  return (
+    <HeadlessMenuButton ref={ref} {...props}>
+      {(menuProps) => (
+        <InnerMenuButton {...menuProps} $shape={shape}>
+          {children}
+        </InnerMenuButton>
+      )}
+    </HeadlessMenuButton>
+  );
+});
 
 export const MenuButtonArrow = ({ as, ...props }) => {
   return (

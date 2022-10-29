@@ -1,7 +1,7 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
+import { forwardRef } from "react";
 
-export const Badge = React.forwardRef(({ children, ...props }, ref) => {
+export const Badge = forwardRef(({ children, ...props }, ref) => {
   if (!children) return null;
 
   return (

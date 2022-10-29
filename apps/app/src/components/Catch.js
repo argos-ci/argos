@@ -1,7 +1,7 @@
-import * as React from "react";
+import { Component } from "react";
 import { captureException } from "@sentry/browser";
 
-export class Catch extends React.Component {
+export class Catch extends Component {
   constructor(props) {
     super(props);
     this.state = { error: null };

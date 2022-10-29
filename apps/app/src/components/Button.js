@@ -1,6 +1,6 @@
-import * as React from "react";
 import { Button as AriakitButton } from "ariakit/button";
 import styled, { css, system } from "@xstyled/styled-components";
+import { forwardRef } from "react";
 
 const InnerButton = styled.buttonBox(({ $color = "primary", $variant }) => {
   const bgColor = `button-${$color}-bg`;
@@ -64,7 +64,7 @@ const InnerButton = styled.buttonBox(({ $color = "primary", $variant }) => {
   `;
 });
 
-export const Button = React.forwardRef(
+export const Button = forwardRef(
   (
     { color = "primary", variant = "contained", children, as, ...props },
     ref

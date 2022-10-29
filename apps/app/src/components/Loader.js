@@ -1,5 +1,5 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
+import { useEffect, useState } from "react";
 
 const InnerLoader = (props) => (
   <x.svg
@@ -104,8 +104,8 @@ const InnerLoader = (props) => (
 );
 
 export const Loader = ({ delay = 300, ...props }) => {
-  const [visible, setVisible] = React.useState(false);
-  React.useEffect(() => {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
     const timeout = setTimeout(() => {
       setVisible(true);
     }, delay);

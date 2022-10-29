@@ -1,6 +1,6 @@
-import * as React from "react";
 import styled, { css } from "@xstyled/styled-components";
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
+import { forwardRef } from "react";
 
 const InnerChip = styled.box(({ $color = "primary", $clickable }) => {
   const onColor = `${$color}-on`;
@@ -52,7 +52,7 @@ const InnerChip = styled.box(({ $color = "primary", $clickable }) => {
   `;
 });
 
-export const Chip = React.forwardRef(
+export const Chip = forwardRef(
   ({ children, clickable, icon: Icon, color = "primary", ...props }, ref) => {
     return (
       <InnerChip ref={ref} $clickable={clickable} $color={color} {...props}>

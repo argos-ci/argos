@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
 import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
@@ -60,6 +59,7 @@ import {
   getDiffStatusColor,
   getDiffStatusIcon,
 } from "../../containers/ScreenshotDiffStatus";
+import { useEffect, useState } from "react";
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
@@ -193,9 +193,8 @@ export function ShowChangesButton({ setShowChanges, showChanges }) {
 }
 
 const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
-  const [showStableScreenshots, setShowStableScreenshots] =
-    React.useState(false);
-  const [showChanges, setShowChanges] = React.useState(true);
+  const [showStableScreenshots, setShowStableScreenshots] = useState(false);
+  const [showChanges, setShowChanges] = useState(true);
   const { observe, inView, scrollDirection } = useInView({});
 
   const { loading, data, fetchMore, startPolling, stopPolling } = useQuery(
@@ -218,7 +217,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
     (data.repository.build.status === "pending" ||
       data.repository.build.status === "progress");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (inProgress) {
       startPolling(1000);
     } else {
@@ -226,7 +225,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
     }
   }, [stopPolling, startPolling, inProgress]);
 
-  const [moreLoading, setMoreLoading] = React.useState();
+  const [moreLoading, setMoreLoading] = useState();
 
   function loadNextPage() {
     setMoreLoading(true);

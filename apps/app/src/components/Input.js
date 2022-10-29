@@ -1,7 +1,7 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
+import { forwardRef } from "react";
 
-export const Input = React.forwardRef((props, ref) => (
+export const Input = forwardRef((props, ref) => (
   <x.input
     ref={ref}
     borderRadius="md"

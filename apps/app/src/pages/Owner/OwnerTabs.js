@@ -1,4 +1,3 @@
-import * as React from "react";
 import { TabList, TabNavLink } from "@argos-ci/app/src/components";
 import { useParams } from "react-router-dom";
 import { HeaderTeleporter } from "../../containers/AppHeader";

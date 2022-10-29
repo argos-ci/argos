@@ -1,4 +1,3 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import { ChevronRightIcon } from "@primer/octicons-react";
 import { Disclosure, DisclosureContent } from "./Disclosure";

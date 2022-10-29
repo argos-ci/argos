@@ -1,4 +1,3 @@
-import * as React from "react";
 import { gql } from "graphql-tag";
 import { LoadingAlert } from "@argos-ci/app/src/components";
 import { useQuery } from "../../containers/Apollo";
@@ -8,6 +7,7 @@ import {
   ScreenshotDiffsPageFragment,
   ScreenshotDiffsSection,
 } from "./ScreenshotDiffsSection";
+import { useState } from "react";
 
 const BUILD_STABLE_SCREENSHOT_DIFFS_QUERY = gql`
   query BUILD_STABLE_SCREENSHOT_DIFFS_QUERY(
@@ -49,7 +49,7 @@ export function StableScreenshots({ ownerLogin, repositoryName, buildNumber }) {
       skip: !ownerLogin || !repositoryName || !buildNumber,
     }
   );
-  const [moreLoading, setMoreLoading] = React.useState();
+  const [moreLoading, setMoreLoading] = useState();
 
   function loadNextPage() {
     setMoreLoading(true);

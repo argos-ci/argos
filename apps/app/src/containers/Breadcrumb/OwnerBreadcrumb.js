@@ -1,4 +1,3 @@
-import * as React from "react";
 import { gql } from "graphql-tag";
 import { useMatch, useParams } from "react-router-dom";
 import { x } from "@xstyled/styled-components";

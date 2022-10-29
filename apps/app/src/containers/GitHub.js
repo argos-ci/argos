@@ -1,4 +1,3 @@
-import * as React from "react";
 import { memo } from "react";
 import { useLocation } from "react-router-dom";
 import { MarkGithubIcon } from "@primer/octicons-react";

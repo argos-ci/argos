@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
 import { useParams } from "react-router-dom";
 import { gql } from "graphql-tag";
 import { RepoIcon } from "@primer/octicons-react";

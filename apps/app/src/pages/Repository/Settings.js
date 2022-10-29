@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
 import { Helmet } from "react-helmet";
 import { gql } from "graphql-tag";
 import {
@@ -26,6 +25,7 @@ import {
 import { x } from "@xstyled/styled-components";
 import { useMutation } from "@apollo/client";
 import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
+import { useState } from "react";
 
 const UPDATE_REFERENCE_BRANCH = gql`
   mutation updateReferenceBranch(
@@ -70,11 +70,11 @@ function UpdateBranchForm({ repository }) {
   const successToast = useToast();
   const errorToast = useToast();
 
-  const [baselineBranch, setBaselineBranch] = React.useState(
+  const [baselineBranch, setBaselineBranch] = useState(
     repository.baselineBranch || repository.defaultBranch || ""
   );
   const initialUseDefaultBranch = repository.baselineBranch === null;
-  const [useDefaultBranch, setUseDefaultBranch] = React.useState(
+  const [useDefaultBranch, setUseDefaultBranch] = useState(
     initialUseDefaultBranch
   );
 

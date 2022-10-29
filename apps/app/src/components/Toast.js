@@ -1,9 +1,9 @@
-import * as React from "react";
+import { useEffect, useState } from "react";
 
 export function useToast({ ms = 3000, onHide } = {}) {
-  const [showToast, setShowToast] = React.useState(false);
+  const [showToast, setShowToast] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let timer;
     if (showToast) {
       timer = setTimeout(() => {

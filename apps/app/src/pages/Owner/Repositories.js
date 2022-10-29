@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
 import { gql } from "graphql-tag";
 import { x } from "@xstyled/styled-components";
 import { useParams } from "react-router-dom";

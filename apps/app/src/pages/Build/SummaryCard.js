@@ -1,4 +1,3 @@
-import * as React from "react";
 import { useParams } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
@@ -25,6 +24,7 @@ import {
 import { getBuildStatusColor } from "../../containers/BuildStatus";
 import { BuildStatusChip } from "../../containers/BuildStatusChip";
 import { ShowChangesButton } from ".";
+import { forwardRef } from "react";
 
 export const SummaryCardBuildFragment = gql`
   fragment SummaryCardBuildFragment on Build {
@@ -157,7 +157,7 @@ function ProgressField({ build: { batchCount, totalBatch } }) {
   );
 }
 
-export const SummaryCard = React.forwardRef(({ build }, ref) => (
+export const SummaryCard = forwardRef(({ build }, ref) => (
   <Card ref={ref}>
     <CardBody display="grid" gridTemplateColumns={{ _: 1, sm: 2 }} gap={1}>
       <IllustratedText field icon={ClockIcon}>

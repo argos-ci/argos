@@ -4,8 +4,7 @@
   "extends": [
     "eslint:recommended",
     "plugin:import/recommended",
-    "plugin:storybook/recommended",
-    "plugin:react/recommended"
+    "plugin:storybook/recommended"
   ],
   "env": {
     "node": true,

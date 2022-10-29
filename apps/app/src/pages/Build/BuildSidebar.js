@@ -1,8 +1,8 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
 import styled, { x } from "@xstyled/styled-components";
 import { Tab, TabList, TabPanel, useTabState } from "ariakit/tab";
 import { Link, ThumbnailsList, Time } from "@argos-ci/app/src/components";
+import { useRef } from "react";
 
 const SidebarTab = styled(Tab)`
   background-color: transparent;
@@ -62,7 +62,7 @@ export function BuildSidebar({
   ...props
 }) {
   const tab = useTabState();
-  const sidebarTabsRef = React.useRef();
+  const sidebarTabsRef = useRef();
 
   const {
     stats,

@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import {
   Alert,

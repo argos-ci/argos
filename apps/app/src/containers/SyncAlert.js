@@ -1,5 +1,5 @@
-import * as React from "react";
 import { Container, LoadingAlert } from "@argos-ci/app/src/components";
+import { useEffect } from "react";
 import { isUserSyncing } from "../modules/user";
 import { useUser, useRefetchUser } from "./User";
 
@@ -10,7 +10,7 @@ export function SyncAlert() {
   const refetchUser = useRefetchUser();
   const syncing = isUserSyncing(user);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (syncing) {
       const id = setInterval(() => refetchUser(), REFETCH_DELAY);
       return () => {

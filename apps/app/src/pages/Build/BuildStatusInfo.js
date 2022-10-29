@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
 import { gql } from "@apollo/client";
 import { x } from "@xstyled/styled-components";
 import { Link, Alert, InlineCode } from "@argos-ci/app/src/components";

@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-import * as React from "react";
 import { gql } from "graphql-tag";
 import { useParams } from "react-router-dom";
 import { x } from "@xstyled/styled-components";
@@ -39,6 +38,7 @@ import { useLiveRef } from "../../utils/useLiveRef";
 import { BuildSidebar } from "./BuildSidebar";
 import { BuildDiff } from "./BuildDiff";
 import { useUser } from "../../containers/User";
+import { useCallback, useState } from "react";
 
 const BUILD_QUERY = gql`
   query BUILD_QUERY(
@@ -188,8 +188,8 @@ const BuildContent = ({
   buildNumber,
   activeDiffId,
 }) => {
-  const [showChanges, setShowChanges] = React.useState(true);
-  const [moreLoading, setMoreLoading] = React.useState(false);
+  const [showChanges, setShowChanges] = useState(true);
+  const [moreLoading, setMoreLoading] = useState(false);
 
   const { loading, data, fetchMore } = useQuery(BUILD_QUERY, {
     variables: {
@@ -203,7 +203,7 @@ const BuildContent = ({
   });
 
   const dataRef = useLiveRef(data);
-  const fetchNextPage = React.useCallback(() => {
+  const fetchNextPage = useCallback(() => {
     setMoreLoading(true);
     fetchMoreScreenshotDiffs({ data: dataRef.current, fetchMore }).finally(
       () => {

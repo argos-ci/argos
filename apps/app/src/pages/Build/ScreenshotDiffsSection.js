@@ -1,4 +1,3 @@
-import * as React from "react";
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
 import { Button, Loader, SecondaryTitle } from "@argos-ci/app/src/components";

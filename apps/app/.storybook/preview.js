@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useColorMode, ColorModeProvider } from "@xstyled/styled-components";
-import { GlobalStyle, ThemeInitializer } from "../apps/app/src/components";
+import { GlobalStyle, ThemeInitializer } from "@argos-ci/app/src/components";
 
 const THEMES = {
   light: "default",

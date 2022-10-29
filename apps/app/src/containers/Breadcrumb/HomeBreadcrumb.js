@@ -1,4 +1,3 @@
-import * as React from "react";
 import { useMatch } from "react-router-dom";
 import { HomeIcon } from "@primer/octicons-react";
 import { BreadcrumbItem, BreadcrumbLink } from "@argos-ci/app/src/components";
