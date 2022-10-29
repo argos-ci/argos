@@ -23,18 +23,18 @@ const DIFFS_GROUPS = {
 
 const ThumbnailImage = ({ image, ...props }) => {
   if (!image?.url) return null;
-  return (
-    <x.img src={image.url} borderRadius="base" objectFit="contain" {...props} />
-  );
+  return <x.img src={image.url} objectFit="contain" {...props} />;
 };
 
 const Thumbnail = styled(BaseLink)`
   background-color: bg;
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  justify-content: center;
   border-radius: base;
   padding: 0;
   cursor: default;
+  width: 100%;
 
   &:hover {
     outline: solid 4px;
@@ -195,7 +195,7 @@ function BuildStatLink({ status, count, label, onClick }) {
 }
 
 export function ThumbnailsList({
-  imageHeight = 200,
+  imageHeight = 350,
   gap = 20,
   headerSize = 36,
   height = 400,
