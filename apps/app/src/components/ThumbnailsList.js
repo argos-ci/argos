@@ -1,17 +1,14 @@
 import { ChevronRightIcon } from "@primer/octicons-react";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
-import styled, { x } from "@xstyled/styled-components";
+import { x } from "@xstyled/styled-components";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import {
-  getDiffStatusColor,
-  getDiffStatusIcon,
-} from "../containers/ScreenshotDiffStatus";
 import { Alert } from "./Alert";
 import { Badge } from "./Badge";
-import { BuildStat } from "./BuildStat";
-import { BaseLink, LinkBlock } from "./Link";
+import { BuildStatLink, BuildStatLinks } from "./BuildStat";
+import { LinkBlock } from "./Link";
+import { Thumbnail, ThumbnailImage, ThumbnailTitle } from "./Thumbnail";
 
 const DIFFS_GROUPS = {
   failed: { diffs: [], label: "failures", collapsed: false },
@@ -21,50 +18,11 @@ const DIFFS_GROUPS = {
   stable: { diffs: [], label: "stables", collapsed: true },
 };
 
-const ThumbnailName = styled.box`
-  font-size: sm;
-  white-space: nowrap;
-  overflow: hidden;
-  direction: rtl;
-  text-align: left;
-  color: secondary-text;
-  width: 100%;
-  line-height: 20px;
-  margin-bottom: 2;
-`;
-
-const ThumbnailImage = ({ image, ...props }) => {
-  if (!image?.url) return null;
-  return (
-    <x.img src={image.url} borderRadius="base" objectFit="contain" {...props} />
-  );
-};
-
-const Thumbnail = styled(BaseLink)`
-  background-color: bg;
-  position: relative;
-  display: inline-flex;
-  justify-content: center;
-  border-radius: base;
-  padding: 0;
-  cursor: default;
-  width: 100%;
-
-  &:hover {
-    outline: solid 4px;
-    outline-color: slate-700;
-  }
-
-  &:focus {
-    outline: solid 4px;
-    outline-color: sky-900-a70;
-  }
-
-  &[data-active="true"] {
-    outline: solid 4px;
-    outline-color: sky-900;
-  }
-`;
+const ScreenshotName = ({ diff }) =>
+  (diff?.compareScreenshot?.name || diff?.baseScreenshot?.name || "")
+    .split(".")
+    .slice(0, -1)
+    .join(".");
 
 const ListItem = ({ virtualRow, ...props }) => (
   <x.div
@@ -76,7 +34,9 @@ const ListItem = ({ virtualRow, ...props }) => (
     position="absolute"
     transform={`translateY(${virtualRow.start}px)`}
     px={5}
-    py={2}
+    display="flex"
+    flexDirection="column"
+    gap={2}
     {...props}
   />
 );
@@ -88,6 +48,7 @@ const HeaderChevron = (props) => (
     alignItems="center"
     justifyContent="center"
     color="secondary-text"
+    transform
     data-header-chevron=""
     {...props}
   >
@@ -177,23 +138,28 @@ function getRows(groups) {
   });
 }
 
-function BuildStatLink({ status, count, label, onClick }) {
-  if (count === 0) return null;
-
-  return (
-    <BuildStat
-      icon={getDiffStatusIcon(status)}
-      color={getDiffStatusColor(status)}
-      count={count}
-      label={label}
-      onClick={() => onClick(status)}
+const DiffImages = ({ diff, imageHeight }) => (
+  <>
+    {diff.status === "updated" && (
+      <ThumbnailImage
+        image={diff}
+        position="absolute"
+        backgroundColor="rgba(255, 255, 255, 0.8)"
+        top="50%"
+        transform
+        translateY="-50%"
+      />
+    )}
+    <ThumbnailImage
+      image={diff.compareScreenshot || diff.baseScreenshot}
+      h={imageHeight}
     />
-  );
-}
+  </>
+);
 
 export function ThumbnailsList({
-  imageHeight = 350,
-  gap = 32,
+  imageHeight = 300,
+  gap = 16,
   headerSize = 36,
   height = 400,
   data,
@@ -223,7 +189,7 @@ export function ThumbnailsList({
   const isActiveSticky = (index) => activeStickyIndexRef.current === index;
   const isFirst = (index) => isSticky(index - 1);
   const isLast = (index) => isSticky(index + 1);
-  const handleClick = (status) => {
+  const handleStatClick = (status) => {
     const index = richGroups.find((group) => group.status === status).index;
     if (groupCollapseStatuses[status]) {
       setGroupCollapseStatuses((prev) => ({ ...prev, [status]: false }));
@@ -236,9 +202,9 @@ export function ThumbnailsList({
     estimateSize: (i) =>
       isSticky(i)
         ? headerSize
-        : imageHeight +
-          gap +
-          (!isSticky(i) ? 12 : 0) +
+        : gap + // top padding + bottom padding
+          40 + // thumbnail title + gap
+          imageHeight +
           (isFirst(i) ? gap / 2 : 0) +
           (isLast(i) ? gap / 2 : 0),
     getScrollElement: () => parentRef.current,
@@ -277,48 +243,38 @@ export function ThumbnailsList({
 
   return (
     <>
-      <x.div
-        display="flex"
-        px={4}
-        py={2}
-        borderBottom={1}
-        borderColor="layout-border"
-        justifyContent="flex-start"
-        fontSize="sm"
-        h="38px"
-        ml="-10px"
-      >
+      <BuildStatLinks>
         <BuildStatLink
           status="failed"
           count={stats.failedScreenshotCount}
           label="Failure screenshots"
-          onClick={handleClick}
+          onClick={handleStatClick}
         />
         <BuildStatLink
           status="updated"
           count={stats.updatedScreenshotCount}
           label="Change screenshots"
-          onClick={handleClick}
+          onClick={handleStatClick}
         />
         <BuildStatLink
           status="added"
           count={stats.addedScreenshotCount}
           label="Additional screenshots"
-          onClick={handleClick}
+          onClick={handleStatClick}
         />
         <BuildStatLink
           status="removed"
           count={stats.removedScreenshotCount}
           label="Deleted screenshots"
-          onClick={handleClick}
+          onClick={handleStatClick}
         />
         <BuildStatLink
           status="stable"
           count={stats.stableScreenshotCount}
           label="Stable screenshots"
-          onClick={handleClick}
+          onClick={handleStatClick}
         />
-      </x.div>
+      </BuildStatLinks>
 
       <x.div ref={parentRef} h={height} w={1} overflowY="auto">
         {rows.length === 0 ? (
@@ -359,10 +315,7 @@ export function ThumbnailsList({
                         alignItems="center"
                         fontWeight="medium"
                       >
-                        <HeaderChevron
-                          transform
-                          rotate={item.collapsed ? 0 : 90}
-                        />
+                        <HeaderChevron rotate={item.collapsed ? 0 : 90} />
                         {item.label}
                       </x.div>
 
@@ -376,19 +329,12 @@ export function ThumbnailsList({
                 <ListItem
                   key={virtualRow.index}
                   virtualRow={virtualRow}
-                  pt={isFirst(virtualRow.index) ? 5 : 2}
-                  pb={isLast(virtualRow.index) ? 5 : 2}
+                  pt={isFirst(virtualRow.index) ? `${gap}px` : `${gap / 2}px`}
+                  pb={isLast(virtualRow.index) ? `${gap}px` : `${gap / 2}px`}
                 >
-                  <ThumbnailName>
-                    {(
-                      item.diff?.compareScreenshot?.name ||
-                      item.diff?.baseScreenshot?.name ||
-                      ""
-                    )
-                      .split(".")
-                      .slice(0, -1)
-                      .join(".")}
-                  </ThumbnailName>
+                  <ThumbnailTitle>
+                    <ScreenshotName diff={item.diff} />
+                  </ThumbnailTitle>
 
                   {item.diff ? (
                     <Thumbnail
@@ -396,21 +342,7 @@ export function ThumbnailsList({
                       to={`/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new/${item.diff.id}`}
                       data-active={diffId === item.diff.id}
                     >
-                      {item.diff.status === "updated" && (
-                        <ThumbnailImage
-                          image={item.diff}
-                          h={imageHeight}
-                          position="absolute"
-                          backgroundColor="rgba(255, 255, 255, 0.8)"
-                        />
-                      )}
-                      <ThumbnailImage
-                        image={
-                          item.diff.compareScreenshot ||
-                          item.diff.baseScreenshot
-                        }
-                        h={imageHeight}
-                      />
+                      <DiffImages diff={item.diff} imageHeight={imageHeight} />
                     </Thumbnail>
                   ) : null}
                 </ListItem>
