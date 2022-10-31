@@ -184,8 +184,6 @@ function RepositoriesList({ repositories, ...props }) {
             const repositoryUrl = `/${owner.login}/${repository.name}`;
             const lastBuild = repository.builds?.edges?.[0];
 
-            console.log({ repository });
-
             return (
               <Tr key={`${owner.login}-${repository.name}`}>
                 <RepositoryNameCell

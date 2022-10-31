@@ -18,7 +18,9 @@ export const ThumbnailTitle = styled.box`
 
 export const ThumbnailImage = ({ image, ...props }) => {
   if (!image?.url) return null;
-  return <x.img src={image.url} objectFit="contain" {...props} />;
+  return (
+    <x.img src={image.url} borderRadius="base" objectFit="contain" {...props} />
+  );
 };
 
 export const Thumbnail = styled(BaseLink)`

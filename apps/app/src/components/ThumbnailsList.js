@@ -124,16 +124,27 @@ function enrichGroups(groups, groupCollapseStatuses, stats) {
 }
 
 function getRows(groups) {
+  let itemRank = 1;
+
   return groups.flatMap((group) => {
+    if (group.collapsed) {
+      itemRank += group.count;
+    }
+
     return [
       { type: "listHeader", ...group },
 
       ...(group.collapsed
         ? []
-        : Array.from({ length: group.count }, (e, i) => ({
-            type: "listItem",
-            diff: group.diffs[i] || null,
-          }))),
+        : Array.from({ length: group.count }, () => {
+            const rank = itemRank++;
+
+            return {
+              type: "listItem",
+              rank,
+              diff: group.diffs.find((diff) => diff.rank === rank) || null,
+            };
+          })),
     ];
   });
 }
@@ -148,6 +159,7 @@ const DiffImages = ({ diff, imageHeight }) => (
         top="50%"
         transform
         translateY="-50%"
+        maxH={imageHeight}
       />
     )}
     <ThumbnailImage
@@ -163,12 +175,12 @@ export function ThumbnailsList({
   headerSize = 36,
   height = 400,
   data,
-  hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
   stats,
+  activeDiff,
 }) {
-  const { ownerLogin, repositoryName, buildNumber, diffId } = useParams();
+  const { ownerLogin, repositoryName, buildNumber } = useParams();
   const parentRef = useRef();
   const activeStickyIndexRef = useRef(0);
 
@@ -198,7 +210,7 @@ export function ThumbnailsList({
   };
 
   const rowVirtualizer = useVirtualizer({
-    count: hasNextPage ? rows.length + 1 : rows.length,
+    count: rows.length,
     estimateSize: (i) =>
       isSticky(i)
         ? headerSize
@@ -208,7 +220,7 @@ export function ThumbnailsList({
           (isFirst(i) ? gap / 2 : 0) +
           (isLast(i) ? gap / 2 : 0),
     getScrollElement: () => parentRef.current,
-    overscan: 20,
+    overscan: 10,
     paddingEnd: 32,
     rangeExtractor: useCallback(
       (range) => {
@@ -228,18 +240,19 @@ export function ThumbnailsList({
   });
 
   const virtualItems = rowVirtualizer.getVirtualItems();
-  const lastItem = virtualItems[virtualItems.length - 1];
-  const shouldFetch =
-    hasNextPage &&
-    !isFetchingNextPage &&
-    lastItem &&
-    lastItem.index >= rows.length - 1;
+  const firstEmptyVirtualItem = virtualItems.find(
+    ({ index }) => rows[index].type === "listItem" && rows[index].diff === null
+  );
+  const firstEmptyRank = firstEmptyVirtualItem
+    ? rows[firstEmptyVirtualItem.index].rank
+    : null;
+  const shouldFetch = !isFetchingNextPage && firstEmptyRank !== null;
 
   useEffect(() => {
     if (shouldFetch) {
-      fetchNextPage();
+      fetchNextPage(firstEmptyRank);
     }
-  }, [shouldFetch, fetchNextPage]);
+  }, [shouldFetch, fetchNextPage, firstEmptyRank]);
 
   return (
     <>
@@ -339,8 +352,8 @@ export function ThumbnailsList({
                   {item.diff ? (
                     <Thumbnail
                       replace
-                      to={`/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new/${item.diff.id}`}
-                      data-active={diffId === item.diff.id}
+                      to={`/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new/${item.rank}`}
+                      data-active={activeDiff.rank === item.diff.rank}
                     >
                       <DiffImages diff={item.diff} imageHeight={imageHeight} />
                     </Thumbnail>

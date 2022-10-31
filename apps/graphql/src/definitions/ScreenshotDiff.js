@@ -30,6 +30,7 @@ export const typeDefs = gql`
     "Represent the status given by the user"
     validationStatus: ValidationStatus!
     status: ScreenshotDiffStatus!
+    rank: Int
   }
 
   type ScreenshotDiffResult {
