@@ -6,7 +6,8 @@ import { Button, Icon } from "../components";
 import config from "../config";
 
 const useLoginUrl = () => {
-  const { pathname, origin } = useLocation();
+  const { origin } = window.location;
+  const { pathname } = useLocation();
   return `${config.get(
     "github.loginUrl"
   )}&redirect_uri=${origin}/auth/github/callback?r=${encodeURIComponent(
