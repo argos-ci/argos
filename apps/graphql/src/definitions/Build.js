@@ -66,6 +66,11 @@ export const typeDefs = gql`
       offset: Int!
       limit: Int!
     ): ScreenshotDiffResult!
+    "The screenshot diffs before and after the input rank"
+    screenshotDiffCursorPaginated(
+      limit: Int!
+      rank: Int!
+    ): ScreenshotDiffResult!
     "The screenshot bucket ID of the baselineBranch"
     baseScreenshotBucketId: ID
     "The screenshot bucket of the baselineBranch"
@@ -108,15 +113,13 @@ export const typeDefs = gql`
   }
 `;
 
-export const resolvers = {
-  Build: {
-    async screenshotDiffs(build, { where, limit = 10, offset = 0 }) {
-      const query = build
-        .$relatedQuery("screenshotDiffs")
-        .leftJoinRelated("[baseScreenshot, compareScreenshot]")
-        // sort screenshots by : "failed", "updated", "added" and "removed", "stable"
-        .orderByRaw(
-          `CASE \
+const getSortedDiffsQuery = (build) =>
+  build
+    .$relatedQuery("screenshotDiffs")
+    .leftJoinRelated("[baseScreenshot, compareScreenshot]")
+    // sort screenshots by : "failed", "updated", "added" and "removed", "stable"
+    .orderByRaw(
+      `CASE \
             WHEN "baseScreenshot"."name" IS NULL AND "compareScreenshot"."name" LIKE '%failed%' \
               THEN 0 \
             WHEN "score" IS NOT NULL AND "score" > 0 \
@@ -127,11 +130,15 @@ export const resolvers = {
               THEN 4 \
             ELSE 10 \
           END ASC`
-        )
-        .orderBy("compareScreenshot.name", "asc")
-        .orderBy("baseScreenshot.name", "asc")
-        .orderBy("id", "asc")
-        .range(offset, offset + limit - 1);
+    )
+    .orderBy("compareScreenshot.name", "asc")
+    .orderBy("baseScreenshot.name", "asc")
+    .orderBy("screenshot_diffs.id", "asc");
+
+export const resolvers = {
+  Build: {
+    async screenshotDiffs(build, { where, limit = 10, offset = 0 }) {
+      const query = getSortedDiffsQuery(build);
 
       if (where) {
         if (where.passing) {
@@ -145,8 +152,41 @@ export const resolvers = {
         }
       }
 
-      const result = await query;
+      const result = await query.range(offset, offset + limit - 1);
       return paginateResult({ result, offset, limit });
+    },
+    async screenshotDiffCursorPaginated(build, { limit = 10, rank }) {
+      const diffsTotalCount = await getSortedDiffsQuery(build).resultSize();
+      const existingRank =
+        !Number.isInteger(rank) || rank < 1 || rank > diffsTotalCount
+          ? 0
+          : parseInt(rank, 10);
+
+      const diffs = await knex
+        .with("diffs", getSortedDiffsQuery(build).toKnexQuery())
+        .with(
+          "rankedDiffs",
+          knex.raw(
+            'SELECT *, ROW_NUMBER() OVER (ORDER BY NULL) as rank FROM "diffs"'
+          )
+        )
+        .with(
+          "range",
+          knex
+            .select("rankedDiffs.*")
+            .from("rankedDiffs")
+            .whereBetween("rank", [
+              Math.floor(existingRank - limit / 2),
+              Math.floor(existingRank + limit / 2),
+            ])
+        )
+        .from("range");
+
+      return paginateResult({
+        result: { total: diffsTotalCount, results: diffs },
+        offset: diffs.length > 0 ? diffs[0].rank : 0,
+        limit,
+      });
     },
     compareScreenshotBucket: async (build) => {
       return ScreenshotBucketLoader.load(build.compareScreenshotBucketId);

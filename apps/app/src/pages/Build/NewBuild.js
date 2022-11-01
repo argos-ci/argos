@@ -47,8 +47,8 @@ const BUILD_QUERY = gql`
     $buildNumber: Int!
     $ownerLogin: String!
     $repositoryName: String!
-    $offset: Int!
     $limit: Int!
+    $rank: Int!
   ) {
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
@@ -75,7 +75,10 @@ const BUILD_QUERY = gql`
         ...ReviewButtonBuildFragment
         ...BuildStatusChipBuildFragment
 
-        screenshotDiffs(offset: $offset, limit: $limit) {
+        screenshotDiffs: screenshotDiffCursorPaginated(
+          limit: $limit
+          rank: $rank
+        ) {
           pageInfo {
             totalCount
             hasNextPage
@@ -188,9 +191,8 @@ const BuildContent = ({
   ownerLogin,
   repositoryName,
   buildNumber,
-  activeDiffId,
+  activeRank,
 }) => {
-  const [showChanges, setShowChanges] = useState(true);
   const [moreLoading, setMoreLoading] = useState(false);
 
   const { loading, data, fetchMore } = useQuery(BUILD_QUERY, {
@@ -198,21 +200,26 @@ const BuildContent = ({
       ownerLogin,
       repositoryName,
       buildNumber,
-      offset: 0,
-      limit: 10,
+      rank: activeRank,
+      limit: 20,
     },
     skip: !ownerLogin || !repositoryName || !buildNumber,
   });
 
   const dataRef = useLiveRef(data);
-  const fetchNextPage = useCallback(() => {
-    setMoreLoading(true);
-    fetchMoreScreenshotDiffs({ data: dataRef.current, fetchMore }).finally(
-      () => {
+  const fetchNextPage = useCallback(
+    (rank) => {
+      setMoreLoading(true);
+      fetchMoreScreenshotDiffs({
+        data: dataRef.current,
+        fetchMore,
+        rank,
+      }).finally(() => {
         setMoreLoading(false);
-      }
-    );
-  }, [fetchMore, dataRef]);
+      });
+    },
+    [fetchMore, dataRef]
+  );
 
   if (!data || loading) return <LoadingAlert />;
   if (!data.repository?.build) return <NotFound />;
@@ -220,8 +227,15 @@ const BuildContent = ({
   const {
     owner: { plan, consumptionRatio },
     build,
+    build: {
+      screenshotDiffs: { edges: screenshotDiffs },
+    },
   } = data.repository;
   const showBanner = plan && consumptionRatio && consumptionRatio >= 0.9;
+
+  const activeDiff =
+    screenshotDiffs.find(({ rank }) => rank === activeRank) ||
+    screenshotDiffs[0];
 
   return (
     <x.div
@@ -257,16 +271,16 @@ const BuildContent = ({
           fetchNextPage={fetchNextPage}
           ownerLogin={ownerLogin}
           repositoryName={repositoryName}
+          activeDiff={activeDiff}
           build={build}
           w={296}
           minW={296}
         />
 
         <BuildDiff
-          build={build}
-          activeDiffId={activeDiffId}
-          showChanges={showChanges}
-          setShowChanges={setShowChanges}
+          baseScreenshotBucket={build.baseScreenshotBucket}
+          compareScreenshotBucket={build.compareScreenshotBucket}
+          activeDiff={activeDiff}
         />
       </x.div>
     </x.div>
@@ -278,10 +292,11 @@ export function NewBuild() {
     ownerLogin,
     repositoryName,
     buildNumber: strBuildNumber,
-    diffId: activeDiffId,
+    diffRank: strActiveRank,
   } = useParams();
 
   const buildNumber = parseInt(strBuildNumber, 10);
+  const activeRankNumber = parseInt(strActiveRank, 10) || 1;
 
   return (
     <>
@@ -293,7 +308,7 @@ export function NewBuild() {
           ownerLogin={ownerLogin}
           repositoryName={repositoryName}
           buildNumber={buildNumber}
-          activeDiffId={activeDiffId}
+          activeRank={activeRankNumber}
         />
       ) : (
         <NotFound />

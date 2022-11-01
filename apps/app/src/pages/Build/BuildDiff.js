@@ -219,19 +219,11 @@ const ChangesScreenshot = ({ activeDiff, showChanges }) => (
 );
 
 export function BuildDiff({
-  build,
-  activeDiffId,
-  showChanges,
-  setShowChanges,
+  baseScreenshotBucket,
+  compareScreenshotBucket,
+  activeDiff,
 }) {
-  const {
-    baseScreenshotBucket,
-    compareScreenshotBucket,
-    screenshotDiffs: { edges: screenshotDiffs },
-  } = build;
-
-  const activeDiff =
-    screenshotDiffs.find(({ id }) => id === activeDiffId) || screenshotDiffs[0];
+  const [showChanges, setShowChanges] = useState(true);
 
   const headerRef = useRef();
   const [headerRect, setHeaderRect] = useState(null);

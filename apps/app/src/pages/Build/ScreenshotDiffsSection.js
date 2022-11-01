@@ -19,17 +19,19 @@ export const ScreenshotDiffsPageFragment = gql`
       id
       score
       status
-
+      rank
       ...ScreenshotsDiffCardFragment
     }
   }
   ${ScreenshotsDiffCardFragment}
 `;
 
-export function fetchMoreScreenshotDiffs({ data, fetchMore }) {
+export function fetchMoreScreenshotDiffs({ data, fetchMore, rank }) {
   return fetchMore({
     variables: {
-      offset: data.repository.build.screenshotDiffs.pageInfo.endCursor,
+      ...(rank
+        ? { rank }
+        : { offset: data.repository.build.screenshotDiffs.pageInfo.endCursor }),
     },
     updateQuery: (prev, { fetchMoreResult }) => {
       if (!fetchMoreResult) return prev;

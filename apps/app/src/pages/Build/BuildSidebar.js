@@ -72,6 +72,7 @@ export function BuildSidebar({
   ownerLogin,
   repositoryName,
   build,
+  activeDiff,
   ...props
 }) {
   const tab = useTabState();
@@ -80,10 +81,7 @@ export function BuildSidebar({
   const {
     stats,
     compareScreenshotBucket,
-    screenshotDiffs: {
-      pageInfo: { hasNextPage },
-      edges: screenshotDiffs,
-    },
+    screenshotDiffs: { edges: screenshotDiffs },
   } = build;
   const githubLink = `https://github.com/${ownerLogin}/${repositoryName}/commit/${compareScreenshotBucket.commit}`;
   const sidebarTabRect = sidebarTabsRef.current?.getBoundingClientRect();
@@ -108,13 +106,13 @@ export function BuildSidebar({
       <TabPanel state={tab}>
         <ThumbnailsList
           data={screenshotDiffs}
-          hasNextPage={hasNextPage}
           isFetchingNextPage={moreLoading}
           fetchNextPage={fetchNextPage}
           stats={stats}
           height={`calc(100vh - 38px - ${
             sidebarTabRect?.top + sidebarTabRect?.height || 0
           }px)`}
+          activeDiff={activeDiff}
         />
       </TabPanel>
 
@@ -126,10 +124,10 @@ export function BuildSidebar({
           </BuildInfo>
 
           <BuildInfoTitle>Baseline build</BuildInfoTitle>
-          <BuildInfo> Build {build.number}</BuildInfo>
+          <BuildInfo>Build {build.number}</BuildInfo>
 
           <BuildInfoTitle>Total screenshots count</BuildInfoTitle>
-          <BuildInfo> {stats.screenshotCount}</BuildInfo>
+          <BuildInfo>{stats.screenshotCount}</BuildInfo>
 
           <BuildInfoTitle>Head commit</BuildInfoTitle>
           <BuildInfo>
