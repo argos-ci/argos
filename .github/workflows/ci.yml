@@ -35,7 +35,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      
+
       rabbit:
         image: rabbitmq:3-alpine
         ports:
