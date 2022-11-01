@@ -4,7 +4,8 @@ import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
 import { useCallback, useRef, useState } from "react";
 import { Helmet } from "react-helmet";
-import { useParams } from "react-router-dom";
+import { useHotkeys } from "react-hotkeys-hook";
+import { useNavigate, useParams } from "react-router-dom";
 
 import {
   Banner,
@@ -139,6 +140,7 @@ const BuildHeader = ({
   repositoryName,
   buildNumber,
   build,
+  repoUrl,
 }) => {
   const user = useUser();
 
@@ -162,7 +164,7 @@ const BuildHeader = ({
             Build #{buildNumber}
           </x.div>
           <Link
-            to={`/${ownerLogin}/${repositoryName}`}
+            to={repoUrl}
             whiteSpace="nowrap"
             fontWeight="normal"
             lineHeight={1}
@@ -195,16 +197,21 @@ const BuildContent = ({
   buildNumber,
   activeRank,
 }) => {
-  const [moreLoading, setMoreLoading] = useState(false);
+  const repoUrl = `/${ownerLogin}/${repositoryName}`;
+  const buildUrl = `${repoUrl}/builds/${buildNumber}/new`;
+
+  const navigate = useNavigate();
   const previousRank = useRef();
   const nextRank = useRef();
+  const [moreLoading, setMoreLoading] = useState(false);
+  const [showChanges, setShowChanges] = useState(true);
 
   const { loading, data, fetchMore } = useQuery(BUILD_QUERY, {
     variables: {
       ownerLogin,
       repositoryName,
       buildNumber,
-      rank: activeRank,
+      rank: 1,
       limit: 20,
     },
     skip: !ownerLogin || !repositoryName || !buildNumber,
@@ -225,6 +232,20 @@ const BuildContent = ({
     [fetchMore, dataRef]
   );
 
+  useHotkeys("h", () => setShowChanges((prev) => !prev));
+  useHotkeys("up, left", (e) => {
+    e.preventDefault();
+    if (previousRank.current) {
+      navigate(`${buildUrl}/${previousRank.current}`, { replace: true });
+    }
+  });
+  useHotkeys("down, right", (e) => {
+    e.preventDefault();
+    if (nextRank.current) {
+      navigate(`${buildUrl}/${nextRank.current}`, { replace: true });
+    }
+  });
+
   if (!data || loading) return <LoadingAlert />;
   if (!data.repository?.build) return <NotFound />;
 
@@ -236,7 +257,6 @@ const BuildContent = ({
     },
   } = data.repository;
   const showBanner = plan && consumptionRatio && consumptionRatio >= 0.9;
-
   const activeDiff =
     screenshotDiffs.find(({ rank }) => rank === activeRank) ||
     screenshotDiffs[0];
@@ -262,6 +282,7 @@ const BuildContent = ({
         buildNumber={buildNumber}
         build={build}
         repository={data.repository}
+        repoUrl={repoUrl}
       />
 
       <x.div
@@ -277,6 +298,8 @@ const BuildContent = ({
           nextRank={nextRank}
           activeDiff={activeDiff}
           build={build}
+          githubRepoUrl={`https://github.com/${ownerLogin}/${repositoryName}`}
+          buildUrl={buildUrl}
           w={296}
           minW={296}
         />
@@ -285,8 +308,11 @@ const BuildContent = ({
           baseScreenshotBucket={build.baseScreenshotBucket}
           compareScreenshotBucket={build.compareScreenshotBucket}
           activeDiff={activeDiff}
+          showChanges={showChanges}
+          setShowChanges={setShowChanges}
           previousRank={previousRank}
           nextRank={nextRank}
+          buildUrl={buildUrl}
         />
       </x.div>
     </x.div>

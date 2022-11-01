@@ -2,7 +2,6 @@
 import styled, { x } from "@xstyled/styled-components";
 import { Tab, TabList, TabPanel, useTabState } from "ariakit/tab";
 import { useRef } from "react";
-import { useParams } from "react-router-dom";
 
 import { Link, ThumbnailsList, Time } from "@argos-ci/app/src/components";
 
@@ -26,6 +25,10 @@ const SidebarTab = styled(Tab)`
 
   &[aria-selected="true"] {
     color: primary-text;
+
+    &:focus-visible {
+      text-decoration: underline;
+    }
   }
 
   $[data-focus-visible] {
@@ -84,9 +87,10 @@ export function BuildSidebar({
   activeDiff,
   previousRank,
   nextRank,
+  buildUrl,
+  githubRepoUrl,
   ...props
 }) {
-  const { ownerLogin, repositoryName } = useParams();
   const tab = useTabState();
   const sidebarTabsRef = useRef();
 
@@ -97,7 +101,6 @@ export function BuildSidebar({
     screenshotDiffs: { edges: screenshotDiffs },
   } = build;
   const sidebarTabRect = sidebarTabsRef.current?.getBoundingClientRect();
-  const githubRepoUrl = `https://github.com/${ownerLogin}/${repositoryName}`;
 
   return (
     <Sidebar {...props}>
@@ -116,18 +119,19 @@ export function BuildSidebar({
         </x.div>
       </TabList>
 
-      <TabPanel state={tab}>
+      <TabPanel state={tab} tabIndex={-1}>
         <ThumbnailsList
           data={screenshotDiffs}
           isFetchingNextPage={moreLoading}
           fetchNextPage={fetchNextPage}
           stats={stats}
-          height={`calc(100vh - 38px - ${
+          height={`calc(100vh - 35px - ${
             sidebarTabRect?.top + sidebarTabRect?.height || 0
           }px)`}
           activeDiff={activeDiff}
           previousRank={previousRank}
           nextRank={nextRank}
+          buildUrl={buildUrl}
         />
       </TabPanel>
 

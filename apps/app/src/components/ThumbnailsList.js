@@ -2,12 +2,11 @@ import { ChevronRightIcon } from "@primer/octicons-react";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { x } from "@xstyled/styled-components";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useHotkeys } from "react-hotkeys-hook";
 
 import { Alert } from "./Alert";
 import { Badge } from "./Badge";
 import { BuildStatLink, BuildStatLinks } from "./BuildStat";
-import { LinkBlock } from "./Link";
 import { Thumbnail, ThumbnailImage, ThumbnailTitle } from "./Thumbnail";
 
 const DIFFS_GROUPS = {
@@ -57,9 +56,10 @@ const HeaderChevron = (props) => (
 );
 
 const Header = ({ ...props }) => (
-  <x.div
+  <x.button
     w={1}
-    as={LinkBlock}
+    color="primary-text"
+    outline={{ _: "none", focus: "none" }}
     display="flex"
     alignItems="center"
     justifyContent="space-between"
@@ -67,11 +67,12 @@ const Header = ({ ...props }) => (
     lineHeight="16px"
     textTransform="capitalize"
     cursor="default"
+    fontWeight={{ _: "medium", focus: "semibold" }}
     borderTop={1}
     borderBottom={1}
     borderColor="layout-border"
     borderRadius={0}
-    backgroundColor="bg"
+    backgroundColor={{ _: "bg", hover: "bg-hover", focus: "bg-hover" }}
     userSelect="none"
     pr={4}
     h={1}
@@ -181,8 +182,8 @@ export function ThumbnailsList({
   previousRank,
   nextRank,
   activeDiff,
+  buildUrl,
 }) {
-  const { ownerLogin, repositoryName, buildNumber } = useParams();
   const parentRef = useRef();
   const activeStickyIndexRef = useRef(0);
 
@@ -207,6 +208,22 @@ export function ThumbnailsList({
   );
   previousRank.current = rowsRanks[activeDiffRankIndex - 1];
   nextRank.current = rowsRanks[activeDiffRankIndex + 1];
+
+  useHotkeys("f", () => {
+    setGroupCollapseStatuses((prev) => ({ ...prev, failed: !prev.failed }));
+  });
+  useHotkeys("c", () => {
+    setGroupCollapseStatuses((prev) => ({ ...prev, updated: !prev.updated }));
+  });
+  useHotkeys("a", () => {
+    setGroupCollapseStatuses((prev) => ({ ...prev, added: !prev.added }));
+  });
+  useHotkeys("d", () => {
+    setGroupCollapseStatuses((prev) => ({ ...prev, removed: !prev.removed }));
+  });
+  useHotkeys("s", () => {
+    setGroupCollapseStatuses((prev) => ({ ...prev, stable: !prev.stable }));
+  });
 
   const isSticky = (index) => stickyIndexes.includes(index);
   const isActiveSticky = (index) => activeStickyIndexRef.current === index;
@@ -273,30 +290,35 @@ export function ThumbnailsList({
           count={stats.failedScreenshotCount}
           label="Failure screenshots"
           onClick={handleStatClick}
+          hotkey="F"
         />
         <BuildStatLink
           status="updated"
           count={stats.updatedScreenshotCount}
           label="Change screenshots"
           onClick={handleStatClick}
+          hotkey="C"
         />
         <BuildStatLink
           status="added"
           count={stats.addedScreenshotCount}
           label="Additional screenshots"
           onClick={handleStatClick}
+          hotkey="A"
         />
         <BuildStatLink
           status="removed"
           count={stats.removedScreenshotCount}
           label="Deleted screenshots"
           onClick={handleStatClick}
+          hotkey="D"
         />
         <BuildStatLink
           status="stable"
           count={stats.stableScreenshotCount}
           label="Stable screenshots"
           onClick={handleStatClick}
+          hotkey="S"
         />
       </BuildStatLinks>
 
@@ -334,11 +356,7 @@ export function ThumbnailsList({
                           : "layout-border"
                       }
                     >
-                      <x.div
-                        display="flex"
-                        alignItems="center"
-                        fontWeight="medium"
-                      >
+                      <x.div display="flex" alignItems="center">
                         <HeaderChevron rotate={item.collapsed ? 0 : 90} />
                         {item.label}
                       </x.div>
@@ -363,7 +381,7 @@ export function ThumbnailsList({
                   {item.diff ? (
                     <Thumbnail
                       replace
-                      to={`/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new/${item.rank}`}
+                      to={`${buildUrl}/${item.rank}`}
                       data-active={activeDiff.rank === item.diff.rank}
                     >
                       <DiffImages diff={item.diff} imageHeight={imageHeight} />

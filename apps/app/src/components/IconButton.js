@@ -17,6 +17,7 @@ const InnerButton = styled.buttonBox(({ $color = "primary", $toggle }) => {
     color: ${onColor};
     background-color: ${bgColor};
     align-self: center;
+    user-select: none;
 
     &:disabled {
       opacity: 0.38;

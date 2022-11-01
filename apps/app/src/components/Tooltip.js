@@ -1,13 +1,13 @@
 import { x } from "@xstyled/styled-components";
 import {
   Tooltip as AriakitTooltip,
-  TooltipAnchor,
+  TooltipAnchor as AriakitTooltipAnchor,
   TooltipArrow,
   useTooltipState as ariakitUseTooltipState,
 } from "ariakit/tooltip";
 import { forwardRef } from "react";
 
-export { TooltipAnchor, TooltipArrow };
+export { TooltipArrow };
 
 export function useTooltipState(props) {
   return ariakitUseTooltipState({ placement: "bottom", ...props });
@@ -32,6 +32,18 @@ export const TooltipHotkey = ({ children, ...props }) => (
     <Hotkey {...props}>{children}</Hotkey>
   </>
 );
+
+export const TooltipAnchor = forwardRef(({ children, as, ...props }, ref) => {
+  return (
+    <AriakitTooltipAnchor ref={ref} {...props}>
+      {(tooltipAnchorProps) => (
+        <x.div outline={{ focus: "none" }} as={as} {...tooltipAnchorProps}>
+          {children}
+        </x.div>
+      )}
+    </AriakitTooltipAnchor>
+  );
+});
 
 export const Tooltip = forwardRef(({ children, ...props }, ref) => {
   return (

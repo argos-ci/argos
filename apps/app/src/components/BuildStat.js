@@ -5,38 +5,52 @@ import {
   getDiffStatusIcon,
 } from "../containers/ScreenshotDiffStatus";
 import { IllustratedText } from "./IllustratedText";
-import { LinkBlock } from "./Link";
-import { Tooltip, TooltipAnchor, useTooltipState } from "./Tooltip";
+import {
+  Tooltip,
+  TooltipAnchor,
+  TooltipHotkey,
+  useTooltipState,
+} from "./Tooltip";
 
-export function BuildStat({ icon, color, count, label, ...props }) {
+export function BuildStat({ icon, color, count, label, hotkey, ...props }) {
   const tooltip = useTooltipState();
 
   if (count === 0) return null;
 
   return (
     <>
-      <TooltipAnchor state={tooltip}>
-        <LinkBlock px={2} py={1} {...props}>
-          <IllustratedText icon={icon} color={color} cursor="default">
-            {count}
-          </IllustratedText>
-        </LinkBlock>
+      <TooltipAnchor state={tooltip} px={2} py={1} h="24px" {...props}>
+        <IllustratedText icon={icon} color={color} cursor="default">
+          {count}
+        </IllustratedText>
       </TooltipAnchor>
-      <Tooltip state={tooltip}>{label}</Tooltip>
+      <Tooltip state={tooltip}>
+        {label}
+        {hotkey && <TooltipHotkey>{hotkey}</TooltipHotkey>}
+      </Tooltip>
     </>
   );
 }
 
-export function BuildStatLink({ status, count, label, onClick }) {
+export function BuildStatLink({ status, count, onClick, ...props }) {
   if (count === 0) return null;
 
   return (
     <BuildStat
       icon={getDiffStatusIcon(status)}
       color={getDiffStatusColor(status)}
-      count={count}
-      label={label}
       onClick={() => onClick(status)}
+      count={count}
+      as="button"
+      outline={{ focus: "none" }}
+      backgroundColor={{
+        _: "bg",
+        focus: "background-focus",
+        hover: "bg-hover",
+      }}
+      borderRadius="md"
+      cursor="pointer"
+      {...props}
     />
   );
 }
@@ -45,13 +59,13 @@ export const BuildStatLinks = (props) => (
   <x.div
     display="flex"
     px={4}
-    py={2}
+    py="5px"
     borderBottom={1}
     borderColor="layout-border"
     justifyContent="flex-start"
     fontSize="sm"
-    h="38px"
     ml="-10px"
+    gap={1}
     {...props}
   />
 );
