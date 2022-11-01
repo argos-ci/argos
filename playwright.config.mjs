@@ -1,7 +1,9 @@
+/* eslint-disable import/no-unresolved */
 // @ts-check
-import argosConfig from "@argos-ci/config";
+import { devices } from "@playwright/test";
 
-const { devices } = require("@playwright/test");
+// @ts-ignore
+import argosConfig from "@argos-ci/config";
 
 /**
  * Read environment variables from file.
@@ -110,4 +112,4 @@ const config = {
   },
 };
 
-module.exports = config;
+export default config;
