@@ -178,6 +178,8 @@ export function ThumbnailsList({
   isFetchingNextPage,
   fetchNextPage,
   stats,
+  previousRank,
+  nextRank,
   activeDiff,
 }) {
   const { ownerLogin, repositoryName, buildNumber } = useParams();
@@ -196,6 +198,15 @@ export function ThumbnailsList({
   const richGroups = enrichGroups(filledGroups, groupCollapseStatuses, stats);
   const stickyIndexes = richGroups.map(({ index }) => index);
   const rows = getRows(richGroups);
+
+  const rowsRanks = rows
+    .filter((item) => item.rank !== undefined)
+    .map(({ rank }) => rank);
+  const activeDiffRankIndex = rowsRanks.findIndex(
+    (rank) => activeDiff.rank === rank
+  );
+  previousRank.current = rowsRanks[activeDiffRankIndex - 1];
+  nextRank.current = rowsRanks[activeDiffRankIndex + 1];
 
   const isSticky = (index) => stickyIndexes.includes(index);
   const isActiveSticky = (index) => activeStickyIndexRef.current === index;

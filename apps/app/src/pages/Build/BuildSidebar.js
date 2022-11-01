@@ -2,6 +2,7 @@
 import styled, { x } from "@xstyled/styled-components";
 import { Tab, TabList, TabPanel, useTabState } from "ariakit/tab";
 import { useRef } from "react";
+import { useParams } from "react-router-dom";
 
 import { Link, ThumbnailsList, Time } from "@argos-ci/app/src/components";
 
@@ -66,25 +67,37 @@ const Sidebar = styled.box`
   }
 `;
 
+const CommitLink = ({ githubRepoUrl, screenshotBucket }) => {
+  if (!screenshotBucket) return "-";
+
+  return (
+    <Link href={`${githubRepoUrl}/commit/${screenshotBucket.commit}`}>
+      {screenshotBucket.commit.split("").slice(0, 7)}
+    </Link>
+  );
+};
+
 export function BuildSidebar({
   moreLoading,
   fetchNextPage,
-  ownerLogin,
-  repositoryName,
   build,
   activeDiff,
+  previousRank,
+  nextRank,
   ...props
 }) {
+  const { ownerLogin, repositoryName } = useParams();
   const tab = useTabState();
   const sidebarTabsRef = useRef();
 
   const {
     stats,
     compareScreenshotBucket,
+    baseScreenshotBucket,
     screenshotDiffs: { edges: screenshotDiffs },
   } = build;
-  const githubLink = `https://github.com/${ownerLogin}/${repositoryName}/commit/${compareScreenshotBucket.commit}`;
   const sidebarTabRect = sidebarTabsRef.current?.getBoundingClientRect();
+  const githubRepoUrl = `https://github.com/${ownerLogin}/${repositoryName}`;
 
   return (
     <Sidebar {...props}>
@@ -113,6 +126,8 @@ export function BuildSidebar({
             sidebarTabRect?.top + sidebarTabRect?.height || 0
           }px)`}
           activeDiff={activeDiff}
+          previousRank={previousRank}
+          nextRank={nextRank}
         />
       </TabPanel>
 
@@ -129,18 +144,20 @@ export function BuildSidebar({
           <BuildInfoTitle>Total screenshots count</BuildInfoTitle>
           <BuildInfo>{stats.screenshotCount}</BuildInfo>
 
-          <BuildInfoTitle>Head commit</BuildInfoTitle>
+          <BuildInfoTitle>Baseline commit</BuildInfoTitle>
           <BuildInfo>
-            <Link href={githubLink}>
-              {compareScreenshotBucket.commit.split("").slice(0, 7)}
-            </Link>
+            <CommitLink
+              githubRepoUrl={githubRepoUrl}
+              screenshotBucket={baseScreenshotBucket}
+            />
           </BuildInfo>
 
-          <BuildInfoTitle>Base commit</BuildInfoTitle>
+          <BuildInfoTitle>Changes commit</BuildInfoTitle>
           <BuildInfo>
-            <Link href={githubLink}>
-              {compareScreenshotBucket.commit.split("").slice(0, 7)}
-            </Link>
+            <CommitLink
+              githubRepoUrl={githubRepoUrl}
+              screenshotBucket={compareScreenshotBucket}
+            />
           </BuildInfo>
         </x.div>
       </TabPanel>

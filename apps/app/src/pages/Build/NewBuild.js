@@ -2,7 +2,7 @@
 import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
@@ -90,12 +90,14 @@ const BUILD_QUERY = gql`
           id
           createdAt
           branch
+          commit
         }
 
         compareScreenshotBucket {
           id
           createdAt
           branch
+          commit
         }
 
         stats {
@@ -194,6 +196,8 @@ const BuildContent = ({
   activeRank,
 }) => {
   const [moreLoading, setMoreLoading] = useState(false);
+  const previousRank = useRef();
+  const nextRank = useRef();
 
   const { loading, data, fetchMore } = useQuery(BUILD_QUERY, {
     variables: {
@@ -269,8 +273,8 @@ const BuildContent = ({
         <BuildSidebar
           moreLoading={moreLoading}
           fetchNextPage={fetchNextPage}
-          ownerLogin={ownerLogin}
-          repositoryName={repositoryName}
+          previousRank={previousRank}
+          nextRank={nextRank}
           activeDiff={activeDiff}
           build={build}
           w={296}
@@ -281,6 +285,8 @@ const BuildContent = ({
           baseScreenshotBucket={build.baseScreenshotBucket}
           compareScreenshotBucket={build.compareScreenshotBucket}
           activeDiff={activeDiff}
+          previousRank={previousRank}
+          nextRank={nextRank}
         />
       </x.div>
     </x.div>
