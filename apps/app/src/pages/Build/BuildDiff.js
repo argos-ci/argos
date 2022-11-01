@@ -11,7 +11,6 @@ import {
 import { x } from "@xstyled/styled-components";
 import moment from "moment";
 import { forwardRef, useLayoutEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
 
 import {
   Alert,
@@ -52,36 +51,23 @@ const BranchInfo = ({ bucket, baseline, ...props }) => {
   );
 };
 
-const ArrowUpButton = (props) => {
+const ArrowButton = ({ buildUrl, icon: Icon, link, children }) => {
   const tooltip = useTooltipState();
+  const disabled = link === undefined;
 
   return (
     <>
-      <TooltipAnchor state={tooltip}>
-        <IconButton icon={ArrowUpIcon} {...props} />
+      <TooltipAnchor
+        state={tooltip}
+        as={LinkBlock}
+        to={disabled ? null : `${buildUrl}/${link}`}
+      >
+        <IconButton icon={Icon} disabled={disabled} />
       </TooltipAnchor>
       <Tooltip state={tooltip}>
-        Previous screenshot
+        {children}
         <TooltipHotkey>
-          <ArrowUpIcon />
-        </TooltipHotkey>
-      </Tooltip>
-    </>
-  );
-};
-
-const ArrowDownButton = (props) => {
-  const tooltip = useTooltipState();
-
-  return (
-    <>
-      <TooltipAnchor state={tooltip}>
-        <IconButton icon={ArrowDownIcon} {...props} />
-      </TooltipAnchor>
-      <Tooltip state={tooltip}>
-        Next screenshot
-        <TooltipHotkey>
-          <ArrowDownIcon />
+          <Icon />
         </TooltipHotkey>
       </Tooltip>
     </>
@@ -89,7 +75,7 @@ const ArrowDownButton = (props) => {
 };
 
 const ToggleChangesButton = (props) => {
-  const tooltip = useTooltipState({ placement: "left" });
+  const tooltip = useTooltipState();
 
   return (
     <>
@@ -98,7 +84,7 @@ const ToggleChangesButton = (props) => {
       </TooltipAnchor>
       <Tooltip state={tooltip}>
         Hide changes overlay
-        <TooltipHotkey>D</TooltipHotkey>
+        <TooltipHotkey>H</TooltipHotkey>
       </Tooltip>
     </>
   );
@@ -106,12 +92,16 @@ const ToggleChangesButton = (props) => {
 
 const DiffHeader = forwardRef(
   (
-    { activeDiff, setShowChanges, showChanges, previousRank, nextRank },
+    {
+      activeDiff,
+      setShowChanges,
+      showChanges,
+      previousRank,
+      nextRank,
+      buildUrl,
+    },
     ref
   ) => {
-    const { ownerLogin, repositoryName, buildNumber } = useParams();
-    const buildUrl = `/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new`;
-
     return (
       <x.div
         ref={ref}
@@ -121,12 +111,20 @@ const DiffHeader = forwardRef(
         p={4}
       >
         <x.div display="flex" alignItems="center">
-          <LinkBlock as={BaseLink} to={`${buildUrl}/${previousRank.current}`}>
-            <ArrowUpButton />
-          </LinkBlock>
-          <LinkBlock as={BaseLink} to={`${buildUrl}/${nextRank.current}`}>
-            <ArrowDownButton />
-          </LinkBlock>
+          <ArrowButton
+            buildUrl={buildUrl}
+            icon={ArrowUpIcon}
+            link={previousRank.current}
+          >
+            Previous screenshot
+          </ArrowButton>
+          <ArrowButton
+            buildUrl={buildUrl}
+            icon={ArrowDownIcon}
+            link={nextRank.current}
+          >
+            Next screenshot
+          </ArrowButton>
           <x.div ml={3} fontSize="sm" fontWeight="medium" lineHeight={1.2}>
             {activeDiff.compareScreenshot?.name ||
               activeDiff.baseScreenshot?.name}
@@ -238,9 +236,10 @@ export function BuildDiff({
   activeDiff,
   previousRank,
   nextRank,
+  showChanges,
+  setShowChanges,
+  buildUrl,
 }) {
-  const [showChanges, setShowChanges] = useState(true);
-
   const headerRef = useRef();
   const [headerRect, setHeaderRect] = useState(null);
   useLayoutEffect(() => {
@@ -256,6 +255,7 @@ export function BuildDiff({
         showChanges={showChanges}
         previousRank={previousRank}
         nextRank={nextRank}
+        buildUrl={buildUrl}
       />
 
       <x.div
