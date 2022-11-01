@@ -1,6 +1,9 @@
 const now = new Date();
 
-exports.up = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
   await knex.schema.alterTable("accounts", async (table) => {
     table.bigInteger("userId").unique().alter();
     table.bigInteger("organizationId").unique().alter();
@@ -40,9 +43,14 @@ exports.up = async (knex) => {
   ]);
 };
 
-exports.down = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
   await knex.schema.alterTable("accounts", function (table) {
+    // @ts-ignore
     table.dropUnique("userId");
+    // @ts-ignore
     table.dropUnique("organizationId");
   });
 };

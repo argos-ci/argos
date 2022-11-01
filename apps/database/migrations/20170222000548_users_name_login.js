@@ -1,4 +1,7 @@
-exports.up = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
   await knex.schema.table("users", (table) => {
     table.string("login");
   });
@@ -7,7 +10,10 @@ exports.up = async (knex) => {
   await knex.raw('ALTER TABLE users ALTER COLUMN "name" DROP NOT NULL');
 };
 
-exports.down = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
   await knex.schema.table("users", (table) => {
     table.dropColumn("login");
   });

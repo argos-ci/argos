@@ -2,9 +2,14 @@
   "name": "@argos-ci/sentry-node",
   "version": "2.0.0",
   "private": true,
-  "main": "src/index.js",
+  "type": "module",
+  "exports": "./dist/index.js",
+  "scripts": {
+    "build": "swc src --config-file ../../.swcrc -d dist",
+    "dev": "npm run build -- --watch"
+  },
   "dependencies": {
-    "@argos-ci/config": "2.0.0",
+    "@argos-ci/config": "*",
     "@sentry/node": "^7.9.0"
   }
 }

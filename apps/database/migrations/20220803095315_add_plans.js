@@ -1,6 +1,9 @@
-exports.up = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
   await knex.schema.createTable("accounts", (table) => {
-    table.bigincrements("id").primary();
+    table.bigIncrements("id").primary();
     table.dateTime("createdAt").notNullable();
     table.dateTime("updatedAt").notNullable();
     table.bigInteger("userId").index();
@@ -13,7 +16,7 @@ exports.up = async (knex) => {
   );
 
   await knex.schema.createTable("plans", (table) => {
-    table.bigincrements("id").primary();
+    table.bigIncrements("id").primary();
     table.dateTime("createdAt").notNullable();
     table.dateTime("updatedAt").notNullable();
     table.string("name").notNullable();
@@ -21,7 +24,7 @@ exports.up = async (knex) => {
     table.string("githubId").notNullable();
   });
   await knex.schema.createTable("purchases", (table) => {
-    table.bigincrements("id").primary();
+    table.bigIncrements("id").primary();
     table.dateTime("createdAt").notNullable();
     table.dateTime("updatedAt").notNullable();
     table.bigInteger("planId").index().notNullable();
@@ -31,7 +34,10 @@ exports.up = async (knex) => {
   });
 };
 
-exports.down = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
   await await knex.raw(
     "ALTER TABLE accounts DROP CONSTRAINT accounts_only_one_non_null"
   );

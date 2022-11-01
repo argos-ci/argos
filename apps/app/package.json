@@ -11,7 +11,7 @@
   "sideEffects": false,
   "devDependencies": {
     "@apollo/client": "^3.6.9",
-    "@argos-ci/config": "2.0.0",
+    "@argos-ci/config": "*",
     "@heroicons/react": "^2.0.12",
     "@primer/octicons-react": "^17.4.1",
     "@sentry/browser": "^7.10.0",
@@ -21,7 +21,6 @@
     "@storybook/react": "^7.0.0-alpha.38",
     "@storybook/react-webpack5": "^7.0.0-alpha.38",
     "@storybook/testing-library": "^0.0.13",
-    "@swc/core": "^1.2.248",
     "@tanstack/react-virtual": "^3.0.0-beta.18",
     "@xstyled/styled-components": "^3.6.0",
     "ariakit": "^2.0.0-next.39",

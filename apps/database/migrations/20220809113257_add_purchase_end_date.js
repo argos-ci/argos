@@ -1,4 +1,7 @@
-exports.up = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
   await knex.schema.table("purchases", (table) => {
     table.dateTime("startDate").defaultTo(knex.fn.now());
     table.dateTime("endDate");
@@ -8,7 +11,10 @@ exports.up = async (knex) => {
   });
 };
 
-exports.down = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
   await knex.schema.table("purchases", (table) => {
     table.dropColumn("startDate");
     table.dropColumn("endDate");

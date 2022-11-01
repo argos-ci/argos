@@ -1,14 +1,17 @@
-exports.up = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
   await knex.schema
     .createTable("installations", (table) => {
-      table.bigincrements("id").primary();
+      table.bigIncrements("id").primary();
       table.dateTime("createdAt").notNullable();
       table.dateTime("updatedAt").notNullable();
       table.integer("githubId").notNullable().index();
       table.boolean("deleted").notNullable().defaultTo(false);
     })
     .createTable("installation_repository_rights", (table) => {
-      table.bigincrements("id").primary();
+      table.bigIncrements("id").primary();
       table.dateTime("createdAt").notNullable();
       table.dateTime("updatedAt").notNullable();
       table.bigInteger("installationId").notNullable().index();
@@ -17,7 +20,7 @@ exports.up = async (knex) => {
       table.foreign("repositoryId").references("repositories.id");
     })
     .createTable("user_installation_rights", (table) => {
-      table.bigincrements("id").primary();
+      table.bigIncrements("id").primary();
       table.dateTime("createdAt").notNullable();
       table.dateTime("updatedAt").notNullable();
       table.bigInteger("userId").notNullable().index();
@@ -50,7 +53,10 @@ exports.up = async (knex) => {
   ALTER TABLE synchronizations ALTER COLUMN "type" TYPE synchronization_type USING "type"::text::synchronization_type;`);
 };
 
-exports.down = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
   await knex.schema
     .dropTable("user_installation_rights")
     .dropTable("installation_repository_rights")

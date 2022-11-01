@@ -18,7 +18,7 @@ export function AuthCallback() {
     api
       .post("/auth/github", { code })
       .then((result) => {
-        setToken(result.data.access_token);
+        setToken(result.data.jwt);
         navigate(r || "/");
       })
       .catch((error) => {

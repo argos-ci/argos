@@ -2,13 +2,14 @@
   "name": "@argos-ci/graphql",
   "version": "2.0.0",
   "private": true,
-  "main": "src/index.js",
+  "type": "module",
+  "exports": "./dist/index.js",
   "dependencies": {
-    "@argos-ci/build": "2.0.0",
-    "@argos-ci/build-notification": "2.0.0",
-    "@argos-ci/config": "2.0.0",
-    "@argos-ci/database": "2.0.0",
-    "@argos-ci/storage": "2.0.0",
+    "@argos-ci/build": "*",
+    "@argos-ci/build-notification": "*",
+    "@argos-ci/config": "*",
+    "@argos-ci/database": "*",
+    "@argos-ci/storage": "*",
     "@graphql-tools/schema": "^9.0.0",
     "@sentry/node": "^7.9.0",
     "apollo-server-core": "^3.10.0",
@@ -21,9 +22,14 @@
     "moment": "^2.29.4"
   },
   "devDependencies": {
+    "@types/graphql-iso-date": "^3.4.0",
     "supertest": "^6.2.4"
   },
   "overrides": {
     "graphql": "^16.5.0"
+  },
+  "scripts": {
+    "build": "swc src --config-file ../../.swcrc -d dist",
+    "dev": "npm run build -- --watch"
   }
 }

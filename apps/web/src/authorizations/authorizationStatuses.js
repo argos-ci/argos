@@ -1,3 +1,0 @@
-export const CONSISTENT = "CONSISTENT";
-export const INCONSISTENT = "INCONSISTENT";
-export const INVALID_TOKEN = "INVALID_TOKEN";

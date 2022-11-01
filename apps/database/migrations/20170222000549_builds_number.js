@@ -1,4 +1,7 @@
-exports.up = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
   await knex.schema.table("builds", (table) => {
     table.integer("number").index();
   });
@@ -13,7 +16,10 @@ exports.up = async (knex) => {
   await knex.raw('ALTER TABLE builds ALTER COLUMN "number" SET NOT NULL');
 };
 
-exports.down = async (knex) => {
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
   await knex.schema.table("builds", (table) => {
     table.dropColumn("number");
   });

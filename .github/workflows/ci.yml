@@ -36,6 +36,11 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      rabbit:
+        image: rabbitmq:3-alpine
+        ports:
+          - 5672:5672
+
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -50,6 +55,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Check types
+        run: npx tsc
 
       - name: Check Prettier
         run: npx prettier --check .

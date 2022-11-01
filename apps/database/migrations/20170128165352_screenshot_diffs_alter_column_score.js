@@ -1,5 +1,17 @@
-exports.up = (knex) =>
-  knex.raw('ALTER TABLE screenshot_diffs ALTER COLUMN "score" DROP NOT NULL');
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) => {
+  await knex.raw(
+    'ALTER TABLE screenshot_diffs ALTER COLUMN "score" DROP NOT NULL'
+  );
+};
 
-exports.down = (knex) =>
-  knex.raw('ALTER TABLE screenshot_diffs ALTER COLUMN "score" SET NOT NULL');
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) => {
+  await knex.raw(
+    'ALTER TABLE screenshot_diffs ALTER COLUMN "score" SET NOT NULL'
+  );
+};

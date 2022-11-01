@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`#diffImages alphaBackground 1`] = `
+{
+  "pixels": 0,
+  "score": 0,
+  "scoreRaw": 0,
+}
+`;
+
+exports[`#diffImages boxShadow 1`] = `
+{
+  "pixels": 0,
+  "score": 0,
+  "scoreRaw": 0,
+}
+`;
+
+exports[`#diffImages imageCompression 1`] = `
+{
+  "pixels": 0,
+  "score": 0,
+  "scoreRaw": 0,
+}
+`;
+
+exports[`#diffImages simple with enough fuzz 1`] = `
+{
+  "pixels": 0,
+  "score": 0,
+  "scoreRaw": 0,
+}
+`;

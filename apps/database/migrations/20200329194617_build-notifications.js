@@ -1,4 +1,7 @@
-exports.up = (knex) =>
+/**
+ * @param {import('knex')} knex
+ */
+export const up = async (knex) =>
   knex.schema.raw(
     `
   ALTER TYPE build_notifications_type RENAME TO build_notifications_type_old;
@@ -11,7 +14,10 @@ exports.up = (knex) =>
   `
   );
 
-exports.down = (knex) =>
+/**
+ * @param {import('knex')} knex
+ */
+export const down = async (knex) =>
   knex.schema.raw(
     `
   ALTER TYPE build_notifications_type RENAME TO build_notifications_type_old;

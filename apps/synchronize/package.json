@@ -2,16 +2,21 @@
   "name": "@argos-ci/synchronize",
   "version": "2.0.0",
   "private": true,
-  "main": "src/index.js",
+  "type": "module",
+  "exports": "./dist/index.js",
   "dependencies": {
-    "@argos-ci/config": "2.0.0",
-    "@argos-ci/database": "2.0.0",
-    "@argos-ci/github": "2.0.0",
-    "@argos-ci/job-core": "2.0.0",
-    "@argos-ci/logger": "2.0.0",
+    "@argos-ci/config": "*",
+    "@argos-ci/database": "*",
+    "@argos-ci/github": "*",
+    "@argos-ci/job-core": "*",
+    "@argos-ci/logger": "*",
     "@octokit/rest": "^19.0.3"
   },
   "devDependencies": {
     "moment": "^2.29.4"
+  },
+  "scripts": {
+    "build": "swc src --config-file ../../.swcrc -d dist",
+    "dev": "npm run build -- --watch"
   }
 }
