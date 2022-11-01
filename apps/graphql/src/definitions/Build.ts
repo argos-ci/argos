@@ -238,7 +238,7 @@ export const resolvers = {
           `)
         )
         .count("*")
-        .groupBy("1");
+        .groupBy("status");
 
       const stats = data.reduce(
         // @ts-ignore
