@@ -11,12 +11,14 @@ import {
 import { x } from "@xstyled/styled-components";
 import moment from "moment";
 import { forwardRef, useLayoutEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 
 import {
   Alert,
   BaseLink,
   IconButton,
   InlineCode,
+  LinkBlock,
   Tooltip,
   TooltipAnchor,
   TooltipHotkey,
@@ -103,31 +105,43 @@ const ToggleChangesButton = (props) => {
 };
 
 const DiffHeader = forwardRef(
-  ({ activeDiff, setShowChanges, showChanges }, ref) => (
-    <x.div
-      ref={ref}
-      display="flex"
-      justifyContent="space-between"
-      alignItems="center"
-      p={4}
-    >
-      <x.div display="flex" alignItems="center">
-        <ArrowUpButton />
-        <ArrowDownButton />
-        <x.div ml={3} fontSize="sm" fontWeight="medium" lineHeight={1.2}>
-          {activeDiff.compareScreenshot?.name ||
-            activeDiff.baseScreenshot?.name}
+  (
+    { activeDiff, setShowChanges, showChanges, previousRank, nextRank },
+    ref
+  ) => {
+    const { ownerLogin, repositoryName, buildNumber } = useParams();
+    const buildUrl = `/${ownerLogin}/${repositoryName}/builds/${buildNumber}/new`;
+
+    return (
+      <x.div
+        ref={ref}
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        p={4}
+      >
+        <x.div display="flex" alignItems="center">
+          <LinkBlock as={BaseLink} to={`${buildUrl}/${previousRank.current}`}>
+            <ArrowUpButton />
+          </LinkBlock>
+          <LinkBlock as={BaseLink} to={`${buildUrl}/${nextRank.current}`}>
+            <ArrowDownButton />
+          </LinkBlock>
+          <x.div ml={3} fontSize="sm" fontWeight="medium" lineHeight={1.2}>
+            {activeDiff.compareScreenshot?.name ||
+              activeDiff.baseScreenshot?.name}
+          </x.div>
+        </x.div>
+
+        <x.div display="flex" alignItems="center">
+          <ToggleChangesButton
+            onClick={() => setShowChanges((prev) => !prev)}
+            toggle={showChanges}
+          />
         </x.div>
       </x.div>
-
-      <x.div display="flex" alignItems="center">
-        <ToggleChangesButton
-          onClick={() => setShowChanges((prev) => !prev)}
-          toggle={showChanges}
-        />
-      </x.div>
-    </x.div>
-  )
+    );
+  }
 );
 
 const FullWidthImage = (props) => (
@@ -222,6 +236,8 @@ export function BuildDiff({
   baseScreenshotBucket,
   compareScreenshotBucket,
   activeDiff,
+  previousRank,
+  nextRank,
 }) {
   const [showChanges, setShowChanges] = useState(true);
 
@@ -238,6 +254,8 @@ export function BuildDiff({
         activeDiff={activeDiff}
         setShowChanges={setShowChanges}
         showChanges={showChanges}
+        previousRank={previousRank}
+        nextRank={nextRank}
       />
 
       <x.div
