@@ -3,7 +3,7 @@ import { callbackify } from "node:util";
 
 import config from "@argos-ci/config";
 
-let connectPromise: ReturnType<typeof amqp.connect>;
+let connectPromise: ReturnType<typeof amqp.connect> | null = null;
 async function connect() {
   if (!connectPromise) {
     connectPromise = amqp.connect(config.get("amqp.url"));
@@ -25,6 +25,7 @@ export async function getAmqpChannel() {
 export async function quitAmqp() {
   if (!connectPromise) return;
   const connection = await connectPromise;
+  connectPromise = null;
   await connection.close();
 }
 
