@@ -301,7 +301,7 @@ const BuildContent = ({ ownerLogin, repositoryName, buildNumber }) => {
             icon={getDiffStatusIcon("updated")}
             color={getDiffStatusColor("updated")}
             count={stats.updatedScreenshotCount}
-            label="Change screenshots"
+            label="Changes screenshots"
           />
           <BuildStat
             icon={getDiffStatusIcon("stable")}

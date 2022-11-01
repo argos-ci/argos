@@ -10,10 +10,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   Banner,
   BrandShield,
+  HotkeysDialog,
   Icon,
   Link,
   LinkBlock,
   LoadingAlert,
+  Tooltip,
+  TooltipAnchor,
+  useDialogState,
+  useTooltipState,
 } from "@argos-ci/app/src/components";
 import { GitHubLoginButton } from "@argos-ci/app/src/containers/GitHub";
 
@@ -25,9 +30,10 @@ import {
 } from "../../containers/BuildStatusChip";
 import { useUser } from "../../containers/User";
 import { useLiveRef } from "../../utils/useLiveRef";
-import { NotFound } from "../NotFound";
+import { NotFoundWithContainer } from "../NotFound";
 import { BuildDiff } from "./BuildDiff";
 import { BuildSidebar } from "./BuildSidebar";
+import { HOTKEYS } from "./Hotkeys";
 import {
   ReviewButton,
   ReviewButtonBuildFragment,
@@ -134,13 +140,49 @@ const OvercapacityBanner = ({ plan, consumptionRatio, ownerLogin }) => (
   </Banner>
 );
 
+const BrandLink = () => {
+  const tooltip = useTooltipState();
+  return (
+    <>
+      <TooltipAnchor state={tooltip}>
+        <LinkBlock to="/">
+          <x.svg as={BrandShield} w={10} h={7} minW={10} />
+        </LinkBlock>
+      </TooltipAnchor>
+      <Tooltip state={tooltip}>Home</Tooltip>
+    </>
+  );
+};
+
+const RepositoryLink = ({ repoUrl, ownerLogin, repositoryName }) => {
+  const tooltip = useTooltipState();
+  return (
+    <>
+      <TooltipAnchor state={tooltip}>
+        <Link
+          to={repoUrl}
+          whiteSpace="nowrap"
+          fontWeight="normal"
+          lineHeight={1}
+          fontSize="xs"
+          color="secondary-text"
+          display="block"
+        >
+          {ownerLogin}/{repositoryName}
+        </Link>
+      </TooltipAnchor>
+      <Tooltip state={tooltip}>See all builds</Tooltip>
+    </>
+  );
+};
+
 const BuildHeader = ({
   repository,
-  ownerLogin,
-  repositoryName,
   buildNumber,
   build,
   repoUrl,
+  ownerLogin,
+  repositoryName,
 }) => {
   const user = useUser();
 
@@ -156,25 +198,23 @@ const BuildHeader = ({
       flex="0 0 auto"
     >
       <x.div display="flex" alignItems="center" gap={4}>
-        <LinkBlock to="/">
-          <x.svg as={BrandShield} w={10} h={7} minW={10} />
-        </LinkBlock>
-        <div>
-          <x.div fontWeight="medium" fontSize="sm" lineHeight={1} mb={1}>
+        <BrandLink />
+        <x.div
+          display="flex"
+          justifyContent="center"
+          alignItems="flex-start"
+          flexDirection="column"
+          gap={1}
+        >
+          <x.div fontWeight="medium" fontSize="sm" lineHeight={1}>
             Build #{buildNumber}
           </x.div>
-          <Link
-            to={repoUrl}
-            whiteSpace="nowrap"
-            fontWeight="normal"
-            lineHeight={1}
-            fontSize="xs"
-            color="secondary-text"
-            display="block"
-          >
-            {ownerLogin}/{repositoryName}
-          </Link>
-        </div>
+          <RepositoryLink
+            repoUrl={repoUrl}
+            ownerLogin={ownerLogin}
+            repositoryName={repositoryName}
+          />
+        </x.div>
         <BuildStatusChip
           build={build}
           referenceBranch={repository.referenceBranch}
@@ -201,6 +241,7 @@ const BuildContent = ({
   const buildUrl = `${repoUrl}/builds/${buildNumber}/new`;
 
   const navigate = useNavigate();
+  const hotkeysDialog = useDialogState();
   const previousRank = useRef();
   const nextRank = useRef();
   const [moreLoading, setMoreLoading] = useState(false);
@@ -232,22 +273,25 @@ const BuildContent = ({
     [fetchMore, dataRef]
   );
 
-  useHotkeys("h", () => setShowChanges((prev) => !prev));
-  useHotkeys("up, left", (e) => {
+  useHotkeys(HOTKEYS.toggleHotkeysDialog.shortcut, hotkeysDialog.toggle);
+  useHotkeys(HOTKEYS.toggleChangesOverlay.shortcut, () =>
+    setShowChanges((prev) => !prev)
+  );
+  useHotkeys(HOTKEYS.previousDiff.shortcut, (e) => {
     e.preventDefault();
     if (previousRank.current) {
       navigate(`${buildUrl}/${previousRank.current}`, { replace: true });
     }
   });
-  useHotkeys("down, right", (e) => {
+  useHotkeys(HOTKEYS.nextDiff.shortcut, (e) => {
     e.preventDefault();
     if (nextRank.current) {
       navigate(`${buildUrl}/${nextRank.current}`, { replace: true });
     }
   });
 
-  if (!data || loading) return <LoadingAlert />;
-  if (!data.repository?.build) return <NotFound />;
+  if (!data || loading) return <LoadingAlert mt={10} />;
+  if (!data.repository?.build) return <NotFoundWithContainer mt={10} />;
 
   const {
     owner: { plan, consumptionRatio },
@@ -268,6 +312,8 @@ const BuildContent = ({
       flexDirection="column"
       minW="fit-content"
     >
+      <HotkeysDialog state={hotkeysDialog} hotkeys={HOTKEYS} />
+
       {showBanner ? (
         <OvercapacityBanner
           plan={plan}
@@ -343,7 +389,7 @@ export function NewBuild() {
           activeRank={activeRankNumber}
         />
       ) : (
-        <NotFound />
+        <NotFoundWithContainer mt={10} />
       )}
     </>
   );

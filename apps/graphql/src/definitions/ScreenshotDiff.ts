@@ -65,19 +65,14 @@ export const resolvers = {
     status: async (screenshotDiff: ScreenshotDiff) => {
       if (!screenshotDiff.compareScreenshotId) return "removed";
 
-      switch (screenshotDiff.score) {
-        case null: {
-          const { name } = await ScreenshotLoader.load(
-            screenshotDiff.compareScreenshotId
-          );
-
-          return name.match("(failed)") ? "failed" : "added";
-        }
-        case 0:
-          return "stable";
-        default:
-          return "updated";
+      if (screenshotDiff.score === null) {
+        const { name } = await ScreenshotLoader.load(
+          screenshotDiff.compareScreenshotId
+        );
+        return name.match("(failed)") ? "failed" : "added";
       }
+
+      return screenshotDiff.score > 0 ? "updated" : "stable";
     },
   },
 };

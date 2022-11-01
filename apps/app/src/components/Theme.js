@@ -144,6 +144,7 @@ const newColors = {
   "secondary-text-hover": th.color("slate-700"),
 
   "code-bg": th.color("slate-200"),
+  "backdrop-bg": th.color("black-a10"),
 
   "tooltip-bg": th.color("slate-50"),
   "tooltip-border": th.color("slate-200"),
@@ -227,6 +228,7 @@ const newColors = {
       "secondary-text-hover": th.color("slate-200"),
 
       "code-bg": th.color("slate-700"),
+      "backdrop-bg": th.color("black-a50"),
 
       "tooltip-bg": th.color("slate-900"),
       "tooltip-border": th.color("slate-800"),
@@ -314,7 +316,7 @@ export const theme = {
     container: 1040,
   },
   shadows: {
-    paragraphTooltip: "0px 0px 4px rgba(0, 0, 0, 0.1)",
+    dialog: "0px 0px 4px rgba(0, 0, 0, 0.1)",
   },
 };
 

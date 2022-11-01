@@ -72,7 +72,7 @@ export const Menu = (props) => (
     borderRadius="md"
     p={1}
     minWidth="110"
-    zIndex="1000"
+    zIndex="500"
     {...props}
   />
 );

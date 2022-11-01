@@ -32,14 +32,16 @@ export function BuildStat({ icon, color, count, label, hotkey, ...props }) {
   );
 }
 
-export function BuildStatLink({ status, count, onClick, ...props }) {
+export function BuildStatLink({ status, count, label, ...props }) {
   if (count === 0) return null;
+  const capitalizedLabel = `${label.slice(0, 1).toUpperCase()}${label
+    .slice(1)
+    .toUpperCase()}`;
 
   return (
     <BuildStat
       icon={getDiffStatusIcon(status)}
       color={getDiffStatusColor(status)}
-      onClick={() => onClick(status)}
       count={count}
       as="button"
       outline={{ focus: "none" }}
@@ -50,6 +52,7 @@ export function BuildStatLink({ status, count, onClick, ...props }) {
       }}
       borderRadius="md"
       cursor="pointer"
+      label={capitalizedLabel}
       {...props}
     />
   );

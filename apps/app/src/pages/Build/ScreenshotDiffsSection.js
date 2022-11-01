@@ -26,6 +26,12 @@ export const ScreenshotDiffsPageFragment = gql`
   ${ScreenshotsDiffCardFragment}
 `;
 
+function dedupeById(list) {
+  return Object.values(
+    list.reduce((res, item) => ({ ...res, [item.id]: item }), [])
+  );
+}
+
 export function fetchMoreScreenshotDiffs({ data, fetchMore, rank }) {
   return fetchMore({
     variables: {
@@ -44,10 +50,10 @@ export function fetchMoreScreenshotDiffs({ data, fetchMore, rank }) {
             ...prev.repository.build,
             screenshotDiffs: {
               ...fetchMoreResult.repository.build.screenshotDiffs,
-              edges: [
+              edges: dedupeById([
                 ...prev.repository.build.screenshotDiffs.edges,
                 ...fetchMoreResult.repository.build.screenshotDiffs.edges,
-              ],
+              ]),
             },
           },
         },

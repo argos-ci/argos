@@ -68,6 +68,12 @@ const Sidebar = styled.box`
       opacity: 1;
     }
   }
+
+  &:focus-within {
+    [data-header-chevron] {
+      opacity: 1;
+    }
+  }
 `;
 
 const CommitLink = ({ githubRepoUrl, screenshotBucket }) => {

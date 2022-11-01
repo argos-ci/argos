@@ -71,6 +71,14 @@ export const ArgosGlobalStyle = createGlobalStyle`
     outline: 1px dotted;
     outline: 5px auto -webkit-focus-ring-color;
   }
+
+  [data-backdrop] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: backdrop-bg;
+    backdrop-filter: blur(4px);
+  }
 `;
 
 export const GlobalStyle = () => (
