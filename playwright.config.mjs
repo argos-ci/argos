@@ -105,7 +105,7 @@ const config = {
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "npx argos-web",
+    command: "node apps/processes/dist/bin/web.js",
     port: 4001,
     timeout: 10 * 1000,
     reuseExistingServer: !process.env.CI,
