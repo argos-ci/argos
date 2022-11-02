@@ -252,10 +252,12 @@ export const resolvers = {
         stableScreenshotCount: stats.stable,
         updatedScreenshotCount: stats.updated,
         removedScreenshotCount: stats.removed,
-        screenshotCount: Object.values(stats).reduce(
-          (sum, count) => count + sum,
-          0
-        ),
+        screenshotCount:
+          stats.failed +
+          stats.added +
+          stats.stable +
+          stats.updated +
+          stats.removed,
       };
     },
   },

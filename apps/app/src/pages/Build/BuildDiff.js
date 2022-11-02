@@ -61,6 +61,7 @@ const ArrowButton = ({ buildUrl, icon: Icon, link, children }) => {
         state={tooltip}
         as={LinkBlock}
         to={disabled ? null : `${buildUrl}/${link}`}
+        disabled={disabled}
       >
         <IconButton icon={Icon} disabled={disabled} />
       </TooltipAnchor>
@@ -109,6 +110,7 @@ const DiffHeader = forwardRef(
         justifyContent="space-between"
         alignItems="center"
         p={4}
+        gap={10}
       >
         <x.div display="flex" alignItems="center">
           <ArrowButton

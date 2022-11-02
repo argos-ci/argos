@@ -7,29 +7,18 @@ import {
 } from "ariakit/tooltip";
 import { forwardRef } from "react";
 
+import { Hotkey, HotkeySeparator } from "./Hotkey";
+
 export { TooltipArrow };
 
 export function useTooltipState(props) {
   return ariakitUseTooltipState({ placement: "bottom", ...props });
 }
 
-export const Hotkey = (props) => (
-  <x.div
-    fontSize="10px"
-    lineHeight={1}
-    p={1}
-    color="hotkey-on"
-    backgroundColor="hotkey-bg"
-    borderRadius="base"
-    minW={4}
-    {...props}
-  />
-);
-
-export const TooltipHotkey = ({ children, ...props }) => (
+export const TooltipHotkey = ({ children }) => (
   <>
-    <x.div>·</x.div>
-    <Hotkey {...props}>{children}</Hotkey>
+    <HotkeySeparator />
+    <Hotkey>{children}</Hotkey>
   </>
 );
 
@@ -37,7 +26,12 @@ export const TooltipAnchor = forwardRef(({ children, as, ...props }, ref) => {
   return (
     <AriakitTooltipAnchor ref={ref} {...props}>
       {(tooltipAnchorProps) => (
-        <x.div outline={{ focus: "none" }} as={as} {...tooltipAnchorProps}>
+        <x.div
+          outline={{ focus: "none" }}
+          w="fit-content"
+          as={as}
+          {...tooltipAnchorProps}
+        >
           {children}
         </x.div>
       )}
@@ -57,7 +51,7 @@ export const Tooltip = forwardRef(({ children, ...props }, ref) => {
           py={1}
           px={2}
           borderRadius="base"
-          zIndex={200}
+          zIndex={700}
           display="flex"
           alignItems="center"
           gap={1}
@@ -80,7 +74,7 @@ export const ParagraphTooltip = forwardRef(({ children, ...props }, ref) => {
           maxW={416}
           p={2}
           borderRadius="md"
-          boxShadow="paragraphTooltip"
+          boxShadow="dialog"
           fontSize="sm"
           lineHeight="16px"
           border={1}

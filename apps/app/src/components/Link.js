@@ -32,7 +32,7 @@ export const LinkBlock = forwardRef((props, ref) => {
       borderRadius="md"
       backgroundColor={{
         _: "inherit",
-        hover: "bg-hover",
+        hover: props.disabled ? "inherit" : "bg-hover",
       }}
       {...props}
     />

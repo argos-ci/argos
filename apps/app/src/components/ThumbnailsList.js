@@ -3,18 +3,20 @@ import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { x } from "@xstyled/styled-components";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useNavigate } from "react-router-dom";
 
+import { HOTKEYS } from "../pages/Build/Hotkeys";
 import { Alert } from "./Alert";
 import { Badge } from "./Badge";
 import { BuildStatLink, BuildStatLinks } from "./BuildStat";
 import { Thumbnail, ThumbnailImage, ThumbnailTitle } from "./Thumbnail";
 
 const DIFFS_GROUPS = {
-  failed: { diffs: [], label: "failures", collapsed: false },
-  updated: { diffs: [], label: "changes", collapsed: false },
-  added: { diffs: [], label: "additions", collapsed: false },
-  removed: { diffs: [], label: "deletions", collapsed: false },
-  stable: { diffs: [], label: "stables", collapsed: true },
+  failed: { diffs: {}, label: "failures", collapsed: false },
+  updated: { diffs: {}, label: "changes", collapsed: false },
+  added: { diffs: {}, label: "additions", collapsed: false },
+  removed: { diffs: {}, label: "deletions", collapsed: false },
+  stable: { diffs: {}, label: "stables", collapsed: true },
 };
 
 const ScreenshotName = ({ diff }) =>
@@ -91,13 +93,14 @@ const StickyItem = ({ active, ...props }) => (
 
 function fillGroups(groups, data) {
   return data.reduce((res, item) => {
-    res[item.status].diffs.push(item);
+    res[item.status].diffs[item.rank] = item;
     return res;
   }, groups);
 }
 
 function enrichGroups(groups, groupCollapseStatuses, stats) {
   let nextGroupIndex = 0;
+  let nextFirstRank = 1;
 
   const richGroups = Object.keys(groups).reduce((acc, status) => {
     const count = stats[`${status}ScreenshotCount`];
@@ -108,6 +111,8 @@ function enrichGroups(groups, groupCollapseStatuses, stats) {
     const index = nextGroupIndex;
     const collapsed = groupCollapseStatuses[status];
     nextGroupIndex += collapsed ? 1 : count + 1;
+    const firstRank = nextFirstRank;
+    nextFirstRank += count;
 
     return {
       ...acc,
@@ -117,6 +122,7 @@ function enrichGroups(groups, groupCollapseStatuses, stats) {
         index,
         status,
         collapsed,
+        firstRank,
       },
     };
   }, {});
@@ -125,25 +131,18 @@ function enrichGroups(groups, groupCollapseStatuses, stats) {
 }
 
 function getRows(groups) {
-  let itemRank = 1;
-
   return groups.flatMap((group) => {
-    if (group.collapsed) {
-      itemRank += group.count;
-    }
-
     return [
       { type: "listHeader", ...group },
 
       ...(group.collapsed
         ? []
-        : Array.from({ length: group.count }, () => {
-            const rank = itemRank++;
-
+        : Array.from({ length: group.count }, (e, i) => {
+            const rank = group.firstRank + i;
             return {
               type: "listItem",
               rank,
-              diff: group.diffs.find((diff) => diff.rank === rank) || null,
+              diff: group.diffs[rank] || null,
             };
           })),
     ];
@@ -184,6 +183,7 @@ export function ThumbnailsList({
   activeDiff,
   buildUrl,
 }) {
+  const navigate = useNavigate();
   const parentRef = useRef();
   const activeStickyIndexRef = useRef(0);
 
@@ -209,33 +209,28 @@ export function ThumbnailsList({
   previousRank.current = rowsRanks[activeDiffRankIndex - 1];
   nextRank.current = rowsRanks[activeDiffRankIndex + 1];
 
-  useHotkeys("f", () => {
-    setGroupCollapseStatuses((prev) => ({ ...prev, failed: !prev.failed }));
-  });
-  useHotkeys("c", () => {
-    setGroupCollapseStatuses((prev) => ({ ...prev, updated: !prev.updated }));
-  });
-  useHotkeys("a", () => {
-    setGroupCollapseStatuses((prev) => ({ ...prev, added: !prev.added }));
-  });
-  useHotkeys("d", () => {
-    setGroupCollapseStatuses((prev) => ({ ...prev, removed: !prev.removed }));
-  });
-  useHotkeys("s", () => {
-    setGroupCollapseStatuses((prev) => ({ ...prev, stable: !prev.stable }));
-  });
-
   const isSticky = (index) => stickyIndexes.includes(index);
   const isActiveSticky = (index) => activeStickyIndexRef.current === index;
   const isFirst = (index) => isSticky(index - 1);
   const isLast = (index) => isSticky(index + 1);
-  const handleStatClick = (status) => {
-    const index = richGroups.find((group) => group.status === status).index;
-    if (groupCollapseStatuses[status]) {
-      setGroupCollapseStatuses((prev) => ({ ...prev, [status]: false }));
-    }
-    rowVirtualizer.scrollToIndex(index, { align: "start", smoothScroll: true });
+  const toggleSection = (status) =>
+    setGroupCollapseStatuses((prev) => ({ ...prev, [status]: !prev[status] }));
+  const goToSection = (index) => {
+    const group = richGroups[index];
+    if (!group) return;
+    if (groupCollapseStatuses[group.status]) toggleSection(group.status);
+    rowVirtualizer.scrollToIndex(group.index, {
+      align: "start",
+      smoothScroll: true,
+    });
+    navigate(`${buildUrl}/${group.firstRank}`, { replace: true });
   };
+
+  useHotkeys(HOTKEYS.goToFirstSection.shortcut, () => goToSection(0));
+  useHotkeys(HOTKEYS.goToSecondSection.shortcut, () => goToSection(1));
+  useHotkeys(HOTKEYS.goToThirdSection.shortcut, () => goToSection(2));
+  useHotkeys(HOTKEYS.goToFourthSection.shortcut, () => goToSection(3));
+  useHotkeys(HOTKEYS.goToFifthSection.shortcut, () => goToSection(4));
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
@@ -285,41 +280,20 @@ export function ThumbnailsList({
   return (
     <>
       <BuildStatLinks>
-        <BuildStatLink
-          status="failed"
-          count={stats.failedScreenshotCount}
-          label="Failure screenshots"
-          onClick={handleStatClick}
-          hotkey="F"
-        />
-        <BuildStatLink
-          status="updated"
-          count={stats.updatedScreenshotCount}
-          label="Change screenshots"
-          onClick={handleStatClick}
-          hotkey="C"
-        />
-        <BuildStatLink
-          status="added"
-          count={stats.addedScreenshotCount}
-          label="Additional screenshots"
-          onClick={handleStatClick}
-          hotkey="A"
-        />
-        <BuildStatLink
-          status="removed"
-          count={stats.removedScreenshotCount}
-          label="Deleted screenshots"
-          onClick={handleStatClick}
-          hotkey="D"
-        />
-        <BuildStatLink
-          status="stable"
-          count={stats.stableScreenshotCount}
-          label="Stable screenshots"
-          onClick={handleStatClick}
-          hotkey="S"
-        />
+        {richGroups.map((group, index) => (
+          <BuildStatLink
+            key={group.status}
+            status={group.status}
+            count={group.count}
+            label={`${group.label} screenshots`}
+            onClick={() =>
+              goToSection(
+                richGroups.findIndex(({ status }) => group.status === status)
+              )
+            }
+            hotkey={index + 1}
+          />
+        ))}
       </BuildStatLinks>
 
       <x.div ref={parentRef} h={height} w={1} overflowY="auto">
@@ -340,12 +314,7 @@ export function ThumbnailsList({
                     key={virtualRow.index}
                     virtualRow={virtualRow}
                     active={isActiveSticky(virtualRow.index)}
-                    onClick={() => {
-                      setGroupCollapseStatuses((prev) => ({
-                        ...prev,
-                        [item.status]: !prev[item.status],
-                      }));
-                    }}
+                    onClick={() => toggleSection(item.status)}
                   >
                     <Header
                       borderTopColor={
