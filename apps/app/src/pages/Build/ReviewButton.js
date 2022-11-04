@@ -23,7 +23,6 @@ import { hasWritePermission } from "../../modules/permissions";
 export const ReviewButtonBuildFragment = gql`
   fragment ReviewButtonBuildFragment on Build {
     id
-    name
     status
     type
   }
@@ -39,6 +38,7 @@ export const ReviewButtonRepositoryFragment = gql`
 
 export const ReviewButtonOwnerFragment = gql`
   fragment ReviewButtonOwnerFragment on Owner {
+    name
     consumptionRatio
   }
 `;
@@ -147,7 +147,7 @@ export function ReviewButton({ repository }) {
       <DisabledReviewButton repository={repository}>
         You must have access to{" "}
         <x.span fontWeight="medium">
-          {repository.name}/{repository.build.name}
+          {repository.name}/{repository.owner.name}
         </x.span>{" "}
         repository on GitHub to review changes.
       </DisabledReviewButton>
