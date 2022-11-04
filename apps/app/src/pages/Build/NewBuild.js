@@ -246,6 +246,7 @@ const BuildContent = ({
   const nextRank = useRef();
   const [moreLoading, setMoreLoading] = useState(false);
   const [showChanges, setShowChanges] = useState(true);
+  const [containedScreenshots, setContainedScreenshots] = useState(true);
 
   const { loading, data, fetchMore } = useQuery(BUILD_QUERY, {
     variables: {
@@ -273,6 +274,9 @@ const BuildContent = ({
     [fetchMore, dataRef]
   );
 
+  useHotkeys(HOTKEYS.toggleContainedScreenshots.shortcut, () =>
+    setContainedScreenshots((prev) => !prev)
+  );
   useHotkeys(HOTKEYS.toggleHotkeysDialog.shortcut, hotkeysDialog.toggle);
   useHotkeys(HOTKEYS.toggleChangesOverlay.shortcut, () =>
     setShowChanges((prev) => !prev)
@@ -359,6 +363,7 @@ const BuildContent = ({
           previousRank={previousRank}
           nextRank={nextRank}
           buildUrl={buildUrl}
+          containedScreenshots={containedScreenshots}
         />
       </x.div>
     </x.div>

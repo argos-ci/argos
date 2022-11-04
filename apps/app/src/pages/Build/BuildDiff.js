@@ -150,7 +150,7 @@ const Screenshot = ({ screenshot, ...props }) => {
   );
 };
 
-const Baseline = ({ activeDiff }) => {
+const Baseline = ({ activeDiff, containedScreenshots }) => {
   if (activeDiff.status === "added") {
     return (
       <div>
@@ -188,23 +188,32 @@ const Baseline = ({ activeDiff }) => {
   }
 
   return (
-    <BaseLink
-      href={activeDiff.baseScreenshot?.url}
-      target="_blank"
-      position="relative"
-      display="inline-block" // fix Firefox bug on "position: relative"
-    >
-      <Screenshot screenshot={activeDiff} maxH={1} opacity={0} />
+    <ScreenshotsLink href={activeDiff.baseScreenshot?.url}>
+      <Screenshot
+        screenshot={activeDiff}
+        maxH={containedScreenshots ? 1 : "unset"}
+        opacity={0}
+      />
       <Screenshot
         screenshot={activeDiff.baseScreenshot}
         position={activeDiff.url ? "absolute" : "static"}
         top={0}
       />
-    </BaseLink>
+    </ScreenshotsLink>
   );
 };
 
-const Changes = ({ activeDiff, showChanges }) => {
+const ScreenshotsLink = (props) => (
+  <BaseLink
+    target="_blank"
+    position="relative"
+    display="inline-block" // fix Firefox bug on "position: relative"
+    mx="auto"
+    {...props}
+  />
+);
+
+const Changes = ({ activeDiff, showChanges, containedScreenshots }) => {
   if (activeDiff.status === "stable") {
     return (
       <div>
@@ -233,14 +242,12 @@ const Changes = ({ activeDiff, showChanges }) => {
   }
 
   return (
-    <BaseLink
-      href={activeDiff.compareScreenshot?.url}
-      target="_blank"
-      position="relative"
-      display="inline-block" // fix Firefox bug on "position: relative"
-      mx="auto"
-    >
-      <Screenshot screenshot={activeDiff} maxH={1} opacity={0} />
+    <ScreenshotsLink href={activeDiff.compareScreenshot?.url}>
+      <Screenshot
+        screenshot={activeDiff}
+        maxH={containedScreenshots ? 1 : "unset"}
+        opacity={0}
+      />
       <Screenshot
         screenshot={activeDiff.compareScreenshot}
         position={activeDiff.url ? "absolute" : "static"}
@@ -253,7 +260,7 @@ const Changes = ({ activeDiff, showChanges }) => {
         opacity={showChanges ? 1 : 0}
         backgroundColor="rgba(255, 255, 255, 0.8)"
       />
-    </BaseLink>
+    </ScreenshotsLink>
   );
 };
 
@@ -266,6 +273,7 @@ export function BuildDiff({
   showChanges,
   setShowChanges,
   buildUrl,
+  containedScreenshots,
 }) {
   const headerRef = useRef();
   const [headerRect, setHeaderRect] = useState(null);
@@ -289,9 +297,12 @@ export function BuildDiff({
         h={`calc(100vh - ${headerRect?.top + headerRect?.height || 0}px)`}
         overflowY="auto"
         pt={2}
+        pb={8}
         px={4}
         display="grid"
-        gridTemplateRows="min-content minmax(10px, 1fr)"
+        gridTemplateRows={`min-content ${
+          containedScreenshots ? "minmax(0, 1fr)" : "auto"
+        }`}
         gridTemplateColumns={2}
         gap={6}
         color="secondary-text"
@@ -299,11 +310,15 @@ export function BuildDiff({
       >
         <BranchInfo bucket={baseScreenshotBucket} baseline />
         <BranchInfo bucket={compareScreenshotBucket} />
-        <Baseline activeDiff={activeDiff} />
+        <Baseline
+          activeDiff={activeDiff}
+          containedScreenshots={containedScreenshots}
+        />
         <Changes
           activeDiff={activeDiff}
           showChanges={showChanges}
           compareScreenshotBucket={compareScreenshotBucket}
+          containedScreenshots={containedScreenshots}
         />
       </x.div>
     </x.div>

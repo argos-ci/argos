@@ -3,6 +3,10 @@ export const HOTKEYS = {
     shortcut: "H",
     description: "Show/Hide changes overlay",
   },
+  toggleContainedScreenshots: {
+    shortcut: "space",
+    description: "Enlarge/Shrink screenshots",
+  },
   previousDiff: { shortcut: "up, left", description: "Previous screenshot" },
   nextDiff: { shortcut: "down, right", description: "Next screenshot" },
   goToFirstSection: {
