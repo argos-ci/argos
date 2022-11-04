@@ -15,6 +15,7 @@ export const InlineCode = (props) => (
     p={1}
     w="fit-content"
     display="inline-block"
+    whiteSpace="pre-wrap"
     {...props}
   />
 );

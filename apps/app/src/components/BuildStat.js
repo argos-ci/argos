@@ -34,9 +34,9 @@ export function BuildStat({ icon, color, count, label, hotkey, ...props }) {
 
 export function BuildStatLink({ status, count, label, ...props }) {
   if (count === 0) return null;
-  const capitalizedLabel = `${label.slice(0, 1).toUpperCase()}${label
-    .slice(1)
-    .toUpperCase()}`;
+  const capitalizedLabel = `${label.slice(0, 1).toUpperCase()}${label.slice(
+    1
+  )}`;
 
   return (
     <BuildStat
