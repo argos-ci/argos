@@ -24,30 +24,21 @@ import {
   useTooltipState,
 } from "@argos-ci/app/src/components";
 
-const BranchInfo = ({ bucket, baseline, ...props }) => {
+const BranchInfo = ({ bucket, baseline }) => {
+  if (!bucket) {
+    return <div>No baseline to compare</div>;
+  }
+
   return (
-    <x.div
-      color="secondary-text"
-      textAlign="center"
-      w={1}
-      fontWeight="medium"
-      fontSize="xs"
-      lineHeight={3}
-      mb={4}
-      {...props}
-    >
-      {bucket ? (
-        <>
-          {baseline ? "Baseline" : "Changes"} from{" "}
-          <InlineCode mx={1}>{bucket.branch}</InlineCode>
-          <x.div fontSize={11} mt={0.5} fontWeight="normal">
-            {moment(bucket.createdAt).fromNow()}
-          </x.div>
-        </>
-      ) : (
-        "No baseline to compare"
-      )}
-    </x.div>
+    <div>
+      <x.div fontWeight="medium" fontSize="xs" lineHeight={3}>
+        {baseline ? "Baseline" : "Changes"} from{" "}
+        <InlineCode>{bucket.branch}</InlineCode>
+      </x.div>
+      <x.div fontSize={11} mt={0.5} fontWeight="normal">
+        {moment(bucket.createdAt).fromNow()}
+      </x.div>
+    </div>
   );
 };
 
@@ -144,10 +135,6 @@ const DiffHeader = forwardRef(
   }
 );
 
-const FullWidthImage = (props) => (
-  <x.img w={1} objectFit="contain" mb={8} {...props} />
-);
-
 const ScreenshotAlert = (props) => (
   <Alert color="info" py={8} textAlign="center" {...props} />
 );
@@ -155,82 +142,120 @@ const AlertIcon = (props) => <x.svg w={16} mb={5} mx="auto" {...props} />;
 const AlertTitle = (props) => <x.div fontWeight="semibold" mb={2} {...props} />;
 const AlertBody = (props) => <x.div fontSize="sm" {...props} />;
 
-const AddedDiffAlert = () => (
-  <ScreenshotAlert>
-    <AlertIcon as={PhotoIcon} />
-    <AlertTitle>New screenshot</AlertTitle>
-    <AlertBody>
-      Nothing to compare yet. The baseline build does not contain a screenshot
-      with this name.
-    </AlertBody>
-  </ScreenshotAlert>
-);
+const Screenshot = ({ screenshot, ...props }) => {
+  const { name, url } = screenshot || {};
+  if (!url) return null;
+  return (
+    <x.img src={url} name={name} mx="auto" objectFit="contain" {...props} />
+  );
+};
 
-const FailDiffAlert = () => (
-  <ScreenshotAlert>
-    <AlertIcon as={XMarkIcon} />
-    <AlertTitle>Failure screenshot</AlertTitle>
-    <AlertBody>
-      <x.div>
-        Nothing to compare yet. The baseline build does not contain a screenshot
-        with this name.
-      </x.div>
-      <x.div mt={4} fontSize="xs">
-        Failure screenshots are automatically captured when a test fail and
-        their filepath end by "failed".
-      </x.div>
-    </AlertBody>
-  </ScreenshotAlert>
-);
+const Baseline = ({ activeDiff }) => {
+  if (activeDiff.status === "added") {
+    return (
+      <div>
+        <ScreenshotAlert>
+          <AlertIcon as={PhotoIcon} />
+          <AlertTitle>New screenshot</AlertTitle>
+          <AlertBody>
+            Nothing to compare yet. The baseline build does not contain a
+            screenshot with this name.
+          </AlertBody>
+        </ScreenshotAlert>
+      </div>
+    );
+  }
 
-const RemovedDiffAlert = () => (
-  <ScreenshotAlert>
-    <AlertIcon as={ArchiveBoxXMarkIcon} />
-    <AlertTitle>Screenshot deletion</AlertTitle>
-    <AlertBody>
-      Nothing to compare. The new build does not contain a screenshot with this
-      name.
-    </AlertBody>
-  </ScreenshotAlert>
-);
+  if (activeDiff.status === "failed") {
+    return (
+      <div>
+        <ScreenshotAlert>
+          <AlertIcon as={XMarkIcon} />
+          <AlertTitle>Failure screenshot</AlertTitle>
+          <AlertBody>
+            <x.div>
+              Nothing to compare yet. The baseline build does not contain a
+              screenshot with this name.
+            </x.div>
+            <x.div mt={4} fontSize="xs">
+              Failure screenshots are automatically captured when a test fail
+              and their filepath end by "failed".
+            </x.div>
+          </AlertBody>
+        </ScreenshotAlert>
+      </div>
+    );
+  }
 
-const StableDiffAlert = () => (
-  <ScreenshotAlert>
-    <AlertIcon as={DocumentCheckIcon} />
-    <AlertTitle>Stable Screenshot</AlertTitle>
-    <AlertBody>No visual changes</AlertBody>
-  </ScreenshotAlert>
-);
+  return (
+    <BaseLink
+      href={activeDiff.baseScreenshot?.url}
+      target="_blank"
+      position="relative"
+      display="inline-block" // fix Firefox bug on "position: relative"
+    >
+      <Screenshot screenshot={activeDiff} maxH={1} opacity={0} />
+      <Screenshot
+        screenshot={activeDiff.baseScreenshot}
+        position={activeDiff.url ? "absolute" : "static"}
+        top={0}
+      />
+    </BaseLink>
+  );
+};
 
-const BaselineScreenshot = ({ activeDiff }) => (
-  <BaseLink href={activeDiff.baseScreenshot.url} target="_blank">
-    <FullWidthImage
-      src={activeDiff.baseScreenshot.url}
-      alt={activeDiff.baseScreenshot.name}
-    />
-  </BaseLink>
-);
+const Changes = ({ activeDiff, showChanges }) => {
+  if (activeDiff.status === "stable") {
+    return (
+      <div>
+        <ScreenshotAlert>
+          <AlertIcon as={DocumentCheckIcon} />
+          <AlertTitle>Stable Screenshot</AlertTitle>
+          <AlertBody>No visual changes</AlertBody>
+        </ScreenshotAlert>
+      </div>
+    );
+  }
 
-const ChangesScreenshot = ({ activeDiff, showChanges }) => (
-  <BaseLink
-    href={activeDiff.compareScreenshot?.url}
-    target="_blank"
-    position="relative"
-    display="inline-block" // fix Firefox bug on "position: relative"
-  >
-    {showChanges && activeDiff.url ? (
-      <FullWidthImage
-        src={activeDiff.url}
+  if (activeDiff.status === "removed") {
+    return (
+      <div>
+        <ScreenshotAlert>
+          <AlertIcon as={ArchiveBoxXMarkIcon} />
+          <AlertTitle>Screenshot deletion</AlertTitle>
+          <AlertBody>
+            Nothing to compare. The new build does not contain a screenshot with
+            this name.
+          </AlertBody>
+        </ScreenshotAlert>
+      </div>
+    );
+  }
+
+  return (
+    <BaseLink
+      href={activeDiff.compareScreenshot?.url}
+      target="_blank"
+      position="relative"
+      display="inline-block" // fix Firefox bug on "position: relative"
+      mx="auto"
+    >
+      <Screenshot screenshot={activeDiff} maxH={1} opacity={0} />
+      <Screenshot
+        screenshot={activeDiff.compareScreenshot}
+        position={activeDiff.url ? "absolute" : "static"}
+        top="0"
+      />
+      <Screenshot
+        screenshot={activeDiff}
         position="absolute"
+        top="0"
+        opacity={showChanges ? 1 : 0}
         backgroundColor="rgba(255, 255, 255, 0.8)"
       />
-    ) : null}
-    <FullWidthImage
-      alt={activeDiff.compareScreenshot.name}
-      src={activeDiff.compareScreenshot.url}
-    />
-  </BaseLink>
-);
+    </BaseLink>
+  );
+};
 
 export function BuildDiff({
   baseScreenshotBucket,
@@ -261,42 +286,25 @@ export function BuildDiff({
       />
 
       <x.div
-        display="flex"
-        justifyContent="space-between"
-        gap={6}
         h={`calc(100vh - ${headerRect?.top + headerRect?.height || 0}px)`}
         overflowY="auto"
         pt={2}
         px={4}
+        display="grid"
+        gridTemplateRows="min-content minmax(10px, 1fr)"
+        gridTemplateColumns={2}
+        gap={6}
+        color="secondary-text"
+        textAlign="center"
       >
-        <x.div display="flex" flex={1} flexDirection="column">
-          <BranchInfo bucket={baseScreenshotBucket} baseline />
-          {activeDiff.status === "added" ? (
-            <AddedDiffAlert />
-          ) : activeDiff.status === "failed" ? (
-            <FailDiffAlert />
-          ) : (
-            <BaselineScreenshot
-              activeDiff={activeDiff}
-              baseScreenshotBucket={baseScreenshotBucket}
-            />
-          )}
-        </x.div>
-
-        <x.div display="flex" flex={1} flexDirection="column">
-          <BranchInfo bucket={compareScreenshotBucket} />
-          {activeDiff.status === "stable" ? (
-            <StableDiffAlert />
-          ) : activeDiff.status === "removed" ? (
-            <RemovedDiffAlert />
-          ) : (
-            <ChangesScreenshot
-              activeDiff={activeDiff}
-              showChanges={showChanges}
-              compareScreenshotBucket={compareScreenshotBucket}
-            />
-          )}
-        </x.div>
+        <BranchInfo bucket={baseScreenshotBucket} baseline />
+        <BranchInfo bucket={compareScreenshotBucket} />
+        <Baseline activeDiff={activeDiff} />
+        <Changes
+          activeDiff={activeDiff}
+          showChanges={showChanges}
+          compareScreenshotBucket={compareScreenshotBucket}
+        />
       </x.div>
     </x.div>
   );
