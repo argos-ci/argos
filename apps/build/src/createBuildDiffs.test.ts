@@ -125,7 +125,7 @@ describe("createBuildDiffs", () => {
           .patch({ s3Id: "file-key", fileId: file.id });
       });
 
-      it("puts a score of 0 and mark the jobStatus as complete", async () => {
+      it("puts a score of 0 and mark the jobStatus as pending", async () => {
         const diffs = sortBy(await createBuildDiffs(build), (diff) =>
           Number(diff.baseScreenshotId)
         );
@@ -143,7 +143,7 @@ describe("createBuildDiffs", () => {
           baseScreenshotId: baseScreenshot.id,
           compareScreenshotId: compareScreenshot2.id,
           score: 0,
-          jobStatus: "complete",
+          jobStatus: "pending",
           validationStatus: "unknown",
         });
       });

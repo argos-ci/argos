@@ -5,9 +5,10 @@ import tmp from "tmp";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { raw } from "@argos-ci/database";
-import { ScreenshotDiff } from "@argos-ci/database/models";
+import { File, ScreenshotDiff } from "@argos-ci/database/models";
 import { download, upload } from "@argos-ci/storage";
 
+import { getImageSize } from "./util/image-diff/imageDifference.js";
 import { diffImages } from "./util/image-diff/index.js";
 
 function createTmpDirectory() {
@@ -28,7 +29,7 @@ export const computeScreenshotDiff = async (
 ) => {
   screenshotDiff = await screenshotDiff
     .$query()
-    .withGraphFetched("[build, baseScreenshot, compareScreenshot]");
+    .withGraphFetched("[build, baseScreenshot.file, compareScreenshot.file]");
 
   if (!screenshotDiff) {
     throw new Error(`Screenshot diff id: \`${screenshotDiff}\` not found`);
@@ -40,12 +41,16 @@ export const computeScreenshotDiff = async (
   const diffResultPath = join(tmpDir, "diff.png");
 
   await Promise.all([
-    download({
-      s3,
-      outputPath: baseScreenshotPath,
-      Bucket: bucket,
-      Key: screenshotDiff.baseScreenshot!.s3Id,
-    }),
+    ...(screenshotDiff.baseScreenshot
+      ? [
+          download({
+            s3,
+            outputPath: baseScreenshotPath,
+            Bucket: bucket,
+            Key: screenshotDiff.baseScreenshot!.s3Id,
+          }),
+        ]
+      : []),
     download({
       s3,
       outputPath: compareScreenshotPath,
@@ -54,19 +59,59 @@ export const computeScreenshotDiff = async (
     }),
   ]);
 
+  await Promise.all(
+    [
+      { ...screenshotDiff.baseScreenshot, filePath: baseScreenshotPath },
+      { ...screenshotDiff.compareScreenshot, filePath: compareScreenshotPath },
+    ]
+      .filter(
+        (screenshot) =>
+          screenshot &&
+          screenshot.fileId &&
+          screenshot.file &&
+          (screenshot.file.width === undefined ||
+            screenshot.file.height === undefined)
+      )
+      .map(async (screenshot) => {
+        const { width, height } = await getImageSize(screenshot.filePath);
+        await File.query()
+          .findById(screenshot.fileId as string)
+          .patch({ width, height });
+      })
+  );
+
+  if (
+    !screenshotDiff.baseScreenshot ||
+    (screenshotDiff.compareScreenshot!.fileId !== null &&
+      screenshotDiff.baseScreenshot!.fileId ===
+        screenshotDiff.compareScreenshot!.fileId)
+  ) {
+    await ScreenshotDiff.query().findById(screenshotDiff.id).patch({
+      jobStatus: "complete",
+    });
+    return;
+  }
+
   const difference = await diffImages({
     actualFilename: compareScreenshotPath,
     expectedFilename: baseScreenshotPath,
     diffFilename: diffResultPath,
   });
 
-  let uploadResult = null;
+  let file = null;
   if (difference.score > 0) {
-    uploadResult = await upload({
+    const uploadResult = await upload({
       s3,
       Bucket: bucket,
       inputPath: diffResultPath,
     });
+    file = await File.query()
+      .insert({
+        key: uploadResult.Key,
+        width: difference.width,
+        height: difference.height,
+      })
+      .returning("*");
   }
 
   await Promise.all([
@@ -82,7 +127,8 @@ export const computeScreenshotDiff = async (
     .patch({
       score: difference.score,
       jobStatus: "complete",
-      s3Id: uploadResult ? uploadResult.Key : null,
+      s3Id: file ? file.key : null,
+      fileId: file ? file.id : null,
     });
 
   // @ts-ignore

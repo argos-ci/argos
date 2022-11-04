@@ -32,5 +32,7 @@ export const diffImages = async ({
     score: score < 0.00003 ? 0 : score,
     pixels: difference.value,
     scoreRaw: score,
+    width: difference.width,
+    height: difference.height,
   };
 };

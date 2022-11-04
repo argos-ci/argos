@@ -36,7 +36,7 @@ const transparent = (
   return gmImage;
 };
 
-const getImageSize = async (filename: string) => {
+export const getImageSize = async (filename: string) => {
   const gf = gmMagick(filename);
   return promisify((cb: gm.GetterCallback<gm.Dimensions>) => gf.size(cb))();
 };
