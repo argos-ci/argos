@@ -9,7 +9,7 @@ import {
   CardTitle,
   Container,
   Link,
-} from "@argos-ci/app/src/components";
+} from "@/components";
 
 export function NotFound(props) {
   return (

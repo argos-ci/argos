@@ -1,9 +1,9 @@
 import axios from "axios";
-import qs from "query-string";
+import { parse as parseQs } from "query-string";
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { useAuth } from "../containers/Auth";
+import { useAuth } from "@/containers/Auth";
 
 const api = axios.create({
   baseURL: process.env.API_BASE_URL,
@@ -12,7 +12,7 @@ const api = axios.create({
 export function AuthCallback() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { code, r } = qs.parse(location.search);
+  const { code, r } = parseQs(location.search);
   const { setToken } = useAuth();
   useEffect(() => {
     api

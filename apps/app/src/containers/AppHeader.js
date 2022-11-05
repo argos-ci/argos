@@ -1,11 +1,6 @@
 import { createTeleporter } from "react-teleporter";
 
-import {
-  Breadcrumb,
-  Header,
-  HeaderBody,
-  HeaderPrimary,
-} from "@argos-ci/app/src/components";
+import { Breadcrumb, Header, HeaderBody, HeaderPrimary } from "@/components";
 
 import { HomeBreadcrumbItem } from "./Breadcrumb/HomeBreadcrumb";
 import { OwnerBreadcrumbItem } from "./Breadcrumb/OwnerBreadcrumb";

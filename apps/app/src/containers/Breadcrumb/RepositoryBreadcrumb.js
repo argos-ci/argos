@@ -7,9 +7,9 @@ import {
   BreadcrumbLink,
   BreadcrumbSeparator,
   Icon,
-} from "@argos-ci/app/src/components";
+} from "@/components";
+import { useUser } from "@/containers/User";
 
-import { useUser } from "../User";
 import { RepositoryBreadcrumbMenu } from "./RepositoryBreadcrumbMenu";
 
 export function RepositoryBreadcrumbItem() {

@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { Container, LoadingAlert } from "@argos-ci/app/src/components";
+import { Container, LoadingAlert } from "@/components";
+import { isUserSyncing } from "@/modules/user";
 
-import { isUserSyncing } from "../modules/user";
 import { useRefetchUser, useUser } from "./User";
 
 const REFETCH_DELAY = 1000;

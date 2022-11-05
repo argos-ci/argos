@@ -35,19 +35,18 @@ import {
   TooltipAnchor,
   Tr,
   useTooltipState,
-} from "@argos-ci/app/src/components";
-
-import config from "../config";
-import { Query } from "../containers/Apollo";
+} from "@/components";
+import config from "@/config";
+import { Query } from "@/containers/Apollo";
 import {
   BuildStatusChip,
   BuildStatusChipBuildFragment,
   BuildStatusChipRepositoryFragment,
-} from "../containers/BuildStatusChip";
-import { OwnerAvatar } from "../containers/OwnerAvatar";
-import { useUser } from "../containers/User";
-import { hasWritePermission } from "../modules/permissions";
-import { isUserSyncing } from "../modules/user";
+} from "@/containers/BuildStatusChip";
+import { OwnerAvatar } from "@/containers/OwnerAvatar";
+import { useUser } from "@/containers/User";
+import { hasWritePermission } from "@/modules/permissions";
+import { isUserSyncing } from "@/modules/user";
 
 const HOME_OWNERS_REPOSITORIES_QUERY = gql`
   query HOME_OWNERS_REPOSITORIES_QUERY {

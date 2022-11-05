@@ -17,11 +17,11 @@ import {
   Link,
   ProgressBar,
   Time,
-} from "@argos-ci/app/src/components";
+} from "@/components";
+import { getBuildStatusColor } from "@/containers/BuildStatus";
+import { BuildStatusChip } from "@/containers/BuildStatusChip";
 
 import { ShowChangesButton } from ".";
-import { getBuildStatusColor } from "../../containers/BuildStatus";
-import { BuildStatusChip } from "../../containers/BuildStatusChip";
 import {
   ReviewButton,
   ReviewButtonBuildFragment,

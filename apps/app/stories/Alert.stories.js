@@ -1,7 +1,7 @@
 import { x } from "@xstyled/styled-components";
 import * as React from "react";
 
-import { Alert } from "@argos-ci/app/src/components";
+import { Alert } from "@/components";
 
 export const Alerts = () => (
   <x.div display="flex" flexDirection="column" gap={3} maxW={600}>

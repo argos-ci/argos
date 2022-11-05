@@ -2,8 +2,9 @@ import { x } from "@xstyled/styled-components";
 import React from "react";
 import { Outlet } from "react-router-dom";
 
-import { Catch } from "../components";
-import { ErrorPage } from "../pages/ErrorPage";
+import { Catch } from "@/components";
+import { ErrorPage } from "@/pages/ErrorPage";
+
 import { AppFooter } from "./AppFooter";
 import { AppHeader } from "./AppHeader";
 import { AppNavbar } from "./AppNavbar";

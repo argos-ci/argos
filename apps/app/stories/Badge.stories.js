@@ -1,7 +1,7 @@
 import { x } from "@xstyled/styled-components";
 import * as React from "react";
 
-import { Badge } from "@argos-ci/app/src/components";
+import { Badge } from "@/components";
 
 export const Badges = () => (
   <x.div display="flex" gap={3}>

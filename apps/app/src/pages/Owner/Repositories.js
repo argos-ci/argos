@@ -5,17 +5,12 @@ import { gql } from "graphql-tag";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
-import {
-  Container,
-  Link,
-  Loader,
-  SecondaryTitle,
-} from "@argos-ci/app/src/components";
+import { Container, Link, Loader, SecondaryTitle } from "@/components";
+import config from "@/config";
+import { Query } from "@/containers/Apollo";
+import { useUser } from "@/containers/User";
+import { NotFound } from "@/pages/NotFound";
 
-import config from "../../config";
-import { Query } from "../../containers/Apollo";
-import { useUser } from "../../containers/User";
-import { NotFound } from "../NotFound";
 import { OwnerTabs } from "./OwnerTabs";
 import {
   ActiveRepositoryCard,

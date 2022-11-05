@@ -16,9 +16,8 @@ import {
   MenuText,
   MenuTitle,
   useMenuState,
-} from "@argos-ci/app/src/components";
-
-import { Query } from "../Apollo";
+} from "@/components";
+import { Query } from "@/containers/Apollo";
 
 const OWNER_REPOSITORIES_QUERY = gql`
   query OWNER_REPOSITORIES_QUERY($login: String!) {

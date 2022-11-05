@@ -8,11 +8,11 @@ import {
   SidebarList,
   SidebarNavLink,
   SidebarTitle,
-} from "@argos-ci/app/src/components";
+} from "@/components";
+import { Query } from "@/containers/Apollo";
+import { hasWritePermission } from "@/modules/permissions";
+import { NotFound, NotFoundWithContainer } from "@/pages/NotFound";
 
-import { Query } from "../../containers/Apollo";
-import { hasWritePermission } from "../../modules/permissions";
-import { NotFound, NotFoundWithContainer } from "../NotFound";
 import { GeneralSettings, OwnerSettingsFragment } from "./GeneralSettings";
 import { OwnerTabs } from "./OwnerTabs";
 import {

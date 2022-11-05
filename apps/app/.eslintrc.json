@@ -1,4 +1,5 @@
 {
+  "extends": ["plugin:react/recommended", "plugin:react-hooks/recommended"],
   "env": {
     "es2022": true,
     "browser": true,
@@ -15,7 +16,6 @@
     }
   },
   "plugins": ["react", "react-hooks"],
-  "extends": ["plugin:react/recommended", "plugin:react-hooks/recommended"],
   "settings": {
     "react": {
       "version": "detect"
@@ -24,6 +24,8 @@
   "rules": {
     "react/prop-types": "off",
     "react/display-name": "off",
-    "react/react-in-jsx-scope": "off"
+    "react/react-in-jsx-scope": "off",
+
+    "import/no-relative-packages": "error"
   }
 }

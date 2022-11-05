@@ -19,18 +19,18 @@ import {
   TooltipAnchor,
   useDialogState,
   useTooltipState,
-} from "@argos-ci/app/src/components";
-import { GitHubLoginButton } from "@argos-ci/app/src/containers/GitHub";
-
-import { useQuery } from "../../containers/Apollo";
+} from "@/components";
+import { useQuery } from "@/containers/Apollo";
 import {
   BuildStatusChip,
   BuildStatusChipBuildFragment,
   BuildStatusChipRepositoryFragment,
-} from "../../containers/BuildStatusChip";
-import { useUser } from "../../containers/User";
-import { useLiveRef } from "../../utils/useLiveRef";
-import { NotFoundWithContainer } from "../NotFound";
+} from "@/containers/BuildStatusChip";
+import { GitHubLoginButton } from "@/containers/GitHub";
+import { useUser } from "@/containers/User";
+import { NotFoundWithContainer } from "@/pages/NotFound";
+import { useLiveRef } from "@/utils/useLiveRef";
+
 import { BuildDiff } from "./BuildDiff";
 import { BuildSidebar } from "./BuildSidebar";
 import { HOTKEYS } from "./Hotkeys";

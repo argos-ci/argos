@@ -1,7 +1,7 @@
 import { x } from "@xstyled/styled-components";
 import * as React from "react";
 
-import { Button } from "@argos-ci/app/src/components";
+import { Button } from "@/components";
 
 export const Buttons = () => (
   <x.div display="flex" gap={3}>

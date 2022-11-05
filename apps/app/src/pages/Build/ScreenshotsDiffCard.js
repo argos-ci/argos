@@ -12,12 +12,11 @@ import {
   CollapseCardTitle,
   Icon,
   useDisclosureState,
-} from "@argos-ci/app/src/components";
-
+} from "@/components";
 import {
   getDiffStatusColor,
   getDiffStatusIcon,
-} from "../../containers/ScreenshotDiffStatus";
+} from "@/containers/ScreenshotDiffStatus";
 
 export const ScreenshotsDiffCardFragment = gql`
   fragment ScreenshotsDiffCardFragment on ScreenshotDiff {

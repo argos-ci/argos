@@ -10,7 +10,7 @@ import {
   Link,
   LinkBlock,
   TagButton,
-} from "@argos-ci/app/src/components";
+} from "@/components";
 
 export const OwnerRepositoryCardFragment = gql`
   fragment OwnerRepositoryCardFragment on Repository {

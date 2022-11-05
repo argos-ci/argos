@@ -1,5 +1,5 @@
 {
-  "importOrder": ["^@argos-ci/", "^[./]"],
+  "importOrder": ["^@/", "^@argos-ci/", "^[./]"],
   "importOrderSeparation": true,
   "importOrderSortSpecifiers": true
 }

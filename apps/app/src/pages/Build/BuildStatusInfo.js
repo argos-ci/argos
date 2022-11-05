@@ -2,7 +2,7 @@
 import { gql } from "@apollo/client";
 import { x } from "@xstyled/styled-components";
 
-import { Alert, InlineCode, Link } from "@argos-ci/app/src/components";
+import { Alert, InlineCode, Link } from "@/components";
 
 export const BuildStatusInfoRepositoryFragment = gql`
   fragment BuildStatusInfoRepositoryFragment on Repository {
