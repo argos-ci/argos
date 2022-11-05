@@ -118,7 +118,11 @@ factory.define("Screenshot", Screenshot, {
   screenshotBucketId: factory.assoc("ScreenshotBucket", "id"),
 });
 
-factory.define("File", File, {});
+factory.define("File", File, {
+  key: factory.sequence("file.key", (n) => `key-${n}`),
+  width: 10,
+  height: 10,
+});
 
 factory.define("Synchronization", Synchronization, {
   userId: factory.assoc("User", "id"),

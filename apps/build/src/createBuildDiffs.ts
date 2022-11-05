@@ -66,15 +66,25 @@ const getJobStatus = ({
   sameFileId: boolean;
   compareScreenshot: Screenshot;
 }) => {
-  if (baseScreenshot && baseScreenshot.file?.height) {
+  if (
+    baseScreenshot &&
+    (!baseScreenshot?.fileId ||
+      !baseScreenshot.file?.width ||
+      !baseScreenshot.file?.height)
+  ) {
     return "pending" as const;
   }
-  if (compareScreenshot.file && !compareScreenshot.file.height) {
+  if (
+    !compareScreenshot?.fileId ||
+    !compareScreenshot.file?.width ||
+    !compareScreenshot.file?.height
+  ) {
     return "pending" as const;
   }
   if (compareWithBaseline) return "complete" as const;
   if (!baseScreenshot) return "complete" as const;
   if (sameFileId) return "complete" as const;
+
   return "pending" as const;
 };
 

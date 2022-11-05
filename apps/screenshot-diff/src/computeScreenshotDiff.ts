@@ -1,14 +1,13 @@
 import type { S3Client } from "@aws-sdk/client-s3";
-import { rmdir, unlink } from "node:fs/promises";
-import { join } from "node:path";
+import { rmdir } from "node:fs/promises";
+import type { TransactionOrKnex } from "objection";
 import tmp from "tmp";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
-import { raw } from "@argos-ci/database";
+import { raw, transaction } from "@argos-ci/database";
 import { File, ScreenshotDiff } from "@argos-ci/database/models";
-import { download, upload } from "@argos-ci/storage";
+import { S3Image } from "@argos-ci/storage";
 
-import { getImageSize } from "./util/image-diff/imageDifference.js";
 import { diffImages } from "./util/image-diff/index.js";
 
 function createTmpDirectory() {
@@ -23,134 +22,145 @@ function createTmpDirectory() {
   });
 }
 
+async function patchMissingFileDimensions({
+  s3Image,
+  fileId,
+  trx,
+}: {
+  s3Image: S3Image;
+  fileId: String | undefined;
+  trx?: TransactionOrKnex;
+}) {
+  if (!fileId) return;
+
+  const { width, height } = await s3Image.getDimensions();
+  if (width && height) return;
+
+  await s3Image.measureDimensions();
+  const measuredDimensions = await s3Image.getDimensions();
+  await File.query(trx)
+    .findById(fileId as string)
+    .patch(measuredDimensions);
+}
+
 export const computeScreenshotDiff = async (
   screenshotDiff: ScreenshotDiff,
   { s3, bucket }: { s3: S3Client; bucket: string }
 ) => {
-  screenshotDiff = await screenshotDiff
-    .$query()
-    .withGraphFetched("[build, baseScreenshot.file, compareScreenshot.file]");
+  await transaction(async (trx) => {
+    screenshotDiff = await screenshotDiff
+      .$query(trx)
+      .withGraphFetched("[build, baseScreenshot.file, compareScreenshot.file]");
 
-  if (!screenshotDiff) {
-    throw new Error(`Screenshot diff id: \`${screenshotDiff}\` not found`);
-  }
-
-  const tmpDir = await createTmpDirectory();
-  const baseScreenshotPath = join(tmpDir, "base");
-  const compareScreenshotPath = join(tmpDir, "compare");
-  const diffResultPath = join(tmpDir, "diff.png");
-
-  await Promise.all([
-    ...(screenshotDiff.baseScreenshot
-      ? [
-          download({
-            s3,
-            outputPath: baseScreenshotPath,
-            Bucket: bucket,
-            Key: screenshotDiff.baseScreenshot!.s3Id,
-          }),
-        ]
-      : []),
-    download({
-      s3,
-      outputPath: compareScreenshotPath,
-      Bucket: bucket,
-      Key: screenshotDiff.compareScreenshot!.s3Id,
-    }),
-  ]);
-
-  await Promise.all(
-    [
-      { ...screenshotDiff.baseScreenshot, filePath: baseScreenshotPath },
-      { ...screenshotDiff.compareScreenshot, filePath: compareScreenshotPath },
-    ]
-      .filter(
-        (screenshot) =>
-          screenshot &&
-          screenshot.fileId &&
-          screenshot.file &&
-          (screenshot.file.width === undefined ||
-            screenshot.file.height === undefined)
-      )
-      .map(async (screenshot) => {
-        const { width, height } = await getImageSize(screenshot.filePath);
-        await File.query()
-          .findById(screenshot.fileId as string)
-          .patch({ width, height });
-      })
-  );
-
-  if (
-    !screenshotDiff.baseScreenshot ||
-    (screenshotDiff.compareScreenshot!.fileId !== null &&
-      screenshotDiff.baseScreenshot!.fileId ===
-        screenshotDiff.compareScreenshot!.fileId)
-  ) {
-    await ScreenshotDiff.query().findById(screenshotDiff.id).patch({
-      jobStatus: "complete",
-    });
-    return;
-  }
-
-  const difference = await diffImages({
-    actualFilename: compareScreenshotPath,
-    expectedFilename: baseScreenshotPath,
-    diffFilename: diffResultPath,
-  });
-
-  let file = null;
-  if (difference.score > 0) {
-    const uploadResult = await upload({
-      s3,
-      Bucket: bucket,
-      inputPath: diffResultPath,
-    });
-    file = await File.query()
-      .insert({
-        key: uploadResult.Key,
-        width: difference.width,
-        height: difference.height,
-      })
-      .returning("*");
-  }
-
-  await Promise.all([
-    unlink(compareScreenshotPath),
-    unlink(baseScreenshotPath),
-    unlink(diffResultPath),
-  ]);
-
-  await rmdir(tmpDir);
-
-  await ScreenshotDiff.query()
-    .findById(screenshotDiff.id)
-    .patch({
-      score: difference.score,
-      jobStatus: "complete",
-      s3Id: file ? file.key : null,
-      fileId: file ? file.id : null,
-    });
-
-  // @ts-ignore
-  const [{ complete, diff }] = await ScreenshotDiff.query()
-    .select(
-      raw(`bool_and("jobStatus" = 'complete') as complete`),
-      raw("bool_or(score > 0) as diff")
-    )
-    .where("buildId", screenshotDiff.buildId)
-    .groupBy("buildId");
-
-  if (complete) {
-    if (diff) {
-      await pushBuildNotification({
-        buildId: screenshotDiff.buildId,
-        type: "diff-detected",
-      });
-    } else {
-      await pushBuildNotification({
-        buildId: screenshotDiff.buildId,
-        type: "no-diff-detected",
-      });
+    if (!screenshotDiff) {
+      throw new Error(`Screenshot diff id: \`${screenshotDiff}\` not found`);
     }
-  }
+
+    const tmpDir = await createTmpDirectory();
+
+    const baseImage = new S3Image({
+      s3,
+      bucket: bucket,
+      key: screenshotDiff.baseScreenshot?.s3Id,
+      filePath: `${tmpDir}/base`,
+      width: screenshotDiff.baseScreenshot?.file?.width || null,
+      height: screenshotDiff.baseScreenshot?.file?.height || null,
+    });
+
+    const compareImage = new S3Image({
+      s3,
+      bucket,
+      key: screenshotDiff.compareScreenshot!.s3Id,
+      filePath: `${tmpDir}/compare`,
+      width: screenshotDiff.compareScreenshot?.file?.width || null,
+      height: screenshotDiff.compareScreenshot?.file?.height || null,
+    });
+
+    const diffImage = new S3Image({
+      s3,
+      bucket: bucket,
+      filePath: `${tmpDir}/diff.png`,
+    });
+
+    await Promise.all([baseImage.download(), compareImage.download()]);
+    await Promise.all([
+      patchMissingFileDimensions({
+        fileId: screenshotDiff.baseScreenshot?.fileId,
+        s3Image: baseImage,
+        trx,
+      }),
+      patchMissingFileDimensions({
+        fileId: screenshotDiff.compareScreenshot!.fileId,
+        s3Image: compareImage,
+        trx,
+      }),
+    ]);
+
+    let patchProps = {};
+    const shouldCompareScreenshot =
+      screenshotDiff.baseScreenshot &&
+      screenshotDiff.baseScreenshot.s3Id !==
+        screenshotDiff.compareScreenshot!.s3Id;
+
+    if (shouldCompareScreenshot) {
+      const diffResult = await diffImages({
+        baseImage,
+        compareImage,
+        diffImage,
+      });
+
+      if (diffResult.score > 0) {
+        const uploadResult = await diffImage.upload();
+        const diffFile = await File.query(trx)
+          .insert({
+            key: uploadResult!.Key,
+            width: diffResult.width,
+            height: diffResult.height,
+          })
+          .returning("*");
+        patchProps = {
+          score: diffResult.score,
+          s3Id: diffFile.key,
+          fileId: diffFile.id,
+        };
+      }
+    }
+
+    await ScreenshotDiff.query(trx)
+      .findById(screenshotDiff.id)
+      .patch({ jobStatus: "complete", ...patchProps });
+
+    await Promise.all([
+      baseImage.unlink(),
+      compareImage.unlink(),
+      diffImage.unlink(),
+    ]);
+
+    await rmdir(tmpDir);
+
+    // @ts-ignore
+    const [{ complete, diff }] = await ScreenshotDiff.query(trx)
+      .select(
+        raw(`bool_and("jobStatus" = 'complete') as complete`),
+        raw("bool_or(score > 0) as diff")
+      )
+      .where("buildId", screenshotDiff.buildId)
+      .groupBy("buildId");
+
+    if (complete) {
+      if (diff) {
+        await pushBuildNotification({
+          buildId: screenshotDiff.buildId,
+          type: "diff-detected",
+          trx,
+        });
+      } else {
+        await pushBuildNotification({
+          buildId: screenshotDiff.buildId,
+          type: "no-diff-detected",
+          trx,
+        });
+      }
+    }
+  });
 };

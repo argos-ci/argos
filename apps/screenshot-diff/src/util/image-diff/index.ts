@@ -1,3 +1,5 @@
+import type { S3Image } from "@argos-ci/storage";
+
 import imageDifference from "./imageDifference.js";
 
 // Generate an image diff result.
@@ -9,20 +11,20 @@ import imageDifference from "./imageDifference.js";
 // Some documentation
 // https://en.wikipedia.org/wiki/Color_difference
 export const diffImages = async ({
-  actualFilename,
-  expectedFilename,
-  diffFilename,
+  baseImage,
+  compareImage,
+  diffImage,
   fuzz = "10%",
 }: {
-  actualFilename: string;
-  expectedFilename: string;
-  diffFilename: string;
+  baseImage: S3Image;
+  compareImage: S3Image;
+  diffImage: S3Image;
   fuzz?: string | number;
 }) => {
   const difference = await imageDifference({
-    actualFilename,
-    expectedFilename,
-    diffFilename,
+    baseImage,
+    compareImage,
+    diffImage,
     fuzz,
   });
 

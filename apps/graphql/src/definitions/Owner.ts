@@ -133,7 +133,7 @@ const getOwnerRepositories = (
     .orderBy("repositories.name", "asc");
 
   if (enabled !== undefined) {
-    return addEnableFilter({ enabled, query: repositoriesQuery }).debug();
+    return addEnableFilter({ enabled, query: repositoriesQuery });
   }
 
   return repositoriesQuery;

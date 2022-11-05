@@ -2,6 +2,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import type {
   Build,
+  File,
   Repository,
   Screenshot,
   ScreenshotBucket,
@@ -39,9 +40,11 @@ describe("build", () => {
         repositoryId: repository.id,
         jobStatus: "pending",
       });
+      const file = await factory.create<File>("File");
       await factory.create<Screenshot>("Screenshot", {
         name: "b",
         screenshotBucketId: compareBucket.id,
+        fileId: file.id,
       });
     });
 
