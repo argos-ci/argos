@@ -132,7 +132,7 @@ export const createBuildDiffs = async (build: Build) => {
           compareScreenshotId: compareScreenshot.id,
           jobStatus: getJobStatus({
             compareWithBaseline,
-            baseScreenshot: baseScreenshot || null,
+            baseScreenshot: baseScreenshot ?? null,
             sameFileId,
             compareScreenshot,
           }),
