@@ -66,7 +66,7 @@ const getJobStatus = ({
   sameFileId: boolean;
   compareScreenshot: Screenshot;
 }) => {
-  if (baseScreenshot && baseScreenshot.file && !baseScreenshot.file.height) {
+  if (baseScreenshot && baseScreenshot.file?.height) {
     return "pending" as const;
   }
   if (compareScreenshot.file && !compareScreenshot.file.height) {
