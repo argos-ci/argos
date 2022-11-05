@@ -8,11 +8,11 @@ import {
   BreadcrumbLink,
   BreadcrumbSeparator,
   Icon,
-} from "@argos-ci/app/src/components";
+} from "@/components";
+import { useQuery } from "@/containers/Apollo";
+import { OwnerAvatar, OwnerAvatarFragment } from "@/containers/OwnerAvatar";
+import { useUser } from "@/containers/User";
 
-import { useQuery } from "../Apollo";
-import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
-import { useUser } from "../User";
 import { OwnerBreadcrumbMenu } from "./OwnerBreadcrumbMenu";
 
 const OWNER_BREADCRUMB_OWNER_QUERY = gql`

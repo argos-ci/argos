@@ -5,14 +5,14 @@ import {
   ParagraphTooltip,
   TooltipAnchor,
   useTooltipState,
-} from "@argos-ci/app/src/components";
-
+} from "@/components";
 import {
   BuildStatusInfo,
   BuildStatusInfoBuildFragment,
   BuildStatusInfoRepositoryFragment,
   getStatusInfoType,
-} from "../pages/Build/BuildStatusInfo";
+} from "@/pages/Build/BuildStatusInfo";
+
 import {
   getBuildStatusColor,
   getBuildStatusIcon,

@@ -19,10 +19,10 @@ import {
   NavbarBrandLink,
   NavbarSecondary,
   useMenuState,
-} from "@argos-ci/app/src/components";
-import { GitHubLoginButton } from "@argos-ci/app/src/containers/GitHub";
+} from "@/components";
+import config from "@/config";
+import { GitHubLoginButton } from "@/containers/GitHub";
 
-import config from "../config";
 import { useLogout } from "./Auth";
 import { OwnerAvatar } from "./OwnerAvatar";
 import { useUser } from "./User";

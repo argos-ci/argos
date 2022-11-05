@@ -14,11 +14,10 @@ import {
   MenuText,
   MenuTitle,
   useMenuState,
-} from "@argos-ci/app/src/components";
-
-import config from "../../config";
-import { Query } from "../Apollo";
-import { OwnerAvatar, OwnerAvatarFragment } from "../OwnerAvatar";
+} from "@/components";
+import config from "@/config";
+import { Query } from "@/containers/Apollo";
+import { OwnerAvatar, OwnerAvatarFragment } from "@/containers/OwnerAvatar";
 
 const BREADCRUMB_MENU_OWNERS_QUERY = gql`
   query BREADCRUMB_MENU_OWNERS_QUERY {

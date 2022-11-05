@@ -1,9 +1,9 @@
 import { gql } from "graphql-tag";
 import { useState } from "react";
 
-import { LoadingAlert } from "@argos-ci/app/src/components";
+import { LoadingAlert } from "@/components";
+import { useQuery } from "@/containers/Apollo";
 
-import { useQuery } from "../../containers/Apollo";
 import {
   LoadMoreButton,
   ScreenshotDiffsPageFragment,

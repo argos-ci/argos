@@ -24,20 +24,20 @@ import {
   Link,
   LoadingAlert,
   PrimaryTitle,
-} from "@argos-ci/app/src/components";
-
-import { useQuery } from "../../containers/Apollo";
-import { getBuildStatusLabel } from "../../containers/BuildStatus";
+} from "@/components";
+import { useQuery } from "@/containers/Apollo";
+import { getBuildStatusLabel } from "@/containers/BuildStatus";
 import {
   BuildStatusChip,
   BuildStatusChipBuildFragment,
   BuildStatusChipRepositoryFragment,
-} from "../../containers/BuildStatusChip";
+} from "@/containers/BuildStatusChip";
 import {
   getDiffStatusColor,
   getDiffStatusIcon,
-} from "../../containers/ScreenshotDiffStatus";
-import { NotFound } from "../NotFound";
+} from "@/containers/ScreenshotDiffStatus";
+import { NotFound } from "@/pages/NotFound";
+
 import {
   BuildStatusInfoAlert,
   BuildStatusInfoBuildFragment,

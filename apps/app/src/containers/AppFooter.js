@@ -5,7 +5,7 @@ import {
   FooterLink,
   FooterPrimary,
   FooterSecondary,
-} from "@argos-ci/app/src/components";
+} from "@/components";
 
 export function AppFooter() {
   return (

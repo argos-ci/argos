@@ -22,7 +22,7 @@ import {
   TooltipAnchor,
   TooltipHotkey,
   useTooltipState,
-} from "@argos-ci/app/src/components";
+} from "@/components";
 
 const BranchInfo = ({ bucket, baseline }) => {
   if (!bucket) {

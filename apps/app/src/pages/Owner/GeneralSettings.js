@@ -22,10 +22,9 @@ import {
   SidebarLayout,
   Time,
   useDisclosureState,
-} from "@argos-ci/app/src/components";
-
-import config from "../../config";
-import { getPossessiveForm, pluralize } from "../../modules/utils";
+} from "@/components";
+import config from "@/config";
+import { getPossessiveForm, pluralize } from "@/modules/utils";
 
 export const OwnerSettingsFragment = gql`
   fragment OwnerSettingsFragment on Owner {

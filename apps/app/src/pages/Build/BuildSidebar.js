@@ -3,7 +3,7 @@ import styled, { x } from "@xstyled/styled-components";
 import { Tab, TabList, TabPanel, useTabState } from "ariakit/tab";
 import { useRef } from "react";
 
-import { Link, ThumbnailsList, Time } from "@argos-ci/app/src/components";
+import { Link, ThumbnailsList, Time } from "@/components";
 
 const SidebarTab = styled(Tab)`
   background-color: transparent;

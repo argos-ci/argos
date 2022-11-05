@@ -2,7 +2,7 @@ import { SparklesIcon } from "@heroicons/react/24/solid";
 import { x } from "@xstyled/styled-components";
 import * as React from "react";
 
-import { Chip } from "@argos-ci/app/src/components";
+import { Chip } from "@/components";
 
 export const Chips = () => (
   <x.div display="flex" gap={10} flexDirection="column">

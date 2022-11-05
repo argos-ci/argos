@@ -1,6 +1,7 @@
 import styled, { x } from "@xstyled/styled-components";
 
-import { useIsMatchingTo } from "../containers/Router";
+import { useIsMatchingTo } from "@/containers/Router";
+
 import { LinkBlock } from "./Link";
 
 export const SidebarList = (props) => (

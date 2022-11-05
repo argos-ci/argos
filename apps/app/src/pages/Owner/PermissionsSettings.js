@@ -9,10 +9,9 @@ import {
   Link,
   PrimaryTitle,
   SidebarLayout,
-} from "@argos-ci/app/src/components";
-
-import config from "../../config";
-import { getPossessiveForm } from "../../modules/utils";
+} from "@/components";
+import config from "@/config";
+import { getPossessiveForm } from "@/modules/utils";
 
 export const OwnerPermissionsSettingsFragment = gql`
   fragment OwnerPermissionsSettingsFragment on Owner {

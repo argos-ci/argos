@@ -40,6 +40,11 @@ export default {
       },
     ],
   },
+  resolve: {
+    alias: {
+      "@": join(__dirname, "src"),
+    },
+  },
   plugins: [
     ...(prod
       ? [

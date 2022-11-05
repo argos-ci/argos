@@ -12,7 +12,7 @@ import {
   DialogHeader,
   Hotkey,
   HotkeySeparator,
-} from "@argos-ci/app/src/components";
+} from "@/components";
 
 function ShortcutIcon({ shortcut }) {
   switch (shortcut) {

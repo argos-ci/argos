@@ -25,9 +25,8 @@ import {
   Toast,
   useFormState,
   useToast,
-} from "@argos-ci/app/src/components";
-
-import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
+} from "@/components";
+import { DocumentationPhrase } from "@/containers/DocumentationPhrase";
 
 const UPDATE_REFERENCE_BRANCH = gql`
   mutation updateReferenceBranch(

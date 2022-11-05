@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router-dom";
 
-import { HOTKEYS } from "../pages/Build/Hotkeys";
+import { HOTKEYS } from "@/pages/Build/Hotkeys";
+
 import { Alert } from "./Alert";
 import { Badge } from "./Badge";
 import { BuildStatLink, BuildStatLinks } from "./BuildStat";

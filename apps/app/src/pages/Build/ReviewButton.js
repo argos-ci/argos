@@ -14,11 +14,10 @@ import {
   TooltipAnchor,
   useMenuState,
   useTooltipState,
-} from "@argos-ci/app/src/components";
-
-import { getBuildStatusIcon } from "../../containers/BuildStatus";
-import { useUser } from "../../containers/User";
-import { hasWritePermission } from "../../modules/permissions";
+} from "@/components";
+import { getBuildStatusIcon } from "@/containers/BuildStatus";
+import { useUser } from "@/containers/User";
+import { hasWritePermission } from "@/modules/permissions";
 
 export const ReviewButtonBuildFragment = gql`
   fragment ReviewButtonBuildFragment on Build {

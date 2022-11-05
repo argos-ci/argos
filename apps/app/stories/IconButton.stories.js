@@ -3,7 +3,7 @@ import { EyeIcon } from "@heroicons/react/24/solid";
 import { x } from "@xstyled/styled-components";
 import * as React from "react";
 
-import { IconButton } from "@argos-ci/app/src/components";
+import { IconButton } from "@/components";
 
 export const States = () => (
   <x.div

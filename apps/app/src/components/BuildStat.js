@@ -3,7 +3,8 @@ import { x } from "@xstyled/styled-components";
 import {
   getDiffStatusColor,
   getDiffStatusIcon,
-} from "../containers/ScreenshotDiffStatus";
+} from "@/containers/ScreenshotDiffStatus";
+
 import { IllustratedText } from "./IllustratedText";
 import {
   Tooltip,

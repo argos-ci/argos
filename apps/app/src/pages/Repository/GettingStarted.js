@@ -9,9 +9,8 @@ import {
   CardTitle,
   Code,
   InlineCode,
-} from "@argos-ci/app/src/components";
-
-import { DocumentationPhrase } from "../../containers/DocumentationPhrase";
+} from "@/components";
+import { DocumentationPhrase } from "@/containers/DocumentationPhrase";
 
 export function GettingStarted({ repository }) {
   return (

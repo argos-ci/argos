@@ -22,16 +22,16 @@ import {
   Th,
   Thead,
   Tr,
-} from "@argos-ci/app/src/components";
-
-import { useQuery } from "../../containers/Apollo";
+} from "@/components";
+import { useQuery } from "@/containers/Apollo";
 import {
   BuildStatusChip,
   BuildStatusChipBuildFragment,
   BuildStatusChipRepositoryFragment,
-} from "../../containers/BuildStatusChip";
-import { hasWritePermission } from "../../modules/permissions";
-import { getPossessiveForm } from "../../modules/utils";
+} from "@/containers/BuildStatusChip";
+import { hasWritePermission } from "@/modules/permissions";
+import { getPossessiveForm } from "@/modules/utils";
+
 import { GettingStarted } from "./GettingStarted";
 
 const REPOSITORY_BUILDS_QUERY = gql`
