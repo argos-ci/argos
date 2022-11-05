@@ -74,6 +74,7 @@ export const typeDefs = gql`
       limit: Int!
       rank: Int!
     ): ScreenshotDiffResult!
+    diffs(offset: Int!, limit: Int!): ScreenshotDiffResult!
     "The screenshot bucket ID of the baselineBranch"
     baseScreenshotBucketId: ID
     "The screenshot bucket of the baselineBranch"
@@ -140,6 +141,16 @@ const getSortedDiffsQuery = (build: Build) =>
 
 export const resolvers = {
   Build: {
+    diffs: async (build: Build, args: { offset: number; limit: number }) => {
+      if (args.limit > 200) {
+        throw new Error("Limit is too high");
+      }
+      const result = await build
+        .$relatedQuery("screenshotDiffs")
+        .orderBy("id", "asc")
+        .range(args.offset, args.offset + args.limit - 1);
+      return paginateResult({ result, offset: args.offset, limit: args.limit });
+    },
     async screenshotDiffs(
       build: Build,
       {
@@ -218,7 +229,7 @@ export const resolvers = {
       return buildLoader.load(build);
     },
     stats: async (build: Build) => {
-      const data = await ScreenshotDiff.query()
+      const data = (await ScreenshotDiff.query()
         .where("buildId", build.id)
         .leftJoin(
           "screenshots",
@@ -238,10 +249,9 @@ export const resolvers = {
           `)
         )
         .count("*")
-        .groupBy("status");
+        .groupBy("status")) as unknown as { status: string; count: string }[];
 
       const stats = data.reduce(
-        // @ts-ignore
         (res, { status, count }) => ({ ...res, [status]: Number(count) }),
         { failed: 0, added: 0, stable: 0, updated: 0, removed: 0 }
       );

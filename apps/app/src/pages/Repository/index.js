@@ -79,17 +79,17 @@ export function Repository() {
 
               <Routes>
                 <Route
-                  path={"builds"}
+                  path="builds"
                   element={<RepositoryBuilds repository={data.repository} />}
                 />
                 <Route index element={<Navigate to="builds" replace />} />
                 <Route
-                  path={`getting-started`}
+                  path="getting-started"
                   element={<GettingStarted repository={data.repository} />}
                 />
                 {hasWritePermission(data.repository) ? (
                   <Route
-                    path={`settings`}
+                    path="settings"
                     element={
                       <RepositorySettings repository={data.repository} />
                     }

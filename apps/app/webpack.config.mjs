@@ -1,10 +1,10 @@
 /* eslint-env node */
-// @ts-ignore
 import AssetsPlugin from "assets-webpack-plugin";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import webpack from "webpack";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
 
 // eslint-disable-next-line import/no-unresolved
 import config from "@argos-ci/config";
@@ -30,7 +30,7 @@ export default {
         },
       },
       {
-        test: /\.m?js$/,
+        test: /\.m?(t|j)sx?$/,
         exclude: /node_modules/,
         use: "swc-loader",
       },
@@ -38,14 +38,29 @@ export default {
         test: /\.(jpe?g|png|gif|svg)$/,
         type: "asset/resource",
       },
+      {
+        test: /\.css$/i,
+        include: join(__dirname, "src"),
+        use: [MiniCssExtractPlugin.loader, "css-loader", "postcss-loader"],
+        sideEffects: true,
+      },
     ],
   },
   resolve: {
     alias: {
       "@": join(__dirname, "src"),
     },
+    extensions: [".tsx", ".ts", ".jsx", ".js"],
   },
   plugins: [
+    new MiniCssExtractPlugin({
+      filename: prod ? "[name]-bundle-[chunkhash:8].css" : "[name].css",
+    }),
+    new webpack.EnvironmentPlugin({
+      PLATFORM: "browser",
+      SENTRY_RELEASE: process.env["COMMIT_REF"] || "",
+      API_BASE_URL: "https://api.argos-ci.dev:4001",
+    }),
     ...(prod
       ? [
           new AssetsPlugin({
@@ -53,11 +68,6 @@ export default {
           }),
         ]
       : []),
-    new webpack.EnvironmentPlugin({
-      PLATFORM: "browser",
-      SENTRY_RELEASE: process.env["COMMIT_REF"] || "",
-      API_BASE_URL: "https://api.argos-ci.dev:4001",
-    }),
   ],
   ...(!prod
     ? {

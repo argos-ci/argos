@@ -37,6 +37,7 @@ const getHtmlWebpackPluginConfig = (): {
   return {
     files: {
       js: ["/static/app/main.js"],
+      css: ["/static/app/main.css"],
     },
   };
 };

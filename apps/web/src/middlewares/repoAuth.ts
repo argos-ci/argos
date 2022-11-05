@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 // @ts-ignore
 import { HttpError } from "express-err";
 

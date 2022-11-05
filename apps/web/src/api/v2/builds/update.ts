@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 // @ts-ignore
 import { HttpError } from "express-err";
 import type { TransactionOrKnex } from "objection";
@@ -14,7 +14,7 @@ import { validate } from "../../../middlewares/validate.js";
 import { asyncHandler } from "../../../util.js";
 import { getUnknownScreenshotKeys } from "./util.js";
 
-const router = express.Router();
+const router = Router();
 export default router;
 
 const validateRoute = validate({
@@ -65,7 +65,7 @@ type UpdateRequest = express.Request<
   {
     buildId?: string;
   },
-  {},
+  Record<string, never>,
   {
     commit: string;
     screenshots: {

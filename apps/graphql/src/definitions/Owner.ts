@@ -6,6 +6,7 @@ import type { Repository } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
 
+// eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
@@ -166,7 +167,11 @@ export const resolvers = {
         enabled: args.enabled,
       });
     },
-    permissions: async (owner: Owner, _args: {}, ctx: Context) => {
+    permissions: async (
+      owner: Owner,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
       if (!ctx.user) return ["read"];
       const hasWritePermission = owner.$checkWritePermission(ctx.user);
       return hasWritePermission ? ["read", "write"] : ["read"];
@@ -175,14 +180,17 @@ export const resolvers = {
       const account = await getOwnerAccount(owner);
       return account.getScreenshotsConsumptionRatio();
     },
-    repositoriesNumber: async (owner: Owner, _args: {}, ctx: Context) => {
+    repositoriesNumber: async (
+      owner: Owner,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
       const [result] = await getOwnerRepositories(owner, {
         user: ctx.user,
         // @TODO add missing enabled filter here
         // enabled: args.enabled,
       }).count("repositories.*");
-      // @ts-ignore
-      return result.count;
+      return (result as unknown as { count: number }).count;
     },
     currentMonthUsedScreenshots: async (owner: Owner) => {
       const account = await getOwnerAccount(owner);
@@ -198,7 +206,7 @@ export const resolvers = {
     },
   },
   Query: {
-    owners: async (_root: null, _args: {}, ctx: Context) => {
+    owners: async (_root: null, _args: Record<string, never>, ctx: Context) => {
       if (!ctx.user) return [];
 
       const [organizations, users] = await Promise.all([

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 import * as authorization from "auth-header";
 import type { Request, RequestHandler } from "express";
 

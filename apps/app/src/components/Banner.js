@@ -2,6 +2,10 @@ import { x } from "@xstyled/styled-components";
 import { forwardRef } from "react";
 
 export const Banner = forwardRef(
+  /**
+   * @param {any} param0
+   * @param {any} ref
+   */
   ({ children, color = "neutral", ...props }, ref) => {
     const onColor = `${color}-on`;
     const bgColor = `${color}-bg`;
