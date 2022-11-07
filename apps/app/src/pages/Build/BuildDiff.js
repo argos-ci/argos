@@ -197,6 +197,7 @@ const Baseline = ({ activeDiff, containedScreenshots }) => {
       <Screenshot
         screenshot={activeDiff.baseScreenshot}
         position={activeDiff.url ? "absolute" : "static"}
+        maxH={containedScreenshots ? 1 : "unset"}
         top={0}
       />
     </ScreenshotsLink>
@@ -251,6 +252,7 @@ const Changes = ({ activeDiff, showChanges, containedScreenshots }) => {
       <Screenshot
         screenshot={activeDiff.compareScreenshot}
         position={activeDiff.url ? "absolute" : "static"}
+        maxH={containedScreenshots ? 1 : "unset"}
         top="0"
       />
       <Screenshot

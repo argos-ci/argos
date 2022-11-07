@@ -274,25 +274,33 @@ const BuildContent = ({
     [fetchMore, dataRef]
   );
 
-  useHotkeys(HOTKEYS.toggleContainedScreenshots.shortcut, () =>
-    setContainedScreenshots((prev) => !prev)
+  useHotkeys(
+    HOTKEYS.toggleContainedScreenshots.shortcut,
+    () => setContainedScreenshots((prev) => !prev),
+    { preventDefault: true }
   );
   useHotkeys(HOTKEYS.toggleHotkeysDialog.shortcut, hotkeysDialog.toggle);
   useHotkeys(HOTKEYS.toggleChangesOverlay.shortcut, () =>
     setShowChanges((prev) => !prev)
   );
-  useHotkeys(HOTKEYS.previousDiff.shortcut, (e) => {
-    e.preventDefault();
-    if (previousRank.current) {
-      navigate(`${buildUrl}/${previousRank.current}`, { replace: true });
-    }
-  });
-  useHotkeys(HOTKEYS.nextDiff.shortcut, (e) => {
-    e.preventDefault();
-    if (nextRank.current) {
-      navigate(`${buildUrl}/${nextRank.current}`, { replace: true });
-    }
-  });
+  useHotkeys(
+    HOTKEYS.previousDiff.shortcut,
+    () => {
+      if (previousRank.current) {
+        navigate(`${buildUrl}/${previousRank.current}`, { replace: true });
+      }
+    },
+    { preventDefault: true }
+  );
+  useHotkeys(
+    HOTKEYS.nextDiff.shortcut,
+    () => {
+      if (nextRank.current) {
+        navigate(`${buildUrl}/${nextRank.current}`, { replace: true });
+      }
+    },
+    { preventDefault: true }
+  );
 
   if (!data || loading) return <LoadingAlert mt={10} />;
   if (!data.repository?.build) return <NotFoundWithContainer mt={10} />;
