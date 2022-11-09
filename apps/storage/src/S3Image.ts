@@ -1,6 +1,6 @@
 import type { S3Client } from "@aws-sdk/client-s3";
 import gm from "gm";
-import { stat, unlink } from "node:fs/promises";
+import { unlink } from "node:fs/promises";
 import { promisify } from "node:util";
 import { tmpName as cbTmpName } from "tmp";
 import type { TmpNameCallback, TmpNameOptions } from "tmp";
@@ -11,179 +11,157 @@ import { upload as s3Upload } from "./upload.js";
 const gmMagick = gm.subClass({ imageMagick: true });
 
 function transparent(
-  filename: string,
+  filepath: string,
   { width, height }: { width: number; height: number }
 ) {
-  const gmImage = gmMagick(filename);
+  const gmImage = gmMagick(filepath);
   gmImage.background("transparent"); // Fill in new space with white background
   gmImage.gravity("NorthWest"); // Anchor image to upper-left
   gmImage.extent(width, height); // Specify new image size
   return gmImage;
 }
 
-async function checkLocalFiles(filename: string) {
-  try {
-    await stat(filename);
-    return true;
-  } catch (error: any) {
-    if (error.code === "ENOENT") {
-      return false;
+export const tmpName = promisify(
+  (options: TmpNameOptions, cb: TmpNameCallback) => {
+    cbTmpName(options, cb);
+  }
+);
+
+interface Dimensions {
+  width: number;
+  height: number;
+}
+
+export interface ImageFile {
+  getFilepath(): Promise<string> | string;
+  getDimensions(): Promise<Dimensions>;
+  unlink(): Promise<void>;
+  enlarge(targetDimensions: Dimensions): Promise<string>;
+}
+
+abstract class AbstractImageFile implements ImageFile {
+  abstract getFilepath(): Promise<string> | string;
+  abstract unlink(): Promise<void>;
+
+  dimensions: Dimensions | null = null;
+  _measurePromise: Promise<Dimensions> | null = null;
+
+  async measure() {
+    const filepath = await this.getFilepath();
+    const gf = gmMagick(filepath);
+    return promisify((cb: gm.GetterCallback<gm.Dimensions>) => gf.size(cb))();
+  }
+
+  async getDimensions(): Promise<Dimensions> {
+    if (this.dimensions) {
+      return this.dimensions;
     }
-    throw error;
+    this._measurePromise = this._measurePromise ?? this.measure();
+    return this._measurePromise;
+  }
+
+  async enlarge(targetDimensions: Dimensions): Promise<string> {
+    const [dimensions, filepath] = await Promise.all([
+      this.getDimensions(),
+      this.getFilepath(),
+    ]);
+    if (
+      dimensions.width > targetDimensions.width ||
+      dimensions.height > targetDimensions.height ||
+      (dimensions.height === targetDimensions.height &&
+        dimensions.width === targetDimensions.width)
+    ) {
+      return filepath;
+    }
+
+    const gf = transparent(filepath, targetDimensions);
+    const resultFilepath = await tmpName({ postfix: ".png" });
+    await promisify(gf.write.bind(gf))(resultFilepath);
+    return resultFilepath;
   }
 }
 
-const tmpName = promisify((options: TmpNameOptions, cb: TmpNameCallback) => {
-  cbTmpName(options, cb);
-});
-
-export class S3Image {
+export class S3ImageFile extends AbstractImageFile implements ImageFile {
   s3: S3Client;
-  bucket: string | undefined;
-  key: string | null | undefined;
-  filePath: string;
-  file: any;
-  width: number | null;
-  height: number | null;
-  localFile: Boolean;
-  protectOriginal: Boolean;
-  originalFilePath: string;
+  bucket: string;
+  key: string | null;
+  filepath: string | null;
+  downloadFromS3Promise: Promise<string> | null;
 
-  constructor({
-    s3,
-    bucket,
-    key,
-    filePath,
-    width,
-    height,
-    localFile,
-    protectOriginal,
-  }: {
+  constructor(params: {
     s3: S3Client;
-    bucket?: string;
-    key?: string | undefined;
-    filePath: string;
-    width?: number | null;
-    height?: number | null;
-    localFile?: Boolean;
-    protectOriginal?: Boolean;
+    bucket: string;
+    filepath?: string;
+    key?: string;
+    dimensions?: Dimensions | null;
   }) {
-    this.s3 = s3;
-    this.bucket = bucket;
-    this.key = key;
-    this.filePath = filePath;
-    this.originalFilePath = filePath;
-    this.width = width || null;
-    this.height = height || null;
-    this.localFile = localFile || false;
-    this.protectOriginal = protectOriginal || false;
+    super();
+    this.filepath = params.filepath ?? null;
+    this.dimensions = params.dimensions ?? null;
+    this.s3 = params.s3;
+    this.bucket = params.bucket;
+    this.key = params.key ?? null;
+    this.downloadFromS3Promise = null;
   }
 
-  async download() {
+  private async downloadFromS3(): Promise<string> {
     if (!this.key) {
-      return;
+      throw new Error("Missing key");
     }
-
-    if (!this.bucket) {
-      throw new Error(`Missing bucket. Could not download file from s3.`);
-    }
-
-    this.file = await s3Download({
+    const outputPath = await tmpName({});
+    await s3Download({
       s3: this.s3,
-      outputPath: this.filePath,
       Bucket: this.bucket,
       Key: this.key,
+      outputPath,
     });
-    const fileDownload = await checkLocalFiles(this.filePath);
-    if (fileDownload) {
-      this.localFile = true;
-    }
+    this.filepath = outputPath;
+    return this.filepath;
   }
 
-  setLocalFile(val: boolean) {
-    this.localFile = val;
-  }
-
-  async upload() {
-    if (!this.localFile) {
-      throw new Error(
-        `Upload can't be performed. File "${this.filePath}" does not exist.`
-      );
-    }
-
-    return s3Upload({
-      s3: this.s3,
-      Bucket: this.bucket,
-      inputPath: this.filePath,
-    });
-  }
-
-  getTargetFilePath() {
-    return this.filePath;
-  }
-
-  getFilePath() {
-    if (!this.localFile) {
-      throw new Error(
-        `File "${this.filePath}" does not exist. Can't return file path.`
-      );
-    }
-
-    return this.filePath;
+  async getFilepath(): Promise<string> {
+    if (this.filepath) return this.filepath;
+    this.downloadFromS3Promise =
+      this.downloadFromS3Promise || this.downloadFromS3();
+    return this.downloadFromS3Promise;
   }
 
   async unlink() {
-    if (
-      this.localFile &&
-      (!this.protectOriginal || this.originalFilePath !== this.filePath)
-    ) {
-      await unlink(this.filePath);
-    }
-    this.localFile = false;
+    if (!this.filepath) return;
+    const filepath = await this.getFilepath();
+    await unlink(filepath);
   }
 
-  async measureDimensions() {
-    if (!this.localFile) {
-      throw new Error(
-        `File "${this.filePath}" does not exist. Could not measure dimensions of a missing file.`
-      );
+  async upload(): Promise<string> {
+    if (this.key) {
+      throw new Error("Already uploaded");
     }
+    if (!this.filepath) {
+      throw new Error("No filepath");
+    }
+    const result = await s3Upload({
+      s3: this.s3,
+      Bucket: this.bucket,
+      inputPath: this.filepath,
+    });
+    this.key = result.Key;
+    return this.key;
+  }
+}
 
-    const gf = gmMagick(this.filePath);
-    const dimensions = await promisify((cb: gm.GetterCallback<gm.Dimensions>) =>
-      gf.size(cb)
-    )();
-    this.width = dimensions.width;
-    this.height = dimensions.height;
+export class LocalImageFile extends AbstractImageFile implements ImageFile {
+  filepath: string;
+
+  constructor(params: { filepath: string }) {
+    super();
+    this.filepath = params.filepath;
   }
 
-  async getDimensions() {
-    return { width: this.width, height: this.height };
+  getFilepath(): string {
+    return this.filepath;
   }
 
-  async enlarge({ width, height }: { width: number; height: number }) {
-    if (!this.localFile) {
-      throw new Error(
-        `File "${this.filePath}" does not exist. Could not enlarge missing file.`
-      );
-    }
-
-    const dimensions = await this.getDimensions();
-    if (!dimensions.width || !dimensions.height) this.measureDimensions();
-
-    if (
-      this.width! > width ||
-      this.height! > height ||
-      (this.height === height && this.width === width)
-    ) {
-      return;
-    }
-
-    const tmpFilename = await tmpName({ postfix: ".png" });
-    const gf = transparent(this.filePath, { width, height });
-    await promisify(gf.write.bind(gf))(tmpFilename);
-    if (!this.protectOriginal) await this.unlink();
-    this.filePath = tmpFilename;
-    await this.measureDimensions();
+  async unlink() {
+    // We do not remove images from the local filesystem (used in tests)
   }
 }

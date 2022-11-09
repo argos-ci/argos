@@ -1,4 +1,4 @@
-import type { S3Image } from "@argos-ci/storage";
+import type { ImageFile } from "@argos-ci/storage";
 
 import imageDifference from "./imageDifference.js";
 
@@ -13,18 +13,15 @@ import imageDifference from "./imageDifference.js";
 export const diffImages = async ({
   baseImage,
   compareImage,
-  diffImage,
   fuzz = "10%",
 }: {
-  baseImage: S3Image;
-  compareImage: S3Image;
-  diffImage: S3Image;
+  baseImage: ImageFile;
+  compareImage: ImageFile;
   fuzz?: string | number;
 }) => {
   const difference = await imageDifference({
     baseImage,
     compareImage,
-    diffImage,
     fuzz,
   });
 
@@ -36,5 +33,6 @@ export const diffImages = async ({
     scoreRaw: score,
     width: difference.width,
     height: difference.height,
+    filepath: difference.filepath,
   };
 };

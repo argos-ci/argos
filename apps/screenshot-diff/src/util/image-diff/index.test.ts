@@ -1,35 +1,21 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { S3Image, s3 as s3client } from "@argos-ci/storage";
+import { LocalImageFile } from "@argos-ci/storage";
 
 import { diffImages } from "./index.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
-const s3 = s3client();
 
 describe("#diffImages", () => {
   it("simple", async () => {
-    const result = await diffImages({
-      baseImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/simple/compare.png"),
-        localFile: true,
-        protectOriginal: true,
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/simple/compare.png"),
       }),
-      compareImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/simple/base.png"),
-        localFile: true,
-        protectOriginal: true,
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/simple/base.png"),
       }),
-      diffImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/simple/diff_tmp.png"),
-        localFile: true,
-        protectOriginal: true,
-      }),
-
       fuzz: 900,
     });
 
@@ -38,24 +24,12 @@ describe("#diffImages", () => {
   });
 
   it("simple with enough fuzz", async () => {
-    const result = await diffImages({
-      baseImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/simple/compare.png"),
-        localFile: true,
-        protectOriginal: true,
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/simple/compare.png"),
       }),
-      compareImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/simple/base.png"),
-        localFile: true,
-        protectOriginal: true,
-      }),
-      diffImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/simple/diff_tmp.png"),
-        localFile: true,
-        protectOriginal: true,
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/simple/base.png"),
       }),
       fuzz: 70 ** 2,
     });
@@ -65,24 +39,12 @@ describe("#diffImages", () => {
   });
 
   it("alphaBackground", async () => {
-    const result = await diffImages({
-      baseImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/alphaBackground/compare.png"),
-        localFile: true,
-        protectOriginal: true,
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/alphaBackground/compare.png"),
       }),
-      compareImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/alphaBackground/base.png"),
-        localFile: true,
-        protectOriginal: true,
-      }),
-      diffImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/alphaBackground/diff_tmp.png"),
-        localFile: true,
-        protectOriginal: true,
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/alphaBackground/base.png"),
       }),
     });
 
@@ -91,24 +53,12 @@ describe("#diffImages", () => {
   });
 
   it("boxShadow", async () => {
-    const result = await diffImages({
-      baseImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/boxShadow/compare.png"),
-        localFile: true,
-        protectOriginal: true,
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/boxShadow/compare.png"),
       }),
-      compareImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/boxShadow/base.png"),
-        localFile: true,
-        protectOriginal: true,
-      }),
-      diffImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/boxShadow/diff_tmp.png"),
-        localFile: true,
-        protectOriginal: true,
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/boxShadow/base.png"),
       }),
     });
 
@@ -117,24 +67,12 @@ describe("#diffImages", () => {
   });
 
   it("border", async () => {
-    const result = await diffImages({
-      baseImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/border/compare.png"),
-        localFile: true,
-        protectOriginal: true,
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/border/compare.png"),
       }),
-      compareImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/border/base.png"),
-        localFile: true,
-        protectOriginal: true,
-      }),
-      diffImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/border/diff_tmp.png"),
-        localFile: true,
-        protectOriginal: true,
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/border/base.png"),
       }),
     });
 
@@ -142,24 +80,12 @@ describe("#diffImages", () => {
   });
 
   it("fontAliasing", async () => {
-    const result = await diffImages({
-      baseImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/fontAliasing/compare.png"),
-        localFile: true,
-        protectOriginal: true,
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/fontAliasing/compare.png"),
       }),
-      compareImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/fontAliasing/base.png"),
-        localFile: true,
-        protectOriginal: true,
-      }),
-      diffImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/fontAliasing/diff_tmp.png"),
-        localFile: true,
-        protectOriginal: true,
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/fontAliasing/base.png"),
       }),
     });
 
@@ -167,24 +93,12 @@ describe("#diffImages", () => {
   });
 
   it("imageCompression", async () => {
-    const result = await diffImages({
-      baseImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/imageCompression/compare.png"),
-        localFile: true,
-        protectOriginal: true,
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression/compare.png"),
       }),
-      compareImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/imageCompression/base.png"),
-        localFile: true,
-        protectOriginal: true,
-      }),
-      diffImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/imageCompression/diff_tmp.png"),
-        localFile: true,
-        protectOriginal: true,
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression/base.png"),
       }),
     });
 
@@ -193,27 +107,12 @@ describe("#diffImages", () => {
   });
 
   it("imageCompression2", async () => {
-    const result = await diffImages({
-      baseImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/imageCompression2/compare.png"),
-        localFile: true,
-        protectOriginal: true,
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression2/compare.png"),
       }),
-      compareImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/imageCompression2/base.png"),
-        localFile: true,
-        protectOriginal: true,
-      }),
-      diffImage: new S3Image({
-        s3,
-        filePath: join(
-          __dirname,
-          "__fixtures__/imageCompression2/diff_tmp.png"
-        ),
-        localFile: true,
-        protectOriginal: true,
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression2/base.png"),
       }),
     });
 
@@ -222,27 +121,12 @@ describe("#diffImages", () => {
   });
 
   it("imageCompression3", async () => {
-    const result = await diffImages({
-      baseImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/imageCompression3/compare.png"),
-        localFile: true,
-        protectOriginal: true,
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression3/compare.png"),
       }),
-      compareImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/imageCompression3/base.png"),
-        localFile: true,
-        protectOriginal: true,
-      }),
-      diffImage: new S3Image({
-        s3,
-        filePath: join(
-          __dirname,
-          "__fixtures__/imageCompression3/diff_tmp.png"
-        ),
-        localFile: true,
-        protectOriginal: true,
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression3/base.png"),
       }),
     });
 
@@ -251,24 +135,12 @@ describe("#diffImages", () => {
   });
 
   it("big images", async () => {
-    const result = await diffImages({
-      baseImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/big-images/compare.png"),
-        localFile: true,
-        protectOriginal: true,
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/big-images/compare.png"),
       }),
-      compareImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/big-images/base.png"),
-        localFile: true,
-        protectOriginal: true,
-      }),
-      diffImage: new S3Image({
-        s3,
-        filePath: join(__dirname, "__fixtures__/big-images/diff_tmp.png"),
-        localFile: true,
-        protectOriginal: true,
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/big-images/base.png"),
       }),
     });
 

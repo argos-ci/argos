@@ -1,37 +1,28 @@
 /* eslint-disable import/namespace */
 import { spawn } from "child_process";
-import { mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
 
-import type { S3Image } from "@argos-ci/storage";
+import { tmpName } from "@argos-ci/storage";
+import type { ImageFile } from "@argos-ci/storage";
 
-export const handleRaw = (diff: {
-  raw: string;
-  width: number;
-  height: number;
-}) => {
-  const matches = diff.raw.match(/all: (.+)\n/);
+const getScore = (raw: string) => {
+  const matches = raw.match(/all: (.+)\n/);
   if (!matches) {
-    throw new Error(`Expected raw to contain 'all' but received "${diff.raw}"`);
+    throw new Error(`Expected raw to contain 'all' but received "${raw}"`);
   }
-  return {
-    width: diff.width,
-    height: diff.height,
-    value: parseFloat(matches[1] as string),
-  };
+  return parseFloat(matches[1] as string);
 };
 
 const getDiffArgs = ({
-  baseImageFilePath,
-  compareImageFilePath,
-  diffImageFilename,
+  baseImageFilepath,
+  compareImageFilepath,
+  diffImageFilepath,
   highlightColor,
   lowlightColor,
   fuzz,
 }: {
-  baseImageFilePath: string;
-  compareImageFilePath: string;
-  diffImageFilename: string;
+  baseImageFilepath: string;
+  compareImageFilepath: string;
+  diffImageFilepath: string;
   highlightColor: string;
   lowlightColor: string;
   fuzz: string | number;
@@ -56,18 +47,18 @@ const getDiffArgs = ({
   }
 
   diffArgs.push(
-    baseImageFilePath,
-    compareImageFilePath,
+    baseImageFilepath,
+    compareImageFilepath,
     // If there is no output image, then output to `stdout` (which is ignored)
-    diffImageFilename || "-"
+    diffImageFilepath || "-"
   );
   return diffArgs;
 };
 
 const createDifference = async (options: {
-  baseImageFilePath: string;
-  compareImageFilePath: string;
-  diffImageFilename: string;
+  baseImageFilepath: string;
+  compareImageFilepath: string;
+  diffImageFilepath: string;
   highlightColor: string;
   lowlightColor: string;
   fuzz: string | number;
@@ -92,31 +83,20 @@ const createDifference = async (options: {
   });
 };
 
-async function getMaxDimensions(images: S3Image[]) {
+async function getMaxDimensions(images: ImageFile[]) {
   const imagesDimensions = await Promise.all(
-    images.map(async (image) => {
-      const { width, height } = await image.getDimensions();
-      if (!width || !height) await image.measureDimensions();
-      return image.getDimensions();
-    })
+    images.map(async (image) => image.getDimensions())
   );
 
   return {
-    width: Math.max(
-      ...(imagesDimensions.map(({ width }) => width).filter(Number) as [number])
-    ),
-    height: Math.max(
-      ...(imagesDimensions.map(({ height }) => height).filter(Number) as [
-        number
-      ])
-    ),
+    width: Math.max(...imagesDimensions.map(({ width }) => width)),
+    height: Math.max(...imagesDimensions.map(({ height }) => height)),
   };
 }
 
 export default async function imageDifference(optionsWithoutDefault: {
-  baseImage: S3Image;
-  compareImage: S3Image;
-  diffImage: S3Image;
+  baseImage: ImageFile;
+  compareImage: ImageFile;
   highlightColor?: string;
   lowlightColor?: string;
   fuzz?: string | number;
@@ -124,19 +104,18 @@ export default async function imageDifference(optionsWithoutDefault: {
   const {
     baseImage,
     compareImage,
-    diffImage,
     highlightColor = "red",
     lowlightColor = "none",
     fuzz = "0",
   } = optionsWithoutDefault;
 
-  const [maxDimensions] = await Promise.all([
+  const [maxDimensions, diffImageFilepath] = await Promise.all([
     getMaxDimensions([baseImage, compareImage]),
-    mkdir(dirname(diffImage.getTargetFilePath()), { recursive: true }),
+    tmpName({ postfix: ".png" }),
   ]);
 
   // Resize images to the maximum dimensions
-  await Promise.all([
+  const [baseImageFilepath, compareImageFilepath] = await Promise.all([
     baseImage.enlarge(maxDimensions),
     compareImage.enlarge(maxDimensions),
   ]);
@@ -146,11 +125,14 @@ export default async function imageDifference(optionsWithoutDefault: {
     highlightColor,
     lowlightColor,
     fuzz,
-    baseImageFilePath: baseImage.getFilePath(),
-    compareImageFilePath: compareImage.getFilePath(),
-    diffImageFilename: diffImage.getTargetFilePath(),
+    baseImageFilepath: baseImageFilepath,
+    compareImageFilepath: compareImageFilepath,
+    diffImageFilepath,
   });
-  diffImage.setLocalFile(true);
 
-  return handleRaw({ ...maxDimensions, raw });
+  return {
+    ...maxDimensions,
+    filepath: diffImageFilepath,
+    value: getScore(raw),
+  };
 }
