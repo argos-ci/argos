@@ -202,7 +202,9 @@ CREATE TABLE public.files (
     id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    key character varying(255) NOT NULL
+    key character varying(255) NOT NULL,
+    width integer,
+    height integer
 );
 
 
@@ -579,7 +581,8 @@ CREATE TABLE public.screenshot_diffs (
     "validationStatus" character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "s3Id" character varying(255)
+    "s3Id" character varying(255),
+    "fileId" bigint
 );
 
 
@@ -1348,6 +1351,13 @@ CREATE INDEX screenshot_diffs_comparescreenshotid_index ON public.screenshot_dif
 
 
 --
+-- Name: screenshot_diffs_fileid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_fileid_index ON public.screenshot_diffs USING btree ("fileId");
+
+
+--
 -- Name: screenshots_fileid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1589,6 +1599,14 @@ ALTER TABLE ONLY public.screenshot_diffs
 
 
 --
+-- Name: screenshot_diffs screenshot_diffs_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.screenshot_diffs
+    ADD CONSTRAINT screenshot_diffs_fileid_foreign FOREIGN KEY ("fileId") REFERENCES public.files(id);
+
+
+--
 -- Name: screenshots screenshots_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1724,3 +1742,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022091
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220921142914_remove.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220927074934_add_missing_accounts.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221013113904_add_forced_plan.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221104162900_add_files_dimensions.js', 1, NOW());

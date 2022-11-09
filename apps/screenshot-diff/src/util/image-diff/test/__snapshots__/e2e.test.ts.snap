@@ -8,26 +8,10 @@ exports[`e2e diffing different images 1`] = `
 }
 `;
 
-exports[`e2e diffing different images without an output image 1`] = `
-{
-  "height": 10,
-  "value": 47,
-  "width": 10,
-}
-`;
-
 exports[`e2e diffing different sizes images 1`] = `
 {
   "height": 15,
   "value": 125,
-  "width": 15,
-}
-`;
-
-exports[`e2e diffing images which cannot scale into each other 1`] = `
-{
-  "height": 15,
-  "value": 28,
   "width": 15,
 }
 `;
@@ -37,6 +21,14 @@ exports[`e2e diffing images with big diff 1`] = `
   "height": 4469,
   "value": 4434050,
   "width": 1000,
+}
+`;
+
+exports[`e2e diffing the same image 1`] = `
+{
+  "height": 10,
+  "value": 0,
+  "width": 10,
 }
 `;
 

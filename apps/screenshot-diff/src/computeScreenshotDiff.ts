@@ -1,89 +1,152 @@
 import type { S3Client } from "@aws-sdk/client-s3";
-import { rmdir, unlink } from "node:fs/promises";
-import { join } from "node:path";
-import tmp from "tmp";
+import type { TransactionOrKnex } from "objection";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
-import { raw } from "@argos-ci/database";
-import { ScreenshotDiff } from "@argos-ci/database/models";
-import { download, upload } from "@argos-ci/storage";
+import { raw, transaction } from "@argos-ci/database";
+import { File, Screenshot, ScreenshotDiff } from "@argos-ci/database/models";
+import { S3ImageFile } from "@argos-ci/storage";
 
 import { diffImages } from "./util/image-diff/index.js";
 
-function createTmpDirectory() {
-  return new Promise<string>((resolve, reject) => {
-    tmp.dir((err, path) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(path);
-      }
+const getOrCreateFile = async (
+  values: { key: string; width: number; height: number },
+  trx: TransactionOrKnex
+) => {
+  const file = await File.query(trx).findOne({ key: values.key });
+  if (file) {
+    return file;
+  }
+  return File.query(trx).insert(values).returning("*");
+};
+
+async function patchMissingFileDimensions({
+  s3Image,
+  screenshot,
+}: {
+  s3Image: S3ImageFile;
+  screenshot: Screenshot;
+}) {
+  if (screenshot?.file?.width != null && screenshot?.file?.height != null) {
+    return;
+  }
+  const dimensions = await s3Image.getDimensions();
+  if (screenshot.fileId) {
+    await File.query().findById(screenshot.fileId).patch(dimensions);
+  } else {
+    await transaction(async (trx) => {
+      const file = await getOrCreateFile(
+        {
+          ...dimensions,
+          key: screenshot.s3Id,
+        },
+        trx
+      );
+      await Screenshot.query(trx).findById(screenshot.id).patch({
+        fileId: file.id,
+      });
     });
-  });
+  }
 }
 
 export const computeScreenshotDiff = async (
-  screenshotDiff: ScreenshotDiff,
+  poorScreenshotDiff: ScreenshotDiff,
   { s3, bucket }: { s3: S3Client; bucket: string }
 ) => {
-  screenshotDiff = await screenshotDiff
+  if (poorScreenshotDiff.jobStatus === "complete") return;
+
+  const screenshotDiff = await poorScreenshotDiff
     .$query()
-    .withGraphFetched("[build, baseScreenshot, compareScreenshot]");
+    .withGraphFetched("[build, baseScreenshot.file, compareScreenshot.file]");
 
   if (!screenshotDiff) {
     throw new Error(`Screenshot diff id: \`${screenshotDiff}\` not found`);
   }
 
-  const tmpDir = await createTmpDirectory();
-  const baseScreenshotPath = join(tmpDir, "base");
-  const compareScreenshotPath = join(tmpDir, "compare");
-  const diffResultPath = join(tmpDir, "diff.png");
+  if (!screenshotDiff.compareScreenshot) {
+    throw new Error(
+      `Invariant violation: compareScreenshot should be defined for screenshotDiff id: \`${screenshotDiff.id}\``
+    );
+  }
 
-  await Promise.all([
-    download({
-      s3,
-      outputPath: baseScreenshotPath,
-      Bucket: bucket,
-      Key: screenshotDiff.baseScreenshot!.s3Id,
-    }),
-    download({
-      s3,
-      outputPath: compareScreenshotPath,
-      Bucket: bucket,
-      Key: screenshotDiff.compareScreenshot!.s3Id,
-    }),
-  ]);
+  const baseImage = screenshotDiff.baseScreenshot?.s3Id
+    ? new S3ImageFile({
+        s3,
+        bucket: bucket,
+        key: screenshotDiff.baseScreenshot.s3Id,
+        dimensions:
+          screenshotDiff.baseScreenshot.file?.width != null &&
+          screenshotDiff.baseScreenshot.file?.height != null
+            ? {
+                width: screenshotDiff.baseScreenshot.file.width,
+                height: screenshotDiff.baseScreenshot.file.height,
+              }
+            : null,
+      })
+    : null;
 
-  const difference = await diffImages({
-    actualFilename: compareScreenshotPath,
-    expectedFilename: baseScreenshotPath,
-    diffFilename: diffResultPath,
+  const compareImage = new S3ImageFile({
+    s3,
+    bucket: bucket,
+    key: screenshotDiff.compareScreenshot.s3Id,
+    dimensions:
+      screenshotDiff.compareScreenshot.file?.width != null &&
+      screenshotDiff.compareScreenshot.file?.height != null
+        ? {
+            width: screenshotDiff.compareScreenshot.file.width,
+            height: screenshotDiff.compareScreenshot.file.height,
+          }
+        : null,
   });
 
-  let uploadResult = null;
-  if (difference.score > 0) {
-    uploadResult = await upload({
-      s3,
-      Bucket: bucket,
-      inputPath: diffResultPath,
+  // Patching cannot be done in parallel since the file can be the same and must be created only
+  if (baseImage && screenshotDiff.baseScreenshot) {
+    await patchMissingFileDimensions({
+      screenshot: screenshotDiff.baseScreenshot,
+      s3Image: baseImage,
     });
   }
 
-  await Promise.all([
-    unlink(compareScreenshotPath),
-    unlink(baseScreenshotPath),
-    unlink(diffResultPath),
-  ]);
+  await patchMissingFileDimensions({
+    screenshot: screenshotDiff.compareScreenshot,
+    s3Image: compareImage,
+  });
 
-  await rmdir(tmpDir);
+  if (baseImage && baseImage.key !== compareImage.key && !screenshotDiff.s3Id) {
+    const diffResult = await diffImages({
+      baseImage,
+      compareImage,
+    });
+
+    if (diffResult.score > 0) {
+      const diffImage = new S3ImageFile({
+        s3,
+        bucket: bucket,
+        filepath: diffResult.filepath,
+      });
+      const key = await diffImage.upload();
+      await diffImage.unlink();
+      await transaction(async (trx) => {
+        const diffFile = await File.query(trx)
+          .insert({
+            key,
+            width: diffResult.width,
+            height: diffResult.height,
+          })
+          .returning("*");
+        await ScreenshotDiff.query(trx).findById(screenshotDiff.id).patch({
+          score: diffResult.score,
+          s3Id: diffFile.key,
+          fileId: diffFile.id,
+        });
+      });
+    }
+  }
 
   await ScreenshotDiff.query()
     .findById(screenshotDiff.id)
-    .patch({
-      score: difference.score,
-      jobStatus: "complete",
-      s3Id: uploadResult ? uploadResult.Key : null,
-    });
+    .patch({ jobStatus: "complete" });
+
+  await Promise.all([baseImage?.unlink(), compareImage.unlink()]);
 
   // @ts-ignore
   const [{ complete, diff }] = await ScreenshotDiff.query()

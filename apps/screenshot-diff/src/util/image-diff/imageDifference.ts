@@ -1,83 +1,28 @@
 /* eslint-disable import/namespace */
 import { spawn } from "child_process";
-import gm from "gm";
-import { mkdir, stat, unlink } from "node:fs/promises";
-import { dirname } from "node:path";
-import { promisify } from "node:util";
-import { tmpName as cbTmpName } from "tmp";
-import type { TmpNameCallback, TmpNameOptions } from "tmp";
 
-const tmpName = promisify((options: TmpNameOptions, cb: TmpNameCallback) => {
-  cbTmpName(options, cb);
-});
+import { tmpName } from "@argos-ci/storage";
+import type { ImageFile } from "@argos-ci/storage";
 
-const gmMagick = gm.subClass({ imageMagick: true });
-
-const checkFileExists = async (filename: string) => {
-  try {
-    await stat(filename);
-    return true;
-  } catch (error: any) {
-    if (error.code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-};
-
-const transparent = (
-  filename: string,
-  { width, height }: { width: number; height: number }
-) => {
-  const gmImage = gmMagick(filename);
-  gmImage.background("transparent"); // Fill in new space with white background
-  gmImage.gravity("NorthWest"); // Anchor image to upper-left
-  gmImage.extent(width, height); // Specify new image size
-  return gmImage;
-};
-
-const getImageSize = async (filename: string) => {
-  const gf = gmMagick(filename);
-  return promisify((cb: gm.GetterCallback<gm.Dimensions>) => gf.size(cb))();
-};
-
-export const handleRaw = (diff: {
-  raw: string;
-  width: number;
-  height: number;
-}) => {
-  const matches = diff.raw.match(/all: (.+)\n/);
+const getScore = (raw: string) => {
+  const matches = raw.match(/all: (.+)\n/);
   if (!matches) {
-    throw new Error(`Expected raw to contain 'all' but received "${diff.raw}"`);
+    throw new Error(`Expected raw to contain 'all' but received "${raw}"`);
   }
-  return {
-    width: diff.width,
-    height: diff.height,
-    value: parseFloat(matches[1] as string),
-  };
-};
-
-const resizeImage = async (
-  filename: string,
-  { width, height }: { width: number; height: number }
-) => {
-  const tmpFilename = await tmpName({ postfix: ".png" });
-  const gf = transparent(filename, { width, height });
-  await promisify(gf.write.bind(gf))(tmpFilename);
-  return tmpFilename;
+  return parseFloat(matches[1] as string);
 };
 
 const getDiffArgs = ({
-  actualFilename,
-  expectedFilename,
-  diffFilename,
+  baseImageFilepath,
+  compareImageFilepath,
+  diffImageFilepath,
   highlightColor,
   lowlightColor,
   fuzz,
 }: {
-  actualFilename: string;
-  expectedFilename: string;
-  diffFilename: string;
+  baseImageFilepath: string;
+  compareImageFilepath: string;
+  diffImageFilepath: string;
   highlightColor: string;
   lowlightColor: string;
   fuzz: string | number;
@@ -102,23 +47,24 @@ const getDiffArgs = ({
   }
 
   diffArgs.push(
-    actualFilename,
-    expectedFilename,
+    baseImageFilepath,
+    compareImageFilepath,
     // If there is no output image, then output to `stdout` (which is ignored)
-    diffFilename || "-"
+    diffImageFilepath || "-"
   );
   return diffArgs;
 };
 
 const createDifference = async (options: {
-  actualFilename: string;
-  expectedFilename: string;
-  diffFilename: string;
+  baseImageFilepath: string;
+  compareImageFilepath: string;
+  diffImageFilepath: string;
   highlightColor: string;
   lowlightColor: string;
   fuzz: string | number;
 }) => {
   const diffArgs = getDiffArgs(options);
+
   return new Promise<string>((resolve, reject) => {
     // http://www.imagemagick.org/script/compare.php
     const proc = spawn("compare", diffArgs);
@@ -137,120 +83,56 @@ const createDifference = async (options: {
   });
 };
 
-const resizeIfNecessary = async (
-  filename: string,
-  dimensions: { width: number; height: number },
-  maxDimensions: { width: number; height: number }
-) => {
-  if (
-    dimensions.width !== maxDimensions.width ||
-    dimensions.height !== maxDimensions.height
-  ) {
-    return resizeImage(filename, {
-      width: maxDimensions.width,
-      height: maxDimensions.height,
-    });
-  }
-  return filename;
-};
-
-export async function rawDifference(options: {
-  actualFilename: string;
-  diffFilename: string;
-  expectedFilename: string;
-  highlightColor: string;
-  lowlightColor: string;
-  fuzz: string | number;
-}) {
-  const { actualFilename, expectedFilename, diffFilename, ...other } = options;
-
-  // Check if files exists
-  await Promise.all(
-    [actualFilename, expectedFilename].map(async (filename) => {
-      if (!(await checkFileExists(filename))) {
-        throw new Error(`File "${filename}" does not exist`);
-      }
-    })
+async function getMaxDimensions(images: ImageFile[]) {
+  const imagesDimensions = await Promise.all(
+    images.map(async (image) => image.getDimensions())
   );
 
-  const [actualSize, expectedSize] = await Promise.all([
-    getImageSize(actualFilename),
-    getImageSize(expectedFilename),
-    diffFilename ? mkdir(dirname(diffFilename), { recursive: true }) : null,
-  ]);
-
-  // Find the maximum dimensions
-  const maxDimensions = {
-    width: Math.max(actualSize.width, expectedSize.width),
-    height: Math.max(actualSize.height, expectedSize.height),
+  return {
+    width: Math.max(...imagesDimensions.map(({ width }) => width)),
+    height: Math.max(...imagesDimensions.map(({ height }) => height)),
   };
-
-  // Resize images to the maximum dimensions
-  const [resizedActualFilename, resizedExpectedFilename] = await Promise.all([
-    resizeIfNecessary(actualFilename, actualSize, maxDimensions),
-    resizeIfNecessary(expectedFilename, expectedSize, maxDimensions),
-  ]);
-
-  // Create difference
-  const raw = await createDifference({
-    ...other,
-    actualFilename: resizedActualFilename,
-    expectedFilename: resizedExpectedFilename,
-    diffFilename,
-  });
-
-  // Remove temporary files
-  await Promise.all([
-    resizedActualFilename !== actualFilename
-      ? unlink(resizedActualFilename)
-      : null,
-    resizedExpectedFilename !== expectedFilename
-      ? unlink(resizedExpectedFilename)
-      : null,
-  ]);
-
-  return { ...maxDimensions, raw };
 }
 
 export default async function imageDifference(optionsWithoutDefault: {
-  actualFilename: string;
-  expectedFilename: string;
-  diffFilename: string;
+  baseImage: ImageFile;
+  compareImage: ImageFile;
   highlightColor?: string;
   lowlightColor?: string;
   fuzz?: string | number;
 }) {
   const {
-    actualFilename,
-    expectedFilename,
+    baseImage,
+    compareImage,
     highlightColor = "red",
     lowlightColor = "none",
     fuzz = "0",
-    ...other
   } = optionsWithoutDefault;
 
-  // Assert our options are passed in
-  if (!actualFilename) {
-    throw new Error(
-      "`options.actualFilename` was not passed to `image-difference`"
-    );
-  }
+  const [maxDimensions, diffImageFilepath] = await Promise.all([
+    getMaxDimensions([baseImage, compareImage]),
+    tmpName({ postfix: ".png" }),
+  ]);
 
-  if (!expectedFilename) {
-    throw new Error(
-      "`options.expectedFilename` was not passed to `image-difference`"
-    );
-  }
+  // Resize images to the maximum dimensions
+  const [baseImageFilepath, compareImageFilepath] = await Promise.all([
+    baseImage.enlarge(maxDimensions),
+    compareImage.enlarge(maxDimensions),
+  ]);
 
-  const options = {
-    actualFilename,
-    expectedFilename,
+  // Create difference
+  const raw = await createDifference({
     highlightColor,
     lowlightColor,
     fuzz,
-    ...other,
-  };
+    baseImageFilepath: baseImageFilepath,
+    compareImageFilepath: compareImageFilepath,
+    diffImageFilepath,
+  });
 
-  const difference = await rawDifference(options);
-  return handleRaw(difference);
+  return {
+    ...maxDimensions,
+    filepath: diffImageFilepath,
+    value: getScore(raw),
+  };
 }

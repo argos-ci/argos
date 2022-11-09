@@ -14,14 +14,14 @@ export class Screenshot extends Model {
       name: { type: "string" },
       s3Id: { type: "string" },
       screenshotBucketId: { type: "string" },
-      fileId: { type: "string" },
+      fileId: { type: ["string", "null"] },
     },
   });
 
   name!: string;
   s3Id!: string;
   screenshotBucketId!: string;
-  fileId!: string;
+  fileId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

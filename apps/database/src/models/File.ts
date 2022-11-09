@@ -8,8 +8,12 @@ export class File extends Model {
     required: ["key"],
     properties: {
       key: { type: ["string"] },
+      width: { type: ["number", "null"], minimum: 0 },
+      height: { type: ["number", "null"], minimum: 0 },
     },
   });
 
   key!: string;
+  width!: number | null;
+  height!: number | null;
 }

@@ -1,7 +1,7 @@
 import type { TransactionOrKnex } from "objection";
 
 import { transaction } from "@argos-ci/database";
-import { Build, ScreenshotDiff } from "@argos-ci/database/models";
+import { Build, Screenshot, ScreenshotDiff } from "@argos-ci/database/models";
 import type {
   BuildType,
   Repository,
@@ -59,14 +59,32 @@ const getJobStatus = ({
   compareWithBaseline,
   baseScreenshot,
   sameFileId,
+  compareScreenshot,
 }: {
   compareWithBaseline: boolean;
-  baseScreenshot: boolean;
+  baseScreenshot: Screenshot | null;
   sameFileId: boolean;
+  compareScreenshot: Screenshot;
 }) => {
+  if (
+    baseScreenshot &&
+    (!baseScreenshot?.fileId ||
+      !baseScreenshot.file?.width ||
+      !baseScreenshot.file?.height)
+  ) {
+    return "pending" as const;
+  }
+  if (
+    !compareScreenshot?.fileId ||
+    !compareScreenshot.file?.width ||
+    !compareScreenshot.file?.height
+  ) {
+    return "pending" as const;
+  }
   if (compareWithBaseline) return "complete" as const;
   if (!baseScreenshot) return "complete" as const;
   if (sameFileId) return "complete" as const;
+
   return "pending" as const;
 };
 
@@ -75,7 +93,7 @@ export const createBuildDiffs = async (build: Build) => {
     const richBuild = await build
       .$query(trx)
       .withGraphFetched(
-        "[repository, baseScreenshotBucket.screenshots, compareScreenshotBucket.screenshots]"
+        "[repository, baseScreenshotBucket.screenshots.file, compareScreenshotBucket.screenshots.file]"
       );
 
     const baseScreenshotBucket = await getOrCreateBaseScreenshotBucket(
@@ -124,8 +142,9 @@ export const createBuildDiffs = async (build: Build) => {
           compareScreenshotId: compareScreenshot.id,
           jobStatus: getJobStatus({
             compareWithBaseline,
-            baseScreenshot: Boolean(baseScreenshot),
+            baseScreenshot: baseScreenshot ?? null,
             sameFileId,
+            compareScreenshot,
           }),
           score: sameFileId ? 0 : null,
           validationStatus: "unknown" as const,

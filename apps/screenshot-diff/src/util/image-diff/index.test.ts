@@ -1,16 +1,21 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { LocalImageFile } from "@argos-ci/storage";
+
 import { diffImages } from "./index.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 describe("#diffImages", () => {
   it("simple", async () => {
-    const result = await diffImages({
-      actualFilename: join(__dirname, "__fixtures__/simple/compare.png"),
-      expectedFilename: join(__dirname, "__fixtures__/simple/base.png"),
-      diffFilename: join(__dirname, "__fixtures__/simple/diff_tmp.png"),
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/simple/compare.png"),
+      }),
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/simple/base.png"),
+      }),
       fuzz: 900,
     });
 
@@ -19,10 +24,13 @@ describe("#diffImages", () => {
   });
 
   it("simple with enough fuzz", async () => {
-    const result = await diffImages({
-      actualFilename: join(__dirname, "__fixtures__/simple/compare.png"),
-      expectedFilename: join(__dirname, "__fixtures__/simple/base.png"),
-      diffFilename: join(__dirname, "__fixtures__/simple/diff_tmp.png"),
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/simple/compare.png"),
+      }),
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/simple/base.png"),
+      }),
       fuzz: 70 ** 2,
     });
 
@@ -31,19 +39,13 @@ describe("#diffImages", () => {
   });
 
   it("alphaBackground", async () => {
-    const result = await diffImages({
-      actualFilename: join(
-        __dirname,
-        "__fixtures__/alphaBackground/compare.png"
-      ),
-      expectedFilename: join(
-        __dirname,
-        "__fixtures__/alphaBackground/base.png"
-      ),
-      diffFilename: join(
-        __dirname,
-        "__fixtures__/alphaBackground/diff_tmp.png"
-      ),
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/alphaBackground/compare.png"),
+      }),
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/alphaBackground/base.png"),
+      }),
     });
 
     expect(result.score).toBe(0);
@@ -51,10 +53,13 @@ describe("#diffImages", () => {
   });
 
   it("boxShadow", async () => {
-    const result = await diffImages({
-      actualFilename: join(__dirname, "__fixtures__/boxShadow/compare.png"),
-      expectedFilename: join(__dirname, "__fixtures__/boxShadow/base.png"),
-      diffFilename: join(__dirname, "__fixtures__/boxShadow/diff_tmp.png"),
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/boxShadow/compare.png"),
+      }),
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/boxShadow/base.png"),
+      }),
     });
 
     expect(result.score).toBe(0);
@@ -62,39 +67,39 @@ describe("#diffImages", () => {
   });
 
   it("border", async () => {
-    const result = await diffImages({
-      actualFilename: join(__dirname, "__fixtures__/border/compare.png"),
-      expectedFilename: join(__dirname, "__fixtures__/border/base.png"),
-      diffFilename: join(__dirname, "__fixtures__/border/diff_tmp.png"),
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/border/compare.png"),
+      }),
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/border/base.png"),
+      }),
     });
 
     expect(result.score).toBe(0);
   });
 
   it("fontAliasing", async () => {
-    const result = await diffImages({
-      actualFilename: join(__dirname, "__fixtures__/fontAliasing/compare.png"),
-      expectedFilename: join(__dirname, "__fixtures__/fontAliasing/base.png"),
-      diffFilename: join(__dirname, "__fixtures__/fontAliasing/diff_tmp.png"),
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/fontAliasing/compare.png"),
+      }),
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/fontAliasing/base.png"),
+      }),
     });
 
     expect(result.score).toBeCloseTo(0, 2);
   });
 
   it("imageCompression", async () => {
-    const result = await diffImages({
-      actualFilename: join(
-        __dirname,
-        "__fixtures__/imageCompression/compare.png"
-      ),
-      expectedFilename: join(
-        __dirname,
-        "__fixtures__/imageCompression/base.png"
-      ),
-      diffFilename: join(
-        __dirname,
-        "__fixtures__/imageCompression/diff_tmp.png"
-      ),
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression/compare.png"),
+      }),
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression/base.png"),
+      }),
     });
 
     expect(result.score).toBe(0);
@@ -102,19 +107,13 @@ describe("#diffImages", () => {
   });
 
   it("imageCompression2", async () => {
-    const result = await diffImages({
-      actualFilename: join(
-        __dirname,
-        "__fixtures__/imageCompression2/compare.png"
-      ),
-      expectedFilename: join(
-        __dirname,
-        "__fixtures__/imageCompression2/base.png"
-      ),
-      diffFilename: join(
-        __dirname,
-        "__fixtures__/imageCompression2/diff_tmp.png"
-      ),
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression2/compare.png"),
+      }),
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression2/base.png"),
+      }),
     });
 
     expect(result.score).toBe(0);
@@ -122,19 +121,13 @@ describe("#diffImages", () => {
   });
 
   it("imageCompression3", async () => {
-    const result = await diffImages({
-      actualFilename: join(
-        __dirname,
-        "__fixtures__/imageCompression3/compare.png"
-      ),
-      expectedFilename: join(
-        __dirname,
-        "__fixtures__/imageCompression3/base.png"
-      ),
-      diffFilename: join(
-        __dirname,
-        "__fixtures__/imageCompression3/diff_tmp.png"
-      ),
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression3/compare.png"),
+      }),
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/imageCompression3/base.png"),
+      }),
     });
 
     expect(result.pixels).toBeCloseTo(35, -2);
@@ -142,10 +135,13 @@ describe("#diffImages", () => {
   });
 
   it("big images", async () => {
-    const result = await diffImages({
-      actualFilename: join(__dirname, "__fixtures__/big-images/compare.png"),
-      expectedFilename: join(__dirname, "__fixtures__/big-images/base.png"),
-      diffFilename: join(__dirname, "__fixtures__/big-images/diff_tmp.png"),
+    const { filepath, ...result } = await diffImages({
+      baseImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/big-images/compare.png"),
+      }),
+      compareImage: new LocalImageFile({
+        filepath: join(__dirname, "__fixtures__/big-images/base.png"),
+      }),
     });
 
     expect(result.score).toBeGreaterThan(0.95);

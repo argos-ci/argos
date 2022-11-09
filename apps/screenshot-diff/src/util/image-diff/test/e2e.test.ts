@@ -1,8 +1,11 @@
 // @ts-ignore
 import getPixels from "get-pixels";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 // @ts-ignore
 import rimraf from "rimraf";
+
+import { LocalImageFile } from "@argos-ci/storage";
 
 import imageDifference from "../imageDifference.js";
 
@@ -21,24 +24,39 @@ function getPixelsAsync(filename: string) {
   });
 }
 
-// Clean up actual-files
+async function compareLocalImages(params: {
+  baseFilepath: string;
+  compareFilepath: string;
+}) {
+  return imageDifference({
+    baseImage: new LocalImageFile({
+      filepath: params.baseFilepath,
+    }),
+    compareImage: new LocalImageFile({
+      filepath: params.compareFilepath,
+    }),
+  });
+}
 
 describe("e2e", () => {
   beforeAll(async () => {
-    await rimraf.sync(`${__dirname}/actual-files`);
+    // Clean up actual-files
+    await rimraf.sync(join(__dirname, "/actual-files"));
   });
 
   it("diffing different images", async () => {
-    const difference = await imageDifference({
-      actualFilename: `${__dirname}/test-files/checkerboard.png`,
-      expectedFilename: `${__dirname}/test-files/white.png`,
-      diffFilename: `${__dirname}/actual-files/different.png`,
+    const baseFilename = "checkerboard.png";
+    const compareFilename = "white.png";
+    const diffFileName = "different.png";
+
+    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
+      baseFilepath: join(__dirname, "/test-files", baseFilename),
+      compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
-    const actual = await getPixelsAsync(
-      `${__dirname}/actual-files/different.png`
-    );
+
+    const actual = await getPixelsAsync(diffFilepath);
     const expected = await getPixelsAsync(
-      `${__dirname}/expected-files/different.png`
+      join(__dirname, "/expected-files", diffFileName)
     );
 
     expect(difference).toMatchSnapshot();
@@ -46,15 +64,22 @@ describe("e2e", () => {
   });
 
   it("diffing the same image", async () => {
-    const difference = await imageDifference({
-      actualFilename: `${__dirname}/test-files/checkerboard.png`,
-      expectedFilename: `${__dirname}/test-files/checkerboard.png`,
-      diffFilename: `${__dirname}/actual-files/same.png`,
+    const baseFilename = "checkerboard.png";
+    const compareFilename = "checkerboard.png";
+    const diffFileName = "same.png";
+
+    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
+      baseFilepath: join(__dirname, "/test-files", baseFilename),
+      compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
-    const actual = await getPixelsAsync(`${__dirname}/actual-files/same.png`);
+
+    const actual = await getPixelsAsync(diffFilepath);
     const expected = await getPixelsAsync(
-      `${__dirname}/expected-files/same.png`
+      join(__dirname, "/expected-files", diffFileName)
     );
+
+    expect(difference).toMatchSnapshot();
+    expect(actual).toEqual(expected);
 
     expect(difference).toEqual({
       value: 0,
@@ -65,64 +90,43 @@ describe("e2e", () => {
   });
 
   it("diffing different sizes images", async () => {
-    const difference = await imageDifference({
-      actualFilename: `${__dirname}/test-files/checkerboard-excess.png`,
-      expectedFilename: `${__dirname}/test-files/checkerboard.png`,
-      diffFilename: `${__dirname}/actual-files/different-size.png`,
+    const baseFilename = "checkerboard-excess.png";
+    const compareFilename = "checkerboard.png";
+    const diffFileName = "different-size.png";
+
+    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
+      baseFilepath: join(__dirname, "/test-files", baseFilename),
+      compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
-    const actual = await getPixelsAsync(
-      `${__dirname}/actual-files/different-size.png`
-    );
+
+    const actual = await getPixelsAsync(diffFilepath);
     const expected = await getPixelsAsync(
-      `${__dirname}/expected-files/different-size.png`
+      join(__dirname, "/expected-files", diffFileName)
     );
 
     expect(difference).toMatchSnapshot();
     expect(actual).toEqual(expected);
   });
 
-  it("diffing different images without an output image", async () => {
-    const difference = await imageDifference({
-      actualFilename: `${__dirname}/test-files/checkerboard.png`,
-      expectedFilename: `${__dirname}/test-files/white.png`,
-      diffFilename: `${__dirname}/test-files/diff.png`,
-    });
-
-    expect(difference).toMatchSnapshot();
-  });
-
-  it("diffing images which cannot scale into each other", async () => {
-    const difference = await imageDifference({
-      actualFilename: `${__dirname}/test-files/horizontal.png`,
-      expectedFilename: `${__dirname}/test-files/vertical.png`,
-      diffFilename: `${__dirname}/actual-files/horizontal-vertical.png`,
-    });
-    // const actual = await getPixelsAsync(
-    //   `${__dirname}/actual-files/horizontal-vertical.png`
-    // );
-    // const expected = await getPixelsAsync(
-    //   `${__dirname}/expected-files/horizontal-vertical.png`
-    // );
-
-    expect(difference).toMatchSnapshot();
-    // expect(actual).toEqual(expected);
-  });
-
   it("diffing the same image where 1 has a transparent background", async () => {
-    const difference = await imageDifference({
-      actualFilename: `${__dirname}/test-files/checkerboard-transparent.png`,
-      expectedFilename: `${__dirname}/test-files/checkerboard.png`,
-      diffFilename: `${__dirname}/actual-files/different-transparent.png`,
+    const baseFilename = "checkerboard-transparent.png";
+    const compareFilename = "checkerboard.png";
+
+    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
+      baseFilepath: join(__dirname, "/test-files", baseFilename),
+      compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
 
     expect(difference).toMatchSnapshot();
   });
 
   it("diffing images with big diff", async () => {
-    const difference = await imageDifference({
-      actualFilename: `${__dirname}/test-files/old-site.png`,
-      expectedFilename: `${__dirname}/test-files/new-site.png`,
-      diffFilename: `${__dirname}/actual-files/diff-site.png`,
+    const baseFilename = "old-site.png";
+    const compareFilename = "new-site.png";
+
+    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
+      baseFilepath: join(__dirname, "/test-files", baseFilename),
+      compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
 
     expect(difference).toMatchSnapshot();

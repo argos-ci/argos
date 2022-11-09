@@ -9,6 +9,7 @@ import {
   timestampsSchema,
 } from "../util/schemas.js";
 import { Build } from "./Build.js";
+import { File } from "./File.js";
 import { Screenshot } from "./Screenshot.js";
 
 export class ScreenshotDiff extends Model {
@@ -26,6 +27,7 @@ export class ScreenshotDiff extends Model {
       baseScreenshotId: { type: ["string", "null"] },
       compareScreenshotId: { type: ["string", "null"] },
       s3Id: { type: ["string", "null"] },
+      fileId: { type: ["string", "null"] },
       score: {
         type: ["number", "null"],
         minimum: 0,
@@ -42,6 +44,7 @@ export class ScreenshotDiff extends Model {
   baseScreenshotId!: string | null;
   compareScreenshotId!: string | null;
   s3Id!: string | null;
+  fileId!: string | null;
   score!: number | null;
   jobStatus!: JobStatus;
   validationStatus!: "unknown" | "accepted" | "rejected";
@@ -70,6 +73,14 @@ export class ScreenshotDiff extends Model {
         join: {
           from: "screenshot_diffs.compareScreenshotId",
           to: "screenshots.id",
+        },
+      },
+      file: {
+        relation: Model.HasOneRelation,
+        modelClass: File,
+        join: {
+          from: "screenshot_diffs.fileId",
+          to: "files.id",
         },
       },
     };
