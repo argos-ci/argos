@@ -144,32 +144,56 @@ export const seed = async (knex) => {
       },
     ]);
 
-  const bearFilesDimensions = [
-    { width: 1280, height: 1224 },
-    { width: 1440, height: 1224 },
-    { width: 1920, height: 1224 },
-    { width: 2560, height: 1224 },
-    { width: 320, height: 1224 },
-    { width: 375, height: 1224 },
-    { width: 425, height: 1224 },
-    { width: 768, height: 1224 },
+  const dummiesFilesDimensions = [
+    { width: 375, height: 720 },
+    { width: 375, height: 1024 },
+    { width: 375, height: 1440 },
   ];
 
-  const bearFiles = await knex("files")
+  const bearFilesDimensions = [
+    { width: 1280, height: 1024 },
+    { width: 1440, height: 1024 },
+    { width: 1920, height: 1024 },
+    { width: 2560, height: 1024 },
+    { width: 320, height: 1024 },
+    { width: 375, height: 1024 },
+    { width: 425, height: 1024 },
+    { width: 768, height: 1024 },
+  ];
+
+  const screenshotFiles = await knex("files")
     .returning("*")
-    .insert(
-      bearFilesDimensions.map(({ width, height }) => ({
+    .insert([
+      ...dummiesFilesDimensions.map(({ width, height }) => ({
+        ...timeStamps,
+        width,
+        height,
+        key: `dummy-${width}x${height}.png`,
+      })),
+      ...bearFilesDimensions.map(({ width, height }) => ({
         ...timeStamps,
         width,
         height,
         key: `bear-${width}x${height}.jpg`,
-      }))
-    );
+      })),
+    ]);
 
-  const bearScreenshotIds = await knex("screenshots")
+  const dummiesDiffFileIds = await knex("files")
+    .returning("id")
+    .insert([
+      { ...timeStamps, width: 375, height: 1024, key: "diff-1024-to-720.png" },
+      { ...timeStamps, width: 375, height: 1440, key: "diff-1024-to-1440.png" },
+    ]);
+
+  const [
+    smallDummyScreenshotId,
+    mediumDummyScreenshotId,
+    largeDummyScreenshotId,
+    ...bearScreenshotIds
+  ] = await knex("screenshots")
     .returning("id")
     .insert(
-      bearFiles.map((file) => ({
+      screenshotFiles.map((file) => ({
         ...timeStamps,
         screenshotBucketId: screenshotBuckets[1],
         name: file.key,
@@ -277,6 +301,20 @@ export const seed = async (knex) => {
         ...addedScreenshotDiff,
         compareScreenshotId: id,
       })),
+      {
+        ...updatedScreenshotDiff,
+        s3Id: "diff-1024-to-720.png",
+        baseScreenshotId: mediumDummyScreenshotId,
+        compareScreenshotId: smallDummyScreenshotId,
+        fileId: dummiesDiffFileIds[0],
+      },
+      {
+        ...updatedScreenshotDiff,
+        s3Id: "diff-1024-to-1440.png",
+        baseScreenshotId: mediumDummyScreenshotId,
+        compareScreenshotId: largeDummyScreenshotId,
+        fileId: dummiesDiffFileIds[1],
+      },
       ...duplicate(updatedScreenshotDiff, 30),
     ],
     [acceptedBuildId]: [
