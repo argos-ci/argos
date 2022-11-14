@@ -208,12 +208,7 @@ const useDataState = ({
   const screenshotDiffs: Diff[] =
     data?.repository?.build?.screenshotDiffs.edges ?? [];
 
-  return {
-    screenshotDiffs,
-    complete: Boolean(
-      data && !data?.repository?.build?.screenshotDiffs?.pageInfo?.hasNextPage
-    ),
-  };
+  return screenshotDiffs;
 };
 
 const hydrateGroups = (groups: DiffGroup[], screenshotDiffs: Diff[]) => {
@@ -243,7 +238,8 @@ export const BuildDiffProvider = ({
 }: BuildDiffProviderProps) => {
   const navigate = useNavigate();
   const { expanded, toggleGroup } = useExpandedState();
-  const { screenshotDiffs, complete } = useDataState(params);
+  const screenshotDiffs = useDataState(params);
+  const complete = Boolean(stats && screenshotDiffs.length === stats?.total);
   const firstDiffId = screenshotDiffs[0]?.id ?? null;
 
   // Initial diff from the URL params or the first diff
@@ -325,14 +321,10 @@ export const BuildDiffProvider = ({
     if (initialDiffGroup) {
       toggleGroup(initialDiffGroup.name, true);
       setReady(true);
-    }
-  }, [initialDiffGroup, toggleGroup]);
-
-  useLayoutEffect(() => {
-    if (complete) {
+    } else if (complete) {
       setReady(true);
     }
-  }, [complete]);
+  }, [complete, initialDiffGroup, toggleGroup]);
 
   const value = useMemo(
     (): BuildDiffContextValue => ({

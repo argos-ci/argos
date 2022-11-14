@@ -5,7 +5,8 @@
     "secure": false
   },
   "s3": {
-    "screenshotsBucket": "argos-ci-test"
+    "screenshotsBucket": "argos-ci-test",
+    "publicBaseUrl": "https://ik.imagekit.io/argos/test/"
   },
   "pg": {
     "connection": {

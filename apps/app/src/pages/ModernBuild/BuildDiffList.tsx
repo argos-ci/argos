@@ -105,6 +105,14 @@ const ListHeader = ({
   );
 };
 
+const getImgAttributes = (url: string) => {
+  const src = `${url}?tr=w-262,h-300,c-at_max`;
+  return {
+    src,
+    srcSet: `${src} 1x, ${src},dpr-2 2x, ${src},dpr-3 3x`,
+  };
+};
+
 const DiffImage = memo(({ diff }: { diff: Diff }) => {
   switch (diff.status) {
     case "added":
@@ -112,14 +120,14 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
     case "failed":
       return (
         <img
-          src={diff.compareScreenshot.url}
+          {...getImgAttributes(diff.compareScreenshot.url)}
           className="h-full w-full object-contain"
         />
       );
     case "removed":
       return (
         <img
-          src={diff.baseScreenshot.url}
+          {...getImgAttributes(diff.baseScreenshot.url)}
           className="h-full w-full object-contain"
         />
       );
@@ -127,12 +135,12 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
       return (
         <div className="relative h-full w-full">
           <img
-            src={diff.compareScreenshot.url}
+            {...getImgAttributes(diff.compareScreenshot.url)}
             className="absolute h-full w-full object-contain"
           />
           <div className="absolute inset-0 bg-black bg-opacity-50" />
           <img
-            src={diff.url!}
+            {...getImgAttributes(diff.url!)}
             className="relative z-10 h-full w-full object-contain"
           />
         </div>

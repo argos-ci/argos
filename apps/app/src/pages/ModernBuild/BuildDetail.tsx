@@ -71,6 +71,12 @@ const MissingScreenshotInfo = memo(
   }
 );
 
+const getImgAttributes = (url: string) => {
+  return {
+    src: url,
+  };
+};
+
 const BaseScreenshot = ({ diff }: { diff: Diff }) => {
   switch (diff.status) {
     case "added":
@@ -106,19 +112,22 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
         <div>
           <img
             className="max-h-full"
-            src={diff.baseScreenshot.url}
             alt="Baseline screenshot"
+            {...getImgAttributes(diff.baseScreenshot.url)}
           />
         </div>
       );
     case "updated":
       return (
         <div className="relative">
-          <img className="relative max-h-full opacity-0" src={diff.url!} />
+          <img
+            className="relative max-h-full opacity-0"
+            {...getImgAttributes(diff.url!)}
+          />
           <img
             className="absolute top-0 left-0"
-            src={diff.baseScreenshot.url}
             alt="Baseline screenshot"
+            {...getImgAttributes(diff.baseScreenshot.url)}
           />
         </div>
       );
@@ -136,8 +145,8 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
         <div>
           <img
             className="max-h-full"
-            src={diff.compareScreenshot.url}
             alt="Changes screenshot"
+            {...getImgAttributes(diff.compareScreenshot.url)}
           />
         </div>
       );
@@ -146,8 +155,8 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
         <div>
           <img
             className="max-h-full"
-            src={diff.compareScreenshot.url}
             alt="Failure screenshot"
+            {...getImgAttributes(diff.compareScreenshot.url)}
           />
         </div>
       );
@@ -179,13 +188,17 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
     case "updated":
       return (
         <div className="relative">
-          <img src={diff.compareScreenshot.url} className="absolute" />
+          <img
+            className="absolute"
+            {...getImgAttributes(diff.compareScreenshot.url)}
+          />
           <div
             className={`${opacity} absolute inset-0 bg-black bg-opacity-50`}
           />
           <img
-            src={diff.url!}
             className={`${opacity} relative z-10 max-h-full`}
+            alt="Changes screenshot"
+            {...getImgAttributes(diff.url!)}
           />
         </div>
       );
