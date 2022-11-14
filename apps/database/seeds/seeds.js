@@ -144,25 +144,37 @@ export const seed = async (knex) => {
       },
     ]);
 
-  const bearImages = [
-    "bear-1280x1224.jpg",
-    "bear-1440x1224.jpg",
-    "bear-1920x1224.jpg",
-    "bear-2560x1224.jpg",
-    "bear-320x1224.jpg",
-    "bear-375x1224.jpg",
-    "bear-425x1224.jpg",
-    "bear-768x1224.jpg",
+  const bearFilesDimensions = [
+    { width: 1280, height: 1224 },
+    { width: 1440, height: 1224 },
+    { width: 1920, height: 1224 },
+    { width: 2560, height: 1224 },
+    { width: 320, height: 1224 },
+    { width: 375, height: 1224 },
+    { width: 425, height: 1224 },
+    { width: 768, height: 1224 },
   ];
 
-  const bearScreenshotIds = await await knex("screenshots")
+  const bearFiles = await knex("files")
+    .returning("*")
+    .insert(
+      bearFilesDimensions.map(({ width, height }) => ({
+        ...timeStamps,
+        width,
+        height,
+        key: `bear-${width}x${height}.jpg`,
+      }))
+    );
+
+  const bearScreenshotIds = await knex("screenshots")
     .returning("id")
     .insert(
-      bearImages.map((bearImage) => ({
+      bearFiles.map((file) => ({
         ...timeStamps,
         screenshotBucketId: screenshotBuckets[1],
-        name: bearImage,
-        s3Id: bearImage,
+        name: file.key,
+        s3Id: file.key,
+        fileId: file.id,
       }))
     );
 
