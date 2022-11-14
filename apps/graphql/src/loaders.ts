@@ -22,12 +22,6 @@ const createModelLoader = <TModelClass extends ModelClass<Model>>(
   });
 };
 
-export const ScreenshotLoader = createModelLoader(Screenshot);
-export const ScreenshotBucketLoader = createModelLoader(ScreenshotBucket);
-export const ScreenshotDiffLoader = createModelLoader(ScreenshotDiff);
-export const RepositoryLoader = createModelLoader(Repository);
-export const FileLoader = createModelLoader(File);
-
 type AggregatedStatus =
   | "accepted"
   | "rejected"
@@ -40,8 +34,8 @@ type AggregatedStatus =
   | "error"
   | "aborted";
 
-export const buildLoader = new DataLoader<Build, AggregatedStatus>(
-  async (builds) => {
+const createBuildAggregatedStatusLoader = () =>
+  new DataLoader<Build, AggregatedStatus>(async (builds) => {
     const reviewStatuses = await Build.getReviewStatuses(builds as Build[]);
     const conclusions = await Build.getConclusions(builds as Build[]);
     const statuses = await Build.getStatuses(builds as Build[]);
@@ -51,5 +45,13 @@ export const buildLoader = new DataLoader<Build, AggregatedStatus>(
       if (conclusions[index]) return conclusions[index];
       return statuses[index];
     }) as AggregatedStatus[];
-  }
-);
+  });
+
+export const createLoaders = () => ({
+  Screenshot: createModelLoader(Screenshot),
+  ScreenshotBucket: createModelLoader(ScreenshotBucket),
+  ScreenshotDiff: createModelLoader(ScreenshotDiff),
+  Repository: createModelLoader(Repository),
+  File: createModelLoader(File),
+  BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
+});

@@ -4,6 +4,7 @@ import {
   ApolloServerPluginLandingPageGraphQLPlayground,
 } from "apollo-server-core";
 import { ApolloServer } from "apollo-server-express";
+import { getContext } from "./context.js";
 
 import { schema } from "./schema.js";
 
@@ -14,7 +15,7 @@ export const apolloServer = new ApolloServer({
       : ApolloServerPluginLandingPageGraphQLPlayground(),
   ],
   schema,
-  context: ({ req }) => ({ user: req.user || null }),
+  context: ({ req }) => getContext({ req }),
   formatError: (error) => {
     // We do want to report errors that are intentionally inside the resolvers.
     if (!error.originalError || error.originalError.name !== "APIError") {

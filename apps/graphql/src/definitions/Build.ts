@@ -5,11 +5,6 @@ import { knex } from "@argos-ci/database";
 import { Account, Build, ScreenshotDiff } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
-import {
-  RepositoryLoader,
-  ScreenshotBucketLoader,
-  buildLoader,
-} from "../loaders.js";
 import { APIError } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
@@ -209,24 +204,48 @@ export const resolvers = {
         limit,
       });
     },
-    compareScreenshotBucket: async (build: Build) => {
-      return ScreenshotBucketLoader.load(build.compareScreenshotBucketId);
+    compareScreenshotBucket: async (
+      build: Build,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
+      return context.loaders.ScreenshotBucket.load(
+        build.compareScreenshotBucketId
+      );
     },
-    compositeStatus: async (build: Build) => {
+    compositeStatus: async (
+      build: Build,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
       if (build.type && build.type !== "check") {
         return build.type;
       }
-      return buildLoader.load(build);
+      return context.loaders.BuildAggregatedStatus.load(build);
     },
-    baseScreenshotBucket: async (build: Build) => {
+    baseScreenshotBucket: async (
+      build: Build,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
       if (!build.baseScreenshotBucketId) return null;
-      return ScreenshotBucketLoader.load(build.baseScreenshotBucketId);
+      return context.loaders.ScreenshotBucket.load(
+        build.baseScreenshotBucketId
+      );
     },
-    repository: async (build: Build) => {
-      return RepositoryLoader.load(build.repositoryId);
+    repository: async (
+      build: Build,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
+      return context.loaders.Repository.load(build.repositoryId);
     },
-    status: async (build: Build) => {
-      return buildLoader.load(build);
+    status: async (
+      build: Build,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
+      return context.loaders.BuildAggregatedStatus.load(build);
     },
     stats: async (build: Build) => {
       const data = (await ScreenshotDiff.query()

@@ -2,8 +2,8 @@ import gqlTag from "graphql-tag";
 
 import type { ScreenshotDiff, Screenshot } from "@argos-ci/database/models";
 
-import { ScreenshotLoader, FileLoader } from "../loaders.js";
 import { getPublicUrl } from "@argos-ci/storage";
+import type { Context } from "../context.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -47,23 +47,37 @@ export const typeDefs = gql`
 
 export const resolvers = {
   ScreenshotDiff: {
-    baseScreenshot: async (screenshotDiff: ScreenshotDiff) => {
+    baseScreenshot: async (
+      screenshotDiff: ScreenshotDiff,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
       if (!screenshotDiff.baseScreenshotId) return null;
-      return ScreenshotLoader.load(screenshotDiff.baseScreenshotId);
+      return context.loaders.Screenshot.load(screenshotDiff.baseScreenshotId);
     },
-    compareScreenshot: async (screenshotDiff: ScreenshotDiff) => {
+    compareScreenshot: async (
+      screenshotDiff: ScreenshotDiff,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
       if (!screenshotDiff.compareScreenshotId) return null;
-      return ScreenshotLoader.load(screenshotDiff.compareScreenshotId);
+      return context.loaders.Screenshot.load(
+        screenshotDiff.compareScreenshotId
+      );
     },
     url: (screenshotDiff: ScreenshotDiff) => {
       if (!screenshotDiff.s3Id) return null;
       return getPublicUrl(screenshotDiff.s3Id);
     },
-    status: async (screenshotDiff: ScreenshotDiff) => {
+    status: async (
+      screenshotDiff: ScreenshotDiff,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
       if (!screenshotDiff.compareScreenshotId) return "removed";
 
       if (screenshotDiff.score === null) {
-        const { name } = await ScreenshotLoader.load(
+        const { name } = await context.loaders.Screenshot.load(
           screenshotDiff.compareScreenshotId
         );
         return name.match("(failed)") ? "failed" : "added";
@@ -71,13 +85,17 @@ export const resolvers = {
 
       return screenshotDiff.score > 0 ? "updated" : "stable";
     },
-    name: async (screenshotDiff: ScreenshotDiff) => {
+    name: async (
+      screenshotDiff: ScreenshotDiff,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
       const [baseScreenshot, compareScreenshot] = await Promise.all([
         screenshotDiff.baseScreenshotId
-          ? ScreenshotLoader.load(screenshotDiff.baseScreenshotId)
+          ? context.loaders.Screenshot.load(screenshotDiff.baseScreenshotId)
           : null,
         screenshotDiff.compareScreenshotId
-          ? ScreenshotLoader.load(screenshotDiff.compareScreenshotId)
+          ? context.loaders.Screenshot.load(screenshotDiff.compareScreenshotId)
           : null,
       ]);
       const name = baseScreenshot?.name || compareScreenshot?.name;
@@ -86,14 +104,22 @@ export const resolvers = {
       }
       return name;
     },
-    width: async (screenshot: Screenshot) => {
+    width: async (
+      screenshot: Screenshot,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
       if (!screenshot.fileId) return null;
-      const file = await FileLoader.load(screenshot.fileId);
+      const file = await context.loaders.File.load(screenshot.fileId);
       return file.width;
     },
-    height: async (screenshot: Screenshot) => {
+    height: async (
+      screenshot: Screenshot,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
       if (!screenshot.fileId) return null;
-      const file = await FileLoader.load(screenshot.fileId);
+      const file = await context.loaders.File.load(screenshot.fileId);
       return file.height;
     },
   },
