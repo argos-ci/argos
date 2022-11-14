@@ -1,8 +1,8 @@
 import gqlTag from "graphql-tag";
 
-import config from "@argos-ci/config";
 import type { Screenshot } from "@argos-ci/database/models";
 import { FileLoader } from "../loaders.js";
+import { getPublicUrl } from "@argos-ci/storage";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -22,10 +22,7 @@ export const typeDefs = gql`
 export const resolvers = {
   Screenshot: {
     url: (screenshot: Screenshot) => {
-      return new URL(
-        `/screenshots/${screenshot.s3Id}`,
-        config.get("server.url")
-      );
+      return getPublicUrl(screenshot.s3Id);
     },
     width: async (screenshot: Screenshot) => {
       if (!screenshot.fileId) return null;

@@ -1,9 +1,9 @@
 import gqlTag from "graphql-tag";
 
-import config from "@argos-ci/config";
 import type { ScreenshotDiff, Screenshot } from "@argos-ci/database/models";
 
 import { ScreenshotLoader, FileLoader } from "../loaders.js";
+import { getPublicUrl } from "@argos-ci/storage";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -57,10 +57,7 @@ export const resolvers = {
     },
     url: (screenshotDiff: ScreenshotDiff) => {
       if (!screenshotDiff.s3Id) return null;
-      return new URL(
-        `/screenshots/${screenshotDiff.s3Id}`,
-        config.get("server.url")
-      );
+      return getPublicUrl(screenshotDiff.s3Id);
     },
     status: async (screenshotDiff: ScreenshotDiff) => {
       if (!screenshotDiff.compareScreenshotId) return "removed";
