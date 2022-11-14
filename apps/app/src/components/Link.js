@@ -15,26 +15,37 @@ export const BaseLink = forwardRef((props, ref) => {
   );
 });
 
-export const Link = forwardRef((props, ref) => (
-  <BaseLink
-    ref={ref}
-    textDecoration={{ _: "none", hover: "underline" }}
-    color="link"
-    cursor="pointer"
-    {...props}
-  />
-));
-
-export const LinkBlock = forwardRef((props, ref) => {
-  return (
+export const Link = forwardRef(
+  /**
+   * @param {any} props
+   * @param {any} ref
+   */
+  (props, ref) => (
     <BaseLink
       ref={ref}
-      borderRadius="md"
-      backgroundColor={{
-        _: "inherit",
-        hover: props.disabled ? "inherit" : "bg-hover",
-      }}
+      textDecoration={{ _: "none", hover: "underline" }}
+      color="link"
+      cursor="pointer"
       {...props}
     />
-  );
-});
+  )
+);
+
+export const LinkBlock = forwardRef(
+  /**
+   * @param {any} props
+   * @param {any} ref
+   */ (props, ref) => {
+    return (
+      <BaseLink
+        ref={ref}
+        borderRadius="md"
+        backgroundColor={{
+          _: "inherit",
+          hover: props.disabled ? "inherit" : "bg-hover",
+        }}
+        {...props}
+      />
+    );
+  }
+);

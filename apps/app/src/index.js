@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 import config from "./config";
+import "./index.css";
 
 if (process.env.NODE_ENV === "production") {
   initSentry({

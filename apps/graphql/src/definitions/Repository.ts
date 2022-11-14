@@ -14,6 +14,7 @@ import type { Context } from "../context.js";
 import { APIError } from "../util.js";
 import { getOwner } from "./Owner.js";
 
+// eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
@@ -110,7 +111,11 @@ export const resolvers = {
       const buildCount = await repository.$relatedQuery("builds").resultSize();
       return buildCount > 0;
     },
-    token: async (repository: Repository, _args: {}, ctx: Context) => {
+    token: async (
+      repository: Repository,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
       if (!ctx.user) return null;
       const hasWritePermission = await repository.$checkWritePermission(
         ctx.user
@@ -121,7 +126,11 @@ export const resolvers = {
     owner: async (repository: Repository) => {
       return repository.$relatedOwner();
     },
-    permissions: async (repository: Repository, _args: {}, ctx: Context) => {
+    permissions: async (
+      repository: Repository,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
       if (!ctx.user) return ["read"];
       const hasWritePermission = await repository.$checkWritePermission(
         ctx.user

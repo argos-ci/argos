@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/swcrc",
   "jsc": {
     "parser": {
-      "syntax": "ecmascript",
-      "jsx": true
+      "syntax": "typescript",
+      "tsx": true
     },
     "loose": true,
     "transform": {

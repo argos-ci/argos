@@ -74,6 +74,8 @@ export const handleGitHubEvents = async ({
             await synchronizeFromInstallationId(installation.id);
             return;
           }
+          default:
+            return;
         }
       }
       case "installation": {

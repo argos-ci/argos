@@ -2,10 +2,10 @@ import gqlTag from "graphql-tag";
 
 import config from "@argos-ci/config";
 import type { ScreenshotDiff } from "@argos-ci/database/models";
-import { s3 as getS3, getSignedGetObjectUrl } from "@argos-ci/storage";
 
 import { ScreenshotLoader } from "../loaders.js";
 
+// eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
@@ -34,6 +34,7 @@ export const typeDefs = gql`
     validationStatus: ValidationStatus!
     status: ScreenshotDiffStatus!
     rank: Int
+    name: String!
   }
 
   type ScreenshotDiffResult {
@@ -54,13 +55,10 @@ export const resolvers = {
     },
     url: (screenshotDiff: ScreenshotDiff) => {
       if (!screenshotDiff.s3Id) return null;
-      const s3 = getS3();
-      return getSignedGetObjectUrl({
-        s3,
-        Bucket: config.get("s3.screenshotsBucket"),
-        Key: screenshotDiff.s3Id,
-        expiresIn: 7200,
-      });
+      return new URL(
+        `/screenshots/${screenshotDiff.s3Id}`,
+        config.get("server.url")
+      );
     },
     status: async (screenshotDiff: ScreenshotDiff) => {
       if (!screenshotDiff.compareScreenshotId) return "removed";
@@ -73,6 +71,21 @@ export const resolvers = {
       }
 
       return screenshotDiff.score > 0 ? "updated" : "stable";
+    },
+    name: async (screenshotDiff: ScreenshotDiff) => {
+      const [baseScreenshot, compareScreenshot] = await Promise.all([
+        screenshotDiff.baseScreenshotId
+          ? ScreenshotLoader.load(screenshotDiff.baseScreenshotId)
+          : null,
+        screenshotDiff.compareScreenshotId
+          ? ScreenshotLoader.load(screenshotDiff.compareScreenshotId)
+          : null,
+      ]);
+      const name = baseScreenshot?.name || compareScreenshot?.name;
+      if (!name) {
+        throw new Error("ScreenshotDiff without name");
+      }
+      return name;
     },
   },
 };

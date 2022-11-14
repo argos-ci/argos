@@ -8,6 +8,7 @@ import auth from "./auth.js";
 import builds from "./builds.js";
 import v2 from "./v2/index.js";
 import webhooks from "./webhooks.js";
+import { screenshots } from "./screenshot.js";
 
 export const installApiRouter = (app: express.Application) => {
   const router = express.Router();
@@ -16,6 +17,7 @@ export const installApiRouter = (app: express.Application) => {
   router.use(builds);
   router.use(auth);
   router.use(webhooks);
+  router.use("/screenshots", screenshots);
 
   router.use(Sentry.Handlers.errorHandler());
 

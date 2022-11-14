@@ -145,7 +145,7 @@ export class GitHubSynchronizer {
           defaultBranch: githubRepository.default_branch,
         };
 
-        let [repository] = await Repository.query().where({
+        const [repository] = await Repository.query().where({
           githubId: githubRepository.id,
         });
 

@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    font-family: theme("fontFamily.sans");
+    background-color: theme("colors.bg");
+    color: theme("colors.on");
+    height: 100%;
+    -webkit-font-smoothing: antialiased;
+    color-scheme: dark;
+  }
+
+  #root {
+    height: 100%;
+  }
+
+  [data-backdrop] {
+    @apply bg-black/70;
+  }
+}

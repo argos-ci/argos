@@ -4,6 +4,7 @@ import type { User } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
 
+// eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
@@ -33,7 +34,7 @@ export const typeDefs = gql`
 
 export const resolvers = {
   Query: {
-    user: async (_root: null, _args: {}, ctx: Context) => {
+    user: async (_root: null, _args: Record<string, never>, ctx: Context) => {
       return ctx.user || null;
     },
   },

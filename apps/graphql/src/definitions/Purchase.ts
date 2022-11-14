@@ -2,6 +2,7 @@ import gqlTag from "graphql-tag";
 
 import type { Purchase } from "@argos-ci/database/models";
 
+// eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`

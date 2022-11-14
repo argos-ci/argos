@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 // @ts-ignore
 import { HttpError } from "express-err";
 import type { TransactionOrKnex } from "objection";
@@ -17,7 +17,7 @@ import { getRedisLock } from "../../../redis/index.js";
 import { asyncHandler } from "../../../util.js";
 import { getUnknownScreenshotKeys } from "./util.js";
 
-const router = express.Router();
+const router = Router();
 export default router;
 
 const validateRoute = validate({
@@ -54,8 +54,8 @@ const validateRoute = validate({
 });
 
 type CreateRequest = express.Request<
-  {},
-  {},
+  Record<string, never>,
+  Record<string, never>,
   {
     commit: string;
     screenshotKeys: string[];

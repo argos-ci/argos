@@ -1,5 +1,5 @@
 import { Handlers } from "@sentry/node";
-import express from "express";
+import express, { Router, static as serveStatic } from "express";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,12 +15,12 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 export const installAppRouter = async (app: express.Application) => {
   const production = config.get("env") === "production";
 
-  const router = express.Router();
+  const router = Router();
 
   // Static directory
   router.use(
     "/static/app",
-    express.static(join(__dirname, "../../app/dist"), {
+    serveStatic(join(__dirname, "../../app/dist"), {
       etag: true,
       lastModified: false,
       maxAge: "1 year",

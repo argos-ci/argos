@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 import * as Sentry from "@sentry/node";
 import compress from "compression";
-import ejs from "ejs";
-import express from "express";
+import { renderFile } from "ejs";
+import express, { static as serveStatic } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import { join } from "node:path";
@@ -18,7 +18,7 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 export const createApp = async () => {
   const app = express();
   app.disable("x-powered-by");
-  app.engine("html", ejs.renderFile);
+  app.engine("html", renderFile);
   app.set("trust proxy", 1);
   app.set("views", join(__dirname, ".."));
 
@@ -63,7 +63,7 @@ export const createApp = async () => {
 
   // Public directory
   app.use(
-    express.static(join(__dirname, "../../../public"), {
+    serveStatic(join(__dirname, "../../../public"), {
       etag: true,
       lastModified: false,
       setHeaders: (res) => {

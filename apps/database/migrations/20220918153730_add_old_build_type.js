@@ -32,4 +32,6 @@ export const up = async (knex) => {
   await knex("builds").whereNull("type").update("type", "check");
 };
 
-export const down = async () => {};
+export const down = async () => {
+  // No rollback
+};
