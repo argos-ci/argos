@@ -83,7 +83,7 @@ export const BuildDetailToolbar = memo(
       : "border-b-transparent";
     return (
       <div
-        className={`${borderClassName} b sticky top-0 flex flex-shrink-0 justify-between gap-4 border-b bg-black/80 p-4 backdrop-blur-[5px] backdrop-saturate-[180%] transition-colors`}
+        className={`${borderClassName} b sticky top-0 z-50 z-20 flex flex-shrink-0 justify-between gap-4 border-b bg-black/80 p-4 backdrop-blur-[5px] backdrop-saturate-[180%] transition-colors`}
       >
         <div className="flex items-center gap-2">
           <div className="flex gap-1">

@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
 
-const LIMIT = 10;
+const LIMIT = 100;
 
 export interface Diff {
   id: string;
