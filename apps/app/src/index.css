@@ -3,10 +3,11 @@
 @tailwind utilities;
 
 @layer base {
-  html, body {
-    font-family: theme('fontFamily.sans');
-    background-color: theme('colors.bg');
-    color: theme('colors.on');
+  html,
+  body {
+    font-family: theme("fontFamily.sans");
+    background-color: theme("colors.bg");
+    color: theme("colors.on");
     height: 100%;
     -webkit-font-smoothing: antialiased;
     color-scheme: dark;
