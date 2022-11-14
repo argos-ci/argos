@@ -111,13 +111,16 @@ export const computeScreenshotDiff = async (
     s3Image: compareImage,
   });
 
+  let score = screenshotDiff.score ?? 0;
+
   if (baseImage && baseImage.key !== compareImage.key && !screenshotDiff.s3Id) {
     const diffResult = await diffImages({
       baseImage,
       compareImage,
     });
+    score = diffResult.score;
 
-    if (diffResult.score > 0) {
+    if (score > 0) {
       const diffImage = new S3ImageFile({
         s3,
         bucket: bucket,
@@ -134,7 +137,7 @@ export const computeScreenshotDiff = async (
           })
           .returning("*");
         await ScreenshotDiff.query(trx).findById(screenshotDiff.id).patch({
-          score: diffResult.score,
+          score,
           s3Id: diffFile.key,
           fileId: diffFile.id,
         });
@@ -144,7 +147,7 @@ export const computeScreenshotDiff = async (
 
   await ScreenshotDiff.query()
     .findById(screenshotDiff.id)
-    .patch({ jobStatus: "complete" });
+    .patch({ jobStatus: "complete", score });
 
   await Promise.all([baseImage?.unlink(), compareImage.unlink()]);
 

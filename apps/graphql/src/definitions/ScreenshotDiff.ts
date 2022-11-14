@@ -8,6 +8,38 @@ import type { Context } from "../context.js";
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
+async function getDiffStatus(
+  screenshotDiff: ScreenshotDiff,
+  _args: Record<string, never>,
+  context: Context
+) {
+  if (!screenshotDiff.compareScreenshotId) return "removed";
+
+  if (!screenshotDiff.baseScreenshotId) {
+    const { name } = await context.loaders.Screenshot.load(
+      screenshotDiff.compareScreenshotId
+    );
+    return name.match("(failed)") ? "failed" : "added";
+  }
+
+  return screenshotDiff.score && screenshotDiff.score > 0
+    ? "updated"
+    : "stable";
+}
+
+export const sortDiffByStatus = `CASE \
+    WHEN "compareScreenshotId" IS NULL \
+      THEN 3 -- REMOVED
+    WHEN "baseScreenshotId" IS NULL \
+      AND "compareScreenshot"."name" LIKE '%failed%' \
+      THEN 0 -- FAILED
+    WHEN "baseScreenshotId" IS NULL  \
+      THEN 2 -- ADDED
+    WHEN "score" IS NOT NULL AND "score" > 0 \
+      THEN 1 -- UPDATED
+    ELSE 4 -- STABLE
+  END ASC`;
+
 export const typeDefs = gql`
   enum ScreenshotDiffStatus {
     added
@@ -69,22 +101,7 @@ export const resolvers = {
       if (!screenshotDiff.s3Id) return null;
       return getPublicUrl(screenshotDiff.s3Id);
     },
-    status: async (
-      screenshotDiff: ScreenshotDiff,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
-      if (!screenshotDiff.compareScreenshotId) return "removed";
-
-      if (screenshotDiff.score === null) {
-        const { name } = await context.loaders.Screenshot.load(
-          screenshotDiff.compareScreenshotId
-        );
-        return name.match("(failed)") ? "failed" : "added";
-      }
-
-      return screenshotDiff.score > 0 ? "updated" : "stable";
-    },
+    status: getDiffStatus,
     name: async (
       screenshotDiff: ScreenshotDiff,
       _args: Record<string, never>,
