@@ -1,9 +1,9 @@
 import gqlTag from "graphql-tag";
 
 import config from "@argos-ci/config";
-import type { ScreenshotDiff } from "@argos-ci/database/models";
+import type { ScreenshotDiff, Screenshot } from "@argos-ci/database/models";
 
-import { ScreenshotLoader } from "../loaders.js";
+import { ScreenshotLoader, FileLoader } from "../loaders.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -35,6 +35,8 @@ export const typeDefs = gql`
     status: ScreenshotDiffStatus!
     rank: Int
     name: String!
+    width: Int
+    height: Int
   }
 
   type ScreenshotDiffResult {
@@ -86,6 +88,16 @@ export const resolvers = {
         throw new Error("ScreenshotDiff without name");
       }
       return name;
+    },
+    width: async (screenshot: Screenshot) => {
+      if (!screenshot.fileId) return null;
+      const file = await FileLoader.load(screenshot.fileId);
+      return file.width;
+    },
+    height: async (screenshot: Screenshot) => {
+      if (!screenshot.fileId) return null;
+      const file = await FileLoader.load(screenshot.fileId);
+      return file.height;
     },
   },
 };

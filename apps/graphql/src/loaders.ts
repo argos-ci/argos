@@ -3,6 +3,7 @@ import type { ModelClass } from "objection";
 
 import {
   Build,
+  File,
   Model,
   Repository,
   Screenshot,
@@ -25,6 +26,7 @@ export const ScreenshotLoader = createModelLoader(Screenshot);
 export const ScreenshotBucketLoader = createModelLoader(ScreenshotBucket);
 export const ScreenshotDiffLoader = createModelLoader(ScreenshotDiff);
 export const RepositoryLoader = createModelLoader(Repository);
+export const FileLoader = createModelLoader(File);
 
 type AggregatedStatus =
   | "accepted"

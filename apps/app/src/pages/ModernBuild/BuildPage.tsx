@@ -1,5 +1,4 @@
-import { gql } from "@apollo/client";
-import { useQuery } from "@apollo/client";
+import { gql, useQuery } from "@apollo/client";
 
 import { BuildHeader } from "./BuildHeader";
 import { BuildHotkeysDialog } from "./BuildHotkeys";
@@ -9,7 +8,6 @@ import type { Build } from "@/modern/containers/Build";
 import type { Repository } from "@/modern/containers/Repository";
 import { BuildWorkspace } from "./BuildWorkspace";
 import { BuildNotFound } from "./BuildNotFound";
-import { Route, Routes } from "react-router-dom";
 
 const BuildQuery = gql`
   query BuildQuery(

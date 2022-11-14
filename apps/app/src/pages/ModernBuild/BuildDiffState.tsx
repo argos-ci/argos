@@ -21,13 +21,19 @@ export interface Diff {
   url: string | null;
   status: "added" | "updated" | "removed" | "stable" | "failed";
   name: string;
+  width: number | null;
+  height: number | null;
   compareScreenshot: {
     id: string;
     url: string;
+    width: number | null;
+    height: number | null;
   };
   baseScreenshot: {
     id: string;
     url: string;
+    width: number | null;
+    height: number | null;
   };
 }
 
@@ -116,13 +122,19 @@ const ScreenshotDiffQuery = gql`
             status
             url
             name
+            width
+            height
             baseScreenshot {
               id
               url
+              width
+              height
             }
             compareScreenshot {
               id
               url
+              width
+              height
             }
           }
         }
