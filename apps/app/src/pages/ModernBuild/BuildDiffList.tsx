@@ -136,7 +136,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
         <div className="relative h-full w-full">
           <img
             {...getImgAttributes(diff.compareScreenshot.url)}
-            className="absolute h-full w-full object-contain"
+            className="absolute max-h-full w-full object-contain"
           />
           <div className="absolute inset-0 bg-black bg-opacity-50" />
           <img
@@ -250,6 +250,32 @@ const useInViewportIndices = (containerRef: React.RefObject<HTMLElement>) => {
   return { observer, getIndicesInViewport };
 };
 
+const getImageHeight = (diff: Diff | null) => {
+  const maxWidth = 247;
+  const defaultImageHeight = 300;
+
+  if (!diff) {
+    return defaultImageHeight;
+  }
+
+  const screenshotWithDimensions = [
+    diff,
+    diff.baseScreenshot,
+    diff.compareScreenshot,
+  ].find(
+    (screenshot) =>
+      Number.isInteger(screenshot?.width) &&
+      Number.isInteger(screenshot?.height)
+  );
+
+  if (!screenshotWithDimensions) {
+    return defaultImageHeight;
+  }
+
+  const { width, height } = screenshotWithDimensions;
+  return Math.round((height! * maxWidth) / width!);
+};
+
 const InternalBuildDiffList = memo(() => {
   const {
     groups,
@@ -305,7 +331,7 @@ const InternalBuildDiffList = memo(() => {
           return headerHeight - (row.borderBottom ? 0 : 1);
         }
         case "item": {
-          const imageHeight = 300;
+          const imageHeight = getImageHeight(row.diff);
           const gap = 16;
           const mt = row.first ? gap / 2 : 0;
           const mb = row.last ? gap / 2 : 0;
@@ -315,6 +341,7 @@ const InternalBuildDiffList = memo(() => {
           return 0;
       }
     },
+    scrollPaddingStart: 30,
     getScrollElement: () => containerRef.current,
     overscan: 20,
     rangeExtractor: useCallback(
@@ -346,7 +373,7 @@ const InternalBuildDiffList = memo(() => {
     const index = getDiffIndex(initialDiff);
     if (index !== -1) {
       scrollToIndexRef.current(index, {
-        align: "center",
+        align: "start",
         smoothScroll: false,
       });
     }
