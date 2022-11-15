@@ -110,6 +110,7 @@ const getImgAttributes = (url: string, height?: number) => {
     ? `${url}?tr=w-247,h-${height},c-at_max`
     : `${url}?tr=w-247,c-at_max`;
   return {
+    key: src,
     src,
     srcSet: `${src} 1x, ${src},dpr-2 2x, ${src},dpr-3 3x`,
   };
