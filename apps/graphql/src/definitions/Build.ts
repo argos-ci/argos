@@ -7,6 +7,7 @@ import { Account, Build, ScreenshotDiff } from "@argos-ci/database/models";
 import type { Context } from "../context.js";
 import { APIError } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
+import { sortDiffByStatus } from "./ScreenshotDiff.js";
 
 const { gql } = gqlTag;
 
@@ -116,20 +117,7 @@ const getSortedDiffsQuery = (build: Build) =>
   build
     .$relatedQuery("screenshotDiffs")
     .leftJoinRelated("[baseScreenshot, compareScreenshot]")
-    // sort screenshots by : "failed", "updated", "added" and "removed", "stable"
-    .orderByRaw(
-      `CASE \
-            WHEN "baseScreenshot"."name" IS NULL AND "compareScreenshot"."name" LIKE '%failed%' \
-              THEN 0 \
-            WHEN "score" IS NOT NULL AND "score" > 0 \
-              THEN 1 \
-            WHEN "baseScreenshot"."name" IS NULL \
-              THEN 3 \
-            WHEN "compareScreenshot"."name" IS NULL \
-              THEN 4 \
-            ELSE 10 \
-          END ASC`
-    )
+    .orderByRaw(sortDiffByStatus)
     .orderBy("compareScreenshot.name", "asc")
     .orderBy("baseScreenshot.name", "asc")
     .orderBy("screenshot_diffs.id", "asc");
