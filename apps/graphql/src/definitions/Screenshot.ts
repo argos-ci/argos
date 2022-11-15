@@ -1,8 +1,8 @@
 import gqlTag from "graphql-tag";
 
 import type { Screenshot } from "@argos-ci/database/models";
-import { FileLoader } from "../loaders.js";
 import { getPublicUrl } from "@argos-ci/storage";
+import type { Context } from "../context.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -24,14 +24,22 @@ export const resolvers = {
     url: (screenshot: Screenshot) => {
       return getPublicUrl(screenshot.s3Id);
     },
-    width: async (screenshot: Screenshot) => {
+    width: async (
+      screenshot: Screenshot,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
       if (!screenshot.fileId) return null;
-      const file = await FileLoader.load(screenshot.fileId);
+      const file = await context.loaders.File.load(screenshot.fileId);
       return file.width;
     },
-    height: async (screenshot: Screenshot) => {
+    height: async (
+      screenshot: Screenshot,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
       if (!screenshot.fileId) return null;
-      const file = await FileLoader.load(screenshot.fileId);
+      const file = await context.loaders.File.load(screenshot.fileId);
       return file.height;
     },
   },
