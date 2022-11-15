@@ -250,12 +250,13 @@ const useInViewportIndices = (containerRef: React.RefObject<HTMLElement>) => {
   return { observer, getIndicesInViewport };
 };
 
-const getImageHeight = (
-  diff: Diff | null,
-  maxWidth = 247,
-  defaultImageHeight = 300
-) => {
-  if (!diff) return defaultImageHeight;
+const getImageHeight = (diff: Diff | null) => {
+  const maxWidth = 247;
+  const defaultImageHeight = 300;
+
+  if (!diff) {
+    return defaultImageHeight;
+  }
 
   const screenshotWithDimensions = [
     diff,
@@ -267,7 +268,9 @@ const getImageHeight = (
       Number.isInteger(screenshot?.height)
   );
 
-  if (!screenshotWithDimensions) return defaultImageHeight;
+  if (!screenshotWithDimensions) {
+    return defaultImageHeight;
+  }
 
   const { width, height } = screenshotWithDimensions;
   return Math.round((height! * maxWidth) / width!);
