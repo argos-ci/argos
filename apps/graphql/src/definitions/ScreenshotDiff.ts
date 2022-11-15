@@ -8,6 +8,11 @@ import type { Context } from "../context.js";
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
+const screenshotFailureRegexp = `(${Object.values({
+  cypress: " \\(failed\\)\\.",
+  playwright: "-failed-",
+}).join("|")})`;
+
 async function getDiffStatus(
   screenshotDiff: ScreenshotDiff,
   _args: Record<string, never>,
@@ -19,7 +24,7 @@ async function getDiffStatus(
     const { name } = await context.loaders.Screenshot.load(
       screenshotDiff.compareScreenshotId
     );
-    return name.match("(failed)") ? "failed" : "added";
+    return name.match(screenshotFailureRegexp) ? "failed" : "added";
   }
 
   return screenshotDiff.score && screenshotDiff.score > 0
@@ -27,11 +32,25 @@ async function getDiffStatus(
     : "stable";
 }
 
+export const selectDiffStatus = `CASE \
+    WHEN "compareScreenshotId" IS NULL \
+      THEN 'removed' \
+    WHEN "baseScreenshotId" IS NULL \
+      AND "name" ~ '${screenshotFailureRegexp}' \
+      THEN 'failed'  \
+    WHEN "baseScreenshotId" IS NULL \
+      THEN 'added' \
+    WHEN "score" IS NOT NULL AND "score" > 0 \
+      THEN 'updated' \
+    ELSE 'stable'  \
+  END \
+  AS status`;
+
 export const sortDiffByStatus = `CASE \
     WHEN "compareScreenshotId" IS NULL \
       THEN 3 -- REMOVED
     WHEN "baseScreenshotId" IS NULL \
-      AND "compareScreenshot"."name" LIKE '%failed%' \
+      AND "compareScreenshot"."name" ~ '${screenshotFailureRegexp}' \
       THEN 0 -- FAILED
     WHEN "baseScreenshotId" IS NULL  \
       THEN 2 -- ADDED
