@@ -7,7 +7,7 @@ import { Account, Build, ScreenshotDiff } from "@argos-ci/database/models";
 import type { Context } from "../context.js";
 import { APIError } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
-import { sortDiffByStatus } from "./ScreenshotDiff.js";
+import { sortDiffByStatus, selectDiffStatus } from "./ScreenshotDiff.js";
 
 const { gql } = gqlTag;
 
@@ -243,18 +243,7 @@ export const resolvers = {
           "screenshot_diffs.compareScreenshotId",
           "screenshots.id"
         )
-        .select(
-          knex.raw(`\
-            CASE \
-              WHEN "compareScreenshotId" IS NULL THEN 'removed' \
-              WHEN name ~ '(failed)' THEN 'failed' \
-              WHEN score IS NULL THEN 'added' \
-              WHEN score = 0 THEN 'stable' \
-              ELSE 'updated' \
-            END \
-            AS status \
-          `)
-        )
+        .select(knex.raw(selectDiffStatus))
         .count("*")
         .groupBy("status")) as unknown as { status: string; count: string }[];
 
