@@ -73,6 +73,7 @@ const MissingScreenshotInfo = memo(
 
 const getImgAttributes = (url: string) => {
   return {
+    key: url,
     src: url,
   };
 };
