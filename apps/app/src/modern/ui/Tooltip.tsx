@@ -104,7 +104,7 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(
     return (
       <AriakitTooltip
         ref={ref}
-        className={`${variantClassName} z-10 rounded border border-tooltip-border bg-tooltip-bg text-tooltip-on`}
+        className={`${variantClassName} z-50 rounded border border-tooltip-border bg-tooltip-bg text-tooltip-on`}
         {...props}
       />
     );
