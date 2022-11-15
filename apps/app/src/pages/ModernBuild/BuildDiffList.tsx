@@ -105,44 +105,63 @@ const ListHeader = ({
   );
 };
 
-const getImgAttributes = (url: string) => {
-  const src = `${url}?tr=w-262,h-300,c-at_max`;
+const getImgAttributes = (url: string, height?: number) => {
+  const src = height
+    ? `${url}?tr=w-247,h-${height},c-at_max`
+    : `${url}?tr=w-247,c-at_max`;
   return {
     src,
     srcSet: `${src} 1x, ${src},dpr-2 2x, ${src},dpr-3 3x`,
   };
 };
 
+const getAspectRatio = ({
+  width,
+  height,
+}: {
+  width?: number | null;
+  height?: number | null;
+}) => (width && height ? `${width} / ${height}` : "auto");
+
 const DiffImage = memo(({ diff }: { diff: Diff }) => {
+  const imageHeight = getImageHeight(diff);
+
   switch (diff.status) {
     case "added":
     case "stable":
     case "failed":
       return (
         <img
-          {...getImgAttributes(diff.compareScreenshot.url)}
+          {...getImgAttributes(diff.compareScreenshot.url, imageHeight)}
           className="h-full w-full object-contain"
         />
       );
     case "removed":
       return (
         <img
-          {...getImgAttributes(diff.baseScreenshot.url)}
+          {...getImgAttributes(diff.baseScreenshot.url, imageHeight)}
           className="h-full w-full object-contain"
         />
       );
     case "updated":
       return (
-        <div className="relative h-full w-full">
-          <img
-            {...getImgAttributes(diff.compareScreenshot.url)}
-            className="absolute max-h-full w-full object-contain"
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-50" />
-          <img
-            {...getImgAttributes(diff.url!)}
-            className="relative z-10 h-full w-full object-contain"
-          />
+        <div className="flex h-full justify-center">
+          <div
+            className="relative"
+            style={{ aspectRatio: getAspectRatio(diff) }}
+          >
+            <img
+              {...getImgAttributes(diff.compareScreenshot.url)}
+              className="absolute w-full"
+              style={{ aspectRatio: getAspectRatio(diff.compareScreenshot) }}
+            />
+            <div className="absolute inset-0 bg-black bg-opacity-50" />
+            <img
+              className="relative z-10 max-h-full w-full"
+              {...getImgAttributes(diff.url!, imageHeight)}
+              style={{ aspectRatio: getAspectRatio(diff) }}
+            />
+          </div>
         </div>
       );
     default:
@@ -273,7 +292,8 @@ const getImageHeight = (diff: Diff | null) => {
   }
 
   const { width, height } = screenshotWithDimensions;
-  return Math.round((height! * maxWidth) / width!);
+  const imageHeight = Math.round((height! * maxWidth) / width!);
+  return Math.min(Math.max(imageHeight, 80), 600);
 };
 
 const InternalBuildDiffList = memo(() => {
