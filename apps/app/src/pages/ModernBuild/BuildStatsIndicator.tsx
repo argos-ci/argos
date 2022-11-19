@@ -3,6 +3,8 @@ import { Button as AriakitButton } from "ariakit/button";
 import type { BuildStats } from "@/modern/containers/Build";
 import type { DiffGroup } from "./BuildDiffState";
 import { getGroupColor, getGroupIcon, GROUPS } from "./BuildDiffGroup";
+import { HotkeyName, useBuildHotkey } from "./BuildHotkeys";
+import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
 
 type StatCountColor = "danger" | "warning" | "success" | "neutral";
 
@@ -20,25 +22,52 @@ const getStatCountColorClassName = (color: StatCountColor) => {
   }
 };
 
+const getStatHotkeyName = (group: DiffGroup["name"]): HotkeyName => {
+  switch (group) {
+    case "failure":
+      return "goToFirstFailure";
+    case "changed":
+      return "goToFirstChanged";
+    case "added":
+      return "goToFirstAdded";
+    case "removed":
+      return "goToFirstRemoved";
+    case "unchanged":
+      return "goToFirstUnchanged";
+    default:
+      throw new Error(`Unknown group: ${group}`);
+  }
+};
+
 interface StatCountProps {
   icon: React.ReactNode;
   count: number;
   color: StatCountColor;
-  onClick: HTMLAttributes<HTMLDivElement>["onClick"];
+  onActive: () => void;
+  hotkeyName: HotkeyName;
 }
 
-const StatCount = ({ icon, count, color, onClick }: StatCountProps) => {
+const StatCount = ({
+  icon,
+  count,
+  color,
+  onActive,
+  hotkeyName,
+}: StatCountProps) => {
   const colorClassName = getStatCountColorClassName(color);
+  const hotkey = useBuildHotkey(hotkeyName, onActive);
   return (
-    <AriakitButton
-      as="div"
-      className={`${colorClassName} flex cursor-default items-center gap-1 p-2 transition aria-disabled:opacity-70`}
-      onClick={onClick}
-      disabled={count === 0}
-    >
-      <span className="[&>*]:h-4 [&>*]:w-4">{icon}</span>
-      <span className="text-xs">{count}</span>
-    </AriakitButton>
+    <HotkeyTooltip keys={hotkey.displayKeys} description={hotkey.description}>
+      <AriakitButton
+        as="div"
+        className={`${colorClassName} flex cursor-default items-center gap-1 p-2 transition aria-disabled:opacity-70`}
+        onClick={onActive}
+        disabled={count === 0}
+      >
+        <span className="[&>*]:h-4 [&>*]:w-4">{icon}</span>
+        <span className="text-xs">{count}</span>
+      </AriakitButton>
+    </HotkeyTooltip>
   );
 };
 
@@ -59,7 +88,8 @@ export const BuildStatsIndicator = memo(
               icon={getGroupIcon(group)}
               count={count}
               color={getGroupColor(group)}
-              onClick={() => onClickGroup(group)}
+              onActive={() => onClickGroup(group)}
+              hotkeyName={getStatHotkeyName(group)}
             />
           );
         })}

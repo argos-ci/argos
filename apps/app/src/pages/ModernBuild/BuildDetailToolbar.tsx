@@ -1,3 +1,4 @@
+import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
 import { IconButton } from "@/modern/ui/IconButton";
 import {
   ArrowUpIcon,
@@ -9,65 +10,89 @@ import { memo } from "react";
 import { useBuildDiffFitState } from "./BuildDiffFitState";
 import { useBuildDiffState } from "./BuildDiffState";
 import { useBuildDiffVisibleState } from "./BuildDiffVisibleState";
+import { useBuildHotkey } from "./BuildHotkeys";
 
-const BuildDiffVisibilityToggle = memo(() => {
+const BuildDiffChangesOverlayToggle = memo(() => {
   const { visible, setVisible } = useBuildDiffVisibleState();
+  const toggle = () => setVisible((visible) => !visible);
+  const hotkey = useBuildHotkey("toggleChangesOverlay", toggle, {
+    preventDefault: true,
+  });
   return (
-    <IconButton
-      color="danger"
-      aria-pressed={visible}
-      onClick={() => setVisible((visible) => !visible)}
+    <HotkeyTooltip
+      description={visible ? "Hide changes overlay" : "Show changes overlay"}
+      keys={hotkey.displayKeys}
     >
-      <EyeIcon />
-    </IconButton>
+      <IconButton color="danger" aria-pressed={visible} onClick={toggle}>
+        <EyeIcon />
+      </IconButton>
+    </HotkeyTooltip>
   );
 });
 
 const BuildDiffFitToggle = memo(() => {
   const { contained, setContained } = useBuildDiffFitState();
+  const toggle = () => setContained((contained) => !contained);
+  const hotkey = useBuildHotkey("toggleDiffFit", toggle, {
+    preventDefault: true,
+  });
   return (
-    <IconButton
-      aria-pressed={contained}
-      onClick={() => setContained((contained) => !contained)}
+    <HotkeyTooltip
+      description={contained ? "Expand the screenshot" : "Fit the screenshot"}
+      keys={hotkey.displayKeys}
     >
-      <ArrowsPointingInIcon />
-    </IconButton>
+      <IconButton aria-pressed={contained} onClick={toggle}>
+        <ArrowsPointingInIcon />
+      </IconButton>
+    </HotkeyTooltip>
   );
 });
 
-const NextBuildButton = memo(() => {
+const NextDiffButton = memo(() => {
   const { diffs, activeDiff, setActiveDiff } = useBuildDiffState();
   const activeDiffIndex = activeDiff ? diffs.indexOf(activeDiff) : -1;
+  const disabled = activeDiffIndex >= diffs.length - 1;
+  const goToNextDiff = () => {
+    if (disabled) return;
+    const nextDiff = diffs[activeDiffIndex + 1];
+    if (nextDiff) {
+      setActiveDiff(nextDiff, true);
+    }
+  };
+  const hotkey = useBuildHotkey("goToNextDiff", goToNextDiff, {
+    preventDefault: true,
+    enabled: !disabled,
+  });
   return (
-    <IconButton
-      disabled={activeDiffIndex >= diffs.length - 1}
-      onClick={() => {
-        const nextDiff = diffs[activeDiffIndex + 1];
-        if (nextDiff) {
-          setActiveDiff(nextDiff, true);
-        }
-      }}
-    >
-      <ArrowDownIcon />
-    </IconButton>
+    <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
+      <IconButton disabled={disabled} onClick={goToNextDiff}>
+        <ArrowDownIcon />
+      </IconButton>
+    </HotkeyTooltip>
   );
 });
 
-const PrevBuildButton = memo(() => {
+const PreviousDiffButton = memo(() => {
   const { diffs, activeDiff, setActiveDiff } = useBuildDiffState();
   const activeDiffIndex = activeDiff ? diffs.indexOf(activeDiff) : -1;
+  const disabled = activeDiffIndex <= 0;
+  const goToPreviousDiff = () => {
+    if (disabled) return;
+    const previousDiff = diffs[activeDiffIndex - 1];
+    if (previousDiff) {
+      setActiveDiff(previousDiff, true);
+    }
+  };
+  const hotkey = useBuildHotkey("goToPreviousDiff", goToPreviousDiff, {
+    preventDefault: true,
+    enabled: !disabled,
+  });
   return (
-    <IconButton
-      disabled={activeDiffIndex <= 0}
-      onClick={() => {
-        const prevDiff = diffs[activeDiffIndex - 1];
-        if (prevDiff) {
-          setActiveDiff(prevDiff, true);
-        }
-      }}
-    >
-      <ArrowUpIcon />
-    </IconButton>
+    <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
+      <IconButton disabled={disabled} onClick={goToPreviousDiff}>
+        <ArrowUpIcon />
+      </IconButton>
+    </HotkeyTooltip>
   );
 });
 
@@ -87,8 +112,8 @@ export const BuildDetailToolbar = memo(
       >
         <div className="flex items-center gap-2">
           <div className="flex gap-1">
-            <PrevBuildButton />
-            <NextBuildButton />
+            <PreviousDiffButton />
+            <NextDiffButton />
           </div>
           <div role="heading" className="text-sm font-medium">
             {name}
@@ -96,7 +121,7 @@ export const BuildDetailToolbar = memo(
         </div>
         <div className="flex gap-2">
           <BuildDiffFitToggle />
-          <BuildDiffVisibilityToggle />
+          <BuildDiffChangesOverlayToggle />
         </div>
       </div>
     );

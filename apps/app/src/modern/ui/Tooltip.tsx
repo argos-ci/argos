@@ -58,18 +58,18 @@ export interface MagicTooltipProps {
   children: React.ReactElement;
 }
 
-export const MagicTooltip = ({
-  tooltip,
-  variant,
-  children,
-}: MagicTooltipProps) => {
-  const state = useTooltipState();
-  return (
-    <>
-      <TooltipAnchor state={state}>{children}</TooltipAnchor>
-      <Tooltip state={state} variant={variant}>
-        {tooltip}
-      </Tooltip>
-    </>
-  );
-};
+export const MagicTooltip = forwardRef<HTMLDivElement, MagicTooltipProps>(
+  ({ tooltip, variant, children }, ref) => {
+    const state = useTooltipState();
+    return (
+      <>
+        <TooltipAnchor state={state} ref={ref}>
+          {children}
+        </TooltipAnchor>
+        <Tooltip state={state} variant={variant}>
+          {tooltip}
+        </Tooltip>
+      </>
+    );
+  }
+);

@@ -8,6 +8,8 @@ import {
 import { BuildInfos, BuildInfosProps } from "./BuildInfos";
 import { BuildDiffList } from "./BuildDiffList";
 import { memo } from "react";
+import { useBuildHotkey } from "./BuildHotkeys";
+import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
 
 const Tab = (props: TabProps) => {
   return (
@@ -22,7 +24,16 @@ export type BuildSidebarProps = BuildInfosProps;
 
 export const BuildSidebar = memo(
   ({ build, githubRepoUrl }: BuildSidebarProps) => {
-    const tab = useTabState();
+    const tab = useTabState({
+      defaultSelectedId: "screenshots",
+    });
+    const hotkey = useBuildHotkey(
+      "toggleSidebarPanel",
+      () => {
+        tab.setSelectedId(tab.next());
+      },
+      { preventDefault: true }
+    );
     return (
       <div className="group/sidebar flex w-[295px] flex-shrink-0 flex-col border-r border-r-border">
         <TabList
@@ -30,19 +41,36 @@ export const BuildSidebar = memo(
           aria-label="Build details"
           className="flex flex-shrink-0 border-b border-b-border px-2"
         >
-          <Tab state={tab}>Screenshots</Tab>
-          <Tab state={tab}>Info</Tab>
+          <HotkeyTooltip
+            keys={hotkey.displayKeys}
+            description="Screenshots"
+            keysEnabled={tab.selectedId !== "screenshots"}
+          >
+            <Tab id="screenshots" state={tab}>
+              Screenshots
+            </Tab>
+          </HotkeyTooltip>
+          <HotkeyTooltip
+            keys={hotkey.displayKeys}
+            description="Info"
+            keysEnabled={tab.selectedId !== "info"}
+          >
+            <Tab id="info" state={tab}>
+              Info
+            </Tab>
+          </HotkeyTooltip>
         </TabList>
 
         <TabPanel
           state={tab}
+          tabId="screenshots"
           tabIndex={-1}
           className="flex min-h-0 flex-1 flex-col"
         >
           <BuildDiffList />
         </TabPanel>
 
-        <TabPanel state={tab} className="flex-1 p-4">
+        <TabPanel state={tab} tabId="info" className="flex-1 p-4">
           <BuildInfos build={build} githubRepoUrl={githubRepoUrl} />
         </TabPanel>
       </div>

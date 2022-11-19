@@ -211,7 +211,7 @@ const ListItem = ({
       data-index={index}
       as="div"
       disabled={!item.diff}
-      className={`group/item w-full cursor-default px-4 ${pt} ${pb}`}
+      className={`group/item w-full cursor-default px-4 focus:outline-none ${pt} ${pb}`}
       style={style}
       onClick={() => {
         if (item.diff) {
