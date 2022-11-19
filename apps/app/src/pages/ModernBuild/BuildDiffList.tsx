@@ -41,10 +41,9 @@ const getRows = (
   groups: DiffGroup[],
   expandedGroups: DiffGroup["name"][]
 ): ListRow[] => {
-  return groups.flatMap((group, groupIndex) => {
-    const count = group.diffs.length;
-    if (count === 0) return [];
-    const last = groupIndex === groups.length - 1;
+  const filledGroups = groups.filter((group) => group.diffs.length > 0);
+  return filledGroups.flatMap((group, groupIndex) => {
+    const last = groupIndex === filledGroups.length - 1;
     const expanded = expandedGroups.includes(group.name);
     const borderBottom = last || expanded;
     const header: ListHeaderRow = {
