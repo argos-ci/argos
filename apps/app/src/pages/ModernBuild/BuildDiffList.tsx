@@ -156,7 +156,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
               className="absolute w-full"
               style={{ aspectRatio: getAspectRatio(diff.compareScreenshot) }}
             />
-            <div className="absolute inset-0 bg-black bg-opacity-50" />
+            <div className="absolute inset-0 bg-black bg-opacity-70" />
             <img
               className="relative z-10 max-h-full w-full"
               {...getImgAttributes(diff.url!, imageHeight)}
