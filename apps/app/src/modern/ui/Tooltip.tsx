@@ -3,72 +3,13 @@ import {
   Tooltip as AriakitTooltip,
   TooltipAnchor as AriakitTooltipAnchor,
 } from "ariakit/tooltip";
-import {
-  forwardRef,
-  Children,
-  cloneElement,
-  createContext,
-  useRef,
-  useState,
-  useMemo,
-  useCallback,
-  useContext,
-  useEffect,
-} from "react";
-import type { ReactNode } from "react";
+import { forwardRef, Children, cloneElement } from "react";
 import type {
   TooltipProps as AriakitTooltipProps,
   TooltipAnchorOptions,
 } from "ariakit/tooltip";
 
-interface TooltipContextValue {
-  active: boolean;
-  toggle: (value: boolean) => void;
-}
-
-const TooltipContext = createContext<TooltipContextValue | null>(null);
-
-export const TooltipProvider = ({
-  children,
-  delay = 800,
-}: {
-  children: ReactNode;
-  delay?: number;
-}) => {
-  const [active, setActive] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
-  const clearTimeoutRef = useCallback(() => {
-    if (timeoutRef.current !== null) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  }, []);
-  const toggle = useCallback(
-    (value: boolean) => {
-      clearTimeoutRef();
-      timeoutRef.current = window.setTimeout(() => setActive(value), delay);
-    },
-    [clearTimeoutRef, delay]
-  );
-  const value = useMemo(() => ({ active, toggle }), [active, toggle]);
-  useEffect(() => clearTimeoutRef, [clearTimeoutRef]);
-  return (
-    <TooltipContext.Provider value={value}>{children}</TooltipContext.Provider>
-  );
-};
-
-export const useTooltipState = () => {
-  const ctx = useContext(TooltipContext);
-  const [open, setOpen] = useState(false);
-  const state = useAriakitTooltipState({
-    setOpen: (value) => {
-      setOpen(value);
-      ctx?.toggle(value);
-    },
-    open: open && ctx ? ctx.active && open : open,
-  });
-  return state;
-};
+export const useTooltipState = () => useAriakitTooltipState({ timeout: 800 });
 
 export interface TooltipAnchorProps extends TooltipAnchorOptions<"div"> {
   children: React.ReactElement;
