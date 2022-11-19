@@ -8,6 +8,7 @@ import type { Build } from "@/modern/containers/Build";
 import type { Repository } from "@/modern/containers/Repository";
 import { BuildWorkspace } from "./BuildWorkspace";
 import { BuildNotFound } from "./BuildNotFound";
+import { useEffect } from "react";
 
 const BuildQuery = gql`
   query BuildQuery(
@@ -102,13 +103,30 @@ interface BuildQueryData {
 }
 
 export const BuildPage = ({ params }: { params: BuildParams }) => {
-  const { data, error } = useQuery<BuildQueryData>(BuildQuery, {
+  const { data, error, refetch } = useQuery<BuildQueryData>(BuildQuery, {
     variables: {
       ownerLogin: params.ownerLogin,
       repositoryName: params.repositoryName,
       buildNumber: params.buildNumber,
     },
   });
+
+  const repository = data?.repository ?? null;
+  const build = repository?.build ?? null;
+  const buildStatusProgress = Boolean(
+    build?.status && (build.status === "pending" || build.status === "progress")
+  );
+
+  useEffect(() => {
+    if (buildStatusProgress) {
+      const interval = setInterval(() => {
+        refetch();
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+    return undefined;
+  }, [buildStatusProgress, refetch]);
 
   if (error) {
     throw error;
@@ -133,13 +151,16 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
           buildNumber={params.buildNumber}
           ownerLogin={params.ownerLogin}
           repositoryName={params.repositoryName}
-          build={data?.repository.build ?? null}
+          build={build}
           repository={data?.repository ?? null}
         />
-        <BuildWorkspace
-          params={params}
-          build={data?.repository.build ?? null}
-        />
+        {repository && build ? (
+          <BuildWorkspace
+            params={params}
+            build={build}
+            repository={repository}
+          />
+        ) : null}
       </div>
     </>
   );
