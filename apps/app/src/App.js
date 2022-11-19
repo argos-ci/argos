@@ -17,7 +17,6 @@ import { NotFoundWithContainer } from "./pages/NotFound";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
 import { Repository } from "./pages/Repository";
-import { TooltipProvider } from "@/modern/ui/Tooltip";
 
 export function App() {
   return (
@@ -65,19 +64,11 @@ export function App() {
                 />
                 <Route
                   path="/:ownerLogin/:repositoryName/builds/:buildNumber/modern"
-                  element={
-                    <TooltipProvider>
-                      <ModernBuild />
-                    </TooltipProvider>
-                  }
+                  element={<ModernBuild />}
                 />
                 <Route
                   path="/:ownerLogin/:repositoryName/builds/:buildNumber/modern/:diffId"
-                  element={
-                    <TooltipProvider>
-                      <ModernBuild />
-                    </TooltipProvider>
-                  }
+                  element={<ModernBuild />}
                 />
                 <Route
                   path="/"

@@ -41,10 +41,9 @@ const getRows = (
   groups: DiffGroup[],
   expandedGroups: DiffGroup["name"][]
 ): ListRow[] => {
-  return groups.flatMap((group, groupIndex) => {
-    const count = group.diffs.length;
-    if (count === 0) return [];
-    const last = groupIndex === groups.length - 1;
+  const filledGroups = groups.filter((group) => group.diffs.length > 0);
+  return filledGroups.flatMap((group, groupIndex) => {
+    const last = groupIndex === filledGroups.length - 1;
     const expanded = expandedGroups.includes(group.name);
     const borderBottom = last || expanded;
     const header: ListHeaderRow = {
@@ -156,7 +155,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
               className="absolute w-full"
               style={{ aspectRatio: getAspectRatio(diff.compareScreenshot) }}
             />
-            <div className="absolute inset-0 bg-black bg-opacity-50" />
+            <div className="absolute inset-0 bg-black bg-opacity-70" />
             <img
               className="relative z-10 max-h-full w-full"
               {...getImgAttributes(diff.url!, imageHeight)}
@@ -211,7 +210,7 @@ const ListItem = ({
       data-index={index}
       as="div"
       disabled={!item.diff}
-      className={`group/item w-full cursor-default px-4 ${pt} ${pb}`}
+      className={`group/item w-full cursor-default px-4 focus:outline-none ${pt} ${pb}`}
       style={style}
       onClick={() => {
         if (item.diff) {

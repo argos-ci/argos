@@ -194,7 +194,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             {...getImgAttributes(diff.compareScreenshot.url)}
           />
           <div
-            className={`${opacity} absolute inset-0 bg-black bg-opacity-50`}
+            className={`${opacity} absolute inset-0 bg-black bg-opacity-70`}
           />
           <img
             className={`${opacity} relative z-10 max-h-full`}
