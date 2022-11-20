@@ -78,6 +78,18 @@ const getImgAttributes = (url: string) => {
   };
 };
 
+const NeutralLink = ({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) => (
+  <a href={href} rel="noopener noreferrer" target="_blank">
+    {children}
+  </a>
+);
+
 const BaseScreenshot = ({ diff }: { diff: Diff }) => {
   switch (diff.status) {
     case "added":
@@ -111,25 +123,29 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
     case "removed":
       return (
         <div>
-          <img
-            className="max-h-full"
-            alt="Baseline screenshot"
-            {...getImgAttributes(diff.baseScreenshot.url)}
-          />
+          <NeutralLink href={diff.baseScreenshot.url}>
+            <img
+              className="max-h-full"
+              alt="Baseline screenshot"
+              {...getImgAttributes(diff.baseScreenshot.url)}
+            />
+          </NeutralLink>
         </div>
       );
     case "updated":
       return (
         <div className="relative">
-          <img
-            className="relative max-h-full opacity-0"
-            {...getImgAttributes(diff.url!)}
-          />
-          <img
-            className="absolute top-0 left-0"
-            alt="Baseline screenshot"
-            {...getImgAttributes(diff.baseScreenshot.url)}
-          />
+          <NeutralLink href={diff.baseScreenshot.url}>
+            <img
+              className="relative max-h-full opacity-0"
+              {...getImgAttributes(diff.url!)}
+            />
+            <img
+              className="absolute top-0 left-0"
+              alt="Baseline screenshot"
+              {...getImgAttributes(diff.baseScreenshot.url)}
+            />
+          </NeutralLink>
         </div>
       );
     default:
@@ -144,21 +160,25 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
     case "added":
       return (
         <div>
-          <img
-            className="max-h-full"
-            alt="Changes screenshot"
-            {...getImgAttributes(diff.compareScreenshot.url)}
-          />
+          <NeutralLink href={diff.compareScreenshot.url}>
+            <img
+              className="max-h-full"
+              alt="Changes screenshot"
+              {...getImgAttributes(diff.compareScreenshot.url)}
+            />
+          </NeutralLink>
         </div>
       );
     case "failed":
       return (
         <div>
-          <img
-            className="max-h-full"
-            alt="Failure screenshot"
-            {...getImgAttributes(diff.compareScreenshot.url)}
-          />
+          <NeutralLink href={diff.compareScreenshot.url}>
+            <img
+              className="max-h-full"
+              alt="Failure screenshot"
+              {...getImgAttributes(diff.compareScreenshot.url)}
+            />
+          </NeutralLink>
         </div>
       );
     case "stable":
@@ -189,18 +209,20 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
     case "updated":
       return (
         <div className="relative">
-          <img
-            className="absolute"
-            {...getImgAttributes(diff.compareScreenshot.url)}
-          />
-          <div
-            className={`${opacity} absolute inset-0 bg-black bg-opacity-70`}
-          />
-          <img
-            className={`${opacity} relative z-10 max-h-full`}
-            alt="Changes screenshot"
-            {...getImgAttributes(diff.url!)}
-          />
+          <NeutralLink href={diff.compareScreenshot.url}>
+            <img
+              className="absolute"
+              {...getImgAttributes(diff.compareScreenshot.url)}
+            />
+            <div
+              className={`${opacity} absolute inset-0 bg-black bg-opacity-70`}
+            />
+            <img
+              className={`${opacity} relative z-10 max-h-full`}
+              alt="Changes screenshot"
+              {...getImgAttributes(diff.url!)}
+            />
+          </NeutralLink>
         </div>
       );
     default:
