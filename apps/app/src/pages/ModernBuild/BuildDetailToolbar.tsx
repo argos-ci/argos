@@ -56,7 +56,6 @@ const NextDiffButton = memo(() => {
     if (disabled) return;
     const nextDiff = diffs[activeDiffIndex + 1];
     if (nextDiff) {
-      console.log("next", nextDiff);
       setActiveDiff(nextDiff, true);
     }
   };
@@ -81,7 +80,6 @@ const PreviousDiffButton = memo(() => {
     if (disabled) return;
     const previousDiff = diffs[activeDiffIndex - 1];
     if (previousDiff) {
-      console.log("previous", previousDiff);
       setActiveDiff(previousDiff, true);
     }
   };
