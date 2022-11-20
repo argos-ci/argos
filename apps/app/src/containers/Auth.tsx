@@ -18,22 +18,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const value = useContext(AuthContext);
+  if (!value) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+  return value;
 }
 
 export function useAuthToken() {
-  const value = useAuth();
-  if (!value) {
-    throw new Error("useAuthToken must be used within AuthProvider");
-  }
-  return value.token;
+  const { token } = useAuth();
+  return token;
 }
 
 export function useLogout() {
-  const value = useAuth();
-  if (!value) {
-    throw new Error("useLogout must be used within AuthProvider");
-  }
-  const { setToken } = value;
+  const { setToken } = useAuth();
   return useCallback(() => setToken(null), [setToken]);
 }
