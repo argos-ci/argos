@@ -1,11 +1,12 @@
 // Taken from convict source code.
-function walk(obj, path, initializeMissing = false) {
+function walk(obj: any, path: string, initializeMissing = false) {
   let newObj = obj;
 
   if (path) {
     const ar = path.split(".");
     while (ar.length) {
       const k = ar.shift();
+      if (!k) continue;
       if (initializeMissing && obj[k] == null) {
         newObj[k] = {};
         newObj = newObj[k];
@@ -21,6 +22,8 @@ function walk(obj, path, initializeMissing = false) {
 }
 
 export default {
-  get: (key) =>
-    window.clientData ? walk(window.clientData.config, key) : null,
+  get: (key: string): any =>
+    (window as any).clientData
+      ? walk((window as any).clientData.config, key)
+      : null,
 };

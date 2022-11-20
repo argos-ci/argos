@@ -14,6 +14,7 @@
     "@primer/octicons-react": "^17.9.0",
     "@sentry/browser": "^7.20.0",
     "@tanstack/react-virtual": "^3.0.0-beta.23",
+    "@types/react-dom": "^18.0.9",
     "@types/react-helmet": "^6.1.5",
     "@xstyled/styled-components": "^3.7.0",
     "ariakit": "^2.0.0-next.41",

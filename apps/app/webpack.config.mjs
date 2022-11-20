@@ -14,7 +14,7 @@ const prod = process.env["NODE_ENV"] === "production";
 
 export default {
   mode: prod ? "production" : "development",
-  entry: "./src/index.js",
+  entry: "./src/index.tsx",
   output: {
     filename: prod ? "[name]-bundle-[chunkhash:8].js" : "[name].js",
     publicPath: "/static/app/",

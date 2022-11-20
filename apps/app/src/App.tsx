@@ -35,7 +35,6 @@ export function App() {
             <UserInitializer>
               <Routes>
                 <Route
-                  exact
                   path="/auth/github/callback"
                   element={<AuthCallback />}
                 />
