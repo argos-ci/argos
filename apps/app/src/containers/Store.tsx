@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import store from "store";
 
-export function useStoreState(name, initialValue = null) {
-  const [state, setState] = useState(() => {
+export const useStoreState = <T,>(name: string, initialValue: T) => {
+  const [state, setState] = useState<T>(() => {
     const value = store.get(name);
     return value === undefined ? initialValue : value;
   });
@@ -13,5 +13,5 @@ export function useStoreState(name, initialValue = null) {
       store.set(name, state);
     }
   }, [name, state]);
-  return [state, setState];
-}
+  return [state, setState] as const;
+};

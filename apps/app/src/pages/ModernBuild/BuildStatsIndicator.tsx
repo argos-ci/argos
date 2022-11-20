@@ -1,4 +1,4 @@
-import { HTMLAttributes, memo } from "react";
+import { memo } from "react";
 import { Button as AriakitButton } from "ariakit/button";
 import type { BuildStats } from "@/modern/containers/Build";
 import type { DiffGroup } from "./BuildDiffState";

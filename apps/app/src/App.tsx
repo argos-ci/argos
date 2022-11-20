@@ -4,7 +4,7 @@ import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 
 import { GlobalStyle, ThemeInitializer } from "./components";
 import { ApolloInitializer } from "./containers/Apollo";
-import { AuthInitializer } from "./containers/Auth";
+import { AuthProvider } from "./containers/Auth";
 import { Layout } from "./containers/Layout";
 import { ScrollToTop } from "./containers/Router";
 import { UserInitializer } from "./containers/User";
@@ -18,7 +18,7 @@ import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
 import { Repository } from "./pages/Repository";
 
-export function App() {
+export const App = () => {
   return (
     <>
       <Helmet
@@ -30,7 +30,7 @@ export function App() {
 
       <BrowserRouter>
         <ScrollToTop />
-        <AuthInitializer>
+        <AuthProvider>
           <ApolloInitializer>
             <UserInitializer>
               <Routes>
@@ -100,8 +100,8 @@ export function App() {
               </Routes>
             </UserInitializer>
           </ApolloInitializer>
-        </AuthInitializer>
+        </AuthProvider>
       </BrowserRouter>
     </>
   );
-}
+};

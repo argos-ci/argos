@@ -11,6 +11,14 @@
     },
     "setup": {
       "cache": false
+    },
+    "check-types": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "//#check-types": {
+      "dependsOn": [],
+      "outputs": []
     }
   },
   "globalDependencies": ["tsconfig.json", ".swcrc"]
