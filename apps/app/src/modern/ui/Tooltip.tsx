@@ -63,7 +63,7 @@ export const MagicTooltip = forwardRef<HTMLDivElement, MagicTooltipProps>(
     const state = useTooltipState();
     return (
       <>
-        <TooltipAnchor state={state} ref={ref}>
+        <TooltipAnchor ref={ref} state={state}>
           {children}
         </TooltipAnchor>
         <Tooltip state={state} variant={variant}>

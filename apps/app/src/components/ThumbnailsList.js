@@ -2,7 +2,6 @@ import { ChevronRightIcon } from "@primer/octicons-react";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { x } from "@xstyled/styled-components";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router-dom";
 
 import { HOTKEYS } from "@/pages/Build/Hotkeys";
@@ -227,11 +226,11 @@ export function ThumbnailsList({
     navigate(`${buildUrl}/${group.firstRank}`, { replace: true });
   };
 
-  useHotkeys(HOTKEYS.goToFirstSection.shortcut, () => goToSection(0));
-  useHotkeys(HOTKEYS.goToSecondSection.shortcut, () => goToSection(1));
-  useHotkeys(HOTKEYS.goToThirdSection.shortcut, () => goToSection(2));
-  useHotkeys(HOTKEYS.goToFourthSection.shortcut, () => goToSection(3));
-  useHotkeys(HOTKEYS.goToFifthSection.shortcut, () => goToSection(4));
+  // useHotkeys(HOTKEYS.goToFirstSection.shortcut, () => goToSection(0));
+  // useHotkeys(HOTKEYS.goToSecondSection.shortcut, () => goToSection(1));
+  // useHotkeys(HOTKEYS.goToThirdSection.shortcut, () => goToSection(2));
+  // useHotkeys(HOTKEYS.goToFourthSection.shortcut, () => goToSection(3));
+  // useHotkeys(HOTKEYS.goToFifthSection.shortcut, () => goToSection(4));
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,

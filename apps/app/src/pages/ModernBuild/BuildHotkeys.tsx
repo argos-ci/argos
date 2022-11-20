@@ -1,5 +1,4 @@
-import { memo, useLayoutEffect, useRef } from "react";
-import { useHotkeys } from "react-hotkeys-hook";
+import { memo, useEffect, useLayoutEffect, useRef } from "react";
 
 import {
   Dialog,
@@ -20,57 +19,57 @@ const isMacOS = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
 export const hotkeys = {
   goToFirstFailure: {
-    keys: ["1", "shift+1"],
+    keys: ["Digit1"],
     displayKeys: ["1"],
     description: "Go to first failure screenshot",
-  },
+  } as Hotkey,
   goToFirstChanged: {
-    keys: ["2", "shift+2"],
+    keys: ["Digit2"],
     displayKeys: ["2"],
     description: "Go to first changed screenshot",
-  },
+  } as Hotkey,
   goToFirstAdded: {
-    keys: ["3", "shift+3"],
+    keys: ["Digit3"],
     displayKeys: ["3"],
     description: "Go to first added screenshot",
-  },
+  } as Hotkey,
   goToFirstRemoved: {
-    keys: ["4", "shift+4"],
+    keys: ["Digit4"],
     displayKeys: ["4"],
     description: "Go to first removed screenshot",
-  },
+  } as Hotkey,
   goToFirstUnchanged: {
-    keys: ["5", "shift+5"],
+    keys: ["Digit5"],
     displayKeys: ["5"],
     description: "Go to first unchanged screenshot",
-  },
+  } as Hotkey,
   toggleSidebarPanel: {
-    keys: ["meta+b"],
+    keys: ["⌘", "KeyB"],
     displayKeys: isMacOS ? ["⌘", "B"] : ["Ctrl", "B"],
     description: "Toggle info/screenshots sidebar panel",
   } as Hotkey,
   goToNextDiff: {
-    keys: ["down"],
+    keys: ["ArrowDown"],
     displayKeys: ["↓"],
     description: "Go to next screenshot",
   } as Hotkey,
   goToPreviousDiff: {
-    keys: ["up"],
+    keys: ["ArrowUp"],
     displayKeys: ["↑"],
     description: "Go to previous screenshot",
   } as Hotkey,
   toggleChangesOverlay: {
-    keys: ["d"],
+    keys: ["KeyD"],
     displayKeys: ["D"],
     description: "Toggle changes overlay",
   } as Hotkey,
   toggleDiffFit: {
-    keys: ["space"],
+    keys: ["Space"],
     displayKeys: ["Space"],
     description: "Toggle fit to screen",
   } as Hotkey,
   toggleHotkeysDialog: {
-    keys: ["?", "shift+?"],
+    keys: ["?"],
     displayKeys: ["?"],
     description: "Open this dialog",
   } as Hotkey,
@@ -80,21 +79,42 @@ export type HotkeyName = keyof typeof hotkeys;
 
 export const useBuildHotkey = (
   name: HotkeyName,
-  callback: Parameters<typeof useHotkeys>[1],
-  options?: Parameters<typeof useHotkeys>[2]
+  callback: (event: KeyboardEvent) => void,
+  options?: {
+    preventDefault?: boolean;
+    enabled?: boolean;
+  }
 ) => {
-  const callbackRef = useRef(callback);
+  const hotkey = hotkeys[name];
+  const { preventDefault = true, enabled = true } = options ?? {};
+  const optionsWithDefaults = { preventDefault, enabled };
+  const refs = useRef({ callback, options: optionsWithDefaults });
   useLayoutEffect(() => {
-    callbackRef.current = callback;
+    refs.current.callback = callback;
+    refs.current.options = optionsWithDefaults;
   });
-  useHotkeys(
-    hotkeys[name].keys,
-    (...events) => {
-      callbackRef.current(...events);
-    },
-    options
-  );
-  return hotkeys[name];
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => {
+      const { options, callback } = refs.current;
+      if (!options.enabled) return;
+      const matchKeys = hotkey.keys.every((key) => {
+        if (key === "⌘") {
+          if (isMacOS && event.metaKey) return true;
+          if (!isMacOS && event.ctrlKey) return true;
+          return false;
+        }
+        return key === event.code || key === event.key;
+      });
+      if (!matchKeys) return;
+      if (options.preventDefault) event.preventDefault();
+      callback(event);
+    };
+    document.addEventListener("keydown", listener);
+    return () => {
+      document.removeEventListener("keydown", listener);
+    };
+  }, [hotkey]);
+  return hotkey;
 };
 
 const Kbd = ({ children }: { children: React.ReactNode }) => (

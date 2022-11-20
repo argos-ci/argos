@@ -43,7 +43,6 @@
     "react-cool-inview": "^3.0.1",
     "react-dom": "^18.2.0",
     "react-helmet": "^6.1.0",
-    "react-hotkeys-hook": "^4.0.2",
     "react-router-dom": "^6.3.0",
     "react-teleporter": "^3.0.2",
     "store": "^2.0.12",

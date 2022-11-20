@@ -7,18 +7,19 @@ import {
 } from "ariakit/tab";
 import { BuildInfos, BuildInfosProps } from "./BuildInfos";
 import { BuildDiffList } from "./BuildDiffList";
-import { memo } from "react";
+import { forwardRef, memo } from "react";
 import { useBuildHotkey } from "./BuildHotkeys";
 import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
 
-const Tab = (props: TabProps) => {
+const Tab = forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
   return (
     <AriakitTab
+      ref={ref}
       className="cursor-default px-2 text-sm font-medium leading-10 text-tab-on transition hover:text-tab-hover-on aria-selected:text-tab-selected-on"
       {...props}
     />
   );
-};
+});
 
 export type BuildSidebarProps = BuildInfosProps;
 
