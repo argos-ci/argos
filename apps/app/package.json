@@ -4,9 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "webpack-dev-server",
-    "build": "NODE_ENV=production webpack",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build": "NODE_ENV=production webpack"
   },
   "sideEffects": false,
   "devDependencies": {
@@ -15,12 +13,6 @@
     "@heroicons/react": "^2.0.12",
     "@primer/octicons-react": "^17.4.1",
     "@sentry/browser": "^7.10.0",
-    "@storybook/addon-essentials": "^7.0.0-alpha.38",
-    "@storybook/addon-interactions": "^7.0.0-alpha.38",
-    "@storybook/addon-links": "^7.0.0-alpha.38",
-    "@storybook/react": "^7.0.0-alpha.38",
-    "@storybook/react-webpack5": "^7.0.0-alpha.38",
-    "@storybook/testing-library": "^0.0.13",
     "@tanstack/react-virtual": "^3.0.0-beta.18",
     "@types/react-helmet": "^6.1.5",
     "@xstyled/styled-components": "^3.6.0",
@@ -31,7 +23,6 @@
     "css-loader": "^6.7.2",
     "eslint-plugin-react": "^7.30.1",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-storybook": "^0.6.6",
     "file-loader": "^6.2.0",
     "graphql-tag": "^2.12.6",
     "mini-css-extract-plugin": "^2.6.1",
@@ -46,7 +37,6 @@
     "react-router-dom": "^6.3.0",
     "react-teleporter": "^3.0.2",
     "store": "^2.0.12",
-    "storybook": "^7.0.0-alpha.38",
     "styled-components": "^5.3.5",
     "swc-loader": "^0.2.3",
     "tailwindcss": "^3.2.2",
