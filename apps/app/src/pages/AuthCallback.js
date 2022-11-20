@@ -1,5 +1,4 @@
 import axios from "axios";
-import { parse as parseQs } from "query-string";
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -12,7 +11,9 @@ const api = axios.create({
 export function AuthCallback() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { code, r } = parseQs(location.search);
+  const params = new URLSearchParams(location.search);
+  const code = params.get("code");
+  const r = params.get("r");
   const { setToken } = useAuth();
   useEffect(() => {
     api

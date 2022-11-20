@@ -57,7 +57,7 @@ jobs:
         run: npm run lint
 
       - name: Check types
-        run: npx tsc
+        run: npx turbo run check-types
 
       - name: Check Prettier
         run: npx prettier --check .

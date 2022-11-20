@@ -4,7 +4,6 @@ import { x } from "@xstyled/styled-components";
 import { gql } from "graphql-tag";
 import { useCallback, useRef, useState } from "react";
 import { Helmet } from "react-helmet";
-import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
@@ -272,34 +271,6 @@ const BuildContent = ({
       });
     },
     [fetchMore, dataRef]
-  );
-
-  useHotkeys(
-    HOTKEYS.toggleContainedScreenshots.shortcut,
-    () => setContainedScreenshots((prev) => !prev),
-    { preventDefault: true }
-  );
-  useHotkeys(HOTKEYS.toggleHotkeysDialog.shortcut, hotkeysDialog.toggle);
-  useHotkeys(HOTKEYS.toggleChangesOverlay.shortcut, () =>
-    setShowChanges((prev) => !prev)
-  );
-  useHotkeys(
-    HOTKEYS.previousDiff.shortcut,
-    () => {
-      if (previousRank.current) {
-        navigate(`${buildUrl}/${previousRank.current}`, { replace: true });
-      }
-    },
-    { preventDefault: true }
-  );
-  useHotkeys(
-    HOTKEYS.nextDiff.shortcut,
-    () => {
-      if (nextRank.current) {
-        navigate(`${buildUrl}/${nextRank.current}`, { replace: true });
-      }
-    },
-    { preventDefault: true }
   );
 
   if (!data || loading) return <LoadingAlert mt={10} />;

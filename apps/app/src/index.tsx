@@ -6,7 +6,7 @@ import { App } from "./App";
 import config from "./config";
 import "./index.css";
 
-if (process.env.NODE_ENV === "production") {
+if (process.env["NODE_ENV"] === "production") {
   initSentry({
     dsn: config.get("sentry.clientDsn"),
     environment: config.get("sentry.environment"),
@@ -14,10 +14,9 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-const renderRoot = () => {
-  const container = document.querySelector("#root");
-  const root = createRoot(container);
-  root.render(<App />);
-};
-
-renderRoot();
+const container = document.querySelector("#root");
+if (!container) {
+  throw new Error("No #root element found");
+}
+const root = createRoot(container);
+root.render(<App />);

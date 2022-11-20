@@ -12,51 +12,10 @@ import {
   MenuItemIcon,
 } from "@/modern/ui/Menu";
 import { MagicTooltip } from "@/modern/ui/Tooltip";
-import { Button, ButtonArrow, ButtonIcon } from "@/modern/ui/Button";
-import { getBuildIcon, getBuildColor } from "./Build";
-
-// import { MagicTooltip } from "@/modern/ui/Tooltip";
-
-// import {
-//   Alert,
-//   Button,
-//   HeadlessMenuButton,
-//   Icon,
-//   Menu,
-//   MenuButtonArrow,
-//   MenuItem,
-//   ParagraphTooltip,
-//   TooltipAnchor,
-//   useMenuState,
-//   useTooltipState,
-// } from "@/components";
-// import { getBuildStatusIcon } from "@/containers/BuildStatus";
+import { Button, ButtonArrow } from "@/modern/ui/Button";
+import { getBuildIcon } from "./Build";
 import { hasWritePermission } from "@/modern/containers/Permission";
-import { IconButton } from "@/modern/ui/IconButton";
 import { gql, useMutation } from "@apollo/client";
-
-// export const ReviewButtonBuildFragment = gql`
-//   fragment ReviewButtonBuildFragment on Build {
-//     id
-//     status
-//     type
-//   }
-// `;
-
-// export const ReviewButtonRepositoryFragment = gql`
-//   fragment ReviewButtonRepositoryFragment on Repository {
-//     name
-//     permissions
-//     private
-//   }
-// `;
-
-// export const ReviewButtonOwnerFragment = gql`
-//   fragment ReviewButtonOwnerFragment on Owner {
-//     name
-//     consumptionRatio
-//   }
-// `;
 
 interface BaseReviewButtonProps {
   build: Pick<Build, "id" | "status">;

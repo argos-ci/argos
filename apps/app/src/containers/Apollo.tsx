@@ -1,6 +1,7 @@
 import {
   ApolloClient,
   ApolloProvider as BaseApolloProvider,
+  DocumentNode,
   InMemoryCache,
   useQuery as useApolloQuery,
 } from "@apollo/client";
@@ -8,7 +9,13 @@ import { useMemo } from "react";
 
 import { useAuthToken } from "./Auth";
 
-function ApolloProvider({ children, authToken }) {
+function ApolloProvider({
+  children,
+  authToken,
+}: {
+  children: React.ReactNode;
+  authToken: string | null;
+}) {
   const authorization = authToken ? `Bearer ${authToken}` : null;
   const apolloClient = useMemo(
     () =>
@@ -19,9 +26,7 @@ function ApolloProvider({ children, authToken }) {
             Owner: ["User", "Organization"],
           },
         }),
-        headers: {
-          authorization,
-        },
+        headers: authorization ? { authorization } : {},
       }),
     [authorization]
   );
@@ -30,20 +35,29 @@ function ApolloProvider({ children, authToken }) {
   );
 }
 
-export function ApolloInitializer({ children }) {
+export function ApolloInitializer({ children }: { children: React.ReactNode }) {
   const authToken = useAuthToken();
   return <ApolloProvider authToken={authToken}>{children}</ApolloProvider>;
 }
 
-export function useQuery(query, options) {
+export const useQuery: typeof useApolloQuery = (query, options) => {
   const { loading, error, data, ...others } = useApolloQuery(query, options);
   if (error) {
     throw error;
   }
   return { loading, data, ...others };
-}
+};
 
-export function Query({ fallback = null, children, query, ...props }) {
+export const Query = ({
+  fallback = null,
+  children,
+  query,
+  ...props
+}: {
+  children: (data: any) => React.ReactNode;
+  fallback?: React.ReactNode;
+  query: DocumentNode;
+}) => {
   const { data } = useQuery(query, props);
 
   if (!data) {
@@ -51,4 +65,4 @@ export function Query({ fallback = null, children, query, ...props }) {
   }
 
   return children(data);
-}
+};
