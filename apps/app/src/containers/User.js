@@ -41,13 +41,6 @@ export function UserInitializer({ children }) {
     }
   }, [loading, token, data, logout]);
   const user = token && !loading ? data.user : null;
-  useEffect(() => {
-    if (user) {
-      window.gtag("set", { user_id: user.id });
-    } else {
-      window.gtag("set", { user_id: null });
-    }
-  }, [user]);
   const value = useMemo(() => ({ user, refetch }), [user, refetch]);
   if (loading && token) return null;
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

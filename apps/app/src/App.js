@@ -6,7 +6,7 @@ import { GlobalStyle, ThemeInitializer } from "./components";
 import { ApolloInitializer } from "./containers/Apollo";
 import { AuthInitializer } from "./containers/Auth";
 import { Layout } from "./containers/Layout";
-import { GoogleAnalytics, ScrollToTop } from "./containers/Router";
+import { ScrollToTop } from "./containers/Router";
 import { UserInitializer } from "./containers/User";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Build } from "./pages/Build";
@@ -30,7 +30,6 @@ export function App() {
 
       <BrowserRouter>
         <ScrollToTop />
-        <GoogleAnalytics />
         <AuthInitializer>
           <ApolloInitializer>
             <UserInitializer>
