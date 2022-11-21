@@ -11,12 +11,16 @@ import {
   BuildDiffFitStateProvider,
   useBuildDiffFitState,
 } from "./BuildDiffFitState";
+import { checkIsBuildEmpty } from "@/modern/containers/Build";
 import { useScrollListener } from "@/modern/ui/useScrollListener";
 import { getGroupIcon } from "./BuildDiffGroup";
 import { FragmentType, graphql, useFragment, DocumentType } from "@/gql";
 
 export const BuildFragment = graphql(`
   fragment BuildDetail_Build on Build {
+    stats {
+      total: screenshotCount
+    }
     baseScreenshotBucket {
       branch
       createdAt
@@ -306,6 +310,11 @@ export const BuildDetail = (props: {
             <BuildScreenshots build={build} diff={activeDiff} />
           </BuildDiffFitStateProvider>
         </BuildDiffVisibleStateProvider>
+      ) : checkIsBuildEmpty(build) ? (
+        <div className="m-4 rounded-lg border border-info-500 px-4 py-2 text-info-500">
+          No screenshot has been uploaded. Be sure to specify a directory
+          containing images in your upload script.
+        </div>
       ) : null}
     </div>
   );

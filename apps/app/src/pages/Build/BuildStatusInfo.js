@@ -79,7 +79,7 @@ export function BuildStatusInfo({ statusInfoType, referenceBranch }) {
       return "This build was performed on the reference branch. Screenshots will be used as a comparison baseline in next Argos builds";
 
     case "empty":
-      return "Empty build: no screenshot has been uploaded. It may result of a wrong uploaded repository's path.";
+      return "No screenshot has been uploaded. Be sure to specify a directory containing images in your upload script.";
 
     case "stable":
       return "This build is stable: no screenshot change detected.";
