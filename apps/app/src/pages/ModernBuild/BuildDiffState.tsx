@@ -15,8 +15,6 @@ import { useNavigate } from "react-router-dom";
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
 
-const LIMIT = 100;
-
 export interface Diff {
   id: string;
   url?: string | null;
@@ -159,7 +157,7 @@ const useDataState = ({
       repositoryName,
       buildNumber,
       offset: 0,
-      limit: LIMIT,
+      limit: 20,
     },
   });
   if (error) {
@@ -173,6 +171,7 @@ const useDataState = ({
       fetchMore({
         variables: {
           offset: data.repository.build.screenshotDiffs.edges.length,
+          limit: 100,
         },
         updateQuery: (prev, { fetchMoreResult }) => {
           if (!fetchMoreResult?.repository?.build?.screenshotDiffs.edges)
