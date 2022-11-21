@@ -1,7 +1,7 @@
 import { checkIsBuildEmpty, checkIsBuildIncomplete } from "./Build";
 import type { Build } from "./Build";
 import type { Repository } from "./Repository";
-import { Link } from "@/modern/ui/Link";
+import { Anchor } from "@/modern/ui/Link";
 import { Code } from "@/modern/ui/Code";
 
 export interface BuildStatusDescriptionProps {
@@ -79,7 +79,7 @@ export const BuildStatusDescription = ({
               Build has been killed because it took too much time.
               <br />
               If you are having trouble with this issue reach us on{" "}
-              <Link to="https://discord.gg/pK79sv85Vg">Discord</Link>.
+              <Anchor href="https://discord.gg/pK79sv85Vg">Discord</Anchor>.
             </>
           );
         }
@@ -90,7 +90,7 @@ export const BuildStatusDescription = ({
               The build failed to be processed.
               <br />
               If you are having trouble with this issue reach us on{" "}
-              <Link to="https://discord.gg/pK79sv85Vg">Discord</Link>.
+              <Anchor href="https://discord.gg/pK79sv85Vg">Discord</Anchor>.
             </>
           );
 

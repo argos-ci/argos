@@ -1,5 +1,5 @@
 import type { Build } from "@/modern/containers/Build";
-import { Link } from "@/modern/ui/Link";
+import { Anchor } from "@/modern/ui/Link";
 import { Time } from "@/modern/ui/Time";
 
 const Dt = ({ children }: { children: React.ReactNode }) => {
@@ -18,9 +18,9 @@ const CommitLink = ({
   commit: string;
 }) => {
   return (
-    <Link className="font-mono" to={`${githubRepoUrl}/commit/${commit}`}>
+    <Anchor className="font-mono" href={`${githubRepoUrl}/commit/${commit}`}>
       {commit.slice(0, 7)}
-    </Link>
+    </Anchor>
   );
 };
 
