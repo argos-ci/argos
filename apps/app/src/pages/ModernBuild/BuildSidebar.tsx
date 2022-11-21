@@ -5,11 +5,12 @@ import {
   TabProps,
   useTabState,
 } from "ariakit/tab";
-import { BuildInfos, BuildInfosProps } from "./BuildInfos";
+import { BuildInfos } from "./BuildInfos";
 import { BuildDiffList } from "./BuildDiffList";
 import { forwardRef, memo } from "react";
 import { useBuildHotkey } from "./BuildHotkeys";
 import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
+import { FragmentType, graphql, useFragment } from "@/gql";
 
 const Tab = forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
   return (
@@ -21,10 +22,18 @@ const Tab = forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
   );
 });
 
-export type BuildSidebarProps = BuildInfosProps;
+export const BuildFragment = graphql(`
+  fragment BuildSidebar_Build on Build {
+    ...BuildInfos_Build
+  }
+`);
 
 export const BuildSidebar = memo(
-  ({ build, githubRepoUrl }: BuildSidebarProps) => {
+  (props: {
+    githubRepoUrl: string;
+    build: FragmentType<typeof BuildFragment>;
+  }) => {
+    const build = useFragment(BuildFragment, props.build);
     const tab = useTabState({
       defaultSelectedId: "screenshots",
     });
@@ -72,7 +81,7 @@ export const BuildSidebar = memo(
         </TabPanel>
 
         <TabPanel state={tab} tabId="info" className="flex-1 p-4">
-          <BuildInfos build={build} githubRepoUrl={githubRepoUrl} />
+          <BuildInfos build={build} githubRepoUrl={props.githubRepoUrl} />
         </TabPanel>
       </div>
     );

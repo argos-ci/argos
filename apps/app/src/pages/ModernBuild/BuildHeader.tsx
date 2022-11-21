@@ -1,15 +1,12 @@
-import { memo } from "react";
+import { ComponentProps, memo } from "react";
 import { Link } from "react-router-dom";
 import { MagicTooltip } from "@/modern/ui/Tooltip";
 import { BrandShield } from "@/components/BrandShield";
 import { BuildStatusChip } from "@/modern/containers/BuildStatusChip";
-import type { BuildStatusChipProps } from "@/modern/containers/BuildStatusChip";
 import { GitHubLoginButton } from "@/modern/containers/GitHub";
-import {
-  ReviewButton,
-  ReviewButtonProps,
-} from "@/modern/containers/ReviewButton";
+import { ReviewButton } from "@/modern/containers/ReviewButton";
 import { useUser } from "@/containers/User";
+import { FragmentType, graphql, useFragment } from "@/gql";
 
 const BrandLink = memo(() => {
   return (
@@ -42,46 +39,53 @@ const RepositoryLink = memo(
   }
 );
 
-export interface BuildHeaderProps {
-  buildNumber: number;
-  ownerLogin: string;
-  repositoryName: string;
-  build: BuildStatusChipProps["build"] | null;
-  repository:
-    | (BuildStatusChipProps["repository"] & ReviewButtonProps["repository"])
-    | null;
-}
-
 const BuildReviewButton = memo(
-  ({ repository }: { repository: ReviewButtonProps["repository"] }) => {
+  (props: {
+    repository: ComponentProps<typeof ReviewButton>["repository"];
+  }) => {
     const user = useUser();
     return user ? (
-      <ReviewButton repository={repository} />
+      <ReviewButton repository={props.repository} />
     ) : (
       <GitHubLoginButton />
     );
   }
 );
 
+export const BuildFragment = graphql(`
+  fragment BuildHeader_Build on Build {
+    ...BuildStatusChip_Build
+  }
+`);
+
+export const RepositoryFragment = graphql(`
+  fragment BuildHeader_Repository on Repository {
+    ...BuildStatusChip_Repository
+    ...ReviewButton_Repository
+  }
+`);
+
 export const BuildHeader = memo(
-  ({
-    buildNumber,
-    ownerLogin,
-    repositoryName,
-    build,
-    repository,
-  }: BuildHeaderProps) => {
+  (props: {
+    buildNumber: number;
+    ownerLogin: string;
+    repositoryName: string;
+    build: FragmentType<typeof BuildFragment> | null;
+    repository: FragmentType<typeof RepositoryFragment> | null;
+  }) => {
+    const build = useFragment(BuildFragment, props.build);
+    const repository = useFragment(RepositoryFragment, props.repository);
     return (
       <div className="flex flex-none flex-grow-0 items-center justify-between border-b border-b-border p-4">
         <div className="flex h-[32px] items-center gap-4">
           <BrandLink />
           <div className="flex flex-col justify-center">
             <div className="mb-1 text-sm font-medium leading-none">
-              Build {buildNumber}
+              Build {props.buildNumber}
             </div>
             <RepositoryLink
-              ownerLogin={ownerLogin}
-              repositoryName={repositoryName}
+              ownerLogin={props.ownerLogin}
+              repositoryName={props.repositoryName}
             />
           </div>
           {build && repository ? (

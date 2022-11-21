@@ -1,20 +1,34 @@
 import { checkIsBuildEmpty, checkIsBuildIncomplete } from "./Build";
-import type { Build } from "./Build";
-import type { Repository } from "./Repository";
 import { Anchor } from "@/modern/ui/Link";
 import { Code } from "@/modern/ui/Code";
 
-export interface BuildStatusDescriptionProps {
-  build: Pick<Build, "type" | "status" | "batchCount" | "totalBatch"> & {
-    stats: Pick<Build["stats"], "total">;
-  };
-  repository: Pick<Repository, "referenceBranch">;
-}
+import { graphql, FragmentType, useFragment } from "@/gql";
 
-export const BuildStatusDescription = ({
-  build,
-  repository,
-}: BuildStatusDescriptionProps) => {
+export const BuildFragment = graphql(`
+  fragment BuildStatusDescription_Build on Build {
+    type
+    status
+    batchCount
+    totalBatch
+    stats {
+      total: screenshotCount
+    }
+  }
+`);
+
+export const RepositoryFragment = graphql(`
+  fragment BuildStatusDescription_Repository on Repository {
+    referenceBranch
+  }
+`);
+
+export const BuildStatusDescription = (props: {
+  build: FragmentType<typeof BuildFragment>;
+  repository: FragmentType<typeof RepositoryFragment>;
+}) => {
+  const build = useFragment(BuildFragment, props.build);
+  const repository = useFragment(RepositoryFragment, props.repository);
+
   switch (build.type) {
     case "orphan":
       return (

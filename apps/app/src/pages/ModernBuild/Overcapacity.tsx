@@ -2,16 +2,29 @@ import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import { memo } from "react";
 
 import { Banner, Icon, Link } from "@/components";
+import { graphql } from "@/gql";
 
-export interface OvercapacityBannerProps {
-  plan: { name: string } | null;
-  consumptionRatio: number | null;
-  ownerLogin: string;
-}
+import { FragmentType, useFragment } from "@/gql/fragment-masking";
+
+export const OwnerFragment = graphql(`
+  fragment OvercapacityBanner_Owner on Owner {
+    plan {
+      name
+    }
+    consumptionRatio
+  }
+`);
 
 export const OvercapacityBanner = memo(
-  ({ plan, consumptionRatio, ownerLogin }: OvercapacityBannerProps) => {
-    const visible = plan && consumptionRatio && consumptionRatio >= 0.9;
+  (props: {
+    ownerLogin: string;
+    owner: FragmentType<typeof OwnerFragment>;
+  }) => {
+    const { ownerLogin } = props;
+    const owner = useFragment(OwnerFragment, props.owner);
+    const { plan, consumptionRatio } = owner;
+    const visible =
+      plan && typeof consumptionRatio === "number" && consumptionRatio >= 0.9;
 
     if (!visible) {
       return null;

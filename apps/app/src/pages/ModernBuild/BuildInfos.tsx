@@ -1,5 +1,5 @@
-import type { Build } from "@/modern/containers/Build";
 import { Anchor } from "@/modern/ui/Link";
+import { FragmentType, graphql, useFragment } from "@/gql";
 import { Time } from "@/modern/ui/Time";
 
 const Dt = ({ children }: { children: React.ReactNode }) => {
@@ -24,24 +24,26 @@ const CommitLink = ({
   );
 };
 
-export interface BuildInfosProps {
-  build:
-    | (Pick<Build, "createdAt"> & {
-        stats: Pick<Build["stats"], "total">;
-        baseScreenshotBucket: Pick<
-          Exclude<Build["baseScreenshotBucket"], null>,
-          "commit"
-        > | null;
-        compareScreenshotBucket: Pick<
-          Build["compareScreenshotBucket"],
-          "commit"
-        >;
-      })
-    | null;
-  githubRepoUrl: string;
-}
+export const BuildFragment = graphql(`
+  fragment BuildInfos_Build on Build {
+    createdAt
+    stats {
+      total: screenshotCount
+    }
+    baseScreenshotBucket {
+      commit
+    }
+    compareScreenshotBucket {
+      commit
+    }
+  }
+`);
 
-export const BuildInfos = ({ build, githubRepoUrl }: BuildInfosProps) => {
+export const BuildInfos = (props: {
+  githubRepoUrl: string;
+  build: FragmentType<typeof BuildFragment>;
+}) => {
+  const build = useFragment(BuildFragment, props.build);
   return (
     <dl>
       <Dt>Created</Dt>
@@ -57,7 +59,7 @@ export const BuildInfos = ({ build, githubRepoUrl }: BuildInfosProps) => {
       <Dd>
         {build?.baseScreenshotBucket ? (
           <CommitLink
-            githubRepoUrl={githubRepoUrl}
+            githubRepoUrl={props.githubRepoUrl}
             commit={build.baseScreenshotBucket.commit}
           />
         ) : (
@@ -69,7 +71,7 @@ export const BuildInfos = ({ build, githubRepoUrl }: BuildInfosProps) => {
       <Dd>
         {build ? (
           <CommitLink
-            githubRepoUrl={githubRepoUrl}
+            githubRepoUrl={props.githubRepoUrl}
             commit={build.compareScreenshotBucket.commit}
           />
         ) : (

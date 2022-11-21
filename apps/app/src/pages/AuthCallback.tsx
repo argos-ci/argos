@@ -5,10 +5,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/containers/Auth";
 
 const api = axios.create({
-  baseURL: process.env.API_BASE_URL,
+  baseURL: process.env["API_BASE_URL"] as string,
 });
 
-export function AuthCallback() {
+export const AuthCallback = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -28,4 +28,4 @@ export function AuthCallback() {
   }, [code, navigate, r, setToken]);
 
   return null;
-}
+};

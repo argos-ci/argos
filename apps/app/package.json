@@ -3,14 +3,19 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "dev": "webpack-dev-server",
+    "dev:webpack": "webpack-dev-server",
+    "dev:codegen": "npm run codegen -- --watch",
+    "dev": "concurrently \"npm run dev:webpack\" \"npm run dev:codegen\"",
     "build": "NODE_ENV=production webpack",
+    "codegen": "NODE_TLS_REJECT_UNAUTHORIZED=0 graphql-codegen --config codegen.ts",
     "check-types": "npx tsc --noEmit"
   },
   "sideEffects": false,
   "devDependencies": {
     "@apollo/client": "^3.7.1",
     "@argos-ci/config": "*",
+    "@graphql-codegen/cli": "^2.13.12",
+    "@graphql-codegen/client-preset": "^1.1.4",
     "@heroicons/react": "^2.0.13",
     "@primer/octicons-react": "^17.9.0",
     "@sentry/browser": "^7.20.0",
@@ -22,6 +27,7 @@
     "ariakit": "^2.0.0-next.41",
     "assets-webpack-plugin": "^7.1.1",
     "autoprefixer": "^10.4.13",
+    "concurrently": "^7.6.0",
     "core-js": "^3.26.1",
     "css-loader": "^6.7.2",
     "eslint-plugin-react": "^7.31.11",

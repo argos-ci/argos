@@ -32,7 +32,7 @@ export const typeDefs = gql`
     "A single build linked to the repository"
     build(number: Int!): Build
     "Determine if the current user has write access to the repository"
-    permissions: [Permission]!
+    permissions: [Permission!]!
     "Owner of the repository"
     owner: Owner
     sampleBuildId: ID

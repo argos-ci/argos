@@ -132,14 +132,14 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
     case "failed":
       return (
         <img
-          {...getImgAttributes(diff.compareScreenshot.url, imageHeight)}
+          {...getImgAttributes(diff.compareScreenshot!.url, imageHeight)}
           className="h-full w-full object-contain"
         />
       );
     case "removed":
       return (
         <img
-          {...getImgAttributes(diff.baseScreenshot.url, imageHeight)}
+          {...getImgAttributes(diff.baseScreenshot!.url, imageHeight)}
           className="h-full w-full object-contain"
         />
       );
@@ -151,9 +151,9 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
             style={{ aspectRatio: getAspectRatio(diff) }}
           >
             <img
-              {...getImgAttributes(diff.compareScreenshot.url)}
+              {...getImgAttributes(diff.compareScreenshot!.url)}
               className="absolute w-full"
-              style={{ aspectRatio: getAspectRatio(diff.compareScreenshot) }}
+              style={{ aspectRatio: getAspectRatio(diff.compareScreenshot!) }}
             />
             <div className="absolute inset-0 bg-black bg-opacity-70" />
             <img

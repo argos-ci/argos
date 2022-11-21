@@ -1,9 +1,3 @@
-// import { gql, useMutation } from "@apollo/client";
-// import { x } from "@xstyled/styled-components";
-import type { Build } from "./Build";
-import type { Repository } from "./Repository";
-import type { Owner } from "./Owner";
-
 import {
   Menu,
   MenuItem,
@@ -15,16 +9,44 @@ import { MagicTooltip } from "@/modern/ui/Tooltip";
 import { Button, ButtonArrow } from "@/modern/ui/Button";
 import { getBuildIcon } from "./Build";
 import { hasWritePermission } from "@/modern/containers/Permission";
-import { gql, useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client";
+import { FragmentType, graphql, useFragment } from "@/gql";
+import { BuildStatus, ValidationStatus } from "@/gql/graphql";
+
+export const RepositoryFragment = graphql(`
+  fragment ReviewButton_Repository on Repository {
+    name
+    permissions
+    private
+    owner {
+      login
+      consumptionRatio
+    }
+    build(number: $buildNumber) {
+      id
+      status
+    }
+  }
+`);
+
+const SetValidationStatusMutation = graphql(`
+  mutation setValidationStatus(
+    $buildId: ID!
+    $validationStatus: ValidationStatus!
+  ) {
+    setValidationStatus(
+      buildId: $buildId
+      validationStatus: $validationStatus
+    ) {
+      id
+      status
+    }
+  }
+`);
 
 interface BaseReviewButtonProps {
-  build: Pick<Build, "id" | "status">;
+  build: { id: string; status: BuildStatus };
   disabled?: boolean;
-}
-
-interface SetValidationStatusVariables {
-  buildId: string;
-  validationStatus: "accepted" | "rejected";
 }
 
 const BaseReviewButton = ({
@@ -32,30 +54,18 @@ const BaseReviewButton = ({
   disabled = false,
 }: BaseReviewButtonProps) => {
   const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
-  const [setValidationStatus, { loading }] = useMutation<
-    any,
-    SetValidationStatusVariables
-  >(
-    gql`
-      mutation setValidationStatus(
-        $buildId: ID!
-        $validationStatus: ValidationStatus!
-      ) {
-        setValidationStatus(
-          buildId: $buildId
-          validationStatus: $validationStatus
-        ) {
-          id
-          status
-        }
-      }
-    `,
+  const [setValidationStatus, { loading }] = useMutation(
+    SetValidationStatusMutation,
     {
-      optimisticResponse: (variables: SetValidationStatusVariables) => ({
+      optimisticResponse: (variables) => ({
         setValidationStatus: {
           id: variables.buildId,
-          status: variables.validationStatus,
-          __typename: "Build",
+          status:
+            variables.validationStatus === ValidationStatus.Accepted
+              ? BuildStatus.Accepted
+              : variables.validationStatus === ValidationStatus.Rejected
+              ? BuildStatus.Rejected
+              : BuildStatus.Pending,
         },
       }),
     }
@@ -75,7 +85,10 @@ const BaseReviewButton = ({
           state={menu}
           onClick={() => {
             setValidationStatus({
-              variables: { buildId: build.id, validationStatus: "accepted" },
+              variables: {
+                buildId: build.id,
+                validationStatus: ValidationStatus.Accepted,
+              },
             });
             menu.hide();
           }}
@@ -90,7 +103,10 @@ const BaseReviewButton = ({
           state={menu}
           onClick={() => {
             setValidationStatus({
-              variables: { buildId: build.id, validationStatus: "rejected" },
+              variables: {
+                buildId: build.id,
+                validationStatus: ValidationStatus.Rejected,
+              },
             });
             menu.hide();
           }}
@@ -124,16 +140,13 @@ const DisabledReviewButton = ({
   );
 };
 
-export interface ReviewButtonProps {
-  repository: Pick<Repository, "name" | "permissions" | "private"> & {
-    build: (Pick<Build, "status"> & DisabledReviewButtonProps["build"]) | null;
-    owner: Pick<Owner, "login" | "consumptionRatio">;
-  };
-}
-
-export const ReviewButton = ({ repository }: ReviewButtonProps) => {
+export const ReviewButton = (props: {
+  repository: FragmentType<typeof RepositoryFragment>;
+}) => {
+  const repository = useFragment(RepositoryFragment, props.repository);
   if (
     !repository.build ||
+    !repository.owner ||
     !["accepted", "rejected", "diffDetected"].includes(repository.build.status)
   ) {
     return null;
@@ -158,7 +171,7 @@ export const ReviewButton = ({ repository }: ReviewButtonProps) => {
 
   if (
     repository.private &&
-    repository.owner.consumptionRatio !== null &&
+    typeof repository.owner.consumptionRatio === "number" &&
     repository.owner.consumptionRatio >= 1
   ) {
     return (

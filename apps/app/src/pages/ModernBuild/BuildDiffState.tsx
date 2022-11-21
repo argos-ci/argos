@@ -1,5 +1,6 @@
+import { graphql } from "@/gql";
 import type { BuildStats } from "@/modern/containers/Build";
-import { gql, useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 import {
   createContext,
   useCallback,
@@ -14,27 +15,25 @@ import { useNavigate } from "react-router-dom";
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
 
-const LIMIT = 100;
-
 export interface Diff {
   id: string;
-  url: string | null;
+  url?: string | null;
   status: "added" | "updated" | "removed" | "stable" | "failed";
   name: string;
-  width: number | null;
-  height: number | null;
-  compareScreenshot: {
+  width?: number | null;
+  height?: number | null;
+  compareScreenshot?: {
     id: string;
     url: string;
-    width: number | null;
-    height: number | null;
-  };
-  baseScreenshot: {
+    width?: number | null;
+    height?: number | null;
+  } | null;
+  baseScreenshot?: {
     id: string;
     url: string;
-    width: number | null;
-    height: number | null;
-  };
+    width?: number | null;
+    height?: number | null;
+  } | null;
 }
 
 export interface DiffGroup {
@@ -101,8 +100,8 @@ const useExpandedState = () => {
   return { expanded, toggleGroup };
 };
 
-const ScreenshotDiffQuery = gql`
-  query ScreenshotDiffQuery(
+const RepositoryQuery = graphql(`
+  query BuildDiffState_repository(
     $ownerLogin: String!
     $repositoryName: String!
     $buildNumber: Int!
@@ -141,7 +140,7 @@ const ScreenshotDiffQuery = gql`
       }
     }
   }
-`;
+`);
 
 const useDataState = ({
   ownerLogin,
@@ -152,22 +151,13 @@ const useDataState = ({
   repositoryName: string;
   buildNumber: number;
 }) => {
-  const { data, loading, error, fetchMore } = useQuery<
-    any,
-    {
-      ownerLogin: string;
-      repositoryName: string;
-      buildNumber: number;
-      offset: number;
-      limit: number;
-    }
-  >(ScreenshotDiffQuery, {
+  const { data, loading, error, fetchMore } = useQuery(RepositoryQuery, {
     variables: {
       ownerLogin,
       repositoryName,
       buildNumber,
       offset: 0,
-      limit: LIMIT,
+      limit: 20,
     },
   });
   if (error) {
@@ -181,9 +171,12 @@ const useDataState = ({
       fetchMore({
         variables: {
           offset: data.repository.build.screenshotDiffs.edges.length,
+          limit: 100,
         },
         updateQuery: (prev, { fetchMoreResult }) => {
-          if (!fetchMoreResult) return prev;
+          if (!fetchMoreResult?.repository?.build?.screenshotDiffs.edges)
+            return prev;
+          if (!prev?.repository?.build?.screenshotDiffs.edges) return prev;
 
           return {
             ...prev,

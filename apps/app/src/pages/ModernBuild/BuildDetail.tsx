@@ -13,17 +13,22 @@ import {
 } from "./BuildDiffFitState";
 import { useScrollListener } from "@/modern/ui/useScrollListener";
 import { getGroupIcon } from "./BuildDiffGroup";
+import { FragmentType, graphql, useFragment, DocumentType } from "@/gql";
 
-interface BuildDetailBuild {
-  baseScreenshotBucket: {
-    branch: string;
-    createdAt: string;
-  } | null;
-  compareScreenshotBucket: {
-    branch: string;
-    createdAt: string;
-  };
-}
+export const BuildFragment = graphql(`
+  fragment BuildDetail_Build on Build {
+    baseScreenshotBucket {
+      branch
+      createdAt
+    }
+    compareScreenshotBucket {
+      branch
+      createdAt
+    }
+  }
+`);
+
+type BuildFragmentDocument = DocumentType<typeof BuildFragment>;
 
 const BuildScreenshotHeader = memo(
   ({
@@ -123,11 +128,11 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
     case "removed":
       return (
         <div>
-          <NeutralLink href={diff.baseScreenshot.url}>
+          <NeutralLink href={diff.baseScreenshot!.url}>
             <img
               className="max-h-full"
               alt="Baseline screenshot"
-              {...getImgAttributes(diff.baseScreenshot.url)}
+              {...getImgAttributes(diff.baseScreenshot!.url)}
             />
           </NeutralLink>
         </div>
@@ -135,7 +140,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
     case "updated":
       return (
         <div className="relative">
-          <NeutralLink href={diff.baseScreenshot.url}>
+          <NeutralLink href={diff.baseScreenshot!.url}>
             <img
               className="relative max-h-full opacity-0"
               {...getImgAttributes(diff.url!)}
@@ -143,7 +148,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             <img
               className="absolute top-0 left-0"
               alt="Baseline screenshot"
-              {...getImgAttributes(diff.baseScreenshot.url)}
+              {...getImgAttributes(diff.baseScreenshot!.url)}
             />
           </NeutralLink>
         </div>
@@ -160,11 +165,11 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
     case "added":
       return (
         <div>
-          <NeutralLink href={diff.compareScreenshot.url}>
+          <NeutralLink href={diff.compareScreenshot!.url}>
             <img
               className="max-h-full"
               alt="Changes screenshot"
-              {...getImgAttributes(diff.compareScreenshot.url)}
+              {...getImgAttributes(diff.compareScreenshot!.url)}
             />
           </NeutralLink>
         </div>
@@ -172,11 +177,11 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
     case "failed":
       return (
         <div>
-          <NeutralLink href={diff.compareScreenshot.url}>
+          <NeutralLink href={diff.compareScreenshot!.url}>
             <img
               className="max-h-full"
               alt="Failure screenshot"
-              {...getImgAttributes(diff.compareScreenshot.url)}
+              {...getImgAttributes(diff.compareScreenshot!.url)}
             />
           </NeutralLink>
         </div>
@@ -209,10 +214,10 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
     case "updated":
       return (
         <div className="relative">
-          <NeutralLink href={diff.compareScreenshot.url}>
+          <NeutralLink href={diff.compareScreenshot!.url}>
             <img
               className="absolute"
-              {...getImgAttributes(diff.compareScreenshot.url)}
+              {...getImgAttributes(diff.compareScreenshot!.url)}
             />
             <div
               className={`${opacity} absolute inset-0 bg-black bg-opacity-70`}
@@ -231,41 +236,37 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
 };
 
 const BuildScreenshots = memo(
-  ({ diff, build }: { diff: Diff; build: BuildDetailBuild }) => {
+  (props: { diff: Diff; build: BuildFragmentDocument }) => {
     const { contained } = useBuildDiffFitState();
     const flex = contained ? "flex-1 min-h-0" : "";
     return (
       <div className={`${flex} flex gap-4 px-4`}>
-        {build.baseScreenshotBucket ? (
+        {props.build.baseScreenshotBucket ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
             <BuildScreenshotHeader
               label="Baseline"
-              branch={build.baseScreenshotBucket.branch}
-              date={build.baseScreenshotBucket.createdAt}
+              branch={props.build.baseScreenshotBucket.branch}
+              date={props.build.baseScreenshotBucket.createdAt}
             />
             <div className="flex min-h-0 flex-1 justify-center">
-              <BaseScreenshot diff={diff} />
+              <BaseScreenshot diff={props.diff} />
             </div>
           </div>
         ) : null}
         <div className="flex min-h-0 flex-1 flex-col gap-4">
           <BuildScreenshotHeader
             label="Changes"
-            branch={build.compareScreenshotBucket.branch}
-            date={build.compareScreenshotBucket.createdAt}
+            branch={props.build.compareScreenshotBucket.branch}
+            date={props.build.compareScreenshotBucket.createdAt}
           />
           <div className="flex min-h-0 flex-1 justify-center">
-            <CompareScreenshot diff={diff} />
+            <CompareScreenshot diff={props.diff} />
           </div>
         </div>
       </div>
     );
   }
 );
-
-export interface BuildDetailProps {
-  build: BuildDetailBuild;
-}
 
 const useScrollToTop = (
   ref: React.RefObject<HTMLElement>,
@@ -280,7 +281,10 @@ const useScrollToTop = (
   }, [ref, activeDiff]);
 };
 
-export const BuildDetail = ({ build }: BuildDetailProps) => {
+export const BuildDetail = (props: {
+  build: FragmentType<typeof BuildFragment>;
+}) => {
+  const build = useFragment(BuildFragment, props.build);
   const { activeDiff } = useBuildDiffState();
   const containerRef = useRef<HTMLDivElement>(null);
   useScrollToTop(containerRef, activeDiff);

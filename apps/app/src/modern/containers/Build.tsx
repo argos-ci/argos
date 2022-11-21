@@ -10,7 +10,6 @@ import {
   XCircleIcon,
   DotIcon,
 } from "@primer/octicons-react";
-import type { ScreenshotBucket } from "./ScreenshotBucket";
 
 export type BuildType = "reference" | "check" | "orphan";
 
@@ -34,20 +33,10 @@ export interface BuildStats {
   unchanged: number;
 }
 
-export interface Build {
-  id: string;
-  createdAt: string;
-  number: number;
-  type: BuildType | null;
-  status: BuildStatus;
-  batchCount: number | null;
-  totalBatch: number | null;
-  stats: BuildStats;
-  compareScreenshotBucket: ScreenshotBucket;
-  baseScreenshotBucket: ScreenshotBucket | null;
-}
-
-export const getBuildColor = (type: BuildType | null, status: BuildStatus) => {
+export const getBuildColor = (
+  type: BuildType | null | undefined,
+  status: BuildStatus
+) => {
   switch (type) {
     case "reference":
       return "success" as const;
@@ -86,7 +75,7 @@ export const getBuildColor = (type: BuildType | null, status: BuildStatus) => {
 };
 
 export const getBuildIcon = (
-  type: BuildType | null,
+  type: BuildType | null | undefined,
   status: BuildStatus
 ): React.ComponentType<any> => {
   switch (type) {
@@ -131,7 +120,7 @@ export const getBuildIcon = (
 };
 
 export const getBuildLabel = (
-  type: BuildType | null,
+  type: BuildType | null | undefined,
   status: BuildStatus
 ): string => {
   switch (type) {
@@ -171,12 +160,12 @@ export const getBuildLabel = (
 };
 
 export const checkIsBuildIncomplete = (build: {
-  batchCount: number | null;
-  totalBatch: number | null;
+  batchCount?: number | null;
+  totalBatch?: number | null;
 }): boolean => {
   return (
-    build.totalBatch !== null &&
-    build.batchCount !== null &&
+    build.totalBatch != null &&
+    build.batchCount != null &&
     build.totalBatch > 0 &&
     build.batchCount < build.totalBatch
   );
