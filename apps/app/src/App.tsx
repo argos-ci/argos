@@ -9,7 +9,6 @@ import { Layout } from "./containers/Layout";
 import { ScrollToTop } from "./containers/Router";
 import { UserInitializer } from "./containers/User";
 import { AuthCallback } from "./pages/AuthCallback";
-import { Build } from "./pages/Build";
 import { Home } from "./pages/Home";
 import { ModernBuild } from "./pages/ModernBuild";
 import { NotFoundWithContainer } from "./pages/NotFound";
@@ -38,31 +37,11 @@ export const App = () => {
                   element={<AuthCallback />}
                 />
                 <Route
-                  path="/:ownerLogin/:repositoryName/builds/:buildNumber/new/:diffRank"
-                  element={
-                    <ThemeInitializer>
-                      <ColorModeProvider>
-                        <GlobalStyle />
-                      </ColorModeProvider>
-                    </ThemeInitializer>
-                  }
-                />
-                <Route
-                  path="/:ownerLogin/:repositoryName/builds/:buildNumber/new/"
-                  element={
-                    <ThemeInitializer>
-                      <ColorModeProvider>
-                        <GlobalStyle />
-                      </ColorModeProvider>
-                    </ThemeInitializer>
-                  }
-                />
-                <Route
-                  path="/:ownerLogin/:repositoryName/builds/:buildNumber/modern"
+                  path="/:ownerLogin/:repositoryName/builds/:buildNumber"
                   element={<ModernBuild />}
                 />
                 <Route
-                  path="/:ownerLogin/:repositoryName/builds/:buildNumber/modern/:diffId"
+                  path="/:ownerLogin/:repositoryName/builds/:buildNumber/:diffId"
                   element={<ModernBuild />}
                 />
                 <Route
@@ -82,10 +61,6 @@ export const App = () => {
                   <Route
                     path="/:ownerLogin/settings/*"
                     element={<OwnerSettings />}
-                  />
-                  <Route
-                    path="/:ownerLogin/:repositoryName/builds/:buildNumber"
-                    element={<Build />}
                   />
                   <Route
                     path="/:ownerLogin/:repositoryName/*"

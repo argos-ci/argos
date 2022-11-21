@@ -9,6 +9,7 @@ import { BuildInfos } from "./BuildInfos";
 import { BuildDiffList } from "./BuildDiffList";
 import { forwardRef, memo } from "react";
 import { useBuildHotkey } from "./BuildHotkeys";
+import { checkIsBuildEmpty } from "@/modern/containers/Build";
 import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
 import { FragmentType, graphql, useFragment } from "@/gql";
 
@@ -25,6 +26,9 @@ const Tab = forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
 export const BuildFragment = graphql(`
   fragment BuildSidebar_Build on Build {
     ...BuildInfos_Build
+    stats {
+      total: screenshotCount
+    }
   }
 `);
 
@@ -35,7 +39,8 @@ export const BuildSidebar = memo(
   }) => {
     const build = useFragment(BuildFragment, props.build);
     const tab = useTabState({
-      defaultSelectedId: "screenshots",
+      defaultSelectedId:
+        build && checkIsBuildEmpty(build) ? "info" : "screenshots",
     });
     const hotkey = useBuildHotkey(
       "toggleSidebarPanel",

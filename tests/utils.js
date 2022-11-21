@@ -78,6 +78,7 @@ export async function argosScreenshot(
     type: "png",
     fullPage: true,
     mask: [page.locator('[data-visual-test="blackout"]')],
+    animations: "disabled",
     ...options,
   });
 }
