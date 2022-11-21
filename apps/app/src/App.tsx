@@ -10,7 +10,6 @@ import { ScrollToTop } from "./containers/Router";
 import { UserInitializer } from "./containers/User";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Build } from "./pages/Build";
-import { NewBuild } from "./pages/Build/NewBuild";
 import { Home } from "./pages/Home";
 import { ModernBuild } from "./pages/ModernBuild";
 import { NotFoundWithContainer } from "./pages/NotFound";
@@ -44,7 +43,6 @@ export const App = () => {
                     <ThemeInitializer>
                       <ColorModeProvider>
                         <GlobalStyle />
-                        <NewBuild />
                       </ColorModeProvider>
                     </ThemeInitializer>
                   }
@@ -55,7 +53,6 @@ export const App = () => {
                     <ThemeInitializer>
                       <ColorModeProvider>
                         <GlobalStyle />
-                        <NewBuild />
                       </ColorModeProvider>
                     </ThemeInitializer>
                   }

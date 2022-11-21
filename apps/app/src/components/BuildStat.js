@@ -6,12 +6,7 @@ import {
 } from "@/containers/ScreenshotDiffStatus";
 
 import { IllustratedText } from "./IllustratedText";
-import {
-  Tooltip,
-  TooltipAnchor,
-  TooltipHotkey,
-  useTooltipState,
-} from "./Tooltip";
+import { Tooltip, TooltipAnchor, useTooltipState } from "./Tooltip";
 
 export function BuildStat({ icon, color, count, label, hotkey, ...props }) {
   const tooltip = useTooltipState();
@@ -25,10 +20,7 @@ export function BuildStat({ icon, color, count, label, hotkey, ...props }) {
           {count}
         </IllustratedText>
       </TooltipAnchor>
-      <Tooltip state={tooltip}>
-        {label}
-        {hotkey && <TooltipHotkey>{hotkey}</TooltipHotkey>}
-      </Tooltip>
+      <Tooltip state={tooltip}>{label}</Tooltip>
     </>
   );
 }
