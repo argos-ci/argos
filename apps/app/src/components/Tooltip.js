@@ -7,20 +7,11 @@ import {
 } from "ariakit/tooltip";
 import { forwardRef } from "react";
 
-import { Hotkey, HotkeySeparator } from "./Hotkey";
-
 export { TooltipArrow };
 
 export function useTooltipState(props) {
   return ariakitUseTooltipState({ placement: "bottom", ...props });
 }
-
-export const TooltipHotkey = ({ children }) => (
-  <>
-    <HotkeySeparator />
-    <Hotkey>{children}</Hotkey>
-  </>
-);
 
 export const TooltipAnchor = forwardRef(
   /**
