@@ -68,8 +68,8 @@ export const BuildStatusDescription = (props: {
           if (checkIsBuildEmpty(build)) {
             return (
               <>
-                Empty build: no screenshot has been uploaded. It may result of a
-                wrong uploaded repository&apos;s path.
+                No screenshot has been uploaded. Be sure to specify a directory
+                containing images in your upload script.
               </>
             );
           }
