@@ -314,9 +314,9 @@ export class GitHubSynchronizer {
     installationId: string
   ) {
     const installationRepositoryRights =
-      await InstallationRepositoryRight.query().where({
-        installationId,
-      });
+      await InstallationRepositoryRight.query()
+        .withGraphFetched("installation")
+        .where({ installationId, delete: false });
 
     await Promise.all(
       repositories.map(async (repository) => {
