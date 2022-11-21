@@ -23,7 +23,7 @@ export const typeDefs = gql`
     repositoriesNumber: Int!
     repositories(enabled: Boolean): [Repository!]!
     consumptionRatio: Float
-    permissions: [Permission]!
+    permissions: [Permission!]!
     currentMonthUsedScreenshots: Int!
     plan: Plan
     screenshotsLimitPerMonth: Int
@@ -37,7 +37,7 @@ export const typeDefs = gql`
     repositoriesNumber: Int!
     repositories(enabled: Boolean): [Repository!]!
     consumptionRatio: Float
-    permissions: [Permission]!
+    permissions: [Permission!]!
     currentMonthUsedScreenshots: Int!
     plan: Plan
     screenshotsLimitPerMonth: Int

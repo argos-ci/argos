@@ -5,11 +5,15 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
+    "codegen": {
+      "outputs": ["src/gql/**"]
+    },
     "dev": {
-      "cache": false,
-      "dependsOn": ["build"]
+      "dependsOn": [],
+      "cache": false
     },
     "setup": {
+      "dependsOn": ["build"],
       "cache": false
     },
     "check-types": {

@@ -1,16 +1,15 @@
-import { gql, useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 
 import { BuildHeader } from "./BuildHeader";
 import { BuildHotkeysDialog } from "./BuildHotkeys";
 import type { BuildParams } from "./BuildParams";
 import { OvercapacityBanner } from "./Overcapacity";
-import type { Build } from "@/modern/containers/Build";
-import type { Repository } from "@/modern/containers/Repository";
 import { BuildWorkspace } from "./BuildWorkspace";
 import { BuildNotFound } from "./BuildNotFound";
 import { useEffect } from "react";
+import { graphql } from "@/gql";
 
-const BuildQuery = gql`
+const BuildQuery = graphql(`
   query BuildQuery(
     $ownerLogin: String!
     $repositoryName: String!
@@ -18,92 +17,24 @@ const BuildQuery = gql`
   ) {
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
-      referenceBranch
-      name
-      permissions
-      private
+      ...BuildHeader_Repository
+      ...BuildWorkspace_Repository
       owner {
         id
-        name
-        login
-        consumptionRatio
-        plan {
-          id
-          name
-        }
+        ...OvercapacityBanner_Owner
       }
       build(number: $buildNumber) {
         id
-        createdAt
-        type
         status
-        batchCount
-        totalBatch
-        stats {
-          total: screenshotCount
-          failure: failedScreenshotCount
-          changed: updatedScreenshotCount
-          added: addedScreenshotCount
-          removed: removedScreenshotCount
-          unchanged: stableScreenshotCount
-        }
-        baseScreenshotBucket {
-          id
-          commit
-          branch
-          createdAt
-        }
-        compareScreenshotBucket {
-          id
-          commit
-          branch
-          createdAt
-        }
+        ...BuildHeader_Build
+        ...BuildWorkspace_Build
       }
     }
   }
-`;
-
-interface BuildQueryData {
-  repository: Pick<
-    Repository,
-    "id" | "referenceBranch" | "name" | "permissions" | "private"
-  > & {
-    owner: Pick<
-      Repository["owner"],
-      "id" | "name" | "login" | "consumptionRatio"
-    > & {
-      plan: Pick<
-        Exclude<Repository["owner"]["plan"], null>,
-        "id" | "name"
-      > | null;
-    };
-    build:
-      | (Pick<
-          Exclude<Repository["build"], null>,
-          | "id"
-          | "createdAt"
-          | "type"
-          | "status"
-          | "batchCount"
-          | "totalBatch"
-          | "stats"
-        > & {
-          baseScreenshotBucket: Pick<
-            Exclude<Build["baseScreenshotBucket"], null>,
-            "id" | "commit" | "branch" | "createdAt"
-          > | null;
-          compareScreenshotBucket: Pick<
-            Build["compareScreenshotBucket"],
-            "id" | "commit" | "branch" | "createdAt"
-          >;
-        })
-      | null;
-  };
-}
+`);
 
 export const BuildPage = ({ params }: { params: BuildParams }) => {
-  const { data, error, refetch } = useQuery<BuildQueryData>(BuildQuery, {
+  const { data, error, refetch } = useQuery(BuildQuery, {
     variables: {
       ownerLogin: params.ownerLogin,
       repositoryName: params.repositoryName,
@@ -132,7 +63,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
     throw error;
   }
 
-  if (data && !data?.repository?.build) {
+  if (data && !data.repository?.build) {
     return <BuildNotFound />;
   }
 
@@ -140,11 +71,10 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
     <>
       <BuildHotkeysDialog />
       <div className="m flex h-screen min-h-0 flex-col">
-        {data && (
+        {data?.repository?.owner && (
           <OvercapacityBanner
-            consumptionRatio={data.repository.owner.consumptionRatio}
+            owner={data.repository.owner}
             ownerLogin={params.ownerLogin}
-            plan={data.repository.owner.plan}
           />
         )}
         <BuildHeader

@@ -11,3 +11,4 @@ apps/screenshot-diff/src/util/image-diff/test/actual-files/*
 /playwright/.cache/
 screenshots/*
 .turbo
+tsconfig.tsbuildinfo
