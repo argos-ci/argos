@@ -119,7 +119,6 @@ export const BuildStatusDescription = (props: {
             </>
           );
 
-        case "pending":
         case "progress":
           return <>This build is in progress.</>;
         case "accepted":
@@ -129,6 +128,12 @@ export const BuildStatusDescription = (props: {
         default:
           return null;
       }
+    }
+    case null: {
+      if (build.status === "pending") {
+        return <>This build is in progress.</>;
+      }
+      return null;
     }
     default:
       throw new Error(`Unknown build type: ${build.type}`);
