@@ -26,6 +26,8 @@ export const updatePurchase = async (
     return;
   }
 
+  await activePurchase.$fetchGraph("plan");
+
   if (activePurchase.plan!.githubId === payload.marketplace_purchase.plan?.id) {
     return;
   }
