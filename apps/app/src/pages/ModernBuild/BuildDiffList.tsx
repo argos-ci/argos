@@ -430,56 +430,62 @@ const InternalBuildDiffList = memo(() => {
             position: "relative",
           }}
         >
-          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const item = rows[virtualRow.index];
-            if (!item) return null;
+          {rowVirtualizer
+            .getVirtualItems()
+            .filter((e) => e)
+            .map((virtualRow) => {
+              const item = rows[virtualRow.index];
+              if (!item) return null;
 
-            switch (item.type) {
-              case "header":
-                return (
-                  <ListHeader
-                    key={virtualRow.index}
-                    item={item}
-                    activeIndex={item.group.diffs.indexOf(activeDiff)}
-                    onClick={() => {
-                      toggleGroup(item.name);
-                    }}
-                    style={{
-                      height: virtualRow.size,
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      ...(activeStickyIndex == virtualRow.index
-                        ? { position: "sticky", borderTopColor: "transparent" }
-                        : {
-                            position: "absolute",
-                            transform: `translateY(${virtualRow.start}px)`,
-                          }),
-                    }}
-                  />
-                );
-              case "item":
-                return (
-                  <ListItem
-                    key={virtualRow.index}
-                    index={virtualRow.index}
-                    style={{
-                      height: virtualRow.size,
-                      top: 0,
-                      left: 0,
-                      position: "absolute",
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                    item={item}
-                    active={activeDiff === item.diff}
-                    setActiveDiff={setActiveDiff}
-                    observer={observer}
-                  />
-                );
-              default:
-                return null;
-            }
-          })}
+              switch (item.type) {
+                case "header":
+                  return (
+                    <ListHeader
+                      key={virtualRow.index}
+                      item={item}
+                      activeIndex={item.group.diffs.indexOf(activeDiff)}
+                      onClick={() => {
+                        toggleGroup(item.name);
+                      }}
+                      style={{
+                        height: virtualRow.size,
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        ...(activeStickyIndex == virtualRow.index
+                          ? {
+                              position: "sticky",
+                              borderTopColor: "transparent",
+                            }
+                          : {
+                              position: "absolute",
+                              transform: `translateY(${virtualRow.start}px)`,
+                            }),
+                      }}
+                    />
+                  );
+                case "item":
+                  return (
+                    <ListItem
+                      key={virtualRow.index}
+                      index={virtualRow.index}
+                      style={{
+                        height: virtualRow.size,
+                        top: 0,
+                        left: 0,
+                        position: "absolute",
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                      item={item}
+                      active={activeDiff === item.diff}
+                      setActiveDiff={setActiveDiff}
+                      observer={observer}
+                    />
+                  );
+                default:
+                  return null;
+              }
+            })}
         </div>
       </div>
     </>

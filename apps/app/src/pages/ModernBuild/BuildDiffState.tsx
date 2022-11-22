@@ -242,7 +242,7 @@ export const BuildDiffProvider = ({
   useEffect(() => {
     if (!params.diffId && firstDiffId) {
       navigate(
-        `/${params.ownerLogin}/${params.repositoryName}/builds/${params.buildNumber}/modern/${firstDiffId}`,
+        `/${params.ownerLogin}/${params.repositoryName}/builds/${params.buildNumber}/${firstDiffId}`,
         { replace: true }
       );
       setInitialDiffId(firstDiffId);
@@ -287,7 +287,7 @@ export const BuildDiffProvider = ({
   const setActiveDiff = useCallback(
     (diff: Diff, scroll?: boolean) => {
       navigate(
-        `/${params.ownerLogin}/${params.repositoryName}/builds/${params.buildNumber}/modern/${diff.id}`,
+        `/${params.ownerLogin}/${params.repositoryName}/builds/${params.buildNumber}/${diff.id}`,
         { replace: true }
       );
       if (scroll) {
