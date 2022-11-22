@@ -36,9 +36,15 @@ type AggregatedStatus =
 
 const createBuildAggregatedStatusLoader = () =>
   new DataLoader<Build, AggregatedStatus>(async (builds) => {
-    const reviewStatuses = await Build.getReviewStatuses(builds as Build[]);
-    const conclusions = await Build.getConclusions(builds as Build[]);
     const statuses = await Build.getStatuses(builds as Build[]);
+    const conclusions = await Build.getConclusions(
+      builds.map((b) => b.id),
+      statuses
+    );
+    const reviewStatuses = await Build.getReviewStatuses(
+      builds.map((b) => b.id),
+      conclusions
+    );
 
     return builds.map((_build, index) => {
       if (reviewStatuses[index]) return reviewStatuses[index];

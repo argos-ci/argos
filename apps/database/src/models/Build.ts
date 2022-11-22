@@ -16,6 +16,15 @@ import { ScreenshotDiff } from "./ScreenshotDiff.js";
 import { User } from "./User.js";
 
 export type BuildType = "orphan" | "reference" | "check";
+export type BuildStatus =
+  | "expired"
+  | "pending"
+  | "progress"
+  | "complete"
+  | "error"
+  | "aborted";
+export type BuildConclusion = "stable" | "diffDetected" | null;
+export type BuildReviewStatus = "accepted" | "rejected" | null;
 
 export class Build extends Model {
   static override tableName = "builds";
@@ -137,10 +146,12 @@ export class Build extends Model {
       .filter(({ jobStatus }) => jobStatus === "complete")
       .map(({ id }) => id);
 
-    const screenshotDiffs = await ScreenshotDiff.query()
-      .select("buildId", "jobStatus")
-      .whereIn("buildId", completeBuildIds)
-      .groupBy("buildId", "jobStatus");
+    const screenshotDiffs = completeBuildIds.length
+      ? await ScreenshotDiff.query()
+          .select("buildId", "jobStatus")
+          .whereIn("buildId", completeBuildIds)
+          .groupBy("buildId", "jobStatus")
+      : [];
 
     return builds.map((build) => {
       switch (build.jobStatus) {
@@ -190,21 +201,27 @@ export class Build extends Model {
   /**
    * Get the conclusion of builds.
    */
-  static async getConclusions(builds: Build[]) {
-    const buildIds = builds.map(({ id }) => id);
-    const [buildStatuses, buildsDiffCount] = await Promise.all([
-      this.getStatuses(builds),
-      ScreenshotDiff.query()
-        .select("buildId")
-        .count()
-        .where("score", ">", 0)
-        .whereIn("buildId", buildIds)
-        .groupBy("buildId"),
-    ]);
-    return builds.map((build, index) => {
-      if (buildStatuses[index] !== "complete") return null;
+  static async getConclusions(
+    buildIds: string[],
+    statuses: BuildStatus[]
+  ): Promise<BuildConclusion[]> {
+    const completeBuildIds = buildIds.filter(
+      (_, index) => statuses[index] === "complete"
+    );
+
+    const buildsDiffCount = completeBuildIds.length
+      ? await ScreenshotDiff.query()
+          .select("buildId")
+          .count()
+          .where("score", ">", 0)
+          .whereIn("buildId", completeBuildIds)
+          .groupBy("buildId")
+      : [];
+
+    return buildIds.map((buildId, index) => {
+      if (statuses[index] !== "complete") return null;
       const buildDiffCount = buildsDiffCount.find(
-        ({ buildId }) => buildId === build.id
+        (diff) => diff.buildId === buildId
       );
       // @ts-ignore
       if (buildDiffCount?.count > 0) return "diffDetected";
@@ -215,21 +232,25 @@ export class Build extends Model {
   /**
    * Get the review status of builds.
    */
-  static async getReviewStatuses(builds: Build[]) {
-    const buildConclusions = await this.getConclusions(builds);
-    const diffDetectedBuildIds = builds
-      .filter((_build, index) => buildConclusions[index] === "diffDetected")
-      .map(({ id }) => id);
+  static async getReviewStatuses(
+    buildIds: string[],
+    conclusions: BuildConclusion[]
+  ): Promise<BuildReviewStatus[]> {
+    const diffDetectedBuildIds = buildIds.filter(
+      (_buildId, index) => conclusions[index] === "diffDetected"
+    );
 
-    const screenshotDiffs = await ScreenshotDiff.query()
-      .select("buildId", "validationStatus")
-      .whereIn("buildId", diffDetectedBuildIds)
-      .groupBy("buildId", "validationStatus");
+    const screenshotDiffs = diffDetectedBuildIds.length
+      ? await ScreenshotDiff.query()
+          .select("buildId", "validationStatus")
+          .whereIn("buildId", diffDetectedBuildIds)
+          .groupBy("buildId", "validationStatus")
+      : [];
 
-    return builds.map((build, index) => {
-      if (buildConclusions[index] !== "diffDetected") return null;
+    return buildIds.map((buildId, index) => {
+      if (conclusions[index] !== "diffDetected") return null;
       const status = screenshotDiffs
-        .filter(({ buildId }) => buildId === build.id)
+        .filter((diff) => diff.buildId === buildId)
         .map(({ validationStatus }) => validationStatus);
       if (status.includes("rejected")) return "rejected";
       if (status.length === 1 && status[0] === "accepted") return "accepted";

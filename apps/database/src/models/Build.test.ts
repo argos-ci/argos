@@ -218,7 +218,11 @@ describe("models/Build", () => {
         { jobStatus: "aborted" },
       ]);
 
-      const conclusions = await Build.getConclusions(builds);
+      const statuses = await Build.getStatuses(builds);
+      const conclusions = await Build.getConclusions(
+        builds.map((b) => b.id),
+        statuses
+      );
       expect(conclusions).toEqual([null, null, null, null]);
     });
 
@@ -226,7 +230,8 @@ describe("models/Build", () => {
       const build = await factory.create<Build>("Build", {
         jobStatus: "complete",
       });
-      const conclusions = await Build.getConclusions([build]);
+      const statuses = await Build.getStatuses([build]);
+      const conclusions = await Build.getConclusions([build.id], statuses);
       expect(conclusions).toEqual(["stable"]);
     });
 
@@ -236,7 +241,8 @@ describe("models/Build", () => {
         { buildId: build.id },
         { buildId: build.id },
       ]);
-      const conclusions = await Build.getConclusions([build]);
+      const statuses = await Build.getStatuses([build]);
+      const conclusions = await Build.getConclusions([build.id], statuses);
       expect(conclusions).toEqual(["stable"]);
     });
 
@@ -246,7 +252,8 @@ describe("models/Build", () => {
         { buildId: build.id },
         { buildId: build.id, score: 1.3 },
       ]);
-      const conclusions = await Build.getConclusions([build]);
+      const statuses = await Build.getStatuses([build]);
+      const conclusions = await Build.getConclusions([build.id], statuses);
       expect(conclusions).toEqual(["diffDetected"]);
     });
   });
@@ -256,15 +263,28 @@ describe("models/Build", () => {
       const build = await factory.create<Build>("Build", {
         jobStatus: "pending",
       });
-      const conclusions = await Build.getReviewStatuses([build]);
-      expect(conclusions).toEqual([null]);
+      const statuses = await Build.getStatuses([build]);
+      const conclusions = await Build.getConclusions([build.id], statuses);
+      const reviewStatuses = await Build.getReviewStatuses(
+        [build.id],
+        conclusions
+      );
+      expect(reviewStatuses).toEqual([null]);
     });
 
     it("should return null for stable build", async () => {
       const builds = await factory.createMany<Build>("Build", 2);
       await factory.createMany("ScreenshotDiff", 2, { buildId: builds[0]!.id });
       await factory.createMany("ScreenshotDiff", 2, { buildId: builds[1]!.id });
-      const reviewStatuses = await Build.getReviewStatuses(builds);
+      const statuses = await Build.getStatuses(builds);
+      const conclusions = await Build.getConclusions(
+        builds.map((b) => b.id),
+        statuses
+      );
+      const reviewStatuses = await Build.getReviewStatuses(
+        builds.map((b) => b.id),
+        conclusions
+      );
       expect(reviewStatuses).toEqual([null, null]);
     });
 
@@ -274,7 +294,12 @@ describe("models/Build", () => {
         { buildId: build.id, score: "1.3", validationStatus: "accepted" },
         { buildId: build.id, score: "0.4", validationStatus: "accepted" },
       ]);
-      const reviewStatuses = await Build.getReviewStatuses([build]);
+      const statuses = await Build.getStatuses([build]);
+      const conclusions = await Build.getConclusions([build.id], statuses);
+      const reviewStatuses = await Build.getReviewStatuses(
+        [build.id],
+        conclusions
+      );
       expect(reviewStatuses).toEqual(["accepted"]);
     });
 
@@ -284,7 +309,12 @@ describe("models/Build", () => {
         { buildId: build.id, score: "1.3", validationStatus: "accepted" },
         { buildId: build.id, score: "0.4", validationStatus: "rejected" },
       ]);
-      const reviewStatuses = await Build.getReviewStatuses([build]);
+      const statuses = await Build.getStatuses([build]);
+      const conclusions = await Build.getConclusions([build.id], statuses);
+      const reviewStatuses = await Build.getReviewStatuses(
+        [build.id],
+        conclusions
+      );
       expect(reviewStatuses).toEqual(["rejected"]);
     });
 
@@ -294,7 +324,12 @@ describe("models/Build", () => {
         { buildId: build.id, score: "1.3", validationStatus: "accepted" },
         { buildId: build.id, score: "0.4", validationStatus: "" },
       ]);
-      const reviewStatuses = await Build.getReviewStatuses([build]);
+      const statuses = await Build.getStatuses([build]);
+      const conclusions = await Build.getConclusions([build.id], statuses);
+      const reviewStatuses = await Build.getReviewStatuses(
+        [build.id],
+        conclusions
+      );
       expect(reviewStatuses).toEqual([null]);
     });
   });
