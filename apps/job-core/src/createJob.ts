@@ -91,14 +91,12 @@ export const createJob = <TArg>(
             }
 
             channel.ack(msg);
-            Sentry.captureException(error);
             logger.error(error);
             await consumer.error(payload.args[0]);
             return;
           }
         } catch (error: any) {
           channel.ack(msg);
-          Sentry.captureException(error);
           logger.error(error);
           return;
         }
