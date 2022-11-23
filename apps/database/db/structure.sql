@@ -1295,6 +1295,13 @@ CREATE INDEX repositories_organizationid_index ON public.repositories USING btre
 
 
 --
+-- Name: repositories_private; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX repositories_private ON public.repositories USING btree (private);
+
+
+--
 -- Name: repositories_token_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1355,6 +1362,13 @@ CREATE INDEX screenshot_diffs_comparescreenshotid_index ON public.screenshot_dif
 --
 
 CREATE INDEX screenshot_diffs_fileid_index ON public.screenshot_diffs USING btree ("fileId");
+
+
+--
+-- Name: screenshots_createdat; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshots_createdat ON public.screenshots USING btree ("createdAt" DESC);
 
 
 --
@@ -1743,3 +1757,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022092
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20220927074934_add_missing_accounts.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221013113904_add_forced_plan.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221104162900_add_files_dimensions.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221123165000_add_indexes.js', 1, NOW());
