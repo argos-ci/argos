@@ -93,7 +93,7 @@ export const BuildStatusDescription = (props: {
               Build has been killed because it took too much time.
               <br />
               If you are having trouble with this issue reach us on{" "}
-              <Anchor href="https://discord.gg/pK79sv85Vg">Discord</Anchor>.
+              <Anchor href="https://discord.gg/WjzGrQGS4A">Discord</Anchor>.
             </>
           );
         }
@@ -104,7 +104,7 @@ export const BuildStatusDescription = (props: {
               The build failed to be processed.
               <br />
               If you are having trouble with this issue reach us on{" "}
-              <Anchor href="https://discord.gg/pK79sv85Vg">Discord</Anchor>.
+              <Anchor href="https://discord.gg/WjzGrQGS4A">Discord</Anchor>.
             </>
           );
 

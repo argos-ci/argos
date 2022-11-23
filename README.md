@@ -12,7 +12,7 @@ _Argos is a visual testing solution that fits in your workflow to avoid visual r
 
 - [Docs](https://docs.argos-ci.com)
 - [Examples](https://github.com/argos-ci/argos/tree/main/examples)
-- [Discord](https://discord.gg/pK79sv85Vg)
+- [Discord](https://discord.gg/WjzGrQGS4A)
 
 ## Contributing
 

@@ -101,7 +101,7 @@ export function BuildStatusInfo({ statusInfoType, referenceBranch }) {
           Build has been killed because it took too much time.
           <br />
           If you are having trouble with this issue reach us on{" "}
-          <Link href="https://discord.gg/pK79sv85Vg">Discord</Link>.
+          <Link href="https://discord.gg/WjzGrQGS4A">Discord</Link>.
         </>
       );
 
@@ -111,7 +111,7 @@ export function BuildStatusInfo({ statusInfoType, referenceBranch }) {
           The build failed to be processed.
           <br />
           If you are having trouble with this issue reach us on{" "}
-          <Link href="https://discord.gg/pK79sv85Vg">Discord</Link>.
+          <Link href="https://discord.gg/WjzGrQGS4A">Discord</Link>.
         </>
       );
 
