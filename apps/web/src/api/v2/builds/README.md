@@ -18,8 +18,8 @@ The server verifies that the screenshots are present and mark the build as compl
 ## Parallel mode
 
 The parallel mode is used when the client wants to upload the screenshots in several times.
-To activate the pallaral mode, the client must send the `parallel` parameter with a value of `true`.
-It works with two fondamental parameters:
+To activate the parallel mode, the client must send the `parallel` parameter with a value of `true`.
+It works with two required parameters:
 
 - `parallelTotal`: the total number of upload batches (usually the number of parallel workers)
 - `parallelNonce`: the nonce of the current upload batch
