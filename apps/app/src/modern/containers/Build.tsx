@@ -68,7 +68,13 @@ export const getBuildColor = (
       }
     }
     case null:
-      return "pending" as const;
+      switch (status) {
+        case "expired":
+          return "danger" as const;
+
+        default:
+          return "pending" as const;
+      }
     default:
       throw new Error(`Invalid type: ${type}`);
   }
@@ -113,7 +119,13 @@ export const getBuildIcon = (
       }
     }
     case null:
-      return DotIcon;
+      switch (status) {
+        case "expired":
+          return XCircleIcon;
+
+        default:
+          return DotIcon;
+      }
     default:
       throw new Error(`Invalid type: ${type}`);
   }
@@ -153,7 +165,13 @@ export const getBuildLabel = (
       }
     }
     case null:
-      return "Build scheduled";
+      switch (status) {
+        case "expired":
+          return "Build expired";
+
+        default:
+          return "Build scheduled";
+      }
     default:
       throw new Error(`Invalid type: ${type}`);
   }
