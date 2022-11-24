@@ -199,7 +199,7 @@ function RepositoriesList({ repositories, ...props }) {
                   verticalAlign="middle"
                   color={repository.enabled ? "primary-text" : "secondary-text"}
                 >
-                  {repository.enabled ? "Active" : "Deactivated"}
+                  {repository.enabled ? "Active" : "Inactive"}
                 </Td>
 
                 <Td
@@ -280,7 +280,7 @@ function Owners({ owners }) {
                 icon={activeFilter ? EyeClosedIcon : EyeIcon}
                 field
               >
-                {!activeFilter ? "Hide" : "Show"} deactivated repositories
+                {!activeFilter ? "Hide" : "Show"} inactive repositories
               </IllustratedText>
             </Button>
           ) : null}
