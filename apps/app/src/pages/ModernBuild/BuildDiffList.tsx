@@ -104,27 +104,23 @@ const ListHeader = ({
   );
 };
 
-const getImgAttributes = (url: string, height?: number) => {
-  const src = height
-    ? `${url}?tr=w-247,h-${height},c-at_max`
-    : `${url}?tr=w-247,c-at_max`;
+const getImgAttributes = (
+  url: string,
+  dimensions?: { width: number; height: number }
+) => {
+  const src = dimensions
+    ? `${url}?tr=w-${dimensions.width},h-${dimensions.height},c-at_max,dpr-2`
+    : url;
   return {
     key: src,
     src,
-    srcSet: `${src} 1x, ${src},dpr-2 2x, ${src},dpr-3 3x`,
+    width: dimensions?.width,
+    height: dimensions?.height,
   };
 };
 
-const getAspectRatio = ({
-  width,
-  height,
-}: {
-  width?: number | null;
-  height?: number | null;
-}) => (width && height ? `${width} / ${height}` : "auto");
-
 const DiffImage = memo(({ diff }: { diff: Diff }) => {
-  const imageHeight = getImageHeight(diff);
+  const dimensions = getDiffDimensions(diff);
 
   switch (diff.status) {
     case "added":
@@ -132,38 +128,38 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
     case "failed":
       return (
         <img
-          {...getImgAttributes(diff.compareScreenshot!.url, imageHeight)}
-          className="h-full w-full object-contain"
+          {...getImgAttributes(diff.compareScreenshot!.url, dimensions)}
+          className="max-h-full max-w-full object-contain"
         />
       );
     case "removed":
       return (
         <img
-          {...getImgAttributes(diff.baseScreenshot!.url, imageHeight)}
-          className="h-full w-full object-contain"
+          {...getImgAttributes(diff.baseScreenshot!.url, dimensions)}
+          className="max-h-full max-w-full object-contain"
         />
       );
-    case "updated":
+    case "updated": {
+      const dimensions = getDiffDimensions(diff);
       return (
-        <div className="flex h-full justify-center">
+        <div className="flex h-full items-center justify-center">
           <div
             className="relative"
-            style={{ aspectRatio: getAspectRatio(diff) }}
+            style={{ width: dimensions.width, height: dimensions.height }}
           >
             <img
               {...getImgAttributes(diff.compareScreenshot!.url)}
               className="absolute w-full"
-              style={{ aspectRatio: getAspectRatio(diff.compareScreenshot!) }}
             />
             <div className="absolute inset-0 bg-black bg-opacity-70" />
             <img
               className="relative z-10 max-h-full w-full"
-              {...getImgAttributes(diff.url!, imageHeight)}
-              style={{ aspectRatio: getAspectRatio(diff) }}
+              {...getImgAttributes(diff.url!, dimensions)}
             />
           </div>
         </div>
       );
+    }
     default:
       return null;
   }
@@ -218,7 +214,7 @@ const ListItem = ({
         }
       }}
     >
-      <div className="relative h-full overflow-hidden rounded-lg bg-slate-800/50">
+      <div className="relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-slate-800/50">
         {item.diff ? (
           <>
             <DiffImage diff={item.diff} />{" "}
@@ -269,31 +265,51 @@ const useInViewportIndices = (containerRef: React.RefObject<HTMLElement>) => {
   return { observer, getIndicesInViewport };
 };
 
-const getImageHeight = (diff: Diff | null) => {
-  const maxWidth = 247;
-  const defaultImageHeight = 300;
+const MAX_HEIGHT = 400;
+const MIN_HEIGHT = 100;
+const MAX_WIDTH = 247;
+const DEFAULT_IMAGE_HEIGHT = 300;
 
-  if (!diff) {
-    return defaultImageHeight;
+const constraint = ({ width, height }: { width: number; height: number }) => {
+  const wp = MAX_WIDTH / width;
+  const hp = MAX_HEIGHT / height;
+  const ratio = Math.min(wp, hp, 1);
+  return {
+    width: Math.round(width * ratio),
+    height: Math.round(height * ratio),
+  };
+};
+
+const getDiffDimensions = (diff: Diff | null) => {
+  if (diff && diff.width != null && diff.height != null) {
+    return constraint({ width: diff.width, height: diff.height });
   }
 
-  const screenshotWithDimensions = [
-    diff,
-    diff.baseScreenshot,
-    diff.compareScreenshot,
-  ].find(
-    (screenshot) =>
-      Number.isInteger(screenshot?.width) &&
-      Number.isInteger(screenshot?.height)
-  );
-
-  if (!screenshotWithDimensions) {
-    return defaultImageHeight;
+  if (
+    diff &&
+    diff.compareScreenshot &&
+    diff.compareScreenshot.width != null &&
+    diff.compareScreenshot.height != null
+  ) {
+    return constraint({
+      width: diff.compareScreenshot.width,
+      height: diff.compareScreenshot.height,
+    });
   }
 
-  const { width, height } = screenshotWithDimensions;
-  const imageHeight = Math.round((height! * maxWidth) / width!);
-  return Math.min(Math.max(imageHeight, 80), 600);
+  if (
+    diff &&
+    diff.baseScreenshot &&
+    diff.baseScreenshot.width != null &&
+    diff.baseScreenshot.height != null
+  ) {
+    return constraint({
+      width: diff.baseScreenshot.width,
+      height: diff.baseScreenshot.height,
+    });
+  }
+
+  return { height: DEFAULT_IMAGE_HEIGHT, width: MAX_WIDTH };
 };
 
 const InternalBuildDiffList = memo(() => {
@@ -351,11 +367,12 @@ const InternalBuildDiffList = memo(() => {
           return headerHeight - (row.borderBottom ? 0 : 1);
         }
         case "item": {
-          const imageHeight = getImageHeight(row.diff);
+          const dimensions = getDiffDimensions(row.diff);
+          const height = Math.max(dimensions.height, MIN_HEIGHT);
           const gap = 16;
           const mt = row.first ? gap / 2 : 0;
           const mb = row.last ? gap / 2 : 0;
-          return imageHeight + gap + mt + mb;
+          return height + gap + mt + mb;
         }
         default:
           return 0;
