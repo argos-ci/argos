@@ -1,5 +1,4 @@
 import { checkIsBuildEmpty, checkIsBuildIncomplete } from "./Build";
-import { Anchor } from "@/modern/ui/Link";
 import { Code } from "@/modern/ui/Code";
 
 import { graphql, FragmentType, useFragment } from "@/gql";
@@ -88,25 +87,11 @@ export const BuildStatusDescription = (props: {
               </>
             );
           }
-          return (
-            <>
-              Build has been killed because it took too much time.
-              <br />
-              If you are having trouble with this issue reach us on{" "}
-              <Anchor href="https://discord.gg/WjzGrQGS4A">Discord</Anchor>.
-            </>
-          );
+          return <>Build has been killed because it took too much time.</>;
         }
 
         case "error":
-          return (
-            <>
-              The build failed to be processed.
-              <br />
-              If you are having trouble with this issue reach us on{" "}
-              <Anchor href="https://discord.gg/WjzGrQGS4A">Discord</Anchor>.
-            </>
-          );
+          return <>The build has failed to be processed.</>;
 
         case "aborted":
           return <>This build has been voluntarily aborted.</>;
