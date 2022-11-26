@@ -81,10 +81,19 @@ const MissingScreenshotInfo = memo(
   }
 );
 
-const getImgAttributes = (url: string) => {
+const getImgAttributes = ({
+  url,
+  width,
+  height,
+}: {
+  url: string;
+  width?: number | null | undefined;
+  height?: number | null | undefined;
+}) => {
   return {
     key: url,
     src: url,
+    style: { aspectRatio: width && height ? `${width}/${height}` : undefined },
   };
 };
 
@@ -137,7 +146,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             <img
               className="max-h-full"
               alt="Baseline screenshot"
-              {...getImgAttributes(diff.baseScreenshot!.url)}
+              {...getImgAttributes(diff.baseScreenshot!)}
             />
           </NeutralLink>
         </div>
@@ -148,12 +157,16 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
           <NeutralLink href={diff.baseScreenshot!.url}>
             <img
               className="relative max-h-full opacity-0"
-              {...getImgAttributes(diff.url!)}
+              {...getImgAttributes({
+                url: diff.url!,
+                width: diff.width,
+                height: diff.height,
+              })}
             />
             <img
               className="absolute top-0 left-0"
               alt="Baseline screenshot"
-              {...getImgAttributes(diff.baseScreenshot!.url)}
+              {...getImgAttributes(diff.baseScreenshot!)}
             />
           </NeutralLink>
         </div>
@@ -174,7 +187,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             <img
               className="max-h-full"
               alt="Changes screenshot"
-              {...getImgAttributes(diff.compareScreenshot!.url)}
+              {...getImgAttributes(diff.compareScreenshot!)}
             />
           </NeutralLink>
         </div>
@@ -186,7 +199,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             <img
               className="max-h-full"
               alt="Failure screenshot"
-              {...getImgAttributes(diff.compareScreenshot!.url)}
+              {...getImgAttributes(diff.compareScreenshot!)}
             />
           </NeutralLink>
         </div>
@@ -222,7 +235,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
           <NeutralLink href={diff.compareScreenshot!.url}>
             <img
               className="absolute"
-              {...getImgAttributes(diff.compareScreenshot!.url)}
+              {...getImgAttributes(diff.compareScreenshot!)}
             />
             <div
               className={`${opacity} absolute inset-0 bg-black bg-opacity-70`}
@@ -230,7 +243,11 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             <img
               className={`${opacity} relative z-10 max-h-full`}
               alt="Changes screenshot"
-              {...getImgAttributes(diff.url!)}
+              {...getImgAttributes({
+                url: diff.url!,
+                width: diff.width,
+                height: diff.height,
+              })}
             />
           </NeutralLink>
         </div>
