@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // @ts-ignore
 import getPixels from "get-pixels";
 import { join } from "node:path";

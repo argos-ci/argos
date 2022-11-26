@@ -77,3 +77,17 @@ export function useRefetchUser() {
   const { refetch } = useUserContext();
   return refetch;
 }
+
+export function checkIsUserSyncing(
+  user:
+    | {
+        latestSynchronization?: { jobStatus: string } | null | undefined;
+      }
+    | null
+    | undefined
+) {
+  return (
+    user?.latestSynchronization?.jobStatus === "queued" ||
+    user?.latestSynchronization?.jobStatus === "progress"
+  );
+}

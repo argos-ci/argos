@@ -34,7 +34,7 @@ export const typeDefs = gql`
     "Determine if the current user has write access to the repository"
     permissions: [Permission!]!
     "Owner of the repository"
-    owner: Owner
+    owner: Owner!
     sampleBuildId: ID
     "Github default branch"
     defaultBranch: String
@@ -123,8 +123,18 @@ export const resolvers = {
       if (!hasWritePermission) return null;
       return repository.token;
     },
-    owner: async (repository: Repository) => {
-      return repository.$relatedOwner();
+    owner: async (
+      repository: Repository,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
+      if (repository.userId) {
+        return ctx.loaders.User.load(repository.userId);
+      }
+      if (repository.organizationId) {
+        return ctx.loaders.Organization.load(repository.organizationId);
+      }
+      throw new Error(`Invalid repository owner: ${repository.id}`);
     },
     permissions: async (
       repository: Repository,

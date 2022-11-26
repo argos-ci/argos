@@ -65,11 +65,6 @@ export const typeDefs = gql`
       offset: Int!
       limit: Int!
     ): ScreenshotDiffResult!
-    "The screenshot diffs before and after the input rank"
-    screenshotDiffCursorPaginated(
-      limit: Int!
-      rank: Int!
-    ): ScreenshotDiffResult!
     diffs(offset: Int!, limit: Int!): ScreenshotDiffResult!
     "The screenshot bucket ID of the baselineBranch"
     baseScreenshotBucketId: ID
@@ -158,39 +153,6 @@ export const resolvers = {
 
       const result = await query.range(offset, offset + limit - 1);
       return paginateResult({ result, offset, limit });
-    },
-    async screenshotDiffCursorPaginated(
-      build: Build,
-      { limit, rank }: { limit: number; rank: number }
-    ) {
-      const diffsTotalCount = await getSortedDiffsQuery(build).resultSize();
-      const existingRank = rank < 1 || rank > diffsTotalCount ? 0 : rank;
-
-      const diffs = await knex
-        .with("diffs", getSortedDiffsQuery(build).toKnexQuery())
-        .with(
-          "rankedDiffs",
-          knex.raw(
-            'SELECT *, ROW_NUMBER() OVER (ORDER BY NULL) as rank FROM "diffs"'
-          )
-        )
-        .with(
-          "range",
-          knex
-            .select("rankedDiffs.*")
-            .from("rankedDiffs")
-            .whereBetween("rank", [
-              Math.floor(existingRank - limit / 2),
-              Math.floor(existingRank + limit / 2),
-            ])
-        )
-        .from("range");
-
-      return paginateResult({
-        result: { total: diffsTotalCount, results: diffs },
-        offset: diffs.length > 0 ? diffs[0].rank : 0,
-        limit,
-      });
     },
     compareScreenshotBucket: async (
       build: Build,

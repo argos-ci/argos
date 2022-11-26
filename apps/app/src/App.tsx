@@ -1,31 +1,27 @@
-import { ColorModeProvider } from "@xstyled/styled-components";
 import { Helmet } from "react-helmet";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 
-import { GlobalStyle, ThemeInitializer } from "./components";
+import { Layout, Main } from "@/containers/Layout";
+
 import { ApolloInitializer } from "./containers/Apollo";
 import { AuthProvider } from "./containers/Auth";
-import { Layout } from "./containers/Layout";
-import { ScrollToTop } from "./containers/Router";
 import { UserInitializer } from "./containers/User";
 import { AuthCallback } from "./pages/AuthCallback";
+import { Build } from "./pages/Build";
 import { Home } from "./pages/Home";
-import { ModernBuild } from "./pages/ModernBuild";
-import { NotFoundWithContainer } from "./pages/NotFound";
+import { NotFound } from "./pages/NotFound";
+import { Owner } from "./pages/Owner";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
 import { Repository } from "./pages/Repository";
+import { RepositoryBuilds } from "./pages/Repository/RepositoryBuilds";
+import { RepositorySettings } from "./pages/Repository/RepositorySettings";
 
 export const App = () => {
   return (
     <>
-      <Helmet
-        titleTemplate="%s • Argos"
-        defaultTitle="Argos - Automated visual testing"
-      />
-
+      <Helmet defaultTitle="Argos" />
       <BrowserRouter>
-        <ScrollToTop />
         <AuthProvider>
           <ApolloInitializer>
             <UserInitializer>
@@ -36,36 +32,43 @@ export const App = () => {
                 />
                 <Route
                   path="/:ownerLogin/:repositoryName/builds/:buildNumber"
-                  element={<ModernBuild />}
+                  element={<Build />}
                 />
                 <Route
                   path="/:ownerLogin/:repositoryName/builds/:buildNumber/:diffId"
-                  element={<ModernBuild />}
+                  element={<Build />}
                 />
                 <Route
                   path="/"
                   element={
-                    <ThemeInitializer>
-                      <ColorModeProvider>
-                        <GlobalStyle />
-                        <Layout>
-                          <Outlet />
-                        </Layout>
-                      </ColorModeProvider>
-                    </ThemeInitializer>
+                    <Layout>
+                      <Outlet />
+                    </Layout>
                   }
                 >
-                  <Route index element={<Home />} />
                   <Route
-                    path="/:ownerLogin/settings/*"
-                    element={<OwnerSettings />}
+                    index
+                    element={
+                      <Main>
+                        <Helmet>
+                          <title>All my repositories</title>
+                        </Helmet>
+                        <Home />
+                      </Main>
+                    }
                   />
                   <Route
-                    path="/:ownerLogin/:repositoryName/*"
+                    path=":ownerLogin/:repositoryName"
                     element={<Repository />}
-                  />
-                  <Route path="/:ownerLogin" element={<OwnerRepositories />} />
-                  <Route path="*" element={<NotFoundWithContainer />} />
+                  >
+                    <Route path="" element={<RepositoryBuilds />} />
+                    <Route path="settings" element={<RepositorySettings />} />
+                  </Route>
+                  <Route path=":ownerLogin" element={<Owner />}>
+                    <Route path="" element={<OwnerRepositories />} />
+                    <Route path="settings" element={<OwnerSettings />} />
+                  </Route>
+                  <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
             </UserInitializer>

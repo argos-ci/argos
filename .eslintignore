@@ -4,3 +4,5 @@ package.json
 node_modules/
 /public/
 /examples
+# Generated
+apps/app/src/gql
