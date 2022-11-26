@@ -1,19 +1,19 @@
 import { ComponentProps, memo } from "react";
 import { Link } from "react-router-dom";
 
-import { BrandShield } from "@/components/BrandShield";
 import { useUser } from "@/containers/User";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BuildStatusChip } from "@/modern/containers/BuildStatusChip";
 import { GitHubLoginButton } from "@/modern/containers/GitHub";
 import { ReviewButton } from "@/modern/containers/ReviewButton";
+import { BrandShield } from "@/modern/ui/BrandShield";
 import { MagicTooltip } from "@/modern/ui/Tooltip";
 
 const BrandLink = memo(() => {
   return (
     <MagicTooltip tooltip="Go to home">
       <Link to="/" className="transition hover:brightness-125">
-        <BrandShield className="h-[32px] w-auto" />
+        <BrandShield height={32} />
       </Link>
     </MagicTooltip>
   );

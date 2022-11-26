@@ -1,35 +1,23 @@
-import { x } from "@xstyled/styled-components";
-
 import { Catch } from "@/components";
 import { ErrorPage } from "@/pages/ErrorPage";
+import { Navbar } from "@/modern/containers/Navbar";
 
-import { AppFooter } from "./AppFooter";
 import { AppHeader } from "./AppHeader";
-import { AppNavbar } from "./AppNavbar";
 import { SyncAlert } from "./SyncAlert";
 
 export const Layout = ({ children }) => {
   return (
-    <x.div
-      minHeight="100%"
-      display="flex"
-      flexDirection="column"
-      backgroundColor="bg"
-    >
-      <x.div flex="0 0 auto">
-        <AppNavbar />
+    <div className="flex min-h-full flex-col">
+      <header className="flex-shrink-0">
+        <Navbar />
         <AppHeader />
-      </x.div>
+      </header>
 
       <SyncAlert />
 
-      <x.main mt={6} flex="1 1 auto">
+      <main className="mt-6 flex-1">
         <Catch fallback={<ErrorPage />}>{children}</Catch>
-      </x.main>
-
-      <x.footer flex="0 0 auto" mt={16}>
-        <AppFooter />
-      </x.footer>
-    </x.div>
+      </main>
+    </div>
   );
 };

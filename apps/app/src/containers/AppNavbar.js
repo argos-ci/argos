@@ -73,17 +73,15 @@ export function AppNavbar() {
   const user = useUser();
 
   return (
-    <>
-      <Navbar>
-        <NavbarBrandLink as={BaseLink} to="/">
-          <NavbarBrand>
-            <BrandLogo height={32} />
-          </NavbarBrand>
-        </NavbarBrandLink>
-        <NavbarSecondary>
-          {user ? <UserMenu user={user} /> : <GitHubLoginButton />}
-        </NavbarSecondary>
-      </Navbar>
-    </>
+    <Navbar>
+      <NavbarBrandLink as={BaseLink} to="/">
+        <NavbarBrand>
+          <BrandLogo height={32} />
+        </NavbarBrand>
+      </NavbarBrandLink>
+      <NavbarSecondary>
+        {user ? <UserMenu user={user} /> : <GitHubLoginButton />}
+      </NavbarSecondary>
+    </Navbar>
   );
 }
