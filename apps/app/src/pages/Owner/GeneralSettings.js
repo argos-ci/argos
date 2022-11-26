@@ -64,7 +64,7 @@ function PlanCard({ plan: { name, screenshotsLimitPerMonth }, ...props }) {
       </CardHeader>
 
       <CardBody>
-        <x.div fontSize="4xl" mb={3}>
+        <x.div fontSize="4xl" mb={3} className="capitalize">
           {name}
         </x.div>
 
