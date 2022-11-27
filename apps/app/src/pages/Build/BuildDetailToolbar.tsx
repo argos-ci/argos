@@ -13,6 +13,7 @@ import { useBuildDiffFitState } from "./BuildDiffFitState";
 import { useBuildDiffState } from "./BuildDiffState";
 import { useBuildDiffVisibleState } from "./BuildDiffVisibleState";
 import { useBuildHotkey } from "./BuildHotkeys";
+import { clsx } from "clsx";
 
 const BuildDiffChangesOverlayToggle = memo(() => {
   const { visible, setVisible } = useBuildDiffVisibleState();
@@ -110,7 +111,10 @@ export const BuildDetailToolbar = memo(
       : "border-b-transparent";
     return (
       <div
-        className={`${borderClassName} b sticky top-0 z-20 flex flex-shrink-0 justify-between gap-4 border-b bg-black/80 p-4 backdrop-blur-[5px] backdrop-saturate-[180%] transition-colors`}
+        className={clsx(
+          borderClassName,
+          "b sticky top-0 z-20 flex flex-shrink-0 justify-between gap-4 border-b bg-black/80 p-4 backdrop-blur-[5px] backdrop-saturate-[180%] transition-colors"
+        )}
       >
         <div className="flex items-center gap-2">
           <div className="flex gap-1">

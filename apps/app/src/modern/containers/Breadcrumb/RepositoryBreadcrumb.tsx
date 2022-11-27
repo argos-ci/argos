@@ -3,18 +3,17 @@ import { useParams } from "react-router-dom";
 
 import {
   BreadcrumbItem,
-  BreadcrumbItemMenu,
+  BreadcrumbItemIcon,
   BreadcrumbLink,
   BreadcrumbSeparator,
-  Icon,
-} from "@/components";
+} from "@/modern/ui/Breadcrumb";
 import { useUser } from "@/containers/User";
 
 import { RepositoryBreadcrumbMenu } from "./RepositoryBreadcrumbMenu";
 
-export function RepositoryBreadcrumbItem() {
-  const user = useUser();
+export const RepositoryBreadcrumbItem = () => {
   const { ownerLogin, repositoryName } = useParams();
+  const user = useUser();
 
   if (!repositoryName) return null;
 
@@ -26,20 +25,13 @@ export function RepositoryBreadcrumbItem() {
           to={`${ownerLogin}/${repositoryName}/builds`}
           aria-current="page"
         >
-          <Icon
-            as={RepoIcon}
-            mt={1}
-            width={{ _: 20, md: 25 }}
-            height={{ _: 20, md: 25 }}
-          />
+          <BreadcrumbItemIcon>
+            <RepoIcon size={18} />
+          </BreadcrumbItemIcon>
           {repositoryName}
         </BreadcrumbLink>
-        {user && (
-          <BreadcrumbItemMenu>
-            <RepositoryBreadcrumbMenu />
-          </BreadcrumbItemMenu>
-        )}
+        {user && <RepositoryBreadcrumbMenu />}
       </BreadcrumbItem>
     </>
   );
-}
+};

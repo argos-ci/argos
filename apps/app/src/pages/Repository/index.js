@@ -4,7 +4,7 @@ import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { TabList, TabNavLink } from "@/components";
 import { Query } from "@/containers/Apollo";
-import { HeaderTeleporter } from "@/containers/AppHeader";
+import { SubNavbarTabs } from "@/modern/containers/SubNavbar";
 import { NotFoundWithContainer } from "@/pages/NotFound";
 
 import { RepositoryBuilds } from "./Builds";
@@ -68,14 +68,14 @@ export function Repository() {
 
           return (
             <>
-              <HeaderTeleporter>
+              <SubNavbarTabs>
                 <TabList>
                   <TabNavLink to={`builds`}>Builds</TabNavLink>
                   {hasWritePermission(data.repository) ? (
                     <TabNavLink to={`settings`}>Settings</TabNavLink>
                   ) : null}
                 </TabList>
-              </HeaderTeleporter>
+              </SubNavbarTabs>
 
               <Routes>
                 <Route

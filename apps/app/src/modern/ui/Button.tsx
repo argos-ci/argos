@@ -1,6 +1,7 @@
 import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import { Button as AriakitButton } from "ariakit/button";
 import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
+import { clsx } from "clsx";
 import { Children, cloneElement, forwardRef, memo } from "react";
 
 export type ButtonColor = "primary" | "neutral";
@@ -39,7 +40,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <AriakitButton
         ref={ref}
         as="button"
-        className={`${variantClassName} align-center inline-flex whitespace-nowrap rounded-lg border py-2 px-3 font-sans text-sm font-medium leading-none transition disabled:opacity-70 [&:is(button)]:cursor-default`}
+        className={clsx(
+          variantClassName,
+          "align-center inline-flex whitespace-nowrap rounded-lg border py-2 px-3 font-sans text-sm font-medium leading-none transition disabled:opacity-70 [&:is(button)]:cursor-default"
+        )}
         {...props}
       >
         {children}

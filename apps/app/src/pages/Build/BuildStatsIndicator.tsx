@@ -1,4 +1,5 @@
 import { Button as AriakitButton } from "ariakit/button";
+import { clsx } from "clsx";
 import { memo } from "react";
 
 import type { BuildStats } from "@/modern/containers/Build";
@@ -62,7 +63,10 @@ const StatCount = ({
     <HotkeyTooltip keys={hotkey.displayKeys} description={hotkey.description}>
       <AriakitButton
         as="div"
-        className={`${colorClassName} flex cursor-default items-center gap-1 p-2 transition aria-disabled:opacity-70`}
+        className={clsx(
+          colorClassName,
+          "flex cursor-default items-center gap-1 p-2 transition aria-disabled:opacity-70"
+        )}
         onClick={onActive}
         disabled={count === 0}
       >

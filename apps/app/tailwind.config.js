@@ -65,6 +65,7 @@ module.exports = {
           bg: colors.slate[900],
           border: colors.slate[800],
           on: colors.slate[300],
+          "on-title": colors.slate[400],
           "hover-on": colors.slate[50],
           item: {
             "hover-bg": colors.slate[800],

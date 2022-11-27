@@ -1,4 +1,5 @@
 /* eslint-disable react/no-unescaped-entities */
+import { clsx } from "clsx";
 import { memo, useLayoutEffect, useRef, useState } from "react";
 
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
@@ -240,10 +241,13 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
               {...getImgAttributes(diff.compareScreenshot!)}
             />
             <div
-              className={`${opacity} absolute inset-0 bg-black bg-opacity-70`}
+              className={clsx(
+                opacity,
+                "absolute inset-0 bg-black bg-opacity-70"
+              )}
             />
             <img
-              className={`${opacity} relative z-10 max-h-full`}
+              className={clsx(opacity, "relative z-10 max-h-full")}
               alt="Changes screenshot"
               {...getImgAttributes({
                 url: diff.url!,
@@ -262,9 +266,8 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
 const BuildScreenshots = memo(
   (props: { diff: Diff; build: BuildFragmentDocument }) => {
     const { contained } = useBuildDiffFitState();
-    const flex = contained ? "flex-1 min-h-0" : "";
     return (
-      <div className={`${flex} flex gap-4 px-4`}>
+      <div className={clsx(contained && "min-h-0 flex-1", "flex gap-4 px-4")}>
         {props.build.baseScreenshotBucket ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
             <BuildScreenshotHeader

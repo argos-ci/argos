@@ -1,18 +1,24 @@
 import { forwardRef, HTMLAttributes } from "react";
+import { clsx } from "clsx";
 
 interface OwnerAvatarProps extends HTMLAttributes<HTMLDivElement> {
   owner?: { name: string; login: string } | null | undefined;
+  size?: number;
 }
 
 export const OwnerAvatar = forwardRef<
   HTMLDivElement | HTMLImageElement,
   OwnerAvatarProps
->(({ owner, className, ...props }, ref) => {
+>(({ owner, className, size = 32, ...props }, ref) => {
   if (!owner) {
     return (
       <div
         ref={ref}
-        className={`${className} h-8 w-8 rounded-full bg-slate-900`}
+        className={clsx(className, "rounded-full bg-slate-900")}
+        style={{
+          width: size,
+          height: size,
+        }}
         {...props}
       />
     );
@@ -21,9 +27,9 @@ export const OwnerAvatar = forwardRef<
     <img
       src={`https://github.com/${owner.login}.png?size=60`}
       alt={owner.name}
-      className={`${className} rounded-full`}
-      height={32}
-      width={32}
+      className={clsx(className, "rounded-full")}
+      height={size}
+      width={size}
       {...props}
     />
   );

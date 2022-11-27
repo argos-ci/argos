@@ -7,8 +7,10 @@ import {
   MenuSeparatorProps as AriakitMenuSeparatorProps,
 } from "ariakit/menu";
 import { Children, cloneElement, forwardRef } from "react";
+import { clsx } from "clsx";
 
 export { MenuButton, useMenuState } from "ariakit/menu";
+export type { MenuState } from "ariakit/menu";
 
 export type MenuSeparatorProps = Omit<AriakitMenuSeparatorProps, "className">;
 
@@ -46,7 +48,10 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
     return (
       <AriakitMenuItem
         ref={ref}
-        className={`${pointerClassName} flex items-center rounded py-1.5 px-3 text-sm text-menu-on transition hover:bg-menu-item-hover-bg hover:text-menu-hover-on focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-70`}
+        className={clsx(
+          pointerClassName,
+          "flex items-center rounded py-1.5 px-3 text-sm text-menu-on transition hover:bg-menu-item-hover-bg hover:text-menu-hover-on focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-70"
+        )}
         {...props}
       />
     );
@@ -63,6 +68,25 @@ export const MenuItemIcon = ({
   className = "",
 }: MenuItemIconProps) => {
   return cloneElement(Children.only(children), {
-    className: `${className} h-[1em] w-[1em] mr-3`,
+    className: clsx(className, "h-[1em] w-[1em] mr-3"),
   });
+};
+
+export const MenuTitle = (props: { children: React.ReactNode }) => {
+  return (
+    <div className="px-2 py-1.5 text-xs font-semibold text-menu-on-title">
+      {props.children}
+    </div>
+  );
+};
+
+export const MenuText = (props: { children: React.ReactNode }) => {
+  return (
+    <>
+      <MenuSeparator />
+      <div className="px-2 py-1.5 text-xs text-menu-on-title">
+        {props.children}
+      </div>
+    </>
+  );
 };

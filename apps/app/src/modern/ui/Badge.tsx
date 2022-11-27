@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { clsx } from "clsx";
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -10,7 +11,10 @@ export const Badge = forwardRef<HTMLDivElement, BadgeProps>(
     return (
       <div
         ref={ref}
-        className={`${className} rounded-lg border border-border px-[7px] py-[3px] text-xxs font-semibold tabular-nums leading-none text-on-light`}
+        className={clsx(
+          className,
+          "rounded-lg border border-border px-[7px] py-[3px] text-xxs font-semibold tabular-nums leading-none text-on-light"
+        )}
       >
         {children}
       </div>

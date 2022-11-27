@@ -1,6 +1,7 @@
 import { Button as AriakitButton } from "ariakit/button";
 import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { forwardRef } from "react";
+import { clsx } from "clsx";
 
 export type IconButtonColor = "danger" | "success" | "neutral";
 
@@ -29,7 +30,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       <AriakitButton
         ref={ref}
         as="button"
-        className={`${variantClassName} flex cursor-default items-center rounded-lg border border-transparent p-[7px] text-sm text-icon-button-on transition disabled:opacity-70 [&>*]:h-4 [&>*]:w-4`}
+        className={clsx(
+          variantClassName,
+          "flex cursor-default items-center rounded-lg border border-transparent p-[7px] text-sm text-icon-button-on transition disabled:opacity-70 [&>*]:h-4 [&>*]:w-4"
+        )}
         {...props}
       >
         {children}

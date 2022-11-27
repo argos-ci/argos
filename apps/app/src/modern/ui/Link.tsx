@@ -1,6 +1,7 @@
 import { AnchorHTMLAttributes, forwardRef } from "react";
 import { Link as ReactRouterLink } from "react-router-dom";
 import type { LinkProps as ReactRouterLinkProps } from "react-router-dom";
+import { clsx } from "clsx";
 
 export type LinkProps = ReactRouterLinkProps;
 
@@ -11,7 +12,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(
     return (
       <ReactRouterLink
         ref={ref}
-        className={`${className} ${anchorClassNames}`}
+        className={clsx(className, anchorClassNames)}
         {...props}
       />
     );
@@ -23,6 +24,6 @@ export const Anchor = forwardRef<
   AnchorHTMLAttributes<HTMLAnchorElement>
 >(({ className, ...props }, ref) => {
   return (
-    <a ref={ref} className={`${className} ${anchorClassNames}`} {...props} />
+    <a ref={ref} className={clsx(className, anchorClassNames)} {...props} />
   );
 });

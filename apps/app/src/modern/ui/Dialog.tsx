@@ -6,6 +6,7 @@ import {
   useDialogState,
 } from "ariakit/dialog";
 import { forwardRef } from "react";
+import { clsx } from "clsx";
 
 import { IconButton } from "./IconButton";
 
@@ -34,9 +35,9 @@ export interface DialogBodyProps {
 }
 
 export const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
-  ({ children, className = "" }, ref) => {
+  ({ children, className }, ref) => {
     return (
-      <div ref={ref} className={`${className} p-4`}>
+      <div ref={ref} className={clsx(className, "p-4")}>
         {children}
       </div>
     );
@@ -81,7 +82,7 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(
     return (
       <AriakitDialog
         ref={ref}
-        className={`bordered absolute top-[50%] left-[50%] z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-auto rounded-lg border border-tooltip-border bg-tooltip-bg text-sm shadow-md`}
+        className="bordered absolute top-[50%] left-[50%] z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-auto rounded-lg border border-tooltip-border bg-tooltip-bg text-sm shadow-md"
         {...props}
       >
         {children}

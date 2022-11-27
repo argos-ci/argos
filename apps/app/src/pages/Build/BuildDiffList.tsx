@@ -5,6 +5,7 @@ import {
   useVirtualizer,
 } from "@tanstack/react-virtual";
 import { Button as AriakitButton } from "ariakit/button";
+import { clsx } from "clsx";
 import {
   memo,
   useCallback,
@@ -86,14 +87,18 @@ const ListHeader = ({
   return (
     <AriakitButton
       as="div"
-      className={`${borderB} z-10 flex cursor-default select-none items-center border-t border-t-border bg-black pr-4 hover:bg-slate-900`}
+      className={clsx(
+        borderB,
+        "z-10 flex cursor-default select-none items-center border-t border-t-border bg-black pr-4 hover:bg-slate-900"
+      )}
       style={style}
       onClick={onClick}
     >
       <ChevronDownIcon
-        className={`m-0.5 h-3 w-3 flex-shrink-0 transform text-on-light opacity-0 transition group-hover/sidebar:opacity-100 ${
-          !item.expanded ? "rotate-[-90deg]" : ""
-        }`}
+        className={clsx(
+          "m-0.5 h-3 w-3 flex-shrink-0 transform text-on-light opacity-0 transition group-hover/sidebar:opacity-100",
+          !item.expanded && "rotate-[-90deg]"
+        )}
       />
       <div className="flex-1 text-sm font-medium text-on">
         {getGroupLabel(item.name)}
@@ -208,7 +213,11 @@ const ListItem = ({
       data-index={index}
       as="div"
       disabled={!item.diff}
-      className={`group/item w-full cursor-default px-4 focus:outline-none ${pt} ${pb}`}
+      className={clsx(
+        pt,
+        pb,
+        "group/item w-full cursor-default px-4 focus:outline-none"
+      )}
       style={style}
       onClick={() => {
         if (item.diff) {
@@ -225,7 +234,7 @@ const ListItem = ({
             </div>
           </>
         ) : null}
-        <div className={`absolute inset-0 z-20 rounded-lg ${ring}`} />
+        <div className={clsx(ring, "absolute inset-0 z-20 rounded-lg")} />
       </div>
     </AriakitButton>
   );
@@ -439,9 +448,10 @@ const InternalBuildDiffList = memo(() => {
       {stats && <BuildStatsIndicator stats={stats} onClickGroup={openGroup} />}
       <div
         ref={containerRef}
-        className={`${
-          visible ? "" : "opacity-0"
-        } min-h-0 flex-1 overflow-y-auto`}
+        className={clsx(
+          "min-h-0 flex-1 overflow-y-auto",
+          !visible && "opacity-0"
+        )}
       >
         <div
           style={{

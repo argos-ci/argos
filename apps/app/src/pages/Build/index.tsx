@@ -5,7 +5,7 @@ import { BuildNotFound } from "./BuildNotFound";
 import { BuildPage } from "./BuildPage";
 import { useBuildParams } from "./BuildParams";
 
-export const ModernBuild = memo(() => {
+export const Build = memo(() => {
   const params = useBuildParams();
 
   if (!params) {

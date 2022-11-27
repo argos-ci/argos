@@ -7,6 +7,7 @@ import type {
   TooltipProps as AriakitTooltipProps,
   TooltipAnchorOptions,
 } from "ariakit/tooltip";
+import { clsx } from "clsx";
 import { Children, cloneElement, forwardRef } from "react";
 
 export const useTooltipState = () => useAriakitTooltipState({ timeout: 800 });
@@ -45,7 +46,10 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(
     return (
       <AriakitTooltip
         ref={ref}
-        className={`${variantClassName} z-50 rounded border border-tooltip-border bg-tooltip-bg text-tooltip-on`}
+        className={clsx(
+          variantClassName,
+          "z-50 rounded border border-tooltip-border bg-tooltip-bg text-tooltip-on"
+        )}
         {...props}
       />
     );

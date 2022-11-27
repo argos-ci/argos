@@ -11,7 +11,7 @@ import {
   BuildStatusInfoBuildFragment,
   BuildStatusInfoRepositoryFragment,
   getStatusInfoType,
-} from "@/pages/Build/BuildStatusInfo";
+} from "./BuildStatusInfo";
 
 import {
   getBuildStatusColor,

@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { clsx } from "clsx";
 
 type ChipColor =
   | "primary"
@@ -34,7 +35,10 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(
     return (
       <div
         ref={ref}
-        className={`${colorClassName} no-wrap inline-flex select-none items-center gap-2 rounded-chip px-4 py-2 text-sm font-medium leading-4`}
+        className={clsx(
+          colorClassName,
+          "no-wrap inline-flex select-none items-center gap-2 rounded-chip px-4 py-2 text-sm font-medium leading-4"
+        )}
         {...props}
       >
         {Icon && <Icon className="h-[1em] w-[1em] shrink-0" />}
