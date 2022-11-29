@@ -50,13 +50,17 @@ const RepositoryRow = ({ repository }: { repository: Repository }) => {
       to={`/${repository.owner.login}/${repository.name}`}
       className="flex items-center justify-between rounded bg-slate-900/70 p-3 font-medium text-on-light transition hover:bg-slate-900"
     >
-      <div className="flex gap-1">
+      <div className="flex-shink-0 flex gap-1">
         <FakeRouterLink
           to={`/${repository.owner.login}`}
           className="transition hover:text-on hover:brightness-125"
         >
           <span className="flex gap-2">
-            <OwnerAvatar owner={repository.owner} size={24} />
+            <OwnerAvatar
+              owner={repository.owner}
+              size={24}
+              className="flex-shrink-0"
+            />
             {repository.owner.login}
           </span>
         </FakeRouterLink>
@@ -122,11 +126,7 @@ export const RepositoryList = (props: {
       )}
       <div className="text-center text-xs text-on-light">
         Don&apos;t see your repo?{" "}
-        <Anchor
-          href={config.get("github.appUrl")}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <Anchor href={config.get("github.appUrl")} external>
           Manage access restrictions
         </Anchor>{" "}
         or <Anchor href="">reload the page</Anchor>.

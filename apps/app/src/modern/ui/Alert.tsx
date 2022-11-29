@@ -1,10 +1,7 @@
 import { clsx } from "clsx";
-import { HTMLAttributes } from "react";
+import { HTMLProps } from "react";
 
-export const Alert = ({
-  className,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) => {
+export const Alert = ({ className, ...props }: HTMLProps<HTMLDivElement>) => {
   return (
     <div role="alert" className={clsx(className, "text-center")} {...props} />
   );
@@ -13,7 +10,7 @@ export const Alert = ({
 export const AlertTitle = ({
   className,
   ...props
-}: HTMLAttributes<HTMLHeadingElement>) => {
+}: HTMLProps<HTMLHeadingElement>) => {
   return (
     <h2 className={clsx(className, "mb-3 text-xl font-medium")} {...props} />
   );
@@ -22,7 +19,7 @@ export const AlertTitle = ({
 export const AlertText = ({
   className,
   ...props
-}: HTMLAttributes<HTMLHeadingElement>) => {
+}: HTMLProps<HTMLHeadingElement>) => {
   return (
     <p className={clsx(className, "my-2 text-sm text-on-light")} {...props} />
   );
@@ -31,6 +28,6 @@ export const AlertText = ({
 export const AlertActions = ({
   className,
   ...props
-}: HTMLAttributes<HTMLDivElement>) => {
+}: HTMLProps<HTMLDivElement>) => {
   return <div className={clsx(className, "mt-4")} {...props} />;
 };

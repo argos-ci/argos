@@ -1,7 +1,14 @@
 import moment from "moment";
-import { Children, forwardRef, useCallback, useEffect, useState } from "react";
+import {
+  Children,
+  forwardRef,
+  HTMLProps,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
-export interface TimeProps extends React.HTMLAttributes<HTMLTimeElement> {
+export interface TimeProps extends HTMLProps<HTMLTimeElement> {
   date: string;
   format?: string;
   children?: React.ReactNode;

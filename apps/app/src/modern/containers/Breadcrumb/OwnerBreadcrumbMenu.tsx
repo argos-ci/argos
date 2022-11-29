@@ -1,10 +1,9 @@
 import { Link as RouterLink } from "react-router-dom";
-import { HomeIcon, LinkExternalIcon } from "@primer/octicons-react";
+import { HomeIcon } from "@primer/octicons-react";
 import {
   useMenuState,
   MenuTitle,
   Menu,
-  MenuSeparator,
   MenuItem,
   MenuItemIcon,
   MenuText,
@@ -75,9 +74,8 @@ export const OwnerBreadcrumbMenu = () => {
         <MenuText>
           Don&apos;t see your org?
           <br />
-          <Anchor href={config.get("github.appUrl")} target="_blank">
-            Manage access restrictions{" "}
-            <LinkExternalIcon className="h-[1em] w-[1em]" />
+          <Anchor href={config.get("github.appUrl")} external>
+            Manage access restrictions
           </Anchor>
         </MenuText>
       </Menu>

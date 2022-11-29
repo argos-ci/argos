@@ -1,4 +1,4 @@
-import { ComponentProps, HTMLAttributes } from "react";
+import { ComponentProps, HTMLProps } from "react";
 import { Link } from "react-router-dom";
 import { MenuButton, MenuState } from "./Menu";
 import { ChevronDownIcon } from "@primer/octicons-react";
@@ -13,7 +13,7 @@ export const Breadcrumb = (props: { children: React.ReactNode }) => {
   );
 };
 
-export const BreadcrumbItem = (props: HTMLAttributes<HTMLLIElement>) => {
+export const BreadcrumbItem = (props: HTMLProps<HTMLLIElement>) => {
   return <li className="flex flex-shrink-0 items-center gap-1" {...props} />;
 };
 

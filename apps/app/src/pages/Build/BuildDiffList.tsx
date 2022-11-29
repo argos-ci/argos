@@ -78,8 +78,8 @@ const ListHeader = ({
   item,
   activeIndex,
 }: {
-  style: React.HTMLAttributes<HTMLDivElement>["style"];
-  onClick: React.HTMLAttributes<HTMLDivElement>["onClick"];
+  style: React.HTMLProps<HTMLDivElement>["style"];
+  onClick: React.HTMLProps<HTMLDivElement>["onClick"];
   item: ListHeaderRow;
   activeIndex: number;
 }) => {
@@ -173,7 +173,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
 });
 
 interface ListItemProps {
-  style: React.HTMLAttributes<HTMLDivElement>["style"];
+  style: React.HTMLProps<HTMLDivElement>["style"];
   item: ListItemRow;
   index: number;
   active: boolean;
