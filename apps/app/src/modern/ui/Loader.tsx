@@ -115,9 +115,11 @@ export const useDelayedVisible = (delay: number) => {
 export const Loader = ({
   delay = 400,
   size = 64,
+  className,
 }: {
   delay?: number;
   size?: number;
+  className?: string;
 }) => {
   const visible = useDelayedVisible(delay);
 
@@ -125,6 +127,7 @@ export const Loader = ({
     <SvgLoader
       role="status"
       aria-busy="true"
+      className={className}
       style={{
         width: size,
         height: size,

@@ -19,7 +19,7 @@ module.exports = {
 
         // Global colors
         bg: colors.black,
-        on: colors.slate[50],
+        on: colors.slate[100],
         "on-light": colors.slate[400],
         border: colors.slate[800],
         text: colors.slate[50],

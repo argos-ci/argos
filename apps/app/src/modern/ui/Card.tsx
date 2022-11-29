@@ -3,7 +3,7 @@ import { HTMLProps } from "react";
 export const Card = (props: HTMLProps<HTMLDivElement>) => {
   return (
     <div
-      className="w-full overflow-hidden rounded border border-border"
+      className="w-full overflow-hidden rounded border border-border bg-slate-900/50"
       {...props}
     />
   );
@@ -19,4 +19,15 @@ export const CardFooter = (props: HTMLProps<HTMLDivElement>) => {
 
 export const CardTitle = (props: HTMLProps<HTMLDivElement>) => {
   return <h2 className="mb-4 text-xl font-semibold" {...props} />;
+};
+
+export const CardSeparator = (props: HTMLProps<HTMLDivElement>) => {
+  return (
+    <div
+      role="separator"
+      aria-orientation="horizontal"
+      className="border-t border-t-menu-border"
+      {...props}
+    />
+  );
 };

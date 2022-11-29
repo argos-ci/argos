@@ -46,6 +46,7 @@ export const TabLink = forwardRef<HTMLAnchorElement, TabLinkProps>(
         )}
         href={href}
         onClick={onClick}
+        id={href}
         {...props}
       />
     );

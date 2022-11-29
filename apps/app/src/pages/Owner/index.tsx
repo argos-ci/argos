@@ -13,12 +13,8 @@ export const Owner = () => {
   return (
     <>
       <TabLinkList state={tab} aria-label="Sections">
-        <TabLink id={`/${ownerLogin}`} to="">
-          Repositories
-        </TabLink>
-        <TabLink id={`/${ownerLogin}/settings`} to="settings">
-          Settings
-        </TabLink>
+        <TabLink to="">Repositories</TabLink>
+        <TabLink to="settings">Settings</TabLink>
       </TabLinkList>
       <TabLinkPanel state={tab} as={Main} tabId={tab.selectedId || null}>
         <Outlet />
