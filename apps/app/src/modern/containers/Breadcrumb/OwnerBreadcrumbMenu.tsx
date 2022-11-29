@@ -1,5 +1,5 @@
 import { Link as RouterLink } from "react-router-dom";
-import { LinkExternalIcon } from "@primer/octicons-react";
+import { HomeIcon, LinkExternalIcon } from "@primer/octicons-react";
 import {
   useMenuState,
   MenuTitle,
@@ -53,13 +53,24 @@ const Owners = (props: { menu: MenuState }) => {
 
 export const OwnerBreadcrumbMenu = () => {
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
+  const title = "Switch context";
 
   return (
     <>
       <BreadcrumbMenuButton state={menu} />
 
-      <Menu aria-label="Organizations" state={menu}>
-        <MenuTitle>Organizations</MenuTitle>
+      <Menu aria-label={title} state={menu}>
+        <MenuTitle>{title}</MenuTitle>
+        <MenuItem state={menu}>
+          {(menuItemProps) => (
+            <RouterLink {...menuItemProps} to="/">
+              <MenuItemIcon>
+                <HomeIcon />
+              </MenuItemIcon>
+              All my repositories
+            </RouterLink>
+          )}
+        </MenuItem>
         {menu.open && <Owners menu={menu} />}
         <MenuText>
           Don&apos;t see your org?

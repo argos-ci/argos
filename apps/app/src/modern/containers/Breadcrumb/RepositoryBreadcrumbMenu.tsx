@@ -70,12 +70,14 @@ export const RepositoryBreadcrumbMenu = () => {
 
   if (!ownerLogin) return null;
 
+  const title = "Switch repository";
+
   return (
     <>
       <BreadcrumbMenuButton state={menu} />
 
-      <Menu aria-label="Repositories" state={menu}>
-        <MenuTitle>Repositories</MenuTitle>
+      <Menu aria-label={title} state={menu}>
+        <MenuTitle>{title}</MenuTitle>
         {menu.open && <Repositories ownerLogin={ownerLogin} menu={menu} />}
         <MenuText>
           Don&apos;t see your repo?

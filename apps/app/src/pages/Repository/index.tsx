@@ -1,18 +1,18 @@
-import { gql } from "graphql-tag";
 import { Helmet } from "react-helmet";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { TabList, TabNavLink } from "@/components";
 import { Query } from "@/containers/Apollo";
 import { SubNavbarTabs } from "@/modern/containers/SubNavbar";
-import { NotFoundWithContainer } from "@/pages/NotFound";
+import { NotFound } from "@/pages/NotFound";
 
 import { RepositoryBuilds } from "./Builds";
 import { GettingStarted } from "./GettingStarted";
 import { RepositorySettings } from "./Settings";
+import { graphql } from "@/gql";
 
-const REPOSITORY_QUERY = gql`
-  query REPOSITORY_QUERY($ownerLogin: String!, $repositoryName: String!) {
+const RepositoryQuery = graphql(`
+  query Repository_repository($ownerLogin: String!, $repositoryName: String!) {
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
       name
@@ -41,7 +41,7 @@ const REPOSITORY_QUERY = gql`
       }
     }
   }
-`;
+`);
 
 function hasWritePermission(repository) {
   return repository.permissions.includes("write");
@@ -49,6 +49,10 @@ function hasWritePermission(repository) {
 
 export function Repository() {
   const { ownerLogin, repositoryName } = useParams();
+
+  if (!ownerLogin || !repositoryName) {
+    return <Navigate to="/" />;
+  }
 
   return (
     <>
@@ -59,12 +63,11 @@ export function Repository() {
       </Helmet>
 
       <Query
-        query={REPOSITORY_QUERY}
+        query={RepositoryQuery}
         variables={{ ownerLogin: ownerLogin, repositoryName: repositoryName }}
-        skip={!ownerLogin || !repositoryName}
       >
         {(data) => {
-          if (!data?.repository) return <NotFoundWithContainer />;
+          if (!data?.repository) return <NotFound />;
 
           return (
             <>
@@ -95,7 +98,7 @@ export function Repository() {
                     }
                   />
                 ) : null}
-                <Route path="*" element={<NotFoundWithContainer />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </>
           );

@@ -5,16 +5,17 @@ import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 import { GlobalStyle, ThemeInitializer } from "./components";
 import { ApolloInitializer } from "./containers/Apollo";
 import { AuthProvider } from "./containers/Auth";
-import { Layout } from "@/modern/containers/Layout";
+import { Layout, Main } from "@/modern/containers/Layout";
 import { ScrollToTop } from "./containers/Router";
 import { UserInitializer } from "./containers/User";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Home } from "./pages/Home";
 import { Build } from "./pages/Build";
-import { NotFoundWithContainer } from "./pages/NotFound";
+import { NotFound } from "./pages/NotFound";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
 import { Repository } from "./pages/Repository";
+import { Owner } from "./pages/Owner";
 
 export const App = () => {
   return (
@@ -55,17 +56,24 @@ export const App = () => {
                     </ThemeInitializer>
                   }
                 >
-                  <Route index element={<Home />} />
                   <Route
-                    path="/:ownerLogin/settings/*"
-                    element={<OwnerSettings />}
+                    index
+                    element={
+                      <Main>
+                        <Home />
+                      </Main>
+                    }
                   />
+                  <Route path=":ownerLogin" element={<Owner />}>
+                    <Route path="" element={<OwnerRepositories />} />
+                    <Route path="settings" element={<OwnerSettings />} />
+                  </Route>
                   <Route
                     path="/:ownerLogin/:repositoryName/*"
                     element={<Repository />}
                   />
                   <Route path="/:ownerLogin" element={<OwnerRepositories />} />
-                  <Route path="*" element={<NotFoundWithContainer />} />
+                  <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
             </UserInitializer>

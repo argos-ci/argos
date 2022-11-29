@@ -1,11 +1,10 @@
-import { OrganizationIcon } from "@primer/octicons-react";
+import { HomeIcon, OrganizationIcon } from "@primer/octicons-react";
 import { useMatch, useParams } from "react-router-dom";
 
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
   BreadcrumbLink,
-  BreadcrumbSeparator,
 } from "@/modern/ui/Breadcrumb";
 import { useQuery } from "@apollo/client";
 import { OwnerAvatar } from "@/modern/containers/OwnerAvatar";
@@ -13,7 +12,6 @@ import { useUser } from "@/containers/User";
 import { graphql } from "@/gql";
 
 import { OwnerBreadcrumbMenu } from "./OwnerBreadcrumbMenu";
-import { memo } from "react";
 
 const OwnerQuery = graphql(`
   query OwnerBreadcrumb_owner($login: String!) {
@@ -25,44 +23,56 @@ const OwnerQuery = graphql(`
   }
 `);
 
-const ActiveOwnerBreadcrumbItem = (props: { ownerLogin: string }) => {
-  const user = useUser();
-  const match = useMatch(`/${props.ownerLogin}`);
+const OwnerBreadcrumbLink = ({ ownerLogin }: { ownerLogin: string }) => {
+  const match = useMatch(`/${ownerLogin}`);
   const { data, error } = useQuery(OwnerQuery, {
-    variables: { login: props.ownerLogin },
+    variables: { login: ownerLogin },
   });
-
   if (error) {
     throw error;
   }
+  return (
+    <BreadcrumbLink
+      to={`/${ownerLogin}`}
+      aria-current={match ? "page" : undefined}
+    >
+      <BreadcrumbItemIcon>
+        {data ? (
+          data.owner ? (
+            <OwnerAvatar owner={data.owner} size={24} />
+          ) : (
+            <OrganizationIcon size={18} />
+          )
+        ) : null}
+      </BreadcrumbItemIcon>
+      {ownerLogin}
+    </BreadcrumbLink>
+  );
+};
+
+const HomeBreadcrumbLink = () => {
+  return (
+    <BreadcrumbLink to="/" aria-current="page">
+      <HomeIcon size={18} />
+      All my repositories
+    </BreadcrumbLink>
+  );
+};
+
+export const OwnerBreadcrumbItem = () => {
+  const { ownerLogin } = useParams();
+  const user = useUser();
 
   return (
     <>
-      <BreadcrumbSeparator />
       <BreadcrumbItem>
-        <BreadcrumbLink
-          to={`/${props.ownerLogin}`}
-          aria-current={match ? "page" : undefined}
-        >
-          <BreadcrumbItemIcon>
-            {data ? (
-              data.owner ? (
-                <OwnerAvatar owner={data.owner} size={24} />
-              ) : (
-                <OrganizationIcon size={18} />
-              )
-            ) : null}
-          </BreadcrumbItemIcon>
-          {props.ownerLogin}
-        </BreadcrumbLink>
+        {ownerLogin ? (
+          <OwnerBreadcrumbLink ownerLogin={ownerLogin} />
+        ) : (
+          <HomeBreadcrumbLink />
+        )}
         {user && <OwnerBreadcrumbMenu />}
       </BreadcrumbItem>
     </>
   );
 };
-
-export const OwnerBreadcrumbItem = memo(() => {
-  const { ownerLogin } = useParams();
-  if (!ownerLogin) return null;
-  return <ActiveOwnerBreadcrumbItem ownerLogin={ownerLogin} />;
-});

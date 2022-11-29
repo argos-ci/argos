@@ -21,7 +21,7 @@ module.exports = {
         bg: colors.black,
         on: colors.slate[50],
         "on-light": colors.slate[400],
-        border: colors.slate[700],
+        border: colors.slate[800],
         text: colors.slate[50],
 
         // Components

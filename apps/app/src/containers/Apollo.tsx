@@ -3,20 +3,21 @@ import {
   ApolloProvider as BaseApolloProvider,
   DocumentNode,
   InMemoryCache,
+  OperationVariables,
+  QueryHookOptions,
+  QueryResult,
+  TypedDocumentNode,
   useQuery as useApolloQuery,
 } from "@apollo/client";
 import { useMemo } from "react";
 
 import { useAuthToken } from "./Auth";
 
-function ApolloProvider({
-  children,
-  authToken,
-}: {
+const ApolloProvider = (props: {
   children: React.ReactNode;
   authToken: string | null;
-}) {
-  const authorization = authToken ? `Bearer ${authToken}` : null;
+}) => {
+  const authorization = props.authToken ? `Bearer ${props.authToken}` : null;
   const apolloClient = useMemo(
     () =>
       new ApolloClient({
@@ -31,38 +32,49 @@ function ApolloProvider({
     [authorization]
   );
   return (
-    <BaseApolloProvider client={apolloClient}>{children}</BaseApolloProvider>
+    <BaseApolloProvider client={apolloClient}>
+      {props.children}
+    </BaseApolloProvider>
   );
-}
+};
 
-export function ApolloInitializer({ children }: { children: React.ReactNode }) {
+export const ApolloInitializer = (props: { children: React.ReactNode }) => {
   const authToken = useAuthToken();
-  return <ApolloProvider authToken={authToken}>{children}</ApolloProvider>;
-}
+  return (
+    <ApolloProvider authToken={authToken}>{props.children}</ApolloProvider>
+  );
+};
 
-export const useQuery: typeof useApolloQuery = (query, options) => {
+export function useQuery<TData = any, TVariables = OperationVariables>(
+  query: DocumentNode | TypedDocumentNode<TData, TVariables>,
+  options?: QueryHookOptions<TData, TVariables>
+): QueryResult<TData, TVariables> {
   const { loading, error, data, ...others } = useApolloQuery(query, options);
   if (error) {
     throw error;
   }
   return { loading, data, ...others };
-};
+}
 
-export const Query = ({
+export function Query<TData = any, TVariables = OperationVariables>({
   fallback = null,
   children,
   query,
-  ...props
+  ...options
 }: {
-  children: (data: any) => React.ReactNode;
-  fallback?: React.ReactNode;
-  query: DocumentNode;
-}) => {
-  const { data } = useQuery(query, props);
+  children: (
+    data: NonNullable<QueryResult<TData, TVariables>["data"]>
+  ) => React.ReactElement | null;
+  fallback?: React.ReactElement | null;
+  query: DocumentNode | TypedDocumentNode<TData, TVariables>;
+  variables?: TVariables;
+  skip?: boolean;
+}): React.ReactElement | null {
+  const { data } = useQuery(query, options);
 
   if (!data) {
     return fallback;
   }
 
   return children(data);
-};
+}

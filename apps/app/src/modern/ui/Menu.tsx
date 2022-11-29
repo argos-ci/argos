@@ -74,7 +74,7 @@ export const MenuItemIcon = ({
 
 export const MenuTitle = (props: { children: React.ReactNode }) => {
   return (
-    <div className="px-2 py-1.5 text-xs font-semibold text-menu-on-title">
+    <div className="px-2 py-1.5 text-xs font-medium text-menu-on-title">
       {props.children}
     </div>
   );

@@ -21,6 +21,7 @@ import {
 import { useLogout } from "@/containers/Auth";
 import config from "@/config";
 import { OwnerAvatar } from "./OwnerAvatar";
+import { SubNavbar } from "./SubNavbar";
 
 const UserMenu = () => {
   const user = useUser() as NonNullable<ReturnType<typeof useUser>>;
@@ -95,31 +96,32 @@ const UserControl = () => {
 export const Navbar = () => {
   return (
     <nav className="container mx-auto flex items-center justify-between p-4">
-      <div className="flex flex-shrink-0 items-center gap-6">
+      <div className="flex flex-shrink-0 items-center">
         <MagicTooltip tooltip="Go to home">
-          <RouterLink to="/" className=" ransition hover:brightness-125">
-            <BrandLogo height={32} />
+          <RouterLink to="/" className="transition hover:brightness-125">
+            <BrandLogo height={32} className="max-w-none" />
           </RouterLink>
         </MagicTooltip>
-        <a
-          href="https://docs.argos-ci.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-semibold text-on-light transition hover:text-on"
-        >
-          Docs
-        </a>
+        <SubNavbar />
+      </div>
+
+      <div className="flex flex-shrink-0 items-center gap-6">
         <a
           href="https://discord.gg/WjzGrQGS4A"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-semibold text-on-light transition hover:text-on"
+          className="font-medium text-on-light transition hover:text-on"
         >
-          Help
+          Help & Community
         </a>
-      </div>
-
-      <div className="flex-shrink-0">
+        <a
+          href="https://docs.argos-ci.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-on-light transition hover:text-on"
+        >
+          Docs
+        </a>
         <UserControl />
       </div>
     </nav>

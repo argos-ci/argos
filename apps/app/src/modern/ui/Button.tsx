@@ -7,8 +7,7 @@ import { Children, cloneElement, forwardRef, memo } from "react";
 export type ButtonColor = "primary" | "neutral";
 export type ButtonVariant = "contained" | "outline";
 
-export interface ButtonProps
-  extends Omit<AriakitButtonProps<"button">, "className"> {
+export interface ButtonProps extends AriakitButtonProps<"button"> {
   color?: ButtonColor;
   variant?: ButtonVariant;
 }
@@ -27,7 +26,10 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ color = "primary", variant = "contained", children, ...props }, ref) => {
+  (
+    { color = "primary", variant = "contained", children, className, ...props },
+    ref
+  ) => {
     const colorClassNames = variantClassNames[variant];
     if (!colorClassNames) {
       throw new Error(`Invalid variant: ${variant}`);
@@ -41,6 +43,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         as="button"
         className={clsx(
+          className,
           variantClassName,
           "align-center inline-flex whitespace-nowrap rounded-lg border py-2 px-3 font-sans text-sm font-medium leading-none transition disabled:opacity-70 [&:is(button)]:cursor-default"
         )}

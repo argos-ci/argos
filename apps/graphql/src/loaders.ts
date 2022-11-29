@@ -3,6 +3,8 @@ import type { ModelClass } from "objection";
 
 import {
   Build,
+  User,
+  Organization,
   File,
   Model,
   Repository,
@@ -54,6 +56,8 @@ const createBuildAggregatedStatusLoader = () =>
   });
 
 export const createLoaders = () => ({
+  User: createModelLoader(User),
+  Organization: createModelLoader(Organization),
   Screenshot: createModelLoader(Screenshot),
   ScreenshotBucket: createModelLoader(ScreenshotBucket),
   ScreenshotDiff: createModelLoader(ScreenshotDiff),

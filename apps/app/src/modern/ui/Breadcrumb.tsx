@@ -20,7 +20,7 @@ export const BreadcrumbItem = (props: HTMLAttributes<HTMLLIElement>) => {
 export const BreadcrumbLink = (props: ComponentProps<typeof Link>) => {
   return (
     <Link
-      className="flex min-h-[28px] items-center gap-2 px-2 text-on-light transition hover:text-on"
+      className="flex min-h-[28px] items-center gap-2 font-medium text-on-light transition hover:text-on aria-[current=page]:cursor-default aria-[current=page]:text-on"
       {...props}
     />
   );
