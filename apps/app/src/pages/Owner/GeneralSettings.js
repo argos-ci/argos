@@ -55,6 +55,8 @@ const Feature = ({ children, ...props }) => (
 );
 
 function PlanCard({ plan: { name, screenshotsLimitPerMonth }, ...props }) {
+  const unlimitedPrivateScreenshots = screenshotsLimitPerMonth === -1;
+
   return (
     <Card {...props}>
       <CardHeader>
@@ -63,21 +65,20 @@ function PlanCard({ plan: { name, screenshotsLimitPerMonth }, ...props }) {
 
       <CardBody>
         <x.div fontSize="4xl" mb={3}>
-          {name}{" "}
-          <x.span text="xs" color="primary" fontWeight="extrabold">
-            Beta
-          </x.span>
+          {name}
         </x.div>
 
         <x.ul display="flex" flexDirection="column" gap={2} my={4} ml={4}>
           <Feature>
-            {screenshotsLimitPerMonth === -1
-              ? "Unlimited"
-              : `Up to ${screenshotsLimitPerMonth.toLocaleString()}`}{" "}
-            screenshots
+            {unlimitedPrivateScreenshots
+              ? "Unlimited screenshots"
+              : `Up to ${screenshotsLimitPerMonth.toLocaleString()} screenshots/month`}
           </Feature>
           <Feature>Unlimited users</Feature>
           <Feature>Unlimited repositories</Feature>
+          {unlimitedPrivateScreenshots ? null : (
+            <Feature>Unlimited screenshots for public repositories</Feature>
+          )}
         </x.ul>
 
         <x.div display="flex" justifyContent="flex-end">
