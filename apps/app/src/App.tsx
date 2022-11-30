@@ -14,8 +14,10 @@ import { Build } from "./pages/Build";
 import { NotFound } from "./pages/NotFound";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
-import { Repository } from "./pages/Repository";
+import { Repository as OldRepository } from "./pages/Repository/index-old";
 import { Owner } from "./pages/Owner";
+import { Repository } from "./pages/Repository";
+import { RepositorySettings } from "./pages/Repository/RepositorySettings";
 
 export const App = () => {
   return (
@@ -64,15 +66,21 @@ export const App = () => {
                       </Main>
                     }
                   />
+                  <Route
+                    path=":ownerLogin/:repositoryName"
+                    element={<Repository />}
+                  >
+                    {/* <Route path="" element={<RepositoryBuilds />} /> */}
+                    <Route path="settings" element={<RepositorySettings />} />
+                  </Route>
                   <Route path=":ownerLogin" element={<Owner />}>
                     <Route path="" element={<OwnerRepositories />} />
                     <Route path="settings" element={<OwnerSettings />} />
                   </Route>
                   <Route
-                    path="/:ownerLogin/:repositoryName/*"
-                    element={<Repository />}
+                    path="/old/:ownerLogin/:repositoryName/*"
+                    element={<OldRepository />}
                   />
-                  <Route path="/:ownerLogin" element={<OwnerRepositories />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>

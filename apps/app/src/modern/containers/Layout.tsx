@@ -26,3 +26,7 @@ export const Layout = (props: { children: React.ReactNode }) => {
     </div>
   );
 };
+
+export const SettingsLayout = (props: { children: React.ReactNode }) => {
+  return <div className="flex max-w-4xl flex-col gap-6">{props.children}</div>;
+};

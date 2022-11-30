@@ -93,8 +93,13 @@ const Group = (props: { label: string; children: React.ReactNode }) => {
 
 export const RepositoryList = (props: {
   repositories: RepositoryFragmentType[];
+  hasWritePermission: boolean;
 }) => {
   const repositories = useFragment(RepositoryFragment, props.repositories);
+
+  if (repositories.length === 0) {
+    return <div>No repository found</div>;
+  }
 
   const [enabledRepos, disabledRepos] = repositories.reduce(
     ([enabled, disabled], repo) => {
@@ -124,13 +129,15 @@ export const RepositoryList = (props: {
           ))}
         </Group>
       )}
-      <div className="text-center text-xs text-on-light">
-        Don&apos;t see your repo?{" "}
-        <Anchor href={config.get("github.appUrl")} external>
-          Manage access restrictions
-        </Anchor>{" "}
-        or <Anchor href="">reload the page</Anchor>.
-      </div>
+      {props.hasWritePermission && (
+        <div className="text-center text-xs text-on-light">
+          Don&apos;t see your repo?{" "}
+          <Anchor href={config.get("github.appUrl")} external>
+            Manage access restrictions
+          </Anchor>{" "}
+          or <Anchor href="">reload the page</Anchor>.
+        </div>
+      )}
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { RepositoryList } from "@/modern/containers/RepositoryList";
 import { useParams } from "react-router-dom";
 import { NotFound } from "../NotFound";
 import { Helmet } from "react-helmet";
+import { useOwnerContext } from ".";
 
 const OwnerQuery = graphql(`
   query OwnerRepositories_owner($login: String!) {
@@ -20,6 +21,7 @@ const OwnerQuery = graphql(`
 `);
 
 export const OwnerRepositories = () => {
+  const { hasWritePermission } = useOwnerContext();
   const { ownerLogin } = useParams();
 
   if (!ownerLogin) {
@@ -37,13 +39,14 @@ export const OwnerRepositories = () => {
         variables={{ login: ownerLogin }}
       >
         {({ owner }) => {
-          if (!owner) {
-            return <NotFound />;
-          }
+          if (!owner) return <NotFound />;
 
           return (
             <Container>
-              <RepositoryList repositories={owner.repositories} />
+              <RepositoryList
+                repositories={owner.repositories}
+                hasWritePermission={hasWritePermission}
+              />
             </Container>
           );
         }}

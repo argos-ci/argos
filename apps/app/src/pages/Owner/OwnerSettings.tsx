@@ -24,11 +24,9 @@ import {
   DisclosureContent,
   useDisclosureState,
 } from "ariakit/disclosure";
-import {
-  ArrowRightIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-} from "@primer/octicons-react";
+import { ChevronDownIcon, ChevronRightIcon } from "@primer/octicons-react";
+import { SettingsLayout } from "@/modern/containers/Layout";
+import { useOwnerContext } from ".";
 
 const OwnerQuery = graphql(`
   query OwnerSettings_owner($login: String!) {
@@ -225,8 +223,15 @@ const ConsumptionDetail = ({
 
 export const OwnerSettings = () => {
   const { ownerLogin } = useParams();
+  const { hasWritePermission } = useOwnerContext();
 
-  if (!ownerLogin) return null;
+  if (!ownerLogin) {
+    return <NotFound />;
+  }
+
+  if (!hasWritePermission) {
+    return <NotFound />;
+  }
 
   return (
     <Container>
@@ -243,12 +248,12 @@ export const OwnerSettings = () => {
           if (!owner) return <NotFound />;
 
           return (
-            <div className="flex max-w-4xl flex-col gap-6">
+            <SettingsLayout>
               {owner.plan && (
                 <PlanCard plan={owner.plan} repositories={owner.repositories} />
               )}
               <PermissionCard />
-            </div>
+            </SettingsLayout>
           );
         }}
       </Query>

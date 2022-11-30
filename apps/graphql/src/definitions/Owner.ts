@@ -173,7 +173,7 @@ export const resolvers = {
       ctx: Context
     ) => {
       if (!ctx.user) return ["read"];
-      const hasWritePermission = owner.$checkWritePermission(ctx.user);
+      const hasWritePermission = await owner.$checkWritePermission(ctx.user);
       return hasWritePermission ? ["read", "write"] : ["read"];
     },
     consumptionRatio: async (owner: Owner) => {
@@ -228,15 +228,9 @@ export const resolvers = {
 
       return [ctx.user, ...owners];
     },
-    owner: async (_root: null, args: { login: string }, ctx: Context) => {
+    owner: async (_root: null, args: { login: string }) => {
       const owner = await getOwner({ login: args.login });
-      if (!owner) return null;
-      // @TODO use a request to count the number of repositories
-      const ownerRepositories = await getOwnerRepositories(owner, {
-        user: ctx.user,
-        enabled: ctx.user ? undefined : true,
-      });
-      return ownerRepositories.length === 0 ? null : owner;
+      return owner;
     },
   },
 };
