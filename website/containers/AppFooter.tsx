@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
-import { x, useColorMode } from "@xstyled/styled-components";
+// import { useEffect, useState } from "react";
+// import { x, useColorMode } from "@xstyled/styled-components";
+import { x } from "@xstyled/styled-components";
 import { Container } from "@/components/Container";
 import { ArgosLogo } from "@/components/ArgosLogo";
-import { Select, SelectIcon } from "@/components/Select";
-import {
-  MoonIcon,
-  SunIcon,
-  ComputerDesktopIcon,
-  ChevronDownIcon,
-} from "@heroicons/react/24/solid";
+// import { Select, SelectIcon } from "@/components/Select";
+// import {
+//   MoonIcon,
+//   SunIcon,
+//   ComputerDesktopIcon,
+//   ChevronDownIcon,
+// } from "@heroicons/react/24/solid";
 import {
   FooterSections,
   FooterSection,
@@ -16,54 +17,54 @@ import {
   FooterLink,
 } from "@/components/Footer";
 
-const STORAGE_KEY = "xstyled-color-mode";
+// const STORAGE_KEY = "xstyled-color-mode";
 
-const colorModeIcons = {
-  system: ComputerDesktopIcon,
-  dark: MoonIcon,
-  default: SunIcon,
-};
+// const colorModeIcons = {
+//   system: ComputerDesktopIcon,
+//   dark: MoonIcon,
+//   default: SunIcon,
+// };
 
-const ColorModeSelector = () => {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    setVisible(true);
-  }, []);
-  const [_colorMode, setColorMode] = useColorMode();
-  const [mode, setMode] = useState<"dark" | "default" | null>(() =>
-    typeof window === "undefined"
-      ? null
-      : (window.localStorage.getItem(STORAGE_KEY) as "dark" | "default") ?? null
-  );
-  const realMode: "system" | "dark" | "default" = mode ?? "system";
-  if (!visible) return null;
-  const Icon = colorModeIcons[realMode];
-  return (
-    <Select>
-      <SelectIcon>
-        <Icon />
-      </SelectIcon>
-      <select
-        value={realMode}
-        onChange={(event) => {
-          const mode =
-            event.target.value === "system"
-              ? null
-              : (event.target.value as "dark" | "default");
-          setMode(mode);
-          setColorMode(mode);
-        }}
-      >
-        <option value="system">System</option>
-        <option value="dark">Dark</option>
-        <option value="default">Light</option>
-      </select>
-      <SelectIcon>
-        <ChevronDownIcon />
-      </SelectIcon>
-    </Select>
-  );
-};
+// const ColorModeSelector = () => {
+//   const [visible, setVisible] = useState(false);
+//   useEffect(() => {
+//     setVisible(true);
+//   }, []);
+//   const [_colorMode, setColorMode] = useColorMode();
+//   const [mode, setMode] = useState<"dark" | "default" | null>(() =>
+//     typeof window === "undefined"
+//       ? null
+//       : (window.localStorage.getItem(STORAGE_KEY) as "dark" | "default") ?? null
+//   );
+//   const realMode: "system" | "dark" | "default" = mode ?? "system";
+//   if (!visible) return null;
+//   const Icon = colorModeIcons[realMode];
+//   return (
+//     <Select>
+//       <SelectIcon>
+//         <Icon />
+//       </SelectIcon>
+//       <select
+//         value={realMode}
+//         onChange={(event) => {
+//           const mode =
+//             event.target.value === "system"
+//               ? null
+//               : (event.target.value as "dark" | "default");
+//           setMode(mode);
+//           setColorMode(mode);
+//         }}
+//       >
+//         <option value="system">System</option>
+//         <option value="dark">Dark</option>
+//         <option value="default">Light</option>
+//       </select>
+//       <SelectIcon>
+//         <ChevronDownIcon />
+//       </SelectIcon>
+//     </Select>
+//   );
+// };
 
 export const AppFooter: React.FC = () => (
   <x.footer
@@ -108,7 +109,7 @@ export const AppFooter: React.FC = () => (
       <x.hr mt={16} mb={10} borderBottom={1} borderColor="layout-border" />
       <x.div display="flex" justifyContent="space-between">
         <ArgosLogo width="160" />
-        <ColorModeSelector />
+        {/* <ColorModeSelector /> */}
       </x.div>
     </Container>
   </x.footer>

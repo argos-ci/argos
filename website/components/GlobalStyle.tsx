@@ -43,7 +43,7 @@ const ArgosGlobalStyle = createGlobalStyle`
 
 export const GlobalStyle: React.FC<{}> = () => (
   <>
-    <ArgosGlobalStyle />
     <Preflight />
+    <ArgosGlobalStyle />
   </>
 );

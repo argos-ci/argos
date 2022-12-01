@@ -45,8 +45,7 @@ export default function Home() {
         backgroundImage="gradient-to-b"
         gradientFrom="lighter"
         gradientTo="hero-bg"
-        pt={10}
-        pb={20}
+        py={20}
       >
         <Container
           display="flex"
@@ -63,15 +62,15 @@ export default function Home() {
                 Puppeteer support
               </Chip>
             </Link>
-            <x.h1 text="h1">
+            <x.h1 text={{ _: "h1-sm", sm: "h1" }}>
               Argos is the better way to
               <br />
               ship pixel perfect apps
             </x.h1>
-            <x.p text="teaser">
+            <x.p text={{ _: "teaser-sm", sm: "teaser" }}>
               Meet the new standard for modern visual testing.
               <br />
-              Compare pull request screenshots side-by-side with baseline.
+              Review visual changes in your development workflow.
             </x.p>
             <x.div display="flex" gap={{ _: 4, sm: 6 }} mt={6} mx="auto">
               <Button
@@ -88,15 +87,16 @@ export default function Home() {
             </x.div>
           </x.div>
 
-          <x.div flex={1} display={{ _: "none", md: "block" }} mt={10}>
+          <x.div flex={1} mt={{ _: 6, sm: 10 }}>
             <Image
               src={argosBuildExample}
               alt="build example"
               style={{
                 maxWidth: "100%",
                 height: "auto",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: 8,
+                border: "4px solid black",
+                borderRadius: 4,
+                boxShadow: "0 -10px 100px 20px rgba(201, 136, 248, 0.2)",
               }}
             />
           </x.div>

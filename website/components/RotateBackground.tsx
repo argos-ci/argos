@@ -9,8 +9,8 @@ export type RotateBackgroundOptions<T extends As = "div"> = Options<T> & {
 
 export const RotateBackground: SystemComponent<RotateBackgroundOptions> =
   forwardRef(({ children, ...props }, ref) => (
-    <x.div ref={ref} transform rotate={-6} mx={-10} {...props}>
-      <x.div transform rotate={6} mx={10}>
+    <x.div ref={ref} transform rotate={-6} mx={-20} {...props}>
+      <x.div transform rotate={6} mx={20}>
         {children}
       </x.div>
     </x.div>

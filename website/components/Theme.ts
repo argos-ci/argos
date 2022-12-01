@@ -6,16 +6,19 @@ import {
 } from "@xstyled/styled-components";
 
 export interface Theme extends DefaultTheme {
+  defaultColorModeName: string;
   fonts: DefaultTheme["fonts"] & {
     default: string;
   };
   colors: any;
   texts: DefaultTheme["texts"] & {
     h1: any;
+    "h1-sm": any;
     h2: any;
     quote: any;
     "feature-title": any;
     teaser: any;
+    "teaser-sm": any;
   };
   radii: DefaultTheme["radii"] & {
     chip: string;
@@ -24,6 +27,7 @@ export interface Theme extends DefaultTheme {
 
 export const theme: Theme = {
   ...defaultTheme,
+  defaultColorModeName: "dark",
   fonts: {
     ...defaultTheme.fonts,
     default:
@@ -32,7 +36,14 @@ export const theme: Theme = {
   texts: {
     ...defaultTheme.texts,
     h1: {
-      fontSize: "5xl",
+      fontSize: "6xl",
+      lineHeight: 1.1,
+      fontWeight: "bold",
+      color: "title",
+    },
+    "h1-sm": {
+      fontSize: "4xl",
+      lineHeight: "2.5rem",
       fontWeight: "bold",
       color: "title",
     },
@@ -55,8 +66,13 @@ export const theme: Theme = {
       fontWeight: "semibold",
     },
     teaser: {
+      fontSize: "xl",
+      lineHeight: "1.75rem",
+      color: "on-light",
+    },
+    "teaser-sm": {
       fontSize: "lg",
-      lineHeight: 1.5,
+      lineHeight: "1.75rem",
       color: "on-light",
     },
   },
