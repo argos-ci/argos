@@ -6,7 +6,6 @@ import {
 } from "@xstyled/styled-components";
 
 export interface Theme extends DefaultTheme {
-  defaultColorModeName: string;
   fonts: DefaultTheme["fonts"] & {
     default: string;
   };
@@ -25,9 +24,49 @@ export interface Theme extends DefaultTheme {
   };
 }
 
+const darkMode = {
+  "on-dark": th.color("white"),
+  on: th.color("slate-100"),
+  "on-light": th.color("slate-400"),
+  "primary-border": th.color("primary-800"),
+  "layout-border": th.color("slate-800"),
+  lighter: th.color("black"),
+  darker: th.color("white"),
+
+  link: th.color("primary-400"),
+
+  "primary-focus-ring": th.color("primary-700"),
+  "secondary-focus-ring": th.color("secondary-700"),
+
+  "button-primary-bg": th.color("primary-600"),
+  "button-primary-bg-hover": th.color("primary-600"),
+  "button-primary-outline": th.color("primary-400"),
+  "button-primary-outline-hover": th.color("primary-200"),
+  "button-secondary-bg": th.color("secondary-700"),
+  "button-secondary-bg-hover": th.color("secondary-600"),
+  "button-secondary-outline": th.color("secondary-400"),
+  "button-secondary-outline-hover": th.color("secondary-200"),
+  "button-contained-text": th.color("white"),
+
+  "feature-primary-bg": th.color("primary-900"),
+  "feature-orange-bg": th.color("orange-900"),
+  "feature-green-bg": th.color("green-900"),
+  "feature-primary-icon": th.color("primary-300"),
+  "feature-orange-icon": th.color("orange-300"),
+  "feature-green-icon": th.color("green-300"),
+
+  "chip-on": th.color("primary-300"),
+  "chip-bg": th.color("primary-900-a50"),
+  "chip-bg-hover": th.color("primary-900"),
+
+  "hero-bg": th.color("blue-800-a30"),
+
+  "testimonials-bg-top": th.color("fuchsia-800-a30"),
+  "testimonials-bg-bottom": th.color("blue-800-a30"),
+};
+
 export const theme: Theme = {
   ...defaultTheme,
-  defaultColorModeName: "dark",
   fonts: {
     ...defaultTheme.fonts,
     default:
@@ -147,86 +186,7 @@ export const theme: Theme = {
       "sky-900": "#0c4a6e",
     }),
 
-    "on-dark": th.color("black"),
-    on: th.color("slate-900"),
-    "on-light": th.color("slate-500"),
-    "primary-border": th.color("purple-200"),
-    "layout-border": th.color("slate-200"),
-    lighter: th.color("white"),
-    darker: th.color("black"),
-
-    link: th.color("primary-600"),
-
-    "feature-primary-bg": th.color("primary-50"),
-    "feature-orange-bg": th.color("orange-50"),
-    "feature-green-bg": th.color("green-50"),
-    "feature-primary-icon": th.color("primary-600"),
-    "feature-orange-icon": th.color("orange-600"),
-    "feature-green-icon": th.color("green-600"),
-
-    "primary-focus-ring": th.color("primary-300"),
-    "secondary-focus-ring": th.color("secondary-300"),
-
-    "button-primary-bg": th.color("primary-600"),
-    "button-primary-bg-hover": th.color("primary-700"),
-    "button-primary-outline": th.color("primary-600"),
-    "button-primary-outline-hover": th.color("primary-800"),
-    "button-secondary-bg": th.color("secondary-600"),
-    "button-secondary-bg-hover": th.color("secondary-700"),
-    "button-secondary-outline": th.color("secondary-600"),
-    "button-secondary-outline-hover": th.color("secondary-800"),
-    "button-contained-text": th.color("white"),
-
-    "chip-on": th.color("primary-600"),
-    "chip-bg": th.color("primary-50"),
-    "chip-bg-hover": th.color("primary-100"),
-
-    "hero-bg": th.color("sky-100-a60"),
-
-    "testimonials-bg-top": th.color("fuchsia-200-a30"),
-    "testimonials-bg-bottom": th.color("sky-200-a30"),
-
-    modes: {
-      dark: {
-        "on-dark": th.color("white"),
-        on: th.color("slate-100"),
-        "on-light": th.color("slate-400"),
-        "primary-border": th.color("primary-800"),
-        "layout-border": th.color("slate-800"),
-        lighter: th.color("black"),
-        darker: th.color("white"),
-
-        link: th.color("primary-400"),
-
-        "primary-focus-ring": th.color("primary-700"),
-        "secondary-focus-ring": th.color("secondary-700"),
-
-        "button-primary-bg": th.color("primary-600"),
-        "button-primary-bg-hover": th.color("primary-600"),
-        "button-primary-outline": th.color("primary-400"),
-        "button-primary-outline-hover": th.color("primary-200"),
-        "button-secondary-bg": th.color("secondary-700"),
-        "button-secondary-bg-hover": th.color("secondary-600"),
-        "button-secondary-outline": th.color("secondary-400"),
-        "button-secondary-outline-hover": th.color("secondary-200"),
-
-        "feature-primary-bg": th.color("primary-900"),
-        "feature-orange-bg": th.color("orange-900"),
-        "feature-green-bg": th.color("green-900"),
-        "feature-primary-icon": th.color("primary-300"),
-        "feature-orange-icon": th.color("orange-300"),
-        "feature-green-icon": th.color("green-300"),
-
-        "chip-on": th.color("primary-300"),
-        "chip-bg": th.color("primary-900-a50"),
-        "chip-bg-hover": th.color("primary-900"),
-
-        "hero-bg": th.color("blue-800-a30"),
-
-        "testimonials-bg-top": th.color("fuchsia-800-a30"),
-        "testimonials-bg-bottom": th.color("blue-800-a30"),
-      },
-    },
+    ...darkMode,
   },
   radii: {
     ...defaultTheme.radii,

@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import Head from "next/head";
-import { ThemeProvider, ColorModeProvider } from "@xstyled/styled-components";
+import { ThemeProvider } from "@xstyled/styled-components";
 import { theme } from "@/components/Theme";
 import { GlobalStyle } from "@/components/GlobalStyle";
 import type { AppProps } from "next/app";
@@ -68,16 +68,14 @@ const App = ({ Component, pageProps }: AppProps) => {
         />
       </Head>
       <ThemeProvider theme={theme}>
-        <ColorModeProvider>
-          <GlobalStyle />
-          <div id="content">
-            <AppNavbar />
-            <main>
-              <Component {...pageProps} />
-            </main>
-            <AppFooter />
-          </div>
-        </ColorModeProvider>
+        <GlobalStyle />
+        <div id="content">
+          <AppNavbar />
+          <main>
+            <Component {...pageProps} />
+          </main>
+          <AppFooter />
+        </div>
       </ThemeProvider>
     </StrictMode>
   );
