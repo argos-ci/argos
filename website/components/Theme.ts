@@ -55,7 +55,7 @@ export const theme: Theme = {
       fontWeight: "semibold",
     },
     teaser: {
-      fontSize: "default",
+      fontSize: "lg",
       lineHeight: 1.5,
       color: "on-light",
     },

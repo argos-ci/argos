@@ -16,7 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/Button";
 import { Chip } from "@/components/Chip";
-import heroIllustration from "@/images/hero-illustration.png";
+import argosBuildExample from "@/images/argos-build-example.png";
 import {
   FeatureList,
   Feature,
@@ -45,22 +45,35 @@ export default function Home() {
         backgroundImage="gradient-to-b"
         gradientFrom="lighter"
         gradientTo="hero-bg"
-        py={20}
+        pt={10}
+        pb={20}
       >
-        <Container display="flex" gap={11} alignItems="center">
+        <Container
+          display="flex"
+          gap={11}
+          alignItems="center"
+          flexDirection="column"
+          mb={20}
+          textAlign="center"
+        >
           <x.div display="flex" flexDirection="column" gap={6} flex={1}>
             <Link href="https://docs.argos-ci.com/puppeteer" passHref>
-              <Chip icon={SparklesIcon} clickable as="a">
-                <x.span fontWeight="700">New · </x.span>
+              <Chip icon={SparklesIcon} clickable as="a" margin="auto">
+                <x.span fontWeight="500">New · </x.span>
                 Puppeteer support
               </Chip>
             </Link>
-            <x.h1 text="h1">Ship pixel perfect apps with no bug.</x.h1>
+            <x.h1 text="h1">
+              Argos is the better way to
+              <br />
+              ship pixel perfect apps
+            </x.h1>
             <x.p text="teaser">
-              Argos detects all visual changes in websites, components or
-              applications and notifies in pull-requests.
+              Meet the new standard for modern visual testing.
+              <br />
+              Compare pull request screenshots side-by-side with baseline.
             </x.p>
-            <x.div display="flex" gap={{ _: 4, sm: 6 }}>
+            <x.div display="flex" gap={{ _: 4, sm: 6 }} mt={6} mx="auto">
               <Button
                 as="a"
                 href="https://app.argos-ci.com/argos-ci/www.argos-ci.com/builds/66"
@@ -77,9 +90,14 @@ export default function Home() {
 
           <x.div flex={1} display={{ _: "none", md: "block" }} mt={10}>
             <Image
-              src={heroIllustration}
-              alt="Visual Testing"
-              style={{ maxWidth: "100%", height: "auto" }}
+              src={argosBuildExample}
+              alt="build example"
+              style={{
+                maxWidth: "100%",
+                height: "auto",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: 8,
+              }}
             />
           </x.div>
         </Container>
