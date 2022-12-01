@@ -1,7 +1,8 @@
 import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import { memo } from "react";
 
-import { Banner, Icon, Link } from "@/components";
+import { Link } from "@/modern/ui/Link";
+import { Banner } from "@/modern/ui/Banner";
 import { graphql } from "@/gql";
 
 import { FragmentType, useFragment } from "@/gql/fragment-masking";
@@ -32,12 +33,15 @@ export const OvercapacityBanner = memo(
 
     return (
       <Banner
+        className="flex flex-shrink-0 items-center justify-center gap-2"
         color={consumptionRatio >= 1 ? "danger" : "warning"}
-        flex="0 0 auto"
       >
-        <Icon as={ExclamationTriangleIcon} w={4} />
-        You&apos;ve hit {Math.floor(consumptionRatio * 100)}% of the {plan.name}{" "}
-        plan limit. <Link to={`/${ownerLogin}/settings`}>Upgrade plan</Link>
+        <ExclamationTriangleIcon className="h-4 w-4" />
+        <span>
+          You&apos;ve hit {Math.floor(consumptionRatio * 100)}% of the{" "}
+          {plan.name} plan limit.
+        </span>
+        <Link to={`/${ownerLogin}/settings`}>Upgrade plan</Link>
       </Banner>
     );
   }
