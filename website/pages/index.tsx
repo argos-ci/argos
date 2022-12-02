@@ -248,8 +248,9 @@ export default function Home() {
             fontSize="sm"
             lineHeight={1.4}
             letterSpacing="widest"
+            textTransform="uppercase"
           >
-            TRUSTED BY THE BEST FRONT-END TEAMS
+            Trusted by the best front-end teams
           </x.div>
         </Container>
         <Testimonials gap={10}>

@@ -6,6 +6,12 @@ export interface TestimonialsProps {
   gap: number;
 }
 
+const TestimonialsContainer = styled.div`
+  img {
+    filter: brightness(0) invert(1);
+  }
+`;
+
 const Slider = styled.box`
   overflow: hidden;
   position: relative;
@@ -21,7 +27,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
   gap,
 }) => {
   return (
-    <>
+    <TestimonialsContainer>
       <Container
         display={{ _: "none", lg: "flex" }}
         justifyContent="space-between"
@@ -34,6 +40,6 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
           {children}
         </x.div>
       </Slider>
-    </>
+    </TestimonialsContainer>
   );
 };
