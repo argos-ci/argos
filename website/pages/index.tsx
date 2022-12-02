@@ -5,7 +5,6 @@ import {
   SparklesIcon,
   EyeIcon,
   Square3Stack3DIcon,
-  RocketLaunchIcon,
   HeartIcon,
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/solid";
@@ -13,6 +12,8 @@ import {
   CameraIcon,
   ArrowUpOnSquareStackIcon,
   CheckCircleIcon,
+  BellAlertIcon,
+  GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/Button";
 import { Chip } from "@/components/Chip";
@@ -112,33 +113,35 @@ export default function Home() {
         textAlign="center"
       >
         <Chip icon={EyeIcon}>What is Argos?</Chip>
-        <x.h2 text="h2">Get instant value from a simple screenshot</x.h2>
-        <x.p text="teaser">
-          Take screenshots, upload them and get instant value by being notified
-          of changes.
+        <x.h2 text="h2">Visual testing powered by CI</x.h2>
+        <x.p text="teaser" mb={2}>
+          Compare your pull requests screenshots with baseline to secure your
+          delivery. Designed to fit seamlessly in your development routine.
         </x.p>
         <FeatureList>
           <Feature>
             <FeatureIcon icon={CameraIcon} color="primary" />
             <FeatureTitle>Take screenshots</FeatureTitle>
-            <FeatureText>
-              Use one of Argos’ many integrations to take screenshots or do it
-              yourself.
-            </FeatureText>
+            <FeatureText>Use your favorite testing framework.</FeatureText>
           </Feature>
+
           <Feature>
             <FeatureIcon icon={ArrowUpOnSquareStackIcon} color="orange" />
             <FeatureTitle>Upload screenshots</FeatureTitle>
+            <FeatureText>Add one command to configure your CI.</FeatureText>
+          </Feature>
+          <Feature>
+            <FeatureIcon icon={BellAlertIcon} color="sky" />
+            <FeatureTitle>Be notified</FeatureTitle>
             <FeatureText>
-              Add one command in your CI to upload screenshots to Argos.
+              Get a status check on Github pull-request.
             </FeatureText>
           </Feature>
           <Feature>
             <FeatureIcon icon={CheckCircleIcon} color="green" />
             <FeatureTitle>Review changes</FeatureTitle>
             <FeatureText>
-              Get status on your pull-requests and use Argos to review and
-              approve changes.
+              Compare screenshots in Argos side-by-side UI.
             </FeatureText>
           </Feature>
         </FeatureList>
@@ -159,11 +162,11 @@ export default function Home() {
           />
         </x.div>
         <x.div display="flex" flexDirection="column" gap={6} flex={1}>
-          <Chip icon={Square3Stack3DIcon}>Easy integration</Chip>
-          <x.h2 text="h2">Compatible with your stack</x.h2>
+          <Chip icon={Square3Stack3DIcon}>Easy installation</Chip>
+          <x.h2 text="h2">Compatible with every stack</x.h2>
           <x.p text="teaser">
-            Argos offers SDK for most frameworks, testing libraries and CI
-            providers. This is not mandatory, as long as you can take
+            Argos offers integrations (SDK) for the most famous frameworks,
+            testing libraries, and CI providers. As long as you can take
             screenshots, you can use Argos.
           </x.p>
         </x.div>
@@ -190,12 +193,12 @@ export default function Home() {
         </x.div>
 
         <x.div flex={1} display="flex" flexDirection="column" gap={6}>
-          <Chip icon={RocketLaunchIcon}>Unified platform</Chip>
-          <x.h2 text="h2">Review websites, apps and components together</x.h2>
+          <Chip icon={GlobeAltIcon}>Universal testing</Chip>
+          <x.h2 text="h2">Review whole pages and individual components</x.h2>
           <x.p text="teaser">
-            Argos has no limit. Whether it's a single component or a website in
-            multiple resolutions, everything is possible. Use a single tool for
-            Visual Testing.
+            Use Argos to secure whole pages and individual components from
+            regressions on several resolutions and browsers. Use a single tool
+            for visual testing.
           </x.p>
         </x.div>
 
@@ -306,7 +309,7 @@ export default function Home() {
           <Link href="https://discord.gg/FNGFpJS9" passHref>
             <Button display="flex" gap={1} w="fit-content" as="a">
               <x.svg as={ChatBubbleLeftRightIcon} w={4} />
-              Chat about Argos on Discord
+              Join us on Discord
             </Button>
           </Link>
         </x.section>

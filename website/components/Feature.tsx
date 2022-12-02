@@ -18,7 +18,7 @@ export const Feature: React.FC<{ children: React.ReactNode }> = ({
 
 export const FeatureIcon: React.FC<{
   icon: React.ComponentType;
-  color: "primary" | "orange" | "green";
+  color: "primary" | "orange" | "green" | "sky";
 }> = ({ icon: Icon, color }) => (
   <x.div
     borderRadius="full"

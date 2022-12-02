@@ -48,12 +48,14 @@ const darkMode = {
   "button-secondary-outline-hover": th.color("secondary-200"),
   "button-contained-text": th.color("white"),
 
-  "feature-primary-bg": th.color("primary-900"),
-  "feature-orange-bg": th.color("orange-900"),
-  "feature-green-bg": th.color("green-900"),
+  "feature-primary-bg": th.color("primary-900-a50"),
+  "feature-orange-bg": th.color("orange-900-a50"),
+  "feature-green-bg": th.color("green-900-a50"),
+  "feature-sky-bg": th.color("sky-900-a50"),
   "feature-primary-icon": th.color("primary-300"),
   "feature-orange-icon": th.color("orange-300"),
   "feature-green-icon": th.color("green-300"),
+  "feature-sky-icon": th.color("sky-300"),
 
   "chip-on": th.color("primary-300"),
   "chip-bg": th.color("primary-900-a50"),
