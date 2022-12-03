@@ -1,4 +1,5 @@
 import { useMutation } from "@apollo/client";
+import { CheckIcon, XIcon } from "@primer/octicons-react";
 import { useState } from "react";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
@@ -6,7 +7,6 @@ import { useParams } from "react-router-dom";
 import { Query } from "@/containers/Apollo";
 import { DocumentType, graphql } from "@/gql";
 import { SettingsLayout } from "@/modern/containers/Layout";
-import { Alert } from "@/modern/ui/Alert";
 import { Button } from "@/modern/ui/Button";
 import { Card, CardBody, CardFooter, CardTitle } from "@/modern/ui/Card";
 import { Code } from "@/modern/ui/Code";
@@ -78,98 +78,99 @@ const TokenCard = ({ repository }: { repository: Repository }) => {
   );
 };
 
-const UpdateBranchForm = ({ repository }: { repository: Repository }) => {
+const ReferenceBranchCard = ({ repository }: { repository: Repository }) => {
+  const defaultUseDefaultBranch = repository.baselineBranch === null;
+  const [useDefaultBranch, setUseDefaultBranch] = useState(
+    defaultUseDefaultBranch
+  );
   const [baselineBranch, setBaselineBranch] = useState(
     repository.baselineBranch || repository.defaultBranch || ""
   );
-  const initialUseDefaultBranch = repository.baselineBranch === null;
-  const [useDefaultBranch, setUseDefaultBranch] = useState(
-    initialUseDefaultBranch
-  );
 
-  const [updateReferenceBranch, { loading }] = useMutation(
-    UpdateReferenceBranchMutation
-  );
+  const [updateReferenceBranch, { loading, data: updated, error }] =
+    useMutation(UpdateReferenceBranchMutation);
 
-  const form = useFormState();
-
-  form.useSubmit(async () => {
-    await updateReferenceBranch({
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
+    updateReferenceBranch({
       variables: {
         repositoryId: repository.id,
         baselineBranch: useDefaultBranch ? null : baselineBranch,
       },
     });
-  });
+  };
 
-  return (
-    <Form state={form} mt={4}>
-      <x.div>
-        <FormLabel name="defaultBranch">
-          <Checkbox
-            name="defaultBranch"
-            onChange={(event) => setUseDefaultBranch(event.target.checked)}
-            checked={useDefaultBranch}
-          />{" "}
-          Use GitHub default branch{" "}
-          <x.span color="secondary-text">({repository.defaultBranch})</x.span>
-        </FormLabel>
-        <FormError name="defaultBranch" mt={2} />
-      </x.div>
+  const baselineBranchRef = (element: HTMLInputElement | null) => {
+    if (!element) return;
+    // Just checked
+    if (!useDefaultBranch && defaultUseDefaultBranch !== useDefaultBranch) {
+      element.focus();
+    }
+  };
 
-      {useDefaultBranch ? null : (
-        <x.div>
-          <FormLabel name="name" required>
-            Custom reference branch
-          </FormLabel>
-          <FormInput
-            ref={(element) => {
-              if (!element) return;
-              // Just checked
-              if (
-                !useDefaultBranch &&
-                initialUseDefaultBranch !== useDefaultBranch
-              ) {
-                element.focus();
-              }
-            }}
-            name="name"
-            placeholder="Branch name"
-            onChange={(event) => setBaselineBranch(event.target.value)}
-            value={baselineBranch}
-            required
-          />
-          <FormError name="name" mt={2} />
-        </x.div>
-      )}
-
-      <FormSubmit disabled={loading} alignSelf="start">
-        Save changes
-      </FormSubmit>
-
-      <Toast state={successToast}>
-        <Alert color="success">Changes saved</Alert>
-      </Toast>
-
-      <Toast state={errorToast}>
-        <Alert color="danger">Something went wrong. Please try again.</Alert>
-      </Toast>
-    </Form>
-  );
-};
-
-const ReferenceBranchCard = ({ repository }: { repository: Repository }) => {
   return (
     <Card>
-      <CardBody>
-        <CardTitle>Reference branch</CardTitle>
-        <p>
-          Argos uses this branch as the reference for screenshots comparison.
-        </p>
-      </CardBody>
-      <CardFooter className="flex justify-end">
-        <Button type="submit">Save</Button>
-      </CardFooter>
+      <form onSubmit={handleSubmit} aria-labelledby="reference-branch">
+        <CardBody>
+          <CardTitle id="reference-branch">Reference branch</CardTitle>
+          <p>
+            Argos uses this branch as the reference for screenshots comparison.
+          </p>
+          <div className="my-4 flex gap-2">
+            <input
+              type="checkbox"
+              id="useDefaultBranch"
+              name="useDefaultBranch"
+              checked={useDefaultBranch}
+              onChange={(event) => {
+                setUseDefaultBranch(event.target.checked);
+              }}
+            />
+            <label htmlFor="useDefaultBranch" className="select-none">
+              Use GitHub default branch
+            </label>
+          </div>
+          {!useDefaultBranch && (
+            <div className="my-4">
+              <label
+                htmlFor="baselineBranch"
+                className="mb-2 block font-semibold"
+              >
+                Custom reference branch
+              </label>
+              <input
+                ref={baselineBranchRef}
+                type="text"
+                id="baselineBranch"
+                className="focus:shadow-outline w-full appearance-none rounded border border-border bg-slate-900 py-2 px-3 leading-tight text-on shadow invalid:border-red-800 focus:outline-none"
+                name="baselineBranch"
+                placeholder="Branch name"
+                required
+                value={baselineBranch}
+                onChange={(event) => {
+                  setBaselineBranch(event.target.value);
+                }}
+              />
+            </div>
+          )}
+        </CardBody>
+        <CardFooter className="flex items-center justify-end gap-4">
+          {error ? (
+            <div className="flex items-center gap-2 font-medium">
+              <XIcon className="text-error-500" /> Error while saving
+            </div>
+          ) : (
+            updated && (
+              <div className="flex items-center gap-2 font-medium">
+                <CheckIcon className="text-success-500" /> Saved
+              </div>
+            )
+          )}
+          <Button type="submit" disabled={loading}>
+            Save
+          </Button>
+        </CardFooter>
+      </form>
     </Card>
   );
 };
