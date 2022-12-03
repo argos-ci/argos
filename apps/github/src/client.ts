@@ -34,7 +34,7 @@ export const getOAuthOctokit = () => {
 };
 
 export const getInstallationOctokit = async (
-  installationId: number,
+  installationId: string,
   appOctokit = getAppOctokit()
 ): Promise<Octokit | null> => {
   const installation = await Installation.query().findById(installationId);
@@ -55,7 +55,7 @@ export const getInstallationOctokit = async (
     try {
       const result = (await appOctokit.auth({
         type: "installation",
-        installationId,
+        installationId: installation.githubId,
       })) as { token: string; expiresAt: string };
       return result;
     } catch (error) {

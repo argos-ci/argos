@@ -61,7 +61,7 @@ const strategy = {
     }
 
     const octokit = await getInstallationOctokit(
-      Number(repository.activeInstallation.githubId)
+      repository.activeInstallation.id
     );
 
     if (!octokit) {

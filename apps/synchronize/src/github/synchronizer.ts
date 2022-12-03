@@ -501,10 +501,7 @@ export class GitHubSynchronizer {
     const appOctokit = getAppOctokit();
     this.appOctokit = appOctokit;
 
-    const octokit = await getInstallationOctokit(
-      installation.githubId,
-      appOctokit
-    );
+    const octokit = await getInstallationOctokit(installation.id, appOctokit);
 
     // If we don't get an octokit, then the installation has been removed
     // we deleted the installation

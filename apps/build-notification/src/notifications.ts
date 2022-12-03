@@ -108,7 +108,7 @@ export const processBuildNotification = async (
     throw error;
   }
 
-  const octokit = await getInstallationOctokit(installation.githubId);
+  const octokit = await getInstallationOctokit(installation.id);
 
   if (!octokit) {
     return null;
