@@ -112,14 +112,19 @@ const insertFilesAndScreenshots = async ({
   trx?: TransactionOrKnex;
 }) => {
   await transaction(trx, async (trx) => {
-    // Insert unknown files
-    await File.query(trx)
-      .insert(unknownKeys.map((key) => ({ key })))
-      .onConflict("key")
-      .ignore();
+    if (unknownKeys.length > 0) {
+      // Insert unknown files
+      await File.query(trx)
+        .insert(unknownKeys.map((key) => ({ key })))
+        .onConflict("key")
+        .ignore();
+    }
 
     // Retrieve all screenshot files
     const screenshots = req.body.screenshots;
+
+    if (screenshots.length === 0) return;
+
     const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
     const files = await File.query(trx).whereIn("key", screenshotKeys);
 
