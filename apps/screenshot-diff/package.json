@@ -11,12 +11,12 @@
     "@argos-ci/github": "*",
     "@argos-ci/job-core": "*",
     "@argos-ci/storage": "*",
-    "@octokit/rest": "^19.0.3",
+    "@octokit/rest": "^19.0.5",
     "gm": "^1.25.0",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@types/gm": "^1.18.12",
+    "@types/gm": "^1.25.0",
     "@types/tmp": "^0.2.3",
     "get-pixels": "^3.3.3"
   },

@@ -51,7 +51,7 @@ export const seed = async (knex) => {
         githubId: 23083156,
         name: "material-ui",
         token: "650ded7d72e85b52e099df6e56aa204d4fe92fd1",
-        organizationId: organizations[0],
+        organizationId: organizations[0].id,
         baselineBranch: "next",
         defaultBranch: "master",
       },
@@ -60,7 +60,7 @@ export const seed = async (knex) => {
         githubId: 31123797,
         name: "SplitMe",
         token: "650ded7d72e85b52e099df6e56aa204d4fe92fd2",
-        userId: users[0],
+        userId: users[0].id,
         baselineBranch: "master",
         defaultBranch: null,
       },
@@ -69,7 +69,7 @@ export const seed = async (knex) => {
         githubId: 14022421,
         name: "doctolib",
         token: "650ded7d72e85b52e099df6e56aa204d4fe92fd3",
-        organizationId: organizations[1],
+        organizationId: organizations[1].id,
         private: true,
         baselineBranch: null,
         defaultBranch: "master",
@@ -77,16 +77,16 @@ export const seed = async (knex) => {
     ]);
 
   await knex("accounts").insert([
-    { ...timeStamps, organizationId: organizations[0], userId: null },
-    { ...timeStamps, organizationId: organizations[1], userId: null },
-    { ...timeStamps, organizationId: null, userId: users[0] },
+    { ...timeStamps, organizationId: organizations[0].id, userId: null },
+    { ...timeStamps, organizationId: organizations[1].id, userId: null },
+    { ...timeStamps, organizationId: null, userId: users[0].id },
   ]);
 
   const screenshotBucket = {
     name: "default",
     commit: "029b662f3ae57bae7a215301067262c1e95bbc95",
     branch: "master",
-    repositoryId: repositories[0],
+    repositoryId: repositories[0].id,
     createdAt: "2016-12-08T22:59:55Z",
     updatedAt: "2016-12-08T22:59:55Z",
   };
@@ -126,19 +126,19 @@ export const seed = async (knex) => {
     .insert([
       {
         ...timeStamps,
-        screenshotBucketId: screenshotBuckets[0],
+        screenshotBucketId: screenshotBuckets[0].id,
         name: "penelope.jpg",
         s3Id: "penelope.jpg",
       },
       {
         ...timeStamps,
-        screenshotBucketId: screenshotBuckets[1],
+        screenshotBucketId: screenshotBuckets[1].id,
         name: "penelope-argos.png",
         s3Id: "penelope-argos.jpg",
       },
       {
         ...timeStamps,
-        screenshotBucketId: screenshotBuckets[2],
+        screenshotBucketId: screenshotBuckets[2].id,
         name: "penelope-argos (failed).png",
         s3Id: "penelope-argos.jpg",
       },
@@ -186,28 +186,30 @@ export const seed = async (knex) => {
     ]);
 
   const [
-    smallDummyScreenshotId,
-    mediumDummyScreenshotId,
-    largeDummyScreenshotId,
-    ...bearScreenshotIds
+    { id: smallDummyScreenshotId },
+    { id: mediumDummyScreenshotId },
+    { id: largeDummyScreenshotId },
+    ...bearScreenshots
   ] = await knex("screenshots")
     .returning("id")
     .insert(
       screenshotFiles.map((file) => ({
         ...timeStamps,
-        screenshotBucketId: screenshotBuckets[1],
+        screenshotBucketId: screenshotBuckets[1].id,
         name: file.key,
         s3Id: file.key,
         fileId: file.id,
       }))
     );
 
+  const bearScreenshotIds = bearScreenshots.map(({ id }) => id);
+
   const build = {
     number: 1,
     name: "main",
-    baseScreenshotBucketId: screenshotBuckets[0],
-    compareScreenshotBucketId: screenshotBuckets[1],
-    repositoryId: repositories[0],
+    baseScreenshotBucketId: screenshotBuckets[0].id,
+    compareScreenshotBucketId: screenshotBuckets[1].id,
+    repositoryId: repositories[0].id,
     jobStatus: "complete",
     type: "check",
     createdAt: "2016-12-08T22:59:55Z",
@@ -215,20 +217,20 @@ export const seed = async (knex) => {
   };
 
   const [
-    orphanBuildId,
-    referenceBuildId,
+    { id: orphanBuildId },
+    { id: referenceBuildId },
     ,
     ,
     ,
-    diffDetectedBuildId,
-    acceptedBuildId,
-    rejectedBuildId,
+    { id: diffDetectedBuildId },
+    { id: acceptedBuildId },
+    { id: rejectedBuildId },
     ,
-    inProgressBuildId,
-    failBuildId,
-    stableBuildId,
+    { id: inProgressBuildId },
+    { id: failBuildId },
+    { id: stableBuildId },
     ,
-    removedBuildId,
+    { id: removedBuildId },
   ] = await knex("builds")
     .returning("id")
     .insert([
@@ -249,8 +251,8 @@ export const seed = async (knex) => {
     ]);
 
   const defaultScreenshotDiff = {
-    baseScreenshotId: screenshots[0],
-    compareScreenshotId: screenshots[1],
+    baseScreenshotId: screenshots[0].id,
+    compareScreenshotId: screenshots[1].id,
     score: null,
     jobStatus: "complete",
     validationStatus: "unknown",
@@ -284,7 +286,7 @@ export const seed = async (knex) => {
 
   const failedScreenshotDiff = {
     ...addedScreenshotDiff,
-    compareScreenshotId: screenshots[2],
+    compareScreenshotId: screenshots[2].id,
   };
 
   const buildScreenshotDiffs = {
@@ -306,14 +308,14 @@ export const seed = async (knex) => {
         s3Id: "diff-1024-to-720.png",
         baseScreenshotId: mediumDummyScreenshotId,
         compareScreenshotId: smallDummyScreenshotId,
-        fileId: dummiesDiffFileIds[0],
+        fileId: dummiesDiffFileIds[0].id,
       },
       {
         ...updatedScreenshotDiff,
         s3Id: "diff-1024-to-1440.png",
         baseScreenshotId: mediumDummyScreenshotId,
         compareScreenshotId: largeDummyScreenshotId,
-        fileId: dummiesDiffFileIds[1],
+        fileId: dummiesDiffFileIds[1].id,
       },
       ...duplicate(updatedScreenshotDiff, 30),
     ],

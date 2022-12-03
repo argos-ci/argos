@@ -1,9 +1,9 @@
 import { memo } from "react";
 import { Helmet } from "react-helmet";
 
+import { BuildNotFound } from "./BuildNotFound";
 import { BuildPage } from "./BuildPage";
 import { useBuildParams } from "./BuildParams";
-import { BuildNotFound } from "./BuildNotFound";
 
 export const ModernBuild = memo(() => {
   const params = useBuildParams();

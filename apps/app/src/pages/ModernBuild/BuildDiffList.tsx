@@ -1,10 +1,10 @@
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import {
-  defaultRangeExtractor,
   Range,
+  defaultRangeExtractor,
   useVirtualizer,
 } from "@tanstack/react-virtual";
 import { Button as AriakitButton } from "ariakit/button";
-import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import {
   memo,
   useCallback,
@@ -14,10 +14,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { useBuildDiffState, DiffGroup, Diff } from "./BuildDiffState";
+
 import { Badge } from "@/modern/ui/Badge";
-import { BuildStatsIndicator } from "./BuildStatsIndicator";
+
 import { getGroupLabel } from "./BuildDiffGroup";
+import { Diff, DiffGroup, useBuildDiffState } from "./BuildDiffState";
+import { BuildStatsIndicator } from "./BuildStatsIndicator";
 
 interface ListHeaderRow {
   type: "header";

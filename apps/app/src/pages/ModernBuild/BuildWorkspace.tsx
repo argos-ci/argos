@@ -1,10 +1,12 @@
-import { BuildDetail } from "./BuildDetail";
-import { BuildSidebar } from "./BuildSidebar";
-import { BuildDiffProvider } from "./BuildDiffState";
-import { BuildStatusDescription } from "@/modern/containers/BuildStatusDescription";
-import { FragmentType, graphql, useFragment } from "@/gql";
 import { memo } from "react";
+
+import { FragmentType, graphql, useFragment } from "@/gql";
+import { BuildStatusDescription } from "@/modern/containers/BuildStatusDescription";
+
+import { BuildDetail } from "./BuildDetail";
+import { BuildDiffProvider } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
+import { BuildSidebar } from "./BuildSidebar";
 
 const BuildProgress = memo(() => {
   return (

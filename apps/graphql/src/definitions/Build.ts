@@ -7,7 +7,7 @@ import { Account, Build, ScreenshotDiff } from "@argos-ci/database/models";
 import type { Context } from "../context.js";
 import { APIError } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
-import { sortDiffByStatus, selectDiffStatus } from "./ScreenshotDiff.js";
+import { selectDiffStatus, sortDiffByStatus } from "./ScreenshotDiff.js";
 
 const { gql } = gqlTag;
 
@@ -281,15 +281,18 @@ export const resolvers = {
       }
 
       const { buildId, validationStatus } = args;
-      const user = await Build.getUsers(buildId).findById(ctx.user.id);
+      const [user, build] = await Promise.all([
+        Build.getUsers(buildId).findById(ctx.user.id),
+        Build.query().findById(buildId).withGraphFetched("repository"),
+      ]);
 
       if (!user) {
         throw new APIError("Invalid user authorization");
       }
 
-      const build = await Build.query()
-        .findById(buildId)
-        .withGraphFetched("repository");
+      if (!build) {
+        throw new APIError("Build not found");
+      }
 
       if (build.repository!.private) {
         const account = await Account.getAccount(build.repository!);

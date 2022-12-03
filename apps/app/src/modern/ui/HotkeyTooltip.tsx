@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+
 import { MagicTooltip } from "./Tooltip";
 
 export interface HotkeyTooltipProps {

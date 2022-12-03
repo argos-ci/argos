@@ -3,7 +3,7 @@ import { readFile } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import tmp from "tmp";
+import { dirSync } from "tmp";
 
 import config from "@argos-ci/config";
 
@@ -28,7 +28,7 @@ describe("#download", () => {
   });
 
   beforeEach(() => {
-    tmpDirectory = tmp.dirSync().name;
+    tmpDirectory = dirSync().name;
   });
 
   it("should download a file from S3", async () => {

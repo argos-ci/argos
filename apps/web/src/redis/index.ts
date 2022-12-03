@@ -1,52 +1,25 @@
 import { callbackify } from "node:util";
-import redis from "redis";
+import { createClient } from "redis";
 
 import config from "@argos-ci/config";
 
 import { createRedisLock } from "./lock.js";
-import type { RedisLock } from "./lock.js";
 
-let redisClient: redis.RedisClient | null = null;
-let redisLock: RedisLock | null = null;
+const redisClient = createClient({ url: config.get("redis.url") });
+const redisLock = createRedisLock(redisClient);
 
-const init = () => {
-  if (!redisClient) {
-    redisClient = redis.createClient({ url: config.get("redis.url") });
-    redisLock = createRedisLock(redisClient);
-  }
-};
+let connection: Promise<void> | null = null;
 
-export const connect = () => {
-  init();
-  return redisClient;
-};
-
-export const getRedisClient = () => {
-  init();
-  return redisClient as redis.RedisClient;
-};
-
-export const getRedisLock = () => {
-  init();
-  return redisLock as RedisLock;
+export const getRedisLock = async () => {
+  connection = connection || redisClient.connect();
+  await connection;
+  return redisLock;
 };
 
 export const quitRedis = async () => {
-  return new Promise<void>((resolve, reject) => {
-    if (!redisClient) {
-      resolve();
-      return;
-    }
-
-    redisClient.quit((error) => {
-      if (error) {
-        reject(error);
-      } else {
-        redisClient = null;
-        resolve();
-      }
-    });
-  });
+  if (redisClient) {
+    await redisClient.quit();
+  }
 };
 
 process.on("SIGTERM", () => {

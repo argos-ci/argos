@@ -1,7 +1,7 @@
+import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import { Button as AriakitButton } from "ariakit/button";
 import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
-import { forwardRef, cloneElement, Children, memo } from "react";
-import { ChevronDownIcon } from "@heroicons/react/24/solid";
+import { Children, cloneElement, forwardRef, memo } from "react";
 
 export type ButtonColor = "primary" | "neutral";
 export type ButtonVariant = "contained" | "outline";

@@ -16,7 +16,7 @@ describe("models/ScreenshotDiff", () => {
           ...baseData,
           score: 2,
         });
-      }).toThrow("should be <= 1");
+      }).toThrow("score: must be <= 1");
     });
 
     it("should not throw if the score is valid", () => {

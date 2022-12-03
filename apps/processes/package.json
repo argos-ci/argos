@@ -22,6 +22,6 @@
     "@argos-ci/sentry-node": "*",
     "@argos-ci/synchronize": "*",
     "@argos-ci/web": "*",
-    "@sentry/node": "^7.9.0"
+    "@sentry/node": "^7.23.0"
   }
 }

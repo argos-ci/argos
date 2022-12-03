@@ -1,10 +1,10 @@
 /* eslint-env node */
 import AssetsPlugin from "assets-webpack-plugin";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import webpack from "webpack";
-import MiniCssExtractPlugin from "mini-css-extract-plugin";
 
 // eslint-disable-next-line import/no-unresolved
 import config from "@argos-ci/config";

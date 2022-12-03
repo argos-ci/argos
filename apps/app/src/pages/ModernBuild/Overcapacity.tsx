@@ -1,11 +1,10 @@
 import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import { memo } from "react";
 
-import { Link } from "@/modern/ui/Link";
-import { Banner } from "@/modern/ui/Banner";
 import { graphql } from "@/gql";
-
 import { FragmentType, useFragment } from "@/gql/fragment-masking";
+import { Banner } from "@/modern/ui/Banner";
+import { Link } from "@/modern/ui/Link";
 
 export const OwnerFragment = graphql(`
   fragment OvercapacityBanner_Owner on Owner {

@@ -32,6 +32,6 @@ describe("#get", () => {
       Key: "hello.txt",
     });
 
-    expect(result.Body.statusCode).toBe(200);
+    expect(result.ContentType).toBe("text/plain");
   });
 });

@@ -16,7 +16,7 @@
     "@argos-ci/job-core": "*",
     "@argos-ci/logger": "*",
     "@argos-ci/screenshot-diff": "*",
-    "@octokit/rest": "^19.0.3",
+    "@octokit/rest": "^19.0.5",
     "lodash-es": "^4.17.21"
   },
   "devDependencies": {

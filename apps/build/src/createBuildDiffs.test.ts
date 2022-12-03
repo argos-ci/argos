@@ -246,7 +246,7 @@ describe("#createBuildDiffs", () => {
       it("should update build type to 'reference'", async () => {
         await createBuildDiffs(build);
         const updatedBuild = await Build.query().findById(build.id);
-        expect(updatedBuild.type).toBe("reference");
+        expect(updatedBuild?.type).toBe("reference");
       });
     });
 
@@ -254,7 +254,7 @@ describe("#createBuildDiffs", () => {
       it("should update build type to 'check'", async () => {
         await createBuildDiffs(build);
         const updatedBuild = await Build.query().findById(build.id);
-        expect(updatedBuild.type).toBe("check");
+        expect(updatedBuild?.type).toBe("check");
       });
     });
   });
@@ -282,7 +282,7 @@ describe("#createBuildDiffs", () => {
     it("should update build type to 'orphan'", async () => {
       await createBuildDiffs(build);
       const updatedBuild = await Build.query().findById(build.id);
-      expect(updatedBuild.type).toBe("orphan");
+      expect(updatedBuild?.type).toBe("orphan");
     });
   });
 });

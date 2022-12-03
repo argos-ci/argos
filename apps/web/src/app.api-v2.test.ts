@@ -82,6 +82,11 @@ describe("api v2", () => {
         const build = await Build.query()
           .withGraphFetched("compareScreenshotBucket")
           .first();
+
+        if (!build) {
+          throw new Error("Build not found");
+        }
+
         expect(build.jobStatus).toBe("pending");
         expect(build.name).toBe("current");
         expect(build.repositoryId).toBe(repository.id);
@@ -201,6 +206,11 @@ describe("api v2", () => {
         const build = await Build.query()
           .withGraphFetched("compareScreenshotBucket.screenshots.file")
           .first();
+
+        if (!build) {
+          throw new Error("Build not found");
+        }
+
         expect(build.jobStatus).toBe("pending");
         expect(build.name).toBe("current");
         expect(build.repositoryId).toBe(repository.id);
@@ -333,6 +343,11 @@ describe("api v2", () => {
         const build = await Build.query()
           .withGraphFetched("compareScreenshotBucket.screenshots.file")
           .first();
+
+        if (!build) {
+          throw new Error("Build not found");
+        }
+
         expect(build.jobStatus).toBe("pending");
         expect(build.name).toBe("current");
         expect(build.repositoryId).toBe(repository.id);

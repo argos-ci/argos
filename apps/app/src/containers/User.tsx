@@ -1,8 +1,9 @@
+import { useQuery } from "@apollo/client";
 import { createContext, useContext, useEffect, useMemo } from "react";
 
-import { useQuery } from "@apollo/client";
+import { DocumentType, graphql } from "@/gql";
+
 import { useAuthToken, useLogout } from "./Auth";
-import { graphql, DocumentType } from "@/gql";
 
 const UserQuery = graphql(`
   query User {

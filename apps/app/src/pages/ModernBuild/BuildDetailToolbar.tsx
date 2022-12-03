@@ -1,12 +1,14 @@
-import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
-import { IconButton } from "@/modern/ui/IconButton";
 import {
-  ArrowUpIcon,
   ArrowDownIcon,
-  EyeIcon,
+  ArrowUpIcon,
   ArrowsPointingInIcon,
+  EyeIcon,
 } from "@heroicons/react/20/solid";
 import { memo } from "react";
+
+import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
+import { IconButton } from "@/modern/ui/IconButton";
+
 import { useBuildDiffFitState } from "./BuildDiffFitState";
 import { useBuildDiffState } from "./BuildDiffState";
 import { useBuildDiffVisibleState } from "./BuildDiffVisibleState";

@@ -1,13 +1,13 @@
 import {
-  useTooltipState as useAriakitTooltipState,
   Tooltip as AriakitTooltip,
   TooltipAnchor as AriakitTooltipAnchor,
+  useTooltipState as useAriakitTooltipState,
 } from "ariakit/tooltip";
-import { forwardRef, Children, cloneElement } from "react";
 import type {
   TooltipProps as AriakitTooltipProps,
   TooltipAnchorOptions,
 } from "ariakit/tooltip";
+import { Children, cloneElement, forwardRef } from "react";
 
 export const useTooltipState = () => useAriakitTooltipState({ timeout: 800 });
 

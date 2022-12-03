@@ -4,8 +4,8 @@ import {
   ApolloServerPluginLandingPageGraphQLPlayground,
 } from "apollo-server-core";
 import { ApolloServer } from "apollo-server-express";
-import { getContext } from "./context.js";
 
+import { getContext } from "./context.js";
 import { schema } from "./schema.js";
 
 export const apolloServer = new ApolloServer({

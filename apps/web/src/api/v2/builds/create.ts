@@ -168,8 +168,8 @@ const handleCreateParallel = async ({ req }: { req: CreateRequest }) => {
   const parallelNonce = req.body.parallelNonce;
 
   const lockKey = `${req.authRepository.id}:${req.body.commit}:${buildName}:${parallelNonce}`;
-  const lock = getRedisLock();
-  const build = await lock(lockKey, async () => {
+  const lock = await getRedisLock();
+  const build = await lock.acquire(lockKey, async () => {
     return transaction(async (trx) => {
       const existingBuild = await Build.query(trx)
         .withGraphFetched("compareScreenshotBucket")

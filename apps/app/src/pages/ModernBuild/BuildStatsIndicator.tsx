@@ -1,10 +1,12 @@
-import { memo } from "react";
 import { Button as AriakitButton } from "ariakit/button";
+import { memo } from "react";
+
 import type { BuildStats } from "@/modern/containers/Build";
-import type { DiffGroup } from "./BuildDiffState";
-import { getGroupColor, getGroupIcon, GROUPS } from "./BuildDiffGroup";
-import { HotkeyName, useBuildHotkey } from "./BuildHotkeys";
 import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
+
+import { GROUPS, getGroupColor, getGroupIcon } from "./BuildDiffGroup";
+import type { DiffGroup } from "./BuildDiffState";
+import { HotkeyName, useBuildHotkey } from "./BuildHotkeys";
 
 type StatCountColor = "danger" | "warning" | "success" | "neutral";
 

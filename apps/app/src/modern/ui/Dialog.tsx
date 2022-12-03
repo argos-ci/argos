@@ -2,8 +2,8 @@ import { XMarkIcon } from "@heroicons/react/24/solid";
 import {
   Dialog as AriakitDialog,
   DialogDismiss as AriakitDialogDismiss,
-  useDialogState,
   DialogOptions,
+  useDialogState,
 } from "ariakit/dialog";
 import { forwardRef } from "react";
 

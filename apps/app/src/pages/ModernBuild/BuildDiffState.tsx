@@ -1,5 +1,3 @@
-import { graphql } from "@/gql";
-import type { BuildStats } from "@/modern/containers/Build";
 import { useQuery } from "@apollo/client";
 import {
   createContext,
@@ -12,6 +10,10 @@ import {
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { graphql } from "@/gql";
+import type { BuildStats } from "@/modern/containers/Build";
+
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
 

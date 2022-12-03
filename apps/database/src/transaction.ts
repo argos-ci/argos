@@ -1,5 +1,7 @@
-import type Knex from "knex";
+import type { Knex } from "knex";
 import type { TransactionOrKnex } from "objection";
+
+export { TransactionOrKnex };
 
 type TransactionOrKnexWithPromise = TransactionOrKnex & {
   executionPromise: Promise<any>;

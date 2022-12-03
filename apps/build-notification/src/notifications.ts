@@ -1,6 +1,4 @@
-import type { TransactionOrKnex } from "objection";
-
-import { runAfterTransaction } from "@argos-ci/database";
+import { TransactionOrKnex, runAfterTransaction } from "@argos-ci/database";
 import { BuildNotification } from "@argos-ci/database/models";
 import { getInstallationOctokit } from "@argos-ci/github";
 
@@ -112,10 +110,7 @@ export const processBuildNotification = async (
 
   const octokit = await getInstallationOctokit(installation.githubId);
 
-  // If we don't get an octokit, then the installation has been removed
-  // we deleted the installation
   if (!octokit) {
-    await installation.$query().patch({ deleted: true });
     return null;
   }
 

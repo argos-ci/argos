@@ -1,5 +1,6 @@
 import {
   AlertIcon,
+  DotIcon,
   IssueClosedIcon,
   IssueOpenedIcon,
   IssueReopenedIcon,
@@ -8,7 +9,6 @@ import {
   ThumbsupIcon,
   VerifiedIcon,
   XCircleIcon,
-  DotIcon,
 } from "@primer/octicons-react";
 
 export type BuildType = "reference" | "check" | "orphan";
