@@ -41,8 +41,8 @@ export const getInstallationOctokit = async (
   if (!installation) {
     throw new Error(`Installation not found for id "${installationId}"`);
   }
-  if (installation.githubToken && installation.githubTokenExpiredAt) {
-    const expiredAt = Number(new Date(installation.githubTokenExpiredAt));
+  if (installation.githubToken && installation.githubTokenExpiresAt) {
+    const expiredAt = Number(new Date(installation.githubTokenExpiresAt));
     const now = Date.now();
     const delay = 60 * 5 * 1000; // 5 minutes
     const expired = expiredAt < now + delay;
@@ -69,14 +69,14 @@ export const getInstallationOctokit = async (
     await Installation.query().findById(installationId).patch({
       deleted: true,
       githubToken: null,
-      githubTokenExpiredAt: null,
+      githubTokenExpiresAt: null,
     });
     return null;
   }
   await Installation.query().findById(installationId).patch({
     deleted: false,
     githubToken: result.token,
-    githubTokenExpiredAt: result.expiresAt,
+    githubTokenExpiresAt: result.expiresAt,
   });
   return getTokenOctokit(result.token);
 };
