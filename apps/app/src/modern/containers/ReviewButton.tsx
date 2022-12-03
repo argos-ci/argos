@@ -181,8 +181,8 @@ export const ReviewButton = (props: {
         build={repository.build}
         tooltip={
           <>
-            You have hit {repository.owner.consumptionRatio}% of your current
-            plan. Please upgrade to unlock build reviews.
+            You have hit {Math.floor(repository.owner.consumptionRatio * 100)}%
+            of your current plan. Please upgrade to unlock build reviews.
           </>
         }
       />
