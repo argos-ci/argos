@@ -4,6 +4,7 @@ import {
   ArrowsPointingInIcon,
   EyeIcon,
 } from "@heroicons/react/20/solid";
+import { clsx } from "clsx";
 import { memo } from "react";
 
 import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
@@ -13,7 +14,6 @@ import { useBuildDiffFitState } from "./BuildDiffFitState";
 import { useBuildDiffState } from "./BuildDiffState";
 import { useBuildDiffVisibleState } from "./BuildDiffVisibleState";
 import { useBuildHotkey } from "./BuildHotkeys";
-import { clsx } from "clsx";
 
 const BuildDiffChangesOverlayToggle = memo(() => {
   const { visible, setVisible } = useBuildDiffVisibleState();

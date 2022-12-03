@@ -1,14 +1,15 @@
 import { useEffect } from "react";
+
 import config from "@/config";
-import { Button } from "@/modern/ui/Button";
-import { Container } from "@/modern/ui/Container";
 import { Query } from "@/containers/Apollo";
 import { useUser } from "@/containers/User";
-import { isUserSyncing } from "@/modules/user";
-import { Alert, AlertActions, AlertText, AlertTitle } from "@/modern/ui/Alert";
-import { graphql, DocumentType } from "@/gql";
-import { PageLoader } from "@/modern/ui/PageLoader";
+import { DocumentType, graphql } from "@/gql";
 import { RepositoryList } from "@/modern/containers/RepositoryList";
+import { Alert, AlertActions, AlertText, AlertTitle } from "@/modern/ui/Alert";
+import { Button } from "@/modern/ui/Button";
+import { Container } from "@/modern/ui/Container";
+import { PageLoader } from "@/modern/ui/PageLoader";
+import { isUserSyncing } from "@/modules/user";
 
 const OwnersQuery = graphql(`
   query Home_owners {

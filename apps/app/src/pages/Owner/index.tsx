@@ -4,18 +4,20 @@ import {
   useOutletContext,
   useParams,
 } from "react-router-dom";
+
+import { Query } from "@/containers/Apollo";
+import { graphql } from "@/gql";
+import { Permission } from "@/gql/graphql";
+import { Main } from "@/modern/containers/Layout";
+import { PageLoader } from "@/modern/ui/PageLoader";
 import {
   TabLink,
   TabLinkList,
   TabLinkPanel,
   useTabLinkState,
 } from "@/modern/ui/TabLink";
-import { Main } from "@/modern/containers/Layout";
-import { graphql } from "@/gql";
-import { Query } from "@/containers/Apollo";
-import { PageLoader } from "@/modern/ui/PageLoader";
+
 import { NotFound } from "../NotFound";
-import { Permission } from "@/gql/graphql";
 
 const OwnerQuery = graphql(`
   query Owner_owner($ownerLogin: String!) {

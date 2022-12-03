@@ -1,18 +1,19 @@
-import { Link as RouterLink, useParams } from "react-router-dom";
+import { useQuery } from "@apollo/client";
 import { RepoIcon } from "@primer/octicons-react";
+import { Link as RouterLink, useParams } from "react-router-dom";
+
 import { graphql } from "@/gql";
 import { BreadcrumbMenuButton } from "@/modern/ui/Breadcrumb";
+import { Link } from "@/modern/ui/Link";
 import {
-  useMenuState,
-  MenuTitle,
   Menu,
   MenuItem,
   MenuItemIcon,
   MenuState,
   MenuText,
+  MenuTitle,
+  useMenuState,
 } from "@/modern/ui/Menu";
-import { Link } from "@/modern/ui/Link";
-import { useQuery } from "@apollo/client";
 
 const OwnerQuery = graphql(`
   query RepositoryBreadcrumbMenu_owner($login: String!) {

@@ -6,18 +6,18 @@ import {
   TooltipAnchor,
   useTooltipState,
 } from "@/components";
-import {
-  BuildStatusInfo,
-  BuildStatusInfoBuildFragment,
-  BuildStatusInfoRepositoryFragment,
-  getStatusInfoType,
-} from "./BuildStatusInfo";
 
 import {
   getBuildStatusColor,
   getBuildStatusIcon,
   getBuildStatusLabel,
 } from "./BuildStatus";
+import {
+  BuildStatusInfo,
+  BuildStatusInfoBuildFragment,
+  BuildStatusInfoRepositoryFragment,
+  getStatusInfoType,
+} from "./BuildStatusInfo";
 
 export const BuildStatusChipBuildFragment = gql`
   fragment BuildStatusChipBuildFragment on Build {

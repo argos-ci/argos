@@ -5,8 +5,8 @@ import {
   DialogOptions,
   useDialogState,
 } from "ariakit/dialog";
-import { forwardRef } from "react";
 import { clsx } from "clsx";
+import { forwardRef } from "react";
 
 import { IconButton } from "./IconButton";
 

@@ -1,12 +1,14 @@
-import { Container } from "@/modern/ui/Container";
+import { Helmet } from "react-helmet";
+import { useParams } from "react-router-dom";
+
 import { Query } from "@/containers/Apollo";
 import { graphql } from "@/gql";
-import { PageLoader } from "@/modern/ui/PageLoader";
 import { RepositoryList } from "@/modern/containers/RepositoryList";
-import { useParams } from "react-router-dom";
-import { NotFound } from "../NotFound";
-import { Helmet } from "react-helmet";
+import { Container } from "@/modern/ui/Container";
+import { PageLoader } from "@/modern/ui/PageLoader";
+
 import { useOwnerContext } from ".";
+import { NotFound } from "../NotFound";
 
 const OwnerQuery = graphql(`
   query OwnerRepositories_owner($login: String!) {

@@ -1,6 +1,6 @@
 import { Catch } from "@/components";
-import { ErrorPage } from "@/pages/ErrorPage";
 import { Navbar } from "@/modern/containers/Navbar";
+import { ErrorPage } from "@/pages/ErrorPage";
 
 import { AppHeader } from "./AppHeader";
 import { SyncAlert } from "./SyncAlert";

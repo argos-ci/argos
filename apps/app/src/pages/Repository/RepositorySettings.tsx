@@ -1,20 +1,20 @@
+import { useMutation } from "@apollo/client";
+import { useState } from "react";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
 import { Query } from "@/containers/Apollo";
-import { NotFound } from "@/pages/NotFound";
-import { graphql, DocumentType } from "@/gql";
-import { Heading } from "@/modern/ui/Typography";
-import { PageLoader } from "@/modern/ui/PageLoader";
-import { Card, CardFooter, CardBody, CardTitle } from "@/modern/ui/Card";
-import { Container } from "@/modern/ui/Container";
-import { Anchor } from "@/modern/ui/Link";
-import { Code } from "@/modern/ui/Code";
+import { DocumentType, graphql } from "@/gql";
 import { SettingsLayout } from "@/modern/containers/Layout";
 import { Alert } from "@/modern/ui/Alert";
 import { Button } from "@/modern/ui/Button";
-import { useState } from "react";
-import { useMutation } from "@apollo/client";
+import { Card, CardBody, CardFooter, CardTitle } from "@/modern/ui/Card";
+import { Code } from "@/modern/ui/Code";
+import { Container } from "@/modern/ui/Container";
+import { Anchor } from "@/modern/ui/Link";
+import { PageLoader } from "@/modern/ui/PageLoader";
+import { Heading } from "@/modern/ui/Typography";
+import { NotFound } from "@/pages/NotFound";
 
 const RepositoryQuery = graphql(`
   query RepositorySettings_repository(

@@ -1,10 +1,10 @@
 import { Helmet } from "react-helmet";
-
 import { Link as RouterLink } from "react-router-dom";
+
 import { Container } from "@/components";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/modern/ui/Alert";
-import { Anchor } from "@/modern/ui/Link";
 import { Button } from "@/modern/ui/Button";
+import { Anchor } from "@/modern/ui/Link";
 
 export const ErrorPage = () => {
   return (

@@ -3,13 +3,13 @@ import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { TabList, TabNavLink } from "@/components";
 import { Query } from "@/containers/Apollo";
+import { graphql } from "@/gql";
 import { SubNavbarTabs } from "@/modern/containers/SubNavbar";
 import { NotFound } from "@/pages/NotFound";
 
 import { RepositoryBuilds } from "./Builds";
 import { GettingStarted } from "./GettingStarted";
 import { RepositorySettings } from "./Settings";
-import { graphql } from "@/gql";
 
 const RepositoryQuery = graphql(`
   query Repository_repositoryold(

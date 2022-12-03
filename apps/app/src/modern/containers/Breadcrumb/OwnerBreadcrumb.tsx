@@ -1,15 +1,15 @@
+import { useQuery } from "@apollo/client";
 import { HomeIcon, OrganizationIcon } from "@primer/octicons-react";
 import { useMatch, useParams } from "react-router-dom";
 
+import { useUser } from "@/containers/User";
+import { graphql } from "@/gql";
+import { OwnerAvatar } from "@/modern/containers/OwnerAvatar";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
   BreadcrumbLink,
 } from "@/modern/ui/Breadcrumb";
-import { useQuery } from "@apollo/client";
-import { OwnerAvatar } from "@/modern/containers/OwnerAvatar";
-import { useUser } from "@/containers/User";
-import { graphql } from "@/gql";
 
 import { OwnerBreadcrumbMenu } from "./OwnerBreadcrumbMenu";
 

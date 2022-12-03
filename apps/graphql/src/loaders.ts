@@ -3,14 +3,14 @@ import type { ModelClass } from "objection";
 
 import {
   Build,
-  User,
-  Organization,
   File,
   Model,
+  Organization,
   Repository,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
+  User,
 } from "@argos-ci/database/models";
 
 const createModelLoader = <TModelClass extends ModelClass<Model>>(

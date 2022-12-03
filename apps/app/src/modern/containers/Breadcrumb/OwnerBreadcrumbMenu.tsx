@@ -1,20 +1,21 @@
-import { Link as RouterLink } from "react-router-dom";
+import { useQuery } from "@apollo/client";
 import { HomeIcon } from "@primer/octicons-react";
+import { Link as RouterLink } from "react-router-dom";
+
+import config from "@/config";
+import { graphql } from "@/gql";
+import { OwnerAvatar } from "@/modern/containers/OwnerAvatar";
+import { BreadcrumbMenuButton } from "@/modern/ui/Breadcrumb";
+import { Anchor } from "@/modern/ui/Link";
 import {
-  useMenuState,
-  MenuTitle,
   Menu,
   MenuItem,
   MenuItemIcon,
-  MenuText,
   MenuState,
+  MenuText,
+  MenuTitle,
+  useMenuState,
 } from "@/modern/ui/Menu";
-import config from "@/config";
-import { useQuery } from "@apollo/client";
-import { OwnerAvatar } from "@/modern/containers/OwnerAvatar";
-import { graphql } from "@/gql";
-import { BreadcrumbMenuButton } from "@/modern/ui/Breadcrumb";
-import { Anchor } from "@/modern/ui/Link";
 
 const OwnersQuery = graphql(`
   query OwnerBreadcrumbMenu_owners {

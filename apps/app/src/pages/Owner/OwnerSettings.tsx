@@ -1,31 +1,32 @@
-import { Helmet } from "react-helmet";
-import { useParams } from "react-router-dom";
-
-import { Query } from "@/containers/Apollo";
-import { NotFound } from "@/pages/NotFound";
-import { graphql, DocumentType } from "@/gql";
-import { Heading } from "@/modern/ui/Typography";
-import { PageLoader } from "@/modern/ui/PageLoader";
-import {
-  Card,
-  CardFooter,
-  CardBody,
-  CardTitle,
-  CardSeparator,
-} from "@/modern/ui/Card";
-import { Container } from "@/modern/ui/Container";
-import { Anchor } from "@/modern/ui/Link";
-import config from "@/config";
-import { Progress } from "@/modern/ui/Progress";
-import { Time } from "@/modern/ui/Time";
-import moment from "moment";
+import { ChevronDownIcon, ChevronRightIcon } from "@primer/octicons-react";
 import {
   Disclosure,
   DisclosureContent,
   useDisclosureState,
 } from "ariakit/disclosure";
-import { ChevronDownIcon, ChevronRightIcon } from "@primer/octicons-react";
+import moment from "moment";
+import { Helmet } from "react-helmet";
+import { useParams } from "react-router-dom";
+
+import config from "@/config";
+import { Query } from "@/containers/Apollo";
+import { DocumentType, graphql } from "@/gql";
 import { SettingsLayout } from "@/modern/containers/Layout";
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardSeparator,
+  CardTitle,
+} from "@/modern/ui/Card";
+import { Container } from "@/modern/ui/Container";
+import { Anchor } from "@/modern/ui/Link";
+import { PageLoader } from "@/modern/ui/PageLoader";
+import { Progress } from "@/modern/ui/Progress";
+import { Time } from "@/modern/ui/Time";
+import { Heading } from "@/modern/ui/Typography";
+import { NotFound } from "@/pages/NotFound";
+
 import { useOwnerContext } from ".";
 
 const OwnerQuery = graphql(`

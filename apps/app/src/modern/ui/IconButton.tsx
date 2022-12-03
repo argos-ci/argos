@@ -1,7 +1,7 @@
 import { Button as AriakitButton } from "ariakit/button";
 import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
-import { forwardRef } from "react";
 import { clsx } from "clsx";
+import { forwardRef } from "react";
 
 export type IconButtonColor = "danger" | "success" | "neutral";
 

@@ -1,25 +1,26 @@
-import { BrandLogo } from "@/modern/ui/BrandLogo";
-import { Link as RouterLink } from "react-router-dom";
-import { MagicTooltip } from "@/modern/ui/Tooltip";
-import { useUser } from "@/containers/User";
-
-import { GitHubLoginButton } from "./GitHub";
-import {
-  useMenuState,
-  Menu,
-  MenuItem,
-  MenuItemIcon,
-  MenuSeparator,
-  MenuButton,
-} from "@/modern/ui/Menu";
 import {
   GearIcon,
   HomeIcon,
   RepoIcon,
   SignOutIcon,
 } from "@primer/octicons-react";
-import { useLogout } from "@/containers/Auth";
+import { Link as RouterLink } from "react-router-dom";
+
 import config from "@/config";
+import { useLogout } from "@/containers/Auth";
+import { useUser } from "@/containers/User";
+import { BrandLogo } from "@/modern/ui/BrandLogo";
+import {
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItemIcon,
+  MenuSeparator,
+  useMenuState,
+} from "@/modern/ui/Menu";
+import { MagicTooltip } from "@/modern/ui/Tooltip";
+
+import { GitHubLoginButton } from "./GitHub";
 import { OwnerAvatar } from "./OwnerAvatar";
 import { SubNavbar } from "./SubNavbar";
 

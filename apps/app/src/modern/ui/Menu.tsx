@@ -6,8 +6,8 @@ import {
   MenuSeparator as AriakitMenuSeparator,
   MenuSeparatorProps as AriakitMenuSeparatorProps,
 } from "ariakit/menu";
-import { Children, cloneElement, forwardRef } from "react";
 import { clsx } from "clsx";
+import { Children, cloneElement, forwardRef } from "react";
 
 export { MenuButton, useMenuState } from "ariakit/menu";
 export type { MenuState } from "ariakit/menu";

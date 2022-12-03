@@ -1,9 +1,10 @@
-import { Catch } from "@/modern/ui/Catch";
-import { ErrorPage } from "@/pages/ErrorPage";
-import { Navbar } from "./Navbar";
+import { forwardRef } from "react";
 
 import { SyncAlert } from "@/containers/SyncAlert";
-import { forwardRef } from "react";
+import { Catch } from "@/modern/ui/Catch";
+import { ErrorPage } from "@/pages/ErrorPage";
+
+import { Navbar } from "./Navbar";
 
 export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
   (props: { children: React.ReactNode }, ref) => {

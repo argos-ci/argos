@@ -2,22 +2,23 @@ import { ColorModeProvider } from "@xstyled/styled-components";
 import { Helmet } from "react-helmet";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 
+import { Layout, Main } from "@/modern/containers/Layout";
+
 import { GlobalStyle, ThemeInitializer } from "./components";
 import { ApolloInitializer } from "./containers/Apollo";
 import { AuthProvider } from "./containers/Auth";
-import { Layout, Main } from "@/modern/containers/Layout";
 import { ScrollToTop } from "./containers/Router";
 import { UserInitializer } from "./containers/User";
 import { AuthCallback } from "./pages/AuthCallback";
-import { Home } from "./pages/Home";
 import { Build } from "./pages/Build";
+import { Home } from "./pages/Home";
 import { NotFound } from "./pages/NotFound";
+import { Owner } from "./pages/Owner";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
-import { Repository as OldRepository } from "./pages/Repository/index-old";
-import { Owner } from "./pages/Owner";
 import { Repository } from "./pages/Repository";
 import { RepositorySettings } from "./pages/Repository/RepositorySettings";
+import { Repository as OldRepository } from "./pages/Repository/index-old";
 
 export const App = () => {
   return (

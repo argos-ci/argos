@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 
+import { Banner } from "@/modern/ui/Banner";
+import { Loader } from "@/modern/ui/Loader";
 import { isUserSyncing } from "@/modules/user";
 
 import { useRefetchUser, useUser } from "./User";
-import { Banner } from "@/modern/ui/Banner";
-import { Loader } from "@/modern/ui/Loader";
 
 const REFETCH_DELAY = 1000;
 

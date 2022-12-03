@@ -1,7 +1,8 @@
+import { ChevronDownIcon } from "@primer/octicons-react";
 import { ComponentProps, HTMLProps } from "react";
 import { Link } from "react-router-dom";
+
 import { MenuButton, MenuState } from "./Menu";
-import { ChevronDownIcon } from "@primer/octicons-react";
 
 export const Breadcrumb = (props: { children: React.ReactNode }) => {
   return (

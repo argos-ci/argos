@@ -1,13 +1,13 @@
 import { RepoIcon } from "@primer/octicons-react";
 import { useParams } from "react-router-dom";
 
+import { useUser } from "@/containers/User";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
   BreadcrumbLink,
   BreadcrumbSeparator,
 } from "@/modern/ui/Breadcrumb";
-import { useUser } from "@/containers/User";
 
 import { RepositoryBreadcrumbMenu } from "./RepositoryBreadcrumbMenu";
 

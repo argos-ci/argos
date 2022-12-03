@@ -1,10 +1,11 @@
+import { HTMLProps } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
-import { graphql, FragmentType, useFragment, DocumentType } from "@/gql";
+
+import config from "@/config";
+import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { OwnerAvatar } from "@/modern/containers/OwnerAvatar";
 import { Badge } from "@/modern/ui/Badge";
-import { HTMLProps } from "react";
 import { Anchor } from "@/modern/ui/Link";
-import config from "@/config";
 
 const RepositoryFragment = graphql(`
   fragment RepositoryList_repository on Repository {
