@@ -110,10 +110,7 @@ export const processBuildNotification = async (
 
   const octokit = await getInstallationOctokit(installation.githubId);
 
-  // If we don't get an octokit, then the installation has been removed
-  // we deleted the installation
   if (!octokit) {
-    await installation.$query().patch({ deleted: true });
     return null;
   }
 

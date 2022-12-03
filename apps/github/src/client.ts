@@ -3,6 +3,7 @@ import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { Octokit } from "@octokit/rest";
 
 import config from "@argos-ci/config";
+import { Installation } from "@argos-ci/database/models";
 
 export const getAppOctokit = () => {
   return new Octokit({
@@ -36,13 +37,27 @@ export const getInstallationOctokit = async (
   installationId: number,
   appOctokit = getAppOctokit()
 ): Promise<Octokit | null> => {
-  const token = await (async () => {
+  const installation = await Installation.query().findById(installationId);
+  if (!installation) {
+    throw new Error(`Installation not found for id "${installationId}"`);
+  }
+  if (installation.githubToken && installation.githubTokenExpiredAt) {
+    const expiredAt = Number(new Date(installation.githubTokenExpiredAt));
+    const now = Date.now();
+    const delay = 60 * 5 * 1000; // 5 minutes
+    const expired = expiredAt < now + delay;
+    if (!expired) {
+      const token = installation.githubToken;
+      return getTokenOctokit(token);
+    }
+  }
+  const result = await (async () => {
     try {
-      const result = await appOctokit.auth({
+      const result = (await appOctokit.auth({
         type: "installation",
         installationId,
-      });
-      return (result as { token: string }).token;
+      })) as { token: string; expiresAt: string };
+      return result;
     } catch (error) {
       if ((error as { status: number }).status === 404) {
         return null;
@@ -50,6 +65,18 @@ export const getInstallationOctokit = async (
       throw error;
     }
   })();
-  if (!token) return null;
-  return getTokenOctokit(token);
+  if (!result) {
+    await Installation.query().findById(installationId).patch({
+      deleted: true,
+      githubToken: null,
+      githubTokenExpiredAt: null,
+    });
+    return null;
+  }
+  await Installation.query().findById(installationId).patch({
+    deleted: false,
+    githubToken: result.token,
+    githubTokenExpiredAt: result.expiresAt,
+  });
+  return getTokenOctokit(result.token);
 };

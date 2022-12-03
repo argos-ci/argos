@@ -65,7 +65,6 @@ const strategy = {
     );
 
     if (!octokit) {
-      await repository.activeInstallation.$query().patch({ deleted: true });
       return null;
     }
 

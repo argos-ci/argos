@@ -15,6 +15,8 @@
   },
   "dependencies": {
     "@argos-ci/config": "*",
+    "@argos-ci/database": "*",
+    "@argos-ci/redis": "*",
     "@octokit/auth-app": "^4.0.7",
     "@octokit/auth-oauth-app": "^5.0.4",
     "@octokit/rest": "^19.0.5"

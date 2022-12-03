@@ -32,7 +32,9 @@ export const getOrCreateInstallation = async ({
   githubId: number;
   deleted?: boolean;
 }) => {
-  const data = { githubId, deleted };
+  const data = deleted
+    ? { githubId, deleted: true, githubToken: null, githubTokenExpiresAt: null }
+    : { githubId, deleted: false };
   const installation = await Installation.query().findOne({ githubId });
   if (installation) {
     if (installation.deleted !== deleted) {
@@ -496,16 +498,6 @@ export class GitHubSynchronizer {
       throw new Error(`Installation with id "${installationId}" not found`);
     }
 
-    if (installation.deleted) {
-      await Promise.all(
-        installation.users!.map(async (user) =>
-          this.synchronizeFromUser(user.id)
-        )
-      );
-      await this.synchronizeInstallationRepositoryRights([], installationId);
-      return;
-    }
-
     const appOctokit = getAppOctokit();
     this.appOctokit = appOctokit;
 
@@ -517,7 +509,12 @@ export class GitHubSynchronizer {
     // If we don't get an octokit, then the installation has been removed
     // we deleted the installation
     if (!octokit) {
-      await installation.$query().patch({ deleted: true });
+      await Promise.all(
+        installation.users!.map(async (user) =>
+          this.synchronizeFromUser(user.id)
+        )
+      );
+      await this.synchronizeInstallationRepositoryRights([], installationId);
       return;
     }
 

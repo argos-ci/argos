@@ -13,11 +13,15 @@ export class Installation extends Model {
     properties: {
       githubId: { type: "number" },
       deleted: { type: "boolean" },
+      githubToken: { type: ["string", "null"] },
+      githubTokenExpiredAt: { type: ["string", "null"] },
     },
   });
 
   githubId!: number;
   deleted!: boolean;
+  githubToken!: string | null;
+  githubTokenExpiredAt!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
