@@ -2,6 +2,7 @@ import gqlTag from "graphql-tag";
 
 import type { Screenshot } from "@argos-ci/database/models";
 import { getPublicUrl } from "@argos-ci/storage";
+
 import type { Context } from "../context.js";
 
 // eslint-disable-next-line import/no-named-as-default-member

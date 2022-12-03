@@ -1,11 +1,12 @@
-import type { DiffGroup } from "./BuildDiffState";
 import {
-  XCircleIcon,
-  ExclamationCircleIcon,
-  PlusCircleIcon,
-  MinusCircleIcon,
   CheckCircleIcon,
+  ExclamationCircleIcon,
+  MinusCircleIcon,
+  PlusCircleIcon,
+  XCircleIcon,
 } from "@heroicons/react/20/solid";
+
+import type { DiffGroup } from "./BuildDiffState";
 
 export const GROUPS = [
   "failure",

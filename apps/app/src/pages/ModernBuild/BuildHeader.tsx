@@ -1,12 +1,13 @@
 import { ComponentProps, memo } from "react";
 import { Link } from "react-router-dom";
-import { MagicTooltip } from "@/modern/ui/Tooltip";
+
 import { BrandShield } from "@/components/BrandShield";
+import { useUser } from "@/containers/User";
+import { FragmentType, graphql, useFragment } from "@/gql";
 import { BuildStatusChip } from "@/modern/containers/BuildStatusChip";
 import { GitHubLoginButton } from "@/modern/containers/GitHub";
 import { ReviewButton } from "@/modern/containers/ReviewButton";
-import { useUser } from "@/containers/User";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { MagicTooltip } from "@/modern/ui/Tooltip";
 
 const BrandLink = memo(() => {
   return (

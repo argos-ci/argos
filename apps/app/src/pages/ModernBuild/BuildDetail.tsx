@@ -1,21 +1,23 @@
 /* eslint-disable react/no-unescaped-entities */
+import { memo, useLayoutEffect, useRef, useState } from "react";
+
+import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { checkIsBuildEmpty } from "@/modern/containers/Build";
 import { Code } from "@/modern/ui/Code";
 import { Time } from "@/modern/ui/Time";
-import { memo, useLayoutEffect, useRef, useState } from "react";
-import {
-  BuildDiffVisibleStateProvider,
-  useBuildDiffVisibleState,
-} from "./BuildDiffVisibleState";
+import { useScrollListener } from "@/modern/ui/useScrollListener";
+
 import { BuildDetailToolbar } from "./BuildDetailToolbar";
-import { Diff, useBuildDiffState } from "./BuildDiffState";
 import {
   BuildDiffFitStateProvider,
   useBuildDiffFitState,
 } from "./BuildDiffFitState";
-import { checkIsBuildEmpty } from "@/modern/containers/Build";
-import { useScrollListener } from "@/modern/ui/useScrollListener";
 import { getGroupIcon } from "./BuildDiffGroup";
-import { FragmentType, graphql, useFragment, DocumentType } from "@/gql";
+import { Diff, useBuildDiffState } from "./BuildDiffState";
+import {
+  BuildDiffVisibleStateProvider,
+  useBuildDiffVisibleState,
+} from "./BuildDiffVisibleState";
 
 export const BuildFragment = graphql(`
   fragment BuildDetail_Build on Build {

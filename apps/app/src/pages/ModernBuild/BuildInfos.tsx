@@ -1,5 +1,5 @@
-import { Anchor } from "@/modern/ui/Link";
 import { FragmentType, graphql, useFragment } from "@/gql";
+import { Anchor } from "@/modern/ui/Link";
 import { Time } from "@/modern/ui/Time";
 
 const Dt = ({ children }: { children: React.ReactNode }) => {

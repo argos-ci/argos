@@ -1,4 +1,4 @@
-import { MenuItem as AriakitMenuItem, Menu as AriakitMenu } from "ariakit/menu";
+import { Menu as AriakitMenu, MenuItem as AriakitMenuItem } from "ariakit/menu";
 import type {
   MenuItemProps as AriakitMenuItemProps,
   MenuProps as AriakitMenuProps,

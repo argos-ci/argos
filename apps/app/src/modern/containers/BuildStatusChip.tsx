@@ -1,9 +1,9 @@
-import { getBuildColor, getBuildIcon, getBuildLabel } from "./Build";
-import { MagicTooltip } from "@/modern/ui/Tooltip";
-import { BuildStatusDescription } from "./BuildStatusDescription";
-
+import { FragmentType, graphql, useFragment } from "@/gql";
 import { Chip } from "@/modern/ui/Chip";
-import { useFragment, graphql, FragmentType } from "@/gql";
+import { MagicTooltip } from "@/modern/ui/Tooltip";
+
+import { getBuildColor, getBuildIcon, getBuildLabel } from "./Build";
+import { BuildStatusDescription } from "./BuildStatusDescription";
 
 export const BuildFragment = graphql(`
   fragment BuildStatusChip_Build on Build {

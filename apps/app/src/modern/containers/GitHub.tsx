@@ -2,8 +2,8 @@ import { MarkGithubIcon } from "@primer/octicons-react";
 import { memo } from "react";
 import { useLocation } from "react-router-dom";
 
-import { Button, ButtonIcon } from "@/modern/ui/Button";
 import config from "@/config";
+import { Button, ButtonIcon } from "@/modern/ui/Button";
 
 const useLoginUrl = () => {
   const { origin } = window.location;

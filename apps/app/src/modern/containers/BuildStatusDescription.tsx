@@ -1,7 +1,7 @@
-import { checkIsBuildEmpty, checkIsBuildIncomplete } from "./Build";
+import { FragmentType, graphql, useFragment } from "@/gql";
 import { Code } from "@/modern/ui/Code";
 
-import { graphql, FragmentType, useFragment } from "@/gql";
+import { checkIsBuildEmpty, checkIsBuildIncomplete } from "./Build";
 
 export const BuildFragment = graphql(`
   fragment BuildStatusDescription_Build on Build {

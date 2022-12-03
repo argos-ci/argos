@@ -5,13 +5,15 @@ import {
   TabProps,
   useTabState,
 } from "ariakit/tab";
-import { BuildInfos } from "./BuildInfos";
-import { BuildDiffList } from "./BuildDiffList";
 import { forwardRef, memo } from "react";
-import { useBuildHotkey } from "./BuildHotkeys";
+
+import { FragmentType, graphql, useFragment } from "@/gql";
 import { checkIsBuildEmpty } from "@/modern/containers/Build";
 import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
-import { FragmentType, graphql, useFragment } from "@/gql";
+
+import { BuildDiffList } from "./BuildDiffList";
+import { useBuildHotkey } from "./BuildHotkeys";
+import { BuildInfos } from "./BuildInfos";
 
 const Tab = forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
   return (
