@@ -547,6 +547,27 @@ export class GitHubSynchronizer {
 
     this.octokit = getTokenOctokit(user.accessToken);
 
+    try {
+      const githubUser = await this.octokit.users.getAuthenticated();
+
+      await user.$query().patchAndFetch({
+        login: githubUser.data.login,
+        name: githubUser.data.name,
+        email: githubUser.data.email,
+      });
+    } catch (error) {
+      const status = (error as { status: number }).status;
+      if (status === 403) {
+        await this.synchronizeUserInstallationRights([], userId);
+        await Promise.all([
+          this.synchronizeRepositoryRights([], userId),
+          this.synchronizeOrganizationRights([], userId),
+        ]);
+        return;
+      }
+      throw error;
+    }
+
     const installations = await this.synchronizeUserInstallations();
 
     await this.synchronizeUserInstallationRights(installations, userId);
