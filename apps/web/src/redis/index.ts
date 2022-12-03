@@ -8,6 +8,10 @@ import { createRedisLock } from "./lock.js";
 
 const redisClient = createClient({ url: config.get("redis.url") });
 redisClient.on("error", (err: unknown) => {
+  // Ignore this error, it will reconnect anyway
+  if ((err as { message: string }).message === "Socket closed unexpectedly") {
+    return;
+  }
   logger.error(err);
 });
 redisClient.on("connect", () => {
