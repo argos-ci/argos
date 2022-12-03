@@ -1,6 +1,7 @@
 import { setTimeout } from "node:timers/promises";
-import { promisify } from "node:util";
-import type { RedisClient } from "redis";
+import type { createClient } from "redis";
+
+type RedisClient = ReturnType<typeof createClient>;
 
 const acquireLock = async ({
   client,
@@ -13,11 +14,10 @@ const acquireLock = async ({
   timeout: number;
   retryDelay: number;
 }) => {
-  const result = await promisify(
-    (cb: (err: Error | null, res: "OK" | undefined) => void) => {
-      client.set(name, "1", "PX", timeout, "NX", cb);
-    }
-  )();
+  const result = await client.set(name, "1", {
+    PX: timeout,
+    NX: true,
+  });
 
   if (result !== "OK") {
     await setTimeout(retryDelay);
@@ -25,14 +25,18 @@ const acquireLock = async ({
   }
 };
 
-export type RedisLock = <T>(
+export type Acquire = <T>(
   name: string,
   task: () => Promise<T>,
   options?: { timeout?: number; retryDelay?: number }
 ) => Promise<T>;
 
+export interface RedisLock {
+  acquire: Acquire;
+}
+
 export const createRedisLock = (client: RedisClient): RedisLock => {
-  const lock: RedisLock = async (
+  const acquire: Acquire = async (
     name,
     task,
     { timeout = 20000, retryDelay = 500 } = {}
@@ -46,11 +50,9 @@ export const createRedisLock = (client: RedisClient): RedisLock => {
       retryDelay,
     });
     const result = await task();
-    await promisify((cb: (err: Error | null, res: number) => void) => {
-      client.del(fullName, cb);
-    })();
+    await client.del(fullName);
     return result;
   };
 
-  return lock;
+  return { acquire };
 };

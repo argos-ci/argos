@@ -84,7 +84,8 @@ export class Account extends Model {
 
   async getPlan(): Promise<Plan | null> {
     if (this.forcedPlanId) {
-      return Plan.query().findById(this.forcedPlanId);
+      const plan = await Plan.query().findById(this.forcedPlanId);
+      return plan ?? null;
     }
 
     const activePurchase = await this.getActivePurchase();

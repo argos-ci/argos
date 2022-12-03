@@ -492,6 +492,10 @@ export class GitHubSynchronizer {
       .findById(installationId)
       .withGraphFetched("users");
 
+    if (!installation) {
+      throw new Error(`Installation with id "${installationId}" not found`);
+    }
+
     if (installation.deleted) {
       await Promise.all(
         installation.users!.map(async (user) =>
@@ -528,6 +532,11 @@ export class GitHubSynchronizer {
 
   async synchronizeFromUser(userId: string) {
     const user = await User.query().findById(userId);
+
+    if (!user) {
+      throw new Error(`User with id "${userId}" not found`);
+    }
+
     const tokenValid = await checkAccessTokenValidity(user.accessToken);
 
     if (!tokenValid) {

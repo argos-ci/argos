@@ -1,7 +1,6 @@
 import { jest } from "@jest/globals";
 import { setTimeout as delay } from "node:timers/promises";
-import { promisify } from "node:util";
-import redis from "redis";
+import { RedisClientType, createClient } from "redis";
 
 import config from "@argos-ci/config";
 
@@ -17,15 +16,16 @@ function createResolvablePromise() {
 }
 
 describe("redis-lock", () => {
-  let client: redis.RedisClient;
+  let client: RedisClientType;
 
   beforeEach(async () => {
-    client = redis.createClient({ url: config.get("redis.url") });
-    await promisify((cb) => client.del("lock.x", cb));
+    client = createClient({ url: config.get("redis.url") });
+    await client.connect();
+    await client.del("lock.x");
   });
 
   afterEach(async () => {
-    await promisify(client.quit).bind(client)();
+    await client.quit();
   });
 
   it("takes lock", async () => {
@@ -33,8 +33,8 @@ describe("redis-lock", () => {
     const p1 = createResolvablePromise();
     const spy1 = jest.fn();
     const spy2 = jest.fn();
-    lock("x", async () => p1).then(spy1);
-    lock("x", async () => "second", { retryDelay: 30 }).then(spy2);
+    lock.acquire("x", async () => p1).then(spy1);
+    lock.acquire("x", async () => "second", { retryDelay: 30 }).then(spy2);
     await delay(10);
     expect(spy1).not.toHaveBeenCalled();
     expect(spy2).not.toHaveBeenCalled();

@@ -5,7 +5,7 @@ export const timestampsSchema: JSONSchema = {
   required: [],
   properties: {
     id: {
-      type: ["integer", "string"],
+      type: "string",
     },
     createdAt: {
       type: "string",

@@ -1,6 +1,4 @@
-import type { TransactionOrKnex } from "objection";
-
-import { runAfterTransaction } from "@argos-ci/database";
+import { TransactionOrKnex, runAfterTransaction } from "@argos-ci/database";
 import { BuildNotification } from "@argos-ci/database/models";
 import { getInstallationOctokit } from "@argos-ci/github";
 

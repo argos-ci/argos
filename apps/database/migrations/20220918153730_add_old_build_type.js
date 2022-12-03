@@ -1,5 +1,5 @@
 /**
- * @param {import('knex')} knex
+ * @param {import('knex').Knex} knex
  */
 export const up = async (knex) => {
   const referenceBuildIds = knex("builds")

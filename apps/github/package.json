@@ -15,9 +15,9 @@
   },
   "dependencies": {
     "@argos-ci/config": "*",
-    "@octokit/auth-app": "^4.0.4",
-    "@octokit/auth-oauth-app": "^5.0.1",
-    "@octokit/rest": "^19.0.3"
+    "@octokit/auth-app": "^4.0.7",
+    "@octokit/auth-oauth-app": "^5.0.4",
+    "@octokit/rest": "^19.0.5"
   },
   "devDependencies": {
     "nock": "^13.2.9"

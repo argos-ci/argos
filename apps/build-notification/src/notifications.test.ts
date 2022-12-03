@@ -214,8 +214,9 @@ describe.skip("notifications", () => {
           })
           .first();
 
-        expect(newBuildNotification.type).toBe("progress");
-        expect(newBuildNotification.buildId).toBe(build.id);
+        expect(newBuildNotification).toBeDefined();
+        expect(newBuildNotification!.type).toBe("progress");
+        expect(newBuildNotification!.buildId).toBe(build.id);
       });
     });
   });

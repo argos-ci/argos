@@ -1,5 +1,5 @@
 /* eslint-env jest */
-import type Knex from "knex";
+import type { Knex } from "knex";
 
 import { knex } from "../knex.js";
 

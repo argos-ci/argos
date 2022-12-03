@@ -80,7 +80,7 @@ describe("#baseCompare", () => {
         perPage: 5,
       });
 
-      expect(baseScreenshotBucket.id).toBe(screenshotBucket.id);
+      expect(baseScreenshotBucket?.id).toBe(screenshotBucket.id);
     });
 
     // History:
@@ -116,7 +116,7 @@ describe("#baseCompare", () => {
         perPage: 5,
       });
 
-      expect(baseScreenshotBucket.id).toBe(screenshotBucket1.id);
+      expect(baseScreenshotBucket?.id).toBe(screenshotBucket1.id);
     });
 
     it("should fallback to master if no fork commit is found", async () => {
@@ -140,7 +140,7 @@ describe("#baseCompare", () => {
         perPage: 5,
       });
 
-      expect(baseScreenshotBucket.id).toBe(screenshotBucket.id);
+      expect(baseScreenshotBucket?.id).toBe(screenshotBucket.id);
     });
   });
 
@@ -182,7 +182,7 @@ describe("#baseCompare", () => {
       build,
     });
 
-    expect(baseScreenshotBucket.id).toBe(screenshotBucket1.id);
+    expect(baseScreenshotBucket?.id).toBe(screenshotBucket1.id);
   });
 
   describe("master", () => {
@@ -232,7 +232,7 @@ describe("#baseCompare", () => {
         perPage: 5,
       });
 
-      expect(baseScreenshotBucket.id).toBe(bucket3.id);
+      expect(baseScreenshotBucket?.id).toBe(bucket3.id);
     });
   });
 
@@ -276,6 +276,6 @@ describe("#baseCompare", () => {
       build,
     });
 
-    expect(baseScreenshotBucket.id).toBe(bucket1.id);
+    expect(baseScreenshotBucket?.id).toBe(bucket1.id);
   });
 });
