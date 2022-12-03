@@ -59,7 +59,10 @@ export const getInstallationOctokit = async (
       })) as { token: string; expiresAt: string };
       return result;
     } catch (error) {
-      if ((error as { status: number }).status === 404) {
+      const status = (error as { status: number }).status;
+      // 404 means the installation has been deleted
+      // 403 means the installation has been suspended
+      if (status === 404 || status === 403) {
         return null;
       }
       throw error;
