@@ -170,9 +170,10 @@ export const createBuildDiffs = async (build: Build) => {
             }))
         : [];
 
-    return ScreenshotDiff.query(trx).insert([
-      ...inserts,
-      ...removedScreenshots,
-    ]);
+    const allInserts = [...inserts, ...removedScreenshots];
+
+    if (allInserts.length === 0) return [];
+
+    return ScreenshotDiff.query(trx).insert(allInserts);
   });
 };
