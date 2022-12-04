@@ -90,7 +90,7 @@ export const BuildHeader = memo(
             />
           </div>
           {build && repository ? (
-            <BuildStatusChip build={build} repository={repository} />
+            <BuildStatusChip build={build} repository={repository} tooltip />
           ) : null}
         </div>
         {repository && <BuildReviewButton repository={repository} />}

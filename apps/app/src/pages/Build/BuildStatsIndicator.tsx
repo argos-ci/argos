@@ -90,34 +90,40 @@ interface StatCountProps {
   icon: React.ReactNode;
   count: number;
   color: StatCountColor;
-  tooltip: string;
+  tooltip: string | null;
 }
 
 const StatCount = ({ icon, count, color, tooltip }: StatCountProps) => {
   const colorClassName = getStatCountColorClassName(color, false);
-  return (
-    <MagicTooltip tooltip={tooltip}>
-      <div
-        className={clsx(
-          colorClassName,
-          "flex w-16 items-center gap-1 tabular-nums"
-        )}
-      >
-        <span className="[&>*]:h-4 [&>*]:w-4">{icon}</span>
-        <span className="text-xs">{count}</span>
-      </div>
-    </MagicTooltip>
+  const element = (
+    <div
+      className={clsx(
+        colorClassName,
+        "flex w-16 items-center gap-1 tabular-nums"
+      )}
+    >
+      <span className="[&>*]:h-4 [&>*]:w-4">{icon}</span>
+      <span className="text-xs">{count}</span>
+    </div>
   );
+  if (!tooltip) return element;
+  return <MagicTooltip tooltip={tooltip}>{element}</MagicTooltip>;
 };
 
 export interface BuildStatsIndicatorProps {
   stats: BuildStats;
   onClickGroup?: (group: DiffGroup["name"]) => void;
   className?: string;
+  tooltip?: boolean;
 }
 
 export const BuildStatsIndicator = memo(
-  ({ stats, onClickGroup, className }: BuildStatsIndicatorProps) => {
+  ({
+    stats,
+    onClickGroup,
+    className,
+    tooltip = true,
+  }: BuildStatsIndicatorProps) => {
     return (
       <div className={clsx(className, "flex items-center")}>
         {GROUPS.map((group) => {
@@ -129,7 +135,7 @@ export const BuildStatsIndicator = memo(
                 icon={getGroupIcon(group)}
                 count={count}
                 color={getGroupColor(group)}
-                tooltip={getGroupLabel(group)}
+                tooltip={tooltip ? getGroupLabel(group) : null}
               />
             );
           }
