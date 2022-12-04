@@ -2,8 +2,8 @@ import { useEffect } from "react";
 
 import config from "@/config";
 import { Query } from "@/containers/Apollo";
+import { useIsLoggedIn } from "@/containers/Auth";
 import { RepositoryList } from "@/containers/RepositoryList";
-import { checkIsUserSyncing, useUser } from "@/containers/User";
 import { DocumentType, graphql } from "@/gql";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
@@ -67,9 +67,9 @@ const RedirectToWww = () => {
 };
 
 export const Home = () => {
-  const user = useUser();
+  const loggedIn = useIsLoggedIn();
 
-  if (!user) {
+  if (!loggedIn) {
     if (process.env["NODE_ENV"] !== "production") {
       return (
         <div className="container mx-auto p-4 text-center">
@@ -79,29 +79,6 @@ export const Home = () => {
       );
     }
     return <RedirectToWww />;
-  }
-
-  if (!user.installations.length && !checkIsUserSyncing(user)) {
-    return (
-      <Container>
-        <Alert>
-          <AlertTitle>Missing installation</AlertTitle>
-          <AlertText>
-            It looks like Argos GitHub application is not installed on your
-            account.
-          </AlertText>
-          <AlertActions>
-            <Button>
-              {(buttonProps) => (
-                <a {...buttonProps} href={config.get("github.appUrl")}>
-                  Install Argos GitHub App
-                </a>
-              )}
-            </Button>
-          </AlertActions>
-        </Alert>
-      </Container>
-    );
   }
 
   return (

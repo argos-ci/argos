@@ -25,9 +25,32 @@ export function useAuth() {
   return value;
 }
 
+const jwtDecode = (t: string) => {
+  const parts = t.split(".");
+  if (!parts[1]) return null;
+  try {
+    return JSON.parse(window.atob(parts[1])) as {
+      id: string;
+      login: string;
+      name: string | null;
+    };
+  } catch (e) {
+    return null;
+  }
+};
+
 export function useAuthToken() {
   const { token } = useAuth();
   return token;
+}
+
+export function useAuthTokenPayload() {
+  const token = useAuthToken();
+  return token ? jwtDecode(token) : null;
+}
+
+export function useIsLoggedIn() {
+  return useAuthTokenPayload() !== null;
 }
 
 export function useLogout() {

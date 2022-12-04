@@ -7,8 +7,11 @@ import {
 import { Link as RouterLink } from "react-router-dom";
 
 import config from "@/config";
-import { useLogout } from "@/containers/Auth";
-import { useUser } from "@/containers/User";
+import {
+  useAuthTokenPayload,
+  useIsLoggedIn,
+  useLogout,
+} from "@/containers/Auth";
 import { BrandLogo } from "@/ui/BrandLogo";
 import {
   Menu,
@@ -25,12 +28,14 @@ import { OwnerAvatar } from "./OwnerAvatar";
 import { SubNavbar } from "./SubNavbar";
 
 const UserMenu = () => {
-  const user = useUser() as NonNullable<ReturnType<typeof useUser>>;
+  const authPayload = useAuthTokenPayload();
   const logout = useLogout();
   const menu = useMenuState({
     placement: "bottom-end",
     gutter: 4,
   });
+
+  if (!authPayload) return null;
 
   return (
     <>
@@ -38,7 +43,7 @@ const UserMenu = () => {
         state={menu}
         className="rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
       >
-        <OwnerAvatar owner={user} />
+        <OwnerAvatar owner={authPayload} />
       </MenuButton>
       <Menu aria-label="User settings" state={menu}>
         <MenuItem state={menu} pointer>
@@ -69,7 +74,10 @@ const UserMenu = () => {
         </MenuItem>
         <MenuItem state={menu} pointer>
           {(menuItemProps) => (
-            <RouterLink {...menuItemProps} to={`/${user.login}/settings`}>
+            <RouterLink
+              {...menuItemProps}
+              to={`/${authPayload.login}/settings`}
+            >
               <MenuItemIcon>
                 <GearIcon />
               </MenuItemIcon>
@@ -90,8 +98,8 @@ const UserMenu = () => {
 };
 
 const UserControl = () => {
-  const user = useUser();
-  return user ? <UserMenu /> : <GitHubLoginButton />;
+  const loggedIn = useIsLoggedIn();
+  return loggedIn ? <UserMenu /> : <GitHubLoginButton />;
 };
 
 export const Navbar = () => {

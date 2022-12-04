@@ -1,7 +1,7 @@
 import { RepoIcon } from "@primer/octicons-react";
 import { useParams } from "react-router-dom";
 
-import { useUser } from "@/containers/User";
+import { useIsLoggedIn } from "@/containers/Auth";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
@@ -13,7 +13,7 @@ import { RepositoryBreadcrumbMenu } from "./RepositoryBreadcrumbMenu";
 
 export const RepositoryBreadcrumbItem = () => {
   const { ownerLogin, repositoryName } = useParams();
-  const user = useUser();
+  const loggedIn = useIsLoggedIn();
 
   if (!repositoryName) return null;
 
@@ -30,7 +30,7 @@ export const RepositoryBreadcrumbItem = () => {
           </BreadcrumbItemIcon>
           {repositoryName}
         </BreadcrumbLink>
-        {user && <RepositoryBreadcrumbMenu />}
+        {loggedIn && <RepositoryBreadcrumbMenu />}
       </BreadcrumbItem>
     </>
   );

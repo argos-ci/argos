@@ -2,8 +2,8 @@ import { useQuery } from "@apollo/client";
 import { HomeIcon, OrganizationIcon } from "@primer/octicons-react";
 import { useMatch, useParams } from "react-router-dom";
 
+import { useIsLoggedIn } from "@/containers/Auth";
 import { OwnerAvatar } from "@/containers/OwnerAvatar";
-import { useUser } from "@/containers/User";
 import { graphql } from "@/gql";
 import {
   BreadcrumbItem,
@@ -61,7 +61,7 @@ const HomeBreadcrumbLink = () => {
 
 export const OwnerBreadcrumbItem = () => {
   const { ownerLogin } = useParams();
-  const user = useUser();
+  const loggedIn = useIsLoggedIn();
 
   return (
     <>
@@ -71,7 +71,7 @@ export const OwnerBreadcrumbItem = () => {
         ) : (
           <HomeBreadcrumbLink />
         )}
-        {user && <OwnerBreadcrumbMenu />}
+        {loggedIn && <OwnerBreadcrumbMenu />}
       </BreadcrumbItem>
     </>
   );

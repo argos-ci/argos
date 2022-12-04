@@ -11,7 +11,6 @@ import { Layout, Main } from "@/containers/Layout";
 
 import { ApolloInitializer } from "./containers/Apollo";
 import { AuthProvider } from "./containers/Auth";
-import { UserInitializer } from "./containers/User";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Build } from "./pages/Build";
 import { Home } from "./pages/Home";
@@ -30,58 +29,53 @@ export const App = () => {
       <BrowserRouter>
         <AuthProvider>
           <ApolloInitializer>
-            <UserInitializer>
-              <Routes>
+            <Routes>
+              <Route path="/auth/github/callback" element={<AuthCallback />} />
+              <Route
+                path="/:ownerLogin/:repositoryName/builds/:buildNumber"
+                element={<Build />}
+              />
+              <Route
+                path="/:ownerLogin/:repositoryName/builds/:buildNumber/:diffId"
+                element={<Build />}
+              />
+              <Route
+                path="/"
+                element={
+                  <Layout>
+                    <Outlet />
+                  </Layout>
+                }
+              >
                 <Route
-                  path="/auth/github/callback"
-                  element={<AuthCallback />}
-                />
-                <Route
-                  path="/:ownerLogin/:repositoryName/builds/:buildNumber"
-                  element={<Build />}
-                />
-                <Route
-                  path="/:ownerLogin/:repositoryName/builds/:buildNumber/:diffId"
-                  element={<Build />}
-                />
-                <Route
-                  path="/"
+                  index
                   element={
-                    <Layout>
-                      <Outlet />
-                    </Layout>
+                    <Main>
+                      <Helmet>
+                        <title>All my repositories</title>
+                      </Helmet>
+                      <Home />
+                    </Main>
                   }
+                />
+                <Route
+                  path=":ownerLogin/:repositoryName"
+                  element={<Repository />}
                 >
+                  <Route path="" element={<RepositoryBuilds />} />
                   <Route
-                    index
-                    element={
-                      <Main>
-                        <Helmet>
-                          <title>All my repositories</title>
-                        </Helmet>
-                        <Home />
-                      </Main>
-                    }
+                    path="builds"
+                    element={<Navigate to=".." replace={true} />}
                   />
-                  <Route
-                    path=":ownerLogin/:repositoryName"
-                    element={<Repository />}
-                  >
-                    <Route path="" element={<RepositoryBuilds />} />
-                    <Route
-                      path="builds"
-                      element={<Navigate to=".." replace={true} />}
-                    />
-                    <Route path="settings" element={<RepositorySettings />} />
-                  </Route>
-                  <Route path=":ownerLogin" element={<Owner />}>
-                    <Route path="" element={<OwnerRepositories />} />
-                    <Route path="settings" element={<OwnerSettings />} />
-                  </Route>
-                  <Route path="*" element={<NotFound />} />
+                  <Route path="settings" element={<RepositorySettings />} />
                 </Route>
-              </Routes>
-            </UserInitializer>
+                <Route path=":ownerLogin" element={<Owner />}>
+                  <Route path="" element={<OwnerRepositories />} />
+                  <Route path="settings" element={<OwnerSettings />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
           </ApolloInitializer>
         </AuthProvider>
       </BrowserRouter>

@@ -1,10 +1,10 @@
 import { ComponentProps, memo } from "react";
 import { Link } from "react-router-dom";
 
+import { useIsLoggedIn } from "@/containers/Auth";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { ReviewButton } from "@/containers/ReviewButton";
-import { useUser } from "@/containers/User";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BrandShield } from "@/ui/BrandShield";
 import { MagicTooltip } from "@/ui/Tooltip";
@@ -44,8 +44,8 @@ const BuildReviewButton = memo(
   (props: {
     repository: ComponentProps<typeof ReviewButton>["repository"];
   }) => {
-    const user = useUser();
-    return user ? (
+    const loggedIn = useIsLoggedIn();
+    return loggedIn ? (
       <ReviewButton repository={props.repository} />
     ) : (
       <GitHubLoginButton />
