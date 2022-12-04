@@ -1,5 +1,11 @@
 import { Helmet } from "react-helmet";
-import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from "react-router-dom";
 
 import { Layout, Main } from "@/containers/Layout";
 
@@ -62,6 +68,10 @@ export const App = () => {
                     element={<Repository />}
                   >
                     <Route path="" element={<RepositoryBuilds />} />
+                    <Route
+                      path="builds"
+                      element={<Navigate to=".." replace={true} />}
+                    />
                     <Route path="settings" element={<RepositorySettings />} />
                   </Route>
                   <Route path=":ownerLogin" element={<Owner />}>
