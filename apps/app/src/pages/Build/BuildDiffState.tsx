@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 
 import type { BuildStats } from "@/containers/Build";
 import { graphql } from "@/gql";
+import { ScreenshotDiffStatus } from "@/gql/graphql";
 
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
@@ -20,7 +21,7 @@ import type { BuildParams } from "./BuildParams";
 export interface Diff {
   id: string;
   url?: string | null;
-  status: "added" | "updated" | "removed" | "stable" | "failed";
+  status: ScreenshotDiffStatus;
   name: string;
   width?: number | null;
   height?: number | null;
@@ -107,14 +108,14 @@ const RepositoryQuery = graphql(`
     $ownerLogin: String!
     $repositoryName: String!
     $buildNumber: Int!
-    $offset: Int!
-    $limit: Int!
+    $after: Int!
+    $first: Int!
   ) {
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
       build(number: $buildNumber) {
         id
-        screenshotDiffs(offset: $offset, limit: $limit) {
+        screenshotDiffs(after: $after, first: $first) {
           pageInfo {
             hasNextPage
           }
@@ -158,8 +159,8 @@ const useDataState = ({
       ownerLogin,
       repositoryName,
       buildNumber,
-      offset: 0,
-      limit: 20,
+      after: 0,
+      first: 20,
     },
   });
   if (error) {
@@ -172,8 +173,8 @@ const useDataState = ({
     ) {
       fetchMore({
         variables: {
-          offset: data.repository.build.screenshotDiffs.edges.length,
-          limit: 100,
+          after: data.repository.build.screenshotDiffs.edges.length,
+          first: 100,
         },
         updateQuery: (prev, { fetchMoreResult }) => {
           if (!fetchMoreResult?.repository?.build?.screenshotDiffs.edges)

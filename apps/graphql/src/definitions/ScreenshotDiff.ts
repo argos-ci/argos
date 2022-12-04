@@ -13,84 +13,75 @@ const screenshotFailureRegexp = `(${Object.values({
   playwright: "-failed-",
 }).join("|")})`;
 
-async function getDiffStatus(
+const getDiffStatus = async (
   screenshotDiff: ScreenshotDiff,
   _args: Record<string, never>,
   context: Context
-) {
+) => {
   if (!screenshotDiff.compareScreenshotId) return "removed";
 
   if (!screenshotDiff.baseScreenshotId) {
     const { name } = await context.loaders.Screenshot.load(
       screenshotDiff.compareScreenshotId
     );
-    return name.match(screenshotFailureRegexp) ? "failed" : "added";
+    return name.match(screenshotFailureRegexp) ? "failure" : "added";
   }
 
   return screenshotDiff.score && screenshotDiff.score > 0
-    ? "updated"
-    : "stable";
-}
+    ? "changed"
+    : "unchanged";
+};
 
 export const selectDiffStatus = `CASE \
     WHEN "compareScreenshotId" IS NULL \
       THEN 'removed' \
     WHEN "baseScreenshotId" IS NULL \
       AND "name" ~ '${screenshotFailureRegexp}' \
-      THEN 'failed'  \
+      THEN 'failure'  \
     WHEN "baseScreenshotId" IS NULL \
       THEN 'added' \
     WHEN "score" IS NOT NULL AND "score" > 0 \
-      THEN 'updated' \
-    ELSE 'stable'  \
+      THEN 'changed' \
+    ELSE 'unchanged'  \
   END \
   AS status`;
 
 export const sortDiffByStatus = `CASE \
     WHEN "compareScreenshotId" IS NULL \
-      THEN 3 -- REMOVED
+      THEN 3 -- removed
     WHEN "baseScreenshotId" IS NULL \
       AND "compareScreenshot"."name" ~ '${screenshotFailureRegexp}' \
-      THEN 0 -- FAILED
+      THEN 0 -- failure
     WHEN "baseScreenshotId" IS NULL  \
-      THEN 2 -- ADDED
+      THEN 2 -- added
     WHEN "score" IS NOT NULL AND "score" > 0 \
-      THEN 1 -- UPDATED
-    ELSE 4 -- STABLE
+      THEN 1 -- changed
+    ELSE 4 -- unchanged
   END ASC`;
 
 export const typeDefs = gql`
   enum ScreenshotDiffStatus {
     added
-    stable
-    updated
-    failed
+    unchanged
+    changed
+    failure
     removed
   }
 
-  type ScreenshotDiff {
+  type ScreenshotDiff implements Node {
     id: ID!
     createdAt: DateTime!
-    updatedAt: DateTime!
-    buildId: ID!
-    baseScreenshotId: ID
     baseScreenshot: Screenshot
-    compareScreenshotId: ID
     compareScreenshot: Screenshot
-    score: Float
     url: String
-    "Represent the state of the job generating the diffs"
-    jobStatus: JobStatus
-    "Represent the status given by the user"
-    validationStatus: ValidationStatus!
-    status: ScreenshotDiffStatus!
-    rank: Int
     name: String!
     width: Int
     height: Int
+    status: ScreenshotDiffStatus!
+    validationStatus: String
   }
 
-  type ScreenshotDiffResult {
+  type ScreenshotDiffConnection implements Connection {
     pageInfo: PageInfo!
     edges: [ScreenshotDiff!]!
   }
@@ -120,7 +111,6 @@ export const resolvers = {
       if (!screenshotDiff.s3Id) return null;
       return getPublicUrl(screenshotDiff.s3Id);
     },
-    status: getDiffStatus,
     name: async (
       screenshotDiff: ScreenshotDiff,
       _args: Record<string, never>,
@@ -158,5 +148,6 @@ export const resolvers = {
       const file = await context.loaders.File.load(screenshot.fileId);
       return file.height;
     },
+    status: getDiffStatus,
   },
 };

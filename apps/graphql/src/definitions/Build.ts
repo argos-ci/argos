@@ -43,45 +43,28 @@ export const typeDefs = gql`
   }
 
   type BuildStats {
-    failedScreenshotCount: Int!
-    addedScreenshotCount: Int!
-    stableScreenshotCount: Int!
-    updatedScreenshotCount: Int!
-    removedScreenshotCount: Int!
-    screenshotCount: Int!
+    total: Int!
+    failure: Int!
+    changed: Int!
+    added: Int!
+    removed: Int!
+    unchanged: Int!
   }
 
-  input ScreenshotDiffWhere {
-    passing: Boolean
-  }
-
-  type Build {
+  type Build implements Node {
     id: ID!
     createdAt: DateTime!
     updatedAt: DateTime!
     "The screenshot diffs between the base screenshot bucket of the compare screenshot bucket"
-    screenshotDiffs(
-      where: ScreenshotDiffWhere
-      offset: Int!
-      limit: Int!
-    ): ScreenshotDiffResult!
-    diffs(offset: Int!, limit: Int!): ScreenshotDiffResult!
-    "The screenshot bucket ID of the baselineBranch"
-    baseScreenshotBucketId: ID
+    screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
     "The screenshot bucket of the baselineBranch"
     baseScreenshotBucket: ScreenshotBucket
-    "The screenshot bucket ID of the build commit"
-    compareScreenshotBucketId: ID!
     "The screenshot bucket of the build commit"
     compareScreenshotBucket: ScreenshotBucket!
-    "The repository associated to the build"
-    repository: Repository!
     "Continuous number. It is incremented after each build"
     number: Int!
     "Review status, conclusion or job status"
     status: BuildStatus!
-    "Merge build type and status"
-    compositeStatus: String!
     "Build name"
     name: String!
     "Build stats"
@@ -94,7 +77,7 @@ export const typeDefs = gql`
     totalBatch: Int
   }
 
-  type BuildResult {
+  type BuildConnection implements Connection {
     pageInfo: PageInfo!
     edges: [Build!]!
   }
@@ -108,51 +91,22 @@ export const typeDefs = gql`
   }
 `;
 
-const getSortedDiffsQuery = (build: Build) =>
-  build
-    .$relatedQuery("screenshotDiffs")
-    .leftJoinRelated("[baseScreenshot, compareScreenshot]")
-    .orderByRaw(sortDiffByStatus)
-    .orderBy("compareScreenshot.name", "asc")
-    .orderBy("baseScreenshot.name", "asc")
-    .orderBy("screenshot_diffs.id", "asc");
-
 export const resolvers = {
   Build: {
-    diffs: async (build: Build, args: { offset: number; limit: number }) => {
-      if (args.limit > 200) {
-        throw new Error("Limit is too high");
-      }
-      const result = await build
-        .$relatedQuery("screenshotDiffs")
-        .orderBy("id", "asc")
-        .range(args.offset, args.offset + args.limit - 1);
-      return paginateResult({ result, offset: args.offset, limit: args.limit });
-    },
     async screenshotDiffs(
       build: Build,
-      {
-        where,
-        limit,
-        offset,
-      }: { where: { passing?: boolean }; limit: number; offset: number }
+      { first, after }: { first: number; after: number }
     ) {
-      const query = getSortedDiffsQuery(build);
+      const result = await build
+        .$relatedQuery("screenshotDiffs")
+        .leftJoinRelated("[baseScreenshot, compareScreenshot]")
+        .orderByRaw(sortDiffByStatus)
+        .orderBy("compareScreenshot.name", "asc")
+        .orderBy("baseScreenshot.name", "asc")
+        .orderBy("screenshot_diffs.id", "asc")
+        .range(after, after + first - 1);
 
-      if (where) {
-        if (where.passing) {
-          query.where("screenshot_diffs.score", 0);
-        } else {
-          query.where((qb) => {
-            qb.whereNot("screenshot_diffs.score", 0).orWhereNull(
-              "screenshot_diffs.score"
-            );
-          });
-        }
-      }
-
-      const result = await query.range(offset, offset + limit - 1);
-      return paginateResult({ result, offset, limit });
+      return paginateResult({ result, first, after });
     },
     compareScreenshotBucket: async (
       build: Build,
@@ -163,16 +117,6 @@ export const resolvers = {
         build.compareScreenshotBucketId
       );
     },
-    compositeStatus: async (
-      build: Build,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
-      if (build.type && build.type !== "check") {
-        return build.type;
-      }
-      return context.loaders.BuildAggregatedStatus.load(build);
-    },
     baseScreenshotBucket: async (
       build: Build,
       _args: Record<string, never>,
@@ -182,13 +126,6 @@ export const resolvers = {
       return context.loaders.ScreenshotBucket.load(
         build.baseScreenshotBucketId
       );
-    },
-    repository: async (
-      build: Build,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
-      return context.loaders.Repository.load(build.repositoryId);
     },
     status: async (
       build: Build,
@@ -211,21 +148,12 @@ export const resolvers = {
 
       const stats = data.reduce(
         (res, { status, count }) => ({ ...res, [status]: Number(count) }),
-        { failed: 0, added: 0, stable: 0, updated: 0, removed: 0 }
+        { failure: 0, added: 0, unchanged: 0, changed: 0, removed: 0 }
       );
 
       return {
-        failedScreenshotCount: stats.failed,
-        addedScreenshotCount: stats.added,
-        stableScreenshotCount: stats.stable,
-        updatedScreenshotCount: stats.updated,
-        removedScreenshotCount: stats.removed,
-        screenshotCount:
-          stats.failed +
-          stats.added +
-          stats.stable +
-          stats.updated +
-          stats.removed,
+        ...stats,
+        total: Object.values(stats).reduce((a, b) => a + b, 0),
       };
     },
   },

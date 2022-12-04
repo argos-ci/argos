@@ -82,7 +82,7 @@ describe("GraphQL", () => {
                 buildId: "${build.id}",
                 validationStatus: rejected
               ){
-                screenshotDiffs(offset: 0, limit: 10) {
+                screenshotDiffs(after: 0, first: 10) {
                   edges {
                     validationStatus
                   }
@@ -115,7 +115,7 @@ describe("GraphQL", () => {
               repositoryName: "${repository.name}",
             ) {
               build(number: 1) {
-                screenshotDiffs(offset: 0, limit: 10) {
+                screenshotDiffs(after: 0, first: 10) {
                   edges {
                     validationStatus
                   }
@@ -153,7 +153,7 @@ describe("GraphQL", () => {
                 buildId: "${build.id}",
                 validationStatus: rejected
               ) {
-                screenshotDiffs(offset: 0, limit: 10) {
+                screenshotDiffs(after: 0, first: 10) {
                   edges {
                     validationStatus
                   }

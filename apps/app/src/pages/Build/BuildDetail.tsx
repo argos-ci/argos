@@ -23,7 +23,7 @@ import {
 export const BuildFragment = graphql(`
   fragment BuildDetail_Build on Build {
     stats {
-      total: screenshotCount
+      total
     }
     baseScreenshotBucket {
       branch
@@ -127,7 +127,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
           icon={getGroupIcon("added")}
         />
       );
-    case "failed":
+    case "failure":
       return (
         <MissingScreenshotInfo
           title="Failure screenshot"
@@ -141,7 +141,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
           icon={getGroupIcon("failure")}
         />
       );
-    case "stable":
+    case "unchanged":
     case "removed":
       return (
         <div>
@@ -154,7 +154,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
           </NeutralLink>
         </div>
       );
-    case "updated":
+    case "changed":
       return (
         <div className="relative">
           <NeutralLink href={diff.baseScreenshot!.url}>
@@ -195,7 +195,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
           </NeutralLink>
         </div>
       );
-    case "failed":
+    case "failure":
       return (
         <div>
           <NeutralLink href={diff.compareScreenshot!.url}>
@@ -207,7 +207,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
           </NeutralLink>
         </div>
       );
-    case "stable":
+    case "unchanged":
       return (
         <MissingScreenshotInfo
           title="Unchanged screenshot"
@@ -232,7 +232,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
           icon={getGroupIcon("removed")}
         />
       );
-    case "updated":
+    case "changed":
       return (
         <div className="relative">
           <NeutralLink href={diff.compareScreenshot!.url}>

@@ -28,7 +28,7 @@ export const BuildFragment = graphql(`
   fragment BuildInfos_Build on Build {
     createdAt
     stats {
-      total: screenshotCount
+      total
     }
     baseScreenshotBucket {
       commit

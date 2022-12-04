@@ -61,12 +61,12 @@ const RepositoryBuildsQuery = graphql(`
             commit
           }
           stats {
-            total: screenshotCount
-            failure: failedScreenshotCount
-            changed: updatedScreenshotCount
-            added: addedScreenshotCount
-            removed: removedScreenshotCount
-            unchanged: stableScreenshotCount
+            total
+            failure
+            changed
+            added
+            removed
+            unchanged
           }
           ...BuildStatusChip_Build
         }

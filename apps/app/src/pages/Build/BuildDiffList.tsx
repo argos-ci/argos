@@ -131,8 +131,8 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
 
   switch (diff.status) {
     case "added":
-    case "stable":
-    case "failed":
+    case "unchanged":
+    case "failure":
       return (
         <img
           {...getImgAttributes(diff.compareScreenshot!.url, dimensions)}
@@ -146,7 +146,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
           className="max-h-full max-w-full object-contain"
         />
       );
-    case "updated": {
+    case "changed": {
       const dimensions = getDiffDimensions(diff);
       return (
         <div className="flex h-full items-center justify-center">

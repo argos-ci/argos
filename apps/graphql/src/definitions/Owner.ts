@@ -10,18 +10,12 @@ import type { Context } from "../context.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  enum OwnerType {
-    organization
-    user
-  }
-
-  interface Owner {
+  interface Owner implements Node {
     id: ID!
     name: String!
     login: String!
-    type: OwnerType!
-    repositoriesNumber: Int!
     repositories(enabled: Boolean): [Repository!]!
+    repositoriesNumber: Int!
     consumptionRatio: Float
     permissions: [Permission!]!
     currentMonthUsedScreenshots: Int!
@@ -29,13 +23,12 @@ export const typeDefs = gql`
     screenshotsLimitPerMonth: Int
   }
 
-  type Organization implements Owner {
+  type Organization implements Node & Owner {
     id: ID!
     name: String!
     login: String!
-    type: OwnerType!
-    repositoriesNumber: Int!
     repositories(enabled: Boolean): [Repository!]!
+    repositoriesNumber: Int!
     consumptionRatio: Float
     permissions: [Permission!]!
     currentMonthUsedScreenshots: Int!
@@ -93,25 +86,24 @@ function addEnableFilter({
 
 const getOwnerRepositories = (
   owner: Owner,
-  { user, enabled }: { user?: User | null; enabled?: boolean | undefined } = {}
+  { user, enabled }: { user: User | null; enabled: boolean | undefined }
 ) => {
   if (!user) {
-    const repositoriesQuery = owner
+    const query = owner
       .$relatedQuery<Repository>("repositories")
       .where({
         private: false,
         [`repositories.${owner.type()}Id`]: owner.id,
       })
       .orderBy("repositories.name", "asc");
-
     if (enabled !== undefined) {
-      return addEnableFilter({ enabled, query: repositoriesQuery });
+      return addEnableFilter({ enabled, query });
     }
 
-    return repositoriesQuery;
+    return query;
   }
 
-  const repositoriesQuery = owner
+  const query = owner
     .$relatedQuery<Repository>("repositories")
     .select("repositories.*")
     .whereIn("repositories.id", (builder) =>
@@ -134,10 +126,10 @@ const getOwnerRepositories = (
     .orderBy("repositories.name", "asc");
 
   if (enabled !== undefined) {
-    return addEnableFilter({ enabled, query: repositoriesQuery });
+    return addEnableFilter({ enabled, query });
   }
 
-  return repositoriesQuery;
+  return query;
 };
 
 const getOwnerAccount = async (owner: Owner) => {
@@ -167,6 +159,17 @@ export const resolvers = {
         enabled: args.enabled,
       });
     },
+    repositoriesNumber: async (
+      owner: Owner,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
+      const [result] = await getOwnerRepositories(owner, {
+        user: ctx.user,
+        enabled: undefined,
+      }).count("repositories.*");
+      return (result as unknown as { count: number }).count;
+    },
     permissions: async (
       owner: Owner,
       _args: Record<string, never>,
@@ -179,18 +182,6 @@ export const resolvers = {
     consumptionRatio: async (owner: Owner) => {
       const account = await getOwnerAccount(owner);
       return account.getScreenshotsConsumptionRatio();
-    },
-    repositoriesNumber: async (
-      owner: Owner,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
-      const [result] = await getOwnerRepositories(owner, {
-        user: ctx.user,
-        // @TODO add missing enabled filter here
-        // enabled: args.enabled,
-      }).count("repositories.*");
-      return (result as unknown as { count: number }).count;
     },
     currentMonthUsedScreenshots: async (owner: Owner) => {
       const account = await getOwnerAccount(owner);

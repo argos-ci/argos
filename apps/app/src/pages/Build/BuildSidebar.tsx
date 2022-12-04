@@ -29,7 +29,7 @@ export const BuildFragment = graphql(`
   fragment BuildSidebar_Build on Build {
     ...BuildInfos_Build
     stats {
-      total: screenshotCount
+      total
     }
   }
 `);

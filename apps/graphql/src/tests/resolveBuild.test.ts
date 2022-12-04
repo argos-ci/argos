@@ -77,15 +77,10 @@ describe("GraphQL", () => {
               repositoryName: "${repository.name}",
             ) {
               build(number: 1) {
-                screenshotDiffs(offset: 0, limit: 10) {
+                screenshotDiffs(after: 0, first: 10) {
                   edges {
-                    baseScreenshot {
-                      name
-                    }
-                    compareScreenshot {
-                      name
-                    }
-                    score
+                    name
+                    status
                   }
                 }
               }
@@ -99,82 +94,18 @@ describe("GraphQL", () => {
         res.body.data.repository.build.screenshotDiffs;
       expect(screenshotDiffs).toEqual([
         {
-          baseScreenshot: { name: "email_deleted" },
-          compareScreenshot: { name: "email_deleted" },
-          score: 0.3,
+          name: "email_deleted",
+          status: "changed",
         },
         {
-          baseScreenshot: { name: "email_added" },
-          compareScreenshot: { name: "email_added" },
-          score: 0,
+          name: "email_added",
+          status: "unchanged",
         },
         {
-          baseScreenshot: { name: "email_deleted" },
-          compareScreenshot: { name: "email_deleted" },
-          score: 0,
+          name: "email_deleted",
+          status: "unchanged",
         },
       ]);
-    });
-
-    // @TODO check if it should pass
-    it.skip("should also display transitioning diffs", async () => {
-      await factory.create<ScreenshotDiff>("ScreenshotDiff", {
-        buildId: build.id,
-        baseScreenshotId: null,
-        compareScreenshotId: screenshot2.id,
-        score: null,
-      });
-
-      const app = await createApolloServerApp(apolloServer, { user });
-      await request(app)
-        .post("/graphql")
-        .send({
-          query: `{
-            repository(
-              ownerLogin: "${user.login}",
-              repositoryName: "${repository.name}",
-            ) {
-              build(number: 1) {
-                screenshotDiffs(where: {passing: false}, offset: 0, limit: 10) {
-                  edges {
-                    baseScreenshot {
-                      name
-                    }
-                    compareScreenshot {
-                      name
-                    }
-                    score
-                  }
-                }
-              }
-            }
-          }`,
-        })
-        .expect(expectNoGraphQLError)
-        .expect((res) => {
-          const { edges: screenshotDiffs } =
-            res.body.data.repository.build.screenshotDiffs;
-          expect(screenshotDiffs).toHaveLength(2);
-          expect(screenshotDiffs).toEqual([
-            {
-              baseScreenshot: null,
-              compareScreenshot: {
-                name: "email_deleted",
-              },
-              score: null,
-            },
-            {
-              baseScreenshot: {
-                name: "email_deleted",
-              },
-              compareScreenshot: {
-                name: "email_deleted",
-              },
-              score: 0.3,
-            },
-          ]);
-        })
-        .expect(200);
     });
   });
 });

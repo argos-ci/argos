@@ -10,7 +10,7 @@ export const BuildFragment = graphql(`
     batchCount
     totalBatch
     stats {
-      total: screenshotCount
+      total
     }
   }
 `);

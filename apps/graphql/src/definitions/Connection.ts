@@ -4,8 +4,8 @@ import gqlTag from "graphql-tag";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type Synchronization implements Node {
-    id: ID!
-    jobStatus: JobStatus!
+  interface Connection {
+    pageInfo: PageInfo!
+    edges: [Node!]!
   }
 `;

@@ -26,12 +26,12 @@ export const BuildFragment = graphql(`
     ...BuildDetail_Build
     status
     stats {
-      total: screenshotCount
-      failure: failedScreenshotCount
-      changed: updatedScreenshotCount
-      added: addedScreenshotCount
-      removed: removedScreenshotCount
-      unchanged: stableScreenshotCount
+      total
+      failure
+      changed
+      added
+      removed
+      unchanged
     }
   }
 `);
