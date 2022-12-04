@@ -101,7 +101,7 @@ const BuildRow = memo(
           <BuildStatsIndicator stats={build.stats} />
         </div>
         <div className="flex-1" />
-        <div className="hidden w-28 sm:block lg:w-80">
+        <div className="relative hidden w-28 sm:block lg:w-80">
           {build.compareScreenshotBucket && (
             <MagicTooltip
               tooltip={
@@ -112,7 +112,7 @@ const BuildRow = memo(
               }
             >
               <div
-                className="flex items-center gap-1 text-on-light transition hover:text-on"
+                className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on"
                 onClick={(event) => {
                   event.preventDefault();
                   window
@@ -132,7 +132,7 @@ const BuildRow = memo(
           )}
         </div>
         <div
-          className="hidden w-28 md:block"
+          className="relative hidden w-28 md:block"
           onClick={
             build.compareScreenshotBucket
               ? (event) => {
@@ -149,7 +149,7 @@ const BuildRow = memo(
         >
           {build.compareScreenshotBucket && (
             <MagicTooltip tooltip="View commit on GitHub">
-              <div className="flex items-center gap-1 text-on-light transition hover:text-on">
+              <div className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on">
                 <GitCommitIcon className="flex-shrink-0" />
                 <span className="overflow-hidden text-ellipsis whitespace-nowrap">
                   {build.compareScreenshotBucket.commit.slice(0, 7)}
