@@ -20,33 +20,22 @@ export type Scalars = {
   Time: any;
 };
 
-export type Build = {
+export type Build = Node & {
   __typename?: 'Build';
   /** The screenshot bucket of the baselineBranch */
   baseScreenshotBucket?: Maybe<ScreenshotBucket>;
-  /** The screenshot bucket ID of the baselineBranch */
-  baseScreenshotBucketId?: Maybe<Scalars['ID']>;
   /** Received batch count  */
   batchCount?: Maybe<Scalars['Int']>;
   /** The screenshot bucket of the build commit */
   compareScreenshotBucket: ScreenshotBucket;
-  /** The screenshot bucket ID of the build commit */
-  compareScreenshotBucketId: Scalars['ID'];
-  /** Merge build type and status */
-  compositeStatus: Scalars['String'];
   createdAt: Scalars['DateTime'];
-  diffs: ScreenshotDiffResult;
   id: Scalars['ID'];
   /** Build name */
   name: Scalars['String'];
   /** Continuous number. It is incremented after each build */
   number: Scalars['Int'];
-  /** The repository associated to the build */
-  repository: Repository;
-  /** The screenshot diffs before and after the input rank */
-  screenshotDiffCursorPaginated: ScreenshotDiffResult;
   /** The screenshot diffs between the base screenshot bucket of the compare screenshot bucket */
-  screenshotDiffs: ScreenshotDiffResult;
+  screenshotDiffs: ScreenshotDiffConnection;
   /** Build stats */
   stats: BuildStats;
   /** Review status, conclusion or job status */
@@ -59,38 +48,25 @@ export type Build = {
 };
 
 
-export type BuildDiffsArgs = {
-  limit: Scalars['Int'];
-  offset: Scalars['Int'];
-};
-
-
-export type BuildScreenshotDiffCursorPaginatedArgs = {
-  limit: Scalars['Int'];
-  rank: Scalars['Int'];
-};
-
-
 export type BuildScreenshotDiffsArgs = {
-  limit: Scalars['Int'];
-  offset: Scalars['Int'];
-  where?: InputMaybe<ScreenshotDiffWhere>;
+  after: Scalars['Int'];
+  first: Scalars['Int'];
 };
 
-export type BuildResult = {
-  __typename?: 'BuildResult';
+export type BuildConnection = Connection & {
+  __typename?: 'BuildConnection';
   edges: Array<Build>;
   pageInfo: PageInfo;
 };
 
 export type BuildStats = {
   __typename?: 'BuildStats';
-  addedScreenshotCount: Scalars['Int'];
-  failedScreenshotCount: Scalars['Int'];
-  removedScreenshotCount: Scalars['Int'];
-  screenshotCount: Scalars['Int'];
-  stableScreenshotCount: Scalars['Int'];
-  updatedScreenshotCount: Scalars['Int'];
+  added: Scalars['Int'];
+  changed: Scalars['Int'];
+  failure: Scalars['Int'];
+  removed: Scalars['Int'];
+  total: Scalars['Int'];
+  unchanged: Scalars['Int'];
 };
 
 export enum BuildStatus {
@@ -123,7 +99,12 @@ export enum BuildType {
   Reference = 'reference'
 }
 
-export type Installation = {
+export type Connection = {
+  edges: Array<Node>;
+  pageInfo: PageInfo;
+};
+
+export type Installation = Node & {
   __typename?: 'Installation';
   id: Scalars['ID'];
   latestSynchronization?: Maybe<Synchronization>;
@@ -158,7 +139,11 @@ export type MutationUpdateReferenceBranchArgs = {
   repositoryId: Scalars['String'];
 };
 
-export type Organization = Owner & {
+export type Node = {
+  id: Scalars['ID'];
+};
+
+export type Organization = Node & Owner & {
   __typename?: 'Organization';
   consumptionRatio?: Maybe<Scalars['Float']>;
   currentMonthUsedScreenshots: Scalars['Int'];
@@ -170,7 +155,6 @@ export type Organization = Owner & {
   repositories: Array<Repository>;
   repositoriesNumber: Scalars['Int'];
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
-  type: OwnerType;
 };
 
 
@@ -189,7 +173,6 @@ export type Owner = {
   repositories: Array<Repository>;
   repositoriesNumber: Scalars['Int'];
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
-  type: OwnerType;
 };
 
 
@@ -197,14 +180,8 @@ export type OwnerRepositoriesArgs = {
   enabled?: InputMaybe<Scalars['Boolean']>;
 };
 
-export enum OwnerType {
-  Organization = 'organization',
-  User = 'user'
-}
-
 export type PageInfo = {
   __typename?: 'PageInfo';
-  endCursor: Scalars['Int'];
   hasNextPage: Scalars['Boolean'];
   totalCount: Scalars['Int'];
 };
@@ -214,20 +191,11 @@ export enum Permission {
   Write = 'write'
 }
 
-export type Plan = {
+export type Plan = Node & {
   __typename?: 'Plan';
-  githubId: Scalars['ID'];
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
   screenshotsLimitPerMonth: Scalars['Int'];
-};
-
-export type Purchase = {
-  __typename?: 'Purchase';
-  endDate?: Maybe<Scalars['DateTime']>;
-  id: Scalars['ID'];
-  plan: Plan;
-  startDate: Scalars['DateTime'];
 };
 
 export type Query = {
@@ -254,35 +222,30 @@ export type QueryRepositoryArgs = {
   repositoryName: Scalars['String'];
 };
 
-export type Repository = {
+export type Repository = Node & {
   __typename?: 'Repository';
   /** Override branch name */
   baselineBranch?: Maybe<Scalars['String']>;
   /** A single build linked to the repository */
   build?: Maybe<Build>;
   /** Builds associated to the repository */
-  builds: BuildResult;
-  createdAt: Scalars['DateTime'];
+  builds: BuildConnection;
   /** Current month used screenshots */
   currentMonthUsedScreenshots: Scalars['Int'];
   /** Github default branch */
   defaultBranch?: Maybe<Scalars['String']>;
   enabled: Scalars['Boolean'];
-  githubId: Scalars['ID'];
   id: Scalars['ID'];
   name: Scalars['String'];
-  organizationId: Scalars['ID'];
   /** Owner of the repository */
-  owner?: Maybe<Owner>;
+  owner: Owner;
   /** Determine if the current user has write access to the repository */
   permissions: Array<Permission>;
   /** Private repository on GitHub */
   private: Scalars['Boolean'];
   /** Reference branch */
   referenceBranch?: Maybe<Scalars['String']>;
-  sampleBuildId?: Maybe<Scalars['ID']>;
   token?: Maybe<Scalars['ID']>;
-  updatedAt: Scalars['DateTime'];
 };
 
 
@@ -296,76 +259,57 @@ export type RepositoryBuildsArgs = {
   first: Scalars['Int'];
 };
 
-export type Screenshot = {
+export type Screenshot = Node & {
   __typename?: 'Screenshot';
-  createdAt: Scalars['DateTime'];
   height?: Maybe<Scalars['Int']>;
   id: Scalars['ID'];
-  name: Scalars['String'];
-  updatedAt: Scalars['DateTime'];
   url: Scalars['String'];
   width?: Maybe<Scalars['Int']>;
 };
 
-export type ScreenshotBucket = {
+export type ScreenshotBucket = Node & {
   __typename?: 'ScreenshotBucket';
   branch: Scalars['String'];
   commit: Scalars['String'];
   createdAt: Scalars['DateTime'];
   id: Scalars['ID'];
-  name: Scalars['String'];
-  updatedAt: Scalars['DateTime'];
 };
 
-export type ScreenshotDiff = {
+export type ScreenshotDiff = Node & {
   __typename?: 'ScreenshotDiff';
   baseScreenshot?: Maybe<Screenshot>;
-  baseScreenshotId?: Maybe<Scalars['ID']>;
-  buildId: Scalars['ID'];
   compareScreenshot?: Maybe<Screenshot>;
-  compareScreenshotId?: Maybe<Scalars['ID']>;
   createdAt: Scalars['DateTime'];
   height?: Maybe<Scalars['Int']>;
   id: Scalars['ID'];
-  /** Represent the state of the job generating the diffs */
-  jobStatus?: Maybe<JobStatus>;
   name: Scalars['String'];
-  rank?: Maybe<Scalars['Int']>;
-  score?: Maybe<Scalars['Float']>;
   status: ScreenshotDiffStatus;
-  updatedAt: Scalars['DateTime'];
   url?: Maybe<Scalars['String']>;
-  /** Represent the status given by the user */
-  validationStatus: ValidationStatus;
+  validationStatus?: Maybe<Scalars['String']>;
   width?: Maybe<Scalars['Int']>;
 };
 
-export type ScreenshotDiffResult = {
-  __typename?: 'ScreenshotDiffResult';
+export type ScreenshotDiffConnection = Connection & {
+  __typename?: 'ScreenshotDiffConnection';
   edges: Array<ScreenshotDiff>;
   pageInfo: PageInfo;
 };
 
 export enum ScreenshotDiffStatus {
   Added = 'added',
-  Failed = 'failed',
+  Changed = 'changed',
+  Failure = 'failure',
   Removed = 'removed',
-  Stable = 'stable',
-  Updated = 'updated'
+  Unchanged = 'unchanged'
 }
 
-export type ScreenshotDiffWhere = {
-  passing?: InputMaybe<Scalars['Boolean']>;
-};
-
-export type Synchronization = {
+export type Synchronization = Node & {
   __typename?: 'Synchronization';
   id: Scalars['ID'];
   jobStatus: JobStatus;
-  type: Scalars['String'];
 };
 
-export type User = Owner & {
+export type User = Node & Owner & {
   __typename?: 'User';
   consumptionRatio?: Maybe<Scalars['Float']>;
   currentMonthUsedScreenshots: Scalars['Int'];
@@ -381,7 +325,6 @@ export type User = Owner & {
   repositories: Array<Repository>;
   repositoriesNumber: Scalars['Int'];
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
-  type: OwnerType;
 };
 
 
@@ -395,10 +338,24 @@ export enum ValidationStatus {
   Unknown = 'unknown'
 }
 
-export type UserQueryVariables = Exact<{ [key: string]: never; }>;
+export type OwnerBreadcrumb_OwnerQueryVariables = Exact<{
+  login: Scalars['String'];
+}>;
 
 
-export type UserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, email?: string | null, name: string, login: string, privateSync: boolean, latestSynchronization?: { __typename?: 'Synchronization', id: string, jobStatus: JobStatus } | null, installations: Array<{ __typename?: 'Installation', id: string, latestSynchronization?: { __typename?: 'Synchronization', id: string, jobStatus: JobStatus } | null }> } | null };
+export type OwnerBreadcrumb_OwnerQuery = { __typename?: 'Query', owner?: { __typename?: 'Organization', id: string, login: string, name: string } | { __typename?: 'User', id: string, login: string, name: string } | null };
+
+export type OwnerBreadcrumbMenu_OwnersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type OwnerBreadcrumbMenu_OwnersQuery = { __typename?: 'Query', owners: Array<{ __typename?: 'Organization', id: string, login: string, name: string } | { __typename?: 'User', id: string, login: string, name: string }> };
+
+export type RepositoryBreadcrumbMenu_OwnerQueryVariables = Exact<{
+  login: Scalars['String'];
+}>;
+
+
+export type RepositoryBreadcrumbMenu_OwnerQuery = { __typename?: 'Query', owner?: { __typename?: 'Organization', id: string, repositories: Array<{ __typename?: 'Repository', id: string, name: string }> } | { __typename?: 'User', id: string, repositories: Array<{ __typename?: 'Repository', id: string, name: string }> } | null };
 
 export type BuildStatusChip_BuildFragment = (
   { __typename?: 'Build', type?: BuildType | null, status: BuildStatus }
@@ -414,7 +371,9 @@ export type BuildStatusDescription_BuildFragment = { __typename?: 'Build', type?
 
 export type BuildStatusDescription_RepositoryFragment = { __typename?: 'Repository', referenceBranch?: string | null } & { ' $fragmentName'?: 'BuildStatusDescription_RepositoryFragment' };
 
-export type ReviewButton_RepositoryFragment = { __typename?: 'Repository', name: string, permissions: Array<Permission>, private: boolean, owner?: { __typename?: 'Organization', login: string, consumptionRatio?: number | null } | { __typename?: 'User', login: string, consumptionRatio?: number | null } | null, build?: { __typename?: 'Build', id: string, status: BuildStatus } | null } & { ' $fragmentName'?: 'ReviewButton_RepositoryFragment' };
+export type RepositoryList_RepositoryFragment = { __typename?: 'Repository', id: string, name: string, enabled: boolean, owner: { __typename?: 'Organization', id: string, login: string, name: string } | { __typename?: 'User', id: string, login: string, name: string }, builds: { __typename?: 'BuildConnection', pageInfo: { __typename?: 'PageInfo', totalCount: number } } } & { ' $fragmentName'?: 'RepositoryList_RepositoryFragment' };
+
+export type ReviewButton_RepositoryFragment = { __typename?: 'Repository', name: string, permissions: Array<Permission>, private: boolean, owner: { __typename?: 'Organization', login: string, consumptionRatio?: number | null } | { __typename?: 'User', login: string, consumptionRatio?: number | null }, build?: { __typename?: 'Build', id: string, status: BuildStatus } | null } & { ' $fragmentName'?: 'ReviewButton_RepositoryFragment' };
 
 export type SetValidationStatusMutationVariables = Exact<{
   buildId: Scalars['ID'];
@@ -424,18 +383,23 @@ export type SetValidationStatusMutationVariables = Exact<{
 
 export type SetValidationStatusMutation = { __typename?: 'Mutation', setValidationStatus: { __typename?: 'Build', id: string, status: BuildStatus } };
 
+export type SyncAlert_UserQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SyncAlert_UserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, login: string, latestSynchronization?: { __typename?: 'Synchronization', id: string, jobStatus: JobStatus } | null } | null };
+
 export type BuildDetail_BuildFragment = { __typename?: 'Build', stats: { __typename?: 'BuildStats', total: number }, baseScreenshotBucket?: { __typename?: 'ScreenshotBucket', branch: string, createdAt: any } | null, compareScreenshotBucket: { __typename?: 'ScreenshotBucket', branch: string, createdAt: any } } & { ' $fragmentName'?: 'BuildDetail_BuildFragment' };
 
 export type BuildDiffState_RepositoryQueryVariables = Exact<{
   ownerLogin: Scalars['String'];
   repositoryName: Scalars['String'];
   buildNumber: Scalars['Int'];
-  offset: Scalars['Int'];
-  limit: Scalars['Int'];
+  after: Scalars['Int'];
+  first: Scalars['Int'];
 }>;
 
 
-export type BuildDiffState_RepositoryQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', id: string, build?: { __typename?: 'Build', id: string, screenshotDiffs: { __typename?: 'ScreenshotDiffResult', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean }, edges: Array<{ __typename?: 'ScreenshotDiff', id: string, status: ScreenshotDiffStatus, url?: string | null, name: string, width?: number | null, height?: number | null, baseScreenshot?: { __typename?: 'Screenshot', id: string, url: string, width?: number | null, height?: number | null } | null, compareScreenshot?: { __typename?: 'Screenshot', id: string, url: string, width?: number | null, height?: number | null } | null }> } } | null } | null };
+export type BuildDiffState_RepositoryQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', id: string, build?: { __typename?: 'Build', id: string, screenshotDiffs: { __typename?: 'ScreenshotDiffConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean }, edges: Array<{ __typename?: 'ScreenshotDiff', id: string, status: ScreenshotDiffStatus, url?: string | null, name: string, width?: number | null, height?: number | null, baseScreenshot?: { __typename?: 'Screenshot', id: string, url: string, width?: number | null, height?: number | null } | null, compareScreenshot?: { __typename?: 'Screenshot', id: string, url: string, width?: number | null, height?: number | null } | null }> } } | null } | null };
 
 export type BuildHeader_BuildFragment = (
   { __typename?: 'Build' }
@@ -457,13 +421,13 @@ export type BuildQueryQueryVariables = Exact<{
 
 
 export type BuildQueryQuery = { __typename?: 'Query', repository?: (
-    { __typename?: 'Repository', id: string, owner?: (
+    { __typename?: 'Repository', id: string, owner: (
       { __typename?: 'Organization', id: string }
       & { ' $fragmentRefs'?: { 'OvercapacityBanner_Owner_Organization_Fragment': OvercapacityBanner_Owner_Organization_Fragment } }
     ) | (
       { __typename?: 'User', id: string }
       & { ' $fragmentRefs'?: { 'OvercapacityBanner_Owner_User_Fragment': OvercapacityBanner_Owner_User_Fragment } }
-    ) | null, build?: (
+    ), build?: (
       { __typename?: 'Build', id: string, status: BuildStatus }
       & { ' $fragmentRefs'?: { 'BuildHeader_BuildFragment': BuildHeader_BuildFragment;'BuildWorkspace_BuildFragment': BuildWorkspace_BuildFragment } }
     ) | null }
@@ -491,20 +455,122 @@ type OvercapacityBanner_Owner_User_Fragment = { __typename?: 'User', consumption
 
 export type OvercapacityBanner_OwnerFragment = OvercapacityBanner_Owner_Organization_Fragment | OvercapacityBanner_Owner_User_Fragment;
 
-export const BuildStatusDescription_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildStatusDescription_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"batchCount"}},{"kind":"Field","name":{"kind":"Name","value":"totalBatch"}},{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"total"},"name":{"kind":"Name","value":"screenshotCount"}}]}}]}}]} as unknown as DocumentNode<BuildStatusDescription_BuildFragment, unknown>;
+export type Home_OwnersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type Home_OwnersQuery = { __typename?: 'Query', owners: Array<{ __typename?: 'Organization', id: string, repositories: Array<(
+      { __typename?: 'Repository', id: string, enabled: boolean }
+      & { ' $fragmentRefs'?: { 'RepositoryList_RepositoryFragment': RepositoryList_RepositoryFragment } }
+    )> } | { __typename?: 'User', id: string, repositories: Array<(
+      { __typename?: 'Repository', id: string, enabled: boolean }
+      & { ' $fragmentRefs'?: { 'RepositoryList_RepositoryFragment': RepositoryList_RepositoryFragment } }
+    )> }> };
+
+export type OwnerSettings_OwnerQueryVariables = Exact<{
+  login: Scalars['String'];
+}>;
+
+
+export type OwnerSettings_OwnerQuery = { __typename?: 'Query', owner?: { __typename?: 'Organization', id: string, name: string, screenshotsLimitPerMonth?: number | null, plan?: { __typename?: 'Plan', id: string, name?: string | null, screenshotsLimitPerMonth: number } | null, repositories: Array<{ __typename?: 'Repository', id: string, name: string, private: boolean, currentMonthUsedScreenshots: number }> } | { __typename?: 'User', id: string, name: string, screenshotsLimitPerMonth?: number | null, plan?: { __typename?: 'Plan', id: string, name?: string | null, screenshotsLimitPerMonth: number } | null, repositories: Array<{ __typename?: 'Repository', id: string, name: string, private: boolean, currentMonthUsedScreenshots: number }> } | null };
+
+export type OwnerRepositories_OwnerQueryVariables = Exact<{
+  login: Scalars['String'];
+}>;
+
+
+export type OwnerRepositories_OwnerQuery = { __typename?: 'Query', owner?: { __typename?: 'Organization', id: string, repositories: Array<(
+      { __typename?: 'Repository', id: string }
+      & { ' $fragmentRefs'?: { 'RepositoryList_RepositoryFragment': RepositoryList_RepositoryFragment } }
+    )> } | { __typename?: 'User', id: string, repositories: Array<(
+      { __typename?: 'Repository', id: string }
+      & { ' $fragmentRefs'?: { 'RepositoryList_RepositoryFragment': RepositoryList_RepositoryFragment } }
+    )> } | null };
+
+export type Owner_OwnerQueryVariables = Exact<{
+  ownerLogin: Scalars['String'];
+}>;
+
+
+export type Owner_OwnerQuery = { __typename?: 'Query', owner?: { __typename?: 'Organization', id: string, permissions: Array<Permission> } | { __typename?: 'User', id: string, permissions: Array<Permission> } | null };
+
+export type GettingStarted_RepositoryFragment = { __typename?: 'Repository', token?: string | null } & { ' $fragmentName'?: 'GettingStarted_RepositoryFragment' };
+
+export type RepositoryBuilds_RepositoryQueryVariables = Exact<{
+  ownerLogin: Scalars['String'];
+  repositoryName: Scalars['String'];
+}>;
+
+
+export type RepositoryBuilds_RepositoryQuery = { __typename?: 'Query', repository?: (
+    { __typename?: 'Repository', id: string, permissions: Array<Permission> }
+    & { ' $fragmentRefs'?: { 'GettingStarted_RepositoryFragment': GettingStarted_RepositoryFragment;'BuildStatusChip_RepositoryFragment': BuildStatusChip_RepositoryFragment } }
+  ) | null };
+
+export type RepositoryBuilds_Repository_BuildsQueryVariables = Exact<{
+  ownerLogin: Scalars['String'];
+  repositoryName: Scalars['String'];
+  after: Scalars['Int'];
+  first: Scalars['Int'];
+}>;
+
+
+export type RepositoryBuilds_Repository_BuildsQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', id: string, builds: { __typename?: 'BuildConnection', pageInfo: { __typename?: 'PageInfo', totalCount: number, hasNextPage: boolean }, edges: Array<(
+        { __typename?: 'Build', id: string, number: number, createdAt: any, name: string, compareScreenshotBucket: { __typename?: 'ScreenshotBucket', id: string, branch: string, commit: string }, stats: { __typename?: 'BuildStats', total: number, failure: number, changed: number, added: number, removed: number, unchanged: number } }
+        & { ' $fragmentRefs'?: { 'BuildStatusChip_BuildFragment': BuildStatusChip_BuildFragment } }
+      )> } } | null };
+
+export type RepositorySettings_RepositoryQueryVariables = Exact<{
+  ownerLogin: Scalars['String'];
+  repositoryName: Scalars['String'];
+}>;
+
+
+export type RepositorySettings_RepositoryQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', id: string, token?: string | null, baselineBranch?: string | null, defaultBranch?: string | null } | null };
+
+export type RepositorySettings_UpdateReferenceBranchMutationVariables = Exact<{
+  repositoryId: Scalars['String'];
+  baselineBranch?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type RepositorySettings_UpdateReferenceBranchMutation = { __typename?: 'Mutation', updateReferenceBranch: { __typename?: 'Repository', id: string, baselineBranch?: string | null, defaultBranch?: string | null } };
+
+export type Repository_RepositoryQueryVariables = Exact<{
+  ownerLogin: Scalars['String'];
+  repositoryName: Scalars['String'];
+}>;
+
+
+export type Repository_RepositoryQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', id: string, permissions: Array<Permission> } | null };
+
+export const RepositoryList_RepositoryFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RepositoryList_repository"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Repository"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"login"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"builds"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"IntValue","value":"0"}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"IntValue","value":"0"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalCount"}}]}}]}}]}}]} as unknown as DocumentNode<RepositoryList_RepositoryFragment, unknown>;
+export const BuildStatusDescription_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildStatusDescription_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"batchCount"}},{"kind":"Field","name":{"kind":"Name","value":"totalBatch"}},{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}}]}}]}}]} as unknown as DocumentNode<BuildStatusDescription_BuildFragment, unknown>;
 export const BuildStatusChip_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildStatusChip_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildStatusDescription_Build"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<BuildStatusChip_BuildFragment, unknown>;
 export const BuildHeader_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildHeader_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildStatusChip_Build"}}]}}]} as unknown as DocumentNode<BuildHeader_BuildFragment, unknown>;
 export const BuildStatusDescription_RepositoryFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildStatusDescription_Repository"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Repository"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceBranch"}}]}}]} as unknown as DocumentNode<BuildStatusDescription_RepositoryFragment, unknown>;
 export const BuildStatusChip_RepositoryFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildStatusChip_Repository"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Repository"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildStatusDescription_Repository"}}]}}]} as unknown as DocumentNode<BuildStatusChip_RepositoryFragment, unknown>;
 export const ReviewButton_RepositoryFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ReviewButton_Repository"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Repository"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"permissions"}},{"kind":"Field","name":{"kind":"Name","value":"private"}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"login"}},{"kind":"Field","name":{"kind":"Name","value":"consumptionRatio"}}]}},{"kind":"Field","name":{"kind":"Name","value":"build"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"number"},"value":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<ReviewButton_RepositoryFragment, unknown>;
 export const BuildHeader_RepositoryFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildHeader_Repository"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Repository"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildStatusChip_Repository"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"ReviewButton_Repository"}}]}}]} as unknown as DocumentNode<BuildHeader_RepositoryFragment, unknown>;
-export const BuildInfos_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildInfos_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"total"},"name":{"kind":"Name","value":"screenshotCount"}}]}},{"kind":"Field","name":{"kind":"Name","value":"baseScreenshotBucket"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commit"}}]}},{"kind":"Field","name":{"kind":"Name","value":"compareScreenshotBucket"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commit"}}]}}]}}]} as unknown as DocumentNode<BuildInfos_BuildFragment, unknown>;
-export const BuildSidebar_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildSidebar_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildInfos_Build"}},{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"total"},"name":{"kind":"Name","value":"screenshotCount"}}]}}]}}]} as unknown as DocumentNode<BuildSidebar_BuildFragment, unknown>;
-export const BuildDetail_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildDetail_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"total"},"name":{"kind":"Name","value":"screenshotCount"}}]}},{"kind":"Field","name":{"kind":"Name","value":"baseScreenshotBucket"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"branch"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"compareScreenshotBucket"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"branch"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<BuildDetail_BuildFragment, unknown>;
-export const BuildWorkspace_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildWorkspace_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildSidebar_Build"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildStatusDescription_Build"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildDetail_Build"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"total"},"name":{"kind":"Name","value":"screenshotCount"}},{"kind":"Field","alias":{"kind":"Name","value":"failure"},"name":{"kind":"Name","value":"failedScreenshotCount"}},{"kind":"Field","alias":{"kind":"Name","value":"changed"},"name":{"kind":"Name","value":"updatedScreenshotCount"}},{"kind":"Field","alias":{"kind":"Name","value":"added"},"name":{"kind":"Name","value":"addedScreenshotCount"}},{"kind":"Field","alias":{"kind":"Name","value":"removed"},"name":{"kind":"Name","value":"removedScreenshotCount"}},{"kind":"Field","alias":{"kind":"Name","value":"unchanged"},"name":{"kind":"Name","value":"stableScreenshotCount"}}]}}]}}]} as unknown as DocumentNode<BuildWorkspace_BuildFragment, unknown>;
+export const BuildInfos_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildInfos_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}}]}},{"kind":"Field","name":{"kind":"Name","value":"baseScreenshotBucket"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commit"}}]}},{"kind":"Field","name":{"kind":"Name","value":"compareScreenshotBucket"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commit"}}]}}]}}]} as unknown as DocumentNode<BuildInfos_BuildFragment, unknown>;
+export const BuildSidebar_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildSidebar_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildInfos_Build"}},{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}}]}}]}}]} as unknown as DocumentNode<BuildSidebar_BuildFragment, unknown>;
+export const BuildDetail_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildDetail_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}}]}},{"kind":"Field","name":{"kind":"Name","value":"baseScreenshotBucket"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"branch"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"compareScreenshotBucket"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"branch"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<BuildDetail_BuildFragment, unknown>;
+export const BuildWorkspace_BuildFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildWorkspace_Build"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Build"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildSidebar_Build"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildStatusDescription_Build"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildDetail_Build"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"failure"}},{"kind":"Field","name":{"kind":"Name","value":"changed"}},{"kind":"Field","name":{"kind":"Name","value":"added"}},{"kind":"Field","name":{"kind":"Name","value":"removed"}},{"kind":"Field","name":{"kind":"Name","value":"unchanged"}}]}}]}}]} as unknown as DocumentNode<BuildWorkspace_BuildFragment, unknown>;
 export const BuildWorkspace_RepositoryFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BuildWorkspace_Repository"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Repository"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildStatusDescription_Repository"}}]}}]} as unknown as DocumentNode<BuildWorkspace_RepositoryFragment, unknown>;
 export const OvercapacityBanner_OwnerFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"OvercapacityBanner_Owner"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Owner"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"plan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"consumptionRatio"}}]}}]} as unknown as DocumentNode<OvercapacityBanner_OwnerFragment, unknown>;
-export const UserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"User"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"login"}},{"kind":"Field","name":{"kind":"Name","value":"privateSync"}},{"kind":"Field","name":{"kind":"Name","value":"latestSynchronization"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"jobStatus"}}]}},{"kind":"Field","name":{"kind":"Name","value":"installations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"latestSynchronization"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"jobStatus"}}]}}]}}]}}]}}]} as unknown as DocumentNode<UserQuery, UserQueryVariables>;
+export const GettingStarted_RepositoryFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"GettingStarted_repository"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Repository"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"token"}}]}}]} as unknown as DocumentNode<GettingStarted_RepositoryFragment, unknown>;
+export const OwnerBreadcrumb_OwnerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"OwnerBreadcrumb_owner"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"login"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owner"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"login"},"value":{"kind":"Variable","name":{"kind":"Name","value":"login"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"login"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<OwnerBreadcrumb_OwnerQuery, OwnerBreadcrumb_OwnerQueryVariables>;
+export const OwnerBreadcrumbMenu_OwnersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"OwnerBreadcrumbMenu_owners"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owners"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"login"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<OwnerBreadcrumbMenu_OwnersQuery, OwnerBreadcrumbMenu_OwnersQueryVariables>;
+export const RepositoryBreadcrumbMenu_OwnerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"RepositoryBreadcrumbMenu_owner"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"login"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owner"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"login"},"value":{"kind":"Variable","name":{"kind":"Name","value":"login"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"repositories"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"enabled"},"value":{"kind":"BooleanValue","value":true}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<RepositoryBreadcrumbMenu_OwnerQuery, RepositoryBreadcrumbMenu_OwnerQueryVariables>;
 export const SetValidationStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"setValidationStatus"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"buildId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"validationStatus"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ValidationStatus"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"setValidationStatus"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"buildId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"buildId"}}},{"kind":"Argument","name":{"kind":"Name","value":"validationStatus"},"value":{"kind":"Variable","name":{"kind":"Name","value":"validationStatus"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<SetValidationStatusMutation, SetValidationStatusMutationVariables>;
-export const BuildDiffState_RepositoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"BuildDiffState_repository"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"build"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"number"},"value":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"screenshotDiffs"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}},{"kind":"Field","name":{"kind":"Name","value":"baseScreenshot"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}}]}},{"kind":"Field","name":{"kind":"Name","value":"compareScreenshot"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}}]}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<BuildDiffState_RepositoryQuery, BuildDiffState_RepositoryQueryVariables>;
+export const SyncAlert_UserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SyncAlert_user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"login"}},{"kind":"Field","name":{"kind":"Name","value":"latestSynchronization"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"jobStatus"}}]}}]}}]}}]} as unknown as DocumentNode<SyncAlert_UserQuery, SyncAlert_UserQueryVariables>;
+export const BuildDiffState_RepositoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"BuildDiffState_repository"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"build"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"number"},"value":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"screenshotDiffs"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}},{"kind":"Field","name":{"kind":"Name","value":"baseScreenshot"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}}]}},{"kind":"Field","name":{"kind":"Name","value":"compareScreenshot"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}}]}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<BuildDiffState_RepositoryQuery, BuildDiffState_RepositoryQueryVariables>;
 export const BuildQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"BuildQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildHeader_Repository"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildWorkspace_Repository"}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"OvercapacityBanner_Owner"}}]}},{"kind":"Field","name":{"kind":"Name","value":"build"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"number"},"value":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildHeader_Build"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildWorkspace_Build"}}]}}]}}]}},...BuildHeader_RepositoryFragmentDoc.definitions,...BuildStatusChip_RepositoryFragmentDoc.definitions,...BuildStatusDescription_RepositoryFragmentDoc.definitions,...ReviewButton_RepositoryFragmentDoc.definitions,...BuildWorkspace_RepositoryFragmentDoc.definitions,...OvercapacityBanner_OwnerFragmentDoc.definitions,...BuildHeader_BuildFragmentDoc.definitions,...BuildStatusChip_BuildFragmentDoc.definitions,...BuildStatusDescription_BuildFragmentDoc.definitions,...BuildWorkspace_BuildFragmentDoc.definitions,...BuildSidebar_BuildFragmentDoc.definitions,...BuildInfos_BuildFragmentDoc.definitions,...BuildDetail_BuildFragmentDoc.definitions]} as unknown as DocumentNode<BuildQueryQuery, BuildQueryQueryVariables>;
+export const Home_OwnersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Home_owners"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owners"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"repositories"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"RepositoryList_repository"}}]}}]}}]}},...RepositoryList_RepositoryFragmentDoc.definitions]} as unknown as DocumentNode<Home_OwnersQuery, Home_OwnersQueryVariables>;
+export const OwnerSettings_OwnerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"OwnerSettings_owner"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"login"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owner"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"login"},"value":{"kind":"Variable","name":{"kind":"Name","value":"login"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"screenshotsLimitPerMonth"}},{"kind":"Field","name":{"kind":"Name","value":"plan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"screenshotsLimitPerMonth"}}]}},{"kind":"Field","name":{"kind":"Name","value":"repositories"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"private"}},{"kind":"Field","name":{"kind":"Name","value":"currentMonthUsedScreenshots"}}]}}]}}]}}]} as unknown as DocumentNode<OwnerSettings_OwnerQuery, OwnerSettings_OwnerQueryVariables>;
+export const OwnerRepositories_OwnerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"OwnerRepositories_owner"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"login"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owner"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"login"},"value":{"kind":"Variable","name":{"kind":"Name","value":"login"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"repositories"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"RepositoryList_repository"}}]}}]}}]}},...RepositoryList_RepositoryFragmentDoc.definitions]} as unknown as DocumentNode<OwnerRepositories_OwnerQuery, OwnerRepositories_OwnerQueryVariables>;
+export const Owner_OwnerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Owner_owner"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owner"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"login"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissions"}}]}}]}}]} as unknown as DocumentNode<Owner_OwnerQuery, Owner_OwnerQueryVariables>;
+export const RepositoryBuilds_RepositoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"RepositoryBuilds_repository"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissions"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"GettingStarted_repository"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildStatusChip_Repository"}}]}}]}},...GettingStarted_RepositoryFragmentDoc.definitions,...BuildStatusChip_RepositoryFragmentDoc.definitions,...BuildStatusDescription_RepositoryFragmentDoc.definitions]} as unknown as DocumentNode<RepositoryBuilds_RepositoryQuery, RepositoryBuilds_RepositoryQueryVariables>;
+export const RepositoryBuilds_Repository_BuildsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"RepositoryBuilds_repository_builds"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"builds"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"number"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"compareScreenshotBucket"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"branch"}},{"kind":"Field","name":{"kind":"Name","value":"commit"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"failure"}},{"kind":"Field","name":{"kind":"Name","value":"changed"}},{"kind":"Field","name":{"kind":"Name","value":"added"}},{"kind":"Field","name":{"kind":"Name","value":"removed"}},{"kind":"Field","name":{"kind":"Name","value":"unchanged"}}]}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildStatusChip_Build"}}]}}]}}]}}]}},...BuildStatusChip_BuildFragmentDoc.definitions,...BuildStatusDescription_BuildFragmentDoc.definitions]} as unknown as DocumentNode<RepositoryBuilds_Repository_BuildsQuery, RepositoryBuilds_Repository_BuildsQueryVariables>;
+export const RepositorySettings_RepositoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"RepositorySettings_repository"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"token"}},{"kind":"Field","name":{"kind":"Name","value":"baselineBranch"}},{"kind":"Field","name":{"kind":"Name","value":"defaultBranch"}}]}}]}}]} as unknown as DocumentNode<RepositorySettings_RepositoryQuery, RepositorySettings_RepositoryQueryVariables>;
+export const RepositorySettings_UpdateReferenceBranchDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RepositorySettings_updateReferenceBranch"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"baselineBranch"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateReferenceBranch"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"repositoryId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryId"}}},{"kind":"Argument","name":{"kind":"Name","value":"baselineBranch"},"value":{"kind":"Variable","name":{"kind":"Name","value":"baselineBranch"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"baselineBranch"}},{"kind":"Field","name":{"kind":"Name","value":"defaultBranch"}}]}}]}}]} as unknown as DocumentNode<RepositorySettings_UpdateReferenceBranchMutation, RepositorySettings_UpdateReferenceBranchMutationVariables>;
+export const Repository_RepositoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Repository_repository"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissions"}}]}}]}}]} as unknown as DocumentNode<Repository_RepositoryQuery, Repository_RepositoryQueryVariables>;

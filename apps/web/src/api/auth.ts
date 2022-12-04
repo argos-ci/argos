@@ -77,7 +77,7 @@ router.post(
 
     const user = await registerUserFromGitHub(result.data.access_token);
     res.send({
-      jwt: createJWT(user.id),
+      jwt: createJWT(user),
     });
   })
 );

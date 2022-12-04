@@ -13,29 +13,25 @@ import type { User } from "@argos-ci/database/models";
 import type { Context } from "../context.js";
 import { APIError } from "../util.js";
 import { getOwner } from "./Owner.js";
+import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type Repository {
+  type Repository implements Node {
     id: ID!
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    githubId: ID!
     name: String!
     enabled: Boolean!
     token: ID
-    organizationId: ID!
     "Builds associated to the repository"
-    builds(first: Int!, after: Int!): BuildResult!
+    builds(first: Int!, after: Int!): BuildConnection!
     "A single build linked to the repository"
     build(number: Int!): Build
     "Determine if the current user has write access to the repository"
     permissions: [Permission!]!
     "Owner of the repository"
-    owner: Owner
-    sampleBuildId: ID
+    owner: Owner!
     "Github default branch"
     defaultBranch: String
     "Override branch name"
@@ -123,8 +119,18 @@ export const resolvers = {
       if (!hasWritePermission) return null;
       return repository.token;
     },
-    owner: async (repository: Repository) => {
-      return repository.$relatedOwner();
+    owner: async (
+      repository: Repository,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
+      if (repository.userId) {
+        return ctx.loaders.User.load(repository.userId);
+      }
+      if (repository.organizationId) {
+        return ctx.loaders.Organization.load(repository.organizationId);
+      }
+      throw new Error(`Invalid repository owner: ${repository.id}`);
     },
     permissions: async (
       repository: Repository,
@@ -139,35 +145,22 @@ export const resolvers = {
     },
     builds: async (
       repository: Repository,
-      args: { first: number; after: number }
+      { first, after }: { first: number; after: number }
     ) => {
       const result = await Build.query()
         .where({ repositoryId: repository.id })
         .whereNot({ number: 0 })
         .orderBy("createdAt", "desc")
         .orderBy("number", "desc")
-        .range(args.after, args.after + args.first - 1);
+        .range(after, after + first - 1);
 
-      const hasNextPage = args.after + args.first < result.total;
-
-      return {
-        pageInfo: {
-          totalCount: result.total,
-          hasNextPage,
-          endCursor: hasNextPage ? args.after + args.first : result.total,
-        },
-        edges: result.results,
-      };
+      return paginateResult({ result, first, after });
     },
     build: async (repository: Repository, args: { number: number }) => {
       return Build.query().findOne({
         repositoryId: repository.id,
         number: args.number,
       });
-    },
-    // @TODO remove from client and remove this resolver
-    sampleBuildId: () => {
-      return null;
     },
     currentMonthUsedScreenshots: async (repository: Repository) => {
       const account = await Account.getAccount(repository);

@@ -61,6 +61,7 @@ export class Organization extends Model {
   static async checkWritePermission(owner: Organization, user: User) {
     if (!user) return false;
     const userOrganizationRight = await UserOrganizationRight.query()
+      .select("id")
       .where({ userId: user.id, organizationId: owner.id })
       .first();
     return Boolean(userOrganizationRight);

@@ -112,6 +112,26 @@ npm run procfile
 npm run dev
 ```
 
+## Run E2E locally
+
+Install playwright:
+
+```
+npx playwright install --with-deps
+```
+
+Run E2E setup:
+
+```
+npm run e2e:setup
+```
+
+Run E2E in debug mode:
+
+```
+npm run e2e:start -- --debug
+```
+
 ### Jobs
 
 ### Migrations

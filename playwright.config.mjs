@@ -108,7 +108,7 @@ const config = {
     command: "node apps/processes/dist/bin/web.js",
     port: 4001,
     timeout: 10 * 1000,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
 };
 

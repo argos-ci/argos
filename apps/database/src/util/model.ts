@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Model as ObjectionModel } from "objection";
 import type { ModelOptions, QueryContext, TransactionOrKnex } from "objection";
 

@@ -5,7 +5,7 @@ import type { Installation } from "@argos-ci/database/models";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type Installation {
+  type Installation implements Node {
     id: ID!
     latestSynchronization: Synchronization
   }

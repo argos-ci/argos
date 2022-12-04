@@ -5,10 +5,12 @@ import {
   Build,
   File,
   Model,
+  Organization,
   Repository,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
+  User,
 } from "@argos-ci/database/models";
 
 const createModelLoader = <TModelClass extends ModelClass<Model>>(
@@ -54,6 +56,8 @@ const createBuildAggregatedStatusLoader = () =>
   });
 
 export const createLoaders = () => ({
+  User: createModelLoader(User),
+  Organization: createModelLoader(Organization),
   Screenshot: createModelLoader(Screenshot),
   ScreenshotBucket: createModelLoader(ScreenshotBucket),
   ScreenshotDiff: createModelLoader(ScreenshotDiff),

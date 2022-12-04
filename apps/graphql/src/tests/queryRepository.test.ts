@@ -69,7 +69,6 @@ describe("GraphQL", () => {
               ) {
                 pageInfo {
                   totalCount
-                  endCursor
                   hasNextPage
                 }
                 edges {
@@ -87,7 +86,6 @@ describe("GraphQL", () => {
       const { builds } = res.body.data.repository;
       expect(builds).toEqual({
         pageInfo: {
-          endCursor: 2,
           hasNextPage: false,
           totalCount: 2,
         },

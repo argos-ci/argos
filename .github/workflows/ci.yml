@@ -117,14 +117,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
-
       - name: Setup
         run: npm run setup
 
       - name: Truncate and seed database
-        run: npm run -w @argos-ci/database db:truncate && npm run -w @argos-ci/database db:seed
+        run: npm run e2e:setup
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps

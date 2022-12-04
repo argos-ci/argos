@@ -8,7 +8,7 @@ import type { Context } from "../context.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type User implements Owner {
+  type User implements Node & Owner {
     id: ID!
     email: String
     login: String!
@@ -16,7 +16,6 @@ export const typeDefs = gql`
     privateSync: Boolean!
     installations: [Installation!]!
     latestSynchronization: Synchronization
-    type: OwnerType!
     repositoriesNumber: Int!
     repositories(enabled: Boolean): [Repository!]!
     consumptionRatio: Float

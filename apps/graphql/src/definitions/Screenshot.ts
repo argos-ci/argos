@@ -9,11 +9,8 @@ import type { Context } from "../context.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type Screenshot {
+  type Screenshot implements Node {
     id: ID!
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    name: String!
     url: String!
     width: Int
     height: Int

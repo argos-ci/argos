@@ -6,26 +6,23 @@ const { gql } = gqlTag;
 export const typeDefs = gql`
   type PageInfo {
     totalCount: Int!
-    endCursor: Int!
     hasNextPage: Boolean!
   }
 `;
 
 export const paginateResult = ({
   result,
-  offset,
-  limit,
+  after,
+  first,
 }: {
   result: { total: number; results: any[] };
-  offset: number;
-  limit: number;
+  after: number;
+  first: number;
 }) => {
-  const hasNextPage = offset + limit < result.total;
   return {
     pageInfo: {
       totalCount: result.total,
-      hasNextPage,
-      endCursor: hasNextPage ? offset + limit : result.total,
+      hasNextPage: after + first < result.total,
     },
     edges: result.results,
   };

@@ -1,74 +1,81 @@
-import { ColorModeProvider } from "@xstyled/styled-components";
 import { Helmet } from "react-helmet";
-import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from "react-router-dom";
 
-import { GlobalStyle, ThemeInitializer } from "./components";
+import { Layout, Main } from "@/containers/Layout";
+
 import { ApolloInitializer } from "./containers/Apollo";
 import { AuthProvider } from "./containers/Auth";
-import { Layout } from "./containers/Layout";
-import { ScrollToTop } from "./containers/Router";
-import { UserInitializer } from "./containers/User";
 import { AuthCallback } from "./pages/AuthCallback";
+import { Build } from "./pages/Build";
 import { Home } from "./pages/Home";
-import { ModernBuild } from "./pages/ModernBuild";
-import { NotFoundWithContainer } from "./pages/NotFound";
+import { NotFound } from "./pages/NotFound";
+import { Owner } from "./pages/Owner";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
 import { Repository } from "./pages/Repository";
+import { RepositoryBuilds } from "./pages/Repository/RepositoryBuilds";
+import { RepositorySettings } from "./pages/Repository/RepositorySettings";
 
 export const App = () => {
   return (
     <>
-      <Helmet
-        titleTemplate="%s • Argos"
-        defaultTitle="Argos - Automated visual testing"
-      />
-
+      <Helmet defaultTitle="Argos" />
       <BrowserRouter>
-        <ScrollToTop />
         <AuthProvider>
           <ApolloInitializer>
-            <UserInitializer>
-              <Routes>
+            <Routes>
+              <Route path="/auth/github/callback" element={<AuthCallback />} />
+              <Route
+                path="/:ownerLogin/:repositoryName/builds/:buildNumber"
+                element={<Build />}
+              />
+              <Route
+                path="/:ownerLogin/:repositoryName/builds/:buildNumber/:diffId"
+                element={<Build />}
+              />
+              <Route
+                path="/"
+                element={
+                  <Layout>
+                    <Outlet />
+                  </Layout>
+                }
+              >
                 <Route
-                  path="/auth/github/callback"
-                  element={<AuthCallback />}
-                />
-                <Route
-                  path="/:ownerLogin/:repositoryName/builds/:buildNumber"
-                  element={<ModernBuild />}
-                />
-                <Route
-                  path="/:ownerLogin/:repositoryName/builds/:buildNumber/:diffId"
-                  element={<ModernBuild />}
-                />
-                <Route
-                  path="/"
+                  index
                   element={
-                    <ThemeInitializer>
-                      <ColorModeProvider>
-                        <GlobalStyle />
-                        <Layout>
-                          <Outlet />
-                        </Layout>
-                      </ColorModeProvider>
-                    </ThemeInitializer>
+                    <Main>
+                      <Helmet>
+                        <title>All my repositories</title>
+                      </Helmet>
+                      <Home />
+                    </Main>
                   }
+                />
+                <Route
+                  path=":ownerLogin/:repositoryName"
+                  element={<Repository />}
                 >
-                  <Route index element={<Home />} />
+                  <Route path="" element={<RepositoryBuilds />} />
                   <Route
-                    path="/:ownerLogin/settings/*"
-                    element={<OwnerSettings />}
+                    path="builds"
+                    element={<Navigate to=".." replace={true} />}
                   />
-                  <Route
-                    path="/:ownerLogin/:repositoryName/*"
-                    element={<Repository />}
-                  />
-                  <Route path="/:ownerLogin" element={<OwnerRepositories />} />
-                  <Route path="*" element={<NotFoundWithContainer />} />
+                  <Route path="settings" element={<RepositorySettings />} />
                 </Route>
-              </Routes>
-            </UserInitializer>
+                <Route path=":ownerLogin" element={<Owner />}>
+                  <Route path="" element={<OwnerRepositories />} />
+                  <Route path="settings" element={<OwnerSettings />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
           </ApolloInitializer>
         </AuthProvider>
       </BrowserRouter>

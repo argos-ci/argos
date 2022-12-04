@@ -1,6 +1,10 @@
 import { ValidationError } from "objection";
-import type { Pojo, QueryContext, TransactionOrKnex } from "objection";
-import type { RelationMappings } from "objection";
+import type {
+  Pojo,
+  QueryContext,
+  RelationMappings,
+  TransactionOrKnex,
+} from "objection";
 
 import config from "@argos-ci/config";
 
