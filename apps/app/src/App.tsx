@@ -17,17 +17,13 @@ import { Owner } from "./pages/Owner";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
 import { Repository } from "./pages/Repository";
+import { RepositoryBuilds } from "./pages/Repository/RepositoryBuilds";
 import { RepositorySettings } from "./pages/Repository/RepositorySettings";
-import { Repository as OldRepository } from "./pages/Repository/index-old";
 
 export const App = () => {
   return (
     <>
-      <Helmet
-        titleTemplate="%s • Argos"
-        defaultTitle="Argos - Automated visual testing"
-      />
-
+      <Helmet defaultTitle="Argos" />
       <BrowserRouter>
         <ScrollToTop />
         <AuthProvider>
@@ -63,6 +59,9 @@ export const App = () => {
                     index
                     element={
                       <Main>
+                        <Helmet>
+                          <title>All my repositories</title>
+                        </Helmet>
                         <Home />
                       </Main>
                     }
@@ -71,17 +70,13 @@ export const App = () => {
                     path=":ownerLogin/:repositoryName"
                     element={<Repository />}
                   >
-                    {/* <Route path="" element={<RepositoryBuilds />} /> */}
+                    <Route path="" element={<RepositoryBuilds />} />
                     <Route path="settings" element={<RepositorySettings />} />
                   </Route>
                   <Route path=":ownerLogin" element={<Owner />}>
                     <Route path="" element={<OwnerRepositories />} />
                     <Route path="settings" element={<OwnerSettings />} />
                   </Route>
-                  <Route
-                    path="/old/:ownerLogin/:repositoryName/*"
-                    element={<OldRepository />}
-                  />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>

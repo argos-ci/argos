@@ -4,24 +4,33 @@ import { memo } from "react";
 
 import type { BuildStats } from "@/modern/containers/Build";
 import { HotkeyTooltip } from "@/modern/ui/HotkeyTooltip";
+import { MagicTooltip } from "@/modern/ui/Tooltip";
 
-import { GROUPS, getGroupColor, getGroupIcon } from "./BuildDiffGroup";
+import {
+  GROUPS,
+  getGroupColor,
+  getGroupIcon,
+  getGroupLabel,
+} from "./BuildDiffGroup";
 import type { DiffGroup } from "./BuildDiffState";
 import { HotkeyName, useBuildHotkey } from "./BuildHotkeys";
 
 type StatCountColor = "danger" | "warning" | "success" | "neutral";
 
-const getStatCountColorClassName = (color: StatCountColor) => {
+const getStatCountColorClassName = (
+  color: StatCountColor,
+  interactive: boolean
+) => {
   switch (color) {
     case "danger":
-      return "text-danger-600 hover:text-danger-400";
+      return clsx("text-danger-600", interactive && "hover:text-danger-400");
     case "warning":
-      return "text-warning-600 hover:text-warning-400";
+      return clsx("text-warning-600", interactive && "hover:text-warning-400");
     case "success":
-      return "text-success-600 hover:text-success-400";
+      return clsx("text-success-600", interactive && "hover:text-success-400");
     case "neutral":
     default:
-      return "text-neutral-400 hover:text-neutral-200";
+      return clsx("text-neutral-400", interactive && "hover:text-neutral-200");
   }
 };
 
@@ -42,7 +51,7 @@ const getStatHotkeyName = (group: DiffGroup["name"]): HotkeyName => {
   }
 };
 
-interface StatCountProps {
+interface InteractiveStatCountProps {
   icon: React.ReactNode;
   count: number;
   color: StatCountColor;
@@ -50,14 +59,14 @@ interface StatCountProps {
   hotkeyName: HotkeyName;
 }
 
-const StatCount = ({
+const InteractiveStatCount = ({
   icon,
   count,
   color,
   onActive,
   hotkeyName,
-}: StatCountProps) => {
-  const colorClassName = getStatCountColorClassName(color);
+}: InteractiveStatCountProps) => {
+  const colorClassName = getStatCountColorClassName(color, true);
   const hotkey = useBuildHotkey(hotkeyName, onActive);
   return (
     <HotkeyTooltip keys={hotkey.displayKeys} description={hotkey.description}>
@@ -77,19 +86,55 @@ const StatCount = ({
   );
 };
 
+interface StatCountProps {
+  icon: React.ReactNode;
+  count: number;
+  color: StatCountColor;
+  tooltip: string;
+}
+
+const StatCount = ({ icon, count, color, tooltip }: StatCountProps) => {
+  const colorClassName = getStatCountColorClassName(color, false);
+  return (
+    <MagicTooltip tooltip={tooltip}>
+      <div
+        className={clsx(
+          colorClassName,
+          "flex w-16 items-center gap-1 tabular-nums"
+        )}
+      >
+        <span className="[&>*]:h-4 [&>*]:w-4">{icon}</span>
+        <span className="text-xs">{count}</span>
+      </div>
+    </MagicTooltip>
+  );
+};
+
 export interface BuildStatsIndicatorProps {
   stats: BuildStats;
-  onClickGroup: (group: DiffGroup["name"]) => void;
+  onClickGroup?: (group: DiffGroup["name"]) => void;
+  className?: string;
 }
 
 export const BuildStatsIndicator = memo(
-  ({ stats, onClickGroup }: BuildStatsIndicatorProps) => {
+  ({ stats, onClickGroup, className }: BuildStatsIndicatorProps) => {
     return (
-      <div className="flex flex-shrink-0 items-center border-b border-b-border px-2">
+      <div className={clsx(className, "flex items-center")}>
         {GROUPS.map((group) => {
           const count = stats[group];
+          if (!onClickGroup) {
+            return (
+              <StatCount
+                key={group}
+                icon={getGroupIcon(group)}
+                count={count}
+                color={getGroupColor(group)}
+                tooltip={getGroupLabel(group)}
+              />
+            );
+          }
           return (
-            <StatCount
+            <InteractiveStatCount
               key={group}
               icon={getGroupIcon(group)}
               count={count}

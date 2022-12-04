@@ -16,6 +16,7 @@ import {
   Card,
   CardBody,
   CardFooter,
+  CardParagraph,
   CardSeparator,
   CardTitle,
 } from "@/modern/ui/Card";
@@ -81,14 +82,14 @@ const PlanCard = ({
     <Card>
       <CardBody>
         <CardTitle>Plan</CardTitle>
-        <p className="my-6">
+        <CardParagraph>
           Your organization account is on the{" "}
           <strong className="capitalize">{plan.name} plan</strong>.
           {free && " Free of charge."}{" "}
           <Anchor href="https://github.com/marketplace/argos-ci" external>
             Learn more
           </Anchor>
-        </p>
+        </CardParagraph>
         <CardSeparator />
         <div className="my-6">
           <div className="font-medium">
@@ -170,10 +171,10 @@ const PermissionCard = () => {
     <Card>
       <CardBody>
         <CardTitle>Permissions</CardTitle>
-        <p>
+        <CardParagraph>
           Argos uses OAuth GitHub App to manage your repositories. You can
           revoke access to your repositories at any time.
-        </p>
+        </CardParagraph>
       </CardBody>
       <CardFooter>
         <Anchor href={config.get("github.appUrl")} external>

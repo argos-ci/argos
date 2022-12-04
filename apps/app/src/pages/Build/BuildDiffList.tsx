@@ -445,7 +445,13 @@ const InternalBuildDiffList = memo(() => {
 
   return (
     <>
-      {stats && <BuildStatsIndicator stats={stats} onClickGroup={openGroup} />}
+      {stats && (
+        <BuildStatsIndicator
+          className="flex flex-shrink-0 items-center border-b border-b-border px-2"
+          stats={stats}
+          onClickGroup={openGroup}
+        />
+      )}
       <div
         ref={containerRef}
         className={clsx(

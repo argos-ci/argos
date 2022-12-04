@@ -30,6 +30,13 @@ export const CardTitle = (props: HTMLProps<HTMLDivElement>) => {
   return <h2 className="mb-4 text-xl font-semibold" {...props} />;
 };
 
+export const CardParagraph = ({
+  className,
+  ...props
+}: HTMLProps<HTMLDivElement>) => {
+  return <p className={clsx(className, "my-4 last-of-type:mb-0")} {...props} />;
+};
+
 export const CardSeparator = (props: HTMLProps<HTMLDivElement>) => {
   return (
     <div

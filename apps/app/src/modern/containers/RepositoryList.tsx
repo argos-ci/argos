@@ -66,12 +66,7 @@ const RepositoryRow = ({ repository }: { repository: Repository }) => {
           </span>
         </FakeRouterLink>
         <span className="text-on-light">/</span>
-        <FakeRouterLink
-          to={`/${repository.owner.login}/${repository.name}`}
-          className="transition hover:text-on"
-        >
-          {repository.name}
-        </FakeRouterLink>
+        <span className="transition hover:text-on">{repository.name}</span>
       </div>
       <div className="">
         <Badge>

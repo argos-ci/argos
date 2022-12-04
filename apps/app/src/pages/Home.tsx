@@ -55,7 +55,7 @@ function Owners(props: { owners: OwnersQueryDocument["owners"] }) {
 
   return (
     <Container>
-      <RepositoryList repositories={repositories} />
+      <RepositoryList repositories={repositories} hasWritePermission />
     </Container>
   );
 }

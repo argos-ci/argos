@@ -8,13 +8,22 @@ import { Query } from "@/containers/Apollo";
 import { DocumentType, graphql } from "@/gql";
 import { SettingsLayout } from "@/modern/containers/Layout";
 import { Button } from "@/modern/ui/Button";
-import { Card, CardBody, CardFooter, CardTitle } from "@/modern/ui/Card";
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardParagraph,
+  CardTitle,
+} from "@/modern/ui/Card";
 import { Code } from "@/modern/ui/Code";
 import { Container } from "@/modern/ui/Container";
 import { Anchor } from "@/modern/ui/Link";
 import { PageLoader } from "@/modern/ui/PageLoader";
+import { Pre } from "@/modern/ui/Pre";
 import { Heading } from "@/modern/ui/Typography";
 import { NotFound } from "@/pages/NotFound";
+
+import { useRepositoryContext } from ".";
 
 const RepositoryQuery = graphql(`
   query RepositorySettings_repository(
@@ -31,7 +40,7 @@ const RepositoryQuery = graphql(`
 `);
 
 const UpdateReferenceBranchMutation = graphql(`
-  mutation updateReferenceBranch(
+  mutation RepositorySettings_updateReferenceBranch(
     $repositoryId: String!
     $baselineBranch: String
   ) {
@@ -54,18 +63,18 @@ const TokenCard = ({ repository }: { repository: Repository }) => {
     <Card>
       <CardBody>
         <CardTitle>Upload token</CardTitle>
-        <p className="my-4">
+        <CardParagraph>
           Use this <Code>ARGOS_TOKEN</Code> to authenticate your repository when
           you send screenshots to Argos.
-        </p>
-        <pre className="whitespace-pre-wrap rounded bg-slate-900 p-4">
+        </CardParagraph>
+        <Pre>
           <code>ARGOS_TOKEN={repository.token}</code>
-        </pre>
-        <p className="mt-4">
+        </Pre>
+        <CardParagraph>
           <strong>
             This token should be kept secret. Do not expose it publicly.
           </strong>
-        </p>
+        </CardParagraph>
       </CardBody>
       <CardFooter>
         Read{" "}
@@ -113,9 +122,9 @@ const ReferenceBranchCard = ({ repository }: { repository: Repository }) => {
       <form onSubmit={handleSubmit} aria-labelledby="reference-branch">
         <CardBody>
           <CardTitle id="reference-branch">Reference branch</CardTitle>
-          <p>
+          <CardParagraph>
             Argos uses this branch as the reference for screenshots comparison.
-          </p>
+          </CardParagraph>
           <div className="my-4 flex gap-2">
             <input
               type="checkbox"
@@ -177,8 +186,15 @@ const ReferenceBranchCard = ({ repository }: { repository: Repository }) => {
 
 export const RepositorySettings = () => {
   const { ownerLogin, repositoryName } = useParams();
+  const { hasWritePermission } = useRepositoryContext();
 
-  if (!ownerLogin || !repositoryName) return null;
+  if (!ownerLogin || !repositoryName) {
+    return <NotFound />;
+  }
+
+  if (!hasWritePermission) {
+    return <NotFound />;
+  }
 
   return (
     <Container>
@@ -198,10 +214,8 @@ export const RepositorySettings = () => {
 
           return (
             <SettingsLayout>
-              <SettingsLayout>
-                <TokenCard repository={repository} />
-                <ReferenceBranchCard repository={repository} />
-              </SettingsLayout>
+              <TokenCard repository={repository} />
+              <ReferenceBranchCard repository={repository} />
             </SettingsLayout>
           );
         }}

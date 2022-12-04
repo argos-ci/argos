@@ -1,4 +1,6 @@
-import { forwardRef } from "react";
+import { clsx } from "clsx";
+import { HTMLProps, forwardRef } from "react";
+import { useMatch } from "react-router-dom";
 
 import { SyncAlert } from "@/containers/SyncAlert";
 import { Catch } from "@/modern/ui/Catch";
@@ -17,8 +19,9 @@ export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
 );
 
 export const Layout = (props: { children: React.ReactNode }) => {
+  const fullSize = useMatch("/:ownerLogin/:repositoryName");
   return (
-    <div className="flex min-h-full flex-col">
+    <div className={clsx(fullSize && "h-screen", "flex min-h-full flex-col")}>
       <header className="flex-shrink-0">
         <SyncAlert />
         <Navbar />
@@ -28,6 +31,14 @@ export const Layout = (props: { children: React.ReactNode }) => {
   );
 };
 
-export const SettingsLayout = (props: { children: React.ReactNode }) => {
-  return <div className="flex max-w-4xl flex-col gap-6">{props.children}</div>;
+export const SettingsLayout = ({
+  className,
+  ...props
+}: HTMLProps<HTMLDivElement>) => {
+  return (
+    <div
+      className={clsx(className, "flex max-w-4xl flex-col gap-6")}
+      {...props}
+    />
+  );
 };

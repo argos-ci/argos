@@ -1,5 +1,5 @@
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Chip } from "@/modern/ui/Chip";
+import { Chip, ChipProps } from "@/modern/ui/Chip";
 import { MagicTooltip } from "@/modern/ui/Tooltip";
 
 import { getBuildColor, getBuildIcon, getBuildLabel } from "./Build";
@@ -22,6 +22,7 @@ export const RepositoryFragment = graphql(`
 export const BuildStatusChip = (props: {
   build: FragmentType<typeof BuildFragment>;
   repository: FragmentType<typeof RepositoryFragment>;
+  scale?: ChipProps["scale"];
 }) => {
   const build = useFragment(BuildFragment, props.build);
   const repository = useFragment(RepositoryFragment, props.repository);
@@ -33,6 +34,7 @@ export const BuildStatusChip = (props: {
       <Chip
         icon={getBuildIcon(build.type, build.status)}
         color={getBuildColor(build.type, build.status)}
+        scale={props.scale}
       >
         {getBuildLabel(build.type, build.status)}
       </Chip>
