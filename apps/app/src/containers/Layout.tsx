@@ -11,7 +11,10 @@ import { Navbar } from "./Navbar";
 export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
   (props: { children: React.ReactNode }, ref) => {
     return (
-      <main ref={ref} className="flex-1 border-t border-t-border py-6">
+      <main
+        ref={ref}
+        className="flex min-h-0 flex-1 flex-col border-t border-t-border py-6"
+      >
         <Catch fallback={<ErrorPage />}>{props.children}</Catch>
       </main>
     );

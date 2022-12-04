@@ -88,13 +88,11 @@ const BuildRow = memo(
         to={`/${ownerLogin}/${repositoryName}/builds/${build.number}`}
         className="flex items-center gap-4 border-b border-b-border py-2 px-2 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
       >
-        <div className="w-8 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums text-on-light">
+        <div className="w-[7ch] overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-on-light">
           <span>#{build.number}</span>
         </div>
         <div className="w-20 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums text-on-light lg:w-40">
-          {build.name !== "default" && (
-            <span className="ml-1 text-xs">{build.name}</span>
-          )}
+          {build.name}
         </div>
         <div className="w-48">
           <BuildStatusChip scale="sm" build={build} repository={repository} />
@@ -197,7 +195,7 @@ const BuildsList = ({
     count: hasNextPage ? displayCount + 1 : displayCount,
     estimateSize: () => 43,
     getScrollElement: () => parentRef.current,
-    overscan: 2,
+    overscan: 20,
   });
 
   const virtualItems = rowVirtualizer.getVirtualItems();
@@ -215,9 +213,11 @@ const BuildsList = ({
   }, [lastItem, hasNextPage, fetching, fetchNextPage, displayCount]);
 
   return (
-    <div ref={parentRef} className="mt-4 min-h-0 w-full flex-1 overflow-auto">
+    <div
+      ref={parentRef}
+      className="mt-4 max-h-max min-h-0 w-full flex-1 overflow-auto "
+    >
       <div
-        className="rounded border border-border"
         style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}
       >
         {virtualItems.map((virtualRow) => {
