@@ -13,7 +13,6 @@ import { Container } from "@/ui/Container";
 import { Loader, useDelayedVisible } from "@/ui/Loader";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
-import { MagicTooltip } from "@/ui/Tooltip";
 
 import { useRepositoryContext } from ".";
 import { BuildStatsIndicator } from "../Build/BuildStatsIndicator";
@@ -95,40 +94,37 @@ const BuildRow = memo(
           {build.name}
         </div>
         <div className="w-48">
-          <BuildStatusChip scale="sm" build={build} repository={repository} />
+          <BuildStatusChip
+            scale="sm"
+            build={build}
+            repository={repository}
+            tooltip={false}
+          />
         </div>
         <div className="hidden w-64 tabular-nums opacity-80 xl:block">
-          <BuildStatsIndicator stats={build.stats} />
+          <BuildStatsIndicator stats={build.stats} tooltip={false} />
         </div>
         <div className="flex-1" />
         <div className="relative hidden w-28 sm:block lg:w-80">
           {build.compareScreenshotBucket && (
-            <MagicTooltip
-              tooltip={
-                <>
-                  View <strong>{build.compareScreenshotBucket.branch}</strong>{" "}
-                  branch on GitHub
-                </>
-              }
+            <div
+              className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on"
+              onClick={(event) => {
+                event.preventDefault();
+                window
+                  .open(
+                    `https://github.com/${ownerLogin}/${repositoryName}/tree/${build.compareScreenshotBucket.branch}`,
+                    "_blank"
+                  )
+                  ?.focus();
+              }}
+              title={build.compareScreenshotBucket.branch}
             >
-              <div
-                className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on"
-                onClick={(event) => {
-                  event.preventDefault();
-                  window
-                    .open(
-                      `https://github.com/${ownerLogin}/${repositoryName}/tree/${build.compareScreenshotBucket.branch}`,
-                      "_blank"
-                    )
-                    ?.focus();
-                }}
-              >
-                <GitBranchIcon className="flex-shrink-0" />
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                  {build.compareScreenshotBucket.branch}
-                </span>
-              </div>
-            </MagicTooltip>
+              <GitBranchIcon className="flex-shrink-0" />
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                {build.compareScreenshotBucket.branch}
+              </span>
+            </div>
           )}
         </div>
         <div
@@ -146,16 +142,15 @@ const BuildRow = memo(
                 }
               : undefined
           }
+          title={build.compareScreenshotBucket.commit}
         >
           {build.compareScreenshotBucket && (
-            <MagicTooltip tooltip="View commit on GitHub">
-              <div className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on">
-                <GitCommitIcon className="flex-shrink-0" />
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                  {build.compareScreenshotBucket.commit.slice(0, 7)}
-                </span>
-              </div>
-            </MagicTooltip>
+            <div className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on">
+              <GitCommitIcon className="flex-shrink-0" />
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                {build.compareScreenshotBucket.commit.slice(0, 7)}
+              </span>
+            </div>
           )}
         </div>
         <div className="hidden w-28 flex-shrink-0 text-right text-on-light sm:block">
