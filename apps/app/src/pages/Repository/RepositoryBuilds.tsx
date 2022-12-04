@@ -1,7 +1,7 @@
 import { useQuery } from "@apollo/client";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import { Helmet } from "react-helmet";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
@@ -78,85 +78,81 @@ type RepositoryBuildsDocument = DocumentType<typeof RepositoryBuildsQuery>;
 type Builds = NonNullable<RepositoryBuildsDocument["repository"]>["builds"];
 type Build = Builds["edges"][0];
 
-const BuildRow = ({
-  build,
-  repository,
-}: {
-  build: Build;
-  repository: Repository;
-}) => {
-  const { ownerLogin, repositoryName } = useParams();
-  return (
-    <RouterLink
-      to={`/${ownerLogin}/${repositoryName}/builds/${build.number}`}
-      className="flex items-center gap-4 border-b border-b-border py-2 px-2 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
-    >
-      <div className="w-16 tabular-nums text-on-light">#{build.number}</div>
-      <div className="w-48">
-        <BuildStatusChip scale="sm" build={build} repository={repository} />
-      </div>
-      <div className="hidden w-64 tabular-nums opacity-80 xl:block">
-        <BuildStatsIndicator stats={build.stats} />
-      </div>
-      <div className="flex-1" />
-      <div
-        className="hidden w-48 items-center gap-1 text-on-light transition hover:text-on sm:flex lg:w-96"
-        onClick={
-          build.compareScreenshotBucket
-            ? (event) => {
-                event.preventDefault();
-                window
-                  .open(
-                    `https://github.com/${ownerLogin}/${repositoryName}/tree/${build.compareScreenshotBucket.branch}`,
-                    "_blank"
-                  )
-                  ?.focus();
-              }
-            : undefined
-        }
+const BuildRow = memo(
+  ({ build, repository }: { build: Build; repository: Repository }) => {
+    const { ownerLogin, repositoryName } = useParams();
+    return (
+      <RouterLink
+        to={`/${ownerLogin}/${repositoryName}/builds/${build.number}`}
+        className="flex items-center gap-4 border-b border-b-border py-2 px-2 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
       >
-        {build.compareScreenshotBucket && (
-          <>
-            <GitBranchIcon className="flex-shrink-0" />
-            <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-              {build.compareScreenshotBucket.branch}
-            </span>
-          </>
-        )}
-      </div>
-      <div
-        className="hidden w-28 items-center gap-1 text-on-light transition hover:text-on md:flex"
-        onClick={
-          build.compareScreenshotBucket
-            ? (event) => {
-                event.preventDefault();
-                window
-                  .open(
-                    `https://github.com/${ownerLogin}/${repositoryName}/commit/${build.compareScreenshotBucket.commit}`,
-                    "_blank"
-                  )
-                  ?.focus();
-              }
-            : undefined
-        }
-      >
-        {build.compareScreenshotBucket && (
-          <>
-            <GitCommitIcon className="flex-shrink-0" />
-            <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-              {build.compareScreenshotBucket.commit.slice(0, 7)}
-            </span>
-          </>
-        )}
-      </div>
-      <div className="w-24 flex-shrink-0 text-right text-on-light">
-        <Time date={build.createdAt} />
-      </div>
-    </RouterLink>
-  );
-};
+        <div className="w-16 tabular-nums text-on-light">#{build.number}</div>
+        <div className="w-48">
+          <BuildStatusChip scale="sm" build={build} repository={repository} />
+        </div>
+        <div className="hidden w-64 tabular-nums opacity-80 xl:block">
+          <BuildStatsIndicator stats={build.stats} />
+        </div>
+        <div className="flex-1" />
+        <div
+          className="hidden w-48 items-center gap-1 text-on-light transition hover:text-on sm:flex lg:w-96"
+          onClick={
+            build.compareScreenshotBucket
+              ? (event) => {
+                  event.preventDefault();
+                  window
+                    .open(
+                      `https://github.com/${ownerLogin}/${repositoryName}/tree/${build.compareScreenshotBucket.branch}`,
+                      "_blank"
+                    )
+                    ?.focus();
+                }
+              : undefined
+          }
+        >
+          {build.compareScreenshotBucket && (
+            <>
+              <GitBranchIcon className="flex-shrink-0" />
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                {build.compareScreenshotBucket.branch}
+              </span>
+            </>
+          )}
+        </div>
+        <div
+          className="hidden w-28 items-center gap-1 text-on-light transition hover:text-on md:flex"
+          onClick={
+            build.compareScreenshotBucket
+              ? (event) => {
+                  event.preventDefault();
+                  window
+                    .open(
+                      `https://github.com/${ownerLogin}/${repositoryName}/commit/${build.compareScreenshotBucket.commit}`,
+                      "_blank"
+                    )
+                    ?.focus();
+                }
+              : undefined
+          }
+        >
+          {build.compareScreenshotBucket && (
+            <>
+              <GitCommitIcon className="flex-shrink-0" />
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                {build.compareScreenshotBucket.commit.slice(0, 7)}
+              </span>
+            </>
+          )}
+        </div>
+        <div className="w-24 flex-shrink-0 text-right text-on-light">
+          <Time date={build.createdAt} />
+        </div>
+      </RouterLink>
+    );
+  }
+);
 
-const ListLoader = () => {
+const ListLoader = memo(() => {
   const visible = useDelayedVisible(500);
   if (!visible) return null;
   return (
@@ -165,7 +161,7 @@ const ListLoader = () => {
       <span>Fetching builds...</span>
     </>
   );
-};
+});
 
 const BuildsList = ({
   builds,
