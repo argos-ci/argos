@@ -149,7 +149,7 @@ const BuildRow = ({
           </>
         )}
       </div>
-      <div className="flex-shrink-0 text-on-light">
+      <div className="w-24 flex-shrink-0 text-right text-on-light">
         <Time date={build.createdAt} />
       </div>
     </RouterLink>
