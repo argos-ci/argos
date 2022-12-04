@@ -13,6 +13,7 @@ import { Container } from "@/ui/Container";
 import { Loader, useDelayedVisible } from "@/ui/Loader";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
+import { MagicTooltip } from "@/ui/Tooltip";
 
 import { useRepositoryContext } from ".";
 import { BuildStatsIndicator } from "../Build/BuildStatsIndicator";
@@ -94,11 +95,12 @@ const BuildRow = memo(
           <BuildStatsIndicator stats={build.stats} />
         </div>
         <div className="flex-1" />
-        <div
-          className="hidden w-48 items-center gap-1 text-on-light transition hover:text-on sm:flex lg:w-96"
-          onClick={
-            build.compareScreenshotBucket
-              ? (event) => {
+        <div className="hidden w-48 sm:block lg:w-96">
+          {build.compareScreenshotBucket && (
+            <MagicTooltip tooltip="View branch on GitHub">
+              <div
+                className="flex items-center gap-1 text-on-light transition hover:text-on"
+                onClick={(event) => {
                   event.preventDefault();
                   window
                     .open(
@@ -106,21 +108,18 @@ const BuildRow = memo(
                       "_blank"
                     )
                     ?.focus();
-                }
-              : undefined
-          }
-        >
-          {build.compareScreenshotBucket && (
-            <>
-              <GitBranchIcon className="flex-shrink-0" />
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                {build.compareScreenshotBucket.branch}
-              </span>
-            </>
+                }}
+              >
+                <GitBranchIcon className="flex-shrink-0" />
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                  {build.compareScreenshotBucket.branch}
+                </span>
+              </div>
+            </MagicTooltip>
           )}
         </div>
         <div
-          className="hidden w-28 items-center gap-1 text-on-light transition hover:text-on md:flex"
+          className="hidden w-28 md:block"
           onClick={
             build.compareScreenshotBucket
               ? (event) => {
@@ -136,12 +135,14 @@ const BuildRow = memo(
           }
         >
           {build.compareScreenshotBucket && (
-            <>
-              <GitCommitIcon className="flex-shrink-0" />
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                {build.compareScreenshotBucket.commit.slice(0, 7)}
-              </span>
-            </>
+            <MagicTooltip tooltip="View commit on GitHub">
+              <div className="flex items-center gap-1 text-on-light transition hover:text-on">
+                <GitCommitIcon className="flex-shrink-0" />
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                  {build.compareScreenshotBucket.commit.slice(0, 7)}
+                </span>
+              </div>
+            </MagicTooltip>
           )}
         </div>
         <div className="w-24 flex-shrink-0 text-right text-on-light">
