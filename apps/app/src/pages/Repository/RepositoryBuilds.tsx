@@ -55,6 +55,7 @@ const RepositoryBuildsQuery = graphql(`
           id
           number
           createdAt
+          name
           compareScreenshotBucket {
             id
             branch
@@ -87,7 +88,14 @@ const BuildRow = memo(
         to={`/${ownerLogin}/${repositoryName}/builds/${build.number}`}
         className="flex items-center gap-4 border-b border-b-border py-2 px-2 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
       >
-        <div className="w-16 tabular-nums text-on-light">#{build.number}</div>
+        <div className="w-8 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums text-on-light">
+          <span>#{build.number}</span>
+        </div>
+        <div className="w-20 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums text-on-light lg:w-40">
+          {build.name !== "default" && (
+            <span className="ml-1 text-xs">{build.name}</span>
+          )}
+        </div>
         <div className="w-48">
           <BuildStatusChip scale="sm" build={build} repository={repository} />
         </div>
@@ -95,9 +103,16 @@ const BuildRow = memo(
           <BuildStatsIndicator stats={build.stats} />
         </div>
         <div className="flex-1" />
-        <div className="hidden w-48 sm:block lg:w-96">
+        <div className="hidden w-28 sm:block lg:w-80">
           {build.compareScreenshotBucket && (
-            <MagicTooltip tooltip="View branch on GitHub">
+            <MagicTooltip
+              tooltip={
+                <>
+                  View <strong>{build.compareScreenshotBucket.branch}</strong>{" "}
+                  branch on GitHub
+                </>
+              }
+            >
               <div
                 className="flex items-center gap-1 text-on-light transition hover:text-on"
                 onClick={(event) => {
@@ -145,7 +160,7 @@ const BuildRow = memo(
             </MagicTooltip>
           )}
         </div>
-        <div className="w-24 flex-shrink-0 text-right text-on-light">
+        <div className="hidden w-28 flex-shrink-0 text-right text-on-light sm:block">
           <Time date={build.createdAt} />
         </div>
       </RouterLink>
@@ -200,11 +215,9 @@ const BuildsList = ({
   }, [lastItem, hasNextPage, fetching, fetchNextPage, displayCount]);
 
   return (
-    <div
-      ref={parentRef}
-      className="mt-4 min-h-0 w-full flex-1 overflow-auto rounded border border-border"
-    >
+    <div ref={parentRef} className="mt-4 min-h-0 w-full flex-1 overflow-auto">
       <div
+        className="rounded border border-border"
         style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}
       >
         {virtualItems.map((virtualRow) => {
