@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unescaped-entities */
-import Image from "next/future/image";
+import Image from "next/image";
 import { x } from "@xstyled/styled-components";
 import {
   SparklesIcon,
@@ -36,7 +36,6 @@ import mui from "@/images/brands/mui.svg";
 import { Testimonials } from "@/components/Testimonials";
 import { Container } from "@/components/Container";
 import { RotateBackground } from "@/components/RotateBackground";
-import Link from "next/link";
 
 export default function Home() {
   return (
@@ -56,12 +55,16 @@ export default function Home() {
           textAlign="center"
         >
           <x.div display="flex" flexDirection="column" gap={6} flex={1}>
-            <Link href="https://docs.argos-ci.com/puppeteer" passHref>
-              <Chip icon={SparklesIcon} clickable as="a" margin="auto">
-                <x.span fontWeight="500">New · </x.span>
-                Puppeteer support
-              </Chip>
-            </Link>
+            <Chip
+              icon={SparklesIcon}
+              clickable
+              as="a"
+              href="https://docs.argos-ci.com/puppeteer"
+              margin="auto"
+            >
+              <x.span fontWeight="500">New · </x.span>
+              Puppeteer support
+            </Chip>
             <x.h1 text={{ _: "h1-sm", sm: "h1" }}>
               Ship pixel perfect apps
               <br />
@@ -79,11 +82,14 @@ export default function Home() {
               >
                 View a demo build
               </Button>
-              <Link href="https://docs.argos-ci.com" passHref>
-                <Button color="secondary" variant="outline">
-                  Documentation
-                </Button>
-              </Link>
+              <Button
+                as="a"
+                href="https://docs.argos-ci.com"
+                color="secondary"
+                variant="outline"
+              >
+                Documentation
+              </Button>
             </x.div>
           </x.div>
 
@@ -304,12 +310,16 @@ export default function Home() {
             Argos is open source and community driven. Supported by a network of
             early advocates, contributors, and champions.
           </x.p>
-          <Link href="https://discord.gg/FNGFpJS9" passHref>
-            <Button display="flex" gap={1} w="fit-content" as="a">
-              <x.svg as={ChatBubbleLeftRightIcon} w={4} />
-              Join us on Discord
-            </Button>
-          </Link>
+          <Button
+            display="flex"
+            gap={1}
+            w="fit-content"
+            as="a"
+            href="https://discord.gg/FNGFpJS9"
+          >
+            <x.svg as={ChatBubbleLeftRightIcon} w={4} />
+            Join us on Discord
+          </Button>
         </x.section>
       </Container>
     </x.div>

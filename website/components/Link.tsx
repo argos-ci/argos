@@ -11,16 +11,16 @@ export type LinkOptions<T extends As = "a"> = Options<T> & {
 
 export const Link: SystemComponent<LinkOptions> = forwardRef(
   ({ children, href, ...props }, ref) => (
-    <NextLink href={href} passHref>
-      <x.a
-        ref={ref}
-        transition="default"
-        textDecoration="none"
-        color={{ _: "white", hover: "on-light" }}
-        {...props}
-      >
-        {children}
-      </x.a>
-    </NextLink>
+    <x.a
+      ref={ref}
+      as={NextLink}
+      href={href}
+      transition="default"
+      textDecoration="none"
+      color={{ _: "white", hover: "on-light" }}
+      {...props}
+    >
+      {children}
+    </x.a>
   )
 );

@@ -1,4 +1,3 @@
-import NextLink from "next/link";
 import { ArgosLogo } from "@/components/ArgosLogo";
 import { x } from "@xstyled/styled-components";
 import { Button } from "@/components/Button";
@@ -24,16 +23,15 @@ export const AppNavbar: React.FC = () => {
             Login
           </NavbarLink>
 
-          <NextLink href="https://docs.argos-ci.com/" passHref>
-            <Button
-              mt={{ _: 3, md: 0 }}
-              as="a"
-              order={{ _: -1, md: 0 }}
-              mb={{ _: 4, md: 0 }}
-            >
-              Get Started
-            </Button>
-          </NextLink>
+          <Button
+            mt={{ _: 3, md: 0 }}
+            as="a"
+            href="https://docs.argos-ci.com/"
+            order={{ _: -1, md: 0 }}
+            mb={{ _: 4, md: 0 }}
+          >
+            Get Started
+          </Button>
         </>
       }
     />
