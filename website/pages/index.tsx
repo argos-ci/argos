@@ -12,7 +12,6 @@ import {
   CameraIcon,
   ArrowUpOnSquareStackIcon,
   CheckCircleIcon,
-  BellAlertIcon,
   GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/Button";
@@ -64,9 +63,9 @@ export default function Home() {
               </Chip>
             </Link>
             <x.h1 text={{ _: "h1-sm", sm: "h1" }}>
-              Argos is the better way to
+              Ship pixel perfect apps
               <br />
-              ship pixel perfect apps
+              with no bug.
             </x.h1>
             <x.p text={{ _: "teaser-sm", sm: "teaser" }}>
               Meet the new standard for modern visual testing.
@@ -122,26 +121,25 @@ export default function Home() {
           <Feature>
             <FeatureIcon icon={CameraIcon} color="primary" />
             <FeatureTitle>Take screenshots</FeatureTitle>
-            <FeatureText>Use your favorite testing framework.</FeatureText>
+            <FeatureText>
+              Use one of Argos’ many integrations to take screenshots or do it
+              yourself.
+            </FeatureText>
           </Feature>
 
           <Feature>
             <FeatureIcon icon={ArrowUpOnSquareStackIcon} color="orange" />
             <FeatureTitle>Upload screenshots</FeatureTitle>
-            <FeatureText>Add one command to configure your CI.</FeatureText>
-          </Feature>
-          <Feature>
-            <FeatureIcon icon={BellAlertIcon} color="sky" />
-            <FeatureTitle>Be notified</FeatureTitle>
             <FeatureText>
-              Get a status check on Github pull-request.
+              Add one command in your CI to upload screenshots to Argos.
             </FeatureText>
           </Feature>
           <Feature>
             <FeatureIcon icon={CheckCircleIcon} color="green" />
             <FeatureTitle>Review changes</FeatureTitle>
             <FeatureText>
-              Compare screenshots in Argos side-by-side UI.
+              Get status on your pull-requests and use Argos to review and
+              approve changes.
             </FeatureText>
           </Feature>
         </FeatureList>
@@ -162,8 +160,8 @@ export default function Home() {
           />
         </x.div>
         <x.div display="flex" flexDirection="column" gap={6} flex={1}>
-          <Chip icon={Square3Stack3DIcon}>Easy installation</Chip>
-          <x.h2 text="h2">Compatible with every stack</x.h2>
+          <Chip icon={Square3Stack3DIcon}>Easy integration</Chip>
+          <x.h2 text="h2">Compatible with your stack</x.h2>
           <x.p text="teaser">
             Argos offers integrations (SDK) for the most famous frameworks,
             testing libraries, and CI providers. As long as you can take
@@ -194,7 +192,7 @@ export default function Home() {
 
         <x.div flex={1} display="flex" flexDirection="column" gap={6}>
           <Chip icon={GlobeAltIcon}>Universal testing</Chip>
-          <x.h2 text="h2">Review whole pages and individual components</x.h2>
+          <x.h2 text="h2">Review websites, apps and components together</x.h2>
           <x.p text="teaser">
             Use Argos to secure whole pages and individual components from
             regressions on several resolutions and browsers. Use a single tool
