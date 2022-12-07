@@ -15,7 +15,6 @@ import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 
 import { useRepositoryContext } from ".";
-import { BuildStatsIndicator } from "../Build/BuildStatsIndicator";
 import { NotFound } from "../NotFound";
 import { GettingStarted } from "./GettingStarted";
 
