@@ -60,14 +60,6 @@ const RepositoryBuildsQuery = graphql(`
             branch
             commit
           }
-          stats {
-            total
-            failure
-            changed
-            added
-            removed
-            unchanged
-          }
           ...BuildStatusChip_Build
         }
       }
@@ -85,15 +77,15 @@ const BuildRow = memo(
     return (
       <RouterLink
         to={`/${ownerLogin}/${repositoryName}/builds/${build.number}`}
-        className="flex items-center gap-4 border-b border-b-border py-2 px-2 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
+        className="flex items-center gap-4 border-b border-b-border py-2 px-4 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
       >
-        <div className="w-[7ch] overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-on-light">
+        <div className="w-[7ch] flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-on-light">
           <span>#{build.number}</span>
         </div>
         <div className="w-20 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums text-on-light lg:w-40">
           {build.name}
         </div>
-        <div className="w-48">
+        <div className="w-48 flex-shrink-0">
           <BuildStatusChip
             scale="sm"
             build={build}
@@ -101,10 +93,29 @@ const BuildRow = memo(
             tooltip={false}
           />
         </div>
-        <div className="hidden w-64 tabular-nums opacity-80 xl:block">
-          <BuildStatsIndicator stats={build.stats} tooltip={false} />
-        </div>
         <div className="flex-1" />
+        <div className="relative hidden w-20 md:block">
+          {build.compareScreenshotBucket && (
+            <div
+              className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on"
+              title={build.compareScreenshotBucket.commit}
+              onClick={(event) => {
+                event.preventDefault();
+                window
+                  .open(
+                    `https://github.com/${ownerLogin}/${repositoryName}/commit/${build.compareScreenshotBucket.commit}`,
+                    "_blank"
+                  )
+                  ?.focus();
+              }}
+            >
+              <GitCommitIcon className="flex-shrink-0" />
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                {build.compareScreenshotBucket.commit.slice(0, 7)}
+              </span>
+            </div>
+          )}
+        </div>
         <div className="relative hidden w-28 sm:block lg:w-80">
           {build.compareScreenshotBucket && (
             <div
@@ -127,33 +138,7 @@ const BuildRow = memo(
             </div>
           )}
         </div>
-        <div
-          className="relative hidden w-28 md:block"
-          onClick={
-            build.compareScreenshotBucket
-              ? (event) => {
-                  event.preventDefault();
-                  window
-                    .open(
-                      `https://github.com/${ownerLogin}/${repositoryName}/commit/${build.compareScreenshotBucket.commit}`,
-                      "_blank"
-                    )
-                    ?.focus();
-                }
-              : undefined
-          }
-          title={build.compareScreenshotBucket.commit}
-        >
-          {build.compareScreenshotBucket && (
-            <div className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on">
-              <GitCommitIcon className="flex-shrink-0" />
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                {build.compareScreenshotBucket.commit.slice(0, 7)}
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="hidden w-28 flex-shrink-0 text-right text-on-light sm:block">
+        <div className="hidden w-32 flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-right text-on-light sm:block">
           <Time date={build.createdAt} />
         </div>
       </RouterLink>
@@ -210,7 +195,7 @@ const BuildsList = ({
   return (
     <div
       ref={parentRef}
-      className="mt-4 max-h-max min-h-0 w-full flex-1 overflow-auto "
+      className="my-4 max-h-max min-h-0 w-full overflow-auto rounded border border-border"
     >
       <div
         style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}
@@ -314,22 +299,34 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
   }, [fetchMore]);
 
   if (!repositoryResult.data || !buildsResult.data) {
-    return <PageLoader />;
+    return (
+      <Container>
+        <PageLoader />
+      </Container>
+    );
   }
 
   const repository = repositoryResult.data.repository;
   const builds = buildsResult.data.repository?.builds;
 
   if (!repository || !builds) {
-    return <NotFound />;
+    return (
+      <Container>
+        <NotFound />
+      </Container>
+    );
   }
 
   if (builds.pageInfo.totalCount === 0) {
     if (hasWritePermission) {
-      return <GettingStarted repository={repository} />;
+      return (
+        <Container>
+          <GettingStarted repository={repository} />
+        </Container>
+      );
     } else {
       return (
-        <div className="flex-1">
+        <Container>
           <Alert>
             <AlertTitle>No build</AlertTitle>
             <AlertText>There is no build yet on this repository.</AlertText>
@@ -343,18 +340,20 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
               </Button>
             </AlertActions>
           </Alert>
-        </div>
+        </Container>
       );
     }
   }
 
   return (
-    <BuildsList
-      repository={repository}
-      builds={builds}
-      fetchNextPage={fetchNextPage}
-      fetching={buildsResult.loading}
-    />
+    <div className="container mx-auto flex min-h-0 flex-1 flex-col px-4">
+      <BuildsList
+        repository={repository}
+        builds={builds}
+        fetchNextPage={fetchNextPage}
+        fetching={buildsResult.loading}
+      />
+    </div>
   );
 };
 
@@ -366,13 +365,13 @@ export const RepositoryBuilds = () => {
   }
 
   return (
-    <Container className="flex min-h-0 flex-1">
+    <>
       <Helmet>
         <title>
           {ownerLogin}/{repositoryName} • Builds
         </title>
       </Helmet>
       <PageContent ownerLogin={ownerLogin} repositoryName={repositoryName} />
-    </Container>
+    </>
   );
 };
