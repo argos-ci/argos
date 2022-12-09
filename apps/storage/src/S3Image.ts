@@ -1,6 +1,6 @@
 import type { S3Client } from "@aws-sdk/client-s3";
 import gm from "gm";
-import { unlink } from "node:fs/promises";
+import { rename, unlink } from "node:fs/promises";
 import { promisify } from "node:util";
 import { tmpName as cbTmpName } from "tmp";
 import type { TmpNameCallback, TmpNameOptions } from "tmp";
@@ -9,17 +9,6 @@ import { download as s3Download } from "./download.js";
 import { upload as s3Upload } from "./upload.js";
 
 const gmMagick = gm.subClass({ imageMagick: true });
-
-function transparent(
-  filepath: string,
-  { width, height }: { width: number; height: number }
-) {
-  const gmImage = gmMagick(filepath);
-  gmImage.background("transparent"); // Fill in new space with white background
-  gmImage.gravity("NorthWest"); // Anchor image to upper-left
-  gmImage.extent(width, height); // Specify new image size
-  return gmImage;
-}
 
 export const tmpName = promisify(
   (options: TmpNameOptions, cb: TmpNameCallback) => {
@@ -36,7 +25,6 @@ export interface ImageFile {
   getFilepath(): Promise<string> | string;
   getDimensions(): Promise<Dimensions>;
   unlink(): Promise<void>;
-  enlarge(targetDimensions: Dimensions): Promise<string>;
 }
 
 abstract class AbstractImageFile implements ImageFile {
@@ -59,27 +47,18 @@ abstract class AbstractImageFile implements ImageFile {
     this._measurePromise = this._measurePromise ?? this.measure();
     return this._measurePromise;
   }
-
-  async enlarge(targetDimensions: Dimensions): Promise<string> {
-    const [dimensions, filepath] = await Promise.all([
-      this.getDimensions(),
-      this.getFilepath(),
-    ]);
-    if (
-      dimensions.width > targetDimensions.width ||
-      dimensions.height > targetDimensions.height ||
-      (dimensions.height === targetDimensions.height &&
-        dimensions.width === targetDimensions.width)
-    ) {
-      return filepath;
-    }
-
-    const gf = transparent(filepath, targetDimensions);
-    const resultFilepath = await tmpName({ postfix: ".png" });
-    await promisify(gf.write.bind(gf))(resultFilepath);
-    return resultFilepath;
-  }
 }
+
+const getExtensionFromContentType = (contentType: string) => {
+  switch (contentType) {
+    case "image/png":
+      return ".png";
+    case "image/jpeg":
+      return ".jpg";
+    default:
+      throw new Error(`Unsupported content type: ${contentType}`);
+  }
+};
 
 export class S3ImageFile extends AbstractImageFile implements ImageFile {
   s3: S3Client;
@@ -108,14 +87,22 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
     if (!this.key) {
       throw new Error("Missing key");
     }
-    const outputPath = await tmpName({});
-    await s3Download({
+    const outputPath = await tmpName({
+      postfix: ".jpg",
+    });
+    const result = await s3Download({
       s3: this.s3,
       Bucket: this.bucket,
       Key: this.key,
       outputPath,
     });
-    this.filepath = outputPath;
+    if (!result.ContentType) {
+      throw new Error("Missing content type");
+    }
+    const ext = getExtensionFromContentType(result.ContentType);
+    const outputPathWithExt = `${outputPath}${ext}`;
+    await rename(outputPath, outputPathWithExt);
+    this.filepath = outputPathWithExt;
     return this.filepath;
   }
 

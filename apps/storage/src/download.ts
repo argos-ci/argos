@@ -17,4 +17,5 @@ export const download = async ({
     throw new Error("No body");
   }
   await pipeline(result.Body as Readable, createWriteStream(outputPath));
+  return result;
 };

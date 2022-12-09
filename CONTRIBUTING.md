@@ -53,11 +53,12 @@ npm install
 
 ## Install
 
+### Install Volta
+
+Install [volta](https://volta.sh/) to be sure to use the correct Node.js version.
+
 ```sh
-curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
-brew install imagemagick@6 graphicsmagick autoenv watchman
-nvm install
-nvm alias default "$(cat .nvmrc)"
+brew install imagemagick
 ```
 
 ### Setup your .env file
@@ -151,7 +152,7 @@ npm run -w @argos-ci/database db:dump
 #### Execute the latest migration
 
 ```sh
-npm run -w @argos-ci/database  db:migrate:latest
+npm run -w @argos-ci/database db:migrate:latest
 ```
 
 ### Running the test suite

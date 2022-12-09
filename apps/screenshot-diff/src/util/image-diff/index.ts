@@ -13,24 +13,17 @@ import imageDifference from "./imageDifference.js";
 export const diffImages = async ({
   baseImage,
   compareImage,
-  fuzz = "10%",
 }: {
   baseImage: ImageFile;
   compareImage: ImageFile;
-  fuzz?: string | number;
 }) => {
   const difference = await imageDifference({
     baseImage,
     compareImage,
-    fuzz,
   });
 
-  const score = difference.value / (difference.width * difference.height);
-
   return {
-    score: score < 0.00003 ? 0 : score,
-    pixels: difference.value,
-    scoreRaw: score,
+    score: difference.value,
     width: difference.width,
     height: difference.height,
     filepath: difference.filepath,

@@ -1,30 +1,30 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`e2e diffing different images 1`] = `
+exports[`e2e generates different images 1`] = `
 {
   "height": 10,
-  "value": 47,
+  "value": 45,
   "width": 10,
 }
 `;
 
-exports[`e2e diffing different sizes images 1`] = `
+exports[`e2e generates different sizes images 1`] = `
 {
   "height": 15,
-  "value": 125,
+  "value": 55.5555555556,
   "width": 15,
 }
 `;
 
-exports[`e2e diffing images with big diff 1`] = `
+exports[`e2e generates images with big diff 1`] = `
 {
   "height": 4469,
-  "value": 4434050,
+  "value": 97.640956341,
   "width": 1000,
 }
 `;
 
-exports[`e2e diffing the same image 1`] = `
+exports[`e2e generates the same image 1`] = `
 {
   "height": 10,
   "value": 0,
@@ -32,10 +32,18 @@ exports[`e2e diffing the same image 1`] = `
 }
 `;
 
-exports[`e2e diffing the same image where 1 has a transparent background 1`] = `
+exports[`e2e generates the same image where 1 has a transparent background 1`] = `
 {
   "height": 10,
-  "value": 100,
+  "value": 50,
   "width": 10,
+}
+`;
+
+exports[`e2e works with large size image 1`] = `
+{
+  "height": 13358,
+  "value": 17.1186113661,
+  "width": 900,
 }
 `;
