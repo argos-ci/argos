@@ -17,26 +17,9 @@ describe("#diffImages", () => {
       compareImage: new LocalImageFile({
         filepath: join(__dirname, "__fixtures__/simple/base.png"),
       }),
-      fuzz: 900,
     });
 
-    expect(result.score).toBeCloseTo(0.306, 2);
-    expect(result.pixels).toBeCloseTo(50e4, -4);
-  });
-
-  it("simple with enough fuzz", async () => {
-    const { filepath, ...result } = await diffImages({
-      baseImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/simple/compare.png"),
-      }),
-      compareImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/simple/base.png"),
-      }),
-      fuzz: 70 ** 2,
-    });
-
-    expect(result.score).toBe(0);
-    expect(result).toMatchSnapshot();
+    expect(result).toEqual({ score: 0, width: 1425, height: 1146 });
   });
 
   it("alphaBackground", async () => {
@@ -49,8 +32,7 @@ describe("#diffImages", () => {
       }),
     });
 
-    expect(result.score).toBe(0);
-    expect(result).toMatchSnapshot();
+    expect(result).toEqual({ score: 0, width: 1400, height: 300 });
   });
 
   it("boxShadow", async () => {
@@ -63,8 +45,7 @@ describe("#diffImages", () => {
       }),
     });
 
-    expect(result.score).toBe(0);
-    expect(result).toMatchSnapshot();
+    expect(result).toEqual({ score: 0, width: 250, height: 300 });
   });
 
   it("border", async () => {
@@ -77,7 +58,11 @@ describe("#diffImages", () => {
       }),
     });
 
-    expect(result.score).toBe(0);
+    expect(result).toEqual({
+      score: 0.00127226463104,
+      width: 1000,
+      height: 786,
+    });
   });
 
   it("fontAliasing", async () => {
@@ -90,7 +75,11 @@ describe("#diffImages", () => {
       }),
     });
 
-    expect(result.score).toBeCloseTo(0, 2);
+    expect(result).toEqual({
+      score: 0.00152671755725,
+      width: 250,
+      height: 786,
+    });
   });
 
   it("imageCompression", async () => {
@@ -103,8 +92,7 @@ describe("#diffImages", () => {
       }),
     });
 
-    expect(result.score).toBe(0);
-    expect(result).toMatchSnapshot();
+    expect(result).toEqual({ score: 0, width: 327, height: 665 });
   });
 
   it("imageCompression2", async () => {
@@ -117,8 +105,11 @@ describe("#diffImages", () => {
       }),
     });
 
-    expect(result.score).toBe(0);
-    expect(result.scoreRaw).toBeLessThan(1e-5);
+    expect(result).toEqual({
+      height: 665,
+      score: 0,
+      width: 327,
+    });
   });
 
   it("imageCompression3", async () => {
@@ -131,8 +122,11 @@ describe("#diffImages", () => {
       }),
     });
 
-    expect(result.pixels).toBeCloseTo(35, -2);
-    expect(result.score).toBeCloseTo(0, 3);
+    expect(result).toEqual({
+      score: 0.00481770833333,
+      width: 1280,
+      height: 600,
+    });
   });
 
   it("big images", async () => {
@@ -145,6 +139,6 @@ describe("#diffImages", () => {
       }),
     });
 
-    expect(result.score).toBeGreaterThan(0.95);
+    expect(result).toEqual({ score: 97.9687625867, width: 1000, height: 4469 });
   });
 });

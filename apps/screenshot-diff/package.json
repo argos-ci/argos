@@ -13,12 +13,12 @@
     "@argos-ci/storage": "*",
     "@octokit/rest": "^19.0.5",
     "gm": "^1.25.0",
+    "odiff-bin": "^2.5.1",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
     "@types/gm": "^1.25.0",
-    "@types/tmp": "^0.2.3",
-    "get-pixels": "^3.3.3"
+    "@types/tmp": "^0.2.3"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",

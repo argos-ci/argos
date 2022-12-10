@@ -1,86 +1,37 @@
 /* eslint-disable import/namespace */
-import { spawn } from "child_process";
+import { compare } from "odiff-bin";
 
 import { tmpName } from "@argos-ci/storage";
 import type { ImageFile } from "@argos-ci/storage";
-
-const getScore = (raw: string) => {
-  const matches = raw.match(/all: (.+)\n/);
-  if (!matches) {
-    throw new Error(`Expected raw to contain 'all' but received "${raw}"`);
-  }
-  return parseFloat(matches[1] as string);
-};
-
-const getDiffArgs = ({
-  baseImageFilepath,
-  compareImageFilepath,
-  diffImageFilepath,
-  highlightColor,
-  lowlightColor,
-  fuzz,
-}: {
-  baseImageFilepath: string;
-  compareImageFilepath: string;
-  diffImageFilepath: string;
-  highlightColor: string;
-  lowlightColor: string;
-  fuzz: string | number;
-}) => {
-  const diffArgs = [
-    "-verbose",
-    "-highlight-color",
-    highlightColor,
-    "-lowlight-color",
-    lowlightColor,
-    "-compose",
-    "src",
-    // http://legacy.imagemagick.org/script/command-line-options.php#metric
-    // http://www.imagemagick.org/Usage/compare/
-    // https://github.com/ImageMagick/ImageMagick/blob/master/MagickCore/compare.c
-    "-metric",
-    "AE",
-  ];
-
-  if (fuzz) {
-    diffArgs.push("-fuzz", String(fuzz));
-  }
-
-  diffArgs.push(
-    baseImageFilepath,
-    compareImageFilepath,
-    // If there is no output image, then output to `stdout` (which is ignored)
-    diffImageFilepath || "-"
-  );
-  return diffArgs;
-};
 
 const createDifference = async (options: {
   baseImageFilepath: string;
   compareImageFilepath: string;
   diffImageFilepath: string;
-  highlightColor: string;
-  lowlightColor: string;
-  fuzz: string | number;
 }) => {
-  const diffArgs = getDiffArgs(options);
+  const result = await compare(
+    options.baseImageFilepath,
+    options.compareImageFilepath,
+    options.diffImageFilepath,
+    {
+      outputDiffMask: true,
+    }
+  );
 
-  return new Promise<string>((resolve, reject) => {
-    // http://www.imagemagick.org/script/compare.php
-    const proc = spawn("compare", diffArgs);
-    let stderr = "";
-    proc.stderr.on("data", (data) => {
-      stderr += data;
-    });
-    proc.on("close", (code) => {
-      // ImageMagick returns err code 2 if err, 0 if similar, 1 if dissimilar
-      if (code === 0 || code === 1) {
-        resolve(stderr);
-        return;
-      }
-      reject(stderr);
-    });
-  });
+  if (result.match) {
+    return 0;
+  }
+
+  switch (result.reason) {
+    case "file-not-exists":
+      throw new Error(`File not exists`);
+    case "layout-diff":
+      return 1;
+    case "pixel-diff":
+      return result.diffPercentage;
+    default:
+      throw new Error(`Unknown reason`);
+  }
 };
 
 async function getMaxDimensions(images: ImageFile[]) {
@@ -97,42 +48,31 @@ async function getMaxDimensions(images: ImageFile[]) {
 export default async function imageDifference(optionsWithoutDefault: {
   baseImage: ImageFile;
   compareImage: ImageFile;
-  highlightColor?: string;
-  lowlightColor?: string;
-  fuzz?: string | number;
 }) {
-  const {
-    baseImage,
-    compareImage,
-    highlightColor = "red",
-    lowlightColor = "none",
-    fuzz = "0",
-  } = optionsWithoutDefault;
+  const { baseImage, compareImage } = optionsWithoutDefault;
 
-  const [maxDimensions, diffImageFilepath] = await Promise.all([
+  const [
+    baseImageFilepath,
+    compareImageFilepath,
+    maxDimensions,
+    diffImageFilepath,
+  ] = await Promise.all([
+    baseImage.getFilepath(),
+    compareImage.getFilepath(),
     getMaxDimensions([baseImage, compareImage]),
     tmpName({ postfix: ".png" }),
   ]);
 
-  // Resize images to the maximum dimensions
-  const [baseImageFilepath, compareImageFilepath] = await Promise.all([
-    baseImage.enlarge(maxDimensions),
-    compareImage.enlarge(maxDimensions),
-  ]);
-
   // Create difference
-  const raw = await createDifference({
-    highlightColor,
-    lowlightColor,
-    fuzz,
-    baseImageFilepath: baseImageFilepath,
-    compareImageFilepath: compareImageFilepath,
+  const score = await createDifference({
+    baseImageFilepath,
+    compareImageFilepath,
     diffImageFilepath,
   });
 
   return {
     ...maxDimensions,
     filepath: diffImageFilepath,
-    value: getScore(raw),
+    value: score,
   };
 }
