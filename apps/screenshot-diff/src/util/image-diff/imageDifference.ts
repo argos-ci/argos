@@ -15,6 +15,7 @@ const createDifference = async (options: {
     options.diffImageFilepath,
     {
       outputDiffMask: true,
+      threshold: 0.061,
     }
   );
 
@@ -28,7 +29,7 @@ const createDifference = async (options: {
     case "layout-diff":
       return 1;
     case "pixel-diff":
-      return result.diffPercentage;
+      return result.diffPercentage / 100;
     default:
       throw new Error(`Unknown reason`);
   }

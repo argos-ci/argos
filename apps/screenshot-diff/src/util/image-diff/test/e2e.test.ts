@@ -122,4 +122,16 @@ describe("e2e", () => {
 
     expect(difference).toMatchSnapshot();
   });
+
+  it("generates images similar colors", async () => {
+    const baseFilename = "violet-square.png";
+    const compareFilename = "black-square.png";
+
+    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
+      baseFilepath: join(__dirname, "/test-files", baseFilename),
+      compareFilepath: join(__dirname, "/test-files", compareFilename),
+    });
+
+    expect(difference).toMatchSnapshot();
+  });
 });

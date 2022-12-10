@@ -3,7 +3,7 @@
 exports[`e2e generates different images 1`] = `
 {
   "height": 10,
-  "value": 45,
+  "value": 0.45,
   "width": 10,
 }
 `;
@@ -11,15 +11,23 @@ exports[`e2e generates different images 1`] = `
 exports[`e2e generates different sizes images 1`] = `
 {
   "height": 15,
-  "value": 55.5555555556,
+  "value": 0.555555555556,
   "width": 15,
+}
+`;
+
+exports[`e2e generates images similar colors 1`] = `
+{
+  "height": 10,
+  "value": 1,
+  "width": 10,
 }
 `;
 
 exports[`e2e generates images with big diff 1`] = `
 {
   "height": 4469,
-  "value": 97.640956341,
+  "value": 0.980928014553,
   "width": 1000,
 }
 `;
@@ -35,7 +43,7 @@ exports[`e2e generates the same image 1`] = `
 exports[`e2e generates the same image where 1 has a transparent background 1`] = `
 {
   "height": 10,
-  "value": 50,
+  "value": 0.5,
   "width": 10,
 }
 `;
@@ -43,7 +51,7 @@ exports[`e2e generates the same image where 1 has a transparent background 1`] =
 exports[`e2e works with large size image 1`] = `
 {
   "height": 13358,
-  "value": 17.1186113661,
+  "value": 0.18827623606500002,
   "width": 900,
 }
 `;
