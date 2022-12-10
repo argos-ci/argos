@@ -8,6 +8,7 @@ import { dirSync } from "tmp";
 import config from "@argos-ci/config";
 
 import { download } from "./download.js";
+import { get } from "./get.js";
 import { upload } from "./upload.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -33,32 +34,14 @@ describe("#download", () => {
 
   it("should download a file from S3", async () => {
     const outputPath = join(tmpDirectory, "hello.txt");
-    await download({
+    const result = await get({
       s3,
-      outputPath,
       Bucket: config.get("s3.screenshotsBucket"),
       Key: "hello.txt",
     });
+    await download(result, outputPath);
 
     const file = await readFileAsync(outputPath, "utf-8");
     expect(file).toEqual("hello!\n");
-  });
-
-  it("should correctly handle errors", async () => {
-    const outputPath = join(tmpDirectory, "hello.txt");
-    let error;
-
-    try {
-      await download({
-        s3,
-        outputPath,
-        Bucket: config.get("s3.screenshotsBucket"),
-        Key: "hello-nop.txt",
-      });
-    } catch (e) {
-      error = e;
-    }
-
-    expect(error).not.toBe(undefined);
   });
 });

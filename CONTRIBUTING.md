@@ -57,10 +57,6 @@ npm install
 
 Install [volta](https://volta.sh/) to be sure to use the correct Node.js version.
 
-```sh
-brew install imagemagick
-```
-
 ### Setup your .env file
 
 ```

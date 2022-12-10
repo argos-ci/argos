@@ -1,14 +1,13 @@
 import type { S3Client } from "@aws-sdk/client-s3";
-import gm from "gm";
-import { rename, unlink } from "node:fs/promises";
+import { unlink } from "node:fs/promises";
 import { promisify } from "node:util";
+import sharp from "sharp";
 import { tmpName as cbTmpName } from "tmp";
 import type { TmpNameCallback, TmpNameOptions } from "tmp";
 
 import { download as s3Download } from "./download.js";
+import { get as s3Get } from "./get.js";
 import { upload as s3Upload } from "./upload.js";
-
-const gmMagick = gm.subClass({ imageMagick: true });
 
 export const tmpName = promisify(
   (options: TmpNameOptions, cb: TmpNameCallback) => {
@@ -36,8 +35,11 @@ abstract class AbstractImageFile implements ImageFile {
 
   async measure() {
     const filepath = await this.getFilepath();
-    const gf = gmMagick(filepath);
-    return promisify((cb: gm.GetterCallback<gm.Dimensions>) => gf.size(cb))();
+    const { width, height } = await sharp(filepath).metadata();
+    if (!width || !height) {
+      throw new Error("Unable to get image dimensions");
+    }
+    return { width, height };
   }
 
   async getDimensions(): Promise<Dimensions> {
@@ -87,20 +89,18 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
     if (!this.key) {
       throw new Error("Missing key");
     }
-    const outputPath = await tmpName({});
-    const result = await s3Download({
+    const result = await s3Get({
       s3: this.s3,
       Bucket: this.bucket,
       Key: this.key,
-      outputPath,
     });
     if (!result.ContentType) {
       throw new Error("Missing content type");
     }
     const ext = getExtensionFromContentType(result.ContentType);
-    const outputPathWithExt = `${outputPath}${ext}`;
-    await rename(outputPath, outputPathWithExt);
-    this.filepath = outputPathWithExt;
+    const outputPath = await tmpName({ postfix: ext });
+    await s3Download(result, outputPath);
+    this.filepath = outputPath;
     return this.filepath;
   }
 
