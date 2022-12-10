@@ -35,14 +35,14 @@ describe("#computeScreenshotDiff", () => {
     await upload({
       s3,
       Bucket: config.get("s3.screenshotsBucket"),
-      Key: "penelope.jpg",
-      inputPath: join(__dirname, "__fixtures__", "penelope.jpg"),
+      Key: "penelope.png",
+      inputPath: join(__dirname, "__fixtures__", "penelope.png"),
     });
     await upload({
       s3,
       Bucket: config.get("s3.screenshotsBucket"),
-      Key: "penelope-argos.jpg",
-      inputPath: join(__dirname, "__fixtures__", "penelope-argos.jpg"),
+      Key: "penelope-argos.png",
+      inputPath: join(__dirname, "__fixtures__", "penelope-argos.png"),
     });
   });
 
@@ -76,12 +76,12 @@ describe("#computeScreenshotDiff", () => {
     beforeEach(async () => {
       const compareScreenshot = await factory.create<Screenshot>("Screenshot", {
         name: "penelope",
-        s3Id: "penelope-argos.jpg",
+        s3Id: "penelope-argos.png",
         screenshotBucketId: compareBucket.id,
       });
       const baseScreenshot = await factory.create<Screenshot>("Screenshot", {
         name: "penelope",
-        s3Id: "penelope.jpg",
+        s3Id: "penelope.png",
         screenshotBucketId: baseBucket.id,
       });
       screenshotDiff = await factory.create<ScreenshotDiff>("ScreenshotDiff", {
@@ -113,12 +113,12 @@ describe("#computeScreenshotDiff", () => {
     beforeEach(async () => {
       const compareScreenshot = await factory.create<Screenshot>("Screenshot", {
         name: "penelope",
-        s3Id: "penelope.jpg",
+        s3Id: "penelope.png",
         screenshotBucketId: compareBucket.id,
       });
       const baseScreenshot = await factory.create<Screenshot>("Screenshot", {
         name: "penelope",
-        s3Id: "penelope.jpg",
+        s3Id: "penelope.png",
         screenshotBucketId: baseBucket.id,
       });
       screenshotDiff = await factory.create<ScreenshotDiff>("ScreenshotDiff", {

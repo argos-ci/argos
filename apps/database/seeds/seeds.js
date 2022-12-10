@@ -127,20 +127,20 @@ export const seed = async (knex) => {
       {
         ...timeStamps,
         screenshotBucketId: screenshotBuckets[0].id,
-        name: "penelope.jpg",
-        s3Id: "penelope.jpg",
+        name: "penelope.png",
+        s3Id: "penelope.png",
       },
       {
         ...timeStamps,
         screenshotBucketId: screenshotBuckets[1].id,
         name: "penelope-argos.png",
-        s3Id: "penelope-argos.jpg",
+        s3Id: "penelope-argos.png",
       },
       {
         ...timeStamps,
         screenshotBucketId: screenshotBuckets[2].id,
         name: "penelope-argos (failed).png",
-        s3Id: "penelope-argos.jpg",
+        s3Id: "penelope-argos.png",
       },
     ]);
 

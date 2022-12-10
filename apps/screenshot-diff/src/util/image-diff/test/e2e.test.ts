@@ -120,8 +120,6 @@ describe("e2e", () => {
       compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
 
-    console.log(diffFilepath);
-
     expect(difference).toMatchSnapshot();
   });
 });
