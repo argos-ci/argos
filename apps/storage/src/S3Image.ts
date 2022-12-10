@@ -87,9 +87,7 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
     if (!this.key) {
       throw new Error("Missing key");
     }
-    const outputPath = await tmpName({
-      postfix: ".jpg",
-    });
+    const outputPath = await tmpName({});
     const result = await s3Download({
       s3: this.s3,
       Bucket: this.bucket,

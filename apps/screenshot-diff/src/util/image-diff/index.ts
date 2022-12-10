@@ -23,7 +23,7 @@ export const diffImages = async ({
   });
 
   return {
-    score: difference.value,
+    score: difference.value < 0.00005 ? 0 : difference.value,
     width: difference.width,
     height: difference.height,
     filepath: difference.filepath,

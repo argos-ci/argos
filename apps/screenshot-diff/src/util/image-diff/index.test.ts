@@ -59,7 +59,7 @@ describe("#diffImages", () => {
     });
 
     expect(result).toEqual({
-      score: 0.00127226463104,
+      score: 0,
       width: 1000,
       height: 786,
     });
@@ -76,7 +76,7 @@ describe("#diffImages", () => {
     });
 
     expect(result).toEqual({
-      score: 0.00152671755725,
+      score: 0.00182697201018,
       width: 250,
       height: 786,
     });
@@ -123,7 +123,7 @@ describe("#diffImages", () => {
     });
 
     expect(result).toEqual({
-      score: 0.00481770833333,
+      score: 0.0000729166666667,
       width: 1280,
       height: 600,
     });
@@ -139,6 +139,10 @@ describe("#diffImages", () => {
       }),
     });
 
-    expect(result).toEqual({ score: 97.9687625867, width: 1000, height: 4469 });
+    expect(result).toEqual({
+      score: 0.9835782054150001,
+      width: 1000,
+      height: 4469,
+    });
   });
 });
