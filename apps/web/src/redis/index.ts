@@ -26,17 +26,59 @@ redisClient.on("ready", () => {
 
 const redisLock = createRedisLock(redisClient);
 
+let status: "connecting" | "connected" | "disconnecting" | "disconnected" =
+  "disconnected";
 let connection: Promise<void> | null = null;
+let disconnection: Promise<void> | null = null;
 
 export const getRedisLock = async () => {
-  connection = connection || redisClient.connect();
-  await connection;
-  return redisLock;
+  switch (status) {
+    case "connected":
+      return redisLock;
+    case "connecting": {
+      await connection;
+      return redisLock;
+    }
+    case "disconnected": {
+      connection = redisClient.connect();
+      status = "connecting";
+      await connection;
+      status = "connected";
+      connection = null;
+      return redisLock;
+    }
+    case "disconnecting": {
+      throw new Error("Redis is disconnecting");
+    }
+    default: {
+      throw new Error(`Unknown status: ${status}`);
+    }
+  }
 };
 
 export const quitRedis = async () => {
-  if (redisClient) {
-    await redisClient.quit();
+  switch (status) {
+    case "connected": {
+      disconnection = redisClient.quit();
+      status = "disconnecting";
+      await disconnection;
+      status = "disconnected";
+      disconnection = null;
+      return;
+    }
+    case "connecting": {
+      throw new Error("Redis is connecting");
+    }
+    case "disconnected": {
+      return;
+    }
+    case "disconnecting": {
+      await disconnection;
+      return;
+    }
+    default: {
+      throw new Error(`Unknown status: ${status}`);
+    }
   }
 };
 
