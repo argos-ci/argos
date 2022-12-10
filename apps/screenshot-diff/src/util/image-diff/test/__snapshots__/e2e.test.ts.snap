@@ -16,14 +16,6 @@ exports[`e2e generates different sizes images 1`] = `
 }
 `;
 
-exports[`e2e generates images similar colors 1`] = `
-{
-  "height": 10,
-  "value": 1,
-  "width": 10,
-}
-`;
-
 exports[`e2e generates images with big diff 1`] = `
 {
   "height": 4469,
@@ -44,6 +36,14 @@ exports[`e2e generates the same image where 1 has a transparent background 1`] =
 {
   "height": 10,
   "value": 0.5,
+  "width": 10,
+}
+`;
+
+exports[`e2e takes into account colors in comparison 1`] = `
+{
+  "height": 10,
+  "value": 1,
   "width": 10,
 }
 `;

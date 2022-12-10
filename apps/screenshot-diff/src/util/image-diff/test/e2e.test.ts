@@ -123,7 +123,7 @@ describe("e2e", () => {
     expect(difference).toMatchSnapshot();
   });
 
-  it("generates images similar colors", async () => {
+  it("takes into account colors in comparison", async () => {
     const baseFilename = "violet-square.png";
     const compareFilename = "black-square.png";
 
