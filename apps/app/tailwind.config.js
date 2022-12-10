@@ -18,8 +18,8 @@ module.exports = {
         pending: colors.amber,
 
         // Global colors
-        bg: colors.black,
-        on: colors.slate[100],
+        bg: colors.white,
+        on: colors.yellow[300],
         "on-light": colors.slate[400],
         border: colors.slate[800],
         text: colors.slate[50],
