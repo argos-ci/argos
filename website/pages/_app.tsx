@@ -1,3 +1,4 @@
+import "../styles/globals.css";
 import { StrictMode } from "react";
 import Head from "next/head";
 import { ThemeProvider } from "@xstyled/styled-components";
