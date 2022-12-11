@@ -25,7 +25,6 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "stories/*.stories.js",
     "components/*.js"
   ],
   "exclude": ["node_modules"]
