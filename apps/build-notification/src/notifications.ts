@@ -31,11 +31,27 @@ const getNotificationPayload = async (
         .build!.$relatedQuery("screenshotDiffs")
         .where("score", ">", 0)
         .resultSize();
+      const differencesMessage = `${diffsCount} difference${
+        diffsCount > 1 ? "s" : ""
+      } detected`;
+
+      const { baseScreenshotBucket, compareScreenshotBucket } =
+        await buildNotification
+          .build!.$query()
+          .withGraphJoined("[baseScreenshotBucket, compareScreenshotBucket]");
+      const isReferenceBuild =
+        baseScreenshotBucket!.commit === compareScreenshotBucket!.commit;
+
+      if (isReferenceBuild) {
+        return {
+          state: "success",
+          description: `${differencesMessage}, no validation required`,
+        };
+      }
+
       return {
         state: "failure",
-        description: `${diffsCount} difference${
-          diffsCount > 1 ? "s" : ""
-        } detected, waiting for your decision`,
+        description: `${differencesMessage}, waiting for your decision`,
       };
     }
     case "diff-accepted":

@@ -225,10 +225,11 @@ describe("#createBuildDiffs", () => {
       ];
 
       expect(
-        getJobStatuses([addedDiff!, updatedDiff!, sameFileDiff!, removedDiff!])
+        getJobStatuses([addedDiff!, sameFileDiff!, removedDiff!])
       ).toMatchObject(["complete"]);
       expect(
         getJobStatuses([
+          updatedDiff!,
           addDiffWithoutFile!,
           noFileBaseScreenshotDiff!,
           noFileCompareScreenshotDiff!,

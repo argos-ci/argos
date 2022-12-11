@@ -56,12 +56,10 @@ export const getOrCreateBaseScreenshotBucket = async (
 };
 
 const getJobStatus = ({
-  compareWithBaseline,
   baseScreenshot,
   sameFileId,
   compareScreenshot,
 }: {
-  compareWithBaseline: boolean;
   baseScreenshot: Screenshot | null;
   sameFileId: boolean;
   compareScreenshot: Screenshot;
@@ -81,7 +79,6 @@ const getJobStatus = ({
   ) {
     return "pending" as const;
   }
-  if (compareWithBaseline) return "complete" as const;
   if (!baseScreenshot) return "complete" as const;
   if (sameFileId) return "complete" as const;
 
@@ -111,11 +108,6 @@ export const createBuildDiffs = async (build: Build) => {
         }),
       });
 
-    const compareWithBaseline = Boolean(
-      baseScreenshotBucket &&
-        baseScreenshotBucket.commit ===
-          richBuild.compareScreenshotBucket!.commit
-    );
     const sameBucket = Boolean(
       baseScreenshotBucket &&
         baseScreenshotBucket.id === richBuild.compareScreenshotBucket!.id
@@ -141,7 +133,6 @@ export const createBuildDiffs = async (build: Build) => {
           baseScreenshotId: baseScreenshot ? baseScreenshot.id : null,
           compareScreenshotId: compareScreenshot.id,
           jobStatus: getJobStatus({
-            compareWithBaseline,
             baseScreenshot: baseScreenshot ?? null,
             sameFileId,
             compareScreenshot,
