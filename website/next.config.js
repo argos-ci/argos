@@ -19,10 +19,17 @@ const nextConfig = withMDX({
   redirects: async () => {
     return [
       {
-        source: "/:organization/:repository/builds/:path*",
-        destination:
-          "https://app.argos-ci.com/:organization/:repository/builds/:path*",
+        source: "/docs",
+        destination: "/docs/installation",
         permanent: false,
+      },
+    ];
+  },
+  rewrites: async () => {
+    return [
+      {
+        source: "/docs/:path*",
+        destination: "https://argos-docs.netlify.app/:path*", // The :path parameter is used here so will not be automatically passed in the query
       },
     ];
   },
