@@ -40,6 +40,11 @@ export default class MyDocument extends Document {
             href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap"
             rel="stylesheet"
           />
+          <script
+            defer
+            data-domain="argos-ci.com"
+            src="https://plausible.io/js/script.js"
+          ></script>
         </Head>
         <body>
           {getColorModeInitScriptElement()}
