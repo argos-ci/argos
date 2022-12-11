@@ -78,7 +78,7 @@ const TokenCard = ({ repository }: { repository: Repository }) => {
       </CardBody>
       <CardFooter>
         Read{" "}
-        <Anchor href="https://docs.argos-ci.com" external>
+        <Anchor href="https://argos-ci.com/docs" external>
           Argos documentation
         </Anchor>{" "}
         for more information about installing and using it.

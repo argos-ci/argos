@@ -11,7 +11,7 @@ router.post(
   asyncHandler(() => {
     throw new HttpError(
       400,
-      "argos-cli is deprecated, use @argos-ci/cli instead. Check https://docs.argos-ci.com"
+      "argos-cli is deprecated, use @argos-ci/cli instead. Check https://argos-ci.com/docs"
     );
   })
 );

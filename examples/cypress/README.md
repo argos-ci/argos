@@ -14,9 +14,9 @@ This example only shows how to takes screenshots using Argos + Cypress.
 
 It does not include any CI integration on purpose to keep it as clear as possible.
 
-Read [Argos documentations](https://docs.argos-ci.com/) or explore [examples](https://github.com/argos-ci/argos/tree/main/examples) to find the best way to integrate your CI.
+Read [Argos documentations](https://argos-ci.com/docs) or explore [examples](https://github.com/argos-ci/argos/tree/main/examples) to find the best way to integrate your CI.
 
 ## Links
 
-- [Official Argos Docs](https://docs.argos-ci.com/)
+- [Official Argos Docs](https://argos-ci.com/docs)
 - [Discord](https://discord.gg/WjzGrQGS4A)

@@ -124,7 +124,7 @@ export const Navbar = () => {
           Help & Community
         </a>
         <a
-          href="https://docs.argos-ci.com"
+          href="https://argos-ci.com/docs"
           target="_blank"
           rel="noopener noreferrer"
           className="font-medium text-on-light transition hover:text-on"

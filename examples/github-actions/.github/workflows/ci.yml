@@ -30,7 +30,7 @@ jobs:
       # Insert here your steps required to take screenshots of
       # your components or of your application.
       #
-      # Find integrations on https://docs.argos-ci.com/
+      # Find integrations on https://argos-ci.com/docs
       # -----
 
       - name: Upload screenshots to argos-ci.com

@@ -10,10 +10,10 @@ This example showcases Argos Visual Testing running on [Travis](https://www.trav
 
 ## Setup
 
-- Follow [Argos getting started guide](https://docs.argos-ci.com/getting-started) to obtain a Argos token.
+- Follow [Argos getting started guide](https://argos-ci.com/docs) to obtain a Argos token.
 - Add `ARGOS_TOKEN` as an [encrypted environment variable on TravisCI](https://docs.travis-ci.com/user/environment-variables/#defining-encrypted-variables-in-travisyml)
 
 ## Links
 
-- [Official Argos Docs](https://docs.argos-ci.com/)
+- [Official Argos Docs](https://argos-ci.com/docs)
 - [Discord](https://discord.gg/WjzGrQGS4A)
