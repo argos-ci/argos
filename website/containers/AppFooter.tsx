@@ -80,10 +80,10 @@ export const AppFooter: React.FC = () => (
       <FooterSections>
         <FooterSection>
           <FooterSectionTitle>Getting Started</FooterSectionTitle>
-          <FooterLink href="https://docs.argos-ci.com/getting-started">
+          <FooterLink href="https://argos-ci.com/docs/getting-started">
             Installation
           </FooterLink>
-          <FooterLink href="https://docs.argos-ci.com/usage">Usage</FooterLink>
+          <FooterLink href="https://argos-ci.com/docs/usage">Usage</FooterLink>
           <FooterLink href="https://github.com/marketplace/argos-ci">
             View on GitHub Marketplace
           </FooterLink>

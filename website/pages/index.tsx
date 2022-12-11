@@ -59,7 +59,7 @@ export default function Home() {
               icon={SparklesIcon}
               clickable
               as="a"
-              href="https://docs.argos-ci.com/puppeteer"
+              href="https://argos-ci.com/docs/puppeteer"
               margin="auto"
             >
               <x.span fontWeight="500">New · </x.span>
@@ -84,7 +84,7 @@ export default function Home() {
               </Button>
               <Button
                 as="a"
-                href="https://docs.argos-ci.com"
+                href="https://argos-ci.com/docs"
                 color="secondary"
                 variant="outline"
               >

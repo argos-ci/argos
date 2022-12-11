@@ -18,7 +18,7 @@ export const AppNavbar: React.FC = () => {
           <NavbarLink href="https://github.com/marketplace/argos-ci#pricing-and-setup">
             Pricing
           </NavbarLink>
-          <NavbarLink href="https://docs.argos-ci.com/">Docs</NavbarLink>
+          <NavbarLink href="https://argos-ci.com/docs/">Docs</NavbarLink>
           <NavbarLink href="https://github.com/login/oauth/authorize?scope=user:email&client_id=Iv1.d1a5403395ac817e">
             Login
           </NavbarLink>
@@ -26,7 +26,7 @@ export const AppNavbar: React.FC = () => {
           <Button
             mt={{ _: 3, md: 0 }}
             as="a"
-            href="https://docs.argos-ci.com/"
+            href="https://argos-ci.com/docs/"
             order={{ _: -1, md: 0 }}
             mb={{ _: 4, md: 0 }}
           >
