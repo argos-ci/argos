@@ -36,7 +36,7 @@ const App = ({ Component, pageProps }: AppProps) => {
           href="/favicon-16x16.png"
         />
 
-        <meta property="og:url" content="https://www.argos-ci.com" />
+        <meta property="og:url" content="https://argos-ci.com" />
         <meta property="og:type" content="website" />
         <meta
           property="og:title"
@@ -46,14 +46,11 @@ const App = ({ Component, pageProps }: AppProps) => {
           property="og:description"
           content="Argos is a visual testing solution that fits in your workflow to avoid visual regression."
         />
-        <meta
-          property="og:image"
-          content="https://www.argos-ci.com/social.png"
-        />
+        <meta property="og:image" content="https://argos-ci.com/social.png" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta property="twitter:domain" content="argos-ci.com" />
-        <meta property="twitter:url" content="https://www.argos-ci.com" />
+        <meta property="twitter:url" content="https://argos-ci.com" />
         <meta
           name="twitter:title"
           content="Argos - Ship pixel perfect apps with no bug."
@@ -62,10 +59,7 @@ const App = ({ Component, pageProps }: AppProps) => {
           name="twitter:description"
           content="Argos is a visual testing solution that fits in your workflow to avoid visual regression."
         />
-        <meta
-          name="twitter:image"
-          content="https://www.argos-ci.com/social.png"
-        />
+        <meta name="twitter:image" content="https://argos-ci.com/social.png" />
       </Head>
       <ThemeProvider theme={theme}>
         <GlobalStyle />

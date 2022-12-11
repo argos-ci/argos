@@ -6,7 +6,7 @@
 
 # Argos website
 
-Argos website available on [www.argos-ci.com](https://www.argos-ci.com).
+Argos website available on [argos-ci.com](https://argos-ci.com).
 
 ## Links
 

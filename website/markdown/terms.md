@@ -16,7 +16,7 @@ Last motifided: May 13th, 2017.
 
 ## 2. Privacy
 
-Please see Argos’ privacy policy at [https://www.argos-ci.com/privacy](https://www.argos-ci.com/privacy) for information about how we collect, use, and disclose information about users of the Site and the Services. By using the Site and the Services, you consent to our collection, use, and disclosure of information as set forth in our privacy policy, as we may update that policy from time to time.
+Please see Argos’ privacy policy at [https://argos-ci.com/privacy](https://argos-ci.com/privacy) for information about how we collect, use, and disclose information about users of the Site and the Services. By using the Site and the Services, you consent to our collection, use, and disclosure of information as set forth in our privacy policy, as we may update that policy from time to time.
 
 ## 3. Registration
 
