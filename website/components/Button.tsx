@@ -1,101 +1,56 @@
-import { forwardRef } from "react";
 import { Button as AriakitButton } from "ariakit/button";
-import styled, { css, system } from "@xstyled/styled-components";
+import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
+import { clsx } from "clsx";
+import { forwardRef } from "react";
 
-import type { As, Options, SystemComponent } from "./types";
+export type ButtonColor = "primary" | "neutral";
+export type ButtonVariant = "contained" | "outline";
 
-export type ButtonOptions<T extends As = "button"> = Options<T> & {
-  color?: "primary" | "secondary";
-  variant?: "contained" | "outline";
-  children: React.ReactNode;
-};
-
-interface ButtonStyledProps {
-  $color?: ButtonOptions["color"];
-  $variant?: ButtonOptions["variant"];
+export interface ButtonProps extends AriakitButtonProps<"button"> {
+  color?: ButtonColor;
+  variant?: ButtonVariant;
 }
 
-const InnerButton = styled.buttonBox(
-  ({ $color = "primary", $variant }: ButtonStyledProps) => {
-    const bgColor = `button-${$color}-bg`;
-    const bgHoverColor = `button-${$color}-bg-hover`;
-    const outlineColor = `button-${$color}-outline`;
-    const outlineHoverColor = `button-${$color}-outline-hover`;
-    return css`
-      padding: 3 6;
-      font-family: default;
-      font-size: sm;
-      font-weight: 500;
-      line-height: 1;
-      transition: default;
-      transition-duration: instant;
-      text-decoration: none;
-      white-space: nowrap;
-      border-radius: lg;
-      text-align: center;
+const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
+  contained: {
+    primary:
+      "color-white border-transparent bg-primary-600 hover:bg-primary-700 active:bg-primary-800 aria-expanded:bg-primary-800",
+    neutral:
+      "color-white border-transparent bg-neutral-600 hover:bg-neutral-700 active:bg-neutral-800 aria-expanded:bg-neutral-800",
+  },
+  outline: {
+    primary:
+      "text-primary-100 border-primary-100 hover:text-primary-300 hover:border-primary-300 bg-transparent",
+    neutral:
+      "text-neutral-100 border-neutral-100 hover:text-neutral-300 hover:border-neutral-300 bg-transparent",
+  },
+};
 
-      @media (min-width: md) {
-        padding: 2 4;
-      }
-
-      &:disabled {
-        opacity: 0.38;
-      }
-
-      &:focus {
-        outline: 0;
-      }
-
-      &:focus-visible {
-        ${system.apply({
-          ring: 3,
-          ringColor: `${$color}-focus-ring`,
-        })}
-      }
-
-      ${$variant === "contained" &&
-      css`
-        color: button-contained-text;
-        background-color: ${bgColor};
-
-        &:hover:not(:disabled) {
-          background-color: ${bgHoverColor};
-        }
-      `}
-
-      ${$variant === "outline" &&
-      css`
-        color: ${outlineColor};
-        background-color: transparent;
-        border: 1;
-        border-color: ${outlineColor};
-
-        &:hover:not(:disabled) {
-          color: ${outlineHoverColor};
-          border-color: ${outlineHoverColor};
-        }
-      `}
-    `;
-  }
-);
-
-export const Button: SystemComponent<ButtonOptions> = forwardRef(
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { color = "primary", variant = "contained", children, as, ...props },
+    { color = "primary", variant = "contained", children, className, ...props },
     ref
   ) => {
+    const colorClassNames = variantClassNames[variant];
+    if (!colorClassNames) {
+      throw new Error(`Invalid variant: ${variant}`);
+    }
+    const variantClassName = colorClassNames[color];
+    if (!variantClassName) {
+      throw new Error(`Invalid color: ${color}`);
+    }
     return (
-      <AriakitButton ref={ref} {...props}>
-        {(buttonProps) => (
-          <InnerButton
-            {...buttonProps}
-            $color={color}
-            $variant={variant}
-            as={as}
-          >
-            {children}
-          </InnerButton>
+      <AriakitButton
+        ref={ref}
+        as="button"
+        className={clsx(
+          className,
+          variantClassName,
+          "align-center inline-flex whitespace-nowrap rounded-lg border py-2 px-3 font-sans text-sm font-medium leading-none transition disabled:opacity-40 [&:is(button)]:cursor-default"
         )}
+        {...props}
+      >
+        {children}
       </AriakitButton>
     );
   }

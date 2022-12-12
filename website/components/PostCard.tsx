@@ -42,7 +42,7 @@ export const PostCardBody: React.FC<{ children: React.ReactNode }> = (
 ) => <div className="py-4" {...props} />;
 
 export const PostCardTag: React.FC<{ children: React.ReactNode }> = (props) => (
-  <p className="text-xs text-slate-400 mb-2" {...props} />
+  <p className="text-xs text-on-light mb-2" {...props} />
 );
 
 export const PostCardTitle = ({
@@ -75,4 +75,4 @@ export const PostCardAuthor: React.FC<{ children: React.ReactNode }> = (
 
 export const PostCardDate: React.FC<{ children: React.ReactNode }> = (
   props
-) => <div className="text-slate-400" {...props} />;
+) => <div className="text-on-light" {...props} />;

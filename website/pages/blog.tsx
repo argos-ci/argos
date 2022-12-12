@@ -17,7 +17,7 @@ import visualTestingImage from "@/articles/visual-testing/main.jpg";
 
 export default function Blog() {
   return (
-    <Container my={10}>
+    <Container className="my-10">
       <div className="flex flex-col md:flex-row items-baseline gap-x-2">
         <h2 className="font-semibold text-white">Latest updates</h2>
         <div
@@ -27,7 +27,7 @@ export default function Blog() {
         >
           |
         </div>
-        <div className="text-sm text-slate-400">
+        <div className="text-sm text-on-light">
           All the latest Argos news, straight from the team.
         </div>
       </div>

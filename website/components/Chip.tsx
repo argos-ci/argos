@@ -1,71 +1,41 @@
-import { forwardRef } from "react";
-import styled, { css } from "@xstyled/styled-components";
+import {
+  cloneElement,
+  ComponentProps,
+  forwardRef,
+  Children,
+  ReactElement,
+} from "react";
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
+import clsx from "clsx";
 
-import type { As, Options, SystemComponent } from "./types";
-
-export type ChipOptions<T extends As = "div"> = Options<T> & {
-  children: React.ReactNode;
-  icon?: React.ComponentType;
+export interface ChipProps extends ComponentProps<"div"> {
+  icon?: React.ComponentType<{ className?: string }>;
   clickable?: boolean;
-};
-
-interface ChipStyledProps {
-  $clickable?: ChipOptions["clickable"];
+  asChild?: boolean;
 }
 
-const InnerChip = styled.box(
-  (p: ChipStyledProps) => css`
-    display: inline-flex;
-    align-items: center;
-    gap: 2;
-    background-color: chip-bg;
-    color: chip-on;
-    border-radius: chip;
-    width: fit-content;
-    padding: 2 4;
-    font-size: sm;
-    font-weight: 500;
-    text-decoration: none;
-
-    > [data-chip-icon] {
-      width: 1em;
-      height: 1em;
+export const Chip = forwardRef<HTMLDivElement, ChipProps>(
+  ({ children, clickable, asChild, icon: Icon, className, ...props }, ref) => {
+    const child = asChild ? Children.only(children as ReactElement) : null;
+    const renderProps = {
+      className: clsx(
+        className,
+        "group/chip inline-flex items-center gap-2 text-primary-300 bg-primary-900/50 rounded-2xl text-sm font-medium py-2 px-4 no-underline w-fit",
+        clickable && "hover:bg-primary-900 transition"
+      ),
+      children: (
+        <>
+          {Icon && <Icon className="w-[1em] h-[1em]" />}
+          {child ? child.props.children : children}
+          {clickable ? (
+            <ChevronRightIcon className="w-[1em] h-[1em] opacity-50 transition group-hover/chip:opacity-100 group-hover/chip:translate-x-1 group-hover/chip:scale-110" />
+          ) : null}
+        </>
+      ),
+    };
+    if (asChild) {
+      return cloneElement(Children.only(children as ReactElement), renderProps);
     }
-
-    ${p.$clickable &&
-    css`
-      transition: default;
-      will-change: background-color;
-
-      > [data-chip-arrow] {
-        opacity: 0.5;
-        transition: default;
-        will-change: transform opacity;
-      }
-
-      &:hover {
-        background-color: chip-bg-hover;
-
-        > [data-chip-arrow] {
-          transform: translateX(4px) scale(1.1);
-          opacity: 1;
-        }
-      }
-    `}
-  `
-);
-
-export const Chip: SystemComponent<ChipOptions> = forwardRef(
-  ({ children, clickable, icon: Icon, ...props }, ref) => {
-    return (
-      <InnerChip ref={ref} $clickable={clickable} {...props}>
-        {Icon && <Icon data-chip-icon="true" />}
-        {children}
-        {clickable ? (
-          <ChevronRightIcon data-chip-icon="" data-chip-arrow="" />
-        ) : null}
-      </InnerChip>
-    );
+    return <div ref={ref} {...renderProps} {...props} />;
   }
 );

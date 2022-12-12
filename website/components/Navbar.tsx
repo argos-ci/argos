@@ -1,87 +1,24 @@
 import { useState, useEffect, useRef } from "react";
-import styled, { css, up, x } from "@xstyled/styled-components";
 import { Dialog, DialogDisclosure, useDialogState } from "ariakit/dialog";
 import { Burger } from "./Burger";
 import { Container } from "./Container";
 import { Link } from "./Link";
 
 import type { DialogState } from "ariakit/dialog";
+import clsx from "clsx";
 
-export const Nav = styled.nav<{ $scrolled: boolean }>`
-  background-color: lighter;
-  position: sticky;
-  top: 0;
-  left: 0;
-  z-index: 1;
-  backdrop-filter: saturate(180%) blur(5px);
-  padding: 3 0;
-  font-size: sm;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.2s ease-in-out;
-
-  ${up(
-    "md",
-    css`
-      background-color: transparent;
-    `
-  )};
-
-  ${(p) =>
-    p.$scrolled &&
-    css`
-      border-bottom-color: layout-border;
-    `}
-`;
-
-export const NavbarSecondary: React.FC<{ children: React.ReactNode }> = ({
+const NavbarSecondary: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => (
-  <x.div
-    display={{ _: "none", md: "flex" }}
-    flex={1}
-    alignItems="center"
-    justifyContent="flex-end"
-    gap={{ md: 8 }}
-  >
+  <div className="hidden md:flex flex-1 items-center justify-end gap-8">
     {children}
-  </x.div>
+  </div>
 );
 
 export const NavbarLink: React.FC<{
   href: string;
   children: React.ReactNode;
-}> = (props) => (
-  <Link
-    display="block"
-    color={{ _: "darker", hover: "on-light", focus: "on-light" }}
-    outline="none"
-    py={3}
-    {...props}
-  />
-);
-
-const MobileMenuContainer = styled(Container)`
-  position: fixed;
-  background-color: lighter;
-  top: 68px;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 1;
-  overflow: auto;
-  padding: 6;
-
-  display: flex;
-  flex-direction: column;
-  gap: 3;
-
-  ${up(
-    "md",
-    css`
-      display: none;
-    `
-  )}
-`;
+}> = (props) => <Link className="block py-3" {...props} />;
 
 interface MobileMenuProps {
   children: React.ReactNode;
@@ -99,7 +36,9 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ children, dialog }) => {
       aria-label="Menu"
       state={dialog}
     >
-      <MobileMenuContainer>{children}</MobileMenuContainer>
+      <div className="fixed bg-black top-[68px] right-0 bottom-0 left-0 z-10 overflow-auto p-6 flex flex-col gap-3 md:hidden">
+        {children}
+      </div>
     </Dialog>
   );
 };
@@ -139,13 +78,14 @@ export const Navbar: React.FC<NavbarProps> = ({ primary, secondary }) => {
   });
 
   return (
-    <Nav $scrolled={scrolled}>
+    <nav
+      className={clsx(
+        "sticky top-0 left-0 z-10 backdrop-blur-[5px] backdrop-saturate-[180%] py-3 text-sm border-b border-b-transparent transition bg-black md:bg-transparent",
+        scrolled && "border-b-slate-800"
+      )}
+    >
       <MobileMenu dialog={dialog}>{secondary}</MobileMenu>
-      <Container
-        display="flex"
-        alignItems="center"
-        justifyContent={{ _: "space-between", md: "flex-start" }}
-      >
+      <Container className="flex items-center justify-between md:justify-start">
         {primary}
         <NavbarSecondary>{secondary}</NavbarSecondary>
         <DialogDisclosure
@@ -154,6 +94,6 @@ export const Navbar: React.FC<NavbarProps> = ({ primary, secondary }) => {
           as={Burger}
         />
       </Container>
-    </Nav>
+    </nav>
   );
 };

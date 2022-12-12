@@ -1,9 +1,6 @@
 import "@/styles/globals.css";
 import { StrictMode } from "react";
 import Head from "next/head";
-import { ThemeProvider } from "@xstyled/styled-components";
-import { theme } from "@/components/Theme";
-import { GlobalStyle } from "@/components/GlobalStyle";
 import type { AppProps } from "next/app";
 import { AppNavbar } from "@/containers/AppNavbar";
 import { AppFooter } from "@/containers/AppFooter";
@@ -66,16 +63,13 @@ const App = ({ Component, pageProps }: AppProps) => {
         />
         <meta name="twitter:image" content="https://argos-ci.com/social.png" />
       </Head>
-      <ThemeProvider theme={theme}>
-        <GlobalStyle />
-        <div id="content" className={inter.className}>
-          <AppNavbar />
-          <main>
-            <Component {...pageProps} />
-          </main>
-          <AppFooter />
-        </div>
-      </ThemeProvider>
+      <div id="content" className={inter.className}>
+        <AppNavbar />
+        <main>
+          <Component {...pageProps} />
+        </main>
+        <AppFooter />
+      </div>
     </StrictMode>
   );
 };

@@ -1,17 +1,16 @@
 import { ArgosLogo } from "@/components/ArgosLogo";
-import { x } from "@xstyled/styled-components";
 import { Button } from "@/components/Button";
 import React from "react";
 import { Navbar, NavbarLink } from "@/components/Navbar";
-import { Link } from "@/components/Link";
+import NextLink from "next/link";
 
 export const AppNavbar: React.FC = () => {
   return (
     <Navbar
       primary={
-        <Link href="/">
-          <x.svg as={ArgosLogo} h={10} mt={1} />
-        </Link>
+        <NextLink href="/">
+          <ArgosLogo className="h-10 mt-1" />
+        </NextLink>
       }
       secondary={
         <>
@@ -24,14 +23,12 @@ export const AppNavbar: React.FC = () => {
             Login
           </NavbarLink>
 
-          <Button
-            mt={{ _: 3, md: 0 }}
-            as="a"
-            href="https://argos-ci.com/docs/"
-            order={{ _: -1, md: 0 }}
-            mb={{ _: 4, md: 0 }}
-          >
-            Get Started
+          <Button className="mt-3 md:mt-0 -order-1 md:order-[0] mb-4 md:mb-0">
+            {(buttonProps) => (
+              <a {...buttonProps} href="https://docs.argos-ci.com/">
+                Get Started
+              </a>
+            )}
           </Button>
         </>
       }

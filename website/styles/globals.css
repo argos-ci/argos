@@ -1,3 +1,76 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    color-scheme: dark;
+    accent-color: theme(colors.primary.500);
+    color: theme(colors.slate.100);
+    background-color: theme(colors.black);
+  }
+
+  #content {
+    contain: paint;
+  }
+}
+
+@layer components {
+  .burger-menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 20px;
+    height: 18px;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    transition: 300ms;
+    transition-property: opacity;
+
+    & > span {
+      width: 20px;
+      height: 2px;
+      background-color: theme("colors.white");
+      transition: 300ms;
+      transition-property: all;
+      position: relative;
+
+      &:nth-child(2) {
+        opacity: 1;
+      }
+    }
+
+    &[aria-expanded="true"] {
+      & > span:nth-child(1) {
+        transform: translateY(6px) rotate(45deg);
+      }
+
+      & > span:nth-child(2) {
+        opacity: 0;
+        transform: translateX(10px);
+      }
+
+      & > span:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
+      }
+    }
+  }
+
+  @media screen(md) {
+    .burger-menu {
+      display: none;
+    }
+  }
+
+  @keyframes slide {
+    from {
+      transform: translateX(0%);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}

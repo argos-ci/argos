@@ -1,45 +1,17 @@
-import styled, { x } from "@xstyled/styled-components";
 import { Container } from "./Container";
 
-export interface TestimonialsProps {
-  children: React.ReactNode;
-  gap: number;
-}
-
-const TestimonialsContainer = styled.div`
-  img {
-    filter: brightness(0) invert(1);
-  }
-`;
-
-const Slider = styled.box`
-  overflow: hidden;
-  position: relative;
-
-  [data-slide-track] {
-    animation: slide 20s linear infinite;
-    width: max-content;
-  }
-`;
-
-export const Testimonials: React.FC<TestimonialsProps> = ({
-  children,
-  gap,
-}) => {
+export const Testimonials = ({ children }: { children: React.ReactNode }) => {
   return (
-    <TestimonialsContainer>
-      <Container
-        display={{ _: "none", lg: "flex" }}
-        justifyContent="space-between"
-      >
+    <div className="[&_img]:brightness-0 [&_img]:invert">
+      <Container className="hidden lg:flex justify-between">
         {children}
       </Container>
-      <Slider display={{ _: "block", lg: "none" }}>
-        <x.div data-slide-track="" display="flex" gap={gap} pr={gap}>
+      <div className="lg:hidden overflow-hidden relative">
+        <div className="flex animate-[slide_20s_linear_infinite] w-max gap-10 pr-10">
           {children}
           {children}
-        </x.div>
-      </Slider>
-    </TestimonialsContainer>
+        </div>
+      </div>
+    </div>
   );
 };

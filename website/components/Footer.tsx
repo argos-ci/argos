@@ -1,49 +1,29 @@
-import { x } from "@xstyled/styled-components";
-import { Link } from "./Link";
+import NextLink from "next/link";
 
-export const FooterSections: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => (
-  <x.div
-    display="flex"
-    justifyContent="space-between"
-    flexWrap="wrap"
-    rowGap={10}
-    columnGap={2}
-  >
-    {children}
-  </x.div>
+export const FooterSections = (props: { children: React.ReactNode }) => (
+  <div className="flex justify-between flex-wrap gap-y-10 gap-x-2">
+    {props.children}
+  </div>
 );
 
-export const FooterSection: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => (
-  <x.div
-    display="flex"
-    flexDirection="column"
-    gap={2}
-    flexGrow={1}
-    flexBasis="140px"
-  >
-    {children}
-  </x.div>
+export const FooterSection = (props: { children: React.ReactNode }) => (
+  <div className="flex flex-col gap-2 flex-grow basis-36">{props.children}</div>
 );
 
-export const FooterSectionTitle: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => (
-  <x.div mb={1} fontWeight="semibold" color="on">
-    {children}
-  </x.div>
+export const FooterSectionTitle = (props: { children: React.ReactNode }) => (
+  <div className="mb-1 font-semibold text-on">{props.children}</div>
 );
 
-export const FooterLink: React.FC<{
+export const FooterLink = (props: {
   children: React.ReactNode;
   href: string;
-}> = ({ children, href }) => (
+}) => (
   <div>
-    <Link color={{ _: "on-light", hover: "on" }} href={href}>
-      {children}
-    </Link>
+    <NextLink
+      className="transition no-underline text-on-light hover:text-on"
+      href={props.href}
+    >
+      {props.children}
+    </NextLink>
   </div>
 );

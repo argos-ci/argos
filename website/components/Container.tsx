@@ -1,9 +1,13 @@
-import { forwardRef } from "react";
-import { x } from "@xstyled/styled-components";
-import type { Options, SystemComponent } from "./types";
+import { clsx } from "clsx";
 
-export const Container: SystemComponent<Options<"div">> = forwardRef(
-  (props, ref) => (
-    <x.div ref={ref} maxW={1024} mx="auto" px={{ _: 4, sm: 8 }} {...props} />
-  )
-);
+export const Container = ({
+  className,
+  ...props
+}: React.ComponentProps<"div">) => {
+  return (
+    <div
+      className={clsx(className, "container mx-auto px-4 sm:px-8 max-w-5xl")}
+      {...props}
+    />
+  );
+};

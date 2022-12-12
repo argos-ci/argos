@@ -1,6 +1,5 @@
 /* eslint-disable react/no-unescaped-entities */
 import Image from "next/image";
-import { x } from "@xstyled/styled-components";
 import {
   SparklesIcon,
   EyeIcon,
@@ -39,61 +38,48 @@ import { RotateBackground } from "@/components/RotateBackground";
 
 export default function Home() {
   return (
-    <x.div display="flex" flexDirection="column" gap={{ _: 176, md: 240 }}>
-      <RotateBackground
-        backgroundImage="gradient-to-b"
-        gradientFrom="lighter"
-        gradientTo="hero-bg"
-        py={20}
-      >
-        <Container
-          display="flex"
-          gap={11}
-          alignItems="center"
-          flexDirection="column"
-          mb={20}
-          textAlign="center"
-        >
-          <x.div display="flex" flexDirection="column" gap={6} flex={1}>
-            <Chip
-              icon={SparklesIcon}
-              clickable
-              as="a"
-              href="https://argos-ci.com/docs/puppeteer"
-              margin="auto"
-            >
-              <x.span fontWeight="500">New · </x.span>
-              Puppeteer support
+    <div className="flex flex-col gap-[176px] md:gap-[240px]">
+      <RotateBackground className="bg-gradient-to-b from-black to-blue-800/30 py-20">
+        <Container className="flex gap-11 items-center flex-col mb-20 text-center">
+          <div className="flex flex-col gap-6 flex-1">
+            <Chip icon={SparklesIcon} clickable asChild className="mx-auto">
+              <a href="https://argos-ci.com/docs/puppeteer">
+                <span className="font-semibold">New · </span>
+                Puppeteer support
+              </a>
             </Chip>
-            <x.h1 text={{ _: "h1-sm", sm: "h1" }}>
+            <h1 className="text-4xl sm:leading-tight sm:text-6xl font-bold">
               Ship pixel perfect apps
               <br />
               with no bug.
-            </x.h1>
-            <x.p text={{ _: "teaser-sm", sm: "teaser" }}>
+            </h1>
+            <p className="text-on-light text-xl">
               Meet the new standard for modern visual testing.
               <br />
               Review visual changes in your development workflow.
-            </x.p>
-            <x.div display="flex" gap={{ _: 4, sm: 6 }} mt={6} mx="auto">
-              <Button
-                as="a"
-                href="https://app.argos-ci.com/argos-ci/www.argos-ci.com/builds/66"
-              >
-                View a demo build
+            </p>
+            <div className="flex gap-4 sm:gap-6 mt-6 mx-auto">
+              <Button>
+                {(buttonProps) => (
+                  <a
+                    {...buttonProps}
+                    href="https://app.argos-ci.com/argos-ci/www.argos-ci.com/builds/66"
+                  >
+                    View a demo build
+                  </a>
+                )}
               </Button>
-              <Button
-                as="a"
-                href="https://argos-ci.com/docs"
-                color="secondary"
-                variant="outline"
-              >
-                Documentation
+              <Button color="neutral" variant="outline">
+                {(buttonProps) => (
+                  <a {...buttonProps} href="/docs">
+                    Documentation
+                  </a>
+                )}
               </Button>
-            </x.div>
-          </x.div>
+            </div>
+          </div>
 
-          <x.div flex={1} mt={{ _: 6, sm: 10 }}>
+          <div className="flex-1 mt-6 sm:mt-10">
             <Image
               src={argosBuildExample}
               alt="build example"
@@ -105,24 +91,17 @@ export default function Home() {
                 boxShadow: "0 -10px 100px 20px rgba(201, 136, 248, 0.2)",
               }}
             />
-          </x.div>
+          </div>
         </Container>
       </RotateBackground>
 
-      <Container
-        as="section"
-        display="flex"
-        flexDirection="column"
-        gap={6}
-        alignItems="center"
-        textAlign="center"
-      >
+      <Container className="flex flex-col gap-6 items-center text-center">
         <Chip icon={EyeIcon}>What is Argos?</Chip>
-        <x.h2 text="h2">Visual testing powered by CI</x.h2>
-        <x.p text="teaser" mb={2}>
+        <h2 className="text-3xl font-semibold">Visual testing powered by CI</h2>
+        <p className="text-xl text-on-light mb-10">
           Compare your pull requests screenshots with baseline to secure your
           delivery. Designed to fit seamlessly in your development routine.
-        </x.p>
+        </p>
         <FeatureList>
           <Feature>
             <FeatureIcon icon={CameraIcon} color="primary" />
@@ -151,116 +130,80 @@ export default function Home() {
         </FeatureList>
       </Container>
 
-      <Container
-        as="section"
-        display="flex"
-        flexDirection={{ _: "column", md: "row" }}
-        alignItems="center"
-        gap={16}
-      >
-        <x.div flex={1} display="flex" justifyContent="center">
+      <Container className="flex flex-col md:flex-row gap-16 items-center">
+        <div className="flex-1 flex justify-center">
           <Image
             src={integrationImage}
             alt="Argos Integrations"
             style={{ maxWidth: "100%", height: "auto" }}
           />
-        </x.div>
-        <x.div display="flex" flexDirection="column" gap={6} flex={1}>
+        </div>
+        <div className="flex flex-col gap-6 flex-1">
           <Chip icon={Square3Stack3DIcon}>Easy integration</Chip>
-          <x.h2 text="h2">Compatible with your stack</x.h2>
-          <x.p text="teaser">
+          <h2 className="text-3xl font-semibold">Compatible with your stack</h2>
+          <p className="text-on-light text-xl">
             Argos offers integrations (SDK) for the most famous frameworks,
             testing libraries, and CI providers. As long as you can take
             screenshots, you can use Argos.
-          </x.p>
-        </x.div>
+          </p>
+        </div>
       </Container>
 
-      <Container
-        as="section"
-        display="flex"
-        flexDirection={{ _: "column", md: "row" }}
-        gap={20}
-        alignItems="center"
-      >
-        <x.div
-          flex={1}
-          display={{ _: "flex", md: "none" }}
-          justifyContent="center"
-          w={1}
-        >
+      <Container className="flex flex-col md:flex-row gap-20 items-center">
+        <div className="flex-1 flex md:hidden justify-center w-full">
           <Image
             src={unifiedMobileImage}
             alt="Unified platform"
             style={{ maxWidth: "100%", height: "auto" }}
           />
-        </x.div>
+        </div>
 
-        <x.div flex={1} display="flex" flexDirection="column" gap={6}>
+        <div className="flex-1 flex flex-col gap-6">
           <Chip icon={GlobeAltIcon}>Universal testing</Chip>
-          <x.h2 text="h2">Review websites, apps and components together</x.h2>
-          <x.p text="teaser">
+          <h2 className="text-3xl font-semibold">
+            Review websites, apps and components together
+          </h2>
+          <p className="text-on-light text-xl">
             Use Argos to secure whole pages and individual components from
             regressions on several resolutions and browsers. Use a single tool
             for visual testing.
-          </x.p>
-        </x.div>
+          </p>
+        </div>
 
-        <x.div flex={1} display={{ _: "none", md: "block" }}>
+        <div className="flex-1 hidden md:block">
           <Image
             src={unifiedDesktopImage}
             alt="Unified platform"
             style={{ maxWidth: "100%", height: "auto" }}
           />
-        </x.div>
+        </div>
       </Container>
 
-      <RotateBackground
-        as="section"
-        backgroundImage="gradient-to-b"
-        gradientFrom="testimonials-bg-top"
-        gradientTo="testimonials-bg-bottom"
-        pt={120}
-        pb={150}
-      >
-        <Container
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          gap={8}
-          textAlign="center"
-          mb={8}
-        >
-          <x.div text="quote">
+      <RotateBackground className="bg-gradient-to-b from-fuchsia-800/30 to-blue-800/30 pt-[120px] pb-[150px]">
+        <Container className="flex flex-col items-center gap-8 mb-8 text-center">
+          <div className="text-3xl font-medium">
             "Argos helps us every day to avoid regression on all MUI
             components."
-          </x.div>
-          <x.div borderRadius="full" overflow="hidden">
+          </div>
+          <div className="rounded-full overflow-hidden">
             <Image
               src={tassinariProfile}
               alt="Olivier Tassinari"
               height={80}
               width={80}
             />
-          </x.div>
-          <x.div lineHeight={1.5} fontWeight="semibold">
+          </div>
+          <div className="font-semibold">
             Olivier Tassinari
             <br />
             Co-founder & CEO of MUI
-          </x.div>
-          <x.hr borderBottom={1} borderColor="primary-border" w={1} />
-          <x.div
-            color="on"
-            fontWeight="medium"
-            fontSize="sm"
-            lineHeight={1.4}
-            letterSpacing="widest"
-            textTransform="uppercase"
-          >
+          </div>
+          <hr className="border-b border-b-primary-800 w-full" />
+          <div className="font-semibold text-sm tracking-widest uppercase">
             Trusted by the best front-end teams
-          </x.div>
+          </div>
         </Container>
-        <Testimonials gap={10}>
+        <Testimonials>
           <Image
             className="testimonial"
             priority={true}
@@ -296,32 +239,23 @@ export default function Home() {
       </RotateBackground>
 
       <Container>
-        <x.section
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          gap={6}
-          textAlign="center"
-          mb={200}
-        >
+        <section className="flex flex-col items-center gap-6 text-center mb-48">
           <Chip icon={HeartIcon}>Open source</Chip>
-          <x.h2 text="h2">Join the community</x.h2>
-          <x.p text="teaser">
+          <h2 className="text-3xl font-semibold">Join the community</h2>
+          <p className="text-on-light text-xl">
             Argos is open source and community driven. Supported by a network of
             early advocates, contributors, and champions.
-          </x.p>
-          <Button
-            display="flex"
-            gap={1}
-            w="fit-content"
-            as="a"
-            href="https://discord.gg/FNGFpJS9"
-          >
-            <x.svg as={ChatBubbleLeftRightIcon} w={4} />
-            Join us on Discord
+          </p>
+          <Button className="flex gap-1 w-fit">
+            {(buttonProps) => (
+              <a {...buttonProps} href="https://discord.gg/FNGFpJS9">
+                <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                Join us on Discord
+              </a>
+            )}
           </Button>
-        </x.section>
+        </section>
       </Container>
-    </x.div>
+    </div>
   );
 }
