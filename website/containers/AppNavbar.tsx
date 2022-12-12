@@ -15,10 +15,11 @@ export const AppNavbar: React.FC = () => {
       }
       secondary={
         <>
+          <NavbarLink href="https://argos-ci.com/docs/">Docs</NavbarLink>
           <NavbarLink href="https://github.com/marketplace/argos-ci#pricing-and-setup">
             Pricing
           </NavbarLink>
-          <NavbarLink href="https://argos-ci.com/docs/">Docs</NavbarLink>
+          <NavbarLink href="/blog">Blog</NavbarLink>
           <NavbarLink href="https://github.com/login/oauth/authorize?scope=user:email&client_id=Iv1.d1a5403395ac817e">
             Login
           </NavbarLink>
