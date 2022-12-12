@@ -21,6 +21,7 @@ import {
   getTokenOctokit,
 } from "@argos-ci/github";
 
+import * as helpers from "../helpers.js";
 import { cancelPurchase } from "./eventHelpers.js";
 import type { GitHubRepository } from "./types.js";
 import { updatePurchase } from "./updatePurchase.js";
@@ -508,7 +509,7 @@ export class GitHubSynchronizer {
     if (!octokit) {
       await Promise.all(
         installation.users!.map(async (user) =>
-          this.synchronizeFromUser(user.id)
+          helpers.synchronizeFromUserId(user.id)
         )
       );
       await this.synchronizeInstallationRepositoryRights([], installationId);
@@ -520,7 +521,9 @@ export class GitHubSynchronizer {
     await this.synchronizeAppRepositories(installationId);
 
     await Promise.all(
-      installation.users!.map(async (user) => this.synchronizeFromUser(user.id))
+      installation.users!.map(async (user) =>
+        helpers.synchronizeFromUserId(user.id)
+      )
     );
   }
 
