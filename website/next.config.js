@@ -23,6 +23,12 @@ const nextConfig = withMDX({
         destination: "/docs/installation",
         permanent: false,
       },
+      {
+        source: "/:organization/:repository/builds/:path*",
+        destination:
+          "https://app.argos-ci.com/:organization/:repository/builds/:path*",
+        permanent: false,
+      },
     ];
   },
   rewrites: async () => {
