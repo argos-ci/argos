@@ -11,20 +11,30 @@ export interface MainImageProps extends ImageProps {
   credit: ReactNode;
 }
 
-export const MainImage = ({ credit, ...props }: MainImageProps) => (
+export const MainImage = ({
+  credit,
+  width,
+  height,
+  ...props
+}: MainImageProps) => (
   <figure>
-    <Image
-      {...props}
-      priority
+    <div
       className="not-prose rounded-lg"
       style={{
-        objectFit: "cover",
         aspectRatio: "2/1",
-        width: "100%",
-        height: "auto",
+        position: "relative",
       }}
-      alt="Staircase / eye in library — Photo by Petri Heiskanen"
-    />
+    >
+      <Image
+        {...props}
+        priority
+        fill
+        alt="Staircase / eye in library — Photo by Petri Heiskanen"
+        style={{
+          objectFit: "cover",
+        }}
+      />
+    </div>
     <figcaption className="text-center text-sm text-on-light">
       {credit}
     </figcaption>

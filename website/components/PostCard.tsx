@@ -23,21 +23,28 @@ export interface PostCardImageProps extends ImageProps {
 export const PostCardImage = ({
   extended,
   alt,
+  width,
+  height,
   ...props
 }: PostCardImageProps) => {
   return (
-    <Image
-      {...props}
-      priority={Boolean(extended)}
-      alt={alt}
+    <div
       className="rounded-t-lg"
       style={{
-        objectFit: "cover",
+        position: "relative",
         aspectRatio: extended ? "21/9" : "2/1",
-        width: "100%",
-        height: "auto",
       }}
-    />
+    >
+      <Image
+        {...props}
+        fill
+        priority={Boolean(extended)}
+        alt={alt}
+        style={{
+          objectFit: "cover",
+        }}
+      />
+    </div>
   );
 };
 
