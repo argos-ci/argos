@@ -36,10 +36,6 @@ export default class MyDocument extends Document {
     return (
       <Html>
         <Head>
-          <link
-            href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap"
-            rel="stylesheet"
-          />
           <script
             defer
             data-domain="argos-ci.com"

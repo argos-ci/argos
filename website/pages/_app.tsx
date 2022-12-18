@@ -1,4 +1,4 @@
-import "../styles/globals.css";
+import "@/styles/globals.css";
 import { StrictMode } from "react";
 import Head from "next/head";
 import { ThemeProvider } from "@xstyled/styled-components";
@@ -7,6 +7,10 @@ import { GlobalStyle } from "@/components/GlobalStyle";
 import type { AppProps } from "next/app";
 import { AppNavbar } from "@/containers/AppNavbar";
 import { AppFooter } from "@/containers/AppFooter";
+import { Inter } from "@next/font/google";
+
+// If loading a variable font, you don't need to specify the font weight
+const inter = Inter({ subsets: ["latin"] });
 
 const App = ({ Component, pageProps }: AppProps) => {
   return (
@@ -64,7 +68,7 @@ const App = ({ Component, pageProps }: AppProps) => {
       </Head>
       <ThemeProvider theme={theme}>
         <GlobalStyle />
-        <div id="content">
+        <div id="content" className={inter.className}>
           <AppNavbar />
           <main>
             <Component {...pageProps} />

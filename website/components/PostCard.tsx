@@ -1,4 +1,5 @@
-import Image from "next/image";
+import Image, { ImageProps } from "next/image";
+import { clsx } from "clsx";
 
 export const PostCard = ({
   extended,
@@ -8,32 +9,30 @@ export const PostCard = ({
   children: React.ReactNode;
 }) => (
   <div
-    className={`rounded-lg shadow-md text-left ${extended ? "col-span-2" : ""}`}
+    className={clsx("rounded-lg shadow-md text-left", extended && "col-span-2")}
   >
     {children}
   </div>
 );
 
-export const PostCardImage = ({
-  alt,
-  src,
-  extended,
-}: {
+export interface PostCardImageProps extends ImageProps {
   extended?: Boolean;
-  alt: string;
-  src: string;
-}) => {
-  const width = extended ? 990 : 800;
-  const height = extended ? width / (16 / 9) : width / (2 / 1);
+}
 
+export const PostCardImage = ({
+  extended,
+  alt,
+  ...props
+}: PostCardImageProps) => {
   return (
     <Image
-      className="rounded-t-lg"
-      width={width}
-      height={height}
-      alt={alt}
-      src={src}
+      {...props}
       priority={Boolean(extended)}
+      alt={alt}
+      className={clsx(
+        "object-cover rounded-t-lg overflow-hidden w-full",
+        extended ? "aspect-[21/9]" : "aspect-[2/1]"
+      )}
     />
   );
 };
@@ -55,7 +54,7 @@ export const PostCardTitle = ({
 }) => (
   <h2
     className={`mb-2 ${
-      extended ? "text-2xl" : "text-4xl"
+      extended ? "text-4xl" : "text-2xl"
     } font-bold text-white`}
   >
     {children}
