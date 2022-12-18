@@ -17,7 +17,7 @@ import visualTestingImage from "@/articles/visual-testing/main.jpg";
 
 export default function Blog() {
   return (
-    <Container className="my-10">
+    <Container className="my-10" style={{ contain: "none" }}>
       <div className="flex flex-col md:flex-row items-baseline gap-x-2">
         <h2 className="font-semibold text-white">Latest updates</h2>
         <div

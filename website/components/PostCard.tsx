@@ -1,3 +1,4 @@
+import type { ComponentProps, ReactNode } from "react";
 import Image, { ImageProps } from "next/image";
 import { clsx } from "clsx";
 
@@ -6,7 +7,7 @@ export const PostCard = ({
   children,
 }: {
   extended?: Boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) => (
   <div
     className={clsx("rounded-lg shadow-md text-left", extended && "col-span-2")}
@@ -29,17 +30,20 @@ export const PostCardImage = ({
       {...props}
       priority={Boolean(extended)}
       alt={alt}
-      className={clsx(
-        "object-cover rounded-t-lg overflow-hidden w-full",
-        extended ? "aspect-[21/9]" : "aspect-[2/1]"
-      )}
+      className="rounded-t-lg"
+      style={{
+        objectFit: "cover",
+        aspectRatio: extended ? "21/9" : "2/1",
+        width: "100%",
+        height: "auto",
+      }}
     />
   );
 };
 
-export const PostCardBody: React.FC<{ children: React.ReactNode }> = (
-  props
-) => <div className="py-4" {...props} />;
+export const PostCardBody = (props: ComponentProps<"div">) => (
+  <div className="py-4" {...props} />
+);
 
 export const PostCardTag: React.FC<{ children: React.ReactNode }> = (props) => (
   <p className="text-xs text-on-light mb-2" {...props} />
@@ -50,7 +54,7 @@ export const PostCardTitle = ({
   children,
 }: {
   extended?: Boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) => (
   <h2
     className={`mb-2 ${
@@ -61,17 +65,17 @@ export const PostCardTitle = ({
   </h2>
 );
 
-export const PostCardDescription: React.FC<{ children: React.ReactNode }> = (
-  props
-) => <div className="mb-8 text-gray-100 leading-normal" {...props} />;
+export const PostCardDescription = (props: ComponentProps<"div">) => (
+  <div className="mb-8 text-slate-100 leading-normal" {...props} />
+);
 
-export const PostCardFooter: React.FC<{ children: React.ReactNode }> = (
-  props
-) => <div className="text-sm text-gray-100 flex gap-2" {...props} />;
+export const PostCardFooter = (props: ComponentProps<"div">) => (
+  <div className="text-sm text-slate-100 flex gap-2" {...props} />
+);
 
-export const PostCardAuthor: React.FC<{ children: React.ReactNode }> = (
-  props
-) => <div className="text-slate-100" {...props} />;
+export const PostCardAuthor = (props: ComponentProps<"div">) => (
+  <div className="text-slate-100" {...props} />
+);
 
 export const PostCardDate: React.FC<{ children: React.ReactNode }> = (
   props

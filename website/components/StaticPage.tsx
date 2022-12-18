@@ -10,7 +10,10 @@ export const StaticPage: React.FC<{
       <Head>
         <title>{title}</title>
       </Head>
-      <article className="prose prose-invert mx-auto max-w-none mt-14 mb-24">
+      <article
+        className="prose prose-invert mx-auto max-w-none mt-14 mb-24"
+        style={{ contain: "none" }}
+      >
         <Container>{children}</Container>
       </article>
     </>

@@ -16,7 +16,13 @@ export const MainImage = ({ credit, ...props }: MainImageProps) => (
     <Image
       {...props}
       priority
-      className="not-prose object-cover aspect-[2/1] rounded-lg w-full"
+      className="not-prose rounded-lg"
+      style={{
+        objectFit: "cover",
+        aspectRatio: "2/1",
+        width: "100%",
+        height: "auto",
+      }}
       alt="Staircase / eye in library — Photo by Petri Heiskanen"
     />
     <figcaption className="text-center text-sm text-on-light">
