@@ -23,6 +23,7 @@ export const MainImage = ({
       style={{
         aspectRatio: "2/1",
         position: "relative",
+        overflow: "hidden",
       }}
     >
       <Image
@@ -32,6 +33,7 @@ export const MainImage = ({
         alt="Staircase / eye in library — Photo by Petri Heiskanen"
         style={{
           objectFit: "cover",
+          overflow: "hidden",
         }}
       />
     </div>

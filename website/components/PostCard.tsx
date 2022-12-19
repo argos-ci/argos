@@ -33,6 +33,7 @@ export const PostCardImage = ({
       style={{
         position: "relative",
         aspectRatio: extended ? "21/9" : "2/1",
+        overflow: "hidden",
       }}
     >
       <Image
@@ -42,6 +43,7 @@ export const PostCardImage = ({
         alt={alt}
         style={{
           objectFit: "cover",
+          overflow: "hidden",
         }}
       />
     </div>
