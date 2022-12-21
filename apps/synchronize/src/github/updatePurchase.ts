@@ -18,7 +18,7 @@ export const updatePurchase = async (
   const effectiveDate = payload.effective_date || new Date().toISOString();
 
   if (!activePurchase) {
-    Purchase.query().insert({
+    await Purchase.query().insert({
       accountId: account.id,
       planId: plan.id,
       startDate: effectiveDate,

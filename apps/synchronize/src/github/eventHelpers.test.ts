@@ -1,8 +1,15 @@
-import { Account, Organization, User } from "@argos-ci/database/models";
+import {
+  Account,
+  Organization,
+  Plan,
+  Purchase,
+  User,
+} from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 
 import {
   ORGANIZATION_PURCHASE_EVENT_PAYLOAD,
+  ORGANIZATION_UPDATE_PURCHASE_EVENT_PAYLOAD,
   USER_PURCHASE_EVENT_PAYLOAD,
 } from "../fixtures/purchase-event-payload.js";
 import {
@@ -10,6 +17,20 @@ import {
   getNewPlanOrThrow,
   getOrCreateAccount,
 } from "./eventHelpers.js";
+import { handleGitHubEvents } from "./events.js";
+
+async function findOrCreatePlan({ githubId }: { githubId: number }) {
+  const plan = await Plan.query().findOne({ githubId });
+  if (plan) {
+    return plan;
+  }
+
+  return Plan.query().insertAndFetch({
+    githubId: githubId,
+    name: "free 2",
+    screenshotsLimitPerMonth: 5000,
+  });
+}
 
 describe("event helpers", () => {
   useDatabase();
@@ -124,6 +145,56 @@ describe("event helpers", () => {
       await factory.create("Plan", { githubId });
       const plan = await getNewPlanOrThrow(USER_PURCHASE_EVENT_PAYLOAD);
       expect(plan.githubId).toBe(githubId);
+    });
+  });
+
+  describe("handleGitHubEvents", () => {
+    describe("marketplace_purchase", () => {
+      describe("changed", () => {
+        let organization: Organization | undefined;
+        let plan: Plan | undefined;
+        let purchase: Purchase | undefined;
+        let account: Account | undefined;
+
+        const payload = ORGANIZATION_UPDATE_PURCHASE_EVENT_PAYLOAD;
+
+        const planGithubId = payload.marketplace_purchase.plan.id;
+        const organizationGithubId = payload.marketplace_purchase.account.id;
+
+        beforeAll(async () => {
+          plan = await findOrCreatePlan({ githubId: planGithubId });
+
+          // @ts-ignore
+          await handleGitHubEvents({ name: "marketplace_purchase", payload });
+          organization = await Organization.query().findOne({
+            githubId: organizationGithubId,
+          });
+
+          if (!organization) {
+            throw Error("User should be created");
+          }
+
+          account = await Account.getAccount({
+            organizationId: organization.id,
+          });
+          purchase = await Purchase.query().findOne({ accountId: account.id });
+        });
+
+        it("should create an organization", async () => {
+          expect(organization).toBeDefined();
+          expect(organization!.githubId).toBe(organizationGithubId);
+        });
+
+        it("should create an account", async () => {
+          expect(account).toBeDefined();
+          expect(account!.organization!.githubId).toBe(organizationGithubId);
+        });
+
+        it("should create a purchase", async () => {
+          expect(purchase).toBeDefined();
+          expect(purchase!.planId).toBe(plan!.id);
+        });
+      });
     });
   });
 });
