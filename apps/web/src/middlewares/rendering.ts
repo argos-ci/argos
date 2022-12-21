@@ -71,6 +71,10 @@ export const rendering = (additionalClientData?: any) => {
             loginUrl: config.get("github.loginUrl"),
             marketplaceUrl: config.get("github.marketplaceUrl"),
           },
+          stripe: {
+            pricingTableId: config.get("stripe.pricingTableId"),
+            publishableKey: config.get("stripe.publishableKey"),
+          },
         },
         ...additionalClientData,
       }),

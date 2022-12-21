@@ -10,19 +10,23 @@ const { gql } = gqlTag;
 export const typeDefs = gql`
   type User implements Node & Owner {
     id: ID!
+    clientReferenceId: String!
+    consumptionRatio: Float
+    currentMonthUsedScreenshots: Int!
     email: String
-    login: String!
-    name: String!
-    privateSync: Boolean!
     installations: [Installation!]!
     latestSynchronization: Synchronization
-    repositoriesNumber: Int!
-    repositories(enabled: Boolean): [Repository!]!
-    consumptionRatio: Float
+    login: String!
+    name: String!
     permissions: [Permission!]!
-    currentMonthUsedScreenshots: Int!
     plan: Plan
+    privateSync: Boolean!
+    purchase: Purchase
+    repositories(enabled: Boolean): [Repository!]!
+    repositoriesNumber: Int!
     screenshotsLimitPerMonth: Int
+    stripeCustomerId: String
+    type: OwnerType!
   }
 
   extend type Query {
@@ -44,5 +48,6 @@ export const resolvers = {
     latestSynchronization: async (user: User) => {
       return user.$relatedQuery("synchronizations").first();
     },
+    type: () => "user",
   },
 };

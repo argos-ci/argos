@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 13.7
--- Dumped by pg_dump version 14.2
+-- Dumped from database version 13.8
+-- Dumped by pg_dump version 13.8
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -85,6 +85,7 @@ CREATE TABLE public.accounts (
     "userId" bigint,
     "organizationId" bigint,
     "forcedPlanId" bigint,
+    "stripeCustomerId" character varying(255),
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "organizationId") = 1))
 );
 
@@ -422,7 +423,8 @@ CREATE TABLE public.plans (
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
     "screenshotsLimitPerMonth" integer NOT NULL,
-    "githubId" integer NOT NULL
+    "githubId" integer NOT NULL,
+    "stripePlanId" character varying(255)
 );
 
 
@@ -460,7 +462,8 @@ CREATE TABLE public.purchases (
     "planId" bigint NOT NULL,
     "accountId" bigint NOT NULL,
     "startDate" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    "endDate" timestamp with time zone
+    "endDate" timestamp with time zone,
+    source character varying(255) NOT NULL
 );
 
 
@@ -1761,3 +1764,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022101
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221104162900_add_files_dimensions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221123165000_add_indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221203103833_installation_token.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221213130347_add_purchase_source.js', 1, NOW());

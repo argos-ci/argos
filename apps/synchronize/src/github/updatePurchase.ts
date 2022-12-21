@@ -22,6 +22,7 @@ export const updatePurchase = async (
       accountId: account.id,
       planId: plan.id,
       startDate: effectiveDate,
+      source: "github",
     });
     return;
   }
@@ -41,6 +42,7 @@ export const updatePurchase = async (
         accountId: account.id,
         planId: plan.id,
         startDate: effectiveDate,
+        source: "github",
       }),
     ]);
   });

@@ -17,6 +17,7 @@ export class Account extends Model {
       userId: { type: ["string", "null"] },
       organizationId: { type: ["string", "null"] },
       forcedPlanId: { type: ["string", "null"] },
+      stripeCustomerId: { type: ["string", "null"] },
     },
   });
 
@@ -56,6 +57,7 @@ export class Account extends Model {
   user?: User | null;
   organization?: Organization | null;
   purchases?: Purchase[];
+  stripeCustomerId?: string | null;
 
   static override virtualAttributes = ["type"];
 
@@ -77,6 +79,8 @@ export class Account extends Model {
       .where((query) =>
         query.whereNull("endDate").orWhere("endDate", ">=", "now()")
       )
+      .joinRelated("plan")
+      .orderBy("screenshotsLimitPerMonth", "DESC")
       .first();
 
     return purchase ?? null;

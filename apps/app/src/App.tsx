@@ -16,6 +16,7 @@ import { Build } from "./pages/Build";
 import { Home } from "./pages/Home";
 import { NotFound } from "./pages/NotFound";
 import { Owner } from "./pages/Owner";
+import { Checkout } from "./pages/Owner/Checkout";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
 import { Repository } from "./pages/Repository";
@@ -72,6 +73,7 @@ export const App = () => {
                 <Route path=":ownerLogin" element={<Owner />}>
                   <Route path="" element={<OwnerRepositories />} />
                   <Route path="settings" element={<OwnerSettings />} />
+                  <Route path="checkout" element={<Checkout />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Route>

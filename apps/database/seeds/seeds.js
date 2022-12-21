@@ -371,9 +371,24 @@ export const seed = async (knex) => {
     },
     {
       ...timeStamps,
+      name: "starter",
+      screenshotsLimitPerMonth: 40000,
+      githubId: 7786,
+      stripePlanId: "prod_MzEZEfBDYFIc53",
+    },
+    {
+      ...timeStamps,
       name: "standard",
-      screenshotsLimitPerMonth: 100000,
+      screenshotsLimitPerMonth: 250000,
       githubId: 7787,
+      stripePlanId: "prod_MzEavomA8VeCvW",
+    },
+    {
+      ...timeStamps,
+      name: "Pro",
+      screenshotsLimitPerMonth: 1000000,
+      githubId: 7788,
+      stripePlanId: "prod_MzEawyq1kFcHEn",
     },
   ]);
 };

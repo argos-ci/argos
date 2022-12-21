@@ -34,6 +34,7 @@ export const handleGitHubEvents = async ({
               accountId: account.id,
               planId: newPlan.id,
               startDate: payload.effective_date,
+              source: "github",
             });
             return;
           }

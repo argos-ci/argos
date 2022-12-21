@@ -27,10 +27,11 @@
     "ejs": "^3.1.8",
     "express": "^4.18.2",
     "express-err": "^3.0.0",
-    "jsonwebtoken": "^8.5.1",
     "helmet": "^6.0.1",
+    "jsonwebtoken": "^8.5.1",
     "morgan": "^1.10.0",
-    "redis": "^4.5.1"
+    "redis": "^4.5.1",
+    "stripe": "^11.3.0"
   },
   "devDependencies": {
     "@types/auth-header": "^1.0.2",

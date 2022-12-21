@@ -142,8 +142,38 @@ const config = convict({
     marketplaceUrl: {
       doc: "GitHub Marketplace URL",
       format: String,
-      default: "https://github.com/marketplace/argos-ci-dev",
+      default: "https://github.com/marketplace/argos-ci",
       env: "GITHUB_MARKETPLACE_URL",
+    },
+  },
+  stripe: {
+    url: {
+      doc: "Stripe URL",
+      format: String,
+      default: "https://billing.stripe.com/p/login/test_4gw02U4MgaLvcZWeUU",
+      env: "STRIPE_URL",
+    },
+    apiKey: {
+      doc: "Stripe API key",
+      format: String,
+      default: "sk_test_i5PgYTDIrpJbKJwY0DXzAB6s",
+      env: "STRIPE_API_KEY",
+    },
+    pricingTableId: {
+      doc: "Stripe pricing table ID",
+      format: String,
+      default: "prctbl_1MFJlUHOD9RpIFZd8XYehmWL",
+    },
+    publishableKey: {
+      doc: "Stripe publishable key",
+      format: String,
+      default: "pk_test_vdUpuf2Ep9SR8GIfLJYltyCk",
+    },
+    webhookSecret: {
+      doc: "Stripe webhook endpoint secret",
+      format: String,
+      env: "STRIPE_WEBHOOK_SECRET",
+      default: "whsec_XXX",
     },
   },
   redis: {
@@ -200,7 +230,7 @@ const config = convict({
         default: 2,
       },
       max: {
-        doc: "Maxium connections per pool",
+        doc: "Maximum connections per pool",
         format: Number,
         default: Math.floor(
           (maxConnectionsAllowed - freeConnectionsForThirdTools) / workers

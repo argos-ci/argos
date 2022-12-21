@@ -10,12 +10,14 @@ export class Plan extends Model {
       name: { type: "string" },
       screenshotsLimitPerMonth: { type: "number" },
       githubId: { type: "number" },
+      stripePlanId: { type: "string" },
     },
   });
 
   name!: string;
   screenshotsLimitPerMonth!: number;
   githubId!: number;
+  stripePlanId!: string;
 
   static async getFreePlan(): Promise<Plan | null> {
     const freePlan = await Plan.query().findOne({ name: "free" });

@@ -15,6 +15,10 @@ export class Purchase extends Model {
     properties: {
       accountId: { type: ["string"] },
       planId: { type: ["string"] },
+      source: {
+        type: ["string"],
+        enum: ["github", "stripe"],
+      },
       endDate: { type: ["string", "null"] },
       startDate: { type: ["string", "null"] },
     },
@@ -22,6 +26,7 @@ export class Purchase extends Model {
 
   accountId!: string;
   planId!: string;
+  source!: string;
   endDate!: string | null;
   startDate!: string | null;
 
