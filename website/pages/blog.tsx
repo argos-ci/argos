@@ -14,6 +14,7 @@ import {
 } from "@/components/PostCard";
 import { Separator } from "@/components/Separator";
 import visualTestingImage from "@/articles/visual-testing/main.jpg";
+import improveDxImage from "@/articles/improve-dx/main.jpg";
 
 export default function Blog() {
   return (
@@ -32,19 +33,47 @@ export default function Blog() {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-y-20 gap-x-16 mt-12">
-        <Link href="/blog/visual-testing" className="contents">
+        <Link href="/blog/improve-dx" className="contents">
           <PostCard extended>
+            <PostCardImage
+              width={improveDxImage.width}
+              height={improveDxImage.height}
+              src={improveDxImage.src}
+              blurDataURL={improveDxImage.blurDataURL}
+              alt="Cosy guy with dog — Photo by devn"
+              extended
+            />
+            <PostCardBody>
+              <PostCardTag>Testing</PostCardTag>
+              <PostCardTitle extended>
+                How to improve developer experience with visual testing
+              </PostCardTitle>
+              <PostCardDescription>
+                As a developer, it's important to have confidence in the code
+                you're writing and the applications you're building. One way to
+                achieve this confidence is through visual testing.
+              </PostCardDescription>
+              <PostCardFooter>
+                <PostCardAuthor>Jeremy Sfez</PostCardAuthor>
+                <Separator />
+                <PostCardDate>Dec 21, 2022</PostCardDate>
+              </PostCardFooter>
+            </PostCardBody>
+          </PostCard>
+        </Link>
+
+        <Link href="/blog/visual-testing" className="contents">
+          <PostCard>
             <PostCardImage
               width={visualTestingImage.width}
               height={visualTestingImage.height}
               src={visualTestingImage.src}
               blurDataURL={visualTestingImage.blurDataURL}
-              extended
               alt="Staircase / eye in library — Photo by Petri Heiskanen"
             />
             <PostCardBody>
               <PostCardTag>Testing</PostCardTag>
-              <PostCardTitle extended>
+              <PostCardTitle>
                 The Importance of Visual Testing in Ensuring UI Quality
               </PostCardTitle>
               <PostCardDescription>
