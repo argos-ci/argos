@@ -11,6 +11,7 @@ import {
   ORGANIZATION_PURCHASE_EVENT_PAYLOAD,
   ORGANIZATION_UPDATE_PURCHASE_EVENT_PAYLOAD,
   USER_PURCHASE_EVENT_PAYLOAD,
+  USER_PURCHASE_EVENT_PAYLOAD_2,
 } from "../fixtures/purchase-event-payload.js";
 import {
   getAccount,
@@ -150,14 +151,50 @@ describe("event helpers", () => {
 
   describe("handleGitHubEvents", () => {
     describe("marketplace_purchase", () => {
-      describe("changed", () => {
-        let organization: Organization | undefined;
-        let plan: Plan | undefined;
-        let purchase: Purchase | undefined;
-        let account: Account | undefined;
+      let user: User | undefined;
+      let organization: Organization | undefined;
+      let plan: Plan | undefined;
+      let purchase: Purchase | undefined;
+      let account: Account | undefined;
 
+      describe("subscription to a plan", () => {
+        const payload = USER_PURCHASE_EVENT_PAYLOAD_2;
+        const planGithubId = payload.marketplace_purchase.plan.id;
+        const userGithubId = payload.marketplace_purchase.account.id;
+
+        beforeAll(async () => {
+          plan = await findOrCreatePlan({ githubId: planGithubId });
+
+          // @ts-ignore
+          await handleGitHubEvents({ name: "marketplace_purchase", payload });
+          user = await User.query().findOne({ githubId: userGithubId });
+
+          if (!user) {
+            throw Error("User should have been created");
+          }
+
+          account = await Account.getAccount({ userId: user.id });
+          purchase = await Purchase.query().findOne({ accountId: account.id });
+        });
+
+        it("should create a user", async () => {
+          expect(user).toBeDefined();
+          expect(user!.githubId).toBe(userGithubId);
+        });
+
+        it("should create an account", async () => {
+          expect(account).toBeDefined();
+          expect(account!.user!.githubId).toBe(userGithubId);
+        });
+
+        it("should create a purchase", async () => {
+          expect(purchase).toBeDefined();
+          expect(purchase!.planId).toBe(plan!.id);
+        });
+      });
+
+      describe("update organization plan", () => {
         const payload = ORGANIZATION_UPDATE_PURCHASE_EVENT_PAYLOAD;
-
         const planGithubId = payload.marketplace_purchase.plan.id;
         const organizationGithubId = payload.marketplace_purchase.account.id;
 
@@ -171,7 +208,7 @@ describe("event helpers", () => {
           });
 
           if (!organization) {
-            throw Error("User should be created");
+            throw Error("Organization should have been created");
           }
 
           account = await Account.getAccount({
