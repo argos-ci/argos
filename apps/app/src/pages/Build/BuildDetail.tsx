@@ -50,9 +50,14 @@ const BuildScreenshotHeader = memo(
   }) => {
     return (
       <div className="flex flex-shrink-0 flex-col items-center gap-0.5 text-on-light">
-        <div className="flex items-center gap-1">
+        <div className="flex max-w-full items-center gap-1">
           <div className="flex-shrink-0 text-xs font-medium">{label} from</div>
-          <Code>{branch}</Code>
+          <Code
+            className="overflow-hidden text-ellipsis whitespace-nowrap"
+            title={branch}
+          >
+            {branch}
+          </Code>
         </div>
         <Time date={date} className="text-xxs" />
       </div>
@@ -269,7 +274,7 @@ const BuildScreenshots = memo(
     return (
       <div className={clsx(contained && "min-h-0 flex-1", "flex gap-4 px-4")}>
         {props.build.baseScreenshotBucket ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
             <BuildScreenshotHeader
               label="Baseline"
               branch={props.build.baseScreenshotBucket.branch}
@@ -280,7 +285,7 @@ const BuildScreenshots = memo(
             </div>
           </div>
         ) : null}
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
           <BuildScreenshotHeader
             label="Changes"
             branch={props.build.compareScreenshotBucket.branch}
