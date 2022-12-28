@@ -50,7 +50,7 @@ const getNotificationPayload = async (
       }
 
       return {
-        state: "failure",
+        state: "pending",
         description: `${differencesMessage}, waiting for your decision`,
       };
     }
