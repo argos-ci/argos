@@ -8,57 +8,6 @@ import type { Context } from "../context.js";
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
-const screenshotFailureRegexp = `(${Object.values({
-  cypress: " \\(failed\\)\\.",
-  playwright: "-failed-",
-}).join("|")})`;
-
-const getDiffStatus = async (
-  screenshotDiff: ScreenshotDiff,
-  _args: Record<string, never>,
-  context: Context
-) => {
-  if (!screenshotDiff.compareScreenshotId) return "removed";
-
-  if (!screenshotDiff.baseScreenshotId) {
-    const { name } = await context.loaders.Screenshot.load(
-      screenshotDiff.compareScreenshotId
-    );
-    return name.match(screenshotFailureRegexp) ? "failure" : "added";
-  }
-
-  return screenshotDiff.score && screenshotDiff.score > 0
-    ? "changed"
-    : "unchanged";
-};
-
-export const selectDiffStatus = `CASE \
-    WHEN "compareScreenshotId" IS NULL \
-      THEN 'removed' \
-    WHEN "baseScreenshotId" IS NULL \
-      AND "name" ~ '${screenshotFailureRegexp}' \
-      THEN 'failure'  \
-    WHEN "baseScreenshotId" IS NULL \
-      THEN 'added' \
-    WHEN "score" IS NOT NULL AND "score" > 0 \
-      THEN 'changed' \
-    ELSE 'unchanged'  \
-  END \
-  AS status`;
-
-export const sortDiffByStatus = `CASE \
-    WHEN "compareScreenshotId" IS NULL \
-      THEN 3 -- removed
-    WHEN "baseScreenshotId" IS NULL \
-      AND "compareScreenshot"."name" ~ '${screenshotFailureRegexp}' \
-      THEN 0 -- failure
-    WHEN "baseScreenshotId" IS NULL  \
-      THEN 2 -- added
-    WHEN "score" IS NOT NULL AND "score" > 0 \
-      THEN 1 -- changed
-    ELSE 4 -- unchanged
-  END ASC`;
-
 export const typeDefs = gql`
   enum ScreenshotDiffStatus {
     added
@@ -148,6 +97,14 @@ export const resolvers = {
       const file = await context.loaders.File.load(screenshot.fileId);
       return file.height;
     },
-    status: getDiffStatus,
+    status: (
+      screenshotDiff: ScreenshotDiff,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
+      return screenshotDiff.$getDiffStatus(
+        context.loaders.Screenshot.load.bind(context.loaders.Screenshot)
+      );
+    },
   },
 };

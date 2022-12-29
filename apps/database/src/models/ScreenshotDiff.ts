@@ -90,6 +90,53 @@ export class ScreenshotDiff extends Model {
   baseScreenshot?: Screenshot | null;
   compareScreenshot?: Screenshot | null;
 
+  static screenshotFailureRegexp = `(${Object.values({
+    cypress: " \\(failed\\)\\.",
+    playwright: "-failed-",
+  }).join("|")})`;
+
+  static selectDiffStatus = `CASE \
+    WHEN "compareScreenshotId" IS NULL \
+      THEN 'removed' \
+    WHEN "baseScreenshotId" IS NULL \
+      AND "name" ~ '${ScreenshotDiff.screenshotFailureRegexp}' \
+      THEN 'failure'  \
+    WHEN "baseScreenshotId" IS NULL \
+      THEN 'added' \
+    WHEN "score" IS NOT NULL AND "score" > 0 \
+      THEN 'changed' \
+    ELSE 'unchanged'  \
+    END \
+    AS status`;
+
+  static sortDiffByStatus = `CASE \
+    WHEN "compareScreenshotId" IS NULL \
+      THEN 3 -- removed
+    WHEN "baseScreenshotId" IS NULL \
+      AND "compareScreenshot"."name" ~ '${ScreenshotDiff.screenshotFailureRegexp}' \
+      THEN 0 -- failure
+    WHEN "baseScreenshotId" IS NULL  \
+      THEN 2 -- added
+    WHEN "score" IS NOT NULL AND "score" > 0 \
+      THEN 1 -- changed
+    ELSE 4 -- unchanged
+    END ASC`;
+
+  $getDiffStatus = async (
+    loadScreenshot: (screenshotId: string) => Promise<Screenshot>
+  ) => {
+    if (!this.compareScreenshotId) return "removed";
+
+    if (!this.baseScreenshotId) {
+      const { name } = await loadScreenshot(this.compareScreenshotId);
+      return name.match(ScreenshotDiff.screenshotFailureRegexp)
+        ? "failure"
+        : "added";
+    }
+
+    return this.score && this.score > 0 ? "changed" : "unchanged";
+  };
+
   override $parseDatabaseJson(json: Pojo) {
     const newJson = super.$parseDatabaseJson(json);
 

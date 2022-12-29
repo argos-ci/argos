@@ -1,8 +1,20 @@
 import { TransactionOrKnex, runAfterTransaction } from "@argos-ci/database";
-import { BuildNotification } from "@argos-ci/database/models";
+import { Build, BuildNotification } from "@argos-ci/database/models";
 import { getInstallationOctokit } from "@argos-ci/github";
 
 import { job as buildNotificationJob } from "./job.js";
+
+const getStatsMessage = async (buildId: string) => {
+  const stats = await Build.getStats(buildId);
+  const parts = [];
+  if (stats.changed) {
+    parts.push(`${stats.changed} change${stats.changed > 1 ? "s" : ""}`);
+  }
+  if (stats.failure) {
+    parts.push(`${stats.failure} failure${stats.failure > 1 ? "s" : ""}`);
+  }
+  return parts.join(",");
+};
 
 const getNotificationPayload = async (
   buildNotification: BuildNotification
@@ -21,19 +33,15 @@ const getNotificationPayload = async (
         state: "pending",
         description: "Build in progress...",
       };
-    case "no-diff-detected":
+    case "no-diff-detected": {
+      const statsMessage = await getStatsMessage(buildNotification.buildId);
       return {
         state: "success",
-        description: "Everything's good!",
+        description: statsMessage || "Everything's good!",
       };
+    }
     case "diff-detected": {
-      const diffsCount = await buildNotification
-        .build!.$relatedQuery("screenshotDiffs")
-        .where("score", ">", 0)
-        .resultSize();
-      const differencesMessage = `${diffsCount} difference${
-        diffsCount > 1 ? "s" : ""
-      } detected`;
+      const statsMessage = await getStatsMessage(buildNotification.buildId);
 
       const { baseScreenshotBucket, compareScreenshotBucket } =
         await buildNotification
@@ -45,25 +53,29 @@ const getNotificationPayload = async (
       if (isReferenceBuild) {
         return {
           state: "success",
-          description: `${differencesMessage}, no validation required`,
+          description: `${statsMessage} — no validation required`,
         };
       }
 
       return {
-        state: "failure",
-        description: `${differencesMessage}, waiting for your decision`,
+        state: "pending",
+        description: `${statsMessage} — waiting for your decision`,
       };
     }
-    case "diff-accepted":
+    case "diff-accepted": {
+      const statsMessage = await getStatsMessage(buildNotification.buildId);
       return {
         state: "success",
-        description: "Difference accepted",
+        description: `${statsMessage} — changes approved`,
       };
-    case "diff-rejected":
+    }
+    case "diff-rejected": {
+      const statsMessage = await getStatsMessage(buildNotification.buildId);
       return {
         state: "failure",
-        description: "Difference rejected",
+        description: `${statsMessage} — changes rejected`,
       };
+    }
     default:
       throw new Error(`Unknown notification type: ${buildNotification.type}`);
   }

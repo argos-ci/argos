@@ -1,13 +1,11 @@
 import gqlTag from "graphql-tag";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
-import { knex } from "@argos-ci/database";
 import { Account, Build, ScreenshotDiff } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
 import { APIError } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
-import { selectDiffStatus, sortDiffByStatus } from "./ScreenshotDiff.js";
 
 const { gql } = gqlTag;
 
@@ -100,7 +98,7 @@ export const resolvers = {
       const result = await build
         .$relatedQuery("screenshotDiffs")
         .leftJoinRelated("[baseScreenshot, compareScreenshot]")
-        .orderByRaw(sortDiffByStatus)
+        .orderByRaw(ScreenshotDiff.sortDiffByStatus)
         .orderBy("compareScreenshot.name", "asc")
         .orderBy("baseScreenshot.name", "asc")
         .orderBy("screenshot_diffs.id", "asc")
@@ -135,26 +133,7 @@ export const resolvers = {
       return context.loaders.BuildAggregatedStatus.load(build);
     },
     stats: async (build: Build) => {
-      const data = (await ScreenshotDiff.query()
-        .where("buildId", build.id)
-        .leftJoin(
-          "screenshots",
-          "screenshot_diffs.compareScreenshotId",
-          "screenshots.id"
-        )
-        .select(knex.raw(selectDiffStatus))
-        .count("*")
-        .groupBy("status")) as unknown as { status: string; count: string }[];
-
-      const stats = data.reduce(
-        (res, { status, count }) => ({ ...res, [status]: Number(count) }),
-        { failure: 0, added: 0, unchanged: 0, changed: 0, removed: 0 }
-      );
-
-      return {
-        ...stats,
-        total: Object.values(stats).reduce((a, b) => a + b, 0),
-      };
+      return Build.getStats(build.id);
     },
   },
   Mutation: {

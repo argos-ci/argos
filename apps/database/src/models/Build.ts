@@ -1,4 +1,4 @@
-import { ValidationError } from "objection";
+import { ValidationError, raw } from "objection";
 import type {
   Pojo,
   QueryContext,
@@ -192,6 +192,31 @@ export class Build extends Model {
           throw new Error(`Unknown job status: ${build.jobStatus}`);
       }
     });
+  }
+
+  /**
+   * Get stats of the build.
+   */
+  static async getStats(buildId: string) {
+    const data = (await ScreenshotDiff.query()
+      .where("buildId", buildId)
+      .leftJoin(
+        "screenshots",
+        "screenshot_diffs.compareScreenshotId",
+        "screenshots.id"
+      )
+      .select(raw(ScreenshotDiff.selectDiffStatus))
+      .count("*")
+      .groupBy("status")) as unknown as { status: string; count: string }[];
+
+    return data.reduce(
+      (res, { status, count }) => ({
+        ...res,
+        [status]: Number(count),
+        total: Number(count) + res.total,
+      }),
+      { failure: 0, added: 0, unchanged: 0, changed: 0, removed: 0, total: 0 }
+    );
   }
 
   /**
