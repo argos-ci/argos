@@ -102,7 +102,9 @@ export const resolvers = {
       _args: Record<string, never>,
       context: Context
     ) => {
-      return screenshotDiff.$getDiffStatus(context.loaders.Screenshot.load);
+      return screenshotDiff.$getDiffStatus(
+        context.loaders.Screenshot.load.bind(context.loaders.Screenshot)
+      );
     },
   },
 };
