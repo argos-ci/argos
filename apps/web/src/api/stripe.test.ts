@@ -14,11 +14,7 @@ import {
   SUBSCRIPTION_CANCEL_PAYLOAD,
   SUBSCRIPTION_UPDATE_PAYLOAD,
 } from "../__fixtures__/stripe-payloads.js";
-import {
-  findClientAccount,
-  getEffectiveDate,
-  handleStripeEvent,
-} from "./stripe.js";
+import { getEffectiveDate, handleStripeEvent } from "./stripe.js";
 
 describe("stripe", () => {
   useDatabase();
@@ -34,95 +30,6 @@ describe("stripe", () => {
     now.getMonth() + 1,
     now.getDate()
   );
-
-  describe("#findClientAccount", () => {
-    describe("with account ID", () => {
-      it("returns undefined if account not found", async () => {
-        const account = await findClientAccount(`account-22`);
-        expect(account).toBeUndefined();
-      });
-
-      it("returns the account", async () => {
-        const userAccount = (await factory.create("UserAccount")) as Account;
-        const account = await findClientAccount(`account-${userAccount.id}`);
-        expect(account).toMatchObject({ id: userAccount.id });
-      });
-    });
-
-    describe("with organization ID", () => {
-      it("returns organization's account", async () => {
-        const organization = (await factory.create(
-          "Organization"
-        )) as Organization;
-        const account = (await factory.create("OrganizationAccount", {
-          organizationId: organization.id,
-        })) as Account;
-        const clientAccount = await findClientAccount(
-          `organization-${organization.id}`
-        );
-        expect(clientAccount).toMatchObject({
-          id: account.id,
-          organizationId: organization.id,
-        });
-      });
-
-      it("create and returns an organization's account", async () => {
-        const organization = (await factory.create(
-          "Organization"
-        )) as Organization;
-        const clientAccount = await findClientAccount(
-          `organization-${organization.id}`
-        );
-        expect(clientAccount).toMatchObject({
-          organizationId: organization.id,
-        });
-      });
-    });
-
-    describe("with user ID", () => {
-      it("returns user's account", async () => {
-        const user = (await factory.create("User")) as User;
-        const account = (await factory.create("UserAccount", {
-          userId: user.id,
-        })) as Account;
-        const clientAccount = await findClientAccount(`user-${user.id}`);
-        expect(clientAccount).toMatchObject({
-          id: account.id,
-          userId: user.id,
-        });
-      });
-
-      it("create and returns a user's account", async () => {
-        const user = (await factory.create("User")) as User;
-        const account = await findClientAccount(`user-${user.id}`);
-        expect(account).toMatchObject({ userId: user.id });
-      });
-    });
-
-    describe("with client reference ID", () => {
-      it("returns undefined if account not found", async () => {
-        const account = await findClientAccount("xxIDxx01");
-        expect(account).toBeUndefined();
-      });
-
-      it("returns related account", async () => {
-        const organization = (await factory.create(
-          "Organization"
-        )) as Organization;
-        const account = (await factory.create("OrganizationAccount", {
-          organizationId: organization.id,
-          stripeCustomerId: "55-55-s01",
-        })) as Account;
-        const clientAccount = await findClientAccount(
-          `organization-${organization.id}`
-        );
-        expect(clientAccount).toMatchObject({
-          organizationId: organization.id,
-          stripeCustomerId: account.stripeCustomerId,
-        });
-      });
-    });
-  });
 
   describe("#getEffectiveDate", () => {
     const renewalDate = 2674745463; // Sunday 4 October 2054 16:51:03
@@ -183,15 +90,20 @@ describe("stripe", () => {
     describe("checkout.session.completed", () => {
       const payload = SESSION_PAYLOAD;
       const customerId = payload.customer;
-      const accountId = 50;
+      const accountId = 9;
+      const stripePlanId = "prod_MzEavomA8VeCvW";
+      const purchaserId = "7";
 
       beforeEach(async () => {
-        const organization = (await factory.create(
-          "Organization"
-        )) as Organization;
+        const [organization] = (await Promise.all([
+          factory.create("Organization"),
+          factory.create("Plan", { stripePlanId }),
+          factory.create("User", { id: purchaserId }),
+        ])) as [Organization, Plan, User];
+
         await factory.create("OrganizationAccount", {
           organizationId: organization.id,
-          id: 50,
+          id: accountId,
         });
       });
 
@@ -204,7 +116,7 @@ describe("stripe", () => {
             eventType: "checkout.session.completed",
           })
         ).rejects.toThrowError(
-          'empty customer in sessionId "cs_test_a18eU7ciFgAZVVgWFfgXhSp2yPQsImTpux7f5K3z9o84Gj4h9LGQOyFEJ0"'
+          'empty customer in sessionId "cs_test_a191ofb3wzFfrFeTXGppOREABnrPRq789OWQAcYTuHMs8tLrgzrVHeJklw"'
         );
       });
 
@@ -217,20 +129,25 @@ describe("stripe", () => {
             eventType: "checkout.session.completed",
           })
         ).rejects.toThrowError(
-          'empty clientReferenceId in stripe sessionId "cs_test_a18eU7ciFgAZVVgWFfgXhSp2yPQsImTpux7f5K3z9o84Gj4h9LGQOyFEJ0"'
+          'empty clientReferenceId in stripe sessionId "cs_test_a191ofb3wzFfrFeTXGppOREABnrPRq789OWQAcYTuHMs8tLrgzrVHeJklw"'
         );
       });
 
       it("throws with unknown clientReferenceId", async () => {
+        const accountId = "5555";
+        const clientReferenceId = Purchase.encodeStripeClientReferenceId({
+          accountId,
+          purchaserId: "1234",
+        });
         await expect(
           handleStripeEvent({
             data: {
-              object: { ...payload, client_reference_id: "05X" },
+              object: { ...payload, client_reference_id: clientReferenceId },
             },
             eventType: "checkout.session.completed",
           })
         ).rejects.toThrowError(
-          'no account found for stripe clientReferenceId: "05X"'
+          `no account found for with accountId: "${accountId}"`
         );
       });
 
@@ -357,7 +274,6 @@ describe("stripe", () => {
       let oldPlan: Plan;
       let newPlan: Plan;
       let oldPurchase: Purchase;
-      let purchasesCount: number;
       let pendingPurchase: Purchase;
 
       beforeEach(async () => {
@@ -368,20 +284,24 @@ describe("stripe", () => {
             { stripePlanId, screenshotsLimitPerMonth: 40000 },
           ]),
         ])) as [Account, [Plan, Plan]];
-        purchasesCount = await Purchase.query()
-          .where({ accountId: account.id })
-          .resultSize();
       });
 
       it("deletion doesn't create purchase", async () => {
+        await factory.create("Purchase", {
+          accountId: account.id,
+          planId: oldPlan.id,
+          source: "stripe",
+        });
         await handleStripeEvent({
-          data: { object: { ...payload, canceled_at: "1234" } },
+          data: { object: { ...payload, cancel_at: "1234" } },
           eventType: "customer.subscription.updated",
         });
-        const purchases = await Purchase.query().where({
-          accountId: account.id,
-        });
-        expect(purchases).toHaveLength(purchasesCount);
+        const purchases = await Purchase.query()
+          .where({
+            accountId: account.id,
+          })
+          .resultSize();
+        expect(purchases).toBe(1);
       });
 
       it("create a purchase when no purchase found", async () => {

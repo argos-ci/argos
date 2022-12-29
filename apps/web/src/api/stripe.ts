@@ -31,32 +31,6 @@ const getInvoiceCustomerOrThrow = (invoice: Stripe.Invoice) => {
   return stripeCustomerId;
 };
 
-export const findClientAccount = async (clientReferenceId: string) => {
-  const accountMatch = clientReferenceId.match(/^account-(\d+)$/);
-
-  if (accountMatch) {
-    return Account.query().findById(accountMatch[1] as string);
-  }
-
-  const organizationMatch = clientReferenceId.match(/^organization-(\d+)$/);
-  if (organizationMatch) {
-    return Account.getOrCreateAccount({
-      organizationId: organizationMatch[1] as string,
-    });
-  }
-
-  const userMatch = clientReferenceId.match(/^user-(\d+)$/);
-  if (userMatch) {
-    return Account.getOrCreateAccount({
-      userId: userMatch[1] as string,
-    });
-  }
-
-  return Account.query().findOne({
-    stripeCustomerId: clientReferenceId,
-  });
-};
-
 const findPlanOrThrow = async (stripeProductId: string) => {
   const plan = await Plan.query().findOne({ stripePlanId: stripeProductId });
   if (!plan) {
@@ -158,14 +132,19 @@ const getSessionCustomerIdOrThrow = (session: Stripe.Checkout.Session) => {
   return stripeCustomerId;
 };
 
-const getSessionClientIdOrThrow = (session: Stripe.Checkout.Session) => {
+const getClientReferenceIdPayload = (session: Stripe.Checkout.Session) => {
   const clientReferenceId = session.client_reference_id as string;
   if (!clientReferenceId) {
     throw new Error(
       `empty clientReferenceId in stripe sessionId "${session.id}"`
     );
   }
-  return clientReferenceId;
+  const { accountId, purchaserId } =
+    Purchase.decodeStripeClientReferenceId(clientReferenceId);
+  if (!accountId || !purchaserId) {
+    throw new Error(`invalid stripe clientReferenceId "${clientReferenceId}"`);
+  }
+  return { accountId, purchaserId };
 };
 
 const getFirstProductOrThrow = (subscription: Stripe.Subscription) => {
@@ -173,6 +152,14 @@ const getFirstProductOrThrow = (subscription: Stripe.Subscription) => {
     throw new Error("no item found in Stripe subscription");
   }
   return subscription.items.data[0].price!.product as string;
+};
+
+const findSessionPlan = async (initialSession: Stripe.Checkout.Session) => {
+  const session = (await stripe.checkout.sessions.retrieve(initialSession.id, {
+    expand: ["line_items"],
+  })) as Stripe.Checkout.Session;
+  const stripeProductId = session.line_items!.data[0]?.price!.product as string;
+  return findPlanOrThrow(stripeProductId);
 };
 
 export const handleStripeEvent = async ({
@@ -186,15 +173,29 @@ export const handleStripeEvent = async ({
     case "checkout.session.completed": {
       const session: Stripe.Checkout.Session =
         data.object as Stripe.Checkout.Session;
+      const { accountId, purchaserId } = getClientReferenceIdPayload(session);
       const stripeCustomerId = getSessionCustomerIdOrThrow(session);
-      const clientReferenceId = getSessionClientIdOrThrow(session);
-      const account = await findClientAccount(clientReferenceId);
+      const account = await Account.query().patchAndFetchById(accountId, {
+        stripeCustomerId,
+      });
+
       if (!account) {
-        throw new Error(
-          `no account found for stripe clientReferenceId: "${clientReferenceId}"`
-        );
+        throw new Error(`no account found for with accountId: "${accountId}"`);
       }
-      await account.$query().patch({ stripeCustomerId });
+      const activePurchase = await account.getActivePurchase();
+
+      if (activePurchase) {
+        await activePurchase.$query().patch({ purchaserId });
+        break;
+      }
+
+      const plan = await findSessionPlan(session);
+      await Purchase.query().insert({
+        planId: plan.id,
+        accountId: account.id,
+        source: "stripe",
+        purchaserId,
+      });
       break;
     }
 
@@ -232,7 +233,13 @@ export const handleStripeEvent = async ({
       const account = await findCustomerAccountOrThrow(stripeCustomerId);
       const activePurchase = await account.getActivePurchase();
 
-      if (subscription.canceled_at) {
+      if (subscription.cancel_at) {
+        if (!activePurchase) {
+          throw new Error(`can't find purchase for accountId "${account.id}"`);
+        }
+        await activePurchase
+          .$query()
+          .patch({ endDate: timestampToDate(subscription.cancel_at) });
         break;
       }
 
@@ -252,6 +259,12 @@ export const handleStripeEvent = async ({
           renewalDate: subscription.current_period_end,
         })) as string;
         await updatePurchase({ account, plan, effectiveDate, activePurchase });
+      }
+
+      if (activePurchase.endDate) {
+        await Purchase.query()
+          .patch({ endDate: null })
+          .findById(activePurchase.id);
       }
       break;
     }
@@ -313,19 +326,15 @@ router.post(
     if (!stripeCustomerId) {
       throw new Error("stripe customer id missing");
     }
-    const account = await Account.query()
-      .findOne({ stripeCustomerId })
-      .withGraphJoined("[user, organization]");
+    const account = await Account.query().findOne({ stripeCustomerId });
 
     if (!account) {
       throw new Error(
         `no account found with stripeCustomerId: "${stripeCustomerId}"`
       );
     }
-    const accountLogin =
-      account.type === "organization"
-        ? account.organization!.login
-        : account.user!.login;
+
+    const accountLogin = await account.getLogin();
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
       return_url: new URL(`/${accountLogin}/settings`, config.get("server.url"))

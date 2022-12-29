@@ -29,6 +29,10 @@ export const up = async (knex) => {
       .whereNull("accounts.id"),
   ]);
 
+  if (missingOrganizationAccounts.length + missingUserAccounts.length === 0) {
+    return;
+  }
+
   await knex("accounts").insert([
     ...missingOrganizationAccounts.map(({ organizationId }) => ({
       createdAt: now,

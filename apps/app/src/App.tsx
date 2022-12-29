@@ -13,6 +13,7 @@ import { ApolloInitializer } from "./containers/Apollo";
 import { AuthProvider } from "./containers/Auth";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Build } from "./pages/Build";
+import { CheckoutSuccessRedirect } from "./pages/CheckoutSuccessRedirect";
 import { Home } from "./pages/Home";
 import { NotFound } from "./pages/NotFound";
 import { Owner } from "./pages/Owner";
@@ -39,6 +40,10 @@ export const App = () => {
               <Route
                 path="/:ownerLogin/:repositoryName/builds/:buildNumber/:diffId"
                 element={<Build />}
+              />
+              <Route
+                path="/checkout-success"
+                element={<CheckoutSuccessRedirect />}
               />
               <Route
                 path="/"

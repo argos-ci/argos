@@ -15,6 +15,7 @@ export class Purchase extends Model {
     properties: {
       accountId: { type: ["string"] },
       planId: { type: ["string"] },
+      purchaserId: { type: ["string", "null"] },
       source: {
         type: ["string"],
         enum: ["github", "stripe"],
@@ -26,6 +27,7 @@ export class Purchase extends Model {
 
   accountId!: string;
   planId!: string;
+  purchaserId!: string | null;
   source!: string;
   endDate!: string | null;
   startDate!: string | null;
@@ -79,4 +81,24 @@ export class Purchase extends Model {
   plan?: Plan;
   user?: User | null;
   organization?: Organization | null;
+
+  static encodeStripeClientReferenceId({
+    accountId,
+    purchaserId,
+  }: {
+    accountId: string;
+    purchaserId: string | null;
+  }) {
+    return Buffer.from(JSON.stringify({ accountId, purchaserId }), "utf8")
+      .toString("base64")
+      .replaceAll(/=/g, "_");
+  }
+
+  static decodeStripeClientReferenceId(clientReferenceId: string) {
+    const payload = Buffer.from(
+      clientReferenceId.replaceAll(/_/g, "="),
+      "base64"
+    ).toString("utf-8");
+    return JSON.parse(payload);
+  }
 }

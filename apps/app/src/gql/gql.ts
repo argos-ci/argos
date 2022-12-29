@@ -34,8 +34,9 @@ const documents = {
     "\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n  }\n": types.BuildWorkspace_BuildFragmentDoc,
     "\n  fragment BuildWorkspace_Repository on Repository {\n    ...BuildStatusDescription_Repository\n  }\n": types.BuildWorkspace_RepositoryFragmentDoc,
     "\n  fragment OvercapacityBanner_Owner on Owner {\n    plan {\n      name\n    }\n    consumptionRatio\n  }\n": types.OvercapacityBanner_OwnerFragmentDoc,
+    "\n  query Checkout_success {\n    user {\n      id\n      lastPurchase {\n        id\n        owner {\n          id\n          login\n        }\n      }\n    }\n  }\n": types.Checkout_SuccessDocument,
     "\n  query Home_owners {\n    owners {\n      id\n      repositories {\n        id\n        enabled\n        ...RepositoryList_repository\n      }\n    }\n  }\n": types.Home_OwnersDocument,
-    "\n  query OwnerCheckout_owner($login: String!) {\n    owner(login: $login) {\n      id\n      clientReferenceId\n\n      purchase {\n        id\n        source\n      }\n    }\n  }\n": types.OwnerCheckout_OwnerDocument,
+    "\n  query OwnerCheckout_owner($login: String!) {\n    owner(login: $login) {\n      id\n      stripeClientReferenceId\n\n      purchase {\n        id\n        source\n      }\n    }\n  }\n": types.OwnerCheckout_OwnerDocument,
     "\n  query OwnerSettings_owner($login: String!) {\n    owner(login: $login) {\n      id\n      name\n      screenshotsLimitPerMonth\n      type\n      stripeCustomerId\n\n      plan {\n        id\n        name\n        screenshotsLimitPerMonth\n      }\n\n      purchase {\n        id\n        source\n      }\n\n      repositories {\n        id\n        name\n        private\n        currentMonthUsedScreenshots\n      }\n    }\n  }\n": types.OwnerSettings_OwnerDocument,
     "\n  query OwnerRepositories_owner($login: String!) {\n    owner(login: $login) {\n      id\n      repositories {\n        id\n        ...RepositoryList_repository\n      }\n    }\n  }\n": types.OwnerRepositories_OwnerDocument,
     "\n  query Owner_owner($ownerLogin: String!) {\n    owner(login: $ownerLogin) {\n      id\n      permissions\n    }\n  }\n": types.Owner_OwnerDocument,
@@ -134,11 +135,15 @@ export function graphql(source: "\n  fragment OvercapacityBanner_Owner on Owner 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  query Checkout_success {\n    user {\n      id\n      lastPurchase {\n        id\n        owner {\n          id\n          login\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query Checkout_success {\n    user {\n      id\n      lastPurchase {\n        id\n        owner {\n          id\n          login\n        }\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  query Home_owners {\n    owners {\n      id\n      repositories {\n        id\n        enabled\n        ...RepositoryList_repository\n      }\n    }\n  }\n"): (typeof documents)["\n  query Home_owners {\n    owners {\n      id\n      repositories {\n        id\n        enabled\n        ...RepositoryList_repository\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query OwnerCheckout_owner($login: String!) {\n    owner(login: $login) {\n      id\n      clientReferenceId\n\n      purchase {\n        id\n        source\n      }\n    }\n  }\n"): (typeof documents)["\n  query OwnerCheckout_owner($login: String!) {\n    owner(login: $login) {\n      id\n      clientReferenceId\n\n      purchase {\n        id\n        source\n      }\n    }\n  }\n"];
+export function graphql(source: "\n  query OwnerCheckout_owner($login: String!) {\n    owner(login: $login) {\n      id\n      stripeClientReferenceId\n\n      purchase {\n        id\n        source\n      }\n    }\n  }\n"): (typeof documents)["\n  query OwnerCheckout_owner($login: String!) {\n    owner(login: $login) {\n      id\n      stripeClientReferenceId\n\n      purchase {\n        id\n        source\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

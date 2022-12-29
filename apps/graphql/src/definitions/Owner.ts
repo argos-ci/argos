@@ -1,7 +1,12 @@
 import gqlTag from "graphql-tag";
 import type { QueryBuilder } from "objection";
 
-import { Account, Organization, User } from "@argos-ci/database/models";
+import {
+  Account,
+  Organization,
+  Purchase,
+  User,
+} from "@argos-ci/database/models";
 import type { Repository } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
@@ -17,7 +22,7 @@ export const typeDefs = gql`
 
   interface Owner implements Node {
     id: ID!
-    clientReferenceId: String!
+    stripeClientReferenceId: String!
     consumptionRatio: Float
     currentMonthUsedScreenshots: Int!
     login: String!
@@ -34,7 +39,7 @@ export const typeDefs = gql`
 
   type Organization implements Node & Owner {
     id: ID!
-    clientReferenceId: String!
+    stripeClientReferenceId: String!
     consumptionRatio: Float
     currentMonthUsedScreenshots: Int!
     login: String!
@@ -162,15 +167,16 @@ export const resolvers = {
       }
     },
     name: (owner: Owner) => owner.name || owner.login,
-    clientReferenceId: async (owner: Owner) => {
+    stripeClientReferenceId: async (
+      owner: Owner,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
       const account = await getOwnerAccount(owner);
-      if (account && account.stripeCustomerId) {
-        return account.stripeCustomerId;
-      }
-      if (account && account.id) {
-        return `account-${account.id}`;
-      }
-      return `${owner.type()}-${owner.id}`;
+      return Purchase.encodeStripeClientReferenceId({
+        accountId: account.id,
+        purchaserId: ctx.user?.id ?? null,
+      });
     },
     repositories: async (
       owner: Owner,

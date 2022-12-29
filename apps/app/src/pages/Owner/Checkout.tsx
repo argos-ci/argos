@@ -27,7 +27,7 @@ const CheckoutQuery = graphql(`
   query OwnerCheckout_owner($login: String!) {
     owner(login: $login) {
       id
-      clientReferenceId
+      stripeClientReferenceId
 
       purchase {
         id
@@ -72,7 +72,7 @@ export const Checkout = () => {
               <stripe-pricing-table
                 pricing-table-id={config.get("stripe.pricingTableId")}
                 publishable-key={config.get("stripe.publishableKey")}
-                client-reference-id={owner.clientReferenceId}
+                client-reference-id={owner.stripeClientReferenceId}
               ></stripe-pricing-table>
             </div>
           );

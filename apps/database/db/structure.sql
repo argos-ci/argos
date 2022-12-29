@@ -463,7 +463,8 @@ CREATE TABLE public.purchases (
     "accountId" bigint NOT NULL,
     "startDate" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     "endDate" timestamp with time zone,
-    source character varying(255) NOT NULL
+    source character varying(255) NOT NULL,
+    "purchaserId" bigint
 );
 
 
@@ -1570,6 +1571,14 @@ ALTER TABLE ONLY public.purchases
 
 
 --
+-- Name: purchases purchases_purchaserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_purchaserid_foreign FOREIGN KEY ("purchaserId") REFERENCES public.users(id);
+
+
+--
 -- Name: repositories repositories_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1764,4 +1773,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022101
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221104162900_add_files_dimensions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221123165000_add_indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221203103833_installation_token.js', 1, NOW());
-INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221213130347_add_purchase_source.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221213130347_stripe.js', 1, NOW());

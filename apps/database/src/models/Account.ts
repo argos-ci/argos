@@ -100,6 +100,27 @@ export class Account extends Model {
     return Plan.getFreePlan();
   }
 
+  async getLogin(): Promise<string> {
+    switch (this.type) {
+      case "organization": {
+        if (this.organization) return this.organization.login;
+        const organization = (await Organization.query()
+          .select("login")
+          .findOne({ id: this.organizationId })) as Organization;
+        return organization.login;
+      }
+      case "user": {
+        if (this.user) return this.user.login;
+        const user = (await User.query()
+          .select("login")
+          .findOne({ id: this.userId })) as User;
+        return user.login;
+      }
+      default:
+        throw new Error(`Invariant incoherent account type`);
+    }
+  }
+
   async getScreenshotsMonthlyLimit() {
     const plan = await this.getPlan();
     return plan ? plan.screenshotsLimitPerMonth : null;
