@@ -66,14 +66,14 @@ const getNotificationPayload = async (
       const statsMessage = await getStatsMessage(buildNotification.buildId);
       return {
         state: "success",
-        description: `${statsMessage} — Changes accepted`,
+        description: `${statsMessage} — changes approved`,
       };
     }
     case "diff-rejected": {
       const statsMessage = await getStatsMessage(buildNotification.buildId);
       return {
         state: "failure",
-        description: `${statsMessage} — Changes rejected`,
+        description: `${statsMessage} — changes rejected`,
       };
     }
     default:
