@@ -4,7 +4,7 @@ import cors from "cors";
 import { Router } from "express";
 
 import config from "@argos-ci/config";
-import { User } from "@argos-ci/database/models";
+import { Account, User } from "@argos-ci/database/models";
 import { getTokenOctokit } from "@argos-ci/github";
 import { synchronizeFromUserId } from "@argos-ci/synchronize";
 
@@ -44,6 +44,7 @@ async function registerUserFromGitHub(accessToken: string) {
     await User.query().findById(user.id).patch(userData);
   } else {
     user = await User.query().insertAndFetch(userData);
+    await Account.query().insert({ userId: user.id });
   }
 
   await synchronizeFromUserId(user.id);
