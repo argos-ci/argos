@@ -134,4 +134,5 @@ jobs:
 
       - name: Run Argos
         continue-on-error: true
+        if: ${{ always() }}
         run: npx @argos-ci/cli upload screenshots
