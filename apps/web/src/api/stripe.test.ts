@@ -16,6 +16,18 @@ import {
 } from "../__fixtures__/stripe-payloads.js";
 import { getEffectiveDate, handleStripeEvent } from "./stripe.js";
 
+const getOrCreateActivePurchase = async (account: Account, plan: Plan) => {
+  const activePurchase = await account.getActivePurchase();
+  if (activePurchase) {
+    return activePurchase;
+  }
+  return factory.create("Purchase", {
+    accountId: account.id,
+    planId: plan.id,
+    source: "stripe",
+  });
+};
+
 describe("stripe", () => {
   useDatabase();
 
@@ -93,9 +105,12 @@ describe("stripe", () => {
       const accountId = 9;
       const stripePlanId = "prod_MzEavomA8VeCvW";
       const purchaserId = "7";
+      let account: Account;
+      let plan: Plan;
+      let organization: Organization;
 
       beforeEach(async () => {
-        const [organization] = (await Promise.all([
+        [organization, plan] = (await Promise.all([
           factory.create("Organization"),
           factory.create("Plan", { stripePlanId }),
           factory.create("User", { id: purchaserId }),
@@ -105,6 +120,13 @@ describe("stripe", () => {
           organizationId: organization.id,
           id: accountId,
         });
+
+        await handleStripeEvent({
+          data: { object: payload },
+          eventType: "checkout.session.completed",
+        });
+
+        account = (await Account.query().findById(accountId)) as Account;
       });
 
       it("throws without customer", async () => {
@@ -152,13 +174,18 @@ describe("stripe", () => {
       });
 
       it("should add stripeCustomerId to account", async () => {
-        await handleStripeEvent({
-          data: { object: payload },
-          eventType: "checkout.session.completed",
-        });
+        expect(account.stripeCustomerId).toBe(customerId);
+      });
 
-        const account = await Account.query().findById(accountId);
-        expect(account!.stripeCustomerId).toBe(customerId);
+      it("create a purchase", async () => {
+        const activePurchase = await account.getActivePurchase();
+        expect(activePurchase).toMatchObject({
+          planId: plan.id,
+          accountId: account.id,
+          endDate: null,
+          source: "stripe",
+          purchaserId,
+        });
       });
     });
 
@@ -217,45 +244,37 @@ describe("stripe", () => {
           factory.create("OrganizationAccount", { stripeCustomerId }),
           factory.create("Plan"),
         ])) as [Account, Plan];
+      });
 
+      it("should not throw when account not found", async () => {
+        await expect(
+          handleStripeEvent({
+            data: { object: { ...payload, customer: "XXX001" } },
+            eventType: "invoice.payment_failed",
+          })
+        ).resolves.not.toThrowError();
+      });
+
+      it("should not throw when purchase not found", async () => {
         await factory.create("Purchase", {
           accountId: account.id,
           planId: plan.id,
           source: "stripe",
         });
-      });
 
-      it("throws when stripe customer is empty", async () => {
-        await expect(
-          handleStripeEvent({
-            data: { object: { ...payload, customer: null } },
-            eventType: "invoice.payment_failed",
-          })
-        ).rejects.toThrowError("empty customer in invoi");
-      });
-
-      it("throws when account not found", async () => {
         await expect(
           handleStripeEvent({
             data: { object: { ...payload, customer: "XXX001" } },
             eventType: "invoice.payment_failed",
           })
-        ).rejects.toThrowError("no account found for stripe strip");
-      });
-
-      it("throws when purchase not found", async () => {
-        await expect(
-          handleStripeEvent({
-            data: { object: { ...payload, customer: "XXX001" } },
-            eventType: "invoice.payment_failed",
-          })
-        ).rejects.toThrowError(
-          'no account found for stripe stripeCustomerId: "XXX001"'
-        );
+        ).resolves.not.toThrowError();
       });
 
       it("fill purchase's end date", async () => {
-        const purchase = (await account.getActivePurchase()) as Purchase;
+        const purchase = (await getOrCreateActivePurchase(
+          account,
+          plan
+        )) as Purchase;
         expect(purchase.endDate).toBeNull();
         await handleStripeEvent({
           data: { object: payload },
