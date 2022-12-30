@@ -51,12 +51,14 @@ const findCustomerAccountOrThrow = async (stripeCustomerId: string) => {
   return account;
 };
 
-const findActivePurchaseOrThrow = async (account: Account) => {
-  const purchase = await account.getActivePurchase();
-  if (!purchase) {
-    throw new Error(`no purchase found for accountId "${account.id}"`);
-  }
-  return purchase;
+const getLastPurchase = async (account: Account) => {
+  const activePurchase = await account.getActivePurchase();
+  if (activePurchase) return activePurchase;
+  return Purchase.query()
+    .where({ accountId: account.id })
+    .where("startDate", "<=", "now()")
+    .orderBy("endDate", "DESC")
+    .first();
 };
 
 const getPendingPurchases = async (account: Account) => {
@@ -202,12 +204,16 @@ export const handleStripeEvent = async ({
     case "invoice.paid": {
       const invoice: Stripe.Invoice = data.object as Stripe.Invoice;
       const stripeCustomerId = getInvoiceCustomerOrThrow(invoice) as string;
-      const account = await findCustomerAccountOrThrow(stripeCustomerId);
-      const activePurchase = await findActivePurchaseOrThrow(account);
-      if (activePurchase.endDate) {
+      const account = await Account.query().findOne({ stripeCustomerId });
+      if (!account) {
+        break;
+      }
+
+      const lastPurchase = await getLastPurchase(account);
+      if (lastPurchase?.endDate) {
         await Purchase.query()
           .patch({ endDate: null })
-          .findById(activePurchase.id);
+          .findById(lastPurchase.id);
       }
       break;
     }
@@ -215,11 +221,17 @@ export const handleStripeEvent = async ({
     case "invoice.payment_failed": {
       const invoice: Stripe.Invoice = data.object as Stripe.Invoice;
       const stripeCustomerId = getInvoiceCustomerOrThrow(invoice) as string;
-      const account = await findCustomerAccountOrThrow(stripeCustomerId);
-      const purchase = await findActivePurchaseOrThrow(account);
-      await Purchase.query()
-        .patch({ endDate: timestampToDate(invoice.period_start) })
-        .findById(purchase.id);
+      const account = await Account.query().findOne({ stripeCustomerId });
+      if (!account) {
+        break;
+      }
+
+      const activePurchase = await account.getActivePurchase();
+      if (activePurchase) {
+        await Purchase.query()
+          .patch({ endDate: timestampToDate(invoice.period_start) })
+          .findById(activePurchase.id);
+      }
       break;
     }
 

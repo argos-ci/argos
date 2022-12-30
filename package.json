@@ -7,6 +7,7 @@
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
+    "test-watch": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --watch",
     "e2e:setup": "NODE_ENV=test npm run -w @argos-ci/database db:truncate && NODE_ENV=test npm run -w @argos-ci/database db:seed",
     "e2e:start": "NODE_ENV=test playwright test",
     "setup": "turbo run setup",
