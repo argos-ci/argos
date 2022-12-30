@@ -74,7 +74,7 @@ const ManageSubscriptionLink = ({
   stripeCustomerId,
 }: {
   purchase: Purchase;
-  stripeCustomerId: string;
+  stripeCustomerId: string | null;
 }) => {
   if (purchase.source === "stripe") {
     return <StripePortalLink stripeCustomerId={stripeCustomerId} />;
@@ -179,7 +179,7 @@ const PlanCard = ({
         </div>
       </CardBody>
       <CardFooter>
-        {purchase && stripeCustomerId ? (
+        {purchase ? (
           <ManageSubscriptionLink
             purchase={purchase}
             stripeCustomerId={stripeCustomerId}

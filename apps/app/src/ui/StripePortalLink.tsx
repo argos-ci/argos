@@ -1,14 +1,26 @@
 import { LinkExternalIcon } from "@primer/octicons-react";
 
-import { anchorClassNames } from "./Link";
+import { Anchor, anchorClassNames } from "./Link";
 
 export const StripePortalLink = ({
   stripeCustomerId,
 }: {
-  stripeCustomerId: string;
+  stripeCustomerId: string | null;
 }) => {
   if (!stripeCustomerId) {
-    return null;
+    return (
+      <>
+        Contact Argos support via{" "}
+        <Anchor href="https://discord.gg/WjzGrQGS4A" external>
+          Discord
+        </Anchor>{" "}
+        or{" "}
+        <Anchor href="mailto:contact@argos-ci.com" external>
+          by e-mail
+        </Anchor>
+        {"  "}to manage your subscription.
+      </>
+    );
   }
 
   return (
