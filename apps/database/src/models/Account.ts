@@ -17,6 +17,7 @@ export class Account extends Model {
       userId: { type: ["string", "null"] },
       organizationId: { type: ["string", "null"] },
       forcedPlanId: { type: ["string", "null"] },
+      stripeCustomerId: { type: ["string", "null"] },
     },
   });
 
@@ -56,6 +57,7 @@ export class Account extends Model {
   user?: User | null;
   organization?: Organization | null;
   purchases?: Purchase[];
+  stripeCustomerId?: string | null;
 
   static override virtualAttributes = ["type"];
 
@@ -77,6 +79,8 @@ export class Account extends Model {
       .where((query) =>
         query.whereNull("endDate").orWhere("endDate", ">=", "now()")
       )
+      .joinRelated("plan")
+      .orderBy("screenshotsLimitPerMonth", "DESC")
       .first();
 
     return purchase ?? null;
@@ -94,6 +98,27 @@ export class Account extends Model {
       return plan;
     }
     return Plan.getFreePlan();
+  }
+
+  async getLogin(): Promise<string> {
+    switch (this.type) {
+      case "organization": {
+        if (this.organization) return this.organization.login;
+        const organization = (await Organization.query()
+          .select("login")
+          .findOne({ id: this.organizationId })) as Organization;
+        return organization.login;
+      }
+      case "user": {
+        if (this.user) return this.user.login;
+        const user = (await User.query()
+          .select("login")
+          .findOne({ id: this.userId })) as User;
+        return user.login;
+      }
+      default:
+        throw new Error(`Invariant incoherent account type`);
+    }
   }
 
   async getScreenshotsMonthlyLimit() {

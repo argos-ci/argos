@@ -149,6 +149,7 @@ factory.define("Purchase", Purchase, {
   accountId: factory.assoc("UserAccount", "id"),
   startDate: moment().startOf("day").subtract(2, "months").toISOString(),
   endDate: null,
+  source: "github",
 });
 
 export { factory };

@@ -22,9 +22,10 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { Container } from "@/ui/Container";
-import { Anchor } from "@/ui/Link";
+import { Anchor, Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { Progress } from "@/ui/Progress";
+import { StripePortalLink } from "@/ui/StripePortalLink";
 import { Time } from "@/ui/Time";
 import { Heading } from "@/ui/Typography";
 
@@ -36,11 +37,18 @@ const OwnerQuery = graphql(`
       id
       name
       screenshotsLimitPerMonth
+      type
+      stripeCustomerId
 
       plan {
         id
         name
         screenshotsLimitPerMonth
+      }
+
+      purchase {
+        id
+        source
       }
 
       repositories {
@@ -54,17 +62,43 @@ const OwnerQuery = graphql(`
 `);
 
 type OwnerDocument = DocumentType<typeof OwnerQuery>;
+type Plan = NonNullable<NonNullable<OwnerDocument["owner"]>["plan"]>;
+type Purchase = NonNullable<NonNullable<OwnerDocument["owner"]>["purchase"]>;
 type Repository = NonNullable<OwnerDocument["owner"]>["repositories"][0];
 
 const sumUsedScreenshots = (repositories: Repository[]) =>
   repositories.reduce((sum, repo) => repo.currentMonthUsedScreenshots + sum, 0);
 
-const PlanCard = ({
-  plan,
-  repositories,
+const ManageSubscriptionLink = ({
+  purchase,
+  stripeCustomerId,
 }: {
-  plan: NonNullable<NonNullable<OwnerDocument["owner"]>["plan"]>;
+  purchase: Purchase;
+  stripeCustomerId: string;
+}) => {
+  if (purchase.source === "stripe") {
+    return <StripePortalLink stripeCustomerId={stripeCustomerId} />;
+  }
+
+  return (
+    <Anchor href={config.get("github.marketplaceUrl")} external>
+      Manage your subscription on GitHub
+    </Anchor>
+  );
+};
+
+const PlanCard = ({
+  ownerLogin,
+  plan,
+  purchase,
+  repositories,
+  stripeCustomerId,
+}: {
+  ownerLogin: string;
+  plan: Plan;
+  purchase: Purchase | null;
   repositories: Repository[];
+  stripeCustomerId: string | null;
 }) => {
   const free = plan.name === "free";
   const [privateRepos, publicRepos] = repositories.reduce(
@@ -78,6 +112,7 @@ const PlanCard = ({
     },
     [[] as Repository[], [] as Repository[]]
   );
+  const hasStripePurchase = purchase && purchase.source === "stripe";
   return (
     <Card>
       <CardBody>
@@ -86,11 +121,13 @@ const PlanCard = ({
           Your organization account is on the{" "}
           <strong className="capitalize">{plan.name} plan</strong>.
           {free && " Free of charge."}{" "}
-          <Anchor href="https://github.com/marketplace/argos-ci" external>
-            Learn more
-          </Anchor>
+          {!hasStripePurchase && (
+            <Anchor href={config.get("github.marketplaceUrl")} external>
+              Learn more
+            </Anchor>
+          )}
         </CardParagraph>
-        <CardSeparator />
+        <CardSeparator className="my-6" />
         <div className="my-6">
           <div className="font-medium">
             Current period (
@@ -142,9 +179,21 @@ const PlanCard = ({
         </div>
       </CardBody>
       <CardFooter>
-        <Anchor href="https://github.com/marketplace/argos-ci" external>
-          Manage plan on GitHub
-        </Anchor>
+        {purchase && stripeCustomerId ? (
+          <ManageSubscriptionLink
+            purchase={purchase}
+            stripeCustomerId={stripeCustomerId}
+          />
+        ) : (
+          <>
+            Subscribe to plan using{" "}
+            <Link to={`/${ownerLogin}/checkout`}>Stripe</Link> or{" "}
+            <Anchor href={config.get("github.marketplaceUrl")} external>
+              GitHub Marketplace
+            </Anchor>{" "}
+            .
+          </>
+        )}
       </CardFooter>
     </Card>
   );
@@ -252,7 +301,13 @@ export const OwnerSettings = () => {
           return (
             <SettingsLayout>
               {owner.plan && (
-                <PlanCard plan={owner.plan} repositories={owner.repositories} />
+                <PlanCard
+                  ownerLogin={ownerLogin}
+                  plan={owner.plan}
+                  purchase={owner.purchase ?? null}
+                  repositories={owner.repositories}
+                  stripeCustomerId={owner.stripeCustomerId ?? null}
+                />
               )}
               <PermissionCard />
             </SettingsLayout>

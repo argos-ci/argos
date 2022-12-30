@@ -1,6 +1,6 @@
 import gqlTag from "graphql-tag";
 
-import type { User } from "@argos-ci/database/models";
+import { Purchase, User } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
 
@@ -10,19 +10,24 @@ const { gql } = gqlTag;
 export const typeDefs = gql`
   type User implements Node & Owner {
     id: ID!
+    stripeClientReferenceId: String!
+    consumptionRatio: Float
+    currentMonthUsedScreenshots: Int!
     email: String
-    login: String!
-    name: String!
-    privateSync: Boolean!
     installations: [Installation!]!
     latestSynchronization: Synchronization
-    repositoriesNumber: Int!
-    repositories(enabled: Boolean): [Repository!]!
-    consumptionRatio: Float
+    login: String!
+    name: String!
     permissions: [Permission!]!
-    currentMonthUsedScreenshots: Int!
     plan: Plan
+    privateSync: Boolean!
+    purchase: Purchase
+    lastPurchase: Purchase
+    repositories(enabled: Boolean): [Repository!]!
+    repositoriesNumber: Int!
     screenshotsLimitPerMonth: Int
+    stripeCustomerId: String
+    type: OwnerType!
   }
 
   extend type Query {
@@ -44,5 +49,11 @@ export const resolvers = {
     latestSynchronization: async (user: User) => {
       return user.$relatedQuery("synchronizations").first();
     },
+    lastPurchase: async (user: User) => {
+      return Purchase.query()
+        .findOne({ purchaserId: user.id })
+        .orderBy("updatedAt");
+    },
+    type: () => "user",
   },
 };

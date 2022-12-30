@@ -8,6 +8,11 @@
     "clientId": "8460535e1d4c40dfdf05",
     "marketplaceUrl": "https://github.com/marketplace/argos-ci"
   },
+  "stripe": {
+    "url": "https://billing.stripe.com/p/login/14kcOwbdtggG4wwdQQ",
+    "pricingTableId": "prctbl_1MEVJPHOD9RpIFZdmAo2ulfj",
+    "publishableKey": "pk_live_bosnE1BZ2dec2u8HXlZHPvfo"
+  },
   "server": {
     "logFormat": "combined",
     "secure": true,

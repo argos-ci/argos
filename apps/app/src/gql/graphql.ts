@@ -152,9 +152,13 @@ export type Organization = Node & Owner & {
   name: Scalars['String'];
   permissions: Array<Permission>;
   plan?: Maybe<Plan>;
+  purchase?: Maybe<Purchase>;
   repositories: Array<Repository>;
   repositoriesNumber: Scalars['Int'];
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
+  stripeClientReferenceId: Scalars['String'];
+  stripeCustomerId?: Maybe<Scalars['String']>;
+  type: OwnerType;
 };
 
 
@@ -170,15 +174,24 @@ export type Owner = {
   name: Scalars['String'];
   permissions: Array<Permission>;
   plan?: Maybe<Plan>;
+  purchase?: Maybe<Purchase>;
   repositories: Array<Repository>;
   repositoriesNumber: Scalars['Int'];
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
+  stripeClientReferenceId: Scalars['String'];
+  stripeCustomerId?: Maybe<Scalars['String']>;
+  type: OwnerType;
 };
 
 
 export type OwnerRepositoriesArgs = {
   enabled?: InputMaybe<Scalars['Boolean']>;
 };
+
+export enum OwnerType {
+  Organization = 'organization',
+  User = 'user'
+}
 
 export type PageInfo = {
   __typename?: 'PageInfo';
@@ -197,6 +210,18 @@ export type Plan = Node & {
   name?: Maybe<Scalars['String']>;
   screenshotsLimitPerMonth: Scalars['Int'];
 };
+
+export type Purchase = Node & {
+  __typename?: 'Purchase';
+  id: Scalars['ID'];
+  owner: Owner;
+  source?: Maybe<PurchaseSource>;
+};
+
+export enum PurchaseSource {
+  Github = 'github',
+  Stripe = 'stripe'
+}
 
 export type Query = {
   __typename?: 'Query';
@@ -316,15 +341,20 @@ export type User = Node & Owner & {
   email?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
   installations: Array<Installation>;
+  lastPurchase?: Maybe<Purchase>;
   latestSynchronization?: Maybe<Synchronization>;
   login: Scalars['String'];
   name: Scalars['String'];
   permissions: Array<Permission>;
   plan?: Maybe<Plan>;
   privateSync: Scalars['Boolean'];
+  purchase?: Maybe<Purchase>;
   repositories: Array<Repository>;
   repositoriesNumber: Scalars['Int'];
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
+  stripeClientReferenceId: Scalars['String'];
+  stripeCustomerId?: Maybe<Scalars['String']>;
+  type: OwnerType;
 };
 
 
@@ -455,6 +485,11 @@ type OvercapacityBanner_Owner_User_Fragment = { __typename?: 'User', consumption
 
 export type OvercapacityBanner_OwnerFragment = OvercapacityBanner_Owner_Organization_Fragment | OvercapacityBanner_Owner_User_Fragment;
 
+export type Checkout_SuccessQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type Checkout_SuccessQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, lastPurchase?: { __typename?: 'Purchase', id: string, owner: { __typename?: 'Organization', id: string, login: string } | { __typename?: 'User', id: string, login: string } } | null } | null };
+
 export type Home_OwnersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -466,12 +501,19 @@ export type Home_OwnersQuery = { __typename?: 'Query', owners: Array<{ __typenam
       & { ' $fragmentRefs'?: { 'RepositoryList_RepositoryFragment': RepositoryList_RepositoryFragment } }
     )> }> };
 
+export type OwnerCheckout_OwnerQueryVariables = Exact<{
+  login: Scalars['String'];
+}>;
+
+
+export type OwnerCheckout_OwnerQuery = { __typename?: 'Query', owner?: { __typename?: 'Organization', id: string, stripeClientReferenceId: string, purchase?: { __typename?: 'Purchase', id: string, source?: PurchaseSource | null } | null } | { __typename?: 'User', id: string, stripeClientReferenceId: string, purchase?: { __typename?: 'Purchase', id: string, source?: PurchaseSource | null } | null } | null };
+
 export type OwnerSettings_OwnerQueryVariables = Exact<{
   login: Scalars['String'];
 }>;
 
 
-export type OwnerSettings_OwnerQuery = { __typename?: 'Query', owner?: { __typename?: 'Organization', id: string, name: string, screenshotsLimitPerMonth?: number | null, plan?: { __typename?: 'Plan', id: string, name?: string | null, screenshotsLimitPerMonth: number } | null, repositories: Array<{ __typename?: 'Repository', id: string, name: string, private: boolean, currentMonthUsedScreenshots: number }> } | { __typename?: 'User', id: string, name: string, screenshotsLimitPerMonth?: number | null, plan?: { __typename?: 'Plan', id: string, name?: string | null, screenshotsLimitPerMonth: number } | null, repositories: Array<{ __typename?: 'Repository', id: string, name: string, private: boolean, currentMonthUsedScreenshots: number }> } | null };
+export type OwnerSettings_OwnerQuery = { __typename?: 'Query', owner?: { __typename?: 'Organization', id: string, name: string, screenshotsLimitPerMonth?: number | null, type: OwnerType, stripeCustomerId?: string | null, plan?: { __typename?: 'Plan', id: string, name?: string | null, screenshotsLimitPerMonth: number } | null, purchase?: { __typename?: 'Purchase', id: string, source?: PurchaseSource | null } | null, repositories: Array<{ __typename?: 'Repository', id: string, name: string, private: boolean, currentMonthUsedScreenshots: number }> } | { __typename?: 'User', id: string, name: string, screenshotsLimitPerMonth?: number | null, type: OwnerType, stripeCustomerId?: string | null, plan?: { __typename?: 'Plan', id: string, name?: string | null, screenshotsLimitPerMonth: number } | null, purchase?: { __typename?: 'Purchase', id: string, source?: PurchaseSource | null } | null, repositories: Array<{ __typename?: 'Repository', id: string, name: string, private: boolean, currentMonthUsedScreenshots: number }> } | null };
 
 export type OwnerRepositories_OwnerQueryVariables = Exact<{
   login: Scalars['String'];
@@ -565,8 +607,10 @@ export const SetValidationStatusDocument = {"kind":"Document","definitions":[{"k
 export const SyncAlert_UserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SyncAlert_user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"login"}},{"kind":"Field","name":{"kind":"Name","value":"latestSynchronization"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"jobStatus"}}]}}]}}]}}]} as unknown as DocumentNode<SyncAlert_UserQuery, SyncAlert_UserQueryVariables>;
 export const BuildDiffState_RepositoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"BuildDiffState_repository"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"build"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"number"},"value":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"screenshotDiffs"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}},{"kind":"Field","name":{"kind":"Name","value":"baseScreenshot"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}}]}},{"kind":"Field","name":{"kind":"Name","value":"compareScreenshot"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}}]}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<BuildDiffState_RepositoryQuery, BuildDiffState_RepositoryQueryVariables>;
 export const BuildQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"BuildQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildHeader_Repository"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildWorkspace_Repository"}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"OvercapacityBanner_Owner"}}]}},{"kind":"Field","name":{"kind":"Name","value":"build"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"number"},"value":{"kind":"Variable","name":{"kind":"Name","value":"buildNumber"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildHeader_Build"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildWorkspace_Build"}}]}}]}}]}},...BuildHeader_RepositoryFragmentDoc.definitions,...BuildStatusChip_RepositoryFragmentDoc.definitions,...BuildStatusDescription_RepositoryFragmentDoc.definitions,...ReviewButton_RepositoryFragmentDoc.definitions,...BuildWorkspace_RepositoryFragmentDoc.definitions,...OvercapacityBanner_OwnerFragmentDoc.definitions,...BuildHeader_BuildFragmentDoc.definitions,...BuildStatusChip_BuildFragmentDoc.definitions,...BuildStatusDescription_BuildFragmentDoc.definitions,...BuildWorkspace_BuildFragmentDoc.definitions,...BuildSidebar_BuildFragmentDoc.definitions,...BuildInfos_BuildFragmentDoc.definitions,...BuildDetail_BuildFragmentDoc.definitions]} as unknown as DocumentNode<BuildQueryQuery, BuildQueryQueryVariables>;
+export const Checkout_SuccessDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Checkout_success"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"lastPurchase"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"login"}}]}}]}}]}}]}}]} as unknown as DocumentNode<Checkout_SuccessQuery, Checkout_SuccessQueryVariables>;
 export const Home_OwnersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Home_owners"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owners"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"repositories"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"RepositoryList_repository"}}]}}]}}]}},...RepositoryList_RepositoryFragmentDoc.definitions]} as unknown as DocumentNode<Home_OwnersQuery, Home_OwnersQueryVariables>;
-export const OwnerSettings_OwnerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"OwnerSettings_owner"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"login"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owner"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"login"},"value":{"kind":"Variable","name":{"kind":"Name","value":"login"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"screenshotsLimitPerMonth"}},{"kind":"Field","name":{"kind":"Name","value":"plan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"screenshotsLimitPerMonth"}}]}},{"kind":"Field","name":{"kind":"Name","value":"repositories"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"private"}},{"kind":"Field","name":{"kind":"Name","value":"currentMonthUsedScreenshots"}}]}}]}}]}}]} as unknown as DocumentNode<OwnerSettings_OwnerQuery, OwnerSettings_OwnerQueryVariables>;
+export const OwnerCheckout_OwnerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"OwnerCheckout_owner"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"login"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owner"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"login"},"value":{"kind":"Variable","name":{"kind":"Name","value":"login"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"stripeClientReferenceId"}},{"kind":"Field","name":{"kind":"Name","value":"purchase"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"source"}}]}}]}}]}}]} as unknown as DocumentNode<OwnerCheckout_OwnerQuery, OwnerCheckout_OwnerQueryVariables>;
+export const OwnerSettings_OwnerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"OwnerSettings_owner"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"login"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owner"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"login"},"value":{"kind":"Variable","name":{"kind":"Name","value":"login"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"screenshotsLimitPerMonth"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"stripeCustomerId"}},{"kind":"Field","name":{"kind":"Name","value":"plan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"screenshotsLimitPerMonth"}}]}},{"kind":"Field","name":{"kind":"Name","value":"purchase"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"source"}}]}},{"kind":"Field","name":{"kind":"Name","value":"repositories"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"private"}},{"kind":"Field","name":{"kind":"Name","value":"currentMonthUsedScreenshots"}}]}}]}}]}}]} as unknown as DocumentNode<OwnerSettings_OwnerQuery, OwnerSettings_OwnerQueryVariables>;
 export const OwnerRepositories_OwnerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"OwnerRepositories_owner"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"login"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owner"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"login"},"value":{"kind":"Variable","name":{"kind":"Name","value":"login"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"repositories"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"RepositoryList_repository"}}]}}]}}]}},...RepositoryList_RepositoryFragmentDoc.definitions]} as unknown as DocumentNode<OwnerRepositories_OwnerQuery, OwnerRepositories_OwnerQueryVariables>;
 export const Owner_OwnerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Owner_owner"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"owner"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"login"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissions"}}]}}]}}]} as unknown as DocumentNode<Owner_OwnerQuery, Owner_OwnerQueryVariables>;
 export const RepositoryBuilds_RepositoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"RepositoryBuilds_repository"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissions"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"GettingStarted_repository"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BuildStatusChip_Repository"}}]}}]}},...GettingStarted_RepositoryFragmentDoc.definitions,...BuildStatusChip_RepositoryFragmentDoc.definitions,...BuildStatusDescription_RepositoryFragmentDoc.definitions]} as unknown as DocumentNode<RepositoryBuilds_RepositoryQuery, RepositoryBuilds_RepositoryQueryVariables>;

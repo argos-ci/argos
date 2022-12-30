@@ -13,9 +13,11 @@ import { ApolloInitializer } from "./containers/Apollo";
 import { AuthProvider } from "./containers/Auth";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Build } from "./pages/Build";
+import { CheckoutSuccessRedirect } from "./pages/CheckoutSuccessRedirect";
 import { Home } from "./pages/Home";
 import { NotFound } from "./pages/NotFound";
 import { Owner } from "./pages/Owner";
+import { Checkout } from "./pages/Owner/Checkout";
 import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 import { OwnerRepositories } from "./pages/Owner/Repositories";
 import { Repository } from "./pages/Repository";
@@ -38,6 +40,10 @@ export const App = () => {
               <Route
                 path="/:ownerLogin/:repositoryName/builds/:buildNumber/:diffId"
                 element={<Build />}
+              />
+              <Route
+                path="/checkout-success"
+                element={<CheckoutSuccessRedirect />}
               />
               <Route
                 path="/"
@@ -72,6 +78,7 @@ export const App = () => {
                 <Route path=":ownerLogin" element={<Owner />}>
                   <Route path="" element={<OwnerRepositories />} />
                   <Route path="settings" element={<OwnerSettings />} />
+                  <Route path="checkout" element={<Checkout />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Route>

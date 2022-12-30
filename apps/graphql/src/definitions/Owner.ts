@@ -1,7 +1,12 @@
 import gqlTag from "graphql-tag";
 import type { QueryBuilder } from "objection";
 
-import { Account, Organization, User } from "@argos-ci/database/models";
+import {
+  Account,
+  Organization,
+  Purchase,
+  User,
+} from "@argos-ci/database/models";
 import type { Repository } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
@@ -10,30 +15,43 @@ import type { Context } from "../context.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
+  enum OwnerType {
+    organization
+    user
+  }
+
   interface Owner implements Node {
     id: ID!
-    name: String!
+    stripeClientReferenceId: String!
+    consumptionRatio: Float
+    currentMonthUsedScreenshots: Int!
     login: String!
+    name: String!
+    permissions: [Permission!]!
+    plan: Plan
+    purchase: Purchase
     repositories(enabled: Boolean): [Repository!]!
     repositoriesNumber: Int!
-    consumptionRatio: Float
-    permissions: [Permission!]!
-    currentMonthUsedScreenshots: Int!
-    plan: Plan
     screenshotsLimitPerMonth: Int
+    stripeCustomerId: String
+    type: OwnerType!
   }
 
   type Organization implements Node & Owner {
     id: ID!
-    name: String!
+    stripeClientReferenceId: String!
+    consumptionRatio: Float
+    currentMonthUsedScreenshots: Int!
     login: String!
+    name: String!
+    permissions: [Permission!]!
+    plan: Plan
+    purchase: Purchase
     repositories(enabled: Boolean): [Repository!]!
     repositoriesNumber: Int!
-    consumptionRatio: Float
-    permissions: [Permission!]!
-    currentMonthUsedScreenshots: Int!
-    plan: Plan
     screenshotsLimitPerMonth: Int
+    stripeCustomerId: String
+    type: OwnerType!
   }
 
   extend type Query {
@@ -149,6 +167,17 @@ export const resolvers = {
       }
     },
     name: (owner: Owner) => owner.name || owner.login,
+    stripeClientReferenceId: async (
+      owner: Owner,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
+      const account = await getOwnerAccount(owner);
+      return Purchase.encodeStripeClientReferenceId({
+        accountId: account.id,
+        purchaserId: ctx.user?.id ?? null,
+      });
+    },
     repositories: async (
       owner: Owner,
       args: { enabled?: boolean },
@@ -187,6 +216,14 @@ export const resolvers = {
       const account = await getOwnerAccount(owner);
       return account.getScreenshotsCurrentConsumption();
     },
+    purchase: async (owner: Owner) => {
+      const account = await getOwnerAccount(owner);
+      return account.getActivePurchase();
+    },
+    stripeCustomerId: async (owner: Owner) => {
+      const account = await getOwnerAccount(owner);
+      return account ? account.stripeCustomerId : null;
+    },
     plan: async (owner: Owner) => {
       const account = await getOwnerAccount(owner);
       return account.getPlan();
@@ -195,6 +232,7 @@ export const resolvers = {
       const account = await getOwnerAccount(owner);
       return account.getScreenshotsMonthlyLimit();
     },
+    type: () => "organization",
   },
   Query: {
     owners: async (_root: null, _args: Record<string, never>, ctx: Context) => {

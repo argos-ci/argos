@@ -37,12 +37,15 @@ export const CardParagraph = ({
   return <p className={clsx(className, "my-4 last-of-type:mb-0")} {...props} />;
 };
 
-export const CardSeparator = (props: HTMLProps<HTMLDivElement>) => {
+export const CardSeparator = ({
+  className,
+  ...props
+}: HTMLProps<HTMLDivElement>) => {
   return (
     <div
       role="separator"
       aria-orientation="horizontal"
-      className="border-t border-t-menu-border"
+      className={clsx(className, "border-t border-t-menu-border")}
       {...props}
     />
   );

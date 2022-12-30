@@ -10,6 +10,7 @@ import * as Owner from "./Owner.js";
 import * as PageInfo from "./PageInfo.js";
 import * as Permission from "./Permission.js";
 import * as Plan from "./Plan.js";
+import * as Purchase from "./Purchase.js";
 import * as Repository from "./Repository.js";
 import * as Screenshot from "./Screenshot.js";
 import * as ScreenshotBucket from "./ScreenshotBucket.js";
@@ -25,11 +26,12 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   DateDefs,
   Installation,
   JobStatus,
-  Owner,
   Node,
+  Owner,
   PageInfo,
   Permission,
   Plan,
+  Purchase,
   Repository,
   schema,
   Screenshot,
