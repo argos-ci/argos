@@ -26,9 +26,9 @@ const documents = {
     "\n  query SyncAlert_user {\n    user {\n      id\n      login\n      latestSynchronization {\n        id\n        jobStatus\n      }\n    }\n  }\n": types.SyncAlert_UserDocument,
     "\n  fragment BuildDetail_Build on Build {\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      branch\n      createdAt\n    }\n    compareScreenshotBucket {\n      branch\n      createdAt\n    }\n  }\n": types.BuildDetail_BuildFragmentDoc,
     "\n  query BuildDiffState_repository(\n    $ownerLogin: String!\n    $repositoryName: String!\n    $buildNumber: Int!\n    $after: Int!\n    $first: Int!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      build(number: $buildNumber) {\n        id\n        screenshotDiffs(after: $after, first: $first) {\n          pageInfo {\n            hasNextPage\n          }\n          edges {\n            id\n            status\n            url\n            name\n            width\n            height\n            baseScreenshot {\n              id\n              url\n              width\n              height\n            }\n            compareScreenshot {\n              id\n              url\n              width\n              height\n            }\n          }\n        }\n      }\n    }\n  }\n": types.BuildDiffState_RepositoryDocument,
-    "\n  fragment BuildHeader_Build on Build {\n    ...BuildStatusChip_Build\n  }\n": types.BuildHeader_BuildFragmentDoc,
+    "\n  fragment BuildHeader_Build on Build {\n    name\n    ...BuildStatusChip_Build\n  }\n": types.BuildHeader_BuildFragmentDoc,
     "\n  fragment BuildHeader_Repository on Repository {\n    ...BuildStatusChip_Repository\n    ...ReviewButton_Repository\n  }\n": types.BuildHeader_RepositoryFragmentDoc,
-    "\n  fragment BuildInfos_Build on Build {\n    createdAt\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n    }\n    compareScreenshotBucket {\n      commit\n    }\n  }\n": types.BuildInfos_BuildFragmentDoc,
+    "\n  fragment BuildInfos_Build on Build {\n    createdAt\n    name\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n      branch\n    }\n    compareScreenshotBucket {\n      commit\n      branch\n    }\n  }\n": types.BuildInfos_BuildFragmentDoc,
     "\n  query BuildQuery(\n    $ownerLogin: String!\n    $repositoryName: String!\n    $buildNumber: Int!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      ...BuildHeader_Repository\n      ...BuildWorkspace_Repository\n      owner {\n        id\n        ...OvercapacityBanner_Owner\n      }\n      build(number: $buildNumber) {\n        id\n        status\n        ...BuildHeader_Build\n        ...BuildWorkspace_Build\n      }\n    }\n  }\n": types.BuildQueryDocument,
     "\n  fragment BuildSidebar_Build on Build {\n    ...BuildInfos_Build\n    stats {\n      total\n    }\n  }\n": types.BuildSidebar_BuildFragmentDoc,
     "\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n  }\n": types.BuildWorkspace_BuildFragmentDoc,
@@ -103,7 +103,7 @@ export function graphql(source: "\n  query BuildDiffState_repository(\n    $owne
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment BuildHeader_Build on Build {\n    ...BuildStatusChip_Build\n  }\n"): (typeof documents)["\n  fragment BuildHeader_Build on Build {\n    ...BuildStatusChip_Build\n  }\n"];
+export function graphql(source: "\n  fragment BuildHeader_Build on Build {\n    name\n    ...BuildStatusChip_Build\n  }\n"): (typeof documents)["\n  fragment BuildHeader_Build on Build {\n    name\n    ...BuildStatusChip_Build\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -111,7 +111,7 @@ export function graphql(source: "\n  fragment BuildHeader_Repository on Reposito
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment BuildInfos_Build on Build {\n    createdAt\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n    }\n    compareScreenshotBucket {\n      commit\n    }\n  }\n"): (typeof documents)["\n  fragment BuildInfos_Build on Build {\n    createdAt\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n    }\n    compareScreenshotBucket {\n      commit\n    }\n  }\n"];
+export function graphql(source: "\n  fragment BuildInfos_Build on Build {\n    createdAt\n    name\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n      branch\n    }\n    compareScreenshotBucket {\n      commit\n      branch\n    }\n  }\n"): (typeof documents)["\n  fragment BuildInfos_Build on Build {\n    createdAt\n    name\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n      branch\n    }\n    compareScreenshotBucket {\n      commit\n      branch\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
