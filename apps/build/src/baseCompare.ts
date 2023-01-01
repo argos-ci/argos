@@ -1,12 +1,8 @@
-import { Octokit } from "@octokit/rest";
 import type { TransactionOrKnex } from "objection";
 
-import config from "@argos-ci/config";
-import {
-  ScreenshotBucket,
-  UserRepositoryRight,
-} from "@argos-ci/database/models";
-import type { Build, Repository, User } from "@argos-ci/database/models";
+import { ScreenshotBucket } from "@argos-ci/database/models";
+import type { Build } from "@argos-ci/database/models";
+import { getInstallationOctokit } from "@argos-ci/github";
 
 interface Commit {
   sha: string;
@@ -62,51 +58,6 @@ const getBaseScreenshotBucket = async ({
   return buckets[0] || getLatestBaselineBucket(build, { trx });
 };
 
-async function getCommits({
-  user,
-  repository,
-  octokit,
-  owner,
-  sha,
-  perPage,
-  trx,
-}: {
-  user: User;
-  repository: Repository;
-  octokit: Octokit;
-  owner: string;
-  sha: string;
-  perPage: number;
-  trx?: TransactionOrKnex | undefined;
-}) {
-  const params = {
-    owner,
-    repo: repository.name,
-    sha,
-    per_page: perPage,
-    page: 1,
-  };
-
-  try {
-    const response = await octokit.repos.listCommits(params);
-    return response.data;
-  } catch (error: any) {
-    // Several things here:
-    // - Token is no longer valid
-    // - The user lost access to the repository
-    // - The repository has been removed
-    if (error.status === 401 || error.status === 404) {
-      // We remove the rights for the user
-      await UserRepositoryRight.query(trx)
-        .where({ userId: user.id, repositoryId: repository.id })
-        .delete();
-      // The error should not be notified on Sentry
-      return [];
-    }
-    throw error;
-  }
-}
-
 const getPotentialCommits = ({
   baseCommits,
   compareCommits,
@@ -114,9 +65,16 @@ const getPotentialCommits = ({
   baseCommits: Commit[];
   compareCommits: Commit[];
 }) => {
+  // We remove the first commit of compare commit history
+  // because it is the commit we are comparing to
+  // and we don't want to include it in the potential commits
+  const validCompareCommits = compareCommits.slice(1);
+
   // We take all commits included in base commit history and in compare commit history
   const potentialCommits = baseCommits.filter((baseCommit) =>
-    compareCommits.some((compareCommit) => baseCommit.sha === compareCommit.sha)
+    validCompareCommits.some(
+      (compareCommit) => baseCommit.sha === compareCommit.sha
+    )
   );
 
   // If no commit is found, we will use all base commits
@@ -132,55 +90,74 @@ export const baseCompare = async ({
   baseCommit,
   compareCommit,
   build,
-  perPage = 100,
   trx,
 }: {
   baseCommit: string;
   compareCommit: string;
   build: Build;
-  perPage?: number;
   trx?: TransactionOrKnex | undefined;
 }) => {
   const richBuild = await build
     .$query(trx)
-    .withGraphFetched("[repository, compareScreenshotBucket]");
-  const user = await richBuild.repository!.getUsers({ trx }).first();
+    .withGraphFetched("[repository.installations, compareScreenshotBucket]");
 
-  // We can't use Github information without a user.
-  if (!user) {
-    return getLatestBaselineBucket(richBuild, { trx });
+  const [installation] = richBuild.repository!.installations!;
+  if (!installation) {
+    // In test environment, we don't want to run any GitHub API call
+    if (process.env["NODE_ENV"] === "test") {
+      return null;
+    }
+    const error = new Error(
+      `Installation not found for repository "${richBuild.repository!.id}"`
+    );
+    // @ts-ignore
+    error.retryable = false;
+    throw error;
+  }
+
+  const octokit = await getInstallationOctokit(installation.id);
+  if (!octokit) {
+    const error = new Error(
+      `No valid installation found for repository "${richBuild.repository!.id}"`
+    );
+    // @ts-ignore
+    error.retryable = false;
+    throw error;
   }
 
   // Initialize GitHub API
   const owner = await richBuild.repository!.$relatedOwner({ trx });
-  const octokit = new Octokit({
-    debug: config.get("env") === "development",
-    auth: user.accessToken,
-  });
 
   if (!owner) {
     throw new Error("Invariant: no owner found");
   }
 
-  const baseCommits = await getCommits({
-    user,
-    repository: richBuild.repository!,
-    octokit,
-    owner: owner.login,
-    sha: baseCommit,
-    perPage,
-    trx,
-  });
+  const getCommits = async (sha: string) => {
+    try {
+      const response = await octokit.repos.listCommits({
+        owner: owner.login,
+        repo: richBuild.repository!.name,
+        sha,
+        per_page: 100,
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.status === 404) {
+        const notFoundError = new Error(
+          `"${sha}" not found on repository "${richBuild.repository!.id}"`
+        );
+        // @ts-ignore
+        notFoundError.retryable = false;
+        throw notFoundError;
+      }
+      throw error;
+    }
+  };
 
-  const compareCommits = await getCommits({
-    user,
-    repository: richBuild.repository!,
-    octokit,
-    owner: owner.login,
-    sha: compareCommit,
-    perPage,
-    trx,
-  });
+  const [baseCommits, compareCommits] = await Promise.all([
+    getCommits(baseCommit),
+    getCommits(compareCommit),
+  ]);
 
   const potentialCommits = getPotentialCommits({
     baseCommits,

@@ -16,63 +16,76 @@ const getStatsMessage = async (buildId: string) => {
   return parts.join(",");
 };
 
+type NotificationState = "pending" | "success" | "error" | "failure";
+
+const getNotificationState = (
+  buildType: Build["type"],
+  state: NotificationState
+) => {
+  // Reference builds are always successful
+  if (buildType === "reference") return "success";
+  return state;
+};
+
 const getNotificationPayload = async (
   buildNotification: BuildNotification
 ): Promise<{
-  state: "pending" | "success" | "error" | "failure";
+  state: NotificationState;
   description: string;
 }> => {
+  const buildType = buildNotification.build!.type;
   switch (buildNotification.type) {
     case "queued":
       return {
-        state: "pending",
+        state: getNotificationState(buildType, "pending"),
         description: "Build is queued",
       };
     case "progress":
       return {
-        state: "pending",
+        state: getNotificationState(buildType, "pending"),
         description: "Build in progress...",
       };
     case "no-diff-detected": {
       const statsMessage = await getStatsMessage(buildNotification.buildId);
+      const description = (() => {
+        if (!statsMessage) {
+          if (buildType === "reference") return "Used as new baseline";
+          return "Everything's good!";
+        }
+        if (buildType === "reference")
+          return `${statsMessage} — used a new baseline`;
+        return `${statsMessage} — no change`;
+      })();
       return {
-        state: "success",
-        description: statsMessage || "Everything's good!",
+        state: getNotificationState(buildType, "success"),
+        description,
       };
     }
     case "diff-detected": {
       const statsMessage = await getStatsMessage(buildNotification.buildId);
-
-      const { baseScreenshotBucket, compareScreenshotBucket } =
-        await buildNotification
-          .build!.$query()
-          .withGraphJoined("[baseScreenshotBucket, compareScreenshotBucket]");
-      const isReferenceBuild =
-        baseScreenshotBucket!.commit === compareScreenshotBucket!.commit;
-
-      if (isReferenceBuild) {
-        return {
-          state: "success",
-          description: `${statsMessage} — no validation required`,
-        };
-      }
+      const description = (() => {
+        if (buildType === "reference") {
+          return `${statsMessage} — used as new baseline`;
+        }
+        return `${statsMessage} — waiting for your decision`;
+      })();
 
       return {
-        state: "pending",
-        description: `${statsMessage} — waiting for your decision`,
+        state: getNotificationState(buildType, "pending"),
+        description,
       };
     }
     case "diff-accepted": {
       const statsMessage = await getStatsMessage(buildNotification.buildId);
       return {
-        state: "success",
+        state: getNotificationState(buildType, "success"),
         description: `${statsMessage} — changes approved`,
       };
     }
     case "diff-rejected": {
       const statsMessage = await getStatsMessage(buildNotification.buildId);
       return {
-        state: "failure",
+        state: getNotificationState(buildType, "failure"),
         description: `${statsMessage} — changes rejected`,
       };
     }
