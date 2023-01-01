@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { LocalImageFile } from "./S3Image.js";
+import { LocalImageFile } from "./ImageFile.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

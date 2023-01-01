@@ -19,7 +19,10 @@ const getOrCreateFile = async (
   return File.query(trx).insert(values).returning("*");
 };
 
-async function patchMissingFileDimensions({
+/**
+ * Complete files with dimensions and preload them on CDN.
+ */
+async function completeFile({
   s3Image,
   screenshot,
 }: {
@@ -100,16 +103,18 @@ export const computeScreenshotDiff = async (
 
   // Patching cannot be done in parallel since the file can be the same and must be created only
   if (baseImage && screenshotDiff.baseScreenshot) {
-    await patchMissingFileDimensions({
+    await completeFile({
       screenshot: screenshotDiff.baseScreenshot,
       s3Image: baseImage,
     });
+    baseImage.preload();
   }
 
-  await patchMissingFileDimensions({
+  await completeFile({
     screenshot: screenshotDiff.compareScreenshot,
     s3Image: compareImage,
   });
+  compareImage.preload();
 
   if (baseImage && baseImage.key !== compareImage.key && !screenshotDiff.s3Id) {
     const diffResult = await diffImages({
@@ -125,6 +130,7 @@ export const computeScreenshotDiff = async (
       });
       const key = await diffImage.upload();
       await diffImage.unlink();
+      diffImage.preload();
       await transaction(async (trx) => {
         const diffFile = await File.query(trx)
           .insert({
