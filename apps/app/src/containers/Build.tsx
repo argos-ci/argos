@@ -70,6 +70,7 @@ export const getBuildColor = (
     case null:
       switch (status) {
         case "expired":
+        case "error":
           return "danger" as const;
 
         default:
@@ -121,8 +122,8 @@ export const getBuildIcon = (
     case null:
       switch (status) {
         case "expired":
+        case "error":
           return XCircleIcon;
-
         default:
           return DotIcon;
       }
@@ -168,7 +169,8 @@ export const getBuildLabel = (
       switch (status) {
         case "expired":
           return "Build expired";
-
+        case "error":
+          return "An error happened";
         default:
           return "Build scheduled";
       }
