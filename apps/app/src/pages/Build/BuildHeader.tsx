@@ -55,6 +55,7 @@ const BuildReviewButton = memo(
 
 export const BuildFragment = graphql(`
   fragment BuildHeader_Build on Build {
+    name
     ...BuildStatusChip_Build
   }
 `);
@@ -83,6 +84,7 @@ export const BuildHeader = memo(
           <div className="flex flex-col justify-center">
             <div className="mb-1 text-sm font-medium leading-none">
               Build {props.buildNumber}
+              {build && build.name !== "default" ? ` • ${build.name}` : ""}
             </div>
             <RepositoryLink
               ownerLogin={props.ownerLogin}

@@ -82,7 +82,7 @@ const BuildRow = memo(
           <span>#{build.number}</span>
         </div>
         <div className="w-20 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums text-on-light lg:w-40">
-          {build.name}
+          {build.name !== "default" ? build.name : ""}
         </div>
         <div className="w-48 flex-shrink-0">
           <BuildStatusChip

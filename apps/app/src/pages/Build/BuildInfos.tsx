@@ -24,17 +24,34 @@ const CommitLink = ({
   );
 };
 
+const BranchLink = ({
+  githubRepoUrl,
+  branch,
+}: {
+  githubRepoUrl: string;
+  branch: string;
+}) => {
+  return (
+    <Anchor className="font-mono" href={`${githubRepoUrl}/tree/${branch}`}>
+      {branch}
+    </Anchor>
+  );
+};
+
 export const BuildFragment = graphql(`
   fragment BuildInfos_Build on Build {
     createdAt
+    name
     stats {
       total
     }
     baseScreenshotBucket {
       commit
+      branch
     }
     compareScreenshotBucket {
       commit
+      branch
     }
   }
 `);
@@ -49,11 +66,23 @@ export const BuildInfos = (props: {
       <Dt>Created</Dt>
       <Dd>{build ? <Time date={build.createdAt} format="LLL" /> : "-"}</Dd>
 
-      {/* <Dt>Baseline build</Dt>
-      <Dd>Build {buildNumber}</Dd> */}
+      <Dt>Build name</Dt>
+      <Dd>{build.name}</Dd>
 
       <Dt>Total screenshots count</Dt>
       <Dd>{build ? build.stats.total : "-"}</Dd>
+
+      <Dt>Baseline branch</Dt>
+      <Dd>
+        {build?.baseScreenshotBucket ? (
+          <BranchLink
+            githubRepoUrl={props.githubRepoUrl}
+            branch={build.baseScreenshotBucket.branch}
+          />
+        ) : (
+          "-"
+        )}
+      </Dd>
 
       <Dt>Baseline commit</Dt>
       <Dd>
@@ -61,6 +90,18 @@ export const BuildInfos = (props: {
           <CommitLink
             githubRepoUrl={props.githubRepoUrl}
             commit={build.baseScreenshotBucket.commit}
+          />
+        ) : (
+          "-"
+        )}
+      </Dd>
+
+      <Dt>Changes branch</Dt>
+      <Dd>
+        {build ? (
+          <BranchLink
+            githubRepoUrl={props.githubRepoUrl}
+            branch={build.compareScreenshotBucket.branch}
           />
         ) : (
           "-"
