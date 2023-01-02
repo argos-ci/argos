@@ -116,7 +116,7 @@ const createBuild = async ({
   req: CreateRequest;
   trx?: TransactionOrKnex;
 }) => {
-  if (req.authRepository.private) {
+  if (req.authRepository.private || req.authRepository.forcedPrivate) {
     const account = await Account.getAccount(req.authRepository);
     const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
     if (hasExceedLimit) {

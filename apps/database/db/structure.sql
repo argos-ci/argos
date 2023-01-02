@@ -507,6 +507,7 @@ CREATE TABLE public.repositories (
     private boolean DEFAULT false NOT NULL,
     "baselineBranch" character varying(255),
     "defaultBranch" character varying(255),
+    "forcedPrivate" boolean DEFAULT false NOT NULL,
     CONSTRAINT repositories_one_branch_not_null CHECK ((((COALESCE("baselineBranch", ''::character varying))::text <> ''::text) OR ((COALESCE("defaultBranch", ''::character varying))::text <> ''::text)))
 );
 
@@ -1774,3 +1775,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221123165000_add_indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221203103833_installation_token.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221213130347_stripe.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221228140518_add_missing_accounts.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230102064502_add_forced_private.js', 1, NOW());

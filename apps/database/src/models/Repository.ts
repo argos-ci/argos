@@ -28,6 +28,7 @@ export class Repository extends Model {
       organizationId: { type: ["string", "null"] },
       userId: { type: ["string", "null"] },
       private: { type: "boolean" },
+      forcedPrivate: { type: "boolean" },
       defaultBranch: { type: "string" },
       baselineBranch: { type: ["string", "null"] },
     },
@@ -39,6 +40,7 @@ export class Repository extends Model {
   organizationId!: string | null;
   userId!: string | null;
   private!: boolean;
+  forcedPrivate!: boolean;
   defaultBranch!: string;
   baselineBranch!: string | null;
 
@@ -148,7 +150,7 @@ export class Repository extends Model {
   }
 
   static async checkReadPermission(repository: Repository, user: User | null) {
-    if (!repository.private) return true;
+    if (!repository.private && !repository.forcedPrivate) return true;
     return Repository.checkWritePermission(repository, user);
   }
 

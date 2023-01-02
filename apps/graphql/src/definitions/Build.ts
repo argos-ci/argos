@@ -163,7 +163,7 @@ export const resolvers = {
         throw new APIError("Build not found");
       }
 
-      if (build.repository!.private) {
+      if (build.repository!.private || build.repository!.forcedPrivate) {
         const account = await Account.getAccount(build.repository!);
         const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
         if (hasExceedLimit) {

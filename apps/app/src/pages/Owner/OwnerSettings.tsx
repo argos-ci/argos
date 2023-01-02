@@ -55,6 +55,7 @@ const OwnerQuery = graphql(`
         id
         name
         private
+        forcedPrivate
         currentMonthUsedScreenshots
       }
     }
@@ -103,7 +104,7 @@ const PlanCard = ({
   const free = plan.name === "free";
   const [privateRepos, publicRepos] = repositories.reduce(
     (all, repo) => {
-      if (repo.private) {
+      if (repo.private || repo.forcedPrivate) {
         all[0].push(repo);
       } else {
         all[1].push(repo);
