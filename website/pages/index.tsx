@@ -63,7 +63,7 @@ export default function Home() {
                 {(buttonProps) => (
                   <a
                     {...buttonProps}
-                    href="https://app.argos-ci.com/argos-ci/www.argos-ci.com/builds/66"
+                    href="https://app.argos-ci.com/argos-ci/argos-ci.com/builds/20"
                   >
                     View a demo build
                   </a>
