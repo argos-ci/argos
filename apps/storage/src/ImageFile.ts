@@ -1,6 +1,5 @@
 import type { S3Client } from "@aws-sdk/client-s3";
 import { unlink } from "node:fs/promises";
-import { get } from "node:https";
 import { promisify } from "node:util";
 import sharp from "sharp";
 import { tmpName as cbTmpName } from "tmp";
@@ -8,7 +7,6 @@ import type { TmpNameCallback, TmpNameOptions } from "tmp";
 
 import { download as s3Download } from "./download.js";
 import { get as s3Get } from "./get.js";
-import { getPublicUrl } from "./getPublicUrl.js";
 import { upload as s3Upload } from "./upload.js";
 
 export const tmpName = promisify(
@@ -133,13 +131,6 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
     });
     this.key = result.Key;
     return this.key;
-  }
-
-  preload() {
-    if (!this.key) {
-      throw new Error("Impossible to preload without key");
-    }
-    get(getPublicUrl(this.key));
   }
 }
 

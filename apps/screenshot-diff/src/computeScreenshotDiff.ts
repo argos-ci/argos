@@ -107,14 +107,12 @@ export const computeScreenshotDiff = async (
       screenshot: screenshotDiff.baseScreenshot,
       s3Image: baseImage,
     });
-    baseImage.preload();
   }
 
   await completeFile({
     screenshot: screenshotDiff.compareScreenshot,
     s3Image: compareImage,
   });
-  compareImage.preload();
 
   if (baseImage && baseImage.key !== compareImage.key && !screenshotDiff.s3Id) {
     const diffResult = await diffImages({
@@ -130,7 +128,6 @@ export const computeScreenshotDiff = async (
       });
       const key = await diffImage.upload();
       await diffImage.unlink();
-      diffImage.preload();
       await transaction(async (trx) => {
         const diffFile = await File.query(trx)
           .insert({
