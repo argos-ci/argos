@@ -111,6 +111,7 @@ const getOwnerRepositories = (
       .$relatedQuery<Repository>("repositories")
       .where({
         private: false,
+        forcedPrivate: false,
         [`repositories.${owner.type()}Id`]: owner.id,
       })
       .orderBy("repositories.name", "asc");
@@ -134,9 +135,8 @@ const getOwnerRepositories = (
           "repositories.id"
         )
         .where((builder) => {
-          builder.where({ private: false }).orWhere({
+          builder.where({ private: false, forcedPrivate: false }).orWhere({
             "user_repository_rights.userId": user.id,
-            private: true,
             [`repositories.${owner.type()}Id`]: owner.id,
           });
         })

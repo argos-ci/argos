@@ -40,6 +40,8 @@ export const typeDefs = gql`
     referenceBranch: String
     "Private repository on GitHub"
     private: Boolean!
+    "Override repository's Github privacy"
+    forcedPrivate: Boolean!
     "Current month used screenshots"
     currentMonthUsedScreenshots: Int!
   }
@@ -54,6 +56,11 @@ export const typeDefs = gql`
     updateReferenceBranch(
       repositoryId: String!
       baselineBranch: String
+    ): Repository!
+    "Update repository forced private"
+    updateForcedPrivate(
+      repositoryId: String!
+      forcedPrivate: Boolean!
     ): Repository!
   }
 `;
@@ -90,7 +97,7 @@ async function checkUserRepositoryAccess({
 }: {
   user: User | null;
   repositoryId: string;
-  trx: TransactionOrKnex;
+  trx?: TransactionOrKnex;
 }) {
   if (!user) throw new APIError("Invalid user identification");
 
@@ -201,6 +208,19 @@ export const resolvers = {
         return Repository.query(trx).patchAndFetchById(args.repositoryId, {
           baselineBranch: args.baselineBranch?.trim() ?? null,
         });
+      });
+    },
+    updateForcedPrivate: async (
+      _root: null,
+      args: { repositoryId: string; forcedPrivate: boolean },
+      ctx: Context
+    ) => {
+      await checkUserRepositoryAccess({
+        user: ctx.user,
+        repositoryId: args.repositoryId,
+      });
+      return Repository.query().patchAndFetchById(args.repositoryId, {
+        forcedPrivate: args.forcedPrivate,
       });
     },
   },

@@ -35,6 +35,8 @@ const RepositoryQuery = graphql(`
       token
       baselineBranch
       defaultBranch
+      private
+      forcedPrivate
     }
   }
 `);
@@ -51,6 +53,21 @@ const UpdateReferenceBranchMutation = graphql(`
       id
       baselineBranch
       defaultBranch
+    }
+  }
+`);
+
+const UpdateForcedPrivateMutation = graphql(`
+  mutation RepositorySettings_UpdateForcedPrivate(
+    $repositoryId: String!
+    $forcedPrivate: Boolean!
+  ) {
+    updateForcedPrivate(
+      repositoryId: $repositoryId
+      forcedPrivate: $forcedPrivate
+    ) {
+      id
+      forcedPrivate
     }
   }
 `);
@@ -184,6 +201,72 @@ const ReferenceBranchCard = ({ repository }: { repository: Repository }) => {
   );
 };
 
+const VisibilityCard = ({ repository }: { repository: Repository }) => {
+  const [useForcedPrivate, setUseForcedPrivate] = useState(
+    repository.forcedPrivate
+  );
+
+  const [updateReferenceBranch, { loading, data: updated, error }] =
+    useMutation(UpdateForcedPrivateMutation);
+
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
+    updateReferenceBranch({
+      variables: {
+        repositoryId: repository.id,
+        forcedPrivate: useForcedPrivate,
+      },
+    });
+  };
+
+  return (
+    <Card>
+      <form onSubmit={handleSubmit} aria-labelledby="reference-branch">
+        <CardBody>
+          <CardTitle id="reference-branch">Repository visibility</CardTitle>
+          <CardParagraph>
+            Make a public repository private in order to restrict access to
+            builds and screenshots to only authorized users.
+          </CardParagraph>
+          <CardParagraph>
+            This will also mark the screenshots as private and use up credit.
+          </CardParagraph>
+          <div className="my-4 flex gap-2">
+            <input
+              type="checkbox"
+              id="useForcedPrivate"
+              name="useForcedPrivate"
+              checked={useForcedPrivate}
+              onChange={(event) => {
+                setUseForcedPrivate(event.target.checked);
+              }}
+            />
+            <label htmlFor="useForcedPrivate" className="select-none">
+              Change repository visibility to private
+            </label>
+          </div>
+        </CardBody>
+        <CardFooter className="flex items-center justify-end gap-4">
+          {error ? (
+            <div className="flex items-center gap-2 font-medium">
+              <XIcon className="text-error-500" /> Error while saving
+            </div>
+          ) : (
+            updated && (
+              <div className="flex items-center gap-2 font-medium">
+                <CheckIcon className="text-success-500" /> Saved
+              </div>
+            )
+          )}
+          <Button type="submit" disabled={loading}>
+            Save
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
+  );
+};
+
 export const RepositorySettings = () => {
   const { ownerLogin, repositoryName } = useParams();
   const { hasWritePermission } = useRepositoryContext();
@@ -216,6 +299,9 @@ export const RepositorySettings = () => {
             <SettingsLayout>
               <TokenCard repository={repository} />
               <ReferenceBranchCard repository={repository} />
+              {repository.private ? null : (
+                <VisibilityCard repository={repository} />
+              )}
             </SettingsLayout>
           );
         }}

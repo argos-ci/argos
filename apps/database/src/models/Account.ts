@@ -154,8 +154,12 @@ export class Account extends Model {
     const startDate = await this.getCurrentConsumptionStartDate();
     const query = Screenshot.query()
       .joinRelated("screenshotBucket.repository")
-      .where("screenshotBucket:repository.private", "true")
-      .where("screenshots.createdAt", ">=", startDate);
+      .where("screenshots.createdAt", ">=", startDate)
+      .where((builder) =>
+        builder
+          .where("screenshotBucket:repository.private", "true")
+          .orWhere("screenshotBucket:repository.forcedPrivate", "true")
+      );
 
     if (this.userId) {
       query.where("screenshotBucket:repository.userId", this.userId);

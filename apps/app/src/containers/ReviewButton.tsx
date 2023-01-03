@@ -19,6 +19,7 @@ export const RepositoryFragment = graphql(`
     name
     permissions
     private
+    forcedPrivate
     owner {
       login
       consumptionRatio
@@ -171,7 +172,7 @@ export const ReviewButton = (props: {
   }
 
   if (
-    repository.private &&
+    (repository.private || repository.forcedPrivate) &&
     typeof repository.owner.consumptionRatio === "number" &&
     repository.owner.consumptionRatio >= 1
   ) {
