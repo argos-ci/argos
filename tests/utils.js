@@ -8,6 +8,14 @@ export async function goto({ page, link }) {
 }
 
 const GLOBAL_STYLES = `
+  /* Hide carets */
+  * { caret-color: transparent !important; }
+
+  /* Hide scrollbars */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+
   /* Generic hide */
   [data-visual-test="transparent"] {
     color: transparent !important;
