@@ -49,6 +49,11 @@ const validateRoute = validate({
         type: "string",
         nullable: true,
       },
+      prNumber: {
+        type: "integer",
+        minimum: 1,
+        nullable: true,
+      },
     },
   },
 });
@@ -63,6 +68,7 @@ type CreateRequest = express.Request<
     name?: string | null;
     parallel?: string | null;
     parallelNonce?: string | null;
+    prNumber: number | null;
   }
 > & { authRepository: Repository };
 
@@ -86,6 +92,7 @@ const getBuildData = (req: CreateRequest) => {
     batchCount: parallel ? 0 : null,
     repositoryId: req.authRepository.id,
     name: getBuildName(req),
+    prNumber: req.body.prNumber ?? null,
   };
 };
 

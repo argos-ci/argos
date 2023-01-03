@@ -48,6 +48,7 @@ export class Build extends Model {
         type: ["string", "null"],
         enum: ["reference", "check", "orphan"],
       },
+      prNumber: { type: ["integer", "null"] },
     },
   });
 
@@ -61,6 +62,7 @@ export class Build extends Model {
   batchCount!: number | null;
   totalBatch!: number | null;
   type!: BuildType | null;
+  prNumber!: number | null;
 
   static override get relationMappings(): RelationMappings {
     return {
