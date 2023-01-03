@@ -323,6 +323,29 @@ const getDiffDimensions = (diff: Diff | null) => {
   return { height: DEFAULT_IMAGE_HEIGHT, width: MAX_WIDTH };
 };
 
+const preloaded: string[] = [];
+const preloadImage = (src: string) => {
+  if (preloaded.includes(src)) return;
+  const img = new Image();
+  img.src = src;
+  preloaded.push(src);
+  if (preloaded.length > 1000) {
+    preloaded.shift();
+  }
+};
+
+const preloadListItemRow = (row: ListItemRow) => {
+  if (row.diff?.baseScreenshot?.url) {
+    preloadImage(row.diff.baseScreenshot.url);
+  }
+  if (row.diff?.compareScreenshot?.url) {
+    preloadImage(row.diff.compareScreenshot.url);
+  }
+  if (row.diff?.url) {
+    preloadImage(row.diff.url);
+  }
+};
+
 const InternalBuildDiffList = memo(() => {
   const {
     groups,
@@ -411,6 +434,7 @@ const InternalBuildDiffList = memo(() => {
       [stickyIndices]
     ),
   });
+
   const { scrollToIndex } = rowVirtualizer;
   const scrollToIndexRef = useRef(scrollToIndex);
   scrollToIndexRef.current = scrollToIndex;
@@ -470,6 +494,7 @@ const InternalBuildDiffList = memo(() => {
             .filter((e) => e)
             .map((virtualRow) => {
               const item = rows[virtualRow.index];
+
               if (!item) return null;
 
               switch (item.type) {
@@ -499,7 +524,8 @@ const InternalBuildDiffList = memo(() => {
                       }}
                     />
                   );
-                case "item":
+                case "item": {
+                  preloadListItemRow(item);
                   return (
                     <ListItem
                       key={virtualRow.index}
@@ -517,6 +543,7 @@ const InternalBuildDiffList = memo(() => {
                       observer={observer}
                     />
                   );
+                }
                 default:
                   return null;
               }
