@@ -168,6 +168,7 @@ CREATE TABLE public.builds (
     name character varying(255) DEFAULT 'default'::character varying NOT NULL,
     type text,
     "totalBatch" integer,
+    "prNumber" integer,
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
 
@@ -1777,3 +1778,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022120
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221213130347_stripe.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221228140518_add_missing_accounts.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230102064502_add_forced_private.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230103095309_add_pr_number.js', 1, NOW());
