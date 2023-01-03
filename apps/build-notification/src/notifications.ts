@@ -13,7 +13,7 @@ const getStatsMessage = async (buildId: string) => {
   if (stats.failure) {
     parts.push(`${stats.failure} failure${stats.failure > 1 ? "s" : ""}`);
   }
-  return parts.join(",");
+  return parts.join(", ");
 };
 
 type NotificationState = "pending" | "success" | "error" | "failure";
