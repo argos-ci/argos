@@ -38,10 +38,25 @@ const BranchLink = ({
   );
 };
 
+const PullRequestLink = ({
+  githubRepoUrl,
+  prNumber,
+}: {
+  githubRepoUrl: string;
+  prNumber: number;
+}) => {
+  return (
+    <Anchor className="font-mono" href={`${githubRepoUrl}/pull/${prNumber}`}>
+      #{prNumber}
+    </Anchor>
+  );
+};
+
 export const BuildFragment = graphql(`
   fragment BuildInfos_Build on Build {
     createdAt
     name
+    prNumber
     stats {
       total
     }
@@ -71,6 +86,18 @@ export const BuildInfos = (props: {
 
       <Dt>Total screenshots count</Dt>
       <Dd>{build ? build.stats.total : "-"}</Dd>
+
+      {build && build.prNumber ? (
+        <>
+          <Dt>Pull request</Dt>
+          <Dd>
+            <PullRequestLink
+              githubRepoUrl={props.githubRepoUrl}
+              prNumber={build.prNumber}
+            />
+          </Dd>
+        </>
+      ) : null}
 
       <Dt>Baseline branch</Dt>
       <Dd>

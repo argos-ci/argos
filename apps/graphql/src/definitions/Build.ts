@@ -65,6 +65,8 @@ export const typeDefs = gql`
     status: BuildStatus!
     "Build name"
     name: String!
+    "Pull request number"
+    prNumber: Int
     "Build stats"
     stats: BuildStats!
     "Build type"
