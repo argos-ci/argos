@@ -93,7 +93,7 @@ const BuildRow = memo(
           />
         </div>
         <div className="flex-1" />
-        <div className="relative hidden w-20 md:block">
+        <div className="relative hidden w-24 md:block">
           {build.compareScreenshotBucket && (
             <div
               className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on"
