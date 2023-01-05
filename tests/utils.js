@@ -14,6 +14,8 @@ const GLOBAL_STYLES = `
   /* Hide scrollbars */
   ::-webkit-scrollbar {
     display: none !important;
+    width: 0;
+    height: 0;
   }
 
   /* Generic hide */
