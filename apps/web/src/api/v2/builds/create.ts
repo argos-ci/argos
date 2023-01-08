@@ -23,7 +23,7 @@ export default router;
 const validateRoute = validate({
   body: {
     type: "object",
-    required: ["commit", "screenshotKeys"],
+    required: ["commit", "branch", "screenshotKeys"],
     properties: {
       commit: {
         type: "string",
