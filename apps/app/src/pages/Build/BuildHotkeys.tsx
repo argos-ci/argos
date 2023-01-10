@@ -68,6 +68,11 @@ export const hotkeys = {
     displayKeys: ["Space"],
     description: "Toggle fit to screen",
   } as Hotkey,
+  toggleBaselineColumn: {
+    keys: ["KeyB"],
+    displayKeys: ["B"],
+    description: "Toggle baseline column",
+  } as Hotkey,
   toggleHotkeysDialog: {
     keys: ["?"],
     displayKeys: ["?"],

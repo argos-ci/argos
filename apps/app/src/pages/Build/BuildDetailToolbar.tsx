@@ -7,10 +7,12 @@ import {
 import { clsx } from "clsx";
 import { memo } from "react";
 
+import { ColumnsIcon } from "@/ui/ColumnsIcon";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
 import { useBuildDiffFitState } from "./BuildDiffFitState";
+import { useBuildDiffShowBaselineState } from "./BuildDiffShowBaselineState";
 import { useBuildDiffState } from "./BuildDiffState";
 import { useBuildDiffVisibleState } from "./BuildDiffVisibleState";
 import { useBuildHotkey } from "./BuildHotkeys";
@@ -46,6 +48,28 @@ const BuildDiffFitToggle = memo(() => {
     >
       <IconButton aria-pressed={contained} onClick={toggle}>
         <ArrowsPointingInIcon />
+      </IconButton>
+    </HotkeyTooltip>
+  );
+});
+
+const BuildBaselineToggle = memo(() => {
+  const { showBaseline, setShowBaseline } = useBuildDiffShowBaselineState();
+  const toggle = () => setShowBaseline((showBaseline) => !showBaseline);
+  const hotkey = useBuildHotkey("toggleBaselineColumn", toggle, {
+    preventDefault: true,
+  });
+  return (
+    <HotkeyTooltip
+      description={
+        showBaseline
+          ? "Show only changed screenshot"
+          : "Show screenshots side by side"
+      }
+      keys={hotkey.displayKeys}
+    >
+      <IconButton aria-pressed={showBaseline} onClick={toggle}>
+        <ColumnsIcon />
       </IconButton>
     </HotkeyTooltip>
   );
@@ -126,6 +150,7 @@ export const BuildDetailToolbar = memo(
           </div>
         </div>
         <div className="flex gap-2">
+          <BuildBaselineToggle />
           <BuildDiffFitToggle />
           <BuildDiffChangesOverlayToggle />
         </div>
