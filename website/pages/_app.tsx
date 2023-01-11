@@ -9,15 +9,16 @@ import { Inter } from "@next/font/google";
 // If loading a variable font, you don't need to specify the font weight
 const inter = Inter({ subsets: ["latin"] });
 
+const title = "Argos - Detect bugs without writing any test";
+const description =
+  "Argos is a testing platform built for developers, it compares screenshots of your web applications to detect visual regressions.";
+
 const App = ({ Component, pageProps }: AppProps) => {
   return (
     <StrictMode>
       <Head>
-        <title>Argos - Ship pixel perfect apps with no bug.</title>
-        <meta
-          name="description"
-          content="Argos is a visual testing solution that fits in your workflow to avoid visual regression."
-        />
+        <title>{title}</title>
+        <meta name="description" content={description} />
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
         <meta name="format-detection" content="telephone=no" />
         <link
@@ -40,28 +41,15 @@ const App = ({ Component, pageProps }: AppProps) => {
 
         <meta property="og:url" content="https://argos-ci.com" />
         <meta property="og:type" content="website" />
-        <meta
-          property="og:title"
-          content="Argos - Ship pixel perfect apps with no bug."
-        />
-        <meta
-          property="og:description"
-          content="Argos is a visual testing solution that fits in your workflow to avoid visual regression."
-        />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
         <meta property="og:image" content="https://argos-ci.com/social.png" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta property="twitter:domain" content="argos-ci.com" />
         <meta property="twitter:url" content="https://argos-ci.com" />
-        <meta
-          name="twitter:title"
-          content="Argos - Ship pixel perfect apps with no bug."
-        />
-        <meta
-          name="twitter:description"
-          content="Argos is a visual testing solution that fits in your workflow to avoid visual regression."
-        />
-        <meta name="twitter:image" content="https://argos-ci.com/social.png" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
       </Head>
       <div id="content" className={inter.className}>
         <AppNavbar />

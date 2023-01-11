@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 import Image from "next/image";
 import {
-  SparklesIcon,
+  RocketLaunchIcon,
   EyeIcon,
   Square3Stack3DIcon,
   HeartIcon,
@@ -42,21 +42,25 @@ export default function Home() {
       <RotateBackground className="bg-gradient-to-b from-black to-blue-800/30 py-20">
         <Container className="flex gap-11 items-center flex-col mb-20 text-center">
           <div className="flex flex-col gap-6 flex-1">
-            <Chip icon={SparklesIcon} clickable asChild className="mx-auto">
-              <a href="https://argos-ci.com/docs/puppeteer">
-                <span className="font-semibold">New · </span>
-                Puppeteer support
+            <Chip icon={RocketLaunchIcon} clickable asChild className="mx-auto">
+              <a href="https://www.producthunt.com/posts/argos-2">
+                Argos is featured on Product Hunt
               </a>
             </Chip>
-            <h1 className="text-4xl sm:leading-tight sm:text-6xl font-bold">
-              Ship pixel perfect apps
+            <h1 className="text-4xl sm:leading-tight sm:text-6xl font-bold bg-clip-text">
+              <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-[#AAAAAA]">
+                Detect bugs
+              </span>
               <br />
-              with no bug.
+              <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-[#AAAAAA]">
+                without writing any test
+              </span>
             </h1>
             <p className="text-on-light text-xl">
-              Meet the new standard for modern visual testing.
+              Argos is a testing platform built for developers,
               <br />
-              Review visual changes in your development workflow.
+              it compares screenshots of your web applications to detect visual
+              regressions.
             </p>
             <div className="flex gap-4 sm:gap-6 mt-6 mx-auto">
               <Button>
