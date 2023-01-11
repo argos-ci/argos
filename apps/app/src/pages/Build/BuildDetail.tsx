@@ -14,6 +14,10 @@ import {
   useBuildDiffFitState,
 } from "./BuildDiffFitState";
 import { getGroupIcon } from "./BuildDiffGroup";
+import {
+  BuildDiffShowBaselineStateProvider,
+  useBuildDiffShowBaselineState,
+} from "./BuildDiffShowBaselineState";
 import { Diff, useBuildDiffState } from "./BuildDiffState";
 import {
   BuildDiffVisibleStateProvider,
@@ -147,6 +151,17 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
         />
       );
     case "unchanged":
+      return (
+        <MissingScreenshotInfo
+          title="Unchanged screenshot"
+          description={
+            <>
+              All good! This screenshot is similar to the baseline screenshot.
+            </>
+          }
+          icon={getGroupIcon("unchanged")}
+        />
+      );
     case "removed":
       return (
         <div>
@@ -214,15 +229,15 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "unchanged":
       return (
-        <MissingScreenshotInfo
-          title="Unchanged screenshot"
-          description={
-            <>
-              All good! This screenshot is similar to the baseline screenshot.
-            </>
-          }
-          icon={getGroupIcon("unchanged")}
-        />
+        <div>
+          <NeutralLink href={diff.compareScreenshot!.url}>
+            <img
+              className="max-h-full"
+              alt="Baseline screenshot"
+              {...getImgAttributes(diff.compareScreenshot!)}
+            />
+          </NeutralLink>
+        </div>
       );
     case "removed":
       return (
@@ -271,9 +286,10 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
 const BuildScreenshots = memo(
   (props: { diff: Diff; build: BuildFragmentDocument }) => {
     const { contained } = useBuildDiffFitState();
+    const { showBaseline } = useBuildDiffShowBaselineState();
     return (
       <div className={clsx(contained && "min-h-0 flex-1", "flex gap-4 px-4")}>
-        {props.build.baseScreenshotBucket ? (
+        {props.build.baseScreenshotBucket && showBaseline ? (
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
             <BuildScreenshotHeader
               label="Baseline"
@@ -334,8 +350,10 @@ export const BuildDetail = (props: {
       {activeDiff ? (
         <BuildDiffVisibleStateProvider>
           <BuildDiffFitStateProvider>
-            <BuildDetailToolbar name={activeDiff.name} bordered={scrolled} />
-            <BuildScreenshots build={build} diff={activeDiff} />
+            <BuildDiffShowBaselineStateProvider>
+              <BuildDetailToolbar name={activeDiff.name} bordered={scrolled} />
+              <BuildScreenshots build={build} diff={activeDiff} />
+            </BuildDiffShowBaselineStateProvider>
           </BuildDiffFitStateProvider>
         </BuildDiffVisibleStateProvider>
       ) : checkIsBuildEmpty(build) ? (
