@@ -44,8 +44,8 @@ export const hotkeys = {
     description: "Go to first unchanged screenshot",
   } as Hotkey,
   toggleSidebarPanel: {
-    keys: ["⌘", "KeyB"],
-    displayKeys: isMacOS ? ["⌘", "B"] : ["Ctrl", "B"],
+    keys: ["KeyB"],
+    displayKeys: ["B"],
     description: "Toggle info/screenshots sidebar panel",
   } as Hotkey,
   goToNextDiff: {
@@ -69,9 +69,9 @@ export const hotkeys = {
     description: "Toggle fit to screen",
   } as Hotkey,
   toggleBaselineColumn: {
-    keys: ["KeyB"],
-    displayKeys: ["B"],
-    description: "Toggle baseline column",
+    keys: ["KeyS"],
+    displayKeys: ["S"],
+    description: "Toggle side by side mode",
   } as Hotkey,
   toggleHotkeysDialog: {
     keys: ["?"],

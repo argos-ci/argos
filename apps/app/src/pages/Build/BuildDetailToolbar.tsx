@@ -63,8 +63,8 @@ const BuildBaselineToggle = memo(() => {
     <HotkeyTooltip
       description={
         showBaseline
-          ? "Show only changed screenshot"
-          : "Show screenshots side by side"
+          ? "Show only changes column"
+          : "Show baseline and changes side by side"
       }
       keys={hotkey.displayKeys}
     >
