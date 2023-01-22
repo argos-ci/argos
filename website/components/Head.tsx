@@ -1,5 +1,6 @@
 import NextHead from "next/head";
 import { useRouter } from "next/router";
+import socialImg from "@/images/social.png";
 
 const defaultTitle = "Argos - Detect bugs without writing any test";
 const defaultDescription =
@@ -9,7 +10,7 @@ export const Head = ({
   title = defaultTitle,
   description = defaultDescription,
   ogType = "website",
-  ogImage = "https://argos-ci.com/social.png",
+  ogImage = socialImg.src,
 }: {
   title?: string;
   description?: string;
