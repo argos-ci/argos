@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 import remarkFrontmatter from "remark-frontmatter";
+import { StaticImageData } from "next/image";
 
 export interface Article {
   filepath: string;
@@ -15,7 +16,7 @@ export interface Article {
   date: string;
   author: string;
   category?: string;
-  image: any;
+  image: StaticImageData;
   imageAlt: string;
 }
 

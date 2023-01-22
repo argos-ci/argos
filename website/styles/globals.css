@@ -14,6 +14,10 @@
   #content {
     contain: paint;
   }
+
+  .prose.prose {
+    --tw-prose-pre-bg: theme(colors.slate.900);
+  }
 }
 
 @layer components {

@@ -1,3 +1,4 @@
+import "@/styles/highlight-js-github-dark.min.css";
 import "@/styles/globals.css";
 import { StrictMode } from "react";
 import Head from "next/head";

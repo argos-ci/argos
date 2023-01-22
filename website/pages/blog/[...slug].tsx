@@ -48,7 +48,15 @@ const Page: NextPage<{
   const components = useMemo(() => {
     return {
       MainImage: ({ credit }: { credit: React.ReactNode }) => {
-        return <MainImage {...article.image} credit={credit} />;
+        return (
+          <MainImage
+            width={article.image.width}
+            height={article.image.height}
+            src={article.image.src}
+            alt={article.imageAlt}
+            credit={credit}
+          />
+        );
       },
     };
   }, [article]);
