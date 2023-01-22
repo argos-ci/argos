@@ -48,7 +48,7 @@ const getFrontMatterErrors = (frontmatter: any) => {
 
 export const getArticles = async (): Promise<Article[]> => {
   const files = await fg("./articles/**/*.mdx");
-  return Promise.all(
+  const articles = await Promise.all(
     files.map(async (filepath) => {
       const frontmatter = matter.read(filepath).data;
       const dir = dirname(filepath).replace(/^.\/articles\//, "");
@@ -73,6 +73,9 @@ export const getArticles = async (): Promise<Article[]> => {
         category: frontmatter.category,
       };
     })
+  );
+  return articles.sort(
+    (a, b) => Number(new Date(b.date)) - Number(new Date(a.date))
   );
 };
 
