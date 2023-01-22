@@ -56,7 +56,9 @@ const Page: NextPage<{
         <Link href="/blog/improve-dx" className="contents">
           <PostCard extended>
             <PostCardImage
-              {...firstArticle.image}
+              width={firstArticle.image.width}
+              height={firstArticle.image.height}
+              src={firstArticle.image.src}
               alt={firstArticle.imageAlt}
               extended
             />
@@ -85,7 +87,12 @@ const Page: NextPage<{
               className="contents"
             >
               <PostCard>
-                <PostCardImage {...article.image} alt={article.imageAlt} />
+                <PostCardImage
+                  width={article.image.width}
+                  height={article.image.height}
+                  src={article.image.src}
+                  alt={article.imageAlt}
+                />
                 <PostCardBody>
                   {article.category && (
                     <PostCardTag>{article.category}</PostCardTag>
