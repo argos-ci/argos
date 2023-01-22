@@ -71,6 +71,7 @@ const Page: NextPage<{
         description={article.description}
         ogType="article"
         ogImage={article.image.src}
+        ogImageAlt={article.imageAlt}
       />
       <Container>
         {article.category && (

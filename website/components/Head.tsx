@@ -11,11 +11,13 @@ export const Head = ({
   description = defaultDescription,
   ogType = "website",
   ogImage = socialImg.src,
+  ogImageAlt = "",
 }: {
   title?: string;
   description?: string;
   ogType?: string;
   ogImage?: string;
+  ogImageAlt?: string;
 }) => {
   const router = useRouter();
   const canonicalUrl = (
@@ -52,8 +54,11 @@ export const Head = ({
       <meta property="og:description" content={description} />
       <meta property="og:image" content={ogImage} />
 
-      <meta name="twitter:card" content="summary_large_image" />
       <meta property="twitter:domain" content="argos-ci.com" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@argos_ci" />
+      <meta property="twitter:image" content={ogImage} />
+      {ogImageAlt && <meta property="twitter:alt" content={ogImageAlt} />}
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
     </NextHead>
