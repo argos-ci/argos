@@ -1,7 +1,7 @@
 import type { GetStaticPaths, GetStaticProps, NextPage } from "next";
 import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
+import { Head } from "@/components/Head";
 
-import { StaticPage } from "@/components/StaticPage";
 import {
   Article,
   getArticleBySlug,
@@ -11,6 +11,7 @@ import {
 import { MainImage } from "@/components/Post";
 import { useMemo } from "react";
 import { Separator } from "@/components/Separator";
+import { Container } from "@/components/Container";
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   if (!params?.slug) return { notFound: true };
@@ -61,20 +62,31 @@ const Page: NextPage<{
     };
   }, [article]);
   return (
-    <StaticPage title={article.title}>
-      {article.category && (
-        <div className="text-on-light mb-4">{article.category}</div>
-      )}
-      <h1>{article.title}</h1>
-      <div className="text-on-light my-4 flex gap-2 text-sm">
-        {new Intl.DateTimeFormat("en-US", {
-          dateStyle: "long",
-        }).format(new Date(article.date))}
-        <Separator />
-        {article.author}
-      </div>
-      <MDXRemote {...props.source} components={components} />
-    </StaticPage>
+    <article
+      className="prose prose-invert mx-auto max-w-none mt-14 mb-24"
+      style={{ contain: "none" }}
+    >
+      <Head
+        title={article.title}
+        description={article.description}
+        ogType="article"
+        ogImage={article.image.src}
+      />
+      <Container>
+        {article.category && (
+          <div className="text-on-light mb-4">{article.category}</div>
+        )}
+        <h1>{article.title}</h1>
+        <div className="text-on-light my-4 flex gap-2 text-sm">
+          {new Intl.DateTimeFormat("en-US", {
+            dateStyle: "long",
+          }).format(new Date(article.date))}
+          <Separator />
+          {article.author}
+        </div>
+        <MDXRemote {...props.source} components={components} />
+      </Container>
+    </article>
   );
 };
 

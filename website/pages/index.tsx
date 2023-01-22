@@ -35,10 +35,12 @@ import mui from "@/images/brands/mui.svg";
 import { Testimonials } from "@/components/Testimonials";
 import { Container } from "@/components/Container";
 import { RotateBackground } from "@/components/RotateBackground";
+import { Head } from "@/components/Head";
 
 export default function Home() {
   return (
     <div className="flex flex-col gap-[176px] md:gap-[240px]">
+      <Head />
       <RotateBackground className="bg-gradient-to-b from-black to-blue-800/30 py-20">
         <Container className="flex gap-11 items-center flex-col mb-20 text-center">
           <div className="flex flex-col gap-6 flex-1">

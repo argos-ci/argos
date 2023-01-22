@@ -1,5 +1,5 @@
-import Head from "next/head";
 import { Container } from "@/components/Container";
+import { Head } from "@/components/Head";
 
 export const StaticPage: React.FC<{
   children: React.ReactNode;
@@ -7,9 +7,7 @@ export const StaticPage: React.FC<{
 }> = ({ children, title }) => {
   return (
     <>
-      <Head>
-        <title>{title}</title>
-      </Head>
+      <Head title={title} />
       <article
         className="prose prose-invert mx-auto max-w-none mt-14 mb-24"
         style={{ contain: "none" }}

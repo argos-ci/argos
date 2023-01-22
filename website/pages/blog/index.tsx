@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 import { Container } from "@/components/Container";
 import { Link } from "@/components/Link";
+import { Head } from "@/components/Head";
 import {
   PostCard,
   PostCardBody,
@@ -37,6 +38,7 @@ const Page: NextPage<{
   const firstArticle = props.articles[0];
   return (
     <Container className="my-10" style={{ contain: "none" }}>
+      <Head title="Blog — Updates from the Argos team" />
       <div className="flex flex-col md:flex-row items-baseline gap-x-2">
         <h2 className="font-semibold text-white">Latest updates</h2>
         <div
