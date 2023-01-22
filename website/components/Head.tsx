@@ -20,6 +20,7 @@ export const Head = ({
   ogImageAlt?: string;
 }) => {
   const router = useRouter();
+  const ogImageUrl = new URL(ogImage, "https://argos-ci.com").href;
   const canonicalUrl = (
     `https://argos-ci.com` + (router.asPath === "/" ? "" : router.asPath)
   ).split("?")[0];
@@ -52,12 +53,12 @@ export const Head = ({
       <meta property="og:type" content={ogType} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={ogImage} />
+      <meta property="og:image" content={ogImageUrl} />
 
       <meta property="twitter:domain" content="argos-ci.com" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@argos_ci" />
-      <meta property="twitter:image" content={ogImage} />
+      <meta property="twitter:image" content={ogImageUrl} />
       {ogImageAlt && <meta property="twitter:alt" content={ogImageAlt} />}
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
