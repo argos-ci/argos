@@ -1,29 +1,17 @@
-import Image from "next/image";
-import { StaticPage } from "@/components/StaticPage";
-import { Metadata, MainImage } from "@/components/Post";
-import { Separator } from "@/components/Separator";
-import { Link } from "@/components/Link";
-import mainImage from "./main.jpg";
-
-<Metadata>Developer experience</Metadata>
-
-# How to improve developer experience (DX) with visual testing
-
-<Metadata>
-  <div>Dec 21, 2022</div>
-  <Separator />
-  <div>Jeremy Sfez</div>
-</Metadata>
-
-As a developer, there's nothing more frustrating than spending hours, if not days, working on a feature or bug fix, only to have it break the visual layout of the app. This not only slows down the development process, but it can also lead to frustration and loss of confidence in the quality of the work being delivered.
-
-That's where visual testing comes in.
+---
+title: How to improve developer experience (DX) with visual testing
+description: As a developer, it's important to have confidence in the code
+  you're writing and the applications you're building. One way to
+  achieve this confidence is through visual testing.
+slug: improve-dx
+category: Developer Experience
+author: Jeremy Sfez
+date: 2022-12-21
+image: ./main.jpg
+imageAlt: Cosy guy with dog — Photo by devn
+---
 
 <MainImage
-  width={mainImage.width}
-  height={mainImage.height}
-  src={mainImage.src}
-  blurDataURL={mainImage.blurDataURL}
   credit={
     <>
       Photo by{" "}
@@ -37,6 +25,10 @@ That's where visual testing comes in.
     </>
   }
 />
+
+As a developer, there's nothing more frustrating than spending hours, if not days, working on a feature or bug fix, only to have it break the visual layout of the app. This not only slows down the development process, but it can also lead to frustration and loss of confidence in the quality of the work being delivered.
+
+That's where visual testing comes in.
 
 ### Developer experience (DX)
 
@@ -56,7 +48,3 @@ In addition, a visual tests suite can be created to ensure that the visual aspec
 ### Conclusion
 
 Overall, visual testing is invaluable for any developer looking to deliver high-quality, bug-free applications. Automatic visual testing improves software crafting workflow by giving developers more confidence in feature delivery and save time and effort in the long run.
-
-export default ({ children }) => (
-  <StaticPage title="visual testing">{children}</StaticPage>
-);

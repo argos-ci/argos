@@ -1,11 +1,5 @@
 import Image, { ImageProps } from "next/image";
-import { ComponentProps, ReactNode } from "react";
-
-export interface MetadataProps extends ComponentProps<"div"> {}
-
-export const Metadata = (props: MetadataProps) => (
-  <div className="flex gap-2 text-on-light mb-4" {...props} />
-);
+import { ReactNode } from "react";
 
 export interface MainImageProps extends ImageProps {
   credit: ReactNode;

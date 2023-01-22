@@ -1,24 +1,19 @@
-import Image from "next/image";
-import { StaticPage } from "@/components/StaticPage";
-import { Metadata, MainImage } from "@/components/Post";
-import { Separator } from "@/components/Separator";
-import mainImage from "./main.jpg";
-
-<Metadata>Testing</Metadata>
-
-# The Importance of Visual Testing in Ensuring UI Quality
-
-<Metadata>
-  <div>Dec 12, 2022</div>
-  <Separator />
-  <div>Jeremy Sfez</div>
-</Metadata>
+---
+title: The Importance of Visual Testing in Ensuring UI Quality
+description: Visual testing is a critical part of ensuring the quality of a
+  user interface. It involves comparing the visual appearance of a
+  user interface to a set of predetermined criteria, in order to
+  ensure that it meets design specifications and user
+  expectations.
+slug: visual-testing
+category: Testing
+author: Jeremy Sfez
+date: 2022-12-12
+image: ./main.jpg
+imageAlt: Staircase / eye in library — Photo by Petri Heiskanen
+---
 
 <MainImage
-  width={mainImage.width}
-  height={mainImage.height}
-  src={mainImage.src}
-  blurDataURL={mainImage.blurDataURL}
   credit={
     <>
       Photo by{" "}
@@ -50,7 +45,3 @@ Another advantage of visual testing is that it allows developers to test a user 
 ## Conclusion
 
 In conclusion, visual testing is an essential part of ensuring the quality of a user interface. It allows developers to automatically test the visual appearance of a user interface, and to catch defects early in the development process. By implementing visual testing in their development process, developers can save time and effort, and improve the overall user experience of their product.
-
-export default ({ children }) => (
-  <StaticPage title="visual testing">{children}</StaticPage>
-);
