@@ -53,7 +53,7 @@ const Page: NextPage<{
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-y-20 gap-x-16 mt-12">
-        <Link href="/blog/improve-dx" className="contents">
+        <Link href={`/blog/${firstArticle.slug}`} className="contents">
           <PostCard extended>
             <PostCardImage
               width={firstArticle.image.width}

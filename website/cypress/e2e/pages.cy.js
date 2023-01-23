@@ -6,6 +6,7 @@ const pages = {
   blog: "/blog",
   "blog-post-1": "/blog/visual-testing",
   "blog-post-2": "/blog/improve-dx",
+  "blog-post-3": "/blog/playwright",
 };
 
 const viewportPresets = ["macbook-16", "ipad-2", "iphone-8"];
