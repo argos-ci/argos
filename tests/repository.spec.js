@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { test, expect } = require("@playwright/test");
-const { goto, argosScreenshot } = require("./utils");
+const { argosScreenshot } = require("@argos-ci/playwright");
 
 test("build list", async ({ page, browserName }) => {
-  await goto({ page, link: "/callemall/material-ui" });
+  await page.goto("/callemall/material-ui");
   await expect(page.getByText("#12")).toBeVisible();
   await argosScreenshot(page, `owner-repository-list-${browserName}`);
 });
