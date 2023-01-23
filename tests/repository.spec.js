@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { test, expect } = require("@playwright/test");
-const { goto, argosScreenshot } = require("./utils");
+const { goto } = require("./utils");
+const { argosScreenshot } = require("@argos-ci/playwright");
 
 test("build list", async ({ page, browserName }) => {
   await goto({ page, link: "/callemall/material-ui" });

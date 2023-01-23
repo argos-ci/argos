@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { test, expect } = require("@playwright/test");
-const { argosScreenshot, goto } = require("./utils");
+const { goto } = require("./utils");
+const { argosScreenshot } = require("@argos-ci/playwright");
 
 const buildExamples = [
   { name: "orphan", number: 1 },
