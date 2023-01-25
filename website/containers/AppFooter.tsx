@@ -13,10 +13,11 @@ export const AppFooter: React.FC = () => (
       <FooterSections>
         <FooterSection>
           <FooterSectionTitle>Getting Started</FooterSectionTitle>
-          <FooterLink href="https://argos-ci.com/docs/getting-started">
-            Installation
+          <FooterLink href="/docs/installation">Installation</FooterLink>
+          <FooterLink href="/docs/capture-screenshots">
+            Capture screenshots
           </FooterLink>
-          <FooterLink href="https://argos-ci.com/docs/usage">Usage</FooterLink>
+          <FooterLink href="/docs/configure-ci">Configure CI</FooterLink>
           <FooterLink href="https://github.com/marketplace/argos-ci">
             View on GitHub Marketplace
           </FooterLink>
