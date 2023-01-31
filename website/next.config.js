@@ -15,6 +15,9 @@ const nextConfig = withMDX({
     locales: ["en"],
     defaultLocale: "en",
   },
+  images: {
+    unoptimized: true,
+  },
   pageExtensions: ["ts", "tsx", "js", "jsx", "md", "mdx"],
   redirects: async () => {
     return [
