@@ -137,7 +137,7 @@ export const BuildDetailToolbar = memo(
       <div
         className={clsx(
           borderClassName,
-          "b sticky top-0 z-20 flex flex-shrink-0 justify-between gap-4 border-b bg-black/80 p-4 backdrop-blur-[5px] backdrop-saturate-[180%] transition-colors"
+          "b sticky top-0 z-20 flex flex-shrink-0 justify-between gap-3 border-b bg-black/80 p-4 backdrop-blur-[5px] backdrop-saturate-[180%] transition-colors"
         )}
       >
         <div className="flex items-center gap-2">
