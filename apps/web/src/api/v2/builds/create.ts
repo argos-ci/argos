@@ -106,7 +106,7 @@ const getScreenshots = async (keys: string[]) => {
         s3,
         Key: key,
         Bucket: screenshotsBucket,
-        expiresIn: 180,
+        expiresIn: 1800, // 30 minutes
       })
     )
   );
