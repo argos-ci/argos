@@ -530,7 +530,7 @@ export const SUBSCRIPTION_CANCEL_PAYLOAD = {
   collection_method: "charge_automatically",
   created: 1672067063,
   currency: "usd",
-  current_period_end: 1674745463,
+  current_period_end: 4832139775,
   current_period_start: 1672067063,
   customer: "cus_N3P2lnjYuFOnqd",
   days_until_due: null,
