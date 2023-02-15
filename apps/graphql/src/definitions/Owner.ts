@@ -186,7 +186,7 @@ export const resolvers = {
       return getOwnerRepositories(owner, {
         user: ctx.user,
         enabled: args.enabled,
-      });
+      }).limit(200);
     },
     repositoriesNumber: async (
       owner: Owner,
