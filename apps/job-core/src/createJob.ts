@@ -4,6 +4,7 @@ import type { Channel } from "amqplib";
 import logger from "@argos-ci/logger";
 
 import { getAmqpChannel } from "./amqp.js";
+import { checkIsRetryable } from "./error.js";
 
 interface Payload<TArg> {
   args: [TArg];
@@ -77,7 +78,7 @@ export const createJob = <TArg>(
             await consumer.perform(payload.args[0]);
             await consumer.complete(payload.args[0]);
           } catch (error: any) {
-            if (error.retryable && payload.attempts < 2) {
+            if (checkIsRetryable(error) && payload.attempts < 2) {
               channel.ack(msg);
               channel.sendToQueue(
                 queue,
