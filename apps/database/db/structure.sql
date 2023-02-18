@@ -590,7 +590,8 @@ CREATE TABLE public.screenshot_diffs (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "s3Id" character varying(255),
-    "fileId" bigint
+    "fileId" bigint,
+    "stabilityScore" integer
 );
 
 
@@ -1779,3 +1780,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022121
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20221228140518_add_missing_accounts.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230102064502_add_forced_private.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230103095309_add_pr_number.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230218100910_add_stability_score.js', 1, NOW());

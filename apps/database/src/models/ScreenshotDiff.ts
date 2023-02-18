@@ -28,11 +28,8 @@ export class ScreenshotDiff extends Model {
       compareScreenshotId: { type: ["string", "null"] },
       s3Id: { type: ["string", "null"] },
       fileId: { type: ["string", "null"] },
-      score: {
-        type: ["number", "null"],
-        minimum: 0,
-        maximum: 1,
-      },
+      score: { type: ["number", "null"], minimum: 0, maximum: 1 },
+      stabilityScore: { type: ["number", "null"], minimum: 0, maximum: 100 },
       validationStatus: {
         type: "string",
         enum: ["unknown", "accepted", "rejected"],
@@ -46,6 +43,7 @@ export class ScreenshotDiff extends Model {
   s3Id!: string | null;
   fileId!: string | null;
   score!: number | null;
+  stabilityScore!: number | null;
   jobStatus!: JobStatus;
   validationStatus!: "unknown" | "accepted" | "rejected";
 

@@ -3,10 +3,88 @@ import type { TransactionOrKnex } from "objection";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { raw, transaction } from "@argos-ci/database";
-import { File, Screenshot, ScreenshotDiff } from "@argos-ci/database/models";
+import {
+  Build,
+  File,
+  Screenshot,
+  ScreenshotDiff,
+} from "@argos-ci/database/models";
 import { S3ImageFile } from "@argos-ci/storage";
 
 import { diffImages } from "./util/image-diff/index.js";
+
+interface BuildBranch {
+  id: string;
+  branch: string;
+}
+
+export const getStabilityScore = async ({
+  screenshotName,
+  currentBranch,
+  repositoryId,
+}: {
+  screenshotName: string;
+  currentBranch: string;
+  repositoryId: string;
+}) => {
+  const recentBuilds = (await Build.query()
+    .select("builds.id", "screenshot_buckets.branch")
+    .where("builds.repositoryId", repositoryId)
+    .andWhere("builds.createdAt", ">=", raw("now() - interval '7 days'"))
+    .join(
+      "screenshot_buckets",
+      "builds.compareScreenshotBucketId",
+      "screenshot_buckets.id"
+    )
+    .whereNot(
+      "screenshot_buckets.branch",
+      currentBranch
+    )) as unknown as BuildBranch[];
+
+  const totalBuilds = recentBuilds.length;
+  if (!totalBuilds) {
+    return 1;
+  }
+
+  const buildWithDiffs = await ScreenshotDiff.query()
+    .select("buildId")
+    .count("screenshot_diffs.id")
+    .where("score", ">", 0)
+    .whereIn(
+      "buildId",
+      recentBuilds.map(({ id }) => id)
+    )
+    .join(
+      "screenshots",
+      "screenshot_diffs.compareScreenshotId",
+      "screenshots.id"
+    )
+    .where("screenshots.name", screenshotName)
+    .groupBy("buildId")
+    .having(raw("count(screenshot_diffs.id) > 0"))
+    .where("screenshots.name", screenshotName)
+    .then((rows) => rows.map((row) => row.buildId));
+
+  const totalBranchesWithChanges = await Build.query()
+    .select("branch")
+    .whereIn("builds.id", buildWithDiffs)
+    .join(
+      "screenshot_buckets",
+      "builds.compareScreenshotBucketId",
+      "screenshot_buckets.id"
+    )
+    .groupBy("screenshot_buckets.branch")
+    .resultSize();
+
+  const totalBuildWithChanges = buildWithDiffs.length;
+  const totalBranches = new Set(recentBuilds.map(({ branch }) => branch)).size;
+
+  const stabilityScore =
+    (1 - totalBuildWithChanges / totalBuilds) *
+    (1 - totalBranchesWithChanges / totalBranches);
+
+  return Math.round(stabilityScore * 100);
+};
 
 const getOrCreateFile = async (
   values: { key: string; width: number; height: number },
@@ -59,7 +137,9 @@ export const computeScreenshotDiff = async (
 
   const screenshotDiff = await poorScreenshotDiff
     .$query()
-    .withGraphFetched("[build, baseScreenshot.file, compareScreenshot.file]");
+    .withGraphFetched(
+      "[build, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]"
+    );
 
   if (!screenshotDiff) {
     throw new Error(`Screenshot diff id: \`${screenshotDiff}\` not found`);
@@ -128,6 +208,14 @@ export const computeScreenshotDiff = async (
       });
       const key = await diffImage.upload();
       await diffImage.unlink();
+
+      const stabilityScore = await getStabilityScore({
+        screenshotName: screenshotDiff.compareScreenshot.name,
+        currentBranch:
+          screenshotDiff.compareScreenshot.screenshotBucket!.branch,
+        repositoryId: screenshotDiff.build!.repositoryId,
+      });
+
       await transaction(async (trx) => {
         const diffFile = await File.query(trx)
           .insert({
@@ -140,6 +228,7 @@ export const computeScreenshotDiff = async (
           score: diffResult.score,
           s3Id: diffFile.key,
           fileId: diffFile.id,
+          stabilityScore,
         });
       });
     } else {

@@ -2,14 +2,17 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ArrowsPointingInIcon,
+  BugAntIcon,
   EyeIcon,
 } from "@heroicons/react/20/solid";
 import { clsx } from "clsx";
 import { memo } from "react";
 
+import { Badge } from "@/ui/Badge";
 import { ColumnsIcon } from "@/ui/ColumnsIcon";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
+import { MagicTooltip } from "@/ui/Tooltip";
 
 import { useBuildDiffFitState } from "./BuildDiffFitState";
 import { useBuildDiffShowBaselineState } from "./BuildDiffShowBaselineState";
@@ -126,10 +129,11 @@ const PreviousDiffButton = memo(() => {
 export interface BuildDetailToolbarProps {
   name: string;
   bordered: boolean;
+  flakyDetected: boolean;
 }
 
 export const BuildDetailToolbar = memo(
-  ({ name, bordered }: BuildDetailToolbarProps) => {
+  ({ name, bordered, flakyDetected }: BuildDetailToolbarProps) => {
     const borderClassName = bordered
       ? "border-b-border"
       : "border-b-transparent";
@@ -148,6 +152,16 @@ export const BuildDetailToolbar = memo(
           <div role="heading" className="text-sm font-medium">
             {name}
           </div>
+          {flakyDetected && (
+            <MagicTooltip tooltip="This screenshot comparison has high instability in recent builds and may be a flaky.">
+              <div>
+                <Badge className="flex gap-1 text-xs">
+                  <BugAntIcon className="h-3 w-3 text-orange-400" />
+                  Flaky suspected
+                </Badge>
+              </div>
+            </MagicTooltip>
+          )}
         </div>
         <div className="flex gap-2">
           <BuildBaselineToggle />
