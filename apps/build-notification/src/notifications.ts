@@ -1,6 +1,7 @@
 import { TransactionOrKnex, runAfterTransaction } from "@argos-ci/database";
 import { Build, BuildNotification } from "@argos-ci/database/models";
 import { getInstallationOctokit } from "@argos-ci/github";
+import { UnretryableError } from "@argos-ci/job-core";
 
 import { job as buildNotificationJob } from "./job.js";
 
@@ -141,12 +142,9 @@ export const processBuildNotification = async (
 
   const [installation] = build.repository!.installations!;
   if (!installation) {
-    const error = new Error(
+    throw new UnretryableError(
       `Installation not found for repository "${build.repository!.id}"`
     );
-    // @ts-ignore
-    error.retryable = false;
-    throw error;
   }
 
   const octokit = await getInstallationOctokit(installation.id);

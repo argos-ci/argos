@@ -38,8 +38,8 @@ export const getOrCreateBaseScreenshotBucket = async (
   }
 
   const baseScreenshotBucket = await baseCompare({
-    baseCommit: build.repository!.referenceBranch,
-    compareCommit: build.compareScreenshotBucket!.commit,
+    base: build.repository!.referenceBranch,
+    head: build.compareScreenshotBucket!.commit,
     build,
     trx,
   });
