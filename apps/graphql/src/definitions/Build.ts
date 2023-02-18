@@ -101,6 +101,7 @@ export const resolvers = {
         .$relatedQuery("screenshotDiffs")
         .leftJoinRelated("[baseScreenshot, compareScreenshot]")
         .orderByRaw(ScreenshotDiff.sortDiffByStatus)
+        .orderByRaw(`CASE WHEN "stabilityScore" < 60 THEN 2 ELSE 1 END ASC`)
         .orderBy("compareScreenshot.name", "asc")
         .orderBy("baseScreenshot.name", "asc")
         .orderBy("screenshot_diffs.id", "asc")
