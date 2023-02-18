@@ -13,15 +13,11 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-        with:
-          # A minimal fetch-depth of 2 is required
-          # to automatically detect branch in @argos-ci/cli
-          fetch-depth: 2
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: current
 
       - name: Install dependencies
         run: npm ci
