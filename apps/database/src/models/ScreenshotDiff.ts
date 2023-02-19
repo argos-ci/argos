@@ -93,31 +93,36 @@ export class ScreenshotDiff extends Model {
     playwright: "-failed-",
   }).join("|")})`;
 
-  static selectDiffStatus = `CASE \
-    WHEN "compareScreenshotId" IS NULL \
-      THEN 'removed' \
-    WHEN "baseScreenshotId" IS NULL \
-      AND "name" ~ '${ScreenshotDiff.screenshotFailureRegexp}' \
-      THEN 'failure'  \
-    WHEN "baseScreenshotId" IS NULL \
-      THEN 'added' \
-    WHEN "score" IS NOT NULL AND "score" > 0 \
-      THEN 'changed' \
-    ELSE 'unchanged'  \
-    END \
+  static selectDiffStatus = `CASE
+    WHEN "compareScreenshotId" IS NULL
+      THEN 'removed'
+    WHEN "baseScreenshotId" IS NULL
+      THEN (CASE 
+        WHEN "name" ~ '${ScreenshotDiff.screenshotFailureRegexp}'
+          THEN 'failure'
+        ELSE 'added'
+      END)   
+    WHEN "score" IS NOT NULL AND "score" > 0
+      THEN 'changed'
+    ELSE 'unchanged' 
+    END
     AS status`;
 
-  static sortDiffByStatus = `CASE \
-    WHEN "compareScreenshotId" IS NULL \
-      THEN 3 -- removed
-    WHEN "baseScreenshotId" IS NULL \
-      AND "compareScreenshot"."name" ~ '${ScreenshotDiff.screenshotFailureRegexp}' \
-      THEN 0 -- failure
-    WHEN "baseScreenshotId" IS NULL  \
-      THEN 2 -- added
-    WHEN "score" IS NOT NULL AND "score" > 0 \
-      THEN 1 -- changed
-    ELSE 4 -- unchanged
+  static sortDiffByStatus = `CASE 
+    WHEN "compareScreenshotId" IS NULL THEN 30 -- removed 
+    WHEN "baseScreenshotId" IS NULL
+      THEN (CASE 
+        WHEN "compareScreenshot"."name" ~ '${ScreenshotDiff.screenshotFailureRegexp}'
+          THEN 0 -- failure 
+        ELSE 20 -- added
+      END)
+    WHEN "score" IS NOT NULL AND "score" > 0 -- changed
+      THEN (CASE
+        WHEN "stabilityScore" IS NOT NULL AND "stabilityScore" < 60
+          THEN 11 -- flaky
+        ELSE 10 -- not flaky 
+      END)
+    ELSE 40 -- unchanged 
     END ASC`;
 
   $getDiffStatus = async (
