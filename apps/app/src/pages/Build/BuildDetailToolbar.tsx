@@ -8,7 +8,7 @@ import {
 import { clsx } from "clsx";
 import { memo } from "react";
 
-import { Badge } from "@/ui/Badge";
+import { Chip } from "@/ui/Chip";
 import { ColumnsIcon } from "@/ui/ColumnsIcon";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
@@ -154,12 +154,9 @@ export const BuildDetailToolbar = memo(
           </div>
           {flakyDetected && (
             <MagicTooltip tooltip="This screenshot comparison has high instability in recent builds and may be a flaky.">
-              <div>
-                <Badge className="flex gap-1 text-xs">
-                  <BugAntIcon className="h-3 w-3 text-orange-400" />
-                  Flaky suspected
-                </Badge>
-              </div>
+              <Chip icon={BugAntIcon} color="warning" scale="sm">
+                Flaky suspected
+              </Chip>
             </MagicTooltip>
           )}
         </div>

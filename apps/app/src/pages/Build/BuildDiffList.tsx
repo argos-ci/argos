@@ -17,6 +17,7 @@ import {
 } from "react";
 
 import { Badge } from "@/ui/Badge";
+import { MagicTooltip } from "@/ui/Tooltip";
 
 import { getGroupLabel } from "./BuildDiffGroup";
 import { Diff, DiffGroup, useBuildDiffState } from "./BuildDiffState";
@@ -229,7 +230,9 @@ const ListItem = ({
         {item.diff ? (
           <>
             {item.diff.flakyDetected && (
-              <BugAntIcon className="absolute top-3 right-4 z-30 h-4 w-4 text-orange-400" />
+              <MagicTooltip tooltip="Move to end for flaky suspicion">
+                <BugAntIcon className="absolute top-3 right-4 z-30 h-4 w-4 text-warning-400" />
+              </MagicTooltip>
             )}
             <DiffImage diff={item.diff} />{" "}
             <div className="absolute bottom-0 left-0 right-0 z-10 truncate bg-gradient-to-b from-transparent to-black/70 px-2 pb-2 pt-4 text-xxs font-medium opacity-0 transition group-hover/sidebar:opacity-100">

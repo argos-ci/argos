@@ -43,7 +43,7 @@ export const getStabilityScore = async ({
 
   const totalBuilds = recentBuilds.length;
   if (!totalBuilds) {
-    return 1;
+    return 100;
   }
 
   const buildWithDiffs = await ScreenshotDiff.query()
@@ -206,15 +206,17 @@ export const computeScreenshotDiff = async (
         bucket: bucket,
         filepath: diffResult.filepath,
       });
-      const key = await diffImage.upload();
-      await diffImage.unlink();
 
-      const stabilityScore = await getStabilityScore({
-        screenshotName: screenshotDiff.compareScreenshot.name,
-        currentBranch:
-          screenshotDiff.compareScreenshot.screenshotBucket!.branch,
-        repositoryId: screenshotDiff.build!.repositoryId,
-      });
+      const [key, stabilityScore] = await Promise.all([
+        diffImage.upload(),
+        getStabilityScore({
+          screenshotName: screenshotDiff.compareScreenshot.name,
+          currentBranch:
+            screenshotDiff.compareScreenshot.screenshotBucket!.branch,
+          repositoryId: screenshotDiff.build!.repositoryId,
+        }),
+      ]);
+      await diffImage.unlink();
 
       await transaction(async (trx) => {
         const diffFile = await File.query(trx)
