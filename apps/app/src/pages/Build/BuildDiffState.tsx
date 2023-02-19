@@ -25,6 +25,7 @@ export interface Diff {
   name: string;
   width?: number | null;
   height?: number | null;
+  flakyDetected: boolean;
   compareScreenshot?: {
     id: string;
     url: string;
@@ -126,6 +127,7 @@ const RepositoryQuery = graphql(`
             name
             width
             height
+            flakyDetected
             baseScreenshot {
               id
               url

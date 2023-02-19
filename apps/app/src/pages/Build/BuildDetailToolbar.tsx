@@ -8,6 +8,7 @@ import { clsx } from "clsx";
 import { memo } from "react";
 
 import { ColumnsIcon } from "@/ui/ColumnsIcon";
+import { FlakyIndicatorChip } from "@/ui/FlakyIndicator";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
@@ -126,10 +127,11 @@ const PreviousDiffButton = memo(() => {
 export interface BuildDetailToolbarProps {
   name: string;
   bordered: boolean;
+  flakyDetected: boolean;
 }
 
 export const BuildDetailToolbar = memo(
-  ({ name, bordered }: BuildDetailToolbarProps) => {
+  ({ name, bordered, flakyDetected }: BuildDetailToolbarProps) => {
     const borderClassName = bordered
       ? "border-b-border"
       : "border-b-transparent";
@@ -148,6 +150,7 @@ export const BuildDetailToolbar = memo(
           <div role="heading" className="text-sm font-medium">
             {name}
           </div>
+          {flakyDetected && <FlakyIndicatorChip />}
         </div>
         <div className="flex gap-2">
           <BuildBaselineToggle />

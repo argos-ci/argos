@@ -28,6 +28,7 @@ export const typeDefs = gql`
     height: Int
     status: ScreenshotDiffStatus!
     validationStatus: String
+    flakyDetected: Boolean!
   }
 
   type ScreenshotDiffConnection implements Connection {
@@ -104,6 +105,11 @@ export const resolvers = {
     ) => {
       return screenshotDiff.$getDiffStatus(
         context.loaders.Screenshot.load.bind(context.loaders.Screenshot)
+      );
+    },
+    flakyDetected: (screenshotDiff: ScreenshotDiff) => {
+      return Boolean(
+        screenshotDiff.stabilityScore && screenshotDiff.stabilityScore < 60
       );
     },
   },
