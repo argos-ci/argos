@@ -2,17 +2,15 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ArrowsPointingInIcon,
-  BugAntIcon,
   EyeIcon,
 } from "@heroicons/react/20/solid";
 import { clsx } from "clsx";
 import { memo } from "react";
 
-import { Chip } from "@/ui/Chip";
 import { ColumnsIcon } from "@/ui/ColumnsIcon";
+import { FlakyIndicatorChip } from "@/ui/FlakyIndicator";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
-import { MagicTooltip } from "@/ui/Tooltip";
 
 import { useBuildDiffFitState } from "./BuildDiffFitState";
 import { useBuildDiffShowBaselineState } from "./BuildDiffShowBaselineState";
@@ -152,13 +150,7 @@ export const BuildDetailToolbar = memo(
           <div role="heading" className="text-sm font-medium">
             {name}
           </div>
-          {flakyDetected && (
-            <MagicTooltip tooltip="This screenshot comparison has high instability in recent builds and may be a flaky.">
-              <Chip icon={BugAntIcon} color="warning" scale="sm">
-                Flaky suspected
-              </Chip>
-            </MagicTooltip>
-          )}
+          {flakyDetected && <FlakyIndicatorChip />}
         </div>
         <div className="flex gap-2">
           <BuildBaselineToggle />

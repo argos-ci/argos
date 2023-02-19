@@ -129,6 +129,12 @@ describe("#computeScreenshotDiff", () => {
         currentBranch,
         repositoryId: repository.id,
       });
+
+      // totalBuildWithChanges: 0,
+      // totalBuilds: 15,
+      // totalBranchesWithChanges: 0,
+      // totalBranches: 9
+
       expect(stabilityScore).toBe(100);
     });
 
@@ -145,6 +151,12 @@ describe("#computeScreenshotDiff", () => {
         currentBranch,
         repositoryId: repository.id,
       });
+
+      // totalBuildWithChanges: 4,
+      // totalBuilds: 15,
+      // totalBranchesWithChanges: 1,
+      // totalBranches: 9
+
       expect(stabilityScore).toBe(65);
     });
 
@@ -162,6 +174,12 @@ describe("#computeScreenshotDiff", () => {
         currentBranch,
         repositoryId: repository.id,
       });
+
+      // totalBuildWithChanges: 5,
+      // totalBuilds: 15,
+      // totalBranchesWithChanges: 4,
+      // totalBranches: 9
+
       expect(stabilityScore).toBe(37);
     });
   });
