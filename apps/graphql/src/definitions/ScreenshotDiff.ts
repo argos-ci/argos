@@ -109,7 +109,8 @@ export const resolvers = {
     },
     flakyDetected: (screenshotDiff: ScreenshotDiff) => {
       return Boolean(
-        screenshotDiff.stabilityScore && screenshotDiff.stabilityScore < 60
+        screenshotDiff.stabilityScore !== null &&
+          screenshotDiff.stabilityScore < 60
       );
     },
   },

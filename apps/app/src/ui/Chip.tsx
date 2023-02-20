@@ -43,7 +43,7 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(
           colorClassName,
           scale === "sm" && "py-1 px-3 text-xs",
           scale === "md" && "py-2 px-4 text-sm",
-          "no-wrap inline-flex select-none items-center gap-2 rounded-chip border px-4 py-2 font-medium leading-4"
+          "no-wrap inline-flex select-none items-center gap-2 whitespace-nowrap rounded-chip border px-4 py-2 font-medium leading-4"
         )}
         {...props}
       >

@@ -17,7 +17,7 @@ import {
 } from "react";
 
 import { Badge } from "@/ui/Badge";
-import { FlakyIndicatorIcon } from "@/ui/FlakyIndicator";
+import { FlakySuspectedIcon } from "@/ui/FlakyIndicator";
 
 import { getGroupLabel } from "./BuildDiffGroup";
 import { Diff, DiffGroup, useBuildDiffState } from "./BuildDiffState";
@@ -229,7 +229,11 @@ const ListItem = ({
       <div className="relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-slate-800/50">
         {item.diff ? (
           <>
-            {item.diff.flakyDetected && <FlakyIndicatorIcon />}
+            {item.diff.flakyDetected && (
+              <div className="absolute top-3 right-4 z-30 h-4 w-4 opacity-0 transition group-hover/sidebar:opacity-100">
+                <FlakySuspectedIcon />
+              </div>
+            )}
             <DiffImage diff={item.diff} />{" "}
             <div className="absolute bottom-0 left-0 right-0 z-10 truncate bg-gradient-to-b from-transparent to-black/70 px-2 pb-2 pt-4 text-xxs font-medium opacity-0 transition group-hover/sidebar:opacity-100">
               {item.diff.name}

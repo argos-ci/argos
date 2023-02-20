@@ -8,7 +8,7 @@ import { clsx } from "clsx";
 import { memo } from "react";
 
 import { ColumnsIcon } from "@/ui/ColumnsIcon";
-import { FlakyIndicatorChip } from "@/ui/FlakyIndicator";
+import { FlakySuspectedChip } from "@/ui/FlakyIndicator";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
@@ -139,18 +139,18 @@ export const BuildDetailToolbar = memo(
       <div
         className={clsx(
           borderClassName,
-          "b sticky top-0 z-20 flex flex-shrink-0 justify-between gap-4 border-b bg-black/80 p-4 backdrop-blur-[5px] backdrop-saturate-[180%] transition-colors"
+          "b sticky top-0 z-20 flex flex-shrink-0 items-start justify-between gap-4 border-b bg-black/80 p-4 backdrop-blur-[5px] backdrop-saturate-[180%] transition-colors"
         )}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2">
           <div className="flex gap-1">
             <PreviousDiffButton />
             <NextDiffButton />
           </div>
-          <div role="heading" className="text-sm font-medium">
+          <div role="heading" className="mt-1 text-sm font-medium">
             {name}
           </div>
-          {flakyDetected && <FlakyIndicatorChip />}
+          {flakyDetected && <FlakySuspectedChip />}
         </div>
         <div className="flex gap-2">
           <BuildBaselineToggle />
