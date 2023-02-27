@@ -8,7 +8,7 @@ import type {
   ScreenshotBucket,
 } from "@argos-ci/database/models";
 
-import { baseCompare } from "./baseCompare.js";
+import { getBaseScreenshotBucket } from "./base.js";
 
 const getBuildType = ({
   baseScreenshotBucket,
@@ -37,9 +37,7 @@ export const getOrCreateBaseScreenshotBucket = async (
     return build.baseScreenshotBucket!;
   }
 
-  const baseScreenshotBucket = await baseCompare({
-    base: build.repository!.referenceBranch,
-    head: build.compareScreenshotBucket!.commit,
+  const baseScreenshotBucket = await getBaseScreenshotBucket({
     build,
     trx,
   });
