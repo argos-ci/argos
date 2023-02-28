@@ -168,10 +168,10 @@ const BuildsList = ({
   fetchNextPage: () => void;
 }) => {
   const parentRef = useRef<HTMLDivElement | null>(null);
-  const { hasNextPage } = builds.pageInfo;
+  const { hasNextPage, totalCount } = builds.pageInfo;
   const displayCount = builds.edges.length;
   const rowVirtualizer = useVirtualizer({
-    count: hasNextPage ? displayCount + 1 : displayCount,
+    count: totalCount,
     estimateSize: () => 43,
     getScrollElement: () => parentRef.current,
     overscan: 20,
