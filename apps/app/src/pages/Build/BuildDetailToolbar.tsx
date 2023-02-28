@@ -150,7 +150,11 @@ export const BuildDetailToolbar = memo(
           <div role="heading" className="mt-1 text-sm font-medium">
             {name}
           </div>
-          {flakyDetected && <FlakySuspectedChip />}
+          {flakyDetected && (
+            <div className="mt-0.5">
+              <FlakySuspectedChip />
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <BuildBaselineToggle />
