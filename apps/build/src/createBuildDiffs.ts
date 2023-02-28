@@ -117,7 +117,7 @@ export const getStabilityScores = async ({
     "diff_screenshots" AS (
         SELECT
             "screenshots"."name",
-            count("recent_builds"."id") AS diff_count,
+            count(DISTINCT "recent_builds"."id") AS diff_count,
             count(DISTINCT screenshot_buckets.branch) AS diff_branches
         FROM
             "recent_builds"
