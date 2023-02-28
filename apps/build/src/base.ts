@@ -90,7 +90,7 @@ const getBucketFromCommits = async (params: {
     .whereIn("commit", params.shas)
     .joinRaw(
       `join (values ${params.shas.map(
-        (sha, index) => `(${sha},${index})`
+        (sha, index) => `('${sha}',${index})`
       )}) as ordering(sha, rank) on commit = ordering.sha`
     )
     .orderBy("ordering.rank")
