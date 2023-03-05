@@ -122,6 +122,8 @@ export enum JobStatus {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Mute or unmute tests */
+  muteTests: MuteUpdateTest;
   ping: Scalars['Boolean'];
   /** Change the validationStatus on a build */
   setValidationStatus: Build;
@@ -129,6 +131,13 @@ export type Mutation = {
   updateForcedPrivate: Repository;
   /** Update repository baseline branch */
   updateReferenceBranch: Repository;
+};
+
+
+export type MutationMuteTestsArgs = {
+  ids: Array<Scalars['String']>;
+  muteUntil?: InputMaybe<Scalars['String']>;
+  muted: Scalars['Boolean'];
 };
 
 
@@ -147,6 +156,13 @@ export type MutationUpdateForcedPrivateArgs = {
 export type MutationUpdateReferenceBranchArgs = {
   baselineBranch?: InputMaybe<Scalars['String']>;
   repositoryId: Scalars['String'];
+};
+
+export type MuteUpdateTest = {
+  __typename?: 'MuteUpdateTest';
+  ids: Array<Scalars['String']>;
+  mute: Scalars['Boolean'];
+  muteUntil?: Maybe<Scalars['String']>;
 };
 
 export type Node = {
@@ -282,6 +298,8 @@ export type Repository = Node & {
   private: Scalars['Boolean'];
   /** Reference branch */
   referenceBranch?: Maybe<Scalars['String']>;
+  /** Tests associated to the repository */
+  tests: TestConnection;
   token?: Maybe<Scalars['ID']>;
 };
 
@@ -292,6 +310,12 @@ export type RepositoryBuildArgs = {
 
 
 export type RepositoryBuildsArgs = {
+  after: Scalars['Int'];
+  first: Scalars['Int'];
+};
+
+
+export type RepositoryTestsArgs = {
   after: Scalars['Int'];
   first: Scalars['Int'];
 };
@@ -347,6 +371,35 @@ export type Synchronization = Node & {
   jobStatus: JobStatus;
 };
 
+export type Test = Node & {
+  __typename?: 'Test';
+  buildName: Scalars['String'];
+  dailyChanges: Array<DailyCount>;
+  id: Scalars['ID'];
+  lastSeen?: Maybe<Scalars['DateTime']>;
+  mute: Scalars['Boolean'];
+  muteUntil?: Maybe<Scalars['DateTime']>;
+  name: Scalars['String'];
+  resolvedDate?: Maybe<Scalars['DateTime']>;
+  screenshot: Screenshot;
+  stabilityScore?: Maybe<Scalars['Int']>;
+  status: TestStatus;
+  totalBuilds: Scalars['Int'];
+  unstable: Scalars['Boolean'];
+};
+
+export type TestConnection = Connection & {
+  __typename?: 'TestConnection';
+  edges: Array<Test>;
+  pageInfo: PageInfo;
+};
+
+export enum TestStatus {
+  Flaky = 'flaky',
+  Pending = 'pending',
+  Resolved = 'resolved'
+}
+
 export type User = Node & Owner & {
   __typename?: 'User';
   consumptionRatio?: Maybe<Scalars['Float']>;
@@ -380,6 +433,12 @@ export enum ValidationStatus {
   Rejected = 'rejected',
   Unknown = 'unknown'
 }
+
+export type DailyCount = {
+  __typename?: 'dailyCount';
+  count: Scalars['Int'];
+  date: Scalars['Date'];
+};
 
 export type OwnerBreadcrumb_OwnerQueryVariables = Exact<{
   login: Scalars['String'];
@@ -598,6 +657,25 @@ export type RepositorySettings_UpdateForcedPrivateMutationVariables = Exact<{
 
 export type RepositorySettings_UpdateForcedPrivateMutation = { __typename?: 'Mutation', updateForcedPrivate: { __typename?: 'Repository', id: string, forcedPrivate: boolean } };
 
+export type FlakyTests_Repository_TestsQueryVariables = Exact<{
+  ownerLogin: Scalars['String'];
+  repositoryName: Scalars['String'];
+  after: Scalars['Int'];
+  first: Scalars['Int'];
+}>;
+
+
+export type FlakyTests_Repository_TestsQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', id: string, tests: { __typename?: 'TestConnection', pageInfo: { __typename?: 'PageInfo', totalCount: number, hasNextPage: boolean }, edges: Array<{ __typename?: 'Test', id: string, name: string, buildName: string, status: TestStatus, resolvedDate?: any | null, mute: boolean, muteUntil?: any | null, stabilityScore?: number | null, lastSeen?: any | null, unstable: boolean, totalBuilds: number, dailyChanges: Array<{ __typename?: 'dailyCount', date: any, count: number }>, screenshot: { __typename?: 'Screenshot', id: string, url: string, width?: number | null, height?: number | null } }> } } | null };
+
+export type MuteTestsMutationVariables = Exact<{
+  ids: Array<Scalars['String']> | Scalars['String'];
+  muted: Scalars['Boolean'];
+  muteUntil?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type MuteTestsMutation = { __typename?: 'Mutation', muteTests: { __typename?: 'MuteUpdateTest', ids: Array<string>, mute: boolean, muteUntil?: string | null } };
+
 export type Repository_RepositoryQueryVariables = Exact<{
   ownerLogin: Scalars['String'];
   repositoryName: Scalars['String'];
@@ -639,4 +717,6 @@ export const RepositoryBuilds_Repository_BuildsDocument = {"kind":"Document","de
 export const RepositorySettings_RepositoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"RepositorySettings_repository"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"token"}},{"kind":"Field","name":{"kind":"Name","value":"baselineBranch"}},{"kind":"Field","name":{"kind":"Name","value":"defaultBranch"}},{"kind":"Field","name":{"kind":"Name","value":"private"}},{"kind":"Field","name":{"kind":"Name","value":"forcedPrivate"}}]}}]}}]} as unknown as DocumentNode<RepositorySettings_RepositoryQuery, RepositorySettings_RepositoryQueryVariables>;
 export const RepositorySettings_UpdateReferenceBranchDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RepositorySettings_updateReferenceBranch"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"baselineBranch"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateReferenceBranch"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"repositoryId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryId"}}},{"kind":"Argument","name":{"kind":"Name","value":"baselineBranch"},"value":{"kind":"Variable","name":{"kind":"Name","value":"baselineBranch"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"baselineBranch"}},{"kind":"Field","name":{"kind":"Name","value":"defaultBranch"}}]}}]}}]} as unknown as DocumentNode<RepositorySettings_UpdateReferenceBranchMutation, RepositorySettings_UpdateReferenceBranchMutationVariables>;
 export const RepositorySettings_UpdateForcedPrivateDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RepositorySettings_UpdateForcedPrivate"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"forcedPrivate"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateForcedPrivate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"repositoryId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryId"}}},{"kind":"Argument","name":{"kind":"Name","value":"forcedPrivate"},"value":{"kind":"Variable","name":{"kind":"Name","value":"forcedPrivate"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"forcedPrivate"}}]}}]}}]} as unknown as DocumentNode<RepositorySettings_UpdateForcedPrivateMutation, RepositorySettings_UpdateForcedPrivateMutationVariables>;
+export const FlakyTests_Repository_TestsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"FlakyTests_repository_tests"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tests"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"buildName"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"resolvedDate"}},{"kind":"Field","name":{"kind":"Name","value":"mute"}},{"kind":"Field","name":{"kind":"Name","value":"muteUntil"}},{"kind":"Field","name":{"kind":"Name","value":"stabilityScore"}},{"kind":"Field","name":{"kind":"Name","value":"lastSeen"}},{"kind":"Field","name":{"kind":"Name","value":"unstable"}},{"kind":"Field","name":{"kind":"Name","value":"dailyChanges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"count"}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalBuilds"}},{"kind":"Field","name":{"kind":"Name","value":"screenshot"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<FlakyTests_Repository_TestsQuery, FlakyTests_Repository_TestsQueryVariables>;
+export const MuteTestsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"muteTests"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ids"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"muted"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"muteUntil"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"muteTests"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ids"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ids"}}},{"kind":"Argument","name":{"kind":"Name","value":"muted"},"value":{"kind":"Variable","name":{"kind":"Name","value":"muted"}}},{"kind":"Argument","name":{"kind":"Name","value":"muteUntil"},"value":{"kind":"Variable","name":{"kind":"Name","value":"muteUntil"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ids"}},{"kind":"Field","name":{"kind":"Name","value":"mute"}},{"kind":"Field","name":{"kind":"Name","value":"muteUntil"}}]}}]}}]} as unknown as DocumentNode<MuteTestsMutation, MuteTestsMutationVariables>;
 export const Repository_RepositoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Repository_repository"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"repository"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerLogin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerLogin"}}},{"kind":"Argument","name":{"kind":"Name","value":"repositoryName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repositoryName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissions"}}]}}]}}]} as unknown as DocumentNode<Repository_RepositoryQuery, Repository_RepositoryQueryVariables>;

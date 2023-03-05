@@ -7,6 +7,7 @@ import {
   Build,
   Repository,
   Screenshot,
+  Test,
 } from "@argos-ci/database/models";
 import type { User } from "@argos-ci/database/models";
 
@@ -28,6 +29,8 @@ export const typeDefs = gql`
     builds(first: Int!, after: Int!): BuildConnection!
     "A single build linked to the repository"
     build(number: Int!): Build
+    "Tests associated to the repository"
+    tests(first: Int!, after: Int!): TestConnection!
     "Determine if the current user has write access to the repository"
     permissions: [Permission!]!
     "Owner of the repository"
@@ -168,6 +171,32 @@ export const resolvers = {
         repositoryId: repository.id,
         number: args.number,
       });
+    },
+    tests: async (
+      repository: Repository,
+      { first, after }: { first: number; after: number }
+    ) => {
+      const result = await Test.query()
+        .where({ repositoryId: repository.id })
+        .leftJoin(
+          "screenshot_diffs AS last_diff",
+          "last_diff.testId",
+          "=",
+          "tests.id"
+        )
+        .leftJoin("screenshot_diffs AS other_diff", function () {
+          this.on("other_diff.testId", "=", "tests.id").andOn(
+            "other_diff.createdAt",
+            ">",
+            "last_diff.createdAt"
+          );
+        })
+        .whereNull("other_diff.id")
+        .orderBy("last_diff.stabilityScore", "desc")
+        .orderBy("tests.name", "asc")
+        .range(after, after + first - 1);
+
+      return paginateResult({ result, first, after });
     },
     currentMonthUsedScreenshots: async (repository: Repository) => {
       const account = await Account.getAccount(repository);

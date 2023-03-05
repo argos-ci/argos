@@ -4,12 +4,13 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 import config from "@argos-ci/config";
-import type {
+import {
   Build,
   Repository,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
+  Test,
 } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 import { quitAmqp } from "@argos-ci/job-core";
@@ -74,6 +75,7 @@ describe("#computeScreenshotDiff", () => {
   });
 
   describe("with two different screenshots", () => {
+    let test: Test;
     beforeEach(async () => {
       const compareScreenshot = await factory.create<Screenshot>("Screenshot", {
         name: "penelope",
@@ -85,12 +87,19 @@ describe("#computeScreenshotDiff", () => {
         s3Id: "penelope.png",
         screenshotBucketId: baseBucket.id,
       });
+      test = await factory.create<Test>("Test", {
+        name: compareScreenshot.name,
+        repositoryId: repository.id,
+        buildName: "default",
+        status: "pending",
+      });
       screenshotDiff = await factory.create<ScreenshotDiff>("ScreenshotDiff", {
         buildId: build.id,
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot.id,
         jobStatus: "pending",
         validationStatus: "unknown",
+        testId: test.id,
       });
     });
 
@@ -106,6 +115,22 @@ describe("#computeScreenshotDiff", () => {
       // expect(pushBuildNotification).toBeCalledWith({
       //   buildId: build.id,
       //   type: "diff-detected",
+      // });
+    });
+
+    it('a muted test should notify "no-diff-detected"', async () => {
+      await Test.query().patch({ muted: true }).findById(test.id);
+      await computeScreenshotDiff(screenshotDiff, {
+        s3,
+        bucket: config.get("s3.screenshotsBucket"),
+      });
+
+      await screenshotDiff.reload();
+      expect(screenshotDiff.score! > 0).toBe(true);
+      expect(typeof screenshotDiff.s3Id === "string").toBe(true);
+      // expect(pushBuildNotification).toBeCalledWith({
+      //   buildId: build.id,
+      //   type: "no-diff-detected",
       // });
     });
   });

@@ -726,7 +726,8 @@ CREATE TABLE public.tests (
     status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
     "resolvedDate" timestamp with time zone,
     "resolvedStabilityScore" integer,
-    "muteUntil" timestamp with time zone
+    "muteUntil" timestamp with time zone,
+    muted boolean DEFAULT false NOT NULL
 );
 
 
@@ -1909,3 +1910,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023010
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230103095309_add_pr_number.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230218100910_add_stability_score.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230313131422_add_tests_table.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230323071510_add_mute_to_tests.js', 1, NOW());

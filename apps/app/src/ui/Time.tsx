@@ -11,11 +11,12 @@ import {
 export interface TimeProps extends HTMLProps<HTMLTimeElement> {
   date: string;
   format?: string;
+  showTitle?: boolean;
   children?: React.ReactNode;
 }
 
 export const Time = forwardRef<HTMLTimeElement, TimeProps>(
-  ({ date, format, children, ...props }, ref) => {
+  ({ date, format, children, showTitle = true, ...props }, ref) => {
     const hasChildren = Children.count(children) > 0;
     const getFormattedDate = useCallback(
       () =>
@@ -35,7 +36,7 @@ export const Time = forwardRef<HTMLTimeElement, TimeProps>(
       <time
         ref={ref}
         dateTime={moment(date).toISOString()}
-        title={moment(date).format("LLLL")}
+        title={showTitle ? moment(date).format("LLLL") : ""}
         data-visual-test="transparent"
         {...props}
       >

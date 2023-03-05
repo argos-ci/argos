@@ -21,7 +21,7 @@ module.exports = {
         bg: colors.black,
         on: colors.slate[100],
         "on-light": colors.slate[400],
-        border: colors.slate[800],
+        border: colors.slate[700],
         text: colors.slate[50],
 
         // Components
@@ -63,12 +63,13 @@ module.exports = {
 
         menu: {
           bg: colors.slate[900],
-          border: colors.slate[800],
+          border: colors.slate[600],
           on: colors.slate[300],
           "on-title": colors.slate[400],
           "hover-on": colors.slate[50],
           item: {
             "hover-bg": colors.slate[800],
+            "selected-bg": colors.slate[700],
           },
         },
       },
@@ -88,5 +89,5 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [require("@tailwindcss/line-clamp")],
 };

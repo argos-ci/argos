@@ -13,7 +13,7 @@ type ChipColor =
 export interface ChipProps
   extends Omit<React.ComponentProps<"div">, "className"> {
   color?: ChipColor;
-  icon?: React.ComponentType<any>;
+  icon?: React.ComponentType<any> | null;
   scale?: "sm" | "md" | undefined;
 }
 

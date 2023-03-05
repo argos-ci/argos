@@ -157,14 +157,19 @@ export const computeScreenshotDiff = async (
 
   await Promise.all([baseImage?.unlink(), compareImage.unlink()]);
 
-  // @ts-ignore
-  const [{ complete, diff }] = await ScreenshotDiff.query()
+  const { complete, diff } = (await ScreenshotDiff.query()
     .select(
-      raw(`bool_and("jobStatus" = 'complete') as complete`),
-      raw("bool_or(score > 0) as diff")
+      raw(`count(*) FILTER (WHERE "jobStatus" = 'complete') > 0 as complete`),
+      raw(
+        `count(*) FILTER (WHERE score > 0 AND(muted IS NULL OR muted = FALSE OR test."muteUntil" > now())) > 0 AS diff`
+      )
     )
+    .leftJoinRelated("test")
     .where("buildId", screenshotDiff.buildId)
-    .groupBy("buildId");
+    .first()) as unknown as {
+    complete: boolean;
+    diff: boolean;
+  };
 
   if (complete) {
     if (diff) {
