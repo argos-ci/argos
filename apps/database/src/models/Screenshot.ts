@@ -4,6 +4,7 @@ import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { File } from "./File.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
+import { Test } from "./Test.js";
 
 export class Screenshot extends Model {
   static override tableName = "screenshots";
@@ -15,6 +16,7 @@ export class Screenshot extends Model {
       s3Id: { type: "string" },
       screenshotBucketId: { type: "string" },
       fileId: { type: ["string", "null"] },
+      testId: { type: ["string", "null"] },
     },
   });
 
@@ -22,6 +24,7 @@ export class Screenshot extends Model {
   s3Id!: string;
   screenshotBucketId!: string;
   fileId!: string | null;
+  testId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -41,9 +44,18 @@ export class Screenshot extends Model {
           to: "files.id",
         },
       },
+      test: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Test,
+        join: {
+          from: "screenshots.testId",
+          to: "tests.id",
+        },
+      },
     };
   }
 
   screenshotBucket?: ScreenshotBucket;
   file?: File;
+  test?: Test | null;
 }

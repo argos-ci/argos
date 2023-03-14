@@ -11,6 +11,7 @@ import {
 import { Build } from "./Build.js";
 import { File } from "./File.js";
 import { Screenshot } from "./Screenshot.js";
+import { Test } from "./Test.js";
 
 export class ScreenshotDiff extends Model {
   static override tableName = "screenshot_diffs";
@@ -34,6 +35,7 @@ export class ScreenshotDiff extends Model {
         type: "string",
         enum: ["unknown", "accepted", "rejected"],
       },
+      testId: { type: ["string", "null"] },
     },
   });
 
@@ -46,6 +48,7 @@ export class ScreenshotDiff extends Model {
   stabilityScore!: number | null;
   jobStatus!: JobStatus;
   validationStatus!: "unknown" | "accepted" | "rejected";
+  testId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -81,12 +84,21 @@ export class ScreenshotDiff extends Model {
           to: "files.id",
         },
       },
+      test: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Test,
+        join: {
+          from: "screenshot_diffs.testId",
+          to: "tests.id",
+        },
+      },
     };
   }
 
   build?: Build;
   baseScreenshot?: Screenshot | null;
   compareScreenshot?: Screenshot | null;
+  test?: Test | null;
 
   static screenshotFailureRegexp = `(${Object.values({
     cypress: " \\(failed\\)\\.",
