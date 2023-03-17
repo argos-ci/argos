@@ -6,7 +6,7 @@ import type { TransactionOrKnex } from "objection";
 import { job as buildJob } from "@argos-ci/build";
 import { raw, transaction } from "@argos-ci/database";
 import type { Repository } from "@argos-ci/database/models";
-import { Build, File, Screenshot } from "@argos-ci/database/models";
+import { Build, File, Screenshot, Test } from "@argos-ci/database/models";
 
 import { SHA256_REGEX_STR } from "../../../constants.js";
 import { repoAuth } from "../../../middlewares/repoAuth.js";
@@ -100,6 +100,38 @@ type UpdateRequest = express.Request<
 //   }
 // };
 
+const getOrCreateTests = async ({
+  repositoryId,
+  buildName,
+  screenshotNames,
+  trx,
+}: {
+  repositoryId: string;
+  buildName: string;
+  screenshotNames: string[];
+  trx: TransactionOrKnex;
+}) => {
+  const tests: Test[] = await Test.query(trx)
+    .where({ repositoryId, buildName })
+    .whereIn("name", screenshotNames);
+  const testNames = tests.map(({ name }: Test) => name);
+  const testNamesToAdd = screenshotNames.filter(
+    (screenshotName) => !testNames.includes(screenshotName)
+  );
+  if (testNamesToAdd.length === 0) {
+    return tests;
+  }
+
+  const addedTests = await Test.query(trx).insertAndFetch(
+    testNamesToAdd.map((name) => ({
+      name: name,
+      repositoryId,
+      buildName,
+    }))
+  );
+  return [...tests, ...addedTests];
+};
+
 const insertFilesAndScreenshots = async ({
   req,
   build,
@@ -128,6 +160,13 @@ const insertFilesAndScreenshots = async ({
     const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
     const files = await File.query(trx).whereIn("key", screenshotKeys);
 
+    const tests = await getOrCreateTests({
+      repositoryId: build.repositoryId,
+      buildName: build.name,
+      screenshotNames: screenshots.map((screenshot) => screenshot.name),
+      trx,
+    });
+
     // Insert screenshots
     await Screenshot.query(trx).insert(
       screenshots.map((screenshot) => {
@@ -135,11 +174,16 @@ const insertFilesAndScreenshots = async ({
         if (!file) {
           throw new Error(`File not found for key ${screenshot.key}`);
         }
+        const test = tests.find((t) => t.name === screenshot.name);
+        if (!test) {
+          throw new Error(`Test not found for screenshot ${screenshot.name}`);
+        }
         return {
           screenshotBucketId: build.compareScreenshotBucket!.id,
           name: screenshot.name,
           s3Id: screenshot.key,
           fileId: file.id,
+          testId: test.id,
         };
       })
     );

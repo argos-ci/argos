@@ -18,6 +18,7 @@ import {
   ScreenshotBucket,
   ScreenshotDiff,
   Synchronization,
+  Test,
   User,
   UserOrganizationRight,
   UserRepositoryRight,
@@ -112,10 +113,18 @@ factory.define("ScreenshotDiff", ScreenshotDiff, {
   score: 0,
 });
 
+factory.define("Test", Test, {
+  name: factory.chance("animal"),
+  repositoryId: factory.assoc("Repository", "id"),
+  buildName: "default",
+  status: "pending",
+});
+
 factory.define("Screenshot", Screenshot, {
   name: factory.sequence("repository.name", (n) => `screen-${n}`),
   s3Id: "test-s3-id",
   screenshotBucketId: factory.assoc("ScreenshotBucket", "id"),
+  testId: factory.assoc("Test", "id"),
 });
 
 factory.define("File", File, {

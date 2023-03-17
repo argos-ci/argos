@@ -591,7 +591,8 @@ CREATE TABLE public.screenshot_diffs (
     "updatedAt" timestamp with time zone NOT NULL,
     "s3Id" character varying(255),
     "fileId" bigint,
-    "stabilityScore" integer
+    "stabilityScore" integer,
+    "testId" bigint
 );
 
 
@@ -629,7 +630,8 @@ CREATE TABLE public.screenshots (
     "s3Id" character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "fileId" bigint
+    "fileId" bigint,
+    "testId" bigint
 );
 
 
@@ -692,6 +694,63 @@ ALTER TABLE public.synchronizations_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.synchronizations_id_seq OWNED BY public.synchronizations.id;
+
+
+--
+-- Name: test_activities; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.test_activities (
+    "userId" character varying(255) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    date timestamp with time zone,
+    action character varying(255),
+    data jsonb
+);
+
+
+ALTER TABLE public.test_activities OWNER TO postgres;
+
+--
+-- Name: tests; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tests (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    name character varying(255) NOT NULL,
+    "repositoryId" bigint NOT NULL,
+    "buildName" character varying(255) NOT NULL,
+    status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
+    "resolvedDate" timestamp with time zone,
+    "resolvedStabilityScore" integer,
+    "muteUntil" timestamp with time zone
+);
+
+
+ALTER TABLE public.tests OWNER TO postgres;
+
+--
+-- Name: tests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.tests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tests_id_seq OWNER TO postgres;
+
+--
+-- Name: tests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.tests_id_seq OWNED BY public.tests.id;
 
 
 --
@@ -957,6 +1016,13 @@ ALTER TABLE ONLY public.synchronizations ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: tests id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tests ALTER COLUMN id SET DEFAULT nextval('public.tests_id_seq'::regclass);
+
+
+--
 -- Name: user_installation_rights id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1134,6 +1200,22 @@ ALTER TABLE ONLY public.screenshots
 
 ALTER TABLE ONLY public.synchronizations
     ADD CONSTRAINT synchronizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tests tests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tests
+    ADD CONSTRAINT tests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tests tests_repositoryid_buildname_name_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tests
+    ADD CONSTRAINT tests_repositoryid_buildname_name_unique UNIQUE ("repositoryId", "buildName", name);
 
 
 --
@@ -1374,6 +1456,13 @@ CREATE INDEX screenshot_diffs_fileid_index ON public.screenshot_diffs USING btre
 
 
 --
+-- Name: screenshot_diffs_testid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_testid_index ON public.screenshot_diffs USING btree ("testId");
+
+
+--
 -- Name: screenshots_createdat; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1409,6 +1498,13 @@ CREATE INDEX screenshots_screenshotbucketid_index ON public.screenshots USING bt
 
 
 --
+-- Name: screenshots_testid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshots_testid_index ON public.screenshots USING btree ("testId");
+
+
+--
 -- Name: synchronizations_installationid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1434,6 +1530,13 @@ CREATE INDEX synchronizations_type_index ON public.synchronizations USING btree 
 --
 
 CREATE INDEX synchronizations_userid_index ON public.synchronizations USING btree ("userId");
+
+
+--
+-- Name: tests_repositoryid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX tests_repositoryid_index ON public.tests USING btree ("repositoryId");
 
 
 --
@@ -1638,6 +1741,14 @@ ALTER TABLE ONLY public.screenshot_diffs
 
 
 --
+-- Name: screenshot_diffs screenshot_diffs_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.screenshot_diffs
+    ADD CONSTRAINT screenshot_diffs_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
+
+
+--
 -- Name: screenshots screenshots_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1654,6 +1765,14 @@ ALTER TABLE ONLY public.screenshots
 
 
 --
+-- Name: screenshots screenshots_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.screenshots
+    ADD CONSTRAINT screenshots_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
+
+
+--
 -- Name: synchronizations synchronizations_installationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1667,6 +1786,14 @@ ALTER TABLE ONLY public.synchronizations
 
 ALTER TABLE ONLY public.synchronizations
     ADD CONSTRAINT synchronizations_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+
+
+--
+-- Name: tests tests_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tests
+    ADD CONSTRAINT tests_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES public.repositories(id);
 
 
 --
@@ -1781,3 +1908,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2022122
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230102064502_add_forced_private.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230103095309_add_pr_number.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230218100910_add_stability_score.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230313131422_add_tests_table.js', 1, NOW());

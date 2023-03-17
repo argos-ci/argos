@@ -12,6 +12,7 @@ export * from "./Screenshot.js";
 export * from "./ScreenshotBucket.js";
 export * from "./ScreenshotDiff.js";
 export * from "./Synchronization.js";
+export * from "./Test.js";
 export * from "./User.js";
 export * from "./UserInstallationRight.js";
 export * from "./UserOrganizationRight.js";
