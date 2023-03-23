@@ -3,12 +3,15 @@ import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
 import { forwardRef } from "react";
 
+import { ButtonSize } from "./Button";
+
 export type IconButtonColor = "danger" | "success" | "neutral";
 
 export interface IconButtonProps
   extends Omit<AriakitButtonProps<"button">, "className" | "children"> {
   color?: IconButtonColor;
   children: React.ReactNode;
+  size?: ButtonSize;
 }
 
 const colorClassNames: Record<IconButtonColor, string> = {
@@ -20,10 +23,19 @@ const colorClassNames: Record<IconButtonColor, string> = {
     "hover:text-icon-button-danger-hover-on hover:border-icon-button-danger-hover-border aria-pressed:text-icon-button-danger-hover-on aria-pressed:bg-icon-button-danger-active-bg",
 };
 
+const sizeClassNames: Record<ButtonSize, string> = {
+  base: "p-[7px]",
+  small: "p-1",
+};
+
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ color = "neutral", children, ...props }, ref) => {
+  ({ color = "neutral", children, size = "base", ...props }, ref) => {
     const variantClassName = colorClassNames[color];
     if (!variantClassName) {
+      throw new Error(`Invalid color: ${color}`);
+    }
+    const sizeClassName = sizeClassNames[size];
+    if (!sizeClassName) {
       throw new Error(`Invalid color: ${color}`);
     }
     return (
@@ -32,7 +44,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         as="button"
         className={clsx(
           variantClassName,
-          "flex cursor-default items-center rounded-lg border border-transparent p-[7px] text-sm text-icon-button-on transition disabled:opacity-70 [&>*]:h-4 [&>*]:w-4"
+          sizeClassName,
+          "flex cursor-default items-center rounded-lg border border-transparent text-sm text-icon-button-on transition disabled:opacity-70 [&>*]:h-4 [&>*]:w-4"
         )}
         {...props}
       >
