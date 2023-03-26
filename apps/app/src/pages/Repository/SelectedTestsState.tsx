@@ -6,10 +6,15 @@ import {
   useState,
 } from "react";
 
+import { Test } from "@/gql/graphql";
+
 interface SelectedTestsContextValue {
-  selectedTests: Set<string>;
-  setSelectedTests: React.Dispatch<React.SetStateAction<Set<string>>>;
-  toggleTestSelection: (id: string, isSelected: boolean) => void;
+  selectedTests: Test[];
+  selectedTestIds: string[];
+  clearTestSelection: () => void;
+  toggleTestSelection: (test: Test, isSelected: boolean) => void;
+  testIsSelected: (test: Test) => boolean;
+  onlyFlakySelected: boolean;
 }
 
 const SelectedTestsContext = createContext<SelectedTestsContextValue | null>(
@@ -31,27 +36,37 @@ export const SelectedTestsStateProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
+  const [selectedTests, setSelectedTests] = useState<Set<Test>>(new Set());
 
-  const toggleTestSelection = useCallback((id: string, isSelected: boolean) => {
+  const toggleTestSelection = useCallback((test: Test, isSelected: boolean) => {
     setSelectedTests((prevSelectedTests) => {
       const newSelectedTests = new Set(prevSelectedTests);
       if (isSelected) {
-        newSelectedTests.add(id);
+        newSelectedTests.add(test);
       } else {
-        newSelectedTests.delete(id);
+        newSelectedTests.delete(test);
       }
       return newSelectedTests;
     });
   }, []);
 
+  const selectedTestsArray = useMemo(
+    () => Array.from(selectedTests),
+    [selectedTests]
+  );
+
   const value = useMemo(
     (): SelectedTestsContextValue => ({
-      selectedTests,
-      setSelectedTests,
+      selectedTests: selectedTestsArray,
+      selectedTestIds: selectedTestsArray.map((test) => test.id),
+      clearTestSelection: () => setSelectedTests(new Set()),
       toggleTestSelection,
+      testIsSelected: (test) => selectedTests.has(test),
+      onlyFlakySelected:
+        selectedTestsArray.length > 0 &&
+        selectedTestsArray.every((test: Test) => test.status === "flaky"),
     }),
-    [selectedTests, toggleTestSelection]
+    [selectedTests, toggleTestSelection, selectedTestsArray]
   );
 
   return (

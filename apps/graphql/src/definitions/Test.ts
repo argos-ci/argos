@@ -1,7 +1,7 @@
 import gqlTag from "graphql-tag";
 
 import { knex } from "@argos-ci/database";
-import { Test } from "@argos-ci/database/models";
+import { ScreenshotDiff, Test } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
 
@@ -46,6 +46,11 @@ export const typeDefs = gql`
     muteUntil: String
   }
 
+  type UpdatedTestStatuses {
+    ids: [String!]!
+    status: TestStatus!
+  }
+
   extend type Mutation {
     "Mute or unmute tests"
     muteTests(
@@ -53,6 +58,11 @@ export const typeDefs = gql`
       muted: Boolean!
       muteUntil: String
     ): MuteUpdateTest!
+    "Update test statuses"
+    updateTestStatuses(
+      ids: [String!]!
+      status: TestStatus!
+    ): UpdatedTestStatuses!
   }
 `;
 
@@ -131,6 +141,47 @@ export const resolvers = {
         .patch({ muted: args.muted, muteUntil: args.muteUntil })
         .whereIn("id", args.ids);
       return { ids: args.ids, mute: args.muted, muteUntil: args.muteUntil };
+    },
+    updateTestStatuses: async (
+      _root: null,
+      args: { ids: string[]; status: string }
+    ) => {
+      if (args.ids.length === 0) {
+        return { ids: [], status: args.status };
+      }
+
+      if (args.status !== "resolved") {
+        return {
+          ids: args.ids,
+          status: args.status,
+          resolvedDate: null,
+          resolvedStabilityScore: null,
+        };
+      }
+
+      const lastScreenshotDiffs = await ScreenshotDiff.query()
+        .select("testId", "stabilityScore", "createdAt")
+        .whereIn("testId", args.ids)
+        .distinctOn("testId")
+        .orderBy("testId")
+        .orderBy("createdAt", "desc");
+      const lastScreenshotDiffMap: Record<string, ScreenshotDiff> = {};
+      for (const lastScreenshotDiff of lastScreenshotDiffs) {
+        lastScreenshotDiffMap[lastScreenshotDiff.testId!] = lastScreenshotDiff;
+      }
+      await Promise.all(
+        args.ids.map((testId) => {
+          return Test.query()
+            .patch({
+              status: "resolved",
+              resolvedDate: new Date().toISOString(),
+              resolvedStabilityScore:
+                lastScreenshotDiffMap[testId]?.stabilityScore ?? null,
+            })
+            .where("id", testId);
+        })
+      );
+      return { ids: args.ids, status: args.status };
     },
   },
 };

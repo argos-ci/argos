@@ -1,4 +1,9 @@
-import { useMutation, useQuery } from "@apollo/client";
+import {
+  ApolloCache,
+  FetchResult,
+  useMutation,
+  useQuery,
+} from "@apollo/client";
 import { SpeakerXMarkIcon } from "@heroicons/react/20/solid";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
@@ -7,8 +12,11 @@ import { memo, useCallback, useEffect, useRef } from "react";
 import { Helmet } from "react-helmet";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
+import { FlakyButton } from "@/containers/FlakyButton";
 import { MuteTestDropdown } from "@/containers/MuteTestDropdown";
+import { ResolveButton } from "@/containers/ResolveButton";
 import { DocumentType, graphql } from "@/gql";
+import { TestStatus } from "@/gql/graphql";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
@@ -78,6 +86,15 @@ const MuteTestsMutation = graphql(`
       ids
       mute
       muteUntil
+    }
+  }
+`);
+
+const UpdateStatusesMutation = graphql(`
+  mutation updateStatusesMutation($ids: [String!]!, $status: TestStatus!) {
+    updateTestStatuses(ids: $ids, status: $status) {
+      ids
+      status
     }
   }
 `);
@@ -241,22 +258,26 @@ const StabilityCell = ({
 );
 
 const TestRow = memo(({ test }: { test: Test }) => {
-  const { selectedTests, toggleTestSelection } = useSelectedTestsState();
+  const { testIsSelected, toggleTestSelection } = useSelectedTestsState();
 
   return (
     <ListRow>
       <input
         type="checkbox"
-        checked={selectedTests.has(test.id)}
-        onChange={(e) => toggleTestSelection(test.id, e.target.checked)}
+        checked={testIsSelected(test)}
+        onChange={(e) => toggleTestSelection(test, e.target.checked)}
       />
       <div className="w-95 flex grow gap-4">
         <Thumbnail screenshot={test.screenshot} />
         <div className="flex flex-col justify-start gap-1">
-          <div className="flex items-start gap-2">
+          <div className="flex min-h-[1.75rem] items-start gap-2">
             <MuteIndicator mute={test.mute} muteUntil={test.muteUntil} />
             <div className="mr-2 font-bold line-clamp-2">{test.name}</div>
-            <FlakyChip status={test.status} unstable={test.unstable} />
+            <FlakyChip
+              status={test.status}
+              unstable={test.unstable}
+              resolvedDate={test.resolvedDate}
+            />
           </div>
           <div className="flex items-center gap-4 text-sm">
             <BuildNameField buildName={test.buildName} />
@@ -294,47 +315,68 @@ const TestsList = ({
   const parentRef = useRef<HTMLDivElement | null>(null);
   const { hasNextPage } = tests.pageInfo;
   const displayCount = tests.edges.length;
-  const { selectedTests, setSelectedTests } = useSelectedTestsState();
-  const [muteTests, { loading: muteLoading }] = useMutation(MuteTestsMutation, {
-    update(cache, { data }) {
-      const updatedTestIds = data?.muteTests?.ids;
-      if (!updatedTestIds || updatedTestIds.length === 0) {
-        return;
-      }
-      const { mute, muteUntil } = data.muteTests;
-      const after = Math.floor(tests.edges.length / 20);
-      const query = {
-        query: RepositoryTestsQuery,
-        variables: {
-          ownerLogin: ownerLogin!,
-          repositoryName: repositoryName!,
-          after,
-          first: 20,
-        },
-      };
-      const existingData = cache.readQuery(query);
-      if (!existingData?.repository) {
-        return;
-      }
-      const updatedTests = existingData.repository.tests.edges.map((test) => {
-        const updatedTest = updatedTestIds.find((id: string) => id === test.id);
-        return updatedTest ? { ...test, mute, muteUntil } : test;
-      });
-      cache.writeQuery({
-        ...query,
-        data: {
-          ...existingData,
-          repository: {
-            ...existingData.repository,
-            tests: {
-              ...existingData.repository.tests,
-              edges: updatedTests,
-            },
+  const {
+    selectedTests,
+    selectedTestIds,
+    clearTestSelection,
+    onlyFlakySelected,
+  } = useSelectedTestsState();
+
+  const updateTests = (
+    cache: ApolloCache<any>,
+    { data }: Partial<FetchResult>
+  ) => {
+    if (!data) return;
+    const updatedData = Object.values(data)[0];
+    if (!updatedData) return;
+
+    const {
+      ids: updatedTestIds,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      __typename,
+      ...updatePayload
+    } = updatedData;
+    if (updatedTestIds?.length === 0) return;
+
+    const query = {
+      query: RepositoryTestsQuery,
+      variables: {
+        ownerLogin: ownerLogin!,
+        repositoryName: repositoryName!,
+        after: Math.floor(tests.edges.length / 20),
+        first: 20,
+      },
+    };
+    const existingData = cache.readQuery(query);
+    if (!existingData?.repository) return;
+
+    cache.writeQuery({
+      ...query,
+      data: {
+        ...existingData,
+        repository: {
+          ...existingData.repository,
+          tests: {
+            ...existingData.repository.tests,
+            edges: existingData.repository.tests.edges.map((test) =>
+              updatedTestIds.includes(test.id)
+                ? { ...test, ...updatePayload }
+                : test
+            ),
           },
         },
-      });
-    },
+      },
+    });
+  };
+
+  const [muteTests, { loading: muteLoading }] = useMutation(MuteTestsMutation, {
+    update: (cache, { data }) => updateTests(cache, { data: data }),
   });
+
+  const [updateStatuses, { loading: updateStatusesLoading }] = useMutation(
+    UpdateStatusesMutation,
+    { update: (cache, { data }) => updateTests(cache, { data: data }) }
+  );
 
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? displayCount + 1 : displayCount,
@@ -362,11 +404,40 @@ const TestsList = ({
     >
       <ListHeaders>
         <ListHeader className="w-3" />
-        <div className="flex flex-auto gap-2">
-          {/* <FlakyButton />
-          <ResolveButton /> */}
+        <div className="flex flex-auto gap-4">
+          <FlakyButton
+            disabled={selectedTests.length === 0 || updateStatusesLoading}
+            onlyFlakySelected={onlyFlakySelected}
+            onClick={() => {
+              updateStatuses({
+                variables: {
+                  ids: selectedTestIds,
+                  status: onlyFlakySelected
+                    ? TestStatus.Pending
+                    : TestStatus.Flaky,
+                },
+              });
+              clearTestSelection();
+            }}
+          />
+          <ResolveButton
+            disabled={
+              selectedTests.length === 0 ||
+              updateStatusesLoading ||
+              !onlyFlakySelected
+            }
+            onClick={() => {
+              updateStatuses({
+                variables: {
+                  ids: selectedTestIds,
+                  status: TestStatus.Resolved,
+                },
+              });
+              clearTestSelection();
+            }}
+          />
           <MuteTestDropdown
-            disabled={selectedTests.size === 0 || muteLoading}
+            disabled={selectedTests.length === 0 || muteLoading}
             onClick={({
               muted,
               muteUntil,
@@ -374,9 +445,9 @@ const TestsList = ({
               muted: boolean;
               muteUntil: string | null;
             }) => {
-              const ids = Array.from(selectedTests) as [string];
+              const ids = selectedTestIds as [string];
               muteTests({ variables: { ids, muted, muteUntil } });
-              setSelectedTests(new Set());
+              clearTestSelection();
             }}
           />
         </div>

@@ -48,6 +48,7 @@ const documents = {
     "\n  mutation RepositorySettings_UpdateForcedPrivate(\n    $repositoryId: String!\n    $forcedPrivate: Boolean!\n  ) {\n    updateForcedPrivate(\n      repositoryId: $repositoryId\n      forcedPrivate: $forcedPrivate\n    ) {\n      id\n      forcedPrivate\n    }\n  }\n": types.RepositorySettings_UpdateForcedPrivateDocument,
     "\n  query FlakyTests_repository_tests(\n    $ownerLogin: String!\n    $repositoryName: String!\n    $after: Int!\n    $first: Int!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      tests(first: $first, after: $after) {\n        pageInfo {\n          totalCount\n          hasNextPage\n        }\n        edges {\n          id\n          name\n          buildName\n          status\n          resolvedDate\n          mute\n          muteUntil\n          stabilityScore\n          lastSeen\n          unstable\n          dailyChanges {\n            date\n            count\n          }\n          totalBuilds\n          screenshot {\n            id\n            url\n            width\n            height\n          }\n        }\n      }\n    }\n  }\n": types.FlakyTests_Repository_TestsDocument,
     "\n  mutation muteTests($ids: [String!]!, $muted: Boolean!, $muteUntil: String) {\n    muteTests(ids: $ids, muted: $muted, muteUntil: $muteUntil) {\n      ids\n      mute\n      muteUntil\n    }\n  }\n": types.MuteTestsDocument,
+    "\n  mutation updateStatusesMutation($ids: [String!]!, $status: TestStatus!) {\n    updateTestStatuses(ids: $ids, status: $status) {\n      ids\n      status\n    }\n  }\n": types.UpdateStatusesMutationDocument,
     "\n  query Repository_repository($ownerLogin: String!, $repositoryName: String!) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      permissions\n    }\n  }\n": types.Repository_RepositoryDocument,
 };
 
@@ -191,6 +192,10 @@ export function graphql(source: "\n  query FlakyTests_repository_tests(\n    $ow
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation muteTests($ids: [String!]!, $muted: Boolean!, $muteUntil: String) {\n    muteTests(ids: $ids, muted: $muted, muteUntil: $muteUntil) {\n      ids\n      mute\n      muteUntil\n    }\n  }\n"): (typeof documents)["\n  mutation muteTests($ids: [String!]!, $muted: Boolean!, $muteUntil: String) {\n    muteTests(ids: $ids, muted: $muted, muteUntil: $muteUntil) {\n      ids\n      mute\n      muteUntil\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation updateStatusesMutation($ids: [String!]!, $status: TestStatus!) {\n    updateTestStatuses(ids: $ids, status: $status) {\n      ids\n      status\n    }\n  }\n"): (typeof documents)["\n  mutation updateStatusesMutation($ids: [String!]!, $status: TestStatus!) {\n    updateTestStatuses(ids: $ids, status: $status) {\n      ids\n      status\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
