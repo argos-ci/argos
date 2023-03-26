@@ -10,6 +10,7 @@ import {
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
+  Test,
   User,
 } from "@argos-ci/database/models";
 
@@ -55,6 +56,49 @@ const createBuildAggregatedStatusLoader = () =>
     }) as AggregatedStatus[];
   });
 
+const createLastScreenshotDiffLoader = () =>
+  new DataLoader<string, ScreenshotDiff | null>(async (testIds) => {
+    const lastScreenshotDiffs = await ScreenshotDiff.query()
+      .select("*")
+      .whereIn("testId", testIds as string[])
+      .distinctOn("testId")
+      .orderBy("testId")
+      .orderBy("createdAt", "desc");
+    const lastScreenshotDiffMap: Record<string, ScreenshotDiff> = {};
+    for (const lastScreenshotDiff of lastScreenshotDiffs) {
+      lastScreenshotDiffMap[lastScreenshotDiff.testId!] = lastScreenshotDiff;
+    }
+    return testIds.map((id) => lastScreenshotDiffMap[id] ?? null);
+  });
+
+const createLastScreenshotLoader = () =>
+  new DataLoader<string, Screenshot | null>(async (testIds) => {
+    const repository = await Repository.query()
+      .whereIn(
+        "id",
+        Test.query()
+          .select("repositoryId")
+          .where("id", testIds[0] as string)
+      )
+      .first();
+    const lastScreenshots = await Screenshot.query()
+      .select("screenshots.*", "screenshotBucket.branch")
+      .whereIn("testId", testIds as string[])
+      .distinctOn("testId")
+      .joinRelated("screenshotBucket")
+      .orderBy("testId")
+      .orderByRaw(
+        `CASE WHEN "screenshotBucket".branch = ? THEN 0 ELSE 1 END`,
+        repository!.referenceBranch
+      )
+      .orderBy("screenshots.createdAt", "desc");
+    const lastScreenshotMap: Record<string, Screenshot> = {};
+    for (const lastScreenshot of lastScreenshots) {
+      lastScreenshotMap[lastScreenshot.testId!] = lastScreenshot;
+    }
+    return testIds.map((id) => lastScreenshotMap[id] ?? null);
+  });
+
 export const createLoaders = () => ({
   User: createModelLoader(User),
   Organization: createModelLoader(Organization),
@@ -64,4 +108,6 @@ export const createLoaders = () => ({
   Repository: createModelLoader(Repository),
   File: createModelLoader(File),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
+  LastScreenshotDiff: createLastScreenshotDiffLoader(),
+  LastScreenshot: createLastScreenshotLoader(),
 });

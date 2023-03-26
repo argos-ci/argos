@@ -1,17 +1,11 @@
 import gqlTag from "graphql-tag";
 
 import { knex } from "@argos-ci/database";
-import { Screenshot, ScreenshotDiff, Test } from "@argos-ci/database/models";
+import { Test } from "@argos-ci/database/models";
+
+import type { Context } from "../context.js";
 
 const { gql } = gqlTag;
-
-const getLastScreenshotDiff = async (test: Test) => {
-  const screenshotDiff = await ScreenshotDiff.query()
-    .where({ testId: test.id })
-    .orderBy("createdAt", "desc")
-    .first();
-  return screenshotDiff ?? null;
-};
 
 export const typeDefs = gql`
   enum TestStatus {
@@ -64,32 +58,42 @@ export const typeDefs = gql`
 
 export const resolvers = {
   Test: {
-    lastSeen: async (test: Test) => {
-      const lastScreenshotDiff = await test.$relatedQuery("lastScreenshotDiff");
+    lastSeen: async (
+      test: Test,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
+      const lastScreenshotDiff = await context.loaders.LastScreenshotDiff.load(
+        test.id
+      );
       return lastScreenshotDiff?.createdAt ?? null;
     },
-    stabilityScore: async (test: Test) => {
-      const lastScreenshotDiff = await test.$relatedQuery("lastScreenshotDiff");
+    stabilityScore: async (
+      test: Test,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
+      const lastScreenshotDiff = await context.loaders.LastScreenshotDiff.load(
+        test.id
+      );
       return lastScreenshotDiff?.stabilityScore ?? null;
     },
-    unstable: async (test: Test) => {
-      const lastScreenshotDiff = await getLastScreenshotDiff(test);
-      if (!lastScreenshotDiff || lastScreenshotDiff.stabilityScore === null) {
-        return false;
-      }
-      return lastScreenshotDiff.stabilityScore < 60;
+    unstable: async (
+      test: Test,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
+      const lastScreenshotDiff = await context.loaders.LastScreenshotDiff.load(
+        test.id
+      );
+      return (lastScreenshotDiff?.stabilityScore ?? 100) < 60;
     },
-    screenshot: async (test: Test) => {
-      const repository = await test.$relatedQuery("repository");
-      return Screenshot.query()
-        .where({ testId: test.id })
-        .joinRelated("screenshotBucket")
-        .orderByRaw(
-          `CASE WHEN "screenshotBucket".branch = ? THEN 0 ELSE 1 END`,
-          repository.referenceBranch
-        )
-        .orderBy("createdAt", "desc")
-        .first();
+    screenshot: async (
+      test: Test,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
+      return context.loaders.LastScreenshot.load(test.id);
     },
     dailyChanges: async (test: Test) => {
       const result = await knex.raw(
