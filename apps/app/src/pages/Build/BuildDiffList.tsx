@@ -16,8 +16,9 @@ import {
   useState,
 } from "react";
 
+import { Test } from "@/gql/graphql";
 import { Badge } from "@/ui/Badge";
-import { FlakySuspectedIcon } from "@/ui/FlakyIndicator";
+import { getFlakyIndicatorProps } from "@/ui/FlakyIndicator";
 
 import { getGroupLabel } from "./BuildDiffGroup";
 import { Diff, DiffGroup, useBuildDiffState } from "./BuildDiffState";
@@ -182,6 +183,34 @@ interface ListItemProps {
   observer: IntersectionObserver | null;
 }
 
+const FlakyFlag = ({
+  test,
+}: {
+  test: Pick<Test, "status" | "unstable" | "resolvedDate"> | null;
+}) => {
+  if (!test || !test.status) {
+    return null;
+  }
+
+  const { icon: FlakyIcon = null, color: flakyColor = "neutral" } =
+    getFlakyIndicatorProps(test);
+  if (!FlakyIcon) {
+    return null;
+  }
+
+  const colorClassName = `text-${flakyColor}-500`;
+  return (
+    <div
+      className={clsx(
+        colorClassName,
+        "absolute top-3 right-4 z-30 h-4 w-4 opacity-0 transition group-hover/sidebar:opacity-100"
+      )}
+    >
+      <FlakyIcon />
+    </div>
+  );
+};
+
 const ListItem = ({
   style,
   item,
@@ -208,6 +237,7 @@ const ListItem = ({
     }
     return undefined;
   }, [observer]);
+
   return (
     <AriakitButton
       ref={ref}
@@ -229,11 +259,7 @@ const ListItem = ({
       <div className="relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-slate-800/50">
         {item.diff ? (
           <>
-            {item.diff.flakyDetected && (
-              <div className="absolute top-3 right-4 z-30 h-4 w-4 opacity-0 transition group-hover/sidebar:opacity-100">
-                <FlakySuspectedIcon />
-              </div>
-            )}
+            <FlakyFlag test={item?.diff?.test ?? null} />
             <DiffImage diff={item.diff} />{" "}
             <div className="absolute bottom-0 left-0 right-0 z-10 truncate bg-gradient-to-b from-transparent to-black/70 px-2 pb-2 pt-4 text-xxs font-medium opacity-0 transition group-hover/sidebar:opacity-100">
               {item.diff.name}

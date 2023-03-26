@@ -4,7 +4,6 @@ import {
   useMutation,
   useQuery,
 } from "@apollo/client";
-import { SpeakerXMarkIcon } from "@heroicons/react/20/solid";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import moment from "moment";
@@ -28,6 +27,7 @@ import {
   ListLoader,
   ListRow,
 } from "@/ui/List";
+import { MuteIndicator } from "@/ui/MuteIndicator";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 import { MagicTooltip } from "@/ui/Tooltip";
@@ -131,22 +131,6 @@ const Thumbnail = ({ screenshot }: { screenshot: Screenshot }) => {
       )}
     </div>
   );
-};
-
-const MuteIndicator = ({
-  mute,
-  muteUntil,
-}: {
-  mute: boolean;
-  muteUntil: string;
-}) => {
-  return mute ? (
-    <div className="flex h-5 items-center">
-      <MagicTooltip tooltip={`Muted until: ${moment(muteUntil).format("LLL")}`}>
-        <SpeakerXMarkIcon className="h-4 w-4 text-danger-500" />
-      </MagicTooltip>
-    </div>
-  ) : null;
 };
 
 const BuildNameField = ({ buildName }: { buildName: string }) => {
@@ -271,13 +255,9 @@ const TestRow = memo(({ test }: { test: Test }) => {
         <Thumbnail screenshot={test.screenshot} />
         <div className="flex flex-col justify-start gap-1">
           <div className="flex min-h-[1.75rem] items-start gap-2">
-            <MuteIndicator mute={test.mute} muteUntil={test.muteUntil} />
+            <MuteIndicator test={test} />
             <div className="mr-2 font-bold line-clamp-2">{test.name}</div>
-            <FlakyChip
-              status={test.status}
-              unstable={test.unstable}
-              resolvedDate={test.resolvedDate}
-            />
+            <FlakyChip test={test} className="-mt-0.5" />
           </div>
           <div className="flex items-center gap-4 text-sm">
             <BuildNameField buildName={test.buildName} />
@@ -438,6 +418,7 @@ const TestsList = ({
           />
           <MuteTestDropdown
             disabled={selectedTests.length === 0 || muteLoading}
+            onlyUnmuteSelected={selectedTests.every((test) => !test.mute)}
             onClick={({
               muted,
               muteUntil,

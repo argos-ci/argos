@@ -63,6 +63,7 @@ const muteOptions: muteOption[] = [
 export const MuteTestDropdown = ({
   onClick,
   disabled = true,
+  onlyUnmuteSelected,
 }: {
   onClick: ({
     muted,
@@ -72,6 +73,7 @@ export const MuteTestDropdown = ({
     muteUntil: string | null;
   }) => void;
   disabled: boolean;
+  onlyUnmuteSelected: boolean;
 }) => {
   const menu = useMenuState({ placement: "bottom-start", gutter: 4 });
 
@@ -99,6 +101,7 @@ export const MuteTestDropdown = ({
                     onClick({ muted, muteUntil });
                     menu.hide();
                   }}
+                  disabled={onlyUnmuteSelected && !muted}
                 >
                   <MenuItemIcon>
                     <Icon />

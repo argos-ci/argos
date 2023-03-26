@@ -68,6 +68,17 @@ export const typeDefs = gql`
 
 export const resolvers = {
   Test: {
+    status: (test: Test) => {
+      if (test.status !== "resolved") {
+        return test.status;
+      }
+      const now = new Date();
+      const resolvedDateLimit = new Date(
+        now.getTime() - 7 * 24 * 60 * 60 * 1000
+      );
+      const resolvedDate = new Date(test.resolvedDate!);
+      return resolvedDate > resolvedDateLimit ? "pending" : "resolved";
+    },
     lastSeen: async (
       test: Test,
       _args: Record<string, never>,

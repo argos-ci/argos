@@ -107,6 +107,7 @@ export const createLoaders = () => ({
   ScreenshotDiff: createModelLoader(ScreenshotDiff),
   Repository: createModelLoader(Repository),
   File: createModelLoader(File),
+  Test: createModelLoader(Test),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
   LastScreenshotDiff: createLastScreenshotDiffLoader(),
   LastScreenshot: createLastScreenshotLoader(),

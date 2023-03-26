@@ -29,6 +29,7 @@ export const typeDefs = gql`
     status: ScreenshotDiffStatus!
     validationStatus: String
     flakyDetected: Boolean!
+    test: Test
   }
 
   type ScreenshotDiffConnection implements Connection {
@@ -112,6 +113,14 @@ export const resolvers = {
         screenshotDiff.stabilityScore !== null &&
           screenshotDiff.stabilityScore < 60
       );
+    },
+    test: async (
+      screenshot: Screenshot,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
+      if (!screenshot.testId) return null;
+      return context.loaders.Test.load(screenshot.testId);
     },
   },
 };

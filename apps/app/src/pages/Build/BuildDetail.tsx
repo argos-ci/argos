@@ -354,7 +354,7 @@ export const BuildDetail = (props: {
               <BuildDetailToolbar
                 name={activeDiff.name}
                 bordered={scrolled}
-                flakyDetected={activeDiff.flakyDetected}
+                test={activeDiff.test ?? null}
               />
               <BuildScreenshots build={build} diff={activeDiff} />
             </BuildDiffShowBaselineStateProvider>

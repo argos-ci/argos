@@ -161,7 +161,13 @@ export const computeScreenshotDiff = async (
     .select(
       raw(`count(*) FILTER (WHERE "jobStatus" = 'complete') > 0 as complete`),
       raw(
-        `count(*) FILTER (WHERE score > 0 AND(muted IS NULL OR muted = FALSE OR test."muteUntil" > now())) > 0 AS diff`
+        `count(*) FILTER (
+          WHERE score > 0 AND (
+            muted IS NULL 
+            OR muted = FALSE 
+            OR (muted = TRUE AND test."muteUntil" > now())
+          )
+        ) > 0 AS diff`
       )
     )
     .leftJoinRelated("test")

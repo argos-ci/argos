@@ -5,66 +5,34 @@ import {
 } from "@heroicons/react/20/solid";
 import moment from "moment";
 
-import { TestStatus } from "@/gql/graphql";
+import { Test } from "@/gql/graphql";
 
 import { Chip } from "./Chip";
 import { MagicTooltip } from "./Tooltip";
 
-const FlakyIcon = BugAntIcon;
-const flakySuspectedTooltip =
-  "This test has high instability in recent builds and may be a flaky.";
+export const getFlakyIndicatorProps = (
+  test: Pick<Test, "status" | "unstable" | "resolvedDate">
+) => {
+  const { status, unstable, resolvedDate } = test;
 
-export const FlakySuspectedIcon = () => {
-  return (
-    <MagicTooltip tooltip={flakySuspectedTooltip}>
-      <FlakyIcon className="text-warning-400" />
-    </MagicTooltip>
-  );
-};
-
-export const FlakySuspectedChip = () => {
-  return (
-    <MagicTooltip tooltip={flakySuspectedTooltip}>
-      <Chip icon={FlakyIcon} color="warning" scale="sm">
-        Flaky suspected
-      </Chip>
-    </MagicTooltip>
-  );
-};
-
-const getFlakyIndicatorProps = ({
-  status,
-  unstable,
-  resolvedDate,
-}: {
-  status: TestStatus;
-  unstable: boolean;
-  resolvedDate: string | null;
-}) => {
-  const updatedStatus =
-    status === "resolved"
-      ? resolvedDate && moment().subtract(7, "days").isAfter(resolvedDate)
-        ? "pending"
-        : "resolved"
-      : status;
-
-  switch (updatedStatus) {
+  switch (status) {
     case "pending":
       return unstable
         ? {
-            label: "Unstable",
-            color: "warning" as const,
+            label: "Test unstable",
+            color: "neutral" as const,
             icon: ExclamationTriangleIcon,
-            tooltip: "This test is unstable with potential flakiness",
+            tooltip:
+              "High instability and potential flakiness detected in the past 7 days",
           }
         : { label: null, color: "neutral" as const, icon: null };
 
     case "flaky":
       return {
         label: "Flaky",
-        color: "danger" as const,
-        icon: FlakyIcon,
-        tooltip: "This test is unreliable and may have false positives",
+        color: "warning" as const,
+        icon: BugAntIcon,
+        tooltip: "Unreliable test that may have false positives",
       };
 
     case "resolved":
@@ -83,33 +51,28 @@ const getFlakyIndicatorProps = ({
 };
 
 export const FlakyChip = ({
-  status,
-  unstable,
-  resolvedDate,
+  test,
+  className,
 }: {
-  status: TestStatus;
-  unstable: boolean;
-  resolvedDate?: string | null;
+  test: Pick<Test, "status" | "unstable" | "resolvedDate"> | null;
+  className?: string;
 }) => {
-  const {
-    label,
-    color,
-    icon: Icon,
-    tooltip,
-  } = getFlakyIndicatorProps({
-    status,
-    unstable,
-    resolvedDate: resolvedDate ?? null,
-  });
+  if (!test || !test.status) {
+    return null;
+  }
+
+  const { label, color, icon: Icon, tooltip } = getFlakyIndicatorProps(test);
   if (!label) {
     return null;
   }
 
   return (
     <MagicTooltip tooltip={tooltip}>
-      <Chip icon={Icon} color={color} scale="sm">
-        {label}
-      </Chip>
+      <div className={className}>
+        <Chip icon={Icon} color={color} scale="sm">
+          {label}
+        </Chip>
+      </div>
     </MagicTooltip>
   );
 };
