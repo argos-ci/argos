@@ -392,10 +392,7 @@ const TestsList = ({
   }, [lastItem, hasNextPage, fetching, fetchNextPage, displayCount]);
 
   return (
-    <div
-      ref={parentRef}
-      className="my-4 max-h-max min-h-0 w-full overflow-auto rounded border border-border"
-    >
+    <div className="flex min-h-0 flex-1 basis-0 flex-col rounded border border-border">
       <ListHeaders>
         <ListHeader className="w-3" />
         <div className="flex flex-auto gap-4">
@@ -468,16 +465,37 @@ const TestsList = ({
         </ListHeader>
       </ListHeaders>
 
-      <div
-        style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}
-      >
-        {virtualItems.map((virtualRow) => {
-          const test = tests.edges[virtualRow.index];
-          if (!test) {
+      <div ref={parentRef} className="overflow-auto">
+        <div
+          style={{
+            height: rowVirtualizer.getTotalSize(),
+            position: "relative",
+          }}
+        >
+          {virtualItems.map((virtualRow) => {
+            const test = tests.edges[virtualRow.index];
+            if (!test) {
+              return (
+                <div
+                  key={`loader-${virtualRow.index}`}
+                  className="flex items-center justify-center gap-2 text-sm text-on-light"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: virtualRow.size,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <ListLoader />
+                </div>
+              );
+            }
             return (
               <div
-                key={`loader-${virtualRow.index}`}
-                className="flex items-center justify-center gap-2 text-sm text-on-light"
+                key={`test-${test.id}`}
+                className="group"
                 style={{
                   position: "absolute",
                   top: 0,
@@ -487,27 +505,11 @@ const TestsList = ({
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
               >
-                <ListLoader />
+                <TestRow test={test} />
               </div>
             );
-          }
-          return (
-            <div
-              key={`test-${test.id}`}
-              className="group"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: virtualRow.size,
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              <TestRow test={test} />
-            </div>
-          );
-        })}
+          })}
+        </div>
       </div>
     </div>
   );
@@ -593,15 +595,15 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
   }
 
   return (
-    <div className="container mx-auto flex min-h-0 flex-1 flex-col px-4">
-      <SelectedTestsStateProvider>
+    <SelectedTestsStateProvider>
+      <div className="container mx-auto flex min-h-0 flex-1 basis-0 flex-col p-4">
         <TestsList
           tests={tests}
           fetchNextPage={fetchNextPage}
           fetching={testsResult.loading}
         />
-      </SelectedTestsStateProvider>
-    </div>
+      </div>
+    </SelectedTestsStateProvider>
   );
 };
 
