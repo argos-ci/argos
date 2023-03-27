@@ -161,8 +161,8 @@ const DailyVariationGraphCell = ({
       <div className="items-bottom flex h-8 flex-auto justify-between gap-1">
         {dailyChanges.map(({ date, count }) => {
           const heightClassName = `h-[${Math.round(
-            (count * 100) / totalBuilds
-          )}%]`;
+            (count * 32) / totalBuilds
+          )}px]`;
 
           return (
             <MagicTooltip
