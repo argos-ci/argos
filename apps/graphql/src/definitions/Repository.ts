@@ -200,6 +200,7 @@ export const resolvers = {
         .whereNull("other_diff.id")
         .orderBy("last_diff.stabilityScore", "asc")
         .orderBy("tests.name", "asc")
+        .orderBy("tests.id", "asc")
         .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
