@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 
 import type { BuildStats } from "@/containers/Build";
 import { graphql } from "@/gql";
-import { ScreenshotDiffStatus } from "@/gql/graphql";
+import { ScreenshotDiffStatus, TestStatus } from "@/gql/graphql";
 
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
@@ -37,6 +37,14 @@ export interface Diff {
     url: string;
     width?: number | null;
     height?: number | null;
+  } | null;
+  test?: {
+    id: string;
+    status: TestStatus;
+    unstable: boolean;
+    resolvedDate?: string | null;
+    mute: boolean;
+    muteUntil?: string | null;
   } | null;
 }
 
@@ -139,6 +147,14 @@ const RepositoryQuery = graphql(`
               url
               width
               height
+            }
+            test {
+              id
+              status
+              unstable
+              resolvedDate
+              mute
+              muteUntil
             }
           }
         }

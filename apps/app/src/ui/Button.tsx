@@ -6,10 +6,12 @@ import { Children, cloneElement, forwardRef, memo } from "react";
 
 export type ButtonColor = "primary" | "neutral";
 export type ButtonVariant = "contained" | "outline";
+export type ButtonSize = "base" | "small";
 
 export interface ButtonProps extends AriakitButtonProps<"button"> {
   color?: ButtonColor;
   variant?: ButtonVariant;
+  size?: ButtonSize;
 }
 
 const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
@@ -21,13 +23,26 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
   },
   outline: {
     primary: "color-primary-300 border-primary-300 bg-transparent",
-    neutral: "color-neutral-300 border-neutral-300 bg-transparent",
+    neutral:
+      "color-neutral-300 border-neutral-600 bg-slate-800 hover:bg-neutral-900",
   },
+};
+
+const sizeClassNames: Record<ButtonSize, string> = {
+  base: "rounded-lg py-2 px-3 text-sm",
+  small: "rounded py-1 px-2 text-xs leading-4",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { color = "primary", variant = "contained", children, className, ...props },
+    {
+      color = "primary",
+      variant = "contained",
+      size = "base",
+      children,
+      className,
+      ...props
+    },
     ref
   ) => {
     const colorClassNames = variantClassNames[variant];
@@ -38,6 +53,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     if (!variantClassName) {
       throw new Error(`Invalid color: ${color}`);
     }
+    const sizeClassName = sizeClassNames[size];
+    if (!sizeClassName) {
+      throw new Error(`Invalid size: ${color}`);
+    }
     return (
       <AriakitButton
         ref={ref}
@@ -45,7 +64,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={clsx(
           className,
           variantClassName,
-          "align-center inline-flex whitespace-nowrap rounded-lg border py-2 px-3 font-sans text-sm font-medium leading-none transition disabled:opacity-70 [&:is(button)]:cursor-default"
+          sizeClassName,
+          "align-center inline-flex whitespace-nowrap border font-sans font-medium leading-none transition disabled:opacity-70 [&:is(button)]:cursor-default"
         )}
         {...props}
       >

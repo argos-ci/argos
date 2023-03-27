@@ -7,10 +7,12 @@ import {
 import { clsx } from "clsx";
 import { memo } from "react";
 
+import { Test } from "@/gql/graphql";
 import { ColumnsIcon } from "@/ui/ColumnsIcon";
-import { FlakySuspectedChip } from "@/ui/FlakyIndicator";
+import { FlakyChip } from "@/ui/FlakyIndicator";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
+import { MuteIndicator } from "@/ui/MuteIndicator";
 
 import { useBuildDiffFitState } from "./BuildDiffFitState";
 import { useBuildDiffShowBaselineState } from "./BuildDiffShowBaselineState";
@@ -127,11 +129,14 @@ const PreviousDiffButton = memo(() => {
 export interface BuildDetailToolbarProps {
   name: string;
   bordered: boolean;
-  flakyDetected: boolean;
+  test: Pick<
+    Test,
+    "status" | "unstable" | "resolvedDate" | "mute" | "muteUntil"
+  > | null;
 }
 
 export const BuildDetailToolbar = memo(
-  ({ name, bordered, flakyDetected }: BuildDetailToolbarProps) => {
+  ({ name, bordered, test }: BuildDetailToolbarProps) => {
     const borderClassName = bordered
       ? "border-b-border"
       : "border-b-transparent";
@@ -147,14 +152,14 @@ export const BuildDetailToolbar = memo(
             <PreviousDiffButton />
             <NextDiffButton />
           </div>
-          <div role="heading" className="mt-1 text-sm font-medium">
+          <MuteIndicator test={test} className="mt-1" />
+          <div
+            role="heading"
+            className="mr-2 mt-1 text-sm font-medium line-clamp-2"
+          >
             {name}
           </div>
-          {flakyDetected && (
-            <div className="mt-0.5">
-              <FlakySuspectedChip />
-            </div>
-          )}
+          <FlakyChip test={test} className="mt-0.5" />
         </div>
         <div className="flex gap-2">
           <BuildBaselineToggle />

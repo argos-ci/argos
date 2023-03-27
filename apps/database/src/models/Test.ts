@@ -4,7 +4,7 @@ import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Repository } from "./Repository.js";
 import { Screenshot } from "./Screenshot.js";
-import type { ScreenshotDiff } from "./ScreenshotDiff.js";
+import { ScreenshotDiff } from "./ScreenshotDiff.js";
 
 export class Test extends Model {
   static override tableName = "tests";
@@ -17,10 +17,11 @@ export class Test extends Model {
       buildName: { type: "string" },
       status: {
         type: ["string"],
-        enum: ["pending", "resolved", "muted"],
+        enum: ["pending", "flaky", "resolved"],
       },
       resolvedDate: { type: ["string", "null"] },
       resolvedStabilityScore: { type: ["number", "null"] },
+      muted: { type: "boolean" },
       muteUntil: { type: ["string", "null"] },
     },
   });
@@ -31,7 +32,18 @@ export class Test extends Model {
   status!: string;
   resolvedDate!: string | null;
   resolvedStabilityScore!: number | null;
+  muted!: boolean;
   muteUntil!: string | null;
+
+  static override virtualAttributes = ["mute"];
+
+  get mute() {
+    if (!this.muted) return false;
+    if (!this.muteUntil) return true;
+    const now = new Date();
+    const muteUntilDate = new Date(this.muteUntil);
+    return muteUntilDate > now;
+  }
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -39,24 +51,35 @@ export class Test extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: Repository,
         join: {
-          from: "screenshot_buckets.repositoryId",
+          from: "tests.repositoryId",
           to: "repositories.id",
-        },
-      },
-      screenshotDiffs: {
-        relation: Model.HasManyRelation,
-        modelClass: Screenshot,
-        join: {
-          from: "screenshot_buckets.id",
-          to: "screenshots.screenshotBucketId",
         },
       },
       screenshots: {
         relation: Model.HasManyRelation,
         modelClass: Screenshot,
         join: {
-          from: "screenshot_buckets.id",
-          to: "screenshots.screenshotBucketId",
+          from: "tests.id",
+          to: "screenshots.testId",
+        },
+      },
+      screenshotDiffs: {
+        relation: Model.HasManyRelation,
+        modelClass: ScreenshotDiff,
+        join: {
+          from: "tests.id",
+          to: "screenshot_diffs.testId",
+        },
+      },
+      lastScreenshotDiff: {
+        relation: Model.HasOneRelation,
+        modelClass: ScreenshotDiff,
+        join: {
+          from: "tests.id",
+          to: "screenshot_diffs.testId",
+        },
+        modify: (queryBuilder) => {
+          queryBuilder.orderBy("screenshot_diffs.createdAt", "desc").first();
         },
       },
     };
@@ -65,4 +88,5 @@ export class Test extends Model {
   repository?: Repository;
   screenshotDiffs?: ScreenshotDiff[];
   screenshots?: Screenshot[];
+  lastScreenshotDiff?: ScreenshotDiff;
 }

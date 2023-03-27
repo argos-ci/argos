@@ -40,16 +40,20 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>((props, ref) => {
 
 export type MenuItemProps = Omit<AriakitMenuItemProps, "className"> & {
   pointer?: boolean;
+  selected?: boolean;
 };
 
 export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
-  ({ pointer, ...props }, ref) => {
+  ({ pointer, selected = false, ...props }, ref) => {
     const pointerClassName = pointer ? "cursor-pointer" : "cursor-default";
+    const selectedClassName = selected ? "bg-menu-item-selected-bg" : "";
     return (
       <AriakitMenuItem
         ref={ref}
+        aria-checked={selected}
         className={clsx(
           pointerClassName,
+          selectedClassName,
           "flex items-center rounded py-1.5 px-3 text-sm text-menu-on transition hover:bg-menu-item-hover-bg hover:text-menu-hover-on focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-70"
         )}
         {...props}

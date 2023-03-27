@@ -23,6 +23,7 @@ import { OwnerRepositories } from "./pages/Owner/Repositories";
 import { Repository } from "./pages/Repository";
 import { RepositoryBuilds } from "./pages/Repository/RepositoryBuilds";
 import { RepositorySettings } from "./pages/Repository/RepositorySettings";
+import { Tests } from "./pages/Repository/Tests";
 
 export const App = () => {
   return (
@@ -73,6 +74,7 @@ export const App = () => {
                     path="builds"
                     element={<Navigate to=".." replace={true} />}
                   />
+                  <Route path="tests" element={<Tests />} />
                   <Route path="settings" element={<RepositorySettings />} />
                 </Route>
                 <Route path=":ownerLogin" element={<Owner />}>

@@ -19,6 +19,7 @@
     "@heroicons/react": "^2.0.13",
     "@primer/octicons-react": "^17.9.0",
     "@sentry/browser": "^7.23.0",
+    "@tailwindcss/line-clamp": "^0.4.2",
     "@tanstack/react-virtual": "^3.0.0-beta.23",
     "@types/react": "^18.0.25",
     "@types/react-dom": "^18.0.9",

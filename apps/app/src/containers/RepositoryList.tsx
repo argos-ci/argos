@@ -51,7 +51,7 @@ const RepositoryRow = ({ repository }: { repository: Repository }) => {
       to={`/${repository.owner.login}/${repository.name}`}
       className="flex items-center justify-between rounded bg-slate-900/70 p-3 font-medium text-on-light transition hover:bg-slate-900"
     >
-      <div className="flex-shink-0 flex gap-1">
+      <div className="flex flex-shrink-0 gap-1">
         <FakeRouterLink
           to={`/${repository.owner.login}`}
           className="transition hover:text-on hover:brightness-125"
