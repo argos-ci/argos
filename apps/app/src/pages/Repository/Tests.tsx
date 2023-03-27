@@ -160,10 +160,6 @@ const DailyVariationGraphCell = ({
     <ListCell className={secondaryColumnClassNames[0]}>
       <div className="items-bottom flex h-8 flex-auto justify-between gap-1">
         {dailyChanges.map(({ date, count }) => {
-          const heightClassName = `h-[${Math.round(
-            (count * 32) / totalBuilds
-          )}px]`;
-
           return (
             <MagicTooltip
               key={String(date)}
@@ -175,10 +171,10 @@ const DailyVariationGraphCell = ({
             >
               <div className="flex h-full w-full flex-col justify-end">
                 <div
-                  className={clsx(
-                    heightClassName,
-                    "min-h-[1px] bg-neutral-100"
-                  )}
+                  className="min-h-[1px] bg-neutral-100"
+                  style={{
+                    height: `${Math.round((count * 100) / totalBuilds)}%`,
+                  }}
                 />
               </div>
             </MagicTooltip>
