@@ -162,12 +162,14 @@ export const resolvers = {
       }
 
       if (args.status !== "resolved") {
-        return {
-          ids: args.ids,
-          status: args.status,
-          resolvedDate: null,
-          resolvedStabilityScore: null,
-        };
+        await Test.query()
+          .patch({
+            status: args.status,
+            resolvedDate: null,
+            resolvedStabilityScore: null,
+          })
+          .whereIn("id", args.ids);
+        return { ids: args.ids, status: args.status };
       }
 
       const lastScreenshotDiffs = await ScreenshotDiff.query()
@@ -181,16 +183,16 @@ export const resolvers = {
         lastScreenshotDiffMap[lastScreenshotDiff.testId!] = lastScreenshotDiff;
       }
       await Promise.all(
-        args.ids.map((testId) => {
-          return Test.query()
+        args.ids.map(async (testId) =>
+          Test.query()
             .patch({
               status: "resolved",
               resolvedDate: new Date().toISOString(),
               resolvedStabilityScore:
                 lastScreenshotDiffMap[testId]?.stabilityScore ?? null,
             })
-            .where("id", testId);
-        })
+            .where("id", testId)
+        )
       );
       return { ids: args.ids, status: args.status };
     },

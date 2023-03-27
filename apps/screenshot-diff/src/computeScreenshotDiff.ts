@@ -159,7 +159,7 @@ export const computeScreenshotDiff = async (
 
   const { complete, diff } = (await ScreenshotDiff.query()
     .select(
-      raw(`count(*) FILTER (WHERE "jobStatus" = 'complete') > 0 as complete`),
+      raw(`bool_and("jobStatus" = 'complete') as complete`),
       raw(
         `count(*) FILTER (
           WHERE score > 0 AND (

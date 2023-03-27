@@ -215,6 +215,7 @@ export const createBuildDiffs = async (build: Build) => {
           score: sameFileId ? 0 : null,
           validationStatus: "unknown" as const,
           stabilityScore: stabilityScores[compareScreenshot.name] ?? 100,
+          testId: compareScreenshot.testId,
         };
       },
       []
