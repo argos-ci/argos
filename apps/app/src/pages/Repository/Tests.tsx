@@ -318,36 +318,49 @@ const TestsList = ({
     } = updatedData;
     if (updatedTestIds?.length === 0) return;
 
+    let after = 0;
     const first = 20;
-    const query = {
-      query: RepositoryTestsQuery,
-      variables: {
-        ownerLogin: ownerLogin!,
-        repositoryName: repositoryName!,
-        after: tests.edges.length - (tests.edges.length % first),
-        first,
-      },
-    };
-    const existingData = cache.readQuery(query);
-    if (!existingData?.repository) return;
-
-    cache.writeQuery({
-      ...query,
-      data: {
-        ...existingData,
-        repository: {
-          ...existingData.repository,
-          tests: {
-            ...existingData.repository.tests,
-            edges: existingData.repository.tests.edges.map((test) =>
-              updatedTestIds.includes(test.id)
-                ? { ...test, ...updatePayload }
-                : test
-            ),
-          },
+    while (after < tests.edges.length) {
+      const query = {
+        query: RepositoryTestsQuery,
+        variables: {
+          ownerLogin: ownerLogin!,
+          repositoryName: repositoryName!,
+          first,
+          after,
         },
-      },
-    });
+      };
+      const existingData = cache.readQuery(query);
+
+      if (existingData?.repository) {
+        let edgeUpdated = false;
+        const updatedEdges = existingData.repository.tests.edges.map((test) => {
+          if (updatedTestIds.includes(test.id)) {
+            edgeUpdated = true;
+            return { ...test, ...updatePayload };
+          }
+          return test;
+        });
+
+        if (edgeUpdated) {
+          cache.writeQuery({
+            ...query,
+            data: {
+              ...existingData,
+              repository: {
+                ...existingData.repository,
+                tests: {
+                  ...existingData.repository.tests,
+                  edges: updatedEdges,
+                },
+              },
+            },
+          });
+        }
+      }
+
+      after += first;
+    }
   };
 
   const [muteTests, { loading: muteLoading }] = useMutation(MuteTestsMutation, {

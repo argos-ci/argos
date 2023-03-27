@@ -7,6 +7,7 @@ import {
   Build,
   Repository,
   Screenshot,
+  ScreenshotDiff,
   Test,
 } from "@argos-ci/database/models";
 import type { User } from "@argos-ci/database/models";
@@ -178,6 +179,11 @@ export const resolvers = {
     ) => {
       const result = await Test.query()
         .where({ repositoryId: repository.id })
+        .whereNot((builder) =>
+          builder.whereRaw(`"name" ~ :regexp`, {
+            regexp: ScreenshotDiff.screenshotFailureRegexp,
+          })
+        )
         .leftJoin(
           "screenshot_diffs AS last_diff",
           "last_diff.testId",
@@ -192,7 +198,7 @@ export const resolvers = {
           );
         })
         .whereNull("other_diff.id")
-        .orderBy("last_diff.stabilityScore", "desc")
+        .orderBy("last_diff.stabilityScore", "asc")
         .orderBy("tests.name", "asc")
         .range(after, after + first - 1);
 
