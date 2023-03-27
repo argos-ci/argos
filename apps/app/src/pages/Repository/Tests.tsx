@@ -318,13 +318,14 @@ const TestsList = ({
     } = updatedData;
     if (updatedTestIds?.length === 0) return;
 
+    const first = 20;
     const query = {
       query: RepositoryTestsQuery,
       variables: {
         ownerLogin: ownerLogin!,
         repositoryName: repositoryName!,
-        after: Math.floor(tests.edges.length / 20),
-        first: 20,
+        after: tests.edges.length - (tests.edges.length % first),
+        first,
       },
     };
     const existingData = cache.readQuery(query);
