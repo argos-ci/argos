@@ -1,43 +1,43 @@
 import {
   Tooltip as AriakitTooltip,
   TooltipAnchor as AriakitTooltipAnchor,
+  TooltipStateProps,
   useTooltipState as useAriakitTooltipState,
 } from "ariakit/tooltip";
 import type {
+  TooltipAnchorProps as AriakitTooltipAnchorProps,
   TooltipProps as AriakitTooltipProps,
-  TooltipAnchorOptions,
 } from "ariakit/tooltip";
 import { clsx } from "clsx";
-import { Children, cloneElement, forwardRef } from "react";
+import {
+  Children,
+  cloneElement,
+  forwardRef,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
-export const useTooltipState = () => useAriakitTooltipState({ timeout: 800 });
+import { useEventCallback } from "./useEventCallback";
 
-export interface TooltipAnchorProps extends TooltipAnchorOptions<"div"> {
-  children: React.ReactElement;
-}
+const useTooltipState = (props?: TooltipStateProps) =>
+  useAriakitTooltipState({ timeout: 800, ...props });
 
-export const TooltipAnchor = forwardRef<HTMLDivElement, TooltipAnchorProps>(
-  ({ children, ...props }, ref) => {
-    return (
-      <AriakitTooltipAnchor ref={ref} {...props}>
-        {(anchorProps) => cloneElement(Children.only(children), anchorProps)}
-      </AriakitTooltipAnchor>
-    );
-  }
-);
+type TooltipAnchorProps = AriakitTooltipAnchorProps;
+const TooltipAnchor = AriakitTooltipAnchor;
 
 export type TooltipVariant = "default" | "info";
 
-export interface TooltipProps extends AriakitTooltipProps<"div"> {
+type TooltipProps = {
   variant?: TooltipVariant | undefined;
-}
+} & AriakitTooltipProps<"div">;
 
 const variantClassNames: Record<TooltipVariant, string> = {
   default: "text-xxs py-1 px-2",
   info: "text-sm p-2 [&_strong]:font-medium",
 };
 
-export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(
+const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(
   ({ variant = "default", ...props }, ref) => {
     const variantClassName = variantClassNames[variant];
     if (!variantClassName) {
@@ -56,29 +56,95 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(
   }
 );
 
-export interface MagicTooltipProps {
+export type MagicTooltipProps = {
   tooltip: React.ReactNode;
   variant?: TooltipVariant;
   children: React.ReactElement;
-}
+} & Omit<TooltipAnchorProps, "children" | "state">;
+
+type ActiveMagicTooltipProps = MagicTooltipProps & {
+  focusRef: React.MutableRefObject<boolean>;
+  hoverRef: React.MutableRefObject<boolean>;
+};
+
+const ActiveMagicTooltip = forwardRef<HTMLDivElement, ActiveMagicTooltipProps>(
+  (props, ref) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { tooltip, children, hoverRef, focusRef, ...restProps } = props;
+    const state = useTooltipState();
+    const { render, show } = state;
+    useLayoutEffect(() => {
+      if (hoverRef.current || focusRef.current) {
+        render();
+        show();
+      }
+    }, [render, show, hoverRef, focusRef]);
+    return (
+      <>
+        <TooltipAnchor ref={ref} state={state} {...restProps}>
+          {(referenceProps) => cloneElement(children, referenceProps)}
+        </TooltipAnchor>
+        <Tooltip state={state}>{tooltip}</Tooltip>
+      </>
+    );
+  }
+);
 
 export const MagicTooltip = forwardRef<HTMLDivElement, MagicTooltipProps>(
-  ({ tooltip, variant, children }, ref) => {
-    const state = useTooltipState();
+  ({ children, ...props }, ref) => {
+    const [active, setActive] = useState(false);
+    const hoverRef = useRef(false);
+    const handleMouseEnter = useEventCallback(
+      (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        props.onMouseEnter?.(event);
+        hoverRef.current = true;
+        setActive(true);
+      }
+    );
+    const handleMouseLeave = useEventCallback(
+      (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        props.onMouseLeave?.(event);
+        hoverRef.current = false;
+      }
+    );
+    const focusRef = useRef(false);
+    const handleFocus = useEventCallback(
+      (event: React.FocusEvent<HTMLDivElement>) => {
+        props.onFocus?.(event);
+        focusRef.current = true;
+        setActive(true);
+      }
+    );
+    const handleBlur = useEventCallback(
+      (event: React.FocusEvent<HTMLDivElement>) => {
+        props.onBlur?.(event);
+        focusRef.current = false;
+      }
+    );
 
-    if (!tooltip) {
-      return <div ref={ref}>{children}</div>;
+    const child = Children.only(children);
+    if (!props.tooltip) {
+      return cloneElement(child, props);
+    }
+    if (!active) {
+      const childProps = {
+        ...props,
+        ref,
+        onMouseEnter: handleMouseEnter,
+        onMouseLeave: handleMouseLeave,
+        onFocus: handleFocus,
+        onBlur: handleBlur,
+      } as Record<string, any>;
+      if (typeof props.tooltip === "string" && !child.props["aria-label"]) {
+        childProps["aria-label"] = props["aria-label"] ?? props.tooltip;
+      }
+      return cloneElement(child, childProps);
     }
 
     return (
-      <>
-        <TooltipAnchor ref={ref} state={state}>
-          {children}
-        </TooltipAnchor>
-        <Tooltip state={state} variant={variant}>
-          {tooltip}
-        </Tooltip>
-      </>
+      <ActiveMagicTooltip {...props} hoverRef={hoverRef} focusRef={focusRef}>
+        {child}
+      </ActiveMagicTooltip>
     );
   }
 );
