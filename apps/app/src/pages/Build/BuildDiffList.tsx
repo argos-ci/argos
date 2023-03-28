@@ -16,9 +16,9 @@ import {
   useState,
 } from "react";
 
+import { getFlakyIndicatorProps } from "@/containers/FlakyIndicator";
 import { Test } from "@/gql/graphql";
 import { Badge } from "@/ui/Badge";
-import { getFlakyIndicatorProps } from "@/ui/FlakyIndicator";
 
 import { getGroupLabel } from "./BuildDiffGroup";
 import { Diff, DiffGroup, useBuildDiffState } from "./BuildDiffState";

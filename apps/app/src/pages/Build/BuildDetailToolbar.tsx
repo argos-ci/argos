@@ -7,9 +7,9 @@ import {
 import { clsx } from "clsx";
 import { memo } from "react";
 
+import { FlakyChip } from "@/containers/FlakyIndicator";
 import { Test } from "@/gql/graphql";
 import { ColumnsIcon } from "@/ui/ColumnsIcon";
-import { FlakyChip } from "@/ui/FlakyIndicator";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 import { MuteIndicator } from "@/ui/MuteIndicator";

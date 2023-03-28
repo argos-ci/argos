@@ -28,7 +28,7 @@ export const FlakyButton = ({
           onClick={onClick}
           disabled={disabled}
         >
-          {onlyFlakySelected ? "Cancel Flaky Flag" : "Mark as Flaky"}
+          {onlyFlakySelected ? "Cancel Flaky flag" : "Mark as Flaky"}
         </ListHeaderButton>
       </div>
     </MagicTooltip>

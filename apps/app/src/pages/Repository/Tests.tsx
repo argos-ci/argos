@@ -12,6 +12,7 @@ import { Helmet } from "react-helmet";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import { FlakyButton } from "@/containers/FlakyButton";
+import { FlakyDropdown } from "@/containers/FlakyIndicator";
 import { MuteTestDropdown } from "@/containers/MuteTestDropdown";
 import { ResolveButton } from "@/containers/ResolveButton";
 import { DocumentType, graphql } from "@/gql";
@@ -19,7 +20,6 @@ import { TestStatus } from "@/gql/graphql";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
-import { FlakyChip } from "@/ui/FlakyIndicator";
 import {
   ListCell,
   ListHeader,
@@ -237,46 +237,64 @@ const StabilityCell = ({
   </ListCell>
 );
 
-const TestRow = memo(({ test }: { test: Test }) => {
-  const { testIsSelected, toggleTestSelection } = useSelectedTestsState();
+const TestRow = memo(
+  ({
+    test,
+    updateStatuses,
+  }: {
+    test: Test;
+    updateStatuses: ({
+      variables,
+    }: {
+      variables: { ids: string[]; status: TestStatus };
+    }) => void;
+  }) => {
+    const { testIsSelected, toggleTestSelection } = useSelectedTestsState();
 
-  return (
-    <ListRow>
-      <input
-        type="checkbox"
-        checked={testIsSelected(test)}
-        onChange={(e) => toggleTestSelection(test, e.target.checked)}
-      />
-      <div className="w-95 flex grow gap-4">
-        <Thumbnail screenshot={test.screenshot} />
-        <div className="flex flex-col justify-start gap-1">
-          <div className="flex min-h-[1.75rem] items-start gap-2">
-            <MuteIndicator test={test} />
-            <div className="mr-2 font-bold line-clamp-2">{test.name}</div>
-            <FlakyChip test={test} className="-mt-0.5" />
-          </div>
-          <div className="flex items-center gap-4 text-sm">
-            <BuildNameField buildName={test.buildName} />
-            <LastSeenField lastSeen={test.lastSeen} />
+    return (
+      <ListRow>
+        <input
+          type="checkbox"
+          checked={testIsSelected(test)}
+          onChange={(e) => toggleTestSelection(test, e.target.checked)}
+        />
+        <div className="w-95 flex grow gap-4">
+          <Thumbnail screenshot={test.screenshot} />
+          <div className="flex flex-col justify-start gap-1">
+            <div className="flex min-h-[1.75rem] items-start gap-2">
+              <MuteIndicator test={test} />
+              <div className="mr-2 font-bold line-clamp-2">{test.name}</div>
+              <FlakyDropdown
+                test={test}
+                className="-mt-0.5"
+                handleTestStatusChange={({ id, status }) => {
+                  updateStatuses({ variables: { ids: [id], status } });
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <BuildNameField buildName={test.buildName} />
+              <LastSeenField lastSeen={test.lastSeen} />
+            </div>
           </div>
         </div>
-      </div>
 
-      <DailyVariationGraphCell
-        dailyChanges={test.dailyChanges}
-        totalBuilds={test.totalBuilds}
-      />
-      <VariationsCell
-        dailyChanges={test.dailyChanges}
-        totalBuilds={test.totalBuilds}
-      />
-      <StabilityCell
-        score={test.stabilityScore ?? null}
-        unstable={test.unstable}
-      />
-    </ListRow>
-  );
-});
+        <DailyVariationGraphCell
+          dailyChanges={test.dailyChanges}
+          totalBuilds={test.totalBuilds}
+        />
+        <VariationsCell
+          dailyChanges={test.dailyChanges}
+          totalBuilds={test.totalBuilds}
+        />
+        <StabilityCell
+          score={test.stabilityScore ?? null}
+          unstable={test.unstable}
+        />
+      </ListRow>
+    );
+  }
+);
 
 const TestsList = ({
   tests,
@@ -501,7 +519,7 @@ const TestsList = ({
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
               >
-                <TestRow test={test} />
+                <TestRow test={test} updateStatuses={updateStatuses} />
               </div>
             );
           })}
