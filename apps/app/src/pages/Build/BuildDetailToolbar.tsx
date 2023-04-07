@@ -6,6 +6,7 @@ import {
 } from "@heroicons/react/20/solid";
 import { clsx } from "clsx";
 import { memo } from "react";
+import { useParams } from "react-router-dom";
 
 import { Test } from "@/gql/graphql";
 import { ColumnsIcon } from "@/ui/ColumnsIcon";
@@ -137,6 +138,7 @@ export interface BuildDetailToolbarProps {
 
 export const BuildDetailToolbar = memo(
   ({ name, bordered, test }: BuildDetailToolbarProps) => {
+    const { ownerLogin, repositoryName } = useParams();
     const borderClassName = bordered
       ? "border-b-border"
       : "border-b-transparent";
@@ -159,7 +161,11 @@ export const BuildDetailToolbar = memo(
           >
             {name}
           </div>
-          <FlakyChip test={test} className="mt-0.5" />
+          <FlakyChip
+            test={test}
+            className="mt-0.5"
+            link={`${ownerLogin}/${repositoryName}/tests`}
+          />
         </div>
         <div className="flex gap-2">
           <BuildBaselineToggle />

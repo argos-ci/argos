@@ -30,7 +30,7 @@ export const typeDefs = gql`
     stabilityScore: Int
     lastSeen: DateTime
     unstable: Boolean!
-    screenshot: Screenshot!
+    screenshot: Screenshot
     dailyChanges: [dailyCount!]!
     totalBuilds: Int!
   }
