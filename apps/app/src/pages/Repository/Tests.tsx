@@ -9,15 +9,14 @@ import { clsx } from "clsx";
 import moment from "moment";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { Helmet } from "react-helmet";
-import { Link as RouterLink, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import { FlakyButton } from "@/containers/FlakyButton";
 import { MuteTestDropdown } from "@/containers/MuteTestDropdown";
 import { ResolveButton } from "@/containers/ResolveButton";
 import { DocumentType, graphql } from "@/gql";
 import { TestStatus } from "@/gql/graphql";
-import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
-import { Button } from "@/ui/Button";
+import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { Container } from "@/ui/Container";
 import { FlakyChip } from "@/ui/FlakyIndicator";
 import {
@@ -575,16 +574,7 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
       <Container>
         <Alert>
           <AlertTitle>No test</AlertTitle>
-          <AlertText>There is no test yet on this repository.</AlertText>
-          <AlertActions>
-            <Button>
-              {(buttonProps) => (
-                <RouterLink to="/" {...buttonProps}>
-                  Back to home
-                </RouterLink>
-              )}
-            </Button>
-          </AlertActions>
+          <AlertText>There is no test on this repository yet.</AlertText>
         </Alert>
       </Container>
     );

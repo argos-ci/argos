@@ -390,7 +390,7 @@ export type Test = Node & {
   muteUntil?: Maybe<Scalars['DateTime']>;
   name: Scalars['String'];
   resolvedDate?: Maybe<Scalars['DateTime']>;
-  screenshot: Screenshot;
+  screenshot?: Maybe<Screenshot>;
   stabilityScore?: Maybe<Scalars['Int']>;
   status: TestStatus;
   totalBuilds: Scalars['Int'];
@@ -680,7 +680,7 @@ export type FlakyTests_Repository_TestsQueryVariables = Exact<{
 }>;
 
 
-export type FlakyTests_Repository_TestsQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', id: string, tests: { __typename?: 'TestConnection', pageInfo: { __typename?: 'PageInfo', totalCount: number, hasNextPage: boolean }, edges: Array<{ __typename?: 'Test', id: string, name: string, buildName: string, status: TestStatus, resolvedDate?: any | null, mute: boolean, muteUntil?: any | null, stabilityScore?: number | null, lastSeen?: any | null, unstable: boolean, totalBuilds: number, dailyChanges: Array<{ __typename?: 'dailyCount', date: any, count: number }>, screenshot: { __typename?: 'Screenshot', id: string, url: string, width?: number | null, height?: number | null } }> } } | null };
+export type FlakyTests_Repository_TestsQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', id: string, tests: { __typename?: 'TestConnection', pageInfo: { __typename?: 'PageInfo', totalCount: number, hasNextPage: boolean }, edges: Array<{ __typename?: 'Test', id: string, name: string, buildName: string, status: TestStatus, resolvedDate?: any | null, mute: boolean, muteUntil?: any | null, stabilityScore?: number | null, lastSeen?: any | null, unstable: boolean, totalBuilds: number, dailyChanges: Array<{ __typename?: 'dailyCount', date: any, count: number }>, screenshot?: { __typename?: 'Screenshot', id: string, url: string, width?: number | null, height?: number | null } | null }> } } | null };
 
 export type MuteTestsMutationVariables = Exact<{
   ids: Array<Scalars['String']> | Scalars['String'];

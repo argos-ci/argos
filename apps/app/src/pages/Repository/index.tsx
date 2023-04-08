@@ -29,6 +29,7 @@ const RepositoryTabs = () => {
     <>
       <TabLinkList state={tab} aria-label="Sections">
         <TabLink to="">Builds</TabLink>
+        <TabLink to="tests">Tests</TabLink>
         <TabLink to="settings">Settings</TabLink>
       </TabLinkList>
       <TabLinkPanel state={tab} as={Main} tabId={tab.selectedId || null}>
