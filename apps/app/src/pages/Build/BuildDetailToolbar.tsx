@@ -164,7 +164,7 @@ export const BuildDetailToolbar = memo(
           <FlakyChip
             test={test}
             className="mt-0.5"
-            link={`${ownerLogin}/${repositoryName}/tests`}
+            link={`/${ownerLogin}/${repositoryName}/tests`}
           />
         </div>
         <div className="flex gap-2">
