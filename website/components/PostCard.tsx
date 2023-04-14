@@ -2,18 +2,8 @@ import type { ComponentProps, ReactNode } from "react";
 import Image, { ImageProps } from "next/image";
 import { clsx } from "clsx";
 
-export const PostCard = ({
-  extended,
-  children,
-}: {
-  extended?: Boolean;
-  children: ReactNode;
-}) => (
-  <div
-    className={clsx("rounded-lg shadow-md text-left", extended && "col-span-2")}
-  >
-    {children}
-  </div>
+export const PostCard = ({ children }: { children: ReactNode }) => (
+  <div className={clsx("rounded-lg shadow-md text-left")}>{children}</div>
 );
 
 export interface PostCardImageProps extends ImageProps {

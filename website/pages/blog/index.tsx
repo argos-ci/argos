@@ -52,9 +52,9 @@ const Page: NextPage<{
           All the latest Argos news, straight from the team.
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-20 gap-x-16 mt-12">
-        <Link href={`/blog/${firstArticle.slug}`} className="contents">
-          <PostCard extended>
+      <div className="grid grid-cols-2 gap-y-20 gap-x-16 mt-12">
+        <Link href={`/blog/${firstArticle.slug}`} className="col-span-2">
+          <PostCard>
             <PostCardImage
               width={firstArticle.image.width}
               height={firstArticle.image.height}
@@ -84,7 +84,7 @@ const Page: NextPage<{
             <Link
               key={article.slug}
               href={`/blog/${article.slug}`}
-              className="contents"
+              className="col-span-2 md:col-span-1"
             >
               <PostCard>
                 <PostCardImage
