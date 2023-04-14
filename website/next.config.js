@@ -38,7 +38,7 @@ const nextConfig = withMDX({
     return [
       {
         source: "/docs/:path*",
-        destination: "https://argos-docs.netlify.app/:path*", // The :path parameter is used here so will not be automatically passed in the query
+        destination: "https://argos-docs.vercel.app/:path*", // The :path parameter is used here so will not be automatically passed in the query
       },
     ];
   },
