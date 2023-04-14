@@ -40,6 +40,13 @@ viewportPresets.forEach((viewportPreset) => {
           `
           );
         });
+        cy.waitUntil(() =>
+          cy.document().then((document) => {
+            const allImages = Array.from(document.images);
+            allImages.forEach((img) => (img.loading = "eager"));
+            return allImages.every((img) => img.complete);
+          })
+        );
         cy.argosScreenshot(name);
       });
     });
