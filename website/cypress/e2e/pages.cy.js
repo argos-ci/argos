@@ -40,14 +40,18 @@ viewportPresets.forEach((viewportPreset) => {
           `
           );
         });
-        cy.get("img", { includeShadowDom: true })
-          .filter("[src]")
-          .filter(":visible")
-          .should(($imgs) =>
-            $imgs.map((i, /** @type {HTMLImageElement} */ img) =>
-              expect(img.naturalWidth).to.be.greaterThan(0)
-            )
-          );
+        cy.waitUntil(() =>
+          cy.document().then((document) => {
+            const allImages = Array.from(document.images);
+            allImages.forEach((img) => {
+              img.loading = "eager";
+              img.decoding = "sync";
+            });
+            return allImages.every(
+              (img) => img.complete && img.naturalWidth > 0
+            );
+          })
+        );
         cy.argosScreenshot(name);
       });
     });
