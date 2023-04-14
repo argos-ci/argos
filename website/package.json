@@ -32,7 +32,6 @@
     "@argos-ci/cli": "^0.4.4",
     "@argos-ci/cypress": "^0.0.6",
     "@babel/core": "^7.21.4",
-    "@netlify/plugin-nextjs": "^4.34.0",
     "@tailwindcss/typography": "^0.5.9",
     "@types/node": "^18.15.11",
     "@types/react": "^18.0.35",
