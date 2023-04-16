@@ -260,7 +260,7 @@ const ConsumptionDetail = ({
         {repositories.map((repo) => (
           <li
             key={repo.id}
-            className="flex items-center justify-between border-b border-b-border py-1 px-1 last:border-b-0"
+            className="flex items-center justify-between border-b border-b-border px-1 py-1 last:border-b-0"
           >
             <span>{repo.name}</span>
             <span className="tabular-nums">

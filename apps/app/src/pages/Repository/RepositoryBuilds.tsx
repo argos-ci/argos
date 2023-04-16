@@ -76,7 +76,7 @@ const BuildRow = memo(
     return (
       <RouterLink
         to={`/${ownerLogin}/${repositoryName}/builds/${build.number}`}
-        className="flex items-center gap-4 border-b border-b-border py-2 px-4 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
+        className="flex items-center gap-4 border-b border-b-border px-4 py-2 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
       >
         <div className="w-[7ch] flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-on-light">
           <span>#{build.number}</span>

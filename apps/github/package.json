@@ -14,14 +14,14 @@
     }
   },
   "dependencies": {
-    "@argos-ci/config": "*",
-    "@argos-ci/database": "*",
-    "@octokit/auth-app": "^4.0.7",
-    "@octokit/auth-oauth-app": "^5.0.4",
-    "@octokit/rest": "^19.0.5"
+    "@argos-ci/config": "workspace:*",
+    "@argos-ci/database": "workspace:*",
+    "@octokit/auth-app": "^4.0.9",
+    "@octokit/auth-oauth-app": "^5.0.5",
+    "@octokit/rest": "^19.0.7"
   },
   "devDependencies": {
-    "nock": "^13.2.9"
+    "nock": "^13.3.0"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",

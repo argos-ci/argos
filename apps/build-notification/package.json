@@ -5,11 +5,11 @@
   "type": "module",
   "exports": "./dist/index.js",
   "dependencies": {
-    "@argos-ci/config": "*",
-    "@argos-ci/database": "*",
-    "@argos-ci/github": "*",
-    "@argos-ci/job-core": "*",
-    "@octokit/rest": "^19.0.5"
+    "@argos-ci/config": "workspace:*",
+    "@argos-ci/database": "workspace:*",
+    "@argos-ci/github": "workspace:*",
+    "@argos-ci/job-core": "workspace:*",
+    "@octokit/rest": "^19.0.7"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",

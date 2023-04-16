@@ -10,7 +10,8 @@
       "@argos-ci/database/testing": ["./apps/database/src/testing/index.ts"],
       "@argos-ci/github/testing": ["./apps/github/src/testing.ts"]
     },
-    "noEmit": true
+    "noEmit": true,
+    "ignoreDeprecations": "5.0"
   },
   "include": ["apps"],
   "exclude": [

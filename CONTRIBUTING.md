@@ -29,11 +29,11 @@ When adding new features or modifying existing code, please attempt to include t
 ## Branch Structure
 
 All stable releases are tagged ([view tags](https://github.com/argos-ci/argos/tags)).
-At any given time, `master` represents the latest development version of the library.
+At any given time, `main` represents the latest development version of the library.
 
 ## Getting started
 
-Please create a new branch from an up to date master on your fork. (Note, urgent hotfixes should be branched off the latest stable release rather than master)
+Please create a new branch from an up to date `main` on your fork. (Note, urgent hotfixes should be branched off the latest stable release rather than `main`)
 
 1. Fork the argos repository on Github
 2. Clone your fork to your local machine `git clone --depth 1 git@github.com:<yourname>/argos.git`
@@ -45,10 +45,10 @@ If you have an existing local repository, please update it before you start, to 
 
 ```js
 git remote add upstream git@github.com:argos-ci/argos.git
-git checkout master
-git pull upstream master
+git checkout main
+git pull upstream main
 git checkout -b my-topic-branch
-npm install
+pnpm install
 ```
 
 ## Install

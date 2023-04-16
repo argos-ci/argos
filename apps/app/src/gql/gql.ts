@@ -10,7 +10,7 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * 2. It is not minifiable, so the string of a GraphQL query will be multiple times inside the bundle.
  * 3. It does not support dead code elimination, so it will add unused operations.
  *
- * Therefore it is highly recommended to use the babel-plugin for production.
+ * Therefore it is highly recommended to use the babel or swc plugin for production.
  */
 const documents = {
     "\n  query OwnerBreadcrumb_owner($login: String!) {\n    owner(login: $login) {\n      id\n      login\n      name\n    }\n  }\n": types.OwnerBreadcrumb_OwnerDocument,
@@ -51,6 +51,20 @@ const documents = {
     "\n  mutation updateStatusesMutation($ids: [String!]!, $status: TestStatus!) {\n    updateTestStatuses(ids: $ids, status: $status) {\n      ids\n      status\n    }\n  }\n": types.UpdateStatusesMutationDocument,
     "\n  query Repository_repository($ownerLogin: String!, $repositoryName: String!) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      permissions\n    }\n  }\n": types.Repository_RepositoryDocument,
 };
+
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ *
+ *
+ * @example
+ * ```ts
+ * const query = graphql(`query GetUser($id: ID!) { user(id: $id) { name } }`);
+ * ```
+ *
+ * The query argument is unknown!
+ * Please regenerate the types.
+ */
+export function graphql(source: string): unknown;
 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -200,20 +214,6 @@ export function graphql(source: "\n  mutation updateStatusesMutation($ids: [Stri
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query Repository_repository($ownerLogin: String!, $repositoryName: String!) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      permissions\n    }\n  }\n"): (typeof documents)["\n  query Repository_repository($ownerLogin: String!, $repositoryName: String!) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      permissions\n    }\n  }\n"];
-
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- *
- *
- * @example
- * ```ts
- * const query = gql(`query GetUser($id: ID!) { user(id: $id) { name } }`);
- * ```
- *
- * The query argument is unknown!
- * Please regenerate the types.
-**/
-export function graphql(source: string): unknown;
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

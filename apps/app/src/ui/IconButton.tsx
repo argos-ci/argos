@@ -5,11 +5,13 @@ import { forwardRef } from "react";
 
 export type IconButtonColor = "danger" | "success" | "neutral";
 
-export interface IconButtonProps
-  extends Omit<AriakitButtonProps<"button">, "className" | "children"> {
+export type IconButtonProps = Omit<
+  AriakitButtonProps<"button">,
+  "className" | "children"
+> & {
   color?: IconButtonColor;
   children: React.ReactNode;
-}
+};
 
 const colorClassNames: Record<IconButtonColor, string> = {
   neutral:

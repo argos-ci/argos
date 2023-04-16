@@ -9,7 +9,7 @@
     "dev": "npm run build -- --watch"
   }, 
   "dependencies": {
-    "convict": "^6.2.3",
+    "convict": "^6.2.4",
     "dotenv": "^16.0.3"
   },
   "devDependencies": {

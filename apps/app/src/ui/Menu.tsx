@@ -54,7 +54,7 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
         className={clsx(
           pointerClassName,
           selectedClassName,
-          "flex items-center rounded py-1.5 px-3 text-sm text-menu-on transition hover:bg-menu-item-hover-bg hover:text-menu-hover-on focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-70"
+          "flex items-center rounded px-3 py-1.5 text-sm text-menu-on transition hover:bg-menu-item-hover-bg hover:text-menu-hover-on focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-70"
         )}
         {...props}
       />

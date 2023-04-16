@@ -199,7 +199,9 @@ describe("#createBuildDiffs", () => {
         branch: "master",
         repositoryId: repository.id,
       });
-      await build.$query().patch({ baseScreenshotBucketId: baseBucket.id });
+      await build
+        .$query()
+        .patchAndFetch({ baseScreenshotBucketId: baseBucket.id });
       // @ts-ignore
       [
         classicDiffBaseScreenshot,
