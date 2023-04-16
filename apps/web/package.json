@@ -11,6 +11,7 @@
     "@argos-ci/database": "workspace:*",
     "@argos-ci/github": "workspace:*",
     "@argos-ci/graphql": "workspace:*",
+    "@argos-ci/job-core": "workspace:*",
     "@argos-ci/logger": "workspace:*",
     "@argos-ci/storage": "workspace:*",
     "@argos-ci/synchronize": "workspace:*",

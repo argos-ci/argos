@@ -242,6 +242,6 @@ export const createBuildDiffs = async (build: Build) => {
 
     if (allInserts.length === 0) return [];
 
-    return ScreenshotDiff.query(trx).insert(allInserts);
+    return ScreenshotDiff.query(trx).insertAndFetch(allInserts);
   });
 };

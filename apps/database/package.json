@@ -42,7 +42,6 @@
   "devDependencies": {
     "@types/factory-girl": "^5.0.8",
     "factory-girl": "^5.0.4",
-    "factory-girl-objection-adapter": "^1.0.0",
     "knex-scripts": "^0.3.6",
     "moment": "^2.29.4"
   }

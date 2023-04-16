@@ -1,7 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { factory } from "factory-girl";
-// @ts-ignore
-import ObjectionAdapter from "factory-girl-objection-adapter";
 import moment from "moment";
 import { randomBytes } from "node:crypto";
 
@@ -23,6 +21,35 @@ import {
   UserOrganizationRight,
   UserRepositoryRight,
 } from "../models/index.js";
+import type { ModelClass, Model, PartialModelObject } from "objection";
+
+class ObjectionAdapter {
+  build<TModel extends Model>(Model: ModelClass<TModel>, json: object) {
+    return Model.fromJson(json, { skipValidation: true });
+  }
+
+  async save<TModel extends Model>(
+    insert: PartialModelObject<TModel>,
+    Model: ModelClass<TModel>
+  ) {
+    return Model.query().insertAndFetch(insert);
+  }
+
+  async destroy<TModel extends Model>(
+    attrs: { id: number },
+    Model: ModelClass<TModel>
+  ) {
+    return Model.query().deleteById(attrs.id);
+  }
+
+  get<TModel extends Model>(model: TModel, key: keyof TModel) {
+    return model[key];
+  }
+
+  set<TModel extends Model>(attrs: PartialModelObject<TModel>, model: TModel) {
+    return Object.assign(model, attrs);
+  }
+}
 
 factory.setAdapter(new ObjectionAdapter());
 

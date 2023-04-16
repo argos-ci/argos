@@ -103,9 +103,6 @@ importers:
       '@sentry/browser':
         specifier: ^7.48.0
         version: 7.48.0
-      '@tailwindcss/line-clamp':
-        specifier: ^0.4.4
-        version: 0.4.4(tailwindcss@3.3.1)
       '@tanstack/react-virtual':
         specifier: ^3.0.0-beta.23
         version: 3.0.0-beta.23(react@18.2.0)
@@ -292,9 +289,6 @@ importers:
       factory-girl:
         specifier: ^5.0.4
         version: 5.0.4
-      factory-girl-objection-adapter:
-        specifier: ^1.0.0
-        version: 1.0.0(factory-girl@5.0.4)
       knex-scripts:
         specifier: ^0.3.6
         version: 0.3.6
@@ -375,6 +369,9 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1(knex@2.4.2)
     devDependencies:
+      '@argos-ci/job-core':
+        specifier: workspace:*
+        version: link:../job-core
       '@types/express':
         specifier: ^4.17.17
         version: 4.17.17
@@ -583,6 +580,9 @@ importers:
       '@argos-ci/graphql':
         specifier: workspace:*
         version: link:../graphql
+      '@argos-ci/job-core':
+        specifier: workspace:*
+        version: link:../job-core
       '@argos-ci/logger':
         specifier: workspace:*
         version: link:../logger
@@ -4323,14 +4323,6 @@ packages:
       defer-to-connect: 2.0.1
     dev: true
 
-  /@tailwindcss/line-clamp@0.4.4(tailwindcss@3.3.1):
-    resolution: {integrity: sha512-5U6SY5z8N42VtrCrKlsTAA35gy2VSyYtHWCsg1H87NU1SXnEfekTVlrga9fzUDrrHcGi2Lb5KenUWb4lRQT5/g==}
-    peerDependencies:
-      tailwindcss: '>=2.0.0 || >=3.0.0 || >=3.0.0-alpha.1'
-    dependencies:
-      tailwindcss: 3.3.1(postcss@8.4.21)(ts-node@10.9.1)
-    dev: true
-
   /@tanstack/react-virtual@3.0.0-beta.23(react@18.2.0):
     resolution: {integrity: sha512-FurqZJD7oSXLtL5NP0YQKXNEY+2qczXjzxmxkD51ZO8ykyr2z62IRNfvpOyly2CPLg+M346mA/Ul2hlx4R3KPw==}
     engines: {node: '>=12'}
@@ -7590,14 +7582,6 @@ packages:
   /extract-files@11.0.0:
     resolution: {integrity: sha512-FuoE1qtbJ4bBVvv94CC7s0oTnKUGvQs+Rjf1L2SJFfS+HTVVjhPFtehPdQ0JiGPqVNfSSZvL5yzHHQq2Z4WNhQ==}
     engines: {node: ^12.20 || >= 14.13}
-    dev: true
-
-  /factory-girl-objection-adapter@1.0.0(factory-girl@5.0.4):
-    resolution: {integrity: sha512-Yb46hZdlRtY8wHK00Z9wZVt6UyzEZyfXRphPpkxe/YlBxYradnmvJriBnI+l6HCvbzviCgS/aAX39QsgzSWhFw==}
-    peerDependencies:
-      factory-girl: '>=5.0.2'
-    dependencies:
-      factory-girl: 5.0.4
     dev: true
 
   /factory-girl@5.0.4:
