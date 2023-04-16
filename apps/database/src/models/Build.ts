@@ -67,7 +67,7 @@ export class Build extends Model {
   static override get relationMappings(): RelationMappings {
     return {
       baseScreenshotBucket: {
-        relation: Model.BelongsToOneRelation,
+        relation: Model.HasOneRelation,
         modelClass: ScreenshotBucket,
         join: {
           from: "builds.baseScreenshotBucketId",
@@ -75,7 +75,7 @@ export class Build extends Model {
         },
       },
       compareScreenshotBucket: {
-        relation: Model.BelongsToOneRelation,
+        relation: Model.HasOneRelation,
         modelClass: ScreenshotBucket,
         join: {
           from: "builds.compareScreenshotBucketId",
