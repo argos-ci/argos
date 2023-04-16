@@ -7,6 +7,9 @@ importers:
       '@argos-ci/cli':
         specifier: latest
         version: 0.4.4
+      '@argos-ci/config':
+        specifier: workspace:*
+        version: link:apps/config
       '@argos-ci/playwright':
         specifier: ^0.0.4
         version: 0.0.4
@@ -88,6 +91,9 @@ importers:
       '@graphql-codegen/client-preset':
         specifier: ^3.0.0
         version: 3.0.0(graphql@16.6.0)
+      '@graphql-typed-document-node/core':
+        specifier: ^3.0.0
+        version: 3.2.0(graphql@16.6.0)
       '@heroicons/react':
         specifier: ^2.0.17
         version: 2.0.17(react@18.2.0)
@@ -103,6 +109,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.0.0-beta.23
         version: 3.0.0-beta.23(react@18.2.0)
+      '@types/node':
+        specifier: ^18.15.11
+        version: 18.15.11
       '@types/react':
         specifier: ^18.0.35
         version: 18.0.35
@@ -223,6 +232,9 @@ importers:
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
+      objection:
+        specifier: ^3.0.1
+        version: 3.0.1(knex@2.4.2)
     devDependencies:
       nock:
         specifier: ^13.3.0
@@ -359,10 +371,19 @@ importers:
       moment:
         specifier: ^2.29.4
         version: 2.29.4
+      objection:
+        specifier: ^3.0.1
+        version: 3.0.1(knex@2.4.2)
     devDependencies:
+      '@types/express':
+        specifier: ^4.17.17
+        version: 4.17.17
       '@types/graphql-iso-date':
         specifier: ^3.4.0
         version: 3.4.0
+      '@types/supertest':
+        specifier: ^2.0.12
+        version: 2.0.12
       supertest:
         specifier: ^6.3.3
         version: 6.3.3
@@ -381,6 +402,9 @@ importers:
       amqplib:
         specifier: ^0.10.3
         version: 0.10.3
+      objection:
+        specifier: ^3.0.1
+        version: 3.0.1(knex@2.4.2)
     devDependencies:
       '@types/amqplib':
         specifier: ^0.10.1
@@ -445,9 +469,15 @@ importers:
       '@argos-ci/storage':
         specifier: workspace:*
         version: link:../storage
+      '@aws-sdk/client-s3':
+        specifier: ^3.312.0
+        version: 3.312.0
       '@octokit/rest':
         specifier: ^19.0.7
         version: 19.0.7
+      objection:
+        specifier: ^3.0.1
+        version: 3.0.1(knex@2.4.2)
       odiff-bin:
         specifier: ^2.6.1
         version: 2.6.1
@@ -492,9 +522,15 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1
     devDependencies:
+      '@types/mime':
+        specifier: ^3.0.1
+        version: 3.0.1
       '@types/sharp':
         specifier: ^0.31.1
         version: 0.31.1
+      '@types/tmp':
+        specifier: ^0.2.3
+        version: 0.2.3
       axios:
         specifier: ^1.3.5
         version: 1.3.5
@@ -519,6 +555,9 @@ importers:
       '@octokit/rest':
         specifier: ^19.0.7
         version: 19.0.7
+      '@octokit/webhooks':
+        specifier: ^11.0.0
+        version: 11.0.0
     devDependencies:
       moment:
         specifier: ^2.29.4
@@ -544,6 +583,9 @@ importers:
       '@argos-ci/graphql':
         specifier: workspace:*
         version: link:../graphql
+      '@argos-ci/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@argos-ci/storage':
         specifier: workspace:*
         version: link:../storage
@@ -601,6 +643,9 @@ importers:
       morgan:
         specifier: ^1.10.0
         version: 1.10.0
+      objection:
+        specifier: ^3.0.1
+        version: 3.0.1(knex@2.4.2)
       redis:
         specifier: ^4.6.5
         version: 4.6.5
@@ -611,9 +656,21 @@ importers:
       '@types/auth-header':
         specifier: ^1.0.2
         version: 1.0.2
+      '@types/body-parser':
+        specifier: ^1.19.2
+        version: 1.19.2
       '@types/compression':
         specifier: ^1.7.2
         version: 1.7.2
+      '@types/cors':
+        specifier: ^2.8.13
+        version: 2.8.13
+      '@types/express':
+        specifier: ^4.17.17
+        version: 4.17.17
+      '@types/jsonwebtoken':
+        specifier: ^9.0.1
+        version: 9.0.1
       '@types/lodash-es':
         specifier: ^4.17.7
         version: 4.17.7
@@ -4440,6 +4497,12 @@ packages:
     resolution: {integrity: sha512-vt+kDhq/M2ayberEtJcIN/hxXy1Pk+59g2FV/ZQceeaTyCtCucjL2Q7FXlFjtWn4n15KCr1NE2lNNFhp0lEThw==}
     dev: false
 
+  /@types/cors@2.8.13:
+    resolution: {integrity: sha512-RG8AStHlUiV5ysZQKq97copd2UmVYw3/pRMLefISZ3S1hK104Cwm7iLQ3fTKx+lsUH2CE8FlLaYeEA2LSeqYUA==}
+    dependencies:
+      '@types/node': 18.15.11
+    dev: true
+
   /@types/ejs@3.1.2:
     resolution: {integrity: sha512-ZmiaE3wglXVWBM9fyVC17aGPkLo/UgaOjEiI2FXQfyczrCefORPxIe+2dVmnmk3zkVIbizjrlQzmPGhSYGXG5g==}
     dev: false
@@ -4476,13 +4539,12 @@ packages:
       '@types/node': 18.15.11
       '@types/qs': 6.9.7
       '@types/range-parser': 1.2.4
-    dev: true
 
   /@types/express@4.17.13:
     resolution: {integrity: sha512-6bSZTPaTIACxn48l50SR+axgrqm6qXFIxrdAKaG6PaJk3+zuUr35hBlgT7vOmJcum+OEaIBLtHV/qloEAFITeA==}
     dependencies:
       '@types/body-parser': 1.19.2
-      '@types/express-serve-static-core': 4.17.29
+      '@types/express-serve-static-core': 4.17.33
       '@types/qs': 6.9.7
       '@types/serve-static': 1.15.1
     dev: false
@@ -4565,7 +4627,6 @@ packages:
     resolution: {integrity: sha512-c5ltxazpWabia/4UzhIoaDcIza4KViOQhdbjRlfcIGVnsE3c3brkz9Z+F/EeJIECOQP7W7US2hNE930cWWkPiw==}
     dependencies:
       '@types/node': 18.15.11
-    dev: false
 
   /@types/keyv@3.1.4:
     resolution: {integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==}

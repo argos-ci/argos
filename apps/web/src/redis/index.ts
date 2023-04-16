@@ -29,7 +29,7 @@ const redisLock = createRedisLock(redisClient);
 let status: "connecting" | "connected" | "disconnecting" | "disconnected" =
   "disconnected";
 let connection: Promise<void> | null = null;
-let disconnection: Promise<void> | null = null;
+let disconnection: Promise<string> | null = null;
 
 export const getRedisLock = async () => {
   switch (status) {

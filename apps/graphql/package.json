@@ -19,10 +19,13 @@
     "graphql": "^16.6.0",
     "graphql-iso-date": "^3.6.1",
     "graphql-tag": "^2.12.6",
-    "moment": "^2.29.4"
+    "moment": "^2.29.4",
+    "objection": "^3.0.1"
   },
   "devDependencies": {
+    "@types/express": "^4.17.17",
     "@types/graphql-iso-date": "^3.4.0",
+    "@types/supertest": "^2.0.12",
     "supertest": "^6.3.3"
   },
   "overrides": {

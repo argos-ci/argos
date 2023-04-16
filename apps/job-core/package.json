@@ -8,7 +8,8 @@
     "@argos-ci/config": "workspace:*",
     "@argos-ci/logger": "workspace:*",
     "@sentry/node": "^7.48.0",
-    "amqplib": "^0.10.3"
+    "amqplib": "^0.10.3",
+    "objection": "^3.0.1"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.1"

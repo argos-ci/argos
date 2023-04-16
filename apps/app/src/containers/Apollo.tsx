@@ -45,7 +45,10 @@ export const ApolloInitializer = (props: { children: React.ReactNode }) => {
   );
 };
 
-export function useQuery<TData = any, TVariables = OperationVariables>(
+export function useQuery<
+  TData = any,
+  TVariables extends OperationVariables = OperationVariables
+>(
   query: DocumentNode | TypedDocumentNode<TData, TVariables>,
   options?: QueryHookOptions<TData, TVariables>
 ): QueryResult<TData, TVariables> {
@@ -56,7 +59,10 @@ export function useQuery<TData = any, TVariables = OperationVariables>(
   return { loading, data, ...others };
 }
 
-export function Query<TData = any, TVariables = OperationVariables>({
+export function Query<
+  TData = any,
+  TVariables extends OperationVariables = OperationVariables
+>({
   fallback = null,
   children,
   query,

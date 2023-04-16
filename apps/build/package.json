@@ -17,7 +17,8 @@
     "@argos-ci/logger": "workspace:*",
     "@argos-ci/screenshot-diff": "workspace:*",
     "@octokit/rest": "^19.0.7",
-    "lodash-es": "^4.17.21"
+    "lodash-es": "^4.17.21",
+    "objection": "^3.0.1"
   },
   "devDependencies": {
     "nock": "^13.3.0"

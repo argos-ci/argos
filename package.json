@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@argos-ci/cli": "latest",
+    "@argos-ci/config": "workspace:*",
     "@argos-ci/playwright": "^0.0.4",
     "@jest/globals": "^29.5.0",
     "@playwright/test": "^1.32.3",
