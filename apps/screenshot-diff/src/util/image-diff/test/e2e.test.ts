@@ -4,8 +4,7 @@ import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-// @ts-ignore
-import rimraf from "rimraf";
+import { rimraf } from "rimraf";
 
 import { LocalImageFile } from "@argos-ci/storage";
 

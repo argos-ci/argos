@@ -6,10 +6,13 @@ importers:
     devDependencies:
       '@argos-ci/cli':
         specifier: latest
-        version: 0.4.3
+        version: 0.4.4
       '@argos-ci/playwright':
         specifier: ^0.0.4
         version: 0.0.4
+      '@jest/globals':
+        specifier: ^29.5.0
+        version: 29.5.0
       '@playwright/test':
         specifier: ^1.32.3
         version: 1.32.3
@@ -121,6 +124,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.14
         version: 10.4.14(postcss@8.4.21)
+      axios:
+        specifier: ^1.3.5
+        version: 1.3.5
       clsx:
         specifier: ^1.2.1
         version: 1.2.1
@@ -380,7 +386,11 @@ importers:
         specifier: ^0.10.1
         version: 0.10.1
 
-  apps/logger: {}
+  apps/logger:
+    dependencies:
+      '@sentry/node':
+        specifier: ^7.48.0
+        version: 7.48.0
 
   apps/processes:
     dependencies:
@@ -448,6 +458,9 @@ importers:
       '@types/tmp':
         specifier: ^0.2.3
         version: 0.2.3
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.0
 
   apps/sentry-node:
     dependencies:
@@ -482,6 +495,9 @@ importers:
       '@types/sharp':
         specifier: ^0.31.1
         version: 0.31.1
+      axios:
+        specifier: ^1.3.5
+        version: 1.3.5
 
   apps/synchronize:
     dependencies:
@@ -556,7 +572,7 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       axios:
-        specifier: 1.3.5
+        specifier: ^1.3.5
         version: 1.3.5
       body-parser:
         specifier: ^1.20.2
@@ -838,12 +854,12 @@ packages:
       - encoding
     dev: true
 
-  /@argos-ci/cli@0.4.3:
-    resolution: {integrity: sha512-61oP/CrUpxfuEdW+peTnJzr9+JUOAbLi4JDBRJnBHIRinrIjkJKwQmJoSL/qFVdnd8HV8gtSf5cl1I/4StULAA==}
+  /@argos-ci/cli@0.4.4:
+    resolution: {integrity: sha512-qthyP+ZSgbVgJXtBSc+4wKHRsQLAYoyMfgnkZYmfEEiISGmrMClEnZtbZa1KnEZDb8FlBae1RM6AZvjENgP9Og==}
     engines: {node: '>=14.0.0'}
     hasBin: true
     dependencies:
-      '@argos-ci/core': 0.7.3
+      '@argos-ci/core': 0.8.0
       commander: 9.5.0
       ora: 6.3.0
       update-notifier: 6.0.2
@@ -851,8 +867,8 @@ packages:
       - supports-color
     dev: true
 
-  /@argos-ci/core@0.7.3:
-    resolution: {integrity: sha512-JOiV48M3NEXdeQZW0KPHidBPxqVjbJ4YpMhgHDyYrMB/FakvdDJWzHQrKzdGJbnFXCJepYgt7opvOtiJFUevhg==}
+  /@argos-ci/core@0.8.0:
+    resolution: {integrity: sha512-MwCeTos8Fov5V+ybrkcFyMVWgsumDRHUokMOgyYt2gdJ5q0LdEp9wNz0VVIDAGSjyLTTbWqdkVCuaOkw5sz3LQ==}
     engines: {node: '>=14.0.0'}
     dependencies:
       axios: 1.1.2(debug@4.3.4)
@@ -5586,7 +5602,6 @@ packages:
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
-    dev: false
 
   /babel-jest@29.5.0(@babel/core@7.21.4):
     resolution: {integrity: sha512-mA4eCDh5mSo2EcA9xQjVTpmbbNk32Zb3Q3QFQsNhaK56Q+yoXowzFodLux30HRgyOho5rsQ6B0P9QpMkvvnJ0Q==}
@@ -5862,7 +5877,6 @@ packages:
     resolution: {integrity: sha512-XnAIvQ8eM+kC6aULx6wuQiwVsnzsi9d3WxzV3FpWTGA19F621kwdbsAcFKXgKUHZWsy+mY6iL1sHTxWEFCytDA==}
     dependencies:
       balanced-match: 1.0.2
-    dev: false
 
   /braces@2.3.2:
     resolution: {integrity: sha512-aNdbnj9P8PjdXU4ybaWLK2IF3jc/EoDYbC7AazW6to3TRsfXxscC9UXOB5iDiEQrkyIbWp2SLQda4+QAa7nc3w==}
@@ -7962,6 +7976,16 @@ packages:
     resolution: {integrity: sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw==}
     dev: true
 
+  /glob@10.1.0:
+    resolution: {integrity: sha512-daGobsYuT0G4hng24B5LbeLNvwKZYRhWyDl3RvqqAGZjJnCopWWK6PWnAGBY1M/vdA63QE+jddhZcYp+74Bq6Q==}
+    engines: {node: '>=16 || 14 >=14.17'}
+    dependencies:
+      fs.realpath: 1.0.0
+      minimatch: 9.0.0
+      minipass: 5.0.0
+      path-scurry: 1.7.0
+    dev: true
+
   /glob@7.1.6:
     resolution: {integrity: sha512-LwaxwyZ72Lk7vZINtNNrywX0ZuLyStrdDtabefZKAY5ZGJhVtgdznluResxNmPitE0SAO+O26sWTHeKSI2wMBA==}
     dependencies:
@@ -9857,6 +9881,11 @@ packages:
     engines: {node: '>=12'}
     dev: false
 
+  /lru-cache@9.0.3:
+    resolution: {integrity: sha512-cyjNRew29d4kbgnz1sjDqxg7qg8NW4s+HQzCGjeon7DV5T2yDije16W9HaUFV1dhVEMh+SjrOcK0TomBmf3Egg==}
+    engines: {node: 14 || >=16.14}
+    dev: true
+
   /lru_map@0.3.3:
     resolution: {integrity: sha512-Pn9cox5CsMYngeDbmChANltQl+5pi6XmTrraMSzhPmMBbmgcxmqWry0U3PGapCU1yB4/LqCcom7qhHZiF/jGfQ==}
     dev: false
@@ -10044,8 +10073,20 @@ packages:
       brace-expansion: 2.0.1
     dev: false
 
+  /minimatch@9.0.0:
+    resolution: {integrity: sha512-0jJj8AvgKqWN05mrwuqi8QYKx1WmYSUoKSxu5Qhs9prezTz10sxAHGNZe9J9cqIJzta8DWsleh2KaVaLl6Ru2w==}
+    engines: {node: '>=16 || 14 >=14.17'}
+    dependencies:
+      brace-expansion: 2.0.1
+    dev: true
+
   /minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
+
+  /minipass@5.0.0:
+    resolution: {integrity: sha512-3FnjYuehv9k6ovOEbyOswadCDPX1piCfhV8ncmYtHOjuPwylVWsghTLo7rabjC3Rx5xD4HDx8Wm1xnMF7S5qFQ==}
+    engines: {node: '>=8'}
+    dev: true
 
   /mixin-deep@1.3.2:
     resolution: {integrity: sha512-WRoDn//mXBiJ1H40rqa3vH0toePwSsGb45iInWlTySa+Uu4k3tYUSxa2v1KqAiLtvlrSzaExqS1gtk96A9zvEA==}
@@ -10666,6 +10707,14 @@ packages:
     engines: {node: '>=0.10.0'}
     dependencies:
       path-root-regex: 0.1.2
+    dev: true
+
+  /path-scurry@1.7.0:
+    resolution: {integrity: sha512-UkZUeDjczjYRE495+9thsgcVgsaCPkaw80slmfVFgllxY+IO8ubTsOpFVjDPROBqJdHfVPUFRHPBV/WciOVfWg==}
+    engines: {node: '>=16 || 14 >=14.17'}
+    dependencies:
+      lru-cache: 9.0.3
+      minipass: 5.0.0
     dev: true
 
   /path-to-regexp@0.1.7:
@@ -11530,6 +11579,14 @@ packages:
     hasBin: true
     dependencies:
       glob: 7.2.3
+
+  /rimraf@5.0.0:
+    resolution: {integrity: sha512-Jf9llaP+RvaEVS5nPShYFhtXIrb3LRKP281ib3So0KkeZKo2wIKyq0Re7TOSwanasA423PSr6CCIL4bP6T040g==}
+    engines: {node: '>=14'}
+    hasBin: true
+    dependencies:
+      glob: 10.1.0
+    dev: true
 
   /run-async@2.4.1:
     resolution: {integrity: sha512-tvVnVv01b8c1RrA6Ep7JkStj85Guv/YrMcwqYQnwjsAS2cTmmPGBBjAjpCW7RrSodNSoE2/qg9O4bceNvUuDgQ==}
