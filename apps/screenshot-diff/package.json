@@ -5,14 +5,14 @@
   "type": "module",
   "exports": "./dist/index.js",
   "dependencies": {
-    "@argos-ci/build-notification": "*",
-    "@argos-ci/config": "*",
-    "@argos-ci/database": "*",
-    "@argos-ci/github": "*",
-    "@argos-ci/job-core": "*",
-    "@argos-ci/storage": "*",
-    "@octokit/rest": "^19.0.5",
-    "odiff-bin": "^2.5.1",
+    "@argos-ci/build-notification": "workspace:*",
+    "@argos-ci/config": "workspace:*",
+    "@argos-ci/database": "workspace:*",
+    "@argos-ci/github": "workspace:*",
+    "@argos-ci/job-core": "workspace:*",
+    "@argos-ci/storage": "workspace:*",
+    "@octokit/rest": "^19.0.7",
+    "odiff-bin": "^2.6.1",
     "tmp": "^0.2.1"
   },
   "devDependencies": {

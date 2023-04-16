@@ -48,7 +48,7 @@ git remote add upstream git@github.com:argos-ci/argos.git
 git checkout main
 git pull upstream main
 git checkout -b my-topic-branch
-npm install
+pnpm install
 ```
 
 ## Install

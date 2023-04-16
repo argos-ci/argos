@@ -5,12 +5,12 @@
   "type": "module",
   "exports": "./dist/index.js",
   "dependencies": {
-    "@argos-ci/config": "*",
-    "@argos-ci/database": "*",
-    "@argos-ci/github": "*",
-    "@argos-ci/job-core": "*",
-    "@argos-ci/logger": "*",
-    "@octokit/rest": "^19.0.5"
+    "@argos-ci/config": "workspace:*",
+    "@argos-ci/database": "workspace:*",
+    "@argos-ci/github": "workspace:*",
+    "@argos-ci/job-core": "workspace:*",
+    "@argos-ci/logger": "workspace:*",
+    "@octokit/rest": "^19.0.7"
   },
   "devDependencies": {
     "moment": "^2.29.4"

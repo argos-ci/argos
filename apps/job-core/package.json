@@ -5,13 +5,13 @@
   "type": "module",
   "exports": "./dist/index.js",
   "dependencies": {
-    "@argos-ci/config": "*",
-    "@argos-ci/logger": "*",
-    "@sentry/node": "^7.23.0",
+    "@argos-ci/config": "workspace:*",
+    "@argos-ci/logger": "workspace:*",
+    "@sentry/node": "^7.48.0",
     "amqplib": "^0.10.3"
   },
   "devDependencies": {
-    "@types/amqplib": "^0.10.0"
+    "@types/amqplib": "^0.10.1"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",

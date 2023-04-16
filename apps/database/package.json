@@ -34,10 +34,10 @@
     "db:reset": "npm run db:drop && npm run db:create && npm run db:migrate:latest"
   },
   "dependencies": {
-    "@argos-ci/config": "*",
-    "knex": "^2.3.0",
+    "@argos-ci/config": "workspace:*",
+    "knex": "^2.4.2",
     "objection": "^3.0.1",
-    "pg": "^8.8.0"
+    "pg": "^8.10.0"
   },
   "devDependencies": {
     "@types/factory-girl": "^5.0.8",
