@@ -251,7 +251,7 @@ const TestRow = memo(({ test }: { test: Test }) => {
         <div className="flex flex-col justify-start gap-1">
           <div className="flex min-h-[1.75rem] items-start gap-2">
             <MuteIndicator test={test} />
-            <div className="mr-2 font-bold line-clamp-2">{test.name}</div>
+            <div className="mr-2 line-clamp-2 font-bold">{test.name}</div>
             <FlakyChip test={test} className="-mt-0.5" />
           </div>
           <div className="flex items-center gap-4 text-sm">

@@ -157,7 +157,7 @@ export const BuildDetailToolbar = memo(
           <MuteIndicator test={test} className="mt-1" />
           <div
             role="heading"
-            className="mr-2 mt-1 text-sm font-medium line-clamp-2"
+            className="mr-2 mt-1 line-clamp-2 text-sm font-medium"
           >
             {name}
           </div>
