@@ -168,7 +168,7 @@ const ReferenceBranchCard = ({ repository }: { repository: Repository }) => {
                 ref={baselineBranchRef}
                 type="text"
                 id="baselineBranch"
-                className="focus:shadow-outline w-full appearance-none rounded border border-border bg-slate-900 py-2 px-3 leading-tight text-on shadow invalid:border-red-800 focus:outline-none"
+                className="focus:shadow-outline w-full appearance-none rounded border border-border bg-slate-900 px-3 py-2 leading-tight text-on shadow invalid:border-red-800 focus:outline-none"
                 name="baselineBranch"
                 placeholder="Branch name"
                 required

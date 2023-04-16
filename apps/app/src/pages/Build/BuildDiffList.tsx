@@ -203,7 +203,7 @@ const FlakyFlag = ({
     <div
       className={clsx(
         colorClassName,
-        "absolute top-3 right-4 z-30 h-4 w-4 opacity-0 transition group-hover/sidebar:opacity-100"
+        "absolute right-4 top-3 z-30 h-4 w-4 opacity-0 transition group-hover/sidebar:opacity-100"
       )}
     >
       <FlakyIcon />

@@ -24,7 +24,7 @@ const jobStatuses = [
   "aborted",
 ] as const;
 
-export type JobStatus = typeof jobStatuses[number];
+export type JobStatus = (typeof jobStatuses)[number];
 
 export const jobModelSchema: JSONSchema = {
   required: ["jobStatus"],

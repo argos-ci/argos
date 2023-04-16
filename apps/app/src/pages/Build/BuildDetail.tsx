@@ -187,7 +187,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
               })}
             />
             <img
-              className="absolute top-0 left-0"
+              className="absolute left-0 top-0"
               alt="Baseline screenshot"
               {...getImgAttributes(diff.baseScreenshot!)}
             />

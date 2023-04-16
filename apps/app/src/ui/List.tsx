@@ -24,7 +24,7 @@ export const ListHeaders = ({
   return (
     <div
       className={clsx(
-        "flex h-11 items-center gap-4 border-b border-b-border bg-slate-900 py-2 px-4 text-sm",
+        "flex h-11 items-center gap-4 border-b border-b-border bg-slate-900 px-4 py-2 text-sm",
         className
       )}
       {...props}
@@ -58,7 +58,7 @@ export const ListRow = ({
     <div
       className={clsx(
         clickableClassName,
-        "flex items-center gap-4 border-b border-b-border py-2 px-4 text-sm group-last:border-b-transparent",
+        "flex items-center gap-4 border-b border-b-border px-4 py-2 text-sm group-last:border-b-transparent",
         className
       )}
       {...props}

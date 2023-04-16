@@ -41,8 +41,8 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(
         ref={ref}
         className={clsx(
           colorClassName,
-          scale === "sm" && "py-1 px-3 text-xs",
-          scale === "md" && "py-2 px-4 text-sm",
+          scale === "sm" && "px-3 py-1 text-xs",
+          scale === "md" && "px-4 py-2 text-sm",
           "no-wrap inline-flex select-none items-center gap-2 whitespace-nowrap rounded-chip border px-4 py-2 font-medium leading-4"
         )}
         {...props}
