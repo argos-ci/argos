@@ -111,16 +111,19 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
         with:
-          fetch-depth: 2
+          version: 8
 
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Setup
         run: npm run setup
