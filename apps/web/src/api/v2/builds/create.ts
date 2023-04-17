@@ -1,13 +1,11 @@
 import express, { Router } from "express";
 // @ts-ignore
 import { HttpError } from "express-err";
-import type { TransactionOrKnex } from "objection";
 
-import { pushBuildNotification } from "@argos-ci/build-notification";
 import config from "@argos-ci/config";
 import { transaction } from "@argos-ci/database";
 import type { Repository } from "@argos-ci/database/models";
-import { Account, Build, ScreenshotBucket } from "@argos-ci/database/models";
+import { Build } from "@argos-ci/database/models";
 import { s3 as getS3, getSignedPutObjectUrl } from "@argos-ci/storage";
 
 import { SHA1_REGEX_STR, SHA256_REGEX_STR } from "../../../constants.js";
@@ -15,6 +13,7 @@ import { repoAuth } from "../../../middlewares/repoAuth.js";
 import { validate } from "../../../middlewares/validate.js";
 import { getRedisLock } from "../../../redis/index.js";
 import { asyncHandler } from "../../../util.js";
+import { createBuild, getBuildName } from "../util.js";
 import { getUnknownScreenshotKeys } from "./util.js";
 
 const router = Router();
@@ -72,30 +71,6 @@ type CreateRequest = express.Request<
   }
 > & { authRepository: Repository };
 
-const getBuildName = (req: CreateRequest) => req.body.name || "default";
-
-const getBucketData = (req: CreateRequest) => {
-  return {
-    name: getBuildName(req),
-    commit: req.body.commit,
-    branch: req.body.branch,
-    repositoryId: req.authRepository.id,
-  };
-};
-
-const getBuildData = (req: CreateRequest) => {
-  const parallel = req.body.parallel;
-  return {
-    jobStatus: "pending" as const,
-    baseScreenshotBucketId: null,
-    externalId: parallel ? req.body.parallelNonce ?? null : null,
-    batchCount: parallel ? 0 : null,
-    repositoryId: req.authRepository.id,
-    name: getBuildName(req),
-    prNumber: req.body.prNumber ?? null,
-  };
-};
-
 const getScreenshots = async (keys: string[]) => {
   const unknownKeys = await getUnknownScreenshotKeys(keys);
   const s3 = getS3();
@@ -116,47 +91,6 @@ const getScreenshots = async (keys: string[]) => {
   }));
 };
 
-const createBuild = async ({
-  req,
-  trx,
-}: {
-  req: CreateRequest;
-  trx?: TransactionOrKnex;
-}) => {
-  if (req.authRepository.private || req.authRepository.forcedPrivate) {
-    const account = await Account.getAccount(req.authRepository);
-    const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
-    if (hasExceedLimit) {
-      throw new HttpError(
-        402,
-        `Build rejected for insufficient credit. Please upgrade Argos plan.`
-      );
-    }
-  }
-
-  return transaction(trx, async (trx) => {
-    const bucketData = {
-      ...getBucketData(req),
-      complete: false,
-    };
-    const bucket = await ScreenshotBucket.query(trx).insertAndFetch(bucketData);
-
-    const buildData = {
-      ...getBuildData(req),
-      compareScreenshotBucketId: bucket.id,
-    };
-    const build = await Build.query(trx).insertAndFetch(buildData);
-
-    await pushBuildNotification({
-      buildId: build.id,
-      type: "queued",
-      trx,
-    });
-
-    return build;
-  });
-};
-
 const handleCreateSingle = async ({ req }: { req: CreateRequest }) => {
   const screenshots = await getScreenshots(req.body.screenshotKeys);
   const build = await createBuild({ req });
@@ -171,7 +105,7 @@ const handleCreateParallel = async ({ req }: { req: CreateRequest }) => {
     );
   }
   const screenshots = await getScreenshots(req.body.screenshotKeys);
-  const buildName = getBuildName(req);
+  const buildName = getBuildName(req.body.name);
   const parallelNonce = req.body.parallelNonce;
 
   const lockKey = `${req.authRepository.id}:${req.body.commit}:${buildName}:${parallelNonce}`;
@@ -183,7 +117,7 @@ const handleCreateParallel = async ({ req }: { req: CreateRequest }) => {
         .findOne({
           "builds.repositoryId": req.authRepository.id,
           externalId: parallelNonce,
-          name: getBuildName(req),
+          name: getBuildName(req.body.name),
         });
 
       if (existingBuild) {

@@ -2,12 +2,13 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import {
+  JobStatus,
   jobModelSchema,
   mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
-import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { Build } from "./Build.js";
+import { ScreenshotBucket } from "./ScreenshotBucket.js";
 
 export class Crawl extends Model {
   static override tableName = "crawls";
@@ -21,6 +22,7 @@ export class Crawl extends Model {
     },
   });
 
+  jobStatus!: JobStatus;
   buildId!: string;
   screenshotBucketId!: string;
   baseUrl!: string;
