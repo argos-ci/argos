@@ -6,3 +6,4 @@ node_modules/
 /examples
 # Generated
 apps/app/src/gql
+.cache
