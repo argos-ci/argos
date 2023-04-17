@@ -8,10 +8,11 @@ import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 const useLoginUrl = (redirect: string | null | undefined) => {
   const { origin } = window.location;
   const { pathname } = useLocation();
-  return `${config.get(
-    "github.loginUrl"
-  )}&redirect_uri=${origin}/auth/github/callback?r=${encodeURIComponent(
+  const callbackUrl = `${origin}/auth/github/callback?r=${encodeURIComponent(
     redirect ?? pathname
+  )}`;
+  return `${config.get("github.loginUrl")}&redirect_uri=${encodeURIComponent(
+    callbackUrl
   )}`;
 };
 

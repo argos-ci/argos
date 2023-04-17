@@ -11,6 +11,7 @@ import { Account } from "./Account.js";
 import { Build } from "./Build.js";
 import { GithubRepository } from "./GithubRepository.js";
 import type { User } from "./User.js";
+import { VercelProject } from "./VercelProject.js";
 
 export class Project extends Model {
   static override tableName = "projects";
@@ -24,6 +25,7 @@ export class Project extends Model {
       baselineBranch: { type: ["null", "string"] },
       accountId: { type: "string" },
       githubRepositoryId: { type: ["null", "string"] },
+      vercelProjectId: { type: ["null", "string"] },
     },
   });
 
@@ -33,6 +35,7 @@ export class Project extends Model {
   baselineBranch!: string | null;
   accountId!: string;
   githubRepositoryId!: string | null;
+  vercelProjectId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -60,12 +63,21 @@ export class Project extends Model {
           to: "github_repositories.id",
         },
       },
+      vercelProject: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: VercelProject,
+        join: {
+          from: "projects.vercelProjectId",
+          to: "vercel_projects.id",
+        },
+      },
     };
   }
 
   builds?: Build[];
   account?: Account;
   githubRepository?: GithubRepository | null;
+  vercelProject?: VercelProject | null;
 
   override async $beforeInsert(queryContext: QueryContext) {
     await super.$beforeInsert(queryContext);

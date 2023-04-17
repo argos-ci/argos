@@ -10,6 +10,7 @@ import {
   Screenshot,
   ScreenshotDiff,
   Test,
+  User,
 } from "@argos-ci/database/models";
 import { getTokenOctokit } from "@argos-ci/github";
 
@@ -77,12 +78,95 @@ export const typeDefs = gql`
   }
 
   extend type Mutation {
-    "Create a project"
+    "Create a Project"
     createProject(input: CreateProjectInput!): Project!
-    "Update project"
+    "Update Project"
     updateProject(input: UpdateProjectInput): Project!
   }
 `;
+
+export const createProject = async (props: {
+  accountSlug: string;
+  repo: string;
+  owner: string;
+  creator: User;
+}) => {
+  const account = await Account.query().findOne({
+    slug: props.accountSlug,
+  });
+  if (!account) {
+    throw new Error("Account not found");
+  }
+  const hasWritePermission = await account.$checkWritePermission(props.creator);
+  if (!hasWritePermission) {
+    throw new Error("Unauthorized");
+  }
+  const octokit = getTokenOctokit(props.creator.accessToken);
+  const ghApiRepo = await octokit.repos
+    .get({
+      owner: props.owner,
+      repo: props.repo,
+    })
+    .then((res) => res.data);
+  if (!ghApiRepo) {
+    throw new Error("Repository not found");
+  }
+
+  const getOrCreateAccount = async () => {
+    const account = await GithubAccount.query().findOne({
+      githubId: ghApiRepo.owner.id,
+    });
+    if (account) {
+      return account;
+    }
+    return GithubAccount.query().insertAndFetch({
+      githubId: ghApiRepo.owner.id,
+      login: ghApiRepo.owner.login,
+      type: ghApiRepo.owner.type.toLowerCase() as "user" | "organization",
+      name: ghApiRepo.owner.name ?? null,
+    });
+  };
+
+  const getOrCreateRepo = async (props: { githubAccountId: string }) => {
+    const repo = await GithubRepository.query().findOne({
+      githubId: ghApiRepo.id,
+    });
+    if (repo) {
+      return repo;
+    }
+    return GithubRepository.query().insertAndFetch({
+      githubId: ghApiRepo.id,
+      name: ghApiRepo.name,
+      private: ghApiRepo.private,
+      defaultBranch: ghApiRepo.default_branch,
+      githubAccountId: props.githubAccountId,
+    });
+  };
+
+  const getOrCreateProject = async (props: {
+    accountId: string;
+    githubRepositoryId: string;
+  }) => {
+    const project = await Project.query().findOne({
+      githubRepositoryId: props.githubRepositoryId,
+    });
+    if (project) {
+      return project;
+    }
+    return Project.query().insertAndFetch({
+      name: ghApiRepo.name,
+      accountId: props.accountId,
+      githubRepositoryId: props.githubRepositoryId,
+    });
+  };
+
+  const ghAccount = await getOrCreateAccount();
+  const ghRepo = await getOrCreateRepo({ githubAccountId: ghAccount.id });
+  return getOrCreateProject({
+    accountId: account.id,
+    githubRepositoryId: ghRepo.id,
+  });
+};
 
 export const resolvers = {
   Project: {
@@ -219,82 +303,11 @@ export const resolvers = {
       if (!ctx.auth) {
         throw new Error("Unauthorized");
       }
-      const account = await Account.query().findOne({
-        slug: args.input.accountSlug,
-      });
-      if (!account) {
-        throw new Error("Account not found");
-      }
-      const hasWritePermission = await account.$checkWritePermission(
-        ctx.auth.user
-      );
-      if (!hasWritePermission) {
-        throw new Error("Unauthorized");
-      }
-      const octokit = getTokenOctokit(ctx.auth.user.accessToken);
-      const ghApiRepo = await octokit.repos
-        .get({
-          owner: args.input.owner,
-          repo: args.input.repo,
-        })
-        .then((res) => res.data);
-      if (!ghApiRepo) {
-        throw new Error("Repository not found");
-      }
-
-      const getOrCreateAccount = async () => {
-        const account = await GithubAccount.query().findOne({
-          githubId: ghApiRepo.owner.id,
-        });
-        if (account) {
-          return account;
-        }
-        return GithubAccount.query().insertAndFetch({
-          githubId: ghApiRepo.owner.id,
-          login: ghApiRepo.owner.login,
-          type: ghApiRepo.owner.type as "user" | "organization",
-          name: ghApiRepo.owner.name ?? null,
-        });
-      };
-
-      const getOrCreateRepo = async (props: { githubAccountId: string }) => {
-        const repo = await GithubRepository.query().findOne({
-          githubId: ghApiRepo.id,
-        });
-        if (repo) {
-          return repo;
-        }
-        return GithubRepository.query().insertAndFetch({
-          githubId: ghApiRepo.id,
-          name: ghApiRepo.name,
-          private: ghApiRepo.private,
-          defaultBranch: ghApiRepo.default_branch,
-          githubAccountId: props.githubAccountId,
-        });
-      };
-
-      const getOrCreateProject = async (props: {
-        accountId: string;
-        githubRepositoryId: string;
-      }) => {
-        const project = await Project.query().findOne({
-          githubRepositoryId: props.githubRepositoryId,
-        });
-        if (project) {
-          return project;
-        }
-        return Project.query().insertAndFetch({
-          name: ghApiRepo.name,
-          accountId: props.accountId,
-          githubRepositoryId: props.githubRepositoryId,
-        });
-      };
-
-      const ghAccount = await getOrCreateAccount();
-      const ghRepo = await getOrCreateRepo({ githubAccountId: ghAccount.id });
-      return getOrCreateProject({
-        accountId: account.id,
-        githubRepositoryId: ghRepo.id,
+      return createProject({
+        accountSlug: args.input.accountSlug,
+        repo: args.input.repo,
+        owner: args.input.owner,
+        creator: ctx.auth.user,
       });
     },
     updateProject: async (
@@ -313,11 +326,7 @@ export const resolvers = {
       }
 
       const { id } = args.input;
-      const project = await Project.query().findById(id);
-
-      if (!project) {
-        throw new Error("Project not found");
-      }
+      const project = await Project.query().findById(id).throwIfNotFound();
 
       const hasWritePermission = await project.$checkWritePermission(
         ctx.auth.user

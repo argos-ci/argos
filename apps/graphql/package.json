@@ -10,6 +10,7 @@
     "@argos-ci/config": "*",
     "@argos-ci/database": "*",
     "@argos-ci/storage": "*",
+    "@argos-ci/vercel": "*",
     "@graphql-tools/schema": "^9.0.18",
     "@sentry/node": "^7.48.0",
     "@sindresorhus/slugify": "^2.2.0",

@@ -11,6 +11,6 @@ webhooks.onAny((event) => {
   handleGitHubEvents(event);
 });
 
-export default createNodeMiddleware(webhooks, {
+export const webhooksMiddleware = createNodeMiddleware(webhooks, {
   path: "/github/event-handler",
 });

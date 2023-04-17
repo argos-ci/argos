@@ -28,6 +28,7 @@ import { Project } from "./pages/Project";
 import { ProjectBuilds } from "./pages/Project/Builds";
 import { ProjectSettings } from "./pages/Project/Settings";
 import { Tests } from "./pages/Project/Tests";
+import { VercelCallback } from "./pages/Vercel";
 
 export const App = () => {
   return (
@@ -38,6 +39,7 @@ export const App = () => {
           <ApolloInitializer>
             <Routes>
               <Route path="/auth/github/callback" element={<AuthCallback />} />
+              <Route path="/vercel/callback" element={<VercelCallback />} />
               <Route
                 path="/:accountSlug/:projectName/builds/:buildNumber"
                 element={<Build />}
