@@ -13,7 +13,7 @@
   "sideEffects": false,
   "devDependencies": {
     "@apollo/client": "^3.7.12",
-    "@argos-ci/config": "workspace:*",
+    "@argos-ci/config": "*",
     "@graphql-codegen/cli": "^3.3.0",
     "@graphql-codegen/client-preset": "^3.0.0",
     "@graphql-typed-document-node/core": "^3.0.0",

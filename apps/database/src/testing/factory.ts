@@ -2,6 +2,7 @@
 import { factory } from "factory-girl";
 import moment from "moment";
 import { randomBytes } from "node:crypto";
+import type { Model, ModelClass, PartialModelObject } from "objection";
 
 import {
   Account,
@@ -21,7 +22,6 @@ import {
   UserOrganizationRight,
   UserRepositoryRight,
 } from "../models/index.js";
-import type { ModelClass, Model, PartialModelObject } from "objection";
 
 class ObjectionAdapter {
   build<TModel extends Model>(Model: ModelClass<TModel>, json: object) {

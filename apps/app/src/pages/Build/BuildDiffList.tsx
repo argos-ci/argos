@@ -478,7 +478,7 @@ const InternalBuildDiffList = memo(() => {
     if (index !== -1) {
       scrollToIndexRef.current(index, {
         align: "start",
-        smoothScroll: false,
+        behavior: "smooth",
       });
     }
     // This is a hack to ensure that everything is setup before we start
@@ -494,7 +494,7 @@ const InternalBuildDiffList = memo(() => {
     if (index !== -1 && !getIndicesInViewport().has(index)) {
       scrollToIndexRef.current(index, {
         align: "start",
-        smoothScroll: false,
+        behavior: "smooth",
       });
     }
   }, [scrolledDiff, getDiffIndex, getIndicesInViewport]);

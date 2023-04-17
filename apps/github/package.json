@@ -14,8 +14,8 @@
     }
   },
   "dependencies": {
-    "@argos-ci/config": "workspace:*",
-    "@argos-ci/database": "workspace:*",
+    "@argos-ci/config": "*",
+    "@argos-ci/database": "*",
     "@octokit/auth-app": "^4.0.9",
     "@octokit/auth-oauth-app": "^5.0.5",
     "@octokit/rest": "^19.0.7"
