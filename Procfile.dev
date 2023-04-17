@@ -2,3 +2,4 @@ release: ./scripts/release.sh
 web: node --watch apps/processes/dist/bin/web.js
 buildAndSynchronize: node --watch apps/processes/dist/bin/build-and-synchronize.js
 screenshotDiff: node --watch apps/processes/dist/bin/screenshot-diff.js
+crawlAndCapture: node --watch apps/processes/dist/bin/crawl-and-capture.js

@@ -7,6 +7,7 @@
     "paths": {
       "@argos-ci/*": ["./apps/*/src/index.ts"],
       "@argos-ci/database/models": ["./apps/database/src/models/index.ts"],
+      "@argos-ci/database/services/*": ["./apps/database/src/services/*.ts"],
       "@argos-ci/database/testing": ["./apps/database/src/testing/index.ts"],
       "@argos-ci/github/testing": ["./apps/github/src/testing.ts"]
     },

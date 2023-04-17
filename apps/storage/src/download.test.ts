@@ -9,7 +9,7 @@ import config from "@argos-ci/config";
 
 import { download } from "./download.js";
 import { get } from "./get.js";
-import { upload } from "./upload.js";
+import { uploadFromFilePath } from "./upload.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -20,7 +20,7 @@ describe("#download", () => {
   let tmpDirectory: string;
 
   beforeAll(() => {
-    return upload({
+    return uploadFromFilePath({
       s3,
       Bucket: config.get("s3.screenshotsBucket"),
       Key: "hello.txt",

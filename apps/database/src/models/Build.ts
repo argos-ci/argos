@@ -10,6 +10,7 @@ import config from "@argos-ci/config";
 
 import { Model } from "../util/model.js";
 import {
+  JobStatus,
   jobModelSchema,
   mergeSchemas,
   timestampsSchema,
@@ -53,7 +54,7 @@ export class Build extends Model {
   });
 
   name!: string;
-  jobStatus!: "pending" | "progress" | "complete" | "error" | "aborted";
+  jobStatus!: JobStatus;
   baseScreenshotBucketId!: string | null;
   compareScreenshotBucketId!: string;
   repositoryId!: string;
@@ -67,7 +68,7 @@ export class Build extends Model {
   static override get relationMappings(): RelationMappings {
     return {
       baseScreenshotBucket: {
-        relation: Model.BelongsToOneRelation,
+        relation: Model.HasOneRelation,
         modelClass: ScreenshotBucket,
         join: {
           from: "builds.baseScreenshotBucketId",
@@ -75,7 +76,7 @@ export class Build extends Model {
         },
       },
       compareScreenshotBucket: {
-        relation: Model.BelongsToOneRelation,
+        relation: Model.HasOneRelation,
         modelClass: ScreenshotBucket,
         join: {
           from: "builds.compareScreenshotBucketId",

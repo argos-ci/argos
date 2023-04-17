@@ -7,7 +7,7 @@ import type { TmpNameCallback, TmpNameOptions } from "tmp";
 
 import { download as s3Download } from "./download.js";
 import { get as s3Get } from "./get.js";
-import { upload as s3Upload } from "./upload.js";
+import { uploadFromBuffer, uploadFromFilePath } from "./upload.js";
 
 export const tmpName = promisify(
   (options: TmpNameOptions, cb: TmpNameCallback) => {
@@ -67,16 +67,22 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
   bucket: string;
   key: string | null;
   filepath: string | null;
+  buffer: Buffer | null;
+  contentType: string | null;
   downloadFromS3Promise: Promise<string> | null;
 
   constructor(params: {
     s3: S3Client;
     bucket: string;
+    buffer?: Buffer;
+    contentType?: string;
     filepath?: string;
     key?: string;
     dimensions?: Dimensions | null;
   }) {
     super();
+    this.buffer = params.buffer ?? null;
+    this.contentType = params.contentType ?? null;
     this.filepath = params.filepath ?? null;
     this.dimensions = params.dimensions ?? null;
     this.s3 = params.s3;
@@ -121,14 +127,29 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
     if (this.key) {
       throw new Error("Already uploaded");
     }
-    if (!this.filepath) {
-      throw new Error("No filepath");
-    }
-    const result = await s3Upload({
-      s3: this.s3,
-      Bucket: this.bucket,
-      inputPath: this.filepath,
-    });
+    const result = await (async () => {
+      // If there is a buffer, we use it for upload
+      if (this.buffer) {
+        if (!this.contentType) {
+          throw new Error("Missing content type");
+        }
+        return uploadFromBuffer({
+          s3: this.s3,
+          Bucket: this.bucket,
+          buffer: this.buffer,
+          contentType: this.contentType,
+        });
+      }
+      if (this.filepath) {
+        return uploadFromFilePath({
+          s3: this.s3,
+          Bucket: this.bucket,
+          inputPath: this.filepath,
+        });
+      }
+      throw new Error("No filepath or buffer");
+    })();
+
     this.key = result.Key;
     return this.key;
   }

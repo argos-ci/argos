@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "bin": {
-    "argos-web": "./dist/bin/web.js",
     "argos-build-and-synchronize": "./dist/bin/build-and-synchronize.js",
-    "argos-screenshot-diff": "./dist/bin/screenshot-diff.js"
+    "argos-crawl-and-capture": "./dist/bin/crawl-and-capture.js",
+    "argos-screenshot-diff": "./dist/bin/screenshot-diff.js",
+    "argos-web": "./dist/bin/web.js"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",
@@ -15,7 +16,9 @@
   "dependencies": {
     "@argos-ci/build": "*",
     "@argos-ci/build-notification": "*",
+    "@argos-ci/capture": "*",
     "@argos-ci/config": "*",
+    "@argos-ci/crawl": "*",
     "@argos-ci/job-core": "*",
     "@argos-ci/logger": "*",
     "@argos-ci/screenshot-diff": "*",

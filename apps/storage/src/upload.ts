@@ -4,7 +4,7 @@ import mime from "mime";
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 
-export const upload = async ({
+export const uploadFromFilePath = async ({
   s3,
   inputPath,
   Key: KeyArg,
@@ -23,6 +23,30 @@ export const upload = async ({
     new PutObjectCommand({
       Body: createReadStream(inputPath),
       ContentType,
+      Key,
+      ...other,
+    })
+  );
+  return { Key };
+};
+
+export const uploadFromBuffer = async ({
+  s3,
+  buffer,
+  contentType,
+  Key: KeyArg,
+  ...other
+}: {
+  s3: S3Client;
+  buffer: Buffer;
+  contentType: string;
+  Key?: string;
+} & Omit<PutObjectCommand["input"], "Key">) => {
+  const Key = KeyArg || randomUUID();
+  await s3.send(
+    new PutObjectCommand({
+      Body: buffer,
+      ContentType: contentType,
       Key,
       ...other,
     })

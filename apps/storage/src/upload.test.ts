@@ -4,11 +4,11 @@ import { fileURLToPath } from "node:url";
 
 import config from "@argos-ci/config";
 
-import { upload } from "./upload.js";
+import { uploadFromFilePath } from "./upload.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
-describe("#upload", () => {
+describe("#uploadFromFilePath", () => {
   let s3: S3Client;
 
   beforeEach(() => {
@@ -17,7 +17,7 @@ describe("#upload", () => {
 
   it("should upload a file to S3", async () => {
     const inputPath = join(__dirname, "__fixtures__", "screenshot_test.jpg");
-    const data = await upload({
+    const data = await uploadFromFilePath({
       s3,
       inputPath,
       Bucket: config.get("s3.screenshotsBucket"),

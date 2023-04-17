@@ -8,6 +8,7 @@
     "@argos-ci/build": "*",
     "@argos-ci/build-notification": "*",
     "@argos-ci/config": "*",
+    "@argos-ci/crawl": "*",
     "@argos-ci/database": "*",
     "@argos-ci/github": "*",
     "@argos-ci/graphql": "*",

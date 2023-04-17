@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 13.8
--- Dumped by pg_dump version 13.8
+-- Dumped from database version 13.10
+-- Dumped by pg_dump version 14.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -194,6 +194,82 @@ ALTER TABLE public.builds_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.builds_id_seq OWNED BY public.builds.id;
+
+
+--
+-- Name: captures; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.captures (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "jobStatus" public.job_status NOT NULL,
+    "crawlId" bigint NOT NULL,
+    "screenshotId" bigint,
+    "fileId" bigint,
+    url character varying(255) NOT NULL
+);
+
+
+ALTER TABLE public.captures OWNER TO postgres;
+
+--
+-- Name: captures_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.captures_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.captures_id_seq OWNER TO postgres;
+
+--
+-- Name: captures_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.captures_id_seq OWNED BY public.captures.id;
+
+
+--
+-- Name: crawls; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.crawls (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "jobStatus" public.job_status NOT NULL,
+    "buildId" bigint NOT NULL,
+    "baseUrl" character varying(255) NOT NULL
+);
+
+
+ALTER TABLE public.crawls OWNER TO postgres;
+
+--
+-- Name: crawls_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.crawls_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.crawls_id_seq OWNER TO postgres;
+
+--
+-- Name: crawls_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.crawls_id_seq OWNED BY public.crawls.id;
 
 
 --
@@ -926,6 +1002,20 @@ ALTER TABLE ONLY public.builds ALTER COLUMN id SET DEFAULT nextval('public.build
 
 
 --
+-- Name: captures id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.captures ALTER COLUMN id SET DEFAULT nextval('public.captures_id_seq'::regclass);
+
+
+--
+-- Name: crawls id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.crawls ALTER COLUMN id SET DEFAULT nextval('public.crawls_id_seq'::regclass);
+
+
+--
 -- Name: files id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1089,6 +1179,22 @@ ALTER TABLE ONLY public.build_notifications
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: captures captures_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.captures
+    ADD CONSTRAINT captures_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: crawls crawls_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.crawls
+    ADD CONSTRAINT crawls_pkey PRIMARY KEY (id);
 
 
 --
@@ -1321,6 +1427,48 @@ CREATE INDEX builds_externalid_index ON public.builds USING btree ("externalId")
 --
 
 CREATE INDEX builds_number_index ON public.builds USING btree (number);
+
+
+--
+-- Name: captures_crawlid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX captures_crawlid_index ON public.captures USING btree ("crawlId");
+
+
+--
+-- Name: captures_fileid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX captures_fileid_index ON public.captures USING btree ("fileId");
+
+
+--
+-- Name: captures_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX captures_jobstatus_index ON public.captures USING btree ("jobStatus");
+
+
+--
+-- Name: captures_screenshotid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX captures_screenshotid_index ON public.captures USING btree ("screenshotId");
+
+
+--
+-- Name: crawls_buildid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX crawls_buildid_index ON public.crawls USING btree ("buildId");
+
+
+--
+-- Name: crawls_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX crawls_jobstatus_index ON public.crawls USING btree ("jobStatus");
 
 
 --
@@ -1646,6 +1794,38 @@ ALTER TABLE ONLY public.builds
 
 
 --
+-- Name: captures captures_crawlid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.captures
+    ADD CONSTRAINT captures_crawlid_foreign FOREIGN KEY ("crawlId") REFERENCES public.crawls(id);
+
+
+--
+-- Name: captures captures_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.captures
+    ADD CONSTRAINT captures_fileid_foreign FOREIGN KEY ("fileId") REFERENCES public.files(id);
+
+
+--
+-- Name: captures captures_screenshotid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.captures
+    ADD CONSTRAINT captures_screenshotid_foreign FOREIGN KEY ("screenshotId") REFERENCES public.screenshots(id);
+
+
+--
+-- Name: crawls crawls_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.crawls
+    ADD CONSTRAINT crawls_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
+
+
+--
 -- Name: installation_repository_rights installation_repository_rights_installationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1911,3 +2091,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023010
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230218100910_add_stability_score.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230313131422_add_tests_table.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230323071510_add_mute_to_tests.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230416201920_crawls.js', 1, NOW());
