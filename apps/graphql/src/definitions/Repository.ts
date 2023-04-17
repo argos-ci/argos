@@ -48,6 +48,8 @@ export const typeDefs = gql`
     forcedPrivate: Boolean!
     "Current month used screenshots"
     currentMonthUsedScreenshots: Int!
+    "Repository's users"
+    users: [User!]!
   }
 
   extend type Query {
@@ -142,6 +144,9 @@ export const resolvers = {
         return ctx.loaders.Organization.load(repository.organizationId);
       }
       throw new Error(`Invalid repository owner: ${repository.id}`);
+    },
+    users: async (repository: Repository) => {
+      return repository.$relatedQuery("users");
     },
     permissions: async (
       repository: Repository,

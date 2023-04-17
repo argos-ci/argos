@@ -6,8 +6,10 @@ import { useParams } from "react-router-dom";
 
 import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
+import { OwnerAvatar } from "@/containers/OwnerAvatar";
 import { DocumentType, graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
+import { Badge } from "@/ui/Badge";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -24,6 +26,7 @@ import { Pre } from "@/ui/Pre";
 import { Heading } from "@/ui/Typography";
 
 import { useRepositoryContext } from ".";
+import { Forbidden } from "../Forbidden";
 
 const RepositoryQuery = graphql(`
   query RepositorySettings_repository(
@@ -37,6 +40,15 @@ const RepositoryQuery = graphql(`
       defaultBranch
       private
       forcedPrivate
+      owner {
+        id
+        type
+      }
+      users {
+        id
+        login
+        name
+      }
     }
   }
 `);
@@ -74,6 +86,7 @@ const UpdateForcedPrivateMutation = graphql(`
 
 type RepositoryDocument = DocumentType<typeof RepositoryQuery>;
 type Repository = NonNullable<RepositoryDocument["repository"]>;
+type User = Repository["users"][0];
 
 const TokenCard = ({ repository }: { repository: Repository }) => {
   return (
@@ -267,6 +280,38 @@ const VisibilityCard = ({ repository }: { repository: Repository }) => {
   );
 };
 
+const MembersCard = ({ repository }: { repository: Repository }) => {
+  const users = repository.users as User[];
+  return (
+    <Card>
+      <CardBody>
+        <CardTitle id="reference-branch">Members</CardTitle>
+
+        <div className="flex flex-col gap-4">
+          {users.map((user) => {
+            const hasOwnerBadge =
+              repository.owner.type === "user" &&
+              user.id === repository.owner.id;
+
+            return (
+              <div key={user.id} className="flex items-center gap-4">
+                <OwnerAvatar owner={user} className="flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold">{user.name}</div>
+                    {!hasOwnerBadge && <Badge>Owner</Badge>}
+                  </div>
+                  <div className="text-xs text-slate-500">{user.login}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardBody>
+    </Card>
+  );
+};
+
 export const RepositorySettings = () => {
   const { ownerLogin, repositoryName } = useParams();
   const { hasWritePermission } = useRepositoryContext();
@@ -276,7 +321,7 @@ export const RepositorySettings = () => {
   }
 
   if (!hasWritePermission) {
-    return <NotFound />;
+    return <Forbidden link={{ to: "..", label: "Back to repository" }} />;
   }
 
   return (
@@ -302,6 +347,7 @@ export const RepositorySettings = () => {
               {repository.private ? null : (
                 <VisibilityCard repository={repository} />
               )}
+              <MembersCard repository={repository} />
             </SettingsLayout>
           );
         }}
