@@ -22,6 +22,7 @@ import { Code } from "@/ui/Code";
 import { Container } from "@/ui/Container";
 import { Anchor } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
+import { Pagination } from "@/ui/Pagination";
 import { Pre } from "@/ui/Pre";
 import { Heading } from "@/ui/Typography";
 
@@ -32,6 +33,8 @@ const RepositoryQuery = graphql(`
   query RepositorySettings_repository(
     $ownerLogin: String!
     $repositoryName: String!
+    $firstUser: Int!
+    $afterUser: Int!
   ) {
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
@@ -44,10 +47,16 @@ const RepositoryQuery = graphql(`
         id
         type
       }
-      users {
-        id
-        login
-        name
+      users(first: $firstUser, after: $afterUser) {
+        pageInfo {
+          hasNextPage
+          totalCount
+        }
+        edges {
+          id
+          login
+          name
+        }
       }
     }
   }
@@ -86,7 +95,8 @@ const UpdateForcedPrivateMutation = graphql(`
 
 type RepositoryDocument = DocumentType<typeof RepositoryQuery>;
 type Repository = NonNullable<RepositoryDocument["repository"]>;
-type User = Repository["users"][0];
+type UserConnection = Repository["users"];
+type Owner = Repository["owner"];
 
 const TokenCard = ({ repository }: { repository: Repository }) => {
   return (
@@ -280,21 +290,29 @@ const VisibilityCard = ({ repository }: { repository: Repository }) => {
   );
 };
 
-const MembersCard = ({ repository }: { repository: Repository }) => {
-  const users = repository.users as User[];
+const MembersCard = ({
+  userConnection,
+  owner,
+  first,
+  after,
+  handlePageChange,
+}: {
+  userConnection: UserConnection;
+  owner: Owner;
+  first: number;
+  after: number;
+  handlePageChange: (after: number) => void;
+}) => {
   return (
     <Card>
       <CardBody>
         <CardTitle id="reference-branch">Members</CardTitle>
-
         <div className="flex flex-col gap-4">
-          {users.map((user) => {
-            const hasOwnerBadge =
-              repository.owner.type === "user" &&
-              user.id === repository.owner.id;
-
+          {userConnection.edges.map((user, index) => {
+            const hasOwnerBadge = owner.type === "user" && user.id === owner.id;
             return (
               <div key={user.id} className="flex items-center gap-4">
+                <div className="w-8 text-on-light">#{after + index + 1}</div>
                 <OwnerAvatar owner={user} className="flex-shrink-0" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -308,6 +326,16 @@ const MembersCard = ({ repository }: { repository: Repository }) => {
           })}
         </div>
       </CardBody>
+      {userConnection.pageInfo.totalCount > first ? (
+        <CardFooter>
+          <Pagination
+            pageInfo={userConnection.pageInfo}
+            first={first}
+            after={after}
+            handlePageChange={handlePageChange}
+          />
+        </CardFooter>
+      ) : null}
     </Card>
   );
 };
@@ -315,6 +343,8 @@ const MembersCard = ({ repository }: { repository: Repository }) => {
 export const RepositorySettings = () => {
   const { ownerLogin, repositoryName } = useParams();
   const { hasWritePermission } = useRepositoryContext();
+  const [usersCursor, setUsersCursor] = useState(0);
+  const usersByPage = 3;
 
   if (!ownerLogin || !repositoryName) {
     return <NotFound />;
@@ -335,7 +365,12 @@ export const RepositorySettings = () => {
       <Query
         fallback={<PageLoader />}
         query={RepositoryQuery}
-        variables={{ ownerLogin, repositoryName }}
+        variables={{
+          ownerLogin,
+          repositoryName,
+          firstUser: usersByPage,
+          afterUser: usersCursor,
+        }}
       >
         {({ repository }) => {
           if (!repository) return <NotFound />;
@@ -347,7 +382,13 @@ export const RepositorySettings = () => {
               {repository.private ? null : (
                 <VisibilityCard repository={repository} />
               )}
-              <MembersCard repository={repository} />
+              <MembersCard
+                userConnection={repository.users}
+                owner={repository.owner}
+                after={usersCursor}
+                first={usersByPage}
+                handlePageChange={setUsersCursor}
+              />
             </SettingsLayout>
           );
         }}

@@ -30,6 +30,11 @@ export const typeDefs = gql`
     type: OwnerType!
   }
 
+  type UserConnection implements Connection {
+    pageInfo: PageInfo!
+    edges: [User!]!
+  }
+
   extend type Query {
     "Get the authenticated user"
     user: User

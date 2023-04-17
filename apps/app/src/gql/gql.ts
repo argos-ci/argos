@@ -10,7 +10,7 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * 2. It is not minifiable, so the string of a GraphQL query will be multiple times inside the bundle.
  * 3. It does not support dead code elimination, so it will add unused operations.
  *
- * Therefore it is highly recommended to use the babel-plugin for production.
+ * Therefore it is highly recommended to use the babel or swc plugin for production.
  */
 const documents = {
     "\n  query OwnerBreadcrumb_owner($login: String!) {\n    owner(login: $login) {\n      id\n      login\n      name\n    }\n  }\n": types.OwnerBreadcrumb_OwnerDocument,
@@ -43,7 +43,7 @@ const documents = {
     "\n  fragment GettingStarted_repository on Repository {\n    token\n  }\n": types.GettingStarted_RepositoryFragmentDoc,
     "\n  query RepositoryBuilds_repository(\n    $ownerLogin: String!\n    $repositoryName: String!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      permissions\n      ...GettingStarted_repository\n      ...BuildStatusChip_Repository\n    }\n  }\n": types.RepositoryBuilds_RepositoryDocument,
     "\n  query RepositoryBuilds_repository_builds(\n    $ownerLogin: String!\n    $repositoryName: String!\n    $after: Int!\n    $first: Int!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      builds(first: $first, after: $after) {\n        pageInfo {\n          totalCount\n          hasNextPage\n        }\n        edges {\n          id\n          number\n          createdAt\n          name\n          compareScreenshotBucket {\n            id\n            branch\n            commit\n          }\n          ...BuildStatusChip_Build\n        }\n      }\n    }\n  }\n": types.RepositoryBuilds_Repository_BuildsDocument,
-    "\n  query RepositorySettings_repository(\n    $ownerLogin: String!\n    $repositoryName: String!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      token\n      baselineBranch\n      defaultBranch\n      private\n      forcedPrivate\n      owner {\n        id\n        type\n      }\n      users {\n        id\n        login\n        name\n      }\n    }\n  }\n": types.RepositorySettings_RepositoryDocument,
+    "\n  query RepositorySettings_repository(\n    $ownerLogin: String!\n    $repositoryName: String!\n    $firstUser: Int!\n    $afterUser: Int!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      token\n      baselineBranch\n      defaultBranch\n      private\n      forcedPrivate\n      owner {\n        id\n        type\n      }\n      users(first: $firstUser, after: $afterUser) {\n        pageInfo {\n          hasNextPage\n          totalCount\n        }\n        edges {\n          id\n          login\n          name\n        }\n      }\n    }\n  }\n": types.RepositorySettings_RepositoryDocument,
     "\n  mutation RepositorySettings_updateReferenceBranch(\n    $repositoryId: String!\n    $baselineBranch: String\n  ) {\n    updateReferenceBranch(\n      repositoryId: $repositoryId\n      baselineBranch: $baselineBranch\n    ) {\n      id\n      baselineBranch\n      defaultBranch\n    }\n  }\n": types.RepositorySettings_UpdateReferenceBranchDocument,
     "\n  mutation RepositorySettings_UpdateForcedPrivate(\n    $repositoryId: String!\n    $forcedPrivate: Boolean!\n  ) {\n    updateForcedPrivate(\n      repositoryId: $repositoryId\n      forcedPrivate: $forcedPrivate\n    ) {\n      id\n      forcedPrivate\n    }\n  }\n": types.RepositorySettings_UpdateForcedPrivateDocument,
     "\n  query FlakyTests_repository_tests(\n    $ownerLogin: String!\n    $repositoryName: String!\n    $after: Int!\n    $first: Int!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      tests(first: $first, after: $after) {\n        pageInfo {\n          totalCount\n          hasNextPage\n        }\n        edges {\n          id\n          name\n          buildName\n          status\n          resolvedDate\n          mute\n          muteUntil\n          stabilityScore\n          lastSeen\n          unstable\n          dailyChanges {\n            date\n            count\n          }\n          totalBuilds\n          screenshot {\n            id\n            url\n            width\n            height\n          }\n        }\n      }\n    }\n  }\n": types.FlakyTests_Repository_TestsDocument,
@@ -51,6 +51,20 @@ const documents = {
     "\n  mutation updateStatusesMutation($ids: [String!]!, $status: TestStatus!) {\n    updateTestStatuses(ids: $ids, status: $status) {\n      ids\n      status\n    }\n  }\n": types.UpdateStatusesMutationDocument,
     "\n  query Repository_repository($ownerLogin: String!, $repositoryName: String!) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      permissions\n      tests(first: 1, after: 0) {\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n": types.Repository_RepositoryDocument,
 };
+
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ *
+ *
+ * @example
+ * ```ts
+ * const query = graphql(`query GetUser($id: ID!) { user(id: $id) { name } }`);
+ * ```
+ *
+ * The query argument is unknown!
+ * Please regenerate the types.
+ */
+export function graphql(source: string): unknown;
 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -175,7 +189,7 @@ export function graphql(source: "\n  query RepositoryBuilds_repository_builds(\n
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query RepositorySettings_repository(\n    $ownerLogin: String!\n    $repositoryName: String!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      token\n      baselineBranch\n      defaultBranch\n      private\n      forcedPrivate\n      owner {\n        id\n        type\n      }\n      users {\n        id\n        login\n        name\n      }\n    }\n  }\n"): (typeof documents)["\n  query RepositorySettings_repository(\n    $ownerLogin: String!\n    $repositoryName: String!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      token\n      baselineBranch\n      defaultBranch\n      private\n      forcedPrivate\n      owner {\n        id\n        type\n      }\n      users {\n        id\n        login\n        name\n      }\n    }\n  }\n"];
+export function graphql(source: "\n  query RepositorySettings_repository(\n    $ownerLogin: String!\n    $repositoryName: String!\n    $firstUser: Int!\n    $afterUser: Int!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      token\n      baselineBranch\n      defaultBranch\n      private\n      forcedPrivate\n      owner {\n        id\n        type\n      }\n      users(first: $firstUser, after: $afterUser) {\n        pageInfo {\n          hasNextPage\n          totalCount\n        }\n        edges {\n          id\n          login\n          name\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query RepositorySettings_repository(\n    $ownerLogin: String!\n    $repositoryName: String!\n    $firstUser: Int!\n    $afterUser: Int!\n  ) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      token\n      baselineBranch\n      defaultBranch\n      private\n      forcedPrivate\n      owner {\n        id\n        type\n      }\n      users(first: $firstUser, after: $afterUser) {\n        pageInfo {\n          hasNextPage\n          totalCount\n        }\n        edges {\n          id\n          login\n          name\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -200,20 +214,6 @@ export function graphql(source: "\n  mutation updateStatusesMutation($ids: [Stri
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query Repository_repository($ownerLogin: String!, $repositoryName: String!) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      permissions\n      tests(first: 1, after: 0) {\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query Repository_repository($ownerLogin: String!, $repositoryName: String!) {\n    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {\n      id\n      permissions\n      tests(first: 1, after: 0) {\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n"];
-
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- *
- *
- * @example
- * ```ts
- * const query = gql(`query GetUser($id: ID!) { user(id: $id) { name } }`);
- * ```
- *
- * The query argument is unknown!
- * Please regenerate the types.
-**/
-export function graphql(source: string): unknown;
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

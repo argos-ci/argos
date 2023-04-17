@@ -49,7 +49,7 @@ export const typeDefs = gql`
     "Current month used screenshots"
     currentMonthUsedScreenshots: Int!
     "Repository's users"
-    users: [User!]!
+    users(first: Int!, after: Int!): UserConnection!
   }
 
   extend type Query {
@@ -145,8 +145,15 @@ export const resolvers = {
       }
       throw new Error(`Invalid repository owner: ${repository.id}`);
     },
-    users: async (repository: Repository) => {
-      return repository.$relatedQuery("users");
+    users: async (
+      repository: Repository,
+      { first, after }: { first: number; after: number }
+    ) => {
+      const result = await repository
+        .$relatedQuery("users")
+        .orderBy("login", "asc")
+        .range(after, after + first - 1);
+      return paginateResult({ result, first, after });
     },
     permissions: async (
       repository: Repository,
