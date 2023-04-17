@@ -128,9 +128,6 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
       throw new Error("Already uploaded");
     }
     const result = await (async () => {
-      if (!this.filepath && !this.buffer) {
-        throw new Error("No filepath or buffer");
-      }
       // If there is a buffer, we use it for upload
       if (this.buffer) {
         if (!this.contentType) {
@@ -143,11 +140,14 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
           contentType: this.contentType,
         });
       }
-      return uploadFromFilePath({
-        s3: this.s3,
-        Bucket: this.bucket,
-        inputPath: this.filepath,
-      });
+      if (this.filepath) {
+        return uploadFromFilePath({
+          s3: this.s3,
+          Bucket: this.bucket,
+          inputPath: this.filepath,
+        });
+      }
+      throw new Error("No filepath or buffer");
     })();
 
     this.key = result.Key;

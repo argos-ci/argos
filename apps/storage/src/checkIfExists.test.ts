@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import config from "@argos-ci/config";
 
 import { checkIfExists } from "./checkIfExists.js";
-import { upload } from "./upload.js";
+import { uploadFromFilePath } from "./upload.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -14,7 +14,7 @@ describe("#download", () => {
 
   beforeAll(async () => {
     s3 = new S3Client({ region: "eu-west-1" });
-    await upload({
+    await uploadFromFilePath({
       s3,
       Bucket: config.get("s3.screenshotsBucket"),
       Key: "hello.txt",

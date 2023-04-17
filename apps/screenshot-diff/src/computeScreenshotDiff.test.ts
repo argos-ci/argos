@@ -14,7 +14,7 @@ import {
 } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 import { quitAmqp } from "@argos-ci/job-core";
-import { s3 as getS3, upload } from "@argos-ci/storage";
+import { s3 as getS3, uploadFromFilePath } from "@argos-ci/storage";
 import type { S3Client } from "@argos-ci/storage";
 
 import { computeScreenshotDiff } from "./computeScreenshotDiff.js";
@@ -34,13 +34,13 @@ describe("#computeScreenshotDiff", () => {
 
   beforeAll(async () => {
     s3 = getS3();
-    await upload({
+    await uploadFromFilePath({
       s3,
       Bucket: config.get("s3.screenshotsBucket"),
       Key: "penelope.png",
       inputPath: join(__dirname, "__fixtures__", "penelope.png"),
     });
-    await upload({
+    await uploadFromFilePath({
       s3,
       Bucket: config.get("s3.screenshotsBucket"),
       Key: "penelope-argos.png",
