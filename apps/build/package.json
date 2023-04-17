@@ -9,13 +9,13 @@
     "queue-pending-builds": "./dist/bin/queue-pending-builds.js"
   },
   "dependencies": {
-    "@argos-ci/build-notification": "workspace:*",
-    "@argos-ci/config": "workspace:*",
-    "@argos-ci/database": "workspace:*",
-    "@argos-ci/github": "workspace:*",
-    "@argos-ci/job-core": "workspace:*",
-    "@argos-ci/logger": "workspace:*",
-    "@argos-ci/screenshot-diff": "workspace:*",
+    "@argos-ci/build-notification": "*",
+    "@argos-ci/config": "*",
+    "@argos-ci/database": "*",
+    "@argos-ci/github": "*",
+    "@argos-ci/job-core": "*",
+    "@argos-ci/logger": "*",
+    "@argos-ci/screenshot-diff": "*",
     "@octokit/rest": "^19.0.7",
     "lodash-es": "^4.17.21",
     "objection": "^3.0.1"

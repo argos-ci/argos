@@ -9,7 +9,7 @@
     "dev": "npm run build -- --watch"
   },
   "dependencies": {
-    "@argos-ci/config": "workspace:*",
+    "@argos-ci/config": "*",
     "@sentry/node": "^7.48.0"
   }
 }

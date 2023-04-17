@@ -1,6 +1,6 @@
 {
   "name": "@argos-ci/processes",
-  "version": "workspace:*",
+  "version": "*",
   "private": true,
   "type": "module",
   "bin": {
@@ -13,15 +13,15 @@
     "dev": "npm run build -- --watch"
   },
   "dependencies": {
-    "@argos-ci/build": "workspace:*",
-    "@argos-ci/build-notification": "workspace:*",
-    "@argos-ci/config": "workspace:*",
-    "@argos-ci/job-core": "workspace:*",
-    "@argos-ci/logger": "workspace:*",
-    "@argos-ci/screenshot-diff": "workspace:*",
-    "@argos-ci/sentry-node": "workspace:*",
-    "@argos-ci/synchronize": "workspace:*",
-    "@argos-ci/web": "workspace:*",
+    "@argos-ci/build": "*",
+    "@argos-ci/build-notification": "*",
+    "@argos-ci/config": "*",
+    "@argos-ci/job-core": "*",
+    "@argos-ci/logger": "*",
+    "@argos-ci/screenshot-diff": "*",
+    "@argos-ci/sentry-node": "*",
+    "@argos-ci/synchronize": "*",
+    "@argos-ci/web": "*",
     "@sentry/node": "^7.48.0"
   }
 }
