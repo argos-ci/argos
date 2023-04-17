@@ -1,0 +1,16 @@
+{
+  "name": "@argos-ci/crawl",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./dist/index.js",
+  "dependencies": {
+    "@argos-ci/database": "*",
+    "@argos-ci/capture": "*",
+    "@argos-ci/job-core": "*"
+  },
+  "scripts": {
+    "build": "swc src --config-file ../../.swcrc -d dist",
+    "dev": "npm run build -- --watch"
+  }
+}

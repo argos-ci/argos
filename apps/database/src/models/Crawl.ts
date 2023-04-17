@@ -8,35 +8,24 @@ import {
   timestampsSchema,
 } from "../util/schemas.js";
 import { Build } from "./Build.js";
-import { ScreenshotBucket } from "./ScreenshotBucket.js";
 
 export class Crawl extends Model {
   static override tableName = "crawls";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
-    required: ["buildId", "screenshotBucketId", "baseUrl"],
+    required: ["buildId", "baseUrl"],
     properties: {
       buildId: { type: "string" },
-      screenshotBucketId: { type: "string" },
       baseUrl: { type: "string" },
     },
   });
 
   jobStatus!: JobStatus;
   buildId!: string;
-  screenshotBucketId!: string;
   baseUrl!: string;
 
   static override get relationMappings(): RelationMappings {
     return {
-      screenshotBucket: {
-        relation: Model.BelongsToOneRelation,
-        modelClass: ScreenshotBucket,
-        join: {
-          from: "crawls.screenshotBucketId",
-          to: "screenshot_buckets.id",
-        },
-      },
       build: {
         relation: Model.BelongsToOneRelation,
         modelClass: Build,
@@ -48,6 +37,5 @@ export class Crawl extends Model {
     };
   }
 
-  screenshotBucket?: ScreenshotBucket;
   build?: Build;
 }

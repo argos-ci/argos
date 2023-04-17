@@ -2,13 +2,14 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import {
+  JobStatus,
   jobModelSchema,
   mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
 import { Crawl } from "./Crawl.js";
-import { Screenshot } from "./Screenshot.js";
 import { File } from "./File.js";
+import { Screenshot } from "./Screenshot.js";
 
 export class Capture extends Model {
   static override tableName = "captures";
@@ -23,6 +24,7 @@ export class Capture extends Model {
     },
   });
 
+  jobStatus!: JobStatus;
   crawlId!: string;
   url!: string;
   screenshotId!: string | null;

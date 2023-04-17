@@ -245,7 +245,6 @@ CREATE TABLE public.crawls (
     "updatedAt" timestamp with time zone NOT NULL,
     "jobStatus" public.job_status NOT NULL,
     "buildId" bigint NOT NULL,
-    "screenshotBucketId" bigint NOT NULL,
     "baseUrl" character varying(255) NOT NULL
 );
 
@@ -1473,13 +1472,6 @@ CREATE INDEX crawls_jobstatus_index ON public.crawls USING btree ("jobStatus");
 
 
 --
--- Name: crawls_screenshotbucketid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX crawls_screenshotbucketid_index ON public.crawls USING btree ("screenshotBucketId");
-
-
---
 -- Name: installation_repository_rights_installationid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1831,14 +1823,6 @@ ALTER TABLE ONLY public.captures
 
 ALTER TABLE ONLY public.crawls
     ADD CONSTRAINT crawls_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
-
-
---
--- Name: crawls crawls_screenshotbucketid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.crawls
-    ADD CONSTRAINT crawls_screenshotbucketid_foreign FOREIGN KEY ("screenshotBucketId") REFERENCES public.screenshot_buckets(id);
 
 
 --

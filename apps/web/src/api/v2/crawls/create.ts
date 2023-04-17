@@ -1,5 +1,6 @@
 import express, { Router } from "express";
 
+import { job as crawlJob } from "@argos-ci/crawl";
 import { transaction } from "@argos-ci/database";
 import { Crawl, Repository } from "@argos-ci/database/models";
 
@@ -44,6 +45,7 @@ type CreateRequest = express.Request<
 router.post(
   "/crawls",
   repoAuth,
+  express.json(),
   validateRoute,
   asyncHandler(async (req, res) => {
     const ctx = { req } as { req: CreateRequest };
@@ -58,7 +60,7 @@ router.post(
         baseUrl: req.body.baseUrl,
       });
 
-      res.status(201).send({ crawl: { id: crawl.id } });
+      crawlJob.push(crawl.id);
 
       return { build, crawl };
     });

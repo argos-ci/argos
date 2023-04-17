@@ -1,18 +1,20 @@
 import express, { Router } from "express";
 // @ts-ignore
 import { HttpError } from "express-err";
-import type { TransactionOrKnex } from "objection";
 
 import { job as buildJob } from "@argos-ci/build";
 import { raw, transaction } from "@argos-ci/database";
 import type { Repository } from "@argos-ci/database/models";
-import { Build, File, Screenshot, Test } from "@argos-ci/database/models";
+import { Build } from "@argos-ci/database/models";
+import {
+  getUnknownScreenshotKeys,
+  insertFilesAndScreenshots,
+} from "@argos-ci/database/services/screenshots";
 
 import { SHA256_REGEX_STR } from "../../../constants.js";
 import { repoAuth } from "../../../middlewares/repoAuth.js";
 import { validate } from "../../../middlewares/validate.js";
 import { asyncHandler } from "../../../util.js";
-import { getUnknownScreenshotKeys } from "./util.js";
 
 const router = Router();
 export default router;
@@ -77,119 +79,6 @@ type UpdateRequest = express.Request<
   }
 > & { authRepository?: Repository };
 
-// It stucks the build, so for now we can't do it, but we should
-// ---
-// const checkAllScreenshotKeysExist = async (unknownKeys) => {
-//   const s3 = getS3();
-//   const screenshotsBucket = config.get("s3.screenshotsBucket");
-//   const exists = await Promise.all(
-//     unknownKeys.map((key) =>
-//       checkIfExists({
-//         s3,
-//         Key: key,
-//         Bucket: screenshotsBucket,
-//       })
-//     )
-//   );
-//   const missingKeys = unknownKeys.filter((_key, index) => !exists[index]);
-//   if (missingKeys.length > 0) {
-//     throw new HttpError(
-//       400,
-//       `Missing screenshots for keys: ${missingKeys.join(", ")}`
-//     );
-//   }
-// };
-
-const getOrCreateTests = async ({
-  repositoryId,
-  buildName,
-  screenshotNames,
-  trx,
-}: {
-  repositoryId: string;
-  buildName: string;
-  screenshotNames: string[];
-  trx: TransactionOrKnex;
-}) => {
-  const tests: Test[] = await Test.query(trx)
-    .where({ repositoryId, buildName })
-    .whereIn("name", screenshotNames);
-  const testNames = tests.map(({ name }: Test) => name);
-  const testNamesToAdd = screenshotNames.filter(
-    (screenshotName) => !testNames.includes(screenshotName)
-  );
-  if (testNamesToAdd.length === 0) {
-    return tests;
-  }
-
-  const addedTests = await Test.query(trx).insertAndFetch(
-    testNamesToAdd.map((name) => ({
-      name: name,
-      repositoryId,
-      buildName,
-    }))
-  );
-  return [...tests, ...addedTests];
-};
-
-const insertFilesAndScreenshots = async ({
-  req,
-  build,
-  unknownKeys,
-  trx,
-}: {
-  req: UpdateRequest;
-  build: Build;
-  unknownKeys: string[];
-  trx?: TransactionOrKnex;
-}) => {
-  await transaction(trx, async (trx) => {
-    if (unknownKeys.length > 0) {
-      // Insert unknown files
-      await File.query(trx)
-        .insert(unknownKeys.map((key) => ({ key })))
-        .onConflict("key")
-        .ignore();
-    }
-
-    // Retrieve all screenshot files
-    const screenshots = req.body.screenshots;
-
-    if (screenshots.length === 0) return;
-
-    const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
-    const files = await File.query(trx).whereIn("key", screenshotKeys);
-
-    const tests = await getOrCreateTests({
-      repositoryId: build.repositoryId,
-      buildName: build.name,
-      screenshotNames: screenshots.map((screenshot) => screenshot.name),
-      trx,
-    });
-
-    // Insert screenshots
-    await Screenshot.query(trx).insert(
-      screenshots.map((screenshot) => {
-        const file = files.find((f) => f.key === screenshot.key);
-        if (!file) {
-          throw new Error(`File not found for key ${screenshot.key}`);
-        }
-        const test = tests.find((t) => t.name === screenshot.name);
-        if (!test) {
-          throw new Error(`Test not found for screenshot ${screenshot.name}`);
-        }
-        return {
-          screenshotBucketId: build.compareScreenshotBucket!.id,
-          name: screenshot.name,
-          s3Id: screenshot.key,
-          fileId: file.id,
-          testId: test.id,
-        };
-      })
-    );
-  });
-};
-
 const handleUpdateParallel = async ({
   req,
   build,
@@ -213,7 +102,12 @@ const handleUpdateParallel = async ({
   }
 
   const complete = await transaction(async (trx) => {
-    await insertFilesAndScreenshots({ req, build, unknownKeys, trx });
+    await insertFilesAndScreenshots({
+      screenshots: req.body.screenshots,
+      build,
+      unknownKeys,
+      trx,
+    });
 
     await Build.query(trx)
       .findById(build.id)
@@ -247,7 +141,12 @@ const handleUpdateSingle = async ({
   unknownKeys: string[];
 }) => {
   await transaction(async (trx) => {
-    await insertFilesAndScreenshots({ req, build, unknownKeys, trx });
+    await insertFilesAndScreenshots({
+      screenshots: req.body.screenshots,
+      build,
+      unknownKeys,
+      trx,
+    });
 
     await build
       .compareScreenshotBucket!.$query(trx)
@@ -292,7 +191,6 @@ router.put(
     const screenshots = req.body.screenshots;
     const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
     const unknownKeys = await getUnknownScreenshotKeys(screenshotKeys);
-    // await checkAllScreenshotKeysExist(unknownKeys);
 
     const ctx = { req, build, unknownKeys };
     if (req.body.parallel) {

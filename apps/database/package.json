@@ -12,6 +12,7 @@
       "import": "./dist/models/index.js",
       "types": "./src/models/index.ts"
     },
+    "./services/*": "./dist/services/*.js",
     "./testing": {
       "import": "./dist/testing/index.js",
       "types": "./src/testing/index.ts"

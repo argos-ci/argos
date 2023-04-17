@@ -6,6 +6,7 @@ import config from "@argos-ci/config";
 import { transaction } from "@argos-ci/database";
 import type { Repository } from "@argos-ci/database/models";
 import { Build } from "@argos-ci/database/models";
+import { getUnknownScreenshotKeys } from "@argos-ci/database/services/screenshots";
 import { s3 as getS3, getSignedPutObjectUrl } from "@argos-ci/storage";
 
 import { SHA1_REGEX_STR, SHA256_REGEX_STR } from "../../../constants.js";
@@ -14,7 +15,6 @@ import { validate } from "../../../middlewares/validate.js";
 import { getRedisLock } from "../../../redis/index.js";
 import { asyncHandler } from "../../../util.js";
 import { createBuild, getBuildName } from "../util.js";
-import { getUnknownScreenshotKeys } from "./util.js";
 
 const router = Router();
 export default router;

@@ -10,8 +10,6 @@ export const up = async (knex) => {
     table.specificType("jobStatus", "job_status").notNullable().index();
     table.bigInteger("buildId").notNullable().index();
     table.foreign("buildId").references("builds.id");
-    table.bigInteger("screenshotBucketId").notNullable().index();
-    table.foreign("screenshotBucketId").references("screenshot_buckets.id");
     table.string("baseUrl").notNullable();
   });
 
