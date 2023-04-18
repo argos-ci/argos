@@ -106,6 +106,18 @@ export class Repository extends Model {
           return builder.findOne({ deleted: false });
         },
       },
+      users: {
+        relation: Model.ManyToManyRelation,
+        modelClass: User,
+        join: {
+          from: "repositories.id",
+          through: {
+            from: "user_repository_rights.repositoryId",
+            to: "user_repository_rights.userId",
+          },
+          to: "users.id",
+        },
+      },
     };
   }
 

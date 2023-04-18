@@ -76,11 +76,13 @@ export function Query<
   variables?: TVariables;
   skip?: boolean;
 }): React.ReactElement | null {
-  const { data } = useQuery(query, options);
+  const { data, previousData } = useQuery(query, options);
 
-  if (!data) {
+  const dataOrPreviousData = data || previousData;
+
+  if (!dataOrPreviousData) {
     return fallback;
   }
 
-  return children(data);
+  return children(dataOrPreviousData);
 }

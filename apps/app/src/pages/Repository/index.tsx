@@ -19,21 +19,28 @@ const RepositoryQuery = graphql(`
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
       permissions
+      hasTests
     }
   }
 `);
 
-const RepositoryTabs = () => {
+const RepositoryTabs = ({
+  hasTests,
+  hasWritePermission,
+}: {
+  hasTests: boolean;
+  hasWritePermission: boolean;
+}) => {
   const tab = useTabLinkState();
   return (
     <>
       <TabLinkList state={tab} aria-label="Sections">
         <TabLink to="">Builds</TabLink>
-        <TabLink to="tests">Tests</TabLink>
-        <TabLink to="settings">Settings</TabLink>
+        {hasTests && <TabLink to="tests">Tests</TabLink>}
+        {hasWritePermission && <TabLink to="settings">Settings</TabLink>}
       </TabLinkList>
       <TabLinkPanel state={tab} as={Main} tabId={tab.selectedId || null}>
-        <Outlet context={{ hasWritePermission: true } as OutletContext} />
+        <Outlet context={{ hasWritePermission } as OutletContext} />
       </TabLinkPanel>
     </>
   );
@@ -63,12 +70,21 @@ export const Repository = () => {
         if (!repository.permissions.includes("read" as Permission)) {
           return <NotFound />;
         }
-        if (!repository.permissions.includes("write" as Permission)) {
+
+        const hasWritePermission = repository.permissions.includes(
+          "write" as Permission
+        );
+
+        if (repository.hasTests || hasWritePermission) {
           return (
-            <Outlet context={{ hasWritePermission: false } as OutletContext} />
+            <RepositoryTabs
+              hasWritePermission={hasWritePermission}
+              hasTests={repository.hasTests}
+            />
           );
         }
-        return <RepositoryTabs />;
+
+        return <Outlet context={{ hasWritePermission } as OutletContext} />;
       }}
     </Query>
   );
