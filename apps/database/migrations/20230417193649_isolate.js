@@ -178,16 +178,17 @@ export const up = async (knex) => {
     table.bigIncrements("id").primary();
     table.dateTime("createdAt").notNullable();
     table.dateTime("updatedAt").notNullable();
-    table.integer("userGithubId").notNullable().unique();
     table.bigInteger("githubInstallationId").notNullable().index();
     table.foreign("githubInstallationId").references("github_installations.id");
+    table.bigInteger("githubUserId").notNullable().index();
+    table.foreign("githubUserId").references("github_users.id");
   });
 
   // move data from user_installation_rights to github_installation_users
   await knex.raw(
-    `INSERT INTO github_installation_users (id, "createdAt", "updatedAt", "userGithubId", "githubInstallationId")
-    SELECT user_installation_rights.id, user_installation_rights."createdAt", user_installation_rights."updatedAt", users."githubId", user_installation_rights."installationId"
-    FROM user_installation_rights join users on users.id = user_installation_rights."userId"`
+    `INSERT INTO github_installation_users (id, "createdAt", "updatedAt", "githubUserId", "githubInstallationId")
+    SELECT id, "createdAt", "updatedAt", "githubUserId", "installationId"
+    FROM user_installation_rights`
   );
 
   // update github_installation_users autoincrement

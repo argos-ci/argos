@@ -28,7 +28,7 @@ export class TestActivity extends Model {
   testId!: string;
   userId!: string;
   date!: string;
-  action!: string | null;
+  action!: "resolve" | "unresolve" | "mute" | "unmute" | null;
   data!: any | null;
 
   static override get relationMappings(): RelationMappings {

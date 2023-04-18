@@ -2,7 +2,7 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
-import { Repository } from "./Repository.js";
+import { Project } from "./Project.js";
 import { Screenshot } from "./Screenshot.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
 
@@ -47,12 +47,12 @@ export class Test extends Model {
 
   static override get relationMappings(): RelationMappings {
     return {
-      repository: {
+      project: {
         relation: Model.BelongsToOneRelation,
-        modelClass: Repository,
+        modelClass: Project,
         join: {
-          from: "tests.repositoryId",
-          to: "repositories.id",
+          from: "tests.projectId",
+          to: "projects.id",
         },
       },
       screenshots: {
@@ -85,7 +85,7 @@ export class Test extends Model {
     };
   }
 
-  repository?: Repository;
+  project?: Project;
   screenshotDiffs?: ScreenshotDiff[];
   screenshots?: Screenshot[];
   lastScreenshotDiff?: ScreenshotDiff;
