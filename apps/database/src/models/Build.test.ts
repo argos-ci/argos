@@ -341,7 +341,7 @@ describe("models/Build", () => {
       const build = await factory.create<Build>("Build");
       const url = await build.getUrl();
       expect(url).toMatch(
-        `http://localhost:4001/${build.project!.account!.team!.slug}/${
+        `http://localhost:4001/${build.project!.account!.slug}/${
           build.project!.slug
         }/builds/${build.number}`
       );

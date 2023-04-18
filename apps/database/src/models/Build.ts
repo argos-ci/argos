@@ -306,7 +306,7 @@ export class Build extends Model {
   async getUrl({ trx }: { trx?: TransactionOrKnex } = {}) {
     if (!this.project) {
       await this.$fetchGraph(
-        "project.[account.[user, team]]",
+        "project.account",
         trx ? { transaction: trx } : undefined
       );
     }
@@ -315,9 +315,7 @@ export class Build extends Model {
       throw new Error("Owner not found");
     }
 
-    const accountSlug = await this.project.account.getSlug();
-
-    const pathname = `/${accountSlug}/${this.project.slug}/builds/${this.number}`;
+    const pathname = `/${this.project.account.slug}/${this.project.slug}/builds/${this.number}`;
 
     return `${config.get("server.url")}${pathname}`;
   }

@@ -7,10 +7,10 @@ import logger from "@argos-ci/logger";
 import { synchronizeFromInstallationId } from "../helpers.js";
 import {
   cancelPurchase,
+  getAccount,
   getNewPlanOrThrow,
-  getOrCreateAccount,
+  getOrCreateInstallation,
 } from "./eventHelpers.js";
-import { getOrCreateInstallation } from "./synchronizer.js";
 import { updatePurchase } from "./updatePurchase.js";
 
 export const handleGitHubEvents = async ({
@@ -25,8 +25,11 @@ export const handleGitHubEvents = async ({
           case "purchased": {
             const [newPlan, account] = await Promise.all([
               getNewPlanOrThrow(payload),
-              getOrCreateAccount(payload),
+              getAccount(payload),
             ]);
+
+            if (!account) return;
+
             const activePurchase = await account.getActivePurchase();
             if (activePurchase && activePurchase.planId === newPlan.id) return;
 
@@ -39,12 +42,14 @@ export const handleGitHubEvents = async ({
             return;
           }
           case "changed": {
-            const account = await getOrCreateAccount(payload);
+            const account = await getAccount(payload);
+            if (!account) return;
             await updatePurchase(payload, account);
             return;
           }
           case "cancelled": {
-            const account = await getOrCreateAccount(payload);
+            const account = await getAccount(payload);
+            if (!account) return;
             await cancelPurchase(payload, account);
             return;
           }

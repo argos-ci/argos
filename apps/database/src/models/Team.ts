@@ -10,17 +10,8 @@ export class Team extends Model {
   static override tableName = "teams";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["slug"],
-    properties: {
-      name: { type: ["string", "null"] },
-      slug: { type: "string" },
-      githubAccountId: { type: "string" },
-    },
+    required: [],
   });
-
-  name!: string | null;
-  slug!: string;
-  githubAccountId!: string;
 
   static override get relationMappings(): RelationMappings {
     return {

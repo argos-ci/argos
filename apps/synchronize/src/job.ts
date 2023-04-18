@@ -1,6 +1,12 @@
-import { Synchronization } from "@argos-ci/database/models";
+import { GithubSynchronization } from "@argos-ci/database/models";
 import { createModelJob } from "@argos-ci/job-core";
 
-import { synchronize } from "./synchronizer.js";
+import { synchronizeInstallation } from "./synchronizer.js";
 
-export const job = createModelJob("synchronize", Synchronization, synchronize);
+export const job = createModelJob(
+  "synchronize",
+  GithubSynchronization,
+  async (synchronization) => {
+    return synchronizeInstallation(synchronization.githubInstallationId);
+  }
+);

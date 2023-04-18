@@ -9,21 +9,15 @@ export class User extends Model {
   static override tableName = "users";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["slug", "githubAccountId"],
+    required: [],
     properties: {
-      name: { type: ["string", "null"] },
       email: { type: ["string", "null"] },
       accessToken: { type: "string" },
-      slug: { type: "string" },
-      githubAccountId: { type: "string" },
     },
   });
 
-  name!: string | null;
   email!: string | null;
   accessToken!: string;
-  slug!: string;
-  githubAccountId!: string;
 
   static override get relationMappings(): RelationMappings {
     return {

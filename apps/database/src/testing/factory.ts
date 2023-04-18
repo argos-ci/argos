@@ -106,16 +106,10 @@ factory.define("BuildNotification", BuildNotification, {
 });
 
 factory.define("User", User, {
-  name: factory.chance("name"),
-  slug: factory.sequence("user.slug", (n) => `user-${n}`),
   email: factory.sequence("user.email", (n) => `user-${n}@email.com`),
-  githubAccountId: factory.assoc("GithubAccount", "id", { type: "user" }),
 });
 
-factory.define("Team", Team, {
-  name: factory.sequence("team.name", (n) => `Team-${n}`),
-  slug: factory.sequence("team.slug", (n) => `team-${n}`),
-});
+factory.define("Team", Team, {});
 
 factory.define("Project", Project, {
   name: "Default",
@@ -171,10 +165,18 @@ factory.define("Plan", Plan, {
 
 factory.define("TeamAccount", Account, {
   teamId: factory.assoc("Team", "id"),
+  name: factory.sequence("account.slug", (n) => `Account ${n}`),
+  slug: factory.sequence("account.slug", (n) => `account-${n}`),
+  githubAccountId: factory.assoc("GithubAccount", "id", {
+    type: "organization",
+  }),
 });
 
 factory.define("UserAccount", Account, {
   userId: factory.assoc("User", "id"),
+  name: factory.sequence("account.slug", (n) => `Account ${n}`),
+  slug: factory.sequence("account.slug", (n) => `account-${n}`),
+  githubAccountId: factory.assoc("GithubAccount", "id", { type: "user" }),
 });
 
 factory.define("Purchase", Purchase, {

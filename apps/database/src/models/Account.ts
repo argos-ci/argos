@@ -13,12 +13,15 @@ export class Account extends Model {
   static override tableName = "accounts";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: [],
+    required: ["slug"],
     properties: {
       userId: { type: ["string", "null"] },
       forcedPlanId: { type: ["string", "null"] },
       stripeCustomerId: { type: ["string", "null"] },
       teamId: { type: ["string", "null"] },
+      name: { type: ["string", "null"] },
+      slug: { type: "string" },
+      githubAccountId: { type: "string" },
     },
   });
 
@@ -26,6 +29,9 @@ export class Account extends Model {
   forcedPlanId!: string | null;
   teamId!: string | null;
   stripeCustomerId?: string | null;
+  name!: string | null;
+  slug!: string;
+  githubAccountId!: string;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -108,27 +114,6 @@ export class Account extends Model {
       return plan;
     }
     return Plan.getFreePlan();
-  }
-
-  async getSlug(): Promise<string> {
-    switch (this.type) {
-      case "team": {
-        if (this.team) return this.team.slug;
-        const team = (await Team.query()
-          .select("slug")
-          .findOne({ id: this.teamId })) as Team;
-        return team.slug;
-      }
-      case "user": {
-        if (this.user) return this.user.slug;
-        const user = (await User.query()
-          .select("slug")
-          .findOne({ id: this.userId })) as User;
-        return user.slug;
-      }
-      default:
-        throw new Error(`Invariant incoherent account type`);
-    }
   }
 
   async getScreenshotsMonthlyLimit() {
