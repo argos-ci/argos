@@ -316,7 +316,7 @@ const MembersCard = ({
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <div className="text-sm font-semibold">{user.name}</div>
-                    {!hasOwnerBadge && <Badge>Owner</Badge>}
+                    {hasOwnerBadge && <Badge>Owner</Badge>}
                   </div>
                   <div className="text-xs text-slate-500">{user.login}</div>
                 </div>
