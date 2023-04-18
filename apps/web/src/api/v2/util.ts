@@ -8,7 +8,7 @@ import { transaction } from "@argos-ci/database";
 import {
   Account,
   Build,
-  Repository,
+  Project,
   ScreenshotBucket,
 } from "@argos-ci/database/models";
 
@@ -26,14 +26,14 @@ type CreateRequest = Request<
     parallelNonce?: string | null;
     prNumber?: number | null;
   }
-> & { authRepository: Repository };
+> & { authProject: Project };
 
 const getBucketData = (req: CreateRequest) => {
   return {
     name: getBuildName(req.body.name),
     commit: req.body.commit,
     branch: req.body.branch,
-    repositoryId: req.authRepository.id,
+    projectId: req.authProject.id,
   };
 };
 
@@ -44,7 +44,7 @@ const getBuildData = (req: CreateRequest) => {
     baseScreenshotBucketId: null,
     externalId: parallel ? req.body.parallelNonce ?? null : null,
     batchCount: parallel ? 0 : null,
-    repositoryId: req.authRepository.id,
+    projectId: req.authProject.id,
     name: getBuildName(req.body.name),
     prNumber: req.body.prNumber ?? null,
   };
@@ -57,8 +57,9 @@ export const createBuild = async ({
   req: CreateRequest;
   trx?: TransactionOrKnex;
 }) => {
-  if (req.authRepository.private || req.authRepository.forcedPrivate) {
-    const account = await Account.getAccount(req.authRepository);
+  const isPublic = await req.authProject.$checkIsPublic(trx);
+  if (!isPublic) {
+    const account = await req.authProject.$relatedQuery("account", trx);
     const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
     if (hasExceedLimit) {
       throw new HttpError(

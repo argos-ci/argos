@@ -4,7 +4,7 @@ import { HttpError } from "express-err";
 
 import config from "@argos-ci/config";
 import { transaction } from "@argos-ci/database";
-import type { Repository } from "@argos-ci/database/models";
+import type { Project } from "@argos-ci/database/models";
 import { Build } from "@argos-ci/database/models";
 import { getUnknownScreenshotKeys } from "@argos-ci/database/services/screenshots";
 import { s3 as getS3, getSignedPutObjectUrl } from "@argos-ci/storage";
@@ -69,7 +69,7 @@ type CreateRequest = express.Request<
     parallelNonce?: string | null;
     prNumber: number | null;
   }
-> & { authRepository: Repository };
+> & { authProject: Project };
 
 const getScreenshots = async (keys: string[]) => {
   const unknownKeys = await getUnknownScreenshotKeys(keys);
@@ -108,14 +108,14 @@ const handleCreateParallel = async ({ req }: { req: CreateRequest }) => {
   const buildName = getBuildName(req.body.name);
   const parallelNonce = req.body.parallelNonce;
 
-  const lockKey = `${req.authRepository.id}:${req.body.commit}:${buildName}:${parallelNonce}`;
+  const lockKey = `${req.authProject.id}:${req.body.commit}:${buildName}:${parallelNonce}`;
   const lock = await getRedisLock();
   const build = await lock.acquire(lockKey, async () => {
     return transaction(async (trx) => {
       const existingBuild = await Build.query(trx)
         .withGraphFetched("compareScreenshotBucket")
         .findOne({
-          "builds.repositoryId": req.authRepository.id,
+          "builds.projectId": req.authProject.id,
           externalId: parallelNonce,
           name: getBuildName(req.body.name),
         });

@@ -1,14 +1,18 @@
 import type { RequestHandler } from "express";
 import request from "supertest";
 
-import type { Organization, Repository } from "@argos-ci/database/models";
+import type {
+  GithubAccount,
+  GithubRepository,
+  Project,
+} from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 
 import { createTestApp } from "../test-util.js";
 import { repoAuth } from "./repoAuth.js";
 
 const app = createTestApp(repoAuth, ((req, res) => {
-  res.send({ authRepository: req.authRepository });
+  res.send({ authProject: req.authProject });
 }) as RequestHandler);
 
 const encodeToken = ({
@@ -28,14 +32,13 @@ const encodeToken = ({
   ).toString("base64");
 
 describe("repoAuth", () => {
-  let repository: Repository;
+  let project: Project;
 
   useDatabase();
 
   describe("Argos token", () => {
     beforeEach(async () => {
-      repository = await factory.create<Repository>("Repository", {
-        name: "foo",
+      project = await factory.create<Project>("Project", {
         token: "the-awesome-token",
       });
     });
@@ -53,28 +56,32 @@ describe("repoAuth", () => {
     });
 
     // eslint-disable-next-line jest/expect-expect
-    it("puts authRepository in req with a valid token", async () => {
+    it("puts authProject in req with a valid token", async () => {
       await request(app)
         .get("/")
         .set("Authorization", "Bearer the-awesome-token")
         .expect((res) => {
-          expect(res.body.authRepository.id).toBe(repository.id);
+          expect(res.body.authProject.id).toBe(project.id);
         })
         .expect(200);
     });
   });
 
   describe("GitHub token", () => {
-    let organization;
-
     beforeEach(async () => {
-      organization = await factory.create<Organization>("Organization", {
+      const ghAccount = await factory.create<GithubAccount>("GithubAccount", {
         login: "argos-ci",
       });
-      repository = await factory.create<Repository>("Repository", {
+      const repository = await factory.create<GithubRepository>(
+        "GithubRepository",
+        {
+          githubAccountId: ghAccount.id,
+        }
+      );
+      project = await factory.create<Project>("Project", {
         name: "argos",
-        organizationId: organization.id,
         token: "the-awesome-token",
+        githubRepositoryId: repository.id,
       });
     });
 

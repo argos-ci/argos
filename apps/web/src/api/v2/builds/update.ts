@@ -4,7 +4,7 @@ import { HttpError } from "express-err";
 
 import { job as buildJob } from "@argos-ci/build";
 import { raw, transaction } from "@argos-ci/database";
-import type { Repository } from "@argos-ci/database/models";
+import type { Project } from "@argos-ci/database/models";
 import { Build } from "@argos-ci/database/models";
 import {
   getUnknownScreenshotKeys,
@@ -77,7 +77,7 @@ type UpdateRequest = express.Request<
     parallel?: boolean;
     parallelTotal?: number;
   }
-> & { authRepository?: Repository };
+> & { authProject?: Project };
 
 const handleUpdateParallel = async ({
   req,
@@ -184,8 +184,8 @@ router.put(
       throw new HttpError(409, "Build is already finalized");
     }
 
-    if (build.repositoryId !== req.authRepository!.id) {
-      throw new HttpError(403, "Build does not belong to repository");
+    if (build.projectId !== req.authProject!.id) {
+      throw new HttpError(403, "Build does not belong to project");
     }
 
     const screenshots = req.body.screenshots;

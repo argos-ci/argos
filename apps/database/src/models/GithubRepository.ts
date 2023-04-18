@@ -10,13 +10,19 @@ export class GithubRepository extends Model {
   static override tableName = "github_repositories";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["name", "private", "defaultBranch", "githubId"],
+    required: [
+      "name",
+      "private",
+      "defaultBranch",
+      "githubId",
+      "githubAccountId",
+    ],
     properties: {
       name: { type: "string" },
       private: { type: "boolean" },
       defaultBranch: { type: "string" },
       githubId: { type: "number" },
-      githubAccountId: { type: ["string", "null"] },
+      githubAccountId: { type: "string" },
     },
   });
 
@@ -24,7 +30,7 @@ export class GithubRepository extends Model {
   private!: boolean;
   defaultBranch!: string;
   githubId!: number;
-  githubAccountId!: string | null;
+  githubAccountId!: string;
 
   static override get relationMappings(): RelationMappings {
     return {

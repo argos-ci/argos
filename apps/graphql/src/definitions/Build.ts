@@ -1,7 +1,7 @@
 import gqlTag from "graphql-tag";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
-import { Account, Build, ScreenshotDiff } from "@argos-ci/database/models";
+import { Build, ScreenshotDiff } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
 import { APIError } from "../util.js";
@@ -154,7 +154,7 @@ export const resolvers = {
       const { buildId, validationStatus } = args;
       const [user, build] = await Promise.all([
         Build.getUsers(buildId).findById(ctx.user.id),
-        Build.query().findById(buildId).withGraphFetched("repository"),
+        Build.query().findById(buildId).withGraphFetched("project.account"),
       ]);
 
       if (!user) {
@@ -165,9 +165,19 @@ export const resolvers = {
         throw new APIError("Build not found");
       }
 
-      if (build.repository!.private || build.repository!.forcedPrivate) {
-        const account = await Account.getAccount(build.repository!);
-        const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
+      if (!build.project) {
+        throw new APIError("Build project not found");
+      }
+
+      if (!build.project.account) {
+        throw new APIError("Build project account not found");
+      }
+
+      const isPublic = await build.project.$checkIsPublic();
+
+      if (!isPublic) {
+        const hasExceedLimit =
+          await build.project.account.hasExceedScreenshotsMonthlyLimit();
         if (hasExceedLimit) {
           throw new APIError(
             "Insufficient credit. Please upgrade Argos plan to unlock build reviews."

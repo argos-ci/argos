@@ -2,7 +2,7 @@ import express, { Router } from "express";
 
 import { job as crawlJob } from "@argos-ci/crawl";
 import { transaction } from "@argos-ci/database";
-import { Crawl, Repository } from "@argos-ci/database/models";
+import { Crawl, Project } from "@argos-ci/database/models";
 
 import { SHA1_REGEX_STR } from "../../../constants.js";
 import { repoAuth } from "../../../middlewares/repoAuth.js";
@@ -40,7 +40,7 @@ type CreateRequest = express.Request<
     branch: string;
     baseUrl: string;
   }
-> & { authRepository: Repository };
+> & { authProject: Project };
 
 router.post(
   "/crawls",

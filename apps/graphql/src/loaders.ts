@@ -2,14 +2,15 @@ import DataLoader from "dataloader";
 import type { ModelClass } from "objection";
 
 import {
+  Account,
   Build,
   File,
   Model,
-  Organization,
-  Repository,
+  Project,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
+  Team,
   Test,
   User,
 } from "@argos-ci/database/models";
@@ -73,14 +74,15 @@ const createLastScreenshotDiffLoader = () =>
 
 const createLastScreenshotLoader = () =>
   new DataLoader<string, Screenshot | null>(async (testIds) => {
-    const repository = await Repository.query()
+    const project = await Project.query()
       .whereIn(
         "id",
         Test.query()
-          .select("repositoryId")
+          .select("projectId")
           .where("id", testIds[0] as string)
       )
       .first();
+    const referenceBranch = await project!.$getReferenceBranch();
     const lastScreenshots = await Screenshot.query()
       .select("screenshots.*", "screenshotBucket.branch")
       .whereIn("testId", testIds as string[])
@@ -89,7 +91,7 @@ const createLastScreenshotLoader = () =>
       .orderBy("testId")
       .orderByRaw(
         `CASE WHEN "screenshotBucket".branch = ? THEN 0 ELSE 1 END`,
-        repository!.referenceBranch
+        referenceBranch
       )
       .orderBy("screenshots.createdAt", "desc");
     const lastScreenshotMap: Record<string, Screenshot> = {};
@@ -100,12 +102,13 @@ const createLastScreenshotLoader = () =>
   });
 
 export const createLoaders = () => ({
+  Account: createModelLoader(Account),
   User: createModelLoader(User),
-  Organization: createModelLoader(Organization),
+  Team: createModelLoader(Team),
   Screenshot: createModelLoader(Screenshot),
   ScreenshotBucket: createModelLoader(ScreenshotBucket),
   ScreenshotDiff: createModelLoader(ScreenshotDiff),
-  Repository: createModelLoader(Repository),
+  Project: createModelLoader(Project),
   File: createModelLoader(File),
   Test: createModelLoader(Test),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),

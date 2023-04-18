@@ -8,26 +8,11 @@ import type { Context } from "../context.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type User implements Node & Owner {
+  type User implements Node {
     id: ID!
-    stripeClientReferenceId: String!
-    consumptionRatio: Float
-    currentMonthUsedScreenshots: Int!
-    email: String
-    installations: [Installation!]!
-    latestSynchronization: Synchronization
-    login: String!
-    name: String!
-    permissions: [Permission!]!
-    plan: Plan
-    privateSync: Boolean!
-    purchase: Purchase
     lastPurchase: Purchase
-    repositories(enabled: Boolean): [Repository!]!
-    repositoriesNumber: Int!
-    screenshotsLimitPerMonth: Int
-    stripeCustomerId: String
-    type: OwnerType!
+    account: Account!
+    teams: [Team!]!
   }
 
   type UserConnection implements Connection {
@@ -37,28 +22,27 @@ export const typeDefs = gql`
 
   extend type Query {
     "Get the authenticated user"
-    user: User
+    me: User
   }
 `;
 
 export const resolvers = {
   Query: {
-    user: async (_root: null, _args: Record<string, never>, ctx: Context) => {
-      return ctx.user || null;
+    me: async (_root: null, _args: Record<string, never>, ctx: Context) => {
+      return ctx.auth?.user || null;
     },
   },
   User: {
-    installations: async (user: User) => {
-      return user.$relatedQuery("installations");
-    },
-    latestSynchronization: async (user: User) => {
-      return user.$relatedQuery("synchronizations").first();
+    account: async (user: User) => {
+      return user.$relatedQuery("account");
     },
     lastPurchase: async (user: User) => {
       return Purchase.query()
         .findOne({ purchaserId: user.id })
         .orderBy("updatedAt");
     },
-    type: () => "user",
+    teams: async (user: User) => {
+      return user.$relatedQuery("teams");
+    },
   },
 };

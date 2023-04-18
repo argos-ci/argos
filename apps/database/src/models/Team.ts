@@ -28,10 +28,6 @@ export class Team extends Model {
 
   account?: Account;
 
-  type() {
-    return "team";
-  }
-
   async $checkWritePermission(user: User) {
     return Team.checkWritePermission(this.id, user);
   }

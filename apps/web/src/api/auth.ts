@@ -4,9 +4,9 @@ import cors from "cors";
 import { Router } from "express";
 
 import config from "@argos-ci/config";
-import { Account, User } from "@argos-ci/database/models";
-import { getTokenOctokit } from "@argos-ci/github";
-import { synchronizeFromUserId } from "@argos-ci/synchronize";
+import { transaction } from "@argos-ci/database";
+import { Account, GithubAccount, User } from "@argos-ci/database/models";
+import { RestEndpointMethodTypes, getTokenOctokit } from "@argos-ci/github";
 
 import { createJWT } from "../jwt.js";
 import { asyncHandler } from "../util.js";
@@ -18,38 +18,94 @@ export default router;
 // @TODO be more restrictive on cors
 router.use(cors());
 
-const getDataFromProfile = (profile: {
-  id: number;
-  login: string;
-  name: string | null;
-  email: string | null;
-}) => {
-  return {
+type Profile =
+  RestEndpointMethodTypes["users"]["getAuthenticated"]["response"]["data"];
+
+const getOrCreateGhAccount = async (profile: Profile) => {
+  const existing = await GithubAccount.query().findOne({
+    githubId: profile.id,
+  });
+  if (existing) {
+    if (
+      existing.login !== profile.login ||
+      existing.email !== profile.email ||
+      existing.name !== profile.name
+    ) {
+      return existing.$query().patchAndFetch({
+        login: profile.login,
+        email: profile.email,
+        name: profile.name,
+      });
+    }
+    return existing;
+  }
+  return GithubAccount.query().insertAndFetch({
     githubId: profile.id,
     login: profile.login,
-    name: profile.name,
+    type: "user",
     email: profile.email,
-  };
+    name: profile.name,
+  });
 };
 
-async function registerUserFromGitHub(accessToken: string) {
-  const octokit = getTokenOctokit(accessToken);
+const getOrCreateAccount = async (
+  ghAccount: GithubAccount,
+  accessToken: string
+): Promise<Account> => {
+  const existingAccount = await Account.query()
+    .findOne({
+      githubAccountId: ghAccount.id,
+    })
+    .withGraphFetched("user");
 
-  const profile = await octokit.users.getAuthenticated();
-  const userData = { ...getDataFromProfile(profile.data), accessToken };
+  if (existingAccount) {
+    if (!existingAccount.user) {
+      throw new Error("Invariant: user not found");
+    }
 
-  let user = await User.query().findOne({ githubId: userData.githubId });
+    if (
+      existingAccount.user.accessToken !== accessToken ||
+      existingAccount.user.email !== ghAccount.email
+    ) {
+      await existingAccount.user.$query().patchAndFetch({
+        accessToken,
+        email: ghAccount.email,
+      });
+    }
 
-  if (user) {
-    await User.query().findById(user.id).patch(userData);
-  } else {
-    user = await User.query().insertAndFetch(userData);
-    await Account.query().insert({ userId: user.id });
+    if (
+      existingAccount.name !== ghAccount.name ||
+      existingAccount.slug !== ghAccount.login
+    ) {
+      return existingAccount.$query().patchAndFetch({
+        name: ghAccount.name,
+        slug: ghAccount.login,
+      });
+    }
+
+    return existingAccount;
   }
 
-  await synchronizeFromUserId(user.id);
+  return transaction(async (trx) => {
+    const user = await User.query(trx).insertAndFetch({
+      email: ghAccount.email,
+      accessToken,
+    });
+    return Account.query(trx).insertAndFetch({
+      userId: user.id,
+      githubAccountId: ghAccount.id,
+      name: ghAccount.name,
+      slug: ghAccount.login,
+    });
+  });
+};
 
-  return user;
+async function registerAccountFromGithub(accessToken: string) {
+  const octokit = getTokenOctokit(accessToken);
+  const profile = await octokit.users.getAuthenticated();
+  const ghAccount = await getOrCreateGhAccount(profile.data);
+  const account = await getOrCreateAccount(ghAccount, accessToken);
+  return account;
 }
 
 router.post(
@@ -76,9 +132,16 @@ router.post(
       return;
     }
 
-    const user = await registerUserFromGitHub(result.data.access_token);
+    const account = await registerAccountFromGithub(result.data.access_token);
     res.send({
-      jwt: createJWT(user),
+      jwt: createJWT({
+        version: 1,
+        account: {
+          id: account.id,
+          name: account.name,
+          slug: account.slug,
+        },
+      }),
     });
   })
 );

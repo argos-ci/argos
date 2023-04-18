@@ -402,7 +402,7 @@ CREATE TABLE public.github_repositories (
     private boolean NOT NULL,
     "defaultBranch" character varying(255) NOT NULL,
     "githubId" integer NOT NULL,
-    "githubAccountId" bigint
+    "githubAccountId" bigint NOT NULL
 );
 
 
@@ -2059,3 +2059,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023041
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418130232_simplify-github-account.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418133221_simplify-account.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418154104_remove-github-installation-accounts.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418191815_non-nullable-github-repo.js', 1, NOW());

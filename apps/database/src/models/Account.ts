@@ -176,42 +176,6 @@ export class Account extends Model {
     return screenshotsConsumptionRatio >= 1.1;
   }
 
-  static async getAccount({
-    userId,
-    teamId,
-  }: {
-    userId?: string | null;
-    teamId?: string | null;
-  }) {
-    if (userId && teamId) {
-      throw new Error(`Can't call getAccount with both userId and teamId`);
-    }
-    if (userId) {
-      const userAccount = await Account.query()
-        .withGraphFetched("user")
-        .findOne("userId", userId);
-      return userAccount || Account.fromJson({ userId });
-    }
-
-    if (teamId) {
-      const teamAccount = await Account.query()
-        .withGraphFetched("team")
-        .findOne("teamId", teamId);
-      return teamAccount || Account.fromJson({ teamId });
-    }
-
-    throw new Error("Can't get account without userId or teamId");
-  }
-
-  static async getOrCreateAccount(options: {
-    userId?: string;
-    teamId?: string;
-  }) {
-    const account = await this.getAccount(options);
-    if (account.id) return account;
-    return account.$query().insertAndFetch();
-  }
-
   async $checkWritePermission(user: User) {
     return Account.checkWritePermission(this, user);
   }

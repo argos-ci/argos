@@ -3,8 +3,9 @@ import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { Octokit } from "@octokit/rest";
 
 import config from "@argos-ci/config";
-import type { TransactionOrKnex } from "@argos-ci/database";
 import { GithubInstallation } from "@argos-ci/database/models";
+
+export type { RestEndpointMethodTypes } from "@octokit/rest";
 
 export const getAppOctokit = () => {
   return new Octokit({

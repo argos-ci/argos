@@ -47,10 +47,6 @@ export class User extends Model {
   account?: Account;
   teams?: Team[];
 
-  type() {
-    return "user";
-  }
-
   $checkWritePermission(user: User) {
     return User.checkWritePermission(this.id, user);
   }

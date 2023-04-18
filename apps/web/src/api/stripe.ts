@@ -346,10 +346,9 @@ router.post(
       );
     }
 
-    const accountLogin = await account.getLogin();
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: new URL(`/${accountLogin}/settings`, config.get("server.url"))
+      return_url: new URL(`/${account.slug}/settings`, config.get("server.url"))
         .href,
     });
 

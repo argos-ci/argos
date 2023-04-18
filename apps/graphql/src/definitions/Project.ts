@@ -1,31 +1,33 @@
 import gqlTag from "graphql-tag";
-import type { TransactionOrKnex } from "objection";
+import type { PartialModelObject } from "objection";
 
-import { transaction } from "@argos-ci/database";
 import {
   Account,
   Build,
-  Repository,
+  Project,
   Screenshot,
   ScreenshotDiff,
   Test,
 } from "@argos-ci/database/models";
-import type { User } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
-import { APIError } from "../util.js";
-import { getOwner } from "./Owner.js";
 import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type Repository implements Node {
+  type GithubRepository implements Node {
+    id: ID!
+    defaultBranch: String!
+    private: Boolean!
+  }
+
+  type Project implements Node {
     id: ID!
     name: String!
-    enabled: Boolean!
-    token: ID
+    slug: String!
+    token: ID!
     "Builds associated to the repository"
     builds(first: Int!, after: Int!): BuildConnection!
     "A single build linked to the repository"
@@ -34,87 +36,38 @@ export const typeDefs = gql`
     tests(first: Int!, after: Int!): TestConnection!
     "Determines if the repository has tests"
     hasTests: Boolean!
-    "Determine if the current user has write access to the repository"
+    "Determine if the current user has write access to the project"
     permissions: [Permission!]!
     "Owner of the repository"
-    owner: Owner!
-    "Github default branch"
-    defaultBranch: String
+    account: Account!
+    "Repositories associated to the project"
+    ghRepository: GithubRepository!
     "Override branch name"
     baselineBranch: String
     "Reference branch"
     referenceBranch: String
-    "Private repository on GitHub"
-    private: Boolean!
     "Override repository's Github privacy"
-    forcedPrivate: Boolean!
+    private: Boolean
     "Current month used screenshots"
     currentMonthUsedScreenshots: Int!
-    "Repository's users"
-    users(first: Int!, after: Int!): UserConnection!
   }
 
   extend type Query {
-    "Get a repository"
-    repository(ownerLogin: String!, repositoryName: String!): Repository
+    "Get a project"
+    project(accountSlug: String!, projectSlug: String!): Project
+  }
+
+  input UpdateProjectInput {
+    id: ID!
+    baselineBranch: String
+    private: Boolean
   }
 
   extend type Mutation {
-    "Update repository baseline branch"
-    updateReferenceBranch(
-      repositoryId: String!
-      baselineBranch: String
-    ): Repository!
-    "Update repository forced private"
-    updateForcedPrivate(
-      repositoryId: String!
-      forcedPrivate: Boolean!
-    ): Repository!
+    "Update project"
+    updateProject(input: UpdateProjectInput): Repository!
   }
 `;
-
-export async function getRepository({
-  ownerLogin,
-  name,
-  user,
-}: {
-  ownerLogin: string;
-  name: string;
-  user: User | null;
-}) {
-  const owner = await getOwner({ login: ownerLogin });
-  if (!owner) return null;
-
-  const repository = await Repository.query().findOne({
-    [`${owner.type()}Id`]: owner.id,
-    name,
-  });
-
-  if (!repository) return null;
-
-  const hasReadPermission = await repository.$checkReadPermission(user);
-  if (!hasReadPermission) return null;
-
-  return repository;
-}
-
-async function checkUserRepositoryAccess({
-  user,
-  repositoryId,
-  trx,
-}: {
-  user: User | null;
-  repositoryId: string;
-  trx?: TransactionOrKnex;
-}) {
-  if (!user) throw new APIError("Invalid user identification");
-
-  const repositoryUser = await Repository.getUsers(repositoryId, {
-    trx,
-  }).findById(user.id);
-
-  if (!repositoryUser) throw new APIError("Invalid user authorization");
-}
 
 export const resolvers = {
   Repository: {
@@ -237,47 +190,67 @@ export const resolvers = {
     },
   },
   Query: {
-    repository: async (
+    project: async (
       _root: null,
-      args: { ownerLogin: string; repositoryName: string },
+      args: { accountSlug: string; projectSlug: string },
       ctx: Context
     ) => {
-      return getRepository({
-        ownerLogin: args.ownerLogin,
-        name: args.repositoryName,
-        user: ctx.user,
+      const project = await Project.query().joinRelated("account").findOne({
+        "account:slug": args.accountSlug,
+        "projects.slug": args.projectSlug,
       });
+      if (!project) return null;
+
+      const hasReadPermission = await project.$checkReadPermission(
+        ctx.auth?.user ?? null
+      );
+      if (!hasReadPermission) return null;
+
+      return project;
     },
   },
   Mutation: {
-    updateReferenceBranch: async (
+    updateProject: async (
       _root: null,
-      args: { repositoryId: string; baselineBranch?: string },
+      args: {
+        input: {
+          id: string;
+          baselineBranch?: string | null;
+          private?: boolean | null;
+        };
+      },
       ctx: Context
     ) => {
-      return transaction(async (trx) => {
-        await checkUserRepositoryAccess({
-          user: ctx.user,
-          repositoryId: args.repositoryId,
-          trx,
-        });
-        return Repository.query(trx).patchAndFetchById(args.repositoryId, {
-          baselineBranch: args.baselineBranch?.trim() ?? null,
-        });
-      });
-    },
-    updateForcedPrivate: async (
-      _root: null,
-      args: { repositoryId: string; forcedPrivate: boolean },
-      ctx: Context
-    ) => {
-      await checkUserRepositoryAccess({
-        user: ctx.user,
-        repositoryId: args.repositoryId,
-      });
-      return Repository.query().patchAndFetchById(args.repositoryId, {
-        forcedPrivate: args.forcedPrivate,
-      });
+      if (!ctx.auth) {
+        throw new Error("Unauthorized");
+      }
+
+      const { id } = args.input;
+      const project = await Project.query().findById(id);
+
+      if (!project) {
+        throw new Error("Project not found");
+      }
+
+      const hasWritePermission = await project.$checkWritePermission(
+        ctx.auth.user
+      );
+
+      if (!hasWritePermission) {
+        throw new Error("Unauthorized");
+      }
+
+      const data: PartialModelObject<Project> = {};
+
+      if (args.input.baselineBranch !== undefined) {
+        data.baselineBranch = args.input.baselineBranch?.trim() ?? null;
+      }
+
+      if (args.input.private != null) {
+        data.private = args.input.private;
+      }
+
+      return project.$query().patchAndFetch(data);
     },
   },
 };

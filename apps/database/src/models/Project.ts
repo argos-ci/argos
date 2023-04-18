@@ -1,6 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { promisify } from "node:util";
-import type { QueryContext, RelationMappings } from "objection";
+import type {
+  QueryContext,
+  RelationMappings,
+  TransactionOrKnex,
+} from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
@@ -80,16 +84,16 @@ export class Project extends Model {
   }
 
   static async checkReadPermission(project: Project, user: User | null) {
-    if (!user) return false;
     const isPublic = await project.$checkIsPublic();
     if (isPublic) return true;
     return Project.checkWritePermission(project, user);
   }
 
-  async $checkIsPublic() {
+  async $checkIsPublic(trx?: TransactionOrKnex) {
     if (this.private) return false;
     const repository =
-      this.githubRepository ?? (await this.$relatedQuery("githubRepository"));
+      this.githubRepository ??
+      (await this.$relatedQuery("githubRepository", trx));
     if (!repository) return false;
     return repository.private;
   }
@@ -105,5 +109,13 @@ export class Project extends Model {
 
   async $checkReadPermission(user: User | null) {
     return Project.checkReadPermission(this, user);
+  }
+
+  async $getReferenceBranch() {
+    if (this.baselineBranch) return this.baselineBranch;
+    const ghRepo =
+      this.githubRepository || (await this.$relatedQuery("githubRepository"));
+    if (!ghRepo) return null;
+    return ghRepo.defaultBranch;
   }
 }

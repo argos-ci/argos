@@ -10,6 +10,7 @@ import {
   BuildNotification,
   File,
   GithubAccount,
+  GithubRepository,
   GithubSynchronization,
   Plan,
   Project,
@@ -97,6 +98,14 @@ factory.define("GithubAccount", GithubAccount, {
   login: factory.sequence("githubAccount.login", (n) => `login-${n}`),
   githubId: factory.sequence("githubAccount.githubId", (n) => n),
   type: "user",
+});
+
+factory.define("GithubRepository", GithubRepository, {
+  name: factory.sequence("githubRepository.name", (n) => `repo-${n}`),
+  private: true,
+  defaultBranch: "main",
+  githubId: factory.sequence("githubRepository.githubId", (n) => n),
+  githubAccountId: factory.assoc("GithubAccount", "id"),
 });
 
 factory.define("BuildNotification", BuildNotification, {
