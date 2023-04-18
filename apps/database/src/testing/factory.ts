@@ -9,6 +9,7 @@ import {
   Build,
   BuildNotification,
   File,
+  GithubAccount,
   GithubSynchronization,
   Plan,
   Project,
@@ -92,6 +93,12 @@ factory.define<Build>(
   }
 );
 
+factory.define("GithubAccount", GithubAccount, {
+  login: factory.sequence("githubAccount.login", (n) => `login-${n}`),
+  githubId: factory.sequence("githubAccount.githubId", (n) => n),
+  type: "user",
+});
+
 factory.define("BuildNotification", BuildNotification, {
   buildId: factory.assoc("Build", "id"),
   jobStatus: "complete",
@@ -100,9 +107,9 @@ factory.define("BuildNotification", BuildNotification, {
 
 factory.define("User", User, {
   name: factory.chance("name"),
-  githubId: factory.sequence("user.githubId", (n) => n),
   slug: factory.sequence("user.slug", (n) => `user-${n}`),
   email: factory.sequence("user.email", (n) => `user-${n}@email.com`),
+  githubAccountId: factory.assoc("GithubAccount", "id", { type: "user" }),
 });
 
 factory.define("Team", Team, {

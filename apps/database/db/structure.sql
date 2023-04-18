@@ -317,9 +317,10 @@ CREATE TABLE public.github_accounts (
     id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "githubUserId" bigint,
-    "githubOrganizationId" bigint,
-    CONSTRAINT github_accounts_only_one_owner CHECK ((num_nonnulls("githubUserId", "githubOrganizationId") = 1))
+    name character varying(255),
+    email character varying(255),
+    login character varying(255) NOT NULL,
+    "githubId" integer NOT NULL
 );
 
 
@@ -347,25 +348,25 @@ ALTER SEQUENCE public.github_accounts_id_seq OWNED BY public.github_accounts.id;
 
 
 --
--- Name: github_installation_users; Type: TABLE; Schema: public; Owner: postgres
+-- Name: github_installation_accounts; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.github_installation_users (
+CREATE TABLE public.github_installation_accounts (
     id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "githubInstallationId" bigint NOT NULL,
-    "githubUserId" bigint NOT NULL
+    "githubAccountId" bigint NOT NULL
 );
 
 
-ALTER TABLE public.github_installation_users OWNER TO postgres;
+ALTER TABLE public.github_installation_accounts OWNER TO postgres;
 
 --
--- Name: github_installation_users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: github_installation_accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.github_installation_users_id_seq
+CREATE SEQUENCE public.github_installation_accounts_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -373,13 +374,13 @@ CREATE SEQUENCE public.github_installation_users_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.github_installation_users_id_seq OWNER TO postgres;
+ALTER TABLE public.github_installation_accounts_id_seq OWNER TO postgres;
 
 --
--- Name: github_installation_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: github_installation_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.github_installation_users_id_seq OWNED BY public.github_installation_users.id;
+ALTER SEQUENCE public.github_installation_accounts_id_seq OWNED BY public.github_installation_accounts.id;
 
 
 --
@@ -418,43 +419,6 @@ ALTER TABLE public.github_installations_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.github_installations_id_seq OWNED BY public.github_installations.id;
-
-
---
--- Name: github_organizations; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.github_organizations (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    name character varying(255) NOT NULL,
-    login character varying(255) NOT NULL,
-    "githubId" integer NOT NULL
-);
-
-
-ALTER TABLE public.github_organizations OWNER TO postgres;
-
---
--- Name: github_organizations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.github_organizations_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.github_organizations_id_seq OWNER TO postgres;
-
---
--- Name: github_organizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.github_organizations_id_seq OWNED BY public.github_organizations.id;
 
 
 --
@@ -566,44 +530,6 @@ ALTER TABLE public.github_synchronizations_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.github_synchronizations_id_seq OWNED BY public.github_synchronizations.id;
-
-
---
--- Name: github_users; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.github_users (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    name character varying(255),
-    email character varying(255),
-    login character varying(255) NOT NULL,
-    "githubId" integer NOT NULL
-);
-
-
-ALTER TABLE public.github_users OWNER TO postgres;
-
---
--- Name: github_users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.github_users_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.github_users_id_seq OWNER TO postgres;
-
---
--- Name: github_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.github_users_id_seq OWNED BY public.github_users.id;
 
 
 --
@@ -1056,13 +982,13 @@ ALTER SEQUENCE public.tests_id_seq OWNED BY public.tests.id;
 
 CREATE TABLE public.users (
     id bigint NOT NULL,
-    "githubId" integer NOT NULL,
     name character varying(255),
     email character varying(255),
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "accessToken" character varying(255),
-    slug character varying(255) NOT NULL
+    slug character varying(255) NOT NULL,
+    "githubAccountId" bigint NOT NULL
 );
 
 
@@ -1139,10 +1065,10 @@ ALTER TABLE ONLY public.github_accounts ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
--- Name: github_installation_users id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: github_installation_accounts id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.github_installation_users ALTER COLUMN id SET DEFAULT nextval('public.github_installation_users_id_seq'::regclass);
+ALTER TABLE ONLY public.github_installation_accounts ALTER COLUMN id SET DEFAULT nextval('public.github_installation_accounts_id_seq'::regclass);
 
 
 --
@@ -1150,13 +1076,6 @@ ALTER TABLE ONLY public.github_installation_users ALTER COLUMN id SET DEFAULT ne
 --
 
 ALTER TABLE ONLY public.github_installations ALTER COLUMN id SET DEFAULT nextval('public.github_installations_id_seq'::regclass);
-
-
---
--- Name: github_organizations id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.github_organizations ALTER COLUMN id SET DEFAULT nextval('public.github_organizations_id_seq'::regclass);
 
 
 --
@@ -1178,13 +1097,6 @@ ALTER TABLE ONLY public.github_repository_installations ALTER COLUMN id SET DEFA
 --
 
 ALTER TABLE ONLY public.github_synchronizations ALTER COLUMN id SET DEFAULT nextval('public.github_synchronizations_id_seq'::regclass);
-
-
---
--- Name: github_users id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.github_users ALTER COLUMN id SET DEFAULT nextval('public.github_users_id_seq'::regclass);
 
 
 --
@@ -1336,6 +1248,22 @@ ALTER TABLE ONLY public.files
 
 
 --
+-- Name: github_accounts github_accounts_githubid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_accounts
+    ADD CONSTRAINT github_accounts_githubid_unique UNIQUE ("githubId");
+
+
+--
+-- Name: github_accounts github_accounts_login_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_accounts
+    ADD CONSTRAINT github_accounts_login_unique UNIQUE (login);
+
+
+--
 -- Name: github_accounts github_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1344,11 +1272,11 @@ ALTER TABLE ONLY public.github_accounts
 
 
 --
--- Name: github_installation_users github_installation_users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: github_installation_accounts github_installation_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.github_installation_users
-    ADD CONSTRAINT github_installation_users_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.github_installation_accounts
+    ADD CONSTRAINT github_installation_accounts_pkey PRIMARY KEY (id);
 
 
 --
@@ -1365,30 +1293,6 @@ ALTER TABLE ONLY public.github_installations
 
 ALTER TABLE ONLY public.github_installations
     ADD CONSTRAINT github_installations_pkey PRIMARY KEY (id);
-
-
---
--- Name: github_organizations github_organizations_githubid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.github_organizations
-    ADD CONSTRAINT github_organizations_githubid_unique UNIQUE ("githubId");
-
-
---
--- Name: github_organizations github_organizations_login_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.github_organizations
-    ADD CONSTRAINT github_organizations_login_unique UNIQUE (login);
-
-
---
--- Name: github_organizations github_organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.github_organizations
-    ADD CONSTRAINT github_organizations_pkey PRIMARY KEY (id);
 
 
 --
@@ -1421,30 +1325,6 @@ ALTER TABLE ONLY public.github_repository_installations
 
 ALTER TABLE ONLY public.github_synchronizations
     ADD CONSTRAINT github_synchronizations_pkey PRIMARY KEY (id);
-
-
---
--- Name: github_users github_users_githubid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.github_users
-    ADD CONSTRAINT github_users_githubid_unique UNIQUE ("githubId");
-
-
---
--- Name: github_users github_users_login_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.github_users
-    ADD CONSTRAINT github_users_login_unique UNIQUE (login);
-
-
---
--- Name: github_users github_users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.github_users
-    ADD CONSTRAINT github_users_pkey PRIMARY KEY (id);
 
 
 --
@@ -1657,31 +1537,17 @@ CREATE INDEX crawls_jobstatus_index ON public.crawls USING btree ("jobStatus");
 
 
 --
--- Name: github_accounts_githuborganizationid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: github_installation_accounts_githubaccountid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX github_accounts_githuborganizationid_index ON public.github_accounts USING btree ("githubOrganizationId");
-
-
---
--- Name: github_accounts_githubuserid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX github_accounts_githubuserid_index ON public.github_accounts USING btree ("githubUserId");
+CREATE INDEX github_installation_accounts_githubaccountid_index ON public.github_installation_accounts USING btree ("githubAccountId");
 
 
 --
--- Name: github_installation_users_githubinstallationid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: github_installation_accounts_githubinstallationid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX github_installation_users_githubinstallationid_index ON public.github_installation_users USING btree ("githubInstallationId");
-
-
---
--- Name: github_installation_users_githubuserid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX github_installation_users_githubuserid_index ON public.github_installation_users USING btree ("githubUserId");
+CREATE INDEX github_installation_accounts_githubinstallationid_index ON public.github_installation_accounts USING btree ("githubInstallationId");
 
 
 --
@@ -1916,10 +1782,10 @@ CREATE INDEX tests_projectid_index ON public.tests USING btree ("projectId");
 
 
 --
--- Name: users_githubid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: users_githubaccountid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX users_githubid_index ON public.users USING btree ("githubId");
+CREATE INDEX users_githubaccountid_index ON public.users USING btree ("githubAccountId");
 
 
 --
@@ -2018,35 +1884,19 @@ ALTER TABLE ONLY public.crawls
 
 
 --
--- Name: github_accounts github_accounts_githuborganizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: github_installation_accounts github_installation_accounts_githubaccountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.github_accounts
-    ADD CONSTRAINT github_accounts_githuborganizationid_foreign FOREIGN KEY ("githubOrganizationId") REFERENCES public.github_organizations(id);
-
-
---
--- Name: github_accounts github_accounts_githubuserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.github_accounts
-    ADD CONSTRAINT github_accounts_githubuserid_foreign FOREIGN KEY ("githubUserId") REFERENCES public.github_users(id);
+ALTER TABLE ONLY public.github_installation_accounts
+    ADD CONSTRAINT github_installation_accounts_githubaccountid_foreign FOREIGN KEY ("githubAccountId") REFERENCES public.github_accounts(id);
 
 
 --
--- Name: github_installation_users github_installation_users_githubinstallationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: github_installation_accounts github_installation_accounts_githubinstallationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.github_installation_users
-    ADD CONSTRAINT github_installation_users_githubinstallationid_foreign FOREIGN KEY ("githubInstallationId") REFERENCES public.github_installations(id);
-
-
---
--- Name: github_installation_users github_installation_users_githubuserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.github_installation_users
-    ADD CONSTRAINT github_installation_users_githubuserid_foreign FOREIGN KEY ("githubUserId") REFERENCES public.github_users(id);
+ALTER TABLE ONLY public.github_installation_accounts
+    ADD CONSTRAINT github_installation_accounts_githubinstallationid_foreign FOREIGN KEY ("githubInstallationId") REFERENCES public.github_installations(id);
 
 
 --
@@ -2226,6 +2076,14 @@ ALTER TABLE ONLY public.tests
 
 
 --
+-- Name: users users_githubaccountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_githubaccountid_foreign FOREIGN KEY ("githubAccountId") REFERENCES public.github_accounts(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -2294,3 +2152,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023032
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230416201920_crawls.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230417193649_isolate.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418095958_project-not-null.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418125037_user-github-account-id.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418130232_simplify-github-account.js', 1, NOW());
