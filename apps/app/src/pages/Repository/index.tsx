@@ -19,11 +19,7 @@ const RepositoryQuery = graphql(`
     repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
       id
       permissions
-      tests(first: 1, after: 0) {
-        pageInfo {
-          totalCount
-        }
-      }
+      hasTests
     }
   }
 `);
@@ -78,12 +74,12 @@ export const Repository = () => {
         const hasWritePermission = repository.permissions.includes(
           "write" as Permission
         );
-        const hasTests = repository.tests.pageInfo.totalCount > 0;
-        if (hasTests || hasWritePermission) {
+
+        if (repository.hasTests || hasWritePermission) {
           return (
             <RepositoryTabs
               hasWritePermission={hasWritePermission}
-              hasTests={hasTests}
+              hasTests={repository.hasTests}
             />
           );
         }

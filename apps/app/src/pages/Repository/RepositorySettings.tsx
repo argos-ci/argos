@@ -27,7 +27,6 @@ import { Pre } from "@/ui/Pre";
 import { Heading } from "@/ui/Typography";
 
 import { useRepositoryContext } from ".";
-import { Forbidden } from "../Forbidden";
 
 const RepositoryQuery = graphql(`
   query RepositorySettings_repository(
@@ -344,14 +343,14 @@ export const RepositorySettings = () => {
   const { ownerLogin, repositoryName } = useParams();
   const { hasWritePermission } = useRepositoryContext();
   const [usersCursor, setUsersCursor] = useState(0);
-  const usersByPage = 3;
+  const USERS_BY_PAGE = 20;
 
   if (!ownerLogin || !repositoryName) {
     return <NotFound />;
   }
 
   if (!hasWritePermission) {
-    return <Forbidden link={{ to: "..", label: "Back to repository" }} />;
+    return <NotFound />;
   }
 
   return (
@@ -368,7 +367,7 @@ export const RepositorySettings = () => {
         variables={{
           ownerLogin,
           repositoryName,
-          firstUser: usersByPage,
+          firstUser: USERS_BY_PAGE,
           afterUser: usersCursor,
         }}
       >
@@ -386,7 +385,7 @@ export const RepositorySettings = () => {
                 userConnection={repository.users}
                 owner={repository.owner}
                 after={usersCursor}
-                first={usersByPage}
+                first={USERS_BY_PAGE}
                 handlePageChange={setUsersCursor}
               />
             </SettingsLayout>

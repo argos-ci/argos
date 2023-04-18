@@ -16,8 +16,9 @@ export const Pagination: React.FC<PaginationProps> = ({
   after,
   handlePageChange,
 }) => {
-  const currentPage = after / first + 1;
-  if (pageInfo.totalCount <= first) return null;
+  if (pageInfo.totalCount <= first) {
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-between">
@@ -31,7 +32,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         Previous
       </Button>
       <span>
-        Page {currentPage} of {Math.ceil(pageInfo.totalCount / first)}
+        Page {after / first + 1} of {Math.ceil(pageInfo.totalCount / first)}
       </span>
       <Button
         color="neutral"

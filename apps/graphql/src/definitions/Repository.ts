@@ -32,6 +32,8 @@ export const typeDefs = gql`
     build(number: Int!): Build
     "Tests associated to the repository"
     tests(first: Int!, after: Int!): TestConnection!
+    "Determines if the repository has tests"
+    hasTests: Boolean!
     "Determine if the current user has write access to the repository"
     permissions: [Permission!]!
     "Owner of the repository"
@@ -216,6 +218,12 @@ export const resolvers = {
         .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
+    },
+    hasTests: async (repository: Repository) => {
+      const testCount = await Test.query()
+        .where({ repositoryId: repository.id })
+        .resultSize();
+      return testCount > 0;
     },
     currentMonthUsedScreenshots: async (repository: Repository) => {
       const account = await Account.getAccount(repository);
