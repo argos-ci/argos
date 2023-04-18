@@ -2,6 +2,7 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { Account } from "./Account.js";
 import { Team } from "./Team.js";
 
 export class User extends Model {
@@ -26,6 +27,14 @@ export class User extends Model {
 
   static override get relationMappings(): RelationMappings {
     return {
+      account: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Account,
+        join: {
+          from: "users.id",
+          to: "accounts.userId",
+        },
+      },
       teams: {
         relation: Model.ManyToManyRelation,
         modelClass: Team,
@@ -40,6 +49,9 @@ export class User extends Model {
       },
     };
   }
+
+  account?: Account;
+  teams?: Team[];
 
   type() {
     return "user";

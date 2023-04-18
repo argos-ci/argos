@@ -3,6 +3,7 @@ import type { RelationMappings } from "objection";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Plan } from "./Plan.js";
+import { Project } from "./Project.js";
 import { Purchase } from "./Purchase.js";
 import { Screenshot } from "./Screenshot.js";
 import { Team } from "./Team.js";
@@ -52,12 +53,21 @@ export class Account extends Model {
           to: "purchases.accountId",
         },
       },
+      projects: {
+        relation: Model.HasManyRelation,
+        modelClass: Project,
+        join: {
+          from: "accounts.id",
+          to: "projects.accountId",
+        },
+      },
     };
   }
 
   user?: User | null;
   team?: Team | null;
   purchases?: Purchase[];
+  projects?: Project[];
 
   static override virtualAttributes = ["type"];
 
@@ -153,13 +163,13 @@ export class Account extends Model {
   async getScreenshotsCurrentConsumption() {
     const startDate = await this.getCurrentConsumptionStartDate();
     const query = Screenshot.query()
-      .joinRelated("screenshotBucket.project.githubRepository")
+      .leftJoinRelated("screenshotBucket.project.githubRepository")
       .where("screenshots.createdAt", ">=", startDate)
-      .where("screenshotBucket.project.accountId", this.id)
+      .where("screenshotBucket:project.accountId", this.id)
       .where((builder) =>
         builder
-          .where("screenshotBucket.project.githubRepository.private", true)
-          .orWhere("screenshotBucket.project.private", true)
+          .where("screenshotBucket:project:githubRepository.private", true)
+          .orWhere("screenshotBucket:project.private", true)
       );
 
     return query.resultSize();

@@ -1,5 +1,8 @@
+import type { RelationMappings } from "objection";
+
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { Account } from "./Account.js";
 import { TeamUser } from "./TeamUser.js";
 import type { User } from "./User.js";
 
@@ -18,6 +21,21 @@ export class Team extends Model {
   name!: string | null;
   slug!: string;
   githubAccountId!: string;
+
+  static override get relationMappings(): RelationMappings {
+    return {
+      account: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Account,
+        join: {
+          from: "teams.id",
+          to: "accounts.teamId",
+        },
+      },
+    };
+  }
+
+  account?: Account;
 
   type() {
     return "team";

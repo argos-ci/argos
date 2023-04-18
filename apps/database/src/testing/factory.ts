@@ -9,18 +9,17 @@ import {
   Build,
   BuildNotification,
   File,
-  Organization,
+  GithubSynchronization,
   Plan,
+  Project,
   Purchase,
-  Repository,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
-  Synchronization,
+  Team,
+  TeamUser,
   Test,
   User,
-  UserOrganizationRight,
-  UserRepositoryRight,
 } from "../models/index.js";
 
 class ObjectionAdapter {
@@ -66,7 +65,7 @@ factory.define("ScreenshotBucket", ScreenshotBucket, {
   name: "default",
   commit: () => bytesToString(randomBytes(20)),
   branch: "master",
-  repositoryId: factory.assoc("Repository", "id"),
+  projectId: factory.assoc("Project", "id"),
 });
 
 factory.define<Build>(
@@ -74,7 +73,7 @@ factory.define<Build>(
   Build,
   {
     jobStatus: "complete",
-    repositoryId: factory.assoc("Repository", "id"),
+    projectId: factory.assoc("Project", "id"),
   },
   {
     async afterBuild(model: Build) {
@@ -82,7 +81,7 @@ factory.define<Build>(
         const compareScreenshotBucket = await factory.create<ScreenshotBucket>(
           "ScreenshotBucket",
           {
-            repositoryId: model.repositoryId,
+            projectId: model.projectId,
           }
         );
         model.compareScreenshotBucketId = compareScreenshotBucket.id;
@@ -100,35 +99,27 @@ factory.define("BuildNotification", BuildNotification, {
 });
 
 factory.define("User", User, {
-  githubId: factory.sequence("user.githubId", (n) => n),
   name: factory.chance("name"),
-  login: factory.sequence("user.login", (n) => `user-${n}`),
+  githubId: factory.sequence("user.githubId", (n) => n),
+  slug: factory.sequence("user.slug", (n) => `user-${n}`),
   email: factory.sequence("user.email", (n) => `user-${n}@email.com`),
 });
 
-factory.define("Organization", Organization, {
-  githubId: factory.sequence("organization.githubId", (n) => n),
-  name: factory.sequence("organization.name", (n) => `Orga-${n}`),
-  login: factory.sequence("organization.login", (n) => `orga-${n}`),
+factory.define("Team", Team, {
+  name: factory.sequence("team.name", (n) => `Team-${n}`),
+  slug: factory.sequence("team.slug", (n) => `team-${n}`),
 });
 
-factory.define("Repository", Repository, {
-  githubId: factory.sequence("repository.githubId", (n) => n),
-  name: "default",
-  defaultBranch: "master",
+factory.define("Project", Project, {
+  name: "Default",
+  slug: "default",
   baselineBranch: null,
-  organizationId: factory.assoc("Organization", "id"),
-  private: false,
+  accountId: factory.assoc("TeamAccount", "id"),
 });
 
-factory.define("UserRepositoryRight", UserRepositoryRight, {
+factory.define("TeamUser", TeamUser, {
   userId: factory.assoc("User", "id"),
-  repositoryId: factory.assoc("Repository", "id"),
-});
-
-factory.define("UserOrganizationRight", UserOrganizationRight, {
-  userId: factory.assoc("User", "id"),
-  organizationId: factory.assoc("Organization", "id"),
+  teamId: factory.assoc("Team", "id"),
 });
 
 factory.define("ScreenshotDiff", ScreenshotDiff, {
@@ -142,7 +133,7 @@ factory.define("ScreenshotDiff", ScreenshotDiff, {
 
 factory.define("Test", Test, {
   name: factory.chance("animal"),
-  repositoryId: factory.assoc("Repository", "id"),
+  projectId: factory.assoc("Project", "id"),
   buildName: "default",
   status: "pending",
 });
@@ -160,10 +151,9 @@ factory.define("File", File, {
   height: 10,
 });
 
-factory.define("Synchronization", Synchronization, {
-  userId: factory.assoc("User", "id"),
+factory.define("GithubSynchronization", GithubSynchronization, {
+  installationId: factory.assoc("Installation", "id"),
   jobStatus: "complete",
-  type: "github",
 });
 
 factory.define("Plan", Plan, {
@@ -172,8 +162,8 @@ factory.define("Plan", Plan, {
   githubId: factory.sequence("plan.githubId", (n) => n),
 });
 
-factory.define("OrganizationAccount", Account, {
-  organizationId: factory.assoc("Organization", "id"),
+factory.define("TeamAccount", Account, {
+  teamId: factory.assoc("Team", "id"),
 });
 
 factory.define("UserAccount", Account, {

@@ -6,20 +6,18 @@ function duplicate(obj, count) {
 }
 
 export const seed = async (knex) => {
-  const organizations = await knex("organizations")
+  const teams = await knex("teams")
     .returning("id")
     .insert([
       {
         ...timeStamps,
-        githubId: 1262264,
         name: "Call-Em-All",
-        login: "callemall",
+        slug: "callemall",
       },
       {
         ...timeStamps,
-        githubId: 5823649,
         name: "Doctolib",
-        login: "doctolib",
+        slug: "doctolib",
       },
     ]);
 
@@ -30,63 +28,62 @@ export const seed = async (knex) => {
         ...timeStamps,
         githubId: 3165635,
         name: "Olivier Tassinari",
-        login: "oliviertassinari",
+        slug: "oliviertassinari",
         email: "olivier.tassinari@gmail.com",
-        scopes: JSON.stringify(["SUPER_ADMIN"]),
       },
       {
         ...timeStamps,
         githubId: 266302,
         name: "Greg Bergé",
-        login: "neoziro",
+        slug: "neoziro",
         email: "berge.greg@gmail.com",
       },
     ]);
 
-  const repositories = await knex("repositories")
+  const accounts = await knex("accounts")
+    .returning("id")
+    .insert([
+      { ...timeStamps, teamId: teams[0].id, userId: null },
+      { ...timeStamps, teamId: teams[1].id, userId: null },
+      { ...timeStamps, teamId: null, userId: users[0].id },
+      { ...timeStamps, teamId: null, userId: users[1].id },
+    ]);
+
+  const projects = await knex("projects")
     .returning("id")
     .insert([
       {
         ...timeStamps,
-        githubId: 23083156,
-        name: "material-ui",
+        name: "Material UI",
+        slug: "material-ui",
         token: "650ded7d72e85b52e099df6e56aa204d4fe92fd1",
-        organizationId: organizations[0].id,
+        accountId: accounts[0].id,
         baselineBranch: "next",
-        defaultBranch: "master",
       },
       {
         ...timeStamps,
-        githubId: 31123797,
         name: "SplitMe",
+        slug: "SplitMe",
         token: "650ded7d72e85b52e099df6e56aa204d4fe92fd2",
-        userId: users[0].id,
+        accountId: accounts[2].id,
         baselineBranch: "master",
-        defaultBranch: null,
       },
       {
         ...timeStamps,
-        githubId: 14022421,
-        name: "doctolib",
+        name: "Doctolib",
+        slug: "doctolib",
         token: "650ded7d72e85b52e099df6e56aa204d4fe92fd3",
-        organizationId: organizations[1].id,
+        accountId: accounts[1].id,
         private: true,
-        baselineBranch: null,
-        defaultBranch: "master",
+        baselineBranch: "main",
       },
     ]);
-
-  await knex("accounts").insert([
-    { ...timeStamps, organizationId: organizations[0].id, userId: null },
-    { ...timeStamps, organizationId: organizations[1].id, userId: null },
-    { ...timeStamps, organizationId: null, userId: users[0].id },
-  ]);
 
   const screenshotBucket = {
     name: "default",
     commit: "029b662f3ae57bae7a215301067262c1e95bbc95",
     branch: "master",
-    repositoryId: repositories[0].id,
+    projectId: projects[0].id,
     createdAt: "2016-12-08T22:59:55Z",
     updatedAt: "2016-12-08T22:59:55Z",
   };
@@ -209,7 +206,7 @@ export const seed = async (knex) => {
     name: "main",
     baseScreenshotBucketId: screenshotBuckets[0].id,
     compareScreenshotBucketId: screenshotBuckets[1].id,
-    repositoryId: repositories[0].id,
+    projectId: projects[0].id,
     jobStatus: "complete",
     type: "check",
     createdAt: "2016-12-08T22:59:55Z",

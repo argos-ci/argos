@@ -1,9 +1,9 @@
 import { factory, useDatabase } from "../testing/index.js";
 import { Build } from "./Build.js";
-import type { Repository, ScreenshotDiff, User } from "./index.js";
+import type { Account, Project, ScreenshotDiff, User } from "./index.js";
 
 const baseData = {
-  repositoryId: "1",
+  projectId: "1",
   baseScreenshotBucketId: "1",
   compareScreenshotBucketId: "2",
   jobStatus: "pending",
@@ -16,7 +16,7 @@ describe("models/Build", () => {
     it("should add a build number", async () => {
       const build1 = await factory.create<Build>("Build");
       const build2 = await factory.create<Build>("Build", {
-        repositoryId: build1.repositoryId,
+        projectId: build1.projectId,
       });
       expect(build1.number).toBe(1);
       expect(build2.number).toBe(2);
@@ -62,17 +62,19 @@ describe("models/Build", () => {
 
   describe("#getUsers", () => {
     let user: User;
+    let account: Account;
     let build: Build;
 
     beforeEach(async () => {
       user = await factory.create<User>("User");
-      const repository = await factory.create<Repository>("Repository");
-      await factory.create("UserRepositoryRight", {
+      account = await factory.create<Account>("UserAccount", {
         userId: user.id,
-        repositoryId: repository.id,
+      });
+      const project = await factory.create<Project>("Project", {
+        accountId: account.id,
       });
       build = await factory.create<Build>("Build", {
-        repositoryId: repository.id,
+        projectId: project.id,
       });
     });
 
@@ -339,8 +341,8 @@ describe("models/Build", () => {
       const build = await factory.create<Build>("Build");
       const url = await build.getUrl();
       expect(url).toMatch(
-        `http://localhost:4001/${build.repository!.organization!.login}/${
-          build.repository!.name
+        `http://localhost:4001/${build.project!.account!.team!.slug}/${
+          build.project!.slug
         }/builds/${build.number}`
       );
     });

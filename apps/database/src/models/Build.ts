@@ -292,21 +292,11 @@ export class Build extends Model {
 
   static getUsers(buildId: string, { trx }: { trx?: TransactionOrKnex } = {}) {
     return User.query(trx)
-      .select("users.*")
-      .join(
-        "user_repository_rights",
-        "users.id",
-        "=",
-        "user_repository_rights.userId"
+      .leftJoinRelated(
+        "[account.projects.builds, teams.account.projects.builds]"
       )
-      .join(
-        "repositories",
-        "user_repository_rights.repositoryId",
-        "=",
-        "repositories.id"
-      )
-      .join("builds", "repositories.id", "=", "builds.repositoryId")
-      .where("builds.id", buildId);
+      .where("account:projects:builds.id", buildId)
+      .orWhere("teams:account:projects:builds.id", buildId);
   }
 
   getUsers(options?: { trx?: TransactionOrKnex }) {

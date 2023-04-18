@@ -187,7 +187,7 @@ export const up = async (knex) => {
   // move data from user_installation_rights to github_installation_users
   await knex.raw(
     `INSERT INTO github_installation_users (id, "createdAt", "updatedAt", "githubUserId", "githubInstallationId")
-    SELECT id, "createdAt", "updatedAt", "githubUserId", "installationId"
+    SELECT id, "createdAt", "updatedAt", "userId", "installationId"
     FROM user_installation_rights`
   );
 
