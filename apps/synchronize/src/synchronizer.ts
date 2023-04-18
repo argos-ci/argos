@@ -8,17 +8,14 @@ import {
   GithubRepository,
   GithubRepositoryInstallation,
 } from "@argos-ci/database/models";
-import { getAppOctokit, getGithubInstallationOctokit } from "@argos-ci/github";
+import { getAppOctokit, getInstallationOctokit } from "@argos-ci/github";
 
 type ApiRepository =
   RestEndpointMethodTypes["apps"]["listReposAccessibleToInstallation"]["response"]["data"]["repositories"][0];
 
 type SyncCtx = {
   installation: GithubInstallation;
-  octokit: Exclude<
-    Awaited<ReturnType<typeof getGithubInstallationOctokit>>,
-    null
-  >;
+  octokit: Exclude<Awaited<ReturnType<typeof getInstallationOctokit>>, null>;
 };
 
 const linkInstallationRepositories = async (
@@ -229,10 +226,7 @@ export const synchronizeInstallation = async (installationId: string) => {
   }
 
   const appOctokit = getAppOctokit();
-  const octokit = await getGithubInstallationOctokit(
-    installation.id,
-    appOctokit
-  );
+  const octokit = await getInstallationOctokit(installation.id, appOctokit);
 
   // If we don't get an octokit, then the installation has been removed
   // we delete the installation

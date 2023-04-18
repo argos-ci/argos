@@ -34,7 +34,7 @@ export const getOAuthOctokit = () => {
   });
 };
 
-export const getGithubInstallationOctokit = async (
+export const getInstallationOctokit = async (
   installationId: string,
   appOctokit = getAppOctokit()
 ): Promise<Octokit | null> => {
