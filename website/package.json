@@ -11,6 +11,7 @@
     "format": "prettier --ignore-path .gitignore --write ."
   },
   "dependencies": {
+    "@ariakit/react": "^0.1.2",
     "@heroicons/react": "^2.0.17",
     "@mdx-js/loader": "^2.3.0",
     "@mdx-js/react": "^2.3.0",

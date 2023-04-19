@@ -5,18 +5,20 @@ import { forwardRef } from "react";
 
 export type ButtonColor = "primary" | "neutral";
 export type ButtonVariant = "contained" | "outline";
+export type ButtonSize = "base" | "small" | "large";
 
 export interface ButtonProps extends AriakitButtonProps<"button"> {
   color?: ButtonColor;
   variant?: ButtonVariant;
+  size?: ButtonSize;
 }
 
 const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
   contained: {
     primary:
-      "color-white border-transparent bg-primary-600 hover:bg-primary-700 active:bg-primary-800 aria-expanded:bg-primary-800",
+      "text-white border-transparent bg-primary-600 hover:bg-primary-700 active:bg-primary-800 aria-expanded:bg-primary-800",
     neutral:
-      "color-white border-transparent bg-neutral-600 hover:bg-neutral-700 active:bg-neutral-800 aria-expanded:bg-neutral-800",
+      "text-white border-transparent bg-neutral-600 hover:bg-neutral-700 active:bg-neutral-800 aria-expanded:bg-neutral-800",
   },
   outline: {
     primary:
@@ -26,9 +28,22 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
   },
 };
 
+const sizeClassNames: Record<ButtonSize, string> = {
+  base: "rounded-lg py-2 px-3 text-sm leading-none",
+  small: "rounded py-1 px-2 text-xs leading-4",
+  large: "rounded py-2 px-3 text-base",
+};
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { color = "primary", variant = "contained", children, className, ...props },
+    {
+      color = "primary",
+      variant = "contained",
+      size = "base",
+      children,
+      className,
+      ...props
+    },
     ref
   ) => {
     const colorClassNames = variantClassNames[variant];
@@ -39,6 +54,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     if (!variantClassName) {
       throw new Error(`Invalid color: ${color}`);
     }
+    const sizeClassName = sizeClassNames[size];
+    if (!sizeClassName) {
+      throw new Error(`Invalid size: ${color}`);
+    }
     return (
       <AriakitButton
         ref={ref}
@@ -46,7 +65,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={clsx(
           className,
           variantClassName,
-          "align-center inline-flex whitespace-nowrap rounded-lg border py-2 px-3 font-sans text-sm font-medium leading-none transition disabled:opacity-40 [&:is(button)]:cursor-default"
+          sizeClassName,
+          "align-center inline-flex whitespace-nowrap border font-sans font-medium transition disabled:opacity-40 [&:is(button)]:cursor-default"
         )}
         {...props}
       >
