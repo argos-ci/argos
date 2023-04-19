@@ -34,8 +34,6 @@ export const typeDefs = gql`
     build(number: Int!): Build
     "Tests associated to the repository"
     tests(first: Int!, after: Int!): TestConnection!
-    "Determines if the repository has tests"
-    hasTests: Boolean!
     "Determine if the current user has write access to the project"
     permissions: [Permission!]!
     "Owner of the repository"
@@ -70,82 +68,43 @@ export const typeDefs = gql`
 `;
 
 export const resolvers = {
-  Repository: {
-    enabled: async (repository: Repository) => {
-      const buildCount = await repository.$relatedQuery("builds").resultSize();
-      return buildCount > 0;
-    },
+  Project: {
     token: async (
-      repository: Repository,
+      project: Project,
       _args: Record<string, never>,
       ctx: Context
     ) => {
-      if (!ctx.user) return null;
-      const hasWritePermission = await repository.$checkWritePermission(
-        ctx.user
+      if (!ctx.auth) return null;
+      const hasWritePermission = await project.$checkWritePermission(
+        ctx.auth.user
       );
       if (!hasWritePermission) return null;
-      return repository.token;
-    },
-    owner: async (
-      repository: Repository,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
-      if (repository.userId) {
-        return ctx.loaders.User.load(repository.userId);
-      }
-      if (repository.organizationId) {
-        return ctx.loaders.Organization.load(repository.organizationId);
-      }
-      throw new Error(`Invalid repository owner: ${repository.id}`);
-    },
-    users: async (
-      repository: Repository,
-      { first, after }: { first: number; after: number }
-    ) => {
-      const result = await repository
-        .$relatedQuery("users")
-        .orderBy("login", "asc")
-        .range(after, after + first - 1);
-      return paginateResult({ result, first, after });
-    },
-    permissions: async (
-      repository: Repository,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
-      if (!ctx.user) return ["read"];
-      const hasWritePermission = await repository.$checkWritePermission(
-        ctx.user
-      );
-      return hasWritePermission ? ["read", "write"] : ["read"];
+      return project.token;
     },
     builds: async (
-      repository: Repository,
+      project: Project,
       { first, after }: { first: number; after: number }
     ) => {
       const result = await Build.query()
-        .where({ repositoryId: repository.id })
-        .whereNot({ number: 0 })
+        .where({ projectId: project.id })
         .orderBy("createdAt", "desc")
         .orderBy("number", "desc")
         .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
     },
-    build: async (repository: Repository, args: { number: number }) => {
+    build: async (project: Project, args: { number: number }) => {
       return Build.query().findOne({
-        repositoryId: repository.id,
+        projectId: project.id,
         number: args.number,
       });
     },
     tests: async (
-      repository: Repository,
+      project: Project,
       { first, after }: { first: number; after: number }
     ) => {
       const result = await Test.query()
-        .where({ repositoryId: repository.id })
+        .where({ projectId: project.id })
         .whereNot((builder) =>
           builder.whereRaw(`"name" ~ :regexp`, {
             regexp: ScreenshotDiff.screenshotFailureRegexp,
@@ -172,19 +131,46 @@ export const resolvers = {
 
       return paginateResult({ result, first, after });
     },
-    hasTests: async (repository: Repository) => {
-      const testCount = await Test.query()
-        .where({ repositoryId: repository.id })
-        .resultSize();
-      return testCount > 0;
+    permissions: async (
+      project: Project,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
+      if (!ctx.auth) return ["read"];
+      const hasWritePermission = await project.$checkWritePermission(
+        ctx.auth.user
+      );
+      return hasWritePermission ? ["read", "write"] : ["read"];
     },
-    currentMonthUsedScreenshots: async (repository: Repository) => {
-      const account = await Account.getAccount(repository);
+    account: async (
+      project: Project,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
+      return ctx.loaders.Account.load(project.accountId);
+    },
+    ghRepository: async (
+      project: Project,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
+      if (!project.githubRepositoryId) return null;
+      return ctx.loaders.GithubRepository.load(project.githubRepositoryId);
+    },
+    referenceBranch: async (project: Project) => {
+      return project.$getReferenceBranch();
+    },
+    currentMonthUsedScreenshots: async (
+      project: Project,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
+      const account = await ctx.loaders.Account.load(project.accountId);
       const currentConsumptionStartDate =
         await account.getCurrentConsumptionStartDate();
       return Screenshot.query()
         .joinRelated("screenshotBucket")
-        .where("screenshotBucket.repositoryId", repository.id)
+        .where("screenshotBucket.projectId", project.id)
         .where("screenshots.createdAt", ">=", currentConsumptionStartDate)
         .resultSize();
     },
@@ -196,7 +182,7 @@ export const resolvers = {
       ctx: Context
     ) => {
       const project = await Project.query().joinRelated("account").findOne({
-        "account:slug": args.accountSlug,
+        "account.slug": args.accountSlug,
         "projects.slug": args.projectSlug,
       });
       if (!project) return null;

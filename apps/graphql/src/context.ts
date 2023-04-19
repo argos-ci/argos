@@ -1,7 +1,5 @@
 import type { Request } from "express";
 
-import type { Account } from "@argos-ci/database/models";
-
 import { createLoaders } from "./loaders.js";
 
 export interface Context {

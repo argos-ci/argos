@@ -33,8 +33,8 @@ export const resolvers = {
     },
   },
   User: {
-    account: async (user: User) => {
-      return user.$relatedQuery("account");
+    account: async (user: User, _args: Record<string, never>, ctx: Context) => {
+      return ctx.loaders.AccountFromRelation.load({ userId: user.id });
     },
     lastPurchase: async (user: User) => {
       return Purchase.query()

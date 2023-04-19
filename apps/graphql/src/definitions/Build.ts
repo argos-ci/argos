@@ -147,30 +147,33 @@ export const resolvers = {
       },
       ctx: Context
     ) => {
-      if (!ctx.user) {
+      if (!ctx.auth) {
         throw new APIError("Invalid user identification");
       }
 
       const { buildId, validationStatus } = args;
-      const [user, build] = await Promise.all([
-        Build.getUsers(buildId).findById(ctx.user.id),
-        Build.query().findById(buildId).withGraphFetched("project.account"),
-      ]);
-
-      if (!user) {
-        throw new APIError("Invalid user authorization");
-      }
+      const build = await Build.query()
+        .findById(buildId)
+        .withGraphFetched("project.account");
 
       if (!build) {
         throw new APIError("Build not found");
       }
 
       if (!build.project) {
-        throw new APIError("Build project not found");
+        throw new Error("Invariant: no project found");
       }
 
       if (!build.project.account) {
-        throw new APIError("Build project account not found");
+        throw new Error("Invariant: no project account found");
+      }
+
+      const hasWriteAccess = await build.project.$checkWritePermission(
+        ctx.auth.user
+      );
+
+      if (!hasWriteAccess) {
+        throw new APIError("You don't have access to this build");
       }
 
       const isPublic = await build.project.$checkIsPublic();

@@ -5,6 +5,7 @@ import {
   Account,
   Build,
   File,
+  GithubRepository,
   Model,
   Project,
   Screenshot,
@@ -101,8 +102,43 @@ const createLastScreenshotLoader = () =>
     return testIds.map((id) => lastScreenshotMap[id] ?? null);
   });
 
+const createAccountFromRelationLoader = () => {
+  return new DataLoader<{ userId?: string; teamId?: string }, Account | null>(
+    async (relations) => {
+      const userIds = relations
+        .map((r) => r.userId)
+        .filter((id) => id) as string[];
+      const teamIds = relations
+        .map((r) => r.teamId)
+        .filter((id) => id) as string[];
+      if (userIds.length === 0 && teamIds.length === 0) {
+        return relations.map(() => null);
+      }
+
+      const query = Account.query();
+      if (userIds.length > 0) {
+        query.orWhereIn("userId", userIds);
+      }
+      if (teamIds.length > 0) {
+        query.orWhereIn("teamId", teamIds);
+      }
+      const accounts = await query;
+      return relations.map((relation) => {
+        if (relation.userId) {
+          return accounts.find((a) => a.userId === relation.userId) ?? null;
+        }
+        if (relation.teamId) {
+          return accounts.find((a) => a.teamId === relation.teamId) ?? null;
+        }
+        return null;
+      });
+    }
+  );
+};
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
+  GithubRepository: createModelLoader(GithubRepository),
   User: createModelLoader(User),
   Team: createModelLoader(Team),
   Screenshot: createModelLoader(Screenshot),
@@ -111,6 +147,7 @@ export const createLoaders = () => ({
   Project: createModelLoader(Project),
   File: createModelLoader(File),
   Test: createModelLoader(Test),
+  AccountFromRelation: createAccountFromRelationLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
   LastScreenshotDiff: createLastScreenshotDiffLoader(),
   LastScreenshot: createLastScreenshotLoader(),

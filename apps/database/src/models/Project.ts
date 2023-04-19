@@ -10,6 +10,7 @@ import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
 import { Build } from "./Build.js";
+import { GithubInstallation } from "./GithubInstallation.js";
 import { GithubRepository } from "./GithubRepository.js";
 import type { User } from "./User.js";
 
@@ -111,10 +112,11 @@ export class Project extends Model {
     return Project.checkReadPermission(this, user);
   }
 
-  async $getReferenceBranch() {
+  async $getReferenceBranch(trx?: TransactionOrKnex) {
     if (this.baselineBranch) return this.baselineBranch;
     const ghRepo =
-      this.githubRepository || (await this.$relatedQuery("githubRepository"));
+      this.githubRepository ||
+      (await this.$relatedQuery("githubRepository", trx));
     if (!ghRepo) return null;
     return ghRepo.defaultBranch;
   }

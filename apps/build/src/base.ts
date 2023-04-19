@@ -71,8 +71,11 @@ const listParentCommitShas = async (params: {
  * Query the base bucket from a build.
  */
 const queryBaseBucket = (build: Build, trx?: TransactionOrKnex | undefined) => {
+  if (!build.project) {
+    throw new UnretryableError("Invariant: no project found");
+  }
   return ScreenshotBucket.query(trx).where({
-    repositoryId: build.repository!.id,
+    projectId: build.project.id,
     name: build.name,
     complete: true,
   });
@@ -129,40 +132,52 @@ export const getBaseScreenshotBucket = async ({
 }) => {
   const richBuild = await build
     .$query(trx)
-    .withGraphFetched("[repository.installations, compareScreenshotBucket]");
-
-  const [installation] = richBuild.repository!.installations!;
-  if (!installation) {
-    // In test environment, we don't want to run any GitHub API call
-    if (process.env["NODE_ENV"] === "test") {
-      return null;
-    }
-    throw new UnretryableError(
-      `Installation not found for repository "${richBuild.repository!.id}"`
+    .withGraphFetched(
+      "[project.githubRepository.[githubAccount, activeInstallation], compareScreenshotBucket]"
     );
+
+  if (!richBuild) {
+    throw new UnretryableError("Invariant: no build found");
+  }
+
+  if (!richBuild.project) {
+    throw new UnretryableError("Invariant: no project found");
+  }
+
+  if (!richBuild.project.githubRepository) {
+    throw new UnretryableError("Invariant: no repository found");
+  }
+
+  if (!richBuild.project.githubRepository.githubAccount) {
+    throw new UnretryableError("Invariant: no github account found");
+  }
+
+  const installation = richBuild.project.githubRepository.activeInstallation;
+
+  if (!installation) {
+    return null;
   }
 
   const octokit = await getInstallationOctokit(installation.id);
   if (!octokit) {
-    throw new UnretryableError(
-      `No valid installation found for repository "${richBuild.repository!.id}"`
-    );
+    return null;
   }
 
-  // Initialize GitHub API
-  const owner = await richBuild.repository!.$relatedOwner({ trx });
+  const referenceBranch = await richBuild.project.$getReferenceBranch(trx);
 
-  if (!owner) {
-    throw new Error("Invariant: no owner found");
+  if (!referenceBranch) {
+    throw new UnretryableError("Invariant: no reference branch found");
   }
 
-  const base = build.repository!.referenceBranch;
+  const base = referenceBranch;
   const head = build.compareScreenshotBucket!.commit;
+  const owner = richBuild.project.githubRepository.githubAccount.login;
+  const repo = richBuild.project.githubRepository.name;
 
   const mergeBaseCommitSha = await getMergeBaseCommitSha({
     octokit,
-    owner: owner.login,
-    repo: richBuild.repository!.name,
+    owner,
+    repo,
     base,
     head,
   });
@@ -177,9 +192,9 @@ export const getBaseScreenshotBucket = async ({
     return getBucketFromAncestors({
       octokit,
       sha: mergeBaseCommitSha,
-      owner: owner.login,
-      repo: richBuild.repository!.name,
-      build,
+      owner,
+      repo,
+      build: richBuild,
       trx,
     });
   }
@@ -197,8 +212,8 @@ export const getBaseScreenshotBucket = async ({
   return getBucketFromAncestors({
     octokit,
     sha: mergeBaseCommitSha,
-    owner: owner.login,
-    repo: richBuild.repository!.name,
+    owner,
+    repo,
     build,
     trx,
   });

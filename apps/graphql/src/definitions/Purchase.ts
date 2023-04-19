@@ -2,6 +2,8 @@ import gqlTag from "graphql-tag";
 
 import type { Purchase } from "@argos-ci/database/models";
 
+import type { Context } from "../context.js";
+
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
@@ -19,8 +21,12 @@ export const typeDefs = gql`
 
 export const resolvers = {
   Purchase: {
-    account: async (purchase: Purchase) => {
-      return purchase.$relatedQuery("account");
+    account: async (
+      purchase: Purchase,
+      _args: Record<string, never>,
+      ctx: Context
+    ) => {
+      return ctx.loaders.Account.load(purchase.accountId);
     },
   },
 };
