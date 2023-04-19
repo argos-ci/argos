@@ -14,17 +14,21 @@ import {
 
 import { NotFound } from "../NotFound";
 
-const RepositoryQuery = graphql(`
-  query Repository_repository($ownerLogin: String!, $repositoryName: String!) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+const ProjectQuery = graphql(`
+  query Project_project($accountSlug: String!, $projectSlug: String!) {
+    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
       id
       permissions
-      hasTests
+      tests(first: 0, after: 0) {
+        pageInfo {
+          totalCount
+        }
+      }
     }
   }
 `);
 
-const RepositoryTabs = ({
+const ProjectTabs = ({
   hasTests,
   hasWritePermission,
 }: {
@@ -50,36 +54,38 @@ export interface OutletContext {
   hasWritePermission: boolean;
 }
 
-export const useRepositoryContext = () => {
+export const useProjectContext = () => {
   return useOutletContext<OutletContext>();
 };
 
-export const Repository = () => {
-  const { ownerLogin, repositoryName } = useParams();
-  if (!ownerLogin || !repositoryName) {
+export const Project = () => {
+  const { accountSlug, projectSlug } = useParams();
+  if (!accountSlug || !projectSlug) {
     return <NotFound />;
   }
   return (
     <Query
       fallback={<PageLoader />}
-      query={RepositoryQuery}
-      variables={{ ownerLogin, repositoryName }}
+      query={ProjectQuery}
+      variables={{ accountSlug, projectSlug }}
     >
-      {({ repository }) => {
-        if (!repository) return <NotFound />;
-        if (!repository.permissions.includes("read" as Permission)) {
+      {({ project }) => {
+        if (!project) return <NotFound />;
+        if (!project.permissions.includes("read" as Permission)) {
           return <NotFound />;
         }
 
-        const hasWritePermission = repository.permissions.includes(
+        const hasWritePermission = project.permissions.includes(
           "write" as Permission
         );
 
-        if (repository.hasTests || hasWritePermission) {
+        const hasTests = project.tests.pageInfo.totalCount > 0;
+
+        if (hasTests || hasWritePermission) {
           return (
-            <RepositoryTabs
+            <ProjectTabs
               hasWritePermission={hasWritePermission}
-              hasTests={repository.hasTests}
+              hasTests={hasTests}
             />
           );
         }

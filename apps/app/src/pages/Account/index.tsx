@@ -14,9 +14,9 @@ import {
 
 import { NotFound } from "../NotFound";
 
-const OwnerQuery = graphql(`
-  query Owner_owner($ownerLogin: String!) {
-    owner(login: $ownerLogin) {
+const AccountQuery = graphql(`
+  query Account_account($slug: String!) {
+    account(slug: $slug) {
       id
       permissions
     }
@@ -27,16 +27,16 @@ export interface OutletContext {
   hasWritePermission: boolean;
 }
 
-export const useOwnerContext = () => {
+export const useAccountContext = () => {
   return useOutletContext<OutletContext>();
 };
 
-const OwnerTabs = () => {
+const AccountTabs = () => {
   const tab = useTabLinkState();
   return (
     <>
       <TabLinkList state={tab} aria-label="Sections">
-        <TabLink to="">Repositories</TabLink>
+        <TabLink to="">Projects</TabLink>
         <TabLink to="settings">Settings</TabLink>
       </TabLinkList>
       <TabLinkPanel state={tab} as={Main} tabId={tab.selectedId || null}>
@@ -46,30 +46,30 @@ const OwnerTabs = () => {
   );
 };
 
-export const Owner = () => {
-  const { ownerLogin } = useParams();
-  if (!ownerLogin) {
+export const Account = () => {
+  const { accountSlug } = useParams();
+  if (!accountSlug) {
     return <NotFound />;
   }
   return (
     <Query
       fallback={<PageLoader />}
-      query={OwnerQuery}
-      variables={{ ownerLogin }}
+      query={AccountQuery}
+      variables={{ slug: accountSlug }}
     >
-      {({ owner }) => {
-        if (!owner) {
+      {({ account }) => {
+        if (!account) {
           return <NotFound />;
         }
-        if (!owner.permissions.includes("read" as Permission)) {
+        if (!account.permissions.includes("read" as Permission)) {
           return <NotFound />;
         }
-        if (!owner.permissions.includes("write" as Permission)) {
+        if (!account.permissions.includes("write" as Permission)) {
           return (
             <Outlet context={{ hasWritePermission: false } as OutletContext} />
           );
         }
-        return <OwnerTabs />;
+        return <AccountTabs />;
       }}
     </Query>
   );

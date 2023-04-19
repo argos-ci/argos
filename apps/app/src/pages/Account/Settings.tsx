@@ -29,15 +29,14 @@ import { StripePortalLink } from "@/ui/StripePortalLink";
 import { Time } from "@/ui/Time";
 import { Heading } from "@/ui/Typography";
 
-import { useOwnerContext } from ".";
+import { useAccountContext } from ".";
 
-const OwnerQuery = graphql(`
-  query OwnerSettings_owner($login: String!) {
-    owner(login: $login) {
+const AccountQuery = graphql(`
+  query AccountSettings_account($slug: String!) {
+    account(slug: $slug) {
       id
       name
       screenshotsLimitPerMonth
-      type
       stripeCustomerId
 
       plan {
@@ -51,24 +50,30 @@ const OwnerQuery = graphql(`
         source
       }
 
-      repositories {
-        id
-        name
-        private
-        forcedPrivate
-        currentMonthUsedScreenshots
+      projects(first: 100, after: 0) {
+        edges {
+          id
+          name
+          public
+          currentMonthUsedScreenshots
+        }
       }
     }
   }
 `);
 
-type OwnerDocument = DocumentType<typeof OwnerQuery>;
-type Plan = NonNullable<NonNullable<OwnerDocument["owner"]>["plan"]>;
-type Purchase = NonNullable<NonNullable<OwnerDocument["owner"]>["purchase"]>;
-type Repository = NonNullable<OwnerDocument["owner"]>["repositories"][0];
+type AccountDocument = DocumentType<typeof AccountQuery>;
+type Plan = NonNullable<NonNullable<AccountDocument["account"]>["plan"]>;
+type Purchase = NonNullable<
+  NonNullable<AccountDocument["account"]>["purchase"]
+>;
+type Project = NonNullable<AccountDocument["account"]>["projects"]["edges"][0];
 
-const sumUsedScreenshots = (repositories: Repository[]) =>
-  repositories.reduce((sum, repo) => repo.currentMonthUsedScreenshots + sum, 0);
+const sumUsedScreenshots = (projects: Project[]) =>
+  projects.reduce(
+    (sum, project) => project.currentMonthUsedScreenshots + sum,
+    0
+  );
 
 const ManageSubscriptionLink = ({
   purchase,
@@ -89,29 +94,29 @@ const ManageSubscriptionLink = ({
 };
 
 const PlanCard = ({
-  ownerLogin,
+  accountSlug,
   plan,
   purchase,
-  repositories,
   stripeCustomerId,
+  projects,
 }: {
-  ownerLogin: string;
+  accountSlug: string;
   plan: Plan;
   purchase: Purchase | null;
-  repositories: Repository[];
   stripeCustomerId: string | null;
+  projects: Project[];
 }) => {
   const free = plan.name === "free";
-  const [privateRepos, publicRepos] = repositories.reduce(
-    (all, repo) => {
-      if (repo.private || repo.forcedPrivate) {
-        all[0].push(repo);
+  const [privateProjects, publicProjects] = projects.reduce(
+    (all, project) => {
+      if (!project.public) {
+        all[0].push(project);
       } else {
-        all[1].push(repo);
+        all[1].push(project);
       }
       return all;
     },
-    [[] as Repository[], [] as Repository[]]
+    [[] as Project[], [] as Project[]]
   );
   const hasStripePurchase = purchase && purchase.source === "stripe";
   return (
@@ -149,30 +154,30 @@ const PlanCard = ({
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2 rounded border border-border p-4">
-              <div className="font-medium">Private repositories</div>
+              <div className="font-medium">Private projects</div>
               <Consumption
-                value={sumUsedScreenshots(privateRepos)}
+                value={sumUsedScreenshots(privateProjects)}
                 max={
                   plan.screenshotsLimitPerMonth === -1
                     ? Infinity
                     : plan.screenshotsLimitPerMonth
                 }
               />
-              {privateRepos.length > 0 && (
+              {privateProjects.length > 0 && (
                 <div>
-                  <ConsumptionDetail repositories={privateRepos} />
+                  <ConsumptionDetail projects={privateProjects} />
                 </div>
               )}
             </div>
             <div className="flex flex-col gap-2 rounded border border-border p-4">
-              <div className="font-medium">Public repositories</div>
+              <div className="font-medium">Public projects</div>
               <Consumption
-                value={sumUsedScreenshots(publicRepos)}
+                value={sumUsedScreenshots(publicProjects)}
                 max={Infinity}
               />
-              {publicRepos.length > 0 && (
+              {publicProjects.length > 0 && (
                 <div>
-                  <ConsumptionDetail repositories={publicRepos} />
+                  <ConsumptionDetail projects={publicProjects} />
                 </div>
               )}
             </div>
@@ -188,7 +193,7 @@ const PlanCard = ({
         ) : (
           <>
             Subscribe to plan using{" "}
-            <Link to={`/${ownerLogin}/checkout`}>Stripe</Link> or{" "}
+            <Link to={`/${accountSlug}/checkout`}>Stripe</Link> or{" "}
             <Anchor href={config.get("github.marketplaceUrl")} external>
               GitHub Marketplace
             </Anchor>{" "}
@@ -222,24 +227,20 @@ const PermissionCard = () => {
       <CardBody>
         <CardTitle>Permissions</CardTitle>
         <CardParagraph>
-          Argos uses OAuth GitHub App to manage your repositories. You can
-          revoke access to your repositories at any time.
+          Argos uses OAuth GitHub App to manage your projects. You can revoke
+          access to your projects at any time.
         </CardParagraph>
       </CardBody>
       <CardFooter>
         <Anchor href={config.get("github.appUrl")} external>
-          Manage repositories access restrictions from GitHub
+          Manage projects access restrictions from GitHub
         </Anchor>
       </CardFooter>
     </Card>
   );
 };
 
-const ConsumptionDetail = ({
-  repositories,
-}: {
-  repositories: Repository[];
-}) => {
+const ConsumptionDetail = ({ projects }: { projects: Project[] }) => {
   const disclosure = useDisclosureState({ defaultOpen: false });
 
   return (
@@ -257,14 +258,14 @@ const ConsumptionDetail = ({
         as="ul"
         className="mt-2 text-sm text-on-light"
       >
-        {repositories.map((repo) => (
+        {projects.map((project) => (
           <li
-            key={repo.id}
+            key={project.id}
             className="flex items-center justify-between border-b border-b-border px-1 py-1 last:border-b-0"
           >
-            <span>{repo.name}</span>
+            <span>{project.name}</span>
             <span className="tabular-nums">
-              {repo.currentMonthUsedScreenshots.toLocaleString()}
+              {project.currentMonthUsedScreenshots.toLocaleString()}
             </span>
           </li>
         ))}
@@ -273,11 +274,11 @@ const ConsumptionDetail = ({
   );
 };
 
-export const OwnerSettings = () => {
-  const { ownerLogin } = useParams();
-  const { hasWritePermission } = useOwnerContext();
+export const AccountSettings = () => {
+  const { accountSlug } = useParams();
+  const { hasWritePermission } = useAccountContext();
 
-  if (!ownerLogin) {
+  if (!accountSlug) {
     return <NotFound />;
   }
 
@@ -288,26 +289,26 @@ export const OwnerSettings = () => {
   return (
     <Container>
       <Helmet>
-        <title>{ownerLogin} • Settings</title>
+        <title>{accountSlug} • Settings</title>
       </Helmet>
       <Heading>Organization Settings</Heading>
       <Query
         fallback={<PageLoader />}
-        query={OwnerQuery}
-        variables={{ login: ownerLogin }}
+        query={AccountQuery}
+        variables={{ slug: accountSlug }}
       >
-        {({ owner }) => {
-          if (!owner) return <NotFound />;
+        {({ account }) => {
+          if (!account) return <NotFound />;
 
           return (
             <SettingsLayout>
-              {owner.plan && (
+              {account.plan && (
                 <PlanCard
-                  ownerLogin={ownerLogin}
-                  plan={owner.plan}
-                  purchase={owner.purchase ?? null}
-                  repositories={owner.repositories}
-                  stripeCustomerId={owner.stripeCustomerId ?? null}
+                  accountSlug={accountSlug}
+                  plan={account.plan}
+                  purchase={account.purchase ?? null}
+                  stripeCustomerId={account.stripeCustomerId ?? null}
+                  projects={account.projects.edges}
                 />
               )}
               <PermissionCard />

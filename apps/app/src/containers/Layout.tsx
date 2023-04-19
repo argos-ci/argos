@@ -2,7 +2,6 @@ import { clsx } from "clsx";
 import { HTMLProps, forwardRef } from "react";
 import { useMatch } from "react-router-dom";
 
-import { SyncAlert } from "@/containers/SyncAlert";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { Catch } from "@/ui/Catch";
 
@@ -22,11 +21,10 @@ export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
 );
 
 export const Layout = (props: { children: React.ReactNode }) => {
-  const fullSize = useMatch("/:ownerLogin/:repositoryName");
+  const fullSize = useMatch("/:accountSlug/:projectSlug");
   return (
     <div className={clsx(fullSize && "h-screen", "flex min-h-full flex-col")}>
       <header className="flex-shrink-0">
-        <SyncAlert />
         <Navbar />
       </header>
       {props.children}

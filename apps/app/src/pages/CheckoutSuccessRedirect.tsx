@@ -10,13 +10,13 @@ import { NotFound } from "./NotFound";
 
 const UserQuery = graphql(`
   query Checkout_success {
-    user {
+    me {
       id
       lastPurchase {
         id
-        owner {
+        account {
           id
-          login
+          slug
         }
       }
     }
@@ -27,13 +27,13 @@ export const CheckoutSuccessRedirect = () => {
   const loggedIn = useIsLoggedIn();
   const { data } = useQuery(UserQuery);
   const navigate = useNavigate();
-  const ownerLogin = data?.user?.lastPurchase?.owner.login;
+  const accountSlug = data?.me?.lastPurchase?.account.slug;
 
   useEffect(() => {
     if (data) {
-      navigate(ownerLogin ? `/${ownerLogin}/settings` : "/");
+      navigate(accountSlug ? `/${accountSlug}/settings` : "/");
     }
-  }, [data, ownerLogin, navigate]);
+  }, [data, accountSlug, navigate]);
 
   if (!loggedIn) {
     return <NotFound />;

@@ -14,6 +14,10 @@ import { useParams } from "react-router-dom";
 import { FlakyButton } from "@/containers/FlakyButton";
 import { MuteTestDropdown } from "@/containers/MuteTestDropdown";
 import { ResolveButton } from "@/containers/ResolveButton";
+import {
+  SelectedTestsStateProvider,
+  useSelectedTestsState,
+} from "@/containers/SelectedTestsState";
 import { DocumentType, graphql } from "@/gql";
 import { TestStatus } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
@@ -32,19 +36,15 @@ import { Time } from "@/ui/Time";
 import { MagicTooltip } from "@/ui/Tooltip";
 
 import { NotFound } from "../NotFound";
-import {
-  SelectedTestsStateProvider,
-  useSelectedTestsState,
-} from "./SelectedTestsState";
 
-const RepositoryTestsQuery = graphql(`
-  query FlakyTests_repository_tests(
-    $ownerLogin: String!
-    $repositoryName: String!
+const ProjectTestsQuery = graphql(`
+  query FlakyTests_project_tests(
+    $accountSlug: String!
+    $projectSlug: String!
     $after: Int!
     $first: Int!
   ) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
       id
       tests(first: $first, after: $after) {
         pageInfo {
@@ -98,8 +98,8 @@ const UpdateStatusesMutation = graphql(`
   }
 `);
 
-type RepositoryTestsDocument = DocumentType<typeof RepositoryTestsQuery>;
-type Tests = NonNullable<RepositoryTestsDocument["repository"]>["tests"];
+type ProjectTestsDocument = DocumentType<typeof ProjectTestsQuery>;
+type Tests = NonNullable<ProjectTestsDocument["project"]>["tests"];
 type Test = Tests["edges"][0];
 type Screenshot = Tests["edges"][0]["screenshot"];
 
@@ -286,7 +286,7 @@ const TestsList = ({
   fetching: boolean;
   fetchNextPage: () => void;
 }) => {
-  const { ownerLogin, repositoryName } = useParams();
+  const { accountSlug, projectSlug } = useParams();
   const parentRef = useRef<HTMLDivElement | null>(null);
   const { hasNextPage } = tests.pageInfo;
   const displayCount = tests.edges.length;
@@ -317,19 +317,19 @@ const TestsList = ({
     const first = 20;
     while (after < tests.edges.length) {
       const query = {
-        query: RepositoryTestsQuery,
+        query: ProjectTestsQuery,
         variables: {
-          ownerLogin: ownerLogin!,
-          repositoryName: repositoryName!,
+          accountSlug: accountSlug!,
+          projectSlug: projectSlug!,
           first,
           after,
         },
       };
       const existingData = cache.readQuery(query);
 
-      if (existingData?.repository) {
+      if (existingData?.project) {
         let edgeUpdated = false;
-        const updatedEdges = existingData.repository.tests.edges.map((test) => {
+        const updatedEdges = existingData.project.tests.edges.map((test) => {
           if (updatedTestIds.includes(test.id)) {
             edgeUpdated = true;
             return { ...test, ...updatePayload };
@@ -342,10 +342,10 @@ const TestsList = ({
             ...query,
             data: {
               ...existingData,
-              repository: {
-                ...existingData.repository,
+              project: {
+                ...existingData.project,
                 tests: {
-                  ...existingData.repository.tests,
+                  ...existingData.project.tests,
                   edges: updatedEdges,
                 },
               },
@@ -510,11 +510,11 @@ const TestsList = ({
   );
 };
 
-const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
-  const testsResult = useQuery(RepositoryTestsQuery, {
+const PageContent = (props: { accountSlug: string; projectSlug: string }) => {
+  const testsResult = useQuery(ProjectTestsQuery, {
     variables: {
-      ownerLogin: props.ownerLogin,
-      repositoryName: props.repositoryName,
+      accountSlug: props.accountSlug,
+      projectSlug: props.projectSlug,
       after: 0,
       first: 20,
     },
@@ -528,7 +528,7 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
 
   const fetchNextPage = useCallback(() => {
     const displayCount =
-      testResultRef.current.data?.repository?.tests.edges.length;
+      testResultRef.current.data?.project?.tests.edges.length;
     fetchMore({
       variables: {
         after: displayCount,
@@ -536,14 +536,14 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
       updateQuery: (prev, { fetchMoreResult }) => {
         return {
           ...prev,
-          repository: {
-            ...prev.repository!,
+          project: {
+            ...prev.project!,
             tests: {
-              ...prev.repository!.tests,
-              ...fetchMoreResult.repository!.tests,
+              ...prev.project!.tests,
+              ...fetchMoreResult.project!.tests,
               edges: [
-                ...prev.repository!.tests.edges,
-                ...fetchMoreResult.repository!.tests.edges,
+                ...prev.project!.tests.edges,
+                ...fetchMoreResult.project!.tests.edges,
               ],
             },
           },
@@ -560,7 +560,7 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
     );
   }
 
-  const tests = testsResult.data.repository?.tests;
+  const tests = testsResult.data.project?.tests;
   if (!tests) {
     return (
       <Container>
@@ -574,7 +574,7 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
       <Container>
         <Alert>
           <AlertTitle>No test</AlertTitle>
-          <AlertText>There is no test on this repository yet.</AlertText>
+          <AlertText>There is no test on this project yet.</AlertText>
         </Alert>
       </Container>
     );
@@ -594,8 +594,8 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
 };
 
 export const Tests = () => {
-  const { ownerLogin, repositoryName } = useParams();
-  if (!ownerLogin || !repositoryName) {
+  const { accountSlug, projectSlug } = useParams();
+  if (!accountSlug || !projectSlug) {
     return <NotFound />;
   }
 
@@ -603,10 +603,10 @@ export const Tests = () => {
     <>
       <Helmet>
         <title>
-          {ownerLogin}/{repositoryName} • Tests
+          {accountSlug}/{projectSlug} • Tests
         </title>
       </Helmet>
-      <PageContent ownerLogin={ownerLogin} repositoryName={repositoryName} />
+      <PageContent accountSlug={accountSlug} projectSlug={projectSlug} />
     </>
   );
 };

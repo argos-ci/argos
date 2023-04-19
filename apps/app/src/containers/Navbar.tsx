@@ -23,8 +23,8 @@ import {
 } from "@/ui/Menu";
 import { MagicTooltip } from "@/ui/Tooltip";
 
+import { AccountAvatar } from "./AccountAvatar";
 import { GitHubLoginButton } from "./GitHub";
-import { OwnerAvatar } from "./OwnerAvatar";
 import { SubNavbar } from "./SubNavbar";
 
 const UserMenu = () => {
@@ -43,7 +43,7 @@ const UserMenu = () => {
         state={menu}
         className="rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
       >
-        <OwnerAvatar owner={authPayload} />
+        <AccountAvatar account={authPayload.account} />
       </MenuButton>
       <Menu aria-label="User settings" state={menu}>
         <MenuItem state={menu} pointer>
@@ -68,7 +68,7 @@ const UserMenu = () => {
               <MenuItemIcon>
                 <RepoIcon />
               </MenuItemIcon>
-              Add repository
+              Add project
             </a>
           )}
         </MenuItem>
@@ -76,7 +76,7 @@ const UserMenu = () => {
           {(menuItemProps) => (
             <RouterLink
               {...menuItemProps}
-              to={`/${authPayload.login}/settings`}
+              to={`/${authPayload.account.slug}/settings`}
             >
               <MenuItemIcon>
                 <GearIcon />

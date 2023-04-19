@@ -9,28 +9,28 @@ import {
   BreadcrumbSeparator,
 } from "@/ui/Breadcrumb";
 
-import { RepositoryBreadcrumbMenu } from "./RepositoryBreadcrumbMenu";
+import { ProjectBreadcrumbMenu } from "./ProjectBreadcrumbMenu";
 
-export const RepositoryBreadcrumbItem = () => {
-  const { ownerLogin, repositoryName } = useParams();
+export const ProjectBreadcrumbItem = () => {
+  const { accountSlug, projectSlug } = useParams();
   const loggedIn = useIsLoggedIn();
 
-  if (!repositoryName) return null;
+  if (!projectSlug) return null;
 
   return (
     <>
       <BreadcrumbSeparator />
       <BreadcrumbItem>
         <BreadcrumbLink
-          to={`${ownerLogin}/${repositoryName}/builds`}
+          to={`${accountSlug}/${projectSlug}/builds`}
           aria-current="page"
         >
           <BreadcrumbItemIcon>
             <RepoIcon size={18} />
           </BreadcrumbItemIcon>
-          {repositoryName}
+          {projectSlug}
         </BreadcrumbLink>
-        {loggedIn && <RepositoryBreadcrumbMenu />}
+        {loggedIn && <ProjectBreadcrumbMenu />}
       </BreadcrumbItem>
     </>
   );

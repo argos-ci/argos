@@ -10,7 +10,7 @@ import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
 import { Heading } from "@/ui/Typography";
 
-import { useOwnerContext } from ".";
+import { useAccountContext } from ".";
 
 declare global {
   namespace JSX {
@@ -23,12 +23,11 @@ declare global {
   }
 }
 
-const CheckoutQuery = graphql(`
-  query OwnerCheckout_owner($login: String!) {
-    owner(login: $login) {
+const AccountQuery = graphql(`
+  query AccountCheckout_account($slug: String!) {
+    account(slug: $slug) {
       id
       stripeClientReferenceId
-
       purchase {
         id
         source
@@ -37,11 +36,11 @@ const CheckoutQuery = graphql(`
   }
 `);
 
-export const Checkout = () => {
-  const { ownerLogin } = useParams();
-  const { hasWritePermission } = useOwnerContext();
+export const AccountCheckout = () => {
+  const { accountSlug } = useParams();
+  const { hasWritePermission } = useAccountContext();
 
-  if (!ownerLogin) {
+  if (!accountSlug) {
     return <NotFound />;
   }
 
@@ -52,27 +51,27 @@ export const Checkout = () => {
   return (
     <Container>
       <Helmet>
-        <title>{ownerLogin} • Checkout</title>
+        <title>{accountSlug} • Checkout</title>
         <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
       </Helmet>
       <Heading>
-        Subscribe to a plan for <span className="font-bold">{ownerLogin}</span>
+        Subscribe to a plan for <span className="font-bold">{accountSlug}</span>
       </Heading>
       <Query
         fallback={<PageLoader />}
-        query={CheckoutQuery}
-        variables={{ login: ownerLogin }}
+        query={AccountQuery}
+        variables={{ slug: accountSlug }}
       >
-        {({ owner }) => {
-          if (!owner) return <NotFound />;
-          if (owner.purchase) return <NotFound />;
+        {({ account }) => {
+          if (!account) return <NotFound />;
+          if (account.purchase) return <NotFound />;
 
           return (
             <div className="mb-20">
               <stripe-pricing-table
                 pricing-table-id={config.get("stripe.pricingTableId")}
                 publishable-key={config.get("stripe.publishableKey")}
-                client-reference-id={owner.stripeClientReferenceId}
+                client-reference-id={account.stripeClientReferenceId}
               ></stripe-pricing-table>
             </div>
           );

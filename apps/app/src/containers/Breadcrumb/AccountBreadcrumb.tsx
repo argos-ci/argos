@@ -2,8 +2,8 @@ import { useQuery } from "@apollo/client";
 import { HomeIcon, OrganizationIcon } from "@primer/octicons-react";
 import { useMatch, useParams } from "react-router-dom";
 
+import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useIsLoggedIn } from "@/containers/Auth";
-import { OwnerAvatar } from "@/containers/OwnerAvatar";
 import { graphql } from "@/gql";
 import {
   BreadcrumbItem,
@@ -11,41 +11,41 @@ import {
   BreadcrumbLink,
 } from "@/ui/Breadcrumb";
 
-import { OwnerBreadcrumbMenu } from "./OwnerBreadcrumbMenu";
+import { AccountBreadcrumbMenu } from "./AccountBreadcrumbMenu";
 
-const OwnerQuery = graphql(`
-  query OwnerBreadcrumb_owner($login: String!) {
-    owner(login: $login) {
+const AccountQuery = graphql(`
+  query AccountBreadcrumb_account($slug: String!) {
+    account(slug: $slug) {
       id
-      login
+      slug
       name
     }
   }
 `);
 
-const OwnerBreadcrumbLink = ({ ownerLogin }: { ownerLogin: string }) => {
-  const match = useMatch(`/${ownerLogin}`);
-  const { data, error } = useQuery(OwnerQuery, {
-    variables: { login: ownerLogin },
+const AccountBreadcrumbLink = ({ accountSlug }: { accountSlug: string }) => {
+  const match = useMatch(`/${accountSlug}`);
+  const { data, error } = useQuery(AccountQuery, {
+    variables: { slug: accountSlug },
   });
   if (error) {
     throw error;
   }
   return (
     <BreadcrumbLink
-      to={`/${ownerLogin}`}
+      to={`/${accountSlug}`}
       aria-current={match ? "page" : undefined}
     >
       <BreadcrumbItemIcon>
         {data ? (
-          data.owner ? (
-            <OwnerAvatar owner={data.owner} size={24} />
+          data.account ? (
+            <AccountAvatar account={data.account} size={24} />
           ) : (
             <OrganizationIcon size={18} />
           )
         ) : null}
       </BreadcrumbItemIcon>
-      {ownerLogin}
+      {accountSlug}
     </BreadcrumbLink>
   );
 };
@@ -59,19 +59,19 @@ const HomeBreadcrumbLink = () => {
   );
 };
 
-export const OwnerBreadcrumbItem = () => {
-  const { ownerLogin } = useParams();
+export const AccountBreadcrumbItem = () => {
+  const { accountSlug } = useParams();
   const loggedIn = useIsLoggedIn();
 
   return (
     <>
       <BreadcrumbItem>
-        {ownerLogin ? (
-          <OwnerBreadcrumbLink ownerLogin={ownerLogin} />
+        {accountSlug ? (
+          <AccountBreadcrumbLink accountSlug={accountSlug} />
         ) : (
           <HomeBreadcrumbLink />
         )}
-        {loggedIn && <OwnerBreadcrumbMenu />}
+        {loggedIn && <AccountBreadcrumbMenu />}
       </BreadcrumbItem>
     </>
   );

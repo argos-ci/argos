@@ -6,9 +6,10 @@ import { FragmentType, useFragment } from "@/gql/fragment-masking";
 import { Banner } from "@/ui/Banner";
 import { Link } from "@/ui/Link";
 
-export const OwnerFragment = graphql(`
-  fragment OvercapacityBanner_Owner on Owner {
+export const AccountFragment = graphql(`
+  fragment OvercapacityBanner_Account on Account {
     plan {
+      id
       name
     }
     consumptionRatio
@@ -17,12 +18,12 @@ export const OwnerFragment = graphql(`
 
 export const OvercapacityBanner = memo(
   (props: {
-    ownerLogin: string;
-    owner: FragmentType<typeof OwnerFragment>;
+    accountSlug: string;
+    account: FragmentType<typeof AccountFragment>;
   }) => {
-    const { ownerLogin } = props;
-    const owner = useFragment(OwnerFragment, props.owner);
-    const { plan, consumptionRatio } = owner;
+    const { accountSlug } = props;
+    const account = useFragment(AccountFragment, props.account);
+    const { plan, consumptionRatio } = account;
     const visible =
       plan && typeof consumptionRatio === "number" && consumptionRatio >= 0.9;
 
@@ -40,7 +41,7 @@ export const OvercapacityBanner = memo(
           You&apos;ve hit {Math.floor(consumptionRatio * 100)}% of the{" "}
           {plan.name} plan limit.
         </span>
-        <Link to={`/${ownerLogin}/settings`}>Upgrade plan</Link>
+        <Link to={`/${accountSlug}/settings`}>Upgrade plan</Link>
       </Banner>
     );
   }

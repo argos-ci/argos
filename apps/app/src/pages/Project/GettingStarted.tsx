@@ -11,30 +11,30 @@ import { Code } from "@/ui/Code";
 import { Anchor } from "@/ui/Link";
 import { Pre } from "@/ui/Pre";
 
-const RepositoryFragment = graphql(`
-  fragment GettingStarted_repository on Repository {
+const ProjectFragment = graphql(`
+  fragment GettingStarted_Project on Project {
     token
   }
 `);
 
 export const GettingStarted = (props: {
-  repository: FragmentType<typeof RepositoryFragment>;
+  project: FragmentType<typeof ProjectFragment>;
 }) => {
-  const repository = useFragment(RepositoryFragment, props.repository);
+  const project = useFragment(ProjectFragment, props.project);
   return (
     <SettingsLayout className="mx-auto">
       <Card>
         <CardBody>
           <CardTitle>Get started</CardTitle>
           <CardParagraph>
-            The repository is ready to receive the first build.
+            The project is ready to receive the first build.
           </CardParagraph>
           <CardParagraph>
-            Use this <Code>ARGOS_TOKEN</Code> to authenticate your repository
-            when you send screenshots to Argos.
+            Use this <Code>ARGOS_TOKEN</Code> to authenticate your project when
+            you send screenshots to Argos.
           </CardParagraph>
           <Pre>
-            <code>ARGOS_TOKEN={repository.token}</code>
+            <code>ARGOS_TOKEN={project.token}</code>
           </Pre>
           <CardParagraph className="font-bold">
             This token should be kept secret. Do not expose it publicly.

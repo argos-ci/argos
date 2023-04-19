@@ -22,11 +22,7 @@ const ApolloProvider = (props: {
     () =>
       new ApolloClient({
         uri: `/graphql`,
-        cache: new InMemoryCache({
-          possibleTypes: {
-            Owner: ["User", "Organization"],
-          },
-        }),
+        cache: new InMemoryCache(),
         headers: authorization ? { authorization } : {},
       }),
     [authorization]

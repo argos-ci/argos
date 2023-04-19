@@ -43,6 +43,8 @@ export const typeDefs = gql`
     baselineBranch: String
     "Reference branch"
     referenceBranch: String
+    "Check if the project is public or not"
+    public: Boolean!
     "Override repository's Github privacy"
     private: Boolean
     "Current month used screenshots"
@@ -163,6 +165,9 @@ export const resolvers = {
     },
     referenceBranch: async (project: Project) => {
       return project.$getReferenceBranch();
+    },
+    public: async (project: Project) => {
+      return project.$checkIsPublic();
     },
     currentMonthUsedScreenshots: async (
       project: Project,

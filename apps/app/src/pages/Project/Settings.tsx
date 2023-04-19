@@ -6,10 +6,8 @@ import { useParams } from "react-router-dom";
 
 import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
-import { OwnerAvatar } from "@/containers/OwnerAvatar";
 import { DocumentType, graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
-import { Badge } from "@/ui/Badge";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -22,92 +20,61 @@ import { Code } from "@/ui/Code";
 import { Container } from "@/ui/Container";
 import { Anchor } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
-import { Pagination } from "@/ui/Pagination";
 import { Pre } from "@/ui/Pre";
 import { Heading } from "@/ui/Typography";
 
-import { useRepositoryContext } from ".";
+import { useProjectContext } from ".";
 
-const RepositoryQuery = graphql(`
-  query RepositorySettings_repository(
-    $ownerLogin: String!
-    $repositoryName: String!
-    $firstUser: Int!
-    $afterUser: Int!
-  ) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+const ProjectQuery = graphql(`
+  query ProjectSettings_project($accountSlug: String!, $projectSlug: String!) {
+    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
       id
       token
       baselineBranch
-      defaultBranch
-      private
-      forcedPrivate
-      owner {
+      ghRepository {
         id
-        type
+        defaultBranch
       }
-      users(first: $firstUser, after: $afterUser) {
-        pageInfo {
-          hasNextPage
-          totalCount
-        }
-        edges {
-          id
-          login
-          name
-        }
-      }
+      private
     }
   }
 `);
 
-const UpdateReferenceBranchMutation = graphql(`
-  mutation RepositorySettings_updateReferenceBranch(
-    $repositoryId: String!
+const UpdateBaselineBranchMutation = graphql(`
+  mutation ProjectSettings_updateBaselineBranch(
+    $projectId: ID!
     $baselineBranch: String
   ) {
-    updateReferenceBranch(
-      repositoryId: $repositoryId
-      baselineBranch: $baselineBranch
-    ) {
+    updateProject(input: { id: $projectId, baselineBranch: $baselineBranch }) {
       id
       baselineBranch
-      defaultBranch
     }
   }
 `);
 
-const UpdateForcedPrivateMutation = graphql(`
-  mutation RepositorySettings_UpdateForcedPrivate(
-    $repositoryId: String!
-    $forcedPrivate: Boolean!
-  ) {
-    updateForcedPrivate(
-      repositoryId: $repositoryId
-      forcedPrivate: $forcedPrivate
-    ) {
+const UpdatePrivateMutation = graphql(`
+  mutation ProjectSettings_UpdatePrivate($projectId: ID!, $private: Boolean) {
+    updateProject(input: { id: $projectId, private: $private }) {
       id
-      forcedPrivate
+      private
     }
   }
 `);
 
-type RepositoryDocument = DocumentType<typeof RepositoryQuery>;
-type Repository = NonNullable<RepositoryDocument["repository"]>;
-type UserConnection = Repository["users"];
-type Owner = Repository["owner"];
+type ProjectDocument = DocumentType<typeof ProjectQuery>;
+type Project = NonNullable<ProjectDocument["project"]>;
 
-const TokenCard = ({ repository }: { repository: Repository }) => {
+const TokenCard = ({ project }: { project: Project }) => {
   return (
     <Card>
       <CardBody>
         <CardTitle>Upload token</CardTitle>
         <CardParagraph>
-          Use this <Code>ARGOS_TOKEN</Code> to authenticate your repository when
+          Use this <Code>ARGOS_TOKEN</Code> to authenticate your project when
           you send screenshots to Argos.
         </CardParagraph>
         <Pre>
-          <code>ARGOS_TOKEN={repository.token}</code>
+          <code>ARGOS_TOKEN={project.token}</code>
         </Pre>
         <CardParagraph>
           <strong>
@@ -126,23 +93,23 @@ const TokenCard = ({ repository }: { repository: Repository }) => {
   );
 };
 
-const ReferenceBranchCard = ({ repository }: { repository: Repository }) => {
-  const defaultUseDefaultBranch = repository.baselineBranch === null;
+const ReferenceBranchCard = ({ project }: { project: Project }) => {
+  const defaultUseDefaultBranch = project.baselineBranch === null;
   const [useDefaultBranch, setUseDefaultBranch] = useState(
     defaultUseDefaultBranch
   );
   const [baselineBranch, setBaselineBranch] = useState(
-    repository.baselineBranch || repository.defaultBranch || ""
+    project.baselineBranch || project.ghRepository.defaultBranch || ""
   );
 
   const [updateReferenceBranch, { loading, data: updated, error }] =
-    useMutation(UpdateReferenceBranchMutation);
+    useMutation(UpdateBaselineBranchMutation);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault();
     updateReferenceBranch({
       variables: {
-        repositoryId: repository.id,
+        projectId: project.id,
         baselineBranch: useDefaultBranch ? null : baselineBranch,
       },
     });
@@ -223,20 +190,18 @@ const ReferenceBranchCard = ({ repository }: { repository: Repository }) => {
   );
 };
 
-const VisibilityCard = ({ repository }: { repository: Repository }) => {
-  const [useForcedPrivate, setUseForcedPrivate] = useState(
-    repository.forcedPrivate
-  );
+const VisibilityCard = ({ project }: { project: Project }) => {
+  const [isPrivate, setIsPrivate] = useState(project.private);
 
   const [updateReferenceBranch, { loading, data: updated, error }] =
-    useMutation(UpdateForcedPrivateMutation);
+    useMutation(UpdatePrivateMutation);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault();
     updateReferenceBranch({
       variables: {
-        repositoryId: repository.id,
-        forcedPrivate: useForcedPrivate,
+        projectId: project.id,
+        private: isPrivate,
       },
     });
   };
@@ -245,10 +210,10 @@ const VisibilityCard = ({ repository }: { repository: Repository }) => {
     <Card>
       <form onSubmit={handleSubmit} aria-labelledby="reference-branch">
         <CardBody>
-          <CardTitle id="reference-branch">Repository visibility</CardTitle>
+          <CardTitle id="reference-branch">Project visibility</CardTitle>
           <CardParagraph>
-            Make a public repository private in order to restrict access to
-            builds and screenshots to only authorized users.
+            Make a public project private in order to restrict access to builds
+            and screenshots to only authorized users.
           </CardParagraph>
           <CardParagraph>
             This will also mark the screenshots as private and use up credit.
@@ -256,15 +221,15 @@ const VisibilityCard = ({ repository }: { repository: Repository }) => {
           <div className="my-4 flex gap-2">
             <input
               type="checkbox"
-              id="useForcedPrivate"
-              name="useForcedPrivate"
-              checked={useForcedPrivate}
+              id="isPrivate"
+              name="isPrivate"
+              checked={Boolean(isPrivate)}
               onChange={(event) => {
-                setUseForcedPrivate(event.target.checked);
+                setIsPrivate(event.target.checked);
               }}
             />
-            <label htmlFor="useForcedPrivate" className="select-none">
-              Change repository visibility to private
+            <label htmlFor="isPrivate" className="select-none">
+              Change project visibility to private
             </label>
           </div>
         </CardBody>
@@ -289,63 +254,11 @@ const VisibilityCard = ({ repository }: { repository: Repository }) => {
   );
 };
 
-const MembersCard = ({
-  userConnection,
-  owner,
-  first,
-  after,
-  handlePageChange,
-}: {
-  userConnection: UserConnection;
-  owner: Owner;
-  first: number;
-  after: number;
-  handlePageChange: (after: number) => void;
-}) => {
-  return (
-    <Card>
-      <CardBody>
-        <CardTitle id="reference-branch">Members</CardTitle>
-        <div className="flex flex-col gap-4">
-          {userConnection.edges.map((user, index) => {
-            const hasOwnerBadge = owner.type === "user" && user.id === owner.id;
-            return (
-              <div key={user.id} className="flex items-center gap-4">
-                <div className="w-8 text-on-light">#{after + index + 1}</div>
-                <OwnerAvatar owner={user} className="flex-shrink-0" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-semibold">{user.name}</div>
-                    {hasOwnerBadge && <Badge>Owner</Badge>}
-                  </div>
-                  <div className="text-xs text-slate-500">{user.login}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardBody>
-      {userConnection.pageInfo.totalCount > first ? (
-        <CardFooter>
-          <Pagination
-            pageInfo={userConnection.pageInfo}
-            first={first}
-            after={after}
-            handlePageChange={handlePageChange}
-          />
-        </CardFooter>
-      ) : null}
-    </Card>
-  );
-};
+export const ProjectSettings = () => {
+  const { accountSlug, projectSlug } = useParams();
+  const { hasWritePermission } = useProjectContext();
 
-export const RepositorySettings = () => {
-  const { ownerLogin, repositoryName } = useParams();
-  const { hasWritePermission } = useRepositoryContext();
-  const [usersCursor, setUsersCursor] = useState(0);
-  const USERS_BY_PAGE = 20;
-
-  if (!ownerLogin || !repositoryName) {
+  if (!accountSlug || !projectSlug) {
     return <NotFound />;
   }
 
@@ -357,37 +270,26 @@ export const RepositorySettings = () => {
     <Container>
       <Helmet>
         <title>
-          {ownerLogin}/{repositoryName} • Settings
+          {accountSlug}/{projectSlug} • Settings
         </title>
       </Helmet>
-      <Heading>Repository Settings</Heading>
+      <Heading>Project Settings</Heading>
       <Query
         fallback={<PageLoader />}
-        query={RepositoryQuery}
+        query={ProjectQuery}
         variables={{
-          ownerLogin,
-          repositoryName,
-          firstUser: USERS_BY_PAGE,
-          afterUser: usersCursor,
+          accountSlug,
+          projectSlug,
         }}
       >
-        {({ repository }) => {
-          if (!repository) return <NotFound />;
+        {({ project }) => {
+          if (!project) return <NotFound />;
 
           return (
             <SettingsLayout>
-              <TokenCard repository={repository} />
-              <ReferenceBranchCard repository={repository} />
-              {repository.private ? null : (
-                <VisibilityCard repository={repository} />
-              )}
-              <MembersCard
-                userConnection={repository.users}
-                owner={repository.owner}
-                after={usersCursor}
-                first={USERS_BY_PAGE}
-                handlePageChange={setUsersCursor}
-              />
+              <TokenCard project={project} />
+              <ReferenceBranchCard project={project} />
+              {project.private ? null : <VisibilityCard project={project} />}
             </SettingsLayout>
           );
         }}

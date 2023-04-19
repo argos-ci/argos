@@ -15,47 +15,50 @@ import {
   useMenuState,
 } from "@/ui/Menu";
 
-const OwnerQuery = graphql(`
-  query RepositoryBreadcrumbMenu_owner($login: String!) {
-    owner(login: $login) {
+const AccountQuery = graphql(`
+  query ProjectBreadcrumbMenu_account($slug: String!) {
+    account(slug: $slug) {
       id
-      repositories(enabled: true) {
-        id
-        name
+      projects(first: 100, after: 0) {
+        edges {
+          id
+          name
+          slug
+        }
       }
     }
   }
 `);
 
-const Repositories = (props: { ownerLogin: string; menu: MenuState }) => {
-  const { data, error } = useQuery(OwnerQuery, {
-    variables: { login: props.ownerLogin },
+const Repositories = (props: { accountSlug: string; menu: MenuState }) => {
+  const { data, error } = useQuery(AccountQuery, {
+    variables: { slug: props.accountSlug },
   });
   if (error) return null;
   if (!data) return null;
-  const repositoryLogins =
-    data.owner?.repositories
-      .map(({ name }) => name)
-      .sort((repoA, repoB) => repoA.localeCompare(repoB)) ?? [];
+  const projectSlugs =
+    data.account?.projects.edges
+      .map(({ slug }) => slug)
+      .sort((sa, sb) => sa.localeCompare(sb)) ?? [];
 
-  if (repositoryLogins.length === 0) {
-    return <MenuText>No active repository found</MenuText>;
+  if (projectSlugs.length === 0) {
+    return <MenuText>No active project found</MenuText>;
   }
 
   return (
     <>
-      {repositoryLogins.map((repositoryLogin) => {
+      {projectSlugs.map((projectSlug) => {
         return (
-          <MenuItem key={repositoryLogin} state={props.menu} pointer>
+          <MenuItem key={projectSlug} state={props.menu} pointer>
             {(menuItemProps) => (
               <RouterLink
                 {...menuItemProps}
-                to={`${props.ownerLogin}/${repositoryLogin}`}
+                to={`${props.accountSlug}/${projectSlug}`}
               >
                 <MenuItemIcon>
                   <RepoIcon size={18} />
                 </MenuItemIcon>
-                {repositoryLogin}
+                {projectSlug}
               </RouterLink>
             )}
           </MenuItem>
@@ -65,13 +68,13 @@ const Repositories = (props: { ownerLogin: string; menu: MenuState }) => {
   );
 };
 
-export const RepositoryBreadcrumbMenu = () => {
-  const { ownerLogin } = useParams();
+export const ProjectBreadcrumbMenu = () => {
+  const { accountSlug } = useParams();
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
 
-  if (!ownerLogin) return null;
+  if (!accountSlug) return null;
 
-  const title = "Switch repository";
+  const title = "Switch project";
 
   return (
     <>
@@ -79,11 +82,11 @@ export const RepositoryBreadcrumbMenu = () => {
 
       <Menu aria-label={title} state={menu}>
         <MenuTitle>{title}</MenuTitle>
-        {menu.open && <Repositories ownerLogin={ownerLogin} menu={menu} />}
+        {menu.open && <Repositories accountSlug={accountSlug} menu={menu} />}
         <MenuText>
           Don&apos;t see your repo?
           <br />
-          <Link to={`/${ownerLogin}`}>Be sure to activate it →</Link>
+          <Link to={`/${accountSlug}`}>Be sure to activate it →</Link>
         </MenuText>
       </Menu>
     </>

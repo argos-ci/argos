@@ -13,20 +13,20 @@ export const BuildFragment = graphql(`
   }
 `);
 
-export const RepositoryFragment = graphql(`
-  fragment BuildStatusChip_Repository on Repository {
-    ...BuildStatusDescription_Repository
+export const ProjectFragment = graphql(`
+  fragment BuildStatusChip_Project on Project {
+    ...BuildStatusDescription_Project
   }
 `);
 
 export const BuildStatusChip = (props: {
   build: FragmentType<typeof BuildFragment>;
-  repository: FragmentType<typeof RepositoryFragment>;
+  project: FragmentType<typeof ProjectFragment>;
   scale?: ChipProps["scale"];
   tooltip: boolean;
 }) => {
   const build = useFragment(BuildFragment, props.build);
-  const repository = useFragment(RepositoryFragment, props.repository);
+  const project = useFragment(ProjectFragment, props.project);
   const chip = (
     <Chip
       icon={getBuildIcon(build.type, build.status)}
@@ -40,7 +40,7 @@ export const BuildStatusChip = (props: {
   return (
     <MagicTooltip
       variant="info"
-      tooltip={<BuildStatusDescription build={build} repository={repository} />}
+      tooltip={<BuildStatusDescription build={build} project={project} />}
     >
       {chip}
     </MagicTooltip>

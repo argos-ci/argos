@@ -36,20 +36,20 @@ export const BuildFragment = graphql(`
   }
 `);
 
-export const RepositoryFragment = graphql(`
-  fragment BuildWorkspace_Repository on Repository {
-    ...BuildStatusDescription_Repository
+export const ProjectFragment = graphql(`
+  fragment BuildWorkspace_Project on Project {
+    ...BuildStatusDescription_Project
   }
 `);
 
 export const BuildWorkspace = (props: {
   params: BuildParams;
   build: FragmentType<typeof BuildFragment>;
-  repository: FragmentType<typeof RepositoryFragment>;
+  project: FragmentType<typeof ProjectFragment>;
 }) => {
   const build = useFragment(BuildFragment, props.build);
-  const repository = useFragment(RepositoryFragment, props.repository);
-  const githubRepoUrl = `https://github.com/${props.params.ownerLogin}/${props.params.repositoryName}`;
+  const project = useFragment(ProjectFragment, props.project);
+  const githubRepoUrl = `https://github.com/${props.params.accountSlug}/${props.params.projectSlug}`;
 
   switch (build.status) {
     case "aborted":
@@ -57,7 +57,7 @@ export const BuildWorkspace = (props: {
     case "expired":
       return (
         <div className="flex-1 p-10 text-center text-xl">
-          <BuildStatusDescription build={build} repository={repository} />
+          <BuildStatusDescription build={build} project={project} />
         </div>
       );
     case "pending":

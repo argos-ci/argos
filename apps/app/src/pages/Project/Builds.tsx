@@ -14,35 +14,32 @@ import { Loader, useDelayedVisible } from "@/ui/Loader";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 
-import { useRepositoryContext } from ".";
+import { useProjectContext } from ".";
 import { NotFound } from "../NotFound";
 import { GettingStarted } from "./GettingStarted";
 
-const RepositoryQuery = graphql(`
-  query RepositoryBuilds_repository(
-    $ownerLogin: String!
-    $repositoryName: String!
-  ) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+const ProjectQuery = graphql(`
+  query ProjectBuilds_project($accountSlug: String!, $projectSlug: String!) {
+    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
       id
       permissions
-      ...GettingStarted_repository
-      ...BuildStatusChip_Repository
+      ...GettingStarted_Project
+      ...BuildStatusChip_Project
     }
   }
 `);
 
-type RepositoryDocument = DocumentType<typeof RepositoryQuery>;
-type Repository = NonNullable<RepositoryDocument["repository"]>;
+type ProjectDocument = DocumentType<typeof ProjectQuery>;
+type Project = NonNullable<ProjectDocument["project"]>;
 
-const RepositoryBuildsQuery = graphql(`
-  query RepositoryBuilds_repository_builds(
-    $ownerLogin: String!
-    $repositoryName: String!
+const ProjectBuildsQuery = graphql(`
+  query ProjectBuilds_project_Builds(
+    $accountSlug: String!
+    $projectSlug: String!
     $after: Int!
     $first: Int!
   ) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
       id
       builds(first: $first, after: $after) {
         pageInfo {
@@ -66,16 +63,16 @@ const RepositoryBuildsQuery = graphql(`
   }
 `);
 
-type RepositoryBuildsDocument = DocumentType<typeof RepositoryBuildsQuery>;
-type Builds = NonNullable<RepositoryBuildsDocument["repository"]>["builds"];
+type ProjectBuildsDocument = DocumentType<typeof ProjectBuildsQuery>;
+type Builds = NonNullable<ProjectBuildsDocument["project"]>["builds"];
 type Build = Builds["edges"][0];
 
 const BuildRow = memo(
-  ({ build, repository }: { build: Build; repository: Repository }) => {
-    const { ownerLogin, repositoryName } = useParams();
+  ({ build, project }: { build: Build; project: Project }) => {
+    const { accountSlug, projectSlug } = useParams();
     return (
       <RouterLink
-        to={`/${ownerLogin}/${repositoryName}/builds/${build.number}`}
+        to={`/${accountSlug}/${projectSlug}/builds/${build.number}`}
         className="flex items-center gap-4 border-b border-b-border px-4 py-2 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
       >
         <div className="w-[7ch] flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-on-light">
@@ -88,7 +85,7 @@ const BuildRow = memo(
           <BuildStatusChip
             scale="sm"
             build={build}
-            repository={repository}
+            project={project}
             tooltip={false}
           />
         </div>
@@ -102,7 +99,7 @@ const BuildRow = memo(
                 event.preventDefault();
                 window
                   .open(
-                    `https://github.com/${ownerLogin}/${repositoryName}/commit/${build.compareScreenshotBucket.commit}`,
+                    `https://github.com/${accountSlug}/${projectSlug}/commit/${build.compareScreenshotBucket.commit}`,
                     "_blank"
                   )
                   ?.focus();
@@ -123,7 +120,7 @@ const BuildRow = memo(
                 event.preventDefault();
                 window
                   .open(
-                    `https://github.com/${ownerLogin}/${repositoryName}/tree/${build.compareScreenshotBucket.branch}`,
+                    `https://github.com/${accountSlug}/${projectSlug}/tree/${build.compareScreenshotBucket.branch}`,
                     "_blank"
                   )
                   ?.focus();
@@ -158,12 +155,12 @@ const ListLoader = memo(() => {
 
 const BuildsList = ({
   builds,
-  repository,
+  project,
   fetching,
   fetchNextPage,
 }: {
   builds: Builds;
-  repository: Repository;
+  project: Project;
   fetching: boolean;
   fetchNextPage: () => void;
 }) => {
@@ -232,7 +229,7 @@ const BuildsList = ({
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
-              <BuildRow build={build} repository={repository} />
+              <BuildRow build={build} project={project} />
             </div>
           );
         })}
@@ -241,23 +238,23 @@ const BuildsList = ({
   );
 };
 
-const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
-  const { hasWritePermission } = useRepositoryContext();
-  const repositoryResult = useQuery(RepositoryQuery, {
+const PageContent = (props: { accountSlug: string; projectSlug: string }) => {
+  const { hasWritePermission } = useProjectContext();
+  const projectResult = useQuery(ProjectQuery, {
     variables: {
-      ownerLogin: props.ownerLogin,
-      repositoryName: props.repositoryName,
+      accountSlug: props.accountSlug,
+      projectSlug: props.projectSlug,
     },
   });
 
-  if (repositoryResult.error) {
-    throw repositoryResult.error;
+  if (projectResult.error) {
+    throw projectResult.error;
   }
 
-  const buildsResult = useQuery(RepositoryBuildsQuery, {
+  const buildsResult = useQuery(ProjectBuildsQuery, {
     variables: {
-      ownerLogin: props.ownerLogin,
-      repositoryName: props.repositoryName,
+      accountSlug: props.accountSlug,
+      projectSlug: props.projectSlug,
       after: 0,
       first: 20,
     },
@@ -273,7 +270,7 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
 
   const fetchNextPage = useCallback(() => {
     const displayCount =
-      buildResultRef.current.data?.repository?.builds.edges.length;
+      buildResultRef.current.data?.project?.builds.edges.length;
     fetchMore({
       variables: {
         after: displayCount,
@@ -281,14 +278,14 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
       updateQuery: (prev, { fetchMoreResult }) => {
         return {
           ...prev,
-          repository: {
-            ...prev.repository!,
+          project: {
+            ...prev.project!,
             builds: {
-              ...prev.repository!.builds,
-              ...fetchMoreResult.repository!.builds,
+              ...prev.project!.builds,
+              ...fetchMoreResult.project!.builds,
               edges: [
-                ...prev.repository!.builds.edges,
-                ...fetchMoreResult.repository!.builds.edges,
+                ...prev.project!.builds.edges,
+                ...fetchMoreResult.project!.builds.edges,
               ],
             },
           },
@@ -297,7 +294,7 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
     });
   }, [fetchMore]);
 
-  if (!repositoryResult.data || !buildsResult.data) {
+  if (!projectResult.data || !buildsResult.data) {
     return (
       <Container>
         <PageLoader />
@@ -305,10 +302,10 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
     );
   }
 
-  const repository = repositoryResult.data.repository;
-  const builds = buildsResult.data.repository?.builds;
+  const project = projectResult.data.project;
+  const builds = buildsResult.data.project?.builds;
 
-  if (!repository || !builds) {
+  if (!project || !builds) {
     return (
       <Container>
         <NotFound />
@@ -320,7 +317,7 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
     if (hasWritePermission) {
       return (
         <Container>
-          <GettingStarted repository={repository} />
+          <GettingStarted project={project} />
         </Container>
       );
     } else {
@@ -328,7 +325,7 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
         <Container>
           <Alert>
             <AlertTitle>No build</AlertTitle>
-            <AlertText>There is no build yet on this repository.</AlertText>
+            <AlertText>There is no build yet on this project.</AlertText>
             <AlertActions>
               <Button>
                 {(buttonProps) => (
@@ -347,7 +344,7 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
   return (
     <div className="container mx-auto flex min-h-0 flex-1 flex-col px-4">
       <BuildsList
-        repository={repository}
+        project={project}
         builds={builds}
         fetchNextPage={fetchNextPage}
         fetching={buildsResult.loading}
@@ -356,10 +353,10 @@ const PageContent = (props: { ownerLogin: string; repositoryName: string }) => {
   );
 };
 
-export const RepositoryBuilds = () => {
-  const { ownerLogin, repositoryName } = useParams();
+export const ProjectBuilds = () => {
+  const { accountSlug, projectSlug } = useParams();
 
-  if (!ownerLogin || !repositoryName) {
+  if (!accountSlug || !projectSlug) {
     return <NotFound />;
   }
 
@@ -367,10 +364,10 @@ export const RepositoryBuilds = () => {
     <>
       <Helmet>
         <title>
-          {ownerLogin}/{repositoryName} • Builds
+          {accountSlug}/{projectSlug} • Builds
         </title>
       </Helmet>
-      <PageContent ownerLogin={ownerLogin} repositoryName={repositoryName} />
+      <PageContent accountSlug={accountSlug} projectSlug={projectSlug} />
     </>
   );
 };

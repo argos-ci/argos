@@ -25,15 +25,22 @@ export function useAuth() {
   return value;
 }
 
+type JWTData = {
+  version: number;
+  account: {
+    id: string;
+    slug: string;
+    name: string | null;
+  };
+};
+
 const jwtDecode = (t: string) => {
   const parts = t.split(".");
   if (!parts[1]) return null;
   try {
-    return JSON.parse(window.atob(parts[1])) as {
-      id: string;
-      login: string;
-      name: string | null;
-    };
+    const value = JSON.parse(window.atob(parts[1]));
+    if (value.version !== 1) return null;
+    return value as JWTData;
   } catch (e) {
     return null;
   }

@@ -3,7 +3,7 @@ import { HomeIcon } from "@primer/octicons-react";
 import { Link as RouterLink } from "react-router-dom";
 
 import config from "@/config";
-import { OwnerAvatar } from "@/containers/OwnerAvatar";
+import { AccountAvatar } from "@/containers/AccountAvatar";
 import { graphql } from "@/gql";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
 import { Anchor } from "@/ui/Link";
@@ -17,31 +17,46 @@ import {
   useMenuState,
 } from "@/ui/Menu";
 
-const OwnersQuery = graphql(`
-  query OwnerBreadcrumbMenu_owners {
-    owners {
+const MeQuery = graphql(`
+  query AccountBreadcrumbMenu_me {
+    me {
       id
-      login
-      name
+      account {
+        id
+        slug
+        name
+      }
+      teams {
+        id
+        account {
+          id
+          slug
+          name
+        }
+      }
     }
   }
 `);
 
-const Owners = (props: { menu: MenuState }) => {
-  const { data, error } = useQuery(OwnersQuery);
+const Accounts = (props: { menu: MenuState }) => {
+  const { data, error } = useQuery(MeQuery);
   if (error) return null;
-  if (!data) return null;
+  if (!data?.me) return null;
+  const accounts = [
+    data.me.account,
+    ...data.me.teams.map((team) => team.account),
+  ];
   return (
     <>
-      {data.owners.map((owner) => {
+      {accounts.map((account) => {
         return (
-          <MenuItem key={owner.login} state={props.menu} pointer>
+          <MenuItem key={account.slug} state={props.menu} pointer>
             {(menuItemProps) => (
-              <RouterLink {...menuItemProps} to={`/${owner.login}`}>
+              <RouterLink {...menuItemProps} to={`/${account.slug}`}>
                 <MenuItemIcon>
-                  <OwnerAvatar owner={owner} size={18} />
+                  <AccountAvatar account={account} size={18} />
                 </MenuItemIcon>
-                {owner.name}
+                {account.name}
               </RouterLink>
             )}
           </MenuItem>
@@ -51,7 +66,7 @@ const Owners = (props: { menu: MenuState }) => {
   );
 };
 
-export const OwnerBreadcrumbMenu = () => {
+export const AccountBreadcrumbMenu = () => {
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
   const title = "Switch context";
 
@@ -71,7 +86,7 @@ export const OwnerBreadcrumbMenu = () => {
             </RouterLink>
           )}
         </MenuItem>
-        {menu.open && <Owners menu={menu} />}
+        {menu.open && <Accounts menu={menu} />}
         <MenuText>
           Don&apos;t see your org?
           <br />

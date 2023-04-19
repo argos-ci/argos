@@ -26,6 +26,7 @@ export const typeDefs = gql`
     name: String
     plan: Plan
     purchase: Purchase
+    permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
   }
 
@@ -78,10 +79,21 @@ export const resolvers = {
     screenshotsLimitPerMonth: async (account: Account) => {
       return account.getScreenshotsMonthlyLimit();
     },
+    permissions: () => {
+      // For now, everyone can read and write
+      return ["read", "write"];
+    },
   },
   Query: {
-    account: async (_root: null, args: { slug: string }) => {
-      return Account.query().findOne({ slug: args.slug });
+    account: async (_root: null, args: { slug: string }, context: Context) => {
+      if (!context.auth) return null;
+      const account = await Account.query().findOne({ slug: args.slug });
+      if (!account) return null;
+      const hasWritePermission = await account.$checkWritePermission(
+        context.auth.user
+      );
+      if (!hasWritePermission) return null;
+      return account;
     },
   },
 };

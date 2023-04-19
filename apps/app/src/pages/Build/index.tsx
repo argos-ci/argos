@@ -15,7 +15,7 @@ export const Build = memo(() => {
   return (
     <>
       <Helmet>
-        <title>{`Build ${params.buildNumber} • ${params.repositoryName}`}</title>
+        <title>{`Build ${params.buildNumber} • ${params.projectSlug}`}</title>
       </Helmet>
       <BuildPage params={params} />
     </>

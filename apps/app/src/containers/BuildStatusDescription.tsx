@@ -15,18 +15,18 @@ export const BuildFragment = graphql(`
   }
 `);
 
-export const RepositoryFragment = graphql(`
-  fragment BuildStatusDescription_Repository on Repository {
+export const ProjectFragment = graphql(`
+  fragment BuildStatusDescription_Project on Project {
     referenceBranch
   }
 `);
 
 export const BuildStatusDescription = (props: {
   build: FragmentType<typeof BuildFragment>;
-  repository: FragmentType<typeof RepositoryFragment>;
+  project: FragmentType<typeof ProjectFragment>;
 }) => {
   const build = useFragment(BuildFragment, props.build);
-  const repository = useFragment(RepositoryFragment, props.repository);
+  const project = useFragment(ProjectFragment, props.project);
 
   switch (build.type) {
     case "orphan":
@@ -39,16 +39,16 @@ export const BuildStatusDescription = (props: {
             <ul className="ml-8 mt-2 list-disc space-y-1">
               <li>
                 There is no Argos build on the{" "}
-                <Code>{repository.referenceBranch}</Code> branch yet
+                <Code>{project.referenceBranch}</Code> branch yet
               </li>
               <li>
                 Your pull-request is not rebased on{" "}
-                <Code>{repository.referenceBranch}</Code> branch
+                <Code>{project.referenceBranch}</Code> branch
               </li>
             </ul>
           </div>
           To perform comparison, make sure that you have an Argos build on{" "}
-          <Code>{repository.referenceBranch}</Code> branch and that your
+          <Code>{project.referenceBranch}</Code> branch and that your
           pull-request is rebased.
         </>
       );

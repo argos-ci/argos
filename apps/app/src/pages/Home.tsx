@@ -1,89 +1,92 @@
-import { useEffect } from "react";
+// import { useEffect } from "react";
 
-import config from "@/config";
-import { Query } from "@/containers/Apollo";
-import { useIsLoggedIn } from "@/containers/Auth";
-import { RepositoryList } from "@/containers/RepositoryList";
-import { DocumentType, graphql } from "@/gql";
-import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
-import { Button } from "@/ui/Button";
-import { Container } from "@/ui/Container";
-import { PageLoader } from "@/ui/PageLoader";
+// import config from "@/config";
+// import { Query } from "@/containers/Apollo";
+// import { useIsLoggedIn } from "@/containers/Auth";
+// import { ProjectList } from "@/containers/ProjectList";
+// import { DocumentType, graphql } from "@/gql";
+// import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
+// import { Button } from "@/ui/Button";
+// import { Container } from "@/ui/Container";
+// import { PageLoader } from "@/ui/PageLoader";
 
-const OwnersQuery = graphql(`
-  query Home_owners {
-    owners {
-      id
-      repositories {
-        id
-        enabled
-        ...RepositoryList_repository
-      }
-    }
-  }
-`);
+// const MeQuery = graphql(`
+//   query Home_me {
+//     me {
+//       accounts {
+//         id
+//         projects(first: 100, after: 0) {
+//           id
+//           ...ProjectList_Project
+//         }
+//       }
+//     }
+//   }
+// `);
 
-type OwnersQueryDocument = DocumentType<typeof OwnersQuery>;
+// type MeQueryDocument = DocumentType<typeof MeQuery>;
 
-function Owners(props: { owners: OwnersQueryDocument["owners"] }) {
-  const repositories = props.owners.flatMap((owner) =>
-    owner.repositories.map((repository) => repository)
-  );
+// function Owners(props: { accounts: MeQueryDocument["me"]["accounts"] }) {
+//   const projects = props.accounts.flatMap((account) =>
+//     account.projects.edges.map((project) => project)
+//   );
 
-  if (!repositories.length) {
-    return (
-      <Container>
-        <Alert>
-          <AlertTitle>No repository found</AlertTitle>
-          <AlertText>
-            Adds your first repository to start using Argos.
-          </AlertText>
-          <AlertActions>
-            <Button>
-              {(buttonProps) => (
-                <a {...buttonProps} href={config.get("github.appUrl")}>
-                  Give access to your repositories
-                </a>
-              )}
-            </Button>
-          </AlertActions>
-        </Alert>
-      </Container>
-    );
-  }
+//   if (!projects.length) {
+//     return (
+//       <Container>
+//         <Alert>
+//           <AlertTitle>No Project found</AlertTitle>
+//           <AlertText>Adds your first Project to start using Argos.</AlertText>
+//           <AlertActions>
+//             <Button>
+//               {(buttonProps) => (
+//                 <a {...buttonProps} href={config.get("github.appUrl")}>
+//                   Give access to your projects
+//                 </a>
+//               )}
+//             </Button>
+//           </AlertActions>
+//         </Alert>
+//       </Container>
+//     );
+//   }
 
-  return (
-    <Container>
-      <RepositoryList repositories={repositories} hasWritePermission />
-    </Container>
-  );
-}
+//   return (
+//     <Container>
+//       <ProjectList projects={projects} />
+//     </Container>
+//   );
+// }
 
-const RedirectToWww = () => {
-  useEffect(() => {
-    window.location.replace("https://www.argos-ci.com");
-  }, []);
-  return null;
-};
+// const RedirectToWww = () => {
+//   useEffect(() => {
+//     window.location.replace("https://www.argos-ci.com");
+//   }, []);
+//   return null;
+// };
+
+// export const Home = () => {
+//   const loggedIn = useIsLoggedIn();
+
+//   if (!loggedIn) {
+//     if (process.env["NODE_ENV"] !== "production") {
+//       return (
+//         <div className="container mx-auto p-4 text-center">
+//           Not logged in, in production you would be redirected to
+//           www.argos-ci.com.
+//         </div>
+//       );
+//     }
+//     return <RedirectToWww />;
+//   }
+
+//   return (
+//     <Query fallback={<PageLoader />} query={OwnersQuery}>
+//       {({ accounts }) => <Owners accounts={accounts} />}
+//     </Query>
+//   );
+// };
 
 export const Home = () => {
-  const loggedIn = useIsLoggedIn();
-
-  if (!loggedIn) {
-    if (process.env["NODE_ENV"] !== "production") {
-      return (
-        <div className="container mx-auto p-4 text-center">
-          Not logged in, in production you would be redirected to
-          www.argos-ci.com.
-        </div>
-      );
-    }
-    return <RedirectToWww />;
-  }
-
-  return (
-    <Query fallback={<PageLoader />} query={OwnersQuery}>
-      {({ owners }) => <Owners owners={owners} />}
-    </Query>
-  );
+  return <div>Hello World</div>;
 };

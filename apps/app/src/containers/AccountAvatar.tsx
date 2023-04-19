@@ -1,15 +1,18 @@
 import { clsx } from "clsx";
 import { forwardRef } from "react";
 
-interface OwnerAvatarProps {
+interface AccountAvatarProps {
   className?: string;
-  owner?: { name: string | null; login: string } | null | undefined;
+  account?:
+    | { name?: string | null | undefined; slug: string }
+    | null
+    | undefined;
   size?: number;
 }
 
-export const OwnerAvatar = forwardRef<any, OwnerAvatarProps>(
-  ({ owner, className, size = 32 }, ref) => {
-    if (!owner) {
+export const AccountAvatar = forwardRef<any, AccountAvatarProps>(
+  ({ account, className, size = 32 }, ref) => {
+    if (!account) {
       return (
         <div
           ref={ref}
@@ -24,8 +27,8 @@ export const OwnerAvatar = forwardRef<any, OwnerAvatarProps>(
     return (
       <img
         ref={ref}
-        src={`https://github.com/${owner.login}.png?size=60`}
-        alt={owner.name || owner.login}
+        src={`https://github.com/${account.slug}.png?size=60`}
+        alt={account.name || account.slug}
         className={clsx(className, "rounded-full")}
         height={size}
         width={size}
