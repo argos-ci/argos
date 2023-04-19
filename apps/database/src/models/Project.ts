@@ -19,7 +19,7 @@ export class Project extends Model {
   static override tableName = "projects";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["name", "slug", "token", "accountId"],
+    required: ["name", "slug", "accountId"],
     properties: {
       name: { type: "string" },
       slug: { type: "string" },

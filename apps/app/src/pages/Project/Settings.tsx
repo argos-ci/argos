@@ -21,6 +21,7 @@ import { Container } from "@/ui/Container";
 import { Anchor } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { Pre } from "@/ui/Pre";
+import { TextInput } from "@/ui/TextInput";
 import { Heading } from "@/ui/Typography";
 
 import { useProjectContext } from ".";
@@ -153,11 +154,11 @@ const ReferenceBranchCard = ({ project }: { project: Project }) => {
               >
                 Custom reference branch
               </label>
-              <input
+              <TextInput
                 ref={baselineBranchRef}
                 type="text"
                 id="baselineBranch"
-                className="focus:shadow-outline w-full appearance-none rounded border border-border bg-slate-900 px-3 py-2 leading-tight text-on shadow invalid:border-red-800 focus:outline-none"
+                className="w-full"
                 name="baselineBranch"
                 placeholder="Branch name"
                 required

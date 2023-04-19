@@ -13,6 +13,7 @@ export const AuthCallback = () => {
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const code = params.get("code");
+  const state = params.get("state");
   const r = params.get("r");
   const { setToken } = useAuth();
   useEffect(() => {
@@ -20,12 +21,12 @@ export const AuthCallback = () => {
       .post("/auth/github", { code })
       .then((result) => {
         setToken(result.data.jwt);
-        navigate(r || "/");
+        navigate(r || (state ? decodeURIComponent(state) : "/"));
       })
       .catch((error) => {
         console.error(error); // eslint-disable-line no-console
       });
-  }, [code, navigate, r, setToken]);
+  }, [code, navigate, r, setToken, state]);
 
   return null;
 };

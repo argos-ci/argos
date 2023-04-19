@@ -1,9 +1,10 @@
 import { HTMLProps } from "react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link, Link as RouterLink, useNavigate } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Badge } from "@/ui/Badge";
+import { Button } from "@/ui/Button";
 
 const ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
@@ -88,7 +89,21 @@ export const ProjectList = (props: { projects: ProjectFragmentType[] }) => {
   const projects = useFragment(ProjectFragment, props.projects);
 
   if (projects.length === 0) {
-    return <div>No project found</div>;
+    return (
+      <div className="flex flex-col items-center justify-center">
+        <div className="mb-2 text-2xl font-medium">No projects yet!</div>
+        <div className="mb-4 text-on-light">
+          Start by importing a Git repository.
+        </div>
+        <Button>
+          {(buttonProps) => (
+            <Link to="new" {...buttonProps}>
+              Create a new Project
+            </Link>
+          )}
+        </Button>
+      </div>
+    );
   }
 
   return (

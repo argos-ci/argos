@@ -1,10 +1,13 @@
 import { clsx } from "clsx";
 import { HTMLProps } from "react";
 
-export const Card = (props: HTMLProps<HTMLDivElement>) => {
+export const Card = ({ className, ...props }: HTMLProps<HTMLDivElement>) => {
   return (
     <div
-      className="w-full overflow-hidden rounded border border-border bg-slate-900/50"
+      className={clsx(
+        className,
+        "w-full overflow-hidden rounded border border-border bg-slate-900/50"
+      )}
       {...props}
     />
   );

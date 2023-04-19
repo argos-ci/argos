@@ -1,6 +1,7 @@
 import gqlTag from "graphql-tag";
 
 import { Purchase, User } from "@argos-ci/database/models";
+import { getTokenOctokit } from "@argos-ci/github";
 
 import type { Context } from "../context.js";
 
@@ -13,6 +14,7 @@ export const typeDefs = gql`
     lastPurchase: Purchase
     account: Account!
     teams: [Team!]!
+    ghInstallations: GhApiInstallationConnection!
   }
 
   type UserConnection implements Connection {
@@ -43,6 +45,20 @@ export const resolvers = {
     },
     teams: async (user: User) => {
       return user.$relatedQuery("teams");
+    },
+    ghInstallations: async (user: User) => {
+      const octokit = getTokenOctokit(user.accessToken);
+      const apiInstallations =
+        await octokit.apps.listInstallationsForAuthenticatedUser({
+          per_page: 100,
+        });
+      return {
+        edges: apiInstallations.data.installations,
+        pageInfo: {
+          hasNextPage: false,
+          totalCount: apiInstallations.data.total_count,
+        },
+      };
     },
   },
 };

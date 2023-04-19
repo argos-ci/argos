@@ -30,7 +30,6 @@ module.exports = {
           border: colors.slate[800],
           on: colors.slate[50],
         },
-
         code: {
           bg: colors.slate[700],
           on: colors.slate[50],
@@ -80,6 +79,9 @@ module.exports = {
             lineHeight: "1rem",
           },
         ],
+      },
+      opacity: {
+        disabled: ".38",
       },
       fontFamily: {
         sans: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif',

@@ -88,7 +88,7 @@ CREATE TABLE public.accounts (
     "teamId" bigint,
     "githubAccountId" bigint,
     name character varying(255),
-    slug character varying(255),
+    slug character varying(255) NOT NULL,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 

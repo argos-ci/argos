@@ -4,6 +4,9 @@ import * as Account from "./Account.js";
 import * as Build from "./Build.js";
 import * as Connection from "./Connection.js";
 import * as DateDefs from "./Date.js";
+import * as GhApiInstallation from "./GhApiInstallation.js";
+import * as GhApiRepository from "./GhApiRepository.js";
+import * as GithubRepository from "./GithubRepository.js";
 import * as JobStatus from "./JobStatus.js";
 import * as Node from "./Node.js";
 import * as PageInfo from "./PageInfo.js";
@@ -25,6 +28,9 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Build,
   Connection,
   DateDefs,
+  GithubRepository,
+  GhApiInstallation,
+  GhApiRepository,
   JobStatus,
   Node,
   PageInfo,
