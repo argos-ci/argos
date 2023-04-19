@@ -10,10 +10,10 @@ export class Test extends Model {
   static override tableName = "tests";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["name", "repositoryId", "buildName"],
+    required: ["name", "projectId", "buildName"],
     properties: {
       name: { type: "string" },
-      repositoryId: { type: "string" },
+      projectId: { type: "string" },
       buildName: { type: "string" },
       status: {
         type: ["string"],
@@ -27,7 +27,7 @@ export class Test extends Model {
   });
 
   name!: string;
-  repositoryId!: string;
+  projectId!: string;
   buildName!: string;
   status!: string;
   resolvedDate!: string | null;

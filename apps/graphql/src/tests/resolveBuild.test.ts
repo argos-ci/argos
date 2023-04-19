@@ -1,12 +1,12 @@
 import request from "supertest";
 
 import type {
+  Account,
   Build,
-  Repository,
+  Project,
   Screenshot,
   ScreenshotDiff,
-  User,
-  UserRepositoryRight,
+  TeamUser,
 } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 
@@ -18,22 +18,27 @@ describe("GraphQL", () => {
   useDatabase();
 
   describe("resolveBuild", () => {
+    let userAccount: Account;
+    let teamAccount: Account;
+    let project: Project;
     let build: Build;
-    let user: User;
-    let repository: Repository;
     let screenshot2: Screenshot;
 
     beforeEach(async () => {
-      user = await factory.create<User>("User");
-      repository = await factory.create<Repository>("Repository", {
-        userId: user.id,
+      userAccount = await factory.create<Account>("UserAccount");
+      await userAccount.$fetchGraph("user");
+      teamAccount = await factory.create<Account>("TeamAccount");
+      await teamAccount.$fetchGraph("team");
+      project = await factory.create<Project>("Project", {
+        accountId: teamAccount.id,
       });
-      await factory.create<UserRepositoryRight>("UserRepositoryRight", {
-        userId: user.id,
-        repositoryId: repository.id,
+      await factory.create<TeamUser>("TeamUser", {
+        teamId: teamAccount.teamId!,
+        userId: userAccount.userId!,
+        userLevel: "owner",
       });
       build = await factory.create<Build>("Build", {
-        repositoryId: repository.id,
+        projectId: project.id,
       });
       const screenshot1 = await factory.create<Screenshot>("Screenshot", {
         name: "email_deleted",
@@ -67,14 +72,17 @@ describe("GraphQL", () => {
     });
 
     it("should sort the diffs by score", async () => {
-      const app = await createApolloServerApp(apolloServer, { user });
+      const app = await createApolloServerApp(apolloServer, {
+        user: userAccount.user!,
+        account: userAccount,
+      });
       const res = await request(app)
         .post("/graphql")
         .send({
           query: `{
-            repository(
-              ownerLogin: "${user.login}",
-              repositoryName: "${repository.name}",
+            project(
+              accountSlug: "${teamAccount.slug}",
+              projectSlug: "${project.slug}",
             ) {
               build(number: 1) {
                 screenshotDiffs(after: 0, first: 10) {
@@ -91,7 +99,7 @@ describe("GraphQL", () => {
       expect(res.status).toBe(200);
 
       const { edges: screenshotDiffs } =
-        res.body.data.repository.build.screenshotDiffs;
+        res.body.data.project.build.screenshotDiffs;
       expect(screenshotDiffs).toEqual([
         {
           name: "email_deleted",

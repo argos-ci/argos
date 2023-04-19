@@ -2,7 +2,6 @@ import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
 import {
-  Account,
   Build,
   Project,
   Screenshot,
@@ -55,6 +54,11 @@ export const typeDefs = gql`
     project(accountSlug: String!, projectSlug: String!): Project
   }
 
+  type ProjectConnection implements Connection {
+    pageInfo: PageInfo!
+    edges: [Project!]!
+  }
+
   input UpdateProjectInput {
     id: ID!
     baselineBranch: String
@@ -63,7 +67,7 @@ export const typeDefs = gql`
 
   extend type Mutation {
     "Update project"
-    updateProject(input: UpdateProjectInput): Repository!
+    updateProject(input: UpdateProjectInput): Project!
   }
 `;
 

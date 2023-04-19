@@ -14,6 +14,6 @@ export class TeamUser extends Model {
   });
 
   userId!: string;
-  organizationId!: string;
+  teamId!: string;
   userLevel!: "member" | "owner";
 }

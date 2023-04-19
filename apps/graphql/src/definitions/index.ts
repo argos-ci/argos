@@ -9,11 +9,12 @@ import * as Node from "./Node.js";
 import * as PageInfo from "./PageInfo.js";
 import * as Permission from "./Permission.js";
 import * as Plan from "./Plan.js";
+import * as Project from "./Project.js";
 import * as Purchase from "./Purchase.js";
-import * as Repository from "./Repository.js";
 import * as Screenshot from "./Screenshot.js";
 import * as ScreenshotBucket from "./ScreenshotBucket.js";
 import * as ScreenshotDiff from "./ScreenshotDiff.js";
+import * as Team from "./Team.js";
 import * as Test from "./Test.js";
 import * as User from "./User.js";
 import * as ValidationStatus from "./ValidationStatus.js";
@@ -29,12 +30,13 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   PageInfo,
   Permission,
   Plan,
+  Project,
   Purchase,
-  Repository,
   schema,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
+  Team,
   Test,
   User,
   ValidationStatus,

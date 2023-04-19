@@ -10,7 +10,6 @@ import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
 import { Build } from "./Build.js";
-import { GithubInstallation } from "./GithubInstallation.js";
 import { GithubRepository } from "./GithubRepository.js";
 import type { User } from "./User.js";
 

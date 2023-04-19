@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import config from "@argos-ci/config";
 import {
   Build,
-  Repository,
+  Project,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
@@ -30,7 +30,7 @@ describe("#computeScreenshotDiff", () => {
   let build: Build;
   let compareBucket: ScreenshotBucket;
   let screenshotDiff: ScreenshotDiff;
-  let repository: Repository;
+  let project: Project;
 
   beforeAll(async () => {
     s3 = getS3();
@@ -49,23 +49,23 @@ describe("#computeScreenshotDiff", () => {
   });
 
   beforeEach(async () => {
-    repository = await factory.create<Repository>("Repository", {
+    project = await factory.create<Project>("Project", {
       token: "xx",
     });
     compareBucket = await factory.create<ScreenshotBucket>("ScreenshotBucket", {
       name: "test-bucket",
       branch: "test-branch",
-      repositoryId: repository.id,
+      projectId: project.id,
     });
     baseBucket = await factory.create<ScreenshotBucket>("ScreenshotBucket", {
       name: "base-bucket",
       branch: "master",
-      repositoryId: repository.id,
+      projectId: project.id,
     });
     build = await factory.create<Build>("Build", {
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,
-      repositoryId: repository.id,
+      projectId: project.id,
     });
   });
 
@@ -89,7 +89,7 @@ describe("#computeScreenshotDiff", () => {
       });
       test = await factory.create<Test>("Test", {
         name: compareScreenshot.name,
-        repositoryId: repository.id,
+        projectId: project.id,
         buildName: "default",
         status: "pending",
       });

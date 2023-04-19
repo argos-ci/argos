@@ -125,11 +125,13 @@ factory.define("Project", Project, {
   slug: "default",
   baselineBranch: null,
   accountId: factory.assoc("TeamAccount", "id"),
+  githubRepositoryId: factory.assoc("GithubRepository", "id"),
 });
 
 factory.define("TeamUser", TeamUser, {
   userId: factory.assoc("User", "id"),
   teamId: factory.assoc("Team", "id"),
+  userLevel: "owner",
 });
 
 factory.define("ScreenshotDiff", ScreenshotDiff, {

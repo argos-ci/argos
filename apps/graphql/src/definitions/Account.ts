@@ -80,7 +80,7 @@ export const resolvers = {
     },
   },
   Query: {
-    owner: async (_root: null, args: { slug: string }) => {
+    account: async (_root: null, args: { slug: string }) => {
       return Account.query().findOne({ slug: args.slug });
     },
   },

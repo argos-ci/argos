@@ -5,12 +5,7 @@ import type { TransactionOrKnex } from "objection";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { transaction } from "@argos-ci/database";
-import {
-  Account,
-  Build,
-  Project,
-  ScreenshotBucket,
-} from "@argos-ci/database/models";
+import { Build, Project, ScreenshotBucket } from "@argos-ci/database/models";
 
 export const getBuildName = (name: string | undefined | null) =>
   name || "default";
