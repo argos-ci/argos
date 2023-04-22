@@ -56,17 +56,7 @@ export const App = () => {
                   </Layout>
                 }
               >
-                <Route
-                  index
-                  element={
-                    <Main>
-                      <Helmet>
-                        <title>All my repositories</title>
-                      </Helmet>
-                      <Home />
-                    </Main>
-                  }
-                />
+                <Route index element={<Home />} />
                 <Route
                   path="/teams/new"
                   element={
