@@ -31,6 +31,13 @@ module.exports = {
           border: colors.slate[800],
           on: colors.slate[50],
         },
+
+        dialog: {
+          bg: colors.slate[900],
+          border: colors.slate[800],
+          on: colors.slate[50],
+        },
+
         code: {
           bg: colors.slate[700],
           on: colors.slate[50],
@@ -38,6 +45,11 @@ module.exports = {
 
         "icon-button": {
           on: colors.slate[400],
+          primary: {
+            "hover-border": colors.purple[700],
+            "hover-on": colors.purple[300],
+            "active-bg": colors.purple[800],
+          },
           neutral: {
             "hover-border": colors.slate[700],
             "hover-on": colors.slate[300],
@@ -67,6 +79,10 @@ module.exports = {
           on: colors.slate[300],
           "on-title": colors.slate[400],
           "hover-on": colors.slate[50],
+          danger: {
+            on: colors.red[400],
+            "hover-on": colors.red[400],
+          },
           item: {
             "hover-bg": colors.slate[800],
             "selected-bg": colors.slate[700],

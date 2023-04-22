@@ -52,11 +52,11 @@ export const BuildSidebar = memo(
       { preventDefault: true }
     );
     return (
-      <div className="group/sidebar flex w-[295px] flex-shrink-0 flex-col border-r border-r-border">
+      <div className="group/sidebar flex w-[295px] shrink-0 flex-col border-r border-r-border">
         <TabList
           state={tab}
           aria-label="Build details"
-          className="flex flex-shrink-0 border-b border-b-border px-2"
+          className="flex shrink-0 border-b border-b-border px-2"
         >
           <HotkeyTooltip
             keys={hotkey.displayKeys}

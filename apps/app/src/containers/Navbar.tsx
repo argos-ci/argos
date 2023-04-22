@@ -107,7 +107,7 @@ const UserControl = () => {
 export const Navbar = () => {
   return (
     <nav className="container mx-auto flex items-center justify-between p-4">
-      <div className="flex flex-shrink-0 items-center">
+      <div className="flex shrink-0 items-center">
         <MagicTooltip tooltip="Go to home">
           <RouterLink to="/" className="transition hover:brightness-125">
             <BrandLogo height={32} className="max-w-none" />
@@ -116,7 +116,7 @@ export const Navbar = () => {
         <SubNavbar />
       </div>
 
-      <div className="flex flex-shrink-0 items-center gap-6">
+      <div className="flex shrink-0 items-center gap-6">
         <a
           href="https://discord.gg/WjzGrQGS4A"
           target="_blank"

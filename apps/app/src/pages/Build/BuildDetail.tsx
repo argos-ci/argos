@@ -53,9 +53,9 @@ const BuildScreenshotHeader = memo(
     date: string;
   }) => {
     return (
-      <div className="flex flex-shrink-0 flex-col items-center gap-0.5 text-on-light">
+      <div className="flex shrink-0 flex-col items-center gap-0.5 text-on-light">
         <div className="flex max-w-full items-center gap-1">
-          <div className="flex-shrink-0 text-xs font-medium">{label} from</div>
+          <div className="shrink-0 text-xs font-medium">{label} from</div>
           <Code
             className="overflow-hidden text-ellipsis whitespace-nowrap"
             title={branch}

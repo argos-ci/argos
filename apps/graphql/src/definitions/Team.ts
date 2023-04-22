@@ -5,6 +5,7 @@ import { transaction } from "@argos-ci/database";
 import { Account, Team, TeamUser } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
+import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -25,15 +26,23 @@ export const typeDefs = gql`
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
     avatar: AccountAvatar!
+
+    users(after: Int!, first: Int!): UserConnection!
   }
 
   input CreateTeamInput {
     name: String!
   }
 
+  input LeaveTeamInput {
+    accountId: ID!
+  }
+
   extend type Mutation {
     "Create a team"
     createTeam(input: CreateTeamInput!): Team!
+    "Leave a team"
+    leaveTeam(input: LeaveTeamInput!): Boolean!
   }
 `;
 
@@ -54,6 +63,21 @@ const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
 };
 
 export const resolvers = {
+  Team: {
+    users: async (account: Account, args: { first: number; after: number }) => {
+      if (!account.teamId) {
+        throw new Error("Invariant: account.teamId is undefined");
+      }
+      const { first, after } = args;
+      const result = await Account.query()
+        .orderBy("team_users.id", "asc")
+        .join("team_users", "team_users.userId", "accounts.userId")
+        .where("team_users.teamId", account.teamId)
+        .range(after, after + first - 1);
+
+      return paginateResult({ result, first, after });
+    },
+  },
   Mutation: {
     createTeam: async (
       _root: unknown,
@@ -78,6 +102,35 @@ export const resolvers = {
           teamId: team.id,
         });
       });
+    },
+    leaveTeam: async (
+      _root: unknown,
+      args: { input: { accountId: string } },
+      { auth }: Context
+    ) => {
+      if (!auth) {
+        throw new Error("Forbidden");
+      }
+      const account = await Account.query()
+        .findById(args.input.accountId)
+        .throwIfNotFound();
+
+      const count = await TeamUser.query()
+        .where({ teamId: account.teamId })
+        .resultSize();
+
+      if (count === 1) {
+        throw new Error(
+          "You are the last user of this team, you can't leave it"
+        );
+      }
+
+      await TeamUser.query().delete().where({
+        userId: auth.user.id,
+        teamId: account.teamId,
+      });
+
+      return true;
     },
   },
 };

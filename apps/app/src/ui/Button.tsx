@@ -4,7 +4,7 @@ import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
 import { Children, cloneElement, forwardRef, memo } from "react";
 
-export type ButtonColor = "primary" | "neutral";
+export type ButtonColor = "primary" | "danger" | "neutral";
 export type ButtonVariant = "contained" | "outline";
 export type ButtonSize = "base" | "small";
 
@@ -18,13 +18,18 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
   contained: {
     primary:
       "color-white border-transparent bg-primary-600 hover:bg-primary-700 active:bg-primary-800 aria-expanded:bg-primary-800",
+    danger:
+      "color-white border-transparent bg-danger-600 hover:bg-danger-700 active:bg-danger-800 aria-expanded:bg-danger-800",
     neutral:
       "color-white border-transparent bg-neutral-600 hover:bg-neutral-700 active:bg-neutral-800 aria-expanded:bg-neutral-800",
   },
   outline: {
-    primary: "color-primary-300 border-primary-300 bg-transparent",
+    primary:
+      "color-primary-300 border-primary-300 bg-transparent hover:bg-primary-800",
+    danger:
+      "color-danger-300 border-danger-300 bg-transparent hover:bg-danger-800",
     neutral:
-      "color-neutral-300 border-neutral-600 bg-slate-800 hover:bg-neutral-900",
+      "color-neutral-300 border-neutral-600 bg-transparent hover:bg-neutral-800",
   },
 };
 

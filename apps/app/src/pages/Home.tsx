@@ -14,7 +14,7 @@ const RedirectToWww = () => {
 export const Home = () => {
   const authPayload = useAuthTokenPayload();
   if (authPayload) {
-    return <Navigate to={`/${authPayload.account.slug}`} />;
+    return <Navigate replace to={`/${authPayload.account.slug}`} />;
   }
   if (process.env["NODE_ENV"] !== "production") {
     return (

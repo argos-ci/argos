@@ -75,13 +75,13 @@ const BuildRow = memo(
         to={`/${accountSlug}/${projectSlug}/builds/${build.number}`}
         className="flex items-center gap-4 border-b border-b-border px-4 py-2 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
       >
-        <div className="w-[7ch] flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-on-light">
+        <div className="w-[7ch] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-on-light">
           <span>#{build.number}</span>
         </div>
         <div className="w-20 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums text-on-light lg:w-40">
           {build.name !== "default" ? build.name : ""}
         </div>
-        <div className="w-48 flex-shrink-0">
+        <div className="w-48 shrink-0">
           <BuildStatusChip
             scale="sm"
             build={build}
@@ -105,7 +105,7 @@ const BuildRow = memo(
                   ?.focus();
               }}
             >
-              <GitCommitIcon className="flex-shrink-0" />
+              <GitCommitIcon className="shrink-0" />
               <span className="overflow-hidden text-ellipsis whitespace-nowrap">
                 {build.compareScreenshotBucket.commit.slice(0, 7)}
               </span>
@@ -127,14 +127,14 @@ const BuildRow = memo(
               }}
               title={build.compareScreenshotBucket.branch}
             >
-              <GitBranchIcon className="flex-shrink-0" />
+              <GitBranchIcon className="shrink-0" />
               <span className="overflow-hidden text-ellipsis whitespace-nowrap">
                 {build.compareScreenshotBucket.branch}
               </span>
             </div>
           )}
         </div>
-        <div className="hidden w-32 flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-right text-on-light sm:block">
+        <div className="hidden w-32 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-right text-on-light sm:block">
           <Time date={build.createdAt} />
         </div>
       </RouterLink>

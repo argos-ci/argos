@@ -33,7 +33,7 @@ export const OvercapacityBanner = memo(
 
     return (
       <Banner
-        className="flex flex-shrink-0 items-center justify-center gap-2"
+        className="flex shrink-0 items-center justify-center gap-2"
         color={consumptionRatio >= 1 ? "danger" : "warning"}
       >
         <ExclamationTriangleIcon className="h-4 w-4" />

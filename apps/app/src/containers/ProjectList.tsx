@@ -53,7 +53,7 @@ const ProjectRow = ({ project }: { project: Project }) => {
       to={`/${project.account.slug}/${project.name}`}
       className="flex items-center justify-between rounded bg-slate-900/70 p-3 font-medium text-on-light transition hover:bg-slate-900"
     >
-      <div className="flex flex-shrink-0 gap-1">
+      <div className="flex shrink-0 gap-1">
         <FakeRouterLink
           to={`/${project.account.slug}`}
           className="transition hover:text-on hover:brightness-125"
@@ -62,7 +62,7 @@ const ProjectRow = ({ project }: { project: Project }) => {
             <AccountAvatar
               avatar={project.account.avatar}
               size={24}
-              className="flex-shrink-0"
+              className="shrink-0"
             />
             {project.account.slug}
           </span>

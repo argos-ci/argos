@@ -60,10 +60,15 @@ export const resolvers = {
       if (!account.userId) {
         throw new Error("Invariant: account.userId is undefined");
       }
-      return Account.query().whereIn(
-        "teamId",
-        User.relatedQuery("teams").select("teams.id").for(account.userId)
-      );
+      return Account.query()
+        .orderBy([
+          { column: "name", order: "asc" },
+          { column: "slug", order: "asc" },
+        ])
+        .whereIn(
+          "teamId",
+          User.relatedQuery("teams").select("teams.id").for(account.userId)
+        );
     },
     ghInstallations: async (
       account: Account,

@@ -12,7 +12,7 @@ export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
     return (
       <main
         ref={ref}
-        className="flex min-h-0 flex-1 flex-col border-t border-t-border py-6"
+        className="flex min-h-0 flex-grow flex-col border-t border-t-border py-6"
       >
         <Catch fallback={<ErrorPage />}>{props.children}</Catch>
       </main>
@@ -23,8 +23,8 @@ export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
 export const Layout = (props: { children: React.ReactNode }) => {
   const fullSize = useMatch("/:accountSlug/:projectSlug");
   return (
-    <div className={clsx(fullSize && "h-screen", "flex min-h-full flex-col")}>
-      <header className="flex-shrink-0">
+    <div className={clsx(fullSize && "h-screen", "min-h-screen")}>
+      <header>
         <Navbar />
       </header>
       {props.children}

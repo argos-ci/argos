@@ -4,7 +4,7 @@ import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
 import { TeamUser } from "./TeamUser.js";
-import type { User } from "./User.js";
+import { User } from "./User.js";
 
 export class Team extends Model {
   static override tableName = "teams";
@@ -23,10 +23,23 @@ export class Team extends Model {
           to: "accounts.teamId",
         },
       },
+      users: {
+        relation: Model.ManyToManyRelation,
+        modelClass: User,
+        join: {
+          from: "teams.id",
+          through: {
+            from: "team_users.teamId",
+            to: "team_users.userId",
+          },
+          to: "users.id",
+        },
+      },
     };
   }
 
   account?: Account;
+  users?: User[];
 
   async $checkWritePermission(user: User) {
     return Team.checkWritePermission(this.id, user);
