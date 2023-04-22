@@ -15,10 +15,7 @@ const CreateTeamMutation = graphql(`
   mutation NewTeam_createTeam($name: String!) {
     createTeam(input: { name: $name }) {
       id
-      account {
-        id
-        slug
-      }
+      slug
     }
   }
 `);
@@ -50,7 +47,7 @@ const NewTeamForm = (props: { defaultTeamName: string }) => {
       if (!result.data) {
         throw new Error("No data returned from server.");
       }
-      navigate(`/${result.data.createTeam.account.slug}`);
+      navigate(`/${result.data.createTeam.slug}`);
     } catch (error) {
       setError("root.serverError", {
         type: "manual",

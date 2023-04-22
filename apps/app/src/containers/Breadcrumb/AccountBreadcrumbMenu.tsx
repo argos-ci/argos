@@ -29,16 +29,10 @@ const MeQuery = graphql(`
   query AccountBreadcrumbMenu_me {
     me {
       id
-      account {
-        id
-        ...AccountBreadcrumbMenu_Account
-      }
+      ...AccountBreadcrumbMenu_Account
       teams {
         id
-        account {
-          id
-          ...AccountBreadcrumbMenu_Account
-        }
+        ...AccountBreadcrumbMenu_Account
       }
     }
   }
@@ -72,8 +66,8 @@ const MenuContent = (props: { menu: MenuState }) => {
   const { data, error } = useQuery(MeQuery);
   if (error) return null;
   if (!data?.me) return null;
-  const userAccounts = [data.me.account];
-  const teamAccounts = data.me.teams.map((team) => team.account);
+  const userAccounts = [data.me];
+  const teamAccounts = data.me.teams;
   return (
     <>
       <MenuTitle>Personal</MenuTitle>
@@ -99,7 +93,6 @@ export const AccountBreadcrumbMenu = () => {
   return (
     <>
       <BreadcrumbMenuButton state={menu} />
-
       <Menu aria-label="Accounts" state={menu}>
         {menu.open && <MenuContent menu={menu} />}
       </Menu>

@@ -80,15 +80,6 @@ const ProjectRow = ({ project }: { project: Project }) => {
   );
 };
 
-const Group = (props: { label: string; children: React.ReactNode }) => {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="text-sm font-medium text-on-light">{props.label}</div>
-      <div className="flex flex-col gap-1">{props.children}</div>
-    </div>
-  );
-};
-
 export const ProjectList = (props: { projects: ProjectFragmentType[] }) => {
   const projects = useFragment(ProjectFragment, props.projects);
 

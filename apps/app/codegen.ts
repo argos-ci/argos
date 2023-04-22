@@ -12,6 +12,9 @@ const config: CodegenConfig = {
         dedupeFragments: true,
       },
     },
+    "./src/gql-fragments.json": {
+      plugins: ["fragment-matcher"],
+    },
   },
 };
 

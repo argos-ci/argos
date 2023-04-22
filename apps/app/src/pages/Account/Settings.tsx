@@ -11,6 +11,7 @@ import { useParams } from "react-router-dom";
 import config from "@/config";
 import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
+import { TeamMembers } from "@/containers/Team/Members";
 import { DocumentType, graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
 import {
@@ -58,6 +59,7 @@ const AccountQuery = graphql(`
           currentMonthUsedScreenshots
         }
       }
+      ...TeamMembers_Team
     }
   }
 `);
@@ -221,25 +223,6 @@ const Consumption = ({ value, max }: { value: number; max: number }) => {
   );
 };
 
-const PermissionCard = () => {
-  return (
-    <Card>
-      <CardBody>
-        <CardTitle>Permissions</CardTitle>
-        <CardParagraph>
-          Argos uses OAuth GitHub App to manage your projects. You can revoke
-          access to your projects at any time.
-        </CardParagraph>
-      </CardBody>
-      <CardFooter>
-        <Anchor href={config.get("github.appUrl")} external>
-          Manage projects access restrictions from GitHub
-        </Anchor>
-      </CardFooter>
-    </Card>
-  );
-};
-
 const ConsumptionDetail = ({ projects }: { projects: Project[] }) => {
   const disclosure = useDisclosureState({ defaultOpen: false });
 
@@ -291,7 +274,7 @@ export const AccountSettings = () => {
       <Helmet>
         <title>{accountSlug} • Settings</title>
       </Helmet>
-      <Heading>Organization Settings</Heading>
+      <Heading>Account Settings</Heading>
       <Query
         fallback={<PageLoader />}
         query={AccountQuery}
@@ -311,7 +294,7 @@ export const AccountSettings = () => {
                   projects={account.projects.edges}
                 />
               )}
-              <PermissionCard />
+              {account.__typename === "Team" && <TeamMembers team={account} />}
             </SettingsLayout>
           );
         }}

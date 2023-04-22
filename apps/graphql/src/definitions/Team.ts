@@ -10,9 +10,21 @@ import type { Context } from "../context.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type Team implements Node {
+  type Team implements Node & Account {
     id: ID!
-    account: Account!
+    stripeCustomerId: String
+    stripeClientReferenceId: String!
+    consumptionRatio: Float
+    currentMonthUsedScreenshots: Int!
+    screenshotsLimitPerMonth: Int
+    slug: String!
+    name: String
+    plan: Plan
+    purchase: Purchase
+    permissions: [Permission!]!
+    projects(after: Int!, first: Int!): ProjectConnection!
+    ghAccount: GithubAccount
+    avatar: AccountAvatar!
   }
 
   input CreateTeamInput {
@@ -42,17 +54,12 @@ const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
 };
 
 export const resolvers = {
-  Team: {
-    account: async (team: Team, _args: Record<string, never>, ctx: Context) => {
-      return ctx.loaders.AccountFromRelation.load({ teamId: team.id });
-    },
-  },
   Mutation: {
     createTeam: async (
       _root: unknown,
       { input: { name } }: { input: { name: string } },
       { auth }: Context
-    ): Promise<Team> => {
+    ): Promise<Account> => {
       if (!auth) {
         throw new Error("Forbidden");
       }
@@ -65,12 +72,11 @@ export const resolvers = {
           teamId: team.id,
           userLevel: "owner",
         });
-        await Account.query(trx).insert({
+        return Account.query(trx).insertAndFetch({
           name: name.trim(),
           slug,
           teamId: team.id,
         });
-        return team;
       });
     },
   },

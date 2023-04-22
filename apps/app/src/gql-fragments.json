@@ -1,0 +1,34 @@
+{
+  "possibleTypes": {
+    "Account": [
+      "Team",
+      "User"
+    ],
+    "Connection": [
+      "BuildConnection",
+      "GhApiInstallationConnection",
+      "GhApiRepositoryConnection",
+      "ProjectConnection",
+      "ScreenshotDiffConnection",
+      "TestConnection",
+      "UserConnection"
+    ],
+    "Node": [
+      "Build",
+      "GhApiInstallation",
+      "GhApiInstallationAccount",
+      "GhApiRepository",
+      "GithubAccount",
+      "GithubRepository",
+      "Plan",
+      "Project",
+      "Purchase",
+      "Screenshot",
+      "ScreenshotBucket",
+      "ScreenshotDiff",
+      "Team",
+      "Test",
+      "User"
+    ]
+  }
+}

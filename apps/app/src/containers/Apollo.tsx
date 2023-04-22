@@ -11,6 +11,8 @@ import {
 } from "@apollo/client";
 import { useMemo } from "react";
 
+import fragments from "@/gql-fragments.json";
+
 import { useAuthToken } from "./Auth";
 
 const ApolloProvider = (props: {
@@ -22,7 +24,9 @@ const ApolloProvider = (props: {
     () =>
       new ApolloClient({
         uri: `/graphql`,
-        cache: new InMemoryCache(),
+        cache: new InMemoryCache({
+          possibleTypes: fragments.possibleTypes,
+        }),
         headers: authorization ? { authorization } : {},
       }),
     [authorization]

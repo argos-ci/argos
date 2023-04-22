@@ -23,7 +23,6 @@ import {
 } from "@/ui/Menu";
 import { MagicTooltip } from "@/ui/Tooltip";
 
-import { AccountAvatar } from "./AccountAvatar";
 import { GitHubLoginButton } from "./GitHub";
 import { ImageAvatar } from "./ImageAvatar";
 import { SubNavbar } from "./SubNavbar";

@@ -113,6 +113,7 @@ export class Account extends Model {
       const plan = await activePurchase.$relatedQuery("plan");
       return plan;
     }
+
     return Plan.getFreePlan();
   }
 

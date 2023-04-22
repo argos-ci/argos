@@ -20,9 +20,8 @@ export const typeDefs = gql`
     color: String!
   }
 
-  type Account implements Node {
+  interface Account implements Node {
     id: ID!
-    type: AccountType!
     stripeCustomerId: String
     stripeClientReferenceId: String!
     consumptionRatio: Float
@@ -72,6 +71,16 @@ const getAvatarColor = (id: string): string => {
 
 export const resolvers = {
   Account: {
+    __resolveType: (account: Account) => {
+      switch (account.type) {
+        case "team":
+          return "Team";
+        case "user":
+          return "User";
+        default:
+          throw new Error(`Unknown account type: ${account.type}`);
+      }
+    },
     stripeClientReferenceId: (
       account: Account,
       _args: Record<string, never>,
