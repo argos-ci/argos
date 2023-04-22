@@ -1,10 +1,11 @@
+import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { HTMLProps } from "react";
 import { Link, Link as RouterLink, useNavigate } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Badge } from "@/ui/Badge";
-import { Button } from "@/ui/Button";
+import { Button, ButtonIcon } from "@/ui/Button";
 
 const ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
@@ -14,6 +15,9 @@ const ProjectFragment = graphql(`
       id
       slug
       name
+      avatar {
+        ...AccountAvatarFragment
+      }
     }
     builds(first: 0, after: 0) {
       pageInfo {
@@ -56,7 +60,7 @@ const ProjectRow = ({ project }: { project: Project }) => {
         >
           <span className="flex gap-2">
             <AccountAvatar
-              account={project.account}
+              avatar={project.account.avatar}
               size={24}
               className="flex-shrink-0"
             />
@@ -108,11 +112,23 @@ export const ProjectList = (props: { projects: ProjectFragmentType[] }) => {
 
   return (
     <div className="flex flex-col gap-4">
-      <Group label="Projects">
+      <div className="flex justify-end">
+        <Button variant="outline" color="neutral">
+          {(buttonProps) => (
+            <Link to="new" {...buttonProps}>
+              <ButtonIcon>
+                <PlusCircleIcon />
+              </ButtonIcon>
+              Create a new Project
+            </Link>
+          )}
+        </Button>
+      </div>
+      <div className="flex flex-col gap-2">
         {projects.map((project) => (
           <ProjectRow key={project.id} project={project} />
         ))}
-      </Group>
+      </div>
     </div>
   );
 };

@@ -21,6 +21,7 @@ module.exports = {
         bg: colors.black,
         on: colors.slate[100],
         "on-light": colors.slate[400],
+        "on-danger": colors.red[400],
         border: colors.slate[700],
         text: colors.slate[50],
 
@@ -88,6 +89,9 @@ module.exports = {
       },
       borderRadius: {
         chip: "20px",
+      },
+      aria: {
+        invalid: 'invalid="true"',
       },
     },
   },

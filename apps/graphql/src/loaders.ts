@@ -5,6 +5,7 @@ import {
   Account,
   Build,
   File,
+  GithubAccount,
   GithubRepository,
   Model,
   Project,
@@ -139,6 +140,7 @@ const createAccountFromRelationLoader = () => {
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   GithubRepository: createModelLoader(GithubRepository),
+  GithubAccount: createModelLoader(GithubAccount),
   User: createModelLoader(User),
   Team: createModelLoader(Team),
   Screenshot: createModelLoader(Screenshot),

@@ -25,6 +25,7 @@ import { MagicTooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "./AccountAvatar";
 import { GitHubLoginButton } from "./GitHub";
+import { ImageAvatar } from "./ImageAvatar";
 import { SubNavbar } from "./SubNavbar";
 
 const UserMenu = () => {
@@ -43,7 +44,9 @@ const UserMenu = () => {
         state={menu}
         className="rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
       >
-        <AccountAvatar account={authPayload.account} />
+        <ImageAvatar
+          url={`https://github.com/${authPayload.account.slug}.png`}
+        />
       </MenuButton>
       <Menu aria-label="User settings" state={menu}>
         <MenuItem state={menu} pointer>

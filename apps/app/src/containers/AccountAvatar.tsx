@@ -1,38 +1,58 @@
 import { clsx } from "clsx";
 import { forwardRef } from "react";
 
-interface AccountAvatarProps {
+import { FragmentType, graphql, useFragment } from "@/gql";
+
+import { ImageAvatar } from "./ImageAvatar";
+
+const AvatarFragment = graphql(`
+  fragment AccountAvatarFragment on AccountAvatar {
+    url(size: 64)
+    color
+    initial
+  }
+`);
+
+export type AccountAvatarProps = {
   className?: string;
-  account?:
-    | { name?: string | null | undefined; slug: string }
-    | null
-    | undefined;
   size?: number;
-}
+  avatar: FragmentType<typeof AvatarFragment>;
+};
 
 export const AccountAvatar = forwardRef<any, AccountAvatarProps>(
-  ({ account, className, size = 32 }, ref) => {
-    if (!account) {
+  (props, ref) => {
+    const avatar = useFragment(AvatarFragment, props.avatar);
+    const size = props.size ?? 32;
+    if (!avatar.url) {
       return (
         <div
           ref={ref}
-          className={clsx(className, "rounded-full bg-slate-900")}
+          className={clsx(
+            props.className,
+            "flex select-none items-center justify-center rounded-full"
+          )}
           style={{
+            backgroundColor: avatar.color,
             width: size,
             height: size,
           }}
-        />
+        >
+          <svg width="100%" height="100%" viewBox="-50 -66 100 100">
+            <text
+              fill="white"
+              fontWeight="600"
+              textAnchor="middle"
+              fontSize="50"
+              fontFamily="Inter, sans-serif"
+            >
+              {avatar.initial}
+            </text>
+          </svg>
+        </div>
       );
     }
     return (
-      <img
-        ref={ref}
-        src={`https://github.com/${account.slug}.png?size=60`}
-        alt={account.name || account.slug}
-        className={clsx(className, "rounded-full")}
-        height={size}
-        width={size}
-      />
+      <ImageAvatar url={avatar.url} size={size} className={props.className} />
     );
   }
 );

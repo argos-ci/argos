@@ -14,6 +14,7 @@ type JWTData = {
 export const createJWT = (data: JWTData) => {
   return jwt.sign(data, config.get("server.sessionSecret"), {
     expiresIn: "60d",
+    encoding: "utf-8",
   });
 };
 

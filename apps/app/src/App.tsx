@@ -20,6 +20,7 @@ import { AuthCallback } from "./pages/AuthCallback";
 import { Build } from "./pages/Build";
 import { CheckoutSuccessRedirect } from "./pages/CheckoutSuccessRedirect";
 import { Home } from "./pages/Home";
+import { NewTeam } from "./pages/NewTeam";
 import { NotFound } from "./pages/NotFound";
 import { Project } from "./pages/Project";
 import { ProjectBuilds } from "./pages/Project/Builds";
@@ -63,6 +64,14 @@ export const App = () => {
                         <title>All my repositories</title>
                       </Helmet>
                       <Home />
+                    </Main>
+                  }
+                />
+                <Route
+                  path="/teams/new"
+                  element={
+                    <Main>
+                      <NewTeam />
                     </Main>
                   }
                 />

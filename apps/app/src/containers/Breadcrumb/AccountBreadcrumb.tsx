@@ -19,6 +19,9 @@ const AccountQuery = graphql(`
       id
       slug
       name
+      avatar {
+        ...AccountAvatarFragment
+      }
     }
   }
 `);
@@ -39,7 +42,7 @@ const AccountBreadcrumbLink = ({ accountSlug }: { accountSlug: string }) => {
       <BreadcrumbItemIcon>
         {data ? (
           data.account ? (
-            <AccountAvatar account={data.account} size={24} />
+            <AccountAvatar avatar={data.account.avatar} size={24} />
           ) : (
             <OrganizationIcon size={18} />
           )

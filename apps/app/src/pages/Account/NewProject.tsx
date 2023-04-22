@@ -34,7 +34,7 @@ const MeQuery = graphql(`
 `);
 
 const CreateProjectMutation = graphql(`
-  mutation createProject(
+  mutation NewProject_createProject(
     $repo: String!
     $owner: String!
     $accountSlug: String!
@@ -110,7 +110,7 @@ export const AccountNewProject = () => {
   return (
     <>
       <Helmet>
-        <title>New project</title>
+        <title>New Project</title>
       </Helmet>
       <Container>
         <Heading>Create a new Project</Heading>

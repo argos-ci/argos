@@ -158,7 +158,6 @@ const ReferenceBranchCard = ({ project }: { project: Project }) => {
                 ref={baselineBranchRef}
                 type="text"
                 id="baselineBranch"
-                className="w-full"
                 name="baselineBranch"
                 placeholder="Branch name"
                 required

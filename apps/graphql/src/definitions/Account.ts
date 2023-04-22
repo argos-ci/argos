@@ -14,6 +14,12 @@ export const typeDefs = gql`
     user
   }
 
+  type AccountAvatar {
+    url(size: Int!): String
+    initial: String!
+    color: String!
+  }
+
   type Account implements Node {
     id: ID!
     type: AccountType!
@@ -28,6 +34,8 @@ export const typeDefs = gql`
     purchase: Purchase
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
+    ghAccount: GithubAccount
+    avatar: AccountAvatar!
   }
 
   extend type Query {
@@ -35,6 +43,32 @@ export const typeDefs = gql`
     account(slug: String!): Account
   }
 `;
+
+type AccountAvatar = {
+  getUrl(args: { size?: number }): string | null;
+  initial: string;
+  color: string;
+};
+
+const colors = [
+  "#2a3b4c",
+  "#10418e",
+  "#4527a0",
+  "#8ca1ee",
+  "#65b7d7",
+  "#65b793",
+  "#00796b",
+  "#9c1258",
+  "#c20006",
+  "#ff3d44",
+  "#ffb83d",
+  "#f58f00",
+];
+
+const getAvatarColor = (id: string): string => {
+  const randomIndex = Number(id) % colors.length;
+  return colors[randomIndex] ?? colors[0] ?? "#000";
+};
 
 export const resolvers = {
   Account: {
@@ -82,6 +116,48 @@ export const resolvers = {
     permissions: () => {
       // For now, everyone can read and write
       return ["read", "write"];
+    },
+    ghAccount: async (
+      account: Account,
+      _args: Record<string, never>,
+      context: Context
+    ) => {
+      if (!account.githubAccountId) return null;
+      return context.loaders.GithubAccount.load(account.githubAccountId);
+    },
+    avatar: async (
+      account: Account,
+      _args: never,
+      context: Context
+    ): Promise<AccountAvatar> => {
+      const ghAccount = account.githubAccountId
+        ? await context.loaders.GithubAccount.load(account.githubAccountId)
+        : null;
+      const initial = ((account.name || account.slug)[0] || "x").toUpperCase();
+      const color = getAvatarColor(account.id);
+      if (ghAccount) {
+        return {
+          getUrl: ({ size }: { size?: number }) => {
+            const baseUrl = `https://github.com/${ghAccount.login}.png`;
+            if (!size) {
+              return baseUrl;
+            }
+            return `${baseUrl}?size=${size}`;
+          },
+          initial,
+          color,
+        };
+      }
+      return {
+        getUrl: () => null,
+        initial,
+        color,
+      };
+    },
+  },
+  AccountAvatar: {
+    url: (avatar: AccountAvatar, args: { size: number }) => {
+      return avatar.getUrl(args);
     },
   },
   Query: {

@@ -1,3 +1,4 @@
+import jwt_decode from "jwt-decode";
 import { createContext, useCallback, useContext, useMemo } from "react";
 
 import { useStoreState } from "./Store";
@@ -35,11 +36,9 @@ type JWTData = {
 };
 
 const jwtDecode = (t: string) => {
-  const parts = t.split(".");
-  if (!parts[1]) return null;
   try {
-    const value = JSON.parse(window.atob(parts[1]));
-    if (value.version !== 1) return null;
+    const value = jwt_decode<JWTData>(t);
+    if (value?.version !== 1) return null;
     return value as JWTData;
   } catch (e) {
     return null;

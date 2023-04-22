@@ -1,21 +1,29 @@
 import { useQuery } from "@apollo/client";
-import { HomeIcon } from "@primer/octicons-react";
+import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { Link as RouterLink } from "react-router-dom";
 
-import config from "@/config";
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { graphql } from "@/gql";
+import { FragmentType, graphql, useFragment } from "@/gql";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
-import { Anchor } from "@/ui/Link";
 import {
   Menu,
   MenuItem,
   MenuItemIcon,
   MenuState,
-  MenuText,
   MenuTitle,
   useMenuState,
 } from "@/ui/Menu";
+
+const AccountFragment = graphql(`
+  fragment AccountBreadcrumbMenu_Account on Account {
+    id
+    slug
+    name
+    avatar {
+      ...AccountAvatarFragment
+    }
+  }
+`);
 
 const MeQuery = graphql(`
   query AccountBreadcrumbMenu_me {
@@ -23,40 +31,34 @@ const MeQuery = graphql(`
       id
       account {
         id
-        slug
-        name
+        ...AccountBreadcrumbMenu_Account
       }
       teams {
         id
         account {
           id
-          slug
-          name
+          ...AccountBreadcrumbMenu_Account
         }
       }
     }
   }
 `);
 
-const Accounts = (props: { menu: MenuState }) => {
-  const { data, error } = useQuery(MeQuery);
-  if (error) return null;
-  if (!data?.me) return null;
-  const accounts = [
-    data.me.account,
-    ...data.me.teams.map((team) => team.account),
-  ];
+type Account = FragmentType<typeof AccountFragment>;
+
+const AccountMenuItems = (props: { menu: MenuState; accounts: Account[] }) => {
+  const accounts = useFragment(AccountFragment, props.accounts);
   return (
     <>
       {accounts.map((account) => {
         return (
-          <MenuItem key={account.slug} state={props.menu} pointer>
+          <MenuItem key={account.id} state={props.menu} pointer>
             {(menuItemProps) => (
               <RouterLink {...menuItemProps} to={`/${account.slug}`}>
                 <MenuItemIcon>
-                  <AccountAvatar account={account} size={18} />
+                  <AccountAvatar avatar={account.avatar} size={18} />
                 </MenuItemIcon>
-                {account.name}
+                {account.name || account.slug}
               </RouterLink>
             )}
           </MenuItem>
@@ -66,34 +68,40 @@ const Accounts = (props: { menu: MenuState }) => {
   );
 };
 
+const MenuContent = (props: { menu: MenuState }) => {
+  const { data, error } = useQuery(MeQuery);
+  if (error) return null;
+  if (!data?.me) return null;
+  const userAccounts = [data.me.account];
+  const teamAccounts = data.me.teams.map((team) => team.account);
+  return (
+    <>
+      <MenuTitle>Personal</MenuTitle>
+      <AccountMenuItems menu={props.menu} accounts={userAccounts} />
+      <MenuTitle>Teams</MenuTitle>
+      <AccountMenuItems menu={props.menu} accounts={teamAccounts} />
+      <MenuItem state={props.menu} pointer>
+        {(menuItemProps) => (
+          <RouterLink {...menuItemProps} to="/teams/new">
+            <MenuItemIcon>
+              <PlusCircleIcon />
+            </MenuItemIcon>
+            Create Team
+          </RouterLink>
+        )}
+      </MenuItem>
+    </>
+  );
+};
+
 export const AccountBreadcrumbMenu = () => {
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
-  const title = "Switch context";
-
   return (
     <>
       <BreadcrumbMenuButton state={menu} />
 
-      <Menu aria-label={title} state={menu}>
-        <MenuTitle>{title}</MenuTitle>
-        <MenuItem state={menu}>
-          {(menuItemProps) => (
-            <RouterLink {...menuItemProps} to="/">
-              <MenuItemIcon>
-                <HomeIcon />
-              </MenuItemIcon>
-              All my repositories
-            </RouterLink>
-          )}
-        </MenuItem>
-        {menu.open && <Accounts menu={menu} />}
-        <MenuText>
-          Don&apos;t see your org?
-          <br />
-          <Anchor href={config.get("github.appUrl")} external>
-            Manage access restrictions
-          </Anchor>
-        </MenuText>
+      <Menu aria-label="Accounts" state={menu}>
+        {menu.open && <MenuContent menu={menu} />}
       </Menu>
     </>
   );
