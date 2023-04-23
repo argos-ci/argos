@@ -1,10 +1,9 @@
 import { useMutation } from "@apollo/client";
 import { EllipsisVerticalIcon } from "@heroicons/react/20/solid";
-import { Button as AriakitButton } from "ariakit/button";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -31,6 +30,7 @@ import { Menu, MenuButton, MenuItem, useMenuState } from "@/ui/Menu";
 import { MagicTooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "../AccountAvatar";
+import { useAuthTokenPayload } from "../Auth";
 
 const TeamFragment = graphql(`
   fragment TeamMembers_Team on Team {
@@ -54,23 +54,40 @@ const TeamFragment = graphql(`
   }
 `);
 
+type User = DocumentType<typeof TeamFragment>["users"]["edges"][0];
+
 const LeaveTeamMutation = graphql(`
-  mutation TeamMembers_leaveTeam($accountId: ID!) {
-    leaveTeam(input: { accountId: $accountId })
+  mutation TeamMembers_leaveTeam($teamAccountId: ID!) {
+    leaveTeam(input: { teamAccountId: $teamAccountId })
   }
 `);
 
-type LeaveTeamConfirmDialogProps = {
+const RemoveUserFromTeamMutation = graphql(`
+  mutation TeamMembers_removeUserFromTeam(
+    $teamAccountId: ID!
+    $userAccountId: ID!
+  ) {
+    removeUserFromTeam(
+      input: { teamAccountId: $teamAccountId, userAccountId: $userAccountId }
+    )
+  }
+`);
+
+type LeaveTeamDialogProps = {
   state: DialogState;
   teamName: string;
-  accountId: string;
+  teamAccountId: string;
 };
 
-const LeaveTeamConfirmDialog = memo<LeaveTeamConfirmDialogProps>((props) => {
-  const [leaveTeam, { loading, error }] = useMutation(LeaveTeamMutation);
+const LeaveTeamDialog = memo<LeaveTeamDialogProps>((props) => {
+  const [leaveTeam, { loading, error }] = useMutation(LeaveTeamMutation, {
+    variables: {
+      teamAccountId: props.teamAccountId,
+    },
+  });
   const navigate = useNavigate();
   return (
-    <Dialog state={props.state}>
+    <>
       <DialogBody confirm>
         <DialogTitle>Leave Team</DialogTitle>
         <DialogText>
@@ -88,11 +105,7 @@ const LeaveTeamConfirmDialog = memo<LeaveTeamConfirmDialogProps>((props) => {
           disabled={loading}
           color="danger"
           onClick={async () => {
-            await leaveTeam({
-              variables: {
-                accountId: props.accountId,
-              },
-            });
+            await leaveTeam();
             props.state.hide();
             navigate("/");
           }}
@@ -100,7 +113,92 @@ const LeaveTeamConfirmDialog = memo<LeaveTeamConfirmDialogProps>((props) => {
           Leave Team
         </Button>
       </DialogFooter>
-    </Dialog>
+    </>
+  );
+});
+
+type RemoveFromTeamDialogProps = {
+  state: DialogState;
+  teamName: string;
+  teamAccountId: string;
+  user: User;
+};
+
+const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
+  const [removeFromTeam, { loading, error }] = useMutation(
+    RemoveUserFromTeamMutation,
+    {
+      update(cache, { data }) {
+        if (data?.removeUserFromTeam) {
+          cache.modify({
+            id: cache.identify({
+              __typename: "Team",
+              id: props.teamAccountId,
+            }),
+            fields: {
+              users: (existingUsers, { readField }) => {
+                return {
+                  ...existingUsers,
+                  edges: existingUsers.edges.filter(
+                    (userRef: any) => readField("id", userRef) !== props.user.id
+                  ),
+                  pageInfo: {
+                    ...existingUsers.pageInfo,
+                    totalCount: existingUsers.pageInfo.totalCount - 1,
+                  },
+                };
+              },
+            },
+          });
+        }
+      },
+      variables: {
+        teamAccountId: props.teamAccountId,
+        userAccountId: props.user.id,
+      },
+    }
+  );
+  return (
+    <>
+      <DialogBody confirm>
+        <DialogTitle>Remove Team Member</DialogTitle>
+        <DialogText>
+          You are about to remove the following Team Member, are you sure you
+          want to continue?
+        </DialogText>
+        <List>
+          <ListRow>
+            <AccountAvatar
+              avatar={props.user.avatar}
+              size={36}
+              className="shrink-0"
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-semibold">{props.user.name}</div>
+              </div>
+              <div className="text-xs text-slate-500">{props.user.slug}</div>
+            </div>
+          </ListRow>
+        </List>
+      </DialogBody>
+      <DialogFooter>
+        {error && (
+          <FormError>Something went wrong. Please try again.</FormError>
+        )}
+        <DialogDismiss>Cancel</DialogDismiss>
+        <Button
+          disabled={loading}
+          color="danger"
+          onClick={async () => {
+            await removeFromTeam();
+            props.state.hide();
+          }}
+        >
+          Remove from Team
+        </Button>
+      </DialogFooter>
+    </>
   );
 });
 
@@ -108,11 +206,13 @@ type ActionsMenuProps = {
   teamName: string;
   accountId: string;
   lastOne: boolean;
+  onRemove: () => void;
+  isMe: boolean;
 };
 
 const ActionsMenu = (props: ActionsMenuProps) => {
   const menu = useMenuState({ gutter: 4 });
-  const dialog = useDialogState();
+
   return (
     <>
       <MenuButton
@@ -121,33 +221,43 @@ const ActionsMenu = (props: ActionsMenuProps) => {
       >
         <EllipsisVerticalIcon className="h-4 w-4" />
       </MenuButton>
-      <Menu state={menu} aria-label="Mute options">
-        <MagicTooltip
-          tooltip={
-            props.lastOne
-              ? "You are the last user of this team, you can't leave it"
-              : null
-          }
-        >
+      <Menu state={menu} aria-label="Member actions">
+        {props.isMe ? (
+          <MagicTooltip
+            tooltip={
+              props.lastOne
+                ? "You are the last user of this team, you can't leave it"
+                : null
+            }
+          >
+            <MenuItem
+              variant="danger"
+              state={menu}
+              onClick={() => {
+                props.onRemove();
+                menu.hide();
+              }}
+              disabled={props.lastOne}
+              accessibleWhenDisabled
+            >
+              Leave Team
+            </MenuItem>
+          </MagicTooltip>
+        ) : (
           <MenuItem
             variant="danger"
             state={menu}
             onClick={() => {
-              dialog.show();
+              props.onRemove();
               menu.hide();
             }}
             disabled={props.lastOne}
             accessibleWhenDisabled
           >
-            Leave Team
+            Remove from Team
           </MenuItem>
-        </MagicTooltip>
+        )}
       </Menu>
-      <LeaveTeamConfirmDialog
-        state={dialog}
-        teamName={props.teamName}
-        accountId={props.accountId}
-      />
     </>
   );
 };
@@ -197,8 +307,22 @@ const InviteLinkButton = (props: InviteLinkButtonProps) => {
 export const TeamMembers = (props: {
   team: FragmentType<typeof TeamFragment>;
 }) => {
+  const authPayload = useAuthTokenPayload();
+  if (!authPayload) {
+    throw new Error("Forbidden");
+  }
   const team = useFragment(TeamFragment, props.team);
+  const teamName = team.name || team.slug;
   const lastOne = team.users.pageInfo.totalCount === 1;
+  const [removeAccountId, setRemoveAccountId] = useState<string | null>(null);
+  const removeTeamDialog = useDialogState({
+    open: removeAccountId !== null,
+    setOpen: (open) => {
+      if (!open) {
+        setRemoveAccountId(null);
+      }
+    },
+  });
   return (
     <Card>
       <form>
@@ -223,14 +347,38 @@ export const TeamMembers = (props: {
                     <div className="text-xs text-slate-500">{user.slug}</div>
                   </div>
                   <ActionsMenu
-                    teamName={team.name || team.slug}
+                    teamName={teamName}
                     accountId={team.id}
                     lastOne={lastOne}
+                    onRemove={() => setRemoveAccountId(user.id)}
+                    isMe={authPayload.account.id === user.id}
                   />
                 </ListRow>
               );
             })}
           </List>
+          <Dialog state={removeTeamDialog}>
+            {removeAccountId ? (
+              authPayload.account.id === removeAccountId ? (
+                <LeaveTeamDialog
+                  teamName={teamName}
+                  teamAccountId={team.id}
+                  state={removeTeamDialog}
+                />
+              ) : (
+                <RemoveFromTeamDialog
+                  teamName={teamName}
+                  teamAccountId={team.id}
+                  user={
+                    team.users.edges.find(
+                      (user) => user.id === removeAccountId
+                    )!
+                  }
+                  state={removeTeamDialog}
+                />
+              )
+            ) : null}
+          </Dialog>
         </CardBody>
       </form>
       <CardFooter className="flex items-center justify-between">

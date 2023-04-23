@@ -1,5 +1,5 @@
 import { useQuery } from "@apollo/client";
-import { HomeIcon, OrganizationIcon } from "@primer/octicons-react";
+import { OrganizationIcon } from "@primer/octicons-react";
 import { useMatch, useParams } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";

@@ -5,7 +5,7 @@ import { useLocation } from "react-router-dom";
 import config from "@/config";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 
-const useLoginUrl = (redirect: string | undefined) => {
+const useLoginUrl = (redirect: string | null | undefined) => {
   const { origin } = window.location;
   const { pathname } = useLocation();
   return `${config.get(

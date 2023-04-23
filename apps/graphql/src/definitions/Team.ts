@@ -36,7 +36,12 @@ export const typeDefs = gql`
   }
 
   input LeaveTeamInput {
-    accountId: ID!
+    teamAccountId: ID!
+  }
+
+  input RemoveUserFromTeamInput {
+    teamAccountId: ID!
+    userAccountId: ID!
   }
 
   extend type Query {
@@ -48,6 +53,8 @@ export const typeDefs = gql`
     createTeam(input: CreateTeamInput!): Team!
     "Leave a team"
     leaveTeam(input: LeaveTeamInput!): Boolean!
+    "Remove a user from a team"
+    removeUserFromTeam(input: RemoveUserFromTeamInput!): Boolean!
     "Accept an invitation to join a team"
     acceptInvitation(token: String!): Team!
   }
@@ -152,14 +159,14 @@ export const resolvers = {
     },
     leaveTeam: async (
       _root: unknown,
-      args: { input: { accountId: string } },
+      args: { input: { teamAccountId: string } },
       { auth }: Context
     ) => {
       if (!auth) {
         throw new Error("Forbidden");
       }
       const account = await Account.query()
-        .findById(args.input.accountId)
+        .findById(args.input.teamAccountId)
         .throwIfNotFound();
 
       const count = await TeamUser.query()
@@ -175,6 +182,34 @@ export const resolvers = {
       await TeamUser.query().delete().where({
         userId: auth.user.id,
         teamId: account.teamId,
+      });
+
+      return true;
+    },
+    removeUserFromTeam: async (
+      _root: unknown,
+      args: { input: { teamAccountId: string; userAccountId: string } },
+      { auth }: Context
+    ) => {
+      if (!auth) {
+        throw new Error("Forbidden");
+      }
+      const [teamAccount, userAccount] = await Promise.all([
+        Account.query().findById(args.input.teamAccountId).throwIfNotFound(),
+        Account.query().findById(args.input.userAccountId).throwIfNotFound(),
+      ]);
+
+      const count = await TeamUser.query()
+        .where({ teamId: teamAccount.teamId })
+        .resultSize();
+
+      if (count === 1) {
+        throw new Error("Can't remove the last user of a team.");
+      }
+
+      await TeamUser.query().delete().where({
+        userId: userAccount.userId,
+        teamId: teamAccount.teamId,
       });
 
       return true;
