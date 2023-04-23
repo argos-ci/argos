@@ -1,14 +1,23 @@
 import { useMutation } from "@apollo/client";
 import { EllipsisVerticalIcon } from "@heroicons/react/20/solid";
+import { Button as AriakitButton } from "ariakit/button";
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Button } from "@/ui/Button";
-import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardParagraph,
+  CardTitle,
+} from "@/ui/Card";
+import { CopyButton } from "@/ui/CopyButton";
 import {
   Dialog,
   DialogBody,
+  DialogDisclosure,
   DialogDismiss,
   DialogFooter,
   DialogState,
@@ -28,6 +37,7 @@ const TeamFragment = graphql(`
     id
     name
     slug
+    inviteLink
     users(first: 30, after: 0) {
       edges {
         id
@@ -142,6 +152,48 @@ const ActionsMenu = (props: ActionsMenuProps) => {
   );
 };
 
+type InviteLinkButtonProps = {
+  inviteLink: string;
+};
+
+const InviteLinkButton = (props: InviteLinkButtonProps) => {
+  const dialog = useDialogState();
+  return (
+    <>
+      <DialogDisclosure state={dialog}>
+        {(disclosureProps) => (
+          <Button {...disclosureProps} color="neutral" variant="outline">
+            Invite Link
+          </Button>
+        )}
+      </DialogDisclosure>
+      <Dialog state={dialog}>
+        <DialogBody>
+          <DialogTitle>Invite Link</DialogTitle>
+          <DialogText>
+            Share this link with your friends to invite them to your team.
+          </DialogText>
+
+          <div className="flex gap-2 rounded border border-border p-2">
+            <pre className="w-0 flex-1 overflow-auto">
+              <code>{props.inviteLink}</code>
+            </pre>
+            <CopyButton text={props.inviteLink} />
+          </div>
+
+          <DialogText>
+            <strong>Warning:</strong> Anyone with this link will be able to join
+            your team.
+          </DialogText>
+        </DialogBody>
+        <DialogFooter>
+          <DialogDismiss single>OK</DialogDismiss>
+        </DialogFooter>
+      </Dialog>
+    </>
+  );
+};
+
 export const TeamMembers = (props: {
   team: FragmentType<typeof TeamFragment>;
 }) => {
@@ -181,6 +233,10 @@ export const TeamMembers = (props: {
           </List>
         </CardBody>
       </form>
+      <CardFooter className="flex items-center justify-between">
+        <div>Invite people to collaborate in the Team.</div>
+        <InviteLinkButton inviteLink={team.inviteLink} />
+      </CardFooter>
     </Card>
   );
 };

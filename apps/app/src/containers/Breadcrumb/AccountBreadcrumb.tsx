@@ -3,7 +3,7 @@ import { HomeIcon, OrganizationIcon } from "@primer/octicons-react";
 import { useMatch, useParams } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { useIsLoggedIn } from "@/containers/Auth";
+import { useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import {
   BreadcrumbItem,
@@ -54,17 +54,20 @@ const AccountBreadcrumbLink = ({ accountSlug }: { accountSlug: string }) => {
 };
 
 const HomeBreadcrumbLink = () => {
-  return (
-    <BreadcrumbLink to="/" aria-current="page">
-      <HomeIcon size={18} />
-      All my repositories
-    </BreadcrumbLink>
-  );
+  const payload = useAuthTokenPayload();
+  if (!payload) {
+    return null;
+  }
+  return <AccountBreadcrumbLink accountSlug={payload.account.slug} />;
 };
 
 export const AccountBreadcrumbItem = () => {
   const { accountSlug } = useParams();
   const loggedIn = useIsLoggedIn();
+
+  if (!loggedIn) {
+    return null;
+  }
 
   return (
     <>
@@ -74,7 +77,7 @@ export const AccountBreadcrumbItem = () => {
         ) : (
           <HomeBreadcrumbLink />
         )}
-        {loggedIn && <AccountBreadcrumbMenu />}
+        <AccountBreadcrumbMenu />
       </BreadcrumbItem>
     </>
   );

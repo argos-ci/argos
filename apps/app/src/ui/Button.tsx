@@ -6,13 +6,13 @@ import { Children, cloneElement, forwardRef, memo } from "react";
 
 export type ButtonColor = "primary" | "danger" | "neutral";
 export type ButtonVariant = "contained" | "outline";
-export type ButtonSize = "base" | "small";
+export type ButtonSize = "base" | "small" | "large";
 
-export interface ButtonProps extends AriakitButtonProps<"button"> {
+export type ButtonProps = AriakitButtonProps<"button"> & {
   color?: ButtonColor;
   variant?: ButtonVariant;
   size?: ButtonSize;
-}
+};
 
 const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
   contained: {
@@ -36,6 +36,7 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
 const sizeClassNames: Record<ButtonSize, string> = {
   base: "rounded-lg py-2 px-3 text-sm",
   small: "rounded py-1 px-2 text-xs leading-4",
+  large: "rounded py-4 px-8 text-base",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

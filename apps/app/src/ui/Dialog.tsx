@@ -10,7 +10,7 @@ import { forwardRef } from "react";
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
 
-export { useDialogState } from "ariakit/dialog";
+export { useDialogState, DialogDisclosure } from "ariakit/dialog";
 export type { DialogState } from "ariakit/dialog";
 
 export type DialogHeaderProps = {
@@ -97,12 +97,16 @@ export const DialogTitle = forwardRef<HTMLHeadingElement, DialogTitleProps>(
 
 type DialogDismissProps = {
   children?: React.ReactNode;
+  single?: boolean;
 };
 
 export const DialogDismiss = forwardRef<HTMLButtonElement, DialogDismissProps>(
   (props, ref) => {
     return (
-      <AriakitDialogDismiss ref={ref}>
+      <AriakitDialogDismiss
+        ref={ref}
+        className={props.single ? "flex-1 justify-center" : undefined}
+      >
         {(dialogDismissProps) =>
           props.children ? (
             <Button {...dialogDismissProps} color="neutral" variant="outline">

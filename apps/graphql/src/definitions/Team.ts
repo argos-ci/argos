@@ -28,6 +28,7 @@ export const typeDefs = gql`
     avatar: AccountAvatar!
 
     users(after: Int!, first: Int!): UserConnection!
+    inviteLink: String!
   }
 
   input CreateTeamInput {
@@ -38,11 +39,17 @@ export const typeDefs = gql`
     accountId: ID!
   }
 
+  extend type Query {
+    invitation(token: String!): Team
+  }
+
   extend type Mutation {
     "Create a team"
     createTeam(input: CreateTeamInput!): Team!
     "Leave a team"
     leaveTeam(input: LeaveTeamInput!): Boolean!
+    "Accept an invitation to join a team"
+    acceptInvitation(token: String!): Team!
   }
 `;
 
@@ -64,9 +71,19 @@ const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
 
 export const resolvers = {
   Team: {
-    users: async (account: Account, args: { first: number; after: number }) => {
+    users: async (
+      account: Account,
+      args: { first: number; after: number },
+      ctx: Context
+    ) => {
       if (!account.teamId) {
         throw new Error("Invariant: account.teamId is undefined");
+      }
+      if (!ctx.auth) {
+        throw new Error("Forbidden");
+      }
+      if (!Team.checkWritePermission(account.teamId, ctx.auth.user)) {
+        throw new Error("Forbidden");
       }
       const { first, after } = args;
       const result = await Account.query()
@@ -76,6 +93,36 @@ export const resolvers = {
         .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
+    },
+    inviteLink: async (account: Account, _args: unknown, ctx: Context) => {
+      if (!account.teamId) {
+        throw new Error("Invariant: account.teamId is undefined");
+      }
+      if (!ctx.auth) {
+        throw new Error("Forbidden");
+      }
+      if (!Team.checkWritePermission(account.teamId, ctx.auth.user)) {
+        throw new Error("Forbidden");
+      }
+      const team = await account.$relatedQuery("team");
+      return team.$getInviteLink();
+    },
+  },
+  Query: {
+    invitation: async (
+      _root: unknown,
+      { token }: { token: string },
+      { auth }: Context
+    ): Promise<Account | null> => {
+      if (!auth) {
+        throw new Error("Forbidden");
+      }
+      const payload = Team.parseInviteToken(token);
+      if (!payload) {
+        return null;
+      }
+      const account = await Account.query().findOne({ teamId: payload.teamId });
+      return account ?? null;
     },
   },
   Mutation: {
@@ -131,6 +178,42 @@ export const resolvers = {
       });
 
       return true;
+    },
+    acceptInvitation: async (
+      _root: unknown,
+      { token }: { token: string },
+      { auth }: Context
+    ): Promise<Account> => {
+      if (!auth) {
+        throw new Error("Forbidden");
+      }
+      const payload = Team.parseInviteToken(token);
+      if (!payload) {
+        throw new Error("Invalid token");
+      }
+
+      const account = await Account.query().findOne({ teamId: payload.teamId });
+
+      if (!account) {
+        throw new Error("Invalid token");
+      }
+
+      const teamUser = await TeamUser.query().findOne({
+        teamId: payload.teamId,
+        userId: auth.user.id,
+      });
+
+      if (teamUser) {
+        return account;
+      }
+
+      await TeamUser.query().insert({
+        userId: auth.user.id,
+        teamId: payload.teamId,
+        userLevel: "owner",
+      });
+
+      return account;
     },
   },
 };

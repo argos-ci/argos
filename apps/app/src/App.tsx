@@ -20,6 +20,8 @@ import { AuthCallback } from "./pages/AuthCallback";
 import { Build } from "./pages/Build";
 import { CheckoutSuccessRedirect } from "./pages/CheckoutSuccessRedirect";
 import { Home } from "./pages/Home";
+import { Invite } from "./pages/Invite";
+import { Login } from "./pages/Login";
 import { NewTeam } from "./pages/NewTeam";
 import { NotFound } from "./pages/NotFound";
 import { Project } from "./pages/Project";
@@ -57,6 +59,8 @@ export const App = () => {
                 }
               >
                 <Route index element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/invite/:inviteToken" element={<Invite />} />
                 <Route
                   path="/teams/new"
                   element={

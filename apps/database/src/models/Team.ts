@@ -1,5 +1,8 @@
 import type { RelationMappings } from "objection";
 
+import config from "@argos-ci/config";
+
+import { generateRandomHexString } from "../services/crypto.js";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
@@ -11,7 +14,12 @@ export class Team extends Model {
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
     required: [],
+    properties: {
+      inviteSecret: { type: ["null", "string"] },
+    },
   });
+
+  inviteSecret!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -41,6 +49,34 @@ export class Team extends Model {
   account?: Account;
   users?: User[];
 
+  static generateInviteToken(payload: {
+    teamId: string;
+    secret: string;
+  }): string {
+    return Buffer.from(JSON.stringify(payload)).toString("base64url");
+  }
+
+  static parseInviteToken(
+    token: string
+  ): { teamId: string; secret: string } | null {
+    const raw = Buffer.from(token, "base64url").toString("utf8");
+    try {
+      const payload = JSON.parse(raw);
+      if (typeof payload.teamId !== "string") {
+        return null;
+      }
+      if (typeof payload.secret !== "string") {
+        return null;
+      }
+      return {
+        teamId: payload.teamId,
+        secret: payload.secret,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   async $checkWritePermission(user: User) {
     return Team.checkWritePermission(this.id, user);
   }
@@ -52,5 +88,20 @@ export class Team extends Model {
       .where({ userId: user.id, teamId: teamId })
       .first();
     return Boolean(teamUser);
+  }
+
+  async $getInviteLink() {
+    if (!this.inviteSecret) {
+      this.inviteSecret = await generateRandomHexString();
+      await Team.query()
+        .findById(this.id)
+        .patch({ inviteSecret: this.inviteSecret });
+    }
+    const payload = {
+      teamId: this.id,
+      secret: this.inviteSecret,
+    };
+    const token = Team.generateInviteToken(payload);
+    return new URL(`/invite/${token}`, config.get("server.url")).href;
   }
 }

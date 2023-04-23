@@ -857,7 +857,8 @@ ALTER SEQUENCE public.team_users_id_seq OWNED BY public.team_users.id;
 CREATE TABLE public.teams (
     id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
+    "updatedAt" timestamp with time zone NOT NULL,
+    "inviteSecret" character varying(255)
 );
 
 
@@ -2060,3 +2061,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023041
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418133221_simplify-account.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418154104_remove-github-installation-accounts.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418191815_non-nullable-github-repo.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230423073805_team-invite-link.js', 1, NOW());

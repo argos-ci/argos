@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "@/containers/Auth";
 
@@ -9,9 +9,8 @@ const api = axios.create({
 });
 
 export const AuthCallback = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const params = new URLSearchParams(location.search);
+  const [params] = useSearchParams();
   const code = params.get("code");
   const state = params.get("state");
   const r = params.get("r");

@@ -1,19 +1,16 @@
-import { randomBytes } from "node:crypto";
-import { promisify } from "node:util";
 import type {
   QueryContext,
   RelationMappings,
   TransactionOrKnex,
 } from "objection";
 
+import { generateRandomHexString } from "../services/crypto.js";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
 import { Build } from "./Build.js";
 import { GithubRepository } from "./GithubRepository.js";
 import type { User } from "./User.js";
-
-const generateRandomBytes = promisify(randomBytes);
 
 export class Project extends Model {
   static override tableName = "projects";
@@ -99,8 +96,7 @@ export class Project extends Model {
   }
 
   static async generateToken() {
-    const token = await generateRandomBytes(20);
-    return token.toString("hex");
+    return generateRandomHexString();
   }
 
   async $checkWritePermission(user: User | null) {
