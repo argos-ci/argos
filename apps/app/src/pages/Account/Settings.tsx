@@ -126,7 +126,7 @@ const PlanCard = ({
       <CardBody>
         <CardTitle>Plan</CardTitle>
         <CardParagraph>
-          Your organization account is on the{" "}
+          Your account is on the{" "}
           <strong className="capitalize">{plan.name} plan</strong>.
           {free && " Free of charge."}{" "}
           {!hasStripePurchase && (
