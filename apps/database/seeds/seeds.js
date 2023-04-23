@@ -115,6 +115,7 @@ export const seed = async (knex) => {
         name: "big",
         token: "big-xxx",
         accountId: smoothAccount.id,
+        private: false,
       },
       {
         ...timeStamps,

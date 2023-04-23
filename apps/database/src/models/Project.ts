@@ -85,7 +85,8 @@ export class Project extends Model {
   }
 
   async $checkIsPublic(trx?: TransactionOrKnex) {
-    if (this.private) return false;
+    if (this.private === false) return true;
+    if (this.private === true) return false;
     const repository =
       this.githubRepository ??
       (await this.$relatedQuery("githubRepository", trx));

@@ -48,7 +48,7 @@ const AccountBreadcrumbLink = ({ accountSlug }: { accountSlug: string }) => {
           )
         ) : null}
       </BreadcrumbItemIcon>
-      {data?.account?.name ?? accountSlug}
+      {data?.account?.name || accountSlug}
     </BreadcrumbLink>
   );
 };
@@ -65,10 +65,6 @@ export const AccountBreadcrumbItem = () => {
   const { accountSlug } = useParams();
   const loggedIn = useIsLoggedIn();
 
-  if (!loggedIn) {
-    return null;
-  }
-
   return (
     <>
       <BreadcrumbItem>
@@ -77,7 +73,7 @@ export const AccountBreadcrumbItem = () => {
         ) : (
           <HomeBreadcrumbLink />
         )}
-        <AccountBreadcrumbMenu />
+        {loggedIn && <AccountBreadcrumbMenu />}
       </BreadcrumbItem>
     </>
   );
