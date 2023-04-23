@@ -154,7 +154,14 @@ export class Account extends Model {
       .where("screenshotBucket:project.accountId", this.id)
       .where((builder) =>
         builder
-          .where("screenshotBucket:project:githubRepository.private", true)
+          .where((builder) => {
+            builder
+              .whereNull("screenshotBucket:project.private")
+              .andWhere(
+                "screenshotBucket:project:githubRepository.private",
+                true
+              );
+          })
           .orWhere("screenshotBucket:project.private", true)
       );
 

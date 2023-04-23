@@ -122,7 +122,6 @@ factory.define("Team", Team, {});
 
 factory.define("Project", Project, {
   name: "Default",
-  slug: "default",
   baselineBranch: null,
   accountId: factory.assoc("TeamAccount", "id"),
   githubRepositoryId: factory.assoc("GithubRepository", "id"),
