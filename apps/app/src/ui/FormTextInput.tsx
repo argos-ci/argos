@@ -11,9 +11,9 @@ type FormTextInputProps = {
 } & TextInputProps;
 
 export const FormTextInput = forwardRef<HTMLInputElement, FormTextInputProps>(
-  ({ label, id: propId, error, ...props }, ref) => {
+  ({ label, id: idProp, error, ...props }, ref) => {
     const genId = useId();
-    const id = propId || genId;
+    const id = idProp || genId;
     const invalid = Boolean(error);
     return (
       <div>

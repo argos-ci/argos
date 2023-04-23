@@ -80,8 +80,8 @@ module.exports = {
           "on-title": colors.slate[400],
           "hover-on": colors.slate[50],
           danger: {
-            on: colors.red[400],
-            "hover-on": colors.red[400],
+            on: colors.red[500],
+            "hover-on": colors.red[500],
           },
           item: {
             "hover-bg": colors.slate[800],

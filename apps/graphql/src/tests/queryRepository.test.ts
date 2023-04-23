@@ -58,7 +58,7 @@ describe("GraphQL", () => {
           query: `{
             project(
               accountSlug: "${teamAccount.slug}",
-              projectSlug: "${project.slug}",
+              projectName: "${project.name}",
             ) {
               builds(
                 first: 2,

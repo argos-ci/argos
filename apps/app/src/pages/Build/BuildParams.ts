@@ -3,15 +3,15 @@ import { useParams } from "react-router-dom";
 
 export interface BuildParams {
   accountSlug: string;
-  projectSlug: string;
+  projectName: string;
   buildNumber: number;
   diffId: string | null;
 }
 
 export const useBuildParams = (): BuildParams | null => {
-  const { accountSlug, projectSlug, buildNumber, diffId } = useParams();
+  const { accountSlug, projectName, buildNumber, diffId } = useParams();
   const params = useMemo(() => {
-    if (!accountSlug || !projectSlug || !buildNumber) {
+    if (!accountSlug || !projectName || !buildNumber) {
       return null;
     }
     const numBuildNumber = Number(buildNumber);
@@ -19,10 +19,10 @@ export const useBuildParams = (): BuildParams | null => {
     if (!valid) return null;
     return {
       accountSlug,
-      projectSlug,
+      projectName,
       buildNumber: numBuildNumber,
       diffId: diffId ?? null,
     };
-  }, [accountSlug, projectSlug, buildNumber, diffId]);
+  }, [accountSlug, projectName, buildNumber, diffId]);
   return params;
 };

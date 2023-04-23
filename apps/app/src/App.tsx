@@ -39,11 +39,11 @@ export const App = () => {
             <Routes>
               <Route path="/auth/github/callback" element={<AuthCallback />} />
               <Route
-                path="/:accountSlug/:projectSlug/builds/:buildNumber"
+                path="/:accountSlug/:projectName/builds/:buildNumber"
                 element={<Build />}
               />
               <Route
-                path="/:accountSlug/:projectSlug/builds/:buildNumber/:diffId"
+                path="/:accountSlug/:projectName/builds/:buildNumber/:diffId"
                 element={<Build />}
               />
               <Route
@@ -69,7 +69,7 @@ export const App = () => {
                     </Main>
                   }
                 />
-                <Route path=":accountSlug/:projectSlug" element={<Project />}>
+                <Route path=":accountSlug/:projectName" element={<Project />}>
                   <Route path="" element={<ProjectBuilds />} />
                   <Route
                     path="builds"

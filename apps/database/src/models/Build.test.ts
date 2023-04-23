@@ -342,7 +342,7 @@ describe("models/Build", () => {
       const url = await build.getUrl();
       expect(url).toMatch(
         `http://localhost:4001/${build.project!.account!.slug}/${
-          build.project!.slug
+          build.project!.name
         }/builds/${build.number}`
       );
     });

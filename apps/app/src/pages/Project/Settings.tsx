@@ -1,7 +1,6 @@
 import { useMutation } from "@apollo/client";
-import { CheckIcon, XIcon } from "@primer/octicons-react";
-import { useState } from "react";
 import { Helmet } from "react-helmet";
+import { SubmitHandler, useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 
 import { Query } from "@/containers/Apollo";
@@ -18,23 +17,28 @@ import {
 } from "@/ui/Card";
 import { Code } from "@/ui/Code";
 import { Container } from "@/ui/Container";
+import { FormCheckbox } from "@/ui/FormCheckbox";
+import { FormError } from "@/ui/FormError";
+import { FormRadio } from "@/ui/FormRadio";
+import { FormSuccess } from "@/ui/FormSuccess";
+import { FormTextInput } from "@/ui/FormTextInput";
 import { Anchor } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { Pre } from "@/ui/Pre";
-import { TextInput } from "@/ui/TextInput";
 import { Heading } from "@/ui/Typography";
 
 import { useProjectContext } from ".";
 
 const ProjectQuery = graphql(`
-  query ProjectSettings_project($accountSlug: String!, $projectSlug: String!) {
-    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
+  query ProjectSettings_project($accountSlug: String!, $projectName: String!) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       token
       baselineBranch
       ghRepository {
         id
         defaultBranch
+        private
       }
       private
     }
@@ -94,94 +98,95 @@ const TokenCard = ({ project }: { project: Project }) => {
   );
 };
 
+type ReferenceBranchInputs = {
+  useDefaultBranch: boolean;
+  baselineBranch: string;
+};
+
 const ReferenceBranchCard = ({ project }: { project: Project }) => {
-  const defaultUseDefaultBranch = project.baselineBranch === null;
-  const [useDefaultBranch, setUseDefaultBranch] = useState(
-    defaultUseDefaultBranch
-  );
-  const [baselineBranch, setBaselineBranch] = useState(
-    project.baselineBranch || project.ghRepository.defaultBranch || ""
-  );
+  const {
+    register,
+    handleSubmit,
+    setError,
+    clearErrors,
+    watch,
+    formState: { errors, isSubmitting, isSubmitSuccessful, defaultValues },
+  } = useForm<ReferenceBranchInputs>({
+    defaultValues: {
+      useDefaultBranch: project.baselineBranch === null,
+      baselineBranch:
+        project.baselineBranch || project.ghRepository?.defaultBranch || "main",
+    },
+  });
 
-  const [updateReferenceBranch, { loading, data: updated, error }] =
-    useMutation(UpdateBaselineBranchMutation);
+  const [update] = useMutation(UpdateBaselineBranchMutation);
 
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
-    event.preventDefault();
-    updateReferenceBranch({
-      variables: {
-        projectId: project.id,
-        baselineBranch: useDefaultBranch ? null : baselineBranch,
-      },
-    });
+  const onSubmit: SubmitHandler<ReferenceBranchInputs> = async (data) => {
+    try {
+      await update({
+        variables: {
+          projectId: project.id,
+          baselineBranch: data.useDefaultBranch ? null : data.baselineBranch,
+        },
+      });
+      clearErrors();
+    } catch (error) {
+      setError("root.serverError", {
+        type: "manual",
+        message: "Something went wrong. Please try again.",
+      });
+    }
   };
 
+  const useDefaultBranch = watch("useDefaultBranch");
+
+  const baselineBranchProps = register("baselineBranch", {
+    required: { message: "Branch required", value: true },
+  });
+
   const baselineBranchRef = (element: HTMLInputElement | null) => {
+    baselineBranchProps.ref(element);
     if (!element) return;
     // Just checked
-    if (!useDefaultBranch && defaultUseDefaultBranch !== useDefaultBranch) {
+    if (
+      !useDefaultBranch &&
+      defaultValues?.useDefaultBranch !== useDefaultBranch
+    ) {
       element.focus();
     }
   };
 
   return (
     <Card>
-      <form onSubmit={handleSubmit} aria-labelledby="reference-branch">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        aria-labelledby="reference-branch"
+      >
         <CardBody>
           <CardTitle id="reference-branch">Reference branch</CardTitle>
           <CardParagraph>
             Argos uses this branch as the reference for screenshots comparison.
           </CardParagraph>
-          <div className="my-4 flex gap-2">
-            <input
-              type="checkbox"
-              id="useDefaultBranch"
-              name="useDefaultBranch"
-              checked={useDefaultBranch}
-              onChange={(event) => {
-                setUseDefaultBranch(event.target.checked);
-              }}
-            />
-            <label htmlFor="useDefaultBranch" className="select-none">
-              Use GitHub default branch
-            </label>
-          </div>
+          <FormCheckbox
+            {...register("useDefaultBranch")}
+            label="Use GitHub default branch"
+            className="my-4"
+          />
           {!useDefaultBranch && (
-            <div className="my-4">
-              <label
-                htmlFor="baselineBranch"
-                className="mb-2 block font-semibold"
-              >
-                Custom reference branch
-              </label>
-              <TextInput
-                ref={baselineBranchRef}
-                type="text"
-                id="baselineBranch"
-                name="baselineBranch"
-                placeholder="Branch name"
-                required
-                value={baselineBranch}
-                onChange={(event) => {
-                  setBaselineBranch(event.target.value);
-                }}
-              />
-            </div>
+            <FormTextInput
+              {...baselineBranchProps}
+              ref={baselineBranchRef}
+              error={errors.baselineBranch}
+              label="Custom reference branch"
+            />
           )}
         </CardBody>
         <CardFooter className="flex items-center justify-end gap-4">
-          {error ? (
-            <div className="flex items-center gap-2 font-medium">
-              <XIcon className="text-error-500" /> Error while saving
-            </div>
-          ) : (
-            updated && (
-              <div className="flex items-center gap-2 font-medium">
-                <CheckIcon className="text-success-500" /> Saved
-              </div>
-            )
+          {errors.root?.serverError && (
+            <FormError>{errors.root.serverError.message}</FormError>
           )}
-          <Button type="submit" disabled={loading}>
+          {isSubmitSuccessful && <FormSuccess>Saved</FormSuccess>}
+          <Button type="submit" disabled={isSubmitting}>
             Save
           </Button>
         </CardFooter>
@@ -190,25 +195,74 @@ const ReferenceBranchCard = ({ project }: { project: Project }) => {
   );
 };
 
+type VisibilityInputs = {
+  visiblity: "default" | "public" | "private";
+};
+
+const formatVisiblity = (
+  isPrivate: boolean | null
+): VisibilityInputs["visiblity"] => {
+  switch (isPrivate) {
+    case null:
+      return "default";
+    case false:
+      return "public";
+    case true:
+      return "private";
+  }
+};
+
+const parseVisibility = (
+  visiblity: VisibilityInputs["visiblity"]
+): boolean | null => {
+  switch (visiblity) {
+    case "default":
+      return null;
+    case "public":
+      return false;
+    case "private":
+      return true;
+  }
+};
+
 const VisibilityCard = ({ project }: { project: Project }) => {
-  const [isPrivate, setIsPrivate] = useState(project.private);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting, isSubmitSuccessful },
+  } = useForm<VisibilityInputs>({
+    defaultValues: {
+      visiblity: formatVisiblity(project.private ?? null),
+    },
+  });
 
-  const [updateReferenceBranch, { loading, data: updated, error }] =
-    useMutation(UpdatePrivateMutation);
+  const [update] = useMutation(UpdatePrivateMutation);
 
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
-    event.preventDefault();
-    updateReferenceBranch({
-      variables: {
-        projectId: project.id,
-        private: isPrivate,
-      },
-    });
+  const onSubmit: SubmitHandler<VisibilityInputs> = async (data) => {
+    try {
+      await update({
+        variables: {
+          projectId: project.id,
+          private: parseVisibility(data.visiblity),
+        },
+      });
+      clearErrors();
+    } catch (error) {
+      setError("root.serverError", {
+        type: "manual",
+        message: "Something went wrong. Please try again.",
+      });
+    }
   };
 
   return (
     <Card>
-      <form onSubmit={handleSubmit} aria-labelledby="reference-branch">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        aria-labelledby="reference-branch"
+      >
         <CardBody>
           <CardTitle id="reference-branch">Project visibility</CardTitle>
           <CardParagraph>
@@ -218,34 +272,41 @@ const VisibilityCard = ({ project }: { project: Project }) => {
           <CardParagraph>
             This will also mark the screenshots as private and use up credit.
           </CardParagraph>
-          <div className="my-4 flex gap-2">
-            <input
-              type="checkbox"
-              id="isPrivate"
-              name="isPrivate"
-              checked={Boolean(isPrivate)}
-              onChange={(event) => {
-                setIsPrivate(event.target.checked);
-              }}
+          <div className="my-4 flex flex-col gap-4">
+            <FormRadio
+              {...register("visiblity")}
+              value="default"
+              label={
+                <>
+                  Use GitHub visibility settings{" "}
+                  <span className="text-on-light">
+                    {project.ghRepository
+                      ? `(currently ${
+                          project.ghRepository.private ? "private" : "public"
+                        })`
+                      : `(currently unknown)`}
+                  </span>
+                </>
+              }
             />
-            <label htmlFor="isPrivate" className="select-none">
-              Change project visibility to private
-            </label>
+            <FormRadio
+              {...register("visiblity")}
+              value="private"
+              label="Visible only from Team members"
+            />
+            <FormRadio
+              {...register("visiblity")}
+              value="public"
+              label="Visible from everyone"
+            />
           </div>
         </CardBody>
         <CardFooter className="flex items-center justify-end gap-4">
-          {error ? (
-            <div className="flex items-center gap-2 font-medium">
-              <XIcon className="text-error-500" /> Error while saving
-            </div>
-          ) : (
-            updated && (
-              <div className="flex items-center gap-2 font-medium">
-                <CheckIcon className="text-success-500" /> Saved
-              </div>
-            )
+          {errors.root?.serverError && (
+            <FormError>{errors.root.serverError.message}</FormError>
           )}
-          <Button type="submit" disabled={loading}>
+          {isSubmitSuccessful && <FormSuccess>Saved</FormSuccess>}
+          <Button type="submit" disabled={isSubmitting}>
             Save
           </Button>
         </CardFooter>
@@ -255,10 +316,10 @@ const VisibilityCard = ({ project }: { project: Project }) => {
 };
 
 export const ProjectSettings = () => {
-  const { accountSlug, projectSlug } = useParams();
+  const { accountSlug, projectName } = useParams();
   const { hasWritePermission } = useProjectContext();
 
-  if (!accountSlug || !projectSlug) {
+  if (!accountSlug || !projectName) {
     return <NotFound />;
   }
 
@@ -270,7 +331,7 @@ export const ProjectSettings = () => {
     <Container>
       <Helmet>
         <title>
-          {accountSlug}/{projectSlug} • Settings
+          {accountSlug}/{projectName} • Settings
         </title>
       </Helmet>
       <Heading>Project Settings</Heading>
@@ -279,7 +340,7 @@ export const ProjectSettings = () => {
         query={ProjectQuery}
         variables={{
           accountSlug,
-          projectSlug,
+          projectName,
         }}
       >
         {({ project }) => {
@@ -289,7 +350,7 @@ export const ProjectSettings = () => {
             <SettingsLayout>
               <TokenCard project={project} />
               <ReferenceBranchCard project={project} />
-              {project.private ? null : <VisibilityCard project={project} />}
+              <VisibilityCard project={project} />
             </SettingsLayout>
           );
         }}

@@ -40,11 +40,11 @@ import { NotFound } from "../NotFound";
 const ProjectTestsQuery = graphql(`
   query FlakyTests_project_tests(
     $accountSlug: String!
-    $projectSlug: String!
+    $projectName: String!
     $after: Int!
     $first: Int!
   ) {
-    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       tests(first: $first, after: $after) {
         pageInfo {
@@ -286,7 +286,7 @@ const TestsList = ({
   fetching: boolean;
   fetchNextPage: () => void;
 }) => {
-  const { accountSlug, projectSlug } = useParams();
+  const { accountSlug, projectName } = useParams();
   const parentRef = useRef<HTMLDivElement | null>(null);
   const { hasNextPage } = tests.pageInfo;
   const displayCount = tests.edges.length;
@@ -320,7 +320,7 @@ const TestsList = ({
         query: ProjectTestsQuery,
         variables: {
           accountSlug: accountSlug!,
-          projectSlug: projectSlug!,
+          projectName: projectName!,
           first,
           after,
         },
@@ -510,11 +510,11 @@ const TestsList = ({
   );
 };
 
-const PageContent = (props: { accountSlug: string; projectSlug: string }) => {
+const PageContent = (props: { accountSlug: string; projectName: string }) => {
   const testsResult = useQuery(ProjectTestsQuery, {
     variables: {
       accountSlug: props.accountSlug,
-      projectSlug: props.projectSlug,
+      projectName: props.projectName,
       after: 0,
       first: 20,
     },
@@ -594,8 +594,8 @@ const PageContent = (props: { accountSlug: string; projectSlug: string }) => {
 };
 
 export const Tests = () => {
-  const { accountSlug, projectSlug } = useParams();
-  if (!accountSlug || !projectSlug) {
+  const { accountSlug, projectName } = useParams();
+  if (!accountSlug || !projectName) {
     return <NotFound />;
   }
 
@@ -603,10 +603,10 @@ export const Tests = () => {
     <>
       <Helmet>
         <title>
-          {accountSlug}/{projectSlug} • Tests
+          {accountSlug}/{projectName} • Tests
         </title>
       </Helmet>
-      <PageContent accountSlug={accountSlug} projectSlug={projectSlug} />
+      <PageContent accountSlug={accountSlug} projectName={projectName} />
     </>
   );
 };

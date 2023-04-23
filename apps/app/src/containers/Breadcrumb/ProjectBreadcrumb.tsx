@@ -12,23 +12,23 @@ import {
 import { ProjectBreadcrumbMenu } from "./ProjectBreadcrumbMenu";
 
 export const ProjectBreadcrumbItem = () => {
-  const { accountSlug, projectSlug } = useParams();
+  const { accountSlug, projectName } = useParams();
   const loggedIn = useIsLoggedIn();
 
-  if (!projectSlug) return null;
+  if (!projectName) return null;
 
   return (
     <>
       <BreadcrumbSeparator />
       <BreadcrumbItem>
         <BreadcrumbLink
-          to={`${accountSlug}/${projectSlug}/builds`}
+          to={`${accountSlug}/${projectName}/builds`}
           aria-current="page"
         >
           <BreadcrumbItemIcon>
             <RepoIcon size={18} />
           </BreadcrumbItemIcon>
-          {projectSlug}
+          {projectName}
         </BreadcrumbLink>
         {loggedIn && <ProjectBreadcrumbMenu />}
       </BreadcrumbItem>

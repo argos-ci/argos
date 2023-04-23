@@ -61,5 +61,8 @@ export function useIsLoggedIn() {
 
 export function useLogout() {
   const { setToken } = useAuth();
-  return useCallback(() => setToken(null), [setToken]);
+  return useCallback(() => {
+    setToken(null);
+    window.location.replace("https://www.argos-ci.com");
+  }, [setToken]);
 }

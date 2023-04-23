@@ -22,18 +22,18 @@ const BrandLink = memo(() => {
 const ProjectLink = memo(
   ({
     accountSlug,
-    projectSlug,
+    projectName,
   }: {
     accountSlug: string;
-    projectSlug: string;
+    projectName: string;
   }) => {
     return (
       <MagicTooltip tooltip="See all builds">
         <Link
-          to={`/${accountSlug}/${projectSlug}/builds`}
+          to={`/${accountSlug}/${projectName}/builds`}
           className="text-xs leading-none text-on-light transition hover:brightness-125"
         >
-          {accountSlug}/{projectSlug}
+          {accountSlug}/{projectName}
         </Link>
       </MagicTooltip>
     );
@@ -69,7 +69,7 @@ export const BuildHeader = memo(
   (props: {
     buildNumber: number;
     accountSlug: string;
-    projectSlug: string;
+    projectName: string;
     build: FragmentType<typeof BuildFragment> | null;
     project: FragmentType<typeof ProjectFragment> | null;
   }) => {
@@ -86,7 +86,7 @@ export const BuildHeader = memo(
             </div>
             <ProjectLink
               accountSlug={props.accountSlug}
-              projectSlug={props.projectSlug}
+              projectName={props.projectName}
             />
           </div>
           {build && project ? (

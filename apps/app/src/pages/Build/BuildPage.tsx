@@ -13,10 +13,10 @@ import { OvercapacityBanner } from "./Overcapacity";
 const ProjectQuery = graphql(`
   query BuildPage_Project(
     $accountSlug: String!
-    $projectSlug: String!
+    $projectName: String!
     $buildNumber: Int!
   ) {
-    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       ...BuildHeader_Project
       ...BuildWorkspace_Project
@@ -38,7 +38,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
   const { data, error, refetch } = useQuery(ProjectQuery, {
     variables: {
       accountSlug: params.accountSlug,
-      projectSlug: params.projectSlug,
+      projectName: params.projectName,
       buildNumber: params.buildNumber,
     },
   });
@@ -81,7 +81,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
         <BuildHeader
           buildNumber={params.buildNumber}
           accountSlug={params.accountSlug}
-          projectSlug={params.projectSlug}
+          projectName={params.projectName}
           build={build}
           project={data?.project ?? null}
         />

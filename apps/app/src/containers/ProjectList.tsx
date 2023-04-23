@@ -64,7 +64,7 @@ const ProjectRow = ({ project }: { project: Project }) => {
               size={24}
               className="shrink-0"
             />
-            {project.account.slug}
+            {project.account.name}
           </span>
         </FakeRouterLink>
         <span className="text-on-light">/</span>

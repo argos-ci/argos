@@ -49,7 +49,7 @@ export const BuildWorkspace = (props: {
 }) => {
   const build = useFragment(BuildFragment, props.build);
   const project = useFragment(ProjectFragment, props.project);
-  const githubRepoUrl = `https://github.com/${props.params.accountSlug}/${props.params.projectSlug}`;
+  const githubRepoUrl = `https://github.com/${props.params.accountSlug}/${props.params.projectName}`;
 
   switch (build.status) {
     case "aborted":

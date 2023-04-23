@@ -15,8 +15,8 @@ import {
 import { NotFound } from "../NotFound";
 
 const ProjectQuery = graphql(`
-  query Project_project($accountSlug: String!, $projectSlug: String!) {
-    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
+  query Project_project($accountSlug: String!, $projectName: String!) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       permissions
       tests(first: 0, after: 0) {
@@ -59,15 +59,15 @@ export const useProjectContext = () => {
 };
 
 export const Project = () => {
-  const { accountSlug, projectSlug } = useParams();
-  if (!accountSlug || !projectSlug) {
+  const { accountSlug, projectName } = useParams();
+  if (!accountSlug || !projectName) {
     return <NotFound />;
   }
   return (
     <Query
       fallback={<PageLoader />}
       query={ProjectQuery}
-      variables={{ accountSlug, projectSlug }}
+      variables={{ accountSlug, projectName }}
     >
       {({ project }) => {
         if (!project) return <NotFound />;

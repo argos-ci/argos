@@ -115,12 +115,12 @@ const useExpandedState = () => {
 const ProjectQuery = graphql(`
   query BuildDiffState_Project(
     $accountSlug: String!
-    $projectSlug: String!
+    $projectName: String!
     $buildNumber: Int!
     $after: Int!
     $first: Int!
   ) {
-    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       build(number: $buildNumber) {
         id
@@ -165,17 +165,17 @@ const ProjectQuery = graphql(`
 
 const useDataState = ({
   accountSlug,
-  projectSlug,
+  projectName,
   buildNumber,
 }: {
   accountSlug: string;
-  projectSlug: string;
+  projectName: string;
   buildNumber: number;
 }) => {
   const { data, loading, error, fetchMore } = useQuery(ProjectQuery, {
     variables: {
       accountSlug,
-      projectSlug,
+      projectName,
       buildNumber,
       after: 0,
       first: 20,
@@ -263,7 +263,7 @@ export const BuildDiffProvider = ({
   useEffect(() => {
     if (!params.diffId && firstDiffId) {
       navigate(
-        `/${params.accountSlug}/${params.projectSlug}/builds/${params.buildNumber}/${firstDiffId}`,
+        `/${params.accountSlug}/${params.projectName}/builds/${params.buildNumber}/${firstDiffId}`,
         { replace: true }
       );
       setInitialDiffId(firstDiffId);
@@ -308,7 +308,7 @@ export const BuildDiffProvider = ({
   const setActiveDiff = useCallback(
     (diff: Diff, scroll?: boolean) => {
       navigate(
-        `/${params.accountSlug}/${params.projectSlug}/builds/${params.buildNumber}/${diff.id}`,
+        `/${params.accountSlug}/${params.projectName}/builds/${params.buildNumber}/${diff.id}`,
         { replace: true }
       );
       if (scroll) {
@@ -321,7 +321,7 @@ export const BuildDiffProvider = ({
       navigate,
       params.buildNumber,
       params.accountSlug,
-      params.projectSlug,
+      params.projectName,
       getDiffGroup,
       toggleGroup,
     ]

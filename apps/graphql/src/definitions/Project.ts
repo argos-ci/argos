@@ -29,7 +29,6 @@ export const typeDefs = gql`
   type Project implements Node {
     id: ID!
     name: String!
-    slug: String!
     token: ID!
     "Builds associated to the repository"
     builds(first: Int!, after: Int!): BuildConnection!
@@ -42,7 +41,7 @@ export const typeDefs = gql`
     "Owner of the repository"
     account: Account!
     "Repositories associated to the project"
-    ghRepository: GithubRepository!
+    ghRepository: GithubRepository
     "Override branch name"
     baselineBranch: String
     "Reference branch"
@@ -57,7 +56,7 @@ export const typeDefs = gql`
 
   extend type Query {
     "Get a project"
-    project(accountSlug: String!, projectSlug: String!): Project
+    project(accountSlug: String!, projectName: String!): Project
   }
 
   type ProjectConnection implements Connection {
@@ -199,13 +198,14 @@ export const resolvers = {
   Query: {
     project: async (
       _root: null,
-      args: { accountSlug: string; projectSlug: string },
+      args: { accountSlug: string; projectName: string },
       ctx: Context
     ) => {
       const project = await Project.query().joinRelated("account").findOne({
         "account.slug": args.accountSlug,
-        "projects.slug": args.projectSlug,
+        "projects.name": args.projectName,
       });
+
       if (!project) return null;
 
       const hasReadPermission = await project.$checkReadPermission(
@@ -297,7 +297,6 @@ export const resolvers = {
         }
         return Project.query().insertAndFetch({
           name: ghApiRepo.name,
-          slug: ghApiRepo.name,
           accountId: props.accountId,
           githubRepositoryId: props.githubRepositoryId,
         });
@@ -346,7 +345,7 @@ export const resolvers = {
         data.baselineBranch = args.input.baselineBranch?.trim() ?? null;
       }
 
-      if (args.input.private != null) {
+      if (args.input.private !== undefined) {
         data.private = args.input.private;
       }
 

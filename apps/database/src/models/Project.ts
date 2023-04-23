@@ -16,10 +16,9 @@ export class Project extends Model {
   static override tableName = "projects";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["name", "slug", "accountId"],
+    required: ["name", "accountId"],
     properties: {
       name: { type: "string" },
-      slug: { type: "string" },
       token: { type: "string" },
       private: { type: ["null", "boolean"] },
       baselineBranch: { type: ["null", "string"] },
@@ -29,9 +28,8 @@ export class Project extends Model {
   });
 
   name!: string;
-  slug!: string;
   token!: string;
-  private!: boolean;
+  private!: boolean | null;
   baselineBranch!: string | null;
   accountId!: string;
   githubRepositoryId!: string | null;

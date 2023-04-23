@@ -121,7 +121,7 @@ describe("GraphQL", () => {
           query: `{
             project(
               accountSlug: "${teamAccount.slug}",
-              projectSlug: "${project.slug}",
+              projectName: "${project.name}",
             ) {
               build(number: 1) {
                 screenshotDiffs(after: 0, first: 10) {

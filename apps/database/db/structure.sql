@@ -618,7 +618,6 @@ CREATE TABLE public.projects (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
-    slug character varying(255) NOT NULL,
     token character varying(255) NOT NULL,
     private boolean,
     "baselineBranch" character varying(255),
@@ -1149,6 +1148,14 @@ ALTER TABLE ONLY public.accounts
 
 
 --
+-- Name: accounts accounts_slug_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_slug_unique UNIQUE (slug);
+
+
+--
 -- Name: accounts accounts_userid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1395,13 +1402,6 @@ CREATE INDEX accounts_githubaccountid_index ON public.accounts USING btree ("git
 
 
 --
--- Name: accounts_slug_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX accounts_slug_index ON public.accounts USING btree (slug);
-
-
---
 -- Name: accounts_teamid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1567,13 +1567,6 @@ CREATE INDEX projects_accountid_index ON public.projects USING btree ("accountId
 --
 
 CREATE INDEX projects_name_index ON public.projects USING btree (name);
-
-
---
--- Name: projects_slug_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX projects_slug_index ON public.projects USING btree (slug);
 
 
 --
@@ -2062,3 +2055,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023041
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418154104_remove-github-installation-accounts.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418191815_non-nullable-github-repo.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230423073805_team-invite-link.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230423170603_slug-unique.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230423195916_no-project-slug.js', 1, NOW());

@@ -315,7 +315,7 @@ export class Build extends Model {
       throw new Error("Owner not found");
     }
 
-    const pathname = `/${this.project.account.slug}/${this.project.slug}/builds/${this.number}`;
+    const pathname = `/${this.project.account.slug}/${this.project.name}/builds/${this.number}`;
 
     return `${config.get("server.url")}${pathname}`;
   }

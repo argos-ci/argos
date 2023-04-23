@@ -138,7 +138,7 @@ export interface BuildDetailToolbarProps {
 
 export const BuildDetailToolbar = memo(
   ({ name, bordered, test }: BuildDetailToolbarProps) => {
-    const { accountSlug, projectSlug } = useParams();
+    const { accountSlug, projectName } = useParams();
     const borderClassName = bordered
       ? "border-b-border"
       : "border-b-transparent";
@@ -164,7 +164,7 @@ export const BuildDetailToolbar = memo(
           <FlakyChip
             test={test}
             className="mt-0.5"
-            link={`/${accountSlug}/${projectSlug}/tests`}
+            link={`/${accountSlug}/${projectName}/tests`}
           />
         </div>
         <div className="flex gap-2">

@@ -44,10 +44,9 @@ const NewTeamForm = (props: { defaultTeamName: string }) => {
           name: data.name,
         },
       });
-      if (!result.data) {
-        throw new Error("No data returned from server.");
+      if (result.data) {
+        navigate(`/${result.data.createTeam.slug}`);
       }
-      navigate(`/${result.data.createTeam.slug}`);
     } catch (error) {
       setError("root.serverError", {
         type: "manual",

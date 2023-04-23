@@ -23,7 +23,6 @@ const AccountQuery = graphql(`
         edges {
           id
           name
-          slug
         }
       }
     }
@@ -36,29 +35,29 @@ const Repositories = (props: { accountSlug: string; menu: MenuState }) => {
   });
   if (error) return null;
   if (!data) return null;
-  const projectSlugs =
+  const projectNames =
     data.account?.projects.edges
-      .map(({ slug }) => slug)
+      .map(({ name }) => name)
       .sort((sa, sb) => sa.localeCompare(sb)) ?? [];
 
-  if (projectSlugs.length === 0) {
+  if (projectNames.length === 0) {
     return <MenuText>No active project found</MenuText>;
   }
 
   return (
     <>
-      {projectSlugs.map((projectSlug) => {
+      {projectNames.map((projectName) => {
         return (
-          <MenuItem key={projectSlug} state={props.menu} pointer>
+          <MenuItem key={projectName} state={props.menu} pointer>
             {(menuItemProps) => (
               <RouterLink
                 {...menuItemProps}
-                to={`${props.accountSlug}/${projectSlug}`}
+                to={`${props.accountSlug}/${projectName}`}
               >
                 <MenuItemIcon>
                   <RepoIcon size={18} />
                 </MenuItemIcon>
-                {projectSlug}
+                {projectName}
               </RouterLink>
             )}
           </MenuItem>

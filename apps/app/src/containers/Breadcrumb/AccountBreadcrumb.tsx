@@ -48,7 +48,7 @@ const AccountBreadcrumbLink = ({ accountSlug }: { accountSlug: string }) => {
           )
         ) : null}
       </BreadcrumbItemIcon>
-      {accountSlug}
+      {data?.account?.name ?? accountSlug}
     </BreadcrumbLink>
   );
 };

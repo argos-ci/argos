@@ -19,8 +19,8 @@ import { NotFound } from "../NotFound";
 import { GettingStarted } from "./GettingStarted";
 
 const ProjectQuery = graphql(`
-  query ProjectBuilds_project($accountSlug: String!, $projectSlug: String!) {
-    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
+  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       permissions
       ...GettingStarted_Project
@@ -35,11 +35,11 @@ type Project = NonNullable<ProjectDocument["project"]>;
 const ProjectBuildsQuery = graphql(`
   query ProjectBuilds_project_Builds(
     $accountSlug: String!
-    $projectSlug: String!
+    $projectName: String!
     $after: Int!
     $first: Int!
   ) {
-    project(accountSlug: $accountSlug, projectSlug: $projectSlug) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       builds(first: $first, after: $after) {
         pageInfo {
@@ -69,10 +69,10 @@ type Build = Builds["edges"][0];
 
 const BuildRow = memo(
   ({ build, project }: { build: Build; project: Project }) => {
-    const { accountSlug, projectSlug } = useParams();
+    const { accountSlug, projectName } = useParams();
     return (
       <RouterLink
-        to={`/${accountSlug}/${projectSlug}/builds/${build.number}`}
+        to={`/${accountSlug}/${projectName}/builds/${build.number}`}
         className="flex items-center gap-4 border-b border-b-border px-4 py-2 text-sm transition hover:bg-slate-900/70 group-last:border-b-transparent"
       >
         <div className="w-[7ch] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-on-light">
@@ -99,7 +99,7 @@ const BuildRow = memo(
                 event.preventDefault();
                 window
                   .open(
-                    `https://github.com/${accountSlug}/${projectSlug}/commit/${build.compareScreenshotBucket.commit}`,
+                    `https://github.com/${accountSlug}/${projectName}/commit/${build.compareScreenshotBucket.commit}`,
                     "_blank"
                   )
                   ?.focus();
@@ -120,7 +120,7 @@ const BuildRow = memo(
                 event.preventDefault();
                 window
                   .open(
-                    `https://github.com/${accountSlug}/${projectSlug}/tree/${build.compareScreenshotBucket.branch}`,
+                    `https://github.com/${accountSlug}/${projectName}/tree/${build.compareScreenshotBucket.branch}`,
                     "_blank"
                   )
                   ?.focus();
@@ -238,12 +238,12 @@ const BuildsList = ({
   );
 };
 
-const PageContent = (props: { accountSlug: string; projectSlug: string }) => {
+const PageContent = (props: { accountSlug: string; projectName: string }) => {
   const { hasWritePermission } = useProjectContext();
   const projectResult = useQuery(ProjectQuery, {
     variables: {
       accountSlug: props.accountSlug,
-      projectSlug: props.projectSlug,
+      projectName: props.projectName,
     },
   });
 
@@ -254,7 +254,7 @@ const PageContent = (props: { accountSlug: string; projectSlug: string }) => {
   const buildsResult = useQuery(ProjectBuildsQuery, {
     variables: {
       accountSlug: props.accountSlug,
-      projectSlug: props.projectSlug,
+      projectName: props.projectName,
       after: 0,
       first: 20,
     },
@@ -354,9 +354,9 @@ const PageContent = (props: { accountSlug: string; projectSlug: string }) => {
 };
 
 export const ProjectBuilds = () => {
-  const { accountSlug, projectSlug } = useParams();
+  const { accountSlug, projectName } = useParams();
 
-  if (!accountSlug || !projectSlug) {
+  if (!accountSlug || !projectName) {
     return <NotFound />;
   }
 
@@ -364,10 +364,10 @@ export const ProjectBuilds = () => {
     <>
       <Helmet>
         <title>
-          {accountSlug}/{projectSlug} • Builds
+          {accountSlug}/{projectName} • Builds
         </title>
       </Helmet>
-      <PageContent accountSlug={accountSlug} projectSlug={projectSlug} />
+      <PageContent accountSlug={accountSlug} projectName={projectName} />
     </>
   );
 };
