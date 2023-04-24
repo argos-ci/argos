@@ -23,8 +23,8 @@ export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
 export const Layout = (props: { children: React.ReactNode }) => {
   const fullSize = useMatch("/:accountSlug/:projectName");
   return (
-    <div className={clsx(fullSize && "h-screen", "min-h-screen")}>
-      <header>
+    <div className={clsx(fullSize && "h-screen", "flex min-h-full flex-col")}>
+      <header className="flex-shrink-0">
         <Navbar />
       </header>
       {props.children}
