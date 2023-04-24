@@ -383,7 +383,7 @@ export const up = async (knex) => {
 
   // Remove team accounts that does not have any projects
   await knex.raw(
-    'delete from accounts where id not in (select "accountId" from projects) and "teamId" is not null'
+    'delete from accounts where id not in (select "accountId" from projects) and id not in (select "accountId" from purchases) and "teamId" is not null'
   );
 
   // Remove teams that does not have any team accounts
