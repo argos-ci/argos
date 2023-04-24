@@ -7,8 +7,7 @@ import {
   GithubAccount,
   GithubRepository,
   Project,
-  Screenshot,
-  ScreenshotDiff,
+  Screenshot, // ScreenshotDiff,
   Test,
 } from "@argos-ci/database/models";
 import { getTokenOctokit } from "@argos-ci/github";
