@@ -304,7 +304,7 @@ export class Build extends Model {
   }
 
   async getUrl({ trx }: { trx?: TransactionOrKnex } = {}) {
-    if (!this.project) {
+    if (!this.project?.account) {
       await this.$fetchGraph(
         "project.account",
         trx ? { transaction: trx } : undefined
@@ -312,7 +312,7 @@ export class Build extends Model {
     }
 
     if (!this.project?.account) {
-      throw new Error("Owner not found");
+      throw new Error("Account not found");
     }
 
     const pathname = `/${this.project.account.slug}/${this.project.name}/builds/${this.number}`;
