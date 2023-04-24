@@ -122,26 +122,26 @@ export const resolvers = {
     ) => {
       const result = await Test.query()
         .where({ projectId: project.id })
-        .whereNot((builder) =>
-          builder.whereRaw(`"name" ~ :regexp`, {
-            regexp: ScreenshotDiff.screenshotFailureRegexp,
-          })
-        )
-        .leftJoin(
-          "screenshot_diffs AS last_diff",
-          "last_diff.testId",
-          "=",
-          "tests.id"
-        )
-        .leftJoin("screenshot_diffs AS other_diff", function () {
-          this.on("other_diff.testId", "=", "tests.id").andOn(
-            "other_diff.createdAt",
-            ">",
-            "last_diff.createdAt"
-          );
-        })
-        .whereNull("other_diff.id")
-        .orderBy("last_diff.stabilityScore", "asc")
+        // .whereNot((builder) =>
+        //   builder.whereRaw(`"name" ~ :regexp`, {
+        //     regexp: ScreenshotDiff.screenshotFailureRegexp,
+        //   })
+        // )
+        // .leftJoin(
+        //   "screenshot_diffs AS last_diff",
+        //   "last_diff.testId",
+        //   "=",
+        //   "tests.id"
+        // )
+        // .leftJoin("screenshot_diffs AS other_diff", function () {
+        //   this.on("other_diff.testId", "=", "tests.id").andOn(
+        //     "other_diff.createdAt",
+        //     ">",
+        //     "last_diff.createdAt"
+        //   );
+        // })
+        // .whereNull("other_diff.id")
+        // .orderBy("last_diff.stabilityScore", "asc")
         .orderBy("tests.name", "asc")
         .orderBy("tests.id", "asc")
         .range(after, after + first - 1);
