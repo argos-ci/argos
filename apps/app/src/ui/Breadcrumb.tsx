@@ -15,7 +15,7 @@ export const Breadcrumb = (props: { children: React.ReactNode }) => {
 };
 
 export const BreadcrumbItem = (props: HTMLProps<HTMLLIElement>) => {
-  return <li className="flex flex-shrink-0 items-center gap-1" {...props} />;
+  return <li className="flex shrink-0 items-center gap-1" {...props} />;
 };
 
 export const BreadcrumbLink = (props: ComponentProps<typeof Link>) => {

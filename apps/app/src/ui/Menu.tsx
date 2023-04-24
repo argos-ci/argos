@@ -38,9 +38,17 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>((props, ref) => {
   );
 });
 
+type MenuItemVariant = "default" | "danger";
+
 export type MenuItemProps = Omit<AriakitMenuItemProps, "className"> & {
   pointer?: boolean;
   selected?: boolean;
+  variant?: MenuItemVariant;
+};
+
+const menuItemVariantClasses: Record<MenuItemVariant, string> = {
+  default: "text-menu-on hover:text-menu-hover-on",
+  danger: "text-menu-danger-on hover:text-menu-danger-hover-on",
 };
 
 export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
@@ -54,7 +62,8 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
         className={clsx(
           pointerClassName,
           selectedClassName,
-          "flex items-center rounded px-3 py-1.5 text-sm text-menu-on transition hover:bg-menu-item-hover-bg hover:text-menu-hover-on focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-70"
+          menuItemVariantClasses[props.variant ?? "default"],
+          "flex items-center rounded px-3 py-1.5 text-sm transition hover:bg-menu-item-hover-bg focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-70 aria-disabled:hover:bg-transparent"
         )}
         {...props}
       />

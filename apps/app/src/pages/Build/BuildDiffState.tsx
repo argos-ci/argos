@@ -112,15 +112,15 @@ const useExpandedState = () => {
   return { expanded, toggleGroup };
 };
 
-const RepositoryQuery = graphql(`
-  query BuildDiffState_repository(
-    $ownerLogin: String!
-    $repositoryName: String!
+const ProjectQuery = graphql(`
+  query BuildDiffState_Project(
+    $accountSlug: String!
+    $projectName: String!
     $buildNumber: Int!
     $after: Int!
     $first: Int!
   ) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       build(number: $buildNumber) {
         id
@@ -164,18 +164,18 @@ const RepositoryQuery = graphql(`
 `);
 
 const useDataState = ({
-  ownerLogin,
-  repositoryName,
+  accountSlug,
+  projectName,
   buildNumber,
 }: {
-  ownerLogin: string;
-  repositoryName: string;
+  accountSlug: string;
+  projectName: string;
   buildNumber: number;
 }) => {
-  const { data, loading, error, fetchMore } = useQuery(RepositoryQuery, {
+  const { data, loading, error, fetchMore } = useQuery(ProjectQuery, {
     variables: {
-      ownerLogin,
-      repositoryName,
+      accountSlug,
+      projectName,
       buildNumber,
       after: 0,
       first: 20,
@@ -187,29 +187,29 @@ const useDataState = ({
   useEffect(() => {
     if (
       !loading &&
-      data?.repository?.build?.screenshotDiffs?.pageInfo?.hasNextPage
+      data?.project?.build?.screenshotDiffs?.pageInfo?.hasNextPage
     ) {
       fetchMore({
         variables: {
-          after: data.repository.build.screenshotDiffs.edges.length,
+          after: data.project.build.screenshotDiffs.edges.length,
           first: 100,
         },
         updateQuery: (prev, { fetchMoreResult }) => {
-          if (!fetchMoreResult?.repository?.build?.screenshotDiffs.edges)
+          if (!fetchMoreResult?.project?.build?.screenshotDiffs.edges)
             return prev;
-          if (!prev?.repository?.build?.screenshotDiffs.edges) return prev;
+          if (!prev?.project?.build?.screenshotDiffs.edges) return prev;
 
           return {
             ...prev,
-            repository: {
-              ...prev.repository,
+            project: {
+              ...prev.project,
               build: {
-                ...prev.repository.build,
+                ...prev.project.build,
                 screenshotDiffs: {
-                  ...fetchMoreResult.repository.build.screenshotDiffs,
+                  ...fetchMoreResult.project.build.screenshotDiffs,
                   edges: [
-                    ...prev.repository.build.screenshotDiffs.edges,
-                    ...fetchMoreResult.repository.build.screenshotDiffs.edges,
+                    ...prev.project.build.screenshotDiffs.edges,
+                    ...fetchMoreResult.project.build.screenshotDiffs.edges,
                   ],
                 },
               },
@@ -220,7 +220,7 @@ const useDataState = ({
     }
   }, [data, loading, fetchMore]);
   const screenshotDiffs: Diff[] =
-    data?.repository?.build?.screenshotDiffs.edges ?? [];
+    data?.project?.build?.screenshotDiffs.edges ?? [];
 
   return screenshotDiffs;
 };
@@ -263,7 +263,7 @@ export const BuildDiffProvider = ({
   useEffect(() => {
     if (!params.diffId && firstDiffId) {
       navigate(
-        `/${params.ownerLogin}/${params.repositoryName}/builds/${params.buildNumber}/${firstDiffId}`,
+        `/${params.accountSlug}/${params.projectName}/builds/${params.buildNumber}/${firstDiffId}`,
         { replace: true }
       );
       setInitialDiffId(firstDiffId);
@@ -308,7 +308,7 @@ export const BuildDiffProvider = ({
   const setActiveDiff = useCallback(
     (diff: Diff, scroll?: boolean) => {
       navigate(
-        `/${params.ownerLogin}/${params.repositoryName}/builds/${params.buildNumber}/${diff.id}`,
+        `/${params.accountSlug}/${params.projectName}/builds/${params.buildNumber}/${diff.id}`,
         { replace: true }
       );
       if (scroll) {
@@ -320,8 +320,8 @@ export const BuildDiffProvider = ({
     [
       navigate,
       params.buildNumber,
-      params.ownerLogin,
-      params.repositoryName,
+      params.accountSlug,
+      params.projectName,
       getDiffGroup,
       toggleGroup,
     ]

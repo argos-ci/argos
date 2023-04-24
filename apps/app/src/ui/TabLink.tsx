@@ -17,11 +17,11 @@ import {
 } from "react-router-dom";
 
 export const TabLinkList = forwardRef<HTMLDivElement, TabListProps>(
-  (props, ref) => {
+  ({ className, ...props }, ref) => {
     return (
       <TabList
         ref={ref}
-        className="container relative mx-auto px-1"
+        className={clsx(className, "container relative mx-auto px-1")}
         {...props}
       />
     );

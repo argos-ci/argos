@@ -2,7 +2,7 @@
 // @ts-ignore
 import { HttpError } from "express-err";
 
-import { Repository } from "@argos-ci/database/models";
+import { Project } from "@argos-ci/database/models";
 
 import { asyncHandler } from "../util.js";
 import { bearerAuth } from "./bearerAuth.js";
@@ -11,7 +11,7 @@ import githubActions from "./tokenless-strategies/github-actions.js";
 declare global {
   namespace Express {
     interface Request {
-      authRepository?: Repository;
+      authProject?: Project;
     }
   }
 }
@@ -34,18 +34,18 @@ export const repoAuth = [
       tokenlessStrategies.find((strategy) => strategy.detect(bearerToken)) ??
       null;
 
-    const repository = strategy
-      ? await strategy.getRepository(bearerToken)
-      : await Repository.query().findOne({ token: bearerToken });
+    const project = strategy
+      ? await strategy.getProject(bearerToken)
+      : await Project.query().findOne({ token: bearerToken });
 
-    if (!repository) {
+    if (!project) {
       throw new HttpError(
         401,
         `Repository not found (token: "${bearerToken}")`
       );
     }
 
-    req.authRepository = repository;
+    req.authProject = project;
     next();
   }),
 ];

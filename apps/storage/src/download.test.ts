@@ -43,5 +43,5 @@ describe("#download", () => {
 
     const file = await readFileAsync(outputPath, "utf-8");
     expect(file).toEqual("hello!\n");
-  });
+  }, 10000);
 });

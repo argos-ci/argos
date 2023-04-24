@@ -2,14 +2,17 @@ import DataLoader from "dataloader";
 import type { ModelClass } from "objection";
 
 import {
+  Account,
   Build,
   File,
+  GithubAccount,
+  GithubRepository,
   Model,
-  Organization,
-  Repository,
+  Project,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
+  Team,
   Test,
   User,
 } from "@argos-ci/database/models";
@@ -73,14 +76,15 @@ const createLastScreenshotDiffLoader = () =>
 
 const createLastScreenshotLoader = () =>
   new DataLoader<string, Screenshot | null>(async (testIds) => {
-    const repository = await Repository.query()
+    const project = await Project.query()
       .whereIn(
         "id",
         Test.query()
-          .select("repositoryId")
+          .select("projectId")
           .where("id", testIds[0] as string)
       )
       .first();
+    const referenceBranch = await project!.$getReferenceBranch();
     const lastScreenshots = await Screenshot.query()
       .select("screenshots.*", "screenshotBucket.branch")
       .whereIn("testId", testIds as string[])
@@ -89,7 +93,7 @@ const createLastScreenshotLoader = () =>
       .orderBy("testId")
       .orderByRaw(
         `CASE WHEN "screenshotBucket".branch = ? THEN 0 ELSE 1 END`,
-        repository!.referenceBranch
+        referenceBranch
       )
       .orderBy("screenshots.createdAt", "desc");
     const lastScreenshotMap: Record<string, Screenshot> = {};
@@ -99,15 +103,53 @@ const createLastScreenshotLoader = () =>
     return testIds.map((id) => lastScreenshotMap[id] ?? null);
   });
 
+const createAccountFromRelationLoader = () => {
+  return new DataLoader<{ userId?: string; teamId?: string }, Account | null>(
+    async (relations) => {
+      const userIds = relations
+        .map((r) => r.userId)
+        .filter((id) => id) as string[];
+      const teamIds = relations
+        .map((r) => r.teamId)
+        .filter((id) => id) as string[];
+      if (userIds.length === 0 && teamIds.length === 0) {
+        return relations.map(() => null);
+      }
+
+      const query = Account.query();
+      if (userIds.length > 0) {
+        query.orWhereIn("userId", userIds);
+      }
+      if (teamIds.length > 0) {
+        query.orWhereIn("teamId", teamIds);
+      }
+      const accounts = await query;
+      return relations.map((relation) => {
+        if (relation.userId) {
+          return accounts.find((a) => a.userId === relation.userId) ?? null;
+        }
+        if (relation.teamId) {
+          return accounts.find((a) => a.teamId === relation.teamId) ?? null;
+        }
+        return null;
+      });
+    }
+  );
+};
+
 export const createLoaders = () => ({
+  Account: createModelLoader(Account),
+  GithubRepository: createModelLoader(GithubRepository),
+  GithubAccount: createModelLoader(GithubAccount),
   User: createModelLoader(User),
-  Organization: createModelLoader(Organization),
+  Team: createModelLoader(Team),
   Screenshot: createModelLoader(Screenshot),
   ScreenshotBucket: createModelLoader(ScreenshotBucket),
   ScreenshotDiff: createModelLoader(ScreenshotDiff),
-  Repository: createModelLoader(Repository),
+  Project: createModelLoader(Project),
   File: createModelLoader(File),
   Test: createModelLoader(Test),
+  AccountFromRelation: createAccountFromRelationLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
   LastScreenshotDiff: createLastScreenshotDiffLoader(),
   LastScreenshot: createLastScreenshotLoader(),

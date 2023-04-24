@@ -4,8 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import request from "supertest";
 
-// import { job as buildJob } from "@argos-ci/build";
-import type { Organization, Repository } from "@argos-ci/database/models";
+import type { Account, Project } from "@argos-ci/database/models";
 import { Build } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 import { quitAmqp } from "@argos-ci/job-core";
@@ -45,19 +44,16 @@ describe("api v2", () => {
       });
     });
 
-    describe("with valid repository", () => {
-      let repository: Repository;
+    describe("with valid project", () => {
+      let project: Project;
 
       beforeEach(async () => {
-        const organization = await factory.create<Organization>(
-          "Organization",
-          {
-            login: "argos-ci",
-          }
-        );
-        repository = await factory.create<Repository>("Repository", {
+        const account = await factory.create<Account>("TeamAccount", {
+          slug: "argos-ci",
+        });
+        project = await factory.create<Project>("Project", {
           name: "argos",
-          organizationId: organization.id,
+          accountId: account.id,
           token: "awesome-token",
         });
       });
@@ -89,7 +85,7 @@ describe("api v2", () => {
 
         expect(build.jobStatus).toBe("pending");
         expect(build.name).toBe("current");
-        expect(build.repositoryId).toBe(repository.id);
+        expect(build.projectId).toBe(project.id);
         expect(build.externalId).toBe(null);
         expect(build.batchCount).toBe(null);
         expect(build.compareScreenshotBucket!.complete).toBe(false);
@@ -98,7 +94,7 @@ describe("api v2", () => {
           "b6bf264029c03888b7fb7e6db7386f3b245b77b0"
         );
         expect(build.compareScreenshotBucket!.branch).toBe("main");
-        expect(build.compareScreenshotBucket!.repositoryId).toBe(repository.id);
+        expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
 
         expect(res.body).toMatchObject({
           build: {
@@ -120,18 +116,15 @@ describe("api v2", () => {
     });
 
     describe("complete workflow — single", () => {
-      let repository: Repository;
+      let project: Project;
 
       beforeEach(async () => {
-        const organization = await factory.create<Organization>(
-          "Organization",
-          {
-            login: "argos-ci",
-          }
-        );
-        repository = await factory.create<Repository>("Repository", {
+        const account = await factory.create<Account>("TeamAccount", {
+          slug: "argos-ci",
+        });
+        project = await factory.create<Project>("Project", {
           name: "argos",
-          organizationId: organization.id,
+          accountId: account.id,
           token: "awesome-token",
         });
       });
@@ -213,7 +206,7 @@ describe("api v2", () => {
 
         expect(build.jobStatus).toBe("pending");
         expect(build.name).toBe("current");
-        expect(build.repositoryId).toBe(repository.id);
+        expect(build.projectId).toBe(project.id);
         expect(build.externalId).toBe(null);
         expect(build.batchCount).toBe(null);
         expect(
@@ -233,7 +226,7 @@ describe("api v2", () => {
           "b6bf264029c03888b7fb7e6db7386f3b245b77b0"
         );
         expect(build.compareScreenshotBucket!.branch).toBe("main");
-        expect(build.compareScreenshotBucket!.repositoryId).toBe(repository.id);
+        expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
 
         expect(updateResult.body).toEqual({
           build: {
@@ -245,7 +238,7 @@ describe("api v2", () => {
     });
 
     describe("complete workflow — parallel", () => {
-      let repository: Repository;
+      let project: Project;
 
       const screenshotGroups = [
         [
@@ -265,15 +258,12 @@ describe("api v2", () => {
       ];
 
       beforeEach(async () => {
-        const organization = await factory.create<Organization>(
-          "Organization",
-          {
-            login: "argos-ci",
-          }
-        );
-        repository = await factory.create<Repository>("Repository", {
+        const account = await factory.create<Account>("TeamAccount", {
+          slug: "argos-ci",
+        });
+        project = await factory.create<Project>("Project", {
           name: "argos",
-          organizationId: organization.id,
+          accountId: account.id,
           token: "awesome-token",
         });
       });
@@ -350,7 +340,7 @@ describe("api v2", () => {
 
         expect(build.jobStatus).toBe("pending");
         expect(build.name).toBe("current");
-        expect(build.repositoryId).toBe(repository.id);
+        expect(build.projectId).toBe(project.id);
         expect(build.externalId).toBe("unique-build-id");
         expect(build.batchCount).toBe(2);
         expect(build.totalBatch).toBe(2);
@@ -374,7 +364,7 @@ describe("api v2", () => {
           "b6bf264029c03888b7fb7e6db7386f3b245b77b0"
         );
         expect(build.compareScreenshotBucket!.branch).toBe("main");
-        expect(build.compareScreenshotBucket!.repositoryId).toBe(repository.id);
+        expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
 
         const buildUrl = await build.getUrl();
 

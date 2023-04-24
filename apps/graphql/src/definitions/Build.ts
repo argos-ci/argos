@@ -1,7 +1,7 @@
 import gqlTag from "graphql-tag";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
-import { Account, Build, ScreenshotDiff } from "@argos-ci/database/models";
+import { Build, ScreenshotDiff } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
 import { APIError } from "../util.js";
@@ -147,27 +147,40 @@ export const resolvers = {
       },
       ctx: Context
     ) => {
-      if (!ctx.user) {
+      if (!ctx.auth) {
         throw new APIError("Invalid user identification");
       }
 
       const { buildId, validationStatus } = args;
-      const [user, build] = await Promise.all([
-        Build.getUsers(buildId).findById(ctx.user.id),
-        Build.query().findById(buildId).withGraphFetched("repository"),
-      ]);
-
-      if (!user) {
-        throw new APIError("Invalid user authorization");
-      }
+      const build = await Build.query()
+        .findById(buildId)
+        .withGraphFetched("project.account");
 
       if (!build) {
         throw new APIError("Build not found");
       }
 
-      if (build.repository!.private || build.repository!.forcedPrivate) {
-        const account = await Account.getAccount(build.repository!);
-        const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
+      if (!build.project) {
+        throw new Error("Invariant: no project found");
+      }
+
+      if (!build.project.account) {
+        throw new Error("Invariant: no project account found");
+      }
+
+      const hasWriteAccess = await build.project.$checkWritePermission(
+        ctx.auth.user
+      );
+
+      if (!hasWriteAccess) {
+        throw new APIError("You don't have access to this build");
+      }
+
+      const isPublic = await build.project.$checkIsPublic();
+
+      if (!isPublic) {
+        const hasExceedLimit =
+          await build.project.account.hasExceedScreenshotsMonthlyLimit();
         if (hasExceedLimit) {
           throw new APIError(
             "Insufficient credit. Please upgrade Argos plan to unlock build reviews."

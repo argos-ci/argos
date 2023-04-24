@@ -1,7 +1,5 @@
 export type Permission = "read" | "write";
 
-export const hasWritePermission = (ownerOrRepo: {
-  permissions: Permission[];
-}) => {
-  return ownerOrRepo.permissions.includes("write");
+export const hasWritePermission = (object: { permissions: Permission[] }) => {
+  return object.permissions.includes("write");
 };

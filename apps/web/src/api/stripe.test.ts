@@ -1,10 +1,4 @@
-import {
-  Account,
-  Organization,
-  Plan,
-  Purchase,
-  User,
-} from "@argos-ci/database/models";
+import { Account, Plan, Purchase, Team, User } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 
 import {
@@ -102,22 +96,22 @@ describe("stripe", () => {
     describe("checkout.session.completed", () => {
       const payload = SESSION_PAYLOAD;
       const customerId = payload.customer;
-      const accountId = 9;
+      const accountId = "9";
       const stripePlanId = "prod_MzEavomA8VeCvW";
       const purchaserId = "7";
       let account: Account;
       let plan: Plan;
-      let organization: Organization;
+      let team: Team;
 
       beforeEach(async () => {
-        [organization, plan] = (await Promise.all([
-          factory.create("Organization"),
-          factory.create("Plan", { stripePlanId }),
-          factory.create("User", { id: purchaserId }),
-        ])) as [Organization, Plan, User];
+        [team, plan] = await Promise.all([
+          factory.create<Team>("Team"),
+          factory.create<Plan>("Plan", { stripePlanId }),
+          factory.create<User>("User", { id: purchaserId }),
+        ]);
 
-        await factory.create("OrganizationAccount", {
-          organizationId: organization.id,
+        await factory.create<Account>("TeamAccount", {
+          teamId: team.id,
           id: accountId,
         });
 
@@ -197,12 +191,12 @@ describe("stripe", () => {
       let payloadPlan: Plan;
 
       beforeEach(async () => {
-        [payloadPlan, account] = (await Promise.all([
-          factory.create("Plan", { stripePlanId: productId }),
-          factory.create("OrganizationAccount", { stripeCustomerId }),
-        ])) as [Plan, Account];
+        [payloadPlan, account] = await Promise.all([
+          factory.create<Plan>("Plan", { stripePlanId: productId }),
+          factory.create<Account>("TeamAccount", { stripeCustomerId }),
+        ]);
 
-        await factory.create("Purchase", {
+        await factory.create<Purchase>("Purchase", {
           accountId: account.id,
           planId: payloadPlan.id,
           source: "stripe",
@@ -240,10 +234,10 @@ describe("stripe", () => {
       let plan: Plan;
 
       beforeEach(async () => {
-        [account, plan] = (await Promise.all([
-          factory.create("OrganizationAccount", { stripeCustomerId }),
-          factory.create("Plan"),
-        ])) as [Account, Plan];
+        [account, plan] = await Promise.all([
+          factory.create<Account>("TeamAccount", { stripeCustomerId }),
+          factory.create<Plan>("Plan"),
+        ]);
       });
 
       it("should not throw when account not found", async () => {
@@ -256,7 +250,7 @@ describe("stripe", () => {
       });
 
       it("should not throw when purchase not found", async () => {
-        await factory.create("Purchase", {
+        await factory.create<Purchase>("Purchase", {
           accountId: account.id,
           planId: plan.id,
           source: "stripe",
@@ -297,8 +291,8 @@ describe("stripe", () => {
 
       beforeEach(async () => {
         [account, [oldPlan, newPlan]] = (await Promise.all([
-          factory.create("OrganizationAccount", { stripeCustomerId }),
-          factory.createMany("Plan", [
+          factory.create<Account>("TeamAccount", { stripeCustomerId }),
+          factory.createMany<Plan>("Plan", [
             { stripePlanId: "XXX_01_XXX", screenshotsLimitPerMonth: 7000 },
             { stripePlanId, screenshotsLimitPerMonth: 40000 },
           ]),
@@ -306,7 +300,7 @@ describe("stripe", () => {
       });
 
       it("deletion doesn't create purchase", async () => {
-        await factory.create("Purchase", {
+        await factory.create<Purchase>("Purchase", {
           accountId: account.id,
           planId: oldPlan.id,
           source: "stripe",
@@ -340,7 +334,7 @@ describe("stripe", () => {
 
       describe("when plan is updated", () => {
         beforeEach(async () => {
-          [oldPurchase, pendingPurchase] = (await factory.createMany(
+          [oldPurchase, pendingPurchase] = (await factory.createMany<Purchase>(
             "Purchase",
             [
               {
@@ -405,17 +399,17 @@ describe("stripe", () => {
 
       beforeEach(async () => {
         [account, [payloadPlan, pendingPlan]] = (await Promise.all([
-          factory.create("OrganizationAccount", { stripeCustomerId }),
-          factory.createMany("Plan", [{ stripePlanId }, {}]),
+          factory.create<Account>("TeamAccount", { stripeCustomerId }),
+          factory.createMany<Plan>("Plan", [{ stripePlanId }, {}]),
         ])) as [Account, [Plan, Plan]];
 
-        await factory.create("Purchase", {
+        await factory.create<Purchase>("Purchase", {
           accountId: account.id,
           planId: payloadPlan.id,
           source: "stripe",
         });
 
-        pendingPurchase = (await factory.create("Purchase", {
+        pendingPurchase = (await factory.create<Purchase>("Purchase", {
           accountId: account.id,
           planId: pendingPlan.id,
           source: "stripe",

@@ -2,121 +2,57 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
-import { Installation } from "./Installation.js";
-import { Organization } from "./Organization.js";
-import { Repository } from "./Repository.js";
-import { Synchronization } from "./Synchronization.js";
+import { Account } from "./Account.js";
+import { Team } from "./Team.js";
 
 export class User extends Model {
   static override tableName = "users";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["githubId", "login"],
+    required: [],
     properties: {
-      githubId: { type: "number" },
-      accessToken: { type: "string" },
-      name: { type: ["string", "null"] },
-      login: { type: "string" },
       email: { type: ["string", "null"] },
-      privateSync: { type: "boolean" },
-      githubScopes: {
-        type: ["array", "null"],
-        items: { type: "string" },
-        uniqueItems: true,
-      },
-      scopes: {
-        type: ["array", "null"],
-        items: { type: "string" },
-        uniqueItems: true,
-      },
+      accessToken: { type: "string" },
     },
   });
 
-  githubId!: number;
-  accessToken!: string;
-  name!: string | null;
-  login!: string;
   email!: string | null;
-  privateSync!: boolean;
-  githubScopes!: string[] | null;
-  scopes!: string[] | null;
+  accessToken!: string;
 
   static override get relationMappings(): RelationMappings {
     return {
-      synchronizations: {
-        relation: Model.HasManyRelation,
-        modelClass: Synchronization,
+      account: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Account,
         join: {
           from: "users.id",
-          to: "synchronizations.userId",
-        },
-        modify(builder) {
-          return builder.orderBy("synchronizations.createdAt", "desc");
+          to: "accounts.userId",
         },
       },
-      organizations: {
+      teams: {
         relation: Model.ManyToManyRelation,
-        modelClass: Organization,
+        modelClass: Team,
         join: {
           from: "users.id",
           through: {
-            from: "user_organization_rights.userId",
-            to: "user_organization_rights.organizationId",
+            from: "team_users.userId",
+            to: "team_users.teamId",
           },
-          to: "organizations.id",
-        },
-      },
-      repositories: {
-        relation: Model.HasManyRelation,
-        modelClass: Repository,
-        join: {
-          from: "users.id",
-          to: "repositories.userId",
-        },
-      },
-      relatedRepositories: {
-        relation: Model.ManyToManyRelation,
-        modelClass: Repository,
-        join: {
-          from: "users.id",
-          through: {
-            from: "user_repository_rights.userId",
-            to: "user_repository_rights.repositoryId",
-          },
-          to: "repositories.id",
-        },
-      },
-      installations: {
-        relation: Model.ManyToManyRelation,
-        modelClass: Installation,
-        join: {
-          from: "users.id",
-          through: {
-            from: "user_installation_rights.userId",
-            to: "user_installation_rights.installationId",
-          },
-          to: "installations.id",
+          to: "teams.id",
         },
       },
     };
   }
 
-  synchronizations?: Synchronization[];
-  organizations?: Organization[];
-  repositories?: Repository[];
-  relatedRepositories?: Repository[];
-  installations?: Installation[];
-
-  type() {
-    return "user";
-  }
+  account?: Account;
+  teams?: Team[];
 
   $checkWritePermission(user: User) {
-    return User.checkWritePermission(this, user);
+    return User.checkWritePermission(this.id, user);
   }
 
-  static checkWritePermission(owner: User, user: User) {
+  static checkWritePermission(userId: string, user: User) {
     if (!user) return false;
-    return owner.id === user.id;
+    return userId === user.id;
   }
 }

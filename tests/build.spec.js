@@ -21,7 +21,7 @@ const buildExamples = [
 
 buildExamples.forEach((build) => {
   test(build.name, async ({ page, browserName }) => {
-    await goto({ page, link: `/callemall/material-ui/builds/${build.number}` });
+    await goto({ page, link: `/smooth/big/builds/${build.number}` });
     await expect(page.getByText(`Build ${build.number}`)).toBeVisible();
     if (build.compare === undefined || build.compare) {
       await expect(page.getByText(`Changes from`)).toBeVisible();

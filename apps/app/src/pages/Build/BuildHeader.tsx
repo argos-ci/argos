@@ -19,21 +19,21 @@ const BrandLink = memo(() => {
   );
 });
 
-const RepositoryLink = memo(
+const ProjectLink = memo(
   ({
-    ownerLogin,
-    repositoryName,
+    accountSlug,
+    projectName,
   }: {
-    ownerLogin: string;
-    repositoryName: string;
+    accountSlug: string;
+    projectName: string;
   }) => {
     return (
       <MagicTooltip tooltip="See all builds">
         <Link
-          to={`/${ownerLogin}/${repositoryName}/builds`}
+          to={`/${accountSlug}/${projectName}/builds`}
           className="text-xs leading-none text-on-light transition hover:brightness-125"
         >
-          {ownerLogin}/{repositoryName}
+          {accountSlug}/{projectName}
         </Link>
       </MagicTooltip>
     );
@@ -41,12 +41,10 @@ const RepositoryLink = memo(
 );
 
 const BuildReviewButton = memo(
-  (props: {
-    repository: ComponentProps<typeof ReviewButton>["repository"];
-  }) => {
+  (props: { project: ComponentProps<typeof ReviewButton>["project"] }) => {
     const loggedIn = useIsLoggedIn();
     return loggedIn ? (
-      <ReviewButton repository={props.repository} />
+      <ReviewButton project={props.project} />
     ) : (
       <GitHubLoginButton />
     );
@@ -60,23 +58,23 @@ export const BuildFragment = graphql(`
   }
 `);
 
-export const RepositoryFragment = graphql(`
-  fragment BuildHeader_Repository on Repository {
-    ...BuildStatusChip_Repository
-    ...ReviewButton_Repository
+export const ProjectFragment = graphql(`
+  fragment BuildHeader_Project on Project {
+    ...BuildStatusChip_Project
+    ...ReviewButton_Project
   }
 `);
 
 export const BuildHeader = memo(
   (props: {
     buildNumber: number;
-    ownerLogin: string;
-    repositoryName: string;
+    accountSlug: string;
+    projectName: string;
     build: FragmentType<typeof BuildFragment> | null;
-    repository: FragmentType<typeof RepositoryFragment> | null;
+    project: FragmentType<typeof ProjectFragment> | null;
   }) => {
     const build = useFragment(BuildFragment, props.build);
-    const repository = useFragment(RepositoryFragment, props.repository);
+    const project = useFragment(ProjectFragment, props.project);
     return (
       <div className="flex flex-none flex-grow-0 items-center justify-between border-b border-b-border p-4">
         <div className="flex h-[32px] items-center gap-4">
@@ -86,16 +84,16 @@ export const BuildHeader = memo(
               Build {props.buildNumber}
               {build && build.name !== "default" ? ` • ${build.name}` : ""}
             </div>
-            <RepositoryLink
-              ownerLogin={props.ownerLogin}
-              repositoryName={props.repositoryName}
+            <ProjectLink
+              accountSlug={props.accountSlug}
+              projectName={props.projectName}
             />
           </div>
-          {build && repository ? (
-            <BuildStatusChip build={build} repository={repository} tooltip />
+          {build && project ? (
+            <BuildStatusChip build={build} project={project} tooltip />
           ) : null}
         </div>
-        {repository && <BuildReviewButton repository={repository} />}
+        {project && <BuildReviewButton project={project} />}
       </div>
     );
   }

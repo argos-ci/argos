@@ -1,69 +1,47 @@
 import {
   Account,
-  Organization,
+  GithubAccount,
+  GithubInstallation,
   Plan,
   Purchase,
-  User,
 } from "@argos-ci/database/models";
 
-export const getAccount = async (payload: {
-  marketplace_purchase: { account: { id: number; type: string } };
-}) => {
-  const { type, id: githubId } = payload.marketplace_purchase.account;
-
-  if (!type) throw new Error(`can't find account without account type`);
-  if (!githubId) throw new Error(`can't find account without githubId`);
-  if (type.toLowerCase() === "user") {
-    const account = await Account.query()
-      .joinRelated("user")
-      .findOne("user.githubId", githubId);
-    return account || null;
-  }
-  if (type.toLowerCase() === "organization") {
-    const account = await Account.query()
-      .joinRelated("organization")
-      .findOne("organization.githubId", githubId);
-    return account || null;
-  }
-  throw new Error(`can't find account of type : ${type}`);
-};
-
-const getOrCreateUser = async (payload: {
-  sender: { email: string };
-  marketplace_purchase: { account: { id: number; login: string } };
-}) => {
-  const { email } = payload.sender;
-  const { id: githubId, login } = payload.marketplace_purchase.account;
-  const user = await User.query().findOne({ githubId });
-  if (user) return user;
-  return User.query().insertAndFetch({ githubId, login, email });
-};
-
-const getOrCreateOrganization = async (payload: {
-  marketplace_purchase: { account: { id: number; login: string } };
-}) => {
-  const { id: githubId, login } = payload.marketplace_purchase.account;
-  const organization = await Organization.query().findOne({ githubId });
-  if (organization) return organization;
-  return Organization.query().insertAndFetch({ githubId, login });
-};
-
-export const getOrCreateAccount = async (payload: {
-  sender: { email: string };
+type PartialMarketplacePurchasePurchasedEventPayload = {
   marketplace_purchase: {
-    account: { id: number; login: string; type: string };
+    account: { id: number; type: string; login: string };
   };
-}) => {
-  const account = await getAccount(payload);
+};
+
+export const getOrCreateGithubAccount = async (
+  payload: PartialMarketplacePurchasePurchasedEventPayload
+) => {
+  const payloadAccount = payload.marketplace_purchase.account;
+
+  const type = payloadAccount.type.toLowerCase();
+
+  if (type !== "user" && type !== "organization") {
+    throw new Error(`Account of "${type}" is not supported`);
+  }
+
+  const account = await GithubAccount.query().findOne({
+    githubId: payloadAccount.id,
+  });
+
   if (account) return account;
 
-  if (payload.marketplace_purchase.account.type === "User") {
-    const user = await getOrCreateUser(payload);
-    return Account.query().insertAndFetch({ userId: user.id });
-  }
+  return GithubAccount.query().insertAndFetch({
+    githubId: payloadAccount.id,
+    login: payloadAccount.login,
+    type,
+  });
+};
 
-  const organization = await getOrCreateOrganization(payload);
-  return Account.query().insertAndFetch({ organizationId: organization.id });
+export const getAccount = async (
+  payload: PartialMarketplacePurchasePurchasedEventPayload
+) => {
+  const githubAccount = await getOrCreateGithubAccount(payload);
+  const account = await githubAccount.$relatedQuery("account");
+  return account ?? null;
 };
 
 export const getNewPlanOrThrow = async (payload: {
@@ -86,4 +64,27 @@ export const cancelPurchase = async (
       .findById(activePurchase.id)
       .patch({ endDate: payload.effective_date });
   }
+};
+
+export const getOrCreateInstallation = async ({
+  githubId,
+  deleted = false,
+}: {
+  githubId: number;
+  deleted?: boolean;
+}) => {
+  const data = deleted
+    ? { githubId, deleted: true, githubToken: null, githubTokenExpiresAt: null }
+    : { githubId, deleted: false };
+  const installation = await GithubInstallation.query().findOne({ githubId });
+  if (installation) {
+    if (installation.deleted !== deleted) {
+      return GithubInstallation.query().patchAndFetchById(
+        installation.id,
+        data
+      );
+    }
+    return installation;
+  }
+  return GithubInstallation.query().insertAndFetch(data);
 };

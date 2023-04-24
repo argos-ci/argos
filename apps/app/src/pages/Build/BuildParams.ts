@@ -2,27 +2,27 @@ import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 
 export interface BuildParams {
-  ownerLogin: string;
-  repositoryName: string;
+  accountSlug: string;
+  projectName: string;
   buildNumber: number;
   diffId: string | null;
 }
 
 export const useBuildParams = (): BuildParams | null => {
-  const { ownerLogin, repositoryName, buildNumber, diffId } = useParams();
+  const { accountSlug, projectName, buildNumber, diffId } = useParams();
   const params = useMemo(() => {
-    if (!ownerLogin || !repositoryName || !buildNumber) {
+    if (!accountSlug || !projectName || !buildNumber) {
       return null;
     }
     const numBuildNumber = Number(buildNumber);
     const valid = Number.isInteger(numBuildNumber);
     if (!valid) return null;
     return {
-      ownerLogin,
-      repositoryName,
+      accountSlug,
+      projectName,
       buildNumber: numBuildNumber,
       diffId: diffId ?? null,
     };
-  }, [ownerLogin, repositoryName, buildNumber, diffId]);
+  }, [accountSlug, projectName, buildNumber, diffId]);
   return params;
 };

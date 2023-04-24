@@ -3,7 +3,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import type {
   Build,
   File,
-  Repository,
+  Project,
   Screenshot,
   ScreenshotBucket,
 } from "@argos-ci/database/models";
@@ -23,21 +23,21 @@ describe("build", () => {
 
   describe("performBuild", () => {
     let build: Build;
-    let repository: Repository;
+    let project: Project;
     let compareBucket: ScreenshotBucket;
 
     beforeEach(async () => {
-      repository = await factory.create<Repository>("Repository");
+      project = await factory.create<Project>("Project");
       compareBucket = await factory.create<ScreenshotBucket>(
         "ScreenshotBucket",
         {
-          repositoryId: repository.id,
+          projectId: project.id,
         }
       );
       build = await factory.create<Build>("Build", {
         baseScreenshotBucketId: null,
         compareScreenshotBucketId: compareBucket.id,
-        repositoryId: repository.id,
+        projectId: project.id,
         jobStatus: "pending",
       });
       const file = await factory.create<File>("File");
@@ -50,7 +50,7 @@ describe("build", () => {
 
     it("works", async () => {
       await factory.create("ScreenshotBucket", {
-        repositoryId: repository.id,
+        projectId: project.id,
       });
 
       await performBuild(build);

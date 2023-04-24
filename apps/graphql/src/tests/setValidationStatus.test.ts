@@ -2,12 +2,12 @@ import { setTimeout as delay } from "node:timers/promises";
 import request from "supertest";
 
 import type {
+  Account,
   Build,
-  Repository,
+  Project,
   Screenshot,
   ScreenshotDiff,
-  User,
-  UserRepositoryRight,
+  TeamUser,
 } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 import { quitAmqp } from "@argos-ci/job-core";
@@ -25,22 +25,27 @@ describe("GraphQL", () => {
   });
 
   describe("validationStatus", () => {
+    let userAccount: Account;
+    let teamAccount: Account;
+    let project: Project;
     let build: Build;
-    let user: User;
-    let repository: Repository;
-    let screenshot2;
+    let screenshot2: Screenshot;
 
     beforeEach(async () => {
-      user = await factory.create<User>("User");
-      repository = await factory.create<Repository>("Repository", {
-        userId: user.id,
+      userAccount = await factory.create<Account>("UserAccount");
+      await userAccount.$fetchGraph("user");
+      teamAccount = await factory.create<Account>("TeamAccount");
+      await teamAccount.$fetchGraph("team");
+      project = await factory.create<Project>("Project", {
+        accountId: teamAccount.id,
       });
-      await factory.create<UserRepositoryRight>("UserRepositoryRight", {
-        userId: user.id,
-        repositoryId: repository.id,
+      await factory.create<TeamUser>("TeamUser", {
+        teamId: teamAccount.teamId!,
+        userId: userAccount.userId!,
+        userLevel: "owner",
       });
       build = await factory.create<Build>("Build", {
-        repositoryId: repository.id,
+        projectId: project.id,
       });
       const screenshot1 = await factory.create<Screenshot>("Screenshot", {
         name: "email_deleted",
@@ -72,7 +77,10 @@ describe("GraphQL", () => {
     });
 
     it("should mutate all the validationStatus", async () => {
-      const app = await createApolloServerApp(apolloServer, { user });
+      const app = await createApolloServerApp(apolloServer, {
+        user: userAccount.user!,
+        account: userAccount,
+      });
       let res = await request(app)
         .post("/graphql")
         .send({
@@ -104,15 +112,16 @@ describe("GraphQL", () => {
       expect(res.status).toBe(200);
 
       const apolloServerApp = await createApolloServerApp(apolloServer, {
-        user,
+        user: userAccount.user!,
+        account: userAccount,
       });
       res = await request(apolloServerApp)
         .post("/graphql")
         .send({
           query: `{
-            repository(
-              ownerLogin: "${user.login}",
-              repositoryName: "${repository.name}",
+            project(
+              accountSlug: "${teamAccount.slug}",
+              projectName: "${project.name}",
             ) {
               build(number: 1) {
                 screenshotDiffs(after: 0, first: 10) {
@@ -127,7 +136,7 @@ describe("GraphQL", () => {
       expectNoGraphQLError(res);
       expect(res.status).toBe(200);
       const { edges: screenshotDiffs } =
-        res.body.data.repository.build.screenshotDiffs;
+        res.body.data.project.build.screenshotDiffs;
       expect(screenshotDiffs).toEqual([
         {
           validationStatus: "rejected",
@@ -142,8 +151,12 @@ describe("GraphQL", () => {
     });
 
     it("should not mutate when the user is unauthorized", async () => {
-      const user2 = await factory.create<User>("User");
-      const app = await createApolloServerApp(apolloServer, { user: user2 });
+      const userAccount = await factory.create<Account>("UserAccount");
+      await userAccount.$fetchGraph("user");
+      const app = await createApolloServerApp(apolloServer, {
+        user: userAccount.user!,
+        account: userAccount,
+      });
       const res = await request(app)
         .post("/graphql")
         .send({
@@ -163,7 +176,9 @@ describe("GraphQL", () => {
           `,
         });
       expect(res.status).toBe(200);
-      expect(res.body.errors[0].message).toBe("Invalid user authorization");
+      expect(res.body.errors[0].message).toBe(
+        "You don't have access to this build"
+      );
     });
   });
 });

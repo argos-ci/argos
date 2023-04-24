@@ -1,26 +1,22 @@
 import { TransactionOrKnex, knex, transaction } from "@argos-ci/database";
 import { Build, Screenshot, ScreenshotDiff } from "@argos-ci/database/models";
-import type {
-  BuildType,
-  Repository,
-  ScreenshotBucket,
-} from "@argos-ci/database/models";
+import type { BuildType, ScreenshotBucket } from "@argos-ci/database/models";
 
 import { getBaseScreenshotBucket } from "./base.js";
 
 const getBuildType = ({
   baseScreenshotBucket,
   compareScreenshotBucket,
-  repository,
+  referenceBranch,
 }: {
   baseScreenshotBucket: ScreenshotBucket | null;
   compareScreenshotBucket: ScreenshotBucket;
-  repository: Repository;
+  referenceBranch: string;
 }): BuildType => {
   if (!baseScreenshotBucket) {
     return "orphan";
   }
-  if (compareScreenshotBucket.branch === repository.referenceBranch) {
+  if (compareScreenshotBucket.branch === referenceBranch) {
     return "reference";
   }
   return "check";
@@ -83,10 +79,10 @@ const getJobStatus = ({
 
 export const getStabilityScores = async ({
   buildName,
-  repositoryId,
+  projectId,
 }: {
   buildName: string;
-  repositoryId: string;
+  projectId: string;
 }): Promise<{ [key: string]: number }> => {
   const stabilityScores = await knex.raw(
     `WITH "recent_builds_count" AS (
@@ -97,7 +93,7 @@ export const getStabilityScores = async ({
             "builds"
             INNER JOIN "screenshot_buckets" ON "builds"."compareScreenshotBucketId" = "screenshot_buckets"."id"
         WHERE
-            "builds"."repositoryId" = :repositoryId
+            "builds"."projectId" = :projectId
             AND "builds"."name" = :buildName
             AND "builds"."createdAt" >= now() - interval '7 days'
     ),
@@ -110,7 +106,7 @@ export const getStabilityScores = async ({
             "builds"
             INNER JOIN "screenshot_buckets" ON "builds"."compareScreenshotBucketId" = "screenshot_buckets"."id"
         WHERE
-            "builds"."repositoryId" = :repositoryId
+            "builds"."projectId" = :projectId
             AND "builds"."name" = :buildName
             AND "builds"."createdAt" >= now() - interval '7 days'
     ),
@@ -139,7 +135,7 @@ export const getStabilityScores = async ({
         "diff_screenshots",
         "recent_builds_count"
     `,
-    { repositoryId, buildName }
+    { projectId, buildName }
   );
 
   return stabilityScores.rows.reduce(
@@ -159,11 +155,11 @@ export const createBuildDiffs = async (build: Build) => {
     build
       .$query()
       .withGraphFetched(
-        "[repository, baseScreenshotBucket.screenshots.file, compareScreenshotBucket.screenshots.file]"
+        "[project, baseScreenshotBucket.screenshots.file, compareScreenshotBucket.screenshots.file]"
       ),
     getStabilityScores({
       buildName: build.name,
-      repositoryId: build.repositoryId,
+      projectId: build.projectId,
     }),
   ]);
 
@@ -173,13 +169,23 @@ export const createBuildDiffs = async (build: Build) => {
       { trx }
     );
 
+    if (!richBuild.project) {
+      throw new Error("Invariant: no project found for build");
+    }
+
+    const referenceBranch = await richBuild.project.$getReferenceBranch(trx);
+
+    if (!referenceBranch) {
+      throw new Error("Invariant: no reference branch found for project");
+    }
+
     await Build.query(trx)
       .findById(build.id)
       .patch({
         type: getBuildType({
           baseScreenshotBucket,
           compareScreenshotBucket: richBuild.compareScreenshotBucket!,
-          repository: richBuild.repository!,
+          referenceBranch,
         }),
       });
 

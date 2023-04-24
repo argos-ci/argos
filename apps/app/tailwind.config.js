@@ -21,11 +21,18 @@ module.exports = {
         bg: colors.black,
         on: colors.slate[100],
         "on-light": colors.slate[400],
+        "on-danger": colors.red[400],
         border: colors.slate[700],
         text: colors.slate[50],
 
         // Components
         tooltip: {
+          bg: colors.slate[900],
+          border: colors.slate[800],
+          on: colors.slate[50],
+        },
+
+        dialog: {
           bg: colors.slate[900],
           border: colors.slate[800],
           on: colors.slate[50],
@@ -38,6 +45,11 @@ module.exports = {
 
         "icon-button": {
           on: colors.slate[400],
+          primary: {
+            "hover-border": colors.purple[700],
+            "hover-on": colors.purple[300],
+            "active-bg": colors.purple[800],
+          },
           neutral: {
             "hover-border": colors.slate[700],
             "hover-on": colors.slate[300],
@@ -67,6 +79,10 @@ module.exports = {
           on: colors.slate[300],
           "on-title": colors.slate[400],
           "hover-on": colors.slate[50],
+          danger: {
+            on: colors.red[500],
+            "hover-on": colors.red[500],
+          },
           item: {
             "hover-bg": colors.slate[800],
             "selected-bg": colors.slate[700],
@@ -81,11 +97,17 @@ module.exports = {
           },
         ],
       },
+      opacity: {
+        disabled: ".38",
+      },
       fontFamily: {
         sans: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif',
       },
       borderRadius: {
         chip: "20px",
+      },
+      aria: {
+        invalid: 'invalid="true"',
       },
     },
   },

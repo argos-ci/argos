@@ -6,87 +6,143 @@ function duplicate(obj, count) {
 }
 
 export const seed = async (knex) => {
-  const organizations = await knex("organizations")
+  const [smoothTeam, helloTeam] = await knex("teams")
+    .returning("id")
+    .insert([timeStamps, timeStamps]);
+
+  const [gregUser, jeremyUser] = await knex("users")
     .returning("id")
     .insert([
       {
         ...timeStamps,
-        githubId: 1262264,
-        name: "Call-Em-All",
-        login: "callemall",
+        email: "greg@smooth-code.com",
       },
       {
         ...timeStamps,
-        githubId: 5823649,
-        name: "Doctolib",
-        login: "doctolib",
+        email: "jeremy@smooth-code.com",
       },
     ]);
 
-  const users = await knex("users")
+  const [gregGhAccount, jeremyGhAccount] = await knex("github_accounts")
     .returning("id")
     .insert([
-      {
-        ...timeStamps,
-        githubId: 3165635,
-        name: "Olivier Tassinari",
-        login: "oliviertassinari",
-        email: "olivier.tassinari@gmail.com",
-        scopes: JSON.stringify(["SUPER_ADMIN"]),
-      },
       {
         ...timeStamps,
         githubId: 266302,
         name: "Greg Bergé",
-        login: "neoziro",
-        email: "berge.greg@gmail.com",
+        login: "gregberge",
+        email: "greg@smooth-code.com",
+        type: "user",
+      },
+      {
+        ...timeStamps,
+        githubId: 15954562,
+        name: "Jeremy SFEZ",
+        login: "jsfez",
+        email: "jeremy@smooth-code.com",
+        type: "user",
       },
     ]);
 
-  const repositories = await knex("repositories")
+  const [smoothAccount, helloAccount] = await knex("accounts")
     .returning("id")
     .insert([
       {
         ...timeStamps,
-        githubId: 23083156,
-        name: "material-ui",
-        token: "650ded7d72e85b52e099df6e56aa204d4fe92fd1",
-        organizationId: organizations[0].id,
-        baselineBranch: "next",
-        defaultBranch: "master",
+        teamId: smoothTeam.id,
+        name: "Smooth",
+        slug: "smooth",
       },
       {
         ...timeStamps,
-        githubId: 31123797,
-        name: "SplitMe",
-        token: "650ded7d72e85b52e099df6e56aa204d4fe92fd2",
-        userId: users[0].id,
-        baselineBranch: "master",
-        defaultBranch: null,
-      },
-      {
-        ...timeStamps,
-        githubId: 14022421,
-        name: "doctolib",
-        token: "650ded7d72e85b52e099df6e56aa204d4fe92fd3",
-        organizationId: organizations[1].id,
-        private: true,
-        baselineBranch: null,
-        defaultBranch: "master",
+        teamId: helloTeam.id,
+        name: "Hello You",
+        slug: "hello-you",
       },
     ]);
 
-  await knex("accounts").insert([
-    { ...timeStamps, organizationId: organizations[0].id, userId: null },
-    { ...timeStamps, organizationId: organizations[1].id, userId: null },
-    { ...timeStamps, organizationId: null, userId: users[0].id },
+  const [gregAccount, jeremyAccount] = await knex("accounts")
+    .returning("id")
+    .insert([
+      {
+        ...timeStamps,
+        userId: gregUser.id,
+        name: "Greg Bergé",
+        slug: "gregberge",
+        githubAccountId: gregGhAccount.id,
+      },
+      {
+        ...timeStamps,
+        userId: jeremyUser.id,
+        name: "Jeremy Sfez",
+        slug: "jsfez",
+        githubAccountId: jeremyGhAccount.id,
+      },
+    ]);
+
+  await knex("team_users").insert([
+    {
+      ...timeStamps,
+      teamId: smoothTeam.id,
+      userId: gregUser.id,
+      userLevel: "owner",
+    },
+    {
+      ...timeStamps,
+      teamId: smoothTeam.id,
+      userId: jeremyUser.id,
+      userLevel: "owner",
+    },
+    {
+      ...timeStamps,
+      teamId: helloTeam.id,
+      userId: gregUser.id,
+      userLevel: "owner",
+    },
+    {
+      ...timeStamps,
+      teamId: helloTeam.id,
+      userId: jeremyUser.id,
+      userLevel: "owner",
+    },
   ]);
+
+  const projects = await knex("projects")
+    .returning("id")
+    .insert([
+      {
+        ...timeStamps,
+        name: "big",
+        token: "big-xxx",
+        accountId: smoothAccount.id,
+        private: false,
+      },
+      {
+        ...timeStamps,
+        name: "awesome",
+        token: "awesome-xxx",
+        accountId: helloAccount.id,
+        baselineBranch: "main",
+      },
+      {
+        ...timeStamps,
+        name: "zone-51",
+        token: "zone-51-xxx",
+        accountId: gregAccount.id,
+      },
+      {
+        ...timeStamps,
+        name: "lalouland",
+        token: "lalouland-xxx",
+        accountId: jeremyAccount.id,
+      },
+    ]);
 
   const screenshotBucket = {
     name: "default",
     commit: "029b662f3ae57bae7a215301067262c1e95bbc95",
-    branch: "master",
-    repositoryId: repositories[0].id,
+    branch: "main",
+    projectId: projects[0].id,
     createdAt: "2016-12-08T22:59:55Z",
     updatedAt: "2016-12-08T22:59:55Z",
   };
@@ -209,7 +265,7 @@ export const seed = async (knex) => {
     name: "main",
     baseScreenshotBucketId: screenshotBuckets[0].id,
     compareScreenshotBucketId: screenshotBuckets[1].id,
-    repositoryId: repositories[0].id,
+    projectId: projects[0].id,
     jobStatus: "complete",
     type: "check",
     createdAt: "2016-12-08T22:59:55Z",

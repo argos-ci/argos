@@ -1,3 +1,4 @@
+import jwt_decode from "jwt-decode";
 import { createContext, useCallback, useContext, useMemo } from "react";
 
 import { useStoreState } from "./Store";
@@ -25,15 +26,20 @@ export function useAuth() {
   return value;
 }
 
+type JWTData = {
+  version: number;
+  account: {
+    id: string;
+    slug: string;
+    name: string | null;
+  };
+};
+
 const jwtDecode = (t: string) => {
-  const parts = t.split(".");
-  if (!parts[1]) return null;
   try {
-    return JSON.parse(window.atob(parts[1])) as {
-      id: string;
-      login: string;
-      name: string | null;
-    };
+    const value = jwt_decode<JWTData>(t);
+    if (value?.version !== 1) return null;
+    return value as JWTData;
   } catch (e) {
     return null;
   }
@@ -55,5 +61,7 @@ export function useIsLoggedIn() {
 
 export function useLogout() {
   const { setToken } = useAuth();
-  return useCallback(() => setToken(null), [setToken]);
+  return useCallback(() => {
+    setToken(null);
+  }, [setToken]);
 }

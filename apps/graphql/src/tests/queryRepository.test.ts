@@ -1,13 +1,11 @@
 import request from "supertest";
 
 import type {
+  Account,
   Build,
-  Organization,
-  Repository,
+  Project,
   ScreenshotDiff,
-  User,
-  UserOrganizationRight,
-  UserRepositoryRight,
+  TeamUser,
 } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 
@@ -19,49 +17,48 @@ describe("GraphQL", () => {
   useDatabase();
 
   describe("queryRepository", () => {
-    let user: User;
-    let organization: Organization;
-    let repository: Repository;
+    let userAccount: Account;
+    let teamAccount: Account;
+    let project: Project;
 
     beforeEach(async () => {
-      user = await factory.create<User>("User");
-      organization = await factory.create<Organization>("Organization", {
-        name: "bar",
+      userAccount = await factory.create<Account>("UserAccount");
+      await userAccount.$fetchGraph("user");
+      teamAccount = await factory.create<Account>("TeamAccount");
+      await teamAccount.$fetchGraph("team");
+      project = await factory.create<Project>("Project", {
+        accountId: teamAccount.id,
       });
-      repository = await factory.create<Repository>("Repository", {
-        name: "foo",
-        organizationId: organization.id,
-      });
-      await factory.create<UserRepositoryRight>("UserRepositoryRight", {
-        userId: user.id,
-        repositoryId: repository.id,
-      });
-      await factory.create<UserOrganizationRight>("UserOrganizationRight", {
-        userId: user.id,
-        organizationId: organization.id,
+      await factory.create<TeamUser>("TeamUser", {
+        teamId: teamAccount.teamId!,
+        userId: userAccount.userId!,
+        userLevel: "owner",
       });
     });
 
     it("should list builds sorted by number", async () => {
       await factory.create<Build>("Build", {
-        repositoryId: repository.id,
+        projectId: project.id,
         createdAt: "2017-02-04T17:14:28.167Z",
       });
       const build = await factory.create<Build>("Build", {
-        repositoryId: repository.id,
+        projectId: project.id,
         createdAt: "2017-02-05T17:14:28.167Z",
       });
       await factory.create<ScreenshotDiff>("ScreenshotDiff", {
         buildId: build.id,
       });
-      const app = await createApolloServerApp(apolloServer, { user });
+      const app = await createApolloServerApp(apolloServer, {
+        user: userAccount.user!,
+        account: userAccount,
+      });
       const res = await request(app)
         .post("/graphql")
         .send({
           query: `{
-            repository(
-              ownerLogin: "${organization.login}",
-              repositoryName: "${repository.name}",
+            project(
+              accountSlug: "${teamAccount.slug}",
+              projectName: "${project.name}",
             ) {
               builds(
                 first: 2,
@@ -83,7 +80,7 @@ describe("GraphQL", () => {
 
       expectNoGraphQLError(res);
       expect(res.status).toBe(200);
-      const { builds } = res.body.data.repository;
+      const { builds } = res.body.data.project;
       expect(builds).toEqual({
         pageInfo: {
           hasNextPage: false,

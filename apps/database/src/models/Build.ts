@@ -15,7 +15,7 @@ import {
   mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
-import { Repository } from "./Repository.js";
+import { Project } from "./Project.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
 import { User } from "./User.js";
@@ -35,12 +35,12 @@ export class Build extends Model {
   static override tableName = "builds";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
-    required: ["compareScreenshotBucketId", "repositoryId"],
+    required: ["compareScreenshotBucketId", "projectId"],
     properties: {
       name: { type: "string" },
       baseScreenshotBucketId: { type: ["string", "null"] },
       compareScreenshotBucketId: { type: "string" },
-      repositoryId: { type: "string" },
+      projectId: { type: "string" },
       number: { type: "integer" },
       externalId: { type: ["string", "null"] },
       batchCount: { type: ["integer", "null"] },
@@ -57,7 +57,7 @@ export class Build extends Model {
   jobStatus!: JobStatus;
   baseScreenshotBucketId!: string | null;
   compareScreenshotBucketId!: string;
-  repositoryId!: string;
+  projectId!: string;
   number!: number;
   externalId!: string | null;
   batchCount!: number | null;
@@ -83,12 +83,12 @@ export class Build extends Model {
           to: "screenshot_buckets.id",
         },
       },
-      repository: {
+      project: {
         relation: Model.BelongsToOneRelation,
-        modelClass: Repository,
+        modelClass: Project,
         join: {
-          from: "builds.repositoryId",
-          to: "repositories.id",
+          from: "builds.projectId",
+          to: "projects.id",
         },
       },
       screenshotDiffs: {
@@ -104,7 +104,7 @@ export class Build extends Model {
 
   baseScreenshotBucket?: ScreenshotBucket | null;
   compareScreenshotBucket?: ScreenshotBucket;
-  repository?: Repository;
+  project?: Project;
   screenshotDiffs?: ScreenshotDiff[];
 
   override $afterValidate(json: Pojo) {
@@ -132,8 +132,8 @@ export class Build extends Model {
     const json = super.$toDatabaseJson(...args);
     if (json["number"] === -1) {
       json["number"] = this.$knex().raw(
-        '(select coalesce(max(number),0) + 1 as number from builds where "repositoryId" = ?)',
-        this.repositoryId
+        '(select coalesce(max(number),0) + 1 as number from builds where "projectId" = ?)',
+        this.projectId
       );
     }
     return json;
@@ -292,21 +292,11 @@ export class Build extends Model {
 
   static getUsers(buildId: string, { trx }: { trx?: TransactionOrKnex } = {}) {
     return User.query(trx)
-      .select("users.*")
-      .join(
-        "user_repository_rights",
-        "users.id",
-        "=",
-        "user_repository_rights.userId"
+      .leftJoinRelated(
+        "[account.projects.builds, teams.account.projects.builds]"
       )
-      .join(
-        "repositories",
-        "user_repository_rights.repositoryId",
-        "=",
-        "repositories.id"
-      )
-      .join("builds", "repositories.id", "=", "builds.repositoryId")
-      .where("builds.id", buildId);
+      .where("account:projects:builds.id", buildId)
+      .orWhere("teams:account:projects:builds.id", buildId);
   }
 
   getUsers(options?: { trx?: TransactionOrKnex }) {
@@ -314,24 +304,18 @@ export class Build extends Model {
   }
 
   async getUrl({ trx }: { trx?: TransactionOrKnex } = {}) {
-    if (!this.repository) {
+    if (!this.project) {
       await this.$fetchGraph(
-        "repository",
+        "project.account",
         trx ? { transaction: trx } : undefined
       );
     }
 
-    const owner = await this.repository!.$relatedOwner(
-      trx ? { trx } : undefined
-    );
-
-    if (!owner) {
+    if (!this.project?.account) {
       throw new Error("Owner not found");
     }
 
-    const pathname = `/${owner.login}/${this.repository!.name}/builds/${
-      this.number
-    }`;
+    const pathname = `/${this.project.account.slug}/${this.project.name}/builds/${this.number}`;
 
     return `${config.get("server.url")}${pathname}`;
   }

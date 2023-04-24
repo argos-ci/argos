@@ -98,14 +98,14 @@ const ListHeader = ({
     >
       <ChevronDownIcon
         className={clsx(
-          "m-0.5 h-3 w-3 flex-shrink-0 transform text-on-light opacity-0 transition group-hover/sidebar:opacity-100",
+          "m-0.5 h-3 w-3 shrink-0 transform text-on-light opacity-0 transition group-hover/sidebar:opacity-100",
           !item.expanded && "rotate-[-90deg]"
         )}
       />
       <div className="flex-1 text-sm font-medium text-on">
         {getGroupLabel(item.name)}
       </div>
-      <Badge className="flex-shrink-0">
+      <Badge className="shrink-0">
         {activeIndex !== -1 ? <>{activeIndex + 1} / </> : null}
         {item.count}
       </Badge>
@@ -503,7 +503,7 @@ const InternalBuildDiffList = memo(() => {
     <>
       {stats && (
         <BuildStatsIndicator
-          className="flex flex-shrink-0 items-center border-b border-b-border px-2"
+          className="flex shrink-0 items-center border-b border-b-border px-2"
           stats={stats}
           onClickGroup={openGroup}
         />

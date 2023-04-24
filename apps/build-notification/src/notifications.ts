@@ -119,34 +119,38 @@ export const processBuildNotification = async (
   buildNotification: BuildNotification
 ) => {
   await buildNotification.$fetchGraph(
-    `build.[repository.installations, compareScreenshotBucket]`
+    `build.[project.githubRepository.[githubAccount,activeInstallation], compareScreenshotBucket]`
   );
 
   const { build } = buildNotification;
 
   if (!build) {
-    throw new Error("Build not found");
+    throw new UnretryableError("Invariant: no build found");
   }
 
-  // Skip sample build
-  if (build.number === 0) {
+  if (!build.compareScreenshotBucket) {
+    throw new UnretryableError("Invariant: no compare screenshot bucket found");
+  }
+
+  if (!build.project) {
+    throw new UnretryableError("Invariant: no project found");
+  }
+
+  if (!build.project.githubRepository) {
+    throw new UnretryableError("Invariant: no repository found");
+  }
+
+  if (!build.project.githubRepository.githubAccount) {
+    throw new UnretryableError("Invariant: no github account found");
+  }
+
+  const installation = build.project.githubRepository.activeInstallation;
+
+  if (!installation) {
     return null;
   }
 
   const notification = await getNotificationPayload(buildNotification);
-  const owner = await build.repository!.$relatedOwner();
-
-  if (!owner) {
-    throw new Error("Owner not found");
-  }
-
-  const [installation] = build.repository!.installations!;
-  if (!installation) {
-    throw new UnretryableError(
-      `Installation not found for repository "${build.repository!.id}"`
-    );
-  }
-
   const octokit = await getInstallationOctokit(installation.id);
 
   if (!octokit) {
@@ -158,9 +162,9 @@ export const processBuildNotification = async (
   try {
     // https://developer.github.com/v3/repos/statuses/
     return await octokit.repos.createCommitStatus({
-      owner: owner.login,
-      repo: build.repository!.name,
-      sha: build.compareScreenshotBucket!.commit,
+      owner: build.project.githubRepository.githubAccount.login,
+      repo: build.project.githubRepository.name,
+      sha: build.compareScreenshotBucket.commit,
       state: notification.state,
       target_url: buildUrl,
       description: notification.description, // Short description of the status.

@@ -3,7 +3,7 @@ import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
 import { forwardRef } from "react";
 
-export type IconButtonColor = "danger" | "success" | "neutral";
+export type IconButtonColor = "primary" | "danger" | "success" | "neutral";
 
 export type IconButtonProps = Omit<
   AriakitButtonProps<"button">,
@@ -14,6 +14,8 @@ export type IconButtonProps = Omit<
 };
 
 const colorClassNames: Record<IconButtonColor, string> = {
+  primary:
+    "hover:text-icon-button-primary-hover-on hover:border-icon-button-primary-hover-border aria-pressed:text-icon-button-primary-hover-on aria-pressed:bg-icon-button-primary-active-bg",
   neutral:
     "hover:text-icon-button-neutral-hover-on hover:border-icon-button-neutral-hover-border aria-pressed:text-icon-button-neutral-hover-on aria-pressed:bg-icon-button-neutral-active-bg",
   success:

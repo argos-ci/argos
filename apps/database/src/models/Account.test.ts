@@ -1,12 +1,7 @@
 import { factory, useDatabase } from "../testing/index.js";
 import { Account } from "./Account.js";
 import { Plan } from "./Plan.js";
-import type {
-  Organization,
-  Purchase,
-  Repository,
-  ScreenshotBucket,
-} from "./index.js";
+import type { Project, Purchase, ScreenshotBucket, Team } from "./index.js";
 
 describe("Account", () => {
   let plans: Plan[];
@@ -19,10 +14,7 @@ describe("Account", () => {
   useDatabase();
 
   beforeEach(async () => {
-    const organizations = await factory.createMany<Organization>(
-      "Organization",
-      2
-    );
+    const teams = await factory.createMany<Team>("Team", 2);
     // @ts-ignore
     plans = await factory.createMany<Plan>("Plan", [
       { name: "free", screenshotsLimitPerMonth: -1 },
@@ -30,26 +22,23 @@ describe("Account", () => {
       { name: "pro", screenshotsLimitPerMonth: 100 },
     ]);
     // @ts-ignore
-    [account, vipAccount] = await factory.createMany<Account>(
-      "OrganizationAccount",
-      [
-        { organizationId: organizations[0]!.id },
-        { organizationId: organizations[1]!.id, forcedPlanId: plans[2]!.id },
-      ]
-    );
-    const repositories = await factory.createMany<Repository>("Repository", [
-      { organizationId: organizations[0]!.id, private: true },
-      { organizationId: organizations[0]!.id, private: true },
-      { organizationId: organizations[0]!.id, private: false },
-      { organizationId: organizations[1]!.id, private: true },
+    [account, vipAccount] = await factory.createMany<Account>("TeamAccount", [
+      { teamId: teams[0]!.id },
+      { teamId: teams[1]!.id, forcedPlanId: plans[2]!.id },
+    ]);
+    const projects = await factory.createMany<Project>("Project", [
+      { accountId: account.id, private: true },
+      { accountId: account.id, private: true },
+      { accountId: account.id, private: false },
+      { accountId: vipAccount.id, private: true },
     ]);
     // @ts-ignore
     [bucket1, bucket2, bucket3, bucketOtherOrga] =
       await factory.createMany<ScreenshotBucket>("ScreenshotBucket", [
-        { repositoryId: repositories[0]!.id },
-        { repositoryId: repositories[1]!.id },
-        { repositoryId: repositories[2]!.id },
-        { repositoryId: repositories[3]!.id },
+        { projectId: projects[0]!.id },
+        { projectId: projects[1]!.id },
+        { projectId: projects[2]!.id },
+        { projectId: projects[3]!.id },
       ]);
   });
 
@@ -211,7 +200,7 @@ describe("Account", () => {
       });
 
       it("without free plan in database returns null", async () => {
-        await Account.query().delete().where("id", vipAccount.id);
+        await Account.query().patch({ forcedPlanId: null });
         await Plan.query().delete();
         const plan = await account.getPlan();
         expect(plan).toBeNull();

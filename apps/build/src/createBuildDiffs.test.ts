@@ -6,7 +6,7 @@ import {
   ScreenshotBucket,
   ScreenshotDiff,
 } from "@argos-ci/database/models";
-import type { File, Repository } from "@argos-ci/database/models";
+import type { File, Project } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 import { quitAmqp } from "@argos-ci/job-core";
 
@@ -24,19 +24,19 @@ describe("#createBuildDiffs", () => {
   let compareBucket: ScreenshotBucket;
   let newScreenshot: Screenshot | undefined;
   let newScreenshotWithoutFile: Screenshot | undefined;
-  let repository: Repository;
+  let project: Project;
   let files: File[];
 
   beforeEach(async () => {
-    repository = await factory.create<Repository>("Repository");
+    project = await factory.create<Project>("Project");
     compareBucket = await factory.create<ScreenshotBucket>("ScreenshotBucket", {
       branch: "BUGS-123",
-      repositoryId: repository.id,
+      projectId: project.id,
     });
     build = await factory.create<Build>("Build", {
       baseScreenshotBucketId: null,
       compareScreenshotBucketId: compareBucket.id,
-      repositoryId: repository.id,
+      projectId: project.id,
       jobStatus: "pending",
     });
     files = await factory.createMany<File>("File", 10);
@@ -65,10 +65,10 @@ describe("#createBuildDiffs", () => {
 
     describe("on a build with low usage (less than 10 builds in a week)", () => {
       beforeEach(async () => {
-        const repository = await factory.create<Repository>("Repository");
+        const project = await factory.create<Project>("Project");
         [builds, screenshot] = await Promise.all([
           factory.createMany<Build>("Build", 2, {
-            repositoryId: repository.id,
+            projectId: project.id,
           }),
           factory.create<Screenshot>("Screenshot", { name: screenshotName }),
         ]);
@@ -86,7 +86,7 @@ describe("#createBuildDiffs", () => {
       it("returns 'undefined' stability score for a never updated screenshot", async () => {
         const stabilityScores = await getStabilityScores({
           buildName: build.name,
-          repositoryId: repository.id,
+          projectId: project.id,
         });
         expect(stabilityScores[screenshotName]).toBeUndefined();
       });
@@ -97,7 +97,7 @@ describe("#createBuildDiffs", () => {
         ]);
         const stabilityScores = await getStabilityScores({
           buildName: build.name,
-          repositoryId: repository.id,
+          projectId: project.id,
         });
         expect(stabilityScores[screenshotName]).toBe(100);
       });
@@ -116,21 +116,21 @@ describe("#createBuildDiffs", () => {
         );
         [builds, screenshot] = await Promise.all([
           factory.createMany<Build>("Build", 8, {
-            repositoryId: repository.id,
+            projectId: project.id,
             compareScreenshotBucketId: screenshotBuckets[0]!.id,
           }),
           factory.create<Screenshot>("Screenshot", { name: screenshotName }),
           factory.createMany<Build>("Build", [
             {
-              repositoryId: repository.id,
+              projectId: project.id,
               compareScreenshotBucketId: screenshotBuckets[1]!.id,
             },
             {
-              repositoryId: repository.id,
+              projectId: project.id,
               compareScreenshotBucketId: screenshotBuckets[2]!.id,
             },
             {
-              repositoryId: repository.id,
+              projectId: project.id,
               compareScreenshotBucketId: screenshotBuckets[3]!.id,
             },
           ]),
@@ -149,7 +149,7 @@ describe("#createBuildDiffs", () => {
       it("returns 'undefined' stability score for a never updated screenshot", async () => {
         const stabilityScores = await getStabilityScores({
           buildName: build.name,
-          repositoryId: repository.id,
+          projectId: project.id,
         });
         expect(stabilityScores[screenshotName]).toBeUndefined();
       });
@@ -160,7 +160,7 @@ describe("#createBuildDiffs", () => {
         ]);
         const stabilityScores = await getStabilityScores({
           buildName: build.name,
-          repositoryId: repository.id,
+          projectId: project.id,
         });
         expect(stabilityScores[screenshotName]).toBe(73);
       });
@@ -175,7 +175,7 @@ describe("#createBuildDiffs", () => {
         ]);
         const stabilityScores = await getStabilityScores({
           buildName: build.name,
-          repositoryId: repository.id,
+          projectId: project.id,
         });
         expect(stabilityScores[screenshotName]).toBe(47);
       });
@@ -197,7 +197,7 @@ describe("#createBuildDiffs", () => {
     beforeEach(async () => {
       baseBucket = await factory.create<ScreenshotBucket>("ScreenshotBucket", {
         branch: "master",
-        repositoryId: repository.id,
+        projectId: project.id,
       });
       await build
         .$query()
@@ -373,8 +373,12 @@ describe("#createBuildDiffs", () => {
 
     describe("when compare branch equal reference branch", () => {
       beforeEach(async () => {
+        const referenceBranch = await project.$getReferenceBranch();
+        if (!referenceBranch) {
+          throw new Error("Reference branch not found");
+        }
         await ScreenshotBucket.query().findById(compareBucket.id).patch({
-          branch: repository.referenceBranch,
+          branch: referenceBranch,
         });
       });
 

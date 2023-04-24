@@ -47,18 +47,22 @@ export const ListHeader = ({
   );
 };
 
-export const ListRow = ({
-  className,
-  onClick,
-  ...props
-}: HTMLProps<HTMLDivElement>) => {
-  const clickableClassName = onClick ? "transition hover:bg-slate-900/70" : "";
+export type ListProps = HTMLProps<HTMLDivElement>;
+export const List = ({ className, ...props }: ListProps) => {
+  return (
+    <div
+      className={clsx("flex flex-col rounded border border-border", className)}
+      {...props}
+    />
+  );
+};
 
+export type ListRowProps = HTMLProps<HTMLDivElement>;
+export const ListRow = ({ className, ...props }: ListRowProps) => {
   return (
     <div
       className={clsx(
-        clickableClassName,
-        "flex items-center gap-4 border-b border-b-border px-4 py-2 text-sm group-last:border-b-transparent",
+        "flex items-center gap-4 border-b border-b-border px-4 py-2 text-sm last:border-b-0",
         className
       )}
       {...props}

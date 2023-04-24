@@ -2,28 +2,36 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
-import { Organization } from "./Organization.js";
 import { Plan } from "./Plan.js";
+import { Project } from "./Project.js";
 import { Purchase } from "./Purchase.js";
 import { Screenshot } from "./Screenshot.js";
+import { Team } from "./Team.js";
 import { User } from "./User.js";
 
 export class Account extends Model {
   static override tableName = "accounts";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: [],
+    required: ["slug"],
     properties: {
       userId: { type: ["string", "null"] },
-      organizationId: { type: ["string", "null"] },
       forcedPlanId: { type: ["string", "null"] },
       stripeCustomerId: { type: ["string", "null"] },
+      teamId: { type: ["string", "null"] },
+      name: { type: ["string", "null"] },
+      slug: { type: "string" },
+      githubAccountId: { type: "string" },
     },
   });
 
   userId!: string | null;
-  organizationId!: string | null;
   forcedPlanId!: string | null;
+  teamId!: string | null;
+  stripeCustomerId?: string | null;
+  name!: string | null;
+  slug!: string;
+  githubAccountId!: string;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -35,12 +43,12 @@ export class Account extends Model {
           to: "users.id",
         },
       },
-      organization: {
+      team: {
         relation: Model.HasOneRelation,
-        modelClass: Organization,
+        modelClass: Team,
         join: {
-          from: "accounts.organizationId",
-          to: "organizations.id",
+          from: "accounts.teamId",
+          to: "teams.id",
         },
       },
       purchases: {
@@ -51,22 +59,30 @@ export class Account extends Model {
           to: "purchases.accountId",
         },
       },
+      projects: {
+        relation: Model.HasManyRelation,
+        modelClass: Project,
+        join: {
+          from: "accounts.id",
+          to: "projects.accountId",
+        },
+      },
     };
   }
 
   user?: User | null;
-  organization?: Organization | null;
+  team?: Team | null;
   purchases?: Purchase[];
-  stripeCustomerId?: string | null;
+  projects?: Project[];
 
   static override virtualAttributes = ["type"];
 
   get type() {
-    if (this.userId && this.organizationId) {
+    if (this.userId && this.teamId) {
       throw new Error(`Invariant incoherent account type`);
     }
     if (this.userId) return "user";
-    if (this.organizationId) return "organization";
+    if (this.teamId) return "team";
     throw new Error(`Invariant incoherent account type`);
   }
 
@@ -97,28 +113,8 @@ export class Account extends Model {
       const plan = await activePurchase.$relatedQuery("plan");
       return plan;
     }
-    return Plan.getFreePlan();
-  }
 
-  async getLogin(): Promise<string> {
-    switch (this.type) {
-      case "organization": {
-        if (this.organization) return this.organization.login;
-        const organization = (await Organization.query()
-          .select("login")
-          .findOne({ id: this.organizationId })) as Organization;
-        return organization.login;
-      }
-      case "user": {
-        if (this.user) return this.user.login;
-        const user = (await User.query()
-          .select("login")
-          .findOne({ id: this.userId })) as User;
-        return user.login;
-      }
-      default:
-        throw new Error(`Invariant incoherent account type`);
-    }
+    return Plan.getFreePlan();
   }
 
   async getScreenshotsMonthlyLimit() {
@@ -153,22 +149,21 @@ export class Account extends Model {
   async getScreenshotsCurrentConsumption() {
     const startDate = await this.getCurrentConsumptionStartDate();
     const query = Screenshot.query()
-      .joinRelated("screenshotBucket.repository")
+      .leftJoinRelated("screenshotBucket.project.githubRepository")
       .where("screenshots.createdAt", ">=", startDate)
+      .where("screenshotBucket:project.accountId", this.id)
       .where((builder) =>
         builder
-          .where("screenshotBucket:repository.private", "true")
-          .orWhere("screenshotBucket:repository.forcedPrivate", "true")
+          .where((builder) => {
+            builder
+              .whereNull("screenshotBucket:project.private")
+              .andWhere(
+                "screenshotBucket:project:githubRepository.private",
+                true
+              );
+          })
+          .orWhere("screenshotBucket:project.private", true)
       );
-
-    if (this.userId) {
-      query.where("screenshotBucket:repository.userId", this.userId);
-    } else {
-      query.where(
-        "screenshotBucket:repository.organizationId",
-        this.organizationId
-      );
-    }
 
     return query.resultSize();
   }
@@ -189,41 +184,19 @@ export class Account extends Model {
     return screenshotsConsumptionRatio >= 1.1;
   }
 
-  static async getAccount({
-    userId,
-    organizationId,
-  }: {
-    userId?: string | null;
-    organizationId?: string | null;
-  }) {
-    if (userId && organizationId) {
-      throw new Error(
-        `Can't call getAccount with both userId and organizationId`
-      );
-    }
-    if (userId) {
-      const userAccount = await Account.query()
-        .withGraphFetched("user")
-        .findOne("userId", userId);
-      return userAccount || Account.fromJson({ userId });
-    }
-
-    if (organizationId) {
-      const organizationAccount = await Account.query()
-        .withGraphFetched("organization")
-        .findOne("organizationId", organizationId);
-      return organizationAccount || Account.fromJson({ organizationId });
-    }
-
-    throw new Error("Can't get account without userId or organizationId");
+  async $checkWritePermission(user: User) {
+    return Account.checkWritePermission(this, user);
   }
 
-  static async getOrCreateAccount(options: {
-    userId?: string;
-    organizationId?: string;
-  }) {
-    const account = await this.getAccount(options);
-    if (account.id) return account;
-    return account.$query().insertAndFetch();
+  static async checkWritePermission(account: Account, user: User) {
+    if (!user) return false;
+    switch (account.type) {
+      case "user":
+        return User.checkWritePermission(account.userId as string, user);
+      case "team":
+        return Team.checkWritePermission(account.teamId as string, user);
+      default:
+        throw new Error(`Invariant incoherent account type`);
+    }
   }
 }

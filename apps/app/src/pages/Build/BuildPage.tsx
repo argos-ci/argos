@@ -10,19 +10,19 @@ import type { BuildParams } from "./BuildParams";
 import { BuildWorkspace } from "./BuildWorkspace";
 import { OvercapacityBanner } from "./Overcapacity";
 
-const BuildQuery = graphql(`
-  query BuildQuery(
-    $ownerLogin: String!
-    $repositoryName: String!
+const ProjectQuery = graphql(`
+  query BuildPage_Project(
+    $accountSlug: String!
+    $projectName: String!
     $buildNumber: Int!
   ) {
-    repository(ownerLogin: $ownerLogin, repositoryName: $repositoryName) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
       id
-      ...BuildHeader_Repository
-      ...BuildWorkspace_Repository
-      owner {
+      ...BuildHeader_Project
+      ...BuildWorkspace_Project
+      account {
         id
-        ...OvercapacityBanner_Owner
+        ...OvercapacityBanner_Account
       }
       build(number: $buildNumber) {
         id
@@ -35,16 +35,16 @@ const BuildQuery = graphql(`
 `);
 
 export const BuildPage = ({ params }: { params: BuildParams }) => {
-  const { data, error, refetch } = useQuery(BuildQuery, {
+  const { data, error, refetch } = useQuery(ProjectQuery, {
     variables: {
-      ownerLogin: params.ownerLogin,
-      repositoryName: params.repositoryName,
+      accountSlug: params.accountSlug,
+      projectName: params.projectName,
       buildNumber: params.buildNumber,
     },
   });
 
-  const repository = data?.repository ?? null;
-  const build = repository?.build ?? null;
+  const project = data?.project ?? null;
+  const build = project?.build ?? null;
   const buildStatusProgress = Boolean(
     build?.status && (build.status === "pending" || build.status === "progress")
   );
@@ -64,7 +64,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
     throw error;
   }
 
-  if (data && !data.repository?.build) {
+  if (data && !data.project?.build) {
     return <BuildNotFound />;
   }
 
@@ -72,25 +72,21 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
     <>
       <BuildHotkeysDialog />
       <div className="m flex h-screen min-h-0 flex-col">
-        {data?.repository?.owner && (
+        {data?.project?.account && (
           <OvercapacityBanner
-            owner={data.repository.owner}
-            ownerLogin={params.ownerLogin}
+            account={data.project.account}
+            accountSlug={params.accountSlug}
           />
         )}
         <BuildHeader
           buildNumber={params.buildNumber}
-          ownerLogin={params.ownerLogin}
-          repositoryName={params.repositoryName}
+          accountSlug={params.accountSlug}
+          projectName={params.projectName}
           build={build}
-          repository={data?.repository ?? null}
+          project={data?.project ?? null}
         />
-        {repository && build ? (
-          <BuildWorkspace
-            params={params}
-            build={build}
-            repository={repository}
-          />
+        {project && build ? (
+          <BuildWorkspace params={params} build={build} project={project} />
         ) : null}
       </div>
     </>

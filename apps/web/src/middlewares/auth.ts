@@ -2,7 +2,7 @@
 import * as authorization from "auth-header";
 import type { Request, RequestHandler } from "express";
 
-import { User } from "@argos-ci/database/models";
+import { Account, User } from "@argos-ci/database/models";
 
 import { verifyJWT } from "../jwt.js";
 import { asyncHandler } from "../util.js";
@@ -11,7 +11,10 @@ declare global {
   namespace Express {
     interface Request {
       token?: string | null;
-      user?: User | null;
+      auth?: {
+        account: Account;
+        user: User;
+      } | null;
     }
   }
 }
@@ -36,17 +39,21 @@ const bearerToken: RequestHandler = (req, _res, next) => {
   next();
 };
 
-const getUserFromToken = async (token: string | null) => {
+const getAccountFromToken = async (
+  token: string | null
+): Promise<Account | null> => {
   if (!token) return null;
   const jwt = verifyJWT(token);
   if (!jwt) return null;
-  const user = await User.query().findById(jwt.id);
-  return user ?? null;
+  const account = await Account.query()
+    .withGraphFetched("user")
+    .findById(jwt.account.id);
+  return account ?? null;
 };
 
 const loggedUser = asyncHandler(async (req, _res, next) => {
-  const user = await getUserFromToken(req.token ?? null);
-  req.user = user;
+  const account = await getAccountFromToken(req.token ?? null);
+  req.auth = account?.user ? { account, user: account?.user } : null;
   next();
 });
 

@@ -4,18 +4,18 @@ import { transaction } from "@argos-ci/database";
 import { Build, File, Screenshot, Test } from "@argos-ci/database/models";
 
 const getOrCreateTests = async ({
-  repositoryId,
+  projectId,
   buildName,
   screenshotNames,
   trx,
 }: {
-  repositoryId: string;
+  projectId: string;
   buildName: string;
   screenshotNames: string[];
   trx: TransactionOrKnex;
 }) => {
   const tests: Test[] = await Test.query(trx)
-    .where({ repositoryId, buildName })
+    .where({ projectId, buildName })
     .whereIn("name", screenshotNames);
   const testNames = tests.map(({ name }: Test) => name);
   const testNamesToAdd = screenshotNames.filter(
@@ -28,7 +28,7 @@ const getOrCreateTests = async ({
   const addedTests = await Test.query(trx).insertAndFetch(
     testNamesToAdd.map((name) => ({
       name: name,
-      repositoryId,
+      projectId,
       buildName,
     }))
   );
@@ -77,7 +77,7 @@ export const insertFilesAndScreenshots = async (
     const files = await File.query(trx).whereIn("key", screenshotKeys);
 
     const tests = await getOrCreateTests({
-      repositoryId: params.build.repositoryId,
+      projectId: params.build.projectId,
       buildName: params.build.name,
       screenshotNames: params.screenshots.map((screenshot) => screenshot.name),
       trx,

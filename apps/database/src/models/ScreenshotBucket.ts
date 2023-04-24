@@ -2,7 +2,7 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
-import { Repository } from "./Repository.js";
+import { Project } from "./Project.js";
 import { Screenshot } from "./Screenshot.js";
 
 const SHA1_REGEXP = "^[0-9a-f]{40}$";
@@ -20,7 +20,7 @@ export class ScreenshotBucket extends Model {
         pattern: SHA1_REGEXP,
       },
       branch: { type: "string" },
-      repositoryId: { type: "string" },
+      projectId: { type: "string" },
     },
   });
 
@@ -28,7 +28,7 @@ export class ScreenshotBucket extends Model {
   complete!: boolean;
   commit!: string;
   branch!: string;
-  repositoryId!: string;
+  projectId!: string;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -40,17 +40,17 @@ export class ScreenshotBucket extends Model {
           to: "screenshots.screenshotBucketId",
         },
       },
-      repository: {
+      project: {
         relation: Model.BelongsToOneRelation,
-        modelClass: Repository,
+        modelClass: Project,
         join: {
-          from: "screenshot_buckets.repositoryId",
-          to: "repositories.id",
+          from: "screenshot_buckets.projectId",
+          to: "projects.id",
         },
       },
     };
   }
 
   screenshots?: Screenshot[];
-  repository?: Repository;
+  project?: Project;
 }

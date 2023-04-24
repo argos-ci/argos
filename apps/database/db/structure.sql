@@ -83,10 +83,13 @@ CREATE TABLE public.accounts (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "userId" bigint,
-    "organizationId" bigint,
     "forcedPlanId" bigint,
     "stripeCustomerId" character varying(255),
-    CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "organizationId") = 1))
+    "teamId" bigint,
+    "githubAccountId" bigint,
+    name character varying(255),
+    slug character varying(255) NOT NULL,
+    CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
 
@@ -160,7 +163,6 @@ CREATE TABLE public.builds (
     "compareScreenshotBucketId" bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "repositoryId" bigint NOT NULL,
     number integer NOT NULL,
     "jobStatus" public.job_status,
     "externalId" character varying(255),
@@ -169,6 +171,7 @@ CREATE TABLE public.builds (
     type text,
     "totalBatch" integer,
     "prNumber" integer,
+    "projectId" bigint NOT NULL,
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
 
@@ -310,25 +313,29 @@ ALTER SEQUENCE public.files_id_seq OWNED BY public.files.id;
 
 
 --
--- Name: installation_repository_rights; Type: TABLE; Schema: public; Owner: postgres
+-- Name: github_accounts; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.installation_repository_rights (
+CREATE TABLE public.github_accounts (
     id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "installationId" bigint NOT NULL,
-    "repositoryId" bigint NOT NULL
+    name character varying(255),
+    email character varying(255),
+    login character varying(255) NOT NULL,
+    "githubId" integer NOT NULL,
+    type text NOT NULL,
+    CONSTRAINT github_accounts_type_check CHECK ((type = ANY (ARRAY['user'::text, 'organization'::text])))
 );
 
 
-ALTER TABLE public.installation_repository_rights OWNER TO postgres;
+ALTER TABLE public.github_accounts OWNER TO postgres;
 
 --
--- Name: installation_repository_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: github_accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.installation_repository_rights_id_seq
+CREATE SEQUENCE public.github_accounts_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -336,20 +343,20 @@ CREATE SEQUENCE public.installation_repository_rights_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.installation_repository_rights_id_seq OWNER TO postgres;
+ALTER TABLE public.github_accounts_id_seq OWNER TO postgres;
 
 --
--- Name: installation_repository_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: github_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.installation_repository_rights_id_seq OWNED BY public.installation_repository_rights.id;
+ALTER SEQUENCE public.github_accounts_id_seq OWNED BY public.github_accounts.id;
 
 
 --
--- Name: installations; Type: TABLE; Schema: public; Owner: postgres
+-- Name: github_installations; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.installations (
+CREATE TABLE public.github_installations (
     id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
@@ -360,13 +367,13 @@ CREATE TABLE public.installations (
 );
 
 
-ALTER TABLE public.installations OWNER TO postgres;
+ALTER TABLE public.github_installations OWNER TO postgres;
 
 --
--- Name: installations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: github_installations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.installations_id_seq
+CREATE SEQUENCE public.github_installations_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -374,13 +381,124 @@ CREATE SEQUENCE public.installations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.installations_id_seq OWNER TO postgres;
+ALTER TABLE public.github_installations_id_seq OWNER TO postgres;
 
 --
--- Name: installations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: github_installations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.installations_id_seq OWNED BY public.installations.id;
+ALTER SEQUENCE public.github_installations_id_seq OWNED BY public.github_installations.id;
+
+
+--
+-- Name: github_repositories; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.github_repositories (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    name character varying(255) NOT NULL,
+    private boolean NOT NULL,
+    "defaultBranch" character varying(255) NOT NULL,
+    "githubId" integer NOT NULL,
+    "githubAccountId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.github_repositories OWNER TO postgres;
+
+--
+-- Name: github_repositories_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.github_repositories_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.github_repositories_id_seq OWNER TO postgres;
+
+--
+-- Name: github_repositories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.github_repositories_id_seq OWNED BY public.github_repositories.id;
+
+
+--
+-- Name: github_repository_installations; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.github_repository_installations (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "githubRepositoryId" bigint NOT NULL,
+    "githubInstallationId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.github_repository_installations OWNER TO postgres;
+
+--
+-- Name: github_repository_installations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.github_repository_installations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.github_repository_installations_id_seq OWNER TO postgres;
+
+--
+-- Name: github_repository_installations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.github_repository_installations_id_seq OWNED BY public.github_repository_installations.id;
+
+
+--
+-- Name: github_synchronizations; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.github_synchronizations (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "jobStatus" public.job_status NOT NULL,
+    "githubInstallationId" bigint
+);
+
+
+ALTER TABLE public.github_synchronizations OWNER TO postgres;
+
+--
+-- Name: github_synchronizations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.github_synchronizations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.github_synchronizations_id_seq OWNER TO postgres;
+
+--
+-- Name: github_synchronizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.github_synchronizations_id_seq OWNED BY public.github_synchronizations.id;
 
 
 --
@@ -454,43 +572,6 @@ ALTER SEQUENCE public.knex_migrations_lock_index_seq OWNED BY public.knex_migrat
 
 
 --
--- Name: organizations; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.organizations (
-    id bigint NOT NULL,
-    "githubId" integer NOT NULL,
-    name character varying(255),
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    login character varying(255) NOT NULL
-);
-
-
-ALTER TABLE public.organizations OWNER TO postgres;
-
---
--- Name: organizations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.organizations_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.organizations_id_seq OWNER TO postgres;
-
---
--- Name: organizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.organizations_id_seq OWNED BY public.organizations.id;
-
-
---
 -- Name: plans; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -526,6 +607,46 @@ ALTER TABLE public.plans_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.plans_id_seq OWNED BY public.plans.id;
+
+
+--
+-- Name: projects; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.projects (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    name character varying(255) NOT NULL,
+    token character varying(255) NOT NULL,
+    private boolean,
+    "baselineBranch" character varying(255),
+    "accountId" bigint NOT NULL,
+    "githubRepositoryId" bigint
+);
+
+
+ALTER TABLE public.projects OWNER TO postgres;
+
+--
+-- Name: projects_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.projects_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.projects_id_seq OWNER TO postgres;
+
+--
+-- Name: projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.projects_id_seq OWNED BY public.projects.id;
 
 
 --
@@ -569,50 +690,6 @@ ALTER SEQUENCE public.purchases_id_seq OWNED BY public.purchases.id;
 
 
 --
--- Name: repositories; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.repositories (
-    id bigint NOT NULL,
-    "githubId" integer NOT NULL,
-    name character varying(255) NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    token character varying(255),
-    "organizationId" bigint,
-    "userId" bigint,
-    private boolean DEFAULT false NOT NULL,
-    "baselineBranch" character varying(255),
-    "defaultBranch" character varying(255),
-    "forcedPrivate" boolean DEFAULT false NOT NULL,
-    CONSTRAINT repositories_one_branch_not_null CHECK ((((COALESCE("baselineBranch", ''::character varying))::text <> ''::text) OR ((COALESCE("defaultBranch", ''::character varying))::text <> ''::text)))
-);
-
-
-ALTER TABLE public.repositories OWNER TO postgres;
-
---
--- Name: repositories_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.repositories_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.repositories_id_seq OWNER TO postgres;
-
---
--- Name: repositories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.repositories_id_seq OWNED BY public.repositories.id;
-
-
---
 -- Name: screenshot_buckets; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -623,8 +700,8 @@ CREATE TABLE public.screenshot_buckets (
     branch character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "repositoryId" bigint NOT NULL,
-    complete boolean DEFAULT true
+    complete boolean DEFAULT true,
+    "projectId" bigint NOT NULL
 );
 
 
@@ -735,27 +812,27 @@ ALTER SEQUENCE public.screenshots_id_seq OWNED BY public.screenshots.id;
 
 
 --
--- Name: synchronizations; Type: TABLE; Schema: public; Owner: postgres
+-- Name: team_users; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.synchronizations (
+CREATE TABLE public.team_users (
     id bigint NOT NULL,
-    "userId" bigint,
-    "jobStatus" public.job_status,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    type public.synchronization_type NOT NULL,
-    "installationId" bigint
+    "userId" bigint NOT NULL,
+    "teamId" bigint NOT NULL,
+    "userLevel" text NOT NULL,
+    CONSTRAINT "team_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['member'::text, 'owner'::text])))
 );
 
 
-ALTER TABLE public.synchronizations OWNER TO postgres;
+ALTER TABLE public.team_users OWNER TO postgres;
 
 --
--- Name: synchronizations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: team_users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.synchronizations_id_seq
+CREATE SEQUENCE public.team_users_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -763,13 +840,48 @@ CREATE SEQUENCE public.synchronizations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.synchronizations_id_seq OWNER TO postgres;
+ALTER TABLE public.team_users_id_seq OWNER TO postgres;
 
 --
--- Name: synchronizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: team_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.synchronizations_id_seq OWNED BY public.synchronizations.id;
+ALTER SEQUENCE public.team_users_id_seq OWNED BY public.team_users.id;
+
+
+--
+-- Name: teams; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.teams (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "inviteSecret" character varying(255)
+);
+
+
+ALTER TABLE public.teams OWNER TO postgres;
+
+--
+-- Name: teams_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.teams_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.teams_id_seq OWNER TO postgres;
+
+--
+-- Name: teams_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.teams_id_seq OWNED BY public.teams.id;
 
 
 --
@@ -797,13 +909,13 @@ CREATE TABLE public.tests (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
-    "repositoryId" bigint NOT NULL,
     "buildName" character varying(255) NOT NULL,
     status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
     "resolvedDate" timestamp with time zone,
     "resolvedStabilityScore" integer,
     "muteUntil" timestamp with time zone,
-    muted boolean DEFAULT false NOT NULL
+    muted boolean DEFAULT false NOT NULL,
+    "projectId" bigint NOT NULL
 );
 
 
@@ -831,129 +943,15 @@ ALTER SEQUENCE public.tests_id_seq OWNED BY public.tests.id;
 
 
 --
--- Name: user_installation_rights; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.user_installation_rights (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "userId" bigint NOT NULL,
-    "installationId" bigint NOT NULL
-);
-
-
-ALTER TABLE public.user_installation_rights OWNER TO postgres;
-
---
--- Name: user_installation_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.user_installation_rights_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.user_installation_rights_id_seq OWNER TO postgres;
-
---
--- Name: user_installation_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.user_installation_rights_id_seq OWNED BY public.user_installation_rights.id;
-
-
---
--- Name: user_organization_rights; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.user_organization_rights (
-    id bigint NOT NULL,
-    "userId" bigint NOT NULL,
-    "organizationId" bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
-);
-
-
-ALTER TABLE public.user_organization_rights OWNER TO postgres;
-
---
--- Name: user_organization_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.user_organization_rights_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.user_organization_rights_id_seq OWNER TO postgres;
-
---
--- Name: user_organization_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.user_organization_rights_id_seq OWNED BY public.user_organization_rights.id;
-
-
---
--- Name: user_repository_rights; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.user_repository_rights (
-    id bigint NOT NULL,
-    "userId" bigint NOT NULL,
-    "repositoryId" bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL
-);
-
-
-ALTER TABLE public.user_repository_rights OWNER TO postgres;
-
---
--- Name: user_repository_rights_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.user_repository_rights_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.user_repository_rights_id_seq OWNER TO postgres;
-
---
--- Name: user_repository_rights_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.user_repository_rights_id_seq OWNED BY public.user_repository_rights.id;
-
-
---
 -- Name: users; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.users (
     id bigint NOT NULL,
-    "githubId" integer NOT NULL,
-    name character varying(255),
     email character varying(255),
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "accessToken" character varying(255),
-    login character varying(255) NOT NULL,
-    "privateSync" boolean DEFAULT false NOT NULL,
-    "githubScopes" jsonb,
-    scopes jsonb
+    "accessToken" character varying(255)
 );
 
 
@@ -1023,17 +1021,38 @@ ALTER TABLE ONLY public.files ALTER COLUMN id SET DEFAULT nextval('public.files_
 
 
 --
--- Name: installation_repository_rights id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: github_accounts id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.installation_repository_rights ALTER COLUMN id SET DEFAULT nextval('public.installation_repository_rights_id_seq'::regclass);
+ALTER TABLE ONLY public.github_accounts ALTER COLUMN id SET DEFAULT nextval('public.github_accounts_id_seq'::regclass);
 
 
 --
--- Name: installations id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: github_installations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.installations ALTER COLUMN id SET DEFAULT nextval('public.installations_id_seq'::regclass);
+ALTER TABLE ONLY public.github_installations ALTER COLUMN id SET DEFAULT nextval('public.github_installations_id_seq'::regclass);
+
+
+--
+-- Name: github_repositories id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_repositories ALTER COLUMN id SET DEFAULT nextval('public.github_repositories_id_seq'::regclass);
+
+
+--
+-- Name: github_repository_installations id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_repository_installations ALTER COLUMN id SET DEFAULT nextval('public.github_repository_installations_id_seq'::regclass);
+
+
+--
+-- Name: github_synchronizations id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_synchronizations ALTER COLUMN id SET DEFAULT nextval('public.github_synchronizations_id_seq'::regclass);
 
 
 --
@@ -1051,13 +1070,6 @@ ALTER TABLE ONLY public.knex_migrations_lock ALTER COLUMN index SET DEFAULT next
 
 
 --
--- Name: organizations id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.organizations ALTER COLUMN id SET DEFAULT nextval('public.organizations_id_seq'::regclass);
-
-
---
 -- Name: plans id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1065,17 +1077,17 @@ ALTER TABLE ONLY public.plans ALTER COLUMN id SET DEFAULT nextval('public.plans_
 
 
 --
+-- Name: projects id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects ALTER COLUMN id SET DEFAULT nextval('public.projects_id_seq'::regclass);
+
+
+--
 -- Name: purchases id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.purchases ALTER COLUMN id SET DEFAULT nextval('public.purchases_id_seq'::regclass);
-
-
---
--- Name: repositories id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.repositories ALTER COLUMN id SET DEFAULT nextval('public.repositories_id_seq'::regclass);
 
 
 --
@@ -1100,10 +1112,17 @@ ALTER TABLE ONLY public.screenshots ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- Name: synchronizations id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: team_users id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.synchronizations ALTER COLUMN id SET DEFAULT nextval('public.synchronizations_id_seq'::regclass);
+ALTER TABLE ONLY public.team_users ALTER COLUMN id SET DEFAULT nextval('public.team_users_id_seq'::regclass);
+
+
+--
+-- Name: teams id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.teams ALTER COLUMN id SET DEFAULT nextval('public.teams_id_seq'::regclass);
 
 
 --
@@ -1114,39 +1133,10 @@ ALTER TABLE ONLY public.tests ALTER COLUMN id SET DEFAULT nextval('public.tests_
 
 
 --
--- Name: user_installation_rights id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_installation_rights ALTER COLUMN id SET DEFAULT nextval('public.user_installation_rights_id_seq'::regclass);
-
-
---
--- Name: user_organization_rights id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_organization_rights ALTER COLUMN id SET DEFAULT nextval('public.user_organization_rights_id_seq'::regclass);
-
-
---
--- Name: user_repository_rights id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_repository_rights ALTER COLUMN id SET DEFAULT nextval('public.user_repository_rights_id_seq'::regclass);
-
-
---
 -- Name: users id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
-
-
---
--- Name: accounts accounts_organizationid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.accounts
-    ADD CONSTRAINT accounts_organizationid_unique UNIQUE ("organizationId");
 
 
 --
@@ -1155,6 +1145,14 @@ ALTER TABLE ONLY public.accounts
 
 ALTER TABLE ONLY public.accounts
     ADD CONSTRAINT accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: accounts accounts_slug_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_slug_unique UNIQUE (slug);
 
 
 --
@@ -1214,19 +1212,75 @@ ALTER TABLE ONLY public.files
 
 
 --
--- Name: installation_repository_rights installation_repository_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: github_accounts github_accounts_githubid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.installation_repository_rights
-    ADD CONSTRAINT installation_repository_rights_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.github_accounts
+    ADD CONSTRAINT github_accounts_githubid_unique UNIQUE ("githubId");
 
 
 --
--- Name: installations installations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: github_accounts github_accounts_login_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.installations
-    ADD CONSTRAINT installations_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.github_accounts
+    ADD CONSTRAINT github_accounts_login_unique UNIQUE (login);
+
+
+--
+-- Name: github_accounts github_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_accounts
+    ADD CONSTRAINT github_accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: github_installations github_installations_githubid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_installations
+    ADD CONSTRAINT github_installations_githubid_unique UNIQUE ("githubId");
+
+
+--
+-- Name: github_installations github_installations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_installations
+    ADD CONSTRAINT github_installations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: github_repositories github_repositories_githubid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_repositories
+    ADD CONSTRAINT github_repositories_githubid_unique UNIQUE ("githubId");
+
+
+--
+-- Name: github_repositories github_repositories_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_repositories
+    ADD CONSTRAINT github_repositories_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: github_repository_installations github_repository_installations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_repository_installations
+    ADD CONSTRAINT github_repository_installations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: github_synchronizations github_synchronizations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_synchronizations
+    ADD CONSTRAINT github_synchronizations_pkey PRIMARY KEY (id);
 
 
 --
@@ -1246,14 +1300,6 @@ ALTER TABLE ONLY public.knex_migrations
 
 
 --
--- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.organizations
-    ADD CONSTRAINT organizations_pkey PRIMARY KEY (id);
-
-
---
 -- Name: plans plans_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1262,19 +1308,27 @@ ALTER TABLE ONLY public.plans
 
 
 --
+-- Name: projects projects_githubrepositoryid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_githubrepositoryid_unique UNIQUE ("githubRepositoryId");
+
+
+--
+-- Name: projects projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: purchases purchases_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.purchases
     ADD CONSTRAINT purchases_pkey PRIMARY KEY (id);
-
-
---
--- Name: repositories repositories_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.repositories
-    ADD CONSTRAINT repositories_pkey PRIMARY KEY (id);
 
 
 --
@@ -1302,11 +1356,19 @@ ALTER TABLE ONLY public.screenshots
 
 
 --
--- Name: synchronizations synchronizations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: team_users team_users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.synchronizations
-    ADD CONSTRAINT synchronizations_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.team_users
+    ADD CONSTRAINT team_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: teams teams_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.teams
+    ADD CONSTRAINT teams_pkey PRIMARY KEY (id);
 
 
 --
@@ -1315,54 +1377,6 @@ ALTER TABLE ONLY public.synchronizations
 
 ALTER TABLE ONLY public.tests
     ADD CONSTRAINT tests_pkey PRIMARY KEY (id);
-
-
---
--- Name: tests tests_repositoryid_buildname_name_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.tests
-    ADD CONSTRAINT tests_repositoryid_buildname_name_unique UNIQUE ("repositoryId", "buildName", name);
-
-
---
--- Name: user_installation_rights user_installation_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_installation_rights
-    ADD CONSTRAINT user_installation_rights_pkey PRIMARY KEY (id);
-
-
---
--- Name: user_organization_rights user_organization_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_organization_rights
-    ADD CONSTRAINT user_organization_rights_pkey PRIMARY KEY (id);
-
-
---
--- Name: user_organization_rights user_organization_rights_userid_organizationid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_organization_rights
-    ADD CONSTRAINT user_organization_rights_userid_organizationid_unique UNIQUE ("userId", "organizationId");
-
-
---
--- Name: user_repository_rights user_repository_rights_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_repository_rights
-    ADD CONSTRAINT user_repository_rights_pkey PRIMARY KEY (id);
-
-
---
--- Name: user_repository_rights user_repository_rights_userid_repositoryid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_repository_rights
-    ADD CONSTRAINT user_repository_rights_userid_repositoryid_unique UNIQUE ("userId", "repositoryId");
 
 
 --
@@ -1381,10 +1395,17 @@ CREATE INDEX accounts_forcedplanid_index ON public.accounts USING btree ("forced
 
 
 --
--- Name: accounts_organizationid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: accounts_githubaccountid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX accounts_organizationid_index ON public.accounts USING btree ("organizationId");
+CREATE INDEX accounts_githubaccountid_index ON public.accounts USING btree ("githubAccountId");
+
+
+--
+-- Name: accounts_teamid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX accounts_teamid_index ON public.accounts USING btree ("teamId");
 
 
 --
@@ -1430,6 +1451,13 @@ CREATE INDEX builds_number_index ON public.builds USING btree (number);
 
 
 --
+-- Name: builds_projectid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_projectid_index ON public.builds USING btree ("projectId");
+
+
+--
 -- Name: captures_crawlid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1472,31 +1500,52 @@ CREATE INDEX crawls_jobstatus_index ON public.crawls USING btree ("jobStatus");
 
 
 --
--- Name: installation_repository_rights_installationid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: github_accounts_type_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX installation_repository_rights_installationid_index ON public.installation_repository_rights USING btree ("installationId");
-
-
---
--- Name: installation_repository_rights_repositoryid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX installation_repository_rights_repositoryid_index ON public.installation_repository_rights USING btree ("repositoryId");
+CREATE INDEX github_accounts_type_index ON public.github_accounts USING btree (type);
 
 
 --
--- Name: installations_githubid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: github_repositories_githubaccountid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX installations_githubid_index ON public.installations USING btree ("githubId");
+CREATE INDEX github_repositories_githubaccountid_index ON public.github_repositories USING btree ("githubAccountId");
 
 
 --
--- Name: organizations_githubid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: github_repositories_name_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX organizations_githubid_index ON public.organizations USING btree ("githubId");
+CREATE INDEX github_repositories_name_index ON public.github_repositories USING btree (name);
+
+
+--
+-- Name: github_repository_installations_githubinstallationid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_repository_installations_githubinstallationid_index ON public.github_repository_installations USING btree ("githubInstallationId");
+
+
+--
+-- Name: github_repository_installations_githubrepositoryid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_repository_installations_githubrepositoryid_index ON public.github_repository_installations USING btree ("githubRepositoryId");
+
+
+--
+-- Name: github_synchronizations_githubinstallationid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_synchronizations_githubinstallationid_index ON public.github_synchronizations USING btree ("githubInstallationId");
+
+
+--
+-- Name: github_synchronizations_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_synchronizations_jobstatus_index ON public.github_synchronizations USING btree ("jobStatus");
 
 
 --
@@ -1504,6 +1553,27 @@ CREATE INDEX organizations_githubid_index ON public.organizations USING btree ("
 --
 
 CREATE INDEX plans_githubid_index ON public.plans USING btree ("githubId");
+
+
+--
+-- Name: projects_accountid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX projects_accountid_index ON public.projects USING btree ("accountId");
+
+
+--
+-- Name: projects_name_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX projects_name_index ON public.projects USING btree (name);
+
+
+--
+-- Name: projects_token_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX projects_token_index ON public.projects USING btree (token);
 
 
 --
@@ -1518,41 +1588,6 @@ CREATE INDEX purchases_accountid_index ON public.purchases USING btree ("account
 --
 
 CREATE INDEX purchases_planid_index ON public.purchases USING btree ("planId");
-
-
---
--- Name: repositories_githubid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX repositories_githubid_index ON public.repositories USING btree ("githubId");
-
-
---
--- Name: repositories_organizationid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX repositories_organizationid_index ON public.repositories USING btree ("organizationId");
-
-
---
--- Name: repositories_private; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX repositories_private ON public.repositories USING btree (private);
-
-
---
--- Name: repositories_token_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX repositories_token_index ON public.repositories USING btree (token);
-
-
---
--- Name: repositories_userid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX repositories_userid_index ON public.repositories USING btree ("userId");
 
 
 --
@@ -1574,6 +1609,13 @@ CREATE INDEX screenshot_buckets_complete_index ON public.screenshot_buckets USIN
 --
 
 CREATE INDEX screenshot_buckets_name_index ON public.screenshot_buckets USING btree (name);
+
+
+--
+-- Name: screenshot_buckets_projectid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_buckets_projectid_index ON public.screenshot_buckets USING btree ("projectId");
 
 
 --
@@ -1654,87 +1696,24 @@ CREATE INDEX screenshots_testid_index ON public.screenshots USING btree ("testId
 
 
 --
--- Name: synchronizations_installationid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: team_users_teamid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX synchronizations_installationid_index ON public.synchronizations USING btree ("installationId");
-
-
---
--- Name: synchronizations_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX synchronizations_jobstatus_index ON public.synchronizations USING btree ("jobStatus");
+CREATE INDEX team_users_teamid_index ON public.team_users USING btree ("teamId");
 
 
 --
--- Name: synchronizations_type_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: team_users_userid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX synchronizations_type_index ON public.synchronizations USING btree (type);
-
-
---
--- Name: synchronizations_userid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX synchronizations_userid_index ON public.synchronizations USING btree ("userId");
+CREATE INDEX team_users_userid_index ON public.team_users USING btree ("userId");
 
 
 --
--- Name: tests_repositoryid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: tests_projectid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX tests_repositoryid_index ON public.tests USING btree ("repositoryId");
-
-
---
--- Name: user_installation_rights_installationid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX user_installation_rights_installationid_index ON public.user_installation_rights USING btree ("installationId");
-
-
---
--- Name: user_installation_rights_userid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX user_installation_rights_userid_index ON public.user_installation_rights USING btree ("userId");
-
-
---
--- Name: user_organization_rights_organizationid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX user_organization_rights_organizationid_index ON public.user_organization_rights USING btree ("organizationId");
-
-
---
--- Name: user_organization_rights_userid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX user_organization_rights_userid_index ON public.user_organization_rights USING btree ("userId");
-
-
---
--- Name: user_repository_rights_repositoryid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX user_repository_rights_repositoryid_index ON public.user_repository_rights USING btree ("repositoryId");
-
-
---
--- Name: user_repository_rights_userid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX user_repository_rights_userid_index ON public.user_repository_rights USING btree ("userId");
-
-
---
--- Name: users_githubid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX users_githubid_index ON public.users USING btree ("githubId");
+CREATE INDEX tests_projectid_index ON public.tests USING btree ("projectId");
 
 
 --
@@ -1746,11 +1725,19 @@ ALTER TABLE ONLY public.accounts
 
 
 --
--- Name: accounts accounts_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: accounts accounts_githubaccountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.accounts
-    ADD CONSTRAINT accounts_organizationid_foreign FOREIGN KEY ("organizationId") REFERENCES public.organizations(id);
+    ADD CONSTRAINT accounts_githubaccountid_foreign FOREIGN KEY ("githubAccountId") REFERENCES public.github_accounts(id);
+
+
+--
+-- Name: accounts accounts_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_teamid_foreign FOREIGN KEY ("teamId") REFERENCES public.teams(id);
 
 
 --
@@ -1786,11 +1773,11 @@ ALTER TABLE ONLY public.builds
 
 
 --
--- Name: builds builds_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: builds builds_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.builds
-    ADD CONSTRAINT builds_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES public.repositories(id);
+    ADD CONSTRAINT builds_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
 
 
 --
@@ -1826,19 +1813,51 @@ ALTER TABLE ONLY public.crawls
 
 
 --
--- Name: installation_repository_rights installation_repository_rights_installationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: github_repositories github_repositories_githubaccountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.installation_repository_rights
-    ADD CONSTRAINT installation_repository_rights_installationid_foreign FOREIGN KEY ("installationId") REFERENCES public.installations(id);
+ALTER TABLE ONLY public.github_repositories
+    ADD CONSTRAINT github_repositories_githubaccountid_foreign FOREIGN KEY ("githubAccountId") REFERENCES public.github_accounts(id);
 
 
 --
--- Name: installation_repository_rights installation_repository_rights_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: github_repository_installations github_repository_installations_githubinstallationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.installation_repository_rights
-    ADD CONSTRAINT installation_repository_rights_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES public.repositories(id);
+ALTER TABLE ONLY public.github_repository_installations
+    ADD CONSTRAINT github_repository_installations_githubinstallationid_foreign FOREIGN KEY ("githubInstallationId") REFERENCES public.github_installations(id);
+
+
+--
+-- Name: github_repository_installations github_repository_installations_githubrepositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_repository_installations
+    ADD CONSTRAINT github_repository_installations_githubrepositoryid_foreign FOREIGN KEY ("githubRepositoryId") REFERENCES public.github_repositories(id);
+
+
+--
+-- Name: github_synchronizations github_synchronizations_githubinstallationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_synchronizations
+    ADD CONSTRAINT github_synchronizations_githubinstallationid_foreign FOREIGN KEY ("githubInstallationId") REFERENCES public.github_installations(id);
+
+
+--
+-- Name: projects projects_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id);
+
+
+--
+-- Name: projects projects_githubrepositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_githubrepositoryid_foreign FOREIGN KEY ("githubRepositoryId") REFERENCES public.github_repositories(id);
 
 
 --
@@ -1866,27 +1885,11 @@ ALTER TABLE ONLY public.purchases
 
 
 --
--- Name: repositories repositories_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.repositories
-    ADD CONSTRAINT repositories_organizationid_foreign FOREIGN KEY ("organizationId") REFERENCES public.organizations(id);
-
-
---
--- Name: repositories repositories_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.repositories
-    ADD CONSTRAINT repositories_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
-
-
---
--- Name: screenshot_buckets screenshot_buckets_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: screenshot_buckets screenshot_buckets_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.screenshot_buckets
-    ADD CONSTRAINT screenshot_buckets_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES public.repositories(id);
+    ADD CONSTRAINT screenshot_buckets_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
 
 
 --
@@ -1954,75 +1957,27 @@ ALTER TABLE ONLY public.screenshots
 
 
 --
--- Name: synchronizations synchronizations_installationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: team_users team_users_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.synchronizations
-    ADD CONSTRAINT synchronizations_installationid_foreign FOREIGN KEY ("installationId") REFERENCES public.installations(id);
-
-
---
--- Name: synchronizations synchronizations_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.synchronizations
-    ADD CONSTRAINT synchronizations_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+ALTER TABLE ONLY public.team_users
+    ADD CONSTRAINT team_users_teamid_foreign FOREIGN KEY ("teamId") REFERENCES public.teams(id);
 
 
 --
--- Name: tests tests_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: team_users team_users_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_users
+    ADD CONSTRAINT team_users_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+
+
+--
+-- Name: tests tests_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.tests
-    ADD CONSTRAINT tests_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES public.repositories(id);
-
-
---
--- Name: user_installation_rights user_installation_rights_installationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_installation_rights
-    ADD CONSTRAINT user_installation_rights_installationid_foreign FOREIGN KEY ("installationId") REFERENCES public.installations(id);
-
-
---
--- Name: user_installation_rights user_installation_rights_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_installation_rights
-    ADD CONSTRAINT user_installation_rights_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
-
-
---
--- Name: user_organization_rights user_organization_rights_organizationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_organization_rights
-    ADD CONSTRAINT user_organization_rights_organizationid_foreign FOREIGN KEY ("organizationId") REFERENCES public.organizations(id);
-
-
---
--- Name: user_organization_rights user_organization_rights_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_organization_rights
-    ADD CONSTRAINT user_organization_rights_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
-
-
---
--- Name: user_repository_rights user_repository_rights_repositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_repository_rights
-    ADD CONSTRAINT user_repository_rights_repositoryid_foreign FOREIGN KEY ("repositoryId") REFERENCES public.repositories(id);
-
-
---
--- Name: user_repository_rights user_repository_rights_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.user_repository_rights
-    ADD CONSTRAINT user_repository_rights_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+    ADD CONSTRAINT tests_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
 
 
 --
@@ -2092,3 +2047,13 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023021
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230313131422_add_tests_table.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230323071510_add_mute_to_tests.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230416201920_crawls.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230417193649_isolate.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418095958_project-not-null.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418125037_user-github-account-id.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418130232_simplify-github-account.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418133221_simplify-account.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418154104_remove-github-installation-accounts.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230418191815_non-nullable-github-repo.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230423073805_team-invite-link.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230423170603_slug-unique.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230423195916_no-project-slug.js', 1, NOW());

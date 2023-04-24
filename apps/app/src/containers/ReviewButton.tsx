@@ -14,14 +14,14 @@ import { MagicTooltip } from "@/ui/Tooltip";
 
 import { getBuildIcon } from "./Build";
 
-export const RepositoryFragment = graphql(`
-  fragment ReviewButton_Repository on Repository {
+export const ProjectFragment = graphql(`
+  fragment ReviewButton_Project on Project {
     name
     permissions
-    private
-    forcedPrivate
-    owner {
-      login
+    public
+    account {
+      id
+      slug
       consumptionRatio
     }
     build(number: $buildNumber) {
@@ -143,28 +143,25 @@ const DisabledReviewButton = ({
 };
 
 export const ReviewButton = (props: {
-  repository: FragmentType<typeof RepositoryFragment>;
+  project: FragmentType<typeof ProjectFragment>;
 }) => {
-  const repository = useFragment(RepositoryFragment, props.repository);
+  const project = useFragment(ProjectFragment, props.project);
   if (
-    !repository.build ||
-    !repository.owner ||
-    !["accepted", "rejected", "diffDetected"].includes(repository.build.status)
+    !project.build ||
+    !project.account ||
+    !["accepted", "rejected", "diffDetected"].includes(project.build.status)
   ) {
     return null;
   }
 
-  if (!repository.permissions.includes("write" as Permission)) {
+  if (!project.permissions.includes("write" as Permission)) {
     return (
       <DisabledReviewButton
-        build={repository.build}
+        build={project.build}
         tooltip={
           <>
-            You must have access to{" "}
-            <strong>
-              {repository.owner.login}/{repository.name}
-            </strong>{" "}
-            repository on GitHub to review changes.
+            You must be part of <strong>{project.account.slug}</strong> team to
+            review changes.
           </>
         }
       ></DisabledReviewButton>
@@ -172,16 +169,16 @@ export const ReviewButton = (props: {
   }
 
   if (
-    (repository.private || repository.forcedPrivate) &&
-    typeof repository.owner.consumptionRatio === "number" &&
-    repository.owner.consumptionRatio >= 1
+    !project.public &&
+    typeof project.account.consumptionRatio === "number" &&
+    project.account.consumptionRatio >= 1
   ) {
     return (
       <DisabledReviewButton
-        build={repository.build}
+        build={project.build}
         tooltip={
           <>
-            You have hit {Math.floor(repository.owner.consumptionRatio * 100)}%
+            You have hit {Math.floor(project.account.consumptionRatio * 100)}%
             of your current plan. Please upgrade to unlock build reviews.
           </>
         }
@@ -189,5 +186,5 @@ export const ReviewButton = (props: {
     );
   }
 
-  return <BaseReviewButton build={repository.build} />;
+  return <BaseReviewButton build={project.build} />;
 };

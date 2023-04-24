@@ -1,6 +1,7 @@
 apps/*/lib/
 apps/*/dist/
 apps/app/src/gql/
+apps/app/src/gql-fragments.json
 package.json
 node_modules/
 /public/

@@ -3,7 +3,9 @@ import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { Octokit } from "@octokit/rest";
 
 import config from "@argos-ci/config";
-import { Installation } from "@argos-ci/database/models";
+import { GithubInstallation } from "@argos-ci/database/models";
+
+export type { RestEndpointMethodTypes } from "@octokit/rest";
 
 export const getAppOctokit = () => {
   return new Octokit({
@@ -37,9 +39,11 @@ export const getInstallationOctokit = async (
   installationId: string,
   appOctokit = getAppOctokit()
 ): Promise<Octokit | null> => {
-  const installation = await Installation.query().findById(installationId);
+  const installation = await GithubInstallation.query().findById(
+    installationId
+  );
   if (!installation) {
-    throw new Error(`Installation not found for id "${installationId}"`);
+    throw new Error(`GithubInstallation not found for id "${installationId}"`);
   }
   if (installation.githubToken && installation.githubTokenExpiresAt) {
     const expiredAt = Number(new Date(installation.githubTokenExpiresAt));
@@ -69,14 +73,14 @@ export const getInstallationOctokit = async (
     }
   })();
   if (!result) {
-    await Installation.query().findById(installationId).patch({
+    await GithubInstallation.query().findById(installationId).patch({
       deleted: true,
       githubToken: null,
       githubTokenExpiresAt: null,
     });
     return null;
   }
-  await Installation.query().findById(installationId).patch({
+  await GithubInstallation.query().findById(installationId).patch({
     deleted: false,
     githubToken: result.token,
     githubTokenExpiresAt: result.expiresAt,
