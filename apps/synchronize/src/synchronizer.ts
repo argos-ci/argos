@@ -63,15 +63,20 @@ const extractOwnersFromRepositories = (repositories: ApiRepository[]) => {
   return repositories.reduce((owners, repo) => {
     const exist = owners.some(({ id }) => id === repo.owner.id);
 
-    if (
-      !exist &&
-      (repo.owner.type === "organization" || repo.owner.type === "user")
-    ) {
+    if (!exist) {
+      const lowerType = repo.owner.type.toLowerCase();
+
+      if (lowerType !== "organization" && lowerType !== "user") {
+        throw new Error(
+          `Unexpected owner type ${repo.owner.type} for repository ${repo.id}`
+        );
+      }
+
       owners.push({
         id: repo.owner.id,
         name: repo.owner.name ?? null,
         login: repo.owner.login,
-        type: repo.owner.type,
+        type: lowerType,
       });
     }
 
