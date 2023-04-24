@@ -441,6 +441,7 @@ export const seed = async (knex) => {
     Object.keys(buildScreenshotDiffs).flatMap((buildId) =>
       buildScreenshotDiffs[buildId].map((screenshotDiff) => ({
         ...screenshotDiff,
+        stabilityScore: Math.floor(Math.random() * 100),
         buildId,
       }))
     )

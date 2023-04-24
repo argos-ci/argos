@@ -7,7 +7,8 @@ import {
   GithubAccount,
   GithubRepository,
   Project,
-  Screenshot, // ScreenshotDiff,
+  Screenshot,
+  ScreenshotDiff,
   Test,
 } from "@argos-ci/database/models";
 import { getTokenOctokit } from "@argos-ci/github";
@@ -33,6 +34,8 @@ export const typeDefs = gql`
     builds(first: Int!, after: Int!): BuildConnection!
     "A single build linked to the repository"
     build(number: Int!): Build
+    "Project has Tests"
+    hasTests: Boolean!
     "Tests associated to the repository"
     tests(first: Int!, after: Int!): TestConnection!
     "Determine if the current user has write access to the project"
@@ -115,34 +118,35 @@ export const resolvers = {
         number: args.number,
       });
     },
+    hasTests: async (project: Project) => {
+      const result = await Test.query()
+        .where({ projectId: project.id })
+        .first();
+      return !!result;
+    },
     tests: async (
       project: Project,
       { first, after }: { first: number; after: number }
     ) => {
       const result = await Test.query()
+        .withGraphFetched("screenshotDiffs(orderByMaxId)")
+        .modifiers({
+          orderByMaxId(builder) {
+            builder
+              .select("testId", "stabilityScore")
+              .max("id")
+              .orderBy("id", "desc")
+              .groupBy("testId", "id", "stabilityScore");
+          },
+        })
         .where({ projectId: project.id })
-        // .whereNot((builder) =>
-        //   builder.whereRaw(`"name" ~ :regexp`, {
-        //     regexp: ScreenshotDiff.screenshotFailureRegexp,
-        //   })
-        // )
-        // .leftJoin(
-        //   "screenshot_diffs AS last_diff",
-        //   "last_diff.testId",
-        //   "=",
-        //   "tests.id"
-        // )
-        // .leftJoin("screenshot_diffs AS other_diff", function () {
-        //   this.on("other_diff.testId", "=", "tests.id").andOn(
-        //     "other_diff.createdAt",
-        //     ">",
-        //     "last_diff.createdAt"
-        //   );
-        // })
-        // .whereNull("other_diff.id")
-        // .orderBy("last_diff.stabilityScore", "asc")
-        .orderBy("tests.name", "asc")
-        .orderBy("tests.id", "asc")
+        .whereNot((builder) =>
+          builder.whereRaw(`"name" ~ :regexp`, {
+            regexp: ScreenshotDiff.screenshotFailureRegexp,
+          })
+        )
+        .orderBy("name", "asc")
+        .orderBy("id", "asc")
         .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
