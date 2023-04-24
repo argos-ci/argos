@@ -140,7 +140,9 @@ export const processBuildNotification = async (
     throw new UnretryableError("Invariant: no repository found");
   }
 
-  if (!build.project.githubRepository.githubAccount) {
+  const githubAccount = build.project.githubRepository.githubAccount;
+
+  if (!githubAccount) {
     throw new UnretryableError("Invariant: no github account found");
   }
 
@@ -162,7 +164,7 @@ export const processBuildNotification = async (
   try {
     // https://developer.github.com/v3/repos/statuses/
     return await octokit.repos.createCommitStatus({
-      owner: build.project.githubRepository.githubAccount.login,
+      owner: githubAccount.login,
       repo: build.project.githubRepository.name,
       sha: build.compareScreenshotBucket.commit,
       state: notification.state,
