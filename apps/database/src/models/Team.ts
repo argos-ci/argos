@@ -77,6 +77,23 @@ export class Team extends Model {
     }
   }
 
+  static async verifyInviteToken(token: string): Promise<Team | null> {
+    const payload = Team.parseInviteToken(token);
+    if (!payload) {
+      return null;
+    }
+    const team = await Team.query().findById(payload.teamId);
+
+    if (!team) {
+      return null;
+    }
+
+    if (team.inviteSecret !== payload.secret) {
+      return null;
+    }
+    return team;
+  }
+
   async $checkWritePermission(user: User) {
     return Team.checkWritePermission(this.id, user);
   }

@@ -124,12 +124,11 @@ export const resolvers = {
       if (!auth) {
         throw new Error("Forbidden");
       }
-      const payload = Team.parseInviteToken(token);
-      if (!payload) {
-        return null;
+      const team = await Team.verifyInviteToken(token);
+      if (!team) {
+        throw new Error("Invalid token");
       }
-      const account = await Account.query().findOne({ teamId: payload.teamId });
-      return account ?? null;
+      return team.$relatedQuery("account");
     },
   },
   Mutation: {
@@ -222,19 +221,19 @@ export const resolvers = {
       if (!auth) {
         throw new Error("Forbidden");
       }
-      const payload = Team.parseInviteToken(token);
-      if (!payload) {
+      const team = await Team.verifyInviteToken(token);
+      if (!team) {
         throw new Error("Invalid token");
       }
 
-      const account = await Account.query().findOne({ teamId: payload.teamId });
+      const account = await team.$relatedQuery("account");
 
       if (!account) {
         throw new Error("Invalid token");
       }
 
       const teamUser = await TeamUser.query().findOne({
-        teamId: payload.teamId,
+        teamId: team.id,
         userId: auth.user.id,
       });
 
@@ -244,7 +243,7 @@ export const resolvers = {
 
       await TeamUser.query().insert({
         userId: auth.user.id,
-        teamId: payload.teamId,
+        teamId: team.id,
         userLevel: "owner",
       });
 
