@@ -54,7 +54,7 @@ export const up = async (knex) => {
     table.bigIncrements("id").primary();
     table.dateTime("createdAt").notNullable();
     table.dateTime("updatedAt").notNullable();
-    table.string("name").notNullable();
+    table.string("name");
     table.string("login").notNullable().unique();
     table.integer("githubId").notNullable().unique();
   });
