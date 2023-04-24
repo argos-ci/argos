@@ -136,17 +136,19 @@ export const processBuildNotification = async (
     throw new UnretryableError("Invariant: no project found");
   }
 
-  if (!build.project.githubRepository) {
+  const githubRepository = build.project.githubRepository;
+
+  if (!githubRepository) {
     throw new UnretryableError("Invariant: no repository found");
   }
 
-  const githubAccount = build.project.githubRepository.githubAccount;
+  const githubAccount = githubRepository.githubAccount;
 
   if (!githubAccount) {
     throw new UnretryableError("Invariant: no github account found");
   }
 
-  const installation = build.project.githubRepository.activeInstallation;
+  const installation = githubRepository.activeInstallation;
 
   if (!installation) {
     return null;
@@ -165,7 +167,7 @@ export const processBuildNotification = async (
     // https://developer.github.com/v3/repos/statuses/
     return await octokit.repos.createCommitStatus({
       owner: githubAccount.login,
-      repo: build.project.githubRepository.name,
+      repo: githubRepository.name,
       sha: build.compareScreenshotBucket.commit,
       state: notification.state,
       target_url: buildUrl,
