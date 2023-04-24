@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import config from "@argos-ci/config";
 
 type JWTData = {
-  version: number;
+  version: 1;
   account: {
     id: string;
     slug: string;
@@ -20,7 +20,11 @@ export const createJWT = (data: JWTData) => {
 
 export const verifyJWT = (token: string) => {
   try {
-    return jwt.verify(token, config.get("server.sessionSecret")) as JWTData;
+    const payload = jwt.verify(token, config.get("server.sessionSecret"));
+    if (typeof payload !== "object" || payload["version"] !== 1) {
+      return null;
+    }
+    return payload as JWTData;
   } catch {
     return null;
   }
