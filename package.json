@@ -4,14 +4,13 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run watch-build watch-server --concurrency 50",
     "build": "turbo run build",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test-watch": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --watch",
     "e2e:setup": "NODE_ENV=test npm run -w @argos-ci/database db:truncate && NODE_ENV=test npm run -w @argos-ci/database db:seed",
     "e2e:start": "NODE_ENV=test playwright test",
     "setup": "turbo run setup",
-    "procfile": "heroku local -f Procfile.dev -p 4001",
     "webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/SmH89Dx2HZ89wK7T --target https://api.argos-ci.dev:4001/github/event-handler",
     "stripe-webhook-proxy": "stripe listen --forward-to https://api.argos-ci.dev:4001/stripe/event-handler",
     "lint": "eslint .",
@@ -46,7 +45,7 @@
     "prettier": "^2.8.7",
     "prettier-plugin-tailwindcss": "^0.2.7",
     "smee-client": "^1.2.3",
-    "turbo": "^1.9.1",
+    "turbo": "^1.9.3",
     "typescript": "^5.0.4"
   },
   "volta": {

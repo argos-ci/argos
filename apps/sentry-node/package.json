@@ -6,7 +6,7 @@
   "exports": "./dist/index.js",
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",
-    "dev": "npm run build -- --watch"
+    "watch-build": "npm run build -- --watch --quiet"
   },
   "dependencies": {
     "@argos-ci/config": "*",

@@ -3,15 +3,14 @@
   "version": "*",
   "private": true,
   "type": "module",
-  "bin": {
-    "argos-build-and-synchronize": "./dist/bin/build-and-synchronize.js",
-    "argos-crawl-and-capture": "./dist/bin/crawl-and-capture.js",
-    "argos-screenshot-diff": "./dist/bin/screenshot-diff.js",
-    "argos-web": "./dist/bin/web.js"
-  },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",
-    "dev": "npm run build -- --watch"
+    "watch-server-bs": "node --watch ./dist/bin/build-and-synchronize.js",
+    "watch-server-cc": "node --watch ./dist/bin/crawl-and-capture.js",
+    "watch-server-sd": "node --watch ./dist/bin/screenshot-diff.js",
+    "watch-server-web": "node --watch ./dist/bin/web.js",
+    "watch-build": "npm run build -- --watch --quiet",
+    "watch-server": "concurrently \"npm:watch-server-*\""
   },
   "dependencies": {
     "@argos-ci/build": "*",
@@ -26,5 +25,8 @@
     "@argos-ci/synchronize": "*",
     "@argos-ci/web": "*",
     "@sentry/node": "^7.48.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1"
   }
 }

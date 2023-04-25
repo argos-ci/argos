@@ -20,7 +20,7 @@
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",
-    "dev": "npm run build -- --watch",
+    "watch-build": "npm run build -- --watch --quiet",
     "setup": "npm run db:create && npm run db:load",
     "db:check-structure": "knex-scripts check-structure",
     "db:create": "npx knex-scripts create",
