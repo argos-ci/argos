@@ -105,7 +105,6 @@ npm run -w @argos-ci/database db:truncate && npm run -w @argos-ci/database db:se
 ## Develop
 
 ```sh
-npm run procfile
 npm run dev
 ```
 

@@ -1,0 +1,9 @@
+{
+  "extends": ["//"],
+  "pipeline": {
+    "dev": {
+      "dependsOn": ["^@argos-ci/processes#build"]
+    },
+    "build": {}
+  }
+}

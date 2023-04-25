@@ -3,12 +3,11 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "dev:webpack": "webpack-dev-server",
-    "dev:codegen": "npm run codegen -- --watch",
-    "dev": "concurrently \"npm run dev:webpack\" \"npm run dev:codegen\"",
     "build": "NODE_ENV=production webpack",
     "codegen": "NODE_TLS_REJECT_UNAUTHORIZED=0 graphql-codegen --config codegen.ts",
-    "check-types": "npx tsc --noEmit"
+    "check-types": "npx tsc --noEmit",
+    "watch-build": "webpack-dev-server",
+    "watch-codegen": "npm run codegen -- --watch"
   },
   "sideEffects": false,
   "devDependencies": {

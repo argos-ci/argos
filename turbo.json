@@ -6,11 +6,8 @@
       "outputs": ["dist/**"]
     },
     "codegen": {
+      "dependsOn": ["start"],
       "outputs": ["src/gql/**"]
-    },
-    "dev": {
-      "dependsOn": [],
-      "cache": false
     },
     "setup": {
       "dependsOn": ["build"],
@@ -23,6 +20,14 @@
     "//#check-types": {
       "dependsOn": [],
       "outputs": []
+    },
+    "watch-build": {
+      "persistent": true,
+      "outputs": ["dist/**"]
+    },
+    "watch-server": {
+      "persistent": true,
+      "cache": false
     }
   },
   "globalDependencies": ["tsconfig.json", ".swcrc"]
