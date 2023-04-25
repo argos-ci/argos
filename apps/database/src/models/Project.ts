@@ -91,7 +91,7 @@ export class Project extends Model {
       this.githubRepository ??
       (await this.$relatedQuery("githubRepository", trx));
     if (!repository) return false;
-    return repository.private;
+    return !repository.private;
   }
 
   static async generateToken() {

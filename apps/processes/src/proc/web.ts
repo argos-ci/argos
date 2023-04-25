@@ -41,7 +41,9 @@ server.listen(config.get("server.port"), () => {
 });
 
 process.on("SIGTERM", () => {
-  server.close((err) => {
-    if (err) throw err;
-  });
+  if (server.listening) {
+    server.close((err) => {
+      if (err) throw err;
+    });
+  }
 });

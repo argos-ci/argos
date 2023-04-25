@@ -29,7 +29,7 @@ export const typeDefs = gql`
   type Project implements Node {
     id: ID!
     name: String!
-    token: ID!
+    token: String
     "Builds associated to the repository"
     builds(first: Int!, after: Int!): BuildConnection!
     "A single build linked to the repository"

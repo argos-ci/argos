@@ -376,7 +376,7 @@ describe("api v2", () => {
             },
           });
         });
-      }, 10000);
+      });
 
       it("inconsistent parallel count return an error", async () => {
         const updateResults = await Promise.all(

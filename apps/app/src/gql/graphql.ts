@@ -343,7 +343,7 @@ export type Project = Node & {
   referenceBranch?: Maybe<Scalars['String']>;
   /** Tests associated to the repository */
   tests: TestConnection;
-  token: Scalars['ID'];
+  token?: Maybe<Scalars['String']>;
 };
 
 
@@ -863,7 +863,7 @@ export type ProjectBuilds_Project_BuildsQuery = { __typename?: 'Query', project?
         & { ' $fragmentRefs'?: { 'BuildStatusChip_BuildFragment': BuildStatusChip_BuildFragment } }
       )> } } | null };
 
-export type GettingStarted_ProjectFragment = { __typename?: 'Project', token: string } & { ' $fragmentName'?: 'GettingStarted_ProjectFragment' };
+export type GettingStarted_ProjectFragment = { __typename?: 'Project', token?: string | null } & { ' $fragmentName'?: 'GettingStarted_ProjectFragment' };
 
 export type ProjectSettings_ProjectQueryVariables = Exact<{
   accountSlug: Scalars['String'];
@@ -871,7 +871,7 @@ export type ProjectSettings_ProjectQueryVariables = Exact<{
 }>;
 
 
-export type ProjectSettings_ProjectQuery = { __typename?: 'Query', project?: { __typename?: 'Project', id: string, token: string, baselineBranch?: string | null, private?: boolean | null, ghRepository?: { __typename?: 'GithubRepository', id: string, defaultBranch: string, private: boolean } | null } | null };
+export type ProjectSettings_ProjectQuery = { __typename?: 'Query', project?: { __typename?: 'Project', id: string, token?: string | null, baselineBranch?: string | null, private?: boolean | null, ghRepository?: { __typename?: 'GithubRepository', id: string, defaultBranch: string, private: boolean } | null } | null };
 
 export type ProjectSettings_UpdateBaselineBranchMutationVariables = Exact<{
   projectId: Scalars['ID'];
