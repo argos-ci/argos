@@ -484,7 +484,7 @@ const TestsList = ({
         </MagicTooltip>
       </ListHeader>
 
-      <div ref={parentRef} className="overflow-auto">
+      <div ref={parentRef} className="overflow-scroll">
         <div
           style={{
             height: rowVirtualizer.getTotalSize(),
@@ -603,13 +603,13 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
 
   return (
     <SelectedTestsStateProvider>
-      <div className="container mx-auto flex min-h-0 flex-1 basis-0 flex-col p-4">
+      <Container className="flex min-h-0 flex-1 flex-col">
         <TestsList
           tests={tests}
           fetchNextPage={fetchNextPage}
           fetching={testsResult.loading}
         />
-      </div>
+      </Container>
     </SelectedTestsStateProvider>
   );
 };

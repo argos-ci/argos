@@ -182,17 +182,37 @@ const BuildsList = ({
   }, [lastItem, hasNextPage, fetching, fetchNextPage, displayCount]);
 
   return (
-    <List
-      ref={parentRef}
-      className="relative my-4 max-h-max min-h-0 w-full overflow-auto"
-      style={{ height: rowVirtualizer.getTotalSize() }}
-    >
-      {virtualItems.map((virtualRow) => {
-        const build = builds.edges[virtualRow.index];
-        if (!build) {
+    <List ref={parentRef} className="max-h-max min-h-0 w-full overflow-scroll">
+      <div
+        style={{
+          height: rowVirtualizer.getTotalSize(),
+          position: "relative",
+        }}
+      >
+        {virtualItems.map((virtualRow) => {
+          const build = builds.edges[virtualRow.index];
+          if (!build) {
+            return (
+              <ListRowLoader
+                key={`loader-${virtualRow.index}`}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: virtualRow.size,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                Fetching builds...
+              </ListRowLoader>
+            );
+          }
           return (
-            <ListRowLoader
-              key={`loader-${virtualRow.index}`}
+            <BuildRow
+              key={`build-${build.id}`}
+              build={build}
+              project={project}
               style={{
                 position: "absolute",
                 top: 0,
@@ -201,27 +221,10 @@ const BuildsList = ({
                 height: virtualRow.size,
                 transform: `translateY(${virtualRow.start}px)`,
               }}
-            >
-              Fetching builds...
-            </ListRowLoader>
+            />
           );
-        }
-        return (
-          <BuildRow
-            key={`build-${build.id}`}
-            build={build}
-            project={project}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: virtualRow.size,
-              transform: `translateY(${virtualRow.start}px)`,
-            }}
-          />
-        );
-      })}
+        })}
+      </div>
     </List>
   );
 };
@@ -330,14 +333,14 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   }
 
   return (
-    <div className="container mx-auto flex min-h-0 flex-1 flex-col px-4">
+    <Container className="flex min-h-0 flex-1 flex-col">
       <BuildsList
         project={project}
         builds={builds}
         fetchNextPage={fetchNextPage}
         fetching={buildsResult.loading}
       />
-    </div>
+    </Container>
   );
 };
 
