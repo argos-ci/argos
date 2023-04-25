@@ -177,28 +177,56 @@ export const seed = async (knex) => {
       },
     ]);
 
+  await knex("screenshots").insert([
+    {
+      ...timeStamps,
+      screenshotBucketId: screenshotBuckets[0].id,
+      name: "penelope.png",
+      s3Id: "penelope.png",
+    },
+    {
+      ...timeStamps,
+      screenshotBucketId: screenshotBuckets[1].id,
+      name: "penelope-argos.png",
+      s3Id: "penelope-argos.png",
+    },
+    {
+      ...timeStamps,
+      screenshotBucketId: screenshotBuckets[2].id,
+      name: "penelope-argos (failed).png",
+      s3Id: "penelope-argos.png",
+    },
+  ]);
+
   const screenshots = await knex("screenshots")
-    .returning("id")
-    .insert([
-      {
-        ...timeStamps,
-        screenshotBucketId: screenshotBuckets[0].id,
-        name: "penelope.png",
-        s3Id: "penelope.png",
-      },
-      {
-        ...timeStamps,
-        screenshotBucketId: screenshotBuckets[1].id,
-        name: "penelope-argos.png",
-        s3Id: "penelope-argos.png",
-      },
-      {
-        ...timeStamps,
-        screenshotBucketId: screenshotBuckets[2].id,
-        name: "penelope-argos (failed).png",
-        s3Id: "penelope-argos.png",
-      },
-    ]);
+    .select("screenshots.*", "screenshot_buckets.projectId")
+    .orderBy("screenshots.id")
+    .innerJoin(
+      "screenshot_buckets",
+      "screenshot_buckets.id",
+      "screenshots.screenshotBucketId"
+    );
+
+  await knex("tests").insert(
+    screenshots.map((screenshot) => ({
+      ...timeStamps,
+      name: screenshot.name,
+      buildName: "default",
+      status: "pending",
+      projectId: screenshotBucket.projectId,
+    }))
+  );
+
+  const test = await knex("tests").select("tests.id", "tests.name");
+
+  await Promise.all(
+    screenshots.map(async ({ name }) => {
+      const testId = test.find((t) => t.name === name)?.id;
+      if (testId) {
+        return knex("screenshots").update({ testId });
+      }
+    })
+  );
 
   const dummiesFilesDimensions = [
     { width: 375, height: 720 },
@@ -413,9 +441,24 @@ export const seed = async (knex) => {
     Object.keys(buildScreenshotDiffs).flatMap((buildId) =>
       buildScreenshotDiffs[buildId].map((screenshotDiff) => ({
         ...screenshotDiff,
+        stabilityScore: Math.floor(Math.random() * 100),
         buildId,
       }))
     )
+  );
+
+  const screenshotDiffs = await knex("screenshot_diffs")
+    .select("screenshot_diffs.*", "screenshots.testId")
+    .join(
+      "screenshots",
+      "screenshot_diffs.compareScreenshotId",
+      "screenshots.id"
+    );
+
+  await Promise.all(
+    screenshotDiffs.map(async ({ testId }) => {
+      knex("screenshot_diffs").update({ testId });
+    })
   );
 
   await knex("plans").insert([
