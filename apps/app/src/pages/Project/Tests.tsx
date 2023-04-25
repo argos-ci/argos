@@ -394,7 +394,7 @@ const TestsList = ({
   useEffect(() => {
     if (
       lastItem &&
-      lastItem.index >= displayCount - 1 &&
+      lastItem.index === displayCount &&
       hasNextPage &&
       !fetching
     ) {
@@ -403,7 +403,7 @@ const TestsList = ({
   }, [lastItem, hasNextPage, fetching, fetchNextPage, displayCount]);
 
   return (
-    <List className="min-h-0 flex-1 overflow-hidden">
+    <List className="absolute h-full w-full overflow-hidden">
       <ListHeader className="flex gap-4 px-4 py-2">
         <div className="w-3" />
         <div className="flex flex-1 items-center gap-4">
@@ -484,7 +484,7 @@ const TestsList = ({
         </MagicTooltip>
       </ListHeader>
 
-      <div ref={parentRef} className="overflow-scroll">
+      <div ref={parentRef} className="min-h-0 flex-1 overflow-scroll">
         <div
           style={{
             height: rowVirtualizer.getTotalSize(),
@@ -603,7 +603,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
 
   return (
     <SelectedTestsStateProvider>
-      <Container className="flex min-h-0 flex-1 flex-col">
+      <Container className="relative min-h-0 flex-1">
         <TestsList
           tests={tests}
           fetchNextPage={fetchNextPage}

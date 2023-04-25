@@ -106,8 +106,10 @@ export const resolvers = {
     ) => {
       const result = await Build.query()
         .where({ projectId: project.id })
-        .orderBy("createdAt", "desc")
-        .orderBy("number", "desc")
+        .orderBy([
+          { column: "createdAt", order: "desc" },
+          { column: "number", order: "desc" },
+        ])
         .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });

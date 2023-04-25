@@ -12,7 +12,7 @@ export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
     return (
       <main
         ref={ref}
-        className="flex min-h-0 flex-grow flex-col border-t border-t-border py-6"
+        className="flex min-h-0 flex-1 flex-col border-t border-t-border py-6"
       >
         <Catch fallback={<ErrorPage />}>{props.children}</Catch>
       </main>

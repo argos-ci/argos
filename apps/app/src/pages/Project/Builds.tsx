@@ -173,20 +173,24 @@ const BuildsList = ({
   useEffect(() => {
     if (
       lastItem &&
-      lastItem.index >= displayCount - 1 &&
-      hasNextPage &&
-      !fetching
+      lastItem.index === displayCount &&
+      !fetching &&
+      hasNextPage
     ) {
       fetchNextPage();
     }
-  }, [lastItem, hasNextPage, fetching, fetchNextPage, displayCount]);
+  }, [lastItem, displayCount, fetching, hasNextPage, fetchNextPage]);
 
   return (
-    <List ref={parentRef} className="max-h-max min-h-0 w-full overflow-scroll">
+    <List
+      ref={parentRef}
+      className="absolute h-full w-full overflow-scroll"
+      style={{ display: "block" }}
+    >
       <div
+        className="relative"
         style={{
           height: rowVirtualizer.getTotalSize(),
-          position: "relative",
         }}
       >
         {virtualItems.map((virtualRow) => {
@@ -333,7 +337,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   }
 
   return (
-    <Container className="flex min-h-0 flex-1 flex-col">
+    <Container className="relative min-h-0 flex-1">
       <BuildsList
         project={project}
         builds={builds}
