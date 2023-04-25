@@ -3,7 +3,6 @@ import express, { Router } from "express";
 import { HttpError } from "express-err";
 
 import config from "@argos-ci/config";
-import { transaction } from "@argos-ci/database";
 import type { Project } from "@argos-ci/database/models";
 import { Build } from "@argos-ci/database/models";
 import { getUnknownScreenshotKeys } from "@argos-ci/database/services/screenshots";
@@ -111,25 +110,23 @@ const handleCreateParallel = async ({ req }: { req: CreateRequest }) => {
   const lockKey = `${req.authProject.id}:${req.body.commit}:${buildName}:${parallelNonce}`;
   const lock = await getRedisLock();
   const build = await lock.acquire(lockKey, async () => {
-    return transaction(async (trx) => {
-      const existingBuild = await Build.query(trx)
-        .withGraphFetched("compareScreenshotBucket")
-        .findOne({
-          "builds.projectId": req.authProject.id,
-          externalId: parallelNonce,
-          name: getBuildName(req.body.name),
-        });
+    const existingBuild = await Build.query()
+      .withGraphFetched("compareScreenshotBucket")
+      .findOne({
+        "builds.projectId": req.authProject.id,
+        externalId: parallelNonce,
+        name: getBuildName(req.body.name),
+      });
 
-      if (existingBuild) {
-        if (existingBuild.compareScreenshotBucket!.complete) {
-          throw new HttpError(409, `Build already finalized`);
-        }
-
-        return existingBuild;
+    if (existingBuild) {
+      if (existingBuild.compareScreenshotBucket!.complete) {
+        throw new HttpError(409, `Build already finalized`);
       }
 
-      return createBuild({ req, trx });
-    });
+      return existingBuild;
+    }
+
+    return createBuild({ req });
   });
 
   return { build, screenshots };
