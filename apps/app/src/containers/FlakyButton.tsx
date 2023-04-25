@@ -1,6 +1,6 @@
 import { BugAntIcon } from "@heroicons/react/20/solid";
 
-import { ListHeaderButton } from "@/ui/List";
+import { Button, ButtonIcon } from "@/ui/Button";
 import { MagicTooltip } from "@/ui/Tooltip";
 
 export const FlakyButton = ({
@@ -22,15 +22,19 @@ export const FlakyButton = ({
           : "Mark a test as flaky to highlight its inconsistency for future review"
       }
     >
-      <div>
-        <ListHeaderButton
-          icon={BugAntIcon}
-          onClick={onClick}
-          disabled={disabled}
-        >
-          {onlyFlakySelected ? "Cancel Flaky Flag" : "Mark as Flaky"}
-        </ListHeaderButton>
-      </div>
+      <Button
+        size="small"
+        variant="outline"
+        color="neutral"
+        onClick={onClick}
+        disabled={disabled}
+        accessibleWhenDisabled
+      >
+        <ButtonIcon>
+          <BugAntIcon />
+        </ButtonIcon>
+        {onlyFlakySelected ? "Cancel Flaky Flag" : "Mark as Flaky"}
+      </Button>
     </MagicTooltip>
   );
 };

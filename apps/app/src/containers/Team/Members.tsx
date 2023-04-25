@@ -167,7 +167,7 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
           want to continue?
         </DialogText>
         <List>
-          <ListRow>
+          <ListRow className="px-4 py-2">
             <AccountAvatar
               avatar={props.user.avatar}
               size={36}
@@ -334,7 +334,7 @@ export const TeamMembers = (props: {
           <List className="mt-4">
             {team.users.edges.map((user) => {
               return (
-                <ListRow key={user.id}>
+                <ListRow key={user.id} className="px-4 py-2">
                   <AccountAvatar
                     avatar={user.avatar}
                     size={36}

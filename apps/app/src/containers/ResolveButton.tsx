@@ -1,6 +1,6 @@
 import { CheckCircleIcon } from "@heroicons/react/20/solid";
 
-import { ListHeaderButton } from "@/ui/List";
+import { Button, ButtonIcon } from "@/ui/Button";
 import { MagicTooltip } from "@/ui/Tooltip";
 
 export const ResolveButton = ({
@@ -18,15 +18,19 @@ export const ResolveButton = ({
           : "Mark flaky test as resolved after addressing the issue"
       }
     >
-      <div>
-        <ListHeaderButton
-          icon={CheckCircleIcon}
-          onClick={onClick}
-          disabled={disabled}
-        >
-          Resolve
-        </ListHeaderButton>
-      </div>
+      <Button
+        size="small"
+        variant="outline"
+        color="neutral"
+        onClick={onClick}
+        disabled={disabled}
+        accessibleWhenDisabled
+      >
+        <ButtonIcon>
+          <CheckCircleIcon />
+        </ButtonIcon>
+        Resolve
+      </Button>
     </MagicTooltip>
   );
 };
