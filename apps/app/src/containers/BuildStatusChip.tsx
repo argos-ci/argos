@@ -23,26 +23,21 @@ export const BuildStatusChip = (props: {
   build: FragmentType<typeof BuildFragment>;
   project: FragmentType<typeof ProjectFragment>;
   scale?: ChipProps["scale"];
-  tooltip: boolean;
 }) => {
   const build = useFragment(BuildFragment, props.build);
   const project = useFragment(ProjectFragment, props.project);
-  const chip = (
-    <Chip
-      icon={getBuildIcon(build.type, build.status)}
-      color={getBuildColor(build.type, build.status)}
-      scale={props.scale}
-    >
-      {getBuildLabel(build.type, build.status)}
-    </Chip>
-  );
-  if (!props.tooltip) return chip;
   return (
     <MagicTooltip
       variant="info"
       tooltip={<BuildStatusDescription build={build} project={project} />}
     >
-      {chip}
+      <Chip
+        icon={getBuildIcon(build.type, build.status)}
+        color={getBuildColor(build.type, build.status)}
+        scale={props.scale}
+      >
+        {getBuildLabel(build.type, build.status)}
+      </Chip>
     </MagicTooltip>
   );
 };

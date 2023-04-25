@@ -7,7 +7,14 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import moment from "moment";
-import { memo, useCallback, useEffect, useRef } from "react";
+import {
+  CSSProperties,
+  HTMLAttributes,
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
@@ -23,19 +30,26 @@ import { TestStatus } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { Container } from "@/ui/Container";
 import { FlakyChip } from "@/ui/FlakyIndicator";
-import {
-  ListCell,
-  ListHeader,
-  ListHeaders,
-  ListLoader,
-  ListRow,
-} from "@/ui/List";
+import { List, ListHeader, ListRow, ListRowLoader } from "@/ui/List";
 import { MuteIndicator } from "@/ui/MuteIndicator";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 import { MagicTooltip } from "@/ui/Tooltip";
 
 import { NotFound } from "../NotFound";
+
+type CellProps = HTMLAttributes<HTMLDivElement>;
+
+const Cell = ({ className, ...props }: CellProps) => (
+  <div
+    role="cell"
+    className={clsx(
+      className,
+      "flex h-16 items-center justify-end whitespace-nowrap"
+    )}
+    {...props}
+  />
+);
 
 const ProjectTestsQuery = graphql(`
   query FlakyTests_project_tests(
@@ -103,11 +117,11 @@ type Tests = NonNullable<ProjectTestsDocument["project"]>["tests"];
 type Test = Tests["edges"][0];
 type Screenshot = Tests["edges"][0]["screenshot"];
 
-const secondaryColumnClassNames: string[] = [
-  "w-40 hidden xl:flex",
-  "w-24 hidden lg:flex",
-  "w-32",
-];
+const columns = {
+  graph: "w-40 hidden xl:flex",
+  variations: "w-40 hidden xl:flex",
+  score: "w-40 hidden xl:flex",
+};
 
 const pluralize = (count: number, singular: string, plural: string) => {
   return count < 2 ? singular : plural;
@@ -156,7 +170,7 @@ const DailyVariationGraphCell = ({
   totalBuilds: number;
 }) => {
   return (
-    <ListCell className={secondaryColumnClassNames[0]}>
+    <Cell className={columns.graph}>
       <div className="items-bottom flex h-8 flex-auto justify-between gap-1">
         {dailyChanges.map(({ date, count }) => {
           return (
@@ -180,7 +194,7 @@ const DailyVariationGraphCell = ({
           );
         })}
       </div>
-    </ListCell>
+    </Cell>
   );
 };
 
@@ -193,7 +207,7 @@ const VariationsCell = ({
 }) => {
   const totalChanges = dailyChanges.reduce((sum, { count }) => sum + count, 0);
   return (
-    <ListCell className={secondaryColumnClassNames[1]}>
+    <Cell className={columns.variations}>
       <MagicTooltip
         tooltip={`Over the last 7 days: ${totalChanges} screenshot 
         ${pluralize(totalChanges, "change", "changes")} / ${totalBuilds} total 
@@ -206,7 +220,7 @@ const VariationsCell = ({
           </span>
         </div>
       </MagicTooltip>
-    </ListCell>
+    </Cell>
   );
 };
 
@@ -217,7 +231,7 @@ const StabilityCell = ({
   score: number | null;
   unstable: boolean;
 }) => (
-  <ListCell className={secondaryColumnClassNames[2]}>
+  <Cell className={columns.score}>
     <MagicTooltip
       tooltip={"A test with a stability score lower than 60 is unstable"}
     >
@@ -233,49 +247,51 @@ const StabilityCell = ({
         /<span className="ml-0.5">100</span>
       </div>
     </MagicTooltip>
-  </ListCell>
+  </Cell>
 );
 
-const TestRow = memo(({ test }: { test: Test }) => {
-  const { testIsSelected, toggleTestSelection } = useSelectedTestsState();
+const TestRow = memo(
+  ({ test, style }: { test: Test; style: CSSProperties }) => {
+    const { testIsSelected, toggleTestSelection } = useSelectedTestsState();
 
-  return (
-    <ListRow>
-      <input
-        type="checkbox"
-        checked={testIsSelected(test)}
-        onChange={(e) => toggleTestSelection(test, e.target.checked)}
-      />
-      <div className="w-95 flex grow gap-4">
-        <Thumbnail screenshot={test.screenshot} />
-        <div className="flex flex-col justify-start gap-1">
-          <div className="flex min-h-[1.75rem] items-start gap-2">
-            <MuteIndicator test={test} />
-            <div className="mr-2 line-clamp-2 font-bold">{test.name}</div>
-            <FlakyChip test={test} className="-mt-0.5" />
-          </div>
-          <div className="flex items-center gap-4 text-sm">
-            <BuildNameField buildName={test.buildName} />
-            <LastSeenField lastSeen={test.lastSeen} />
+    return (
+      <ListRow style={style} className="p-4">
+        <input
+          type="checkbox"
+          checked={testIsSelected(test)}
+          onChange={(e) => toggleTestSelection(test, e.target.checked)}
+        />
+        <div className="w-95 -ml-px flex grow gap-4">
+          <Thumbnail screenshot={test.screenshot} />
+          <div className="flex flex-col justify-start gap-1">
+            <div className="flex min-h-[1.75rem] items-start gap-2">
+              <MuteIndicator test={test} />
+              <div className="mr-2 line-clamp-2 font-bold">{test.name}</div>
+              <FlakyChip test={test} className="-mt-0.5" />
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <BuildNameField buildName={test.buildName} />
+              <LastSeenField lastSeen={test.lastSeen} />
+            </div>
           </div>
         </div>
-      </div>
 
-      <DailyVariationGraphCell
-        dailyChanges={test.dailyChanges}
-        totalBuilds={test.totalBuilds}
-      />
-      <VariationsCell
-        dailyChanges={test.dailyChanges}
-        totalBuilds={test.totalBuilds}
-      />
-      <StabilityCell
-        score={test.stabilityScore ?? null}
-        unstable={test.unstable}
-      />
-    </ListRow>
-  );
-});
+        <DailyVariationGraphCell
+          dailyChanges={test.dailyChanges}
+          totalBuilds={test.totalBuilds}
+        />
+        <VariationsCell
+          dailyChanges={test.dailyChanges}
+          totalBuilds={test.totalBuilds}
+        />
+        <StabilityCell
+          score={test.stabilityScore ?? null}
+          unstable={test.unstable}
+        />
+      </ListRow>
+    );
+  }
+);
 
 const TestsList = ({
   tests,
@@ -369,7 +385,7 @@ const TestsList = ({
 
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? displayCount + 1 : displayCount,
-    estimateSize: () => 81,
+    estimateSize: () => 97,
     getScrollElement: () => parentRef.current,
     overscan: 20,
   });
@@ -387,10 +403,10 @@ const TestsList = ({
   }, [lastItem, hasNextPage, fetching, fetchNextPage, displayCount]);
 
   return (
-    <div className="flex min-h-0 flex-1 basis-0 flex-col rounded border border-border">
-      <ListHeaders>
-        <ListHeader className="w-3" />
-        <div className="flex flex-auto gap-4">
+    <List className="min-h-0 flex-1 overflow-hidden">
+      <ListHeader className="flex gap-4 px-4 py-2">
+        <div className="w-3" />
+        <div className="flex flex-1 items-center gap-4">
           <FlakyButton
             disabled={selectedTests.length === 0 || updateStatusesLoading}
             onlyFlakySelected={onlyFlakySelected}
@@ -439,26 +455,34 @@ const TestsList = ({
           />
         </div>
 
-        <ListHeader className={clsx(secondaryColumnClassNames[0], "")}>
-          <MagicTooltip tooltip="Screenshot variations over the last 7 days">
-            <div>Graph</div>
-          </MagicTooltip>
-        </ListHeader>
-        <ListHeader
-          className={clsx(secondaryColumnClassNames[1], "justify-end")}
-        >
-          <MagicTooltip tooltip="Screenshot variations out of the total number of builds over the last 7 days">
-            <div>Variations</div>
-          </MagicTooltip>
-        </ListHeader>
-        <ListHeader
-          className={clsx(secondaryColumnClassNames[2], "justify-end")}
-        >
-          <MagicTooltip tooltip="Higher scores indicating greater stability over the last 7 days">
-            <div>Stability score</div>
-          </MagicTooltip>
-        </ListHeader>
-      </ListHeaders>
+        <MagicTooltip tooltip="Screenshot variations over the last 7 days">
+          <div
+            role="columnheader"
+            className={clsx(columns.graph, "flex items-center")}
+          >
+            Graph
+          </div>
+        </MagicTooltip>
+        <MagicTooltip tooltip="Screenshot variations out of the total number of builds over the last 7 days">
+          <div
+            role="columnheader"
+            className={clsx(
+              columns.variations,
+              "flex items-center justify-end"
+            )}
+          >
+            Variations
+          </div>
+        </MagicTooltip>
+        <MagicTooltip tooltip="Higher scores indicating greater stability over the last 7 days">
+          <div
+            role="columnheader"
+            className={clsx(columns.score, "flex items-center justify-end")}
+          >
+            Stability score
+          </div>
+        </MagicTooltip>
+      </ListHeader>
 
       <div ref={parentRef} className="overflow-auto">
         <div
@@ -471,9 +495,8 @@ const TestsList = ({
             const test = tests.edges[virtualRow.index];
             if (!test) {
               return (
-                <div
+                <ListRowLoader
                   key={`loader-${virtualRow.index}`}
-                  className="flex items-center justify-center gap-2 text-sm text-on-light"
                   style={{
                     position: "absolute",
                     top: 0,
@@ -483,14 +506,14 @@ const TestsList = ({
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  <ListLoader />
-                </div>
+                  Fetching tests...
+                </ListRowLoader>
               );
             }
             return (
-              <div
+              <TestRow
                 key={`test-${test.id}`}
-                className="group"
+                test={test}
                 style={{
                   position: "absolute",
                   top: 0,
@@ -499,14 +522,12 @@ const TestsList = ({
                   height: virtualRow.size,
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
-              >
-                <TestRow test={test} />
-              </div>
+              />
             );
           })}
         </div>
       </div>
-    </div>
+    </List>
   );
 };
 

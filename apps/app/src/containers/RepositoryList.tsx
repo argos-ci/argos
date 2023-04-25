@@ -1,12 +1,13 @@
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
+import { List, ListRow } from "@/ui/List";
 import { Loader } from "@/ui/Loader";
 import { Time } from "@/ui/Time";
 
 import { Query } from "./Apollo";
 
 const InstallationQuery = graphql(`
-  query RepositoriesList_repository($installationId: ID!, $page: Int!) {
+  query RepositoryList_repository($installationId: ID!, $page: Int!) {
     ghApiInstallationRepositories(
       installationId: $installationId
       page: $page
@@ -24,7 +25,7 @@ const InstallationQuery = graphql(`
   }
 `);
 
-export const RepositoriesList = (props: {
+export const RepositoryList = (props: {
   installationId: string;
   importRepo: (repo: { id: string; name: string; owner_login: string }) => void;
   disabled?: boolean;
@@ -37,12 +38,9 @@ export const RepositoriesList = (props: {
     >
       {({ ghApiInstallationRepositories }) => {
         return (
-          <div className="flex flex-col overflow-auto rounded border border-border">
+          <List className="overflow-auto">
             {ghApiInstallationRepositories.edges.map((repo) => (
-              <div
-                key={repo.id}
-                className="flex items-center justify-between border-b border-border p-4 last:border-b-0"
-              >
+              <ListRow key={repo.id} className="justify-between p-4">
                 <div>
                   {repo.name} •{" "}
                   <Time date={repo.updated_at} className="text-on-light" />
@@ -55,9 +53,9 @@ export const RepositoriesList = (props: {
                 >
                   Import
                 </Button>
-              </div>
+              </ListRow>
             ))}
-          </div>
+          </List>
         );
       }}
     </Query>

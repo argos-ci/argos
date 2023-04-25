@@ -6,8 +6,7 @@ import {
 } from "@heroicons/react/20/solid";
 import moment from "moment";
 
-import { ButtonArrow } from "@/ui/Button";
-import { ListHeaderButton } from "@/ui/List";
+import { Button, ButtonArrow, ButtonIcon } from "@/ui/Button";
 import {
   Menu,
   MenuButton,
@@ -78,41 +77,53 @@ export const MuteTestDropdown = ({
   const menu = useMenuState({ placement: "bottom-start", gutter: 4 });
 
   return (
-    <MagicTooltip
-      tooltip={
-        disabled
-          ? "Select a test to mute it"
-          : "Mute a test to prevent it from triggering the GitHub status check"
-      }
-    >
-      <div>
-        <MenuButton state={menu} as={ListHeaderButton} disabled={disabled}>
-          <SpeakerXMarkIcon className="mr-2 h-4 w-4" />
-          Mute
-          <ButtonArrow />
-        </MenuButton>
-        <Menu state={menu} aria-label="Mute options">
-          {muteOptions.map(
-            ({ label, tooltip, icon: Icon, muted, muteUntil }, index) => (
-              <MagicTooltip tooltip={tooltip} key={index}>
-                <MenuItem
-                  state={menu}
-                  onClick={() => {
-                    onClick({ muted, muteUntil });
-                    menu.hide();
-                  }}
-                  disabled={onlyUnmuteSelected && !muted}
-                >
-                  <MenuItemIcon>
-                    <Icon />
-                  </MenuItemIcon>
-                  {label}
-                </MenuItem>
-              </MagicTooltip>
-            )
+    <>
+      <MagicTooltip
+        tooltip={
+          disabled
+            ? "Select a test to mute it"
+            : "Mute a test to prevent it from triggering the GitHub status check"
+        }
+      >
+        <MenuButton state={menu} disabled={disabled}>
+          {(menuButtonProps) => (
+            <Button
+              {...menuButtonProps}
+              color="neutral"
+              size="small"
+              variant="outline"
+              accessibleWhenDisabled
+            >
+              <ButtonIcon>
+                <SpeakerXMarkIcon />
+              </ButtonIcon>
+              Mute
+              <ButtonArrow />
+            </Button>
           )}
-        </Menu>
-      </div>
-    </MagicTooltip>
+        </MenuButton>
+      </MagicTooltip>
+      <Menu state={menu} aria-label="Mute options">
+        {muteOptions.map(
+          ({ label, tooltip, icon: Icon, muted, muteUntil }, index) => (
+            <MagicTooltip tooltip={tooltip} key={index}>
+              <MenuItem
+                state={menu}
+                onClick={() => {
+                  onClick({ muted, muteUntil });
+                  menu.hide();
+                }}
+                disabled={onlyUnmuteSelected && !muted}
+              >
+                <MenuItemIcon>
+                  <Icon />
+                </MenuItemIcon>
+                {label}
+              </MenuItem>
+            </MagicTooltip>
+          )
+        )}
+      </Menu>
+    </>
   );
 };

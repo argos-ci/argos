@@ -17,19 +17,19 @@ export type ButtonProps = AriakitButtonProps<"button"> & {
 const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
   contained: {
     primary:
-      "color-white border-transparent bg-primary-600 hover:bg-primary-700 active:bg-primary-800 aria-expanded:bg-primary-800",
+      "text-white border-transparent bg-primary-600 [&:not([aria-disabled])]:hover:bg-primary-700 active:bg-primary-800 aria-expanded:bg-primary-800",
     danger:
-      "color-white border-transparent bg-danger-600 hover:bg-danger-700 active:bg-danger-800 aria-expanded:bg-danger-800",
+      "text-white border-transparent bg-danger-600 [&:not([aria-disabled])]:hover:bg-danger-700 active:bg-danger-800 aria-expanded:bg-danger-800",
     neutral:
-      "color-white border-transparent bg-neutral-600 hover:bg-neutral-700 active:bg-neutral-800 aria-expanded:bg-neutral-800",
+      "text-white border-transparent bg-neutral-600 [&:not([aria-disabled])]:hover:bg-neutral-700 active:bg-neutral-800 aria-expanded:bg-neutral-800",
   },
   outline: {
     primary:
-      "color-primary-300 border-primary-300 bg-transparent hover:bg-primary-800",
+      "text-primary-300 border-primary-300 bg-transparent [&:not([aria-disabled])]:hover:bg-primary-800",
     danger:
-      "color-danger-300 border-danger-300 bg-transparent hover:bg-danger-800",
+      "text-danger-300 border-danger-300 bg-transparent [&:not([aria-disabled])]:hover:bg-danger-800",
     neutral:
-      "color-neutral-300 border-neutral-600 bg-transparent hover:bg-neutral-800",
+      "text-neutral-300 border-neutral-600 bg-transparent [&:not([aria-disabled])]:hover:bg-neutral-800",
   },
 };
 
@@ -71,7 +71,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           className,
           variantClassName,
           sizeClassName,
-          "align-center inline-flex whitespace-nowrap border font-sans font-medium leading-none transition disabled:opacity-70 [&:is(button)]:cursor-default"
+          "align-center inline-flex whitespace-nowrap border font-sans font-medium leading-none transition aria-disabled:opacity-70 [&:is(button)]:cursor-default"
         )}
         {...props}
       >

@@ -7,7 +7,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import config from "@/config";
 import { Query } from "@/containers/Apollo";
 import { InstallationsSelect } from "@/containers/InstallationsSelect";
-import { RepositoriesList } from "@/containers/RepositoriesList";
+import { RepositoryList } from "@/containers/RepositoryList";
 import { DocumentType, graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Card } from "@/ui/Card";
@@ -78,7 +78,7 @@ const Installations = (props: {
         value={value}
         setValue={setValue}
       />
-      <RepositoriesList
+      <RepositoryList
         installationId={value}
         disabled={loading}
         importRepo={(repo) => {
