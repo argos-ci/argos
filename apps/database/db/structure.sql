@@ -1647,6 +1647,13 @@ CREATE INDEX screenshot_diffs_fileid_index ON public.screenshot_diffs USING btre
 
 
 --
+-- Name: screenshot_diffs_test_id_id_desc_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_test_id_id_desc_idx ON public.screenshot_diffs USING btree ("testId", id DESC);
+
+
+--
 -- Name: screenshot_diffs_testid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2057,3 +2064,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023041
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230423073805_team-invite-link.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230423170603_slug-unique.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230423195916_no-project-slug.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230426123607_screenshot-diff-index.js', 1, NOW());
