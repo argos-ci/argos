@@ -119,7 +119,7 @@ export const processBuildNotification = async (
   buildNotification: BuildNotification
 ) => {
   await buildNotification.$fetchGraph(
-    `build.[project.githubRepository.[githubAccount,activeInstallation], compareScreenshotBucket]`
+    `build.[project.[githubRepository.[githubAccount,activeInstallation], account], compareScreenshotBucket]`
   );
 
   const { build } = buildNotification;
@@ -151,14 +151,14 @@ export const processBuildNotification = async (
   const installation = githubRepository.activeInstallation;
 
   if (!installation) {
-    return null;
+    return;
   }
 
   const notification = await getNotificationPayload(buildNotification);
   const octokit = await getInstallationOctokit(installation.id);
 
   if (!octokit) {
-    return null;
+    return;
   }
 
   const buildUrl = await build.getUrl();
