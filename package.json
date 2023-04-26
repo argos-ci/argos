@@ -4,7 +4,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "turbo run watch-build watch-server --concurrency 50",
+    "dev": "turbo run watch-build watch-server watch-codegen --concurrency 100",
     "build": "turbo run build",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test-watch": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --watch",

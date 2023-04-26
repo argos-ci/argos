@@ -6,7 +6,6 @@
       "outputs": ["dist/**"]
     },
     "codegen": {
-      "dependsOn": ["start"],
       "outputs": ["src/gql/**"]
     },
     "setup": {
@@ -26,6 +25,10 @@
       "outputs": ["dist/**"]
     },
     "watch-server": {
+      "persistent": true,
+      "cache": false
+    },
+    "watch-codegen": {
       "persistent": true,
       "cache": false
     }
