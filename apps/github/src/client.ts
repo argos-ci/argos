@@ -1,11 +1,14 @@
 import { createAppAuth } from "@octokit/auth-app";
 import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
+import { retry } from "@octokit/plugin-retry";
 import { Octokit } from "@octokit/rest";
 
 import config from "@argos-ci/config";
 import { GithubInstallation } from "@argos-ci/database/models";
 
 export type { RestEndpointMethodTypes } from "@octokit/rest";
+
+Octokit.plugin(retry);
 
 export const getAppOctokit = () => {
   return new Octokit({
