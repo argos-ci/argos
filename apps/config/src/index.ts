@@ -5,7 +5,11 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
-dotenv.config();
+const rootDotEnvPath = join(__dirname, "../../../.env");
+
+dotenv.config({
+  path: rootDotEnvPath,
+});
 
 const workers = 5;
 const maxConnectionsAllowed = 20;

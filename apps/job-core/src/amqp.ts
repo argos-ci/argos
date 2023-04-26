@@ -1,6 +1,6 @@
 import amqp from "amqplib";
-import { callbackify } from "node:util";
 
+// import { callbackify } from "node:util";
 import config from "@argos-ci/config";
 
 let connectPromise: ReturnType<typeof amqp.connect> | null = null;
@@ -29,8 +29,8 @@ export async function quitAmqp() {
   await connection.close();
 }
 
-process.on("SIGTERM", () => {
-  callbackify(quitAmqp)((err) => {
-    if (err) throw err;
-  });
-});
+// process.on("SIGTERM", () => {
+//   callbackify(quitAmqp)((err) => {
+//     console.error(err);
+//   });
+// });

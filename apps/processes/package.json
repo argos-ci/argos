@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",
-    "watch-server-bs": "node --watch ./dist/bin/build-and-synchronize.js",
-    "watch-server-cc": "node --watch ./dist/bin/crawl-and-capture.js",
-    "watch-server-sd": "node --watch ./dist/bin/screenshot-diff.js",
-    "watch-server-web": "node --watch ./dist/bin/web.js",
+    "watch-server-build-and-synchronize": "node --watch ./dist/proc/build-and-synchronize.js",
+    "watch-server-crawl-and-capture": "node --watch ./dist/proc/crawl-and-capture.js",
+    "watch-server-screenshot-diff": "node --watch ./dist/proc/screenshot-diff.js",
+    "watch-server-web": "node --watch ./dist/proc/web.js",
     "watch-build": "npm run build -- --watch --quiet",
     "watch-server": "concurrently \"npm:watch-server-*\""
   },

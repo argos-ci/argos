@@ -105,7 +105,7 @@ const config = {
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "node apps/processes/dist/bin/web.js",
+    command: "node apps/processes/dist/proc/web.js",
     port: 4001,
     timeout: 10 * 1000,
     reuseExistingServer: false,
