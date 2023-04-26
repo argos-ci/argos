@@ -340,9 +340,12 @@ describe("models/Build", () => {
     it("should return url", async () => {
       const build = await factory.create<Build>("Build");
       const url = await build.getUrl();
+      const project = await build
+        .$relatedQuery("project")
+        .withGraphFetched("account");
       expect(url).toMatch(
-        `http://localhost:4001/${build.project!.account!.slug}/${
-          build.project!.name
+        `http://localhost:4001/${project!.account!.slug}/${
+          project!.name
         }/builds/${build.number}`
       );
     });

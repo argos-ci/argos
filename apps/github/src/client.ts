@@ -39,12 +39,9 @@ export const getInstallationOctokit = async (
   installationId: string,
   appOctokit = getAppOctokit()
 ): Promise<Octokit | null> => {
-  const installation = await GithubInstallation.query().findById(
-    installationId
-  );
-  if (!installation) {
-    throw new Error(`GithubInstallation not found for id "${installationId}"`);
-  }
+  const installation = await GithubInstallation.query()
+    .findById(installationId)
+    .throwIfNotFound();
   if (installation.githubToken && installation.githubTokenExpiresAt) {
     const expiredAt = Number(new Date(installation.githubTokenExpiresAt));
     const now = Date.now();

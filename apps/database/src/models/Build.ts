@@ -304,18 +304,15 @@ export class Build extends Model {
   }
 
   async getUrl({ trx }: { trx?: TransactionOrKnex } = {}) {
-    if (!this.project?.account) {
-      await this.$fetchGraph(
-        "project.account",
-        trx ? { transaction: trx } : undefined
-      );
-    }
+    const project =
+      this.project ??
+      (await this.$relatedQuery("project", trx).withGraphFetched("account"));
 
-    if (!this.project?.account) {
+    if (!project?.account) {
       throw new Error("Account not found");
     }
 
-    const pathname = `/${this.project.account.slug}/${this.project.name}/builds/${this.number}`;
+    const pathname = `/${project.account.slug}/${project.name}/builds/${this.number}`;
 
     return `${config.get("server.url")}${pathname}`;
   }
