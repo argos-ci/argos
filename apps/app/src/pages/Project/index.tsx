@@ -19,7 +19,11 @@ const ProjectQuery = graphql(`
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       permissions
-      hasTests
+      tests(first: 0, after: 0) {
+        pageInfo {
+          totalCount
+        }
+      }
     }
   }
 `);
@@ -75,11 +79,13 @@ export const Project = () => {
           "write" as Permission
         );
 
-        if (project.hasTests || hasWritePermission) {
+        const hasTests = project.tests.pageInfo.totalCount > 0;
+
+        if (hasTests || hasWritePermission) {
           return (
             <ProjectTabs
               hasWritePermission={hasWritePermission}
-              hasTests={project.hasTests}
+              hasTests={hasTests}
             />
           );
         }

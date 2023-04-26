@@ -34,8 +34,6 @@ export const typeDefs = gql`
     builds(first: Int!, after: Int!): BuildConnection!
     "A single build linked to the repository"
     build(number: Int!): Build
-    "Project has Tests"
-    hasTests: Boolean!
     "Tests associated to the repository"
     tests(first: Int!, after: Int!): TestConnection!
     "Determine if the current user has write access to the project"
@@ -119,12 +117,6 @@ export const resolvers = {
         projectId: project.id,
         number: args.number,
       });
-    },
-    hasTests: async (project: Project) => {
-      const result = await Test.query()
-        .where({ projectId: project.id })
-        .first();
-      return !!result;
     },
     tests: async (
       project: Project,
