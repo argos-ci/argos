@@ -5,6 +5,12 @@ import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
 import { Plan } from "./Plan.js";
 
+const getStartOfMonth = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), 1);
+
+const getStartOfPreviousMonth = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth() - 1, 1);
+
 export class Purchase extends Model {
   static override tableName = "purchases";
 
@@ -19,7 +25,7 @@ export class Purchase extends Model {
         enum: ["github", "stripe"],
       },
       endDate: { type: ["string", "null"] },
-      startDate: { type: ["string", "null"] },
+      startDate: { type: ["string"] },
     },
   });
 
@@ -28,7 +34,7 @@ export class Purchase extends Model {
   purchaserId!: string | null;
   source!: string;
   endDate!: string | null;
-  startDate!: string | null;
+  startDate!: string;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -53,6 +59,24 @@ export class Purchase extends Model {
 
   account?: Account;
   plan?: Plan;
+
+  getLastResetDate(now = new Date()) {
+    const startOfMonth = getStartOfMonth(now);
+    const purchaseDate = new Date(this.startDate);
+    const timeInMonth = now.getTime() - startOfMonth.getTime();
+    const purchaseTimeInMonth =
+      purchaseDate.getTime() - getStartOfMonth(purchaseDate).getTime();
+    const billingHasResetThisMonth = timeInMonth > purchaseTimeInMonth;
+
+    return billingHasResetThisMonth
+      ? new Date(startOfMonth.getTime() + purchaseTimeInMonth)
+      : new Date(
+          Math.min(
+            getStartOfPreviousMonth(now).getTime() + purchaseTimeInMonth,
+            startOfMonth.getTime() // end of previous month
+          )
+        );
+  }
 
   static encodeStripeClientReferenceId({
     accountId,

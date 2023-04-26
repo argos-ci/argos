@@ -64,7 +64,7 @@ const getLastPurchase = async (account: Account) => {
 const getPendingPurchases = async (account: Account) => {
   return Purchase.query()
     .where("accountId", account.id)
-    .where("startDate", ">", "now()")
+    .whereRaw("??::DATE > now()", "startDate")
     .where((query) =>
       query.whereNull("endDate").orWhere("endDate", ">=", "now()")
     );
@@ -197,6 +197,7 @@ export const handleStripeEvent = async ({
         accountId: account.id,
         source: "stripe",
         purchaserId,
+        startDate: new Date().toISOString(),
       });
       break;
     }
@@ -260,6 +261,7 @@ export const handleStripeEvent = async ({
           planId: plan.id,
           accountId: account.id,
           source: "stripe",
+          startDate: new Date(subscription.start_date * 1000).toISOString(),
         });
         break;
       }

@@ -146,25 +146,10 @@ export class Account extends Model {
   async getCurrentConsumptionStartDate() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    if (this.forcedPlanId) {
-      return startOfMonth;
-    }
-
-    const activePurchase = await this.getActivePurchase();
-
-    if (!activePurchase || !activePurchase.startDate) {
-      return startOfMonth;
-    }
-
-    const purchaseStartDate = new Date(activePurchase.startDate);
-
-    const startOfSecondMonth = new Date(
-      purchaseStartDate.getFullYear(),
-      purchaseStartDate.getMonth() + 1,
-      1
-    );
-    return now < startOfSecondMonth ? purchaseStartDate : startOfMonth;
+    const purchase = await this.getActivePurchase();
+    return this.forcedPlanId || !purchase?.startDate
+      ? startOfMonth
+      : purchase.getLastResetDate();
   }
 
   async getScreenshotsCurrentConsumption() {
