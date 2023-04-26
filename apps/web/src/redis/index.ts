@@ -1,4 +1,4 @@
-import { callbackify } from "node:util";
+// import { callbackify } from "node:util";
 import { createClient } from "redis";
 
 import config from "@argos-ci/config";
@@ -82,8 +82,8 @@ export const quitRedis = async () => {
   }
 };
 
-process.on("SIGTERM", () => {
-  callbackify(quitRedis)((err) => {
-    if (err) throw err;
-  });
-});
+// process.on("SIGTERM", () => {
+//   callbackify(quitRedis)((err) => {
+//     console.error(err);
+//   });
+// });

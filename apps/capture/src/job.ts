@@ -1,4 +1,4 @@
-import { callbackify } from "node:util";
+// import { callbackify } from "node:util";
 import puppeteer from "puppeteer";
 
 import { job as buildJob } from "@argos-ci/build";
@@ -24,11 +24,11 @@ const launchBrowser = async () => {
   return browser;
 };
 
-const closeBrowser = async () => {
-  if (browser) {
-    await (await browser).close();
-  }
-};
+// const closeBrowser = async () => {
+//   if (browser) {
+//     await (await browser).close();
+//   }
+// };
 
 const captureScreenshot = async (url: string) => {
   const browser = await launchBrowser();
@@ -88,10 +88,10 @@ export const performCapture = async (capture: Capture) => {
   }
 };
 
-process.on("SIGTERM", () => {
-  callbackify(closeBrowser)((err: any) => {
-    if (err) throw err;
-  });
-});
+// process.on("SIGTERM", () => {
+//   callbackify(closeBrowser)((err: any) => {
+//     if (err) throw err;
+//   });
+// });
 
 export const job = createModelJob("capture", Capture, performCapture);

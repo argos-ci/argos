@@ -8,6 +8,6 @@ import { transaction } from "./transaction.js";
 export const knex = Knex.default(config.get("pg"));
 transaction.knex(knex);
 
-process.on("SIGTERM", () => {
-  knex.destroy();
-});
+// process.on("SIGTERM", () => {
+//   knex.destroy();
+// });

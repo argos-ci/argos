@@ -40,10 +40,10 @@ server.listen(config.get("server.port"), () => {
   logger.info(`Ready on http://localhost:${config.get("server.port")}`);
 });
 
-process.on("SIGTERM", () => {
-  if (server.listening) {
-    server.close((err) => {
-      if (err) throw err;
-    });
-  }
-});
+// process.on("SIGTERM", () => {
+//   if (server.listening) {
+//     server.close((err) => {
+//       if (err) throw err;
+//     });
+//   }
+// });
