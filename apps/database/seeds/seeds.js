@@ -456,9 +456,9 @@ export const seed = async (knex) => {
     );
 
   await Promise.all(
-    screenshotDiffs.map(async ({ testId }) => {
-      knex("screenshot_diffs").update({ testId });
-    })
+    screenshotDiffs.map(async ({ id, testId }) =>
+      knex("screenshot_diffs").update({ testId }).where({ id: id })
+    )
   );
 
   await knex("plans").insert([
