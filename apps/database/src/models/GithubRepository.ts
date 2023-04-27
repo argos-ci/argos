@@ -62,7 +62,7 @@ export class GithubRepository extends Model {
           to: "github_installations.id",
         },
         modify(builder) {
-          return builder.findOne({ deleted: false });
+          builder.where("github_installations.deleted", false);
         },
       },
     };
