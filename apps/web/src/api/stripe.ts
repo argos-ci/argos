@@ -164,6 +164,38 @@ const findSessionPlan = async (initialSession: Stripe.Checkout.Session) => {
   return findPlanOrThrow(stripeProductId);
 };
 
+export const updateStripeUsage = async (account: Account) => {
+  try {
+    const stripeCustomerId = account.stripeCustomerId;
+    if (!stripeCustomerId) return;
+
+    const subscriptions = await stripe.subscriptions.list({
+      status: "active",
+      customer: stripeCustomerId,
+      expand: ["items"],
+    });
+    if (subscriptions.data.length > 1) {
+      throw new Error(
+        `Can't update usage. Stripe return multiple active subscriptions for account ${account.id}`
+      );
+    }
+    const subscription = subscriptions.data[0];
+    const meteredPricing =
+      subscription?.items.data[0]?.price.recurring?.usage_type === "metered";
+    if (!meteredPricing) return;
+
+    const quantity = await account.getScreenshotsCurrentConsumption();
+    await stripe.subscriptionItems.createUsageRecord(subscription.id, {
+      action: "set",
+      quantity,
+    });
+  } catch (e) {
+    throw new Error("error updating stripe usage.", {
+      cause: e instanceof Error ? e.message : String(e),
+    });
+  }
+};
+
 export const handleStripeEvent = async ({
   data,
   eventType,
