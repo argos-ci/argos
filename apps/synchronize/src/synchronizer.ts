@@ -42,12 +42,14 @@ const linkInstallationRepositories = async (
   );
 
   await Promise.all([
-    GithubRepositoryInstallation.query(trx).insert(
-      toLink.map((repository) => ({
-        githubInstallationId: installationId,
-        githubRepositoryId: repository.id,
-      }))
-    ),
+    toLink.length > 0
+      ? GithubRepositoryInstallation.query(trx).insert(
+          toLink.map((repository) => ({
+            githubInstallationId: installationId,
+            githubRepositoryId: repository.id,
+          }))
+        )
+      : null,
     toUnlink.length > 0
       ? GithubRepositoryInstallation.query(trx)
           .whereIn(
@@ -112,7 +114,7 @@ const saveAccounts = async (
   );
 
   await Promise.all([
-    toInsert.length
+    toInsert.length > 0
       ? GithubAccount.query(trx).insert(
           toInsert.map((owner) => ({
             githubId: owner.id,
@@ -189,7 +191,7 @@ const saveRepositories = async (
   };
 
   await Promise.all([
-    toInsert.length
+    toInsert.length > 0
       ? GithubRepository.query(trx).insert(
           toInsert.map((apiRepo) => getRepoData(apiRepo))
         )

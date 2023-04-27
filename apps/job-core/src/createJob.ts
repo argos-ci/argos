@@ -59,9 +59,6 @@ export const createJob = <TArg>(
       );
     },
     async process({ channel }: { channel: Channel }) {
-      Sentry.configureScope((scope) => {
-        scope.setTag("jobQueue", queue);
-      });
       await channel.prefetch(prefetch);
       await channel.assertQueue(queue, { durable: true });
       await channel.consume(queue, async (msg) => {
@@ -71,9 +68,6 @@ export const createJob = <TArg>(
 
         try {
           payload = parseMessage<TArg>(msg.content);
-          Sentry.configureScope((scope) => {
-            scope.setExtra("jobArgs", payload.args);
-          });
           try {
             await consumer.perform(payload.args[0]);
             await consumer.complete(payload.args[0]);
@@ -92,13 +86,21 @@ export const createJob = <TArg>(
             }
 
             channel.ack(msg);
-            logger.error(error);
+            Sentry.withScope((scope) => {
+              scope.setTag("jobQueue", queue);
+              scope.setExtra("jobArgs", payload.args);
+              logger.error(error);
+            });
             await consumer.error(payload.args[0]);
             return;
           }
         } catch (error: any) {
           channel.ack(msg);
-          logger.error(error);
+          Sentry.withScope((scope) => {
+            scope.setTag("jobQueue", queue);
+            scope.setExtra("jobArgs", payload.args);
+            logger.error(error);
+          });
           return;
         }
 
