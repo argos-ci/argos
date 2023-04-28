@@ -26,8 +26,7 @@ export const typeDefs = gql`
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
     avatar: AccountAvatar!
-
-    users(after: Int!, first: Int!): UserConnection!
+    users(after: Int = 0, first: Int = 30): UserConnection!
     inviteLink: String!
   }
 
@@ -93,11 +92,13 @@ export const resolvers = {
         throw new Error("Forbidden");
       }
       const { first, after } = args;
-      const result = await Account.query()
+      const query = Account.query()
         .orderBy("team_users.id", "asc")
         .join("team_users", "team_users.userId", "accounts.userId")
         .where("team_users.teamId", account.teamId)
         .range(after, after + first - 1);
+
+      const result = await query;
 
       return paginateResult({ result, first, after });
     },
