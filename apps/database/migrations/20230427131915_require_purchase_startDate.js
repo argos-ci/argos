@@ -3,7 +3,7 @@
  */
 export const up = async (knex) => {
   await knex.schema.alterTable("purchases", async (table) => {
-    table.string("startDate").notNullable().alter();
+    table.dateTime("startDate").notNullable().defaultTo(knex.fn.now()).alter();
   });
 };
 
@@ -12,6 +12,6 @@ export const up = async (knex) => {
  */
 export const down = async (knex) => {
   await knex.schema.alterTable("purchases", async (table) => {
-    table.string("startDate").nullable().alter();
+    table.dateTime("startDate").nullable().defaultTo(knex.fn.now()).alter();
   });
 };

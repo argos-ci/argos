@@ -661,7 +661,7 @@ CREATE TABLE public.purchases (
     "updatedAt" timestamp with time zone NOT NULL,
     "planId" bigint NOT NULL,
     "accountId" bigint NOT NULL,
-    "startDate" character varying(255) NOT NULL,
+    "startDate" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "endDate" timestamp with time zone,
     source character varying(255) NOT NULL,
     "purchaserId" bigint

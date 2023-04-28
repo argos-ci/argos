@@ -335,7 +335,7 @@ describe("stripe", () => {
           accountId: account.id,
           planId: newPlan.id,
           source: "stripe",
-          startDate: "2022-12-26T14:22:11.000Z",
+          startDate: new Date("2022-12-26T14:22:11.000Z"),
         });
       });
 
