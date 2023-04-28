@@ -15,6 +15,7 @@
     "@argos-ci/job-core": "*",
     "@argos-ci/logger": "*",
     "@argos-ci/storage": "*",
+    "@argos-ci/stripe": "*",
     "@argos-ci/synchronize": "*",
     "@octokit/auth-oauth-app": "^5.0.5",
     "@octokit/rest": "^19.0.7",
@@ -34,8 +35,7 @@
     "jsonwebtoken": "^9.0.0",
     "morgan": "^1.10.0",
     "objection": "^3.0.1",
-    "redis": "^4.6.5",
-    "stripe": "^12.1.1"
+    "redis": "^4.6.5"
   },
   "devDependencies": {
     "@types/auth-header": "^1.0.2",

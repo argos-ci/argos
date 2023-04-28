@@ -4,7 +4,7 @@ import { HttpError } from "express-err";
 
 import { job as buildJob } from "@argos-ci/build";
 import { raw, transaction } from "@argos-ci/database";
-import { Account, Build, Project } from "@argos-ci/database/models";
+import { Build, Project } from "@argos-ci/database/models";
 import {
   getUnknownScreenshotKeys,
   insertFilesAndScreenshots,
@@ -14,7 +14,6 @@ import { SHA256_REGEX_STR } from "../../../constants.js";
 import { repoAuth } from "../../../middlewares/repoAuth.js";
 import { validate } from "../../../middlewares/validate.js";
 import { asyncHandler } from "../../../util.js";
-import { updateStripeUsage } from "../../stripe.js";
 
 const router = Router();
 export default router;
@@ -128,11 +127,6 @@ const handleUpdateParallel = async ({
 
   if (complete) {
     await buildJob.push(build.id);
-    const account = await Project.relatedQuery<Account>("account")
-      .for(build.projectId)
-      .first()
-      .throwIfNotFound();
-    await updateStripeUsage(account);
   }
 };
 
@@ -158,11 +152,6 @@ const handleUpdateSingle = async ({
       .patchAndFetch({ complete: true });
   });
   await buildJob.push(build.id);
-  const account = await Project.relatedQuery<Account>("account")
-    .for(build.projectId)
-    .first()
-    .throwIfNotFound();
-  await updateStripeUsage(account);
 };
 
 router.put(

@@ -1,7 +1,8 @@
 import { pushBuildNotification } from "@argos-ci/build-notification";
-import { Build } from "@argos-ci/database/models";
+import { Account, Build, Project } from "@argos-ci/database/models";
 import { createModelJob } from "@argos-ci/job-core";
 import { job as screenshotDiffJob } from "@argos-ci/screenshot-diff";
+import { updateStripeUsage } from "@argos-ci/stripe";
 
 import { createBuildDiffs } from "./createBuildDiffs.js";
 
@@ -14,6 +15,14 @@ export const performBuild = async (build: Build) => {
       .filter(({ jobStatus }) => jobStatus !== "complete")
       .map(({ id }) => screenshotDiffJob.push(id))
   );
+
+  const account = await Project.relatedQuery<Account>("account")
+    .for(build.projectId)
+    .first()
+    .throwIfNotFound();
+
+  const totalScreenshots = await account.getScreenshotsCurrentConsumption();
+  await updateStripeUsage({ account, totalScreenshots });
 
   if (screenshotDiffJobs.length === 0) {
     await pushBuildNotification({

@@ -537,8 +537,8 @@ export type TeamProjectsArgs = {
 
 
 export type TeamUsersArgs = {
-  after?: InputMaybe<Scalars['Int']>;
-  first?: InputMaybe<Scalars['Int']>;
+  after: Scalars['Int'];
+  first: Scalars['Int'];
 };
 
 export type Test = Node & {
