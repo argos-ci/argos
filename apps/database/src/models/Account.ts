@@ -117,8 +117,7 @@ export class Account extends Model {
       )
       .joinRelated("plan")
       .orderBy("screenshotsLimitPerMonth", "DESC")
-      .first()
-      .debug();
+      .first();
 
     return purchase ?? null;
   }
