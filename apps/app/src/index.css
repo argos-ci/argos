@@ -22,6 +22,12 @@
   }
 }
 
+@layer utilities {
+  .text-wrap-balance {
+    text-wrap: balance;
+  }
+}
+
 .egg-loader {
   width: 100px;
   height: 100px;

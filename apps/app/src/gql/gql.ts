@@ -30,6 +30,15 @@ const documents = {
     "\n  fragment TeamMembers_Team on Team {\n    id\n    name\n    slug\n    inviteLink\n    users(first: 30, after: 0) {\n      edges {\n        id\n        name\n        slug\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n      pageInfo {\n        totalCount\n      }\n    }\n  }\n": types.TeamMembers_TeamFragmentDoc,
     "\n  mutation TeamMembers_leaveTeam($teamAccountId: ID!) {\n    leaveTeam(input: { teamAccountId: $teamAccountId })\n  }\n": types.TeamMembers_LeaveTeamDocument,
     "\n  mutation TeamMembers_removeUserFromTeam(\n    $teamAccountId: ID!\n    $userAccountId: ID!\n  ) {\n    removeUserFromTeam(\n      input: { teamAccountId: $teamAccountId, userAccountId: $userAccountId }\n    )\n  }\n": types.TeamMembers_RemoveUserFromTeamDocument,
+    "\n  mutation NewTeam_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      id\n      slug\n    }\n  }\n": types.NewTeam_CreateTeamDocument,
+    "\n  query Vercel_vercelApiTeam($id: ID!, $accessToken: String!) {\n    vercelApiTeam(id: $id, accessToken: $accessToken) {\n      id\n      name\n      slug\n    }\n  }\n": types.Vercel_VercelApiTeamDocument,
+    "\n  mutation Vercel_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      id\n      slug\n    }\n  }\n": types.Vercel_CreateTeamDocument,
+    "\n  fragment ChooseTeam_Team on Team {\n    id\n    name\n    slug\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n": types.ChooseTeam_TeamFragmentDoc,
+    "\n  query FromTeam_me {\n    me {\n      id\n      teams {\n        id\n        ...ChooseTeam_Team\n      }\n    }\n  }\n": types.FromTeam_MeDocument,
+    "\n  query VercelProjectsSummary_me_vercelApiProjects(\n    $teamId: ID\n    $accessToken: String!\n    $accountId: ID!\n  ) {\n    me {\n      ghInstallations {\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n    vercelApiProjects(teamId: $teamId, accessToken: $accessToken, limit: 100) {\n      projects {\n        id\n        name\n        status(accountId: $accountId)\n        linkedProject {\n          id\n        }\n        link {\n          __typename\n          type\n          ... on VercelApiProjectLinkGithub {\n            org\n            repo\n            repoId\n          }\n        }\n      }\n    }\n  }\n": types.VercelProjectsSummary_Me_VercelApiProjectsDocument,
+    "\n  mutation VercelProjectsSummary_createProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    createProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      name\n      account {\n        id\n        slug\n      }\n    }\n  }\n": types.VercelProjectsSummary_CreateProjectDocument,
+    "\n  mutation VercelProjectsSummary_setupVercelIntegration(\n    $input: SetupVercelIntegrationInput!\n  ) {\n    setupVercelIntegration(input: $input)\n  }\n": types.VercelProjectsSummary_SetupVercelIntegrationDocument,
+    "\n  mutation Vercel_retrieveVercelToken($code: String!) {\n    retrieveVercelToken(code: $code) {\n      access_token\n      installation_id\n      user_id\n      team_id\n    }\n  }\n": types.Vercel_RetrieveVercelTokenDocument,
     "\n  query AccountCheckout_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      stripeClientReferenceId\n      purchase {\n        id\n        source\n      }\n    }\n  }\n": types.AccountCheckout_AccountDocument,
     "\n  query AccountNewProject_me {\n    me {\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n": types.AccountNewProject_MeDocument,
     "\n  mutation NewProject_createProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    createProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      name\n      account {\n        id\n        slug\n      }\n    }\n  }\n": types.NewProject_CreateProjectDocument,
@@ -49,7 +58,6 @@ const documents = {
     "\n  query Checkout_success {\n    me {\n      id\n      lastPurchase {\n        id\n        account {\n          id\n          slug\n        }\n      }\n    }\n  }\n": types.Checkout_SuccessDocument,
     "\n  query Invite_invitation($token: String!) {\n    invitation(token: $token) {\n      id\n      name\n      slug\n    }\n  }\n": types.Invite_InvitationDocument,
     "\n  mutation Invite_acceptInvitation($token: String!) {\n    acceptInvitation(token: $token) {\n      id\n      slug\n    }\n  }\n": types.Invite_AcceptInvitationDocument,
-    "\n  mutation NewTeam_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      id\n      slug\n    }\n  }\n": types.NewTeam_CreateTeamDocument,
     "\n  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      ...GettingStarted_Project\n      ...BuildStatusChip_Project\n    }\n  }\n": types.ProjectBuilds_ProjectDocument,
     "\n  query ProjectBuilds_project_Builds(\n    $accountSlug: String!\n    $projectName: String!\n    $after: Int!\n    $first: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      builds(first: $first, after: $after) {\n        pageInfo {\n          totalCount\n          hasNextPage\n        }\n        edges {\n          id\n          number\n          createdAt\n          name\n          compareScreenshotBucket {\n            id\n            branch\n            commit\n          }\n          ...BuildStatusChip_Build\n        }\n      }\n    }\n  }\n": types.ProjectBuilds_Project_BuildsDocument,
     "\n  fragment GettingStarted_Project on Project {\n    token\n  }\n": types.GettingStarted_ProjectFragmentDoc,
@@ -147,6 +155,42 @@ export function graphql(source: "\n  mutation TeamMembers_removeUserFromTeam(\n 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  mutation NewTeam_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      id\n      slug\n    }\n  }\n"): (typeof documents)["\n  mutation NewTeam_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      id\n      slug\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query Vercel_vercelApiTeam($id: ID!, $accessToken: String!) {\n    vercelApiTeam(id: $id, accessToken: $accessToken) {\n      id\n      name\n      slug\n    }\n  }\n"): (typeof documents)["\n  query Vercel_vercelApiTeam($id: ID!, $accessToken: String!) {\n    vercelApiTeam(id: $id, accessToken: $accessToken) {\n      id\n      name\n      slug\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation Vercel_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      id\n      slug\n    }\n  }\n"): (typeof documents)["\n  mutation Vercel_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      id\n      slug\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment ChooseTeam_Team on Team {\n    id\n    name\n    slug\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n"): (typeof documents)["\n  fragment ChooseTeam_Team on Team {\n    id\n    name\n    slug\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query FromTeam_me {\n    me {\n      id\n      teams {\n        id\n        ...ChooseTeam_Team\n      }\n    }\n  }\n"): (typeof documents)["\n  query FromTeam_me {\n    me {\n      id\n      teams {\n        id\n        ...ChooseTeam_Team\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query VercelProjectsSummary_me_vercelApiProjects(\n    $teamId: ID\n    $accessToken: String!\n    $accountId: ID!\n  ) {\n    me {\n      ghInstallations {\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n    vercelApiProjects(teamId: $teamId, accessToken: $accessToken, limit: 100) {\n      projects {\n        id\n        name\n        status(accountId: $accountId)\n        linkedProject {\n          id\n        }\n        link {\n          __typename\n          type\n          ... on VercelApiProjectLinkGithub {\n            org\n            repo\n            repoId\n          }\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query VercelProjectsSummary_me_vercelApiProjects(\n    $teamId: ID\n    $accessToken: String!\n    $accountId: ID!\n  ) {\n    me {\n      ghInstallations {\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n    vercelApiProjects(teamId: $teamId, accessToken: $accessToken, limit: 100) {\n      projects {\n        id\n        name\n        status(accountId: $accountId)\n        linkedProject {\n          id\n        }\n        link {\n          __typename\n          type\n          ... on VercelApiProjectLinkGithub {\n            org\n            repo\n            repoId\n          }\n        }\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation VercelProjectsSummary_createProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    createProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      name\n      account {\n        id\n        slug\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation VercelProjectsSummary_createProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    createProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      name\n      account {\n        id\n        slug\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation VercelProjectsSummary_setupVercelIntegration(\n    $input: SetupVercelIntegrationInput!\n  ) {\n    setupVercelIntegration(input: $input)\n  }\n"): (typeof documents)["\n  mutation VercelProjectsSummary_setupVercelIntegration(\n    $input: SetupVercelIntegrationInput!\n  ) {\n    setupVercelIntegration(input: $input)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation Vercel_retrieveVercelToken($code: String!) {\n    retrieveVercelToken(code: $code) {\n      access_token\n      installation_id\n      user_id\n      team_id\n    }\n  }\n"): (typeof documents)["\n  mutation Vercel_retrieveVercelToken($code: String!) {\n    retrieveVercelToken(code: $code) {\n      access_token\n      installation_id\n      user_id\n      team_id\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  query AccountCheckout_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      stripeClientReferenceId\n      purchase {\n        id\n        source\n      }\n    }\n  }\n"): (typeof documents)["\n  query AccountCheckout_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      stripeClientReferenceId\n      purchase {\n        id\n        source\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -220,10 +264,6 @@ export function graphql(source: "\n  query Invite_invitation($token: String!) {\
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation Invite_acceptInvitation($token: String!) {\n    acceptInvitation(token: $token) {\n      id\n      slug\n    }\n  }\n"): (typeof documents)["\n  mutation Invite_acceptInvitation($token: String!) {\n    acceptInvitation(token: $token) {\n      id\n      slug\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation NewTeam_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      id\n      slug\n    }\n  }\n"): (typeof documents)["\n  mutation NewTeam_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      id\n      slug\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -29,6 +29,10 @@
       "Team",
       "Test",
       "User"
+    ],
+    "VercelApiProjectLink": [
+      "VercelApiProjectLinkGithub",
+      "VercelApiProjectLinkOther"
     ]
   }
 }

@@ -55,7 +55,7 @@ const config = convict({
     url: {
       doc: "The user public url",
       format: String,
-      default: "https://app.argos-ci.dev:4002",
+      default: "https://app.argos-ci.dev",
       env: "SERVER_URL",
     },
     sessionSecret: {
@@ -178,6 +178,20 @@ const config = convict({
       format: String,
       env: "STRIPE_WEBHOOK_SECRET",
       default: "whsec_XXX",
+    },
+  },
+  vercel: {
+    clientId: {
+      doc: "Client ID",
+      format: String,
+      default: "",
+      env: "VERCEL_CLIENT_ID",
+    },
+    clientSecret: {
+      doc: "Client Secret",
+      format: String,
+      default: "",
+      env: "VERCEL_CLIENT_SECRET",
     },
   },
   redis: {

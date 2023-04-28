@@ -78,6 +78,7 @@ export const createApp = async () => {
       contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
       crossOriginResourcePolicy: false,
+      crossOriginOpenerPolicy: false,
       frameguard: {
         action: "deny", // Disallow embedded iframe
       },

@@ -73,10 +73,16 @@ export const InstallationsSelect = (props: {
           );
         })}
         <SelectText>
-          Don&apos;t see your org?
-          <br />
-          <Anchor href={config.get("github.appUrl")} external>
-            Manage access restrictions
+          Don't see your org?{" "}
+          <Anchor
+            href={`${config.get(
+              "github.appUrl"
+            )}/installations/new?state=${encodeURIComponent(
+              window.location.pathname
+            )}`}
+            external
+          >
+            Add GitHub Account
           </Anchor>
         </SelectText>
       </SelectPopover>

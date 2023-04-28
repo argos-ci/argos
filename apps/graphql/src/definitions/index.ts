@@ -22,6 +22,7 @@ import * as Team from "./Team.js";
 import * as Test from "./Test.js";
 import * as User from "./User.js";
 import * as ValidationStatus from "./ValidationStatus.js";
+import * as Vercel from "./Vercel.js";
 import * as schema from "./schema.js";
 
 export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
@@ -48,4 +49,5 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Test,
   User,
   ValidationStatus,
+  Vercel,
 ];

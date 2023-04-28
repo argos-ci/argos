@@ -2,12 +2,14 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { GithubAccount } from "./GithubAccount.js";
 import { Plan } from "./Plan.js";
 import { Project } from "./Project.js";
 import { Purchase } from "./Purchase.js";
 import { Screenshot } from "./Screenshot.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
+import { VercelConfiguration } from "./VercelConfiguration.js";
 
 export class Account extends Model {
   static override tableName = "accounts";
@@ -21,7 +23,8 @@ export class Account extends Model {
       teamId: { type: ["string", "null"] },
       name: { type: ["string", "null"] },
       slug: { type: "string" },
-      githubAccountId: { type: "string" },
+      githubAccountId: { type: ["string", "null"] },
+      vercelConfigurationId: { type: "string" },
     },
   });
 
@@ -31,7 +34,8 @@ export class Account extends Model {
   stripeCustomerId?: string | null;
   name!: string | null;
   slug!: string;
-  githubAccountId!: string;
+  githubAccountId!: string | null;
+  vercelConfigurationId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -49,6 +53,22 @@ export class Account extends Model {
         join: {
           from: "accounts.teamId",
           to: "teams.id",
+        },
+      },
+      githubAccount: {
+        relation: Model.HasOneRelation,
+        modelClass: GithubAccount,
+        join: {
+          from: "accounts.githubAccountId",
+          to: "github_accounts.id",
+        },
+      },
+      vercelConfiguration: {
+        relation: Model.HasOneRelation,
+        modelClass: VercelConfiguration,
+        join: {
+          from: "accounts.vercelConfigurationId",
+          to: "vercel_configurations.id",
         },
       },
       purchases: {
@@ -97,7 +117,8 @@ export class Account extends Model {
       )
       .joinRelated("plan")
       .orderBy("screenshotsLimitPerMonth", "DESC")
-      .first();
+      .first()
+      .debug();
 
     return purchase ?? null;
   }

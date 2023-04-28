@@ -9,7 +9,7 @@ module.exports = {
     extend: {
       colors: {
         // Color classes
-        primary: colors.purple,
+        primary: colors.violet,
         info: colors.sky,
         warning: colors.orange,
         danger: colors.red,

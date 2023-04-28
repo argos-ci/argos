@@ -38,7 +38,7 @@ export const typeDefs = gql`
   }
 
   extend type Query {
-    "Get account by slug"
+    "Get Account by slug"
     account(slug: String!): Account
   }
 `;
