@@ -1,12 +1,6 @@
-import {
-  GearIcon,
-  HomeIcon,
-  RepoIcon,
-  SignOutIcon,
-} from "@primer/octicons-react";
+import { ArrowLeftOnRectangleIcon } from "@heroicons/react/24/outline";
 import { Link as RouterLink } from "react-router-dom";
 
-import config from "@/config";
 import {
   useAuthTokenPayload,
   useIsLoggedIn,
@@ -50,28 +44,19 @@ const UserMenu = () => {
       <Menu aria-label="User settings" state={menu}>
         <MenuItem state={menu} pointer>
           {(menuItemProps) => (
-            <RouterLink {...menuItemProps} to="/">
-              <MenuItemIcon>
-                <HomeIcon />
-              </MenuItemIcon>
-              Home
+            <RouterLink
+              {...menuItemProps}
+              to={`/${authPayload.account.slug}/new`}
+            >
+              New Project
             </RouterLink>
           )}
         </MenuItem>
-        <MenuSeparator />
         <MenuItem state={menu} pointer>
           {(menuItemProps) => (
-            <a
-              {...menuItemProps}
-              href={config.get("github.appUrl")}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <MenuItemIcon>
-                <RepoIcon />
-              </MenuItemIcon>
-              Add project
-            </a>
+            <RouterLink {...menuItemProps} to={`/teams/new`}>
+              New Team
+            </RouterLink>
           )}
         </MenuItem>
         <MenuItem state={menu} pointer>
@@ -80,9 +65,6 @@ const UserMenu = () => {
               {...menuItemProps}
               to={`/${authPayload.account.slug}/settings`}
             >
-              <MenuItemIcon>
-                <GearIcon />
-              </MenuItemIcon>
               Settings
             </RouterLink>
           )}
@@ -90,7 +72,7 @@ const UserMenu = () => {
         <MenuSeparator />
         <MenuItem state={menu} pointer onClick={() => logout()}>
           <MenuItemIcon>
-            <SignOutIcon />
+            <ArrowLeftOnRectangleIcon />
           </MenuItemIcon>
           Logout
         </MenuItem>
