@@ -10,6 +10,19 @@ import {
 } from "../__fixtures__/stripe-payloads.js";
 import { getEffectiveDate, handleStripeEvent } from "./stripe.js";
 
+const now = new Date();
+const previousMonth = new Date(
+  now.getFullYear(),
+  now.getMonth() - 1,
+  now.getDate()
+);
+const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+const nextMonth = new Date(
+  now.getFullYear(),
+  now.getMonth() + 1,
+  now.getDate()
+);
+
 const getOrCreateActivePurchase = async (account: Account, plan: Plan) => {
   const activePurchase = await account.getActivePurchase();
   if (activePurchase) {
@@ -19,23 +32,12 @@ const getOrCreateActivePurchase = async (account: Account, plan: Plan) => {
     accountId: account.id,
     planId: plan.id,
     source: "stripe",
+    startDate: startOfPreviousMonth.toISOString(),
   });
 };
 
 describe("stripe", () => {
   useDatabase();
-
-  const now = new Date();
-  const previousMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() - 1,
-    now.getDate()
-  );
-  const nextMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    now.getDate()
-  );
 
   describe("#getEffectiveDate", () => {
     const renewalDate = 2674745463; // Sunday 4 October 2054 16:51:03
@@ -54,6 +56,7 @@ describe("stripe", () => {
       activePurchase = (await factory.create("Purchase", {
         planId: standardPlan.id,
         source: "stripe",
+        startDate: previousMonth.toISOString(),
       })) as Purchase;
     });
 
@@ -201,6 +204,7 @@ describe("stripe", () => {
           planId: payloadPlan.id,
           source: "stripe",
           endDate: nextMonth.toISOString(),
+          startDate: startOfPreviousMonth.toISOString(),
         });
       });
 
@@ -254,6 +258,7 @@ describe("stripe", () => {
           accountId: account.id,
           planId: plan.id,
           source: "stripe",
+          startDate: startOfPreviousMonth.toISOString(),
         });
 
         await expect(
@@ -304,6 +309,7 @@ describe("stripe", () => {
           accountId: account.id,
           planId: oldPlan.id,
           source: "stripe",
+          startDate: startOfPreviousMonth.toISOString(),
         });
         await handleStripeEvent({
           data: { object: { ...payload, cancel_at: "1234" } },
@@ -329,6 +335,7 @@ describe("stripe", () => {
           accountId: account.id,
           planId: newPlan.id,
           source: "stripe",
+          startDate: new Date("2022-12-26T14:22:11.000Z"),
         });
       });
 
@@ -407,6 +414,7 @@ describe("stripe", () => {
           accountId: account.id,
           planId: payloadPlan.id,
           source: "stripe",
+          startDate: startOfPreviousMonth.toISOString(),
         });
 
         pendingPurchase = (await factory.create<Purchase>("Purchase", {

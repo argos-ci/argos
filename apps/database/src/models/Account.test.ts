@@ -97,28 +97,29 @@ describe("Account", () => {
     });
 
     describe("with purchase", () => {
-      it("returns purchase start date the first month", async () => {
-        const purchase = await factory.create("Purchase", {
-          planId: plans[1]!.id,
-          accountId: account.id,
-          startDate: startOfMonth,
-        });
-        const startDate = await account.getCurrentConsumptionStartDate();
-        expect(startDate).toEqual(new Date(purchase.startDate));
-      });
+      const subscriptionDay = 10;
 
-      it("returns first day of month from second month", async () => {
+      beforeEach(async () => {
         await factory.create("Purchase", {
           planId: plans[1]!.id,
           accountId: account.id,
-          startDate: new Date(
-            now.getFullYear(),
-            now.getMonth() - 1,
-            now.getDate()
-          ),
+          startDate: new Date(2018, 3, subscriptionDay),
         });
+      });
+
+      it("returns purchase start date", async () => {
         const startDate = await account.getCurrentConsumptionStartDate();
-        expect(startDate).toEqual(startOfMonth);
+        expect(startDate.getDate()).toEqual(subscriptionDay);
+        if (now.getDate() >= subscriptionDay) {
+          expect(startDate.getMonth()).toEqual(now.getMonth());
+          expect(startDate.getFullYear()).toEqual(now.getFullYear());
+        } else if (now.getMonth() === 0) {
+          expect(startDate.getMonth()).toEqual(11);
+          expect(startDate.getFullYear()).toEqual(now.getFullYear() - 1);
+        } else {
+          expect(startDate.getMonth()).toEqual(now.getMonth() - 1);
+          expect(startDate.getFullYear()).toEqual(now.getFullYear());
+        }
       });
     });
   });
