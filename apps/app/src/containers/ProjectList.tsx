@@ -1,11 +1,11 @@
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { HTMLProps } from "react";
-import { Link, Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Badge } from "@/ui/Badge";
-import { Button, ButtonIcon } from "@/ui/Button";
+import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 
 const ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
@@ -80,6 +80,21 @@ const ProjectRow = ({ project }: { project: Project }) => {
   );
 };
 
+const CreateProjectButton = (props: ButtonProps) => {
+  return (
+    <Button {...props}>
+      {(buttonProps) => (
+        <RouterLink to="new" {...buttonProps}>
+          <ButtonIcon>
+            <PlusCircleIcon />
+          </ButtonIcon>
+          Create a new Project
+        </RouterLink>
+      )}
+    </Button>
+  );
+};
+
 export const ProjectList = (props: { projects: ProjectFragmentType[] }) => {
   const projects = useFragment(ProjectFragment, props.projects);
 
@@ -88,15 +103,9 @@ export const ProjectList = (props: { projects: ProjectFragmentType[] }) => {
       <div className="flex flex-col items-center justify-center">
         <div className="mb-2 text-2xl font-medium">No projects yet!</div>
         <div className="mb-4 text-on-light">
-          Start by importing a Git repository.
+          Start by creating a new project.
         </div>
-        <Button>
-          {(buttonProps) => (
-            <Link to="new" {...buttonProps}>
-              Create a new Project
-            </Link>
-          )}
-        </Button>
+        <CreateProjectButton />
       </div>
     );
   }
@@ -104,16 +113,7 @@ export const ProjectList = (props: { projects: ProjectFragmentType[] }) => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <Button variant="outline" color="neutral">
-          {(buttonProps) => (
-            <Link to="new" {...buttonProps}>
-              <ButtonIcon>
-                <PlusCircleIcon />
-              </ButtonIcon>
-              Create a new Project
-            </Link>
-          )}
-        </Button>
+        <CreateProjectButton variant="outline" color="neutral" />
       </div>
       <div className="flex flex-col gap-2">
         {projects.map((project) => (
