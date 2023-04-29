@@ -1,0 +1,16 @@
+{
+  "name": "@argos-ci/stripe",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./dist/index.js",
+  "dependencies": {
+    "@argos-ci/config": "*",
+    "@argos-ci/database": "*",
+    "stripe": "^12.3.0"
+  },
+  "scripts": {
+    "build": "swc src --config-file ../../.swcrc -d dist",
+    "watch-build": "npm run build -- --watch --quiet"
+  }
+}

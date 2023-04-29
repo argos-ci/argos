@@ -4,8 +4,7 @@ import { HttpError } from "express-err";
 
 import { job as buildJob } from "@argos-ci/build";
 import { raw, transaction } from "@argos-ci/database";
-import type { Project } from "@argos-ci/database/models";
-import { Build } from "@argos-ci/database/models";
+import { Build, Project } from "@argos-ci/database/models";
 import {
   getUnknownScreenshotKeys,
   insertFilesAndScreenshots,
