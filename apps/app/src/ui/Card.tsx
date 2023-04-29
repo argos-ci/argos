@@ -37,7 +37,7 @@ export const CardParagraph = ({
   className,
   ...props
 }: HTMLProps<HTMLDivElement>) => {
-  return <p className={clsx(className, "my-4 last-of-type:mb-0")} {...props} />;
+  return <p className={clsx(className, "my-4 last:mb-0")} {...props} />;
 };
 
 export const CardSeparator = ({
