@@ -12,6 +12,7 @@ import config from "@/config";
 import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
 import { TeamChangeName } from "@/containers/Team/ChangeName";
+import { TeamChangeSlug } from "@/containers/Team/ChangeSlug";
 import { TeamMembers } from "@/containers/Team/Members";
 import { DocumentType, graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
@@ -62,6 +63,7 @@ const AccountQuery = graphql(`
       }
       ...TeamMembers_Team
       ...TeamChangeName_Team
+      ...TeamChangeSlug_Team
     }
   }
 `);
@@ -288,7 +290,12 @@ export const AccountSettings = () => {
 
           return (
             <SettingsLayout>
-              {isTeam && <TeamChangeName team={account} />}
+              {isTeam && (
+                <>
+                  <TeamChangeName team={account} />
+                  <TeamChangeSlug team={account} />
+                </>
+              )}
               {account.plan && (
                 <PlanCard
                   accountSlug={accountSlug}

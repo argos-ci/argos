@@ -38,7 +38,7 @@ export const SettingsLayout = ({
 }: HTMLProps<HTMLDivElement>) => {
   return (
     <div
-      className={clsx(className, "flex max-w-4xl flex-col gap-6")}
+      className={clsx(className, "mb-6 flex max-w-4xl flex-col gap-6")}
       {...props}
     />
   );

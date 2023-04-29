@@ -40,6 +40,7 @@ export const typeDefs = gql`
   input UpdateAccountInput {
     id: ID!
     name: String
+    slug: String
   }
 
   extend type Query {
