@@ -61,13 +61,18 @@ export const TeamChangeSlug = (props: TeamChangeSlugProps) => {
             </CardParagraph>
             <FormTextInput
               {...form.register("slug", {
-                required: "Please enter a team URL namespace",
+                required: "Please enter a team slugs",
                 maxLength: {
                   value: 48,
-                  message: "Team URL namespace must be 48 characters or less",
+                  message: "Team slugs must be 48 characters or less",
+                },
+                pattern: {
+                  value: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+                  message:
+                    "Team slugs must be lowercase, begin with an alphanumeric character followed by more alphanumeric characters or dashes and ending with an alphanumeric character.",
                 },
               })}
-              label="Team URL namespace"
+              label="Team slug"
               hiddenLabel
             />
           </CardBody>

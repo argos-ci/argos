@@ -22,7 +22,11 @@ export class Account extends Model {
       stripeCustomerId: { type: ["string", "null"] },
       teamId: { type: ["string", "null"] },
       name: { type: ["string", "null"], maxLength: 40 },
-      slug: { type: "string", maxLength: 48 },
+      slug: {
+        type: "string",
+        maxLength: 48,
+        pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      },
       githubAccountId: { type: ["string", "null"] },
       vercelConfigurationId: { type: "string" },
     },
