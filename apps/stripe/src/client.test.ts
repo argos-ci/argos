@@ -46,8 +46,9 @@ const getOrCreateSubscription = async (customerId: string, priceId: string) => {
     throw new Error(`Stripe return multiple active subscriptions`);
   }
 
-  if (subscriptions.data.length > 0) {
-    return subscriptions.data[0] as Stripe.Subscription;
+  const existingSubscription = subscriptions.data[0];
+  if (existingSubscription) {
+    return existingSubscription;
   }
 
   const subscription = await stripe.subscriptions.create({
