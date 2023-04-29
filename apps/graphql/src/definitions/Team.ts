@@ -119,12 +119,8 @@ export const resolvers = {
   Query: {
     invitation: async (
       _root: unknown,
-      { token }: { token: string },
-      { auth }: Context
+      { token }: { token: string }
     ): Promise<Account | null> => {
-      if (!auth) {
-        throw new Error("Forbidden");
-      }
       const team = await Team.verifyInviteToken(token);
       if (!team) {
         throw new Error("Invalid token");

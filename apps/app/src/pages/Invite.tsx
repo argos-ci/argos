@@ -1,30 +1,15 @@
 import { useMutation } from "@apollo/client";
 import { Helmet } from "react-helmet";
-import {
-  Navigate,
-  Link as RouterLink,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useQuery } from "@/containers/Apollo";
 import { useIsLoggedIn } from "@/containers/Auth";
+import { LoginButtons } from "@/containers/LoginButtons";
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
-
-const useLoginUrl = () => {
-  const { pathname } = useLocation();
-  return `/login?r=${encodeURIComponent(pathname)}`;
-};
-
-const NavigateToLogin = () => {
-  const loginUrl = useLoginUrl();
-  return <Navigate to={loginUrl} replace />;
-};
 
 const InvitationQuery = graphql(`
   query Invite_invitation($token: String!) {
@@ -82,7 +67,8 @@ const JoinTeamButton = (props: {
   );
 };
 
-const InvitePage = () => {
+export const Invite = () => {
+  const loggedIn = useIsLoggedIn();
   const params = useParams();
   const token = params.inviteToken;
   if (!token) {
@@ -108,6 +94,21 @@ const InvitePage = () => {
           if (data) {
             const team = data.invitation;
             if (team) {
+              if (!loggedIn) {
+                return (
+                  <div className="flex flex-col items-center">
+                    <AccountAvatar avatar={team.avatar} size={72} />
+                    <h1 className="my-4 text-4xl font-medium">
+                      Join <strong>{teamTitle}</strong> on Argos.
+                    </h1>
+                    <p className="mb-10 text-xl">
+                      Log in or create an account using GitHub to accept this
+                      invitation.
+                    </p>
+                    <LoginButtons />
+                  </div>
+                );
+              }
               const alreadyJoined = Boolean(
                 data.me?.teams?.some((t) => t.id === team?.id)
               );
@@ -163,12 +164,4 @@ const InvitePage = () => {
       </Container>
     </>
   );
-};
-
-export const Invite = () => {
-  const loggedIn = useIsLoggedIn();
-  if (!loggedIn) {
-    return <NavigateToLogin />;
-  }
-  return <InvitePage />;
 };

@@ -31,7 +31,7 @@ export const GitHubLoginButton = memo<GitHubLoginButtonProps>(
             <ButtonIcon>
               <MarkGithubIcon />
             </ButtonIcon>
-            {children ?? "Login"}
+            {children ?? "Login with GitHub"}
           </a>
         )}
       </Button>
