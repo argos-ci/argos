@@ -41,6 +41,6 @@ export const apolloServer = new ApolloServer({
       }
     }
 
-    return { message: error.message };
+    return { message: error.message, extensions: error.extensions };
   },
 });

@@ -26,6 +26,20 @@ const ApolloProvider = (props: {
         uri: `/graphql`,
         cache: new InMemoryCache({
           possibleTypes: fragments.possibleTypes,
+          typePolicies: {
+            Team: {
+              keyFields: (obj) => {
+                if (!obj.id) throw new Error("Team.id is undefined");
+                return `Account:${obj.id}`;
+              },
+            },
+            User: {
+              keyFields: (obj) => {
+                if (!obj.id) throw new Error("User.id is undefined");
+                return `Account:${obj.id}`;
+              },
+            },
+          },
         }),
         headers: authorization ? { authorization } : {},
       }),

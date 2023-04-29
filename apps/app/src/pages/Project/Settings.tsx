@@ -5,6 +5,7 @@ import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
 import { ProjectReferenceBranch } from "@/containers/Project/ReferenceBranch";
 import { ProjectToken } from "@/containers/Project/Token";
+import { ProjectTransfer } from "@/containers/Project/Transfer";
 import { ProjectVisibility } from "@/containers/Project/Visibility";
 import { graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
@@ -21,6 +22,7 @@ const ProjectQuery = graphql(`
       ...ProjectToken_Project
       ...ProjectReferenceBranch_Project
       ...ProjectVisibility_Project
+      ...ProjectTransfer_Project
     }
   }
 `);
@@ -61,6 +63,7 @@ export const ProjectSettings = () => {
               <ProjectToken project={project} />
               <ProjectReferenceBranch project={project} />
               <ProjectVisibility project={project} />
+              <ProjectTransfer project={project} />
             </SettingsLayout>
           );
         }}

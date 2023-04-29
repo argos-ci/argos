@@ -1,5 +1,6 @@
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
@@ -39,6 +40,7 @@ export const TeamChangeSlug = (props: TeamChangeSlugProps) => {
       slug: team.slug,
     },
   });
+  const navigate = useNavigate();
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     await client.mutate({
       mutation: UpdateAccountMutation,
@@ -47,7 +49,7 @@ export const TeamChangeSlug = (props: TeamChangeSlugProps) => {
         slug: data.slug,
       },
     });
-    window.location.replace(`/${data.slug}/settings`);
+    navigate(`/${data.slug}/settings`, { replace: true });
   };
   return (
     <Card>

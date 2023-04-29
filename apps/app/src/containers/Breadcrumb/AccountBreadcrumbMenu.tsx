@@ -2,7 +2,6 @@ import { useQuery } from "@apollo/client";
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { Link as RouterLink } from "react-router-dom";
 
-import { AccountAvatar } from "@/containers/AccountAvatar";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
 import {
@@ -14,14 +13,13 @@ import {
   useMenuState,
 } from "@/ui/Menu";
 
+import { AccountItem } from "../AccountItem";
+
 const AccountFragment = graphql(`
   fragment AccountBreadcrumbMenu_Account on Account {
     id
     slug
-    name
-    avatar {
-      ...AccountAvatarFragment
-    }
+    ...AccountItem_Account
   }
 `);
 
@@ -49,10 +47,7 @@ const AccountMenuItems = (props: { menu: MenuState; accounts: Account[] }) => {
           <MenuItem key={account.id} state={props.menu} pointer>
             {(menuItemProps) => (
               <RouterLink {...menuItemProps} to={`/${account.slug}`}>
-                <MenuItemIcon>
-                  <AccountAvatar avatar={account.avatar} size={18} />
-                </MenuItemIcon>
-                {account.name || account.slug}
+                <AccountItem account={account} />
               </RouterLink>
             )}
           </MenuItem>

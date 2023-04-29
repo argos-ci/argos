@@ -1,3 +1,4 @@
+import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 
 import { Account, Project, Purchase } from "@argos-ci/database/models";
@@ -46,6 +47,8 @@ export const typeDefs = gql`
   extend type Query {
     "Get Account by slug"
     account(slug: String!): Account
+    "Get Account by id"
+    accountById(id: ID!): Account
   }
 
   extend type Mutation {
@@ -79,6 +82,15 @@ const getAvatarColor = (id: string): string => {
   const randomIndex = Number(id) % colors.length;
   return colors[randomIndex] ?? colors[0] ?? "#000";
 };
+
+const RESERVED_SLUGS = [
+  "auth",
+  "checkout-success",
+  "login",
+  "vercel",
+  "invite",
+  "teams",
+];
 
 export const resolvers = {
   Account: {
@@ -191,11 +203,25 @@ export const resolvers = {
       if (!hasWritePermission) return null;
       return account;
     },
+    accountById: async (
+      _root: null,
+      args: { id: string },
+      context: Context
+    ) => {
+      if (!context.auth) return null;
+      const account = await Account.query().findById(args.id);
+      if (!account) return null;
+      const hasWritePermission = await account.$checkWritePermission(
+        context.auth.user
+      );
+      if (!hasWritePermission) return null;
+      return account;
+    },
   },
   Mutation: {
     updateAccount: async (
       _root: null,
-      args: { input: { id: string; name?: string } },
+      args: { input: { id: string; name?: string; slug?: string } },
       ctx: Context
     ) => {
       if (!ctx.auth) {
@@ -208,6 +234,25 @@ export const resolvers = {
       );
       if (!hasWritePermission) {
         throw new Error("Unauthorized");
+      }
+      if (input.slug && account.slug !== input.slug) {
+        if (RESERVED_SLUGS.includes(input.slug)) {
+          throw new GraphQLError("Slug is reserved for internal usage", {
+            extensions: {
+              code: "BAD_USER_INPUT",
+              field: "slug",
+            },
+          });
+        }
+        const slugExists = await Account.query().findOne({ slug: input.slug });
+        if (slugExists) {
+          throw new GraphQLError("Slug already exists", {
+            extensions: {
+              code: "BAD_USER_INPUT",
+              field: "slug",
+            },
+          });
+        }
       }
       return account.$query().patch(input).returning("*");
     },

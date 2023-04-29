@@ -56,15 +56,18 @@ export const SelectArrow = forwardRef<HTMLSpanElement, AriakitSelectArrowProps>(
   }
 );
 
-export type SelectPopoverProps = Omit<AriakitSelectPopoverProps, "className">;
+export type SelectPopoverProps = AriakitSelectPopoverProps;
 
-export const SelectPopover = forwardRef<HTMLDivElement, SelectProps>(
-  (props, ref) => {
+export const SelectPopover = forwardRef<HTMLDivElement, SelectPopoverProps>(
+  ({ className, ...props }, ref) => {
     return (
       <AriakitSelectPopover
         ref={ref}
         as="div"
-        className="z-50 min-w-[var(--popover-anchor-width)] rounded-lg border border-menu-border bg-menu-bg p-1 focus:outline-none"
+        className={clsx(
+          className,
+          "z-50 min-w-[var(--popover-anchor-width)] rounded-lg border border-menu-border bg-menu-bg p-1 focus:outline-none"
+        )}
         {...props}
       />
     );

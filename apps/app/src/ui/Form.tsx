@@ -1,3 +1,4 @@
+import { ApolloError } from "@apollo/client";
 import { SubmitHandler, useFormContext } from "react-hook-form";
 
 export type FormProps = Omit<
@@ -5,6 +6,23 @@ export type FormProps = Omit<
   "onSubmit"
 > & {
   onSubmit: SubmitHandler<any>;
+};
+
+const unwrapErrors = (error: unknown) => {
+  if (error instanceof ApolloError && error.graphQLErrors.length > 0) {
+    return error.graphQLErrors.map((error) => {
+      if (typeof error.extensions?.field === "string") {
+        return { field: error.extensions.field, message: error.message };
+      }
+      return { field: "root.serverError", message: error.message };
+    });
+  }
+  return [
+    {
+      field: "root.serverError",
+      message: "Something went wrong. Please try again.",
+    },
+  ];
 };
 
 export const Form = ({
@@ -20,9 +38,12 @@ export const Form = ({
           clearErrors();
           await onSubmit(data, event);
         } catch (error) {
-          setError("root.serverError", {
-            type: "manual",
-            message: "Something went wrong. Please try again.",
+          const errors = unwrapErrors(error);
+          errors.forEach((error) => {
+            setError(error.field, {
+              type: "manual",
+              message: error.message,
+            });
           });
         }
       })}

@@ -2,12 +2,12 @@ import { XMarkIcon } from "@heroicons/react/24/solid";
 import {
   Dialog as AriakitDialog,
   DialogDismiss as AriakitDialogDismiss,
-  DialogOptions,
+  DialogProps as AriakitDialogProps,
 } from "ariakit/dialog";
 import { clsx } from "clsx";
 import { forwardRef } from "react";
 
-import { Button } from "./Button";
+import { Button, ButtonProps } from "./Button";
 import { IconButton } from "./IconButton";
 
 export { useDialogState, DialogDisclosure } from "ariakit/dialog";
@@ -98,6 +98,7 @@ export const DialogTitle = forwardRef<HTMLHeadingElement, DialogTitleProps>(
 type DialogDismissProps = {
   children?: React.ReactNode;
   single?: boolean;
+  onClick?: ButtonProps["onClick"];
 };
 
 export const DialogDismiss = forwardRef<HTMLButtonElement, DialogDismissProps>(
@@ -106,6 +107,7 @@ export const DialogDismiss = forwardRef<HTMLButtonElement, DialogDismissProps>(
       <AriakitDialogDismiss
         ref={ref}
         className={props.single ? "flex-1 justify-center" : undefined}
+        onClick={props.onClick}
       >
         {(dialogDismissProps) =>
           props.children ? (
@@ -123,16 +125,17 @@ export const DialogDismiss = forwardRef<HTMLButtonElement, DialogDismissProps>(
   }
 );
 
-export type DialogProps = DialogOptions & {
-  children: React.ReactNode;
-};
+export type DialogProps = AriakitDialogProps;
 
 export const Dialog = forwardRef<HTMLDivElement, DialogProps>(
-  ({ children, ...props }, ref) => {
+  ({ children, className, ...props }, ref) => {
     return (
       <AriakitDialog
         ref={ref}
-        className="bordered absolute left-[50%] top-[50%] z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-auto rounded-lg border border-dialog-border bg-dialog-bg text-sm shadow-md"
+        className={clsx(
+          className,
+          "bordered absolute left-[50%] top-[50%] z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-auto rounded-lg border border-dialog-border bg-dialog-bg text-sm shadow-md"
+        )}
         {...props}
       >
         {children}
