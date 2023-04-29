@@ -21,7 +21,7 @@ export class Account extends Model {
       forcedPlanId: { type: ["string", "null"] },
       stripeCustomerId: { type: ["string", "null"] },
       teamId: { type: ["string", "null"] },
-      name: { type: ["string", "null"] },
+      name: { type: ["string", "null"], maxLength: 40 },
       slug: { type: "string" },
       githubAccountId: { type: ["string", "null"] },
       vercelConfigurationId: { type: "string" },

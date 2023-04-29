@@ -62,6 +62,10 @@ export const TeamChangeName = (props: TeamChangeNameProps) => {
             <FormTextInput
               {...form.register("name", {
                 required: "Please enter a team name",
+                maxLength: {
+                  value: 40,
+                  message: "Team name must be 40 characters or less",
+                },
               })}
               label="Team name"
               hiddenLabel
