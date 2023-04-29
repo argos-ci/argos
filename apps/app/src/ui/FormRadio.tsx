@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { forwardRef, useId } from "react";
+import { HTMLAttributes, forwardRef, useId } from "react";
 
 export type FormRadioProps = {
   label: React.ReactNode;
@@ -19,3 +19,10 @@ export const FormRadio = forwardRef<HTMLInputElement, FormRadioProps>(
     );
   }
 );
+
+export const FormRadioGroup = ({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) => {
+  return <div className={clsx(className, "flex flex-col gap-4")} {...props} />;
+};

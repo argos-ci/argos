@@ -37,9 +37,19 @@ export const typeDefs = gql`
     avatar: AccountAvatar!
   }
 
+  input UpdateAccountInput {
+    id: ID!
+    name: String
+  }
+
   extend type Query {
     "Get Account by slug"
     account(slug: String!): Account
+  }
+
+  extend type Mutation {
+    "Update Account"
+    updateAccount(input: UpdateAccountInput!): Account!
   }
 `;
 
@@ -179,6 +189,26 @@ export const resolvers = {
       );
       if (!hasWritePermission) return null;
       return account;
+    },
+  },
+  Mutation: {
+    updateAccount: async (
+      _root: null,
+      args: { input: { id: string; name?: string } },
+      ctx: Context
+    ) => {
+      if (!ctx.auth) {
+        throw new Error("Unauthorized");
+      }
+      const { id, ...input } = args.input;
+      const account = await Account.query().findById(id).throwIfNotFound();
+      const hasWritePermission = await account.$checkWritePermission(
+        ctx.auth.user
+      );
+      if (!hasWritePermission) {
+        throw new Error("Unauthorized");
+      }
+      return account.$query().patch(input).returning("*");
     },
   },
 };

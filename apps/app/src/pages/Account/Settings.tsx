@@ -11,6 +11,7 @@ import { useParams } from "react-router-dom";
 import config from "@/config";
 import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
+import { TeamChangeName } from "@/containers/Team/ChangeName";
 import { TeamMembers } from "@/containers/Team/Members";
 import { DocumentType, graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
@@ -60,6 +61,7 @@ const AccountQuery = graphql(`
         }
       }
       ...TeamMembers_Team
+      ...TeamChangeName_Team
     }
   }
 `);
@@ -282,9 +284,11 @@ export const AccountSettings = () => {
       >
         {({ account }) => {
           if (!account) return <NotFound />;
+          const isTeam = account.__typename === "Team";
 
           return (
             <SettingsLayout>
+              {isTeam && <TeamChangeName team={account} />}
               {account.plan && (
                 <PlanCard
                   accountSlug={accountSlug}
@@ -294,7 +298,7 @@ export const AccountSettings = () => {
                   projects={account.projects.edges}
                 />
               )}
-              {account.__typename === "Team" && <TeamMembers team={account} />}
+              {isTeam && <TeamMembers team={account} />}
             </SettingsLayout>
           );
         }}
