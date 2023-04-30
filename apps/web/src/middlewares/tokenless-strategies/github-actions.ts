@@ -48,13 +48,24 @@ const strategy = {
 
     const repository = await GithubRepository.query()
       .joinRelated("githubAccount")
-      .withGraphJoined("[activeInstallation, project]")
+      .withGraphJoined("[activeInstallation, projects]")
       .where("githubAccount.login", authData.owner)
       .findOne("github_repositories.name", authData.repository)
       .first();
 
-    if (!repository || !repository.activeInstallation || !repository.project) {
+    if (
+      !repository ||
+      !repository.activeInstallation ||
+      !repository.projects?.[0]
+    ) {
       return null;
+    }
+
+    if (repository.projects.length > 1) {
+      throw new HttpError(
+        500,
+        `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a Project token.`
+      );
     }
 
     const octokit = await getInstallationOctokit(
@@ -107,7 +118,7 @@ const strategy = {
       );
     }
 
-    return repository.project;
+    return repository.projects[0];
   },
 };
 

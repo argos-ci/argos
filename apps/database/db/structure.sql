@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.7 (Homebrew)
+-- Dumped by pg_dump version 14.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -475,7 +475,7 @@ CREATE TABLE public.github_synchronizations (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "jobStatus" public.job_status NOT NULL,
-    "githubInstallationId" bigint NOT NULL
+    "githubInstallationId" bigint
 );
 
 
@@ -1440,14 +1440,6 @@ ALTER TABLE ONLY public.plans
 
 
 --
--- Name: projects projects_githubrepositoryid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.projects
-    ADD CONSTRAINT projects_githubrepositoryid_unique UNIQUE ("githubRepositoryId");
-
-
---
 -- Name: projects projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1739,6 +1731,13 @@ CREATE INDEX plans_githubid_index ON public.plans USING btree ("githubId");
 --
 
 CREATE INDEX projects_accountid_index ON public.projects USING btree ("accountId");
+
+
+--
+-- Name: projects_githubrepositoryid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX projects_githubrepositoryid_index ON public.projects USING btree ("githubRepositoryId");
 
 
 --
@@ -2299,3 +2298,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023042
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230426123607_screenshot-diff-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230427131915_require_purchase_startDate.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230428122453_vercel-data.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230430182249_multiple-project-repo.js', 1, NOW());

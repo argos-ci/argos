@@ -25,6 +25,7 @@ const VercelProjectsQuery = graphql(`
     $accountId: ID!
   ) {
     me {
+      id
       ghInstallations {
         pageInfo {
           totalCount

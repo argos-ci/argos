@@ -23,6 +23,7 @@ const InvitationQuery = graphql(`
     }
 
     me {
+      id
       teams {
         id
       }
