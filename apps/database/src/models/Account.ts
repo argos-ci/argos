@@ -1,4 +1,4 @@
-import type { RelationMappings } from "objection";
+import type { Pojo, RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
@@ -21,9 +21,10 @@ export class Account extends Model {
       forcedPlanId: { type: ["string", "null"] },
       stripeCustomerId: { type: ["string", "null"] },
       teamId: { type: ["string", "null"] },
-      name: { type: ["string", "null"], maxLength: 40 },
+      name: { type: ["string", "null"], maxLength: 40, minLength: 1 },
       slug: {
         type: "string",
+        minLength: 1,
         maxLength: 48,
         pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$",
       },
@@ -40,6 +41,17 @@ export class Account extends Model {
   slug!: string;
   githubAccountId!: string | null;
   vercelConfigurationId!: string | null;
+
+  override $formatDatabaseJson(json: Pojo) {
+    json = super.$formatDatabaseJson(json);
+    if (json["name"]) {
+      json["name"] = json["name"].trim();
+    }
+    if (json["slug"]) {
+      json["slug"] = json["slug"].trim();
+    }
+    return json;
+  }
 
   static override get relationMappings(): RelationMappings {
     return {

@@ -1,4 +1,5 @@
 import type {
+  Pojo,
   QueryContext,
   RelationMappings,
   TransactionOrKnex,
@@ -19,7 +20,12 @@ export class Project extends Model {
   static override jsonSchema = mergeSchemas(timestampsSchema, {
     required: ["name", "accountId"],
     properties: {
-      name: { type: "string" },
+      name: {
+        type: "string",
+        minLength: 1,
+        maxLength: 100,
+        pattern: "^[a-zA-Z0-9_\\-.]+$",
+      },
       token: { type: "string" },
       private: { type: ["null", "boolean"] },
       baselineBranch: { type: ["null", "string"] },
@@ -36,6 +42,17 @@ export class Project extends Model {
   accountId!: string;
   githubRepositoryId!: string | null;
   vercelProjectId!: string | null;
+
+  override $formatDatabaseJson(json: Pojo) {
+    json = super.$formatDatabaseJson(json);
+    if (json["name"]) {
+      json["name"] = json["name"].trim();
+    }
+    if (json["baselineBranch"]) {
+      json["baselineBranch"] = json["baselineBranch"].trim();
+    }
+    return json;
+  }
 
   static override get relationMappings(): RelationMappings {
     return {

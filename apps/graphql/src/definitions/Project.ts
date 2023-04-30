@@ -79,6 +79,7 @@ export const typeDefs = gql`
     id: ID!
     baselineBranch: String
     private: Boolean
+    name: String
   }
 
   input TransferProjectInput {
@@ -130,6 +131,21 @@ const resolveProjectName = async (args: {
   }
 
   return resolveProjectName({ ...args, index: index + 1 });
+};
+
+const checkProjectName = async (args: { name: string; accountId: string }) => {
+  const sameName = await Project.query()
+    .select("id")
+    .findOne({ name: args.name, accountId: args.accountId })
+    .first();
+  if (sameName) {
+    throw new GraphQLError("Name is already used by another project", {
+      extensions: {
+        code: "BAD_USER_INPUT",
+        field: "name",
+      },
+    });
+  }
 };
 
 export const createProject = async (props: {
@@ -381,6 +397,7 @@ export const resolvers = {
           id: string;
           baselineBranch?: string | null;
           private?: boolean | null;
+          name?: string;
         };
       },
       ctx: Context
@@ -393,14 +410,22 @@ export const resolvers = {
       const data: PartialModelObject<Project> = {};
 
       if (args.input.baselineBranch !== undefined) {
-        data.baselineBranch = args.input.baselineBranch?.trim() ?? null;
+        data.baselineBranch = args.input.baselineBranch ?? null;
       }
 
       if (args.input.private !== undefined) {
         data.private = args.input.private;
       }
 
-      return project.$query().patchAndFetch(data);
+      if (args.input.name !== undefined && project.name !== args.input.name) {
+        await checkProjectName({
+          name: args.input.name,
+          accountId: project.accountId,
+        });
+        data.name = args.input.name;
+      }
+
+      return project.$query().patch(data).returning("*");
     },
     transferProject: async (
       _root: null,
@@ -421,18 +446,10 @@ export const resolvers = {
       if (project.accountId === targetAccountId) {
         throw new Error("Project is already owned by this account");
       }
-      const sameName = await Project.query()
-        .select("id")
-        .findOne({ name: args.input.name, accountId: targetAccountId })
-        .first();
-      if (sameName) {
-        throw new GraphQLError("Name is already used by another project", {
-          extensions: {
-            code: "BAD_USER_INPUT",
-            field: "name",
-          },
-        });
-      }
+      await checkProjectName({
+        name: args.input.name,
+        accountId: targetAccountId,
+      });
       return project
         .$query()
         .patch({
