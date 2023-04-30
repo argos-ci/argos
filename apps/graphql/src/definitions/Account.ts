@@ -1,7 +1,7 @@
 import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 
-import { Account, Project, Purchase } from "@argos-ci/database/models";
+import { Account, Project, Purchase, User } from "@argos-ci/database/models";
 
 import type { Context } from "../context.js";
 import { paginateResult } from "./PageInfo.js";
@@ -81,6 +81,21 @@ const colors = [
 const getAvatarColor = (id: string): string => {
   const randomIndex = Number(id) % colors.length;
   return colors[randomIndex] ?? colors[0] ?? "#000";
+};
+
+export const getWritableAccount = async (args: {
+  id: string;
+  user: User | undefined | null;
+}): Promise<Account> => {
+  if (!args.user) {
+    throw new Error("Unauthorized");
+  }
+  const account = await Account.query().findById(args.id).throwIfNotFound();
+  const hasWritePermission = await account.$checkWritePermission(args.user);
+  if (!hasWritePermission) {
+    throw new Error("Unauthorized");
+  }
+  return account;
 };
 
 const RESERVED_SLUGS = [
@@ -224,17 +239,8 @@ export const resolvers = {
       args: { input: { id: string; name?: string; slug?: string } },
       ctx: Context
     ) => {
-      if (!ctx.auth) {
-        throw new Error("Unauthorized");
-      }
       const { id, ...input } = args.input;
-      const account = await Account.query().findById(id).throwIfNotFound();
-      const hasWritePermission = await account.$checkWritePermission(
-        ctx.auth.user
-      );
-      if (!hasWritePermission) {
-        throw new Error("Unauthorized");
-      }
+      const account = await getWritableAccount({ id, user: ctx.auth?.user });
       if (input.slug && account.slug !== input.slug) {
         if (RESERVED_SLUGS.includes(input.slug)) {
           throw new GraphQLError("Slug is reserved for internal usage", {

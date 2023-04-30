@@ -138,12 +138,11 @@ export const createProject = async (props: {
   owner: string;
   creator: User;
 }) => {
-  const account = await Account.query().findOne({
-    slug: props.accountSlug,
-  });
-  if (!account) {
-    throw new Error("Account not found");
-  }
+  const account = await Account.query()
+    .findOne({
+      slug: props.accountSlug,
+    })
+    .throwIfNotFound();
   const hasWritePermission = await account.$checkWritePermission(props.creator);
   if (!hasWritePermission) {
     throw new Error("Unauthorized");
@@ -190,16 +189,10 @@ export const createProject = async (props: {
     });
   };
 
-  const getOrCreateProject = async (props: {
+  const createProjectModel = async (props: {
     accountId: string;
     githubRepositoryId: string;
   }) => {
-    const project = await Project.query().findOne({
-      githubRepositoryId: props.githubRepositoryId,
-    });
-    if (project) {
-      return project;
-    }
     const name = await resolveProjectName({
       name: ghApiRepo.name,
       accountId: props.accountId,
@@ -213,7 +206,7 @@ export const createProject = async (props: {
 
   const ghAccount = await getOrCreateAccount();
   const ghRepo = await getOrCreateRepo({ githubAccountId: ghAccount.id });
-  return getOrCreateProject({
+  return createProjectModel({
     accountId: account.id,
     githubRepositoryId: ghRepo.id,
   });

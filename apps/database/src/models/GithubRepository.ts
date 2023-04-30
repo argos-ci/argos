@@ -34,8 +34,8 @@ export class GithubRepository extends Model {
 
   static override get relationMappings(): RelationMappings {
     return {
-      project: {
-        relation: Model.HasOneRelation,
+      projects: {
+        relation: Model.HasManyRelation,
         modelClass: Project,
         join: {
           from: "github_repositories.id",
@@ -70,5 +70,5 @@ export class GithubRepository extends Model {
 
   githubAccount?: GithubAccount;
   activeInstallation?: GithubInstallation | null;
-  project?: Project | null;
+  projects?: Project[] | null;
 }

@@ -20,6 +20,7 @@ import { NotFound } from "../NotFound";
 const MeQuery = graphql(`
   query AccountNewProject_me {
     me {
+      id
       ghInstallations {
         edges {
           id
