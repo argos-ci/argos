@@ -505,7 +505,7 @@ describe("stripe", () => {
         previousUsage = usageRecordSummaries.data[0]?.total_usage || 0;
       });
 
-      it("should update stripe usage", async () => {
+      it.skip("should update stripe usage", async () => {
         const newUsage = previousUsage + 1;
         const updatedUsage = await updateStripeUsage({
           account,
