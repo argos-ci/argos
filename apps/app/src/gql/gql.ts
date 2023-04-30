@@ -13,6 +13,10 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Therefore it is highly recommended to use the babel or swc plugin for production.
  */
 const documents = {
+    "\n  fragment AccountChangeName_Account on Account {\n    id\n    name\n    slug\n  }\n": types.AccountChangeName_AccountFragmentDoc,
+    "\n  mutation AccountChangeName_updateAccount($id: ID!, $name: String!) {\n    updateAccount(input: { id: $id, name: $name }) {\n      id\n      name\n    }\n  }\n": types.AccountChangeName_UpdateAccountDocument,
+    "\n  fragment AccountChangeSlug_Account on Account {\n    id\n    slug\n  }\n": types.AccountChangeSlug_AccountFragmentDoc,
+    "\n  mutation AccountChangeSlug_updateAccount($id: ID!, $slug: String!) {\n    updateAccount(input: { id: $id, slug: $slug }) {\n      id\n      slug\n    }\n  }\n": types.AccountChangeSlug_UpdateAccountDocument,
     "\n  fragment AccountAvatarFragment on AccountAvatar {\n    url(size: 64)\n    color\n    initial\n  }\n": types.AccountAvatarFragmentFragmentDoc,
     "\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n": types.AccountItem_AccountFragmentDoc,
     "\n  query ProjectTransfer_me {\n    me {\n      id\n      ...AccountItem_Account\n      teams {\n        id\n        ...AccountItem_Account\n      }\n    }\n  }\n": types.ProjectTransfer_MeDocument,
@@ -40,10 +44,6 @@ const documents = {
     "\n  query RepositoryList_repository($installationId: ID!, $page: Int!) {\n    ghApiInstallationRepositories(\n      installationId: $installationId\n      page: $page\n    ) {\n      edges {\n        id\n        name\n        updated_at\n        owner_login\n      }\n      pageInfo {\n        hasNextPage\n      }\n    }\n  }\n": types.RepositoryList_RepositoryDocument,
     "\n  fragment ReviewButton_Project on Project {\n    name\n    permissions\n    public\n    account {\n      id\n      slug\n      consumptionRatio\n    }\n    build(number: $buildNumber) {\n      id\n      status\n    }\n  }\n": types.ReviewButton_ProjectFragmentDoc,
     "\n  mutation setValidationStatus(\n    $buildId: ID!\n    $validationStatus: ValidationStatus!\n  ) {\n    setValidationStatus(\n      buildId: $buildId\n      validationStatus: $validationStatus\n    ) {\n      id\n      status\n    }\n  }\n": types.SetValidationStatusDocument,
-    "\n  fragment TeamChangeName_Team on Team {\n    id\n    name\n    slug\n  }\n": types.TeamChangeName_TeamFragmentDoc,
-    "\n  mutation TeamChangeName_updateAccount($id: ID!, $name: String!) {\n    updateAccount(input: { id: $id, name: $name }) {\n      id\n      name\n    }\n  }\n": types.TeamChangeName_UpdateAccountDocument,
-    "\n  fragment TeamChangeSlug_Team on Team {\n    id\n    slug\n  }\n": types.TeamChangeSlug_TeamFragmentDoc,
-    "\n  mutation TeamChangeSlug_updateAccount($id: ID!, $slug: String!) {\n    updateAccount(input: { id: $id, slug: $slug }) {\n      id\n      slug\n    }\n  }\n": types.TeamChangeSlug_UpdateAccountDocument,
     "\n  fragment TeamMembers_Team on Team {\n    id\n    name\n    slug\n    inviteLink\n    users(first: 30, after: 0) {\n      edges {\n        id\n        name\n        slug\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n      pageInfo {\n        totalCount\n      }\n    }\n  }\n": types.TeamMembers_TeamFragmentDoc,
     "\n  mutation TeamMembers_leaveTeam($teamAccountId: ID!) {\n    leaveTeam(input: { teamAccountId: $teamAccountId })\n  }\n": types.TeamMembers_LeaveTeamDocument,
     "\n  mutation TeamMembers_removeUserFromTeam(\n    $teamAccountId: ID!\n    $userAccountId: ID!\n  ) {\n    removeUserFromTeam(\n      input: { teamAccountId: $teamAccountId, userAccountId: $userAccountId }\n    )\n  }\n": types.TeamMembers_RemoveUserFromTeamDocument,
@@ -60,7 +60,7 @@ const documents = {
     "\n  query AccountNewProject_me {\n    me {\n      id\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n": types.AccountNewProject_MeDocument,
     "\n  mutation NewProject_createProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    createProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      name\n      account {\n        id\n        slug\n      }\n    }\n  }\n": types.NewProject_CreateProjectDocument,
     "\n  query AccountProjects_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          ...ProjectList_Project\n        }\n      }\n    }\n  }\n": types.AccountProjects_AccountDocument,
-    "\n  query AccountSettings_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n      screenshotsLimitPerMonth\n      stripeCustomerId\n\n      plan {\n        id\n        name\n        screenshotsLimitPerMonth\n      }\n\n      purchase {\n        id\n        source\n      }\n\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          name\n          public\n          currentMonthUsedScreenshots\n        }\n      }\n      ...TeamMembers_Team\n      ...TeamChangeName_Team\n      ...TeamChangeSlug_Team\n    }\n  }\n": types.AccountSettings_AccountDocument,
+    "\n  query AccountSettings_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n      screenshotsLimitPerMonth\n      stripeCustomerId\n\n      plan {\n        id\n        name\n        screenshotsLimitPerMonth\n      }\n\n      purchase {\n        id\n        source\n      }\n\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          name\n          public\n          currentMonthUsedScreenshots\n        }\n      }\n      ...TeamMembers_Team\n      ...AccountChangeName_Account\n      ...AccountChangeSlug_Account\n    }\n  }\n": types.AccountSettings_AccountDocument,
     "\n  query Account_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      permissions\n    }\n  }\n": types.Account_AccountDocument,
     "\n  fragment BuildDetail_Build on Build {\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      branch\n      createdAt\n    }\n    compareScreenshotBucket {\n      branch\n      createdAt\n    }\n  }\n": types.BuildDetail_BuildFragmentDoc,
     "\n  query BuildDiffState_Project(\n    $accountSlug: String!\n    $projectName: String!\n    $buildNumber: Int!\n    $after: Int!\n    $first: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      build(number: $buildNumber) {\n        id\n        screenshotDiffs(after: $after, first: $first) {\n          pageInfo {\n            hasNextPage\n          }\n          edges {\n            id\n            status\n            url\n            name\n            width\n            height\n            flakyDetected\n            baseScreenshot {\n              id\n              url\n              width\n              height\n            }\n            compareScreenshot {\n              id\n              url\n              width\n              height\n            }\n            test {\n              id\n              status\n              unstable\n              resolvedDate\n              mute\n              muteUntil\n            }\n          }\n        }\n      }\n    }\n  }\n": types.BuildDiffState_ProjectDocument,
@@ -99,6 +99,22 @@ const documents = {
  */
 export function graphql(source: string): unknown;
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment AccountChangeName_Account on Account {\n    id\n    name\n    slug\n  }\n"): (typeof documents)["\n  fragment AccountChangeName_Account on Account {\n    id\n    name\n    slug\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AccountChangeName_updateAccount($id: ID!, $name: String!) {\n    updateAccount(input: { id: $id, name: $name }) {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  mutation AccountChangeName_updateAccount($id: ID!, $name: String!) {\n    updateAccount(input: { id: $id, name: $name }) {\n      id\n      name\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment AccountChangeSlug_Account on Account {\n    id\n    slug\n  }\n"): (typeof documents)["\n  fragment AccountChangeSlug_Account on Account {\n    id\n    slug\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AccountChangeSlug_updateAccount($id: ID!, $slug: String!) {\n    updateAccount(input: { id: $id, slug: $slug }) {\n      id\n      slug\n    }\n  }\n"): (typeof documents)["\n  mutation AccountChangeSlug_updateAccount($id: ID!, $slug: String!) {\n    updateAccount(input: { id: $id, slug: $slug }) {\n      id\n      slug\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -210,22 +226,6 @@ export function graphql(source: "\n  mutation setValidationStatus(\n    $buildId
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment TeamChangeName_Team on Team {\n    id\n    name\n    slug\n  }\n"): (typeof documents)["\n  fragment TeamChangeName_Team on Team {\n    id\n    name\n    slug\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation TeamChangeName_updateAccount($id: ID!, $name: String!) {\n    updateAccount(input: { id: $id, name: $name }) {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  mutation TeamChangeName_updateAccount($id: ID!, $name: String!) {\n    updateAccount(input: { id: $id, name: $name }) {\n      id\n      name\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  fragment TeamChangeSlug_Team on Team {\n    id\n    slug\n  }\n"): (typeof documents)["\n  fragment TeamChangeSlug_Team on Team {\n    id\n    slug\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation TeamChangeSlug_updateAccount($id: ID!, $slug: String!) {\n    updateAccount(input: { id: $id, slug: $slug }) {\n      id\n      slug\n    }\n  }\n"): (typeof documents)["\n  mutation TeamChangeSlug_updateAccount($id: ID!, $slug: String!) {\n    updateAccount(input: { id: $id, slug: $slug }) {\n      id\n      slug\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
 export function graphql(source: "\n  fragment TeamMembers_Team on Team {\n    id\n    name\n    slug\n    inviteLink\n    users(first: 30, after: 0) {\n      edges {\n        id\n        name\n        slug\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n      pageInfo {\n        totalCount\n      }\n    }\n  }\n"): (typeof documents)["\n  fragment TeamMembers_Team on Team {\n    id\n    name\n    slug\n    inviteLink\n    users(first: 30, after: 0) {\n      edges {\n        id\n        name\n        slug\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n      pageInfo {\n        totalCount\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -290,7 +290,7 @@ export function graphql(source: "\n  query AccountProjects_account($slug: String
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query AccountSettings_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n      screenshotsLimitPerMonth\n      stripeCustomerId\n\n      plan {\n        id\n        name\n        screenshotsLimitPerMonth\n      }\n\n      purchase {\n        id\n        source\n      }\n\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          name\n          public\n          currentMonthUsedScreenshots\n        }\n      }\n      ...TeamMembers_Team\n      ...TeamChangeName_Team\n      ...TeamChangeSlug_Team\n    }\n  }\n"): (typeof documents)["\n  query AccountSettings_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n      screenshotsLimitPerMonth\n      stripeCustomerId\n\n      plan {\n        id\n        name\n        screenshotsLimitPerMonth\n      }\n\n      purchase {\n        id\n        source\n      }\n\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          name\n          public\n          currentMonthUsedScreenshots\n        }\n      }\n      ...TeamMembers_Team\n      ...TeamChangeName_Team\n      ...TeamChangeSlug_Team\n    }\n  }\n"];
+export function graphql(source: "\n  query AccountSettings_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n      screenshotsLimitPerMonth\n      stripeCustomerId\n\n      plan {\n        id\n        name\n        screenshotsLimitPerMonth\n      }\n\n      purchase {\n        id\n        source\n      }\n\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          name\n          public\n          currentMonthUsedScreenshots\n        }\n      }\n      ...TeamMembers_Team\n      ...AccountChangeName_Account\n      ...AccountChangeSlug_Account\n    }\n  }\n"): (typeof documents)["\n  query AccountSettings_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n      screenshotsLimitPerMonth\n      stripeCustomerId\n\n      plan {\n        id\n        name\n        screenshotsLimitPerMonth\n      }\n\n      purchase {\n        id\n        source\n      }\n\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          name\n          public\n          currentMonthUsedScreenshots\n        }\n      }\n      ...TeamMembers_Team\n      ...AccountChangeName_Account\n      ...AccountChangeSlug_Account\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
