@@ -1,3 +1,4 @@
+import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
@@ -32,7 +33,7 @@ export const typeDefs = gql`
     name: String!
     token: String
     "Builds associated to the repository"
-    builds(first: Int!, after: Int!): BuildConnection!
+    builds(first: Int = 30, after: Int = 0): BuildConnection!
     "A single build linked to the repository"
     build(number: Int!): Build
     "Tests associated to the repository"
@@ -53,11 +54,14 @@ export const typeDefs = gql`
     private: Boolean
     "Current month used screenshots"
     currentMonthUsedScreenshots: Int!
+    totalScreenshots: Int!
   }
 
   extend type Query {
     "Get a project"
     project(accountSlug: String!, projectName: String!): Project
+    "Get a project"
+    projectById(id: ID!): Project
   }
 
   type ProjectConnection implements Connection {
@@ -77,13 +81,56 @@ export const typeDefs = gql`
     private: Boolean
   }
 
+  input TransferProjectInput {
+    id: ID!
+    name: String!
+    targetAccountId: ID!
+  }
+
   extend type Mutation {
     "Create a Project"
     createProject(input: CreateProjectInput!): Project!
     "Update Project"
     updateProject(input: UpdateProjectInput): Project!
+    "Transfer Project to another account"
+    transferProject(input: TransferProjectInput!): Project!
   }
 `;
+
+const getWritableProject = async (args: {
+  id: string;
+  user: User | undefined | null;
+}): Promise<Project> => {
+  if (!args.user) {
+    throw new Error("Unauthorized");
+  }
+  const project = await Project.query().findById(args.id).throwIfNotFound();
+  const hasWritePermission = await project.$checkWritePermission(args.user);
+  if (!hasWritePermission) {
+    throw new Error("Unauthorized");
+  }
+  return project;
+};
+
+const resolveProjectName = async (args: {
+  name: string;
+  accountId: string;
+  index?: number;
+}): Promise<string> => {
+  const index = args.index || 0;
+  const name = args.index ? `${args.name}-${index}` : args.name;
+
+  const existingProject = await Project.query()
+    .select("id")
+    .findOne({ name, accountId: args.accountId })
+    .first();
+
+  if (!existingProject) {
+    return name;
+  }
+
+  return resolveProjectName({ ...args, index: index + 1 });
+};
 
 export const createProject = async (props: {
   accountSlug: string;
@@ -153,8 +200,12 @@ export const createProject = async (props: {
     if (project) {
       return project;
     }
-    return Project.query().insertAndFetch({
+    const name = await resolveProjectName({
       name: ghApiRepo.name,
+      accountId: props.accountId,
+    });
+    return Project.query().insertAndFetch({
+      name,
       accountId: props.accountId,
       githubRepositoryId: props.githubRepositoryId,
     });
@@ -266,6 +317,12 @@ export const resolvers = {
         .where("screenshots.createdAt", ">=", currentConsumptionStartDate)
         .resultSize();
     },
+    totalScreenshots: async (project: Project) => {
+      return Screenshot.query()
+        .joinRelated("screenshotBucket")
+        .where("screenshotBucket.projectId", project.id)
+        .resultSize();
+    },
   },
   Query: {
     project: async (
@@ -277,6 +334,20 @@ export const resolvers = {
         "account.slug": args.accountSlug,
         "projects.name": args.projectName,
       });
+
+      if (!project) return null;
+
+      const hasReadPermission = await project.$checkReadPermission(
+        ctx.auth?.user ?? null
+      );
+      if (!hasReadPermission) return null;
+
+      return project;
+    },
+    projectById: async (_root: null, args: { id: string }, ctx: Context) => {
+      const project = await Project.query()
+        .joinRelated("account")
+        .findById(args.id);
 
       if (!project) return null;
 
@@ -321,20 +392,10 @@ export const resolvers = {
       },
       ctx: Context
     ) => {
-      if (!ctx.auth) {
-        throw new Error("Unauthorized");
-      }
-
-      const { id } = args.input;
-      const project = await Project.query().findById(id).throwIfNotFound();
-
-      const hasWritePermission = await project.$checkWritePermission(
-        ctx.auth.user
-      );
-
-      if (!hasWritePermission) {
-        throw new Error("Unauthorized");
-      }
+      const project = await getWritableProject({
+        id: args.input.id,
+        user: ctx.auth?.user,
+      });
 
       const data: PartialModelObject<Project> = {};
 
@@ -347,6 +408,45 @@ export const resolvers = {
       }
 
       return project.$query().patchAndFetch(data);
+    },
+    transferProject: async (
+      _root: null,
+      args: {
+        input: {
+          id: string;
+          name: string;
+          targetAccountId: string;
+        };
+      },
+      ctx: Context
+    ) => {
+      const project = await getWritableProject({
+        id: args.input.id,
+        user: ctx.auth?.user,
+      });
+      const { targetAccountId } = args.input;
+      if (project.accountId === targetAccountId) {
+        throw new Error("Project is already owned by this account");
+      }
+      const sameName = await Project.query()
+        .select("id")
+        .findOne({ name: args.input.name, accountId: targetAccountId })
+        .first();
+      if (sameName) {
+        throw new GraphQLError("Name is already used by another project", {
+          extensions: {
+            code: "BAD_USER_INPUT",
+            field: "name",
+          },
+        });
+      }
+      return project
+        .$query()
+        .patch({
+          accountId: targetAccountId,
+          name: args.input.name,
+        })
+        .returning("*");
     },
   },
 };
