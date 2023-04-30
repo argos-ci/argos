@@ -9,10 +9,10 @@ import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
 import config from "@/config";
+import { AccountChangeName } from "@/containers/Account/ChangeName";
+import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
 import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
-import { TeamChangeName } from "@/containers/Team/ChangeName";
-import { TeamChangeSlug } from "@/containers/Team/ChangeSlug";
 import { TeamMembers } from "@/containers/Team/Members";
 import { DocumentType, graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
@@ -62,8 +62,8 @@ const AccountQuery = graphql(`
         }
       }
       ...TeamMembers_Team
-      ...TeamChangeName_Team
-      ...TeamChangeSlug_Team
+      ...AccountChangeName_Account
+      ...AccountChangeSlug_Account
     }
   }
 `);
@@ -290,12 +290,43 @@ export const AccountSettings = () => {
 
           return (
             <SettingsLayout>
-              {isTeam && (
-                <>
-                  <TeamChangeName team={account} />
-                  <TeamChangeSlug team={account} />
-                </>
-              )}
+              {(() => {
+                switch (account.__typename) {
+                  case "User":
+                    return (
+                      <>
+                        <AccountChangeName
+                          account={account}
+                          title="Your Name"
+                          description="Please enter your full name, or a display name you are comfortable with."
+                        />
+                        <AccountChangeSlug
+                          account={account}
+                          title="Your Username"
+                          description="This is your URL namespace within Argos."
+                        />
+                      </>
+                    );
+                  case "Team":
+                    return (
+                      <>
+                        <AccountChangeName
+                          account={account}
+                          title="Team Name"
+                          description="This is your team's visible name within Argos. For example, the
+              name of your company or department."
+                        />
+                        <AccountChangeSlug
+                          account={account}
+                          title="Team URL"
+                          description="This is your team’s URL namespace on Argos. Within it, your team
+                    can inspect their projects or configure settings."
+                        />
+                      </>
+                    );
+                }
+                return null;
+              })()}
               {account.plan && (
                 <PlanCard
                   accountSlug={accountSlug}

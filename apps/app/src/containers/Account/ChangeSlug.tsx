@@ -8,15 +8,15 @@ import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
 
-const TeamFragment = graphql(`
-  fragment TeamChangeSlug_Team on Team {
+const AccountFragment = graphql(`
+  fragment AccountChangeSlug_Account on Account {
     id
     slug
   }
 `);
 
 const UpdateAccountMutation = graphql(`
-  mutation TeamChangeSlug_updateAccount($id: ID!, $slug: String!) {
+  mutation AccountChangeSlug_updateAccount($id: ID!, $slug: String!) {
     updateAccount(input: { id: $id, slug: $slug }) {
       id
       slug
@@ -28,16 +28,18 @@ type Inputs = {
   slug: string;
 };
 
-export type TeamChangeSlugProps = {
-  team: FragmentType<typeof TeamFragment>;
+export type AccountChangeSlugProps = {
+  account: FragmentType<typeof AccountFragment>;
+  title: React.ReactNode;
+  description: React.ReactNode;
 };
 
-export const TeamChangeSlug = (props: TeamChangeSlugProps) => {
-  const team = useFragment(TeamFragment, props.team);
+export const AccountChangeSlug = (props: AccountChangeSlugProps) => {
+  const account = useFragment(AccountFragment, props.account);
   const client = useApolloClient();
   const form = useForm<Inputs>({
     defaultValues: {
-      slug: team.slug,
+      slug: account.slug,
     },
   });
   const navigate = useNavigate();
@@ -45,7 +47,7 @@ export const TeamChangeSlug = (props: TeamChangeSlugProps) => {
     await client.mutate({
       mutation: UpdateAccountMutation,
       variables: {
-        id: team.id,
+        id: account.id,
         slug: data.slug,
       },
     });
@@ -56,25 +58,22 @@ export const TeamChangeSlug = (props: TeamChangeSlugProps) => {
       <FormProvider {...form}>
         <Form onSubmit={onSubmit}>
           <CardBody>
-            <CardTitle>Team URL</CardTitle>
-            <CardParagraph>
-              This is your team’s URL namespace on Argos. Within it, your team
-              can inspect their projects or configure settings.
-            </CardParagraph>
+            <CardTitle>{props.title}</CardTitle>
+            <CardParagraph>{props.description}</CardParagraph>
             <FormTextInput
               {...form.register("slug", {
-                required: "Please enter a team slugs",
+                required: "Please enter a slug",
                 maxLength: {
                   value: 48,
-                  message: "Team slugs must be 48 characters or less",
+                  message: "Account slugs must be 48 characters or less",
                 },
                 pattern: {
                   value: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
                   message:
-                    "Team slugs must be lowercase, begin with an alphanumeric character followed by more alphanumeric characters or dashes and ending with an alphanumeric character.",
+                    "Account slugs must be lowercase, begin with an alphanumeric character followed by more alphanumeric characters or dashes and ending with an alphanumeric character.",
                 },
               })}
-              label="Team slug"
+              label="URL namespace"
               hiddenLabel
             />
           </CardBody>

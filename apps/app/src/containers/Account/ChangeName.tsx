@@ -7,8 +7,8 @@ import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
 
-const TeamFragment = graphql(`
-  fragment TeamChangeName_Team on Team {
+const AccountFragment = graphql(`
+  fragment AccountChangeName_Account on Account {
     id
     name
     slug
@@ -16,7 +16,7 @@ const TeamFragment = graphql(`
 `);
 
 const UpdateAccountMutation = graphql(`
-  mutation TeamChangeName_updateAccount($id: ID!, $name: String!) {
+  mutation AccountChangeName_updateAccount($id: ID!, $name: String!) {
     updateAccount(input: { id: $id, name: $name }) {
       id
       name
@@ -28,23 +28,25 @@ type Inputs = {
   name: string;
 };
 
-export type TeamChangeNameProps = {
-  team: FragmentType<typeof TeamFragment>;
+export type AccountChangeNameProps = {
+  account: FragmentType<typeof AccountFragment>;
+  title: React.ReactNode;
+  description: React.ReactNode;
 };
 
-export const TeamChangeName = (props: TeamChangeNameProps) => {
-  const team = useFragment(TeamFragment, props.team);
+export const AccountChangeName = (props: AccountChangeNameProps) => {
+  const account = useFragment(AccountFragment, props.account);
   const client = useApolloClient();
   const form = useForm<Inputs>({
     defaultValues: {
-      name: team.name || team.slug,
+      name: account.name || account.slug,
     },
   });
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     await client.mutate({
       mutation: UpdateAccountMutation,
       variables: {
-        id: team.id,
+        id: account.id,
         name: data.name,
       },
     });
@@ -54,20 +56,17 @@ export const TeamChangeName = (props: TeamChangeNameProps) => {
       <FormProvider {...form}>
         <Form onSubmit={onSubmit}>
           <CardBody>
-            <CardTitle>Team Name</CardTitle>
-            <CardParagraph>
-              This is your team's visible name within Argos. For example, the
-              name of your company or department.
-            </CardParagraph>
+            <CardTitle>{props.title}</CardTitle>
+            <CardParagraph>{props.description}</CardParagraph>
             <FormTextInput
               {...form.register("name", {
-                required: "Please enter a team name",
+                required: "Please enter a name",
                 maxLength: {
                   value: 40,
-                  message: "Team name must be 40 characters or less",
+                  message: "Name must be 40 characters or less",
                 },
               })}
-              label="Team name"
+              label="Name"
               hiddenLabel
             />
           </CardBody>
