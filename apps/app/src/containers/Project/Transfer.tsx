@@ -363,7 +363,7 @@ const TransferDialogButton = (props: TransferDialogButtonProps) => {
       <DialogDisclosure state={dialog}>
         {(disclosureProps) => (
           <Button {...disclosureProps} color="primary">
-            Transfer project
+            Transfer
           </Button>
         )}
       </DialogDisclosure>
