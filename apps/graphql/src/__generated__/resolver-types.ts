@@ -224,6 +224,8 @@ export type IMutation = {
   createProject: IProject;
   /** Create a team */
   createTeam: ITeam;
+  /** Delete Project */
+  deleteProject: Scalars['Boolean'];
   /** Leave a team */
   leaveTeam: Scalars['Boolean'];
   /** Mute or unmute tests */
@@ -260,6 +262,11 @@ export type IMutationCreateProjectArgs = {
 
 export type IMutationCreateTeamArgs = {
   input: ICreateTeamInput;
+};
+
+
+export type IMutationDeleteProjectArgs = {
+  id: Scalars['ID'];
 };
 
 
@@ -1067,6 +1074,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'token'>>;
   createProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationCreateProjectArgs, 'input'>>;
   createTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
+  deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
   muteTests?: Resolver<IResolversTypes['MuteUpdateTest'], ParentType, ContextType, RequireFields<IMutationMuteTestsArgs, 'ids' | 'muted'>>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;

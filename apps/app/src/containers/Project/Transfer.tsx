@@ -255,9 +255,9 @@ const ReviewStep = (props: ReviewStepProps) => {
                 data.actualAccount.plan?.id === data.targetAccount.plan?.id;
               return (
                 <>
-                  <p className="my-4">
+                  <DialogText>
                     The following elements will be transfered:
-                  </p>
+                  </DialogText>
                   <ul className="list-disc pl-4">
                     {buildCount > 0 ? (
                       <li>
@@ -275,7 +275,7 @@ const ReviewStep = (props: ReviewStepProps) => {
                     )}
                   </ul>
                   {samePlan ? (
-                    <p className="my-4">
+                    <DialogText>
                       <strong>
                         Both accounts are on the same plan
                         {data.actualAccount.plan?.name
@@ -285,14 +285,14 @@ const ReviewStep = (props: ReviewStepProps) => {
                       </strong>{" "}
                       The project will be transfered without any change to the
                       plan.
-                    </p>
+                    </DialogText>
                   ) : (
-                    <p className="my-4">
+                    <DialogText>
                       The project is actually on the plan{" "}
                       {data.actualAccount.plan?.name}. The project will be
                       transfered to the target account and the plan will be
                       changed to {data.targetAccount.plan?.name}. .
-                    </p>
+                    </DialogText>
                   )}
                 </>
               );
@@ -331,12 +331,12 @@ const SuccessStep = (props: SuccessStepProps) => {
             style={{ width: 80, height: 80 }}
           />
         </div>
-        <p className="text-center text-lg">
+        <DialogText className="text-center text-lg">
           Project transfered successfully.
           <br />
           You can now access the project from{" "}
           <strong>{props.accountName}</strong>.
-        </p>
+        </DialogText>
       </DialogBody>
       <DialogFooter>
         <DialogDismiss
@@ -363,7 +363,7 @@ const TransferDialogButton = (props: TransferDialogButtonProps) => {
       <DialogDisclosure state={dialog}>
         {(disclosureProps) => (
           <Button {...disclosureProps} color="primary">
-            Transfer project
+            Transfer
           </Button>
         )}
       </DialogDisclosure>

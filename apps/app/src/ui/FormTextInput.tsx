@@ -7,13 +7,21 @@ import { TextInput, TextInputProps } from "./TextInput";
 
 type FormTextInputProps = {
   name: string;
-  label: string;
+  label: React.ReactNode;
   hiddenLabel?: boolean;
 } & TextInputProps;
 
 export const FormTextInput = forwardRef<HTMLInputElement, FormTextInputProps>(
   (
-    { label, id: idProp, hiddenLabel = false, name, disabled, ...props },
+    {
+      label,
+      id: idProp,
+      hiddenLabel = false,
+      name,
+      disabled,
+      className,
+      ...props
+    },
     ref
   ) => {
     const form = useFormContext();
@@ -23,7 +31,7 @@ export const FormTextInput = forwardRef<HTMLInputElement, FormTextInputProps>(
     const id = idProp || genId;
     const invalid = Boolean(error);
     return (
-      <div>
+      <div className={className}>
         {!hiddenLabel && (
           <FormLabel htmlFor={id} invalid={invalid}>
             {label}
@@ -34,7 +42,9 @@ export const FormTextInput = forwardRef<HTMLInputElement, FormTextInputProps>(
           id={id}
           name={name}
           aria-invalid={invalid ? "true" : undefined}
-          aria-label={hiddenLabel ? label : undefined}
+          aria-label={
+            hiddenLabel && typeof label === "string" ? label : undefined
+          }
           disabled={disabled || isSubmitting}
           {...props}
         />

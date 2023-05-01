@@ -1,12 +1,17 @@
 import { clsx } from "clsx";
 import { HTMLProps } from "react";
 
-export const Card = ({ className, ...props }: HTMLProps<HTMLDivElement>) => {
+type CardProps = HTMLProps<HTMLDivElement> & {
+  intent?: "danger";
+};
+
+export const Card = ({ className, intent, ...props }: CardProps) => {
   return (
     <div
       className={clsx(
         className,
-        "w-full overflow-hidden rounded border border-border bg-slate-900/50"
+        "w-full overflow-hidden rounded border  bg-slate-900/50",
+        intent === "danger" ? "border-danger-500" : "border-border"
       )}
       {...props}
     />
