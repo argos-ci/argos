@@ -57,40 +57,35 @@ export const getLastPurchase = async (account: Account) => {
     .first();
 };
 
-export const getPendingPurchases = async (account: Account) => {
+export const getPendingPurchases = async (accountId: string) => {
   return Purchase.query()
-    .where("accountId", account.id)
+    .where({ accountId })
     .where("startDate", ">", "now()")
     .where((query) =>
       query.whereNull("endDate").orWhere("endDate", ">=", "now()")
     );
 };
 
-export const updatePurchase = async ({
-  activePurchase,
-  account,
-  plan,
+export const changeActivePurchase = async ({
+  activePurchaseId,
   effectiveDate,
+  newPurchaseProps,
+  pendingPurchases,
 }: {
-  activePurchase: Purchase;
-  account: Account;
-  plan: Plan;
+  activePurchaseId: string;
   effectiveDate: string;
+  newPurchaseProps: any;
+  pendingPurchases: Purchase[];
 }) => {
-  const pendingPurchases = await getPendingPurchases(account);
-
   transaction(async (trx) => {
     await Promise.all([
       Purchase.query(trx)
         .patch({ endDate: effectiveDate })
-        .findById(activePurchase!.id),
+        .findById(activePurchaseId),
       Purchase.query(trx).insert({
-        planId: plan.id,
-        accountId: account.id,
-        source: "stripe",
+        ...newPurchaseProps,
         startDate: effectiveDate,
       }),
-
       ...(pendingPurchases.length > 0
         ? [
             Purchase.query(trx)
@@ -143,7 +138,7 @@ export const getClientReferenceIdPayload = (
     );
   }
   const { accountId, purchaserId } =
-    Purchase.decodeStripeClientReferenceId(clientReferenceId);
+    Account.decodeStripeClientReferenceId(clientReferenceId);
   if (!accountId || !purchaserId) {
     throw new Error(`invalid stripe clientReferenceId "${clientReferenceId}"`);
   }

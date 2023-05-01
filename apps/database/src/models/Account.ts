@@ -252,4 +252,24 @@ export class Account extends Model {
         throw new Error(`Invariant incoherent account type`);
     }
   }
+
+  static encodeStripeClientReferenceId({
+    accountId,
+    purchaserId,
+  }: {
+    accountId: string;
+    purchaserId: string | null;
+  }) {
+    return Buffer.from(JSON.stringify({ accountId, purchaserId }), "utf8")
+      .toString("base64")
+      .replaceAll(/=/g, "_");
+  }
+
+  static decodeStripeClientReferenceId(clientReferenceId: string) {
+    const payload = Buffer.from(
+      clientReferenceId.replaceAll(/_/g, "="),
+      "base64"
+    ).toString("utf-8");
+    return JSON.parse(payload);
+  }
 }

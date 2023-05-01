@@ -1,4 +1,4 @@
-import { PlusCircleIcon } from "@heroicons/react/24/outline";
+import { FolderPlusIcon } from "@heroicons/react/24/outline";
 import { HTMLProps } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 
@@ -86,7 +86,7 @@ const CreateProjectButton = (props: ButtonProps) => {
       {(buttonProps) => (
         <RouterLink to="new" {...buttonProps}>
           <ButtonIcon>
-            <PlusCircleIcon />
+            <FolderPlusIcon />
           </ButtonIcon>
           Create a new Project
         </RouterLink>

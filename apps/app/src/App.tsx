@@ -18,7 +18,7 @@ import { AccountProjects } from "./pages/Account/Projects";
 import { AccountSettings } from "./pages/Account/Settings";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Build } from "./pages/Build";
-import { CheckoutSuccessRedirect } from "./pages/CheckoutSuccessRedirect";
+import { ErrorPage } from "./pages/ErrorPage";
 import { Home } from "./pages/Home";
 import { Invite } from "./pages/Invite";
 import { Login } from "./pages/Login";
@@ -47,10 +47,6 @@ export const App = () => {
               <Route
                 path="/:accountSlug/:projectName/builds/:buildNumber/:diffId"
                 element={<Build />}
-              />
-              <Route
-                path="/checkout-success"
-                element={<CheckoutSuccessRedirect />}
               />
               <Route
                 path="/"
@@ -86,6 +82,7 @@ export const App = () => {
                   <Route path="settings" element={<AccountSettings />} />
                   <Route path="checkout" element={<AccountCheckout />} />
                 </Route>
+                <Route path="error" element={<ErrorPage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

@@ -415,8 +415,11 @@ export type IProjectConnection = IConnection & {
 export type IPurchase = INode & {
   __typename?: 'Purchase';
   account: IAccount;
+  endDate?: Maybe<Scalars['DateTime']>;
   id: Scalars['ID'];
+  paymentMethodFilled?: Maybe<Scalars['Boolean']>;
   source: IPurchaseSource;
+  trialEndDate?: Maybe<Scalars['DateTime']>;
 };
 
 export enum IPurchaseSource {
@@ -1179,8 +1182,11 @@ export type IProjectConnectionResolvers<ContextType = Context, ParentType extend
 
 export type IPurchaseResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Purchase'] = IResolversParentTypes['Purchase']> = ResolversObject<{
   account?: Resolver<IResolversTypes['Account'], ParentType, ContextType>;
+  endDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  paymentMethodFilled?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   source?: Resolver<IResolversTypes['PurchaseSource'], ParentType, ContextType>;
+  trialEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

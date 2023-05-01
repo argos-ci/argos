@@ -25,7 +25,7 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
   },
   outline: {
     primary:
-      "text-primary-300 border-primary-300 bg-transparent [&:not([aria-disabled])]:hover:bg-primary-800",
+      "text-primary-100 border-primary-100 bg-transparent [&:not([aria-disabled])]:hover:border-primary-300 [&:not([aria-disabled])]:hover:text-primary-300",
     danger:
       "text-danger-300 border-danger-300 bg-transparent [&:not([aria-disabled])]:hover:bg-danger-800",
     neutral:

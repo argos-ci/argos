@@ -18,8 +18,11 @@ export const Card = ({ className, intent, ...props }: CardProps) => {
   );
 };
 
-export const CardBody = (props: HTMLProps<HTMLDivElement>) => {
-  return <div className="font-ms p-4" {...props} />;
+export const CardBody = ({
+  className,
+  ...props
+}: HTMLProps<HTMLDivElement>) => {
+  return <div className={clsx(className, "font-ms p-4")} {...props} />;
 };
 
 export const CardFooter = ({
@@ -34,15 +37,20 @@ export const CardFooter = ({
   );
 };
 
-export const CardTitle = (props: HTMLProps<HTMLDivElement>) => {
-  return <h2 className="mb-4 text-xl font-semibold" {...props} />;
+export const CardTitle = ({
+  className,
+  ...props
+}: HTMLProps<HTMLDivElement>) => {
+  return (
+    <h2 className={clsx(className, "mb-4 text-xl font-semibold")} {...props} />
+  );
 };
 
 export const CardParagraph = ({
   className,
   ...props
 }: HTMLProps<HTMLDivElement>) => {
-  return <p className={clsx(className, "my-4 last:mb-0")} {...props} />;
+  return <div className={clsx(className, "my-4 last:mb-0")} {...props} />;
 };
 
 export const CardSeparator = ({

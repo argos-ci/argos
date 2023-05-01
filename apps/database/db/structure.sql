@@ -666,7 +666,8 @@ CREATE TABLE public.purchases (
     "endDate" timestamp with time zone,
     source character varying(255) NOT NULL,
     "purchaserId" bigint,
-    "trialEndDate" timestamp with time zone
+    "trialEndDate" timestamp with time zone,
+    "paymentMethodFilled" boolean
 );
 
 
@@ -2303,3 +2304,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023042
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230429125237_add_purchase_trial.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230430182249_multiple-project-repo.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230501135647_add_plan_usage_type.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230503101723_add_purchase_payment_method_filled.js', 1, NOW());

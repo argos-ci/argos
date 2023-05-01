@@ -47,7 +47,7 @@ export const ProjectSettings = () => {
     <Container>
       <Helmet>
         <title>
-          {accountSlug}/{projectName} • Settings
+          {accountSlug}/{projectName} • Project Settings
         </title>
       </Helmet>
       <Heading>Project Settings</Heading>

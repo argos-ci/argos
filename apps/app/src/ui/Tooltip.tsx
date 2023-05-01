@@ -60,6 +60,7 @@ export type MagicTooltipProps = {
   tooltip: React.ReactNode;
   variant?: TooltipVariant;
   children: React.ReactElement;
+  timeout?: number;
 } & Omit<TooltipAnchorProps, "children" | "state">;
 
 type ActiveMagicTooltipProps = MagicTooltipProps & {

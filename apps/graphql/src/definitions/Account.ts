@@ -94,14 +94,7 @@ export const getWritableAccount = async (args: {
   return account;
 };
 
-const RESERVED_SLUGS = [
-  "auth",
-  "checkout-success",
-  "login",
-  "vercel",
-  "invite",
-  "teams",
-];
+const RESERVED_SLUGS = ["auth", "login", "vercel", "invite", "teams"];
 
 export const resolvers: IResolvers = {
   Account: {
@@ -119,7 +112,7 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw new Error("Unauthorized");
       }
-      return Purchase.encodeStripeClientReferenceId({
+      return Account.encodeStripeClientReferenceId({
         accountId: account.id,
         purchaserId: ctx.auth.user.id,
       });

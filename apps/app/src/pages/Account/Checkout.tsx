@@ -1,27 +1,21 @@
-/* eslint-disable @typescript-eslint/no-namespace */
+import { CheckCircleIcon, CurrencyDollarIcon } from "@heroicons/react/24/solid";
+import { clsx } from "clsx";
+import { ReactNode } from "react";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
-import config from "@/config";
 import { Query } from "@/containers/Apollo";
 import { graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
+import { Button } from "@/ui/Button";
+import { Card } from "@/ui/Card";
+import { Chip } from "@/ui/Chip";
 import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
+import { MagicTooltip } from "@/ui/Tooltip";
 import { Heading } from "@/ui/Typography";
 
 import { useAccountContext } from ".";
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "stripe-pricing-table": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-    }
-  }
-}
 
 const AccountQuery = graphql(`
   query AccountCheckout_account($slug: String!) {
@@ -32,9 +26,88 @@ const AccountQuery = graphql(`
         id
         source
       }
+      plan {
+        id
+        name
+      }
     }
   }
 `);
+
+const HOBBY_PLAN_SCREENSHOT_COUNT = 5000;
+const PRO_PLAN_SCREENSHOT_COUNT = 15000;
+
+const Price = ({
+  amount,
+  recurring,
+  fixedPrice,
+}: {
+  amount: number;
+  recurring: boolean;
+  fixedPrice: boolean;
+}) => (
+  <>
+    <div className="mb-1 mt-6 block h-5 text-sm">
+      {fixedPrice ? null : "Starting at"}
+    </div>
+    <div className="flex items-baseline">
+      <span className="text-3xl font-semibold text-on">
+        $<span className="tracking-tight">{amount}</span>
+      </span>
+      {recurring && <span className="ml-1 text-lg text-on-light">/month</span>}
+    </div>
+    <div className="mt-1 block h-5 text-sm">
+      {fixedPrice ? "forever" : "Billed monthly based on usage"}
+    </div>
+  </>
+);
+
+const Features = ({ children }: { children: ReactNode }) => (
+  <ul className="my-6 flex flex-col gap-4">{children}</ul>
+);
+
+const Feature = ({ children }: { children: ReactNode }) => (
+  <li className="flex gap-2">
+    <CheckCircleIcon className="h-5 w-5 shrink-0 text-on" />
+    <div className="leading-tight">{children}</div>
+  </li>
+);
+
+const PlanCard = ({
+  children,
+  emphasis,
+  className,
+}: {
+  children: ReactNode;
+  emphasis?: boolean;
+  className?: string;
+}) => (
+  <Card
+    className={clsx(
+      className,
+      "flex-1 shrink-0 basis-72 rounded-lg lg:max-w-[340px]",
+      emphasis ? "border-2 border-slate-500 pt-4" : ""
+    )}
+  >
+    {children}
+  </Card>
+);
+
+const PlanCardBody = ({ children }: { children: ReactNode }) => (
+  <div className="p-8 text-left text-on-light antialiased">{children}</div>
+);
+
+const PlanName = ({ children }: { children: ReactNode }) => (
+  <div className="my-2 text-xl font-semibold text-on">{children}</div>
+);
+
+const PlanDescription = ({ children }: { children: ReactNode }) => (
+  <p className="h-16">{children}</p>
+);
+
+const Chips = ({ children }: { children?: ReactNode }) => (
+  <div className="block h-8">{children}</div>
+);
 
 export const AccountCheckout = () => {
   const { accountSlug } = useParams();
@@ -52,11 +125,8 @@ export const AccountCheckout = () => {
     <Container>
       <Helmet>
         <title>{accountSlug} • Checkout</title>
-        <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
       </Helmet>
-      <Heading>
-        Subscribe to a plan for <span className="font-bold">{accountSlug}</span>
-      </Heading>
+      <Heading>Subscribe to a plan</Heading>
       <Query
         fallback={<PageLoader />}
         query={AccountQuery}
@@ -67,12 +137,124 @@ export const AccountCheckout = () => {
           if (account.purchase) return <NotFound />;
 
           return (
-            <div className="mb-20">
-              <stripe-pricing-table
-                pricing-table-id={config.get("stripe.pricingTableId")}
-                publishable-key={config.get("stripe.publishableKey")}
-                client-reference-id={account.stripeClientReferenceId}
-              ></stripe-pricing-table>
+            <div className="mb-10 mt-8 flex flex-wrap justify-evenly gap-6 lg:justify-center">
+              <PlanCard className="mt-4">
+                <PlanCardBody>
+                  <Chips />
+                  <PlanName>Hobby</PlanName>
+                  <PlanDescription>For personal projects.</PlanDescription>
+                  <Price amount={0} recurring={false} fixedPrice={true} />
+                  <Button
+                    className="my-6 w-full justify-center"
+                    variant="outline"
+                    size="large"
+                    color="neutral"
+                    disabled
+                  >
+                    {(buttonProps) => (
+                      <a {...buttonProps} href="/">
+                        Actual plan
+                      </a>
+                    )}
+                  </Button>
+                  <Features>
+                    <Feature>
+                      Up to {HOBBY_PLAN_SCREENSHOT_COUNT.toLocaleString()}{" "}
+                      screenshots
+                    </Feature>
+                    <Feature>Visual changes detection</Feature>
+                    <Feature>GitHub integration</Feature>
+                    <Feature>Community Support</Feature>
+                  </Features>
+                </PlanCardBody>
+              </PlanCard>
+
+              <PlanCard emphasis>
+                <PlanCardBody>
+                  <Chips>
+                    <Chip scale="sm">Most popular</Chip>
+                  </Chips>
+                  <PlanName>Pro</PlanName>
+                  <PlanDescription>
+                    Designed for team collaboration with advanced features.
+                  </PlanDescription>
+                  <Price amount={30} recurring={true} fixedPrice={false} />
+                  <form
+                    method="POST"
+                    action="/create-checkout-session"
+                    encType="x-www-form-urlencoded"
+                  >
+                    <Button
+                      type="submit"
+                      size="large"
+                      className="my-6 w-full justify-center"
+                      style={{ cursor: "pointer" }}
+                    >
+                      Start a free trial
+                    </Button>
+                    <input
+                      type="hidden"
+                      name="accountSlug"
+                      value={accountSlug}
+                    />
+                    <input
+                      type="hidden"
+                      name="stripeClientReferenceId"
+                      value={account.stripeClientReferenceId}
+                    />
+                  </form>
+                  <Features>
+                    <Feature>
+                      <span className="whitespace-nowrap ">
+                        {PRO_PLAN_SCREENSHOT_COUNT.toLocaleString()} screenshots
+                        <MagicTooltip
+                          tooltip="Then $0.0025 per screenshot after"
+                          timeout={0}
+                        >
+                          <CurrencyDollarIcon className="ml-1 inline-block h-4 w-4 text-on" />
+                        </MagicTooltip>
+                      </span>
+                    </Feature>
+                    <Feature>Visual changes detection</Feature>
+                    <Feature>GitHub integration</Feature>
+                    <Feature>Pro Support</Feature>
+                    <Feature>Collaborating visual review</Feature>
+                  </Features>
+                </PlanCardBody>
+              </PlanCard>
+
+              <PlanCard className="mt-0 lg:mt-4">
+                <PlanCardBody>
+                  <Chips />
+                  <PlanName>Enterprise</PlanName>
+                  <PlanDescription>
+                    Tailored solutions with premium features.
+                  </PlanDescription>
+                  <div className="mb-6 mt-12 flex items-baseline text-3xl font-semibold text-on">
+                    Custom
+                  </div>
+
+                  <Button
+                    size="large"
+                    className="my-6 w-full justify-center"
+                    variant="outline"
+                  >
+                    {(buttonProps) => (
+                      <a {...buttonProps} href="mailto:contact@argos-ci.com">
+                        Contact Sales
+                      </a>
+                    )}
+                  </Button>
+                  <Features>
+                    <Feature>Custom amount of screenshots</Feature>
+                    <Feature>Visual changes detection</Feature>
+                    <Feature>GitHub integration</Feature>
+                    <Feature>Dedicated Support</Feature>
+                    <Feature>Collaborating visual review</Feature>
+                    <Feature>SLA for 99.99% Uptime</Feature>
+                  </Features>
+                </PlanCardBody>
+              </PlanCard>
             </div>
           );
         }}

@@ -41,7 +41,9 @@ const ProjectTabs = ({
       <TabLinkList state={tab} aria-label="Sections">
         <TabLink to="">Builds</TabLink>
         {hasTests && <TabLink to="tests">Tests</TabLink>}
-        {hasWritePermission && <TabLink to="settings">Settings</TabLink>}
+        {hasWritePermission && (
+          <TabLink to="settings">Project Settings</TabLink>
+        )}
       </TabLinkList>
       <TabLinkPanel state={tab} as={Main} tabId={tab.selectedId || null}>
         <Outlet context={{ hasWritePermission } as OutletContext} />

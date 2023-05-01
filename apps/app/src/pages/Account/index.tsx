@@ -1,4 +1,9 @@
-import { Outlet, useOutletContext, useParams } from "react-router-dom";
+import {
+  Outlet,
+  useLocation,
+  useOutletContext,
+  useParams,
+} from "react-router-dom";
 
 import { Query } from "@/containers/Apollo";
 import { Main } from "@/containers/Layout";
@@ -33,11 +38,16 @@ export const useAccountContext = () => {
 
 const AccountTabs = () => {
   const tab = useTabLinkState();
+  const location = useLocation();
+
   return (
     <>
       <TabLinkList state={tab} aria-label="Sections">
         <TabLink to="">Projects</TabLink>
-        <TabLink to="settings">Settings</TabLink>
+        <TabLink to="settings">Account Settings</TabLink>
+        {location.pathname.match(/checkout/) && (
+          <TabLink to="checkout">Checkout</TabLink>
+        )}
       </TabLinkList>
       <TabLinkPanel state={tab} as={Main} tabId={tab.selectedId || null}>
         <Outlet context={{ hasWritePermission: true } as OutletContext} />

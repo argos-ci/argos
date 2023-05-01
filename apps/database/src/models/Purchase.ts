@@ -27,6 +27,7 @@ export class Purchase extends Model {
       endDate: { type: ["string", "null"] },
       startDate: { type: ["string"] },
       trialEndDate: { type: ["string", "null"] },
+      paymentMethodFilled: { type: ["boolean", "null"] },
     },
   });
 
@@ -37,6 +38,7 @@ export class Purchase extends Model {
   endDate!: string | null;
   startDate!: string;
   trialEndDate!: string | null;
+  paymentMethodFilled!: boolean | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -78,25 +80,5 @@ export class Purchase extends Model {
             startOfMonth.getTime() // end of previous month
           )
         );
-  }
-
-  static encodeStripeClientReferenceId({
-    accountId,
-    purchaserId,
-  }: {
-    accountId: string;
-    purchaserId: string | null;
-  }) {
-    return Buffer.from(JSON.stringify({ accountId, purchaserId }), "utf8")
-      .toString("base64")
-      .replaceAll(/=/g, "_");
-  }
-
-  static decodeStripeClientReferenceId(clientReferenceId: string) {
-    const payload = Buffer.from(
-      clientReferenceId.replaceAll(/_/g, "="),
-      "base64"
-    ).toString("utf-8");
-    return JSON.parse(payload);
   }
 }

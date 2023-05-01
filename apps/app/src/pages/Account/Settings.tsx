@@ -1,3 +1,4 @@
+import { ArrowLongRightIcon } from "@heroicons/react/24/outline";
 import { ChevronDownIcon, ChevronRightIcon } from "@primer/octicons-react";
 import {
   Disclosure,
@@ -5,8 +6,9 @@ import {
   useDisclosureState,
 } from "ariakit/disclosure";
 import moment from "moment";
+import { useState } from "react";
 import { Helmet } from "react-helmet";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 import config from "@/config";
 import { AccountChangeName } from "@/containers/Account/ChangeName";
@@ -25,11 +27,22 @@ import {
   CardSeparator,
   CardTitle,
 } from "@/ui/Card";
+import { Chip } from "@/ui/Chip";
 import { Container } from "@/ui/Container";
+import {
+  Dialog,
+  DialogBody,
+  DialogDismiss,
+  DialogFooter,
+  DialogState,
+  DialogText,
+  DialogTitle,
+  useDialogState,
+} from "@/ui/Dialog";
 import { Anchor, Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { Progress } from "@/ui/Progress";
-import { StripePortalLink } from "@/ui/StripePortalLink";
+import { ContactLink, StripePortalLink } from "@/ui/StripePortalLink";
 import { Time } from "@/ui/Time";
 import { Heading } from "@/ui/Typography";
 
@@ -53,6 +66,9 @@ const AccountQuery = graphql(`
       purchase {
         id
         source
+        trialEndDate
+        paymentMethodFilled
+        endDate
       }
 
       projects(first: 100, after: 0) {
@@ -76,6 +92,7 @@ type Purchase = NonNullable<
   NonNullable<AccountDocument["account"]>["purchase"]
 >;
 type Project = NonNullable<AccountDocument["account"]>["projects"]["edges"][0];
+type CheckoutStatus = "success" | "cancel" | null;
 
 const sumUsedScreenshots = (projects: Project[]) =>
   projects.reduce(
@@ -91,13 +108,68 @@ const ManageSubscriptionLink = ({
   stripeCustomerId: string | null;
 }) => {
   if (purchase.source === "stripe") {
-    return <StripePortalLink stripeCustomerId={stripeCustomerId} />;
+    return stripeCustomerId ? (
+      <StripePortalLink stripeCustomerId={stripeCustomerId}>
+        Manage your subscription on Stripe
+      </StripePortalLink>
+    ) : (
+      <ContactLink />
+    );
   }
 
   return (
     <Anchor href={config.get("github.marketplaceUrl")} external>
       Manage your subscription on GitHub
     </Anchor>
+  );
+};
+
+const TrialChip = () => {
+  return (
+    <span className="ml-2">
+      <Chip scale="sm" color="info">
+        Trial
+      </Chip>
+    </span>
+  );
+};
+
+const TrialInfo = ({
+  paymentMethodFilled,
+  stripeCustomerId,
+  trialEndDate,
+  subscriptionEndDate,
+}: {
+  trialEndDate: string;
+  paymentMethodFilled: boolean;
+  stripeCustomerId: string;
+  subscriptionEndDate: string;
+}) => {
+  if (trialEndDate === subscriptionEndDate) {
+    return (
+      <div className="mt-2 text-on-light">
+        Trial cancelled. You can still use the service until the trial period
+        ends on {moment(trialEndDate).format("LLL")}.
+      </div>
+    );
+  }
+
+  if (paymentMethodFilled) {
+    return (
+      <div className="mt-2 text-on-light">
+        Your subscription will start automatically when the trial ends on{" "}
+        {moment(trialEndDate).format("LLL")}.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 text-on-light">
+      <StripePortalLink stripeCustomerId={stripeCustomerId}>
+        Add a payment method
+      </StripePortalLink>{" "}
+      to continue using the service after the trial ends.
+    </div>
   );
 };
 
@@ -114,31 +186,45 @@ const PlanCard = ({
   stripeCustomerId: string | null;
   projects: Project[];
 }) => {
-  const free = plan.name === "free";
+  const useFreePlan = plan.name === "free";
+  const planName = `${useFreePlan ? "Hobby" : plan.name} plan`;
+  const isTrialActive =
+    purchase?.trialEndDate && moment().isBefore(purchase.trialEndDate);
+  const hasStripePurchase = purchase && purchase.source === "stripe";
   const [privateProjects, publicProjects] = projects.reduce(
     (all, project) => {
-      if (!project.public) {
-        all[0].push(project);
-      } else {
-        all[1].push(project);
+      const groupId = project.public ? 1 : 0;
+      if (project.currentMonthUsedScreenshots > 0) {
+        all[groupId].push(project);
       }
       return all;
     },
     [[] as Project[], [] as Project[]]
   );
-  const hasStripePurchase = purchase && purchase.source === "stripe";
   return (
-    <Card>
+    <Card id="plan">
       <CardBody>
-        <CardTitle>Plan</CardTitle>
+        <div className="flex items-baseline justify-between">
+          <CardTitle>Plan</CardTitle>
+        </div>
         <CardParagraph>
           Your account is on the{" "}
-          <strong className="capitalize">{plan.name} plan</strong>.
-          {free && " Free of charge."}{" "}
+          <strong className="capitalize">{planName}</strong>
+          {useFreePlan && ". Free of charge. "}
+          {isTrialActive && <TrialChip />}
+          {isTrialActive && stripeCustomerId && (
+            <TrialInfo
+              paymentMethodFilled={!!purchase.paymentMethodFilled}
+              stripeCustomerId={stripeCustomerId}
+              trialEndDate={purchase.trialEndDate}
+              subscriptionEndDate={purchase.endDate}
+            />
+          )}
           {!hasStripePurchase && (
-            <Anchor href={config.get("github.marketplaceUrl")} external>
+            <Link to={`/${accountSlug}/checkout`}>
               Learn more
-            </Anchor>
+              <ArrowLongRightIcon className="ml-1 inline h-[1em] w-[1em] shrink-0" />
+            </Link>
           )}
         </CardParagraph>
         <CardSeparator className="my-6" />
@@ -263,9 +349,56 @@ const ConsumptionDetail = ({ projects }: { projects: Project[] }) => {
   );
 };
 
+const CheckoutStatusDialog = ({
+  checkoutStatus,
+  dialog,
+}: {
+  checkoutStatus: CheckoutStatus;
+  dialog: DialogState;
+}) => {
+  return (
+    <Dialog state={dialog} style={{ width: 560 }}>
+      <DialogBody>
+        <DialogTitle>
+          {checkoutStatus === "success"
+            ? "Subscription confirmed"
+            : "Subscription cancelled"}
+        </DialogTitle>
+        <DialogText>
+          {checkoutStatus === "success"
+            ? "We've received your subscription. Thank you for choosing Argos!"
+            : "Your subscription process has been interrupted."}
+        </DialogText>
+      </DialogBody>
+      <DialogFooter>
+        <DialogDismiss onClick={dialog.hide}>OK</DialogDismiss>
+      </DialogFooter>
+    </Dialog>
+  );
+};
+
 export const AccountSettings = () => {
   const { accountSlug } = useParams();
   const { hasWritePermission } = useAccountContext();
+
+  const { search } = useLocation();
+  const searchParams = new URLSearchParams(search);
+  const checkoutParam = searchParams.get("checkout");
+  const checkoutStatus: CheckoutStatus =
+    checkoutParam === "success" || checkoutParam === "cancel"
+      ? checkoutParam
+      : null;
+  const [showCheckoutDialog, setShowCheckoutDialog] = useState<boolean>(
+    checkoutStatus !== null
+  );
+  const dialog = useDialogState({
+    open: showCheckoutDialog,
+    setOpen: (open) => {
+      if (!open) {
+        setShowCheckoutDialog(false);
+      }
+    },
+  });
 
   if (!accountSlug) {
     return <NotFound />;
@@ -278,7 +411,7 @@ export const AccountSettings = () => {
   return (
     <Container>
       <Helmet>
-        <title>{accountSlug} • Settings</title>
+        <title>{accountSlug} • Account Settings</title>
       </Helmet>
       <Heading>Account Settings</Heading>
       <Query
@@ -341,6 +474,11 @@ export const AccountSettings = () => {
                 />
               )}
               {isTeam && <TeamMembers team={account} />}
+
+              <CheckoutStatusDialog
+                dialog={dialog}
+                checkoutStatus={checkoutStatus}
+              />
             </SettingsLayout>
           );
         }}

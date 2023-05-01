@@ -1,9 +1,10 @@
 import Stripe from "stripe";
 
 import config from "@argos-ci/config";
-import { Account, Purchase } from "@argos-ci/database/models";
+import { Account, Plan, Purchase } from "@argos-ci/database/models";
 
 import {
+  changeActivePurchase,
   findCustomerAccountOrThrow,
   findPlanOrThrow,
   getClientReferenceIdPayload,
@@ -11,11 +12,11 @@ import {
   getFirstProductOrThrow,
   getInvoiceCustomerOrThrow,
   getLastPurchase,
+  getPendingPurchases,
   getSessionCustomerIdOrThrow,
   getSessionSubscriptionOrThrow,
   getSubscriptionCustomerOrThrow,
   timestampToDate,
-  updatePurchase,
 } from "./utils.js";
 
 export type { Stripe };
@@ -24,6 +25,31 @@ export const stripe = new Stripe(config.get("stripe.apiKey"), {
   apiVersion: "2022-11-15",
   typescript: true,
 });
+
+export const getProductPriceOrThrow = async (plan: Plan) => {
+  const stripePlanId = plan.stripePlanId;
+  if (!stripePlanId) {
+    throw new Error(`stripePlanId is empty on plan ${plan.id}`);
+  }
+
+  const prices = await stripe.prices.list({
+    limit: 2,
+    active: true,
+    product: plan.stripePlanId,
+  });
+  if (prices.data.length > 1) {
+    throw new Error(
+      `stripe return multiple active prices found for plan ${plan.id}`
+    );
+  }
+
+  const price = prices.data[0];
+  if (!price) {
+    throw new Error(`stripe price not found for plan ${plan.id}`);
+  }
+
+  return price;
+};
 
 export const updateStripeUsage = async ({
   account,
@@ -99,6 +125,7 @@ export const handleStripeEvent = async ({
       const subscription = getSessionSubscriptionOrThrow(retrievedSession);
       const stripeProductId = getFirstProductOrThrow(subscription);
       const plan = await findPlanOrThrow(stripeProductId);
+      const paymentMethodFilled = subscription.default_payment_method !== null;
 
       await Purchase.query().insert({
         planId: plan.id,
@@ -109,6 +136,7 @@ export const handleStripeEvent = async ({
         trialEndDate: subscription.trial_end
           ? timestampToDate(subscription.trial_end)
           : null,
+        paymentMethodFilled,
       });
       break;
     }
@@ -148,52 +176,59 @@ export const handleStripeEvent = async ({
     }
 
     case "customer.subscription.updated": {
-      const subscription: Stripe.Subscription =
-        data.object as Stripe.Subscription;
+      const subscription = data.object as Stripe.Subscription;
       const stripeCustomerId: string =
         getSubscriptionCustomerOrThrow(subscription);
       const stripeProductId = getFirstProductOrThrow(subscription);
-      const plan = await findPlanOrThrow(stripeProductId);
-      const account = await findCustomerAccountOrThrow(stripeCustomerId);
+      const [plan, account] = await Promise.all([
+        findPlanOrThrow(stripeProductId),
+        findCustomerAccountOrThrow(stripeCustomerId),
+      ]);
       const activePurchase = await account.getActivePurchase();
 
-      if (subscription.cancel_at) {
-        if (!activePurchase) {
-          throw new Error(`can't find purchase for accountId "${account.id}"`);
-        }
-        await activePurchase
-          .$query()
-          .patch({ endDate: timestampToDate(subscription.cancel_at) });
+      const paymentMethodFilled = subscription.default_payment_method !== null;
+      const trialEndDate = subscription.trial_end
+        ? timestampToDate(subscription.trial_end)
+        : null;
+      const endDate = subscription.cancel_at
+        ? timestampToDate(subscription.cancel_at)
+        : null;
+      const newPurchaseProps = {
+        planId: plan.id,
+        accountId: account.id,
+        source: "stripe",
+        startDate: timestampToDate(subscription.start_date),
+        trialEndDate,
+        paymentMethodFilled,
+        endDate,
+      };
+
+      if (!activePurchase) {
+        await Purchase.query().insert(newPurchaseProps);
         break;
       }
 
-      if (!activePurchase) {
-        await Purchase.query().insert({
-          planId: plan.id,
-          accountId: account.id,
-          source: "stripe",
-          startDate: timestampToDate(subscription.start_date),
-          trialEndDate: subscription.trial_end
-            ? timestampToDate(subscription.trial_end)
-            : null,
+      if (plan && activePurchase.planId !== plan.id) {
+        const [effectiveDate, pendingPurchases] = await Promise.all([
+          getEffectiveDate({
+            newPlan: plan,
+            activePurchase,
+            renewalDate: subscription.current_period_end,
+          }),
+          getPendingPurchases(account.id),
+        ]);
+        await changeActivePurchase({
+          activePurchaseId: activePurchase.id,
+          effectiveDate,
+          newPurchaseProps,
+          pendingPurchases,
         });
         break;
       }
 
-      if (activePurchase.planId !== plan.id) {
-        const effectiveDate = (await getEffectiveDate({
-          newPlan: plan,
-          activePurchase,
-          renewalDate: subscription.current_period_end,
-        })) as string;
-        await updatePurchase({ account, plan, effectiveDate, activePurchase });
-      }
-
-      if (activePurchase.endDate) {
-        await Purchase.query()
-          .patch({ endDate: null })
-          .findById(activePurchase.id);
-      }
+      await Purchase.query()
+        .patch({ trialEndDate, paymentMethodFilled, endDate })
+        .findById(activePurchase.id);
       break;
     }
 
