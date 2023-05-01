@@ -12,6 +12,7 @@ import {
   getInvoiceCustomerOrThrow,
   getLastPurchase,
   getSessionCustomerIdOrThrow,
+  getSessionSubscriptionOrThrow,
   getSubscriptionCustomerOrThrow,
   timestampToDate,
   updatePurchase,
@@ -71,16 +72,6 @@ export const updateStripeUsage = async ({
   }
 };
 
-export const findSessionPlan = async (
-  initialSession: Stripe.Checkout.Session
-) => {
-  const session = (await stripe.checkout.sessions.retrieve(initialSession.id, {
-    expand: ["line_items"],
-  })) as Stripe.Checkout.Session;
-  const stripeProductId = session.line_items!.data[0]?.price!.product as string;
-  return findPlanOrThrow(stripeProductId);
-};
-
 export const handleStripeEvent = async ({
   data,
   type,
@@ -89,12 +80,11 @@ export const handleStripeEvent = async ({
     case "checkout.session.completed": {
       const session: Stripe.Checkout.Session =
         data.object as Stripe.Checkout.Session;
+
       const { accountId, purchaserId } = getClientReferenceIdPayload(session);
       const stripeCustomerId = getSessionCustomerIdOrThrow(session);
       const account = await Account.query()
-        .patchAndFetchById(accountId, {
-          stripeCustomerId,
-        })
+        .patchAndFetchById(accountId, { stripeCustomerId })
         .throwIfNotFound({
           message: `can't find account with id "${accountId}"`,
         });
@@ -105,13 +95,24 @@ export const handleStripeEvent = async ({
         break;
       }
 
-      const plan = await findSessionPlan(session);
+      const retrievedSession = await stripe.checkout.sessions.retrieve(
+        session.id,
+        { expand: ["subscription"] }
+      );
+
+      const subscription = getSessionSubscriptionOrThrow(retrievedSession);
+      const stripeProductId = getFirstProductOrThrow(subscription);
+      const plan = await findPlanOrThrow(stripeProductId);
+
       await Purchase.query().insert({
         planId: plan.id,
         accountId: account.id,
         source: "stripe",
         purchaserId,
         startDate: new Date().toISOString(),
+        trialEndDate: subscription.trial_end
+          ? timestampToDate(subscription.trial_end)
+          : null,
       });
       break;
     }
@@ -176,6 +177,9 @@ export const handleStripeEvent = async ({
           accountId: account.id,
           source: "stripe",
           startDate: timestampToDate(subscription.start_date),
+          trialEndDate: subscription.trial_end
+            ? timestampToDate(subscription.trial_end)
+            : null,
         });
         break;
       }
