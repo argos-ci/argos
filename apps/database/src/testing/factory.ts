@@ -171,6 +171,7 @@ factory.define("Plan", Plan, {
   name: factory.chance("pickone", ["Free", "Standard", "Pro", "Enterprise"]),
   screenshotsLimitPerMonth: factory.chance("pickone", [7000, 5e4, 1e5, 1e7]),
   githubId: factory.sequence("plan.githubId", (n) => n),
+  usageBased: false,
 });
 
 factory.define("TeamAccount", Account, {

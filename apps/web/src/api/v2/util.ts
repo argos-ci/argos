@@ -56,7 +56,8 @@ export const createBuild = async ({
   if (!isPublic) {
     const account = await req.authProject.$relatedQuery("account", trx);
     const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
-    if (hasExceedLimit) {
+    const hasUsageBasedPlan = await account.hasUsageBasedPlan();
+    if (hasExceedLimit && !hasUsageBasedPlan) {
       throw new HttpError(
         402,
         `Build rejected for insufficient credit. Please upgrade Argos plan.`

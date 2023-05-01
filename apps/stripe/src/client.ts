@@ -45,19 +45,15 @@ export const updateStripeUsage = async ({
     });
     if (subscriptions.data.length > 1) {
       throw new Error(
-        `Can't update usage. Stripe return multiple active subscriptions for account ${account.id}`
+        `Stripe return multiple active subscriptions for account ${account.id}`
       );
     }
 
     const subscription = subscriptions.data[0];
     if (!subscription) {
-      return null;
-    }
-
-    const meteredPricing =
-      subscription.items.data[0]?.price.recurring?.usage_type === "metered";
-    if (!meteredPricing) {
-      return null;
+      throw new Error(
+        `Stripe return no active subscriptions for account ${account.id}`
+      );
     }
 
     const usage = await stripe.subscriptionItems.createUsageRecord(
