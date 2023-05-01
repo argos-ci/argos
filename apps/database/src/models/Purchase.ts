@@ -26,6 +26,7 @@ export class Purchase extends Model {
       },
       endDate: { type: ["string", "null"] },
       startDate: { type: ["string"] },
+      trialEndDate: { type: ["string", "null"] },
     },
   });
 
@@ -35,6 +36,7 @@ export class Purchase extends Model {
   source!: string;
   endDate!: string | null;
   startDate!: string;
+  trialEndDate!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

@@ -38,6 +38,7 @@ export const handleGitHubEvents = async ({
               planId: newPlan.id,
               startDate: payload.effective_date,
               source: "github",
+              trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
             });
             return;
           }

@@ -9,6 +9,7 @@ export const updatePurchase = async (
     effective_date?: string;
     marketplace_purchase: {
       plan?: { id: number };
+      free_trial_ends_on: string | null;
     };
   },
   account: Account
@@ -23,6 +24,7 @@ export const updatePurchase = async (
       planId: plan.id,
       startDate: effectiveDate,
       source: "github",
+      trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
     });
     return;
   }

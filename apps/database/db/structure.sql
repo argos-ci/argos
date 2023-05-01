@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.2
+-- Dumped by pg_dump version 14.7 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -475,7 +475,7 @@ CREATE TABLE public.github_synchronizations (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "jobStatus" public.job_status NOT NULL,
-    "githubInstallationId" bigint
+    "githubInstallationId" bigint NOT NULL
 );
 
 
@@ -664,7 +664,8 @@ CREATE TABLE public.purchases (
     "startDate" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "endDate" timestamp with time zone,
     source character varying(255) NOT NULL,
-    "purchaserId" bigint
+    "purchaserId" bigint,
+    "trialEndDate" timestamp with time zone
 );
 
 
@@ -2298,4 +2299,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023042
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230426123607_screenshot-diff-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230427131915_require_purchase_startDate.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230428122453_vercel-data.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230429125237_add_purchase_trial.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230430182249_multiple-project-repo.js', 1, NOW());

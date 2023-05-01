@@ -1,11 +1,10 @@
-import type Stripe from "stripe";
-
 import { Account, Plan, Purchase, Team, User } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 
 import {
   PAID_INVOICE_PAYLOAD,
   PAYMENT_FAILED_INVOICE_PAYLOAD,
+  SESSION_PAYLOAD,
   SUBSCRIPTION_CANCEL_PAYLOAD,
   SUBSCRIPTION_UPDATE_PAYLOAD,
 } from "../__fixtures__/stripe-payloads.js";
@@ -36,26 +35,6 @@ const getOrCreateActivePurchase = async (account: Account, plan: Plan) => {
     source: "stripe",
     startDate: startOfPreviousMonth.toISOString(),
   });
-};
-
-const getOrCreateSubscription = async (customerId: string, priceId: string) => {
-  const subscriptions = await stripe.subscriptions.list({
-    customer: customerId,
-  });
-  if (subscriptions.data.length > 1) {
-    throw new Error(`Stripe return multiple active subscriptions`);
-  }
-
-  const existingSubscription = subscriptions.data[0];
-  if (existingSubscription) {
-    return existingSubscription;
-  }
-
-  const subscription = await stripe.subscriptions.create({
-    customer: customerId,
-    items: [{ price: priceId }],
-  });
-  return subscription;
 };
 
 describe("stripe", () => {
@@ -119,27 +98,14 @@ describe("stripe", () => {
 
   describe("handleStripeEvent", () => {
     describe("checkout.session.completed", () => {
-      const customerId = "cus_N4XieLog1nIDoP";
+      const payload = SESSION_PAYLOAD;
+      const customerId = payload.customer;
       const accountId = "9";
-      const stripePlanId = "prod_MzEavomA8VeCvW";
+      const stripePlanId = "prod_Njgin72JdGT9Yu";
       const purchaserId = "7";
       let account: Account;
       let plan: Plan;
       let team: Team;
-      let session: Stripe.Checkout.Session;
-
-      beforeAll(async () => {
-        session = await stripe.checkout.sessions.create({
-          success_url: "https://app.argos-ci.dev:4002/checkout-success",
-          line_items: [
-            { price: "price_1MFG6qHOD9RpIFZdHlE46OrK", quantity: 1 },
-          ],
-          mode: "subscription",
-          customer: customerId,
-          client_reference_id:
-            "eyJhY2NvdW50SWQiOiI5IiwicHVyY2hhc2VySWQiOiI3In0_",
-        });
-      });
 
       beforeEach(async () => {
         [team, plan] = await Promise.all([
@@ -154,7 +120,7 @@ describe("stripe", () => {
         });
 
         await handleStripeEvent({
-          data: { object: session },
+          data: { object: payload },
           type: "checkout.session.completed",
         });
 
@@ -164,7 +130,7 @@ describe("stripe", () => {
       it("throws without customer", async () => {
         await expect(
           handleStripeEvent({
-            data: { object: { ...session, customer: null } },
+            data: { object: { ...payload, customer: null } },
             type: "checkout.session.completed",
           })
         ).rejects.toThrowError(/^empty customer in stripe session/);
@@ -173,7 +139,7 @@ describe("stripe", () => {
       it("throws without clientReferenceId", async () => {
         await expect(
           handleStripeEvent({
-            data: { object: { ...session, client_reference_id: null } },
+            data: { object: { ...payload, client_reference_id: null } },
             type: "checkout.session.completed",
           })
         ).rejects.toThrowError(/^empty clientReferenceId in stripe session/);
@@ -188,7 +154,7 @@ describe("stripe", () => {
         await expect(
           handleStripeEvent({
             data: {
-              object: { ...session, client_reference_id: clientReferenceId },
+              object: { ...payload, client_reference_id: clientReferenceId },
             },
             type: "checkout.session.completed",
           })
@@ -196,6 +162,7 @@ describe("stripe", () => {
       });
 
       it("should add stripeCustomerId to account", async () => {
+        expect(account.stripeCustomerId).not.toBeNull();
         expect(account.stripeCustomerId).toBe(customerId);
       });
 
@@ -207,6 +174,7 @@ describe("stripe", () => {
           endDate: null,
           source: "stripe",
           purchaserId,
+          trialEndDate: new Date("2023-05-15T11:13:12.000Z"),
         });
       });
     });
@@ -480,32 +448,23 @@ describe("stripe", () => {
 
     describe("with stripe subscription", () => {
       let previousUsage: number;
-      let customerId: string;
       let account: Account;
+      const customerId = "cus_NoUkz8LAOY8AOw";
+      const subscriptionItemId = "si_NoUlN4sH4tuNGM";
 
       beforeEach(async () => {
-        const customerList = await stripe.customers.list({ limit: 2 });
-        if (customerList.data.length < 2) {
-          throw new Error("No customer found");
-        }
-
-        customerId = customerList.data[1]!.id;
         account = await factory.create<Account>("UserAccount", {
           stripeCustomerId: customerId,
         });
-        const subscription = await getOrCreateSubscription(
-          customerId,
-          "price_1MyDKkHOD9RpIFZdIwgiX0I2"
-        );
         const usageRecordSummaries =
           await stripe.subscriptionItems.listUsageRecordSummaries(
-            subscription.items.data[0]!.id,
+            subscriptionItemId,
             { limit: 1 }
           );
         previousUsage = usageRecordSummaries.data[0]?.total_usage || 0;
       });
 
-      it.skip("should update stripe usage", async () => {
+      it("should update stripe usage", async () => {
         const newUsage = previousUsage + 1;
         const updatedUsage = await updateStripeUsage({
           account,

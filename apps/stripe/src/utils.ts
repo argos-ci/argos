@@ -13,6 +13,16 @@ export const getSubscriptionCustomerOrThrow = (
   return stripeCustomerId;
 };
 
+export const getSessionSubscriptionOrThrow = (
+  session: Stripe.Checkout.Session
+) => {
+  const subscription = session.subscription as Stripe.Subscription;
+  if (!subscription) {
+    throw new Error(`empty subscription in session "${session.id}"`);
+  }
+  return subscription;
+};
+
 export const getInvoiceCustomerOrThrow = (invoice: Stripe.Invoice) => {
   const stripeCustomerId = invoice.customer as string;
   if (!stripeCustomerId) {
@@ -22,23 +32,19 @@ export const getInvoiceCustomerOrThrow = (invoice: Stripe.Invoice) => {
 };
 
 export const findPlanOrThrow = async (stripeProductId: string) => {
-  const plan = await Plan.query().findOne({ stripePlanId: stripeProductId });
-  if (!plan) {
-    throw new Error(
-      `can't find plan with stripeProductId: "${stripeProductId}"`
-    );
-  }
-  return plan;
+  return Plan.query()
+    .findOne({ stripePlanId: stripeProductId })
+    .throwIfNotFound({
+      message: `can't find plan with stripeProductId: "${stripeProductId}"`,
+    });
 };
 
 export const findCustomerAccountOrThrow = async (stripeCustomerId: string) => {
-  const account = await Account.query().findOne({ stripeCustomerId });
-  if (!account) {
-    throw new Error(
-      `no account found for stripe stripeCustomerId: "${stripeCustomerId}"`
-    );
-  }
-  return account;
+  return Account.query()
+    .findOne({ stripeCustomerId })
+    .throwIfNotFound({
+      message: `can't find account with stripeCustomerId: "${stripeCustomerId}"`,
+    });
 };
 
 export const getLastPurchase = async (account: Account) => {
