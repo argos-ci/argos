@@ -55,7 +55,7 @@ export type DialogTextProps = {
 export const DialogText = forwardRef<HTMLDivElement, DialogTextProps>(
   ({ children, className }, ref) => {
     return (
-      <p ref={ref} className={clsx(className, "my-4 text-on-light")}>
+      <p ref={ref} className={clsx(className, "my-4")}>
         {children}
       </p>
     );

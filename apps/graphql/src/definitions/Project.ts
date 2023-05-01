@@ -5,10 +5,13 @@ import type { PartialModelObject } from "objection";
 import {
   Account,
   Build,
+  Capture,
+  Crawl,
   GithubAccount,
   GithubRepository,
   Project,
   Screenshot,
+  ScreenshotBucket,
   ScreenshotDiff,
   Test,
   User,
@@ -95,6 +98,8 @@ export const typeDefs = gql`
     updateProject(input: UpdateProjectInput!): Project!
     "Transfer Project to another account"
     transferProject(input: TransferProjectInput!): Project!
+    "Delete Project"
+    deleteProject(id: ID!): Boolean!
   }
 `;
 
@@ -396,6 +401,33 @@ export const resolvers: IResolvers = {
         accountId: targetAccountId,
         name: args.input.name,
       });
+    },
+    deleteProject: async (_root, args, ctx) => {
+      const project = await getWritableProject({
+        id: args.id,
+        user: ctx.auth?.user,
+      });
+      await Capture.query()
+        .joinRelated("crawl.build")
+        .where("crawl:build.projectId", project.id)
+        .delete();
+      await Crawl.query()
+        .joinRelated("build")
+        .where("build.projectId", project.id)
+        .delete();
+      await ScreenshotDiff.query()
+        .joinRelated("build")
+        .where("build.projectId", project.id)
+        .delete();
+      await Screenshot.query()
+        .joinRelated("screenshotBucket")
+        .where("screenshotBucket.projectId", project.id)
+        .delete();
+      await ScreenshotBucket.query().where("projectId", project.id).delete();
+      await Build.query().where("projectId", project.id).delete();
+      await Test.query().where("projectId", project.id).delete();
+      await project.$query().delete();
+      return true;
     },
   },
 };

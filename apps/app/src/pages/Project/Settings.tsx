@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
+import { ProjectDelete } from "@/containers/Project/Delete";
 import { ProjectReferenceBranch } from "@/containers/Project/ReferenceBranch";
 import { ProjectToken } from "@/containers/Project/Token";
 import { ProjectTransfer } from "@/containers/Project/Transfer";
@@ -25,6 +26,7 @@ const ProjectQuery = graphql(`
       ...ProjectReferenceBranch_Project
       ...ProjectVisibility_Project
       ...ProjectTransfer_Project
+      ...ProjectDelete_Project
     }
   }
 `);
@@ -67,6 +69,7 @@ export const ProjectSettings = () => {
               <ProjectReferenceBranch project={project} />
               <ProjectVisibility project={project} />
               <ProjectTransfer project={project} />
+              <ProjectDelete project={project} />
             </SettingsLayout>
           );
         }}
