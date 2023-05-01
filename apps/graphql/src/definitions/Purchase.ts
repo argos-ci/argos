@@ -1,8 +1,6 @@
 import gqlTag from "graphql-tag";
 
-import type { Purchase } from "@argos-ci/database/models";
-
-import type { Context } from "../context.js";
+import type { IResolvers } from "../__generated__/resolver-types.js";
 
 const { gql } = gqlTag;
 
@@ -19,13 +17,9 @@ export const typeDefs = gql`
   }
 `;
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   Purchase: {
-    account: async (
-      purchase: Purchase,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
+    account: async (purchase, _args, ctx) => {
       return ctx.loaders.Account.load(purchase.accountId);
     },
   },

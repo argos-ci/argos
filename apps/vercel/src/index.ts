@@ -26,11 +26,13 @@ export const retrieveToken = async (code: string) => {
   return result.data;
 };
 
-export type VercelGetTeamResponse = {
+export type VercelTeam = {
   id: string;
   slug: string;
   name: string | null;
 };
+
+export type VercelGetTeamResponse = VercelTeam;
 
 export type VercelProject = {
   id: string;
@@ -52,6 +54,11 @@ export type VercelProject = {
 
 export type VercelListProjectsResponse = {
   projects: VercelProject[];
+  pagination: {
+    count: number;
+    next: string | null;
+    prev: string | null;
+  };
 };
 
 export type VercelFindProjectResponse = VercelProject;
@@ -85,7 +92,10 @@ export const createVercelClient = (params: VercelClientParams) => {
       return result.data;
     },
     listProjects: async (
-      options: { teamId?: string | undefined; limit?: number | undefined } = {}
+      options: {
+        teamId?: string | undefined | null;
+        limit?: number | undefined | null;
+      } = {}
     ) => {
       const result = await request.get<VercelListProjectsResponse>(
         `/v9/projects`,

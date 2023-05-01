@@ -11,6 +11,12 @@ import { Team } from "./Team.js";
 import { User } from "./User.js";
 import { VercelConfiguration } from "./VercelConfiguration.js";
 
+export type AccountAvatar = {
+  getUrl(args: { size?: number }): string | null;
+  initial: string;
+  color: string;
+};
+
 export class Account extends Model {
   static override tableName = "accounts";
 

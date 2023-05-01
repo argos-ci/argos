@@ -4,6 +4,7 @@ package.json
 node_modules/
 /public/
 /examples
+.cache
 # Generated
 apps/app/src/gql
-.cache
+apps/graphql/src/__generated__/resolver-types.ts

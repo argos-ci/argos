@@ -3,7 +3,10 @@ import gqlTag from "graphql-tag";
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { Build, ScreenshotDiff } from "@argos-ci/database/models";
 
-import type { Context } from "../context.js";
+import type {
+  IBuildStatus,
+  IResolvers,
+} from "../__generated__/resolver-types.js";
 import { APIError } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
@@ -91,12 +94,9 @@ export const typeDefs = gql`
   }
 `;
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   Build: {
-    async screenshotDiffs(
-      build: Build,
-      { first, after }: { first: number; after: number }
-    ) {
+    async screenshotDiffs(build, { first, after }) {
       const result = await build
         .$relatedQuery("screenshotDiffs")
         .leftJoinRelated("[baseScreenshot, compareScreenshot]")
@@ -108,45 +108,24 @@ export const resolvers = {
 
       return paginateResult({ result, first, after });
     },
-    compareScreenshotBucket: async (
-      build: Build,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
-      return context.loaders.ScreenshotBucket.load(
-        build.compareScreenshotBucketId
-      );
+    compareScreenshotBucket: async (build, _args, ctx) => {
+      return ctx.loaders.ScreenshotBucket.load(build.compareScreenshotBucketId);
     },
-    baseScreenshotBucket: async (
-      build: Build,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
+    baseScreenshotBucket: async (build, _args, ctx) => {
       if (!build.baseScreenshotBucketId) return null;
-      return context.loaders.ScreenshotBucket.load(
-        build.baseScreenshotBucketId
-      );
+      return ctx.loaders.ScreenshotBucket.load(build.baseScreenshotBucketId);
     },
-    status: async (
-      build: Build,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
-      return context.loaders.BuildAggregatedStatus.load(build);
+    status: async (build, _args, ctx) => {
+      return ctx.loaders.BuildAggregatedStatus.load(
+        build
+      ) as Promise<IBuildStatus>;
     },
-    stats: async (build: Build) => {
+    stats: async (build) => {
       return Build.getStats(build.id);
     },
   },
   Mutation: {
-    setValidationStatus: async (
-      _root: null,
-      args: {
-        buildId: string;
-        validationStatus: "unknown" | "accepted" | "rejected";
-      },
-      ctx: Context
-    ) => {
+    setValidationStatus: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw new APIError("Invalid user identification");
       }

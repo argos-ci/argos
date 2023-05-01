@@ -4,7 +4,8 @@ import gqlTag from "graphql-tag";
 import { transaction } from "@argos-ci/database";
 import { Account, Team, TeamUser } from "@argos-ci/database/models";
 
-import type { Context } from "../context.js";
+import type { IResolvers } from "../__generated__/resolver-types.js";
+import { getWritableAccount } from "./Account.js";
 import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
@@ -75,13 +76,9 @@ const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
   return resolveTeamSlug(name, index + 1);
 };
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   Team: {
-    users: async (
-      account: Account,
-      args: { first: number; after: number },
-      ctx: Context
-    ) => {
+    users: async (account, args, ctx) => {
       if (!account.teamId) {
         throw new Error("Invariant: account.teamId is undefined");
       }
@@ -102,7 +99,7 @@ export const resolvers = {
 
       return paginateResult({ result, first, after });
     },
-    inviteLink: async (account: Account, _args: unknown, ctx: Context) => {
+    inviteLink: async (account, _args, ctx) => {
       if (!account.teamId) {
         throw new Error("Invariant: account.teamId is undefined");
       }
@@ -117,10 +114,7 @@ export const resolvers = {
     },
   },
   Query: {
-    invitation: async (
-      _root: unknown,
-      { token }: { token: string }
-    ): Promise<Account | null> => {
+    invitation: async (_root, { token }) => {
       const team = await Team.verifyInviteToken(token);
       if (!team) {
         throw new Error("Invalid token");
@@ -129,16 +123,14 @@ export const resolvers = {
     },
   },
   Mutation: {
-    createTeam: async (
-      _root: unknown,
-      { input: { name } }: { input: { name: string } },
-      { auth }: Context
-    ): Promise<Account> => {
+    createTeam: async (_root, args, ctx): Promise<Account> => {
+      const { auth } = ctx;
+
       if (!auth) {
         throw new Error("Forbidden");
       }
 
-      const slug = await resolveTeamSlug(name);
+      const slug = await resolveTeamSlug(args.input.name);
       return transaction(async (trx) => {
         const team = await Team.query(trx).insertAndFetch({});
         await TeamUser.query(trx).insert({
@@ -147,20 +139,17 @@ export const resolvers = {
           userLevel: "owner",
         });
         return Account.query(trx).insertAndFetch({
-          name: name.trim(),
+          name: args.input.name,
           slug,
           teamId: team.id,
         });
       });
     },
-    leaveTeam: async (
-      _root: unknown,
-      args: { input: { teamAccountId: string } },
-      { auth }: Context
-    ) => {
-      if (!auth) {
+    leaveTeam: async (_root, args, ctx) => {
+      if (!ctx.auth) {
         throw new Error("Forbidden");
       }
+
       const account = await Account.query()
         .findById(args.input.teamAccountId)
         .throwIfNotFound();
@@ -176,22 +165,21 @@ export const resolvers = {
       }
 
       await TeamUser.query().delete().where({
-        userId: auth.user.id,
+        userId: ctx.auth.user.id,
         teamId: account.teamId,
       });
 
       return true;
     },
-    removeUserFromTeam: async (
-      _root: unknown,
-      args: { input: { teamAccountId: string; userAccountId: string } },
-      { auth }: Context
-    ) => {
-      if (!auth) {
+    removeUserFromTeam: async (_root, args, ctx) => {
+      if (!ctx.auth) {
         throw new Error("Forbidden");
       }
       const [teamAccount, userAccount] = await Promise.all([
-        Account.query().findById(args.input.teamAccountId).throwIfNotFound(),
+        getWritableAccount({
+          id: args.input.teamAccountId,
+          user: ctx.auth.user,
+        }),
         Account.query().findById(args.input.userAccountId).throwIfNotFound(),
       ]);
 
@@ -210,15 +198,11 @@ export const resolvers = {
 
       return true;
     },
-    acceptInvitation: async (
-      _root: unknown,
-      { token }: { token: string },
-      { auth }: Context
-    ): Promise<Account> => {
-      if (!auth) {
+    acceptInvitation: async (_root, args, ctx): Promise<Account> => {
+      if (!ctx.auth) {
         throw new Error("Forbidden");
       }
-      const team = await Team.verifyInviteToken(token);
+      const team = await Team.verifyInviteToken(args.token);
       if (!team) {
         throw new Error("Invalid token");
       }
@@ -231,7 +215,7 @@ export const resolvers = {
 
       const teamUser = await TeamUser.query().findOne({
         teamId: team.id,
-        userId: auth.user.id,
+        userId: ctx.auth.user.id,
       });
 
       if (teamUser) {
@@ -239,7 +223,7 @@ export const resolvers = {
       }
 
       await TeamUser.query().insert({
-        userId: auth.user.id,
+        userId: ctx.auth.user.id,
         teamId: team.id,
         userLevel: "owner",
       });

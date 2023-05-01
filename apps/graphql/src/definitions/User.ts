@@ -1,9 +1,9 @@
 import gqlTag from "graphql-tag";
 
 import { Account, Purchase, User } from "@argos-ci/database/models";
-import { getTokenOctokit } from "@argos-ci/github";
+import { GhApiInstallation, getTokenOctokit } from "@argos-ci/github";
 
-import type { Context } from "../context.js";
+import type { IResolvers } from "../__generated__/resolver-types.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -41,22 +41,23 @@ export const typeDefs = gql`
   }
 `;
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   Query: {
-    me: async (_root: null, _args: Record<string, never>, ctx: Context) => {
+    me: async (_root, _args, ctx) => {
       return ctx.auth?.account || null;
     },
   },
   User: {
-    lastPurchase: async (account: Account) => {
+    lastPurchase: async (account) => {
       if (!account.userId) {
         throw new Error("Invariant: account.userId is undefined");
       }
-      return Purchase.query()
+      const purchase = await Purchase.query()
         .findOne({ purchaserId: account.userId })
         .orderBy("updatedAt");
+      return purchase ?? null;
     },
-    teams: async (account: Account) => {
+    teams: async (account) => {
       if (!account.userId) {
         throw new Error("Invariant: account.userId is undefined");
       }
@@ -70,12 +71,11 @@ export const resolvers = {
           User.relatedQuery("teams").select("teams.id").for(account.userId)
         );
     },
-    ghInstallations: async (
-      account: Account,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
-      if (account.id !== ctx.auth?.account.id) {
+    ghInstallations: async (account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw new Error("Unauthorized");
+      }
+      if (account.id !== ctx.auth.account.id) {
         throw new Error(
           "Invariant: ghInstallations can only be accessed by the authenticated user"
         );
@@ -86,7 +86,7 @@ export const resolvers = {
           per_page: 100,
         });
       return {
-        edges: apiInstallations.data.installations,
+        edges: apiInstallations.data.installations as GhApiInstallation[],
         pageInfo: {
           hasNextPage: false,
           totalCount: apiInstallations.data.total_count,
