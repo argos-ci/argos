@@ -4,18 +4,13 @@
   "private": true,
   "scripts": {
     "build": "NODE_ENV=production webpack",
-    "codegen": "NODE_TLS_REJECT_UNAUTHORIZED=0 graphql-codegen --config codegen.ts",
     "check-types": "npx tsc --noEmit",
-    "watch-build": "webpack-dev-server",
-    "watch-codegen": "npm run codegen -- --watch"
+    "watch-build": "webpack-dev-server"
   },
   "sideEffects": false,
   "devDependencies": {
     "@apollo/client": "^3.7.12",
     "@argos-ci/config": "*",
-    "@graphql-codegen/cli": "^3.3.0",
-    "@graphql-codegen/client-preset": "^3.0.0",
-    "@graphql-codegen/fragment-matcher": "^4.0.1",
     "@graphql-typed-document-node/core": "^3.0.0",
     "@heroicons/react": "^2.0.17",
     "@primer/octicons-react": "^18.3.0",

@@ -5,7 +5,7 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
-    "codegen": {
+    "//#codegen": {
       "outputs": ["src/gql/**"]
     },
     "setup": {
@@ -28,7 +28,7 @@
       "persistent": true,
       "cache": false
     },
-    "watch-codegen": {
+    "//#watch-codegen": {
       "persistent": true,
       "cache": false
     }

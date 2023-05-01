@@ -17,7 +17,9 @@
     "lint": "eslint .",
     "check-types": "npx tsc --noEmit",
     "format": "prettier --write .",
-    "heroku-postbuild": "npm run build"
+    "heroku-postbuild": "npm run build",
+    "codegen": "NODE_TLS_REJECT_UNAUTHORIZED=0 graphql-codegen --config codegen.ts",
+    "watch-codegen": "npm run codegen -- --watch"
   },
   "repository": "github:argos-ci/argos",
   "engines": {
@@ -27,6 +29,11 @@
     "@argos-ci/cli": "latest",
     "@argos-ci/config": "*",
     "@argos-ci/playwright": "^0.0.4",
+    "@graphql-codegen/cli": "^3.3.0",
+    "@graphql-codegen/client-preset": "^3.0.0",
+    "@graphql-codegen/fragment-matcher": "^4.0.1",
+    "@graphql-codegen/typescript": "^3.0.4",
+    "@graphql-codegen/typescript-resolvers": "^3.2.1",
     "@jest/globals": "^29.5.0",
     "@playwright/test": "^1.32.3",
     "@swc/cli": "^0.1.62",

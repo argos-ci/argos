@@ -15,7 +15,10 @@ import {
   retrieveToken,
 } from "@argos-ci/vercel";
 
-import type { Context } from "../context.js";
+import {
+  IResolvers,
+  IVercelApiProjectStatus,
+} from "../__generated__/resolver-types.js";
 
 const { gql } = gqlTag;
 
@@ -233,14 +236,17 @@ const getLinkedProject = async (vercelProject: VercelApiProject) => {
     return null;
   }
 
-  return Project.query().joinRelated("githubRepository").findOne({
-    "githubRepository.githubId": link.repoId,
-  });
+  const project = await Project.query()
+    .joinRelated("githubRepository")
+    .findOne({
+      "githubRepository.githubId": link.repoId,
+    });
+  return project ?? null;
 };
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   VercelApiProjectLink: {
-    __resolveType: (obj: any) => {
+    __resolveType: (obj) => {
       if (obj.type === "github") {
         return "VercelApiProjectLinkGithub";
       }
@@ -248,11 +254,7 @@ export const resolvers = {
     },
   },
   VercelApiProject: {
-    status: async (
-      vercelProject: VercelApiProject,
-      args: { accountId: string },
-      ctx: Context
-    ) => {
+    status: async (vercelProject, args, ctx) => {
       if (!ctx.auth) {
         throw new Error("Forbidden");
       }
@@ -260,15 +262,15 @@ export const resolvers = {
       const link = vercelProject.link;
 
       if (!link) {
-        return "NO_PROVIDER";
+        return IVercelApiProjectStatus.NoProvider;
       }
 
       if (link.type !== "github") {
-        return "PROVIDER_NOT_SUPPORTED";
+        return IVercelApiProjectStatus.ProviderNotSupported;
       }
 
       if (!link.org || !link.repo || !link.repoId) {
-        return "NO_PROVIDER";
+        return IVercelApiProjectStatus.NoProvider;
       }
 
       const project = await Project.query()
@@ -287,23 +289,19 @@ export const resolvers = {
           .then((res) => res.data);
 
         if (!ghApiRepo) {
-          return "REQUIRE_GITHUB_ACCESS";
+          return IVercelApiProjectStatus.RequireGithubAccess;
         }
 
-        return "READY_FOR_LINK";
+        return IVercelApiProjectStatus.ReadyForLink;
       }
 
       if (project.accountId !== args.accountId) {
-        return "LINKED_TO_OTHER_TEAM";
+        return IVercelApiProjectStatus.LinkedToOtherTeam;
       }
 
-      return "LINKED";
+      return IVercelApiProjectStatus.Linked;
     },
-    linkedProject: async (
-      vercelProject: VercelApiProject,
-      _args: never,
-      ctx: Context
-    ) => {
+    linkedProject: async (vercelProject, _args, ctx) => {
       if (!ctx.auth) {
         throw new Error("Forbidden");
       }
@@ -311,51 +309,22 @@ export const resolvers = {
     },
   },
   Query: {
-    vercelApiTeam: async (
-      _root: never,
-      { accessToken, id }: { accessToken: string; id: string }
-    ) => {
+    vercelApiTeam: async (_root, { accessToken, id }) => {
       const client = createVercelClient({ accessToken });
-      const team = await client.getTeam(id);
-      console.log(team);
-      return team;
+      return client.getTeam(id);
     },
-    vercelApiProjects: async (
-      _root: never,
-      {
-        accessToken,
-        teamId,
-        limit,
-      }: { accessToken: string; teamId?: string; limit: number }
-    ) => {
+    vercelApiProjects: async (_root, { accessToken, teamId, limit }) => {
       const client = createVercelClient({ accessToken });
       const projects = await client.listProjects({ teamId, limit });
-      console.log(projects);
       return projects;
     },
   },
   Mutation: {
-    retrieveVercelToken: async (_root: never, { code }: { code: string }) => {
+    retrieveVercelToken: async (_root, { code }) => {
       const token = await retrieveToken(code);
-      console.log(token);
       return token;
     },
-    setupVercelIntegration: async (
-      _root: never,
-      args: {
-        input: {
-          vercelAccessToken: string;
-          vercelConfigurationId: string;
-          vercelTeamId: string | null;
-          accountId: string;
-          projects: {
-            projectId: string;
-            vercelProjectId: string;
-          }[];
-        };
-      },
-      ctx: Context
-    ) => {
+    setupVercelIntegration: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw new Error("Forbidden");
       }
@@ -363,7 +332,7 @@ export const resolvers = {
       const vercelConfiguration = await linkVercelConfiguration({
         vercelAccessToken: args.input.vercelAccessToken,
         vercelConfigurationId: args.input.vercelConfigurationId,
-        vercelTeamId: args.input.vercelTeamId,
+        vercelTeamId: args.input.vercelTeamId ?? null,
         accountId: args.input.accountId,
         creator: ctx.auth.user,
       });

@@ -1,5 +1,7 @@
 import gqlTag from "graphql-tag";
 
+import type { IResolvers } from "../__generated__/resolver-types.js";
+
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
@@ -17,9 +19,9 @@ export const typeDefs = gql`
   }
 `;
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   GhApiRepository: {
-    owner_login: (parent: { owner: { login: string } }) => {
+    owner_login: (parent) => {
       return parent.owner.login;
     },
   },

@@ -15,7 +15,7 @@ import {
 } from "@argos-ci/database/models";
 import { getTokenOctokit } from "@argos-ci/github";
 
-import type { Context } from "../context.js";
+import { IPermission, IResolvers } from "../__generated__/resolver-types.js";
 import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
@@ -92,7 +92,7 @@ export const typeDefs = gql`
     "Create a Project"
     createProject(input: CreateProjectInput!): Project!
     "Update Project"
-    updateProject(input: UpdateProjectInput): Project!
+    updateProject(input: UpdateProjectInput!): Project!
     "Transfer Project to another account"
     transferProject(input: TransferProjectInput!): Project!
   }
@@ -228,13 +228,9 @@ export const createProject = async (props: {
   });
 };
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   Project: {
-    token: async (
-      project: Project,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
+    token: async (project, _args, ctx) => {
       if (!ctx.auth) return null;
       const hasWritePermission = await project.$checkWritePermission(
         ctx.auth.user
@@ -242,10 +238,7 @@ export const resolvers = {
       if (!hasWritePermission) return null;
       return project.token;
     },
-    builds: async (
-      project: Project,
-      { first, after }: { first: number; after: number }
-    ) => {
+    builds: async (project, { first, after }) => {
       const result = await Build.query()
         .where({ projectId: project.id })
         .orderBy([
@@ -256,16 +249,14 @@ export const resolvers = {
 
       return paginateResult({ result, first, after });
     },
-    build: async (project: Project, args: { number: number }) => {
-      return Build.query().findOne({
+    build: async (project, args) => {
+      const build = await Build.query().findOne({
         projectId: project.id,
         number: args.number,
       });
+      return build ?? null;
     },
-    tests: async (
-      project: Project,
-      { first, after }: { first: number; after: number }
-    ) => {
+    tests: async (project, { first, after }) => {
       const result = await Test.query()
         .where("projectId", project.id)
         .whereNot((builder) =>
@@ -280,43 +271,29 @@ export const resolvers = {
 
       return paginateResult({ result, first, after });
     },
-    permissions: async (
-      project: Project,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
-      if (!ctx.auth) return ["read"];
+    permissions: async (project, _args, ctx) => {
+      if (!ctx.auth) return [IPermission.Read];
       const hasWritePermission = await project.$checkWritePermission(
         ctx.auth.user
       );
-      return hasWritePermission ? ["read", "write"] : ["read"];
+      return hasWritePermission
+        ? [IPermission.Read, IPermission.Write]
+        : [IPermission.Read];
     },
-    account: async (
-      project: Project,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
+    account: async (project, _args, ctx) => {
       return ctx.loaders.Account.load(project.accountId);
     },
-    ghRepository: async (
-      project: Project,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
+    ghRepository: async (project, _args, ctx) => {
       if (!project.githubRepositoryId) return null;
       return ctx.loaders.GithubRepository.load(project.githubRepositoryId);
     },
-    referenceBranch: async (project: Project) => {
+    referenceBranch: async (project) => {
       return project.$getReferenceBranch();
     },
-    public: async (project: Project) => {
+    public: async (project) => {
       return project.$checkIsPublic();
     },
-    currentMonthUsedScreenshots: async (
-      project: Project,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
+    currentMonthUsedScreenshots: async (project, _args, ctx) => {
       const account = await ctx.loaders.Account.load(project.accountId);
       const currentConsumptionStartDate =
         await account.getCurrentConsumptionStartDate();
@@ -326,7 +303,7 @@ export const resolvers = {
         .where("screenshots.createdAt", ">=", currentConsumptionStartDate)
         .resultSize();
     },
-    totalScreenshots: async (project: Project) => {
+    totalScreenshots: async (project) => {
       return Screenshot.query()
         .joinRelated("screenshotBucket")
         .where("screenshotBucket.projectId", project.id)
@@ -334,11 +311,7 @@ export const resolvers = {
     },
   },
   Query: {
-    project: async (
-      _root: null,
-      args: { accountSlug: string; projectName: string },
-      ctx: Context
-    ) => {
+    project: async (_root, args, ctx) => {
       const project = await Project.query().joinRelated("account").findOne({
         "account.slug": args.accountSlug,
         "projects.name": args.projectName,
@@ -353,7 +326,7 @@ export const resolvers = {
 
       return project;
     },
-    projectById: async (_root: null, args: { id: string }, ctx: Context) => {
+    projectById: async (_root, args, ctx) => {
       const project = await Project.query()
         .joinRelated("account")
         .findById(args.id);
@@ -369,17 +342,7 @@ export const resolvers = {
     },
   },
   Mutation: {
-    createProject: async (
-      _root: null,
-      args: {
-        input: {
-          repo: string;
-          owner: string;
-          accountSlug: string;
-        };
-      },
-      ctx: Context
-    ) => {
+    createProject: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw new Error("Unauthorized");
       }
@@ -390,18 +353,7 @@ export const resolvers = {
         creator: ctx.auth.user,
       });
     },
-    updateProject: async (
-      _root: null,
-      args: {
-        input: {
-          id: string;
-          baselineBranch?: string | null;
-          private?: boolean | null;
-          name?: string;
-        };
-      },
-      ctx: Context
-    ) => {
+    updateProject: async (_root, args, ctx) => {
       const project = await getWritableProject({
         id: args.input.id,
         user: ctx.auth?.user,
@@ -417,7 +369,7 @@ export const resolvers = {
         data.private = args.input.private;
       }
 
-      if (args.input.name !== undefined && project.name !== args.input.name) {
+      if (args.input.name != null && project.name !== args.input.name) {
         await checkProjectName({
           name: args.input.name,
           accountId: project.accountId,
@@ -425,19 +377,9 @@ export const resolvers = {
         data.name = args.input.name;
       }
 
-      return project.$query().patch(data).returning("*");
+      return project.$query().patchAndFetch(data);
     },
-    transferProject: async (
-      _root: null,
-      args: {
-        input: {
-          id: string;
-          name: string;
-          targetAccountId: string;
-        };
-      },
-      ctx: Context
-    ) => {
+    transferProject: async (_root, args, ctx) => {
       const project = await getWritableProject({
         id: args.input.id,
         user: ctx.auth?.user,
@@ -450,13 +392,10 @@ export const resolvers = {
         name: args.input.name,
         accountId: targetAccountId,
       });
-      return project
-        .$query()
-        .patch({
-          accountId: targetAccountId,
-          name: args.input.name,
-        })
-        .returning("*");
+      return project.$query().patchAndFetch({
+        accountId: targetAccountId,
+        name: args.input.name,
+      });
     },
   },
 };

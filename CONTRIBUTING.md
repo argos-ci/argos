@@ -128,6 +128,20 @@ Run E2E in debug mode:
 npm run e2e:start -- --debug
 ```
 
+## GraphQL
+
+### Add resolver mapping
+
+When you add a new type linked to a model, don't forget to edit `codegen.ts` to add mapper.
+
+Example with Build:
+
+```ts
+const mappers = {
+  Build: "@argos-ci/database/models#Build",
+};
+```
+
 ### Jobs
 
 ### Migrations

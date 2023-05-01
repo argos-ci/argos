@@ -1,9 +1,8 @@
 import gqlTag from "graphql-tag";
 
-import type { Screenshot } from "@argos-ci/database/models";
 import { getPublicUrl } from "@argos-ci/storage";
 
-import type { Context } from "../context.js";
+import type { IResolvers } from "../__generated__/resolver-types.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -17,27 +16,19 @@ export const typeDefs = gql`
   }
 `;
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   Screenshot: {
-    url: (screenshot: Screenshot) => {
+    url: (screenshot) => {
       return getPublicUrl(screenshot.s3Id);
     },
-    width: async (
-      screenshot: Screenshot,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
+    width: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) return null;
-      const file = await context.loaders.File.load(screenshot.fileId);
+      const file = await ctx.loaders.File.load(screenshot.fileId);
       return file.width;
     },
-    height: async (
-      screenshot: Screenshot,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
+    height: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) return null;
-      const file = await context.loaders.File.load(screenshot.fileId);
+      const file = await ctx.loaders.File.load(screenshot.fileId);
       return file.height;
     },
   },

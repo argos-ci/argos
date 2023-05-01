@@ -3,7 +3,7 @@ import gqlTag from "graphql-tag";
 import { knex } from "@argos-ci/database";
 import { ScreenshotDiff, Test } from "@argos-ci/database/models";
 
-import type { Context } from "../context.js";
+import { IResolvers, ITestStatus } from "../__generated__/resolver-types.js";
 
 const { gql } = gqlTag;
 
@@ -66,57 +66,43 @@ export const typeDefs = gql`
   }
 `;
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   Test: {
-    status: (test: Test) => {
-      if (test.status !== "resolved") {
-        return test.status;
+    status: (test) => {
+      if (test.status !== ITestStatus.Resolved) {
+        return test.status as ITestStatus;
       }
       const now = new Date();
       const resolvedDateLimit = new Date(
         now.getTime() - 7 * 24 * 60 * 60 * 1000
       );
       const resolvedDate = new Date(test.resolvedDate!);
-      return resolvedDate > resolvedDateLimit ? "pending" : "resolved";
+      return resolvedDate > resolvedDateLimit
+        ? ITestStatus.Pending
+        : ITestStatus.Resolved;
     },
-    lastSeen: async (
-      test: Test,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
-      const lastScreenshotDiff = await context.loaders.LastScreenshotDiff.load(
+    lastSeen: async (test, _args, ctx) => {
+      const lastScreenshotDiff = await ctx.loaders.LastScreenshotDiff.load(
         test.id
       );
       return lastScreenshotDiff?.createdAt ?? null;
     },
-    stabilityScore: async (
-      test: Test,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
-      const lastScreenshotDiff = await context.loaders.LastScreenshotDiff.load(
+    stabilityScore: async (test, _args, ctx) => {
+      const lastScreenshotDiff = await ctx.loaders.LastScreenshotDiff.load(
         test.id
       );
       return lastScreenshotDiff?.stabilityScore ?? null;
     },
-    unstable: async (
-      test: Test,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
-      const lastScreenshotDiff = await context.loaders.LastScreenshotDiff.load(
+    unstable: async (test, _args, ctx) => {
+      const lastScreenshotDiff = await ctx.loaders.LastScreenshotDiff.load(
         test.id
       );
       return (lastScreenshotDiff?.stabilityScore ?? 100) < 60;
     },
-    screenshot: async (
-      test: Test,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
-      return context.loaders.LastScreenshot.load(test.id);
+    screenshot: async (test, _args, ctx) => {
+      return ctx.loaders.LastScreenshot.load(test.id);
     },
-    dailyChanges: async (test: Test) => {
+    dailyChanges: async (test) => {
       const result = await knex.raw(
         `SELECT
           to_char(date_trunc('day', gen_date), 'YYYY-MM-DD') AS date,
@@ -135,28 +121,26 @@ export const resolvers = {
       );
       return result.rows;
     },
-    totalBuilds: async (test: Test) => {
+    totalBuilds: async (test) => {
       const screenshotDiffs = await test.$relatedQuery("screenshotDiffs");
       return screenshotDiffs.length ?? 0;
     },
   },
   Mutation: {
-    muteTests: async (
-      _root: null,
-      args: { ids: string[]; muted: boolean; muteUntil: string | null }
-    ) => {
-      if (args.ids.length === 0) {
-        return { ids: [], mute: false, muteUntil: args.muteUntil };
+    muteTests: async (_root, args) => {
+      const muteUntil = args.muteUntil ?? null;
+      if (args.ids.length > 0) {
+        await Test.query()
+          .patch({ muted: args.muted, muteUntil })
+          .whereIn("id", args.ids);
       }
-      await Test.query()
-        .patch({ muted: args.muted, muteUntil: args.muteUntil })
-        .whereIn("id", args.ids);
-      return { ids: args.ids, mute: args.muted, muteUntil: args.muteUntil };
+      return {
+        ids: args.ids,
+        mute: args.muted,
+        muteUntil,
+      };
     },
-    updateTestStatuses: async (
-      _root: null,
-      args: { ids: string[]; status: string }
-    ) => {
+    updateTestStatuses: async (_root, args) => {
       if (args.ids.length === 0) {
         return { ids: [], status: args.status };
       }

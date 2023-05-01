@@ -2,7 +2,7 @@ import gqlTag from "graphql-tag";
 
 import { getTokenOctokit } from "@argos-ci/github";
 
-import type { Context } from "../context.js";
+import type { IResolvers } from "../__generated__/resolver-types.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -32,13 +32,9 @@ export const typeDefs = gql`
   }
 `;
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   Query: {
-    ghApiInstallationRepositories: async (
-      _root: never,
-      args: { installationId: string; page: number },
-      ctx: Context
-    ) => {
+    ghApiInstallationRepositories: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw new Error("Unauthorized");
       }

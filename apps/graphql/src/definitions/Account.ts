@@ -1,9 +1,11 @@
 import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
+import type { PartialModelObject } from "objection";
 
 import { Account, Project, Purchase, User } from "@argos-ci/database/models";
 
-import type { Context } from "../context.js";
+import type { IResolvers } from "../__generated__/resolver-types.js";
+import { IPermission } from "../__generated__/resolver-types.js";
 import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
@@ -57,12 +59,6 @@ export const typeDefs = gql`
   }
 `;
 
-type AccountAvatar = {
-  getUrl(args: { size?: number }): string | null;
-  initial: string;
-  color: string;
-};
-
 const colors = [
   "#2a3b4c",
   "#10418e",
@@ -107,9 +103,9 @@ const RESERVED_SLUGS = [
   "teams",
 ];
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   Account: {
-    __resolveType: (account: Account) => {
+    __resolveType: (account) => {
       switch (account.type) {
         case "team":
           return "Team";
@@ -119,11 +115,7 @@ export const resolvers = {
           throw new Error(`Unknown account type: ${account.type}`);
       }
     },
-    stripeClientReferenceId: (
-      account: Account,
-      _args: Record<string, never>,
-      ctx: Context
-    ) => {
+    stripeClientReferenceId: (account, _args, ctx) => {
       if (!ctx.auth) {
         throw new Error("Unauthorized");
       }
@@ -132,10 +124,7 @@ export const resolvers = {
         purchaserId: ctx.auth.user.id,
       });
     },
-    projects: async (
-      account: Account,
-      args: { first: number; after: number }
-    ) => {
+    projects: async (account, args) => {
       const result = await Project.query()
         .where("accountId", account.id)
         .range(args.after, args.after + args.first - 1);
@@ -145,38 +134,30 @@ export const resolvers = {
         result,
       });
     },
-    consumptionRatio: async (account: Account) => {
+    consumptionRatio: async (account) => {
       return account.getScreenshotsConsumptionRatio();
     },
-    currentMonthUsedScreenshots: async (account: Account) => {
+    currentMonthUsedScreenshots: async (account) => {
       return account.getScreenshotsCurrentConsumption();
     },
-    purchase: async (account: Account) => {
+    purchase: async (account) => {
       return account.getActivePurchase();
     },
-    plan: async (account: Account) => {
+    plan: async (account) => {
       return account.getPlan();
     },
-    screenshotsLimitPerMonth: async (account: Account) => {
+    screenshotsLimitPerMonth: async (account) => {
       return account.getScreenshotsMonthlyLimit();
     },
     permissions: () => {
       // For now, everyone can read and write
-      return ["read", "write"];
+      return [IPermission.Read, IPermission.Write];
     },
-    ghAccount: async (
-      account: Account,
-      _args: Record<string, never>,
-      context: Context
-    ) => {
+    ghAccount: async (account, _args, context) => {
       if (!account.githubAccountId) return null;
       return context.loaders.GithubAccount.load(account.githubAccountId);
     },
-    avatar: async (
-      account: Account,
-      _args: never,
-      context: Context
-    ): Promise<AccountAvatar> => {
+    avatar: async (account, _args, context) => {
       const ghAccount = account.githubAccountId
         ? await context.loaders.GithubAccount.load(account.githubAccountId)
         : null;
@@ -203,12 +184,12 @@ export const resolvers = {
     },
   },
   AccountAvatar: {
-    url: (avatar: AccountAvatar, args: { size: number }) => {
+    url: (avatar, args) => {
       return avatar.getUrl(args);
     },
   },
   Query: {
-    account: async (_root: null, args: { slug: string }, context: Context) => {
+    account: async (_root, args, context) => {
       if (!context.auth) return null;
       const account = await Account.query().findOne({ slug: args.slug });
       if (!account) return null;
@@ -218,11 +199,7 @@ export const resolvers = {
       if (!hasWritePermission) return null;
       return account;
     },
-    accountById: async (
-      _root: null,
-      args: { id: string },
-      context: Context
-    ) => {
+    accountById: async (_root, args, context) => {
       if (!context.auth) return null;
       const account = await Account.query().findById(args.id);
       if (!account) return null;
@@ -234,13 +211,12 @@ export const resolvers = {
     },
   },
   Mutation: {
-    updateAccount: async (
-      _root: null,
-      args: { input: { id: string; name?: string; slug?: string } },
-      ctx: Context
-    ) => {
+    updateAccount: async (_root, args, ctx) => {
       const { id, ...input } = args.input;
       const account = await getWritableAccount({ id, user: ctx.auth?.user });
+
+      const data: PartialModelObject<Account> = {};
+
       if (input.slug && account.slug !== input.slug) {
         if (RESERVED_SLUGS.includes(input.slug)) {
           throw new GraphQLError("Slug is reserved for internal usage", {
@@ -259,8 +235,14 @@ export const resolvers = {
             },
           });
         }
+        data.slug = input.slug;
       }
-      return account.$query().patch(input).returning("*");
+
+      if (input.name !== undefined) {
+        data.name = input.name;
+      }
+
+      return account.$query().patchAndFetch(data);
     },
   },
 };
