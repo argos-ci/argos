@@ -15,6 +15,7 @@ import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
 import { TeamMembers } from "@/containers/Team/Members";
 import { DocumentType, graphql } from "@/gql";
+import { Permission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
 import {
   Card,
@@ -41,6 +42,7 @@ const AccountQuery = graphql(`
       name
       screenshotsLimitPerMonth
       stripeCustomerId
+      permissions
 
       plan {
         id
@@ -287,47 +289,49 @@ export const AccountSettings = () => {
         {({ account }) => {
           if (!account) return <NotFound />;
           const isTeam = account.__typename === "Team";
+          const writable = account.permissions.includes(Permission.Write);
 
           return (
             <SettingsLayout>
-              {(() => {
-                switch (account.__typename) {
-                  case "User":
-                    return (
-                      <>
-                        <AccountChangeName
-                          account={account}
-                          title="Your Name"
-                          description="Please enter your full name, or a display name you are comfortable with."
-                        />
-                        <AccountChangeSlug
-                          account={account}
-                          title="Your Username"
-                          description="This is your URL namespace within Argos."
-                        />
-                      </>
-                    );
-                  case "Team":
-                    return (
-                      <>
-                        <AccountChangeName
-                          account={account}
-                          title="Team Name"
-                          description="This is your team's visible name within Argos. For example, the
+              {writable &&
+                (() => {
+                  switch (account.__typename) {
+                    case "User":
+                      return (
+                        <>
+                          <AccountChangeName
+                            account={account}
+                            title="Your Name"
+                            description="Please enter your full name, or a display name you are comfortable with."
+                          />
+                          <AccountChangeSlug
+                            account={account}
+                            title="Your Username"
+                            description="This is your URL namespace within Argos."
+                          />
+                        </>
+                      );
+                    case "Team":
+                      return (
+                        <>
+                          <AccountChangeName
+                            account={account}
+                            title="Team Name"
+                            description="This is your team's visible name within Argos. For example, the
               name of your company or department."
-                        />
-                        <AccountChangeSlug
-                          account={account}
-                          title="Team URL"
-                          description="This is your team’s URL namespace on Argos. Within it, your team
+                          />
+                          <AccountChangeSlug
+                            account={account}
+                            title="Team URL"
+                            description="This is your team’s URL namespace on Argos. Within it, your team
                     can inspect their projects or configure settings."
-                        />
-                      </>
-                    );
-                }
-                return null;
-              })()}
-              {account.plan && (
+                          />
+                        </>
+                      );
+                  }
+                  return null;
+                })()}
+              {writable && account.plan && (
                 <PlanCard
                   accountSlug={accountSlug}
                   plan={account.plan}

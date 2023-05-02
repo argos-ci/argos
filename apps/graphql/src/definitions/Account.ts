@@ -149,17 +149,22 @@ export const resolvers: IResolvers = {
     screenshotsLimitPerMonth: async (account) => {
       return account.getScreenshotsMonthlyLimit();
     },
-    permissions: () => {
-      // For now, everyone can read and write
-      return [IPermission.Read, IPermission.Write];
+    permissions: async (account, _args, ctx) => {
+      if (!ctx.auth) {
+        return [];
+      }
+      const writable = await account.$checkWritePermission(ctx.auth.user);
+      return writable
+        ? [IPermission.Read, IPermission.Write]
+        : [IPermission.Read];
     },
-    ghAccount: async (account, _args, context) => {
+    ghAccount: async (account, _args, ctx) => {
       if (!account.githubAccountId) return null;
-      return context.loaders.GithubAccount.load(account.githubAccountId);
+      return ctx.loaders.GithubAccount.load(account.githubAccountId);
     },
-    avatar: async (account, _args, context) => {
+    avatar: async (account, _args, ctx) => {
       const ghAccount = account.githubAccountId
-        ? await context.loaders.GithubAccount.load(account.githubAccountId)
+        ? await ctx.loaders.GithubAccount.load(account.githubAccountId)
         : null;
       const initial = ((account.name || account.slug)[0] || "x").toUpperCase();
       const color = getAvatarColor(account.id);
@@ -189,22 +194,22 @@ export const resolvers: IResolvers = {
     },
   },
   Query: {
-    account: async (_root, args, context) => {
-      if (!context.auth) return null;
+    account: async (_root, args, ctx) => {
+      if (!ctx.auth) return null;
       const account = await Account.query().findOne({ slug: args.slug });
       if (!account) return null;
-      const hasWritePermission = await account.$checkWritePermission(
-        context.auth.user
+      const hasWritePermission = await account.$checkReadPermission(
+        ctx.auth.user
       );
       if (!hasWritePermission) return null;
       return account;
     },
-    accountById: async (_root, args, context) => {
-      if (!context.auth) return null;
+    accountById: async (_root, args, ctx) => {
+      if (!ctx.auth) return null;
       const account = await Account.query().findById(args.id);
       if (!account) return null;
-      const hasWritePermission = await account.$checkWritePermission(
-        context.auth.user
+      const hasWritePermission = await account.$checkReadPermission(
+        ctx.auth.user
       );
       if (!hasWritePermission) return null;
       return account;

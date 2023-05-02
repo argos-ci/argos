@@ -102,8 +102,19 @@ export class Team extends Model {
     if (!user) return false;
     const teamUser = await TeamUser.query()
       .select("id")
-      .where({ userId: user.id, teamId: teamId })
-      .first();
+      .findOne({ userId: user.id, teamId: teamId, userLevel: "owner" });
+    return Boolean(teamUser);
+  }
+
+  async $checkReadPermission(user: User) {
+    return Team.checkReadPermission(this.id, user);
+  }
+
+  static async checkReadPermission(teamId: string, user: User) {
+    if (!user) return false;
+    const teamUser = await TeamUser.query()
+      .select("id")
+      .findOne({ userId: user.id, teamId: teamId });
     return Boolean(teamUser);
   }
 

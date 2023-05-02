@@ -55,4 +55,13 @@ export class User extends Model {
     if (!user) return false;
     return userId === user.id;
   }
+
+  $checkReadPermission(user: User) {
+    return User.checkReadPermission(this.id, user);
+  }
+
+  static checkReadPermission(userId: string, user: User) {
+    if (!user) return false;
+    return userId === user.id;
+  }
 }

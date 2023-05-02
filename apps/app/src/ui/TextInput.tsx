@@ -10,7 +10,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
         ref={ref}
         className={clsx(
           className,
-          "focus:shadow-outline block w-full appearance-none rounded border border-border bg-slate-900 px-3 py-2 leading-tight text-on shadow invalid:border-danger-800 focus:outline-none aria-invalid:border-danger-800"
+          "focus:shadow-outline block w-full appearance-none rounded border border-border bg-slate-900 px-3 py-2 leading-tight text-on shadow invalid:border-danger-800 focus:outline-none disabled:opacity-disabled aria-invalid:border-danger-800"
         )}
         {...props}
       />

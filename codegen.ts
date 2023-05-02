@@ -36,6 +36,7 @@ const config: CodegenConfig = {
           ScreenshotDiff: "@argos-ci/database/models#ScreenshotDiff",
           Project: "@argos-ci/database/models#Project",
           Team: "@argos-ci/database/models#Account",
+          TeamMember: "@argos-ci/database/models#TeamUser",
           Test: "@argos-ci/database/models#Test",
           User: "@argos-ci/database/models#Account",
           VercelApiProject: "@argos-ci/vercel#VercelProject",

@@ -236,4 +236,20 @@ export class Account extends Model {
         throw new Error(`Invariant incoherent account type`);
     }
   }
+
+  async $checkReadPermission(user: User) {
+    return Account.checkReadPermission(this, user);
+  }
+
+  static async checkReadPermission(account: Account, user: User) {
+    if (!user) return false;
+    switch (account.type) {
+      case "user":
+        return User.checkReadPermission(account.userId as string, user);
+      case "team":
+        return Team.checkReadPermission(account.teamId as string, user);
+      default:
+        throw new Error(`Invariant incoherent account type`);
+    }
+  }
 }

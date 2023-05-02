@@ -1,5 +1,5 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Build, GithubAccount, GithubRepository, Plan, Purchase, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, Test } from '@argos-ci/database/models';
+import type { AccountAvatar, Build, GithubAccount, GithubRepository, Plan, Purchase, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, Test } from '@argos-ci/database/models';
 import type { GhApiInstallation, GhApiRepository } from '@argos-ci/github';
 import type { VercelProject, VercelTeam } from '@argos-ci/vercel';
 import type { Context } from '../context.js';
@@ -235,6 +235,8 @@ export type IMutation = {
   removeUserFromTeam: Scalars['Boolean'];
   /** Retrieve a Vercel API token from a code */
   retrieveVercelToken: IVercelApiToken;
+  /** Set member level */
+  setTeamMemberLevel: ITeamMember;
   /** Change the validationStatus on a build */
   setValidationStatus: IBuild;
   /** Finish the Vercel integration setup */
@@ -289,6 +291,11 @@ export type IMutationRemoveUserFromTeamArgs = {
 
 export type IMutationRetrieveVercelTokenArgs = {
   code: Scalars['String'];
+};
+
+
+export type IMutationSetTeamMemberLevelArgs = {
+  input: ISetTeamMemberLevelInput;
 };
 
 
@@ -534,6 +541,12 @@ export enum IScreenshotDiffStatus {
   Unchanged = 'unchanged'
 }
 
+export type ISetTeamMemberLevelInput = {
+  level: ITeamUserLevel;
+  teamAccountId: Scalars['ID'];
+  userAccountId: Scalars['ID'];
+};
+
 export type ISetupVercelIntegrationInput = {
   accountId: Scalars['ID'];
   projects: Array<ISetupVercelIntegrationProjectInput>;
@@ -555,6 +568,7 @@ export type ITeam = IAccount & INode & {
   ghAccount?: Maybe<IGithubAccount>;
   id: Scalars['ID'];
   inviteLink: Scalars['String'];
+  members: ITeamMemberConnection;
   name?: Maybe<Scalars['String']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
@@ -564,7 +578,12 @@ export type ITeam = IAccount & INode & {
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
   stripeCustomerId?: Maybe<Scalars['String']>;
-  users: IUserConnection;
+};
+
+
+export type ITeamMembersArgs = {
+  after?: InputMaybe<Scalars['Int']>;
+  first?: InputMaybe<Scalars['Int']>;
 };
 
 
@@ -573,11 +592,23 @@ export type ITeamProjectsArgs = {
   first: Scalars['Int'];
 };
 
-
-export type ITeamUsersArgs = {
-  after?: InputMaybe<Scalars['Int']>;
-  first?: InputMaybe<Scalars['Int']>;
+export type ITeamMember = INode & {
+  __typename?: 'TeamMember';
+  id: Scalars['ID'];
+  level: ITeamUserLevel;
+  user: IUser;
 };
+
+export type ITeamMemberConnection = IConnection & {
+  __typename?: 'TeamMemberConnection';
+  edges: Array<ITeamMember>;
+  pageInfo: IPageInfo;
+};
+
+export enum ITeamUserLevel {
+  Member = 'member',
+  Owner = 'owner'
+}
 
 export type ITest = INode & {
   __typename?: 'Test';
@@ -828,7 +859,7 @@ export type IResolversTypes = ResolversObject<{
   BuildStats: ResolverTypeWrapper<IBuildStats>;
   BuildStatus: IBuildStatus;
   BuildType: IBuildType;
-  Connection: IResolversTypes['BuildConnection'] | IResolversTypes['GhApiInstallationConnection'] | IResolversTypes['GhApiRepositoryConnection'] | IResolversTypes['ProjectConnection'] | IResolversTypes['ScreenshotDiffConnection'] | IResolversTypes['TestConnection'] | IResolversTypes['UserConnection'];
+  Connection: IResolversTypes['BuildConnection'] | IResolversTypes['GhApiInstallationConnection'] | IResolversTypes['GhApiRepositoryConnection'] | IResolversTypes['ProjectConnection'] | IResolversTypes['ScreenshotDiffConnection'] | IResolversTypes['TeamMemberConnection'] | IResolversTypes['TestConnection'] | IResolversTypes['UserConnection'];
   CreateProjectInput: ICreateProjectInput;
   CreateTeamInput: ICreateTeamInput;
   Date: ResolverTypeWrapper<Scalars['Date']>;
@@ -847,7 +878,7 @@ export type IResolversTypes = ResolversObject<{
   LeaveTeamInput: ILeaveTeamInput;
   Mutation: ResolverTypeWrapper<{}>;
   MuteUpdateTest: ResolverTypeWrapper<IMuteUpdateTest>;
-  Node: IResolversTypes['Build'] | IResolversTypes['GhApiInstallation'] | IResolversTypes['GhApiInstallationAccount'] | IResolversTypes['GhApiRepository'] | IResolversTypes['GithubAccount'] | IResolversTypes['GithubRepository'] | IResolversTypes['Plan'] | IResolversTypes['Project'] | IResolversTypes['Purchase'] | IResolversTypes['Screenshot'] | IResolversTypes['ScreenshotBucket'] | IResolversTypes['ScreenshotDiff'] | IResolversTypes['Team'] | IResolversTypes['Test'] | IResolversTypes['User'];
+  Node: IResolversTypes['Build'] | IResolversTypes['GhApiInstallation'] | IResolversTypes['GhApiInstallationAccount'] | IResolversTypes['GhApiRepository'] | IResolversTypes['GithubAccount'] | IResolversTypes['GithubRepository'] | IResolversTypes['Plan'] | IResolversTypes['Project'] | IResolversTypes['Purchase'] | IResolversTypes['Screenshot'] | IResolversTypes['ScreenshotBucket'] | IResolversTypes['ScreenshotDiff'] | IResolversTypes['Team'] | IResolversTypes['TeamMember'] | IResolversTypes['Test'] | IResolversTypes['User'];
   PageInfo: ResolverTypeWrapper<IPageInfo>;
   Permission: IPermission;
   Plan: ResolverTypeWrapper<Plan>;
@@ -862,10 +893,14 @@ export type IResolversTypes = ResolversObject<{
   ScreenshotDiff: ResolverTypeWrapper<ScreenshotDiff>;
   ScreenshotDiffConnection: ResolverTypeWrapper<Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<IResolversTypes['ScreenshotDiff']> }>;
   ScreenshotDiffStatus: IScreenshotDiffStatus;
+  SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
   SetupVercelIntegrationInput: ISetupVercelIntegrationInput;
   SetupVercelIntegrationProjectInput: ISetupVercelIntegrationProjectInput;
   String: ResolverTypeWrapper<Scalars['String']>;
   Team: ResolverTypeWrapper<Account>;
+  TeamMember: ResolverTypeWrapper<TeamUser>;
+  TeamMemberConnection: ResolverTypeWrapper<Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamMember']> }>;
+  TeamUserLevel: ITeamUserLevel;
   Test: ResolverTypeWrapper<Test>;
   TestConnection: ResolverTypeWrapper<Omit<ITestConnection, 'edges'> & { edges: Array<IResolversTypes['Test']> }>;
   TestStatus: ITestStatus;
@@ -897,7 +932,7 @@ export type IResolversParentTypes = ResolversObject<{
   Build: Build;
   BuildConnection: Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversParentTypes['Build']> };
   BuildStats: IBuildStats;
-  Connection: IResolversParentTypes['BuildConnection'] | IResolversParentTypes['GhApiInstallationConnection'] | IResolversParentTypes['GhApiRepositoryConnection'] | IResolversParentTypes['ProjectConnection'] | IResolversParentTypes['ScreenshotDiffConnection'] | IResolversParentTypes['TestConnection'] | IResolversParentTypes['UserConnection'];
+  Connection: IResolversParentTypes['BuildConnection'] | IResolversParentTypes['GhApiInstallationConnection'] | IResolversParentTypes['GhApiRepositoryConnection'] | IResolversParentTypes['ProjectConnection'] | IResolversParentTypes['ScreenshotDiffConnection'] | IResolversParentTypes['TeamMemberConnection'] | IResolversParentTypes['TestConnection'] | IResolversParentTypes['UserConnection'];
   CreateProjectInput: ICreateProjectInput;
   CreateTeamInput: ICreateTeamInput;
   Date: Scalars['Date'];
@@ -915,7 +950,7 @@ export type IResolversParentTypes = ResolversObject<{
   LeaveTeamInput: ILeaveTeamInput;
   Mutation: {};
   MuteUpdateTest: IMuteUpdateTest;
-  Node: IResolversParentTypes['Build'] | IResolversParentTypes['GhApiInstallation'] | IResolversParentTypes['GhApiInstallationAccount'] | IResolversParentTypes['GhApiRepository'] | IResolversParentTypes['GithubAccount'] | IResolversParentTypes['GithubRepository'] | IResolversParentTypes['Plan'] | IResolversParentTypes['Project'] | IResolversParentTypes['Purchase'] | IResolversParentTypes['Screenshot'] | IResolversParentTypes['ScreenshotBucket'] | IResolversParentTypes['ScreenshotDiff'] | IResolversParentTypes['Team'] | IResolversParentTypes['Test'] | IResolversParentTypes['User'];
+  Node: IResolversParentTypes['Build'] | IResolversParentTypes['GhApiInstallation'] | IResolversParentTypes['GhApiInstallationAccount'] | IResolversParentTypes['GhApiRepository'] | IResolversParentTypes['GithubAccount'] | IResolversParentTypes['GithubRepository'] | IResolversParentTypes['Plan'] | IResolversParentTypes['Project'] | IResolversParentTypes['Purchase'] | IResolversParentTypes['Screenshot'] | IResolversParentTypes['ScreenshotBucket'] | IResolversParentTypes['ScreenshotDiff'] | IResolversParentTypes['Team'] | IResolversParentTypes['TeamMember'] | IResolversParentTypes['Test'] | IResolversParentTypes['User'];
   PageInfo: IPageInfo;
   Plan: Plan;
   Project: Project;
@@ -927,10 +962,13 @@ export type IResolversParentTypes = ResolversObject<{
   ScreenshotBucket: ScreenshotBucket;
   ScreenshotDiff: ScreenshotDiff;
   ScreenshotDiffConnection: Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<IResolversParentTypes['ScreenshotDiff']> };
+  SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
   SetupVercelIntegrationInput: ISetupVercelIntegrationInput;
   SetupVercelIntegrationProjectInput: ISetupVercelIntegrationProjectInput;
   String: Scalars['String'];
   Team: Account;
+  TeamMember: TeamUser;
+  TeamMemberConnection: Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamMember']> };
   Test: Test;
   TestConnection: Omit<ITestConnection, 'edges'> & { edges: Array<IResolversParentTypes['Test']> };
   Time: Scalars['Time'];
@@ -1011,7 +1049,7 @@ export type IBuildStatsResolvers<ContextType = Context, ParentType extends IReso
 }>;
 
 export type IConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Connection'] = IResolversParentTypes['Connection']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'ProjectConnection' | 'ScreenshotDiffConnection' | 'TestConnection' | 'UserConnection', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'ProjectConnection' | 'ScreenshotDiffConnection' | 'TeamMemberConnection' | 'TestConnection' | 'UserConnection', ParentType, ContextType>;
   edges?: Resolver<Array<IResolversTypes['Node']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
 }>;
@@ -1080,6 +1118,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   removeUserFromTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
   retrieveVercelToken?: Resolver<IResolversTypes['VercelApiToken'], ParentType, ContextType, RequireFields<IMutationRetrieveVercelTokenArgs, 'code'>>;
+  setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
   setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
   setupVercelIntegration?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<IMutationSetupVercelIntegrationArgs, 'input'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
@@ -1096,7 +1135,7 @@ export type IMuteUpdateTestResolvers<ContextType = Context, ParentType extends I
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubRepository' | 'Plan' | 'Project' | 'Purchase' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'Test' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubRepository' | 'Plan' | 'Project' | 'Purchase' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
@@ -1203,6 +1242,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   inviteLink?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
@@ -1212,7 +1252,19 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  users?: Resolver<IResolversTypes['UserConnection'], ParentType, ContextType, RequireFields<ITeamUsersArgs, 'after' | 'first'>>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ITeamMemberResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TeamMember'] = IResolversParentTypes['TeamMember']> = ResolversObject<{
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  level?: Resolver<IResolversTypes['TeamUserLevel'], ParentType, ContextType>;
+  user?: Resolver<IResolversTypes['User'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ITeamMemberConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TeamMemberConnection'] = IResolversParentTypes['TeamMemberConnection']> = ResolversObject<{
+  edges?: Resolver<Array<IResolversTypes['TeamMember']>, ParentType, ContextType>;
+  pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1367,6 +1419,8 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   ScreenshotDiff?: IScreenshotDiffResolvers<ContextType>;
   ScreenshotDiffConnection?: IScreenshotDiffConnectionResolvers<ContextType>;
   Team?: ITeamResolvers<ContextType>;
+  TeamMember?: ITeamMemberResolvers<ContextType>;
+  TeamMemberConnection?: ITeamMemberConnectionResolvers<ContextType>;
   Test?: ITestResolvers<ContextType>;
   TestConnection?: ITestConnectionResolvers<ContextType>;
   Time?: GraphQLScalarType;
