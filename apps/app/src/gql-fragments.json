@@ -10,6 +10,7 @@
       "GhApiRepositoryConnection",
       "ProjectConnection",
       "ScreenshotDiffConnection",
+      "TeamMemberConnection",
       "TestConnection",
       "UserConnection"
     ],
@@ -27,6 +28,7 @@
       "ScreenshotBucket",
       "ScreenshotDiff",
       "Team",
+      "TeamMember",
       "Test",
       "User"
     ],

@@ -4,7 +4,10 @@ import gqlTag from "graphql-tag";
 import { transaction } from "@argos-ci/database";
 import { Account, Team, TeamUser } from "@argos-ci/database/models";
 
-import type { IResolvers } from "../__generated__/resolver-types.js";
+import type {
+  IResolvers,
+  ITeamUserLevel,
+} from "../__generated__/resolver-types.js";
 import { getWritableAccount } from "./Account.js";
 import { paginateResult } from "./PageInfo.js";
 
@@ -27,8 +30,24 @@ export const typeDefs = gql`
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
     avatar: AccountAvatar!
-    users(after: Int = 0, first: Int = 30): UserConnection!
+    members(after: Int = 0, first: Int = 30): TeamMemberConnection!
     inviteLink: String!
+  }
+
+  enum TeamUserLevel {
+    owner
+    member
+  }
+
+  type TeamMemberConnection implements Connection {
+    pageInfo: PageInfo!
+    edges: [TeamMember!]!
+  }
+
+  type TeamMember implements Node {
+    id: ID!
+    user: User!
+    level: TeamUserLevel!
   }
 
   input CreateTeamInput {
@@ -44,6 +63,12 @@ export const typeDefs = gql`
     userAccountId: ID!
   }
 
+  input SetTeamMemberLevelInput {
+    teamAccountId: ID!
+    userAccountId: ID!
+    level: TeamUserLevel!
+  }
+
   extend type Query {
     invitation(token: String!): Team
   }
@@ -57,6 +82,8 @@ export const typeDefs = gql`
     removeUserFromTeam(input: RemoveUserFromTeamInput!): Boolean!
     "Accept an invitation to join a team"
     acceptInvitation(token: String!): Team!
+    "Set member level"
+    setTeamMemberLevel(input: SetTeamMemberLevelInput!): TeamMember!
   }
 `;
 
@@ -77,8 +104,20 @@ const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
 };
 
 export const resolvers: IResolvers = {
+  TeamMember: {
+    user: async (teamUser, _args, ctx) => {
+      const account = await ctx.loaders.AccountFromRelation.load({
+        userId: teamUser.userId,
+      });
+      if (!account) {
+        throw new Error("Invariant: account is undefined");
+      }
+      return account;
+    },
+    level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
+  },
   Team: {
-    users: async (account, args, ctx) => {
+    members: async (account, args, ctx) => {
       if (!account.teamId) {
         throw new Error("Invariant: account.teamId is undefined");
       }
@@ -89,10 +128,9 @@ export const resolvers: IResolvers = {
         throw new Error("Forbidden");
       }
       const { first, after } = args;
-      const query = Account.query()
-        .orderBy("team_users.id", "asc")
-        .join("team_users", "team_users.userId", "accounts.userId")
-        .where("team_users.teamId", account.teamId)
+      const query = TeamUser.query()
+        .where("teamId", account.teamId)
+        .orderBy("id", "asc")
         .range(after, after + first - 1);
 
       const result = await query;
@@ -225,10 +263,37 @@ export const resolvers: IResolvers = {
       await TeamUser.query().insert({
         userId: ctx.auth.user.id,
         teamId: team.id,
-        userLevel: "owner",
+        userLevel: "member",
       });
 
       return account;
+    },
+    setTeamMemberLevel: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw new Error("Forbidden");
+      }
+      const [teamAccount, userAccount] = await Promise.all([
+        getWritableAccount({
+          id: args.input.teamAccountId,
+          user: ctx.auth.user,
+        }),
+        Account.query().findById(args.input.userAccountId).throwIfNotFound(),
+      ]);
+
+      const teamUser = await TeamUser.query()
+        .findOne({
+          userId: userAccount.userId,
+          teamId: teamAccount.teamId,
+        })
+        .throwIfNotFound();
+
+      if (teamUser.userLevel === args.input.level) {
+        return teamUser;
+      }
+
+      return teamUser.$query().patchAndFetch({
+        userLevel: args.input.level,
+      });
     },
   },
 };

@@ -64,11 +64,6 @@ export const Account = () => {
         if (!account.permissions.includes("read" as Permission)) {
           return <NotFound />;
         }
-        if (!account.permissions.includes("write" as Permission)) {
-          return (
-            <Outlet context={{ hasWritePermission: false } as OutletContext} />
-          );
-        }
         return <AccountTabs />;
       }}
     </Query>

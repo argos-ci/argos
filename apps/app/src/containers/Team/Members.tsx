@@ -4,6 +4,7 @@ import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -27,6 +28,13 @@ import {
 import { FormError } from "@/ui/FormError";
 import { List, ListRow } from "@/ui/List";
 import { Menu, MenuButton, MenuItem, useMenuState } from "@/ui/Menu";
+import {
+  Select,
+  SelectArrow,
+  SelectItem,
+  SelectPopover,
+  useSelectState,
+} from "@/ui/Select";
 import { MagicTooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "../AccountAvatar";
@@ -38,13 +46,17 @@ const TeamFragment = graphql(`
     name
     slug
     inviteLink
-    users(first: 30, after: 0) {
+    members(first: 30, after: 0) {
       edges {
         id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
+        level
+        user {
+          id
+          name
+          slug
+          avatar {
+            ...AccountAvatarFragment
+          }
         }
       }
       pageInfo {
@@ -54,7 +66,8 @@ const TeamFragment = graphql(`
   }
 `);
 
-type User = DocumentType<typeof TeamFragment>["users"]["edges"][0];
+type TeamMember = DocumentType<typeof TeamFragment>["members"]["edges"][0];
+type User = TeamMember["user"];
 
 const LeaveTeamMutation = graphql(`
   mutation TeamMembers_leaveTeam($teamAccountId: ID!) {
@@ -262,6 +275,79 @@ const ActionsMenu = (props: ActionsMenuProps) => {
   );
 };
 
+const SetTeamMemberLevelMutation = graphql(`
+  mutation SetTeamMemberLevelMutation(
+    $teamAccountId: ID!
+    $userAccountId: ID!
+    $level: TeamUserLevel!
+  ) {
+    setTeamMemberLevel(
+      input: {
+        teamAccountId: $teamAccountId
+        userAccountId: $userAccountId
+        level: $level
+      }
+    ) {
+      id
+      level
+    }
+  }
+`);
+
+const LevelSelect = (props: { teamId: string; member: TeamMember }) => {
+  const [setTeamMemberLevel] = useMutation(SetTeamMemberLevelMutation);
+  const select = useSelectState({
+    gutter: 4,
+    value: props.member.level,
+    setValue: (value) => {
+      setTeamMemberLevel({
+        variables: {
+          teamAccountId: props.teamId,
+          userAccountId: props.member.user.id,
+          level: value as TeamUserLevel,
+        },
+        optimisticResponse: {
+          setTeamMemberLevel: {
+            id: props.member.user.id,
+            level: value as TeamUserLevel,
+            __typename: "TeamMember",
+          },
+        },
+      });
+    },
+  });
+
+  const value = select.value as TeamUserLevel;
+
+  return (
+    <>
+      <Select state={select} className="w-full text-sm text-on-light">
+        <div className="flex w-full items-center justify-between gap-2">
+          {levelLabel[value]}
+          <SelectArrow />
+        </div>
+      </Select>
+
+      <SelectPopover aria-label="Levels" state={select}>
+        <SelectItem state={select} value="member">
+          <div className="flex flex-col">
+            <div>Member</div>
+            <div className="text-on-light">See and review builds</div>
+          </div>
+        </SelectItem>
+        <SelectItem state={select} value="owner">
+          <div className="flex flex-col">
+            <div>Owner</div>
+            <div className="text-on-light">
+              Admin level access to the entire team
+            </div>
+          </div>
+        </SelectItem>
+      </SelectPopover>
+    </>
+  );
+};
+
 type InviteLinkButtonProps = {
   inviteLink: string;
 };
@@ -304,6 +390,11 @@ const InviteLinkButton = (props: InviteLinkButtonProps) => {
   );
 };
 
+const levelLabel: Record<TeamUserLevel, string> = {
+  owner: "Owner",
+  member: "Member",
+};
+
 export const TeamMembers = (props: {
   team: FragmentType<typeof TeamFragment>;
 }) => {
@@ -313,7 +404,7 @@ export const TeamMembers = (props: {
   }
   const team = useFragment(TeamFragment, props.team);
   const teamName = team.name || team.slug;
-  const lastOne = team.users.pageInfo.totalCount === 1;
+  const lastOne = team.members.pageInfo.totalCount === 1;
   const [removeAccountId, setRemoveAccountId] = useState<string | null>(null);
   const removeTeamDialog = useDialogState({
     open: removeAccountId !== null,
@@ -323,6 +414,20 @@ export const TeamMembers = (props: {
       }
     },
   });
+  // Put current user at the top
+  const members = Array.from(team.members.edges);
+  const meIndex = members.findIndex(
+    (member) => member.user.id === authPayload.account.id
+  );
+  const me = members[meIndex];
+  if (!me) {
+    throw new Error("Invariant: me not found in members");
+  }
+  const amOwner = me.level === TeamUserLevel.Owner;
+  if (meIndex !== -1) {
+    members.splice(meIndex, 1);
+    members.unshift(me);
+  }
   return (
     <Card>
       <form>
@@ -332,7 +437,9 @@ export const TeamMembers = (props: {
             Add members to your team to give them access to your projects.
           </CardParagraph>
           <List className="mt-4">
-            {team.users.edges.map((user) => {
+            {members.map((member) => {
+              const user = member.user;
+              const isMe = authPayload.account.id === user.id;
               return (
                 <ListRow key={user.id} className="px-4 py-2">
                   <AccountAvatar
@@ -346,13 +453,26 @@ export const TeamMembers = (props: {
                     </div>
                     <div className="text-xs text-slate-500">{user.slug}</div>
                   </div>
-                  <ActionsMenu
-                    teamName={teamName}
-                    accountId={team.id}
-                    lastOne={lastOne}
-                    onRemove={() => setRemoveAccountId(user.id)}
-                    isMe={authPayload.account.id === user.id}
-                  />
+                  {isMe || !amOwner ? (
+                    <div className="text-sm text-on-light">
+                      {levelLabel[member.level]}
+                    </div>
+                  ) : (
+                    <div>
+                      <LevelSelect teamId={team.id} member={member} />
+                    </div>
+                  )}
+                  {isMe || amOwner ? (
+                    <ActionsMenu
+                      teamName={teamName}
+                      accountId={team.id}
+                      lastOne={lastOne}
+                      onRemove={() => setRemoveAccountId(user.id)}
+                      isMe={authPayload.account.id === user.id}
+                    />
+                  ) : (
+                    <div className="w-4" />
+                  )}
                 </ListRow>
               );
             })}
@@ -370,9 +490,9 @@ export const TeamMembers = (props: {
                   teamName={teamName}
                   teamAccountId={team.id}
                   user={
-                    team.users.edges.find(
-                      (user) => user.id === removeAccountId
-                    )!
+                    members.find(
+                      (member) => member.user.id === removeAccountId
+                    )!.user
                   }
                   state={removeTeamDialog}
                 />
