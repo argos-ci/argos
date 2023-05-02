@@ -582,8 +582,9 @@ CREATE TABLE public.plans (
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
     "screenshotsLimitPerMonth" integer NOT NULL,
-    "githubId" integer NOT NULL,
-    "stripePlanId" character varying(255)
+    "githubId" integer,
+    "stripePlanId" character varying(255),
+    "usageBased" boolean NOT NULL
 );
 
 
@@ -2301,3 +2302,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023042
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230428122453_vercel-data.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230429125237_add_purchase_trial.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230430182249_multiple-project-repo.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230501135647_add_plan_usage_type.js', 1, NOW());

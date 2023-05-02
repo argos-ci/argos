@@ -211,6 +211,16 @@ export class Account extends Model {
     return screenshotsConsumptionRatio >= 1.1;
   }
 
+  async hasUsageBasedPlan() {
+    const activePurchase = await this.getActivePurchase();
+    if (!activePurchase) return false;
+
+    const plan = await activePurchase.$relatedQuery<Plan>("plan").first();
+    if (!plan) return false;
+
+    return plan.usageBased;
+  }
+
   async $checkWritePermission(user: User) {
     return Account.checkWritePermission(this, user);
   }
