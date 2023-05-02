@@ -52,7 +52,7 @@ export const updateStripeUsage = async ({
     const subscription = subscriptions.data[0];
     if (!subscription) {
       throw new Error(
-        `Stripe return no active subscriptions for account ${account.id}`
+        `Stripe returns no active subscriptions for account ${account.id}`
       );
     }
 
