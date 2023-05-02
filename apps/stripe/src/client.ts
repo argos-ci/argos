@@ -45,7 +45,7 @@ export const updateStripeUsage = async ({
     });
     if (subscriptions.data.length > 1) {
       throw new Error(
-        `Stripe return multiple active subscriptions for account ${account.id}`
+        `Stripe returns multiple active subscriptions for account ${account.id}`
       );
     }
 
