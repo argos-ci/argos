@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import config from "@argos-ci/config";
-import { apolloServer } from "@argos-ci/graphql";
+import { apolloServer, createApolloMiddleware } from "@argos-ci/graphql";
 
 import { auth } from "./middlewares/auth.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -43,6 +43,9 @@ export const installAppRouter = async (app: express.Application) => {
 
   router.use(vercel);
 
+  await apolloServer.start();
+  router.use("/graphql", express.json(), createApolloMiddleware());
+
   router.get("*", rendering());
 
   const htmlErrorHandler: express.ErrorRequestHandler = (
@@ -72,7 +75,4 @@ export const installAppRouter = async (app: express.Application) => {
   );
 
   app.use(router);
-
-  await apolloServer.start();
-  apolloServer.applyMiddleware({ app });
 };
