@@ -295,18 +295,17 @@ export const resolvers: IResolvers = {
     referenceBranch: async (project) => {
       return project.$getReferenceBranch();
     },
-    public: async (project) => {
+    public: async (project, _args, ctx) => {
+      project.githubRepository = project.githubRepositoryId
+        ? await ctx.loaders.GithubRepository.load(project.githubRepositoryId)
+        : null;
       return project.$checkIsPublic();
     },
     currentMonthUsedScreenshots: async (project, _args, ctx) => {
       const account = await ctx.loaders.Account.load(project.accountId);
-      const currentConsumptionStartDate =
-        await account.getCurrentConsumptionStartDate();
-      return Screenshot.query()
-        .joinRelated("screenshotBucket")
-        .where("screenshotBucket.projectId", project.id)
-        .where("screenshots.createdAt", ">=", currentConsumptionStartDate)
-        .resultSize();
+      return account.$getScreenshotsCurrentConsumption({
+        projectId: project.id,
+      });
     },
     totalScreenshots: async (project) => {
       return Screenshot.query()

@@ -42,9 +42,9 @@ describe("Account", () => {
       ]);
   });
 
-  describe("#getActivePurchase", () => {
+  describe("#$getActivePurchase", () => {
     it("returns null when no purchase found", async () => {
-      const activePurchase = await account.getActivePurchase();
+      const activePurchase = await account.$getActivePurchase();
       expect(activePurchase).toBeNull();
     });
 
@@ -54,7 +54,7 @@ describe("Account", () => {
         accountId: account.id,
         endDate: new Date(2010, 1, 1).toISOString(),
       });
-      const activePurchase = await account.getActivePurchase();
+      const activePurchase = await account.$getActivePurchase();
       expect(activePurchase).toBeNull();
     });
 
@@ -63,7 +63,7 @@ describe("Account", () => {
         planId: plans[1]!.id,
         accountId: account.id,
       });
-      const activePurchase = await account.getActivePurchase();
+      const activePurchase = await account.$getActivePurchase();
       const purchasePlan = await activePurchase!.$relatedQuery("plan");
       expect(purchasePlan!.id).toBe(plans[1]!.id);
     });
@@ -85,13 +85,13 @@ describe("Account", () => {
     });
   });
 
-  describe("#getCurrentConsumptionStartDate", () => {
+  describe("#$getCurrentConsumptionStartDate", () => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     describe("without purchase", () => {
       it("returns first day of month", async () => {
-        const startDate = await account.getCurrentConsumptionStartDate();
+        const startDate = await account.$getCurrentConsumptionStartDate();
         expect(startDate).toEqual(startOfMonth);
       });
     });
@@ -108,7 +108,7 @@ describe("Account", () => {
       });
 
       it("returns purchase start date", async () => {
-        const startDate = await account.getCurrentConsumptionStartDate();
+        const startDate = await account.$getCurrentConsumptionStartDate();
         expect(startDate.getDate()).toEqual(subscriptionDay);
         if (now.getDate() >= subscriptionDay) {
           expect(startDate.getMonth()).toEqual(now.getMonth());
@@ -124,12 +124,12 @@ describe("Account", () => {
     });
   });
 
-  describe("#getScreenshotsCurrentConsumption", () => {
+  describe("#$getScreenshotsCurrentConsumption", () => {
     it("count screenshots used this month", async () => {
       await factory.createMany("Screenshot", 10, {
         screenshotBucketId: bucket1.id,
       });
-      const consumption = await account.getScreenshotsCurrentConsumption();
+      const consumption = await account.$getScreenshotsCurrentConsumption();
       expect(consumption).toBe(10);
     });
 
@@ -137,7 +137,7 @@ describe("Account", () => {
       await factory.createMany("Screenshot", 10, {
         screenshotBucketId: bucket2.id,
       });
-      const consumption = await account.getScreenshotsCurrentConsumption();
+      const consumption = await account.$getScreenshotsCurrentConsumption();
       expect(consumption).toBe(10);
     });
 
@@ -145,7 +145,7 @@ describe("Account", () => {
       await factory.createMany("Screenshot", 10, {
         screenshotBucketId: bucket3.id,
       });
-      const consumption = await account.getScreenshotsCurrentConsumption();
+      const consumption = await account.$getScreenshotsCurrentConsumption();
       expect(consumption).toBe(0);
     });
 
@@ -154,7 +154,7 @@ describe("Account", () => {
         screenshotBucketId: bucket2.id,
         createdAt: new Date(2012, 1, 1),
       });
-      const consumption = await account.getScreenshotsCurrentConsumption();
+      const consumption = await account.$getScreenshotsCurrentConsumption();
       expect(consumption).toBe(0);
     });
 
@@ -162,7 +162,7 @@ describe("Account", () => {
       await factory.createMany("Screenshot", 10, {
         screenshotBucketId: bucketOtherOrga.id,
       });
-      const consumption = await account.getScreenshotsCurrentConsumption();
+      const consumption = await account.$getScreenshotsCurrentConsumption();
       expect(consumption).toBe(0);
     });
   });

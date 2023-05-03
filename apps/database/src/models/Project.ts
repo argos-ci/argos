@@ -117,8 +117,9 @@ export class Project extends Model {
     if (this.private === false) return true;
     if (this.private === true) return false;
     const repository =
-      this.githubRepository ??
-      (await this.$relatedQuery("githubRepository", trx));
+      this.githubRepository === undefined
+        ? await this.$relatedQuery("githubRepository", trx)
+        : this.githubRepository;
     if (!repository) return false;
     return !repository.private;
   }

@@ -138,10 +138,10 @@ export const resolvers: IResolvers = {
       return account.getScreenshotsConsumptionRatio();
     },
     currentMonthUsedScreenshots: async (account) => {
-      return account.getScreenshotsCurrentConsumption();
+      return account.$getScreenshotsCurrentConsumption();
     },
     purchase: async (account) => {
-      return account.getActivePurchase();
+      return account.$getActivePurchase();
     },
     plan: async (account) => {
       return account.getPlan();

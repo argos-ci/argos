@@ -116,6 +116,7 @@ export class Account extends Model {
   team?: Team | null;
   purchases?: Purchase[];
   projects?: Project[];
+  activePurchase?: Purchase | null;
 
   static override virtualAttributes = ["type"];
 
@@ -128,9 +129,8 @@ export class Account extends Model {
     throw new Error(`Invariant incoherent account type`);
   }
 
-  async getActivePurchase() {
+  async $getActivePurchase() {
     if (!this.id) return null;
-
     const purchase = await Purchase.query()
       .where("accountId", this.id)
       .whereRaw("?? < now()", "startDate")
@@ -150,7 +150,7 @@ export class Account extends Model {
       return plan ?? null;
     }
 
-    const activePurchase = await this.getActivePurchase();
+    const activePurchase = await this.$getActivePurchase();
     if (activePurchase) {
       const plan = await activePurchase.$relatedQuery("plan");
       return plan;
@@ -164,17 +164,23 @@ export class Account extends Model {
     return plan ? plan.screenshotsLimitPerMonth : null;
   }
 
-  async getCurrentConsumptionStartDate() {
+  async $getCurrentConsumptionStartDate() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const purchase = await this.getActivePurchase();
-    return this.forcedPlanId || !purchase?.startDate
-      ? startOfMonth
-      : purchase.getLastResetDate();
+    if (this.forcedPlanId) {
+      return startOfMonth;
+    }
+    const purchase =
+      this.activePurchase === undefined
+        ? await this.$getActivePurchase()
+        : this.activePurchase;
+    return !purchase?.startDate ? startOfMonth : purchase.getLastResetDate();
   }
 
-  async getScreenshotsCurrentConsumption() {
-    const startDate = await this.getCurrentConsumptionStartDate();
+  async $getScreenshotsCurrentConsumption(options?: {
+    projectId?: string;
+  }): Promise<number> {
+    const startDate = await this.$getCurrentConsumptionStartDate();
     const query = Screenshot.query()
       .leftJoinRelated("screenshotBucket.project.githubRepository")
       .where("screenshots.createdAt", ">=", startDate)
@@ -192,7 +198,11 @@ export class Account extends Model {
           .orWhere("screenshotBucket:project.private", true)
       );
 
-    return query.resultSize();
+    if (options?.projectId) {
+      query.where("screenshotBucket:project.id", options.projectId);
+    }
+
+    return query.debug().resultSize();
   }
 
   async getScreenshotsConsumptionRatio() {
@@ -200,7 +210,7 @@ export class Account extends Model {
     if (!screenshotsMonthlyLimit) return null;
     if (screenshotsMonthlyLimit === -1) return 0;
     const screenshotsCurrentConsumption =
-      await this.getScreenshotsCurrentConsumption();
+      await this.$getScreenshotsCurrentConsumption();
     return screenshotsCurrentConsumption / screenshotsMonthlyLimit;
   }
 
@@ -212,7 +222,7 @@ export class Account extends Model {
   }
 
   async hasUsageBasedPlan() {
-    const activePurchase = await this.getActivePurchase();
+    const activePurchase = await this.$getActivePurchase();
     if (!activePurchase) return false;
 
     const plan = await activePurchase.$relatedQuery<Plan>("plan").first();
