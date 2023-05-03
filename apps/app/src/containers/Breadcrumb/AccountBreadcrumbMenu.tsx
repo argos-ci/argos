@@ -1,6 +1,12 @@
 import { useQuery } from "@apollo/client";
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
-import { Link as RouterLink } from "react-router-dom";
+import {
+  Link as RouterLink,
+  generatePath,
+  matchPath,
+  useLocation,
+  useMatch,
+} from "react-router-dom";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
@@ -38,15 +44,27 @@ const MeQuery = graphql(`
 
 type Account = FragmentType<typeof AccountFragment>;
 
+const resolveAccountPath = (slug: string, pathname: string) => {
+  if (matchPath("/:slug/settings/*", pathname)) {
+    const parts = pathname.split("/");
+    return "/" + [slug, ...parts.slice(2)].join("/");
+  }
+  return `/${slug}`;
+};
+
 const AccountMenuItems = (props: { menu: MenuState; accounts: Account[] }) => {
   const accounts = useFragment(AccountFragment, props.accounts);
+  const location = useLocation();
   return (
     <>
       {accounts.map((account) => {
         return (
           <MenuItem key={account.id} state={props.menu} pointer>
             {(menuItemProps) => (
-              <RouterLink {...menuItemProps} to={`/${account.slug}`}>
+              <RouterLink
+                {...menuItemProps}
+                to={resolveAccountPath(account.slug, location.pathname)}
+              >
                 <AccountItem account={account} />
               </RouterLink>
             )}
