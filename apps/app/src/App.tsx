@@ -1,10 +1,11 @@
 import { Helmet } from "react-helmet";
 import {
-  BrowserRouter,
   Navigate,
   Outlet,
   Route,
-  Routes,
+  RouterProvider,
+  createBrowserRouter,
+  createRoutesFromElements,
 } from "react-router-dom";
 
 import { Layout, Main } from "@/containers/Layout";
@@ -30,68 +31,66 @@ import { ProjectSettings } from "./pages/Project/Settings";
 import { Tests } from "./pages/Project/Tests";
 import { VercelCallback } from "./pages/Vercel";
 
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <>
+      <Route path="/auth/github/callback" element={<AuthCallback />} />
+      <Route path="/vercel/callback" element={<VercelCallback />} />
+      <Route
+        path="/:accountSlug/:projectName/builds/:buildNumber"
+        element={<Build />}
+      />
+      <Route
+        path="/:accountSlug/:projectName/builds/:buildNumber/:diffId"
+        element={<Build />}
+      />
+      <Route path="/checkout-success" element={<CheckoutSuccessRedirect />} />
+      <Route
+        path="/"
+        element={
+          <Layout>
+            <Outlet />
+          </Layout>
+        }
+      >
+        <Route index element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/invite/:inviteToken" element={<Invite />} />
+        <Route
+          path="/teams/new"
+          element={
+            <Main>
+              <NewTeam />
+            </Main>
+          }
+        />
+        <Route path=":accountSlug/:projectName" element={<Project />}>
+          <Route path="" element={<ProjectBuilds />} />
+          <Route path="builds" element={<Navigate to=".." replace={true} />} />
+          <Route path="tests" element={<Tests />} />
+          <Route path="settings" element={<ProjectSettings />} />
+        </Route>
+        <Route id="account" path=":accountSlug" element={<Account />}>
+          <Route path="" element={<AccountProjects />} />
+          <Route path="new" element={<AccountNewProject />} />
+          <Route path="settings" element={<AccountSettings />} />
+          <Route path="checkout" element={<AccountCheckout />} />
+        </Route>
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </>
+  )
+);
+
 export const App = () => {
   return (
     <>
       <Helmet defaultTitle="Argos" />
-      <BrowserRouter>
-        <AuthProvider>
-          <ApolloInitializer>
-            <Routes>
-              <Route path="/auth/github/callback" element={<AuthCallback />} />
-              <Route path="/vercel/callback" element={<VercelCallback />} />
-              <Route
-                path="/:accountSlug/:projectName/builds/:buildNumber"
-                element={<Build />}
-              />
-              <Route
-                path="/:accountSlug/:projectName/builds/:buildNumber/:diffId"
-                element={<Build />}
-              />
-              <Route
-                path="/checkout-success"
-                element={<CheckoutSuccessRedirect />}
-              />
-              <Route
-                path="/"
-                element={
-                  <Layout>
-                    <Outlet />
-                  </Layout>
-                }
-              >
-                <Route index element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/invite/:inviteToken" element={<Invite />} />
-                <Route
-                  path="/teams/new"
-                  element={
-                    <Main>
-                      <NewTeam />
-                    </Main>
-                  }
-                />
-                <Route path=":accountSlug/:projectName" element={<Project />}>
-                  <Route path="" element={<ProjectBuilds />} />
-                  <Route
-                    path="builds"
-                    element={<Navigate to=".." replace={true} />}
-                  />
-                  <Route path="tests" element={<Tests />} />
-                  <Route path="settings" element={<ProjectSettings />} />
-                </Route>
-                <Route path=":accountSlug" element={<Account />}>
-                  <Route path="" element={<AccountProjects />} />
-                  <Route path="new" element={<AccountNewProject />} />
-                  <Route path="settings" element={<AccountSettings />} />
-                  <Route path="checkout" element={<AccountCheckout />} />
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          </ApolloInitializer>
-        </AuthProvider>
-      </BrowserRouter>
+      <AuthProvider>
+        <ApolloInitializer>
+          <RouterProvider router={router} />
+        </ApolloInitializer>
+      </AuthProvider>
     </>
   );
 };
