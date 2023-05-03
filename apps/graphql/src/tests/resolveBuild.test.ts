@@ -10,7 +10,7 @@ import type {
 } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 
-import { apolloServer } from "../apollo.js";
+import { apolloServer, createApolloMiddleware } from "../apollo.js";
 import { expectNoGraphQLError } from "../testing.js";
 import { createApolloServerApp } from "./util.js";
 
@@ -72,10 +72,14 @@ describe("GraphQL", () => {
     });
 
     it("should sort the diffs by score", async () => {
-      const app = await createApolloServerApp(apolloServer, {
-        user: userAccount.user!,
-        account: userAccount,
-      });
+      const app = await createApolloServerApp(
+        apolloServer,
+        createApolloMiddleware,
+        {
+          user: userAccount.user!,
+          account: userAccount,
+        }
+      );
       const res = await request(app)
         .post("/graphql")
         .send({

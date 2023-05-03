@@ -1,5 +1,5 @@
-import type { ApolloServer } from "apollo-server-express";
-import express from "express";
+import type { ApolloServer } from "@apollo/server";
+import express, { RequestHandler } from "express";
 
 import type { Account, User } from "@argos-ci/database/models";
 
@@ -7,6 +7,7 @@ let started = false;
 
 export const createApolloServerApp = async (
   apolloServer: ApolloServer,
+  getMiddleware: () => RequestHandler,
   auth: { user: User; account: Account } | null
 ) => {
   const app = express();
@@ -20,7 +21,7 @@ export const createApolloServerApp = async (
     await apolloServer.start();
   }
   started = true;
-  apolloServer.applyMiddleware({ app });
+  app.use("/graphql", express.json(), getMiddleware());
 
   return app;
 };

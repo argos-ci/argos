@@ -12,7 +12,7 @@ import type {
 import { factory, useDatabase } from "@argos-ci/database/testing";
 import { quitAmqp } from "@argos-ci/job-core";
 
-import { apolloServer } from "../apollo.js";
+import { apolloServer, createApolloMiddleware } from "../apollo.js";
 import { expectNoGraphQLError } from "../testing.js";
 import { createApolloServerApp } from "./util.js";
 
@@ -77,10 +77,14 @@ describe("GraphQL", () => {
     });
 
     it("should mutate all the validationStatus", async () => {
-      const app = await createApolloServerApp(apolloServer, {
-        user: userAccount.user!,
-        account: userAccount,
-      });
+      const app = await createApolloServerApp(
+        apolloServer,
+        createApolloMiddleware,
+        {
+          user: userAccount.user!,
+          account: userAccount,
+        }
+      );
       let res = await request(app)
         .post("/graphql")
         .send({
@@ -111,10 +115,14 @@ describe("GraphQL", () => {
       expectNoGraphQLError(res);
       expect(res.status).toBe(200);
 
-      const apolloServerApp = await createApolloServerApp(apolloServer, {
-        user: userAccount.user!,
-        account: userAccount,
-      });
+      const apolloServerApp = await createApolloServerApp(
+        apolloServer,
+        createApolloMiddleware,
+        {
+          user: userAccount.user!,
+          account: userAccount,
+        }
+      );
       res = await request(apolloServerApp)
         .post("/graphql")
         .send({
@@ -153,10 +161,14 @@ describe("GraphQL", () => {
     it("should not mutate when the user is unauthorized", async () => {
       const userAccount = await factory.create<Account>("UserAccount");
       await userAccount.$fetchGraph("user");
-      const app = await createApolloServerApp(apolloServer, {
-        user: userAccount.user!,
-        account: userAccount,
-      });
+      const app = await createApolloServerApp(
+        apolloServer,
+        createApolloMiddleware,
+        {
+          user: userAccount.user!,
+          account: userAccount,
+        }
+      );
       const res = await request(app)
         .post("/graphql")
         .send({
