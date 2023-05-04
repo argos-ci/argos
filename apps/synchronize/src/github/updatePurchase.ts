@@ -15,7 +15,7 @@ export const updatePurchase = async (
   account: Account
 ) => {
   const plan = await getNewPlanOrThrow(payload);
-  const activePurchase = await account.getActivePurchase();
+  const activePurchase = await account.$getActivePurchase();
   const effectiveDate = payload.effective_date || new Date().toISOString();
 
   if (!activePurchase) {

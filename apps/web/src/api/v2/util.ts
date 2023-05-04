@@ -55,8 +55,8 @@ export const createBuild = async ({
   const isPublic = await req.authProject.$checkIsPublic(trx);
   if (!isPublic) {
     const account = await req.authProject.$relatedQuery("account", trx);
-    const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
-    const hasUsageBasedPlan = await account.hasUsageBasedPlan();
+    const hasExceedLimit = await account.$hasExceedScreenshotsMonthlyLimit();
+    const hasUsageBasedPlan = await account.$hasUsageBasedPlan();
     if (hasExceedLimit && !hasUsageBasedPlan) {
       throw new HttpError(
         402,

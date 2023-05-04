@@ -30,7 +30,7 @@ export const handleGitHubEvents = async ({
 
             if (!account) return;
 
-            const activePurchase = await account.getActivePurchase();
+            const activePurchase = await account.$getActivePurchase();
             if (activePurchase && activePurchase.planId === newPlan.id) return;
 
             await Purchase.query().insert({

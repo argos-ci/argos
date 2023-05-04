@@ -159,9 +159,9 @@ export const resolvers: IResolvers = {
 
       if (!isPublic) {
         const hasExceedLimit =
-          await build.project.account.hasExceedScreenshotsMonthlyLimit();
+          await build.project.account.$hasExceedScreenshotsMonthlyLimit();
         const hasUsageBasedPlan =
-          await build.project.account.hasUsageBasedPlan();
+          await build.project.account.$hasUsageBasedPlan();
         if (hasExceedLimit && !hasUsageBasedPlan) {
           throw new APIError(
             "Insufficient credit. Please upgrade Argos plan to unlock build reviews."

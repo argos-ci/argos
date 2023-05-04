@@ -51,11 +51,14 @@ type InsertFilesAndScreenshotsParams = {
   trx?: TransactionOrKnex;
 };
 
+/**
+ * @returns The number of screenshots inserted
+ */
 export const insertFilesAndScreenshots = async (
   params: InsertFilesAndScreenshotsParams
-) => {
-  await transaction(params.trx, async (trx) => {
-    if (params.screenshots.length === 0) return;
+): Promise<number> => {
+  return await transaction(params.trx, async (trx) => {
+    if (params.screenshots.length === 0) return 0;
 
     const unknownKeys =
       params.unknownKeys ||
@@ -103,5 +106,7 @@ export const insertFilesAndScreenshots = async (
         };
       })
     );
+
+    return params.screenshots.length;
   });
 };

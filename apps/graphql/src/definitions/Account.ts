@@ -135,19 +135,19 @@ export const resolvers: IResolvers = {
       });
     },
     consumptionRatio: async (account) => {
-      return account.getScreenshotsConsumptionRatio();
+      return account.$getScreenshotsConsumptionRatio();
     },
     currentMonthUsedScreenshots: async (account) => {
-      return account.getScreenshotsCurrentConsumption();
+      return account.$getScreenshotsCurrentConsumption();
     },
     purchase: async (account) => {
-      return account.getActivePurchase();
+      return account.$getActivePurchase();
     },
     plan: async (account) => {
-      return account.getPlan();
+      return account.$getPlan();
     },
     screenshotsLimitPerMonth: async (account) => {
-      return account.getScreenshotsMonthlyLimit();
+      return account.$getScreenshotsMonthlyLimit();
     },
     permissions: async (account, _args, ctx) => {
       if (!ctx.auth) {

@@ -58,7 +58,7 @@ export const cancelPurchase = async (
   payload: { effective_date: string },
   account: Account
 ) => {
-  const activePurchase = await account.getActivePurchase();
+  const activePurchase = await account.$getActivePurchase();
   if (activePurchase && activePurchase.source === "github") {
     await Purchase.query()
       .findById(activePurchase.id)

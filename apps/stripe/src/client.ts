@@ -85,7 +85,7 @@ export const handleStripeEvent = async ({
           message: `can't find account with id "${accountId}"`,
         });
 
-      const activePurchase = await account.getActivePurchase();
+      const activePurchase = await account.$getActivePurchase();
       if (activePurchase) {
         await activePurchase.$query().patch({ purchaserId });
         break;
@@ -138,7 +138,7 @@ export const handleStripeEvent = async ({
         break;
       }
 
-      const activePurchase = await account.getActivePurchase();
+      const activePurchase = await account.$getActivePurchase();
       if (activePurchase) {
         await Purchase.query()
           .patch({ endDate: timestampToDate(invoice.period_start) })
@@ -155,7 +155,7 @@ export const handleStripeEvent = async ({
       const stripeProductId = getFirstProductOrThrow(subscription);
       const plan = await findPlanOrThrow(stripeProductId);
       const account = await findCustomerAccountOrThrow(stripeCustomerId);
-      const activePurchase = await account.getActivePurchase();
+      const activePurchase = await account.$getActivePurchase();
 
       if (subscription.cancel_at) {
         if (!activePurchase) {

@@ -4,7 +4,7 @@ import { HttpError } from "express-err";
 
 import { job as buildJob } from "@argos-ci/build";
 import { raw, transaction } from "@argos-ci/database";
-import { Build, Project } from "@argos-ci/database/models";
+import { Build, Project, Screenshot } from "@argos-ci/database/models";
 import {
   getUnknownScreenshotKeys,
   insertFilesAndScreenshots,
@@ -116,9 +116,12 @@ const handleUpdateParallel = async ({
       });
 
     if (parallelTotal === build.batchCount! + 1) {
+      const screenshotCount = await Screenshot.query(trx)
+        .where("screenshotBucketId", build.compareScreenshotBucketId)
+        .resultSize();
       await build
         .$relatedQuery("compareScreenshotBucket", trx)
-        .patch({ complete: true });
+        .patch({ complete: true, screenshotCount });
       return true;
     }
 
@@ -140,7 +143,7 @@ const handleUpdateSingle = async ({
   unknownKeys: string[];
 }) => {
   await transaction(async (trx) => {
-    await insertFilesAndScreenshots({
+    const screenshotCount = await insertFilesAndScreenshots({
       screenshots: req.body.screenshots,
       build,
       unknownKeys,
@@ -149,7 +152,7 @@ const handleUpdateSingle = async ({
 
     await build
       .compareScreenshotBucket!.$query(trx)
-      .patchAndFetch({ complete: true });
+      .patchAndFetch({ complete: true, screenshotCount });
   });
   await buildJob.push(build.id);
 };

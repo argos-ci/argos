@@ -6,7 +6,7 @@ import { GithubAccount } from "./GithubAccount.js";
 import { Plan } from "./Plan.js";
 import { Project } from "./Project.js";
 import { Purchase } from "./Purchase.js";
-import { Screenshot } from "./Screenshot.js";
+import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
 import { VercelConfiguration } from "./VercelConfiguration.js";
@@ -116,6 +116,7 @@ export class Account extends Model {
   team?: Team | null;
   purchases?: Purchase[];
   projects?: Project[];
+  activePurchase?: Purchase | null;
 
   static override virtualAttributes = ["type"];
 
@@ -128,9 +129,8 @@ export class Account extends Model {
     throw new Error(`Invariant incoherent account type`);
   }
 
-  async getActivePurchase() {
+  async $getActivePurchase() {
     if (!this.id) return null;
-
     const purchase = await Purchase.query()
       .where("accountId", this.id)
       .whereRaw("?? < now()", "startDate")
@@ -144,13 +144,13 @@ export class Account extends Model {
     return purchase ?? null;
   }
 
-  async getPlan(): Promise<Plan | null> {
+  async $getPlan(): Promise<Plan | null> {
     if (this.forcedPlanId) {
       const plan = await Plan.query().findById(this.forcedPlanId);
       return plan ?? null;
     }
 
-    const activePurchase = await this.getActivePurchase();
+    const activePurchase = await this.$getActivePurchase();
     if (activePurchase) {
       const plan = await activePurchase.$relatedQuery("plan");
       return plan;
@@ -159,60 +159,70 @@ export class Account extends Model {
     return Plan.getFreePlan();
   }
 
-  async getScreenshotsMonthlyLimit() {
-    const plan = await this.getPlan();
+  async $getScreenshotsMonthlyLimit() {
+    const plan = await this.$getPlan();
     return plan ? plan.screenshotsLimitPerMonth : null;
   }
 
-  async getCurrentConsumptionStartDate() {
+  async $getCurrentConsumptionStartDate() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const purchase = await this.getActivePurchase();
-    return this.forcedPlanId || !purchase?.startDate
-      ? startOfMonth
-      : purchase.getLastResetDate();
+    if (this.forcedPlanId) {
+      return startOfMonth;
+    }
+    const purchase =
+      this.activePurchase === undefined
+        ? await this.$getActivePurchase()
+        : this.activePurchase;
+    return !purchase?.startDate ? startOfMonth : purchase.getLastResetDate();
   }
 
-  async getScreenshotsCurrentConsumption() {
-    const startDate = await this.getCurrentConsumptionStartDate();
-    const query = Screenshot.query()
-      .leftJoinRelated("screenshotBucket.project.githubRepository")
-      .where("screenshots.createdAt", ">=", startDate)
-      .where("screenshotBucket:project.accountId", this.id)
+  async $getScreenshotsCurrentConsumption(options?: {
+    projectId?: string;
+  }): Promise<number> {
+    const startDate = await this.$getCurrentConsumptionStartDate();
+    const query = ScreenshotBucket.query()
+      .sum("screenshot_buckets.screenshotCount as total")
+      .leftJoinRelated("project.githubRepository")
+      .where("screenshot_buckets.createdAt", ">=", startDate)
+      .where("project.accountId", this.id)
       .where((builder) =>
         builder
           .where((builder) => {
             builder
-              .whereNull("screenshotBucket:project.private")
-              .andWhere(
-                "screenshotBucket:project:githubRepository.private",
-                true
-              );
+              .whereNull("project.private")
+              .andWhere("project:githubRepository.private", true);
           })
-          .orWhere("screenshotBucket:project.private", true)
-      );
+          .orWhere("project.private", true)
+      )
+      .first();
 
-    return query.resultSize();
+    if (options?.projectId) {
+      query.where("project.id", options.projectId);
+    }
+
+    const result = (await query) as unknown as { total: string | null };
+    return result.total ? Number(result.total) : 0;
   }
 
-  async getScreenshotsConsumptionRatio() {
-    const screenshotsMonthlyLimit = await this.getScreenshotsMonthlyLimit();
+  async $getScreenshotsConsumptionRatio() {
+    const screenshotsMonthlyLimit = await this.$getScreenshotsMonthlyLimit();
     if (!screenshotsMonthlyLimit) return null;
     if (screenshotsMonthlyLimit === -1) return 0;
     const screenshotsCurrentConsumption =
-      await this.getScreenshotsCurrentConsumption();
+      await this.$getScreenshotsCurrentConsumption();
     return screenshotsCurrentConsumption / screenshotsMonthlyLimit;
   }
 
-  async hasExceedScreenshotsMonthlyLimit() {
+  async $hasExceedScreenshotsMonthlyLimit() {
     const screenshotsConsumptionRatio =
-      await this.getScreenshotsConsumptionRatio();
+      await this.$getScreenshotsConsumptionRatio();
     if (!screenshotsConsumptionRatio) return false;
     return screenshotsConsumptionRatio >= 1.1;
   }
 
-  async hasUsageBasedPlan() {
-    const activePurchase = await this.getActivePurchase();
+  async $hasUsageBasedPlan() {
+    const activePurchase = await this.$getActivePurchase();
     if (!activePurchase) return false;
 
     const plan = await activePurchase.$relatedQuery<Plan>("plan").first();
