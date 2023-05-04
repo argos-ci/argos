@@ -48,7 +48,7 @@ export const findCustomerAccountOrThrow = async (stripeCustomerId: string) => {
 };
 
 export const getLastPurchase = async (account: Account) => {
-  const activePurchase = await account.getActivePurchase();
+  const activePurchase = await account.$getActivePurchase();
   if (activePurchase) return activePurchase;
   return Purchase.query()
     .where({ accountId: account.id })

@@ -71,7 +71,7 @@ describe("Account", () => {
 
   describe("#screenshotsMonthlyLimit", () => {
     it("without purchase returns free plan limit", async () => {
-      const screenshotsLimit = await account.getScreenshotsMonthlyLimit();
+      const screenshotsLimit = await account.$getScreenshotsMonthlyLimit();
       expect(screenshotsLimit).toBe(-1);
     });
 
@@ -80,7 +80,7 @@ describe("Account", () => {
         planId: plans[1]!.id,
         accountId: account.id,
       });
-      const screenshotsLimit = await account.getScreenshotsMonthlyLimit();
+      const screenshotsLimit = await account.$getScreenshotsMonthlyLimit();
       expect(screenshotsLimit).toBe(10);
     });
   });
@@ -174,7 +174,7 @@ describe("Account", () => {
           planId: plans[1]!.id,
           accountId: account.id,
         });
-        const plan = await account.getPlan();
+        const plan = await account.$getPlan();
         expect(plan!.id).toBe(plans[1]!.id);
       });
 
@@ -184,26 +184,26 @@ describe("Account", () => {
           accountId: vipAccount.id,
         });
 
-        const plan = await vipAccount.getPlan();
+        const plan = await vipAccount.$getPlan();
         expect(plan!.id).toBe(plans[2]!.id);
       });
     });
 
     describe("without purchase", () => {
       it("with free plan in database returns free plan", async () => {
-        const plan = await account.getPlan();
+        const plan = await account.$getPlan();
         expect(plan!.id).toBe(plans[0]!.id);
       });
 
       it("with forced plan returns forced plan", async () => {
-        const plan = await vipAccount.getPlan();
+        const plan = await vipAccount.$getPlan();
         expect(plan!.id).toBe(plans[2]!.id);
       });
 
       it("without free plan in database returns null", async () => {
         await Account.query().patch({ forcedPlanId: null });
         await Plan.query().delete();
-        const plan = await account.getPlan();
+        const plan = await account.$getPlan();
         expect(plan).toBeNull();
       });
     });

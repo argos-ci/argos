@@ -21,9 +21,9 @@ export const performBuild = async (build: Build) => {
     .first()
     .throwIfNotFound();
 
-  const hasExceedLimit = await account.hasExceedScreenshotsMonthlyLimit();
-  const hasUsageBasedPlan = await account.hasUsageBasedPlan();
-  const totalScreenshots = await account.getScreenshotsCurrentConsumption();
+  const hasExceedLimit = await account.$hasExceedScreenshotsMonthlyLimit();
+  const hasUsageBasedPlan = await account.$hasUsageBasedPlan();
+  const totalScreenshots = await account.$getScreenshotsCurrentConsumption();
   if (hasExceedLimit && hasUsageBasedPlan) {
     await updateStripeUsage({ account, totalScreenshots });
   }

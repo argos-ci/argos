@@ -6,7 +6,6 @@ import { GithubAccount } from "./GithubAccount.js";
 import { Plan } from "./Plan.js";
 import { Project } from "./Project.js";
 import { Purchase } from "./Purchase.js";
-import { Screenshot } from "./Screenshot.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
@@ -145,7 +144,7 @@ export class Account extends Model {
     return purchase ?? null;
   }
 
-  async getPlan(): Promise<Plan | null> {
+  async $getPlan(): Promise<Plan | null> {
     if (this.forcedPlanId) {
       const plan = await Plan.query().findById(this.forcedPlanId);
       return plan ?? null;
@@ -160,8 +159,8 @@ export class Account extends Model {
     return Plan.getFreePlan();
   }
 
-  async getScreenshotsMonthlyLimit() {
-    const plan = await this.getPlan();
+  async $getScreenshotsMonthlyLimit() {
+    const plan = await this.$getPlan();
     return plan ? plan.screenshotsLimitPerMonth : null;
   }
 
@@ -206,8 +205,8 @@ export class Account extends Model {
     return result.total ?? 0;
   }
 
-  async getScreenshotsConsumptionRatio() {
-    const screenshotsMonthlyLimit = await this.getScreenshotsMonthlyLimit();
+  async $getScreenshotsConsumptionRatio() {
+    const screenshotsMonthlyLimit = await this.$getScreenshotsMonthlyLimit();
     if (!screenshotsMonthlyLimit) return null;
     if (screenshotsMonthlyLimit === -1) return 0;
     const screenshotsCurrentConsumption =
@@ -215,14 +214,14 @@ export class Account extends Model {
     return screenshotsCurrentConsumption / screenshotsMonthlyLimit;
   }
 
-  async hasExceedScreenshotsMonthlyLimit() {
+  async $hasExceedScreenshotsMonthlyLimit() {
     const screenshotsConsumptionRatio =
-      await this.getScreenshotsConsumptionRatio();
+      await this.$getScreenshotsConsumptionRatio();
     if (!screenshotsConsumptionRatio) return false;
     return screenshotsConsumptionRatio >= 1.1;
   }
 
-  async hasUsageBasedPlan() {
+  async $hasUsageBasedPlan() {
     const activePurchase = await this.$getActivePurchase();
     if (!activePurchase) return false;
 

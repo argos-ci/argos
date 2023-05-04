@@ -25,7 +25,7 @@ const nextMonth = new Date(
 );
 
 const getOrCreateActivePurchase = async (account: Account, plan: Plan) => {
-  const activePurchase = await account.getActivePurchase();
+  const activePurchase = await account.$getActivePurchase();
   if (activePurchase) {
     return activePurchase;
   }
@@ -167,7 +167,7 @@ describe("stripe", () => {
       });
 
       it("create a purchase", async () => {
-        const activePurchase = await account.getActivePurchase();
+        const activePurchase = await account.$getActivePurchase();
         expect(activePurchase).toMatchObject({
           planId: plan.id,
           accountId: account.id,
@@ -217,7 +217,7 @@ describe("stripe", () => {
           data: { object: payload },
           type: "invoice.paid",
         });
-        const purchase = (await account.getActivePurchase()) as Purchase;
+        const purchase = (await account.$getActivePurchase()) as Purchase;
         expect(purchase.endDate).toBeNull();
       });
     });
@@ -320,7 +320,7 @@ describe("stripe", () => {
           type: "customer.subscription.updated",
         });
 
-        const activePurchase = (await account.getActivePurchase()) as Purchase;
+        const activePurchase = (await account.$getActivePurchase()) as Purchase;
         expect(activePurchase).toBeDefined();
         expect(activePurchase).toMatchObject({
           accountId: account.id,
@@ -373,7 +373,7 @@ describe("stripe", () => {
             .where({ accountId: account.id })
             .orderBy("startDate");
 
-          const activePurchase = await account.getActivePurchase();
+          const activePurchase = await account.$getActivePurchase();
 
           expect(purchases).toHaveLength(3);
           expect(activePurchase).toMatchObject({
@@ -422,7 +422,7 @@ describe("stripe", () => {
       });
 
       it("fill active purchase's end date", async () => {
-        const activePurchase = await account.getActivePurchase();
+        const activePurchase = await account.$getActivePurchase();
         expect(activePurchase).toBeDefined();
         expect(activePurchase!.endDate).not.toBeNull();
       });
