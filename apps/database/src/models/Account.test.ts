@@ -126,41 +126,46 @@ describe("Account", () => {
 
   describe("#$getScreenshotsCurrentConsumption", () => {
     it("count screenshots used this month", async () => {
-      await factory.createMany("Screenshot", 10, {
-        screenshotBucketId: bucket1.id,
+      await bucket1.$query().patch({
+        complete: true,
+        screenshotCount: 10,
       });
       const consumption = await account.$getScreenshotsCurrentConsumption();
       expect(consumption).toBe(10);
     });
 
     it("count screenshots used on other account's repository", async () => {
-      await factory.createMany("Screenshot", 10, {
-        screenshotBucketId: bucket2.id,
+      await bucket2.$query().patch({
+        complete: true,
+        screenshotCount: 10,
       });
       const consumption = await account.$getScreenshotsCurrentConsumption();
       expect(consumption).toBe(10);
     });
 
     it("ignore screenshots of a public repository", async () => {
-      await factory.createMany("Screenshot", 10, {
-        screenshotBucketId: bucket3.id,
+      await bucket3.$query().patch({
+        complete: true,
+        screenshotCount: 10,
       });
       const consumption = await account.$getScreenshotsCurrentConsumption();
       expect(consumption).toBe(0);
     });
 
     it("ignore old screenshots", async () => {
-      await factory.createMany("Screenshot", 10, {
-        screenshotBucketId: bucket2.id,
-        createdAt: new Date(2012, 1, 1),
+      await bucket2.$query().patch({
+        createdAt: new Date(2012, 1, 1).toISOString(),
+        complete: true,
+        screenshotCount: 10,
       });
       const consumption = await account.$getScreenshotsCurrentConsumption();
       expect(consumption).toBe(0);
     });
 
     it("ignore screenshots of other account", async () => {
-      await factory.createMany("Screenshot", 10, {
-        screenshotBucketId: bucketOtherOrga.id,
+      await bucketOtherOrga.$query().patch({
+        complete: true,
+        screenshotCount: 10,
       });
       const consumption = await account.$getScreenshotsCurrentConsumption();
       expect(consumption).toBe(0);

@@ -201,8 +201,8 @@ export class Account extends Model {
       query.where("project.id", options.projectId);
     }
 
-    const result = (await query) as unknown as { total: number | null };
-    return result.total ?? 0;
+    const result = (await query) as unknown as { total: string | null };
+    return result.total ? Number(result.total) : 0;
   }
 
   async $getScreenshotsConsumptionRatio() {
