@@ -704,9 +704,10 @@ CREATE TABLE public.screenshot_buckets (
     branch character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    complete boolean DEFAULT true,
+    complete boolean DEFAULT false NOT NULL,
     "projectId" bigint NOT NULL,
-    "screenshotCount" integer
+    "screenshotCount" integer,
+    CONSTRAINT chk_complete_true_screenshotcount_not_null CHECK (((complete = false) OR ("screenshotCount" IS NOT NULL)))
 );
 
 
@@ -1793,6 +1794,13 @@ CREATE INDEX screenshot_buckets_complete_index ON public.screenshot_buckets USIN
 
 
 --
+-- Name: screenshot_buckets_createdat; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_buckets_createdat ON public.screenshot_buckets USING btree ("createdAt");
+
+
+--
 -- Name: screenshot_buckets_name_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2305,3 +2313,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023042
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230430182249_multiple-project-repo.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230501135647_add_plan_usage_type.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230503215250_buckets-count.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230504073924_buckets_constraint.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230504075127_buckets_complete_default_false.js', 1, NOW());
