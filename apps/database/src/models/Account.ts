@@ -7,6 +7,7 @@ import { Plan } from "./Plan.js";
 import { Project } from "./Project.js";
 import { Purchase } from "./Purchase.js";
 import { Screenshot } from "./Screenshot.js";
+import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
 import { VercelConfiguration } from "./VercelConfiguration.js";
@@ -181,28 +182,28 @@ export class Account extends Model {
     projectId?: string;
   }): Promise<number> {
     const startDate = await this.$getCurrentConsumptionStartDate();
-    const query = Screenshot.query()
-      .leftJoinRelated("screenshotBucket.project.githubRepository")
-      .where("screenshots.createdAt", ">=", startDate)
-      .where("screenshotBucket:project.accountId", this.id)
+    const query = ScreenshotBucket.query()
+      .sum("screenshot_buckets.screenshotCount as total")
+      .leftJoinRelated("project.githubRepository")
+      .where("screenshot_buckets.createdAt", ">=", startDate)
+      .where("project.accountId", this.id)
       .where((builder) =>
         builder
           .where((builder) => {
             builder
-              .whereNull("screenshotBucket:project.private")
-              .andWhere(
-                "screenshotBucket:project:githubRepository.private",
-                true
-              );
+              .whereNull("project.private")
+              .andWhere("project:githubRepository.private", true);
           })
-          .orWhere("screenshotBucket:project.private", true)
-      );
+          .orWhere("project.private", true)
+      )
+      .first();
 
     if (options?.projectId) {
-      query.where("screenshotBucket:project.id", options.projectId);
+      query.where("project.id", options.projectId);
     }
 
-    return query.debug().resultSize();
+    const result = (await query) as unknown as { total: number | null };
+    return result.total ?? 0;
   }
 
   async getScreenshotsConsumptionRatio() {

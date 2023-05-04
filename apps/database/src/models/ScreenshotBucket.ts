@@ -21,6 +21,7 @@ export class ScreenshotBucket extends Model {
       },
       branch: { type: "string" },
       projectId: { type: "string" },
+      screenshotCount: { type: "integer" },
     },
   });
 
@@ -29,6 +30,7 @@ export class ScreenshotBucket extends Model {
   commit!: string;
   branch!: string;
   projectId!: string;
+  screenshotCount!: number;
 
   static override get relationMappings(): RelationMappings {
     return {
