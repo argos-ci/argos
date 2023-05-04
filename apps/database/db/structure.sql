@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.7 (Homebrew)
+-- Dumped by pg_dump version 14.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -705,7 +705,8 @@ CREATE TABLE public.screenshot_buckets (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     complete boolean DEFAULT true,
-    "projectId" bigint NOT NULL
+    "projectId" bigint NOT NULL,
+    "screenshotCount" integer
 );
 
 
@@ -2303,3 +2304,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023042
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230429125237_add_purchase_trial.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230430182249_multiple-project-repo.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230501135647_add_plan_usage_type.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230503215250_buckets-count.js', 1, NOW());
