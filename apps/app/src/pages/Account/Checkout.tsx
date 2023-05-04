@@ -1,16 +1,38 @@
+import { ArrowLongRightIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon, CurrencyDollarIcon } from "@heroicons/react/24/solid";
 import { clsx } from "clsx";
 import { ReactNode } from "react";
 import { Helmet } from "react-helmet";
+import {
+  Controller,
+  FormProvider,
+  SubmitHandler,
+  useForm,
+} from "react-hook-form";
 import { useParams } from "react-router-dom";
 
+import { AccountSelector } from "@/containers/AccountSelector";
 import { Query } from "@/containers/Apollo";
+import { useAuth } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
 import { Chip } from "@/ui/Chip";
 import { Container } from "@/ui/Container";
+import {
+  Dialog,
+  DialogBody,
+  DialogDisclosure,
+  DialogDismiss,
+  DialogFooter,
+  DialogState,
+  DialogText,
+  DialogTitle,
+  useDialogState,
+} from "@/ui/Dialog";
+import { Form } from "@/ui/Form";
+import { Loader } from "@/ui/Loader";
 import { PageLoader } from "@/ui/PageLoader";
 import { MagicTooltip } from "@/ui/Tooltip";
 import { Heading } from "@/ui/Typography";
@@ -109,9 +131,87 @@ const Chips = ({ children }: { children?: ReactNode }) => (
   <div className="block h-8">{children}</div>
 );
 
+type ReviewInputs = {
+  accountId: string;
+};
+
+const SelectTeamDialog = ({
+  state,
+  actualAccountId,
+}: {
+  state: DialogState;
+  actualAccountId: string;
+}) => {
+  const { token } = useAuth();
+  const form = useForm<ReviewInputs>({
+    defaultValues: { accountId: actualAccountId },
+  });
+
+  const onSubmit: SubmitHandler<ReviewInputs> = async (data) => {
+    const response = await fetch("/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ accountId: data.accountId }),
+    });
+    const json = await response.json();
+
+    if (response.ok) {
+      window.location.href = json.sessionUrl;
+    } else {
+      console.error("Error:", json.message);
+    }
+  };
+
+  const submitting = form.formState.isSubmitting;
+
+  return (
+    <Dialog state={state} style={{ width: 560 }}>
+      <FormProvider {...form}>
+        <Form onSubmit={onSubmit}>
+          <DialogBody>
+            <DialogTitle>Select Account</DialogTitle>
+            <DialogText>
+              Choose an Argos Account to start your 14-day trial.
+            </DialogText>
+            <Controller
+              name="accountId"
+              control={form.control}
+              render={({ field: { value, onChange } }) => (
+                <AccountSelector value={value} setValue={onChange} />
+              )}
+            />
+          </DialogBody>
+          <DialogFooter>
+            <DialogDismiss>Cancel</DialogDismiss>
+            <Button type="submit" disabled={submitting}>
+              Start trial
+              <div className="ml-2">
+                <Loader
+                  size={14}
+                  className={clsx(submitting ? "" : "hidden")}
+                />
+                <ArrowLongRightIcon
+                  className={clsx(
+                    "h-[1em] w-[1em] shrink-0",
+                    submitting ? "hidden" : ""
+                  )}
+                />
+              </div>
+            </Button>
+          </DialogFooter>
+        </Form>
+      </FormProvider>
+    </Dialog>
+  );
+};
+
 export const AccountCheckout = () => {
   const { accountSlug } = useParams();
   const { hasWritePermission } = useAccountContext();
+  const dialog = useDialogState();
 
   if (!accountSlug) {
     return <NotFound />;
@@ -179,30 +279,24 @@ export const AccountCheckout = () => {
                     Designed for team collaboration with advanced features.
                   </PlanDescription>
                   <Price amount={30} recurring={true} fixedPrice={false} />
-                  <form
-                    method="POST"
-                    action="/create-checkout-session"
-                    encType="x-www-form-urlencoded"
-                  >
-                    <Button
-                      type="submit"
-                      size="large"
-                      className="my-6 w-full justify-center"
-                      style={{ cursor: "pointer" }}
-                    >
-                      Start a free trial
-                    </Button>
-                    <input
-                      type="hidden"
-                      name="accountSlug"
-                      value={accountSlug}
-                    />
-                    <input
-                      type="hidden"
-                      name="stripeClientReferenceId"
-                      value={account.stripeClientReferenceId}
-                    />
-                  </form>
+
+                  <DialogDisclosure state={dialog}>
+                    {(disclosureProps) => (
+                      <Button
+                        {...disclosureProps}
+                        size="large"
+                        className="my-6 w-full justify-center"
+                        color="primary"
+                        style={{ cursor: "pointer" }}
+                      >
+                        Start a free trial
+                      </Button>
+                    )}
+                  </DialogDisclosure>
+                  <SelectTeamDialog
+                    state={dialog}
+                    actualAccountId={account.id}
+                  />
                   <Features>
                     <Feature>
                       <span className="whitespace-nowrap ">

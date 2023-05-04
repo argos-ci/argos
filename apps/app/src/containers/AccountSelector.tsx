@@ -53,7 +53,7 @@ export const AccountSelector = (props: AccountSelectorProps) => {
     }) ?? null;
   return (
     <>
-      <Select state={select} className="w-full">
+      <Select state={select} className="w-full bg-slate-700/30">
         {activeAccount ? (
           <div className="flex w-full items-center justify-between">
             <AccountItem account={activeAccount} />
