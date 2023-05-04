@@ -68,6 +68,8 @@ factory.define("ScreenshotBucket", ScreenshotBucket, {
   commit: () => bytesToString(randomBytes(20)),
   branch: "master",
   projectId: factory.assoc("Project", "id"),
+  complete: true,
+  screenshotCount: 0,
 });
 
 factory.define<Build>(

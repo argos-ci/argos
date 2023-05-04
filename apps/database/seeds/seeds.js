@@ -145,6 +145,8 @@ export const seed = async (knex) => {
     projectId: projects[0].id,
     createdAt: "2016-12-08T22:59:55Z",
     updatedAt: "2016-12-08T22:59:55Z",
+    complete: true,
+    screenshotCount: 0,
   };
 
   const screenshotBuckets = await knex("screenshot_buckets")
