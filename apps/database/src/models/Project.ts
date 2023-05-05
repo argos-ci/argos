@@ -104,7 +104,7 @@ export class Project extends Model {
   static async checkWritePermission(project: Project, user: User | null) {
     if (!user) return false;
     const account = project.account ?? (await project.$relatedQuery("account"));
-    return account.$checkWritePermission(user);
+    return account.$checkReadPermission(user);
   }
 
   static async checkReadPermission(project: Project, user: User | null) {
