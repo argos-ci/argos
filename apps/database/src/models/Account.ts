@@ -177,6 +177,18 @@ export class Account extends Model {
     return !purchase?.startDate ? startOfMonth : purchase.getLastResetDate();
   }
 
+  async $getCurrentConsumptionEndDate() {
+    const now = new Date();
+    const startDate = await this.$getCurrentConsumptionStartDate();
+    startDate.setMonth(startDate.getMonth() + 1);
+    return new Date(
+      Math.min(
+        startDate.getTime(),
+        new Date(now.getFullYear(), now.getMonth() + 2, 0).getTime()
+      )
+    );
+  }
+
   async $getScreenshotsCurrentConsumption(options?: {
     projectId?: string;
   }): Promise<number> {

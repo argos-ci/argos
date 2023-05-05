@@ -29,6 +29,9 @@ export type IAccount = {
   ghAccount?: Maybe<IGithubAccount>;
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
+  oldPaidPurchase?: Maybe<IPurchase>;
+  periodEndDate?: Maybe<Scalars['DateTime']>;
+  periodStartDate?: Maybe<Scalars['DateTime']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
@@ -241,6 +244,8 @@ export type IMutation = {
   setValidationStatus: IBuild;
   /** Finish the Vercel integration setup */
   setupVercelIntegration?: Maybe<Scalars['Boolean']>;
+  /** End trial early */
+  terminateTrial: IPurchase;
   /** Transfer Project to another account */
   transferProject: IProject;
   /** Update Account */
@@ -310,6 +315,12 @@ export type IMutationSetupVercelIntegrationArgs = {
 };
 
 
+export type IMutationTerminateTrialArgs = {
+  purchaseId: Scalars['ID'];
+  stripeCustomerId?: InputMaybe<Scalars['String']>;
+};
+
+
 export type IMutationTransferProjectArgs = {
   input: ITransferProjectInput;
 };
@@ -357,6 +368,7 @@ export type IPlan = INode & {
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
   screenshotsLimitPerMonth: Scalars['Int'];
+  usageBased: Scalars['Boolean'];
 };
 
 export type IProject = INode & {
@@ -415,9 +427,12 @@ export type IProjectConnection = IConnection & {
 export type IPurchase = INode & {
   __typename?: 'Purchase';
   account: IAccount;
+  endDate?: Maybe<Scalars['DateTime']>;
   id: Scalars['ID'];
   paymentMethodFilled?: Maybe<Scalars['Boolean']>;
+  plan: IPlan;
   source: IPurchaseSource;
+  trialEndDate?: Maybe<Scalars['DateTime']>;
 };
 
 export enum IPurchaseSource {
@@ -571,6 +586,9 @@ export type ITeam = IAccount & INode & {
   inviteLink: Scalars['String'];
   members: ITeamMemberConnection;
   name?: Maybe<Scalars['String']>;
+  oldPaidPurchase?: Maybe<IPurchase>;
+  periodEndDate?: Maybe<Scalars['DateTime']>;
+  periodStartDate?: Maybe<Scalars['DateTime']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
@@ -579,6 +597,7 @@ export type ITeam = IAccount & INode & {
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
   stripeCustomerId?: Maybe<Scalars['String']>;
+  type: IAccountType;
 };
 
 
@@ -675,6 +694,9 @@ export type IUser = IAccount & INode & {
   id: Scalars['ID'];
   lastPurchase?: Maybe<IPurchase>;
   name?: Maybe<Scalars['String']>;
+  oldPaidPurchase?: Maybe<IPurchase>;
+  periodEndDate?: Maybe<Scalars['DateTime']>;
+  periodStartDate?: Maybe<Scalars['DateTime']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
@@ -684,6 +706,7 @@ export type IUser = IAccount & INode & {
   stripeClientReferenceId: Scalars['String'];
   stripeCustomerId?: Maybe<Scalars['String']>;
   teams: Array<ITeam>;
+  type: IAccountType;
 };
 
 
@@ -998,6 +1021,9 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
+  periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
+  periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IAccountProjectsArgs, 'after' | 'first'>>;
@@ -1122,6 +1148,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
   setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
   setupVercelIntegration?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<IMutationSetupVercelIntegrationArgs, 'input'>>;
+  terminateTrial?: Resolver<IResolversTypes['Purchase'], ParentType, ContextType, RequireFields<IMutationTerminateTrialArgs, 'purchaseId'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
   updateAccount?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUpdateAccountArgs, 'input'>>;
   updateProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectArgs, 'input'>>;
@@ -1150,6 +1177,7 @@ export type IPlanResolvers<ContextType = Context, ParentType extends IResolversP
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   screenshotsLimitPerMonth?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  usageBased?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1180,9 +1208,12 @@ export type IProjectConnectionResolvers<ContextType = Context, ParentType extend
 
 export type IPurchaseResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Purchase'] = IResolversParentTypes['Purchase']> = ResolversObject<{
   account?: Resolver<IResolversTypes['Account'], ParentType, ContextType>;
+  endDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   paymentMethodFilled?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
+  plan?: Resolver<IResolversTypes['Plan'], ParentType, ContextType>;
   source?: Resolver<IResolversTypes['PurchaseSource'], ParentType, ContextType>;
+  trialEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1246,6 +1277,9 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   inviteLink?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
+  periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
+  periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<ITeamProjectsArgs, 'after' | 'first'>>;
@@ -1254,6 +1288,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  type?: Resolver<IResolversTypes['AccountType'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1312,6 +1347,9 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   lastPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
+  periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
+  periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IUserProjectsArgs, 'after' | 'first'>>;
@@ -1321,6 +1359,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   teams?: Resolver<Array<IResolversTypes['Team']>, ParentType, ContextType>;
+  type?: Resolver<IResolversTypes['AccountType'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

@@ -19,15 +19,18 @@ export const typeDefs = gql`
     slug: String!
     name: String
     plan: Plan
+    periodStartDate: DateTime
+    periodEndDate: DateTime
     purchase: Purchase
+    oldPaidPurchase: Purchase
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
     avatar: AccountAvatar!
-
     lastPurchase: Purchase
     teams: [Team!]!
     ghInstallations: GhApiInstallationConnection!
+    type: AccountType!
   }
 
   type UserConnection implements Connection {

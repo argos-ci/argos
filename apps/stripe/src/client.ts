@@ -22,7 +22,7 @@ import {
 
 export type { Stripe };
 
-export { findOrCreateTeamAccountOrThrow };
+export { findOrCreateTeamAccountOrThrow, timestampToDate };
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
   apiVersion: "2022-11-15",
@@ -54,6 +54,45 @@ export const getStripePriceOrThrow = async (plan: Plan) => {
   return price;
 };
 
+export const getCustomerSubscriptionOrThrow = async (
+  stripeCustomerId: string
+) => {
+  const [activeSubscriptions, trialingSubscriptions] = await Promise.all([
+    stripe.subscriptions.list({
+      status: "active",
+      customer: stripeCustomerId,
+      expand: ["data.items"],
+    }),
+    stripe.subscriptions.list({
+      status: "trialing",
+      customer: stripeCustomerId,
+      expand: ["data.items"],
+    }),
+  ]);
+  const subscriptions = [
+    ...activeSubscriptions.data,
+    ...trialingSubscriptions.data,
+  ];
+  if (subscriptions.length > 1) {
+    throw new Error(
+      `Stripe returns more than one active subscriptions for customer ${stripeCustomerId}`
+    );
+  }
+
+  const subscription = subscriptions[0];
+  if (!subscription) {
+    throw new Error(
+      `Stripe returns no active subscriptions for customer ${stripeCustomerId}`
+    );
+  }
+
+  return subscription;
+};
+
+export const terminateTrial = async (stripeSubscriptionId: string) => {
+  await stripe.subscriptions.update(stripeSubscriptionId, { trial_end: "now" });
+  return;
+};
 export const updateStripeUsage = async ({
   account,
   totalScreenshots,
@@ -67,24 +106,7 @@ export const updateStripeUsage = async ({
       return null;
     }
 
-    const subscriptions = await stripe.subscriptions.list({
-      status: "active",
-      customer: stripeCustomerId,
-      expand: ["data.items"],
-    });
-    if (subscriptions.data.length > 1) {
-      throw new Error(
-        `Stripe returns multiple active subscriptions for account ${account.id}`
-      );
-    }
-
-    const subscription = subscriptions.data[0];
-    if (!subscription) {
-      throw new Error(
-        `Stripe returns no active subscriptions for account ${account.id}`
-      );
-    }
-
+    const subscription = await getCustomerSubscriptionOrThrow(stripeCustomerId);
     const usage = await stripe.subscriptionItems.createUsageRecord(
       subscription.items.data[0]!.id,
       { action: "set", quantity: totalScreenshots }
