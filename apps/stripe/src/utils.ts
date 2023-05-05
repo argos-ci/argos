@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 
 import { transaction } from "@argos-ci/database";
-import { Account, Plan, Purchase } from "@argos-ci/database/models";
+import { Account, Plan, Purchase, Team } from "@argos-ci/database/models";
 
 export const getSubscriptionCustomerOrThrow = (
   subscription: Stripe.Subscription
@@ -57,40 +57,35 @@ export const getLastPurchase = async (account: Account) => {
     .first();
 };
 
-export const getPendingPurchases = async (account: Account) => {
+export const getPendingPurchases = async (accountId: string) => {
   return Purchase.query()
-    .where("accountId", account.id)
+    .where({ accountId })
     .where("startDate", ">", "now()")
     .where((query) =>
       query.whereNull("endDate").orWhere("endDate", ">=", "now()")
     );
 };
 
-export const updatePurchase = async ({
-  activePurchase,
-  account,
-  plan,
+export const changeActivePurchase = async ({
+  activePurchaseId,
   effectiveDate,
+  newPurchaseProps,
+  pendingPurchases,
 }: {
-  activePurchase: Purchase;
-  account: Account;
-  plan: Plan;
+  activePurchaseId: string;
   effectiveDate: string;
+  newPurchaseProps: any;
+  pendingPurchases: Purchase[];
 }) => {
-  const pendingPurchases = await getPendingPurchases(account);
-
   transaction(async (trx) => {
     await Promise.all([
       Purchase.query(trx)
         .patch({ endDate: effectiveDate })
-        .findById(activePurchase!.id),
+        .findById(activePurchaseId),
       Purchase.query(trx).insert({
-        planId: plan.id,
-        accountId: account.id,
-        source: "stripe",
+        ...newPurchaseProps,
         startDate: effectiveDate,
       }),
-
       ...(pendingPurchases.length > 0
         ? [
             Purchase.query(trx)
@@ -155,4 +150,27 @@ export const getFirstProductOrThrow = (subscription: Stripe.Subscription) => {
     throw new Error("no item found in Stripe subscription");
   }
   return subscription.items.data[0].price!.product as string;
+};
+
+export const findOrCreateTeamAccountOrThrow = async ({
+  name,
+  slug,
+}: {
+  name: string;
+  slug: string;
+}): Promise<Account> => {
+  const account = await Account.query().findOne({ slug });
+
+  if (account?.userId) {
+    throw new Error("Account already linked to a user");
+  }
+
+  if (account?.teamId) {
+    return account;
+  }
+
+  return transaction(async (trx) => {
+    const team = await Team.query(trx).insert();
+    return Account.query(trx).insert({ name, slug, teamId: team.id });
+  });
 };
