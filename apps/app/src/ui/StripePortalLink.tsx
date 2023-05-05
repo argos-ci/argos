@@ -1,5 +1,7 @@
 import { LinkExternalIcon } from "@primer/octicons-react";
 
+import config from "@/config";
+
 import { Anchor, anchorClassNames } from "./Link";
 
 export const StripePortalLink = ({
@@ -15,7 +17,7 @@ export const StripePortalLink = ({
           Discord
         </Anchor>{" "}
         or{" "}
-        <Anchor href="mailto:contact@argos-ci.com" external>
+        <Anchor href={`mailto:${config.get("contactEmail")}`} external>
           by e-mail
         </Anchor>
         {"  "}to manage your subscription.

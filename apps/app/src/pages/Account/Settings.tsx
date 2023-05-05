@@ -6,17 +6,19 @@ import {
 } from "ariakit/disclosure";
 import moment from "moment";
 import { Helmet } from "react-helmet";
-import { useParams } from "react-router-dom";
+import { Link as RouterLink, useParams } from "react-router-dom";
 
 import config from "@/config";
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
 import { Query } from "@/containers/Apollo";
+import { useAuthTokenPayload } from "@/containers/Auth";
 import { SettingsLayout } from "@/containers/Layout";
 import { TeamMembers } from "@/containers/Team/Members";
 import { DocumentType, graphql } from "@/gql";
 import { Permission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
+import { Button } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -101,32 +103,79 @@ const ManageSubscriptionLink = ({
   );
 };
 
+const PlanUserActions = () => {
+  return (
+    <div className="flex w-full items-center justify-between">
+      <Anchor href={`mailto:${config.get("contactEmail")}`} external>
+        Contact Sales
+      </Anchor>
+
+      <Button>
+        {(buttonProps) => (
+          <RouterLink to="/teams/new" {...buttonProps}>
+            Create a team
+          </RouterLink>
+        )}
+      </Button>
+    </div>
+  );
+};
+
+const PlanTeamActions = ({
+  purchase,
+  stripeCustomerId,
+  accountSlug,
+}: {
+  purchase: Purchase | null;
+  stripeCustomerId: string | null;
+  accountSlug: string;
+}) => {
+  return purchase ? (
+    <ManageSubscriptionLink
+      purchase={purchase}
+      stripeCustomerId={stripeCustomerId}
+    />
+  ) : (
+    <>
+      Subscribe to plan using{" "}
+      <Link to={`/${accountSlug}/checkout`}>Stripe</Link> or{" "}
+      <Anchor href={config.get("github.marketplaceUrl")} external>
+        GitHub Marketplace
+      </Anchor>{" "}
+      .
+    </>
+  );
+};
+
 const PlanCard = ({
   accountSlug,
   plan,
   purchase,
   stripeCustomerId,
   projects,
+  accountType,
 }: {
   accountSlug: string;
   plan: Plan;
   purchase: Purchase | null;
   stripeCustomerId: string | null;
   projects: Project[];
+  accountType: "User" | "Team";
 }) => {
   const free = plan.name === "free";
   const [privateProjects, publicProjects] = projects.reduce(
     (all, project) => {
-      if (!project.public) {
-        all[0].push(project);
-      } else {
-        all[1].push(project);
+      const groupId = project.public ? 1 : 0;
+      if (project.currentMonthUsedScreenshots > 0) {
+        all[groupId].push(project);
       }
       return all;
     },
     [[] as Project[], [] as Project[]]
   );
   const hasStripePurchase = purchase && purchase.source === "stripe";
+  const pricingUrl = config.get("github.marketplaceUrl");
+
   return (
     <Card>
       <CardBody>
@@ -136,7 +185,7 @@ const PlanCard = ({
           <strong className="capitalize">{plan.name} plan</strong>.
           {free && " Free of charge."}{" "}
           {!hasStripePurchase && (
-            <Anchor href={config.get("github.marketplaceUrl")} external>
+            <Anchor href={pricingUrl} external>
               Learn more
             </Anchor>
           )}
@@ -193,20 +242,14 @@ const PlanCard = ({
         </div>
       </CardBody>
       <CardFooter>
-        {purchase ? (
-          <ManageSubscriptionLink
+        {accountType === "User" ? (
+          <PlanUserActions />
+        ) : (
+          <PlanTeamActions
             purchase={purchase}
             stripeCustomerId={stripeCustomerId}
+            accountSlug={accountSlug}
           />
-        ) : (
-          <>
-            Subscribe to plan using{" "}
-            <Link to={`/${accountSlug}/checkout`}>Stripe</Link> or{" "}
-            <Anchor href={config.get("github.marketplaceUrl")} external>
-              GitHub Marketplace
-            </Anchor>{" "}
-            .
-          </>
         )}
       </CardFooter>
     </Card>
@@ -266,6 +309,8 @@ const ConsumptionDetail = ({ projects }: { projects: Project[] }) => {
 export const AccountSettings = () => {
   const { accountSlug } = useParams();
   const { hasWritePermission } = useAccountContext();
+  const authPayload = useAuthTokenPayload();
+  const userSlug = authPayload?.account.slug;
 
   if (!accountSlug) {
     return <NotFound />;
@@ -280,7 +325,9 @@ export const AccountSettings = () => {
       <Helmet>
         <title>{accountSlug} • Settings</title>
       </Helmet>
-      <Heading>Account Settings</Heading>
+      <Heading>
+        {userSlug === accountSlug ? "Personal" : "Team"} Settings
+      </Heading>
       <Query
         fallback={<PageLoader />}
         query={AccountQuery}
@@ -331,13 +378,14 @@ export const AccountSettings = () => {
                   }
                   return null;
                 })()}
-              {writable && account.plan && (
+              {writable && account.plan && account.__typename && (
                 <PlanCard
                   accountSlug={accountSlug}
                   plan={account.plan}
                   purchase={account.purchase ?? null}
                   stripeCustomerId={account.stripeCustomerId ?? null}
                   projects={account.projects.edges}
+                  accountType={account.__typename}
                 />
               )}
               {isTeam && <TeamMembers team={account} />}

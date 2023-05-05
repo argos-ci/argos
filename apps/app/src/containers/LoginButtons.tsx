@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 
+import config from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { Anchor } from "@/ui/Link";
 
@@ -23,7 +24,9 @@ export const LoginButtons = (props: LoginButtonsProps) => {
         Argos only supports GitHub as account provider.
         <br />
         Use another provider?{" "}
-        <Anchor href="mailto:contact@argos-ci.com">Contact us</Anchor>
+        <Anchor href={`mailto:${config.get("contactEmail")}`}>
+          Contact us
+        </Anchor>
       </p>
     </div>
   );
