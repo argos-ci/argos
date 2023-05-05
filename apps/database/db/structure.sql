@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.2
+-- Dumped by pg_dump version 14.7 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -666,7 +666,8 @@ CREATE TABLE public.purchases (
     "endDate" timestamp with time zone,
     source character varying(255) NOT NULL,
     "purchaserId" bigint,
-    "trialEndDate" timestamp with time zone
+    "trialEndDate" timestamp with time zone,
+    "paymentMethodFilled" boolean
 );
 
 
@@ -2315,3 +2316,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023050
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230503215250_buckets-count.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230504073924_buckets_constraint.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230504075127_buckets_complete_default_false.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230505112219_add_purchase_payment_method_filled.js', 1, NOW());

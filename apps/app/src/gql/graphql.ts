@@ -411,6 +411,7 @@ export type Purchase = Node & {
   __typename?: 'Purchase';
   account: Account;
   id: Scalars['ID'];
+  paymentMethodFilled?: Maybe<Scalars['Boolean']>;
   source: PurchaseSource;
 };
 

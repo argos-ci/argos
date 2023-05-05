@@ -14,6 +14,7 @@ export const typeDefs = gql`
     id: ID!
     source: PurchaseSource!
     account: Account!
+    paymentMethodFilled: Boolean
   }
 `;
 
