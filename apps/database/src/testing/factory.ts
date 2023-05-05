@@ -198,6 +198,7 @@ factory.define("Purchase", Purchase, {
   startDate: moment().startOf("day").subtract(2, "months").toISOString(),
   endDate: null,
   source: "github",
+  paymentMethodFilled: false,
 });
 
 export { factory };

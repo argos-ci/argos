@@ -416,6 +416,7 @@ export type IPurchase = INode & {
   __typename?: 'Purchase';
   account: IAccount;
   id: Scalars['ID'];
+  paymentMethodFilled?: Maybe<Scalars['Boolean']>;
   source: IPurchaseSource;
 };
 
@@ -1180,6 +1181,7 @@ export type IProjectConnectionResolvers<ContextType = Context, ParentType extend
 export type IPurchaseResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Purchase'] = IResolversParentTypes['Purchase']> = ResolversObject<{
   account?: Resolver<IResolversTypes['Account'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  paymentMethodFilled?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   source?: Resolver<IResolversTypes['PurchaseSource'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
