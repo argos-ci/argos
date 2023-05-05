@@ -12,6 +12,7 @@ import config from "@/config";
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
 import { Query } from "@/containers/Apollo";
+import { useAuthTokenPayload } from "@/containers/Auth";
 import { SettingsLayout } from "@/containers/Layout";
 import { TeamMembers } from "@/containers/Team/Members";
 import { DocumentType, graphql } from "@/gql";
@@ -265,6 +266,8 @@ const ConsumptionDetail = ({ projects }: { projects: Project[] }) => {
 export const AccountSettings = () => {
   const { accountSlug } = useParams();
   const { hasWritePermission } = useAccountContext();
+  const authPayload = useAuthTokenPayload();
+  const userSlug = authPayload?.account.slug;
 
   if (!accountSlug) {
     return <NotFound />;
@@ -279,7 +282,9 @@ export const AccountSettings = () => {
       <Helmet>
         <title>{accountSlug} • Settings</title>
       </Helmet>
-      <Heading>Account Settings</Heading>
+      <Heading>
+        {userSlug === accountSlug ? "Personal" : "Team"} Settings
+      </Heading>
       <Query
         fallback={<PageLoader />}
         query={AccountQuery}
