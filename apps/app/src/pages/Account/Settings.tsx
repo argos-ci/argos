@@ -6,7 +6,7 @@ import {
 } from "ariakit/disclosure";
 import moment from "moment";
 import { Helmet } from "react-helmet";
-import { useParams } from "react-router-dom";
+import { Link as RouterLink, useParams } from "react-router-dom";
 
 import config from "@/config";
 import { AccountChangeName } from "@/containers/Account/ChangeName";
@@ -18,6 +18,7 @@ import { TeamMembers } from "@/containers/Team/Members";
 import { DocumentType, graphql } from "@/gql";
 import { Permission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
+import { Button } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -102,18 +103,64 @@ const ManageSubscriptionLink = ({
   );
 };
 
+const PlanUserActions = () => {
+  return (
+    <div className="flex w-full items-center justify-between">
+      <Anchor href={`mailto:${config.get("contactEmail")}`} external>
+        Contact Sales
+      </Anchor>
+
+      <Button>
+        {(buttonProps) => (
+          <RouterLink to="/teams/new" {...buttonProps}>
+            Create a team
+          </RouterLink>
+        )}
+      </Button>
+    </div>
+  );
+};
+
+const PlanTeamActions = ({
+  purchase,
+  stripeCustomerId,
+  accountSlug,
+}: {
+  purchase: Purchase | null;
+  stripeCustomerId: string | null;
+  accountSlug: string;
+}) => {
+  return purchase ? (
+    <ManageSubscriptionLink
+      purchase={purchase}
+      stripeCustomerId={stripeCustomerId}
+    />
+  ) : (
+    <>
+      Subscribe to plan using{" "}
+      <Link to={`/${accountSlug}/checkout`}>Stripe</Link> or{" "}
+      <Anchor href={config.get("github.marketplaceUrl")} external>
+        GitHub Marketplace
+      </Anchor>{" "}
+      .
+    </>
+  );
+};
+
 const PlanCard = ({
   accountSlug,
   plan,
   purchase,
   stripeCustomerId,
   projects,
+  accountType,
 }: {
   accountSlug: string;
   plan: Plan;
   purchase: Purchase | null;
   stripeCustomerId: string | null;
   projects: Project[];
+  accountType: "User" | "Team";
 }) => {
   const free = plan.name === "free";
   const [privateProjects, publicProjects] = projects.reduce(
@@ -127,6 +174,8 @@ const PlanCard = ({
     [[] as Project[], [] as Project[]]
   );
   const hasStripePurchase = purchase && purchase.source === "stripe";
+  const pricingUrl = config.get("github.marketplaceUrl");
+
   return (
     <Card>
       <CardBody>
@@ -136,7 +185,7 @@ const PlanCard = ({
           <strong className="capitalize">{plan.name} plan</strong>.
           {free && " Free of charge."}{" "}
           {!hasStripePurchase && (
-            <Anchor href={config.get("github.marketplaceUrl")} external>
+            <Anchor href={pricingUrl} external>
               Learn more
             </Anchor>
           )}
@@ -193,20 +242,14 @@ const PlanCard = ({
         </div>
       </CardBody>
       <CardFooter>
-        {purchase ? (
-          <ManageSubscriptionLink
+        {accountType === "User" ? (
+          <PlanUserActions />
+        ) : (
+          <PlanTeamActions
             purchase={purchase}
             stripeCustomerId={stripeCustomerId}
+            accountSlug={accountSlug}
           />
-        ) : (
-          <>
-            Subscribe to plan using{" "}
-            <Link to={`/${accountSlug}/checkout`}>Stripe</Link> or{" "}
-            <Anchor href={config.get("github.marketplaceUrl")} external>
-              GitHub Marketplace
-            </Anchor>{" "}
-            .
-          </>
         )}
       </CardFooter>
     </Card>
@@ -335,13 +378,14 @@ export const AccountSettings = () => {
                   }
                   return null;
                 })()}
-              {writable && account.plan && (
+              {writable && account.plan && account.__typename && (
                 <PlanCard
                   accountSlug={accountSlug}
                   plan={account.plan}
                   purchase={account.purchase ?? null}
                   stripeCustomerId={account.stripeCustomerId ?? null}
                   projects={account.projects.edges}
+                  accountType={account.__typename}
                 />
               )}
               {isTeam && <TeamMembers team={account} />}

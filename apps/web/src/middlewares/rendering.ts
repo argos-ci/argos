@@ -67,6 +67,7 @@ export const rendering = (additionalClientData?: any) => {
             clientDsn: config.get("sentry.clientDsn"),
           },
           releaseVersion: config.get("releaseVersion"),
+          contactEmail: config.get("contactEmail"),
           github: {
             appUrl: config.get("github.appUrl"),
             loginUrl: config.get("github.loginUrl"),

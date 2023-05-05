@@ -26,6 +26,10 @@ const config = convict({
     doc: "The tracking id",
     default: "UA-89989315-2",
   },
+  contactEmail: {
+    doc: "The contact email",
+    default: "contact@argos-ci.com",
+  },
   api: {
     subdomain: {
       format: String,
