@@ -1,4 +1,9 @@
-import { ArrowLeftOnRectangleIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftOnRectangleIcon,
+  Cog6ToothIcon,
+  PlusCircleIcon,
+  UserPlusIcon,
+} from "@heroicons/react/24/outline";
 import { Link as RouterLink } from "react-router-dom";
 
 import {
@@ -48,6 +53,9 @@ const UserMenu = () => {
               {...menuItemProps}
               to={`/${authPayload.account.slug}/new`}
             >
+              <MenuItemIcon>
+                <PlusCircleIcon />
+              </MenuItemIcon>
               New Project
             </RouterLink>
           )}
@@ -55,6 +63,9 @@ const UserMenu = () => {
         <MenuItem state={menu} pointer>
           {(menuItemProps) => (
             <RouterLink {...menuItemProps} to={`/teams/new`}>
+              <MenuItemIcon>
+                <UserPlusIcon />
+              </MenuItemIcon>
               New Team
             </RouterLink>
           )}
@@ -65,7 +76,10 @@ const UserMenu = () => {
               {...menuItemProps}
               to={`/${authPayload.account.slug}/settings`}
             >
-              Settings
+              <MenuItemIcon>
+                <Cog6ToothIcon />
+              </MenuItemIcon>
+              Personal Settings
             </RouterLink>
           )}
         </MenuItem>

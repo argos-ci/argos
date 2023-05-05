@@ -80,9 +80,13 @@ export const MenuItemIcon = ({
   children,
   className = "",
 }: MenuItemIconProps) => {
-  return cloneElement(Children.only(children), {
-    className: clsx(className, "h-[1em] w-[1em] mr-3"),
-  });
+  return (
+    <div className="mr-2 w-[18px]">
+      {cloneElement(Children.only(children), {
+        className: clsx(className, "h-[1em] w-[1em] mx-auto"),
+      })}
+    </div>
+  );
 };
 
 export const MenuTitle = (props: { children: React.ReactNode }) => {
