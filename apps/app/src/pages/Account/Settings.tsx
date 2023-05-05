@@ -117,10 +117,9 @@ const PlanCard = ({
   const free = plan.name === "free";
   const [privateProjects, publicProjects] = projects.reduce(
     (all, project) => {
-      if (!project.public) {
-        all[0].push(project);
-      } else {
-        all[1].push(project);
+      const groupId = project.public ? 1 : 0;
+      if (project.currentMonthUsedScreenshots > 0) {
+        all[groupId].push(project);
       }
       return all;
     },
