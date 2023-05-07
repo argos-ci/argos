@@ -404,8 +404,10 @@ describe("stripe", () => {
       });
 
       describe("when user end trial", () => {
-        it("add trial end date", async () => {
-          const payload = SUBSCRIPTION_UPDATE_PAYLOAD_END_TRIAL;
+        const payload = SUBSCRIPTION_UPDATE_PAYLOAD_END_TRIAL;
+        let updatedTrialPurchase: Purchase;
+
+        beforeEach(async () => {
           const trialPurchase = await factory.create<Purchase>("Purchase", {
             accountId: account.id,
             planId: newPlan.id,
@@ -414,16 +416,26 @@ describe("stripe", () => {
             endDate: null,
           });
           await handleStripeEvent({
-            data: { object: SUBSCRIPTION_UPDATE_PAYLOAD_END_TRIAL },
+            data: { object: payload },
             type: "customer.subscription.updated",
           });
-          const updatedTrialPurchase =
-            (await trialPurchase.$query()) as Purchase;
-          expect(updatedTrialPurchase.endDate).toBeDefined();
-          if (!updatedTrialPurchase.endDate) throw new Error("endDate is null");
-          expect(new Date(updatedTrialPurchase.endDate).toISOString()).toBe(
-            timestampToDate(payload.trial_end)
+          updatedTrialPurchase = (await trialPurchase.$query()) as Purchase;
+        });
+
+        it("update purchase end date", async () => {
+          const subscriptionEnd = payload.ended_at || payload.cancel_at;
+          if (!subscriptionEnd) {
+            throw new Error("subscriptionEnd should be defined");
+          }
+          expect(new Date(updatedTrialPurchase.endDate!).toISOString()).toBe(
+            timestampToDate(subscriptionEnd)
           );
+        });
+
+        it("update purchase trial end date", async () => {
+          expect(
+            new Date(updatedTrialPurchase.trialEndDate!).toISOString()
+          ).toBe(timestampToDate(payload.trial_end));
         });
       });
     });
@@ -435,43 +447,40 @@ describe("stripe", () => {
       let account: Account;
       let payloadPlan: Plan;
       let pendingPlan: Plan;
-      let pendingPurchase: Purchase;
+      let oldPurchase: Purchase;
 
       beforeEach(async () => {
         [account, [payloadPlan, pendingPlan]] = (await Promise.all([
           factory.create<Account>("TeamAccount", { stripeCustomerId }),
           factory.createMany<Plan>("Plan", [{ stripePlanId }, {}]),
         ])) as [Account, [Plan, Plan]];
-
-        await factory.create<Purchase>("Purchase", {
+        oldPurchase = await factory.create<Purchase>("Purchase", {
           accountId: account.id,
           planId: payloadPlan.id,
           source: "stripe",
           startDate: startOfPreviousMonth.toISOString(),
         });
-
-        pendingPurchase = (await factory.create<Purchase>("Purchase", {
+        await factory.create<Purchase>("Purchase", {
           accountId: account.id,
           planId: pendingPlan.id,
           source: "stripe",
           startDate: nextMonth.toISOString(),
-        })) as Purchase;
-
+        });
         await handleStripeEvent({
           data: { object: payload },
           type: "customer.subscription.deleted",
         });
       });
 
-      it("fill active purchase's end date", async () => {
+      it("remove active purchase", async () => {
         const activePurchase = await account.$getActivePurchase();
-        expect(activePurchase).toBeDefined();
-        expect(activePurchase!.endDate).not.toBeNull();
+        expect(activePurchase).toBeNull();
       });
 
-      it("fill pending purchase end date", async () => {
-        const purchase = await pendingPurchase.$query();
-        expect(purchase.endDate).not.toBeNull();
+      it("fill active purchase's end date", async () => {
+        expect(oldPurchase.endDate).toBeNull();
+        const refreshedOldPurchase = await oldPurchase.$query();
+        expect(refreshedOldPurchase.endDate).not.toBeNull();
       });
     });
   });

@@ -178,7 +178,8 @@ export const handleStripeEvent = async ({
       break;
     }
 
-    case "customer.subscription.updated": {
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
       const subscription = data.object as Stripe.Subscription;
       const stripeCustomerId: string =
         getSubscriptionCustomerOrThrow(subscription);
@@ -193,9 +194,9 @@ export const handleStripeEvent = async ({
       const trialEndDate = subscription.trial_end
         ? timestampToDate(subscription.trial_end)
         : null;
-      const endDate = subscription.cancel_at
-        ? timestampToDate(subscription.cancel_at)
-        : null;
+      const subscriptionEnd = subscription.ended_at || subscription.cancel_at;
+      const endDate = subscriptionEnd ? timestampToDate(subscriptionEnd) : null;
+
       const newPurchaseProps = {
         planId: plan.id,
         accountId: account.id,
@@ -232,22 +233,6 @@ export const handleStripeEvent = async ({
       await Purchase.query()
         .patch({ trialEndDate, paymentMethodFilled, endDate })
         .findById(activePurchase.id);
-      break;
-    }
-
-    case "customer.subscription.deleted": {
-      const subscription: Stripe.Subscription =
-        data.object as Stripe.Subscription;
-      const stripeCustomerId = getSubscriptionCustomerOrThrow(
-        subscription
-      ) as string;
-      const account = await findCustomerAccountOrThrow(stripeCustomerId);
-      await Purchase.query()
-        .patch({ endDate: timestampToDate(subscription.current_period_end) })
-        .where({ accountId: account.id })
-        .where((query) =>
-          query.whereNull("endDate").orWhere("endDate", ">=", "now()")
-        );
       break;
     }
 
