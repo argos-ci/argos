@@ -24,14 +24,18 @@ export const typeDefs = gql`
     screenshotsLimitPerMonth: Int
     slug: String!
     name: String
+    periodStartDate: DateTime
+    periodEndDate: DateTime
     plan: Plan
     purchase: Purchase
+    oldPaidPurchase: Purchase
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
     avatar: AccountAvatar!
     members(after: Int = 0, first: Int = 30): TeamMemberConnection!
     inviteLink: String!
+    type: AccountType!
   }
 
   enum TeamUserLevel {

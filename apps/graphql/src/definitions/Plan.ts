@@ -8,5 +8,6 @@ export const typeDefs = gql`
     id: ID!
     name: String
     screenshotsLimitPerMonth: Int!
+    usageBased: Boolean!
   }
 `;

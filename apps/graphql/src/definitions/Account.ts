@@ -33,7 +33,10 @@ export const typeDefs = gql`
     slug: String!
     name: String
     plan: Plan
+    periodStartDate: DateTime
+    periodEndDate: DateTime
     purchase: Purchase
+    oldPaidPurchase: Purchase
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
@@ -140,8 +143,24 @@ export const resolvers: IResolvers = {
     currentMonthUsedScreenshots: async (account) => {
       return account.$getScreenshotsCurrentConsumption();
     },
+    periodStartDate: async (account) => {
+      return account.$getCurrentConsumptionStartDate();
+    },
+    periodEndDate: async (account) => {
+      return account.$getCurrentConsumptionEndDate();
+    },
     purchase: async (account) => {
       return account.$getActivePurchase();
+    },
+    oldPaidPurchase: async (account) => {
+      const oldPaidPurchase = await Purchase.query()
+        .where("accountId", account.id)
+        .whereNot({ name: "free" })
+        .whereRaw("?? < now()", "endDate")
+        .joinRelated("plan")
+        .orderBy("endDate", "DESC")
+        .first();
+      return oldPaidPurchase ?? null;
     },
     plan: async (account) => {
       return account.$getPlan();
