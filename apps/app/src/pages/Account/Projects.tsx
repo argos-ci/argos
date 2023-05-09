@@ -2,6 +2,10 @@ import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
 import { Query } from "@/containers/Apollo";
+import {
+  CheckoutStatusDialog,
+  useCheckoutStatusDialog,
+} from "@/containers/CheckoutStatusDialog";
 import { ProjectList } from "@/containers/ProjectList";
 import { graphql } from "@/gql";
 import { Container } from "@/ui/Container";
@@ -25,6 +29,7 @@ const AccountQuery = graphql(`
 
 export const AccountProjects = () => {
   const { accountSlug } = useParams();
+  const { dialog, checkoutStatus } = useCheckoutStatusDialog();
 
   if (!accountSlug) {
     return null;
@@ -50,6 +55,7 @@ export const AccountProjects = () => {
           );
         }}
       </Query>
+      <CheckoutStatusDialog dialog={dialog} checkoutStatus={checkoutStatus} />
     </>
   );
 };

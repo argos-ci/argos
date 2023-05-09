@@ -7,9 +7,11 @@ import {
   SESSION_PAYLOAD,
   SUBSCRIPTION_CANCEL_PAYLOAD,
   SUBSCRIPTION_UPDATE_PAYLOAD,
+  SUBSCRIPTION_UPDATE_PAYLOAD_ADD_PAYMENT_METHOD,
+  SUBSCRIPTION_UPDATE_PAYLOAD_END_TRIAL,
 } from "../__fixtures__/stripe-payloads.js";
 import { handleStripeEvent, stripe, updateStripeUsage } from "./client.js";
-import { getEffectiveDate } from "./utils.js";
+import { getEffectiveDate, timestampToDate } from "./utils.js";
 
 const now = new Date();
 const previousMonth = new Date(
@@ -298,7 +300,7 @@ describe("stripe", () => {
       it("deletion doesn't create purchase", async () => {
         await factory.create<Purchase>("Purchase", {
           accountId: account.id,
-          planId: oldPlan.id,
+          planId: newPlan.id,
           source: "stripe",
           startDate: startOfPreviousMonth.toISOString(),
         });
@@ -307,9 +309,7 @@ describe("stripe", () => {
           type: "customer.subscription.updated",
         });
         const purchases = await Purchase.query()
-          .where({
-            accountId: account.id,
-          })
+          .where({ accountId: account.id })
           .resultSize();
         expect(purchases).toBe(1);
       });
@@ -330,7 +330,25 @@ describe("stripe", () => {
         });
       });
 
-      describe("when plan is updated", () => {
+      describe("when user add payment method", () => {
+        it("update purchase", async () => {
+          oldPurchase = await factory.create<Purchase>("Purchase", {
+            accountId: account.id,
+            planId: newPlan.id,
+            source: "stripe",
+            startDate: startOfPreviousMonth.toISOString(),
+            paymentMethodFilled: false,
+          });
+          await handleStripeEvent({
+            data: { object: SUBSCRIPTION_UPDATE_PAYLOAD_ADD_PAYMENT_METHOD },
+            type: "customer.subscription.updated",
+          });
+          const updatedPurchase = (await oldPurchase.$query()) as Purchase;
+          expect(updatedPurchase.paymentMethodFilled).toBe(true);
+        });
+      });
+
+      describe("when user select a new plan", () => {
         beforeEach(async () => {
           [oldPurchase, pendingPurchase] = (await factory.createMany<Purchase>(
             "Purchase",
@@ -384,6 +402,42 @@ describe("stripe", () => {
           });
         });
       });
+
+      describe("when user end trial", () => {
+        const payload = SUBSCRIPTION_UPDATE_PAYLOAD_END_TRIAL;
+        let updatedTrialPurchase: Purchase;
+
+        beforeEach(async () => {
+          const trialPurchase = await factory.create<Purchase>("Purchase", {
+            accountId: account.id,
+            planId: newPlan.id,
+            source: "stripe",
+            startDate: startOfPreviousMonth.toISOString(),
+            endDate: null,
+          });
+          await handleStripeEvent({
+            data: { object: payload },
+            type: "customer.subscription.updated",
+          });
+          updatedTrialPurchase = (await trialPurchase.$query()) as Purchase;
+        });
+
+        it("update purchase end date", async () => {
+          const subscriptionEnd = payload.ended_at || payload.cancel_at;
+          if (!subscriptionEnd) {
+            throw new Error("subscriptionEnd should be defined");
+          }
+          expect(new Date(updatedTrialPurchase.endDate!).toISOString()).toBe(
+            timestampToDate(subscriptionEnd)
+          );
+        });
+
+        it("update purchase trial end date", async () => {
+          expect(
+            new Date(updatedTrialPurchase.trialEndDate!).toISOString()
+          ).toBe(timestampToDate(payload.trial_end));
+        });
+      });
     });
 
     describe("customer.subscription.deleted", () => {
@@ -393,43 +447,40 @@ describe("stripe", () => {
       let account: Account;
       let payloadPlan: Plan;
       let pendingPlan: Plan;
-      let pendingPurchase: Purchase;
+      let oldPurchase: Purchase;
 
       beforeEach(async () => {
         [account, [payloadPlan, pendingPlan]] = (await Promise.all([
           factory.create<Account>("TeamAccount", { stripeCustomerId }),
           factory.createMany<Plan>("Plan", [{ stripePlanId }, {}]),
         ])) as [Account, [Plan, Plan]];
-
-        await factory.create<Purchase>("Purchase", {
+        oldPurchase = await factory.create<Purchase>("Purchase", {
           accountId: account.id,
           planId: payloadPlan.id,
           source: "stripe",
           startDate: startOfPreviousMonth.toISOString(),
         });
-
-        pendingPurchase = (await factory.create<Purchase>("Purchase", {
+        await factory.create<Purchase>("Purchase", {
           accountId: account.id,
           planId: pendingPlan.id,
           source: "stripe",
           startDate: nextMonth.toISOString(),
-        })) as Purchase;
-
+        });
         await handleStripeEvent({
           data: { object: payload },
           type: "customer.subscription.deleted",
         });
       });
 
-      it("fill active purchase's end date", async () => {
+      it("remove active purchase", async () => {
         const activePurchase = await account.$getActivePurchase();
-        expect(activePurchase).toBeDefined();
-        expect(activePurchase!.endDate).not.toBeNull();
+        expect(activePurchase).toBeNull();
       });
 
-      it("fill pending purchase end date", async () => {
-        const purchase = await pendingPurchase.$query();
-        expect(purchase.endDate).not.toBeNull();
+      it("fill active purchase's end date", async () => {
+        expect(oldPurchase.endDate).toBeNull();
+        const refreshedOldPurchase = await oldPurchase.$query();
+        expect(refreshedOldPurchase.endDate).not.toBeNull();
       });
     });
   });
