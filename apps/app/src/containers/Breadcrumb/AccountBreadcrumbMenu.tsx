@@ -1,5 +1,5 @@
 import { useQuery } from "@apollo/client";
-import { PlusCircleIcon } from "@heroicons/react/24/outline";
+import { UserPlusIcon } from "@heroicons/react/24/outline";
 import { Link as RouterLink, matchPath, useLocation } from "react-router-dom";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -85,9 +85,9 @@ const MenuContent = (props: { menu: MenuState }) => {
         {(menuItemProps) => (
           <RouterLink {...menuItemProps} to="/teams/new">
             <MenuItemIcon>
-              <PlusCircleIcon />
+              <UserPlusIcon />
             </MenuItemIcon>
-            Create Team
+            Create a Team
           </RouterLink>
         )}
       </MenuItem>
