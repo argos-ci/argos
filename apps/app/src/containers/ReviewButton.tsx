@@ -23,6 +23,7 @@ export const ProjectFragment = graphql(`
       id
       slug
       consumptionRatio
+      hasUsageBasedPlan
     }
     build(number: $buildNumber) {
       id
@@ -171,7 +172,8 @@ export const ReviewButton = (props: {
   if (
     !project.public &&
     typeof project.account.consumptionRatio === "number" &&
-    project.account.consumptionRatio >= 1
+    project.account.consumptionRatio >= 1 &&
+    !project.account.hasUsageBasedPlan
   ) {
     return (
       <DisabledReviewButton

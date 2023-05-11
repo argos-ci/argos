@@ -13,6 +13,7 @@ export const typeDefs = gql`
     id: ID!
     stripeCustomerId: String
     stripeClientReferenceId: String!
+    hasUsageBasedPlan: Boolean!
     consumptionRatio: Float
     currentMonthUsedScreenshots: Int!
     screenshotsLimitPerMonth: Int
@@ -30,7 +31,7 @@ export const typeDefs = gql`
     lastPurchase: Purchase
     teams: [Team!]!
     ghInstallations: GhApiInstallationConnection!
-    type: AccountType!
+    hasSubscribedToTrial: Boolean!
   }
 
   type UserConnection implements Connection {
