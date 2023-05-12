@@ -27,6 +27,7 @@ export type IAccount = {
   consumptionRatio?: Maybe<Scalars['Float']>;
   currentMonthUsedScreenshots: Scalars['Int'];
   ghAccount?: Maybe<IGithubAccount>;
+  hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
   oldPaidPurchase?: Maybe<IPurchase>;
@@ -223,6 +224,8 @@ export type IMutation = {
   __typename?: 'Mutation';
   /** Accept an invitation to join a team */
   acceptInvitation: ITeam;
+  /** Create a checkout session for a pro plan */
+  createProPlanCheckoutSession: Scalars['String'];
   /** Create a Project */
   createProject: IProject;
   /** Create a team */
@@ -259,6 +262,11 @@ export type IMutation = {
 
 export type IMutationAcceptInvitationArgs = {
   token: Scalars['String'];
+};
+
+
+export type IMutationCreateProPlanCheckoutSessionArgs = {
+  teamId: Scalars['ID'];
 };
 
 
@@ -428,10 +436,13 @@ export type IPurchase = INode & {
   __typename?: 'Purchase';
   account: IAccount;
   endDate?: Maybe<Scalars['DateTime']>;
+  hasPaidPlan: Scalars['Boolean'];
   id: Scalars['ID'];
+  isTrialActive: Scalars['Boolean'];
   paymentMethodFilled?: Maybe<Scalars['Boolean']>;
   plan: IPlan;
   source: IPurchaseSource;
+  trialDaysRemaining?: Maybe<Scalars['Int']>;
   trialEndDate?: Maybe<Scalars['DateTime']>;
 };
 
@@ -582,6 +593,7 @@ export type ITeam = IAccount & INode & {
   consumptionRatio?: Maybe<Scalars['Float']>;
   currentMonthUsedScreenshots: Scalars['Int'];
   ghAccount?: Maybe<IGithubAccount>;
+  hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   inviteLink: Scalars['String'];
   members: ITeamMemberConnection;
@@ -597,7 +609,6 @@ export type ITeam = IAccount & INode & {
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
   stripeCustomerId?: Maybe<Scalars['String']>;
-  type: IAccountType;
 };
 
 
@@ -691,6 +702,8 @@ export type IUser = IAccount & INode & {
   currentMonthUsedScreenshots: Scalars['Int'];
   ghAccount?: Maybe<IGithubAccount>;
   ghInstallations: IGhApiInstallationConnection;
+  hasSubscribedToTrial: Scalars['Boolean'];
+  hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   lastPurchase?: Maybe<IPurchase>;
   name?: Maybe<Scalars['String']>;
@@ -706,7 +719,6 @@ export type IUser = IAccount & INode & {
   stripeClientReferenceId: Scalars['String'];
   stripeCustomerId?: Maybe<Scalars['String']>;
   teams: Array<ITeam>;
-  type: IAccountType;
 };
 
 
@@ -1019,6 +1031,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
+  hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
@@ -1137,6 +1150,7 @@ export type IGithubRepositoryResolvers<ContextType = Context, ParentType extends
 
 export type IMutationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Mutation'] = IResolversParentTypes['Mutation']> = ResolversObject<{
   acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'token'>>;
+  createProPlanCheckoutSession?: Resolver<IResolversTypes['String'], ParentType, ContextType, RequireFields<IMutationCreateProPlanCheckoutSessionArgs, 'teamId'>>;
   createProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationCreateProjectArgs, 'input'>>;
   createTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
   deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
@@ -1209,10 +1223,13 @@ export type IProjectConnectionResolvers<ContextType = Context, ParentType extend
 export type IPurchaseResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Purchase'] = IResolversParentTypes['Purchase']> = ResolversObject<{
   account?: Resolver<IResolversTypes['Account'], ParentType, ContextType>;
   endDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
+  hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  isTrialActive?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   paymentMethodFilled?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   plan?: Resolver<IResolversTypes['Plan'], ParentType, ContextType>;
   source?: Resolver<IResolversTypes['PurchaseSource'], ParentType, ContextType>;
+  trialDaysRemaining?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   trialEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1273,6 +1290,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
+  hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   inviteLink?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
@@ -1288,7 +1306,6 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  type?: Resolver<IResolversTypes['AccountType'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1344,6 +1361,8 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   ghInstallations?: Resolver<IResolversTypes['GhApiInstallationConnection'], ParentType, ContextType>;
+  hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   lastPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -1359,7 +1378,6 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   teams?: Resolver<Array<IResolversTypes['Team']>, ParentType, ContextType>;
-  type?: Resolver<IResolversTypes['AccountType'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

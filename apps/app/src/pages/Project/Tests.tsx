@@ -484,7 +484,7 @@ const TestsList = ({
         </MagicTooltip>
       </ListHeader>
 
-      <div ref={parentRef} className="min-h-0 flex-1 overflow-scroll">
+      <div ref={parentRef} className="min-h-0 flex-1 overflow-auto">
         <div
           style={{
             height: rowVirtualizer.getTotalSize(),
