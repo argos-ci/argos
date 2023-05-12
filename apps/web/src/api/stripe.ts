@@ -6,7 +6,6 @@ import { Account, Plan } from "@argos-ci/database/models";
 import logger from "@argos-ci/logger";
 import {
   createStripeCheckoutSession,
-  findOrCreateTeamAccountOrThrow,
   handleStripeEvent,
   stripe,
 } from "@argos-ci/stripe";
@@ -20,7 +19,7 @@ const router = express.Router();
 router.post(
   "/stripe/event-handler",
   bodyParser.raw({ type: "application/json" }),
-  async (req: express.Request, res: express.Response): Promise<void> => {
+  asyncHandler(async (req, res) => {
     try {
       const signature = req.headers["stripe-signature"];
       if (!signature) {
@@ -37,12 +36,12 @@ router.post(
       throw new Error("Stripe webhook signature verification failed");
     }
     res.sendStatus(200);
-  }
+  })
 );
 
 router.post(
   "/stripe/create-customer-portal-session",
-  express.urlencoded({ extended: false }),
+  bodyParser.json(),
   asyncHandler(async (req, res) => {
     try {
       const { stripeCustomerId } = req.body;
@@ -56,17 +55,23 @@ router.post(
           message: `no account found with stripeCustomerId: "${stripeCustomerId}"`,
         });
 
-      const portalSession = await stripe.billingPortal.sessions.create({
+      const session = await stripe.billingPortal.sessions.create({
         customer: stripeCustomerId,
         return_url: new URL(
           `/${account.slug}/settings`,
           config.get("server.url")
         ).href,
       });
+      if (!session.url) {
+        throw new Error("No session url");
+      }
 
-      res.redirect(302, portalSession.url);
+      res.json({ sessionUrl: session.url });
     } catch (err) {
-      logger.error("Error creating customer portal session", err);
+      logger.error(
+        "An error occurred while creating Stripe portal session.",
+        err
+      );
       res.redirect(302, "/error");
     }
   })
@@ -76,48 +81,53 @@ router.post(
   "/stripe/create-checkout-session",
   auth,
   bodyParser.json(),
-  async (req: express.Request, res: express.Response): Promise<void> => {
+  asyncHandler(async (req, res) => {
     try {
-      const { name, slug } = req.body;
+      const { accountId } = req.body;
 
-      const auth = req.auth;
-      if (!auth) {
+      const authenticatedUser = req.auth;
+      if (!authenticatedUser) {
         throw new Error("auth missing");
       }
 
-      const [account, proPlan] = await Promise.all([
-        findOrCreateTeamAccountOrThrow({ slug, name }),
+      if (!accountId) {
+        throw new Error("accountId missing");
+      }
+
+      const [teamAccount, proPlan] = await Promise.all([
+        Account.query().findOne({ id: accountId }),
         Plan.query().findOne({ name: "pro", usageBased: true }),
       ]);
 
+      if (!teamAccount) {
+        throw new Error("Team account not found");
+      }
       if (!proPlan) {
         throw new Error("Pro plan not found");
       }
 
       const session = await createStripeCheckoutSession({
         plan: proPlan,
-        account,
-        purchaserId: auth.user.id,
-        successUrl: new URL(
-          `${account.slug}?checkout=success`,
-          config.get("server.url")
-        ).href,
-        cancelUrl: new URL(
-          `${account.slug}?checkout=cancel`,
-          config.get("server.url")
-        ).href,
+        account: teamAccount,
+        purchaserId: authenticatedUser.user.id,
+        // prettier-ignore
+        successUrl: new URL(`${teamAccount.slug}?checkout=success`, config.get('server.url')).href,
+        // prettier-ignore
+        cancelUrl: new URL(`${teamAccount.slug}?checkout=cancel`, config.get('server.url')).href,
       });
+      if (!session.url) {
+        throw new Error("No session url");
+      }
+
       res.json({ sessionUrl: session.url });
     } catch (err) {
-      logger.error("Error creating checkout session", err);
-      res.status(400).json({
-        message:
-          err instanceof Error
-            ? err.message
-            : "An error occurred while creating the checkout session",
-      });
+      logger.error(
+        "An error occurred while creating Stripe checkout session.",
+        err
+      );
+      res.redirect(302, "/error");
     }
-  }
+  })
 );
 
 export default router;

@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { Chip } from "@/ui/Chip";
+import { ContactLink } from "@/ui/ContactLink";
 import {
   Dialog,
   DialogBody,
@@ -35,7 +36,7 @@ import {
 } from "@/ui/Dialog";
 import { Anchor, Link } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
-import { ContactLink, StripePortalLink } from "@/ui/StripePortalLink";
+import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
 
 const TerminateTrialMutation = graphql(`
