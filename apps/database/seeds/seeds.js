@@ -497,7 +497,7 @@ export const seed = async (knex) => {
     },
     {
       ...timeStamps,
-      name: "pro (usage-based)",
+      name: "pro",
       screenshotsLimitPerMonth: 15000,
       githubId: null,
       stripePlanId: "prod_Njgin72JdGT9Yu",
