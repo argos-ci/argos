@@ -29,6 +29,7 @@ import { Project } from "./pages/Project";
 import { ProjectBuilds } from "./pages/Project/Builds";
 import { ProjectSettings } from "./pages/Project/Settings";
 import { Tests } from "./pages/Project/Tests";
+import { Signup } from "./pages/Signup";
 import { VercelCallback } from "./pages/Vercel";
 
 const router = createBrowserRouter(
@@ -55,6 +56,7 @@ const router = createBrowserRouter(
       >
         <Route index element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/invite/:inviteToken" element={<Invite />} />
         <Route
           path="/teams/new"
