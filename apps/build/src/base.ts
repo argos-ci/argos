@@ -117,6 +117,9 @@ const getBucketFromAncestors = async (params: {
     owner: params.owner,
     repo: params.repo,
   });
+  if (shas.length === 0) {
+    return null;
+  }
   return getBucketFromCommits({ shas, build: params.build, trx: params.trx });
 };
 
