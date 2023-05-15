@@ -8,7 +8,7 @@ import { BuildHotkeysDialog } from "./BuildHotkeys";
 import { BuildNotFound } from "./BuildNotFound";
 import type { BuildParams } from "./BuildParams";
 import { BuildWorkspace } from "./BuildWorkspace";
-import { OvercapacityBanner } from "./Overcapacity";
+import { OvercapacityBanner } from "./OvercapacityBanner";
 
 const ProjectQuery = graphql(`
   query BuildPage_Project(

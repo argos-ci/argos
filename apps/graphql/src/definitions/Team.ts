@@ -19,6 +19,7 @@ export const typeDefs = gql`
     id: ID!
     stripeCustomerId: String
     stripeClientReferenceId: String!
+    hasUsageBasedPlan: Boolean!
     consumptionRatio: Float
     currentMonthUsedScreenshots: Int!
     screenshotsLimitPerMonth: Int
@@ -35,7 +36,6 @@ export const typeDefs = gql`
     avatar: AccountAvatar!
     members(after: Int = 0, first: Int = 30): TeamMemberConnection!
     inviteLink: String!
-    type: AccountType!
   }
 
   enum TeamUserLevel {

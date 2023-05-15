@@ -27,6 +27,7 @@ export const typeDefs = gql`
     id: ID!
     stripeCustomerId: String
     stripeClientReferenceId: String!
+    hasUsageBasedPlan: Boolean!
     consumptionRatio: Float
     currentMonthUsedScreenshots: Int!
     screenshotsLimitPerMonth: Int
@@ -136,6 +137,9 @@ export const resolvers: IResolvers = {
         first: args.first,
         result,
       });
+    },
+    hasUsageBasedPlan: async (account) => {
+      return account.$hasUsageBasedPlan();
     },
     consumptionRatio: async (account) => {
       return account.$getScreenshotsConsumptionRatio();

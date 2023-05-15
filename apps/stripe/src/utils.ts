@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 
 import { transaction } from "@argos-ci/database";
-import { Account, Plan, Purchase, Team } from "@argos-ci/database/models";
+import { Account, Plan, Purchase } from "@argos-ci/database/models";
 
 export const getSubscriptionCustomerOrThrow = (
   subscription: Stripe.Subscription
@@ -150,27 +150,4 @@ export const getFirstProductOrThrow = (subscription: Stripe.Subscription) => {
     throw new Error("no item found in Stripe subscription");
   }
   return subscription.items.data[0].price!.product as string;
-};
-
-export const findOrCreateTeamAccountOrThrow = async ({
-  name,
-  slug,
-}: {
-  name: string;
-  slug: string;
-}): Promise<Account> => {
-  const account = await Account.query().findOne({ slug });
-
-  if (account?.userId) {
-    throw new Error("Account already linked to a user");
-  }
-
-  if (account?.teamId) {
-    return account;
-  }
-
-  return transaction(async (trx) => {
-    const team = await Team.query(trx).insert();
-    return Account.query(trx).insert({ name, slug, teamId: team.id });
-  });
 };

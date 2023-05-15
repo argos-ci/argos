@@ -54,37 +54,32 @@ export const CheckoutStatusDialog = ({
             ? "Subscription Confirmed"
             : "Subscription Failed"}
         </DialogTitle>
-        <DialogText>
-          {checkoutStatus === "success" ? (
-            <>
-              <div>
-                We've received your subscription. Thank you for choosing Argos
-                🎉
-              </div>
-              <div className="mt-2">
-                You can now create build on your projects.
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                Your subscription has been interrupted. You won't be able to
-                create build until you subscribe to a paid plan.
-              </div>
-              <div className="mt-2">
-                If you think this is a mistake, please{" "}
-                <Anchor
-                  tabIndex={-1}
-                  href={`mailto:${config.get("contactEmail")}`}
-                  external
-                >
-                  contact support
-                </Anchor>
-                .
-              </div>
-            </>
-          )}
-        </DialogText>
+        {checkoutStatus === "success" ? (
+          <>
+            <DialogText>
+              We've received your subscription. Thank you for choosing Argos 🎉
+            </DialogText>
+            <DialogText>You can now create build on your projects.</DialogText>
+          </>
+        ) : (
+          <>
+            <DialogText>
+              Your subscription has been interrupted. You won't be able to
+              create build until you subscribe to a paid plan.
+            </DialogText>
+            <DialogText>
+              If you think this is a mistake, please{" "}
+              <Anchor
+                tabIndex={-1}
+                href={`mailto:${config.get("contactEmail")}`}
+                external
+              >
+                contact support
+              </Anchor>
+              .
+            </DialogText>
+          </>
+        )}
       </DialogBody>
       <DialogFooter>
         <DialogDismiss onClick={dialog.hide}>OK</DialogDismiss>

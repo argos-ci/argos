@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { Chip } from "@/ui/Chip";
+import { ContactLink } from "@/ui/ContactLink";
 import {
   Dialog,
   DialogBody,
@@ -35,7 +36,7 @@ import {
 } from "@/ui/Dialog";
 import { Anchor, Link } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
-import { ContactLink, StripePortalLink } from "@/ui/StripePortalLink";
+import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
 
 const TerminateTrialMutation = graphql(`
@@ -73,6 +74,8 @@ const PlanCardFragment = graphql(`
       paymentMethodFilled
       endDate
       trialEndDate
+      hasPaidPlan
+      isTrialActive
     }
 
     oldPaidPurchase {
@@ -466,7 +469,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
     }
   );
 
-  const hasPaidPlan = Boolean(plan && plan.name !== "free");
+  const hasPaidPlan = Boolean(purchase?.hasPaidPlan);
   const trialExpired =
     !hasPaidPlan &&
     oldPaidPurchase?.trialEndDate &&
@@ -474,8 +477,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
   const { description: purchaseStatusDescription, secondaryDescription } =
     getPurchaseStatus({ account, trialExpired, hasPaidPlan });
   const [privateProjects, publicProjects] = groupByPrivacy(projects.edges);
-  const trialIsActive =
-    purchase?.trialEndDate && moment().isBefore(purchase.trialEndDate);
+  const trialIsActive = purchase && purchase.isTrialActive;
 
   return (
     <Card>

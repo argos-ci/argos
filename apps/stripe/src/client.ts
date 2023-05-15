@@ -6,7 +6,6 @@ import { Account, Plan, Purchase } from "@argos-ci/database/models";
 import {
   changeActivePurchase,
   findCustomerAccountOrThrow,
-  findOrCreateTeamAccountOrThrow,
   findPlanOrThrow,
   getClientReferenceIdPayload,
   getEffectiveDate,
@@ -22,7 +21,7 @@ import {
 
 export type { Stripe };
 
-export { findOrCreateTeamAccountOrThrow, timestampToDate };
+export { timestampToDate };
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
   apiVersion: "2022-11-15",
@@ -276,12 +275,15 @@ export const createStripeCheckoutSession = async ({
   successUrl: string;
   cancelUrl: string;
 }) => {
-  const [purchase, price, previousTrial] = await Promise.all([
+  const [purchase, price, trialConsumed] = await Promise.all([
     account.$getActivePurchase(),
     getStripePriceOrThrow(plan),
     Purchase.query()
-      .where({ purchaserId })
-      .orWhere({ accountId: account.id })
+      .where((query) =>
+        query.where({ purchaserId }).orWhere({ accountId: account.id })
+      )
+      .whereNotNull("trialEndDate")
+      .limit(1)
       .resultSize(),
   ]);
 
@@ -295,7 +297,7 @@ export const createStripeCheckoutSession = async ({
       trial_settings: {
         end_behavior: { missing_payment_method: "cancel" },
       },
-      trial_period_days: previousTrial > 0 ? 0 : 14,
+      ...(!trialConsumed && { trial_period_days: 14 }),
     },
     mode: "subscription",
     client_reference_id: Purchase.encodeStripeClientReferenceId({
@@ -304,7 +306,7 @@ export const createStripeCheckoutSession = async ({
     }),
     success_url: successUrl,
     cancel_url: cancelUrl,
-    payment_method_collection: "if_required",
+    payment_method_collection: trialConsumed ? "always" : "if_required",
     ...(account.stripeCustomerId && { customer: account.stripeCustomerId }),
   });
 };

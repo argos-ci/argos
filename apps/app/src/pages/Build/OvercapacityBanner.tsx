@@ -13,6 +13,7 @@ export const AccountFragment = graphql(`
       name
     }
     consumptionRatio
+    hasUsageBasedPlan
   }
 `);
 
@@ -23,9 +24,12 @@ export const OvercapacityBanner = memo(
   }) => {
     const { accountSlug } = props;
     const account = useFragment(AccountFragment, props.account);
-    const { plan, consumptionRatio } = account;
+    const { plan, consumptionRatio, hasUsageBasedPlan } = account;
     const visible =
-      plan && typeof consumptionRatio === "number" && consumptionRatio >= 0.9;
+      plan &&
+      typeof consumptionRatio === "number" &&
+      consumptionRatio >= 0.9 &&
+      !hasUsageBasedPlan;
 
     if (!visible) {
       return null;
@@ -33,7 +37,7 @@ export const OvercapacityBanner = memo(
 
     return (
       <Banner
-        className="flex shrink-0 items-center justify-center gap-2"
+        className="flex shrink-0 items-center justify-center gap-2 border-b border-b-border"
         color={consumptionRatio >= 1 ? "danger" : "warning"}
       >
         <ExclamationTriangleIcon className="h-4 w-4" />

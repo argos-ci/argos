@@ -184,7 +184,7 @@ const BuildsList = ({
   return (
     <List
       ref={parentRef}
-      className="absolute max-h-full w-full overflow-scroll"
+      className="absolute max-h-full w-full overflow-auto"
       style={{ display: "block" }}
     >
       <div
