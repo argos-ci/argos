@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuthTokenPayload } from "@/containers/Auth";
 import { TeamNewForm } from "@/containers/Team/NewForm";
@@ -8,7 +8,10 @@ import { Heading, Headline } from "@/ui/Typography";
 
 export const NewTeam = () => {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const auth = useAuthTokenPayload();
+  const name = decodeURIComponent(params.get("name") || "");
+
   return (
     <>
       <Helmet>
@@ -25,9 +28,9 @@ export const NewTeam = () => {
               onCreate={(team) => {
                 navigate(`/${team.slug}`);
               }}
-              defaultTeamName={`${
-                auth.account.name || auth.account.slug
-              }'s Team`}
+              defaultTeamName={
+                name || `${auth.account.name || auth.account.slug}'s Team`
+              }
             />
           </div>
         )}

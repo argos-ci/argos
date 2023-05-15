@@ -2,7 +2,7 @@ import { DisclosureContent, useDisclosureState } from "ariakit/disclosure";
 import { Radio, RadioGroup, useRadioState } from "ariakit/radio";
 import { forwardRef, useState } from "react";
 import { Helmet } from "react-helmet";
-import { Navigate, useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginButtons } from "@/containers/LoginButtons";
