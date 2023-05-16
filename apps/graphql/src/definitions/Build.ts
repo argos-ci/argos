@@ -155,20 +155,6 @@ export const resolvers: IResolvers = {
         throw new APIError("You don't have access to this build");
       }
 
-      const isPublic = await build.project.$checkIsPublic();
-
-      if (!isPublic) {
-        const hasExceedLimit =
-          await build.project.account.$hasExceedScreenshotsMonthlyLimit();
-        const hasUsageBasedPlan =
-          await build.project.account.$hasUsageBasedPlan();
-        if (hasExceedLimit && !hasUsageBasedPlan) {
-          throw new APIError(
-            "Insufficient credit. Please upgrade Argos plan to unlock build reviews."
-          );
-        }
-      }
-
       await ScreenshotDiff.query()
         .where({ buildId })
         .patch({ validationStatus });

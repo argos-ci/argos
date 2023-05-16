@@ -169,24 +169,5 @@ export const ReviewButton = (props: {
     );
   }
 
-  if (
-    !project.public &&
-    typeof project.account.consumptionRatio === "number" &&
-    project.account.consumptionRatio >= 1 &&
-    !project.account.hasUsageBasedPlan
-  ) {
-    return (
-      <DisabledReviewButton
-        build={project.build}
-        tooltip={
-          <>
-            You have hit {Math.floor(project.account.consumptionRatio * 100)}%
-            of your current plan. Please upgrade to unlock build reviews.
-          </>
-        }
-      />
-    );
-  }
-
   return <BaseReviewButton build={project.build} />;
 };
