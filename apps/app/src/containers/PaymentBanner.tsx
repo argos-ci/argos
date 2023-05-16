@@ -9,12 +9,12 @@ export const PaymentBannerFragment = graphql(`
   fragment PaymentBanner_Account on Account {
     id
     stripeCustomerId
+    hasPaidPlan
 
     purchase {
       paymentMethodFilled
       isTrialActive
       trialDaysRemaining
-      hasPaidPlan
     }
   }
 `);
@@ -50,15 +50,12 @@ export type PaymentBannerProps = {
 export const PaymentBanner = memo((props: PaymentBannerProps) => {
   const account = useFragment(PaymentBannerFragment, props.account);
   const { purchase } = account;
-  const {
-    paymentMethodFilled,
-    isTrialActive,
-    trialDaysRemaining,
-    hasPaidPlan,
-  } = purchase || {};
+  const { paymentMethodFilled, isTrialActive, trialDaysRemaining } =
+    purchase || {};
 
   const isTeamAccount = account.__typename === "Team";
-  const visible = isTeamAccount && (!hasPaidPlan || !paymentMethodFilled);
+  const visible =
+    isTeamAccount && (!account.hasPaidPlan || !paymentMethodFilled);
 
   if (!visible) {
     return null;
@@ -68,7 +65,7 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
     ? `Your trial expires in ${trialDaysRemaining} days. `
     : "";
 
-  const { message, buttonLabel } = !hasPaidPlan
+  const { message, buttonLabel } = !account.hasPaidPlan
     ? {
         message: `No paid plan is associated with your team. To maintain access to team features, upgrade to Pro.`,
         buttonLabel: "Upgrade",
@@ -81,7 +78,7 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
   return (
     <Banner
       className="flex justify-center"
-      color={hasPaidPlan ? "warning" : "danger"}
+      color={account.hasPaidPlan ? "warning" : "danger"}
     >
       <Container className="flex items-center justify-center gap-2">
         <p>{message}</p>

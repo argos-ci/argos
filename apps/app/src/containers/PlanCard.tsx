@@ -59,6 +59,7 @@ const PlanCardFragment = graphql(`
     stripeCustomerId
     periodStartDate
     periodEndDate
+    hasPaidPlan
     __typename
 
     plan {
@@ -74,7 +75,6 @@ const PlanCardFragment = graphql(`
       paymentMethodFilled
       endDate
       trialEndDate
-      hasPaidPlan
       isTrialActive
     }
 
@@ -234,13 +234,11 @@ const ConfirmTrialEndDialog = ({
 const getPurchaseStatus = ({
   account,
   trialExpired,
-  hasPaidPlan,
 }: {
   account: any;
   trialExpired: boolean;
-  hasPaidPlan: boolean;
 }) => {
-  const { type: accountType, plan, oldPaidPurchase } = account;
+  const { type: accountType, plan, oldPaidPurchase, hasPaidPlan } = account;
   const accountTypeLabel = accountType === "User" ? "Personal account" : "team";
 
   switch (true) {
@@ -450,6 +448,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
     projects,
     purchase,
     oldPaidPurchase,
+    hasPaidPlan,
     __typename: accountType,
   } = account;
   const [showTrialEndDialog, setShowTrialEndDialog] = useState(false);
@@ -469,13 +468,12 @@ export const PlanCard = (props: { account: AccountFragment }) => {
     }
   );
 
-  const hasPaidPlan = Boolean(purchase?.hasPaidPlan);
   const trialExpired =
     !hasPaidPlan &&
     oldPaidPurchase?.trialEndDate &&
     oldPaidPurchase.trialEndDate === oldPaidPurchase.endDate;
   const { description: purchaseStatusDescription, secondaryDescription } =
-    getPurchaseStatus({ account, trialExpired, hasPaidPlan });
+    getPurchaseStatus({ account, trialExpired });
   const [privateProjects, publicProjects] = groupByPrivacy(projects.edges);
   const trialIsActive = purchase && purchase.isTrialActive;
 

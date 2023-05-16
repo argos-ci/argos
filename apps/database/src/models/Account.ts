@@ -268,6 +268,11 @@ export class Account extends Model {
     return Account.checkReadPermission(this, user);
   }
 
+  async $hasPaidPlan() {
+    const plan = await this.$getPlan();
+    return Boolean(plan && plan.name !== "free");
+  }
+
   static async checkReadPermission(account: Account, user: User) {
     if (!user) return false;
     switch (account.type) {

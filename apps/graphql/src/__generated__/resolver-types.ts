@@ -27,6 +27,7 @@ export type IAccount = {
   consumptionRatio?: Maybe<Scalars['Float']>;
   currentMonthUsedScreenshots: Scalars['Int'];
   ghAccount?: Maybe<IGithubAccount>;
+  hasPaidPlan: Scalars['Boolean'];
   hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
@@ -436,7 +437,6 @@ export type IPurchase = INode & {
   __typename?: 'Purchase';
   account: IAccount;
   endDate?: Maybe<Scalars['DateTime']>;
-  hasPaidPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   isTrialActive: Scalars['Boolean'];
   paymentMethodFilled?: Maybe<Scalars['Boolean']>;
@@ -593,6 +593,7 @@ export type ITeam = IAccount & INode & {
   consumptionRatio?: Maybe<Scalars['Float']>;
   currentMonthUsedScreenshots: Scalars['Int'];
   ghAccount?: Maybe<IGithubAccount>;
+  hasPaidPlan: Scalars['Boolean'];
   hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   inviteLink: Scalars['String'];
@@ -702,6 +703,7 @@ export type IUser = IAccount & INode & {
   currentMonthUsedScreenshots: Scalars['Int'];
   ghAccount?: Maybe<IGithubAccount>;
   ghInstallations: IGhApiInstallationConnection;
+  hasPaidPlan: Scalars['Boolean'];
   hasSubscribedToTrial: Scalars['Boolean'];
   hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
@@ -1031,6 +1033,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
+  hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -1223,7 +1226,6 @@ export type IProjectConnectionResolvers<ContextType = Context, ParentType extend
 export type IPurchaseResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Purchase'] = IResolversParentTypes['Purchase']> = ResolversObject<{
   account?: Resolver<IResolversTypes['Account'], ParentType, ContextType>;
   endDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   isTrialActive?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   paymentMethodFilled?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
@@ -1290,6 +1292,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
+  hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   inviteLink?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
@@ -1361,6 +1364,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   ghInstallations?: Resolver<IResolversTypes['GhApiInstallationConnection'], ParentType, ContextType>;
+  hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
