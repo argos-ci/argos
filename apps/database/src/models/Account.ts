@@ -237,10 +237,15 @@ export class Account extends Model {
     const activePurchase = await this.$getActivePurchase();
     if (!activePurchase) return false;
 
-    const plan = await activePurchase.$relatedQuery<Plan>("plan").first();
-    if (!plan) return false;
+    if (!activePurchase.plan) {
+      throw new Error("Invariant plan not loaded");
+    }
 
-    return plan.usageBased;
+    if (activePurchase.$isTrialActive()) {
+      return false;
+    }
+
+    return activePurchase.plan.usageBased;
   }
 
   async $checkWritePermission(user: User) {
