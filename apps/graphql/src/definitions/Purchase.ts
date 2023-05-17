@@ -29,7 +29,6 @@ export const typeDefs = gql`
     trialEndDate: DateTime
     isTrialActive: Boolean!
     trialDaysRemaining: Int
-    hasPaidPlan: Boolean!
   }
 
   extend type Mutation {
@@ -56,10 +55,6 @@ export const resolvers: IResolvers = {
       const remainingTime =
         new Date(purchase.trialEndDate).getTime() - Date.now();
       return Math.ceil(remainingTime / (1000 * 60 * 60 * 24));
-    },
-    hasPaidPlan: async (purchase, _args, ctx) => {
-      const plan = await ctx.loaders.Plan.load(purchase.planId);
-      return Boolean(plan && plan.name !== "free");
     },
   },
   Mutation: {
