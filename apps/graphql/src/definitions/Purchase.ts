@@ -49,9 +49,7 @@ export const resolvers: IResolvers = {
       return ctx.loaders.Plan.load(purchase.planId);
     },
     isTrialActive: (purchase) => {
-      return Boolean(
-        purchase.trialEndDate && new Date() < new Date(purchase.trialEndDate)
-      );
+      return purchase.$isTrialActive();
     },
     trialDaysRemaining: (purchase) => {
       if (!purchase.trialEndDate) return null;

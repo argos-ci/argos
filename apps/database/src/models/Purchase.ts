@@ -82,6 +82,12 @@ export class Purchase extends Model {
         );
   }
 
+  $isTrialActive() {
+    return Boolean(
+      this.trialEndDate && new Date() < new Date(this.trialEndDate)
+    );
+  }
+
   static encodeStripeClientReferenceId({
     accountId,
     purchaserId,
