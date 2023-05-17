@@ -4,7 +4,7 @@ import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
 import { Children, cloneElement, forwardRef, memo } from "react";
 
-export type ButtonColor = "primary" | "danger" | "neutral";
+export type ButtonColor = "primary" | "danger" | "neutral" | "white";
 export type ButtonVariant = "contained" | "outline";
 export type ButtonSize = "base" | "small" | "large";
 
@@ -22,6 +22,8 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
       "text-white border-transparent bg-danger-600 [&:not([aria-disabled])]:hover:bg-danger-700 active:bg-danger-800 aria-expanded:bg-danger-800",
     neutral:
       "text-white border-transparent bg-neutral-600 [&:not([aria-disabled])]:hover:bg-neutral-700 active:bg-neutral-800 aria-expanded:bg-neutral-800",
+    white:
+      "text-neutral-800 border-transparent bg-white [&:not([aria-disabled])]:hover:bg-neutral-700 [&:not([aria-disabled])]:hover:text-white active:bg-neutral-800 active:bg-neutral-800:text-white aria-expanded:bg-neutral-800 aria-expanded:text-white",
   },
   outline: {
     primary:
@@ -30,6 +32,8 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
       "text-danger-300 border-danger-300 bg-transparent [&:not([aria-disabled])]:hover:bg-danger-800",
     neutral:
       "text-neutral-300 border-neutral-600 bg-transparent [&:not([aria-disabled])]:hover:bg-neutral-800",
+    white:
+      "text-white-300 border-white-300 bg-transparent [&:not([aria-disabled])]:hover:bg-white [&:not([aria-disabled])]:hover:text-neutral-800",
   },
 };
 

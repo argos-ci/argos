@@ -61,9 +61,12 @@ const router = createBrowserRouter(
         <Route
           path="/teams/new"
           element={
-            <Main>
-              <NewTeam />
-            </Main>
+            <>
+              <hr className="border-t-border" />
+              <Main>
+                <NewTeam />
+              </Main>
+            </>
           }
         />
         <Route path=":accountSlug/:projectName" element={<Project />}>

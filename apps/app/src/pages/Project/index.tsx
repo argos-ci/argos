@@ -2,7 +2,8 @@ import { Outlet, useOutletContext, useParams } from "react-router-dom";
 
 import { Query } from "@/containers/Apollo";
 import { Main } from "@/containers/Layout";
-import { graphql } from "@/gql";
+import { PaymentBanner } from "@/containers/PaymentBanner";
+import { DocumentType, graphql } from "@/gql";
 import { Permission } from "@/gql/graphql";
 import { PageLoader } from "@/ui/PageLoader";
 import {
@@ -24,16 +25,26 @@ const ProjectQuery = graphql(`
           totalCount
         }
       }
+      account {
+        id
+        ...PaymentBanner_Account
+      }
     }
   }
 `);
 
+type Account = NonNullable<
+  NonNullable<DocumentType<typeof ProjectQuery>["project"]>["account"]
+>;
+
 const ProjectTabs = ({
   hasTests,
   hasWritePermission,
+  account,
 }: {
   hasTests: boolean;
   hasWritePermission: boolean;
+  account: Account;
 }) => {
   const tab = useTabLinkState();
   return (
@@ -43,6 +54,8 @@ const ProjectTabs = ({
         {hasTests && <TabLink to="tests">Tests</TabLink>}
         {hasWritePermission && <TabLink to="settings">Settings</TabLink>}
       </TabLinkList>
+      <hr className="border-t-border" />
+      <PaymentBanner account={account} />
       <TabLinkPanel state={tab} as={Main} tabId={tab.selectedId || null}>
         <Outlet context={{ hasWritePermission } as OutletContext} />
       </TabLinkPanel>
@@ -86,6 +99,7 @@ export const Project = () => {
             <ProjectTabs
               hasWritePermission={hasWritePermission}
               hasTests={hasTests}
+              account={project.account}
             />
           );
         }
