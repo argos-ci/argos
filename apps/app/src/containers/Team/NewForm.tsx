@@ -6,6 +6,7 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Anchor } from "@/ui/Link";
 
 const CreateTeamMutation = graphql(`
   mutation NewTeam_createTeam($name: String!) {
@@ -23,6 +24,7 @@ type Inputs = {
 export type TeamNewFormProps = {
   defaultTeamName?: string;
   onCreate: (team: { id: string; slug: string }) => void;
+  trial?: boolean;
 };
 
 export const TeamNewForm = (props: TeamNewFormProps) => {
@@ -55,9 +57,19 @@ export const TeamNewForm = (props: TeamNewFormProps) => {
           label="Team Name"
           autoFocus
         />
-        <div className="mt-8 flex items-center justify-end gap-4">
+        <div className="mt-6 text-sm text-on-light">
+          {props.trial
+            ? "Continuing will start a 14-day Pro plan trial."
+            : "Continuing will start a monthly Pro plan subscription."}{" "}
+          <Anchor href="/pricing" external>
+            Learn more
+          </Anchor>
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-4">
           <FormRootError />
-          <FormSubmit>Continue</FormSubmit>
+          <FormSubmit disabled={form.formState.isSubmitted}>
+            Continue
+          </FormSubmit>
         </div>
       </Form>
     </FormProvider>

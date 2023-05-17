@@ -81,6 +81,8 @@ const documents = {
     "\n  query Checkout_success {\n    me {\n      id\n      lastPurchase {\n        id\n        account {\n          id\n          slug\n        }\n      }\n    }\n  }\n": types.Checkout_SuccessDocument,
     "\n  query Invite_invitation($token: String!) {\n    invitation(token: $token) {\n      id\n      name\n      slug\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n\n    me {\n      id\n      teams {\n        id\n      }\n    }\n  }\n": types.Invite_InvitationDocument,
     "\n  mutation Invite_acceptInvitation($token: String!) {\n    acceptInvitation(token: $token) {\n      id\n      slug\n    }\n  }\n": types.Invite_AcceptInvitationDocument,
+    "\n  query NewTeam_me {\n    me {\n      id\n      hasSubscribedToTrial\n    }\n  }\n": types.NewTeam_MeDocument,
+    "\n  mutation NewTeam_createProPlanCheckoutSession($teamId: ID!) {\n    createProPlanCheckoutSession(teamId: $teamId)\n  }\n": types.NewTeam_CreateProPlanCheckoutSessionDocument,
     "\n  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      ...GettingStarted_Project\n      ...BuildStatusChip_Project\n    }\n  }\n": types.ProjectBuilds_ProjectDocument,
     "\n  query ProjectBuilds_project_Builds(\n    $accountSlug: String!\n    $projectName: String!\n    $after: Int!\n    $first: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      builds(first: $first, after: $after) {\n        pageInfo {\n          totalCount\n          hasNextPage\n        }\n        edges {\n          id\n          number\n          createdAt\n          name\n          compareScreenshotBucket {\n            id\n            branch\n            commit\n          }\n          ...BuildStatusChip_Build\n        }\n      }\n    }\n  }\n": types.ProjectBuilds_Project_BuildsDocument,
     "\n  fragment GettingStarted_Project on Project {\n    token\n  }\n": types.GettingStarted_ProjectFragmentDoc,
@@ -377,6 +379,14 @@ export function graphql(source: "\n  query Invite_invitation($token: String!) {\
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation Invite_acceptInvitation($token: String!) {\n    acceptInvitation(token: $token) {\n      id\n      slug\n    }\n  }\n"): (typeof documents)["\n  mutation Invite_acceptInvitation($token: String!) {\n    acceptInvitation(token: $token) {\n      id\n      slug\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query NewTeam_me {\n    me {\n      id\n      hasSubscribedToTrial\n    }\n  }\n"): (typeof documents)["\n  query NewTeam_me {\n    me {\n      id\n      hasSubscribedToTrial\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation NewTeam_createProPlanCheckoutSession($teamId: ID!) {\n    createProPlanCheckoutSession(teamId: $teamId)\n  }\n"): (typeof documents)["\n  mutation NewTeam_createProPlanCheckoutSession($teamId: ID!) {\n    createProPlanCheckoutSession(teamId: $teamId)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
