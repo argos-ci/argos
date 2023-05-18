@@ -31,7 +31,7 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 
 import { AccountAvatar } from "../AccountAvatar";
-import { AccountSelector } from "../AccountSelector";
+import { AccountSelector, AccountSelectorQuery } from "../AccountSelector";
 import { useQuery } from "../Apollo";
 
 type TransferDialogButtonProps = {
@@ -46,6 +46,8 @@ type SelectAccountStepProps = {
 };
 
 const SelectAccountStep = (props: SelectAccountStepProps) => {
+  const { data } = useQuery(AccountSelectorQuery);
+
   return (
     <>
       <DialogBody>
@@ -68,9 +70,10 @@ const SelectAccountStep = (props: SelectAccountStepProps) => {
         </DialogText>
 
         <AccountSelector
-          actualAccountId={props.actualAccountId}
           value={props.targetAccountId}
           setValue={props.setTargetAccountId}
+          accounts={data && data.me ? [data.me, ...data.me.teams] : []}
+          disabledAccountIds={[props.actualAccountId]}
         />
       </DialogBody>
       <DialogFooter>

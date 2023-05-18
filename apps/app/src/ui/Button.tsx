@@ -65,7 +65,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
     const sizeClassName = sizeClassNames[size];
     if (!sizeClassName) {
-      throw new Error(`Invalid size: ${color}`);
+      throw new Error(`Invalid size: ${size}`);
     }
     return (
       <AriakitButton

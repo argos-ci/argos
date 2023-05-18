@@ -37,7 +37,7 @@ const UpgradeButton = ({
   }
 
   return (
-    <StripeCheckoutButton accountId={accountId}>
+    <StripeCheckoutButton accountId={accountId} variant="secondary">
       {children}
     </StripeCheckoutButton>
   );

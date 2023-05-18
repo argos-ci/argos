@@ -92,9 +92,13 @@ type StripeCheckoutFormInputs = {
 export const StripeCheckoutButton = ({
   accountId,
   children,
+  variant = "primary",
+  disabled = false,
 }: {
   accountId: string;
   children: React.ReactNode;
+  variant?: "primary" | "secondary";
+  disabled?: boolean;
 }) => {
   const { token } = useAuth();
 
@@ -121,7 +125,12 @@ export const StripeCheckoutButton = ({
   return (
     <FormProvider {...form}>
       <Form onSubmit={onSubmit}>
-        <Button type="submit" variant="outline" color="neutral">
+        <Button
+          type="submit"
+          variant={variant === "primary" ? "contained" : "outline"}
+          color={variant === "primary" ? "primary" : "neutral"}
+          disabled={disabled}
+        >
           {children}
         </Button>
         <input
