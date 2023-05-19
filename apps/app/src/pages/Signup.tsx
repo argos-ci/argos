@@ -1,6 +1,5 @@
 import { DisclosureContent, useDisclosureState } from "ariakit/disclosure";
-import { Radio, RadioGroup, useRadioState } from "ariakit/radio";
-import { forwardRef, useState } from "react";
+import { useState } from "react";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 
@@ -8,25 +7,8 @@ import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginButtons } from "@/containers/LoginButtons";
 import { Container } from "@/ui/Container";
 import { FormLabel } from "@/ui/FormLabel";
+import { RadioField, RadioGroup, useRadioState } from "@/ui/Radio";
 import { TextInput } from "@/ui/TextInput";
-
-interface RadioFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
-  value: string;
-  children: React.ReactNode;
-}
-
-export const RadioField = forwardRef<HTMLInputElement, RadioFieldProps>(
-  ({ label, value, children, ...props }, ref) => (
-    <label className="flex items-baseline gap-4 text-left">
-      <Radio ref={ref} value={value} {...props} />
-      <div className="border-l border-border px-2 hover:border-on">
-        <div className="text-lg font-semibold">{label}</div>
-        <p>{children}</p>
-      </div>
-    </label>
-  )
-);
 
 const AccountTypeSelector = ({
   value,
@@ -42,10 +24,10 @@ const AccountTypeSelector = ({
       state={radio}
       className="flex w-full flex-col justify-start gap-6"
     >
-      <RadioField label="Hobby" value="hobby">
+      <RadioField label="Hobby" value="hobby" scale="large">
         I'm working on personal projects
       </RadioField>
-      <RadioField label="Pro" value="pro">
+      <RadioField label="Pro" value="pro" scale="large">
         I'm working on a team or my project is on a Github organization
       </RadioField>
     </RadioGroup>

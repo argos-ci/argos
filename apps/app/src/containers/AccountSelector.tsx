@@ -7,16 +7,19 @@ import {
   useSelectState,
 } from "@/ui/Select";
 
-import { AccountItem } from "./AccountItem";
-import { useQuery } from "./Apollo";
+import { AccountItem, AccountItemProps } from "./AccountItem";
 
-const MeQuery = graphql(`
-  query ProjectTransfer_me {
+export const AccountSelectorQuery = graphql(`
+  query AccountSelector_me {
     me {
       id
+      slug
+      hasSubscribedToTrial
       ...AccountItem_Account
       teams {
         id
+        slug
+        hasPaidPlan
         ...AccountItem_Account
       }
     }
@@ -24,36 +27,33 @@ const MeQuery = graphql(`
 `);
 
 export type AccountSelectorProps = {
-  actualAccountId?: string;
   value: string;
   setValue: (value: string) => void;
+  accounts: AccountItemProps["account"][];
+  disabledAccountIds?: string[];
 };
 
 export const AccountSelector = (props: AccountSelectorProps) => {
-  const { data } = useQuery(MeQuery);
   const select = useSelectState({
     gutter: 4,
     value: props.value,
     setValue: props.setValue,
   });
-  if (!data) {
+  if (!props.accounts) {
     return (
       <Select state={select} className="w-full">
         Loading...
       </Select>
     );
   }
-  if (!data.me) {
-    throw new Error("Invariant: no user");
-  }
-  const accounts = [data.me, ...data.me.teams];
+
   const activeAccount =
-    accounts.find((account) => {
+    props.accounts.find((account: any) => {
       return account.id === props.value;
     }) ?? null;
   return (
     <>
-      <Select state={select} className="w-full">
+      <Select state={select} className="w-full bg-slate-700/40">
         {activeAccount ? (
           <div className="flex w-full items-center justify-between">
             <AccountItem account={activeAccount} />
@@ -68,15 +68,16 @@ export const AccountSelector = (props: AccountSelectorProps) => {
       </Select>
 
       <SelectPopover state={select} aria-label="Accounts" portal>
-        {accounts.map((account) => {
+        {props.accounts.map((account: any) => {
           return (
             <SelectItem
               state={select}
               key={account.id}
               value={account.id}
-              disabled={Boolean(
-                props.actualAccountId && props.actualAccountId === account.id
-              )}
+              disabled={
+                props.disabledAccountIds &&
+                props.disabledAccountIds.includes(account.id)
+              }
             >
               <AccountItem account={account} />
             </SelectItem>

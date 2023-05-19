@@ -1,5 +1,5 @@
 import { FetchResult, useMutation } from "@apollo/client";
-import { ArrowLongRightIcon } from "@heroicons/react/24/outline";
+import { UserPlusIcon } from "@heroicons/react/24/outline";
 import { ChevronDownIcon, ChevronRightIcon } from "@primer/octicons-react";
 import {
   Disclosure,
@@ -13,7 +13,7 @@ import { Link as RouterLink } from "react-router-dom";
 
 import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Button } from "@/ui/Button";
+import { Button, ButtonIcon } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -34,10 +34,12 @@ import {
   DialogTitle,
   useDialogState,
 } from "@/ui/Dialog";
-import { Anchor, Link } from "@/ui/Link";
+import { Anchor } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
+
+import { UpgradeDialogButton } from "./UpgradeDialog";
 
 const TerminateTrialMutation = graphql(`
   mutation terminateTrial($purchaseId: ID!, $stripeCustomerId: String!) {
@@ -360,13 +362,13 @@ const PlanActions = ({
   hasPaidPlan,
   hasPurchase,
   stripeCustomerId,
-  accountSlug,
+  accountId,
   accountType,
 }: {
   hasPaidPlan: boolean;
   hasPurchase: boolean;
   stripeCustomerId: string | null;
-  accountSlug: string;
+  accountId: string;
   accountType: "User" | "Team";
 }) => {
   if (accountType === "User") {
@@ -378,6 +380,9 @@ const PlanActions = ({
         <Button>
           {(buttonProps) => (
             <RouterLink to="/teams/new" {...buttonProps}>
+              <ButtonIcon>
+                <UserPlusIcon />
+              </ButtonIcon>
               Create a Team
             </RouterLink>
           )}
@@ -388,14 +393,12 @@ const PlanActions = ({
 
   if (!hasPaidPlan) {
     return (
-      <>
-        Subscribe to paid plan using{" "}
-        <Link to={`/${accountSlug}/checkout`}>Stripe</Link> or{" "}
-        <Anchor href={config.get("github.marketplaceUrl")} external>
-          GitHub Marketplace
-        </Anchor>{" "}
-        .
-      </>
+      <div className="flex items-center justify-between">
+        <Anchor href={`mailto:${config.get("contactEmail")}`} external>
+          Contact Sales
+        </Anchor>
+        <UpgradeDialogButton currentAccountId={accountId} />
+      </div>
     );
   }
 
@@ -493,10 +496,9 @@ export const PlanCard = (props: { account: AccountFragment }) => {
             </span>
           )}
           {!hasPaidPlan && (
-            <Link to={`/${account.slug}/checkout`}>
+            <Anchor href="https://argos-ci.com/pricing" external>
               Learn more
-              <ArrowLongRightIcon className="ml-1 inline h-[1em] w-[1em] shrink-0" />
-            </Link>
+            </Anchor>
           )}
           <div className="mt-2 text-on-light">{secondaryDescription}</div>
           {trialIsActive && account.stripeCustomerId && plan && (
@@ -542,7 +544,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
           hasPaidPlan={hasPaidPlan}
           hasPurchase={!!purchase}
           stripeCustomerId={account.stripeCustomerId ?? null}
-          accountSlug={account.slug}
+          accountId={account.id}
           accountType={accountType}
         />
       </CardFooter>
