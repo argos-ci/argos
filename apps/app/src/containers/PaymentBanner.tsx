@@ -63,39 +63,41 @@ const getSubscriptionStatus = ({
   buttonLabel?: string;
   bannerColor?: BannerProps["color"];
 } => {
-  switch (true) {
-    case !isTeamAccount:
-      return { message: "" };
-
-    case !hasPaidPlan && now < FREE_PLAN_EXPIRATION_DATE:
-      return {
-        message:
-          "Starting June 1st, 2023, a Pro plan will be required to use team features.",
-        buttonLabel: "Start trial",
-      };
-
-    case !hasPaidPlan:
-      return {
-        message: `Upgrade to Pro plan to continue using team features.`,
-        bannerColor: "danger",
-      };
-
-    case isTrialActive && !paymentMethodFilled:
-      return {
-        message: `Your trial ends in ${trialDaysRemaining} days. Add a payment method to retain access to team features.`,
-        buttonLabel: "Add payment method",
-      };
-
-    case !paymentMethodFilled:
-      return {
-        message: `Add a payment method to ensure uninterrupted access to team features.`,
-        buttonLabel: "Add payment method",
-        bannerColor: "warning",
-      };
-
-    default:
-      return { message: "" };
+  if (!isTeamAccount) {
+    return { message: "" };
   }
+
+  if (!hasPaidPlan && now < FREE_PLAN_EXPIRATION_DATE) {
+    return {
+      message:
+        "Starting June 1st, 2023, a Pro plan will be required to use team features.",
+      buttonLabel: "Start trial",
+    };
+  }
+
+  if (!hasPaidPlan) {
+    return {
+      message: `Upgrade to Pro plan to continue using team features.`,
+      bannerColor: "danger",
+    };
+  }
+
+  if (isTrialActive && !paymentMethodFilled) {
+    return {
+      message: `Your trial ends in ${trialDaysRemaining} days. Add a payment method to retain access to team features.`,
+      buttonLabel: "Add payment method",
+    };
+  }
+
+  if (!paymentMethodFilled) {
+    return {
+      message: `Add a payment method to ensure uninterrupted access to team features.`,
+      buttonLabel: "Add payment method",
+      bannerColor: "warning",
+    };
+  }
+
+  return { message: "" };
 };
 
 export type PaymentBannerProps = {

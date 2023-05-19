@@ -231,7 +231,7 @@ const ConfirmTrialEndDialog = ({
   );
 };
 
-const getPurchaseStatus = ({
+const SubscriptionStatus = ({
   account,
   trialExpired,
 }: {
@@ -239,52 +239,19 @@ const getPurchaseStatus = ({
   trialExpired: boolean;
 }) => {
   const { type: accountType, plan, oldPaidPurchase, hasPaidPlan } = account;
-  const accountTypeLabel = accountType === "User" ? "Personal account" : "team";
-
-  switch (true) {
-    case !plan:
-      return {
-        status: "noPlan",
-        description: `You have no plan yet.`,
-        secondaryDescription: "",
-      };
-
-    case accountType === "Team" && trialExpired:
-      return {
-        status: "teamTrialExpired",
-        description: "Your team trial has expired.",
-        secondaryDescription:
-          "You will no longer be able to create builds until you subscribe to a paid plan.",
-      };
-
-    case accountType === "Team" && !hasPaidPlan && Boolean(oldPaidPurchase):
-      return {
-        status: "TeamPaidPlanCancelled",
-        description: `Your team ${
-          oldPaidPurchase!.plan.name
-        } plan has been cancelled.`,
-        secondaryDescription:
-          "You will no longer be able to create builds until you subscribe to a paid plan.",
-      };
-
-    // Legacy plan on team account
-    // case accountType === "Team" && !hasPaidPlan:
-    //   return {
-    //     status: "TeamNoPaidPlan",
-    //     description: `Your ${accountTypeLabel} is on the ${planName} plan.`,
-    //     secondaryDescription:
-    //       "Starting from July 1st, 2023, you will not be able to create builds until you subscribe to a paid plan.",
-    //   };
-
-    default:
-      return {
-        status: "default",
-        description: `Your ${accountTypeLabel} is on the ${plan!.name} plan. ${
-          hasPaidPlan ? "" : "Free of charge. "
-        }`,
-        secondaryDescription: "",
-      };
+  if (accountType === "User") {
+    return <>Your Personal account is on the Free plan. Free of charge.</>;
   }
+  if (hasPaidPlan) {
+    return <>Your team is on the {plan!.name} plan.</>;
+  }
+  if (trialExpired) {
+    return <>Your trial has expired.</>;
+  }
+  if (oldPaidPurchase) {
+    return <>Your plan has been cancelled.</>;
+  }
+  return <>Your team has no paid plan.</>;
 };
 
 const ConsumptionBlock = ({
@@ -472,8 +439,6 @@ export const PlanCard = (props: { account: AccountFragment }) => {
     !hasPaidPlan &&
     oldPaidPurchase?.trialEndDate &&
     oldPaidPurchase.trialEndDate === oldPaidPurchase.endDate;
-  const { description: purchaseStatusDescription, secondaryDescription } =
-    getPurchaseStatus({ account, trialExpired });
   const [privateProjects, publicProjects] = groupByPrivacy(projects.edges);
   const trialIsActive = purchase && purchase.isTrialActive;
 
@@ -482,7 +447,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
       <CardBody>
         <CardTitle>Plan</CardTitle>
         <CardParagraph>
-          {purchaseStatusDescription}{" "}
+          <SubscriptionStatus account={account} trialExpired={trialExpired} />{" "}
           {(trialIsActive || trialExpired) && (
             <TrialChip expired={trialExpired} />
           )}
@@ -498,7 +463,11 @@ export const PlanCard = (props: { account: AccountFragment }) => {
               <ArrowLongRightIcon className="ml-1 inline h-[1em] w-[1em] shrink-0" />
             </Link>
           )}
-          <div className="mt-2 text-on-light">{secondaryDescription}</div>
+          {accountType === "Team" && !hasPaidPlan && (
+            <div className="mt-2 text-on-light">
+              Subscribe to Pro plan to use team features.
+            </div>
+          )}
           {trialIsActive && account.stripeCustomerId && plan && (
             <TrialStatus
               trialIsActive={trialIsActive}
