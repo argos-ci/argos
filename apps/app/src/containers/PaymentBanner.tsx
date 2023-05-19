@@ -3,7 +3,9 @@ import { memo } from "react";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Banner } from "@/ui/Banner";
 import { Container } from "@/ui/Container";
-import { StripeCheckoutButton, StripePortalLink } from "@/ui/StripeLink";
+import { StripePortalLink } from "@/ui/StripeLink";
+
+import { UpgradeDialogButton } from "./UpgradeDialog";
 
 export const PaymentBannerFragment = graphql(`
   fragment PaymentBanner_Account on Account {
@@ -37,9 +39,9 @@ const UpgradeButton = ({
   }
 
   return (
-    <StripeCheckoutButton accountId={accountId} variant="secondary">
+    <UpgradeDialogButton currentAccountId={accountId} color="white">
       {children}
-    </StripeCheckoutButton>
+    </UpgradeDialogButton>
   );
 };
 
