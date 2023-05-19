@@ -6,6 +6,7 @@ import { Account, Project, Purchase, User } from "@argos-ci/database/models";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { IPermission } from "../__generated__/resolver-types.js";
+import type { Context } from "../context.js";
 import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
@@ -56,6 +57,8 @@ export const typeDefs = gql`
     account(slug: String!): Account
     "Get Account by id"
     accountById(id: ID!): Account
+    "Get Team by id"
+    teamById(id: ID!): Team
   }
 
   extend type Mutation {
@@ -107,6 +110,19 @@ const RESERVED_SLUGS = [
   "invite",
   "teams",
 ];
+
+const accountById = async (
+  _root: unknown,
+  args: { id: string },
+  ctx: Context
+) => {
+  if (!ctx.auth) return null;
+  const account = await Account.query().findById(args.id);
+  if (!account) return null;
+  const hasReadPermission = await account.$checkReadPermission(ctx.auth.user);
+  if (!hasReadPermission) return null;
+  return account;
+};
 
 export const resolvers: IResolvers = {
   Account: {
@@ -225,22 +241,14 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) return null;
       const account = await Account.query().findOne({ slug: args.slug });
       if (!account) return null;
-      const hasWritePermission = await account.$checkReadPermission(
+      const hasReadPermission = await account.$checkReadPermission(
         ctx.auth.user
       );
-      if (!hasWritePermission) return null;
+      if (!hasReadPermission) return null;
       return account;
     },
-    accountById: async (_root, args, ctx) => {
-      if (!ctx.auth) return null;
-      const account = await Account.query().findById(args.id);
-      if (!account) return null;
-      const hasWritePermission = await account.$checkReadPermission(
-        ctx.auth.user
-      );
-      if (!hasWritePermission) return null;
-      return account;
-    },
+    accountById,
+    teamById: accountById,
   },
   Mutation: {
     updateAccount: async (_root, args, ctx) => {
