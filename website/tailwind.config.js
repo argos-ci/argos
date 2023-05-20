@@ -17,6 +17,13 @@ module.exports = {
         "on-light": colors.slate[400],
         primary: colors.purple,
         neutral: colors.slate,
+        border: colors.slate[700],
+
+        tooltip: {
+          bg: colors.slate[900],
+          border: colors.slate[700],
+          on: colors.slate[50],
+        },
       },
     },
   },
