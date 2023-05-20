@@ -2,7 +2,8 @@ import { Outlet, useOutletContext, useParams } from "react-router-dom";
 
 import { Query } from "@/containers/Apollo";
 import { Main } from "@/containers/Layout";
-import { graphql } from "@/gql";
+import { PaymentBanner } from "@/containers/PaymentBanner";
+import { DocumentType, graphql } from "@/gql";
 import { Permission } from "@/gql/graphql";
 import { PageLoader } from "@/ui/PageLoader";
 import {
@@ -19,9 +20,12 @@ const AccountQuery = graphql(`
     account(slug: $slug) {
       id
       permissions
+      ...PaymentBanner_Account
     }
   }
 `);
+
+type Account = NonNullable<DocumentType<typeof AccountQuery>["account"]>;
 
 export interface OutletContext {
   hasWritePermission: boolean;
@@ -31,7 +35,7 @@ export const useAccountContext = () => {
   return useOutletContext<OutletContext>();
 };
 
-const AccountTabs = () => {
+const AccountTabs = ({ account }: { account: Account }) => {
   const tab = useTabLinkState();
   return (
     <>
@@ -39,6 +43,8 @@ const AccountTabs = () => {
         <TabLink to="">Projects</TabLink>
         <TabLink to="settings">Settings</TabLink>
       </TabLinkList>
+      <hr className="border-t-border" />
+      <PaymentBanner account={account} />
       <TabLinkPanel state={tab} as={Main} tabId={tab.selectedId || null}>
         <Outlet context={{ hasWritePermission: true } as OutletContext} />
       </TabLinkPanel>
@@ -64,7 +70,7 @@ export const Account = () => {
         if (!account.permissions.includes("read" as Permission)) {
           return <NotFound />;
         }
-        return <AccountTabs />;
+        return <AccountTabs account={account} />;
       }}
     </Query>
   );

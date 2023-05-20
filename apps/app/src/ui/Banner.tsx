@@ -6,9 +6,12 @@ export interface BannerProps extends HTMLProps<HTMLDivElement> {
 }
 
 const colorClassNames = {
-  neutral: "bg-neutral-500/20 text-neutral-400",
-  danger: "bg-danger-500/20 text-danger-400",
-  warning: "bg-warning-500/20 text-warning-400",
+  neutral:
+    "bg-gradient-to-r from-neutral-800 via-primary-900/80 to-neutral-800",
+  danger:
+    "bg-gradient-to-r from-neutral-800 via-red-900 to-neutral-800 text-red-200",
+  warning:
+    "bg-gradient-to-r from-neutral-800 via-warning-900 to-neutral-800 text-warning-200",
 };
 
 export const Banner = forwardRef<HTMLDivElement, BannerProps>(
@@ -20,7 +23,7 @@ export const Banner = forwardRef<HTMLDivElement, BannerProps>(
         className={clsx(
           className,
           colorClassNames[color],
-          "p-4 text-sm font-medium"
+          "p-2 text-sm font-medium"
         )}
         {...props}
       >

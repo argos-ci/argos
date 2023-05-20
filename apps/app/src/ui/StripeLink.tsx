@@ -34,11 +34,11 @@ type StripePortalFormInputs = {
 export const StripePortalLink = ({
   stripeCustomerId,
   children,
-  buttonDesign = false,
+  button = false,
 }: {
   stripeCustomerId: string;
   children: React.ReactNode;
-  buttonDesign?: boolean;
+  button?: boolean;
 }) => {
   const form = useForm<StripePortalFormInputs>({
     defaultValues: { stripeCustomerId },
@@ -60,8 +60,8 @@ export const StripePortalLink = ({
   return (
     <FormProvider {...form}>
       <Form onSubmit={onSubmit}>
-        {buttonDesign ? (
-          <Button type="submit" variant="outline" color="neutral">
+        {button ? (
+          <Button type="submit" variant="outline" color="white">
             {children}
           </Button>
         ) : (

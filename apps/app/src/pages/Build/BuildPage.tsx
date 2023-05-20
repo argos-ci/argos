@@ -1,6 +1,7 @@
 import { useQuery } from "@apollo/client";
 import { useEffect } from "react";
 
+import { PaymentBanner } from "@/containers/PaymentBanner";
 import { graphql } from "@/gql";
 
 import { BuildHeader } from "./BuildHeader";
@@ -23,6 +24,7 @@ const ProjectQuery = graphql(`
       account {
         id
         ...OvercapacityBanner_Account
+        ...PaymentBanner_Account
       }
       build(number: $buildNumber) {
         id
@@ -73,10 +75,13 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
       <BuildHotkeysDialog />
       <div className="m flex h-screen min-h-0 flex-col">
         {data?.project?.account && (
-          <OvercapacityBanner
-            account={data.project.account}
-            accountSlug={params.accountSlug}
-          />
+          <>
+            <PaymentBanner account={data.project.account} />
+            <OvercapacityBanner
+              account={data.project.account}
+              accountSlug={params.accountSlug}
+            />
+          </>
         )}
         <BuildHeader
           buildNumber={params.buildNumber}
