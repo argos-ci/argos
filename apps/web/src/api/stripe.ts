@@ -41,19 +41,30 @@ router.post(
 
 router.post(
   "/stripe/create-customer-portal-session",
+  auth,
   bodyParser.json(),
   asyncHandler(async (req, res) => {
     try {
       const { stripeCustomerId } = req.body;
+      const user = req.auth?.user;
+
+      if (!user) {
+        throw new Error("User not logged in");
+      }
+
       if (!stripeCustomerId) {
-        throw new Error("stripe customer id missing");
+        throw new Error("Stripe customer id missing");
       }
 
       const account = await Account.query()
         .findOne({ stripeCustomerId })
         .throwIfNotFound({
-          message: `no account found with stripeCustomerId: "${stripeCustomerId}"`,
+          message: `No account found with stripeCustomerId: "${stripeCustomerId}"`,
         });
+
+      if (!account.$checkWritePermission(user)) {
+        throw new Error("Unauthorized");
+      }
 
       const session = await stripe.billingPortal.sessions.create({
         customer: stripeCustomerId,
@@ -84,14 +95,14 @@ router.post(
   asyncHandler(async (req, res) => {
     try {
       const { accountId } = req.body;
+      const user = req.auth?.user;
 
-      const authenticatedUser = req.auth;
-      if (!authenticatedUser) {
-        throw new Error("auth missing");
+      if (!user) {
+        throw new Error("User not logged in");
       }
 
       if (!accountId) {
-        throw new Error("accountId missing");
+        throw new Error("AccountId missing");
       }
 
       const [teamAccount, proPlan] = await Promise.all([
@@ -102,6 +113,9 @@ router.post(
       if (!teamAccount) {
         throw new Error("Team account not found");
       }
+      if (!teamAccount.$checkWritePermission(user)) {
+        throw new Error("Unauthorized");
+      }
       if (!proPlan) {
         throw new Error("Pro plan not found");
       }
@@ -109,7 +123,7 @@ router.post(
       const session = await createStripeCheckoutSession({
         plan: proPlan,
         account: teamAccount,
-        purchaserId: authenticatedUser.user.id,
+        purchaserId: user.id,
         // prettier-ignore
         successUrl: new URL(`${teamAccount.slug}?checkout=success`, config.get('server.url')).href,
         // prettier-ignore
