@@ -58,7 +58,7 @@ export const SESSION_PAYLOAD = {
   status: "complete",
   submit_type: null,
   subscription: "sub_1N2ufMHOD9RpIFZdIkNDNsIt",
-  success_url: "https://app.argos-ci.dev:4002/checkout-success",
+  success_url: "https://app.argos-ci.dev:4002",
   total_details: {
     amount_discount: 0,
     amount_shipping: 0,

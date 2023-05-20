@@ -62,7 +62,6 @@ const documents = {
     "\n  mutation VercelProjectsSummary_createProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    createProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      name\n      account {\n        id\n        slug\n      }\n    }\n  }\n": types.VercelProjectsSummary_CreateProjectDocument,
     "\n  mutation VercelProjectsSummary_setupVercelIntegration(\n    $input: SetupVercelIntegrationInput!\n  ) {\n    setupVercelIntegration(input: $input)\n  }\n": types.VercelProjectsSummary_SetupVercelIntegrationDocument,
     "\n  mutation Vercel_retrieveVercelToken($code: String!) {\n    retrieveVercelToken(code: $code) {\n      access_token\n      installation_id\n      user_id\n      team_id\n    }\n  }\n": types.Vercel_RetrieveVercelTokenDocument,
-    "\n  query AccountCheckout_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      stripeClientReferenceId\n      purchase {\n        id\n        source\n      }\n    }\n  }\n": types.AccountCheckout_AccountDocument,
     "\n  query AccountNewProject_me {\n    me {\n      id\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n": types.AccountNewProject_MeDocument,
     "\n  mutation NewProject_createProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    createProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      name\n      account {\n        id\n        slug\n      }\n    }\n  }\n": types.NewProject_CreateProjectDocument,
     "\n  query AccountProjects_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          ...ProjectList_Project\n        }\n      }\n    }\n  }\n": types.AccountProjects_AccountDocument,
@@ -78,7 +77,6 @@ const documents = {
     "\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n  }\n": types.BuildWorkspace_BuildFragmentDoc,
     "\n  fragment BuildWorkspace_Project on Project {\n    ...BuildStatusDescription_Project\n  }\n": types.BuildWorkspace_ProjectFragmentDoc,
     "\n  fragment OvercapacityBanner_Account on Account {\n    plan {\n      id\n      name\n    }\n    consumptionRatio\n    hasUsageBasedPlan\n  }\n": types.OvercapacityBanner_AccountFragmentDoc,
-    "\n  query Checkout_success {\n    me {\n      id\n      lastPurchase {\n        id\n        account {\n          id\n          slug\n        }\n      }\n    }\n  }\n": types.Checkout_SuccessDocument,
     "\n  query Invite_invitation($token: String!) {\n    invitation(token: $token) {\n      id\n      name\n      slug\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n\n    me {\n      id\n      teams {\n        id\n      }\n    }\n  }\n": types.Invite_InvitationDocument,
     "\n  mutation Invite_acceptInvitation($token: String!) {\n    acceptInvitation(token: $token) {\n      id\n      slug\n    }\n  }\n": types.Invite_AcceptInvitationDocument,
     "\n  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      ...GettingStarted_Project\n      ...BuildStatusChip_Project\n    }\n  }\n": types.ProjectBuilds_ProjectDocument,
@@ -304,10 +302,6 @@ export function graphql(source: "\n  mutation Vercel_retrieveVercelToken($code: 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query AccountCheckout_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      stripeClientReferenceId\n      purchase {\n        id\n        source\n      }\n    }\n  }\n"): (typeof documents)["\n  query AccountCheckout_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      stripeClientReferenceId\n      purchase {\n        id\n        source\n      }\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
 export function graphql(source: "\n  query AccountNewProject_me {\n    me {\n      id\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query AccountNewProject_me {\n    me {\n      id\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -365,10 +359,6 @@ export function graphql(source: "\n  fragment BuildWorkspace_Project on Project 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  fragment OvercapacityBanner_Account on Account {\n    plan {\n      id\n      name\n    }\n    consumptionRatio\n    hasUsageBasedPlan\n  }\n"): (typeof documents)["\n  fragment OvercapacityBanner_Account on Account {\n    plan {\n      id\n      name\n    }\n    consumptionRatio\n    hasUsageBasedPlan\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query Checkout_success {\n    me {\n      id\n      lastPurchase {\n        id\n        account {\n          id\n          slug\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query Checkout_success {\n    me {\n      id\n      lastPurchase {\n        id\n        account {\n          id\n          slug\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
