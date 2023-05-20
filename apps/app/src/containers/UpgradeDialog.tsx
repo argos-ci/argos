@@ -102,7 +102,7 @@ export const UpgradeDialogButton = ({
     <>
       <DialogDisclosure state={dialog}>
         {(disclosureProps) => (
-          <Button {...disclosureProps} color={color}>
+          <Button {...disclosureProps} color={color} variant="outline">
             {children || "Upgrade"}
           </Button>
         )}
