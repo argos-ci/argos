@@ -1,6 +1,7 @@
 import { memo } from "react";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
+import { Permission } from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
 import { Container } from "@/ui/Container";
 import { StripePortalLink } from "@/ui/StripeLink";
@@ -15,6 +16,7 @@ export const PaymentBannerFragment = graphql(`
     id
     stripeCustomerId
     hasPaidPlan
+    permissions
 
     purchase {
       paymentMethodFilled
@@ -108,10 +110,9 @@ export type PaymentBannerProps = {
 
 export const PaymentBanner = memo((props: PaymentBannerProps) => {
   const account = useFragment(PaymentBannerFragment, props.account);
-  const { purchase, hasPaidPlan } = account;
+  const { purchase, hasPaidPlan, permissions } = account;
   const { paymentMethodFilled, isTrialActive, trialDaysRemaining } =
     purchase || {};
-
   const { message, buttonLabel, bannerColor } = getSubscriptionStatus({
     isTeamAccount: account.__typename === "Team",
     hasPaidPlan,
@@ -119,8 +120,9 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
     isTrialActive: isTrialActive ?? false,
     trialDaysRemaining: trialDaysRemaining ?? null,
   });
+  const userIsOwner = permissions.includes(Permission.Write);
 
-  if (!message) {
+  if (!userIsOwner || !message) {
     return null;
   }
 

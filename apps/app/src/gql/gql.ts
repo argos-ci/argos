@@ -29,7 +29,7 @@ const documents = {
     "\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    batchCount\n    totalBatch\n    stats {\n      total\n    }\n  }\n": types.BuildStatusDescription_BuildFragmentDoc,
     "\n  fragment BuildStatusDescription_Project on Project {\n    referenceBranch\n  }\n": types.BuildStatusDescription_ProjectFragmentDoc,
     "\n  fragment InstallationsSelect_GhApiInstallation on GhApiInstallation {\n    id\n    account {\n      id\n      login\n      name\n    }\n  }\n": types.InstallationsSelect_GhApiInstallationFragmentDoc,
-    "\n  fragment PaymentBanner_Account on Account {\n    id\n    stripeCustomerId\n    hasPaidPlan\n\n    purchase {\n      paymentMethodFilled\n      isTrialActive\n      trialDaysRemaining\n    }\n  }\n": types.PaymentBanner_AccountFragmentDoc,
+    "\n  fragment PaymentBanner_Account on Account {\n    id\n    stripeCustomerId\n    hasPaidPlan\n    permissions\n\n    purchase {\n      paymentMethodFilled\n      isTrialActive\n      trialDaysRemaining\n    }\n  }\n": types.PaymentBanner_AccountFragmentDoc,
     "\n  mutation terminateTrial($purchaseId: ID!, $stripeCustomerId: String!) {\n    terminateTrial(\n      purchaseId: $purchaseId\n      stripeCustomerId: $stripeCustomerId\n    ) {\n      id\n      trialEndDate\n      __typename\n    }\n  }\n": types.TerminateTrialDocument,
     "\n  fragment PlanCard_Account on Account {\n    id\n    slug\n    stripeCustomerId\n    periodStartDate\n    periodEndDate\n    hasPaidPlan\n    __typename\n\n    plan {\n      id\n      name\n      screenshotsLimitPerMonth\n      usageBased\n    }\n\n    purchase {\n      id\n      source\n      paymentMethodFilled\n      endDate\n      trialEndDate\n      isTrialActive\n    }\n\n    oldPaidPurchase {\n      id\n      endDate\n      trialEndDate\n      plan {\n        id\n        name\n      }\n    }\n\n    projects(first: 100, after: 0) {\n      edges {\n        id\n        name\n        public\n        currentMonthUsedScreenshots\n      }\n    }\n  }\n": types.PlanCard_AccountFragmentDoc,
     "\n  fragment ProjectChangeName_Project on Project {\n    id\n    name\n    account {\n      id\n      slug\n    }\n  }\n": types.ProjectChangeName_ProjectFragmentDoc,
@@ -173,7 +173,7 @@ export function graphql(source: "\n  fragment InstallationsSelect_GhApiInstallat
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment PaymentBanner_Account on Account {\n    id\n    stripeCustomerId\n    hasPaidPlan\n\n    purchase {\n      paymentMethodFilled\n      isTrialActive\n      trialDaysRemaining\n    }\n  }\n"): (typeof documents)["\n  fragment PaymentBanner_Account on Account {\n    id\n    stripeCustomerId\n    hasPaidPlan\n\n    purchase {\n      paymentMethodFilled\n      isTrialActive\n      trialDaysRemaining\n    }\n  }\n"];
+export function graphql(source: "\n  fragment PaymentBanner_Account on Account {\n    id\n    stripeCustomerId\n    hasPaidPlan\n    permissions\n\n    purchase {\n      paymentMethodFilled\n      isTrialActive\n      trialDaysRemaining\n    }\n  }\n"): (typeof documents)["\n  fragment PaymentBanner_Account on Account {\n    id\n    stripeCustomerId\n    hasPaidPlan\n    permissions\n\n    purchase {\n      paymentMethodFilled\n      isTrialActive\n      trialDaysRemaining\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
