@@ -59,7 +59,7 @@ export const StripePortalLink = ({
 
   return (
     <FormProvider {...form}>
-      <Form onSubmit={onSubmit}>
+      <Form onSubmit={onSubmit} className="inline-block">
         {button ? (
           <Button type="submit" variant="outline" color="white">
             {children}
@@ -67,7 +67,7 @@ export const StripePortalLink = ({
         ) : (
           <button
             type="submit"
-            className={clsx(anchorClassNames, "inline-flex items-center")}
+            className={clsx(anchorClassNames, "flex items-center")}
           >
             {children}
             <LinkExternalIcon className="ml-[0.5ex] h-[1em] w-[1em]" />
