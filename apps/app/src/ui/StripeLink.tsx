@@ -40,6 +40,7 @@ export const StripePortalLink = ({
   children: React.ReactNode;
   button?: boolean;
 }) => {
+  const { token } = useAuth();
   const form = useForm<StripePortalFormInputs>({
     defaultValues: { stripeCustomerId },
   });
@@ -48,6 +49,7 @@ export const StripePortalLink = ({
     const response = await postJson({
       url: "/stripe/create-customer-portal-session",
       data,
+      token,
     });
     const json = await response.json();
     if (response.ok) {
