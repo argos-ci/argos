@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import config from "@/config";
-import { Button, ButtonColor, ButtonIcon } from "@/ui/Button";
+import { Button, ButtonColor, ButtonIcon, ButtonVariant } from "@/ui/Button";
 import {
   Dialog,
   DialogBody,
@@ -78,10 +78,12 @@ export const UpgradeDialogButton = ({
   children,
   currentAccountId,
   color = "primary",
+  variant = "contained",
 }: {
   children?: React.ReactNode;
   currentAccountId?: string;
   color?: ButtonColor;
+  variant?: ButtonVariant;
 }) => {
   const dialog = useDialogState();
   const [provider, setProvider] = useState<ServiceProvider>("stripe");
@@ -102,7 +104,7 @@ export const UpgradeDialogButton = ({
     <>
       <DialogDisclosure state={dialog}>
         {(disclosureProps) => (
-          <Button {...disclosureProps} color={color} variant="outline">
+          <Button {...disclosureProps} color={color} variant={variant}>
             {children || "Upgrade"}
           </Button>
         )}

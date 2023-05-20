@@ -44,7 +44,11 @@ const UpgradeButton = ({
   }
 
   return (
-    <UpgradeDialogButton currentAccountId={accountId} color="white">
+    <UpgradeDialogButton
+      currentAccountId={accountId}
+      color="white"
+      variant="outline"
+    >
       {children}
     </UpgradeDialogButton>
   );
