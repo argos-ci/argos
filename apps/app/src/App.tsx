@@ -13,13 +13,11 @@ import { Layout, Main } from "@/containers/Layout";
 import { ApolloInitializer } from "./containers/Apollo";
 import { AuthProvider } from "./containers/Auth";
 import { Account } from "./pages/Account";
-import { AccountCheckout } from "./pages/Account/Checkout";
 import { AccountNewProject } from "./pages/Account/NewProject";
 import { AccountProjects } from "./pages/Account/Projects";
 import { AccountSettings } from "./pages/Account/Settings";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Build } from "./pages/Build";
-import { CheckoutSuccessRedirect } from "./pages/CheckoutSuccessRedirect";
 import { Home } from "./pages/Home";
 import { Invite } from "./pages/Invite";
 import { Login } from "./pages/Login";
@@ -45,7 +43,6 @@ const router = createBrowserRouter(
         path="/:accountSlug/:projectName/builds/:buildNumber/:diffId"
         element={<Build />}
       />
-      <Route path="/checkout-success" element={<CheckoutSuccessRedirect />} />
       <Route
         path="/"
         element={
@@ -79,7 +76,6 @@ const router = createBrowserRouter(
           <Route path="" element={<AccountProjects />} />
           <Route path="new" element={<AccountNewProject />} />
           <Route path="settings" element={<AccountSettings />} />
-          <Route path="checkout" element={<AccountCheckout />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Route>

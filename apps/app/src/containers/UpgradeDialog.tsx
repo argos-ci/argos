@@ -15,8 +15,8 @@ import {
 } from "@/ui/Dialog";
 import { Anchor } from "@/ui/Link";
 import { RadioField, RadioGroup, useRadioState } from "@/ui/Radio";
+import { StripeCheckoutButton } from "@/ui/StripeLink";
 
-// import { StripeCheckoutButton } from "@/ui/StripeLink";
 import { AccountSelector, AccountSelectorQuery } from "./AccountSelector";
 import { useQuery } from "./Apollo";
 
@@ -29,11 +29,11 @@ const DialogFooter = ({ children }: { children: React.ReactNode }) => (
 const SubscribeButton = ({
   provider,
   disabled,
-  accountSlug,
+  accountId,
 }: {
   provider: ServiceProvider;
   disabled: boolean;
-  accountSlug: string | null;
+  accountId: string;
 }) => {
   if (provider === "github") {
     return (
@@ -47,20 +47,10 @@ const SubscribeButton = ({
     );
   }
 
-  // return (
-  //   <StripeCheckoutButton accountId={accountId} disabled={disabled}>
-  //     Continue
-  //   </StripeCheckoutButton>
-  // );
-
   return (
-    <Button disabled={!accountSlug || disabled}>
-      {(buttonProps) => (
-        <Link to={`/${accountSlug}/checkout`} {...buttonProps}>
-          Continue
-        </Link>
-      )}
-    </Button>
+    <StripeCheckoutButton accountId={accountId} disabled={disabled}>
+      Continue
+    </StripeCheckoutButton>
   );
 };
 
@@ -107,7 +97,6 @@ export const UpgradeDialogButton = ({
       : [];
   const disableSubmit = provider === "stripe" && !accountId;
   const canGetTrial = Boolean(data?.me && !data?.me?.hasSubscribedToTrial);
-  const account = data?.me?.teams.find((a) => a.id === accountId);
 
   return (
     <>
@@ -190,8 +179,7 @@ export const UpgradeDialogButton = ({
               <SubscribeButton
                 provider={provider}
                 disabled={disableSubmit}
-                // accountId={accountId}
-                accountSlug={account?.slug ?? null}
+                accountId={accountId}
               />
             </div>
           </div>
