@@ -36,6 +36,7 @@ export const typeDefs = gql`
     ghAccount: GithubAccount
     avatar: AccountAvatar!
     members(after: Int = 0, first: Int = 30): TeamMemberConnection!
+    me: TeamMember!
     inviteLink: String!
   }
 
@@ -53,6 +54,10 @@ export const typeDefs = gql`
     id: ID!
     user: User!
     level: TeamUserLevel!
+  }
+
+  type RemoveUserFromTeamPayload {
+    teamMemberId: ID!
   }
 
   input CreateTeamInput {
@@ -84,7 +89,9 @@ export const typeDefs = gql`
     "Leave a team"
     leaveTeam(input: LeaveTeamInput!): Boolean!
     "Remove a user from a team"
-    removeUserFromTeam(input: RemoveUserFromTeamInput!): Boolean!
+    removeUserFromTeam(
+      input: RemoveUserFromTeamInput!
+    ): RemoveUserFromTeamPayload!
     "Accept an invitation to join a team"
     acceptInvitation(token: String!): Team!
     "Set member level"
@@ -122,6 +129,23 @@ export const resolvers: IResolvers = {
     level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
   },
   Team: {
+    me: async (account, _args, ctx) => {
+      if (!account.teamId) {
+        throw new Error("Invariant: account.teamId is undefined");
+      }
+      if (!ctx.auth) {
+        throw new Error("Forbidden");
+      }
+      if (!Team.checkReadPermission(account.teamId, ctx.auth.user)) {
+        throw new Error("Forbidden");
+      }
+
+      return TeamUser.query()
+        .where("teamId", account.teamId)
+        .where("userId", ctx.auth.user.id)
+        .first()
+        .throwIfNotFound();
+    },
     members: async (account, args, ctx) => {
       if (!account.teamId) {
         throw new Error("Invariant: account.teamId is undefined");
@@ -129,16 +153,20 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw new Error("Forbidden");
       }
-      if (!Team.checkWritePermission(account.teamId, ctx.auth.user)) {
+      if (!Team.checkReadPermission(account.teamId, ctx.auth.user)) {
         throw new Error("Forbidden");
       }
       const { first, after } = args;
-      const query = TeamUser.query()
+      const result = await TeamUser.query()
         .where("teamId", account.teamId)
-        .orderBy("id", "asc")
+        .where("userId", ctx.auth.user.id)
+        .union(
+          TeamUser.query()
+            .where("teamId", account.teamId)
+            .whereNot("userId", ctx.auth.user.id)
+            .orderBy("id", "asc")
+        )
         .range(after, after + first - 1);
-
-      const result = await query;
 
       return paginateResult({ result, first, after });
     },
@@ -234,12 +262,19 @@ export const resolvers: IResolvers = {
         throw new Error("Can't remove the last user of a team.");
       }
 
-      await TeamUser.query().delete().where({
-        userId: userAccount.userId,
-        teamId: teamAccount.teamId,
-      });
+      const teamUser = await TeamUser.query()
+        .select("id")
+        .findOne({
+          teamId: teamAccount.teamId,
+          userId: userAccount.userId,
+        })
+        .throwIfNotFound();
 
-      return true;
+      await teamUser?.$query().delete();
+
+      return {
+        teamMemberId: teamUser.id,
+      };
     },
     acceptInvitation: async (_root, args, ctx): Promise<Account> => {
       if (!ctx.auth) {

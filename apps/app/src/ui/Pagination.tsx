@@ -7,14 +7,14 @@ interface PaginationProps {
   };
   first: number;
   after: number;
-  handlePageChange: (after: number) => void;
+  onPageChange: (after: number) => void;
 }
 
 export const Pagination: React.FC<PaginationProps> = ({
   pageInfo,
   first,
   after,
-  handlePageChange,
+  onPageChange,
 }) => {
   if (pageInfo.totalCount <= first) {
     return null;
@@ -26,7 +26,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         color="neutral"
         variant="outline"
         size="small"
-        onClick={() => handlePageChange(after - first)}
+        onClick={() => onPageChange(after - first)}
         disabled={after === 0}
       >
         Previous
@@ -38,7 +38,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         color="neutral"
         variant="outline"
         size="small"
-        onClick={() => handlePageChange(after + first)}
+        onClick={() => onPageChange(after + first)}
         disabled={!pageInfo.hasNextPage}
       >
         Next

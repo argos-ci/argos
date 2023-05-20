@@ -239,7 +239,7 @@ export type IMutation = {
   muteTests: IMuteUpdateTest;
   ping: Scalars['Boolean'];
   /** Remove a user from a team */
-  removeUserFromTeam: Scalars['Boolean'];
+  removeUserFromTeam: IRemoveUserFromTeamPayload;
   /** Retrieve a Vercel API token from a code */
   retrieveVercelToken: IVercelApiToken;
   /** Set member level */
@@ -466,6 +466,8 @@ export type IQuery = {
   project?: Maybe<IProject>;
   /** Get a project */
   projectById?: Maybe<IProject>;
+  /** Get Team by id */
+  teamById?: Maybe<ITeam>;
   /** Get Vercel projects from API */
   vercelApiProjects: IVercelApiProjectConnection;
   /** Get a Vercel Team From API */
@@ -505,6 +507,11 @@ export type IQueryProjectByIdArgs = {
 };
 
 
+export type IQueryTeamByIdArgs = {
+  id: Scalars['ID'];
+};
+
+
 export type IQueryVercelApiProjectsArgs = {
   accessToken: Scalars['String'];
   limit?: InputMaybe<Scalars['Int']>;
@@ -520,6 +527,11 @@ export type IQueryVercelApiTeamArgs = {
 export type IRemoveUserFromTeamInput = {
   teamAccountId: Scalars['ID'];
   userAccountId: Scalars['ID'];
+};
+
+export type IRemoveUserFromTeamPayload = {
+  __typename?: 'RemoveUserFromTeamPayload';
+  teamMemberId: Scalars['ID'];
 };
 
 export type IScreenshot = INode & {
@@ -597,6 +609,7 @@ export type ITeam = IAccount & INode & {
   hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   inviteLink: Scalars['String'];
+  me: ITeamMember;
   members: ITeamMemberConnection;
   name?: Maybe<Scalars['String']>;
   oldPaidPurchase?: Maybe<IPurchase>;
@@ -926,6 +939,7 @@ export type IResolversTypes = ResolversObject<{
   PurchaseSource: IPurchaseSource;
   Query: ResolverTypeWrapper<{}>;
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
+  RemoveUserFromTeamPayload: ResolverTypeWrapper<IRemoveUserFromTeamPayload>;
   Screenshot: ResolverTypeWrapper<Screenshot>;
   ScreenshotBucket: ResolverTypeWrapper<ScreenshotBucket>;
   ScreenshotDiff: ResolverTypeWrapper<ScreenshotDiff>;
@@ -996,6 +1010,7 @@ export type IResolversParentTypes = ResolversObject<{
   Purchase: Purchase;
   Query: {};
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
+  RemoveUserFromTeamPayload: IRemoveUserFromTeamPayload;
   Screenshot: Screenshot;
   ScreenshotBucket: ScreenshotBucket;
   ScreenshotDiff: ScreenshotDiff;
@@ -1160,7 +1175,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
   muteTests?: Resolver<IResolversTypes['MuteUpdateTest'], ParentType, ContextType, RequireFields<IMutationMuteTestsArgs, 'ids' | 'muted'>>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  removeUserFromTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
+  removeUserFromTeam?: Resolver<IResolversTypes['RemoveUserFromTeamPayload'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
   retrieveVercelToken?: Resolver<IResolversTypes['VercelApiToken'], ParentType, ContextType, RequireFields<IMutationRetrieveVercelTokenArgs, 'code'>>;
   setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
   setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
@@ -1245,8 +1260,14 @@ export type IQueryResolvers<ContextType = Context, ParentType extends IResolvers
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   project?: Resolver<Maybe<IResolversTypes['Project']>, ParentType, ContextType, RequireFields<IQueryProjectArgs, 'accountSlug' | 'projectName'>>;
   projectById?: Resolver<Maybe<IResolversTypes['Project']>, ParentType, ContextType, RequireFields<IQueryProjectByIdArgs, 'id'>>;
+  teamById?: Resolver<Maybe<IResolversTypes['Team']>, ParentType, ContextType, RequireFields<IQueryTeamByIdArgs, 'id'>>;
   vercelApiProjects?: Resolver<IResolversTypes['VercelApiProjectConnection'], ParentType, ContextType, RequireFields<IQueryVercelApiProjectsArgs, 'accessToken'>>;
   vercelApiTeam?: Resolver<Maybe<IResolversTypes['VercelApiTeam']>, ParentType, ContextType, RequireFields<IQueryVercelApiTeamArgs, 'accessToken' | 'id'>>;
+}>;
+
+export type IRemoveUserFromTeamPayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['RemoveUserFromTeamPayload'] = IResolversParentTypes['RemoveUserFromTeamPayload']> = ResolversObject<{
+  teamMemberId?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IScreenshotResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Screenshot'] = IResolversParentTypes['Screenshot']> = ResolversObject<{
@@ -1296,6 +1317,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   inviteLink?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  me?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType>;
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
@@ -1477,6 +1499,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   ProjectConnection?: IProjectConnectionResolvers<ContextType>;
   Purchase?: IPurchaseResolvers<ContextType>;
   Query?: IQueryResolvers<ContextType>;
+  RemoveUserFromTeamPayload?: IRemoveUserFromTeamPayloadResolvers<ContextType>;
   Screenshot?: IScreenshotResolvers<ContextType>;
   ScreenshotBucket?: IScreenshotBucketResolvers<ContextType>;
   ScreenshotDiff?: IScreenshotDiffResolvers<ContextType>;

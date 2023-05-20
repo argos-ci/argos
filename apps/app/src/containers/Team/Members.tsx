@@ -3,7 +3,8 @@ import { EllipsisVerticalIcon } from "@heroicons/react/20/solid";
 import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { useQuery } from "@/containers/Apollo";
+import { FragmentType, graphql, useFragment } from "@/gql";
 import { TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
@@ -40,34 +41,58 @@ import { MagicTooltip } from "@/ui/Tooltip";
 import { AccountAvatar } from "../AccountAvatar";
 import { useAuthTokenPayload } from "../Auth";
 
+const NB_MEMBERS_PER_PAGE = 10;
+
+const TeamMembersQuery = graphql(`
+  query TeamMembers_teamMembers($id: ID!, $first: Int!, $after: Int!) {
+    team: teamById(id: $id) {
+      id
+      members(first: $first, after: $after) {
+        edges {
+          id
+          level
+          user {
+            id
+            name
+            slug
+            avatar {
+              ...AccountAvatarFragment
+            }
+            ...RemoveFromTeamDialog_User
+          }
+          ...LevelSelect_TeamMember
+        }
+        pageInfo {
+          hasNextPage
+          totalCount
+        }
+      }
+    }
+  }
+`);
+
 const TeamFragment = graphql(`
   fragment TeamMembers_Team on Team {
     id
     name
     slug
     inviteLink
-    members(first: 30, after: 0) {
-      edges {
+    me {
+      id
+      level
+      user {
         id
-        level
-        user {
-          id
-          name
-          slug
-          avatar {
-            ...AccountAvatarFragment
-          }
+        name
+        slug
+        avatar {
+          ...AccountAvatarFragment
         }
+        ...RemoveFromTeamDialog_User
       }
-      pageInfo {
-        totalCount
-      }
+      ...LevelSelect_TeamMember
     }
   }
 `);
-
-type TeamMember = DocumentType<typeof TeamFragment>["members"]["edges"][0];
-type User = TeamMember["user"];
 
 const LeaveTeamMutation = graphql(`
   mutation TeamMembers_leaveTeam($teamAccountId: ID!) {
@@ -82,7 +107,9 @@ const RemoveUserFromTeamMutation = graphql(`
   ) {
     removeUserFromTeam(
       input: { teamAccountId: $teamAccountId, userAccountId: $userAccountId }
-    )
+    ) {
+      teamMemberId
+    }
   }
 `);
 
@@ -130,14 +157,26 @@ const LeaveTeamDialog = memo<LeaveTeamDialogProps>((props) => {
   );
 });
 
+const RemoveFromTeamDialogUserFragment = graphql(`
+  fragment RemoveFromTeamDialog_User on User {
+    id
+    name
+    slug
+    avatar {
+      ...AccountAvatarFragment
+    }
+  }
+`);
+
 type RemoveFromTeamDialogProps = {
   state: DialogState;
   teamName: string;
   teamAccountId: string;
-  user: User;
+  user: FragmentType<typeof RemoveFromTeamDialogUserFragment>;
 };
 
 const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
+  const user = useFragment(RemoveFromTeamDialogUserFragment, props.user);
   const [removeFromTeam, { loading, error }] = useMutation(
     RemoveUserFromTeamMutation,
     {
@@ -149,15 +188,17 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
               id: props.teamAccountId,
             }),
             fields: {
-              users: (existingUsers, { readField }) => {
+              members: (existingMembers, { readField }) => {
                 return {
-                  ...existingUsers,
-                  edges: existingUsers.edges.filter(
-                    (userRef: any) => readField("id", userRef) !== props.user.id
+                  ...existingMembers,
+                  edges: existingMembers.edges.filter(
+                    (userRef: any) =>
+                      readField("id", userRef) !==
+                      data.removeUserFromTeam.teamMemberId
                   ),
                   pageInfo: {
-                    ...existingUsers.pageInfo,
-                    totalCount: existingUsers.pageInfo.totalCount - 1,
+                    ...existingMembers.pageInfo,
+                    totalCount: existingMembers.pageInfo.totalCount - 1,
                   },
                 };
               },
@@ -167,7 +208,7 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
       },
       variables: {
         teamAccountId: props.teamAccountId,
-        userAccountId: props.user.id,
+        userAccountId: user.id,
       },
     }
   );
@@ -182,15 +223,15 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
         <List>
           <ListRow className="px-4 py-2">
             <AccountAvatar
-              avatar={props.user.avatar}
+              avatar={user.avatar}
               size={36}
               className="shrink-0"
             />
             <div>
               <div className="flex items-center gap-2">
-                <div className="text-sm font-semibold">{props.user.name}</div>
+                <div className="text-sm font-semibold">{user.name}</div>
               </div>
-              <div className="text-xs text-slate-500">{props.user.slug}</div>
+              <div className="text-xs text-slate-500">{user.slug}</div>
             </div>
           </ListRow>
         </List>
@@ -294,21 +335,35 @@ const SetTeamMemberLevelMutation = graphql(`
   }
 `);
 
-const LevelSelect = (props: { teamId: string; member: TeamMember }) => {
+const LevelSelectTeamMemberFragment = graphql(`
+  fragment LevelSelect_TeamMember on TeamMember {
+    id
+    level
+    user {
+      id
+    }
+  }
+`);
+
+const LevelSelect = (props: {
+  teamId: string;
+  member: FragmentType<typeof LevelSelectTeamMemberFragment>;
+}) => {
+  const member = useFragment(LevelSelectTeamMemberFragment, props.member);
   const [setTeamMemberLevel] = useMutation(SetTeamMemberLevelMutation);
   const select = useSelectState({
     gutter: 4,
-    value: props.member.level,
+    value: member.level,
     setValue: (value) => {
       setTeamMemberLevel({
         variables: {
           teamAccountId: props.teamId,
-          userAccountId: props.member.user.id,
+          userAccountId: member.user.id,
           level: value as TeamUserLevel,
         },
         optimisticResponse: {
           setTeamMemberLevel: {
-            id: props.member.user.id,
+            id: member.user.id,
             level: value as TeamUserLevel,
             __typename: "TeamMember",
           },
@@ -403,8 +458,6 @@ export const TeamMembers = (props: {
     throw new Error("Forbidden");
   }
   const team = useFragment(TeamFragment, props.team);
-  const teamName = team.name || team.slug;
-  const lastOne = team.members.pageInfo.totalCount === 1;
   const [removeAccountId, setRemoveAccountId] = useState<string | null>(null);
   const removeTeamDialog = useDialogState({
     open: removeAccountId !== null,
@@ -414,20 +467,22 @@ export const TeamMembers = (props: {
       }
     },
   });
-  // Put current user at the top
-  const members = Array.from(team.members.edges);
-  const meIndex = members.findIndex(
-    (member) => member.user.id === authPayload.account.id
-  );
-  const me = members[meIndex];
-  if (!me) {
-    throw new Error("Invariant: me not found in members");
-  }
+  const me = team.me;
   const amOwner = me.level === TeamUserLevel.Owner;
-  if (meIndex !== -1) {
-    members.splice(meIndex, 1);
-    members.unshift(me);
+  const { data, fetchMore } = useQuery(TeamMembersQuery, {
+    variables: {
+      id: team.id,
+      after: 0,
+      first: NB_MEMBERS_PER_PAGE,
+    },
+  });
+  if (!data) return null;
+  if (data.team?.__typename !== "Team") {
+    throw new Error("Invariant: Invalid team");
   }
+  const teamName = team.name || team.slug;
+  const lastOne = data.team.members.pageInfo.totalCount === 1;
+  const members = Array.from(data.team.members.edges);
   return (
     <Card>
       <form>
@@ -477,6 +532,42 @@ export const TeamMembers = (props: {
               );
             })}
           </List>
+          {data.team.members.pageInfo.hasNextPage && (
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                color="neutral"
+                className="w-full justify-center"
+                onClick={() => {
+                  fetchMore({
+                    variables: {
+                      after: members.length,
+                    },
+                    updateQuery: (prev, { fetchMoreResult }) => {
+                      if (!fetchMoreResult) return prev;
+                      if (!fetchMoreResult.team) return prev;
+                      if (!prev.team) return prev;
+                      return {
+                        team: {
+                          ...prev.team,
+                          members: {
+                            ...prev.team.members,
+                            edges: [
+                              ...prev.team.members.edges,
+                              ...fetchMoreResult.team.members.edges,
+                            ],
+                            pageInfo: fetchMoreResult.team.members.pageInfo,
+                          },
+                        },
+                      };
+                    },
+                  });
+                }}
+              >
+                Load more
+              </Button>
+            </div>
+          )}
           <Dialog state={removeTeamDialog}>
             {removeAccountId ? (
               authPayload.account.id === removeAccountId ? (
