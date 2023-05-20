@@ -144,20 +144,21 @@ const TrialStatus = ({
   if (trialCanceled) {
     return (
       <div className="mt-2 text-on-light">
-        Trial cancelled. You can still use the service until the trial period
-        ends on ${trialEndDate}.
+        Trial cancelled. You can still use the service until the trial ends on{" "}
+        {trialEndDate}.
       </div>
     );
   }
 
   if (!paymentMethodFilled) {
     return (
-      <div className="mt-2 text-on-light">
+      <div className="mt-2 gap-1 text-on-light">
         Please{" "}
         <StripePortalLink stripeCustomerId={stripeCustomerId}>
           add a payment method
         </StripePortalLink>{" "}
-        to be able to create builds after the trial ends.{" "}
+        to retain access to team features after the trial ends on {trialEndDate}
+        .
       </div>
     );
   }
@@ -233,6 +234,8 @@ const ConfirmTrialEndDialog = ({
   );
 };
 
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 const SubscriptionStatus = ({
   account,
   trialExpired,
@@ -242,10 +245,20 @@ const SubscriptionStatus = ({
 }) => {
   const { type: accountType, plan, oldPaidPurchase, hasPaidPlan } = account;
   if (accountType === "User") {
-    return <>Your Personal account is on the Free plan. Free of charge.</>;
+    return (
+      <>
+        Your Personal account is on the{" "}
+        <span className="font-medium">Free</span> plan. Free of charge.
+      </>
+    );
   }
   if (hasPaidPlan) {
-    return <>Your team is on the {plan!.name} plan.</>;
+    return (
+      <>
+        Your team is on the{" "}
+        <span className="font-medium">{capitalize(plan.name)}</span> plan.
+      </>
+    );
   }
   if (trialExpired) {
     return <>Your trial has expired.</>;
@@ -424,7 +437,13 @@ export const PlanCard = (props: { account: AccountFragment }) => {
   const [showTrialEndDialog, setShowTrialEndDialog] = useState(false);
   const confirmTrialEndDialogState = useDialogState({
     open: showTrialEndDialog,
+    setOpen: (open) => {
+      if (!open) {
+        setShowTrialEndDialog(false);
+      }
+    },
   });
+
   const [terminateTrial, { loading: terminateTrialLoading }] = useMutation(
     TerminateTrialMutation,
     {
