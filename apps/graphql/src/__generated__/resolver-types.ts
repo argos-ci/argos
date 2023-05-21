@@ -38,6 +38,7 @@ export type IAccount = {
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   purchase?: Maybe<IPurchase>;
+  purchaseStatus: IPurchaseStatus;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
@@ -61,11 +62,6 @@ export type IAccountAvatar = {
 export type IAccountAvatarUrlArgs = {
   size: Scalars['Int'];
 };
-
-export enum IAccountType {
-  Organization = 'organization',
-  User = 'user'
-}
 
 export type IBuild = INode & {
   __typename?: 'Build';
@@ -451,6 +447,27 @@ export enum IPurchaseSource {
   Stripe = 'stripe'
 }
 
+export enum IPurchaseStatus {
+  /** Active purchase */
+  Active = 'active',
+  /** No active purchase: the subscription has been canceled */
+  Canceled = 'canceled',
+  /** A forced plan is set */
+  Forced = 'forced',
+  /** No active purchase. */
+  Missing = 'missing',
+  /** Returned on personal account */
+  None = 'none',
+  /** Missing payment method. The subscription will end at the end of period */
+  PaymentMethodMissing = 'paymentMethodMissing',
+  /** Active purchase. Trial in progress: the subscription will start at the end of period */
+  Trial = 'trial',
+  /** Active purchase. Trial in progress: the subscription will end at the end of period */
+  TrialCanceled = 'trialCanceled',
+  /** No active purchase: the trial has ended */
+  TrialExpired = 'trialExpired'
+}
+
 export type IQuery = {
   __typename?: 'Query';
   /** Get Account by slug */
@@ -619,6 +636,7 @@ export type ITeam = IAccount & INode & {
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   purchase?: Maybe<IPurchase>;
+  purchaseStatus: IPurchaseStatus;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
@@ -729,6 +747,7 @@ export type IUser = IAccount & INode & {
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   purchase?: Maybe<IPurchase>;
+  purchaseStatus: IPurchaseStatus;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
@@ -903,7 +922,6 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type IResolversTypes = ResolversObject<{
   Account: IResolversTypes['Team'] | IResolversTypes['User'];
   AccountAvatar: ResolverTypeWrapper<AccountAvatar>;
-  AccountType: IAccountType;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
   Build: ResolverTypeWrapper<Build>;
   BuildConnection: ResolverTypeWrapper<Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversTypes['Build']> }>;
@@ -937,6 +955,7 @@ export type IResolversTypes = ResolversObject<{
   ProjectConnection: ResolverTypeWrapper<Omit<IProjectConnection, 'edges'> & { edges: Array<IResolversTypes['Project']> }>;
   Purchase: ResolverTypeWrapper<Purchase>;
   PurchaseSource: IPurchaseSource;
+  PurchaseStatus: IPurchaseStatus;
   Query: ResolverTypeWrapper<{}>;
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: ResolverTypeWrapper<IRemoveUserFromTeamPayload>;
@@ -1059,6 +1078,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IAccountProjectsArgs, 'after' | 'first'>>;
   purchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
+  purchaseStatus?: Resolver<IResolversTypes['PurchaseStatus'], ParentType, ContextType>;
   screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
@@ -1327,6 +1347,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<ITeamProjectsArgs, 'after' | 'first'>>;
   purchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
+  purchaseStatus?: Resolver<IResolversTypes['PurchaseStatus'], ParentType, ContextType>;
   screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
@@ -1399,6 +1420,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IUserProjectsArgs, 'after' | 'first'>>;
   purchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
+  purchaseStatus?: Resolver<IResolversTypes['PurchaseStatus'], ParentType, ContextType>;
   screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;

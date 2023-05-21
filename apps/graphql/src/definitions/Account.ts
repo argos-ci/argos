@@ -4,7 +4,10 @@ import type { PartialModelObject } from "objection";
 
 import { Account, Project, Purchase, User } from "@argos-ci/database/models";
 
-import type { IResolvers } from "../__generated__/resolver-types.js";
+import type {
+  IPurchaseStatus,
+  IResolvers,
+} from "../__generated__/resolver-types.js";
 import { IPermission } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
 import { paginateResult } from "./PageInfo.js";
@@ -13,15 +16,33 @@ import { paginateResult } from "./PageInfo.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  enum AccountType {
-    organization
-    user
-  }
-
   type AccountAvatar {
     url(size: Int!): String
     initial: String!
     color: String!
+  }
+
+  enum PurchaseStatus {
+    "Returned on personal account"
+    none
+    "A forced plan is set"
+    forced
+    "Missing payment method. The subscription will end at the end of period"
+    paymentMethodMissing
+
+    "Active purchase"
+    active
+    "Active purchase. Trial in progress: the subscription will start at the end of period"
+    trial
+    "Active purchase. Trial in progress: the subscription will end at the end of period"
+    trialCanceled
+
+    "No active purchase."
+    missing
+    "No active purchase: the trial has ended"
+    trialExpired
+    "No active purchase: the subscription has been canceled"
+    canceled
   }
 
   interface Account implements Node {
@@ -39,6 +60,7 @@ export const typeDefs = gql`
     periodStartDate: DateTime
     periodEndDate: DateTime
     purchase: Purchase
+    purchaseStatus: PurchaseStatus!
     oldPaidPurchase: Purchase
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
@@ -175,6 +197,9 @@ export const resolvers: IResolvers = {
     },
     purchase: async (account) => {
       return account.$getActivePurchase();
+    },
+    purchaseStatus: async (account) => {
+      return account.$getPurchaseStatus() as Promise<IPurchaseStatus>;
     },
     oldPaidPurchase: async (account) => {
       const oldPaidPurchase = await Purchase.query()
