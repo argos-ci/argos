@@ -33,6 +33,7 @@ export type Account = {
   plan?: Maybe<Plan>;
   projects: ProjectConnection;
   purchase?: Maybe<Purchase>;
+  purchaseStatus: PurchaseStatus;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
@@ -56,11 +57,6 @@ export type AccountAvatar = {
 export type AccountAvatarUrlArgs = {
   size: Scalars['Int'];
 };
-
-export enum AccountType {
-  Organization = 'organization',
-  User = 'user'
-}
 
 export type Build = Node & {
   __typename?: 'Build';
@@ -446,6 +442,27 @@ export enum PurchaseSource {
   Stripe = 'stripe'
 }
 
+export enum PurchaseStatus {
+  /** Active purchase */
+  Active = 'active',
+  /** No active purchase: the subscription has been canceled */
+  Canceled = 'canceled',
+  /** A forced plan is set */
+  Forced = 'forced',
+  /** No active purchase. */
+  Missing = 'missing',
+  /** Returned on personal account */
+  None = 'none',
+  /** Missing payment method. The subscription will end at the end of period */
+  PaymentMethodMissing = 'paymentMethodMissing',
+  /** Active purchase. Trial in progress: the subscription will start at the end of period */
+  Trial = 'trial',
+  /** Active purchase. Trial in progress: the subscription will end at the end of period */
+  TrialCanceled = 'trialCanceled',
+  /** No active purchase: the trial has ended */
+  TrialExpired = 'trialExpired'
+}
+
 export type Query = {
   __typename?: 'Query';
   /** Get Account by slug */
@@ -614,6 +631,7 @@ export type Team = Account & Node & {
   plan?: Maybe<Plan>;
   projects: ProjectConnection;
   purchase?: Maybe<Purchase>;
+  purchaseStatus: PurchaseStatus;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
@@ -724,6 +742,7 @@ export type User = Account & Node & {
   plan?: Maybe<Plan>;
   projects: ProjectConnection;
   purchase?: Maybe<Purchase>;
+  purchaseStatus: PurchaseStatus;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
