@@ -244,8 +244,8 @@ export type IMutation = {
   setValidationStatus: IBuild;
   /** Finish the Vercel integration setup */
   setupVercelIntegration?: Maybe<Scalars['Boolean']>;
-  /** End trial early */
-  terminateTrial: IPurchase;
+  /** Terminate trial early */
+  terminateTrial: IAccount;
   /** Transfer Project to another account */
   transferProject: IProject;
   /** Update Account */
@@ -321,8 +321,7 @@ export type IMutationSetupVercelIntegrationArgs = {
 
 
 export type IMutationTerminateTrialArgs = {
-  purchaseId: Scalars['ID'];
-  stripeCustomerId?: InputMaybe<Scalars['String']>;
+  accountId: Scalars['ID'];
 };
 
 
@@ -452,13 +451,13 @@ export enum IPurchaseStatus {
   Active = 'active',
   /** No active purchase: the subscription has been canceled */
   Canceled = 'canceled',
-  /** A forced plan is set */
+  /** Active purchase. A forced plan is set */
   Forced = 'forced',
   /** No active purchase. */
   Missing = 'missing',
   /** Returned on personal account */
   None = 'none',
-  /** Missing payment method. The subscription will end at the end of period */
+  /** Active purchase. Missing payment method: the subscription will end at the end of period */
   PaymentMethodMissing = 'paymentMethodMissing',
   /** Active purchase. Trial in progress: the subscription will start at the end of period */
   Trial = 'trial',
@@ -1200,7 +1199,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
   setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
   setupVercelIntegration?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<IMutationSetupVercelIntegrationArgs, 'input'>>;
-  terminateTrial?: Resolver<IResolversTypes['Purchase'], ParentType, ContextType, RequireFields<IMutationTerminateTrialArgs, 'purchaseId'>>;
+  terminateTrial?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationTerminateTrialArgs, 'accountId'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
   updateAccount?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUpdateAccountArgs, 'input'>>;
   updateProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectArgs, 'input'>>;

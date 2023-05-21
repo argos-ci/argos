@@ -3,6 +3,11 @@ import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
 import { Account, Project, Purchase, User } from "@argos-ci/database/models";
+import {
+  getCustomerSubscriptionOrThrow,
+  terminateStripeTrial,
+  timestampToDate,
+} from "@argos-ci/stripe";
 
 import type {
   IPurchaseStatus,
@@ -25,17 +30,17 @@ export const typeDefs = gql`
   enum PurchaseStatus {
     "Returned on personal account"
     none
-    "A forced plan is set"
-    forced
-    "Missing payment method. The subscription will end at the end of period"
-    paymentMethodMissing
 
     "Active purchase"
     active
+    "Active purchase. A forced plan is set"
+    forced
     "Active purchase. Trial in progress: the subscription will start at the end of period"
     trial
     "Active purchase. Trial in progress: the subscription will end at the end of period"
     trialCanceled
+    "Active purchase. Missing payment method: the subscription will end at the end of period"
+    paymentMethodMissing
 
     "No active purchase."
     missing
@@ -86,6 +91,8 @@ export const typeDefs = gql`
   extend type Mutation {
     "Update Account"
     updateAccount(input: UpdateAccountInput!): Account!
+    "Terminate trial early"
+    terminateTrial(accountId: ID!): Account!
   }
 `;
 
@@ -308,6 +315,41 @@ export const resolvers: IResolvers = {
       }
 
       return account.$query().patchAndFetch(data);
+    },
+    terminateTrial: async (_root, args, ctx) => {
+      const { accountId } = args;
+      const account = await getWritableAccount({
+        id: accountId,
+        user: ctx.auth?.user,
+      });
+      const purchase = await account.$getActivePurchase();
+      if (
+        !purchase ||
+        purchase.trialEndDate === null ||
+        new Date(purchase.trialEndDate) < new Date()
+      ) {
+        return account;
+      }
+
+      if (!account.stripeCustomerId) {
+        throw new Error("No stripe customer id");
+      }
+
+      const subscription = await getCustomerSubscriptionOrThrow(
+        account.stripeCustomerId
+      );
+      await terminateStripeTrial(subscription.id);
+      const updatedSubscription = await getCustomerSubscriptionOrThrow(
+        account.stripeCustomerId
+      );
+      const trialEndDate = updatedSubscription.trial_end
+        ? timestampToDate(updatedSubscription.trial_end)
+        : new Date().toISOString();
+      await Purchase.query().findById(purchase.id).patch({ trialEndDate });
+      const updatedAccount = await account
+        .$query()
+        .throwIfNotFound({ message: "Account not found" });
+      return updatedAccount;
     },
   },
 };

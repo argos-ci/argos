@@ -137,7 +137,7 @@ export class Account extends Model {
       .where((query) =>
         query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate")
       )
-      .joinRelated("plan")
+      .withGraphJoined("plan")
       .orderBy("screenshotsLimitPerMonth", "DESC")
       .first();
 

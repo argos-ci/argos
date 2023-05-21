@@ -1,12 +1,8 @@
 import gqlTag from "graphql-tag";
 
 import config from "@argos-ci/config";
-import { Plan, Purchase, Team } from "@argos-ci/database/models";
-import {
-  createStripeCheckoutSession,
-  getCustomerSubscriptionOrThrow,
-  terminateTrial,
-} from "@argos-ci/stripe";
+import { Plan } from "@argos-ci/database/models";
+import { createStripeCheckoutSession } from "@argos-ci/stripe";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { APIError } from "../util.js";
@@ -32,8 +28,6 @@ export const typeDefs = gql`
   }
 
   extend type Mutation {
-    "End trial early"
-    terminateTrial(purchaseId: ID!, stripeCustomerId: String): Purchase!
     "Create a checkout session for a pro plan"
     createProPlanCheckoutSession(teamId: ID!): String!
   }
@@ -58,46 +52,6 @@ export const resolvers: IResolvers = {
     },
   },
   Mutation: {
-    terminateTrial: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw new APIError("Invalid user identification");
-      }
-
-      const { purchaseId, stripeCustomerId } = args;
-
-      if (!stripeCustomerId) {
-        throw new Error("stripe customer id missing");
-      }
-
-      const purchase = await Purchase.query()
-        .findById(purchaseId)
-        .withGraphFetched("account")
-        .throwIfNotFound({ message: `Purchase ${purchaseId} not found` });
-
-      if (!purchase.account) {
-        throw new Error("Invariant: purchase.account is undefined");
-      }
-
-      if (!purchase.account.teamId) {
-        throw new Error("Invariant: account.teamId is undefined");
-      }
-
-      if (!Team.checkWritePermission(purchase.account.teamId, ctx.auth.user)) {
-        throw new Error("Forbidden");
-      }
-
-      const subscription = await getCustomerSubscriptionOrThrow(
-        stripeCustomerId
-      );
-      if (!subscription.trial_end) {
-        return purchase;
-      }
-
-      await terminateTrial(subscription.id);
-      return Purchase.query().patchAndFetchById(purchaseId, {
-        trialEndDate: new Date().toISOString(),
-      });
-    },
     createProPlanCheckoutSession: async (_root, { teamId }, ctx) => {
       if (!ctx.auth) {
         throw new APIError("Invalid user identification");

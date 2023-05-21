@@ -88,7 +88,7 @@ export const getCustomerSubscriptionOrThrow = async (
   return subscription;
 };
 
-export const terminateTrial = async (stripeSubscriptionId: string) => {
+export const terminateStripeTrial = async (stripeSubscriptionId: string) => {
   await stripe.subscriptions.update(stripeSubscriptionId, { trial_end: "now" });
   return;
 };

@@ -8,11 +8,12 @@ import {
 } from "ariakit/disclosure";
 import { clsx } from "clsx";
 import moment from "moment";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
 import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
+import { PurchaseStatus } from "@/gql/graphql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import {
   Card,
@@ -41,14 +42,14 @@ import { Time } from "@/ui/Time";
 
 import { UpgradeDialogButton } from "./UpgradeDialog";
 
+const now = new Date();
+const FREE_PLAN_EXPIRATION_DATE = new Date("2023-06-01");
+
 const TerminateTrialMutation = graphql(`
-  mutation terminateTrial($purchaseId: ID!, $stripeCustomerId: String!) {
-    terminateTrial(
-      purchaseId: $purchaseId
-      stripeCustomerId: $stripeCustomerId
-    ) {
+  mutation terminateTrial($accountId: ID!) {
+    terminateTrial(accountId: $accountId) {
       id
-      trialEndDate
+      purchaseStatus
       __typename
     }
   }
@@ -57,12 +58,10 @@ const TerminateTrialMutation = graphql(`
 const PlanCardFragment = graphql(`
   fragment PlanCard_Account on Account {
     id
-    slug
     stripeCustomerId
     periodStartDate
     periodEndDate
-    hasPaidPlan
-    __typename
+    purchaseStatus
 
     plan {
       id
@@ -73,17 +72,6 @@ const PlanCardFragment = graphql(`
 
     purchase {
       id
-      source
-      paymentMethodFilled
-      endDate
-      trialEndDate
-      isTrialActive
-    }
-
-    oldPaidPurchase {
-      id
-      endDate
-      trialEndDate
       plan {
         id
         name
@@ -109,95 +97,20 @@ type Project = {
   currentMonthUsedScreenshots: number;
 };
 
-const TrialChip = ({ expired }: { expired: boolean }) => {
-  return (
-    <span className="ml-2">
-      {expired ? (
-        <Chip scale="sm" color="danger">
-          Trial expired
-        </Chip>
-      ) : (
-        <Chip scale="sm" color="info">
-          Trial
-        </Chip>
-      )}
-    </span>
-  );
-};
-
-const TrialStatus = ({
-  trialCanceled,
-  trialEndDate,
-  paymentMethodFilled,
-  stripeCustomerId,
-  usageBasedPricing,
-  openTrialEndDialog,
-}: {
-  trialIsActive: boolean;
-  trialCanceled: boolean;
-  trialEndDate: string;
-  paymentMethodFilled: boolean;
-  stripeCustomerId: string;
-  usageBasedPricing: boolean;
-  openTrialEndDialog: () => void;
-}) => {
-  if (trialCanceled) {
-    return (
-      <div className="mt-2 text-on-light">
-        Trial cancelled. You can still use the service until the trial ends on{" "}
-        {trialEndDate}.
-      </div>
-    );
-  }
-
-  if (!paymentMethodFilled) {
-    return (
-      <div className="mt-2 gap-1 text-on-light">
-        Please{" "}
-        <StripePortalLink stripeCustomerId={stripeCustomerId}>
-          add a payment method
-        </StripePortalLink>{" "}
-        to retain access to team features after the trial ends on {trialEndDate}
-        .
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="mt-2 text-on-light">
-        Your subscription will automatically begin after the trial ends on{" "}
-        {trialEndDate}.
-      </div>
-
-      {usageBasedPricing && (
-        <div className="mt-2 text-on-light">
-          To remove the screenshot limitation and enable usage-based pricing,
-          you can{" "}
-          <Anchor className="cursor-default" onClick={openTrialEndDialog}>
-            terminate the trial early
-          </Anchor>
-          .
-        </div>
-      )}
-    </div>
-  );
-};
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const ConfirmTrialEndDialog = ({
   state,
   terminateTrial,
   loading,
-  purchaseId,
-  stripeCustomerId,
+  accountId,
 }: {
   state: DialogState;
   terminateTrial: (props: {
     variables: any;
   }) => Promise<FetchResult<{ terminateTrial: any }>>;
   loading: boolean;
-  purchaseId: string;
-  stripeCustomerId: string;
+  accountId: string;
 }) => {
   return (
     <Dialog
@@ -222,7 +135,7 @@ const ConfirmTrialEndDialog = ({
           disabled={loading}
           onClick={async () => {
             await terminateTrial({
-              variables: { purchaseId, stripeCustomerId },
+              variables: { accountId },
             });
             state.hide();
           }}
@@ -234,39 +147,170 @@ const ConfirmTrialEndDialog = ({
   );
 };
 
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const PricingLinks = () => {
+  return (
+    <Anchor href="https://argos-ci.com/pricing" external>
+      Learn more
+    </Anchor>
+  );
+};
 
-const SubscriptionStatus = ({
-  account,
-  trialExpired,
+const PlanStatus = ({
+  purchaseStatus,
+  planName,
 }: {
-  account: any;
-  trialExpired: boolean;
+  purchaseStatus: PurchaseStatus;
+  planName: string;
 }) => {
-  const { type: accountType, plan, oldPaidPurchase, hasPaidPlan } = account;
-  if (accountType === "User") {
-    return (
-      <>
-        Your Personal account is on the{" "}
-        <span className="font-medium">Free</span> plan. Free of charge.
-      </>
-    );
+  switch (purchaseStatus) {
+    case PurchaseStatus.None:
+      return (
+        <>
+          Your Personal account is on the{" "}
+          <span className="font-medium">Hobby</span> plan. Free of charge.
+        </>
+      );
+
+    case PurchaseStatus.TrialExpired:
+      return (
+        <>
+          Your trial has expired.{" "}
+          <Chip scale="sm" color="danger">
+            Trial expired
+          </Chip>{" "}
+          <PricingLinks />
+        </>
+      );
+
+    case PurchaseStatus.Missing:
+      return (
+        <>
+          Your team has no paid plan. <PricingLinks />
+        </>
+      );
+
+    case PurchaseStatus.Canceled:
+      return (
+        <>
+          Your plan has been cancelled. <PricingLinks />
+        </>
+      );
+
+    case PurchaseStatus.Trial:
+    case PurchaseStatus.TrialCanceled:
+      return (
+        <>
+          Your team is on the{" "}
+          <span className="font-medium">{capitalize(planName)}</span> plan.{" "}
+          <Chip scale="sm" color="info">
+            Trial
+          </Chip>
+        </>
+      );
+
+    case PurchaseStatus.Active:
+    case PurchaseStatus.Forced:
+    case PurchaseStatus.PaymentMethodMissing:
+    default:
+      return (
+        <>
+          Your team is on the{" "}
+          <span className="font-medium">{capitalize(planName)}</span> plan.
+        </>
+      );
   }
-  if (hasPaidPlan) {
-    return (
-      <>
-        Your team is on the{" "}
-        <span className="font-medium">{capitalize(plan.name)}</span> plan.
-      </>
-    );
+};
+
+const PlanStatusDescription = ({
+  purchaseStatus,
+  periodEndDate,
+  stripeCustomerId,
+  openTrialEndDialog,
+  planName,
+}: {
+  purchaseStatus: PurchaseStatus;
+  periodEndDate: string;
+  stripeCustomerId: string;
+  openTrialEndDialog: () => void;
+  planName: string;
+}) => {
+  switch (purchaseStatus) {
+    case PurchaseStatus.Active:
+      return (
+        <Paragraph>
+          The next payment will occur on {moment(periodEndDate).format("LL")}.
+        </Paragraph>
+      );
+
+    case PurchaseStatus.Forced:
+      return (
+        <Paragraph>
+          You are on a specific plan that is not available for purchase. Contact
+          our Sales team to learn more.
+        </Paragraph>
+      );
+
+    case PurchaseStatus.Trial:
+      return (
+        <>
+          <Paragraph>
+            Your subscription will automatically begin after the trial ends on{" "}
+            {periodEndDate}.
+          </Paragraph>
+          <Paragraph>
+            To remove the screenshot limitation and enable usage-based pricing,
+            you can{" "}
+            <Anchor className="cursor-default" onClick={openTrialEndDialog}>
+              terminate the trial early
+            </Anchor>
+            .
+          </Paragraph>
+        </>
+      );
+
+    case PurchaseStatus.TrialCanceled:
+      return (
+        <Paragraph>
+          Trial canceled. You can still use the service until the trial ends on{" "}
+          {periodEndDate}.
+        </Paragraph>
+      );
+
+    case PurchaseStatus.PaymentMethodMissing:
+      return (
+        <Paragraph>
+          Please{" "}
+          <StripePortalLink stripeCustomerId={stripeCustomerId}>
+            add a payment method
+          </StripePortalLink>{" "}
+          to retain access to team features after the trial ends on{" "}
+          {periodEndDate}.
+        </Paragraph>
+      );
+
+    case PurchaseStatus.Missing:
+    case PurchaseStatus.TrialExpired:
+    case PurchaseStatus.Canceled:
+      return (
+        <>
+          <Paragraph>
+            {now < FREE_PLAN_EXPIRATION_DATE
+              ? "Starting June 1st, 2023, a Pro plan will be required to use team features."
+              : "Subscribe to Pro plan to use team features."}
+          </Paragraph>
+          {planName === "free" && (
+            <Paragraph>
+              Note: To switch to a Stripe Plan, you must cancel your Github Free
+              plan first.
+            </Paragraph>
+          )}
+        </>
+      );
+
+    case PurchaseStatus.None:
+    default:
+      return null;
   }
-  if (trialExpired) {
-    return <>Your trial has expired.</>;
-  }
-  if (oldPaidPurchase) {
-    return <>Your plan has been cancelled.</>;
-  }
-  return <>Your team has no paid plan.</>;
 };
 
 const ConsumptionBlock = ({
@@ -338,77 +382,62 @@ const ConsumptionBlock = ({
   );
 };
 
+const CustomNeedsButton = () => (
+  <div className="flex items-center gap-2">
+    Custom needs?
+    <Button color="neutral" variant="outline">
+      {(buttonProps) => (
+        <a href={`mailto:${config.get("contactEmail")}`} {...buttonProps}>
+          Contact Sales
+        </a>
+      )}
+    </Button>
+  </div>
+);
+
 const PlanActions = ({
-  hasPaidPlan,
-  hasPurchase,
-  stripeCustomerId,
+  purchaseStatus,
   accountId,
-  accountType,
 }: {
-  hasPaidPlan: boolean;
-  hasPurchase: boolean;
-  stripeCustomerId: string | null;
+  purchaseStatus: PurchaseStatus;
   accountId: string;
-  accountType: "User" | "Team";
 }) => {
-  if (accountType === "User") {
-    return (
-      <div className="flex items-center justify-between">
-        <Anchor href={`mailto:${config.get("contactEmail")}`} external>
-          Contact Sales
-        </Anchor>
-        <Button>
-          {(buttonProps) => (
-            <RouterLink to="/teams/new" {...buttonProps}>
-              <ButtonIcon>
-                <UserPlusIcon />
-              </ButtonIcon>
-              Create a Team
-            </RouterLink>
-          )}
-        </Button>
-      </div>
-    );
-  }
-
-  if (!hasPaidPlan) {
-    return (
-      <div className="flex items-center justify-between">
-        <Anchor href={`mailto:${config.get("contactEmail")}`} external>
-          Contact Sales
-        </Anchor>
-        <UpgradeDialogButton currentAccountId={accountId} />
-      </div>
-    );
-  }
-
-  if (hasPurchase) {
-    return (
-      <div className="flex items-center justify-between">
-        {stripeCustomerId ? (
-          <StripePortalLink stripeCustomerId={stripeCustomerId}>
-            Manage your subscription
-          </StripePortalLink>
-        ) : (
-          <Anchor href={config.get("github.marketplaceUrl")} external>
-            Manage your subscription
-          </Anchor>
-        )}
-        <div className="flex items-center gap-2">
-          Custom needs?
+  switch (purchaseStatus) {
+    case PurchaseStatus.None:
+      return (
+        <div className="flex items-center gap-4">
+          <CustomNeedsButton />
           <Button>
             {(buttonProps) => (
-              <a href={`mailto:${config.get("contactEmail")}`} {...buttonProps}>
-                Contact Sales
-              </a>
+              <RouterLink to="/teams/new" {...buttonProps}>
+                <ButtonIcon>
+                  <UserPlusIcon />
+                </ButtonIcon>
+                Create a Team
+              </RouterLink>
             )}
           </Button>
         </div>
-      </div>
-    );
-  }
+      );
 
-  return <ContactLink />;
+    case PurchaseStatus.Missing:
+    case PurchaseStatus.TrialCanceled:
+    case PurchaseStatus.TrialExpired:
+    case PurchaseStatus.Canceled:
+      return (
+        <div className="flex items-center gap-4">
+          <CustomNeedsButton />
+          <UpgradeDialogButton currentAccountId={accountId} />
+        </div>
+      );
+
+    case PurchaseStatus.Active:
+    case PurchaseStatus.Forced:
+    case PurchaseStatus.PaymentMethodMissing:
+    case PurchaseStatus.Trial:
+    default:
+      return <CustomNeedsButton />;
+  }
 };
 
 const groupByPrivacy = (projects: Project[]) => {
@@ -424,16 +453,54 @@ const groupByPrivacy = (projects: Project[]) => {
   );
 };
 
+const Paragraph = ({ children }: { children: ReactNode }) => (
+  <p className="mt-2 text-on-light">{children}</p>
+);
+
+const ManageSubscriptionButton = ({
+  purchaseStatus,
+  stripeCustomerId,
+}: {
+  purchaseStatus: PurchaseStatus;
+  stripeCustomerId: string;
+}) => {
+  switch (purchaseStatus) {
+    case PurchaseStatus.Forced:
+    case PurchaseStatus.Active:
+    case PurchaseStatus.Canceled:
+    case PurchaseStatus.PaymentMethodMissing:
+    case PurchaseStatus.Trial:
+    case PurchaseStatus.TrialCanceled:
+    case PurchaseStatus.TrialExpired:
+      return stripeCustomerId ? (
+        <StripePortalLink stripeCustomerId={stripeCustomerId}>
+          Manage your subscription
+        </StripePortalLink>
+      ) : (
+        <Anchor href={config.get("github.marketplaceUrl")} external>
+          Manage your subscription
+        </Anchor>
+      );
+
+    case PurchaseStatus.Missing:
+    case PurchaseStatus.None:
+    default:
+      return null;
+  }
+};
+
 export const PlanCard = (props: { account: AccountFragment }) => {
   const account = useFragment(PlanCardFragment, props.account);
   const {
     plan,
     projects,
+    purchaseStatus,
+    stripeCustomerId,
+    periodStartDate,
+    periodEndDate,
     purchase,
-    oldPaidPurchase,
-    hasPaidPlan,
-    __typename: accountType,
   } = account;
+
   const [showTrialEndDialog, setShowTrialEndDialog] = useState(false);
   const confirmTrialEndDialogState = useDialogState({
     open: showTrialEndDialog,
@@ -449,66 +516,40 @@ export const PlanCard = (props: { account: AccountFragment }) => {
     {
       optimisticResponse: (variables) => ({
         terminateTrial: {
-          id: variables.purchaseId,
-          trialEndDate: new Date().toISOString(),
-          __typename: "Purchase" as const,
+          id: variables.accountId,
+          purchaseStatus: PurchaseStatus.Active,
+          __typename: "Team" as const,
         },
       }),
     }
   );
 
-  const trialExpired =
-    !hasPaidPlan &&
-    oldPaidPurchase?.trialEndDate &&
-    oldPaidPurchase.trialEndDate === oldPaidPurchase.endDate;
   const [privateProjects, publicProjects] = groupByPrivacy(projects.edges);
-  const trialIsActive = purchase && purchase.isTrialActive;
 
   return (
     <Card>
       <CardBody>
         <CardTitle>Plan</CardTitle>
         <CardParagraph>
-          <SubscriptionStatus account={account} trialExpired={trialExpired} />{" "}
-          {(trialIsActive || trialExpired) && (
-            <TrialChip expired={trialExpired} />
-          )}
-          {hasPaidPlan && !trialIsActive && (
-            <span className="text-on-light">
-              The next payment will occur on{" "}
-              {moment(account.periodEndDate).format("LL")}.
-            </span>
-          )}
-          {!hasPaidPlan && (
-            <Anchor href="https://argos-ci.com/pricing" external>
-              Learn more
-            </Anchor>
-          )}
-          {accountType === "Team" && !hasPaidPlan && (
-            <div className="mt-2 text-on-light">
-              Subscribe to Pro plan to use team features.
-            </div>
-          )}
-          {trialIsActive && account.stripeCustomerId && plan && (
-            <TrialStatus
-              trialIsActive={trialIsActive}
-              paymentMethodFilled={!!purchase.paymentMethodFilled}
-              stripeCustomerId={account.stripeCustomerId}
-              trialEndDate={moment(purchase.trialEndDate).format("LLL")}
-              trialCanceled={purchase.trialEndDate === purchase.endDate}
-              usageBasedPricing={plan.usageBased}
-              openTrialEndDialog={() => setShowTrialEndDialog(true)}
-            />
-          )}
+          <PlanStatus
+            purchaseStatus={purchaseStatus}
+            planName={plan?.name ?? ""}
+          />
+          <PlanStatusDescription
+            purchaseStatus={purchaseStatus}
+            periodEndDate={moment(periodEndDate).format("LL")}
+            stripeCustomerId={stripeCustomerId ?? ""}
+            openTrialEndDialog={() => setShowTrialEndDialog(true)}
+            planName={purchase?.plan?.name ?? ""}
+          />
         </CardParagraph>
 
         {plan ? (
           <>
             <CardSeparator className="my-6" />
             <div className="font-medium">
-              Current period (
-              {<Time date={account.periodStartDate} format="MMM DD" />} -{" "}
-              {<Time date={account.periodEndDate} format="MMM DD" />})
+              Current period ({<Time date={periodStartDate} format="MMM DD" />}{" "}
+              - {<Time date={periodEndDate} format="MMM DD" />})
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-4">
@@ -528,22 +569,30 @@ export const PlanCard = (props: { account: AccountFragment }) => {
       </CardBody>
 
       <CardFooter>
-        <PlanActions
-          hasPaidPlan={hasPaidPlan}
-          hasPurchase={!!purchase}
-          stripeCustomerId={account.stripeCustomerId ?? null}
-          accountId={account.id}
-          accountType={accountType}
-        />
+        {purchaseStatus === PurchaseStatus.Forced ? (
+          <ContactLink />
+        ) : (
+          <div className="flex items-center justify-between">
+            <div>
+              <ManageSubscriptionButton
+                purchaseStatus={purchaseStatus}
+                stripeCustomerId={stripeCustomerId ?? ""}
+              />
+            </div>
+            <PlanActions
+              purchaseStatus={purchaseStatus}
+              accountId={account.id}
+            />
+          </div>
+        )}
       </CardFooter>
 
-      {trialIsActive && plan?.usageBased && account.stripeCustomerId && (
+      {purchaseStatus === PurchaseStatus.Trial && stripeCustomerId && (
         <ConfirmTrialEndDialog
           state={confirmTrialEndDialogState}
           loading={terminateTrialLoading}
           terminateTrial={terminateTrial}
-          purchaseId={purchase.id}
-          stripeCustomerId={account.stripeCustomerId}
+          accountId={account.id}
         />
       )}
     </Card>
