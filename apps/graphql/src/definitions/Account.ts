@@ -2,13 +2,21 @@ import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
+import { knex } from "@argos-ci/database";
 import { Account, Project, Purchase, User } from "@argos-ci/database/models";
+import {
+  getCustomerSubscriptionOrThrow,
+  terminateStripeTrial,
+  timestampToDate,
+} from "@argos-ci/stripe";
 
-import type {
+import {
+  IPermission,
+  IPurchaseSource,
   IPurchaseStatus,
   IResolvers,
+  ITrialStatus,
 } from "../__generated__/resolver-types.js";
-import { IPermission } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
 import { paginateResult } from "./PageInfo.js";
 
@@ -23,26 +31,23 @@ export const typeDefs = gql`
   }
 
   enum PurchaseStatus {
-    "Returned on personal account"
-    none
-    "A forced plan is set"
-    forced
-    "Missing payment method. The subscription will end at the end of period"
-    paymentMethodMissing
-
-    "Active purchase"
+    "Ongoing paid purchase"
     active
-    "Active purchase. Trial in progress: the subscription will start at the end of period"
-    trial
-    "Active purchase. Trial in progress: the subscription will end at the end of period"
-    trialCanceled
-
-    "No active purchase."
+    "Ongoing trial"
+    trialing
+    "No paid purchase"
     missing
-    "No active purchase: the trial has ended"
-    trialExpired
-    "No active purchase: the subscription has been canceled"
+    "Payment due"
+    unpaid
+    "Post-cancelation date"
     canceled
+  }
+
+  enum TrialStatus {
+    "Trial is active"
+    active
+    "Subscription ended when trial did"
+    expired
   }
 
   interface Account implements Node {
@@ -60,12 +65,15 @@ export const typeDefs = gql`
     periodStartDate: DateTime
     periodEndDate: DateTime
     purchase: Purchase
-    purchaseStatus: PurchaseStatus!
-    oldPaidPurchase: Purchase
+    purchaseStatus: PurchaseStatus
+    trialStatus: TrialStatus
+    hasForcedPlan: Boolean!
+    pendingCancelAt: DateTime
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
     avatar: AccountAvatar!
+    paymentProvider: PurchaseSource
   }
 
   input UpdateAccountInput {
@@ -86,6 +94,8 @@ export const typeDefs = gql`
   extend type Mutation {
     "Update Account"
     updateAccount(input: UpdateAccountInput!): Account!
+    "Terminate trial early"
+    terminateTrial(accountId: ID!): Account!
   }
 `;
 
@@ -199,17 +209,57 @@ export const resolvers: IResolvers = {
       return account.$getActivePurchase();
     },
     purchaseStatus: async (account) => {
-      return account.$getPurchaseStatus() as Promise<IPurchaseStatus>;
+      if (account.type === "user") return null;
+      const purchase = await account.$getActivePurchase();
+      const hasPaidPlan =
+        purchase && purchase.plan && purchase.plan.name !== "free";
+
+      if (hasPaidPlan) {
+        if (purchase.$isTrialActive()) return IPurchaseStatus.Trialing;
+        if (!purchase.paymentMethodFilled) return IPurchaseStatus.Unpaid;
+        return IPurchaseStatus.Active;
+      }
+
+      const hasOldPaidPurchase = await Purchase.query()
+        .where("accountId", account.id)
+        .whereNot({ name: "free" })
+        .whereRaw("?? < now()", "endDate")
+        .where("endDate", "<>", knex.ref("trialEndDate"))
+        .joinRelated("plan")
+        .orderBy("endDate", "DESC")
+        .limit(1)
+        .resultSize();
+      if (hasOldPaidPurchase) return IPurchaseStatus.Canceled;
+      return IPurchaseStatus.Missing;
     },
-    oldPaidPurchase: async (account) => {
-      const oldPaidPurchase = await Purchase.query()
+    trialStatus: async (account) => {
+      if (account.type === "user") return null;
+      const activePurchase = await account.$getActivePurchase();
+      if (!activePurchase) {
+        return null;
+      }
+      if (activePurchase.$isTrialActive()) {
+        return ITrialStatus.Active;
+      }
+      const previousPaidPurchase = await Purchase.query()
         .where("accountId", account.id)
         .whereNot({ name: "free" })
         .whereRaw("?? < now()", "endDate")
         .joinRelated("plan")
         .orderBy("endDate", "DESC")
         .first();
-      return oldPaidPurchase ?? null;
+      const purchaseEndsAtTrialEnd =
+        previousPaidPurchase &&
+        previousPaidPurchase.endDate === previousPaidPurchase.trialEndDate;
+      return purchaseEndsAtTrialEnd ? ITrialStatus.Expired : null;
+    },
+    hasForcedPlan: async (account) => {
+      return account.forcedPlanId !== null;
+    },
+    pendingCancelAt: async (account) => {
+      if (account.type === "user") return null;
+      const activePurchase = await account.$getActivePurchase();
+      return activePurchase?.endDate ?? null;
     },
     plan: async (account) => {
       return account.$getPlan();
@@ -229,6 +279,14 @@ export const resolvers: IResolvers = {
     ghAccount: async (account, _args, ctx) => {
       if (!account.githubAccountId) return null;
       return ctx.loaders.GithubAccount.load(account.githubAccountId);
+    },
+    paymentProvider: async (account) => {
+      if (account.type === "user") return null;
+      const lastPurchase = await Purchase.query()
+        .orderBy("createdAt", "DESC")
+        .first();
+      if (!lastPurchase) return null;
+      return lastPurchase.source as IPurchaseSource;
     },
     avatar: async (account, _args, ctx) => {
       const ghAccount = account.githubAccountId
@@ -308,6 +366,41 @@ export const resolvers: IResolvers = {
       }
 
       return account.$query().patchAndFetch(data);
+    },
+    terminateTrial: async (_root, args, ctx) => {
+      const { accountId } = args;
+      const account = await getWritableAccount({
+        id: accountId,
+        user: ctx.auth?.user,
+      });
+      const purchase = await account.$getActivePurchase();
+      if (
+        !purchase ||
+        purchase.trialEndDate === null ||
+        new Date(purchase.trialEndDate) < new Date()
+      ) {
+        return account;
+      }
+
+      if (!account.stripeCustomerId) {
+        throw new Error("No stripe customer id");
+      }
+
+      const subscription = await getCustomerSubscriptionOrThrow(
+        account.stripeCustomerId
+      );
+      await terminateStripeTrial(subscription.id);
+      const updatedSubscription = await getCustomerSubscriptionOrThrow(
+        account.stripeCustomerId
+      );
+      const trialEndDate = updatedSubscription.trial_end
+        ? timestampToDate(updatedSubscription.trial_end)
+        : new Date().toISOString();
+      await Purchase.query().findById(purchase.id).patch({ trialEndDate });
+      const updatedAccount = await account
+        .$query()
+        .throwIfNotFound({ message: "Account not found" });
+      return updatedAccount;
     },
   },
 };

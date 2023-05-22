@@ -89,6 +89,7 @@ export const StripePortalLink = ({
 
 type StripeCheckoutFormInputs = {
   accountId: string;
+  stripeCustomerId: string | null;
 };
 
 export const StripeCheckoutButton = ({
@@ -96,16 +97,18 @@ export const StripeCheckoutButton = ({
   children,
   variant = "primary",
   disabled = false,
+  stripeCustomerId,
 }: {
   accountId: string;
   children: React.ReactNode;
   variant?: "primary" | "secondary";
   disabled?: boolean;
+  stripeCustomerId: string | null;
 }) => {
   const { token } = useAuth();
 
   const form = useForm<StripeCheckoutFormInputs>({
-    defaultValues: { accountId },
+    defaultValues: { accountId, stripeCustomerId },
   });
 
   const onSubmit: SubmitHandler<StripeCheckoutFormInputs> = async (
@@ -141,6 +144,7 @@ export const StripeCheckoutButton = ({
             required: "accountId is required",
           })}
         />
+        <input type="hidden" {...form.register("stripeCustomerId")} />
       </Form>
     </FormProvider>
   );

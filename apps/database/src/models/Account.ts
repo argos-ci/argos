@@ -137,7 +137,7 @@ export class Account extends Model {
       .where((query) =>
         query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate")
       )
-      .joinRelated("plan")
+      .withGraphJoined("plan")
       .orderBy("screenshotsLimitPerMonth", "DESC")
       .first();
 
@@ -271,48 +271,6 @@ export class Account extends Model {
   async $hasPaidPlan() {
     const plan = await this.$getPlan();
     return Boolean(plan && plan.name !== "free");
-  }
-
-  async $getPurchaseStatus() {
-    if (this.type === "user") return "none";
-    if (this.forcedPlanId) return "forced";
-
-    const purchase = await this.$getActivePurchase();
-    const hasPaidPlan =
-      purchase && purchase.plan && purchase.plan.name !== "free";
-
-    if (hasPaidPlan) {
-      if (!purchase!.paymentMethodFilled) {
-        return "paymentMethodMissing";
-      }
-      if (purchase.$isTrialActive()) {
-        return purchase.trialEndDate === purchase.endDate
-          ? "trialCanceled"
-          : "trial";
-      }
-      return "active";
-    }
-
-    const oldPaidPurchase = await Purchase.query()
-      .where("accountId", this.id)
-      .whereNot({ name: "free" })
-      .whereRaw("?? < now()", "endDate")
-      .joinRelated("plan")
-      .orderBy("endDate", "DESC")
-      .first();
-
-    if (
-      oldPaidPurchase?.trialEndDate &&
-      oldPaidPurchase.trialEndDate === oldPaidPurchase.endDate
-    ) {
-      return "trialExpired";
-    }
-
-    if (oldPaidPurchase) {
-      return "canceled";
-    }
-
-    return "missing";
   }
 
   static async checkReadPermission(account: Account, user: User) {

@@ -88,7 +88,7 @@ export const getCustomerSubscriptionOrThrow = async (
   return subscription;
 };
 
-export const terminateTrial = async (stripeSubscriptionId: string) => {
+export const terminateStripeTrial = async (stripeSubscriptionId: string) => {
   await stripe.subscriptions.update(stripeSubscriptionId, { trial_end: "now" });
   return;
 };
@@ -268,12 +268,14 @@ export const createStripeCheckoutSession = async ({
   purchaserId,
   successUrl,
   cancelUrl,
+  customer,
 }: {
   plan: Plan;
   account: Account;
   purchaserId: string;
   successUrl: string;
   cancelUrl: string;
+  customer: string | null;
 }) => {
   const [purchase, price, trialConsumed] = await Promise.all([
     account.$getActivePurchase(),
@@ -299,6 +301,7 @@ export const createStripeCheckoutSession = async ({
       },
       ...(!trialConsumed && { trial_period_days: 14 }),
     },
+    ...(customer && { customer }),
     mode: "subscription",
     client_reference_id: Purchase.encodeStripeClientReferenceId({
       accountId: account.id,
