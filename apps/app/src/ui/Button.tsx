@@ -17,13 +17,13 @@ export type ButtonProps = AriakitButtonProps<"button"> & {
 const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
   contained: {
     primary:
-      "text-white border-transparent bg-primary-600 [&:not([aria-disabled])]:hover:bg-primary-700 active:bg-primary-800 aria-expanded:bg-primary-800",
+      "text-white border-transparent bg-primary-600 [&:not([aria-disabled])]:hover:bg-primary-700 [&:not([aria-disabled])]:active:bg-primary-800 aria-expanded:bg-primary-800",
     danger:
-      "text-white border-transparent bg-danger-600 [&:not([aria-disabled])]:hover:bg-danger-700 active:bg-danger-800 aria-expanded:bg-danger-800",
+      "text-white border-transparent bg-danger-600 [&:not([aria-disabled])]:hover:bg-danger-700 [&:not([aria-disabled])]:active:bg-danger-800 aria-expanded:bg-danger-800",
     neutral:
-      "text-white border-transparent bg-neutral-600 [&:not([aria-disabled])]:hover:bg-neutral-700 active:bg-neutral-800 aria-expanded:bg-neutral-800",
+      "text-white border-transparent bg-neutral-600 [&:not([aria-disabled])]:hover:bg-neutral-700 [&:not([aria-disabled])]:active:bg-neutral-800 aria-expanded:bg-neutral-800",
     white:
-      "text-neutral-800 border-transparent bg-white [&:not([aria-disabled])]:hover:bg-neutral-700 [&:not([aria-disabled])]:hover:text-white active:bg-neutral-800 active:bg-neutral-800:text-white aria-expanded:bg-neutral-800 aria-expanded:text-white",
+      "text-neutral-800 border-transparent bg-white [&:not([aria-disabled])]:hover:bg-neutral-700 [&:not([aria-disabled])]:hover:text-white [&:not([aria-disabled])]:active:bg-neutral-800 [&:not([aria-disabled])]:active:bg-neutral-800:text-white aria-expanded:bg-neutral-800 aria-expanded:text-white",
   },
   outline: {
     primary:

@@ -63,6 +63,8 @@ export function useLogout() {
   const { setToken } = useAuth();
   return useCallback(() => {
     setToken(null);
-    window.location.replace("https://argos-ci.com");
+    if (process.env["NODE_ENV"] === "production") {
+      window.location.replace("https://argos-ci.com");
+    }
   }, [setToken]);
 }

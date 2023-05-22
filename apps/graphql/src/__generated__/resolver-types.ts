@@ -162,6 +162,10 @@ export type ICreateTeamInput = {
   name: Scalars['String'];
 };
 
+export type IDeleteTeamInput = {
+  accountId: Scalars['ID'];
+};
+
 export type IGhApiInstallation = INode & {
   __typename?: 'GhApiInstallation';
   account: IGhApiInstallationAccount;
@@ -230,6 +234,8 @@ export type IMutation = {
   createTeam: ITeam;
   /** Delete Project */
   deleteProject: Scalars['Boolean'];
+  /** Delete team and all its projects */
+  deleteTeam: Scalars['Boolean'];
   /** Leave a team */
   leaveTeam: Scalars['Boolean'];
   /** Mute or unmute tests */
@@ -275,6 +281,11 @@ export type IMutationCreateTeamArgs = {
 
 export type IMutationDeleteProjectArgs = {
   id: Scalars['ID'];
+};
+
+
+export type IMutationDeleteTeamArgs = {
+  input: IDeleteTeamInput;
 };
 
 
@@ -930,6 +941,7 @@ export type IResolversTypes = ResolversObject<{
   CreateTeamInput: ICreateTeamInput;
   Date: ResolverTypeWrapper<Scalars['Date']>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']>;
+  DeleteTeamInput: IDeleteTeamInput;
   Float: ResolverTypeWrapper<Scalars['Float']>;
   GhApiInstallation: ResolverTypeWrapper<GhApiInstallation>;
   GhApiInstallationAccount: ResolverTypeWrapper<IGhApiInstallationAccount>;
@@ -1006,6 +1018,7 @@ export type IResolversParentTypes = ResolversObject<{
   CreateTeamInput: ICreateTeamInput;
   Date: Scalars['Date'];
   DateTime: Scalars['DateTime'];
+  DeleteTeamInput: IDeleteTeamInput;
   Float: Scalars['Float'];
   GhApiInstallation: GhApiInstallation;
   GhApiInstallationAccount: IGhApiInstallationAccount;
@@ -1192,6 +1205,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   createProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationCreateProjectArgs, 'input'>>;
   createTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
   deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
+  deleteTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteTeamArgs, 'input'>>;
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
   muteTests?: Resolver<IResolversTypes['MuteUpdateTest'], ParentType, ContextType, RequireFields<IMutationMuteTestsArgs, 'ids' | 'muted'>>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
