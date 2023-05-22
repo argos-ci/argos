@@ -167,7 +167,7 @@ const PlanStatus = ({
   planName: string;
   trialStatus: TrialStatus | null;
 }) => {
-  if (isTeamAccount) {
+  if (!isTeamAccount) {
     return (
       <>
         Your Personal account is on the{" "}
