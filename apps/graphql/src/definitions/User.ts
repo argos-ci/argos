@@ -24,7 +24,7 @@ export const typeDefs = gql`
     periodStartDate: DateTime
     periodEndDate: DateTime
     purchase: Purchase
-    purchaseStatus: PurchaseStatus!
+    purchaseStatus: PurchaseStatus
     oldPaidPurchase: Purchase
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
