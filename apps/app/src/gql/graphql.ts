@@ -216,8 +216,6 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Accept an invitation to join a team */
   acceptInvitation: Team;
-  /** Create a checkout session for a pro plan */
-  createProPlanCheckoutSession: Scalars['String'];
   /** Create a Project */
   createProject: Project;
   /** Create a team */
@@ -254,11 +252,6 @@ export type Mutation = {
 
 export type MutationAcceptInvitationArgs = {
   token: Scalars['String'];
-};
-
-
-export type MutationCreateProPlanCheckoutSessionArgs = {
-  teamId: Scalars['ID'];
 };
 
 

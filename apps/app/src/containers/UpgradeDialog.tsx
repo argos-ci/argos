@@ -30,10 +30,12 @@ const SubscribeButton = ({
   provider,
   disabled,
   accountId,
+  stripeCustomerId,
 }: {
   provider: ServiceProvider;
   disabled: boolean;
   accountId: string;
+  stripeCustomerId: string | null;
 }) => {
   if (provider === "github") {
     return (
@@ -48,13 +50,17 @@ const SubscribeButton = ({
   }
 
   return (
-    <StripeCheckoutButton accountId={accountId} disabled={disabled}>
+    <StripeCheckoutButton
+      accountId={accountId}
+      disabled={disabled}
+      stripeCustomerId={stripeCustomerId}
+    >
       Continue
     </StripeCheckoutButton>
   );
 };
 
-const ProviderRedirectMessage = ({
+const PaymentProviderRedirectMessage = ({
   provider,
   canGetTrial,
 }: {
@@ -79,11 +85,13 @@ export const UpgradeDialogButton = ({
   currentAccountId,
   color = "primary",
   variant = "contained",
+  stripeCustomerId,
 }: {
   children?: React.ReactNode;
   currentAccountId?: string;
   color?: ButtonColor;
   variant?: ButtonVariant;
+  stripeCustomerId: string | null;
 }) => {
   const dialog = useDialogState();
   const [provider, setProvider] = useState<ServiceProvider>("stripe");
@@ -158,7 +166,7 @@ export const UpgradeDialogButton = ({
         </DialogBody>
 
         <DialogFooter>
-          <ProviderRedirectMessage
+          <PaymentProviderRedirectMessage
             provider={provider}
             canGetTrial={canGetTrial}
           />
@@ -182,6 +190,7 @@ export const UpgradeDialogButton = ({
                 provider={provider}
                 disabled={disableSubmit}
                 accountId={accountId}
+                stripeCustomerId={stripeCustomerId}
               />
             </div>
           </div>

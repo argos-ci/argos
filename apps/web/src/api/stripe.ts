@@ -94,7 +94,7 @@ router.post(
   bodyParser.json(),
   asyncHandler(async (req, res) => {
     try {
-      const { accountId } = req.body;
+      const { accountId, stripeCustomerId } = req.body;
       const user = req.auth?.user;
 
       if (!user) {
@@ -124,6 +124,7 @@ router.post(
         plan: proPlan,
         account: teamAccount,
         purchaserId: user.id,
+        customer: stripeCustomerId,
         // prettier-ignore
         successUrl: new URL(`${teamAccount.slug}?checkout=success`, config.get('server.url')).href,
         // prettier-ignore

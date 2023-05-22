@@ -226,13 +226,13 @@ const PlanStatusDescription = ({
   periodEndDate,
   stripeCustomerId,
   openTrialEndDialog,
-  planName,
+  hasFreePlan,
 }: {
   purchaseStatus: PurchaseStatus;
   periodEndDate: string;
   stripeCustomerId: string;
   openTrialEndDialog: () => void;
-  planName: string;
+  hasFreePlan: boolean;
 }) => {
   switch (purchaseStatus) {
     case PurchaseStatus.Active:
@@ -298,7 +298,7 @@ const PlanStatusDescription = ({
               ? "Starting June 1st, 2023, a Pro plan will be required to use team features."
               : "Subscribe to Pro plan to use team features."}
           </Paragraph>
-          {planName === "free" && (
+          {hasFreePlan && (
             <Paragraph>
               Note: To switch to a Stripe Plan, you must cancel your Github Free
               plan first.
@@ -398,9 +398,11 @@ const CustomNeedsButton = () => (
 const PlanActions = ({
   purchaseStatus,
   accountId,
+  stripeCustomerId,
 }: {
   purchaseStatus: PurchaseStatus;
   accountId: string;
+  stripeCustomerId: string | null;
 }) => {
   switch (purchaseStatus) {
     case PurchaseStatus.None:
@@ -427,7 +429,10 @@ const PlanActions = ({
       return (
         <div className="flex items-center gap-4">
           <CustomNeedsButton />
-          <UpgradeDialogButton currentAccountId={accountId} />
+          <UpgradeDialogButton
+            currentAccountId={accountId}
+            stripeCustomerId={stripeCustomerId}
+          />
         </div>
       );
 
@@ -501,6 +506,8 @@ export const PlanCard = (props: { account: AccountFragment }) => {
     purchase,
   } = account;
 
+  const purchasePlanName = purchase?.plan?.name ?? "";
+
   const [showTrialEndDialog, setShowTrialEndDialog] = useState(false);
   const confirmTrialEndDialogState = useDialogState({
     open: showTrialEndDialog,
@@ -540,7 +547,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
             periodEndDate={moment(periodEndDate).format("LL")}
             stripeCustomerId={stripeCustomerId ?? ""}
             openTrialEndDialog={() => setShowTrialEndDialog(true)}
-            planName={purchase?.plan?.name ?? ""}
+            hasFreePlan={purchasePlanName === "free"}
           />
         </CardParagraph>
 
@@ -582,6 +589,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
             <PlanActions
               purchaseStatus={purchaseStatus}
               accountId={account.id}
+              stripeCustomerId={stripeCustomerId ?? ""}
             />
           </div>
         )}
