@@ -221,8 +221,6 @@ export type IMutation = {
   __typename?: 'Mutation';
   /** Accept an invitation to join a team */
   acceptInvitation: ITeam;
-  /** Create a checkout session for a pro plan */
-  createProPlanCheckoutSession: Scalars['String'];
   /** Create a Project */
   createProject: IProject;
   /** Create a team */
@@ -259,11 +257,6 @@ export type IMutation = {
 
 export type IMutationAcceptInvitationArgs = {
   token: Scalars['String'];
-};
-
-
-export type IMutationCreateProPlanCheckoutSessionArgs = {
-  teamId: Scalars['ID'];
 };
 
 
@@ -1187,7 +1180,6 @@ export type IGithubRepositoryResolvers<ContextType = Context, ParentType extends
 
 export type IMutationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Mutation'] = IResolversParentTypes['Mutation']> = ResolversObject<{
   acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'token'>>;
-  createProPlanCheckoutSession?: Resolver<IResolversTypes['String'], ParentType, ContextType, RequireFields<IMutationCreateProPlanCheckoutSessionArgs, 'teamId'>>;
   createProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationCreateProjectArgs, 'input'>>;
   createTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
   deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
