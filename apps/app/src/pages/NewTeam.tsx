@@ -20,7 +20,7 @@ export const NewTeam = () => {
       <Container>
         <Heading>Create a Team</Heading>
         <Headline>
-          A team alllows you to collaborate on one or several projects.
+          A team allows you to collaborate on one or several projects.
         </Headline>
         {auth && (
           <div className="mt-4 max-w-2xl">
