@@ -13,27 +13,12 @@ export const typeDefs = gql`
   type Purchase implements Node {
     id: ID!
     source: PurchaseSource!
-    account: Account!
-    paymentMethodFilled: Boolean
-    endDate: DateTime
-    plan: Plan!
-    trialEndDate: DateTime
-    isTrialActive: Boolean!
     trialDaysRemaining: Int
   }
 `;
 
 export const resolvers: IResolvers = {
   Purchase: {
-    account: async (purchase, _args, ctx) => {
-      return ctx.loaders.Account.load(purchase.accountId);
-    },
-    plan: async (purchase, _args, ctx) => {
-      return ctx.loaders.Plan.load(purchase.planId);
-    },
-    isTrialActive: (purchase) => {
-      return purchase.$isTrialActive();
-    },
     trialDaysRemaining: (purchase) => {
       if (!purchase.trialEndDate) return null;
       const trialEndDate = new Date(purchase.trialEndDate).getTime();

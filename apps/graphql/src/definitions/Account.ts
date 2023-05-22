@@ -66,7 +66,6 @@ export const typeDefs = gql`
     periodEndDate: DateTime
     purchase: Purchase
     purchaseStatus: PurchaseStatus!
-    oldPaidPurchase: Purchase
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
@@ -207,16 +206,6 @@ export const resolvers: IResolvers = {
     },
     purchaseStatus: async (account) => {
       return account.$getPurchaseStatus() as Promise<IPurchaseStatus>;
-    },
-    oldPaidPurchase: async (account) => {
-      const oldPaidPurchase = await Purchase.query()
-        .where("accountId", account.id)
-        .whereNot({ name: "free" })
-        .whereRaw("?? < now()", "endDate")
-        .joinRelated("plan")
-        .orderBy("endDate", "DESC")
-        .first();
-      return oldPaidPurchase ?? null;
     },
     plan: async (account) => {
       return account.$getPlan();

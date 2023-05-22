@@ -31,7 +31,6 @@ export type IAccount = {
   hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
-  oldPaidPurchase?: Maybe<IPurchase>;
   periodEndDate?: Maybe<Scalars['DateTime']>;
   periodStartDate?: Maybe<Scalars['DateTime']>;
   permissions: Array<IPermission>;
@@ -423,15 +422,9 @@ export type IProjectConnection = IConnection & {
 
 export type IPurchase = INode & {
   __typename?: 'Purchase';
-  account: IAccount;
-  endDate?: Maybe<Scalars['DateTime']>;
   id: Scalars['ID'];
-  isTrialActive: Scalars['Boolean'];
-  paymentMethodFilled?: Maybe<Scalars['Boolean']>;
-  plan: IPlan;
   source: IPurchaseSource;
   trialDaysRemaining?: Maybe<Scalars['Int']>;
-  trialEndDate?: Maybe<Scalars['DateTime']>;
 };
 
 export enum IPurchaseSource {
@@ -1063,7 +1056,6 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
@@ -1250,15 +1242,9 @@ export type IProjectConnectionResolvers<ContextType = Context, ParentType extend
 }>;
 
 export type IPurchaseResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Purchase'] = IResolversParentTypes['Purchase']> = ResolversObject<{
-  account?: Resolver<IResolversTypes['Account'], ParentType, ContextType>;
-  endDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  isTrialActive?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  paymentMethodFilled?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
-  plan?: Resolver<IResolversTypes['Plan'], ParentType, ContextType>;
   source?: Resolver<IResolversTypes['PurchaseSource'], ParentType, ContextType>;
   trialDaysRemaining?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
-  trialEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

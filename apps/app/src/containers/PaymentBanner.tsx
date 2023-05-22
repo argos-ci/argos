@@ -8,6 +8,7 @@ import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { StripePortalLink } from "@/ui/StripeLink";
 
+import { useQuery } from "./Apollo";
 import { UpgradeDialogButton } from "./UpgradeDialog";
 
 const now = new Date();
@@ -23,21 +24,16 @@ export const PaymentBannerFragment = graphql(`
     purchase {
       id
       trialDaysRemaining
-      plan {
-        id
-        name
-      }
+      source
     }
+  }
+`);
 
-    ... on Team {
+export const PaymentBannerQuery = graphql(`
+  query PaymentBanner_me {
+    me {
       id
-      me {
-        id
-        user {
-          id
-          hasSubscribedToTrial
-        }
-      }
+      hasSubscribedToTrial
     }
   }
 `);
@@ -106,11 +102,11 @@ const BannerCta = ({
 const getBannerProps = ({
   purchaseStatus,
   trialDaysRemaining,
-  hasFreePlan,
+  hasGithubPurchase,
 }: {
   purchaseStatus: PurchaseStatus;
   trialDaysRemaining: number | null;
-  hasFreePlan: boolean;
+  hasGithubPurchase: boolean;
 }): {
   message: string;
   buttonLabel?: string;
@@ -136,8 +132,8 @@ const getBannerProps = ({
       const isBeforeFreePlanExpiration = now < FREE_PLAN_EXPIRATION_DATE;
       return {
         bannerColor: isBeforeFreePlanExpiration ? "neutral" : "danger",
-        action: hasFreePlan ? "settings" : "stripeCheckoutSession",
-        buttonLabel: hasFreePlan ? "Manage subscription" : "Upgrade",
+        action: hasGithubPurchase ? "settings" : "stripeCheckoutSession",
+        buttonLabel: hasGithubPurchase ? "Manage subscription" : "Upgrade",
         message: isBeforeFreePlanExpiration
           ? "Starting June 1st, 2023, a Pro plan will be required to use team features."
           : "Upgrade to Pro plan to continue using team features.",
@@ -167,20 +163,21 @@ const getBannerProps = ({
 
 export const PaymentBanner = memo((props: PaymentBannerProps) => {
   const account = useFragment(PaymentBannerFragment, props.account);
+  const { data: { me } = {} } = useQuery(PaymentBannerQuery);
+  if (!me) {
+    return null;
+  }
+
   const { purchase, permissions, purchaseStatus, stripeCustomerId } = account;
-  const purchasePlanName = purchase?.plan?.name ?? "";
-  const hasSubscribedToTrial =
-    account.__typename === "Team"
-      ? account.me?.user?.hasSubscribedToTrial
-      : false;
+  const hasGithubPurchase = Boolean(purchase && purchase.source === "github");
 
   const { message, buttonLabel, bannerColor, action } = getBannerProps({
     purchaseStatus,
     trialDaysRemaining: purchase?.trialDaysRemaining ?? null,
-    hasFreePlan: purchasePlanName === "free",
+    hasGithubPurchase: hasGithubPurchase,
   });
   const userIsOwner = permissions.includes(Permission.Write);
-  if (!userIsOwner || !message) {
+  if (!message) {
     return null;
   }
 
@@ -188,13 +185,15 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
     <Banner className="flex justify-center" color={bannerColor ?? "neutral"}>
       <Container className="flex items-center justify-center gap-2">
         <p>{message}</p>
-        <BannerCta
-          stripeCustomerId={stripeCustomerId ?? null}
-          accountId={account.id}
-          action={action}
-        >
-          {buttonLabel || hasSubscribedToTrial ? "Upgrade" : "Start trial"}
-        </BannerCta>
+        {!userIsOwner && (
+          <BannerCta
+            stripeCustomerId={stripeCustomerId ?? null}
+            accountId={account.id}
+            action={action}
+          >
+            {buttonLabel || me.hasSubscribedToTrial ? "Upgrade" : "Start trial"}
+          </BannerCta>
+        )}
       </Container>
     </Banner>
   );

@@ -72,10 +72,7 @@ const PlanCardFragment = graphql(`
 
     purchase {
       id
-      plan {
-        id
-        name
-      }
+      source
     }
 
     projects(first: 100, after: 0) {
@@ -226,13 +223,13 @@ const PlanStatusDescription = ({
   periodEndDate,
   stripeCustomerId,
   openTrialEndDialog,
-  hasFreePlan,
+  hasGithubPurchase,
 }: {
   purchaseStatus: PurchaseStatus;
   periodEndDate: string;
   stripeCustomerId: string;
   openTrialEndDialog: () => void;
-  hasFreePlan: boolean;
+  hasGithubPurchase: boolean;
 }) => {
   switch (purchaseStatus) {
     case PurchaseStatus.Active:
@@ -298,7 +295,7 @@ const PlanStatusDescription = ({
               ? "Starting June 1st, 2023, a Pro plan will be required to use team features."
               : "Subscribe to Pro plan to use team features."}
           </Paragraph>
-          {hasFreePlan && (
+          {hasGithubPurchase && (
             <Paragraph>
               Note: To switch to a Stripe Plan, you must cancel your Github Free
               plan first.
@@ -506,7 +503,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
     purchase,
   } = account;
 
-  const purchasePlanName = purchase?.plan?.name ?? "";
+  const hasGithubPurchase = Boolean(purchase && purchase.source === "github");
 
   const [showTrialEndDialog, setShowTrialEndDialog] = useState(false);
   const confirmTrialEndDialogState = useDialogState({
@@ -547,7 +544,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
             periodEndDate={moment(periodEndDate).format("LL")}
             stripeCustomerId={stripeCustomerId ?? ""}
             openTrialEndDialog={() => setShowTrialEndDialog(true)}
-            hasFreePlan={purchasePlanName === "free"}
+            hasGithubPurchase={hasGithubPurchase}
           />
         </CardParagraph>
 
