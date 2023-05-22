@@ -34,6 +34,10 @@ export const typeDefs = gql`
     teams: [Team!]!
     ghInstallations: GhApiInstallationConnection!
     hasSubscribedToTrial: Boolean!
+    trialStatus: TrialStatus
+    hasForcedPlan: Boolean!
+    pendingCancelAt: DateTime
+    paymentProvider: PurchaseSource
   }
 
   type UserConnection implements Connection {

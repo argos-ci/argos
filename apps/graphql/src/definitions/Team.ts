@@ -39,6 +39,10 @@ export const typeDefs = gql`
     members(after: Int = 0, first: Int = 30): TeamMemberConnection!
     me: TeamMember!
     inviteLink: String!
+    trialStatus: TrialStatus
+    hasForcedPlan: Boolean!
+    pendingCancelAt: DateTime
+    paymentProvider: PurchaseSource
   }
 
   enum TeamUserLevel {

@@ -14,6 +14,7 @@ export const typeDefs = gql`
     id: ID!
     source: PurchaseSource!
     trialDaysRemaining: Int
+    paymentMethodFilled: Boolean!
   }
 `;
 

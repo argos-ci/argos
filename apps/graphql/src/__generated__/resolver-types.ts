@@ -27,21 +27,25 @@ export type IAccount = {
   consumptionRatio?: Maybe<Scalars['Float']>;
   currentMonthUsedScreenshots: Scalars['Int'];
   ghAccount?: Maybe<IGithubAccount>;
+  hasForcedPlan: Scalars['Boolean'];
   hasPaidPlan: Scalars['Boolean'];
   hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
+  paymentProvider?: Maybe<IPurchaseSource>;
+  pendingCancelAt?: Maybe<Scalars['DateTime']>;
   periodEndDate?: Maybe<Scalars['DateTime']>;
   periodStartDate?: Maybe<Scalars['DateTime']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   purchase?: Maybe<IPurchase>;
-  purchaseStatus: IPurchaseStatus;
+  purchaseStatus?: Maybe<IPurchaseStatus>;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
   stripeCustomerId?: Maybe<Scalars['String']>;
+  trialStatus?: Maybe<ITrialStatus>;
 };
 
 
@@ -423,6 +427,7 @@ export type IProjectConnection = IConnection & {
 export type IPurchase = INode & {
   __typename?: 'Purchase';
   id: Scalars['ID'];
+  paymentMethodFilled: Scalars['Boolean'];
   source: IPurchaseSource;
   trialDaysRemaining?: Maybe<Scalars['Int']>;
 };
@@ -433,24 +438,16 @@ export enum IPurchaseSource {
 }
 
 export enum IPurchaseStatus {
-  /** Active purchase */
+  /** Ongoing paid purchase */
   Active = 'active',
-  /** No active purchase: the subscription has been canceled */
+  /** Post-cancelation date */
   Canceled = 'canceled',
-  /** Active purchase. A forced plan is set */
-  Forced = 'forced',
-  /** No active purchase. */
+  /** No paid purchase */
   Missing = 'missing',
-  /** Returned on personal account */
-  None = 'none',
-  /** Active purchase. Missing payment method: the subscription will end at the end of period */
-  PaymentMethodMissing = 'paymentMethodMissing',
-  /** Active purchase. Trial in progress: the subscription will start at the end of period */
-  Trial = 'trial',
-  /** Active purchase. Trial in progress: the subscription will end at the end of period */
-  TrialCanceled = 'trialCanceled',
-  /** No active purchase: the trial has ended */
-  TrialExpired = 'trialExpired'
+  /** Ongoing trial */
+  Trialing = 'trialing',
+  /** Payment due */
+  Unpaid = 'unpaid'
 }
 
 export type IQuery = {
@@ -607,6 +604,7 @@ export type ITeam = IAccount & INode & {
   consumptionRatio?: Maybe<Scalars['Float']>;
   currentMonthUsedScreenshots: Scalars['Int'];
   ghAccount?: Maybe<IGithubAccount>;
+  hasForcedPlan: Scalars['Boolean'];
   hasPaidPlan: Scalars['Boolean'];
   hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
@@ -615,6 +613,8 @@ export type ITeam = IAccount & INode & {
   members: ITeamMemberConnection;
   name?: Maybe<Scalars['String']>;
   oldPaidPurchase?: Maybe<IPurchase>;
+  paymentProvider?: Maybe<IPurchaseSource>;
+  pendingCancelAt?: Maybe<Scalars['DateTime']>;
   periodEndDate?: Maybe<Scalars['DateTime']>;
   periodStartDate?: Maybe<Scalars['DateTime']>;
   permissions: Array<IPermission>;
@@ -626,6 +626,7 @@ export type ITeam = IAccount & INode & {
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
   stripeCustomerId?: Maybe<Scalars['String']>;
+  trialStatus?: Maybe<ITrialStatus>;
 };
 
 
@@ -693,6 +694,13 @@ export type ITransferProjectInput = {
   targetAccountId: Scalars['ID'];
 };
 
+export enum ITrialStatus {
+  /** Trial is active */
+  Active = 'active',
+  /** Subscription ended when trial did */
+  Expired = 'expired'
+}
+
 export type IUpdateAccountInput = {
   id: Scalars['ID'];
   name?: InputMaybe<Scalars['String']>;
@@ -719,6 +727,7 @@ export type IUser = IAccount & INode & {
   currentMonthUsedScreenshots: Scalars['Int'];
   ghAccount?: Maybe<IGithubAccount>;
   ghInstallations: IGhApiInstallationConnection;
+  hasForcedPlan: Scalars['Boolean'];
   hasPaidPlan: Scalars['Boolean'];
   hasSubscribedToTrial: Scalars['Boolean'];
   hasUsageBasedPlan: Scalars['Boolean'];
@@ -726,6 +735,8 @@ export type IUser = IAccount & INode & {
   lastPurchase?: Maybe<IPurchase>;
   name?: Maybe<Scalars['String']>;
   oldPaidPurchase?: Maybe<IPurchase>;
+  paymentProvider?: Maybe<IPurchaseSource>;
+  pendingCancelAt?: Maybe<Scalars['DateTime']>;
   periodEndDate?: Maybe<Scalars['DateTime']>;
   periodStartDate?: Maybe<Scalars['DateTime']>;
   permissions: Array<IPermission>;
@@ -738,6 +749,7 @@ export type IUser = IAccount & INode & {
   stripeClientReferenceId: Scalars['String'];
   stripeCustomerId?: Maybe<Scalars['String']>;
   teams: Array<ITeam>;
+  trialStatus?: Maybe<ITrialStatus>;
 };
 
 
@@ -962,6 +974,7 @@ export type IResolversTypes = ResolversObject<{
   TestStatus: ITestStatus;
   Time: ResolverTypeWrapper<Scalars['Time']>;
   TransferProjectInput: ITransferProjectInput;
+  TrialStatus: ITrialStatus;
   UpdateAccountInput: IUpdateAccountInput;
   UpdateProjectInput: IUpdateProjectInput;
   UpdatedTestStatuses: ResolverTypeWrapper<IUpdatedTestStatuses>;
@@ -1052,21 +1065,25 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
+  hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  paymentProvider?: Resolver<Maybe<IResolversTypes['PurchaseSource']>, ParentType, ContextType>;
+  pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IAccountProjectsArgs, 'after' | 'first'>>;
   purchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
-  purchaseStatus?: Resolver<IResolversTypes['PurchaseStatus'], ParentType, ContextType>;
+  purchaseStatus?: Resolver<Maybe<IResolversTypes['PurchaseStatus']>, ParentType, ContextType>;
   screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
 }>;
 
 export type IAccountAvatarResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountAvatar'] = IResolversParentTypes['AccountAvatar']> = ResolversObject<{
@@ -1243,6 +1260,7 @@ export type IProjectConnectionResolvers<ContextType = Context, ParentType extend
 
 export type IPurchaseResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Purchase'] = IResolversParentTypes['Purchase']> = ResolversObject<{
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  paymentMethodFilled?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   source?: Resolver<IResolversTypes['PurchaseSource'], ParentType, ContextType>;
   trialDaysRemaining?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1310,6 +1328,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
+  hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
@@ -1318,6 +1337,8 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
+  paymentProvider?: Resolver<Maybe<IResolversTypes['PurchaseSource']>, ParentType, ContextType>;
+  pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
@@ -1329,6 +1350,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1384,6 +1406,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   ghInstallations?: Resolver<IResolversTypes['GhApiInstallationConnection'], ParentType, ContextType>;
+  hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
@@ -1391,6 +1414,8 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   lastPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
+  paymentProvider?: Resolver<Maybe<IResolversTypes['PurchaseSource']>, ParentType, ContextType>;
+  pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
@@ -1403,6 +1428,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   teams?: Resolver<Array<IResolversTypes['Team']>, ParentType, ContextType>;
+  trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
