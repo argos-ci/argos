@@ -207,7 +207,7 @@ const PlanStatus = ({
           Your team is on the{" "}
           <span className="font-medium">{capitalize(planName)}</span> plan.{" "}
           {PurchaseStatus.Trialing && (
-            <Chip scale="sm" color="info">
+            <Chip scale="xs" color="info">
               Trial
             </Chip>
           )}
