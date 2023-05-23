@@ -296,6 +296,19 @@ const PlanStatusDescription = ({
         );
       }
 
+      if (hasGithubPurchase) {
+        return (
+          <Paragraph>
+            You subscribed from GitHub Marketplace. You can upgrade or cancel
+            your plan directly from{" "}
+            <Anchor href="https://github.com/marketplace/argos-ci">
+              GitHub
+            </Anchor>
+            .
+          </Paragraph>
+        );
+      }
+
       return (
         <Paragraph>
           The next payment will occur on {formattedPeriodEndDate}.
