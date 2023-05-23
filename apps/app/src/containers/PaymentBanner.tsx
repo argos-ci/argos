@@ -3,7 +3,7 @@ import { memo } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Permission, PurchaseStatus } from "@/gql/graphql";
+import { Permission, PurchaseStatus, Team } from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
 import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
@@ -196,7 +196,7 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
     purchaseStatus,
     stripeCustomerId,
     pendingCancelAt,
-  } = account;
+  } = account as Team;
 
   const { paymentMethodFilled, trialDaysRemaining } = purchase || {};
   const { message, buttonLabel, bannerColor, action } = getBannerProps({

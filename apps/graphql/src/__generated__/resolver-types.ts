@@ -743,7 +743,7 @@ export type IUser = IAccount & INode & {
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   purchase?: Maybe<IPurchase>;
-  purchaseStatus: IPurchaseStatus;
+  purchaseStatus?: Maybe<IPurchaseStatus>;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
@@ -1422,7 +1422,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IUserProjectsArgs, 'after' | 'first'>>;
   purchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
-  purchaseStatus?: Resolver<IResolversTypes['PurchaseStatus'], ParentType, ContextType>;
+  purchaseStatus?: Resolver<Maybe<IResolversTypes['PurchaseStatus']>, ParentType, ContextType>;
   screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
