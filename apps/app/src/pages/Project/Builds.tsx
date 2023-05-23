@@ -337,13 +337,15 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   }
 
   return (
-    <Container className="relative min-h-0 flex-1">
-      <BuildsList
-        project={project}
-        builds={builds}
-        fetchNextPage={fetchNextPage}
-        fetching={buildsResult.loading}
-      />
+    <Container className="flex flex-1">
+      <div className="relative flex-1">
+        <BuildsList
+          project={project}
+          builds={builds}
+          fetchNextPage={fetchNextPage}
+          fetching={buildsResult.loading}
+        />
+      </div>
     </Container>
   );
 };
