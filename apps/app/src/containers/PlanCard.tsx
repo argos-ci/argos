@@ -475,15 +475,19 @@ const ManageSubscriptionButton = ({
   paymentProvider: PurchaseSource | null;
 }) => {
   if (paymentProvider === PurchaseSource.Github) {
-    <Anchor href={config.get("github.marketplaceUrl")} external>
-      Manage your subscription
-    </Anchor>;
+    return (
+      <Anchor href={config.get("github.marketplaceUrl")} external>
+        Manage your subscription
+      </Anchor>
+    );
   }
 
   if (paymentProvider === PurchaseSource.Stripe && stripeCustomerId) {
-    <StripePortalLink stripeCustomerId={stripeCustomerId}>
-      Manage your subscription
-    </StripePortalLink>;
+    return (
+      <StripePortalLink stripeCustomerId={stripeCustomerId}>
+        Manage your subscription
+      </StripePortalLink>
+    );
   }
 
   return null;
