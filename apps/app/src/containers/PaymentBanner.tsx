@@ -216,7 +216,7 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
     <Banner className="flex justify-center" color={bannerColor ?? "neutral"}>
       <Container className="flex items-center justify-center gap-2">
         <p>{message}</p>
-        {!userIsOwner && (
+        {userIsOwner && (
           <BannerCta
             stripeCustomerId={stripeCustomerId ?? null}
             accountId={account.id}
