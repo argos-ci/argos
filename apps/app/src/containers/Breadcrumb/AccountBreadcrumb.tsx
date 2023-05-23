@@ -10,6 +10,7 @@ import {
   BreadcrumbItemIcon,
   BreadcrumbLink,
 } from "@/ui/Breadcrumb";
+import { PlanChip } from "@/ui/PlanChip";
 
 import { AccountBreadcrumbMenu } from "./AccountBreadcrumbMenu";
 
@@ -19,6 +20,11 @@ const AccountQuery = graphql(`
       id
       slug
       name
+      purchaseStatus
+      plan {
+        id
+        name
+      }
       avatar {
         ...AccountAvatarFragment
       }
@@ -49,6 +55,13 @@ const AccountBreadcrumbLink = ({ accountSlug }: { accountSlug: string }) => {
         ) : null}
       </BreadcrumbItemIcon>
       {data?.account?.name || accountSlug}
+      {data?.account?.name && (
+        <PlanChip
+          isUserAccount={data.account.__typename === "User"}
+          purchaseStatus={data.account.purchaseStatus}
+          planName={data.account.plan?.name ?? ""}
+        />
+      )}
     </BreadcrumbLink>
   );
 };

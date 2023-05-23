@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 import { forwardRef } from "react";
 
-type ChipColor =
+export type ChipColor =
   | "primary"
   | "info"
   | "success"
@@ -14,7 +14,7 @@ export interface ChipProps
   extends Omit<React.ComponentProps<"div">, "className"> {
   color?: ChipColor;
   icon?: React.ComponentType<any> | null;
-  scale?: "sm" | "md" | undefined;
+  scale?: "xs" | "sm" | "md" | undefined;
 }
 
 const colorClassNames: Record<ChipColor, string> = {
@@ -41,6 +41,7 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(
         ref={ref}
         className={clsx(
           colorClassName,
+          scale === "xs" && "px-2 text-xs",
           scale === "sm" && "px-3 py-1 text-xs",
           scale === "md" && "px-4 py-2 text-sm",
           "no-wrap inline-flex select-none items-center gap-2 whitespace-nowrap rounded-chip border font-medium leading-4"
