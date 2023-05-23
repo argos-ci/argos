@@ -284,6 +284,7 @@ export const resolvers: IResolvers = {
       if (account.type === "user") return null;
       const lastPurchase = await Purchase.query()
         .orderBy("createdAt", "DESC")
+        .where("accountId", account.id)
         .first();
       if (!lastPurchase) return null;
       return lastPurchase.source as IPurchaseSource;
