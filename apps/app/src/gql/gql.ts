@@ -18,7 +18,7 @@ const documents = {
     "\n  fragment AccountChangeSlug_Account on Account {\n    id\n    slug\n  }\n": types.AccountChangeSlug_AccountFragmentDoc,
     "\n  mutation AccountChangeSlug_updateAccount($id: ID!, $slug: String!) {\n    updateAccount(input: { id: $id, slug: $slug }) {\n      id\n      slug\n    }\n  }\n": types.AccountChangeSlug_UpdateAccountDocument,
     "\n  fragment AccountAvatarFragment on AccountAvatar {\n    url(size: 64)\n    color\n    initial\n  }\n": types.AccountAvatarFragmentFragmentDoc,
-    "\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n": types.AccountItem_AccountFragmentDoc,
+    "\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    purchaseStatus\n    plan {\n      id\n      name\n    }\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n": types.AccountItem_AccountFragmentDoc,
     "\n  query AccountSelector_me {\n    me {\n      id\n      slug\n      hasSubscribedToTrial\n      ...AccountItem_Account\n      teams {\n        id\n        slug\n        hasPaidPlan\n        ...AccountItem_Account\n      }\n    }\n  }\n": types.AccountSelector_MeDocument,
     "\n  query AccountBreadcrumb_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      slug\n      name\n      purchaseStatus\n      plan {\n        id\n        name\n      }\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n  }\n": types.AccountBreadcrumb_AccountDocument,
     "\n  fragment AccountBreadcrumbMenu_Account on Account {\n    id\n    slug\n    ...AccountItem_Account\n  }\n": types.AccountBreadcrumbMenu_AccountFragmentDoc,
@@ -130,7 +130,7 @@ export function graphql(source: "\n  fragment AccountAvatarFragment on AccountAv
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n"): (typeof documents)["\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n"];
+export function graphql(source: "\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    purchaseStatus\n    plan {\n      id\n      name\n    }\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n"): (typeof documents)["\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    purchaseStatus\n    plan {\n      id\n      name\n    }\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
