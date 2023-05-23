@@ -157,17 +157,15 @@ const PricingLinks = () => {
 };
 
 const PlanStatus = ({
-  isTeamAccount,
   purchaseStatus,
   planName,
   trialStatus,
 }: {
-  isTeamAccount: boolean;
-  purchaseStatus: PurchaseStatus;
+  purchaseStatus: PurchaseStatus | null | undefined;
   planName: string;
   trialStatus: TrialStatus | null;
 }) => {
-  if (!isTeamAccount) {
+  if (purchaseStatus === null) {
     return (
       <>
         Your Personal account is on the{" "}
@@ -413,14 +411,12 @@ const PrimaryCta = ({
   purchaseStatus,
   accountId,
   stripeCustomerId,
-  isTeamAccount,
 }: {
-  purchaseStatus: PurchaseStatus;
+  purchaseStatus: PurchaseStatus | null | undefined;
   accountId: string;
   stripeCustomerId: string | null;
-  isTeamAccount: boolean;
 }) => {
-  if (!isTeamAccount) {
+  if (!purchaseStatus) {
     return (
       <Button>
         {(buttonProps) => (
@@ -471,9 +467,7 @@ const ManageSubscriptionButton = ({
   stripeCustomerId,
   paymentProvider,
 }: {
-  purchaseStatus: PurchaseStatus;
   stripeCustomerId: string;
-  isTeamAccount: boolean;
   paymentProvider: PurchaseSource | null;
 }) => {
   if (paymentProvider === PurchaseSource.Github) {
@@ -503,8 +497,6 @@ export const PlanCard = (props: { account: AccountFragment }) => {
     trialStatus,
     paymentProvider,
   } = account;
-
-  const isTeamAccount = account.__typename === "Team";
 
   const [showTrialEndDialog, setShowTrialEndDialog] = useState(false);
   const confirmTrialEndDialogState = useDialogState({
@@ -537,7 +529,6 @@ export const PlanCard = (props: { account: AccountFragment }) => {
         <CardTitle>Plan</CardTitle>
         <CardParagraph>
           <PlanStatus
-            isTeamAccount={isTeamAccount}
             purchaseStatus={purchaseStatus}
             planName={plan?.name ?? ""}
             trialStatus={trialStatus ?? null}
@@ -580,9 +571,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
           <div className="flex items-center justify-between">
             <div>
               <ManageSubscriptionButton
-                purchaseStatus={purchaseStatus}
                 stripeCustomerId={stripeCustomerId ?? ""}
-                isTeamAccount={isTeamAccount}
                 paymentProvider={paymentProvider ?? null}
               />
             </div>
@@ -593,7 +582,6 @@ export const PlanCard = (props: { account: AccountFragment }) => {
                 purchaseStatus={purchaseStatus}
                 accountId={account.id}
                 stripeCustomerId={stripeCustomerId ?? ""}
-                isTeamAccount={isTeamAccount}
               />
             </div>
           </div>

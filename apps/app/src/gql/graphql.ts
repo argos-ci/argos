@@ -738,7 +738,7 @@ export type User = Account & Node & {
   plan?: Maybe<Plan>;
   projects: ProjectConnection;
   purchase?: Maybe<Purchase>;
-  purchaseStatus: PurchaseStatus;
+  purchaseStatus?: Maybe<PurchaseStatus>;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
   slug: Scalars['String'];
   stripeClientReferenceId: Scalars['String'];
@@ -954,7 +954,7 @@ export type InstallationsSelect_GhApiInstallationFragment = { __typename?: 'GhAp
 
 type PaymentBanner_Account_Team_Fragment = { __typename?: 'Team', id: string, purchaseStatus: PurchaseStatus, permissions: Array<Permission>, stripeCustomerId?: string | null, pendingCancelAt?: any | null, purchase?: { __typename?: 'Purchase', id: string, trialDaysRemaining?: number | null, source: PurchaseSource, paymentMethodFilled: boolean } | null } & { ' $fragmentName'?: 'PaymentBanner_Account_Team_Fragment' };
 
-type PaymentBanner_Account_User_Fragment = { __typename?: 'User', id: string, purchaseStatus: PurchaseStatus, permissions: Array<Permission>, stripeCustomerId?: string | null, pendingCancelAt?: any | null, purchase?: { __typename?: 'Purchase', id: string, trialDaysRemaining?: number | null, source: PurchaseSource, paymentMethodFilled: boolean } | null } & { ' $fragmentName'?: 'PaymentBanner_Account_User_Fragment' };
+type PaymentBanner_Account_User_Fragment = { __typename?: 'User', id: string, purchaseStatus?: PurchaseStatus | null, permissions: Array<Permission>, stripeCustomerId?: string | null, pendingCancelAt?: any | null, purchase?: { __typename?: 'Purchase', id: string, trialDaysRemaining?: number | null, source: PurchaseSource, paymentMethodFilled: boolean } | null } & { ' $fragmentName'?: 'PaymentBanner_Account_User_Fragment' };
 
 export type PaymentBanner_AccountFragment = PaymentBanner_Account_Team_Fragment | PaymentBanner_Account_User_Fragment;
 
@@ -968,11 +968,11 @@ export type TerminateTrialMutationVariables = Exact<{
 }>;
 
 
-export type TerminateTrialMutation = { __typename?: 'Mutation', terminateTrial: { __typename: 'Team', id: string, purchaseStatus: PurchaseStatus } | { __typename: 'User', id: string, purchaseStatus: PurchaseStatus } };
+export type TerminateTrialMutation = { __typename?: 'Mutation', terminateTrial: { __typename: 'Team', id: string, purchaseStatus: PurchaseStatus } | { __typename: 'User', id: string, purchaseStatus?: PurchaseStatus | null } };
 
 type PlanCard_Account_Team_Fragment = { __typename?: 'Team', id: string, stripeCustomerId?: string | null, periodStartDate?: any | null, periodEndDate?: any | null, purchaseStatus: PurchaseStatus, trialStatus?: TrialStatus | null, hasForcedPlan: boolean, pendingCancelAt?: any | null, paymentProvider?: PurchaseSource | null, plan?: { __typename?: 'Plan', id: string, name?: string | null, screenshotsLimitPerMonth: number, usageBased: boolean } | null, purchase?: { __typename?: 'Purchase', id: string, paymentMethodFilled: boolean } | null, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'Project', id: string, name: string, public: boolean, currentMonthUsedScreenshots: number }> } } & { ' $fragmentName'?: 'PlanCard_Account_Team_Fragment' };
 
-type PlanCard_Account_User_Fragment = { __typename?: 'User', id: string, stripeCustomerId?: string | null, periodStartDate?: any | null, periodEndDate?: any | null, purchaseStatus: PurchaseStatus, trialStatus?: TrialStatus | null, hasForcedPlan: boolean, pendingCancelAt?: any | null, paymentProvider?: PurchaseSource | null, plan?: { __typename?: 'Plan', id: string, name?: string | null, screenshotsLimitPerMonth: number, usageBased: boolean } | null, purchase?: { __typename?: 'Purchase', id: string, paymentMethodFilled: boolean } | null, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'Project', id: string, name: string, public: boolean, currentMonthUsedScreenshots: number }> } } & { ' $fragmentName'?: 'PlanCard_Account_User_Fragment' };
+type PlanCard_Account_User_Fragment = { __typename?: 'User', id: string, stripeCustomerId?: string | null, periodStartDate?: any | null, periodEndDate?: any | null, purchaseStatus?: PurchaseStatus | null, trialStatus?: TrialStatus | null, hasForcedPlan: boolean, pendingCancelAt?: any | null, paymentProvider?: PurchaseSource | null, plan?: { __typename?: 'Plan', id: string, name?: string | null, screenshotsLimitPerMonth: number, usageBased: boolean } | null, purchase?: { __typename?: 'Purchase', id: string, paymentMethodFilled: boolean } | null, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'Project', id: string, name: string, public: boolean, currentMonthUsedScreenshots: number }> } } & { ' $fragmentName'?: 'PlanCard_Account_User_Fragment' };
 
 export type PlanCard_AccountFragment = PlanCard_Account_Team_Fragment | PlanCard_Account_User_Fragment;
 
