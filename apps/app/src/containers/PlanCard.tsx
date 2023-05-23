@@ -411,19 +411,6 @@ const ConsumptionBlock = ({
   );
 };
 
-const CustomNeedsButton = () => (
-  <div className="flex items-center gap-2">
-    Custom needs?
-    <Button color="neutral" variant="outline">
-      {(buttonProps) => (
-        <a href={`mailto:${config.get("contactEmail")}`} {...buttonProps}>
-          Contact Sales
-        </a>
-      )}
-    </Button>
-  </div>
-);
-
 const PrimaryCta = ({
   purchaseStatus,
   accountId,
@@ -594,7 +581,17 @@ export const PlanCard = (props: { account: AccountFragment }) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <CustomNeedsButton />
+              Custom needs?
+              <Button color="neutral" variant="outline">
+                {(buttonProps) => (
+                  <a
+                    href={`mailto:${config.get("contactEmail")}`}
+                    {...buttonProps}
+                  >
+                    Contact Sales
+                  </a>
+                )}
+              </Button>
               <PrimaryCta
                 purchaseStatus={purchaseStatus}
                 accountId={account.id}
