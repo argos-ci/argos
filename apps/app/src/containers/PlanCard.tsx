@@ -205,12 +205,16 @@ const PlanStatus = ({
       return (
         <>
           Your team is on the{" "}
-          <span className="font-medium">{capitalize(planName)}</span> plan.{" "}
-          {PurchaseStatus.Trialing && (
-            <Chip scale="xs" color="info">
-              Trial
-            </Chip>
+          <span className="font-medium">{capitalize(planName)}</span> plan
+          {purchaseStatus === PurchaseStatus.Trialing && (
+            <>
+              {" "}
+              <Chip scale="xs" color="info">
+                Trial
+              </Chip>
+            </>
           )}
+          .
         </>
       );
   }
@@ -288,6 +292,19 @@ const PlanStatusDescription = ({
           <Paragraph>
             You are on a specific plan that is not available for purchase.
             Contact our Sales team to learn more.
+          </Paragraph>
+        );
+      }
+
+      if (hasGithubPurchase) {
+        return (
+          <Paragraph>
+            You subscribed from GitHub Marketplace. You can upgrade or cancel
+            your plan directly from{" "}
+            <Anchor href="https://github.com/marketplace/argos-ci">
+              GitHub
+            </Anchor>
+            .
           </Paragraph>
         );
       }
@@ -393,19 +410,6 @@ const ConsumptionBlock = ({
     </div>
   );
 };
-
-const CustomNeedsButton = () => (
-  <div className="flex items-center gap-2">
-    Custom needs?
-    <Button color="neutral" variant="outline">
-      {(buttonProps) => (
-        <a href={`mailto:${config.get("contactEmail")}`} {...buttonProps}>
-          Contact Sales
-        </a>
-      )}
-    </Button>
-  </div>
-);
 
 const PrimaryCta = ({
   purchaseStatus,
@@ -577,7 +581,17 @@ export const PlanCard = (props: { account: AccountFragment }) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <CustomNeedsButton />
+              Custom needs?
+              <Button color="neutral" variant="outline">
+                {(buttonProps) => (
+                  <a
+                    href={`mailto:${config.get("contactEmail")}`}
+                    {...buttonProps}
+                  >
+                    Contact Sales
+                  </a>
+                )}
+              </Button>
               <PrimaryCta
                 purchaseStatus={purchaseStatus}
                 accountId={account.id}

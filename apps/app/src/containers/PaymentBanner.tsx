@@ -3,7 +3,7 @@ import { memo } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Permission, PurchaseStatus, Team } from "@/gql/graphql";
+import { Permission, PurchaseStatus } from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
 import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
@@ -105,7 +105,7 @@ const getBannerProps = ({
   missingPaymentMethod,
   pendingCancelAt,
 }: {
-  purchaseStatus: PurchaseStatus;
+  purchaseStatus: PurchaseStatus | null;
   trialDaysRemaining: number | null;
   hasGithubPurchase: boolean;
   missingPaymentMethod: boolean;
@@ -196,11 +196,11 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
     purchaseStatus,
     stripeCustomerId,
     pendingCancelAt,
-  } = account as Team;
+  } = account;
 
   const { paymentMethodFilled, trialDaysRemaining } = purchase || {};
   const { message, buttonLabel, bannerColor, action } = getBannerProps({
-    purchaseStatus,
+    purchaseStatus: purchaseStatus ?? null,
     trialDaysRemaining: trialDaysRemaining ?? null,
     hasGithubPurchase: Boolean(purchase && purchase.source === "github"),
     missingPaymentMethod: !paymentMethodFilled,
