@@ -63,5 +63,6 @@ export function useLogout() {
   const { setToken } = useAuth();
   return useCallback(() => {
     setToken(null);
+    window.location.href = "https://argos-ci.com";
   }, [setToken]);
 }
