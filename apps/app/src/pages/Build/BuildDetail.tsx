@@ -14,15 +14,15 @@ import {
   useBuildDiffFitState,
 } from "./BuildDiffFitState";
 import { getGroupIcon } from "./BuildDiffGroup";
-import {
-  BuildDiffShowBaselineStateProvider,
-  useBuildDiffShowBaselineState,
-} from "./BuildDiffShowBaselineState";
 import { Diff, useBuildDiffState } from "./BuildDiffState";
 import {
   BuildDiffVisibleStateProvider,
   useBuildDiffVisibleState,
 } from "./BuildDiffVisibleState";
+import {
+  BuildDiffViewModeStateProvider,
+  useBuildDiffViewModeState,
+} from "./useBuildDiffViewModeState";
 
 export const BuildFragment = graphql(`
   fragment BuildDetail_Build on Build {
@@ -286,7 +286,10 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
 const BuildScreenshots = memo(
   (props: { diff: Diff; build: BuildFragmentDocument }) => {
     const { contained } = useBuildDiffFitState();
-    const { showBaseline } = useBuildDiffShowBaselineState();
+    const { viewMode } = useBuildDiffViewModeState();
+    const showBaseline = viewMode === "split" || viewMode === "baseline";
+    const showChanges = viewMode === "split" || viewMode === "changes";
+
     return (
       <div className={clsx(contained && "min-h-0 flex-1", "flex gap-4 px-4")}>
         {props.build.baseScreenshotBucket && showBaseline ? (
@@ -301,16 +304,18 @@ const BuildScreenshots = memo(
             </div>
           </div>
         ) : null}
-        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-          <BuildScreenshotHeader
-            label="Changes"
-            branch={props.build.compareScreenshotBucket.branch}
-            date={props.build.compareScreenshotBucket.createdAt}
-          />
-          <div className="flex min-h-0 flex-1 justify-center">
-            <CompareScreenshot diff={props.diff} />
+        {showChanges ? (
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+            <BuildScreenshotHeader
+              label="Changes"
+              branch={props.build.compareScreenshotBucket.branch}
+              date={props.build.compareScreenshotBucket.createdAt}
+            />
+            <div className="flex min-h-0 flex-1 justify-center">
+              <CompareScreenshot diff={props.diff} />
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     );
   }
@@ -350,14 +355,14 @@ export const BuildDetail = (props: {
       {activeDiff ? (
         <BuildDiffVisibleStateProvider>
           <BuildDiffFitStateProvider>
-            <BuildDiffShowBaselineStateProvider>
+            <BuildDiffViewModeStateProvider>
               <BuildDetailToolbar
                 name={activeDiff.name}
                 bordered={scrolled}
                 test={activeDiff.test ?? null}
               />
               <BuildScreenshots build={build} diff={activeDiff} />
-            </BuildDiffShowBaselineStateProvider>
+            </BuildDiffViewModeStateProvider>
           </BuildDiffFitStateProvider>
         </BuildDiffVisibleStateProvider>
       ) : checkIsBuildEmpty(build) ? (
