@@ -148,7 +148,13 @@ export const getBaseScreenshotBucket = async ({
   }
 
   if (!richBuild.project.githubRepository) {
-    throw new UnretryableError("Invariant: no repository found");
+    if (richBuild.referenceCommit) {
+      const mergeBaseBucket = await queryBaseBucket(build, trx)
+        .where({ commit: richBuild.referenceCommit })
+        .first();
+      return mergeBaseBucket ?? null;
+    }
+    return null;
   }
 
   if (!richBuild.project.githubRepository.githubAccount) {
@@ -166,7 +172,9 @@ export const getBaseScreenshotBucket = async ({
     return null;
   }
 
-  const referenceBranch = await richBuild.project.$getReferenceBranch(trx);
+  const referenceBranch =
+    richBuild.referenceBranch ??
+    (await richBuild.project.$getReferenceBranch(trx));
 
   if (!referenceBranch) {
     throw new UnretryableError("Invariant: no reference branch found");
