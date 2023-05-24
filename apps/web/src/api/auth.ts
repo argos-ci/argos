@@ -48,7 +48,7 @@ const getOrCreateGhAccount = async (profile: Profile) => {
   });
 };
 
-const getOrCreateAccount = async (
+const getOrCreateAccountFromGhAccount = async (
   ghAccount: GithubAccount,
   accessToken: string
 ): Promise<Account> => {
@@ -104,7 +104,7 @@ async function registerAccountFromGithub(accessToken: string) {
   const octokit = getTokenOctokit(accessToken);
   const profile = await octokit.users.getAuthenticated();
   const ghAccount = await getOrCreateGhAccount(profile.data);
-  const account = await getOrCreateAccount(ghAccount, accessToken);
+  const account = await getOrCreateAccountFromGhAccount(ghAccount, accessToken);
   return account;
 }
 
