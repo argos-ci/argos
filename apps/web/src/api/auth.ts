@@ -73,16 +73,6 @@ const getOrCreateAccountFromGhAccount = async (
       });
     }
 
-    if (
-      existingAccount.name !== ghAccount.name ||
-      existingAccount.slug !== ghAccount.login
-    ) {
-      return existingAccount.$query().patchAndFetch({
-        name: ghAccount.name,
-        slug: ghAccount.login,
-      });
-    }
-
     return existingAccount;
   }
 
