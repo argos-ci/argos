@@ -48,7 +48,7 @@ const getOrCreateGhAccount = async (profile: Profile) => {
   });
 };
 
-const getOrCreateAccount = async (
+const getOrCreateAccountFromGhAccount = async (
   ghAccount: GithubAccount,
   accessToken: string
 ): Promise<Account> => {
@@ -73,16 +73,6 @@ const getOrCreateAccount = async (
       });
     }
 
-    if (
-      existingAccount.name !== ghAccount.name ||
-      existingAccount.slug !== ghAccount.login
-    ) {
-      return existingAccount.$query().patchAndFetch({
-        name: ghAccount.name,
-        slug: ghAccount.login,
-      });
-    }
-
     return existingAccount;
   }
 
@@ -95,7 +85,7 @@ const getOrCreateAccount = async (
       userId: user.id,
       githubAccountId: ghAccount.id,
       name: ghAccount.name,
-      slug: ghAccount.login,
+      slug: ghAccount.login.toLowerCase(),
     });
   });
 };
@@ -104,7 +94,7 @@ async function registerAccountFromGithub(accessToken: string) {
   const octokit = getTokenOctokit(accessToken);
   const profile = await octokit.users.getAuthenticated();
   const ghAccount = await getOrCreateGhAccount(profile.data);
-  const account = await getOrCreateAccount(ghAccount, accessToken);
+  const account = await getOrCreateAccountFromGhAccount(ghAccount, accessToken);
   return account;
 }
 
