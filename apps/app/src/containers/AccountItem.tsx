@@ -37,7 +37,6 @@ export const AccountItem = ({
         <PlanChip
           planName={account.plan?.name}
           purchaseStatus={account.purchaseStatus}
-          isUserAccount={account.__typename === "User"}
         />
       )}
     </div>
