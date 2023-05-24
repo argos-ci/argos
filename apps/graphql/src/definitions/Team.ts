@@ -170,12 +170,12 @@ export const resolvers: IResolvers = {
       const { first, after } = args;
       const result = await TeamUser.query()
         .where("teamId", account.teamId)
-        .where("userId", ctx.auth.user.id)
-        .union(
-          TeamUser.query()
-            .where("teamId", account.teamId)
-            .whereNot("userId", ctx.auth.user.id)
-            .orderBy("id", "asc")
+        .orderByRaw(
+          `(CASE WHEN "userId" = ? THEN 0
+           ELSE "id"
+           END) ASC
+          `,
+          ctx.auth.user.id
         )
         .range(after, after + first - 1);
 
