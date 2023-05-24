@@ -57,7 +57,6 @@ const AccountBreadcrumbLink = ({ accountSlug }: { accountSlug: string }) => {
       {data?.account?.name || accountSlug}
       {data?.account?.name && (
         <PlanChip
-          isUserAccount={data.account.__typename === "User"}
           purchaseStatus={data.account.purchaseStatus}
           planName={data.account.plan?.name ?? ""}
         />
