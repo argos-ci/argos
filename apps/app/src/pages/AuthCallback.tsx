@@ -14,18 +14,23 @@ export const AuthCallback = () => {
   const code = params.get("code");
   const state = params.get("state");
   const r = params.get("r");
-  const { setToken } = useAuth();
+  const { setToken, token } = useAuth();
   useEffect(() => {
     api
       .post("/auth/github", { code })
       .then((result) => {
         setToken(result.data.jwt);
-        navigate(r || (state ? decodeURIComponent(state) : "/"));
       })
       .catch((error) => {
         console.error(error); // eslint-disable-line no-console
       });
-  }, [code, navigate, r, setToken, state]);
+  }, [code, setToken]);
+  // When the token is present, we want to redirect.
+  useEffect(() => {
+    if (token) {
+      navigate(r || (state ? decodeURIComponent(state) : "/"));
+    }
+  }, [navigate, r, state, token]);
 
   return null;
 };
