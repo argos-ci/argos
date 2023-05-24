@@ -95,7 +95,7 @@ const getOrCreateAccount = async (
       userId: user.id,
       githubAccountId: ghAccount.id,
       name: ghAccount.name,
-      slug: ghAccount.login,
+      slug: ghAccount.login.toLowerCase(),
     });
   });
 };
