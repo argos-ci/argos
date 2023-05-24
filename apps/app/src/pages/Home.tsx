@@ -6,7 +6,7 @@ import { useAuthTokenPayload } from "@/containers/Auth";
 
 const RedirectToWww = () => {
   useEffect(() => {
-    window.location.replace("https://www.argos-ci.com");
+    window.location.replace("https://argos-ci.com");
   }, []);
   return null;
 };
@@ -20,7 +20,7 @@ export const Home = () => {
     return (
       <div className="container mx-auto p-4 text-center">
         Not logged in, in production you would be redirected to
-        www.argos-ci.com.
+        https://argos-ci.com.
       </div>
     );
   }

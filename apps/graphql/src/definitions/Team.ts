@@ -8,7 +8,7 @@ import type {
   IResolvers,
   ITeamUserLevel,
 } from "../__generated__/resolver-types.js";
-import { getWritableAccount } from "./Account.js";
+import { deleteAccount, getWritableAccount } from "../services/account.js";
 import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
@@ -84,6 +84,10 @@ export const typeDefs = gql`
     level: TeamUserLevel!
   }
 
+  input DeleteTeamInput {
+    accountId: ID!
+  }
+
   extend type Query {
     invitation(token: String!): Team
   }
@@ -101,6 +105,8 @@ export const typeDefs = gql`
     acceptInvitation(token: String!): Team!
     "Set member level"
     setTeamMemberLevel(input: SetTeamMemberLevelInput!): TeamMember!
+    "Delete team and all its projects"
+    deleteTeam(input: DeleteTeamInput!): Boolean!
   }
 `;
 
@@ -339,6 +345,10 @@ export const resolvers: IResolvers = {
       return teamUser.$query().patchAndFetch({
         userLevel: args.input.level,
       });
+    },
+    deleteTeam: async (_root, args, ctx) => {
+      await deleteAccount({ id: args.input.accountId, user: ctx.auth?.user });
+      return true;
     },
   },
 };

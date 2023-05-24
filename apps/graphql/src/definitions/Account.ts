@@ -3,7 +3,7 @@ import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
 import { knex } from "@argos-ci/database";
-import { Account, Project, Purchase, User } from "@argos-ci/database/models";
+import { Account, Project, Purchase } from "@argos-ci/database/models";
 import {
   getCustomerSubscriptionOrThrow,
   terminateStripeTrial,
@@ -18,6 +18,7 @@ import {
   ITrialStatus,
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
+import { getWritableAccount } from "../services/account.js";
 import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
@@ -117,21 +118,6 @@ const colors = [
 const getAvatarColor = (id: string): string => {
   const randomIndex = Number(id) % colors.length;
   return colors[randomIndex] ?? colors[0] ?? "#000";
-};
-
-export const getWritableAccount = async (args: {
-  id: string;
-  user: User | undefined | null;
-}): Promise<Account> => {
-  if (!args.user) {
-    throw new Error("Unauthorized");
-  }
-  const account = await Account.query().findById(args.id).throwIfNotFound();
-  const hasWritePermission = await account.$checkWritePermission(args.user);
-  if (!hasWritePermission) {
-    throw new Error("Unauthorized");
-  }
-  return account;
 };
 
 const RESERVED_SLUGS = [

@@ -7,6 +7,7 @@ import { Query } from "@/containers/Apollo";
 import { useAuthTokenPayload } from "@/containers/Auth";
 import { SettingsLayout } from "@/containers/Layout";
 import { PlanCard } from "@/containers/PlanCard";
+import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamMembers } from "@/containers/Team/Members";
 import { graphql } from "@/gql";
 import { Permission } from "@/gql/graphql";
@@ -31,6 +32,7 @@ const AccountQuery = graphql(`
       }
 
       ...TeamMembers_Team
+      ...TeamDelete_Team
       ...AccountChangeName_Account
       ...AccountChangeSlug_Account
       ...PlanCard_Account
@@ -112,6 +114,7 @@ export const AccountSettings = () => {
                 })()}
               {writable && account.plan && <PlanCard account={account} />}
               {isTeam && <TeamMembers team={account} />}
+              {isTeam && <TeamDelete team={account} />}
             </SettingsLayout>
           );
         }}
