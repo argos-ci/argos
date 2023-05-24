@@ -51,7 +51,7 @@ export const BreadcrumbMenuButton = (props: { state: MenuState }) => {
   return (
     <MenuButton
       state={props.state}
-      className="p-1 text-on-light transition hover:text-on focus:text-on focus:outline-none aria-expanded:text-on"
+      className="cursor-default p-1 text-on-light transition hover:text-on aria-expanded:text-on"
     >
       <ChevronDownIcon size={18} />
     </MenuButton>

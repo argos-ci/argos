@@ -9,6 +9,7 @@ import { memo } from "react";
 import { useParams } from "react-router-dom";
 
 import { Test } from "@/gql/graphql";
+import { ButtonGroup } from "@/ui/ButtonGroup";
 import { ColumnsIcon } from "@/ui/ColumnsIcon";
 import { FlakyChip } from "@/ui/FlakyIndicator";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
@@ -16,10 +17,10 @@ import { IconButton } from "@/ui/IconButton";
 import { MuteIndicator } from "@/ui/MuteIndicator";
 
 import { useBuildDiffFitState } from "./BuildDiffFitState";
-import { useBuildDiffShowBaselineState } from "./BuildDiffShowBaselineState";
 import { useBuildDiffState } from "./BuildDiffState";
 import { useBuildDiffVisibleState } from "./BuildDiffVisibleState";
 import { useBuildHotkey } from "./BuildHotkeys";
+import { useBuildDiffViewModeState } from "./useBuildDiffViewModeState";
 
 const BuildDiffChangesOverlayToggle = memo(() => {
   const { visible, setVisible } = useBuildDiffVisibleState();
@@ -57,22 +58,70 @@ const BuildDiffFitToggle = memo(() => {
   );
 });
 
-const BuildBaselineToggle = memo(() => {
-  const { showBaseline, setShowBaseline } = useBuildDiffShowBaselineState();
-  const toggle = () => setShowBaseline((showBaseline) => !showBaseline);
-  const hotkey = useBuildHotkey("toggleBaselineColumn", toggle, {
+const BuildVisibleDiffButtonGroup = memo(() => {
+  const { viewMode, setViewMode } = useBuildDiffViewModeState();
+  const showBaselineOnly = () => setViewMode("baseline");
+  const showBaselineOnlyHotkey = useBuildHotkey(
+    "showBaselineOnly",
+    showBaselineOnly,
+    { preventDefault: true }
+  );
+  const showChangesOnly = () => setViewMode("changes");
+  const showChangesOnlyHotkey = useBuildHotkey(
+    "showChangesOnly",
+    showChangesOnly,
+    { preventDefault: true }
+  );
+
+  if (viewMode === "split") {
+    return null;
+  }
+
+  return (
+    <ButtonGroup>
+      <HotkeyTooltip
+        description={showBaselineOnlyHotkey.description}
+        keys={showBaselineOnlyHotkey.displayKeys}
+      >
+        <IconButton
+          aria-pressed={viewMode === "baseline"}
+          onClick={showBaselineOnly}
+        >
+          Baseline
+        </IconButton>
+      </HotkeyTooltip>
+      <HotkeyTooltip
+        description={showChangesOnlyHotkey.description}
+        keys={showChangesOnlyHotkey.displayKeys}
+      >
+        <IconButton
+          aria-pressed={viewMode === "changes"}
+          onClick={showChangesOnly}
+        >
+          Changes
+        </IconButton>
+      </HotkeyTooltip>
+    </ButtonGroup>
+  );
+});
+
+const BuildSplitViewToggle = memo(() => {
+  const { viewMode, setViewMode } = useBuildDiffViewModeState();
+  const toggleSplitView = () =>
+    setViewMode((viewMode) => (viewMode === "split" ? "changes" : "split"));
+  const hotkey = useBuildHotkey("toggleSplitView", toggleSplitView, {
     preventDefault: true,
   });
   return (
     <HotkeyTooltip
       description={
-        showBaseline
-          ? "Show only changes column"
+        viewMode === "split"
+          ? "Show new screenshot only"
           : "Show baseline and changes side by side"
       }
       keys={hotkey.displayKeys}
     >
-      <IconButton aria-pressed={showBaseline} onClick={toggle}>
+      <IconButton aria-pressed={viewMode === "split"} onClick={toggleSplitView}>
         <ColumnsIcon />
       </IconButton>
     </HotkeyTooltip>
@@ -168,7 +217,8 @@ export const BuildDetailToolbar = memo(
           />
         </div>
         <div className="flex gap-2">
-          <BuildBaselineToggle />
+          <BuildVisibleDiffButtonGroup />
+          <BuildSplitViewToggle />
           <BuildDiffFitToggle />
           <BuildDiffChangesOverlayToggle />
         </div>

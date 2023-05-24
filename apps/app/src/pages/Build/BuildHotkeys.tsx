@@ -68,10 +68,20 @@ export const hotkeys = {
     displayKeys: ["Space"],
     description: "Toggle fit to screen",
   } as Hotkey,
-  toggleBaselineColumn: {
+  toggleSplitView: {
     keys: ["KeyS"],
     displayKeys: ["S"],
     description: "Toggle side by side mode",
+  } as Hotkey,
+  showBaselineOnly: {
+    keys: ["ArrowLeft"],
+    displayKeys: ["←"],
+    description: "Show baseline only",
+  } as Hotkey,
+  showChangesOnly: {
+    keys: ["ArrowRight"],
+    displayKeys: ["→"],
+    description: "Show changes only",
   } as Hotkey,
   toggleHotkeysDialog: {
     keys: ["?"],
