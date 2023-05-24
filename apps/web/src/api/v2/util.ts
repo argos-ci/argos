@@ -1,7 +1,7 @@
 import type { Request } from "express";
 // @ts-ignore
 import { HttpError } from "express-err";
-import type { TransactionOrKnex } from "objection";
+import type { PartialModelObject, TransactionOrKnex } from "objection";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { transaction } from "@argos-ci/database";
@@ -16,6 +16,8 @@ type CreateRequest = Request<
   {
     commit: string;
     branch: string;
+    referenceCommit?: string | null;
+    referenceBranch?: string | null;
     name?: string | null;
     parallel?: string | null;
     parallelNonce?: string | null;
@@ -23,7 +25,9 @@ type CreateRequest = Request<
   }
 > & { authProject: Project };
 
-const getBucketData = (req: CreateRequest) => {
+const getBucketData = (
+  req: CreateRequest
+): PartialModelObject<ScreenshotBucket> => {
   return {
     name: getBuildName(req.body.name),
     commit: req.body.commit,
@@ -32,7 +36,7 @@ const getBucketData = (req: CreateRequest) => {
   };
 };
 
-const getBuildData = (req: CreateRequest) => {
+const getBuildData = (req: CreateRequest): PartialModelObject<Build> => {
   const parallel = req.body.parallel;
   return {
     jobStatus: "pending" as const,
@@ -42,6 +46,8 @@ const getBuildData = (req: CreateRequest) => {
     projectId: req.authProject.id,
     name: getBuildName(req.body.name),
     prNumber: req.body.prNumber ?? null,
+    referenceCommit: req.body.referenceCommit ?? null,
+    referenceBranch: req.body.referenceBranch ?? null,
   };
 };
 

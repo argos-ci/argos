@@ -26,7 +26,6 @@ export const getOrCreateBaseScreenshotBucket = async (
   build: Build,
   { trx }: { trx?: TransactionOrKnex | undefined } = {}
 ) => {
-  // It can already be present, for instance by the sample build feature.
   if (build.baseScreenshotBucket) {
     return build.baseScreenshotBucket!;
   }

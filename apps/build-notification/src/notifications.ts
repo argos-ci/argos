@@ -139,7 +139,7 @@ export const processBuildNotification = async (
   const githubRepository = build.project.githubRepository;
 
   if (!githubRepository) {
-    throw new UnretryableError("Invariant: no repository found");
+    return;
   }
 
   const githubAccount = githubRepository.githubAccount;
