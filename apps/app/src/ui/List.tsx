@@ -88,9 +88,10 @@ const ListLoader = memo((props: { children: ReactNode }) => {
 
 export type ListRowLoaderProps = HTMLAttributes<HTMLDivElement>;
 export const ListRowLoader = forwardRef<HTMLDivElement, ListRowLoaderProps>(
-  ({ className, children, ...props }: ListRowLoaderProps) => {
+  ({ className, children, ...props }, ref) => {
     return (
       <ListRow
+        ref={ref}
         className={clsx(
           className,
           "justify-center gap-2 text-sm text-on-light"
