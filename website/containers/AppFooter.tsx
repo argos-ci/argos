@@ -12,22 +12,31 @@ export const AppFooter: React.FC = () => (
     <Container>
       <FooterSections>
         <FooterSection>
-          <FooterSectionTitle>Getting Started</FooterSectionTitle>
-          <FooterLink href="/docs/installation">Installation</FooterLink>
-          <FooterLink href="/docs/capture-screenshots">
-            Capture screenshots
-          </FooterLink>
-          <FooterLink href="/docs/configure-ci">Configure CI</FooterLink>
-          <FooterLink href="https://github.com/marketplace/argos-ci">
-            View on GitHub Marketplace
+          <FooterSectionTitle>Product</FooterSectionTitle>
+          <FooterLink href="/docs/introduction">What is Argos?</FooterLink>
+          <FooterLink href="/docs/review-changes">Review changes</FooterLink>
+          <FooterLink href="/pricing">Pricing</FooterLink>
+          <FooterLink href="https://github.com/orgs/argos-ci/projects/1">
+            Roadmap
           </FooterLink>
         </FooterSection>
 
         <FooterSection>
-          <FooterSectionTitle>Legal</FooterSectionTitle>
-          <FooterLink href="/terms">Terms</FooterLink>
-          <FooterLink href="/privacy">Privacy</FooterLink>
+          <FooterSectionTitle>Developers</FooterSectionTitle>
+          <FooterLink href="/docs/installation">Installation</FooterLink>
+          <FooterLink href="/docs/introduction">Documentation</FooterLink>
+          <FooterLink href="/docs/upload-screenshots">Configure CI</FooterLink>
+          <FooterLink href="https://github.com/argos-ci/argos/tree/main/examples">
+            Examples
+          </FooterLink>
+        </FooterSection>
+
+        <FooterSection>
+          <FooterSectionTitle>Company</FooterSectionTitle>
+          <FooterLink href="/docs/about-us">About us</FooterLink>
           <FooterLink href="/security">Security</FooterLink>
+          <FooterLink href="/privacy">Privacy</FooterLink>
+          <FooterLink href="/terms">Terms</FooterLink>
         </FooterSection>
 
         <FooterSection>
@@ -37,6 +46,7 @@ export const AppFooter: React.FC = () => (
           </FooterLink>
           <FooterLink href="https://discord.gg/pK79sv85Vg">Discord</FooterLink>
           <FooterLink href="https://twitter.com/argos_ci">Twitter</FooterLink>
+          <FooterLink href="mailto:contact@argos-ci.com">Contact us</FooterLink>
         </FooterSection>
       </FooterSections>
 
