@@ -42,9 +42,13 @@ export const Signup = () => {
       ? params.get("plan")
       : null;
   const [accountType, setAccountType] = useState<string | null>(plan ?? null);
-  const disclosure = useDisclosureState({ open: accountType !== null });
+  const nameDisclosure = useDisclosureState({ open: accountType !== null });
   const proAccountSelected = accountType === "pro";
   const [name, setName] = useState<string>("");
+
+  const submitDisclosure = useDisclosureState({
+    open: name !== "" && name.length > 2,
+  });
 
   if (loggedIn) {
     return <Navigate to="/" replace />;
@@ -56,40 +60,40 @@ export const Signup = () => {
         <title>Sign up</title>
       </Helmet>
 
-      <Container className="mt-16 flex w-[400px] flex-col items-center justify-start">
-        <div className="w-[400px]">
-          <h1 className="mb-10 text-4xl font-medium">Create your Account</h1>
+      <Container className="flex justify-center pt-16">
+        <div className="flex w-[400px] flex-col gap-8">
+          <h1 className="mx-auto text-4xl font-medium">Create your Account</h1>
 
           <AccountTypeSelector value={accountType} setValue={setAccountType} />
 
-          <div className="mt-6 block h-20">
-            <DisclosureContent state={disclosure}>
-              <FormLabel htmlFor="name">
-                {proAccountSelected ? "Team Name" : "Your Name"}
-              </FormLabel>
-              <TextInput
-                id="name"
-                name="name"
-                aria-label="name"
-                placeholder={proAccountSelected ? "Gryffindor" : "John Wick"}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </DisclosureContent>
-          </div>
+          <DisclosureContent state={nameDisclosure}>
+            <FormLabel htmlFor="name">
+              {proAccountSelected ? "Team Name" : "Your Name"}
+            </FormLabel>
+            <TextInput
+              id="name"
+              name="name"
+              aria-label="name"
+              placeholder={proAccountSelected ? "Gryffindor" : "John Wick"}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </DisclosureContent>
 
-          <div className="mb-2 mt-4 block h-5 text-left text-sm font-medium">
-            {proAccountSelected
-              ? "Continuing will start a 14-day Pro plan trial."
-              : ""}
-          </div>
-          <LoginButtons
-            redirect={
-              proAccountSelected
-                ? `/teams/new?name=${encodeURIComponent(name)}`
-                : `/?name=${encodeURIComponent(name)}`
-            }
-          />
+          <DisclosureContent state={submitDisclosure}>
+            <div className="mb-2 block h-5 text-left text-sm font-medium">
+              {proAccountSelected
+                ? "Continuing will start a 14-day Pro plan trial."
+                : ""}
+            </div>
+            <LoginButtons
+              redirect={
+                proAccountSelected
+                  ? `/teams/new?name=${encodeURIComponent(name)}`
+                  : `/?name=${encodeURIComponent(name)}`
+              }
+            />
+          </DisclosureContent>
         </div>
       </Container>
     </>
