@@ -61,16 +61,6 @@ export default function Home() {
               regressions.
             </p>
             <div className="flex gap-4 sm:gap-6 mt-6 mx-auto">
-              <Button>
-                {(buttonProps) => (
-                  <a
-                    {...buttonProps}
-                    href="https://app.argos-ci.com/argos-ci/argos-ci.com/builds/20"
-                  >
-                    View a demo build
-                  </a>
-                )}
-              </Button>
               <Button color="neutral" variant="outline">
                 {(buttonProps) => (
                   <a {...buttonProps} href="/docs">
@@ -78,21 +68,33 @@ export default function Home() {
                   </a>
                 )}
               </Button>
+              <Button>
+                {(buttonProps) => (
+                  <a {...buttonProps} href="https://app.argos-ci.com/signup">
+                    Get Started
+                  </a>
+                )}
+              </Button>
             </div>
           </div>
 
           <div className="flex-1 mt-6 sm:mt-10">
-            <Image
-              src={argosBuildExample}
-              alt="build example"
-              style={{
-                maxWidth: "100%",
-                height: "auto",
-                border: "4px solid black",
-                borderRadius: 4,
-                boxShadow: "0 -10px 100px 20px rgba(201, 136, 248, 0.2)",
-              }}
-            />
+            <a
+              href="https://app.argos-ci.com/argos-ci/argos-ci.com/builds/20"
+              title="View a demo build"
+            >
+              <Image
+                src={argosBuildExample}
+                alt="build example"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto",
+                  border: "4px solid black",
+                  borderRadius: 4,
+                  boxShadow: "0 -10px 100px 20px rgba(201, 136, 248, 0.2)",
+                }}
+              />
+            </a>
           </div>
         </Container>
       </RotateBackground>

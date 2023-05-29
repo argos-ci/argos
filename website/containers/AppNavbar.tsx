@@ -18,7 +18,7 @@ export const AppNavbar: React.FC = () => {
           <NavbarLink href="/pricing">Pricing</NavbarLink>
           <NavbarLink href="/blog">Blog</NavbarLink>
           <NavbarLink href="https://app.argos-ci.com/login">Login</NavbarLink>
-          <Button className="mt-3 md:mt-0 -order-1 md:order-[0] mb-4 md:mb-0">
+          <Button className="mt-3 md:mt-0  md:order-[0] mb-4 md:mb-0 self-start md:self-auto">
             {(buttonProps) => (
               <a {...buttonProps} href="https://app.argos-ci.com/signup">
                 Get Started
