@@ -16,7 +16,7 @@ import clsx from "clsx";
 
 import * as Ariakit from "@ariakit/react";
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { ButtonProps } from "@/components/Button";
 import { BrandTestimonials } from "@/components/BrandTestimonials";
 
@@ -60,7 +60,9 @@ const ExampleCostSection = ({
 }) => {
   const workingDays = 20;
   const dailyUsage = teamSize * dailyPushFrequency * screenshotCount;
-  const monthlyUsage = dailyUsage * workingDays;
+  const initialMonthlyUsage = dailyUsage * workingDays;
+  const [monthlyUsage, setMonthlyUsage] = useState(initialMonthlyUsage);
+  const customPlanThreshold = 1e6;
   const totalPrice =
     PRO_PLAN_BASE_PRICE +
     Math.max(
@@ -96,7 +98,7 @@ const ExampleCostSection = ({
           <div>=</div>
           <div className="text-on">
             <span className="text-primary-300">
-              {monthlyUsage.toLocaleString()}
+              {initialMonthlyUsage.toLocaleString()}
             </span>{" "}
             screenshots
           </div>
@@ -105,13 +107,37 @@ const ExampleCostSection = ({
 
       <p className="text-xl">
         Which costs: ${PRO_PLAN_BASE_PRICE} + (
-        <span className="text-primary-300">
-          {monthlyUsage.toLocaleString()}
-        </span>{" "}
+        <input
+          type="number"
+          min={0}
+          step={1000}
+          value={monthlyUsage}
+          onChange={(e) => {
+            setMonthlyUsage(parseInt(e.target.value, 10));
+          }}
+          className="text-primary-300 bg-neutral-900 rounded-t py-1 px-2 border-b border-primary-300 focus:border-primary-300 focus:ring-0 focus:ring-offset-0 outline-0 w-32"
+        />
         - {PRO_PLAN_SCREENSHOT_COUNT.toLocaleString()}) x $
-        {ADDITIONAL_SCREENSHOT_PRICE} =
-        <span className="text-on"> ${totalPrice} per month</span>
+        {ADDITIONAL_SCREENSHOT_PRICE} ={" "}
+        <span className="text-on whitespace-nowrap">
+          ${totalPrice.toLocaleString()} per month
+        </span>
       </p>
+
+      <div className="mt-4 text-lg">
+        {monthlyUsage >= customPlanThreshold && (
+          <>
+            You should{" "}
+            <a
+              href="mailto:contact@argos-ci.com"
+              className="text-primary-300 hover:underline"
+            >
+              contact us
+            </a>{" "}
+            to discuss a custom plan.
+          </>
+        )}
+      </div>
     </div>
   );
 };
