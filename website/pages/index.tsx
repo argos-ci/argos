@@ -27,15 +27,10 @@ import integrationImage from "@/images/integration.svg";
 import unifiedDesktopImage from "@/images/unified-desktop.svg";
 import unifiedMobileImage from "@/images/unified-mobile.svg";
 import tassinariProfile from "@/images/tassinari-profile.jpg";
-import antDesign from "@/images/brands/ant-design.svg";
-import doctolib from "@/images/brands/doctolib.svg";
-import gitbook from "@/images/brands/gitbook.svg";
-import lemonde from "@/images/brands/lemonde.svg";
-import mui from "@/images/brands/mui.svg";
-import { Testimonials } from "@/components/Testimonials";
 import { Container } from "@/components/Container";
 import { RotateBackground } from "@/components/RotateBackground";
 import { Head } from "@/components/Head";
+import { BrandTestimonials } from "@/components/BrandTestimonials";
 
 export default function Home() {
   return (
@@ -210,39 +205,7 @@ export default function Home() {
             Trusted by the best front-end teams
           </div>
         </Container>
-        <Testimonials>
-          <Image
-            className="testimonial"
-            priority={true}
-            src={antDesign}
-            alt="Ant Design"
-          />
-          <Image
-            className="testimonial"
-            priority={true}
-            src={mui}
-            alt="MUI"
-            style={{ marginTop: -5 }}
-          />
-          <Image
-            className="testimonial"
-            priority={true}
-            src={doctolib}
-            alt="Doctolib"
-          />
-          <Image
-            className="testimonial"
-            priority={true}
-            src={lemonde}
-            alt="Le Monde"
-          />
-          <Image
-            className="testimonial"
-            priority={true}
-            src={gitbook}
-            alt="GitBook"
-          />
-        </Testimonials>
+        <BrandTestimonials />
       </RotateBackground>
 
       <Container>

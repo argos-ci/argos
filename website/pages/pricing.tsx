@@ -13,16 +13,12 @@ import {
   CurrencyDollarIcon,
 } from "@heroicons/react/24/solid";
 import clsx from "clsx";
-import Image from "next/image";
-import antDesign from "@/images/brands/ant-design.svg";
-import doctolib from "@/images/brands/doctolib.svg";
-import gitbook from "@/images/brands/gitbook.svg";
-import mui from "@/images/brands/mui.svg";
+
 import * as Ariakit from "@ariakit/react";
 
 import { ReactNode } from "react";
-import { Testimonials } from "@/components/Testimonials";
 import { ButtonProps } from "@/components/Button";
+import { BrandTestimonials } from "@/components/BrandTestimonials";
 
 const HOBBY_PLAN_SCREENSHOT_COUNT = 5000;
 const PRO_PLAN_SCREENSHOT_COUNT = 15000;
@@ -307,12 +303,7 @@ export default function Pricing() {
           <div className="uppercase tracking-[.25em] text-sm font-semibold mb-8">
             Trusted by the best frontend teams
           </div>
-          <Testimonials>
-            <Image src={antDesign} alt="Ant Design" />
-            <Image src={mui} alt="MUI" className="mt-1" />
-            <Image src={doctolib} alt="Doctolib" />
-            <Image src={gitbook} alt="GitBook" />
-          </Testimonials>
+          <BrandTestimonials />
         </div>
 
         <h2 className="text-3xl font-bold mt-20">How much does it cost?</h2>
