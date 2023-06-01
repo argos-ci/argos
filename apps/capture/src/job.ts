@@ -1,4 +1,3 @@
-// import { callbackify } from "node:util";
 import puppeteer from "puppeteer";
 
 import { job as buildJob } from "@argos-ci/build";
@@ -8,6 +7,8 @@ import { Capture } from "@argos-ci/database/models";
 import { insertFilesAndScreenshots } from "@argos-ci/database/services/screenshots";
 import { createModelJob } from "@argos-ci/job-core";
 import { S3ImageFile, s3 } from "@argos-ci/storage";
+
+import { argosScreenshot } from "./argosScreenshot.js";
 
 let browser: Promise<puppeteer.Browser> | null = null;
 
@@ -41,10 +42,7 @@ const captureScreenshot = async (url: string) => {
   await page.goto(url, {
     waitUntil: "networkidle2",
   });
-  const buffer = await page.screenshot({
-    type: "png",
-    fullPage: true,
-  });
+  const buffer = await argosScreenshot(page);
   await page.close();
   return buffer;
 };
