@@ -89,11 +89,25 @@ export const typeDefs = gql`
     targetAccountId: ID!
   }
 
+  input UnlinkRepositoryInput {
+    projectId: ID!
+  }
+
+  input LinkRepositoryInput {
+    projectId: ID!
+    repo: String!
+    owner: String!
+  }
+
   extend type Mutation {
     "Create a Project"
     createProject(input: CreateProjectInput!): Project!
     "Update Project"
     updateProject(input: UpdateProjectInput!): Project!
+    "Unlink Repository"
+    unlinkRepository(input: UnlinkRepositoryInput!): Project!
+    "Link Repository"
+    linkRepository(input: LinkRepositoryInput!): Project!
     "Transfer Project to another account"
     transferProject(input: TransferProjectInput!): Project!
     "Delete Project"
@@ -136,22 +150,12 @@ const checkProjectName = async (args: { name: string; accountId: string }) => {
   }
 };
 
-export const createProject = async (props: {
-  accountSlug: string;
+const getOrCreateGithubRepository = async (props: {
+  accessToken: string;
   repo: string;
   owner: string;
-  creator: User;
 }) => {
-  const account = await Account.query()
-    .findOne({
-      slug: props.accountSlug,
-    })
-    .throwIfNotFound();
-  const hasWritePermission = await account.$checkWritePermission(props.creator);
-  if (!hasWritePermission) {
-    throw new Error("Unauthorized");
-  }
-  const octokit = getTokenOctokit(props.creator.accessToken);
+  const octokit = getTokenOctokit(props.accessToken);
   const ghApiRepo = await octokit.repos
     .get({
       owner: props.owner,
@@ -177,40 +181,50 @@ export const createProject = async (props: {
     });
   };
 
-  const getOrCreateRepo = async (props: { githubAccountId: string }) => {
-    const repo = await GithubRepository.query().findOne({
-      githubId: ghApiRepo.id,
-    });
-    if (repo) {
-      return repo;
-    }
-    return GithubRepository.query().insertAndFetch({
-      githubId: ghApiRepo.id,
-      name: ghApiRepo.name,
-      private: ghApiRepo.private,
-      defaultBranch: ghApiRepo.default_branch,
-      githubAccountId: props.githubAccountId,
-    });
-  };
+  const githubAccount = await getOrCreateAccount();
+  const repo = await GithubRepository.query().findOne({
+    githubId: ghApiRepo.id,
+  });
+  if (repo) {
+    return repo;
+  }
+  return GithubRepository.query().insertAndFetch({
+    githubId: ghApiRepo.id,
+    name: ghApiRepo.name,
+    private: ghApiRepo.private,
+    defaultBranch: ghApiRepo.default_branch,
+    githubAccountId: githubAccount.id,
+  });
+};
 
-  const createProjectModel = async (props: {
-    accountId: string;
-    githubRepositoryId: string;
-  }) => {
-    const name = await resolveProjectName({
-      name: ghApiRepo.name,
-      accountId: props.accountId,
-    });
-    return Project.query().insertAndFetch({
-      name,
-      accountId: props.accountId,
-      githubRepositoryId: props.githubRepositoryId,
-    });
-  };
+export const createProject = async (props: {
+  accountSlug: string;
+  repo: string;
+  owner: string;
+  creator: User;
+}) => {
+  const account = await Account.query()
+    .findOne({
+      slug: props.accountSlug,
+    })
+    .throwIfNotFound();
+  const hasWritePermission = await account.$checkWritePermission(props.creator);
+  if (!hasWritePermission) {
+    throw new Error("Unauthorized");
+  }
 
-  const ghAccount = await getOrCreateAccount();
-  const ghRepo = await getOrCreateRepo({ githubAccountId: ghAccount.id });
-  return createProjectModel({
+  const ghRepo = await getOrCreateGithubRepository({
+    accessToken: props.creator.accessToken,
+    repo: props.repo,
+    owner: props.owner,
+  });
+
+  const name = await resolveProjectName({
+    name: ghRepo.name,
+    accountId: account.id,
+  });
+  return Project.query().insertAndFetch({
+    name,
     accountId: account.id,
     githubRepositoryId: ghRepo.id,
   });
@@ -365,6 +379,36 @@ export const resolvers: IResolvers = {
       }
 
       return project.$query().patchAndFetch(data);
+    },
+    unlinkRepository: async (_root, args, ctx) => {
+      const project = await getWritableProject({
+        id: args.input.projectId,
+        user: ctx.auth?.user,
+      });
+
+      return project.$query().patchAndFetch({
+        githubRepositoryId: null,
+      });
+    },
+    linkRepository: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw new Error("Unauthorized");
+      }
+
+      const project = await getWritableProject({
+        id: args.input.projectId,
+        user: ctx.auth.user,
+      });
+
+      const ghRepo = await getOrCreateGithubRepository({
+        accessToken: ctx.auth.user.accessToken,
+        owner: args.input.owner,
+        repo: args.input.repo,
+      });
+
+      return project.$query().patchAndFetch({
+        githubRepositoryId: ghRepo.id,
+      });
     },
     transferProject: async (_root, args, ctx) => {
       const project = await getWritableProject({

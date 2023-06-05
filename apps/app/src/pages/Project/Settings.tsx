@@ -5,6 +5,7 @@ import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
 import { ProjectDelete } from "@/containers/Project/Delete";
+import { ProjectGitRepository } from "@/containers/Project/GitRepository";
 import { ProjectReferenceBranch } from "@/containers/Project/ReferenceBranch";
 import { ProjectToken } from "@/containers/Project/Token";
 import { ProjectTransfer } from "@/containers/Project/Transfer";
@@ -27,6 +28,7 @@ const ProjectQuery = graphql(`
       ...ProjectVisibility_Project
       ...ProjectTransfer_Project
       ...ProjectDelete_Project
+      ...ProjectGitRepository_Project
     }
   }
 `);
@@ -64,6 +66,7 @@ export const ProjectSettings = () => {
 
           return (
             <SettingsLayout>
+              <ProjectGitRepository project={project} />
               <ProjectChangeName project={project} />
               <ProjectToken project={project} />
               <ProjectReferenceBranch project={project} />

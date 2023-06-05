@@ -208,6 +208,7 @@ export type IGithubAccount = INode & {
 export type IGithubRepository = INode & {
   __typename?: 'GithubRepository';
   defaultBranch: Scalars['String'];
+  fullName: Scalars['String'];
   id: Scalars['ID'];
   private: Scalars['Boolean'];
 };
@@ -224,6 +225,12 @@ export type ILeaveTeamInput = {
   teamAccountId: Scalars['ID'];
 };
 
+export type ILinkRepositoryInput = {
+  owner: Scalars['String'];
+  projectId: Scalars['ID'];
+  repo: Scalars['String'];
+};
+
 export type IMutation = {
   __typename?: 'Mutation';
   /** Accept an invitation to join a team */
@@ -238,6 +245,8 @@ export type IMutation = {
   deleteTeam: Scalars['Boolean'];
   /** Leave a team */
   leaveTeam: Scalars['Boolean'];
+  /** Link Repository */
+  linkRepository: IProject;
   /** Mute or unmute tests */
   muteTests: IMuteUpdateTest;
   ping: Scalars['Boolean'];
@@ -255,6 +264,8 @@ export type IMutation = {
   terminateTrial: IAccount;
   /** Transfer Project to another account */
   transferProject: IProject;
+  /** Unlink Repository */
+  unlinkRepository: IProject;
   /** Update Account */
   updateAccount: IAccount;
   /** Update Project */
@@ -291,6 +302,11 @@ export type IMutationDeleteTeamArgs = {
 
 export type IMutationLeaveTeamArgs = {
   input: ILeaveTeamInput;
+};
+
+
+export type IMutationLinkRepositoryArgs = {
+  input: ILinkRepositoryInput;
 };
 
 
@@ -334,6 +350,11 @@ export type IMutationTerminateTrialArgs = {
 
 export type IMutationTransferProjectArgs = {
   input: ITransferProjectInput;
+};
+
+
+export type IMutationUnlinkRepositoryArgs = {
+  input: IUnlinkRepositoryInput;
 };
 
 
@@ -712,6 +733,10 @@ export enum ITrialStatus {
   Expired = 'expired'
 }
 
+export type IUnlinkRepositoryInput = {
+  projectId: Scalars['ID'];
+};
+
 export type IUpdateAccountInput = {
   id: Scalars['ID'];
   name?: InputMaybe<Scalars['String']>;
@@ -954,6 +979,7 @@ export type IResolversTypes = ResolversObject<{
   Int: ResolverTypeWrapper<Scalars['Int']>;
   JobStatus: IJobStatus;
   LeaveTeamInput: ILeaveTeamInput;
+  LinkRepositoryInput: ILinkRepositoryInput;
   Mutation: ResolverTypeWrapper<{}>;
   MuteUpdateTest: ResolverTypeWrapper<IMuteUpdateTest>;
   Node: IResolversTypes['Build'] | IResolversTypes['GhApiInstallation'] | IResolversTypes['GhApiInstallationAccount'] | IResolversTypes['GhApiRepository'] | IResolversTypes['GithubAccount'] | IResolversTypes['GithubRepository'] | IResolversTypes['Plan'] | IResolversTypes['Project'] | IResolversTypes['Purchase'] | IResolversTypes['Screenshot'] | IResolversTypes['ScreenshotBucket'] | IResolversTypes['ScreenshotDiff'] | IResolversTypes['Team'] | IResolversTypes['TeamMember'] | IResolversTypes['Test'] | IResolversTypes['User'];
@@ -987,6 +1013,7 @@ export type IResolversTypes = ResolversObject<{
   Time: ResolverTypeWrapper<Scalars['Time']>;
   TransferProjectInput: ITransferProjectInput;
   TrialStatus: ITrialStatus;
+  UnlinkRepositoryInput: IUnlinkRepositoryInput;
   UpdateAccountInput: IUpdateAccountInput;
   UpdateProjectInput: IUpdateProjectInput;
   UpdatedTestStatuses: ResolverTypeWrapper<IUpdatedTestStatuses>;
@@ -1030,6 +1057,7 @@ export type IResolversParentTypes = ResolversObject<{
   ID: Scalars['ID'];
   Int: Scalars['Int'];
   LeaveTeamInput: ILeaveTeamInput;
+  LinkRepositoryInput: ILinkRepositoryInput;
   Mutation: {};
   MuteUpdateTest: IMuteUpdateTest;
   Node: IResolversParentTypes['Build'] | IResolversParentTypes['GhApiInstallation'] | IResolversParentTypes['GhApiInstallationAccount'] | IResolversParentTypes['GhApiRepository'] | IResolversParentTypes['GithubAccount'] | IResolversParentTypes['GithubRepository'] | IResolversParentTypes['Plan'] | IResolversParentTypes['Project'] | IResolversParentTypes['Purchase'] | IResolversParentTypes['Screenshot'] | IResolversParentTypes['ScreenshotBucket'] | IResolversParentTypes['ScreenshotDiff'] | IResolversParentTypes['Team'] | IResolversParentTypes['TeamMember'] | IResolversParentTypes['Test'] | IResolversParentTypes['User'];
@@ -1056,6 +1084,7 @@ export type IResolversParentTypes = ResolversObject<{
   TestConnection: Omit<ITestConnection, 'edges'> & { edges: Array<IResolversParentTypes['Test']> };
   Time: Scalars['Time'];
   TransferProjectInput: ITransferProjectInput;
+  UnlinkRepositoryInput: IUnlinkRepositoryInput;
   UpdateAccountInput: IUpdateAccountInput;
   UpdateProjectInput: IUpdateProjectInput;
   UpdatedTestStatuses: IUpdatedTestStatuses;
@@ -1195,6 +1224,7 @@ export type IGithubAccountResolvers<ContextType = Context, ParentType extends IR
 
 export type IGithubRepositoryResolvers<ContextType = Context, ParentType extends IResolversParentTypes['GithubRepository'] = IResolversParentTypes['GithubRepository']> = ResolversObject<{
   defaultBranch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  fullName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   private?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1207,6 +1237,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
   deleteTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteTeamArgs, 'input'>>;
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
+  linkRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkRepositoryArgs, 'input'>>;
   muteTests?: Resolver<IResolversTypes['MuteUpdateTest'], ParentType, ContextType, RequireFields<IMutationMuteTestsArgs, 'ids' | 'muted'>>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   removeUserFromTeam?: Resolver<IResolversTypes['RemoveUserFromTeamPayload'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
@@ -1216,6 +1247,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   setupVercelIntegration?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<IMutationSetupVercelIntegrationArgs, 'input'>>;
   terminateTrial?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationTerminateTrialArgs, 'accountId'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
+  unlinkRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkRepositoryArgs, 'input'>>;
   updateAccount?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUpdateAccountArgs, 'input'>>;
   updateProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectArgs, 'input'>>;
   updateTestStatuses?: Resolver<IResolversTypes['UpdatedTestStatuses'], ParentType, ContextType, RequireFields<IMutationUpdateTestStatusesArgs, 'ids' | 'status'>>;

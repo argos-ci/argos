@@ -1,0 +1,126 @@
+import { MarkGithubIcon } from "@primer/octicons-react";
+import { useState } from "react";
+import { useLocation } from "react-router-dom";
+
+import config from "@/config";
+import { Query } from "@/containers/Apollo";
+import { InstallationsSelect } from "@/containers/InstallationsSelect";
+import { RepositoryList } from "@/containers/RepositoryList";
+import { DocumentType, graphql } from "@/gql";
+import { Button, ButtonIcon } from "@/ui/Button";
+import { Card } from "@/ui/Card";
+import { PageLoader } from "@/ui/PageLoader";
+
+const MeQuery = graphql(`
+  query AccountNewProject_me {
+    me {
+      id
+      ghInstallations {
+        edges {
+          id
+          ...InstallationsSelect_GhApiInstallation
+        }
+        pageInfo {
+          totalCount
+        }
+      }
+    }
+  }
+`);
+
+type Installation = NonNullable<
+  DocumentType<typeof MeQuery>["me"]
+>["ghInstallations"]["edges"][0];
+
+type InstallationsProps = {
+  installations: Installation[];
+  onSelectRepository: (repo: {
+    name: string;
+    owner_login: string;
+    id: string;
+  }) => void;
+  disabled?: boolean;
+};
+
+const Installations = (props: InstallationsProps) => {
+  const firstInstallation = props.installations[0];
+  if (!firstInstallation) {
+    throw new Error("No installations");
+  }
+  const [value, setValue] = useState<string>(firstInstallation.id);
+  return (
+    <div
+      className="mt-8 flex flex-col gap-4"
+      style={{ height: 400, maxWidth: 800 }}
+    >
+      <InstallationsSelect
+        disabled={props.disabled}
+        installations={props.installations}
+        value={value}
+        setValue={setValue}
+      />
+      <RepositoryList
+        installationId={value}
+        disabled={props.disabled}
+        onSelectRepository={props.onSelectRepository}
+      />
+    </div>
+  );
+};
+
+export type ConnectRepositoryProps = {
+  onSelectRepository: InstallationsProps["onSelectRepository"];
+  disabled?: boolean;
+};
+
+export const ConnectRepository = (props: ConnectRepositoryProps) => {
+  const { pathname } = useLocation();
+  return (
+    <Query
+      fallback={
+        <Card className="h-full">
+          <PageLoader />
+        </Card>
+      }
+      query={MeQuery}
+    >
+      {({ me }) => {
+        if (!me) return null;
+
+        if (!me.ghInstallations.edges.length) {
+          return (
+            <Card className="flex h-full flex-col items-center justify-center">
+              <div className="mb-4 text-on-light">
+                Install GitHub application to import an existing project from a
+                Git repository.
+              </div>
+              <Button color="neutral">
+                {(buttonProps) => (
+                  <a
+                    href={`${config.get(
+                      "github.appUrl"
+                    )}/installations/new?state=${encodeURIComponent(pathname)}`}
+                    {...buttonProps}
+                  >
+                    <ButtonIcon>
+                      <MarkGithubIcon />
+                    </ButtonIcon>
+                    Continue with GitHub
+                  </a>
+                )}
+              </Button>
+            </Card>
+          );
+        }
+
+        return (
+          <Installations
+            onSelectRepository={props.onSelectRepository}
+            installations={me.ghInstallations.edges}
+            disabled={props.disabled}
+          />
+        );
+      }}
+    </Query>
+  );
+};

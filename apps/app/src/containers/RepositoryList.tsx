@@ -27,7 +27,11 @@ const InstallationQuery = graphql(`
 
 export const RepositoryList = (props: {
   installationId: string;
-  importRepo: (repo: { id: string; name: string; owner_login: string }) => void;
+  onSelectRepository: (repo: {
+    id: string;
+    name: string;
+    owner_login: string;
+  }) => void;
   disabled?: boolean;
 }) => {
   return (
@@ -47,7 +51,7 @@ export const RepositoryList = (props: {
                 </div>
                 <Button
                   onClick={() => {
-                    props.importRepo(repo);
+                    props.onSelectRepository(repo);
                   }}
                   disabled={props.disabled}
                 >
