@@ -4,8 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import request from "supertest";
 
-import type { Account, Project } from "@argos-ci/database/models";
-import { Build } from "@argos-ci/database/models";
+import { Account, Build, Project, Purchase } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 import { quitAmqp } from "@argos-ci/job-core";
 import { s3 } from "@argos-ci/storage";
@@ -51,6 +50,7 @@ describe("api v2", () => {
         const account = await factory.create<Account>("TeamAccount", {
           slug: "argos-ci",
         });
+        await factory.create<Purchase>("Purchase", { accountId: account.id });
         project = await factory.create<Project>("Project", {
           name: "argos",
           accountId: account.id,
@@ -122,6 +122,7 @@ describe("api v2", () => {
         const account = await factory.create<Account>("TeamAccount", {
           slug: "argos-ci",
         });
+        await factory.create<Purchase>("Purchase", { accountId: account.id });
         project = await factory.create<Project>("Project", {
           name: "argos",
           accountId: account.id,
@@ -261,6 +262,7 @@ describe("api v2", () => {
         const account = await factory.create<Account>("TeamAccount", {
           slug: "argos-ci",
         });
+        await factory.create<Purchase>("Purchase", { accountId: account.id });
         project = await factory.create<Project>("Project", {
           name: "argos",
           accountId: account.id,

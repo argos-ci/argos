@@ -1,5 +1,5 @@
 import { pushBuildNotification } from "@argos-ci/build-notification";
-import { Account, Build, Project } from "@argos-ci/database/models";
+import { Build, Project } from "@argos-ci/database/models";
 import { createModelJob } from "@argos-ci/job-core";
 import { job as screenshotDiffJob } from "@argos-ci/screenshot-diff";
 import { updateStripeUsage } from "@argos-ci/stripe";
@@ -16,16 +16,20 @@ export const performBuild = async (build: Build) => {
       .map(({ id }) => screenshotDiffJob.push(id))
   );
 
-  const account = await Project.relatedQuery<Account>("account")
-    .for(build.projectId)
-    .first()
+  const project = await Project.query()
+    .findById(build.projectId)
     .throwIfNotFound();
 
-  const hasExceedLimit = await account.$hasExceedScreenshotsMonthlyLimit();
-  const hasUsageBasedPlan = await account.$hasUsageBasedPlan();
-  const totalScreenshots = await account.$getScreenshotsCurrentConsumption();
-  if (hasExceedLimit && hasUsageBasedPlan) {
-    await updateStripeUsage({ account, totalScreenshots });
+  const isPublic = await project.$checkIsPublic();
+  if (!isPublic) {
+    const account = await project.$relatedQuery("account").throwIfNotFound();
+
+    const hasExceedLimit = await account.$hasExceedScreenshotsMonthlyLimit();
+    const hasUsageBasedPlan = await account.$hasUsageBasedPlan();
+    const totalScreenshots = await account.$getScreenshotsCurrentConsumption();
+    if (hasExceedLimit && hasUsageBasedPlan) {
+      await updateStripeUsage({ account, totalScreenshots });
+    }
   }
 
   if (screenshotDiffJobs.length === 0) {

@@ -59,14 +59,27 @@ export const createBuild = async ({
   trx?: TransactionOrKnex;
 }) => {
   const isPublic = await req.authProject.$checkIsPublic(trx);
+  const account = await req.authProject.$relatedQuery("account", trx);
+
+  if (!account) {
+    throw new HttpError(404, `Account not found.`);
+  }
+
+  const plan = await account.$getPlan();
+  if (account.type === "team" && (!plan || plan.name === "free")) {
+    throw new HttpError(
+      402,
+      `Build rejected: upgrade to Pro to use team features.`
+    );
+  }
+
   if (!isPublic) {
-    const account = await req.authProject.$relatedQuery("account", trx);
     const hasExceedLimit = await account.$hasExceedScreenshotsMonthlyLimit();
     const hasUsageBasedPlan = await account.$hasUsageBasedPlan();
     if (hasExceedLimit && !hasUsageBasedPlan) {
       throw new HttpError(
         402,
-        `Build rejected for insufficient credit. Please upgrade Argos plan.`
+        `Build rejected for insufficient credit. Please upgrade your Plan.`
       );
     }
   }
