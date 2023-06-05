@@ -195,7 +195,12 @@ export const resolvers: IResolvers = {
       return account.$getActivePurchase();
     },
     purchaseStatus: async (account) => {
+      if (account.forcedPlanId !== null) {
+        return IPurchaseStatus.Active;
+      }
+
       if (account.type === "user") return null;
+
       const purchase = await account.$getActivePurchase();
       const hasPaidPlan =
         purchase && purchase.plan && purchase.plan.name !== "free";
