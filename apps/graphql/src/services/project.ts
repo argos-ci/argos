@@ -49,8 +49,8 @@ export const deleteProject = async (args: {
     .joinRelated("screenshotBucket")
     .where("screenshotBucket.projectId", project.id)
     .delete();
-  await ScreenshotBucket.query().where("projectId", project.id).delete();
   await Build.query().where("projectId", project.id).delete();
+  await ScreenshotBucket.query().where("projectId", project.id).delete();
   await Test.query().where("projectId", project.id).delete();
   await project.$query().delete();
 };
