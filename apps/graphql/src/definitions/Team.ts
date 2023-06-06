@@ -247,9 +247,22 @@ export const resolvers: IResolvers = {
         );
       }
 
-      await TeamUser.query().delete().where({
-        userId: ctx.auth.user.id,
-        teamId: account.teamId,
+      await transaction(async (trx) => {
+        if (!ctx.auth) {
+          throw new Error("Forbidden");
+        }
+
+        await TeamUser.query(trx).delete().where({
+          userId: ctx.auth.user.id,
+          teamId: account.teamId,
+        });
+
+        // The last one is the only one, so it must be the owner
+        if (count === 2) {
+          await TeamUser.query(trx)
+            .where({ teamId: account.teamId })
+            .patch({ userLevel: "owner" });
+        }
       });
 
       return true;
@@ -282,7 +295,28 @@ export const resolvers: IResolvers = {
         })
         .throwIfNotFound();
 
-      await teamUser?.$query().delete();
+      await transaction(async (trx) => {
+        if (!ctx.auth) {
+          throw new Error("Forbidden");
+        }
+
+        const teamUser = await TeamUser.query(trx)
+          .select("id")
+          .findOne({
+            teamId: teamAccount.teamId,
+            userId: userAccount.userId,
+          })
+          .throwIfNotFound();
+
+        await teamUser.$query(trx).delete();
+
+        // The last one is the only one, so it must be the owner
+        if (count === 2) {
+          await TeamUser.query(trx)
+            .where({ teamId: teamAccount.teamId })
+            .patch({ userLevel: "owner" });
+        }
+      });
 
       return {
         teamMemberId: teamUser.id,
