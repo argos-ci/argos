@@ -198,12 +198,15 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
     pendingCancelAt,
   } = account;
 
-  const { paymentMethodFilled, trialDaysRemaining } = purchase || {};
+  const missingPaymentMethod = Boolean(
+    purchase && !purchase.paymentMethodFilled
+  );
+
   const { message, buttonLabel, bannerColor, action } = getBannerProps({
     purchaseStatus: purchaseStatus ?? null,
-    trialDaysRemaining: trialDaysRemaining ?? null,
+    trialDaysRemaining: purchase?.trialDaysRemaining ?? null,
     hasGithubPurchase: Boolean(purchase && purchase.source === "github"),
-    missingPaymentMethod: !paymentMethodFilled,
+    missingPaymentMethod,
     pendingCancelAt: pendingCancelAt,
   });
   const userIsOwner = permissions.includes(Permission.Write);

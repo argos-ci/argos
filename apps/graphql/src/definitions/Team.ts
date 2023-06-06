@@ -19,7 +19,6 @@ export const typeDefs = gql`
     id: ID!
     stripeCustomerId: String
     stripeClientReferenceId: String!
-    hasUsageBasedPlan: Boolean!
     hasPaidPlan: Boolean!
     consumptionRatio: Float
     currentMonthUsedScreenshots: Int!

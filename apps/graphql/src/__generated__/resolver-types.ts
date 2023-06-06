@@ -29,7 +29,6 @@ export type IAccount = {
   ghAccount?: Maybe<IGithubAccount>;
   hasForcedPlan: Scalars['Boolean'];
   hasPaidPlan: Scalars['Boolean'];
-  hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
   paymentProvider?: Maybe<IPurchaseSource>;
@@ -398,9 +397,8 @@ export enum IPermission {
 export type IPlan = INode & {
   __typename?: 'Plan';
   id: Scalars['ID'];
-  name?: Maybe<Scalars['String']>;
+  name: Scalars['String'];
   screenshotsLimitPerMonth: Scalars['Int'];
-  usageBased: Scalars['Boolean'];
 };
 
 export type IProject = INode & {
@@ -638,7 +636,6 @@ export type ITeam = IAccount & INode & {
   ghAccount?: Maybe<IGithubAccount>;
   hasForcedPlan: Scalars['Boolean'];
   hasPaidPlan: Scalars['Boolean'];
-  hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   inviteLink: Scalars['String'];
   me: ITeamMember;
@@ -766,7 +763,6 @@ export type IUser = IAccount & INode & {
   hasForcedPlan: Scalars['Boolean'];
   hasPaidPlan: Scalars['Boolean'];
   hasSubscribedToTrial: Scalars['Boolean'];
-  hasUsageBasedPlan: Scalars['Boolean'];
   id: Scalars['ID'];
   lastPurchase?: Maybe<IPurchase>;
   name?: Maybe<Scalars['String']>;
@@ -1109,7 +1105,6 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   paymentProvider?: Resolver<Maybe<IResolversTypes['PurchaseSource']>, ParentType, ContextType>;
@@ -1273,9 +1268,8 @@ export type IPageInfoResolvers<ContextType = Context, ParentType extends IResolv
 
 export type IPlanResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Plan'] = IResolversParentTypes['Plan']> = ResolversObject<{
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   screenshotsLimitPerMonth?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  usageBased?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1376,7 +1370,6 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   inviteLink?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   me?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType>;
@@ -1455,7 +1448,6 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  hasUsageBasedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   lastPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;

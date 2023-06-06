@@ -3,6 +3,7 @@ import { OrganizationIcon } from "@primer/octicons-react";
 import { useMatch, useParams } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import { AccountPlanChip } from "@/containers/AccountPlanChip";
 import { useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import {
@@ -10,7 +11,6 @@ import {
   BreadcrumbItemIcon,
   BreadcrumbLink,
 } from "@/ui/Breadcrumb";
-import { PlanChip } from "@/ui/PlanChip";
 
 import { AccountBreadcrumbMenu } from "./AccountBreadcrumbMenu";
 
@@ -20,14 +20,10 @@ const AccountQuery = graphql(`
       id
       slug
       name
-      purchaseStatus
-      plan {
-        id
-        name
-      }
       avatar {
         ...AccountAvatarFragment
       }
+      ...AccountPlanChip_Account
     }
   }
 `);
@@ -55,12 +51,7 @@ const AccountBreadcrumbLink = ({ accountSlug }: { accountSlug: string }) => {
         ) : null}
       </BreadcrumbItemIcon>
       {data?.account?.name || accountSlug}
-      {data?.account?.name && (
-        <PlanChip
-          purchaseStatus={data.account.purchaseStatus}
-          planName={data.account.plan?.name ?? ""}
-        />
-      )}
+      {data?.account && <AccountPlanChip account={data.account} />}
     </BreadcrumbLink>
   );
 };

@@ -3,7 +3,7 @@ import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
 import { knex } from "@argos-ci/database";
-import { Account, Project, Purchase } from "@argos-ci/database/models";
+import { Account, Plan, Project, Purchase } from "@argos-ci/database/models";
 import {
   getCustomerSubscriptionOrThrow,
   terminateStripeTrial,
@@ -55,7 +55,6 @@ export const typeDefs = gql`
     id: ID!
     stripeCustomerId: String
     stripeClientReferenceId: String!
-    hasUsageBasedPlan: Boolean!
     hasPaidPlan: Boolean!
     consumptionRatio: Float
     currentMonthUsedScreenshots: Int!
@@ -173,9 +172,6 @@ export const resolvers: IResolvers = {
         result,
       });
     },
-    hasUsageBasedPlan: async (account) => {
-      return account.$hasUsageBasedPlan();
-    },
     hasPaidPlan: async (account) => {
       return account.$hasPaidPlan();
     },
@@ -256,7 +252,8 @@ export const resolvers: IResolvers = {
       return account.$getPlan();
     },
     screenshotsLimitPerMonth: async (account) => {
-      return account.$getScreenshotsMonthlyLimit();
+      const plan = await account.$getPlan();
+      return Plan.getScreenshotMonthlyLimitForPlan(plan);
     },
     permissions: async (account, _args, ctx) => {
       if (!ctx.auth) {

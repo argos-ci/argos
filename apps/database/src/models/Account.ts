@@ -131,6 +131,7 @@ export class Account extends Model {
 
   async $getActivePurchase() {
     if (!this.id) return null;
+
     const purchase = await Purchase.query()
       .where("accountId", this.id)
       .whereRaw("?? < now()", "startDate")
@@ -138,7 +139,7 @@ export class Account extends Model {
         query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate")
       )
       .withGraphJoined("plan")
-      .orderBy("screenshotsLimitPerMonth", "DESC")
+      .orderBy("plan.screenshotsLimitPerMonth", "DESC")
       .first();
 
     return purchase ?? null;
@@ -157,11 +158,6 @@ export class Account extends Model {
     }
 
     return Plan.getFreePlan();
-  }
-
-  async $getScreenshotsMonthlyLimit() {
-    const plan = await this.$getPlan();
-    return plan ? plan.screenshotsLimitPerMonth : null;
   }
 
   async $getCurrentConsumptionStartDate() {
@@ -218,9 +214,11 @@ export class Account extends Model {
   }
 
   async $getScreenshotsConsumptionRatio() {
-    const screenshotsMonthlyLimit = await this.$getScreenshotsMonthlyLimit();
-    if (!screenshotsMonthlyLimit) return null;
-    if (screenshotsMonthlyLimit === -1) return 0;
+    const plan = await this.$getPlan();
+    const screenshotsMonthlyLimit = Plan.getScreenshotMonthlyLimitForPlan(plan);
+    if (screenshotsMonthlyLimit === null) {
+      return null;
+    }
     const screenshotsCurrentConsumption =
       await this.$getScreenshotsCurrentConsumption();
     return screenshotsCurrentConsumption / screenshotsMonthlyLimit;
@@ -229,7 +227,7 @@ export class Account extends Model {
   async $hasExceedScreenshotsMonthlyLimit() {
     const screenshotsConsumptionRatio =
       await this.$getScreenshotsConsumptionRatio();
-    if (!screenshotsConsumptionRatio) return false;
+    if (screenshotsConsumptionRatio === null) return false;
     return screenshotsConsumptionRatio >= 1.1;
   }
 

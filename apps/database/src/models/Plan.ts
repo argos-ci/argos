@@ -21,6 +21,18 @@ export class Plan extends Model {
   stripePlanId!: string;
   usageBased!: boolean;
 
+  static getScreenshotMonthlyLimitForPlan(plan: Plan | null) {
+    if (!plan) {
+      return 0;
+    }
+
+    if (plan.usageBased) {
+      return null;
+    }
+
+    return plan.screenshotsLimitPerMonth;
+  }
+
   static async getFreePlan(): Promise<Plan | null> {
     const freePlan = await Plan.query().findOne({ name: "free" });
     return freePlan ?? null;

@@ -1,5 +1,5 @@
+import { AccountPlanChip } from "@/containers/AccountPlanChip";
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { PlanChip } from "@/ui/PlanChip";
 
 import { AccountAvatar } from "./AccountAvatar";
 
@@ -8,14 +8,10 @@ const AccountFragment = graphql(`
     id
     slug
     name
-    purchaseStatus
-    plan {
-      id
-      name
-    }
     avatar {
       ...AccountAvatarFragment
     }
+    ...AccountPlanChip_Account
   }
 `);
 
@@ -33,12 +29,7 @@ export const AccountItem = ({
     <div className="flex items-center gap-2">
       <AccountAvatar avatar={account.avatar} size={18} />
       {account.name || account.slug}
-      {showPlan && (
-        <PlanChip
-          planName={account.plan?.name}
-          purchaseStatus={account.purchaseStatus}
-        />
-      )}
+      {showPlan && <AccountPlanChip account={account} />}
     </div>
   );
 };

@@ -27,8 +27,6 @@ const AccountQuery = graphql(`
       plan {
         id
         name
-        screenshotsLimitPerMonth
-        usageBased
       }
 
       ...TeamMembers_Team
