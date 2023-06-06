@@ -1,4 +1,5 @@
 import slugify from "@sindresorhus/slugify";
+import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 
 import { transaction } from "@argos-ci/database";
@@ -241,7 +242,7 @@ export const resolvers: IResolvers = {
         .resultSize();
 
       if (count === 1) {
-        throw new Error(
+        throw new GraphQLError(
           "You are the last user of this team, you can't leave it"
         );
       }
