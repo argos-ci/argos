@@ -26,6 +26,7 @@ import {
   DialogTitle,
   useDialogState,
 } from "@/ui/Dialog";
+import { getGraphQLErrorMessage } from "@/ui/Form";
 import { FormError } from "@/ui/FormError";
 import { List, ListRow } from "@/ui/List";
 import { Menu, MenuButton, MenuItem, useMenuState } from "@/ui/Menu";
@@ -137,9 +138,7 @@ const LeaveTeamDialog = memo<LeaveTeamDialogProps>((props) => {
         <DialogText>Are you sure you want to continue?</DialogText>
       </DialogBody>
       <DialogFooter>
-        {error && (
-          <FormError>Something went wrong. Please try again.</FormError>
-        )}
+        {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
         <DialogDismiss>Cancel</DialogDismiss>
         <Button
           disabled={loading}

@@ -8,6 +8,15 @@ export type FormProps = Omit<
   onSubmit: SubmitHandler<any>;
 };
 
+const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
+
+export const getGraphQLErrorMessage = (error: unknown): string => {
+  if (error instanceof ApolloError && error.graphQLErrors[0]) {
+    return error.graphQLErrors[0].message ?? DEFAULT_ERROR_MESSAGE;
+  }
+  return DEFAULT_ERROR_MESSAGE;
+};
+
 const unwrapErrors = (error: unknown) => {
   if (error instanceof ApolloError && error.graphQLErrors.length > 0) {
     return error.graphQLErrors.map((error) => {
@@ -20,7 +29,7 @@ const unwrapErrors = (error: unknown) => {
   return [
     {
       field: "root.serverError",
-      message: "Something went wrong. Please try again.",
+      message: DEFAULT_ERROR_MESSAGE,
     },
   ];
 };

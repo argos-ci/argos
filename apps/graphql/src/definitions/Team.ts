@@ -1,4 +1,5 @@
 import slugify from "@sindresorhus/slugify";
+import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 
 import { transaction } from "@argos-ci/database";
@@ -240,14 +241,27 @@ export const resolvers: IResolvers = {
         .resultSize();
 
       if (count === 1) {
-        throw new Error(
+        throw new GraphQLError(
           "You are the last user of this team, you can't leave it"
         );
       }
 
-      await TeamUser.query().delete().where({
-        userId: ctx.auth.user.id,
-        teamId: account.teamId,
+      await transaction(async (trx) => {
+        if (!ctx.auth) {
+          throw new Error("Forbidden");
+        }
+
+        await TeamUser.query(trx).delete().where({
+          userId: ctx.auth.user.id,
+          teamId: account.teamId,
+        });
+
+        // The last one is the only one, so it must be the owner
+        if (count === 2) {
+          await TeamUser.query(trx)
+            .where({ teamId: account.teamId })
+            .patch({ userLevel: "owner" });
+        }
       });
 
       return true;
@@ -280,7 +294,28 @@ export const resolvers: IResolvers = {
         })
         .throwIfNotFound();
 
-      await teamUser?.$query().delete();
+      await transaction(async (trx) => {
+        if (!ctx.auth) {
+          throw new Error("Forbidden");
+        }
+
+        const teamUser = await TeamUser.query(trx)
+          .select("id")
+          .findOne({
+            teamId: teamAccount.teamId,
+            userId: userAccount.userId,
+          })
+          .throwIfNotFound();
+
+        await teamUser.$query(trx).delete();
+
+        // The last one is the only one, so it must be the owner
+        if (count === 2) {
+          await TeamUser.query(trx)
+            .where({ teamId: teamAccount.teamId })
+            .patch({ userLevel: "owner" });
+        }
+      });
 
       return {
         teamMemberId: teamUser.id,
