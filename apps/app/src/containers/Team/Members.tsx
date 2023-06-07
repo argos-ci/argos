@@ -220,16 +220,14 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
           want to continue?
         </DialogText>
         <List>
-          <ListRow className="px-4 py-2">
+          <ListRow className="px-4 py-2 text-left">
             <AccountAvatar
               avatar={user.avatar}
               size={36}
               className="shrink-0"
             />
             <div>
-              <div className="flex items-center gap-2">
-                <div className="text-sm font-semibold">{user.name}</div>
-              </div>
+              <div className="text-sm font-semibold">{user.name}</div>
               <div className="text-xs text-slate-500">{user.slug}</div>
             </div>
           </ListRow>
