@@ -71,7 +71,6 @@ const PlanCardFragment = graphql(`
       id
       name
       screenshotsLimitPerMonth
-      usageBased
     }
 
     purchase {
@@ -356,10 +355,7 @@ const ConsumptionBlock = ({
     (sum, project) => project.currentMonthUsedScreenshots + sum,
     0
   );
-  const max =
-    isPrivate && screenshotsLimitPerMonth !== -1
-      ? screenshotsLimitPerMonth
-      : Infinity;
+  const max = isPrivate ? screenshotsLimitPerMonth : Infinity;
 
   return (
     <div className="flex flex-col gap-2 rounded border border-border p-4">

@@ -56,7 +56,7 @@ export const AccountSelector = (props: AccountSelectorProps) => {
       <Select state={select} className="w-full bg-slate-700/40">
         {activeAccount ? (
           <div className="flex w-full items-center justify-between">
-            <AccountItem account={activeAccount} showPlan={true} />
+            <AccountItem account={activeAccount} showPlan />
             <SelectArrow />
           </div>
         ) : (
@@ -79,7 +79,7 @@ export const AccountSelector = (props: AccountSelectorProps) => {
                 props.disabledAccountIds.includes(account.id)
               }
             >
-              <AccountItem account={account} showPlan={true} />
+              <AccountItem account={account} showPlan />
             </SelectItem>
           );
         })}

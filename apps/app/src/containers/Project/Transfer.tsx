@@ -281,7 +281,7 @@ const ReviewStep = (props: ReviewStepProps) => {
                     <DialogText>
                       <strong>
                         Both accounts are on the same plan
-                        {data.actualAccount.plan?.name
+                        {data.actualAccount.plan
                           ? ` (${data.actualAccount.plan.name})`
                           : ""}
                         .

@@ -22,8 +22,6 @@ export const ProjectFragment = graphql(`
     account {
       id
       slug
-      consumptionRatio
-      hasUsageBasedPlan
     }
     build(number: $buildNumber) {
       id

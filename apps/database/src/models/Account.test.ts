@@ -69,22 +69,6 @@ describe("Account", () => {
     });
   });
 
-  describe("#screenshotsMonthlyLimit", () => {
-    it("without purchase returns free plan limit", async () => {
-      const screenshotsLimit = await account.$getScreenshotsMonthlyLimit();
-      expect(screenshotsLimit).toBe(-1);
-    });
-
-    it("with purchase returns plan limit", async () => {
-      await factory.create("Purchase", {
-        planId: plans[1]!.id,
-        accountId: account.id,
-      });
-      const screenshotsLimit = await account.$getScreenshotsMonthlyLimit();
-      expect(screenshotsLimit).toBe(10);
-    });
-  });
-
   describe("#$getCurrentConsumptionStartDate", () => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
