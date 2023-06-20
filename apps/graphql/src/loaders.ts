@@ -16,6 +16,8 @@ import {
   Team,
   Test,
   User,
+  VercelConfiguration,
+  VercelProject,
 } from "@argos-ci/database/models";
 
 const createModelLoader = <TModelClass extends ModelClass<Model>>(
@@ -138,6 +140,17 @@ const createAccountFromRelationLoader = () => {
   );
 };
 
+const createProjectFromVercelProjectLoader = () => {
+  return new DataLoader<string, Project | null>(async (vercelProjectIds) => {
+    const projects = await Project.query()
+      .joinRelated("vercelProject")
+      .whereIn("vercelProject.vercelId", vercelProjectIds as string[]);
+    return vercelProjectIds.map(
+      (id) => projects.find((p) => p.vercelProjectId === id) ?? null
+    );
+  });
+};
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
@@ -149,10 +162,13 @@ export const createLoaders = () => ({
   LastScreenshotDiff: createLastScreenshotDiffLoader(),
   Plan: createModelLoader(Plan),
   Project: createModelLoader(Project),
+  ProjectFromVercelProject: createProjectFromVercelProjectLoader(),
   Screenshot: createModelLoader(Screenshot),
   ScreenshotBucket: createModelLoader(ScreenshotBucket),
   ScreenshotDiff: createModelLoader(ScreenshotDiff),
   Team: createModelLoader(Team),
   Test: createModelLoader(Test),
   User: createModelLoader(User),
+  VercelConfiguration: createModelLoader(VercelConfiguration),
+  VercelProject: createModelLoader(VercelProject),
 });

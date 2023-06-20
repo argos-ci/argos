@@ -65,6 +65,7 @@ export const AccountNewProject = () => {
                 },
               });
             }}
+            connectButtonLabel="Import"
           />
         </div>
       </Container>

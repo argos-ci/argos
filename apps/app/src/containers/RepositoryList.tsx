@@ -7,7 +7,10 @@ import { Time } from "@/ui/Time";
 import { Query } from "./Apollo";
 
 const InstallationQuery = graphql(`
-  query RepositoryList_repository($installationId: ID!, $page: Int!) {
+  query RepositoryList_ghApiInstallationRepositories(
+    $installationId: ID!
+    $page: Int!
+  ) {
     ghApiInstallationRepositories(
       installationId: $installationId
       page: $page
@@ -33,6 +36,7 @@ export const RepositoryList = (props: {
     owner_login: string;
   }) => void;
   disabled?: boolean;
+  connectButtonLabel: string;
 }) => {
   return (
     <Query
@@ -55,7 +59,7 @@ export const RepositoryList = (props: {
                   }}
                   disabled={props.disabled}
                 >
-                  Import
+                  {props.connectButtonLabel}
                 </Button>
               </ListRow>
             ))}

@@ -12,7 +12,7 @@ import { Card } from "@/ui/Card";
 import { PageLoader } from "@/ui/PageLoader";
 
 const MeQuery = graphql(`
-  query AccountNewProject_me {
+  query ConnectRepository_me {
     me {
       id
       ghInstallations {
@@ -40,6 +40,7 @@ type InstallationsProps = {
     id: string;
   }) => void;
   disabled?: boolean;
+  connectButtonLabel: string;
 };
 
 const Installations = (props: InstallationsProps) => {
@@ -63,6 +64,7 @@ const Installations = (props: InstallationsProps) => {
         installationId={value}
         disabled={props.disabled}
         onSelectRepository={props.onSelectRepository}
+        connectButtonLabel={props.connectButtonLabel}
       />
     </div>
   );
@@ -70,6 +72,7 @@ const Installations = (props: InstallationsProps) => {
 
 export type ConnectRepositoryProps = {
   onSelectRepository: InstallationsProps["onSelectRepository"];
+  connectButtonLabel: string;
   disabled?: boolean;
 };
 
@@ -89,7 +92,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
 
         if (!me.ghInstallations.edges.length) {
           return (
-            <Card className="flex h-full flex-col items-center justify-center">
+            <Card className="flex h-full flex-col items-center justify-center py-4">
               <div className="mb-4 text-on-light">
                 Install GitHub application to import an existing project from a
                 Git repository.
@@ -118,6 +121,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
             onSelectRepository={props.onSelectRepository}
             installations={me.ghInstallations.edges}
             disabled={props.disabled}
+            connectButtonLabel={props.connectButtonLabel}
           />
         );
       }}
