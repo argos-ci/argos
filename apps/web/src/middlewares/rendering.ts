@@ -77,6 +77,9 @@ export const rendering = (additionalClientData?: any) => {
             pricingTableId: config.get("stripe.pricingTableId"),
             publishableKey: config.get("stripe.publishableKey"),
           },
+          vercel: {
+            integrationUrl: config.get("vercel.integrationUrl"),
+          },
         },
         ...additionalClientData,
       }),

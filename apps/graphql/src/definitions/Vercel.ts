@@ -19,6 +19,7 @@ import {
   IResolvers,
   IVercelApiProjectStatus,
 } from "../__generated__/resolver-types.js";
+import config from "@argos-ci/config";
 
 const { gql } = gqlTag;
 
@@ -329,8 +330,11 @@ export const resolvers: IResolvers = {
     },
   },
   VercelConfiguration: {
-    url: (configuration) => {
-      return `https://vercel.com/dashboard/argos-ci/integrations/${configuration.vercelId}`;
+    url: () => {
+      // For now it is easier to just go to integration, the user will manage to find the settings
+      // in order to redirect to the settings page we have to find the team slug...
+      // two API requests just for an URL it does not worth it
+      return config.get("vercel.integrationUrl");
     },
     apiProjects: async (configuration) => {
       if (!configuration.vercelAccessToken) return null;

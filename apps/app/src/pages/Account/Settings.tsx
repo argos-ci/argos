@@ -1,3 +1,4 @@
+// @TODO VERCEL-SETUP Uncomment ProjectVercel when Vercel is ready
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
@@ -17,6 +18,7 @@ import { PageLoader } from "@/ui/PageLoader";
 import { Heading } from "@/ui/Typography";
 
 import { useAccountContext } from ".";
+// import { AccountVercel } from "@/containers/Account/Vercel";
 
 const AccountQuery = graphql(`
   query AccountSettings_account($slug: String!) {
@@ -34,6 +36,7 @@ const AccountQuery = graphql(`
       ...AccountChangeName_Account
       ...AccountChangeSlug_Account
       ...PlanCard_Account
+      # ...AccountVercel_Account
     }
   }
 `);
@@ -110,6 +113,7 @@ export const AccountSettings = () => {
                   }
                   return null;
                 })()}
+              {/* <AccountVercel account={account} /> */}
               {writable && account.plan && <PlanCard account={account} />}
               {isTeam && <TeamMembers team={account} />}
               {isTeam && <TeamDelete team={account} />}

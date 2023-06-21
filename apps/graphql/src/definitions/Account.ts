@@ -74,6 +74,7 @@ export const typeDefs = gql`
     ghAccount: GithubAccount
     avatar: AccountAvatar!
     paymentProvider: PurchaseSource
+    vercelConfiguration: VercelConfiguration
   }
 
   input UpdateAccountInput {
@@ -301,6 +302,12 @@ export const resolvers: IResolvers = {
         initial,
         color,
       };
+    },
+    vercelConfiguration: async (account, _args, ctx) => {
+      if (!account.vercelConfigurationId) return null;
+      return ctx.loaders.VercelConfiguration.load(
+        account.vercelConfigurationId
+      );
     },
   },
   AccountAvatar: {

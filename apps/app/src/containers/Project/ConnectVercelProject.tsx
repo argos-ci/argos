@@ -7,20 +7,19 @@ import { PageLoader } from "@/ui/PageLoader";
 import { VercelLogo } from "@/ui/VercelLogo";
 
 import { VercelProjectList } from "../VercelProjectList";
+import config from "@/config";
 
 const AccountQuery = graphql(`
   query ConnectVercelProject_account($accountId: ID!) {
     account: accountById(id: $accountId) {
       id
-      ... on Team {
-        vercelConfiguration {
-          id
-          url
-          apiProjects {
-            projects {
-              id
-              ...VercelProjectList_VercelApiProject
-            }
+      vercelConfiguration {
+        id
+        url
+        apiProjects {
+          projects {
+            id
+            ...VercelProjectList_VercelApiProject
           }
         }
       }
@@ -68,7 +67,7 @@ export const ConnectVercelProject = (props: ConnectVercelProjectProps) => {
         <Button color="neutral">
           {(buttonProps) => (
             <a
-              href="https://vercel.com/integrations/argos-dev"
+              href={config.get("vercel.integrationUrl")}
               target="_blank"
               rel="noopener noreferrer"
               {...buttonProps}
