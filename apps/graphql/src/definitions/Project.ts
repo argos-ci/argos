@@ -12,12 +12,14 @@ import {
   ScreenshotDiff,
   Test,
   User,
+  VercelConfiguration,
 } from "@argos-ci/database/models";
 import { getTokenOctokit } from "@argos-ci/github";
 
 import { IPermission, IResolvers } from "../__generated__/resolver-types.js";
 import { deleteProject, getWritableProject } from "../services/project.js";
 import { paginateResult } from "./PageInfo.js";
+import { linkVercelProject } from "./Vercel.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -55,7 +57,10 @@ export const typeDefs = gql`
     private: Boolean
     "Current month used screenshots"
     currentMonthUsedScreenshots: Int!
+    "Total screenshots used"
     totalScreenshots: Int!
+    "Vercel project"
+    vercelProject: VercelProject
   }
 
   extend type Query {
@@ -99,6 +104,16 @@ export const typeDefs = gql`
     owner: String!
   }
 
+  input UnlinkVercelProjectInput {
+    projectId: ID!
+  }
+
+  input LinkVercelProjectInput {
+    projectId: ID!
+    configurationId: ID!
+    vercelProjectId: ID!
+  }
+
   extend type Mutation {
     "Create a Project"
     createProject(input: CreateProjectInput!): Project!
@@ -108,6 +123,10 @@ export const typeDefs = gql`
     unlinkRepository(input: UnlinkRepositoryInput!): Project!
     "Link Repository"
     linkRepository(input: LinkRepositoryInput!): Project!
+    "Link Vercel project"
+    linkVercelProject(input: LinkVercelProjectInput!): Project!
+    "Unlink Vercel project"
+    unlinkVercelProject(input: UnlinkVercelProjectInput!): Project!
     "Transfer Project to another account"
     transferProject(input: TransferProjectInput!): Project!
     "Delete Project"
@@ -289,6 +308,10 @@ export const resolvers: IResolvers = {
       if (!project.githubRepositoryId) return null;
       return ctx.loaders.GithubRepository.load(project.githubRepositoryId);
     },
+    vercelProject: async (project, _args, ctx) => {
+      if (!project.vercelProjectId) return null;
+      return ctx.loaders.VercelProject.load(project.vercelProjectId);
+    },
     referenceBranch: async (project) => {
       return project.$getReferenceBranch();
     },
@@ -408,6 +431,39 @@ export const resolvers: IResolvers = {
 
       return project.$query().patchAndFetch({
         githubRepositoryId: ghRepo.id,
+      });
+    },
+    linkVercelProject: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw new Error("Unauthorized");
+      }
+
+      const vercelConfiguration = await VercelConfiguration.query()
+        .findById(args.input.configurationId)
+        .throwIfNotFound();
+
+      if (!vercelConfiguration.vercelAccessToken) {
+        throw new Error("Invariant: Vercel access token is missing");
+      }
+
+      await linkVercelProject({
+        vercelProjectId: args.input.vercelProjectId,
+        projectId: args.input.projectId,
+        creator: ctx.auth.user,
+        vercelConfiguration,
+        vercelAccessToken: vercelConfiguration.vercelAccessToken,
+      });
+
+      return Project.query().findById(args.input.projectId).throwIfNotFound();
+    },
+    unlinkVercelProject: async (_root, args, ctx) => {
+      const project = await getWritableProject({
+        id: args.input.projectId,
+        user: ctx.auth?.user,
+      });
+
+      return project.$query().patchAndFetch({
+        vercelProjectId: null,
       });
     },
     transferProject: async (_root, args, ctx) => {

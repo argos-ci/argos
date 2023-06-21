@@ -26,15 +26,15 @@ export const retrieveToken = async (code: string) => {
   return result.data;
 };
 
-export type VercelTeam = {
+export type VercelApiTeam = {
   id: string;
   slug: string;
   name: string | null;
 };
 
-export type VercelGetTeamResponse = VercelTeam;
+export type VercelGetTeamResponse = VercelApiTeam;
 
-export type VercelProject = {
+export type VercelApiProject = {
   id: string;
   name: string;
   link?:
@@ -53,7 +53,7 @@ export type VercelProject = {
 };
 
 export type VercelListProjectsResponse = {
-  projects: VercelProject[];
+  projects: VercelApiProject[];
   pagination: {
     count: number;
     next: string | null;
@@ -61,7 +61,7 @@ export type VercelListProjectsResponse = {
   };
 };
 
-export type VercelFindProjectResponse = VercelProject;
+export type VercelFindProjectResponse = VercelApiProject;
 
 export type VercelClientParams = {
   accessToken: string;
@@ -72,6 +72,7 @@ export type VercelGetConfigurationResponse = {
 };
 
 export const createVercelClient = (params: VercelClientParams) => {
+  console.log(params);
   const request = axios.create({
     baseURL: "https://api.vercel.com",
     headers: {

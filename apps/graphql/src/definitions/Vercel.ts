@@ -10,7 +10,7 @@ import {
 } from "@argos-ci/database/models";
 import { getTokenOctokit } from "@argos-ci/github";
 import {
-  VercelProject as VercelApiProject,
+  VercelApiProject,
   createVercelClient,
   retrieveToken,
 } from "@argos-ci/vercel";
@@ -67,12 +67,25 @@ export const typeDefs = gql`
     link: VercelApiProjectLink
     status(accountId: ID!): VercelApiProjectStatus!
     linkedProject: Project
+    project: Project
   }
 
   type VercelApiPagination {
     count: Int!
     next: ID
     prev: ID
+  }
+
+  type VercelConfiguration {
+    id: ID!
+    vercelId: ID!
+    url: String!
+    apiProjects: VercelApiProjectConnection
+  }
+
+  type VercelProject {
+    id: ID!
+    configuration: VercelConfiguration!
   }
 
   type VercelApiProjectConnection {
@@ -147,6 +160,7 @@ const linkVercelConfiguration = async (input: {
     return VercelConfiguration.query().insertAndFetch({
       vercelId: input.vercelConfigurationId,
       vercelAccessToken: input.vercelAccessToken,
+      vercelTeamId: input.vercelTeamId,
     });
   };
 
@@ -159,7 +173,7 @@ const linkVercelConfiguration = async (input: {
   return vercelConfiguration;
 };
 
-const linkVercelProject = async (input: {
+export const linkVercelProject = async (input: {
   vercelProjectId: string;
   projectId: string;
   vercelAccessToken: string;
@@ -306,6 +320,40 @@ export const resolvers: IResolvers = {
         throw new Error("Forbidden");
       }
       return getLinkedProject(vercelProject);
+    },
+    project: async (vercelProject, _args, ctx) => {
+      if (!ctx.auth) {
+        throw new Error("Forbidden");
+      }
+      return ctx.loaders.ProjectFromVercelProject.load(vercelProject.id);
+    },
+  },
+  VercelConfiguration: {
+    url: (configuration) => {
+      return `https://vercel.com/dashboard/argos-ci/integrations/${configuration.vercelId}`;
+    },
+    apiProjects: async (configuration) => {
+      if (!configuration.vercelAccessToken) return null;
+      const client = createVercelClient({
+        accessToken: configuration.vercelAccessToken,
+      });
+      const projects = await client.listProjects({
+        teamId: configuration.vercelTeamId,
+        limit: 100,
+      });
+      return projects;
+    },
+  },
+  VercelProject: {
+    configuration: async (project) => {
+      const configuration = await project
+        .$relatedQuery("activeConfiguration")
+        .orderBy("id", "desc")
+        .first();
+      if (!configuration) {
+        throw new Error("Vercel configuration not found");
+      }
+      return configuration;
     },
   },
   Query: {

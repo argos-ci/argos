@@ -102,6 +102,7 @@ const LinkRepository = (props: { projectId: string }) => {
           },
         });
       }}
+      connectButtonLabel="Link"
     />
   );
 };
