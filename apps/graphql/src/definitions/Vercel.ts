@@ -1,5 +1,6 @@
 import gqlTag from "graphql-tag";
 
+import config from "@argos-ci/config";
 import {
   Account,
   Project,
@@ -19,7 +20,6 @@ import {
   IResolvers,
   IVercelApiProjectStatus,
 } from "../__generated__/resolver-types.js";
-import config from "@argos-ci/config";
 
 const { gql } = gqlTag;
 

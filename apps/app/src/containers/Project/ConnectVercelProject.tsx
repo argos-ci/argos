@@ -1,5 +1,6 @@
 import { useQuery } from "@apollo/client";
 
+import config from "@/config";
 import { graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Card } from "@/ui/Card";
@@ -7,7 +8,6 @@ import { PageLoader } from "@/ui/PageLoader";
 import { VercelLogo } from "@/ui/VercelLogo";
 
 import { VercelProjectList } from "../VercelProjectList";
-import config from "@/config";
 
 const AccountQuery = graphql(`
   query ConnectVercelProject_account($accountId: ID!) {

@@ -1,9 +1,10 @@
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+
 import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { VercelLogo } from "@/ui/VercelLogo";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 
 const AccountFragment = graphql(`
   fragment AccountVercel_Account on Account {

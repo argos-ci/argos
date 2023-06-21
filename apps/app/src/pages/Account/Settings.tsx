@@ -18,6 +18,7 @@ import { PageLoader } from "@/ui/PageLoader";
 import { Heading } from "@/ui/Typography";
 
 import { useAccountContext } from ".";
+
 // import { AccountVercel } from "@/containers/Account/Vercel";
 
 const AccountQuery = graphql(`
