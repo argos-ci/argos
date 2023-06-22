@@ -1,3 +1,4 @@
+import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Anchor } from "@/ui/Link";
@@ -57,7 +58,7 @@ export const VercelProjectList = (props: {
       ))}
       <ListRow className="p-4">
         Don't see your project?{" "}
-        <Anchor href="https://vercel.com/integrations/argos-dev" external>
+        <Anchor href={config.get("vercel.integrationUrl")} external>
           Manage permissions on Vercel
         </Anchor>
       </ListRow>

@@ -195,12 +195,6 @@ export const resolvers: IResolvers = {
       const team = await account.$relatedQuery("team");
       return team.$getInviteLink();
     },
-    vercelConfiguration: async (account, _args, ctx) => {
-      if (!account.vercelConfigurationId) return null;
-      return ctx.loaders.VercelConfiguration.load(
-        account.vercelConfigurationId
-      );
-    },
   },
   Query: {
     invitation: async (_root, { token }) => {

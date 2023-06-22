@@ -37,6 +37,7 @@ export const typeDefs = gql`
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
     paymentProvider: PurchaseSource
+    vercelConfiguration: VercelConfiguration
   }
 
   type UserConnection implements Connection {

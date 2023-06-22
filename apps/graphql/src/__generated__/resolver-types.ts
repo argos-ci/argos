@@ -45,6 +45,7 @@ export type IAccount = {
   stripeClientReferenceId: Scalars['String'];
   stripeCustomerId?: Maybe<Scalars['String']>;
   trialStatus?: Maybe<ITrialStatus>;
+  vercelConfiguration?: Maybe<IVercelConfiguration>;
 };
 
 
@@ -810,6 +811,7 @@ export type IUser = IAccount & INode & {
   stripeCustomerId?: Maybe<Scalars['String']>;
   teams: Array<ITeam>;
   trialStatus?: Maybe<ITrialStatus>;
+  vercelConfiguration?: Maybe<IVercelConfiguration>;
 };
 
 
@@ -1172,6 +1174,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
+  vercelConfiguration?: Resolver<Maybe<IResolversTypes['VercelConfiguration']>, ParentType, ContextType>;
 }>;
 
 export type IAccountAvatarResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountAvatar'] = IResolversParentTypes['AccountAvatar']> = ResolversObject<{
@@ -1522,6 +1525,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   teams?: Resolver<Array<IResolversTypes['Team']>, ParentType, ContextType>;
   trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
+  vercelConfiguration?: Resolver<Maybe<IResolversTypes['VercelConfiguration']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

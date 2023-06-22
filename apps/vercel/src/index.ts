@@ -69,6 +69,7 @@ export type VercelClientParams = {
 
 export type VercelGetConfigurationResponse = {
   id: string;
+  slug: string;
 };
 
 export const createVercelClient = (params: VercelClientParams) => {

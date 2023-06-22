@@ -1,5 +1,6 @@
 import { useQuery } from "@apollo/client";
 
+import config from "@/config";
 import { graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Card } from "@/ui/Card";
@@ -12,15 +13,13 @@ const AccountQuery = graphql(`
   query ConnectVercelProject_account($accountId: ID!) {
     account: accountById(id: $accountId) {
       id
-      ... on Team {
-        vercelConfiguration {
-          id
-          url
-          apiProjects {
-            projects {
-              id
-              ...VercelProjectList_VercelApiProject
-            }
+      vercelConfiguration {
+        id
+        url
+        apiProjects {
+          projects {
+            id
+            ...VercelProjectList_VercelApiProject
           }
         }
       }
@@ -68,7 +67,7 @@ export const ConnectVercelProject = (props: ConnectVercelProjectProps) => {
         <Button color="neutral">
           {(buttonProps) => (
             <a
-              href="https://vercel.com/integrations/argos-dev"
+              href={config.get("vercel.integrationUrl")}
               target="_blank"
               rel="noopener noreferrer"
               {...buttonProps}
