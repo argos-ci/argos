@@ -17,4 +17,5 @@ export class VercelConfiguration extends Model {
   vercelId!: string;
   vercelAccessToken!: string | null;
   vercelTeamId!: string | null;
+  deleted!: boolean;
 }

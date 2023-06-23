@@ -310,7 +310,14 @@ export const resolvers: IResolvers = {
     },
     vercelProject: async (project, _args, ctx) => {
       if (!project.vercelProjectId) return null;
-      return ctx.loaders.VercelProject.load(project.vercelProjectId);
+      const vercelProject = await ctx.loaders.VercelProject.load(
+        project.vercelProjectId
+      );
+      const activeConfiguration = await vercelProject
+        .$relatedQuery("activeConfiguration")
+        .first();
+      if (!activeConfiguration) return null;
+      return vercelProject;
     },
     referenceBranch: async (project) => {
       return project.$getReferenceBranch();

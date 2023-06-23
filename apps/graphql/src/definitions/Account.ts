@@ -305,9 +305,12 @@ export const resolvers: IResolvers = {
     },
     vercelConfiguration: async (account, _args, ctx) => {
       if (!account.vercelConfigurationId) return null;
-      return ctx.loaders.VercelConfiguration.load(
+      const configuration = await ctx.loaders.VercelConfiguration.load(
         account.vercelConfigurationId
       );
+      if (!configuration) return null;
+      if (configuration.deleted) return null;
+      return configuration;
     },
   },
   AccountAvatar: {
