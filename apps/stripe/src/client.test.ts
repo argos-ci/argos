@@ -176,7 +176,6 @@ describe("stripe", () => {
           endDate: null,
           source: "stripe",
           purchaserId,
-          trialEndDate: new Date("2023-05-15T11:13:12.000Z"),
         });
       });
     });
