@@ -9,15 +9,26 @@ import { FragmentType, graphql, useFragment } from "@/gql";
 import { BrandShield } from "@/ui/BrandShield";
 import { MagicTooltip } from "@/ui/Tooltip";
 
-const BrandLink = memo(() => {
-  return (
-    <MagicTooltip tooltip="Go to home">
-      <Link to="/" className="transition hover:brightness-125">
-        <BrandShield height={32} />
-      </Link>
-    </MagicTooltip>
-  );
-});
+const BrandLink = memo(
+  ({
+    accountSlug,
+    projectName,
+  }: {
+    accountSlug: string;
+    projectName: string;
+  }) => {
+    return (
+      <MagicTooltip tooltip="See all builds">
+        <Link
+          to={`/${accountSlug}/${projectName}/builds`}
+          className="transition hover:brightness-125"
+        >
+          <BrandShield height={32} />
+        </Link>
+      </MagicTooltip>
+    );
+  }
+);
 
 const ProjectLink = memo(
   ({
@@ -78,7 +89,10 @@ export const BuildHeader = memo(
     return (
       <div className="flex flex-none flex-grow-0 items-center justify-between border-b border-b-border p-4">
         <div className="flex h-[32px] items-center gap-4">
-          <BrandLink />
+          <BrandLink
+            accountSlug={props.accountSlug}
+            projectName={props.projectName}
+          />
           <div className="flex flex-col justify-center">
             <div className="mb-1 text-sm font-medium leading-none">
               Build {props.buildNumber}
