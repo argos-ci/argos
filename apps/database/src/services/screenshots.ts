@@ -77,14 +77,33 @@ export const insertFilesAndScreenshots = async (
     const screenshotKeys = params.screenshots.map(
       (screenshot) => screenshot.key
     );
-    const files = await File.query(trx).whereIn("key", screenshotKeys);
+    const [files, tests, duplicates] = await Promise.all([
+      File.query(trx).whereIn("key", screenshotKeys),
+      getOrCreateTests({
+        projectId: params.build.projectId,
+        buildName: params.build.name,
+        screenshotNames: params.screenshots.map(
+          (screenshot) => screenshot.name
+        ),
+        trx,
+      }),
+      Screenshot.query(trx)
+        .select("name")
+        .where({
+          name: params.screenshots.map((screenshot) => screenshot.name),
+          screenshotBucketId: params.build.compareScreenshotBucketId,
+        }),
+    ]);
 
-    const tests = await getOrCreateTests({
-      projectId: params.build.projectId,
-      buildName: params.build.name,
-      screenshotNames: params.screenshots.map((screenshot) => screenshot.name),
-      trx,
-    });
+    if (duplicates.length > 0) {
+      throw new Error(
+        `Screenshots already uploaded for ${duplicates
+          .map((screenshot) => screenshot.name)
+          .join(
+            ", "
+          )}. Please ensure to not upload a screenshot with the same name multiple times.`
+      );
+    }
 
     // Insert screenshots
     await Screenshot.query(trx).insert(
