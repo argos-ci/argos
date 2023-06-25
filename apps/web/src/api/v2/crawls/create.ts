@@ -1,14 +1,12 @@
 import express, { Router } from "express";
 
-import { job as crawlJob } from "@argos-ci/crawl";
-import { transaction } from "@argos-ci/database";
-import { Crawl, Project } from "@argos-ci/database/models";
+import type { Project } from "@argos-ci/database/models";
 
 import { SHA1_REGEX_STR } from "../../../constants.js";
 import { repoAuth } from "../../../middlewares/repoAuth.js";
 import { validate } from "../../../middlewares/validate.js";
 import { asyncHandler } from "../../../util.js";
-import { createBuild } from "../util.js";
+import { createBuildFromRequest, createCrawl } from "../util.js";
 
 const router = Router();
 export default router;
@@ -28,6 +26,10 @@ const validateRoute = validate({
       baseUrl: {
         type: "string",
       },
+      name: {
+        type: "string",
+        nullable: true,
+      },
     },
   },
 });
@@ -39,6 +41,7 @@ type CreateRequest = express.Request<
     commit: string;
     branch: string;
     baseUrl: string;
+    name?: string | null;
   }
 > & { authProject: Project };
 
@@ -50,19 +53,10 @@ router.post(
   asyncHandler(async (req, res) => {
     const ctx = { req } as { req: CreateRequest };
 
-    const { build, crawl } = await transaction(async (trx) => {
-      const { req } = ctx;
-      const build = await createBuild({ req, trx });
-
-      const crawl = await Crawl.query(trx).insertAndFetch({
-        buildId: build.id,
-        jobStatus: "pending",
-        baseUrl: req.body.baseUrl,
-      });
-
-      crawlJob.push(crawl.id);
-
-      return { build, crawl };
+    const build = await createBuildFromRequest({ req: ctx.req });
+    const crawl = await createCrawl({
+      build,
+      baseUrl: req.body.baseUrl,
     });
 
     const buildUrl = await build.getUrl();

@@ -3,7 +3,11 @@ import puppeteer from "puppeteer";
 import { job as buildJob } from "@argos-ci/build";
 import config from "@argos-ci/config";
 import { raw, transaction } from "@argos-ci/database";
-import { Capture } from "@argos-ci/database/models";
+import {
+  Capture,
+  Screenshot,
+  ScreenshotBucket,
+} from "@argos-ci/database/models";
 import { insertFilesAndScreenshots } from "@argos-ci/database/services/screenshots";
 import { createModelJob } from "@argos-ci/job-core";
 import { S3ImageFile, s3 } from "@argos-ci/storage";
@@ -18,7 +22,7 @@ const launchBrowser = async () => {
   }
 
   browser = puppeteer.launch({
-    headless: true,
+    headless: "new",
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
@@ -82,6 +86,15 @@ export const performCapture = async (capture: Capture) => {
   };
 
   if (complete) {
+    const screenshotCount = await Screenshot.query()
+      .where("screenshotBucketId", build.compareScreenshotBucketId)
+      .resultSize();
+    await ScreenshotBucket.query()
+      .findById(build.compareScreenshotBucketId)
+      .patch({
+        screenshotCount,
+        complete: true,
+      });
     buildJob.push(build.id);
   }
 };

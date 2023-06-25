@@ -48,16 +48,12 @@ function waitForFonts() {
  * Wait for all images to be loaded.
  */
 async function waitForImages() {
-  return Promise.all(
-    Array.from(document.images)
-      .filter((img) => !img.complete)
-      .map(
-        (img) =>
-          new Promise((resolve) => {
-            img.onload = img.onerror = resolve;
-          })
-      )
-  );
+  const allImages = Array.from(document.images);
+  allImages.forEach((img) => {
+    img.loading = "eager";
+    img.decoding = "sync";
+  });
+  return allImages.every((img) => img.complete && img.naturalWidth > 0);
 }
 
 export async function argosScreenshot(page, { element = page } = {}) {
