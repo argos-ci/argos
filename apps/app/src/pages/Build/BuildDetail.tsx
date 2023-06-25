@@ -5,6 +5,7 @@ import { memo, useLayoutEffect, useRef, useState } from "react";
 import { checkIsBuildEmpty } from "@/containers/Build";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Code } from "@/ui/Code";
+import { Anchor } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { useScrollListener } from "@/ui/useScrollListener";
 
@@ -366,9 +367,22 @@ export const BuildDetail = (props: {
           </BuildDiffFitStateProvider>
         </BuildDiffVisibleStateProvider>
       ) : checkIsBuildEmpty(build) ? (
-        <div className="m-4 rounded-lg border border-info-500 px-4 py-2 text-info-500">
-          No screenshot has been uploaded. Be sure to specify a directory
-          containing images in your upload script.
+        <div className="flex h-full min-h-0 flex-1 items-center justify-center">
+          <div className="m-4 max-w-2xl rounded-lg border border-info-600 p-8 text-center text-info-500">
+            <div className="mb-2 text-lg font-semibold">
+              No screenshot found
+            </div>
+            Be sure to specify a directory containing images in the upload
+            command.
+            <br />
+            <Anchor
+              external
+              href="https://argos-ci.com/docs/argos-cli#upload-command"
+            >
+              See upload documentation
+            </Anchor>
+            .
+          </div>
         </div>
       ) : null}
     </div>
