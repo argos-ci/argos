@@ -52,16 +52,15 @@ export default async function imageDifference(optionsWithoutDefault: {
 }) {
   const { baseImage, compareImage } = optionsWithoutDefault;
 
-  const [
-    baseImageFilepath,
-    compareImageFilepath,
-    maxDimensions,
-    diffImageFilepath,
-  ] = await Promise.all([
-    baseImage.getFilepath(),
-    compareImage.getFilepath(),
+  const [maxDimensions, diffImageFilepath] = await Promise.all([
     getMaxDimensions([baseImage, compareImage]),
     tmpName({ postfix: ".png" }),
+  ]);
+
+  // Resize images to the maximum dimensions
+  const [baseImageFilepath, compareImageFilepath] = await Promise.all([
+    baseImage.enlarge(maxDimensions),
+    compareImage.enlarge(maxDimensions),
   ]);
 
   // Create difference
