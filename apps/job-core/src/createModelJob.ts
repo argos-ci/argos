@@ -1,5 +1,7 @@
 import type { ModelClass } from "objection";
 
+import logger from "@argos-ci/logger";
+
 import { createJob } from "./createJob.js";
 import type { JobParams } from "./createJob.js";
 
@@ -13,6 +15,7 @@ export const createModelJob = <TModelConstructor extends ModelClass<any>>(
     queue,
     {
       perform: async (id) => {
+        logger.info(`Processing ${Model.name} ${id}`);
         const model = await Model.query().findById(id);
 
         if (!model) {

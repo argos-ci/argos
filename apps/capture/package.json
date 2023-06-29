@@ -9,8 +9,7 @@
     "@argos-ci/config": "*",
     "@argos-ci/database": "*",
     "@argos-ci/job-core": "*",
-    "@argos-ci/storage": "*",
-    "puppeteer": "^20.7.3"
+    "@argos-ci/storage": "*"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",

@@ -24,6 +24,7 @@ export interface ImageFile {
   getFilepath(): Promise<string> | string;
   getDimensions(): Promise<Dimensions>;
   unlink(): Promise<void>;
+  enlarge(targetDimensions: Dimensions): Promise<string>;
 }
 
 abstract class AbstractImageFile implements ImageFile {
@@ -48,6 +49,32 @@ abstract class AbstractImageFile implements ImageFile {
     }
     this._measurePromise = this._measurePromise ?? this.measure();
     return this._measurePromise;
+  }
+
+  async enlarge(targetDimensions: Dimensions): Promise<string> {
+    const [dimensions, filepath] = await Promise.all([
+      this.getDimensions(),
+      this.getFilepath(),
+    ]);
+    if (
+      dimensions.width > targetDimensions.width ||
+      dimensions.height > targetDimensions.height ||
+      (dimensions.height === targetDimensions.height &&
+        dimensions.width === targetDimensions.width)
+    ) {
+      return filepath;
+    }
+
+    const resultFilepath = await tmpName({ postfix: ".png" });
+    await sharp(filepath)
+      .resize({
+        ...targetDimensions,
+        fit: "contain",
+        position: "left top",
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .toFile(resultFilepath);
+    return resultFilepath;
   }
 }
 

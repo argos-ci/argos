@@ -140,7 +140,7 @@ describe("#diffImages", () => {
     });
 
     expect(result).toEqual({
-      score: 0.9835782054150001,
+      score: 0.846446632356,
       width: 1000,
       height: 4469,
     });
