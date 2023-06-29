@@ -11,7 +11,7 @@ exports[`e2e generates different images 1`] = `
 exports[`e2e generates different sizes images 1`] = `
 {
   "height": 15,
-  "value": 0.555555555556,
+  "value": 0.551111111111,
   "width": 15,
 }
 `;
@@ -19,7 +19,7 @@ exports[`e2e generates different sizes images 1`] = `
 exports[`e2e generates images with big diff 1`] = `
 {
   "height": 4469,
-  "value": 0.980928014553,
+  "value": 0.846446632356,
   "width": 1000,
 }
 `;
@@ -51,7 +51,7 @@ exports[`e2e takes into account colors in comparison 1`] = `
 exports[`e2e works with large size image 1`] = `
 {
   "height": 13358,
-  "value": 0.18827623606500002,
+  "value": 0.210276904394,
   "width": 900,
 }
 `;
