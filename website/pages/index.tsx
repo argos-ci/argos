@@ -220,7 +220,7 @@ export default function Home() {
           </p>
           <Button className="flex gap-1 w-fit">
             {(buttonProps) => (
-              <a {...buttonProps} href="https://discord.gg/FNGFpJS9">
+              <a {...buttonProps} href="https://discord.gg/WjzGrQGS4A">
                 <ChatBubbleLeftRightIcon className="w-4 h-4" />
                 Join us on Discord
               </a>
