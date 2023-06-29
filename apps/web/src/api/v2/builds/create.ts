@@ -13,7 +13,7 @@ import { repoAuth } from "../../../middlewares/repoAuth.js";
 import { validate } from "../../../middlewares/validate.js";
 import { getRedisLock } from "../../../redis/index.js";
 import { asyncHandler } from "../../../util.js";
-import { createBuild, getBuildName } from "../util.js";
+import { createBuildFromRequest, getBuildName } from "../util.js";
 
 const router = Router();
 export default router;
@@ -102,7 +102,7 @@ const getScreenshots = async (keys: string[]) => {
 
 const handleCreateSingle = async ({ req }: { req: CreateRequest }) => {
   const screenshots = await getScreenshots(req.body.screenshotKeys);
-  const build = await createBuild({ req });
+  const build = await createBuildFromRequest({ req });
   return { build, screenshots };
 };
 
@@ -136,7 +136,7 @@ const handleCreateParallel = async ({ req }: { req: CreateRequest }) => {
       return existingBuild;
     }
 
-    return createBuild({ req });
+    return createBuildFromRequest({ req });
   });
 
   return { build, screenshots };

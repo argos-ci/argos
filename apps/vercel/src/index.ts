@@ -72,8 +72,56 @@ export type VercelGetConfigurationResponse = {
   slug: string;
 };
 
+export type UpdateCheckParams = {
+  deploymentId: string;
+  checkId: string;
+  teamId?: string | null;
+  name?: string;
+  detailsUrl?: string;
+  externalId?: string;
+  path?: string;
+  rerequestable?: boolean;
+  conclusion?:
+    | "canceled"
+    | "failed"
+    | "neutral"
+    | "succeeded"
+    | "skipped"
+    | "canceled";
+  status?: "running" | "completed";
+};
+
+export type VercelCreateCheckResponse = {
+  id: string;
+  deploymentId: string;
+};
+
+export type CreateCheckParams = {
+  deploymentId: string;
+  teamId?: string | null;
+  blocking: boolean;
+  name: string;
+  detailsUrl?: string;
+  externalId?: string;
+  path?: string;
+  rerequestable?: boolean;
+  conclusion?:
+    | "canceled"
+    | "failed"
+    | "neutral"
+    | "succeeded"
+    | "skipped"
+    | "canceled"
+    | "failed";
+  status?: "running" | "completed";
+};
+
+export type VercelUpdateCheckResponse = {
+  id: string;
+  deploymentId: string;
+};
+
 export const createVercelClient = (params: VercelClientParams) => {
-  console.log(params);
   const request = axios.create({
     baseURL: "https://api.vercel.com",
     headers: {
@@ -114,11 +162,43 @@ export const createVercelClient = (params: VercelClientParams) => {
       const result = await request.get<VercelGetConfigurationResponse>(
         `/v1/integrations/configuration/${id}`,
         {
-          params: {
-            teamId: teamId,
-          },
+          params: { teamId },
         }
       );
+      return result.data;
+    },
+    createCheck: async ({
+      deploymentId,
+      teamId,
+      ...params
+    }: CreateCheckParams) => {
+      const result = await request.post<VercelCreateCheckResponse>(
+        `/v1/deployments/${deploymentId}/checks`,
+        params,
+        {
+          params: { teamId },
+        }
+      );
+      return result.data;
+    },
+    updateCheck: async ({
+      deploymentId,
+      checkId,
+      teamId,
+      ...params
+    }: UpdateCheckParams) => {
+      const result = await request
+        .patch<VercelUpdateCheckResponse>(
+          `/v1/deployments/${deploymentId}/checks/${checkId}`,
+          params,
+          {
+            params: { teamId },
+          }
+        )
+        .catch((error) => {
+          console.log(error.response.data);
+          throw error;
+        });
       return result.data;
     },
   };

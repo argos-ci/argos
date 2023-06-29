@@ -19,6 +19,7 @@ import { Project } from "./Project.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
 import { User } from "./User.js";
+import { VercelCheck } from "./VercelCheck.js";
 
 export type BuildType = "orphan" | "reference" | "check";
 export type BuildStatus =
@@ -72,7 +73,7 @@ export class Build extends Model {
   static override get relationMappings(): RelationMappings {
     return {
       baseScreenshotBucket: {
-        relation: Model.HasOneRelation,
+        relation: Model.BelongsToOneRelation,
         modelClass: ScreenshotBucket,
         join: {
           from: "builds.baseScreenshotBucketId",
@@ -80,11 +81,19 @@ export class Build extends Model {
         },
       },
       compareScreenshotBucket: {
-        relation: Model.HasOneRelation,
+        relation: Model.BelongsToOneRelation,
         modelClass: ScreenshotBucket,
         join: {
           from: "builds.compareScreenshotBucketId",
           to: "screenshot_buckets.id",
+        },
+      },
+      vercelCheck: {
+        relation: Model.HasOneRelation,
+        modelClass: VercelCheck,
+        join: {
+          from: "builds.id",
+          to: "vercel_checks.buildId",
         },
       },
       project: {
@@ -108,6 +117,7 @@ export class Build extends Model {
 
   baseScreenshotBucket?: ScreenshotBucket | null;
   compareScreenshotBucket?: ScreenshotBucket;
+  vercelCheck?: VercelCheck | null;
   project?: Project;
   screenshotDiffs?: ScreenshotDiff[];
 

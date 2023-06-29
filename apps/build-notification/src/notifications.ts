@@ -2,6 +2,7 @@ import { TransactionOrKnex, runAfterTransaction } from "@argos-ci/database";
 import { Build, BuildNotification } from "@argos-ci/database/models";
 import { getInstallationOctokit } from "@argos-ci/github";
 import { UnretryableError } from "@argos-ci/job-core";
+import { createVercelClient } from "@argos-ci/vercel";
 
 import { job as buildNotificationJob } from "./job.js";
 
@@ -17,33 +18,110 @@ const getStatsMessage = async (buildId: string) => {
   return parts.join(", ");
 };
 
-type NotificationState = "pending" | "success" | "error" | "failure";
+enum GithubNotificationState {
+  Pending = "pending",
+  Success = "success",
+  Error = "error",
+  Failure = "failure",
+}
 
-const getNotificationState = (
-  buildType: Build["type"],
-  state: NotificationState
-) => {
-  // Reference builds are always successful
-  if (buildType === "reference") return "success";
-  return state;
+enum VercelConclusion {
+  Neutral = "neutral",
+  Succeeded = "succeeded",
+  Canceled = "canceled",
+  Failed = "failed",
+  Skipped = "skipped",
+}
+
+enum VercelStatus {
+  Completed = "completed",
+  Running = "running",
+}
+
+const getNotificationStatus = (
+  buildNotification: BuildNotification
+): {
+  githubState: GithubNotificationState;
+  vercelStatus: VercelStatus | null;
+  vercelConclusion: VercelConclusion | null;
+} => {
+  const buildType = buildNotification.build!.type;
+  const isReference = buildType === "reference";
+  switch (buildNotification.type) {
+    case "queued": {
+      return {
+        githubState: GithubNotificationState.Pending,
+        vercelStatus: VercelStatus.Running,
+        vercelConclusion: null,
+      };
+    }
+    case "progress": {
+      return {
+        githubState: GithubNotificationState.Pending,
+        vercelStatus: VercelStatus.Running,
+        vercelConclusion: null,
+      };
+    }
+    case "no-diff-detected": {
+      return {
+        githubState: GithubNotificationState.Success,
+        vercelStatus: VercelStatus.Completed,
+        vercelConclusion: VercelConclusion.Succeeded,
+      };
+    }
+    case "diff-detected": {
+      return {
+        githubState: isReference
+          ? GithubNotificationState.Success
+          : GithubNotificationState.Pending,
+        vercelStatus: VercelStatus.Completed,
+        vercelConclusion: isReference
+          ? VercelConclusion.Succeeded
+          : VercelConclusion.Failed,
+      };
+    }
+    case "diff-accepted": {
+      return {
+        githubState: GithubNotificationState.Success,
+        vercelStatus: null,
+        vercelConclusion: null,
+      };
+    }
+    case "diff-rejected": {
+      return {
+        githubState: GithubNotificationState.Failure,
+        vercelStatus: null,
+        vercelConclusion: null,
+      };
+    }
+    default: {
+      throw new UnretryableError(
+        `Unknown notification type: ${buildNotification.type}`
+      );
+    }
+  }
+};
+
+type NotificationPayload = {
+  description: string;
+  githubState: GithubNotificationState;
+  vercelStatus: VercelStatus | null;
+  vercelConclusion: VercelConclusion | null;
 };
 
 const getNotificationPayload = async (
   buildNotification: BuildNotification
-): Promise<{
-  state: NotificationState;
-  description: string;
-}> => {
+): Promise<NotificationPayload> => {
   const buildType = buildNotification.build!.type;
   switch (buildNotification.type) {
     case "queued":
       return {
-        state: getNotificationState(buildType, "pending"),
+        ...getNotificationStatus(buildNotification),
         description: "Build is queued",
       };
     case "progress":
       return {
-        state: getNotificationState(buildType, "pending"),
+        ...getNotificationStatus(buildNotification),
         description: "Build in progress...",
       };
     case "no-diff-detected": {
@@ -58,7 +136,7 @@ const getNotificationPayload = async (
         return `${statsMessage} — no change`;
       })();
       return {
-        state: getNotificationState(buildType, "success"),
+        ...getNotificationStatus(buildNotification),
         description,
       };
     }
@@ -72,21 +150,21 @@ const getNotificationPayload = async (
       })();
 
       return {
-        state: getNotificationState(buildType, "pending"),
+        ...getNotificationStatus(buildNotification),
         description,
       };
     }
     case "diff-accepted": {
       const statsMessage = await getStatsMessage(buildNotification.buildId);
       return {
-        state: getNotificationState(buildType, "success"),
+        ...getNotificationStatus(buildNotification),
         description: `${statsMessage} — changes approved`,
       };
     }
     case "diff-rejected": {
       const statsMessage = await getStatsMessage(buildNotification.buildId);
       return {
-        state: getNotificationState(buildType, "failure"),
+        ...getNotificationStatus(buildNotification),
         description: `${statsMessage} — changes rejected`,
       };
     }
@@ -115,14 +193,15 @@ export async function pushBuildNotification({
   return buildNotification;
 }
 
-export const processBuildNotification = async (
-  buildNotification: BuildNotification
-) => {
-  await buildNotification.$fetchGraph(
-    `build.[project.[githubRepository.[githubAccount,activeInstallation], account], compareScreenshotBucket]`
-  );
+type Context = {
+  buildNotification: BuildNotification;
+  build: Build;
+  buildUrl: string;
+  notification: NotificationPayload;
+};
 
-  const { build } = buildNotification;
+const sendGithubNotification = async (ctx: Context) => {
+  const { build, buildUrl, notification } = ctx;
 
   if (!build) {
     throw new UnretryableError("Invariant: no build found");
@@ -154,14 +233,11 @@ export const processBuildNotification = async (
     return;
   }
 
-  const notification = await getNotificationPayload(buildNotification);
   const octokit = await getInstallationOctokit(installation.id);
 
   if (!octokit) {
     return;
   }
-
-  const buildUrl = await build.getUrl();
 
   try {
     // https://developer.github.com/v3/repos/statuses/
@@ -169,7 +245,7 @@ export const processBuildNotification = async (
       owner: githubAccount.login,
       repo: githubRepository.name,
       sha: build.compareScreenshotBucket.commit,
-      state: notification.state,
+      state: notification.githubState,
       target_url: buildUrl,
       description: notification.description, // Short description of the status.
       context: build.name === "default" ? "argos" : `argos/${build.name}`,
@@ -182,4 +258,76 @@ export const processBuildNotification = async (
     }
     throw error;
   }
+};
+
+const sendVercelNotification = async (ctx: Context) => {
+  const { build, buildUrl, notification } = ctx;
+
+  if (!build) {
+    throw new UnretryableError("Invariant: no build found");
+  }
+
+  // If the build has no vercel check, we don't send a notification
+  if (!build.vercelCheck) {
+    return;
+  }
+
+  if (!build.vercelCheck.vercelDeployment) {
+    throw new UnretryableError("Invariant: no vercel deployment found");
+  }
+
+  if (!build.vercelCheck.vercelDeployment.vercelProject) {
+    throw new UnretryableError("Invariant: no vercel project found");
+  }
+
+  const configuration =
+    build.vercelCheck.vercelDeployment.vercelProject.activeConfiguration;
+
+  // If the project has no active configuration (or token), we don't send a notification
+  if (!configuration?.vercelAccessToken) {
+    return;
+  }
+
+  const client = createVercelClient({
+    accessToken: configuration.vercelAccessToken,
+  });
+
+  await client.updateCheck({
+    teamId: configuration.vercelTeamId,
+    deploymentId: build.vercelCheck.vercelDeployment.vercelId,
+    checkId: build.vercelCheck.vercelId,
+    detailsUrl: buildUrl,
+    name: notification.description,
+    externalId: build.id,
+    ...(notification.vercelStatus ? { status: notification.vercelStatus } : {}),
+    ...(notification.vercelConclusion
+      ? { conclusion: notification.vercelConclusion }
+      : {}),
+  });
+};
+
+export const processBuildNotification = async (
+  buildNotification: BuildNotification
+) => {
+  await buildNotification.$fetchGraph(
+    `build.[project.[githubRepository.[githubAccount,activeInstallation], account], compareScreenshotBucket, vercelCheck.vercelDeployment.vercelProject.activeConfiguration]`
+  );
+
+  if (!buildNotification.build) {
+    throw new UnretryableError("Invariant: no build found");
+  }
+
+  const [buildUrl, notification] = await Promise.all([
+    buildNotification.build.getUrl(),
+    getNotificationPayload(buildNotification),
+  ]);
+
+  const ctx: Context = {
+    buildNotification,
+    build: buildNotification.build,
+    buildUrl,
+    notification,
+  };
+
+  await Promise.all([sendGithubNotification(ctx), sendVercelNotification(ctx)]);
 };
