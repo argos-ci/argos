@@ -70,7 +70,7 @@ abstract class AbstractImageFile implements ImageFile {
       .resize({
         ...targetDimensions,
         fit: "contain",
-        position: "top",
+        position: "left top",
         background: { r: 0, g: 0, b: 0, alpha: 0 },
       })
       .toFile(resultFilepath);

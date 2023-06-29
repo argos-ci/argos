@@ -51,7 +51,7 @@ exports[`e2e takes into account colors in comparison 1`] = `
 exports[`e2e works with large size image 1`] = `
 {
   "height": 13358,
-  "value": 0.210276904394,
+  "value": 0.24803904443400002,
   "width": 900,
 }
 `;
