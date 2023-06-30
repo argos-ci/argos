@@ -1,5 +1,7 @@
 import bodyParser from "body-parser";
 import express from "express";
+// @ts-ignore
+import { HttpError } from "express-err";
 
 import config from "@argos-ci/config";
 import { Account, Plan } from "@argos-ci/database/models";
@@ -33,7 +35,7 @@ router.post(
       logger.info("Stripe event", event.type);
       await handleStripeEvent(event);
     } catch (err) {
-      throw new Error("Stripe webhook signature verification failed");
+      throw new HttpError(400, "Stripe webhook signature verification failed");
     }
     res.sendStatus(200);
   })
@@ -94,7 +96,7 @@ router.post(
   bodyParser.json(),
   asyncHandler(async (req, res) => {
     try {
-      const { accountId, stripeCustomerId } = req.body;
+      const { accountId, stripeCustomerId, successUrl, cancelUrl } = req.body;
       const user = req.auth?.user;
 
       if (!user) {
@@ -113,11 +115,13 @@ router.post(
       if (!teamAccount) {
         throw new Error("Team account not found");
       }
-      if (!teamAccount.$checkWritePermission(user)) {
-        throw new Error("Unauthorized");
-      }
+
       if (!proPlan) {
         throw new Error("Pro plan not found");
+      }
+
+      if (!teamAccount.$checkWritePermission(user)) {
+        throw new Error("Unauthorized");
       }
 
       const session = await createStripeCheckoutSession({
@@ -125,10 +129,8 @@ router.post(
         account: teamAccount,
         purchaserId: user.id,
         customer: stripeCustomerId,
-        // prettier-ignore
-        successUrl: new URL(`${teamAccount.slug}?checkout=success`, config.get('server.url')).href,
-        // prettier-ignore
-        cancelUrl: new URL(`${teamAccount.slug}?checkout=cancel`, config.get('server.url')).href,
+        successUrl,
+        cancelUrl,
       });
       if (!session.url) {
         throw new Error("No session url");

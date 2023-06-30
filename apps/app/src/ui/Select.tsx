@@ -66,7 +66,7 @@ export const SelectPopover = forwardRef<HTMLDivElement, SelectPopoverProps>(
         as="div"
         className={clsx(
           className,
-          "z-50 min-w-[var(--popover-anchor-width)] rounded-lg border border-menu-border bg-menu-bg p-1 focus:outline-none"
+          "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border border-menu-border bg-menu-bg p-1 focus:outline-none"
         )}
         {...props}
       />

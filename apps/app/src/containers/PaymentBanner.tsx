@@ -2,15 +2,14 @@ import moment from "moment";
 import { memo } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
+import { useQuery } from "@/containers/Apollo";
+import { TeamUpgradeDialogButton } from "@/containers/Team/UpgradeDialog";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Permission, PurchaseStatus } from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
 import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { StripePortalLink } from "@/ui/StripeLink";
-
-import { useQuery } from "./Apollo";
-import { UpgradeDialogButton } from "./UpgradeDialog";
 
 const now = new Date();
 const FREE_PLAN_EXPIRATION_DATE = new Date("2023-06-01");
@@ -73,22 +72,19 @@ const BannerCta = ({
 
     case "stripeCheckoutSession":
       return (
-        <UpgradeDialogButton
+        <TeamUpgradeDialogButton
           stripeCustomerId={stripeCustomerId}
-          currentAccountId={accountId}
+          initialAccountId={accountId}
           color="white"
           variant="outline"
         >
           {children}
-        </UpgradeDialogButton>
+        </TeamUpgradeDialogButton>
       );
 
     case "stripePortalSession":
       return stripeCustomerId ? (
-        <StripePortalLink
-          stripeCustomerId={stripeCustomerId ?? ""}
-          button={true}
-        >
+        <StripePortalLink stripeCustomerId={stripeCustomerId} asButton>
           {children}
         </StripePortalLink>
       ) : null;

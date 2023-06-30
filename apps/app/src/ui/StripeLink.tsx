@@ -1,151 +1,186 @@
 import { LinkExternalIcon } from "@primer/octicons-react";
 import { clsx } from "clsx";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { useState } from "react";
 
-import { useAuth } from "@/containers/Auth";
+import { useAuthToken } from "@/containers/Auth";
 
-import { Button } from "./Button";
-import { Form } from "./Form";
+import { Button, ButtonProps } from "./Button";
 import { anchorClassNames } from "./Link";
+import { useEventCallback } from "./useEventCallback";
 
-const postJson = async ({
-  url,
-  token = null,
-  data,
+async function getStripePortalLink({
+  token,
+  ...props
 }: {
-  url: string;
-  token?: string | null;
-  data: any;
-}) => {
-  return fetch(url, {
+  stripeCustomerId: string;
+  token: string;
+}) {
+  const response = await fetch("/stripe/create-customer-portal-session", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
+      Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify(props),
   });
+  const json = await response.json();
+  return json;
+}
+
+export type UseRedirectToStripePortalProps = { stripeCustomerId: string };
+
+export const useRedirectToStripePortal = () => {
+  const token = useAuthToken();
+  if (!token) {
+    throw new Error(`Invalid token`);
+  }
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const redirect = useEventCallback((props: UseRedirectToStripePortalProps) => {
+    setStatus("loading");
+    getStripePortalLink({
+      token,
+      stripeCustomerId: props.stripeCustomerId,
+    })
+      .then((result) => {
+        window.location.href = result.sessionUrl;
+      })
+      .catch((e) => {
+        console.error(e);
+        setStatus("error");
+      });
+  });
+  return { status, redirect };
 };
 
-type StripePortalFormInputs = {
+export type StripePortalButtonProps = {
   stripeCustomerId: string;
+  asButton?: boolean;
+  children: React.ReactNode;
 };
 
 export const StripePortalLink = ({
   stripeCustomerId,
+  asButton,
   children,
-  button = false,
-}: {
-  stripeCustomerId: string;
-  children: React.ReactNode;
-  button?: boolean;
-}) => {
-  const { token } = useAuth();
-  const form = useForm<StripePortalFormInputs>({
-    defaultValues: { stripeCustomerId },
+}: StripePortalButtonProps) => {
+  const { redirect, status } = useRedirectToStripePortal();
+
+  const disabled = status === "loading";
+
+  const handleClick = useEventCallback(() => {
+    redirect({ stripeCustomerId });
   });
 
-  const onSubmit: SubmitHandler<StripePortalFormInputs> = async (data: any) => {
-    const response = await postJson({
-      url: "/stripe/create-customer-portal-session",
-      data,
-      token,
-    });
-    const json = await response.json();
-    if (response.ok) {
-      window.location.href = json.sessionUrl;
-    } else {
-      console.error("Error:", json.message);
-    }
-  };
-
-  return (
-    <FormProvider {...form}>
-      <Form onSubmit={onSubmit} className="inline-block">
-        {button ? (
-          <Button type="submit" variant="outline" color="white">
-            {children}
-          </Button>
-        ) : (
-          <button
-            type="submit"
-            className={clsx(anchorClassNames, "flex items-center")}
-          >
-            {children}
-            <LinkExternalIcon className="ml-[0.5ex] h-[1em] w-[1em]" />
-          </button>
-        )}
-
-        <input
-          type="hidden"
-          {...form.register("stripeCustomerId", {
-            required: "stripeCustomerId is required",
-          })}
-        />
-      </Form>
-    </FormProvider>
+  return asButton ? (
+    <Button
+      type="button"
+      variant="outline"
+      color="white"
+      disabled={disabled}
+      onClick={handleClick}
+    >
+      {children}
+    </Button>
+  ) : (
+    <button
+      type="button"
+      disabled={disabled}
+      className={clsx(anchorClassNames, "flex items-center")}
+      onClick={handleClick}
+    >
+      {children}
+      <LinkExternalIcon className="ml-[0.5ex] h-[1em] w-[1em]" />
+    </button>
   );
 };
 
-type StripeCheckoutFormInputs = {
+async function getCheckoutSessionLink({
+  token,
+  ...props
+}: {
   accountId: string;
+  stripeCustomerId: string | null;
+  token: string;
+  successUrl: string;
+  cancelUrl: string;
+}) {
+  const response = await fetch("/stripe/create-checkout-session", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(props),
+  });
+  const json = await response.json();
+  return json;
+}
+
+export type UseRedirectToStripeCheckoutSessionProps = {
+  accountId: string;
+  successUrl: string;
+  cancelUrl: string;
   stripeCustomerId: string | null;
 };
 
-export const StripeCheckoutButton = ({
-  accountId,
-  children,
-  variant = "primary",
-  disabled = false,
-  stripeCustomerId,
-}: {
-  accountId: string;
-  children: React.ReactNode;
-  variant?: "primary" | "secondary";
-  disabled?: boolean;
-  stripeCustomerId: string | null;
-}) => {
-  const { token } = useAuth();
-
-  const form = useForm<StripeCheckoutFormInputs>({
-    defaultValues: { accountId, stripeCustomerId },
-  });
-
-  const onSubmit: SubmitHandler<StripeCheckoutFormInputs> = async (
-    data: any
-  ) => {
-    const response = await postJson({
-      url: "/stripe/create-checkout-session",
-      data,
-      token,
-    });
-    const json = await response.json();
-    if (response.ok) {
-      window.location.href = json.sessionUrl;
-    } else {
-      console.error("Error:", json.message);
+export const useRedirectToStripeCheckout = () => {
+  const token = useAuthToken();
+  if (!token) {
+    throw new Error(`Invalid token`);
+  }
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const redirect = useEventCallback(
+    (props: UseRedirectToStripeCheckoutSessionProps) => {
+      setStatus("loading");
+      getCheckoutSessionLink({
+        token,
+        accountId: props.accountId,
+        stripeCustomerId: props.stripeCustomerId,
+        successUrl: props.successUrl,
+        cancelUrl: props.cancelUrl,
+      })
+        .then((result) => {
+          window.location.href = result.sessionUrl;
+        })
+        .catch((e) => {
+          console.error(e);
+          setStatus("error");
+        });
     }
-  };
+  );
+  return { status, redirect };
+};
+
+export type StripeCheckoutButtonProps = {
+  accountId: string;
+  stripeCustomerId: string | null;
+  successUrl: string;
+  cancelUrl: string;
+} & ButtonProps;
+
+export const StripeCheckoutButton = ({
+  disabled,
+  accountId,
+  stripeCustomerId,
+  successUrl,
+  cancelUrl,
+  ...props
+}: StripeCheckoutButtonProps) => {
+  const { redirect, status } = useRedirectToStripeCheckout();
 
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={onSubmit}>
-        <Button
-          type="submit"
-          variant={variant === "primary" ? "contained" : "outline"}
-          color={variant === "primary" ? "primary" : "neutral"}
-          disabled={disabled}
-        >
-          {children}
-        </Button>
-        <input
-          type="hidden"
-          {...form.register("accountId", {
-            required: "accountId is required",
-          })}
-        />
-        <input type="hidden" {...form.register("stripeCustomerId")} />
-      </Form>
-    </FormProvider>
+    <Button
+      type="button"
+      onClick={() => {
+        redirect({
+          accountId,
+          stripeCustomerId,
+          successUrl,
+          cancelUrl,
+        });
+      }}
+      disabled={disabled || status === "loading"}
+      {...props}
+    />
   );
 };

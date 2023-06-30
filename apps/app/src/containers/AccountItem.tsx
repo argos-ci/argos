@@ -1,3 +1,5 @@
+import { HTMLAttributes } from "react";
+
 import { AccountPlanChip } from "@/containers/AccountPlanChip";
 import { FragmentType, graphql, useFragment } from "@/gql";
 
@@ -18,15 +20,16 @@ const AccountFragment = graphql(`
 export type AccountItemProps = {
   account: FragmentType<typeof AccountFragment>;
   showPlan?: boolean;
-};
+} & HTMLAttributes<HTMLDivElement>;
 
 export const AccountItem = ({
   account: accountProp,
   showPlan = false,
+  ...props
 }: AccountItemProps) => {
   const account = useFragment(AccountFragment, accountProp);
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" {...props}>
       <AccountAvatar avatar={account.avatar} size={18} />
       {account.name || account.slug}
       {showPlan && <AccountPlanChip account={account} />}

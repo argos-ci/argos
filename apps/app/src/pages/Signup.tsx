@@ -115,8 +115,8 @@ const SignupPage = () => {
           <LoginButtons
             redirect={
               proAccountSelected
-                ? `/teams/new?name=${encodeURIComponent(name)}`
-                : `/?name=${encodeURIComponent(name)}`
+                ? `/teams/new?name=${encodeURIComponent(name)}&autoSubmit=true`
+                : "/"
             }
             disabled={name.length === 0}
           />

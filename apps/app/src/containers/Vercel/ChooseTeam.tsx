@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Button } from "@/ui/Button";
@@ -24,6 +27,16 @@ type ChooseTeamProps = {
 
 export const ChooseTeam = (props: ChooseTeamProps) => {
   const teams = useFragment(TeamFragment, props.teams);
+  const [searchParams] = useSearchParams();
+  const teamId = searchParams.get("teamId");
+  const teamSlug = searchParams.get("teamSlug");
+  const { setLinkedAccount } = props.ctx;
+  useEffect(() => {
+    if (teamId && teamSlug) {
+      setLinkedAccount({ id: teamId, slug: teamSlug });
+    }
+  }, [teamId, teamSlug, setLinkedAccount]);
+
   return (
     <div>
       <p className="mb-6 text-center text-on-light">
@@ -63,9 +76,12 @@ export const ChooseTeam = (props: ChooseTeamProps) => {
       <p className="my-6 text-center text-on-light">or create a new Team:</p>
       <TeamNewForm
         defaultTeamName=""
-        onCreate={(team) => {
-          props.ctx.setLinkedAccount({ id: team.id, slug: team.slug });
-        }}
+        successUrl={(team) =>
+          `${window.location.href}?teamId=${team.id}&teamSlug=${team.slug}`
+        }
+        cancelUrl={(team) =>
+          `${window.location.href}?teamId=${team.id}&teamSlug=${team.slug}`
+        }
       />
     </div>
   );

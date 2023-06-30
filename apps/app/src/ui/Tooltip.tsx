@@ -60,6 +60,7 @@ export type MagicTooltipProps = {
   tooltip: React.ReactNode;
   variant?: TooltipVariant;
   children: React.ReactElement;
+  placement?: TooltipStateProps["placement"];
 } & Omit<TooltipAnchorProps, "children" | "state">;
 
 type ActiveMagicTooltipProps = MagicTooltipProps & {
@@ -70,8 +71,9 @@ type ActiveMagicTooltipProps = MagicTooltipProps & {
 const ActiveMagicTooltip = forwardRef<HTMLDivElement, ActiveMagicTooltipProps>(
   (props, ref) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { tooltip, children, hoverRef, focusRef, ...restProps } = props;
-    const state = useTooltipState();
+    const { tooltip, children, hoverRef, focusRef, placement, ...restProps } =
+      props;
+    const state = useTooltipState({ placement });
     const { render, show } = state;
     useLayoutEffect(() => {
       if (hoverRef.current || focusRef.current) {
@@ -129,6 +131,7 @@ export const MagicTooltip = forwardRef<HTMLDivElement, MagicTooltipProps>(
     if (!active) {
       const childProps = {
         ...props,
+        tooltip: undefined,
         ref,
         onMouseEnter: handleMouseEnter,
         onMouseLeave: handleMouseLeave,

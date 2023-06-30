@@ -31,7 +31,7 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 
 import { AccountAvatar } from "../AccountAvatar";
-import { AccountSelector, AccountSelectorQuery } from "../AccountSelector";
+import { AccountSelector } from "../AccountSelector";
 import { useQuery } from "../Apollo";
 
 type TransferDialogButtonProps = {
@@ -45,8 +45,21 @@ type SelectAccountStepProps = {
   onContinue: () => void;
 };
 
+const MeQuery = graphql(`
+  query TransferProject_me {
+    me {
+      id
+      ...AccountItem_Account
+      teams {
+        id
+        ...AccountItem_Account
+      }
+    }
+  }
+`);
+
 const SelectAccountStep = (props: SelectAccountStepProps) => {
-  const { data } = useQuery(AccountSelectorQuery);
+  const { data } = useQuery(MeQuery);
 
   return (
     <>

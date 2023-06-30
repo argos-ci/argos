@@ -268,7 +268,7 @@ export const createStripeCheckoutSession = async ({
   purchaserId,
   successUrl,
   cancelUrl,
-  customer,
+  customer: propCustomer,
 }: {
   plan: Plan;
   account: Account;
@@ -293,14 +293,19 @@ export const createStripeCheckoutSession = async ({
     throw new Error("Account already has an active purchase");
   }
 
+  const canTrial = !trialConsumed;
+  const customer = propCustomer ?? account.stripeCustomerId ?? null;
+
   return stripe.checkout.sessions.create({
     line_items: [{ price: price.id }],
-    subscription_data: {
-      trial_settings: {
-        end_behavior: { missing_payment_method: "cancel" },
-      },
-      ...(!trialConsumed && { trial_period_days: 14 }),
-    },
+    subscription_data: canTrial
+      ? {
+          trial_settings: {
+            end_behavior: { missing_payment_method: "cancel" },
+          },
+          trial_period_days: 14,
+        }
+      : {},
     ...(customer && { customer }),
     mode: "subscription",
     client_reference_id: Purchase.encodeStripeClientReferenceId({
@@ -310,6 +315,5 @@ export const createStripeCheckoutSession = async ({
     success_url: successUrl,
     cancel_url: cancelUrl,
     payment_method_collection: trialConsumed ? "always" : "if_required",
-    ...(account.stripeCustomerId && { customer: account.stripeCustomerId }),
   });
 };
