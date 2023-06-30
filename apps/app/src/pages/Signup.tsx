@@ -1,5 +1,5 @@
 import { DisclosureContent, useDisclosureState } from "ariakit/disclosure";
-import { useState } from "react";
+import { ElementType, useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 
@@ -34,9 +34,9 @@ const AccountTypeSelector = ({
   );
 };
 
-export const Signup = () => {
+const SignupPage = () => {
   const [params] = useSearchParams();
-  const loggedIn = useIsLoggedIn();
+  const nameRef = useRef<HTMLInputElement>(null);
   const plan =
     params.get("plan") === "hobby" || params.get("plan") === "pro"
       ? params.get("plan")
@@ -46,13 +46,9 @@ export const Signup = () => {
   const proAccountSelected = accountType === "pro";
   const [name, setName] = useState<string>("");
 
-  const submitDisclosure = useDisclosureState({
-    open: name !== "" && name.length > 2,
-  });
-
-  if (loggedIn) {
-    return <Navigate to="/" replace />;
-  }
+  useEffect(() => {
+    nameRef.current?.focus();
+  }, [accountType]);
 
   return (
     <>
@@ -71,21 +67,18 @@ export const Signup = () => {
               {proAccountSelected ? "Team Name" : "Your Name"}
             </FormLabel>
             <TextInput
+              ref={nameRef}
               id="name"
               name="name"
               aria-label="name"
               placeholder={proAccountSelected ? "Gryffindor" : "John Wick"}
               value={name}
+              autoComplete="off"
               onChange={(e) => setName(e.target.value)}
             />
           </DisclosureContent>
 
-          <DisclosureContent state={submitDisclosure}>
-            <div className="mb-2 block h-5 text-left text-sm font-medium">
-              {proAccountSelected
-                ? "Continuing will start a 14-day Pro plan trial."
-                : ""}
-            </div>
+          {name.length > 0 && (
             <LoginButtons
               redirect={
                 proAccountSelected
@@ -93,9 +86,18 @@ export const Signup = () => {
                   : `/?name=${encodeURIComponent(name)}`
               }
             />
-          </DisclosureContent>
+          )}
         </div>
       </Container>
     </>
   );
+};
+
+export const Signup = () => {
+  const loggedIn = useIsLoggedIn();
+  if (loggedIn) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <SignupPage />;
 };
