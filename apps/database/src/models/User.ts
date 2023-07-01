@@ -29,6 +29,19 @@ export class User extends Model {
           to: "accounts.userId",
         },
       },
+      ownedTeams: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Team,
+        join: {
+          from: "users.id",
+          through: {
+            from: "team_users.userId",
+            to: "team_users.teamId",
+          },
+          to: "teams.id",
+        },
+        modify: (query) => query.where({ "team_users.userLevel": "owner" }),
+      },
       teams: {
         relation: Model.ManyToManyRelation,
         modelClass: Team,
@@ -46,6 +59,7 @@ export class User extends Model {
 
   account?: Account;
   teams?: Team[];
+  ownedTeams?: Team[];
 
   $checkWritePermission(user: User) {
     return User.checkWritePermission(this.id, user);

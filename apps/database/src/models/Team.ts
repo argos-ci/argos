@@ -31,6 +31,19 @@ export class Team extends Model {
           to: "accounts.teamId",
         },
       },
+      owners: {
+        relation: Model.ManyToManyRelation,
+        modelClass: User,
+        join: {
+          from: "teams.id",
+          through: {
+            from: "team_users.teamId",
+            to: "team_users.userId",
+          },
+          to: "users.id",
+        },
+        filter: (query) => query.where({ "team_users.userLevel": "owner" }),
+      },
       users: {
         relation: Model.ManyToManyRelation,
         modelClass: User,
@@ -48,6 +61,7 @@ export class Team extends Model {
 
   account?: Account;
   users?: User[];
+  owners?: User[];
 
   static generateInviteToken(payload: {
     teamId: string;

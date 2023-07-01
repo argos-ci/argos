@@ -114,6 +114,8 @@ export class Account extends Model {
 
   user?: User | null;
   team?: Team | null;
+  githubAccount?: GithubAccount | null;
+  vercelConfiguration?: VercelConfiguration | null;
   purchases?: Purchase[];
   projects?: Project[];
   activePurchase?: Purchase | null;

@@ -11,7 +11,8 @@
     "@argos-ci/job-core": "*",
     "@argos-ci/logger": "*",
     "@octokit/rest": "^19.0.7",
-    "@octokit/webhooks": "^11.0.0"
+    "@octokit/webhooks": "^11.0.0",
+    "@octokit/webhooks-types": "^7.1.0"
   },
   "devDependencies": {
     "moment": "^2.29.4"
