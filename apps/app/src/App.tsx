@@ -26,7 +26,7 @@ import { NotFound } from "./pages/NotFound";
 import { Project } from "./pages/Project";
 import { ProjectBuilds } from "./pages/Project/Builds";
 import { ProjectSettings } from "./pages/Project/Settings";
-import { Tests } from "./pages/Project/Tests";
+// import { Tests } from "./pages/Project/Tests";
 import { Signup } from "./pages/Signup";
 import { VercelCallback } from "./pages/Vercel";
 
@@ -69,7 +69,7 @@ const router = createBrowserRouter(
         <Route path=":accountSlug/:projectName" element={<Project />}>
           <Route path="" element={<ProjectBuilds />} />
           <Route path="builds" element={<Navigate to=".." replace={true} />} />
-          <Route path="tests" element={<Tests />} />
+          {/* <Route path="tests" element={<Tests />} /> */}
           <Route path="settings" element={<ProjectSettings />} />
         </Route>
         <Route id="account" path=":accountSlug" element={<Account />}>
