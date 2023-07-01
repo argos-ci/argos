@@ -1,9 +1,9 @@
-import slugify from "@sindresorhus/slugify";
 import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 
 import { transaction } from "@argos-ci/database";
 import { Account, Team, TeamUser } from "@argos-ci/database/models";
+import { createTeamAccount } from "@argos-ci/database/services/team";
 
 import type {
   IResolvers,
@@ -111,22 +111,6 @@ export const typeDefs = gql`
   }
 `;
 
-const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
-  const nameSlug = slugify(name);
-  const slug = index ? `${nameSlug}-${index}` : nameSlug;
-
-  const existingAccount = await Account.query()
-    .select("id")
-    .where({ slug })
-    .first();
-
-  if (!existingAccount) {
-    return slug;
-  }
-
-  return resolveTeamSlug(name, index + 1);
-};
-
 export const resolvers: IResolvers = {
   TeamMember: {
     user: async (teamUser, _args, ctx) => {
@@ -213,19 +197,9 @@ export const resolvers: IResolvers = {
         throw new Error("Forbidden");
       }
 
-      const slug = await resolveTeamSlug(args.input.name);
-      return transaction(async (trx) => {
-        const team = await Team.query(trx).insertAndFetch({});
-        await TeamUser.query(trx).insert({
-          userId: auth.user.id,
-          teamId: team.id,
-          userLevel: "owner",
-        });
-        return Account.query(trx).insertAndFetch({
-          name: args.input.name,
-          slug,
-          teamId: team.id,
-        });
+      return createTeamAccount({
+        name: args.input.name,
+        ownerId: auth.user.id,
       });
     },
     leaveTeam: async (_root, args, ctx) => {

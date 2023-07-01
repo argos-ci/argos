@@ -4,9 +4,11 @@ import cors from "cors";
 import { Router } from "express";
 
 import config from "@argos-ci/config";
-import { transaction } from "@argos-ci/database";
-import { Account, GithubAccount, User } from "@argos-ci/database/models";
-import { RestEndpointMethodTypes, getTokenOctokit } from "@argos-ci/github";
+import {
+  getOrCreateGhAccountFromGhProfile,
+  getOrCreateUserAccountFromGhAccount,
+} from "@argos-ci/database/services/account";
+import { getTokenOctokit } from "@argos-ci/github";
 
 import { createJWT } from "../jwt.js";
 import { asyncHandler } from "../util.js";
@@ -18,83 +20,14 @@ export default router;
 // @TODO be more restrictive on cors
 router.use(cors());
 
-type Profile =
-  RestEndpointMethodTypes["users"]["getAuthenticated"]["response"]["data"];
-
-const getOrCreateGhAccount = async (profile: Profile) => {
-  const existing = await GithubAccount.query().findOne({
-    githubId: profile.id,
-  });
-  if (existing) {
-    if (
-      existing.login !== profile.login ||
-      existing.email !== profile.email ||
-      existing.name !== profile.name
-    ) {
-      return existing.$query().patchAndFetch({
-        login: profile.login,
-        email: profile.email,
-        name: profile.name,
-      });
-    }
-    return existing;
-  }
-  return GithubAccount.query().insertAndFetch({
-    githubId: profile.id,
-    login: profile.login,
-    type: "user",
-    email: profile.email,
-    name: profile.name,
-  });
-};
-
-const getOrCreateAccountFromGhAccount = async (
-  ghAccount: GithubAccount,
-  accessToken: string
-): Promise<Account> => {
-  const existingAccount = await Account.query()
-    .findOne({
-      githubAccountId: ghAccount.id,
-    })
-    .withGraphFetched("user");
-
-  if (existingAccount) {
-    if (!existingAccount.user) {
-      throw new Error("Invariant: user not found");
-    }
-
-    if (
-      existingAccount.user.accessToken !== accessToken ||
-      existingAccount.user.email !== ghAccount.email
-    ) {
-      await existingAccount.user.$query().patchAndFetch({
-        accessToken,
-        email: ghAccount.email,
-      });
-    }
-
-    return existingAccount;
-  }
-
-  return transaction(async (trx) => {
-    const user = await User.query(trx).insertAndFetch({
-      email: ghAccount.email,
-      accessToken,
-    });
-    return Account.query(trx).insertAndFetch({
-      userId: user.id,
-      githubAccountId: ghAccount.id,
-      name: ghAccount.name,
-      slug: ghAccount.login.toLowerCase(),
-    });
-  });
-};
-
 async function registerAccountFromGithub(accessToken: string) {
   const octokit = getTokenOctokit(accessToken);
   const profile = await octokit.users.getAuthenticated();
-  const ghAccount = await getOrCreateGhAccount(profile.data);
-  const account = await getOrCreateAccountFromGhAccount(ghAccount, accessToken);
+  const ghAccount = await getOrCreateGhAccountFromGhProfile(profile.data);
+  const account = await getOrCreateUserAccountFromGhAccount(
+    ghAccount,
+    accessToken
+  );
   return account;
 }
 

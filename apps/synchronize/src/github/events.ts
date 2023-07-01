@@ -9,6 +9,7 @@ import {
   cancelPurchase,
   getAccount,
   getNewPlanOrThrow,
+  getOrCreateAccount,
   getOrCreateInstallation,
 } from "./eventHelpers.js";
 import { updatePurchase } from "./updatePurchase.js";
@@ -25,10 +26,8 @@ export const handleGitHubEvents = async ({
           case "purchased": {
             const [newPlan, account] = await Promise.all([
               getNewPlanOrThrow(payload),
-              getAccount(payload),
+              getOrCreateAccount(payload),
             ]);
-
-            if (!account) return;
 
             const activePurchase = await account.$getActivePurchase();
             if (activePurchase && activePurchase.planId === newPlan.id) return;
@@ -44,13 +43,25 @@ export const handleGitHubEvents = async ({
           }
           case "changed": {
             const account = await getAccount(payload);
-            if (!account) return;
+            if (!account) {
+              logger.error(
+                "Cannot update purchase, account not found",
+                payload
+              );
+              return;
+            }
             await updatePurchase(payload, account);
             return;
           }
           case "cancelled": {
             const account = await getAccount(payload);
-            if (!account) return;
+            if (!account) {
+              logger.error(
+                "Cannot cancel purchase, account not found",
+                payload
+              );
+              return;
+            }
             await cancelPurchase(payload, account);
             return;
           }

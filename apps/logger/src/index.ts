@@ -16,8 +16,13 @@ const logger = {
 
     if (args[0] instanceof Error) {
       Sentry.captureException(args[0]);
-    } else if (typeof args[0] === "string") {
-      Sentry.captureMessage(args[0]);
+    } else {
+      Sentry.captureMessage(
+        typeof args[0] === "string" ? args[0] : "Unknown error",
+        {
+          extra: { args },
+        }
+      );
     }
     console.error(...args);
   },
