@@ -386,7 +386,7 @@ export default function Pricing() {
             For all plans, you can reach out to our customer support and provide
             feedback or request new features through our{" "}
             <Link
-              href="https://discord.gg/WjzGrQGS4A"
+              href="https://argos-ci.com/discord"
               className="text-primary-300"
             >
               Argos Discord channel

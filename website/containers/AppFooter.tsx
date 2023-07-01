@@ -44,7 +44,7 @@ export const AppFooter: React.FC = () => (
           <FooterLink href="https://github.com/argos-ci/argos">
             GitHub
           </FooterLink>
-          <FooterLink href="https://discord.gg/WjzGrQGS4A">Discord</FooterLink>
+          <FooterLink href="https://argos-ci.com/discord">Discord</FooterLink>
           <FooterLink href="https://twitter.com/argos_ci">Twitter</FooterLink>
           <FooterLink href="mailto:contact@argos-ci.com">Contact us</FooterLink>
         </FooterSection>
