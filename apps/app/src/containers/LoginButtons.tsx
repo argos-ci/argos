@@ -6,6 +6,7 @@ import { Anchor } from "@/ui/Link";
 
 export type LoginButtonsProps = {
   redirect?: string | null;
+  disabled?: boolean;
 };
 
 export const LoginButtons = (props: LoginButtonsProps) => {
@@ -17,6 +18,7 @@ export const LoginButtons = (props: LoginButtonsProps) => {
         redirect={redirect}
         size="large"
         className="w-full justify-center"
+        disabled={props.disabled}
       >
         Continue with GitHub
       </GitHubLoginButton>

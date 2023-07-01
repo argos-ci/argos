@@ -37,5 +37,3 @@ export const useEventCallback = <A extends any[], R>(
     []
   );
 };
-
-export default useEventCallback;

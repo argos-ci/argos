@@ -12,6 +12,7 @@ import { ReactNode, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
 import config from "@/config";
+import { TeamUpgradeDialogButton } from "@/containers/Team/UpgradeDialog";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { PurchaseSource, PurchaseStatus, TrialStatus } from "@/gql/graphql";
 import { Button, ButtonIcon } from "@/ui/Button";
@@ -39,8 +40,6 @@ import { Anchor } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
-
-import { UpgradeDialogButton } from "./UpgradeDialog";
 
 const now = new Date();
 const FREE_PLAN_EXPIRATION_DATE = new Date("2023-06-01");
@@ -243,11 +242,11 @@ const PlanStatusDescription = ({
   );
   const formattedPeriodEndDate = moment(periodEndDate).format("LL");
 
-  if (missingPaymentMethod) {
+  if (missingPaymentMethod && stripeCustomerId) {
     return (
       <Paragraph>
         Please{" "}
-        <StripePortalLink stripeCustomerId={stripeCustomerId ?? ""}>
+        <StripePortalLink stripeCustomerId={stripeCustomerId}>
           add a payment method
         </StripePortalLink>{" "}
         to retain access to team features after the trial ends on{" "}
@@ -436,8 +435,8 @@ const PrimaryCta = ({
     purchaseStatus === PurchaseStatus.Canceled
   ) {
     return (
-      <UpgradeDialogButton
-        currentAccountId={accountId}
+      <TeamUpgradeDialogButton
+        initialAccountId={accountId}
         stripeCustomerId={stripeCustomerId}
       />
     );

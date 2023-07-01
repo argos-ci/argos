@@ -1,4 +1,3 @@
-import { graphql } from "@/gql";
 import {
   Select,
   SelectArrow,
@@ -9,28 +8,12 @@ import {
 
 import { AccountItem, AccountItemProps } from "./AccountItem";
 
-export const AccountSelectorQuery = graphql(`
-  query AccountSelector_me {
-    me {
-      id
-      slug
-      hasSubscribedToTrial
-      ...AccountItem_Account
-      teams {
-        id
-        slug
-        hasPaidPlan
-        ...AccountItem_Account
-      }
-    }
-  }
-`);
-
 export type AccountSelectorProps = {
   value: string;
   setValue: (value: string) => void;
-  accounts: AccountItemProps["account"][];
+  accounts: AccountItemProps["account"][] | null;
   disabledAccountIds?: string[];
+  disabledTooltip?: string;
 };
 
 export const AccountSelector = (props: AccountSelectorProps) => {
@@ -74,10 +57,7 @@ export const AccountSelector = (props: AccountSelectorProps) => {
               state={select}
               key={account.id}
               value={account.id}
-              disabled={
-                props.disabledAccountIds &&
-                props.disabledAccountIds.includes(account.id)
-              }
+              disabled={Boolean(props.disabledAccountIds?.includes(account.id))}
             >
               <AccountItem account={account} showPlan />
             </SelectItem>

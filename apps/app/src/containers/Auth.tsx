@@ -26,7 +26,7 @@ export function useAuth() {
   return value;
 }
 
-type JWTData = {
+export type JWTData = {
   version: number;
   account: {
     id: string;

@@ -32,7 +32,7 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>((props, ref) => {
   return (
     <AriakitMenu
       ref={ref}
-      className="z-50 min-w-[var(--popover-anchor-width)] rounded-lg border border-menu-border bg-menu-bg p-1 focus:outline-none"
+      className="z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border border-menu-border bg-menu-bg p-1 focus:outline-none"
       {...props}
     />
   );
