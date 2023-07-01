@@ -9,7 +9,7 @@ import { ProjectGitRepository } from "@/containers/Project/GitRepository";
 import { ProjectReferenceBranch } from "@/containers/Project/ReferenceBranch";
 import { ProjectToken } from "@/containers/Project/Token";
 import { ProjectTransfer } from "@/containers/Project/Transfer";
-import { ProjectVercel } from "@/containers/Project/Vercel";
+// import { ProjectVercel } from "@/containers/Project/Vercel";
 import { ProjectVisibility } from "@/containers/Project/Visibility";
 import { graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
@@ -30,7 +30,7 @@ const ProjectQuery = graphql(`
       ...ProjectTransfer_Project
       ...ProjectDelete_Project
       ...ProjectGitRepository_Project
-      ...ProjectVercel_Project
+      # ...ProjectVercel_Project
     }
   }
 `);
@@ -69,7 +69,7 @@ export const ProjectSettings = () => {
           return (
             <SettingsLayout>
               <ProjectGitRepository project={project} />
-              <ProjectVercel project={project} />
+              {/* <ProjectVercel project={project} /> */}
               <ProjectChangeName project={project} />
               <ProjectToken project={project} />
               <ProjectReferenceBranch project={project} />
