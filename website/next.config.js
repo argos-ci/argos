@@ -32,6 +32,11 @@ const nextConfig = withMDX({
           "https://app.argos-ci.com/:organization/:repository/builds/:path*",
         permanent: false,
       },
+      {
+        source: "/discord",
+        destination: "https://discord.gg/WjzGrQGS4A",
+        permanent: false,
+      },
     ];
   },
   rewrites: async () => {
