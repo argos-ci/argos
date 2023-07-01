@@ -16,4 +16,4 @@ This example showcases Argos Visual Testing running on [Travis](https://www.trav
 ## Links
 
 - [Official Argos Docs](https://argos-ci.com/docs)
-- [Discord](https://discord.gg/WjzGrQGS4A)
+- [Discord](https://argos-ci.com/discord)
