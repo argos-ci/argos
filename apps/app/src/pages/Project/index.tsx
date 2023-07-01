@@ -38,7 +38,7 @@ type Account = NonNullable<
 >;
 
 const ProjectTabs = ({
-  hasTests,
+  // hasTests,
   hasWritePermission,
   account,
 }: {
@@ -51,7 +51,7 @@ const ProjectTabs = ({
     <>
       <TabLinkList state={tab} aria-label="Sections">
         <TabLink to="">Builds</TabLink>
-        {hasTests && <TabLink to="tests">Tests</TabLink>}
+        {/* {hasTests && <TabLink to="tests">Tests</TabLink>} */}
         {hasWritePermission && <TabLink to="settings">Settings</TabLink>}
       </TabLinkList>
       <hr className="border-t-border" />
