@@ -114,7 +114,7 @@ export const Navbar = () => {
 
       <div className="flex shrink-0 items-center gap-6">
         <a
-          href="https://discord.gg/WjzGrQGS4A"
+          href="https://argos-ci.com/discord"
           target="_blank"
           rel="noopener noreferrer"
           className="font-medium text-on-light transition hover:text-on"

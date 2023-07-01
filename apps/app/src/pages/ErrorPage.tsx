@@ -16,7 +16,7 @@ export const ErrorPage = () => {
         <AlertTitle>Sorry an error occurs.</AlertTitle>
         <AlertText>
           Something wrong happens, if the error persist, please reach us on{" "}
-          <Anchor href="https://discord.gg/WjzGrQGS4A" external>
+          <Anchor href="https://argos-ci.com/discord" external>
             Discord
           </Anchor>
           .
