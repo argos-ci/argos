@@ -28,8 +28,35 @@ export const stripe = new Stripe(config.get("stripe.apiKey"), {
   typescript: true,
 });
 
-export const getStripePriceOrThrow = async (plan: Plan) => {
+export const createPurchaseFromSubscription = async ({
+  account,
+  purchaserId,
+  subscription,
+}: {
+  account: Account;
+  purchaserId: string;
+  subscription: Stripe.Subscription;
+}) => {
+  const stripeProductId = getFirstProductOrThrow(subscription);
+  const plan = await findPlanOrThrow(stripeProductId);
+  const paymentMethodFilled = subscription.default_payment_method !== null;
+
+  return Purchase.query().insertAndFetch({
+    planId: plan.id,
+    accountId: account.id,
+    source: "stripe",
+    purchaserId,
+    startDate: new Date().toISOString(),
+    trialEndDate: subscription.trial_end
+      ? timestampToDate(subscription.trial_end)
+      : null,
+    paymentMethodFilled,
+  });
+};
+
+export const getStripePriceFromPlanOrThrow = async (plan: Plan) => {
   const stripePlanId = plan.stripePlanId;
+
   if (!stripePlanId) {
     throw new Error(`stripePlanId is empty on plan ${plan.id}`);
   }
@@ -39,6 +66,7 @@ export const getStripePriceOrThrow = async (plan: Plan) => {
     active: true,
     product: plan.stripePlanId,
   });
+
   if (prices.data.length > 1) {
     throw new Error(
       `stripe return multiple active prices found for plan ${plan.id}`
@@ -46,6 +74,7 @@ export const getStripePriceOrThrow = async (plan: Plan) => {
   }
 
   const price = prices.data[0];
+
   if (!price) {
     throw new Error(`stripe price not found for plan ${plan.id}`);
   }
@@ -118,6 +147,12 @@ export const updateStripeUsage = async ({
   }
 };
 
+export const getStripeProPlanOrThrow = async () => {
+  return Plan.query()
+    .findOne({ name: "pro", usageBased: true })
+    .throwIfNotFound();
+};
+
 export const handleStripeEvent = async ({
   data,
   type,
@@ -147,21 +182,13 @@ export const handleStripeEvent = async ({
       );
 
       const subscription = getSessionSubscriptionOrThrow(retrievedSession);
-      const stripeProductId = getFirstProductOrThrow(subscription);
-      const plan = await findPlanOrThrow(stripeProductId);
-      const paymentMethodFilled = subscription.default_payment_method !== null;
 
-      await Purchase.query().insert({
-        planId: plan.id,
-        accountId: account.id,
-        source: "stripe",
+      await createPurchaseFromSubscription({
+        account,
         purchaserId,
-        startDate: new Date().toISOString(),
-        trialEndDate: subscription.trial_end
-          ? timestampToDate(subscription.trial_end)
-          : null,
-        paymentMethodFilled,
+        subscription,
       });
+
       break;
     }
 
@@ -262,58 +289,84 @@ export const handleStripeEvent = async ({
   }
 };
 
+export const getTrialSubscriptionConfig = () => {
+  return {
+    trial_settings: {
+      end_behavior: { missing_payment_method: "cancel" as const },
+    },
+    trial_period_days: 14,
+  };
+};
+
 export const createStripeCheckoutSession = async ({
   plan,
   account,
-  purchaserId,
+  trial,
+  purchaserAccount,
   successUrl,
   cancelUrl,
-  customer: propCustomer,
 }: {
   plan: Plan;
   account: Account;
-  purchaserId: string;
+  trial: boolean;
+  purchaserAccount: Account;
   successUrl: string;
   cancelUrl: string;
-  customer: string | null;
 }) => {
-  const [purchase, price, trialConsumed] = await Promise.all([
+  if (!purchaserAccount.userId) {
+    throw new Error("Purchaser account must be a user account");
+  }
+
+  const [activePurchase, price] = await Promise.all([
     account.$getActivePurchase(),
-    getStripePriceOrThrow(plan),
-    Purchase.query()
-      .where((query) =>
-        query.where({ purchaserId }).orWhere({ accountId: account.id })
-      )
-      .whereNotNull("trialEndDate")
-      .limit(1)
-      .resultSize(),
+    getStripePriceFromPlanOrThrow(plan),
   ]);
 
-  if (purchase) {
+  if (activePurchase) {
     throw new Error("Account already has an active purchase");
   }
 
-  const canTrial = !trialConsumed;
-  const customer = propCustomer ?? account.stripeCustomerId ?? null;
+  const customer =
+    account.stripeCustomerId ??
+    (await getOrCreateUserCustomerId(purchaserAccount));
 
   return stripe.checkout.sessions.create({
     line_items: [{ price: price.id }],
-    subscription_data: canTrial
-      ? {
-          trial_settings: {
-            end_behavior: { missing_payment_method: "cancel" },
-          },
-          trial_period_days: 14,
-        }
-      : {},
+    subscription_data: trial ? getTrialSubscriptionConfig() : {},
     ...(customer && { customer }),
     mode: "subscription",
     client_reference_id: Purchase.encodeStripeClientReferenceId({
       accountId: account.id,
-      purchaserId: purchaserId,
+      purchaserId: purchaserAccount.userId,
     }),
     success_url: successUrl,
     cancel_url: cancelUrl,
-    payment_method_collection: trialConsumed ? "always" : "if_required",
+    payment_method_collection: "if_required",
   });
+};
+
+export const getOrCreateUserCustomerId = async (
+  userAccount: Account
+): Promise<string | null> => {
+  if (userAccount.stripeCustomerId) {
+    return userAccount.stripeCustomerId;
+  }
+
+  const user = await userAccount.$relatedQuery("user").first();
+
+  if (!user) {
+    throw new Error("Account is not linked to a user");
+  }
+
+  if (!user.email) {
+    return null;
+  }
+
+  const customer = await stripe.customers.create({
+    email: user.email,
+  });
+
+  await userAccount.$query().patch({ stripeCustomerId: customer.id });
+
+  return customer.id;
 };

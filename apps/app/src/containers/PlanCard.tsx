@@ -409,11 +409,9 @@ const ConsumptionBlock = ({
 const PrimaryCta = ({
   purchaseStatus,
   accountId,
-  stripeCustomerId,
 }: {
   purchaseStatus: PurchaseStatus | null | undefined;
   accountId: string;
-  stripeCustomerId: string | null;
 }) => {
   if (!purchaseStatus) {
     return (
@@ -434,12 +432,7 @@ const PrimaryCta = ({
     purchaseStatus === PurchaseStatus.Missing ||
     purchaseStatus === PurchaseStatus.Canceled
   ) {
-    return (
-      <TeamUpgradeDialogButton
-        initialAccountId={accountId}
-        stripeCustomerId={stripeCustomerId}
-      />
-    );
+    return <TeamUpgradeDialogButton initialAccountId={accountId} />;
   }
 
   return null;
@@ -572,12 +565,14 @@ export const PlanCard = (props: { account: AccountFragment }) => {
           <ContactLink />
         ) : (
           <div className="flex items-center justify-between">
-            <div>
-              <ManageSubscriptionButton
-                stripeCustomerId={stripeCustomerId ?? ""}
-                paymentProvider={paymentProvider ?? null}
-              />
-            </div>
+            {stripeCustomerId && (
+              <div>
+                <ManageSubscriptionButton
+                  stripeCustomerId={stripeCustomerId}
+                  paymentProvider={paymentProvider ?? null}
+                />
+              </div>
+            )}
 
             <div className="flex items-center gap-4">
               Custom needs?
@@ -594,7 +589,6 @@ export const PlanCard = (props: { account: AccountFragment }) => {
               <PrimaryCta
                 purchaseStatus={purchaseStatus}
                 accountId={account.id}
-                stripeCustomerId={stripeCustomerId ?? ""}
               />
             </div>
           </div>

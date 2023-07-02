@@ -8,13 +8,11 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { useRedirectToStripeCheckout } from "@/ui/StripeLink";
 
 const CreateTeamMutation = graphql(`
   mutation NewTeam_createTeam($name: String!) {
     createTeam(input: { name: $name }) {
-      id
-      slug
+      redirectUrl
     }
   }
 `);
@@ -49,8 +47,6 @@ export const TeamNewForm = (props: TeamNewFormProps) => {
     }
   }, [initialAutoSubmit]);
   const { data } = useQuery(MeQuery);
-  const me = data?.me;
-  const { redirect } = useRedirectToStripeCheckout();
   const form = useForm<Inputs>({
     defaultValues: {
       name: props.defaultTeamName ?? "",
@@ -64,19 +60,13 @@ export const TeamNewForm = (props: TeamNewFormProps) => {
         name: data.name,
       },
     });
-    const team = result.data?.createTeam;
-    if (!team) {
-      throw new Error("Invariant: missing team");
+    if (!result.data) {
+      throw new Error("Invariant: missing data");
     }
-    await redirect({
-      accountId: team.id,
-      successUrl: props.successUrl
-        ? props.successUrl(team)
-        : new URL(`/${team.slug}`, window.location.origin).href,
-      cancelUrl: props.cancelUrl
-        ? props.cancelUrl(team)
-        : new URL(`/${team.slug}?checkout=cancel`, window.location.origin).href,
-      stripeCustomerId: me?.stripeCustomerId ?? null,
+    const redirectUrl = result.data.createTeam.redirectUrl;
+    window.location.replace(redirectUrl);
+    await new Promise(() => {
+      // Infinite promise while we redirect to keep the form in submitting state
     });
   };
   return (
@@ -99,7 +89,7 @@ export const TeamNewForm = (props: TeamNewFormProps) => {
         </p>
         <div className="mt-8 flex items-center justify-end gap-4">
           <FormRootError />
-          <FormSubmit disabledIfSubmitted>Continue</FormSubmit>
+          <FormSubmit>Continue</FormSubmit>
         </div>
       </Form>
     </FormProvider>

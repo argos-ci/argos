@@ -8,6 +8,7 @@ import { Account, Plan } from "@argos-ci/database/models";
 import logger from "@argos-ci/logger";
 import {
   createStripeCheckoutSession,
+  getStripeProPlanOrThrow,
   handleStripeEvent,
   stripe,
 } from "@argos-ci/stripe";
@@ -96,42 +97,39 @@ router.post(
   bodyParser.json(),
   asyncHandler(async (req, res) => {
     try {
-      const { accountId, stripeCustomerId, successUrl, cancelUrl } = req.body;
-      const user = req.auth?.user;
+      const { accountId, successUrl, cancelUrl } = req.body;
 
-      if (!user) {
-        throw new Error("User not logged in");
+      if (!req.auth) {
+        throw new Error("Forbidden");
       }
 
       if (!accountId) {
         throw new Error("AccountId missing");
       }
 
-      const [teamAccount, proPlan] = await Promise.all([
-        Account.query().findOne({ id: accountId }),
-        Plan.query().findOne({ name: "pro", usageBased: true }),
+      const [teamAccount, proPlan, noTrial] = await Promise.all([
+        Account.query().findById(accountId).throwIfNotFound(),
+        getStripeProPlanOrThrow(),
+        req.auth.account.$checkHasSubscribedToTrial(),
       ]);
 
-      if (!teamAccount) {
-        throw new Error("Team account not found");
-      }
+      const hasWritePermission = await teamAccount.$checkWritePermission(
+        req.auth.user
+      );
 
-      if (!proPlan) {
-        throw new Error("Pro plan not found");
-      }
-
-      if (!teamAccount.$checkWritePermission(user)) {
+      if (!hasWritePermission) {
         throw new Error("Unauthorized");
       }
 
       const session = await createStripeCheckoutSession({
         plan: proPlan,
         account: teamAccount,
-        purchaserId: user.id,
-        customer: stripeCustomerId,
+        purchaserAccount: req.auth.account,
         successUrl,
         cancelUrl,
+        trial: !noTrial,
       });
+
       if (!session.url) {
         throw new Error("No session url");
       }

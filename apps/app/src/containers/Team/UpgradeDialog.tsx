@@ -36,12 +36,10 @@ const MeQuery = graphql(`
 export const TeamUpgradeDialogButton = ({
   children,
   initialAccountId,
-  stripeCustomerId,
   color = "primary",
   variant = "contained",
 }: {
   initialAccountId: string;
-  stripeCustomerId: string | null;
   children?: React.ReactNode;
   color?: ButtonColor;
   variant?: ButtonVariant;
@@ -102,7 +100,6 @@ export const TeamUpgradeDialogButton = ({
 
           <StripeCheckoutButton
             accountId={accountId}
-            stripeCustomerId={stripeCustomerId}
             successUrl={
               team
                 ? new URL(

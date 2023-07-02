@@ -83,7 +83,7 @@ const SignupPage = () => {
       </Helmet>
 
       <Container className="flex justify-center pt-16">
-        <div className="flex max-w-md flex-col gap-8">
+        <div className="flex max-w-md flex-col gap-8 pb-8">
           <h1
             className="mx-auto mb-8 text-center text-4xl font-bold leading-tight"
             style={{ textWrap: "balance" } as CSSProperties}
