@@ -3,7 +3,7 @@ import gqlTag from "graphql-tag";
 
 import config from "@argos-ci/config";
 import { transaction } from "@argos-ci/database";
-import { Account, Plan, Team, TeamUser } from "@argos-ci/database/models";
+import { Account, Team, TeamUser } from "@argos-ci/database/models";
 import { createTeamAccount } from "@argos-ci/database/services/team";
 import {
   createPurchaseFromSubscription,

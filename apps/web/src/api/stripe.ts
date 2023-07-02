@@ -4,7 +4,7 @@ import express from "express";
 import { HttpError } from "express-err";
 
 import config from "@argos-ci/config";
-import { Account, Plan } from "@argos-ci/database/models";
+import { Account } from "@argos-ci/database/models";
 import logger from "@argos-ci/logger";
 import {
   createStripeCheckoutSession,
