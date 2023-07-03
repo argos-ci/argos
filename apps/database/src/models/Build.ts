@@ -38,7 +38,7 @@ export class Build extends Model {
   static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
     required: ["compareScreenshotBucketId", "projectId"],
     properties: {
-      name: { type: "string" },
+      name: { type: "string", maxLength: 255 },
       baseScreenshotBucketId: { type: ["string", "null"] },
       compareScreenshotBucketId: { type: "string" },
       projectId: { type: "string" },

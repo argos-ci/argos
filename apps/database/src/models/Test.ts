@@ -12,9 +12,9 @@ export class Test extends Model {
   static override jsonSchema = mergeSchemas(timestampsSchema, {
     required: ["name", "projectId", "buildName"],
     properties: {
-      name: { type: "string" },
+      name: { type: "string", maxLength: 1024 },
       projectId: { type: "string" },
-      buildName: { type: "string" },
+      buildName: { type: "string", maxLength: 255 },
       status: {
         type: ["string"],
         enum: ["pending", "flaky", "resolved"],

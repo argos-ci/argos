@@ -12,7 +12,7 @@ export class Screenshot extends Model {
   static override jsonSchema = mergeSchemas(timestampsSchema, {
     required: ["name", "s3Id", "screenshotBucketId"],
     properties: {
-      name: { type: "string" },
+      name: { type: "string", maxLength: 1024 },
       s3Id: { type: "string" },
       screenshotBucketId: { type: "string" },
       fileId: { type: ["string", "null"] },
