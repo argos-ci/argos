@@ -162,6 +162,12 @@ export type ICreateTeamInput = {
   name: Scalars['String'];
 };
 
+export type ICreateTeamResult = {
+  __typename?: 'CreateTeamResult';
+  redirectUrl: Scalars['String'];
+  team: ITeam;
+};
+
 export type IDeleteTeamInput = {
   accountId: Scalars['ID'];
 };
@@ -244,7 +250,7 @@ export type IMutation = {
   /** Create a Project */
   createProject: IProject;
   /** Create a team */
-  createTeam: ITeam;
+  createTeam: ICreateTeamResult;
   /** Delete Project */
   deleteProject: Scalars['Boolean'];
   /** Delete team and all its projects */
@@ -1005,6 +1011,7 @@ export type IResolversTypes = ResolversObject<{
   Connection: IResolversTypes['BuildConnection'] | IResolversTypes['GhApiInstallationConnection'] | IResolversTypes['GhApiRepositoryConnection'] | IResolversTypes['ProjectConnection'] | IResolversTypes['ScreenshotDiffConnection'] | IResolversTypes['TeamMemberConnection'] | IResolversTypes['TestConnection'] | IResolversTypes['UserConnection'];
   CreateProjectInput: ICreateProjectInput;
   CreateTeamInput: ICreateTeamInput;
+  CreateTeamResult: ResolverTypeWrapper<Omit<ICreateTeamResult, 'team'> & { team: IResolversTypes['Team'] }>;
   Date: ResolverTypeWrapper<Scalars['Date']>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']>;
   DeleteTeamInput: IDeleteTeamInput;
@@ -1088,6 +1095,7 @@ export type IResolversParentTypes = ResolversObject<{
   Connection: IResolversParentTypes['BuildConnection'] | IResolversParentTypes['GhApiInstallationConnection'] | IResolversParentTypes['GhApiRepositoryConnection'] | IResolversParentTypes['ProjectConnection'] | IResolversParentTypes['ScreenshotDiffConnection'] | IResolversParentTypes['TeamMemberConnection'] | IResolversParentTypes['TestConnection'] | IResolversParentTypes['UserConnection'];
   CreateProjectInput: ICreateProjectInput;
   CreateTeamInput: ICreateTeamInput;
+  CreateTeamResult: Omit<ICreateTeamResult, 'team'> & { team: IResolversParentTypes['Team'] };
   Date: Scalars['Date'];
   DateTime: Scalars['DateTime'];
   DeleteTeamInput: IDeleteTeamInput;
@@ -1224,6 +1232,12 @@ export type IConnectionResolvers<ContextType = Context, ParentType extends IReso
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
 }>;
 
+export type ICreateTeamResultResolvers<ContextType = Context, ParentType extends IResolversParentTypes['CreateTeamResult'] = IResolversParentTypes['CreateTeamResult']> = ResolversObject<{
+  redirectUrl?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  team?: Resolver<IResolversTypes['Team'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export interface IDateScalarConfig extends GraphQLScalarTypeConfig<IResolversTypes['Date'], any> {
   name: 'Date';
 }
@@ -1282,7 +1296,7 @@ export type IGithubRepositoryResolvers<ContextType = Context, ParentType extends
 export type IMutationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Mutation'] = IResolversParentTypes['Mutation']> = ResolversObject<{
   acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'token'>>;
   createProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationCreateProjectArgs, 'input'>>;
-  createTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
+  createTeam?: Resolver<IResolversTypes['CreateTeamResult'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
   deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
   deleteTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteTeamArgs, 'input'>>;
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
@@ -1618,6 +1632,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   BuildConnection?: IBuildConnectionResolvers<ContextType>;
   BuildStats?: IBuildStatsResolvers<ContextType>;
   Connection?: IConnectionResolvers<ContextType>;
+  CreateTeamResult?: ICreateTeamResultResolvers<ContextType>;
   Date?: GraphQLScalarType;
   DateTime?: GraphQLScalarType;
   GhApiInstallation?: IGhApiInstallationResolvers<ContextType>;

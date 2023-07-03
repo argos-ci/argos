@@ -73,7 +73,6 @@ const BannerCta = ({
     case "stripeCheckoutSession":
       return (
         <TeamUpgradeDialogButton
-          stripeCustomerId={stripeCustomerId}
           initialAccountId={accountId}
           color="white"
           variant="outline"

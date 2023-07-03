@@ -93,7 +93,7 @@ export class Purchase extends Model {
     purchaserId,
   }: {
     accountId: string;
-    purchaserId: string | null;
+    purchaserId: string;
   }) {
     return Buffer.from(JSON.stringify({ accountId, purchaserId }), "utf8")
       .toString("base64")

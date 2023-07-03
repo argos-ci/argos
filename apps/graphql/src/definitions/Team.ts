@@ -1,9 +1,19 @@
 import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 
+import config from "@argos-ci/config";
 import { transaction } from "@argos-ci/database";
 import { Account, Team, TeamUser } from "@argos-ci/database/models";
 import { createTeamAccount } from "@argos-ci/database/services/team";
+import {
+  createPurchaseFromSubscription,
+  createStripeCheckoutSession,
+  getOrCreateUserCustomerId,
+  getStripePriceFromPlanOrThrow,
+  getStripeProPlanOrThrow,
+  getTrialSubscriptionConfig,
+  stripe,
+} from "@argos-ci/stripe";
 
 import type {
   IResolvers,
@@ -89,13 +99,18 @@ export const typeDefs = gql`
     accountId: ID!
   }
 
+  type CreateTeamResult {
+    team: Team!
+    redirectUrl: String!
+  }
+
   extend type Query {
     invitation(token: String!): Team
   }
 
   extend type Mutation {
     "Create a team"
-    createTeam(input: CreateTeamInput!): Team!
+    createTeam(input: CreateTeamInput!): CreateTeamResult!
     "Leave a team"
     leaveTeam(input: LeaveTeamInput!): Boolean!
     "Remove a user from a team"
@@ -190,17 +205,79 @@ export const resolvers: IResolvers = {
     },
   },
   Mutation: {
-    createTeam: async (_root, args, ctx): Promise<Account> => {
+    createTeam: async (_root, args, ctx) => {
       const { auth } = ctx;
 
       if (!auth) {
         throw new Error("Forbidden");
       }
 
-      return createTeamAccount({
+      const teamAccount = await createTeamAccount({
         name: args.input.name,
         ownerId: auth.user.id,
       });
+
+      const [hasSubscribedToTrial, plan] = await Promise.all([
+        auth.account.$checkHasSubscribedToTrial(),
+        getStripeProPlanOrThrow(),
+      ]);
+
+      const teamUrl = new URL(`/${teamAccount.slug}`, config.get("server.url"))
+        .href;
+
+      const redirectToStripe = async ({ trial }: { trial: boolean }) => {
+        const session = await createStripeCheckoutSession({
+          account: teamAccount,
+          plan,
+          purchaserAccount: auth.account,
+          trial,
+          successUrl: teamUrl,
+          cancelUrl: `${teamUrl}?checkout=cancel`,
+        });
+        if (!session.url) {
+          throw new Error("session.url is null");
+        }
+
+        return { team: teamAccount, redirectUrl: session.url };
+      };
+
+      // If the user has already subscribed to a trial, we will redirect to the checkout page
+      if (hasSubscribedToTrial) {
+        return redirectToStripe({ trial: false });
+      }
+
+      // Else we will try to setup trial server-side
+
+      // Try to get or create a Stripe customer for the user
+      const stripeCustomerId = await getOrCreateUserCustomerId(auth.account);
+
+      // If we failed to create a customer (no email), we will redirect to checkout page
+      if (!stripeCustomerId) {
+        return redirectToStripe({ trial: true });
+      }
+
+      // Register the Stripe customer id to the team account
+      await teamAccount.$query().patchAndFetch({ stripeCustomerId });
+
+      const price = await getStripePriceFromPlanOrThrow(plan);
+
+      // Create a Stripe subscription for the user
+      const subscription = await stripe.subscriptions.create({
+        customer: stripeCustomerId,
+        items: [{ price: price.id }],
+        ...getTrialSubscriptionConfig(),
+      });
+
+      await createPurchaseFromSubscription({
+        subscription,
+        account: teamAccount,
+        purchaserId: auth.user.id,
+      });
+
+      return {
+        team: teamAccount,
+        redirectUrl: teamUrl,
+      };
     },
     leaveTeam: async (_root, args, ctx) => {
       if (!ctx.auth) {

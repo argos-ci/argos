@@ -131,6 +131,18 @@ export class Account extends Model {
     throw new Error(`Invariant incoherent account type`);
   }
 
+  async $checkHasSubscribedToTrial() {
+    if (!this.userId) {
+      throw new Error("$checkHasSubscribedToTrial can only be called on users");
+    }
+    const purchaseCount = await Purchase.query()
+      .where({ purchaserId: this.userId })
+      .whereNotNull("trialEndDate")
+      .limit(1)
+      .resultSize();
+    return purchaseCount > 0;
+  }
+
   async $getActivePurchase() {
     if (!this.id) return null;
 

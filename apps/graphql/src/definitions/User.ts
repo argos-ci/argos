@@ -59,12 +59,7 @@ export const resolvers: IResolvers = {
   },
   User: {
     hasSubscribedToTrial: async (account) => {
-      const purchaseCount = await Purchase.query()
-        .where({ purchaserId: account.userId })
-        .whereNotNull("trialEndDate")
-        .limit(1)
-        .resultSize();
-      return purchaseCount > 0;
+      return account.$checkHasSubscribedToTrial();
     },
     lastPurchase: async (account) => {
       if (!account.userId) {

@@ -1,6 +1,5 @@
 import { useApolloClient, useQuery } from "@apollo/client";
 import { clsx } from "clsx";
-import { useEffect, useRef, useState } from "react";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { graphql } from "@/gql";
@@ -8,13 +7,12 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { useRedirectToStripeCheckout } from "@/ui/StripeLink";
+import { useEventCallback } from "@/ui/useEventCallback";
 
 const CreateTeamMutation = graphql(`
   mutation NewTeam_createTeam($name: String!) {
     createTeam(input: { name: $name }) {
-      id
-      slug
+      redirectUrl
     }
   }
 `);
@@ -33,55 +31,50 @@ const MeQuery = graphql(`
   }
 `);
 
+export const useCreateTeamAndRedirect = () => {
+  const client = useApolloClient();
+  const createTeamAndRedirect = useEventCallback(
+    async (data: { name: string }) => {
+      const result = await client.mutate({
+        mutation: CreateTeamMutation,
+        variables: {
+          name: data.name,
+        },
+      });
+      if (!result.data) {
+        throw new Error("Invariant: missing data");
+      }
+      const redirectUrl = result.data.createTeam.redirectUrl;
+      window.location.replace(redirectUrl);
+      await new Promise(() => {
+        // Infinite promise while we redirect to keep the form in submitting state
+      });
+    }
+  );
+  return createTeamAndRedirect;
+};
+
 export type TeamNewFormProps = {
   defaultTeamName?: string | null;
-  autoSubmit?: boolean;
   successUrl?: (team: { id: string; slug: string }) => string;
   cancelUrl?: (team: { id: string; slug: string }) => string;
 };
 
 export const TeamNewForm = (props: TeamNewFormProps) => {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [initialAutoSubmit] = useState(props.autoSubmit);
-  useEffect(() => {
-    if (initialAutoSubmit) {
-      formRef.current?.requestSubmit();
-    }
-  }, [initialAutoSubmit]);
+  const createTeamAndRedirect = useCreateTeamAndRedirect();
+
   const { data } = useQuery(MeQuery);
-  const me = data?.me;
-  const { redirect } = useRedirectToStripeCheckout();
   const form = useForm<Inputs>({
     defaultValues: {
       name: props.defaultTeamName ?? "",
     },
   });
-  const client = useApolloClient();
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    const result = await client.mutate({
-      mutation: CreateTeamMutation,
-      variables: {
-        name: data.name,
-      },
-    });
-    const team = result.data?.createTeam;
-    if (!team) {
-      throw new Error("Invariant: missing team");
-    }
-    await redirect({
-      accountId: team.id,
-      successUrl: props.successUrl
-        ? props.successUrl(team)
-        : new URL(`/${team.slug}`, window.location.origin).href,
-      cancelUrl: props.cancelUrl
-        ? props.cancelUrl(team)
-        : new URL(`/${team.slug}?checkout=cancel`, window.location.origin).href,
-      stripeCustomerId: me?.stripeCustomerId ?? null,
-    });
+    await createTeamAndRedirect(data);
   };
   return (
     <FormProvider {...form}>
-      <Form ref={formRef} onSubmit={onSubmit}>
+      <Form onSubmit={onSubmit}>
         <FormTextInput
           {...form.register("name", {
             required: "Team name is required",
@@ -99,7 +92,7 @@ export const TeamNewForm = (props: TeamNewFormProps) => {
         </p>
         <div className="mt-8 flex items-center justify-end gap-4">
           <FormRootError />
-          <FormSubmit disabledIfSubmitted>Continue</FormSubmit>
+          <FormSubmit>Continue</FormSubmit>
         </div>
       </Form>
     </FormProvider>

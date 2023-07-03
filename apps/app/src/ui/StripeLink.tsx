@@ -99,7 +99,6 @@ async function getCheckoutSessionLink({
   ...props
 }: {
   accountId: string;
-  stripeCustomerId: string | null;
   token: string;
   successUrl: string;
   cancelUrl: string;
@@ -120,7 +119,6 @@ export type UseRedirectToStripeCheckoutSessionProps = {
   accountId: string;
   successUrl: string;
   cancelUrl: string;
-  stripeCustomerId: string | null;
 };
 
 export const useRedirectToStripeCheckout = () => {
@@ -135,7 +133,6 @@ export const useRedirectToStripeCheckout = () => {
       getCheckoutSessionLink({
         token,
         accountId: props.accountId,
-        stripeCustomerId: props.stripeCustomerId,
         successUrl: props.successUrl,
         cancelUrl: props.cancelUrl,
       })
@@ -153,7 +150,6 @@ export const useRedirectToStripeCheckout = () => {
 
 export type StripeCheckoutButtonProps = {
   accountId: string;
-  stripeCustomerId: string | null;
   successUrl: string;
   cancelUrl: string;
 } & ButtonProps;
@@ -161,7 +157,6 @@ export type StripeCheckoutButtonProps = {
 export const StripeCheckoutButton = ({
   disabled,
   accountId,
-  stripeCustomerId,
   successUrl,
   cancelUrl,
   ...props
@@ -174,7 +169,6 @@ export const StripeCheckoutButton = ({
       onClick={() => {
         redirect({
           accountId,
-          stripeCustomerId,
           successUrl,
           cancelUrl,
         });

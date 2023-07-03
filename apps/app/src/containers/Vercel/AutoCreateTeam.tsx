@@ -20,8 +20,10 @@ const VercelTeamQuery = graphql(`
 const CreateTeamMutation = graphql(`
   mutation Vercel_createTeam($name: String!) {
     createTeam(input: { name: $name }) {
-      id
-      slug
+      team {
+        id
+        slug
+      }
     }
   }
 `);
@@ -52,7 +54,7 @@ export const AutoCreateTeam = (props: AutoCreateTeamProps) => {
       variables: { name: `${vercelTeamName} (Vercel)` },
     });
   }, [data, createTeam]);
-  const team = createTeamResult.data?.createTeam;
+  const team = createTeamResult.data?.createTeam.team;
   useEffect(() => {
     if (team) {
       setLinkedAccount(team);
