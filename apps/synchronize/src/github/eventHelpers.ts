@@ -7,7 +7,8 @@ import {
   Purchase,
 } from "@argos-ci/database/models";
 import {
-  getOrCreateGhAccountFromGhProfile,
+  getGhAccountType,
+  getOrCreateGhAccount,
   getOrCreateUserAccountFromGhAccount,
 } from "@argos-ci/database/services/account";
 import { createTeamAccount } from "@argos-ci/database/services/team";
@@ -26,10 +27,10 @@ type PartialMarketplacePurchasePurchasedEventPayload = {
 export const getOrCreateAccount = async (
   payload: MarketplacePurchasePurchasedEvent
 ): Promise<Account> => {
-  const ghAccount = await getOrCreateGhAccountFromGhProfile({
-    id: payload.marketplace_purchase.account.id,
+  const ghAccount = await getOrCreateGhAccount({
+    githubId: payload.marketplace_purchase.account.id,
     login: payload.marketplace_purchase.account.login,
-    type: payload.marketplace_purchase.account.type,
+    type: getGhAccountType(payload.marketplace_purchase.account.type),
     email: payload.marketplace_purchase.account.organization_billing_email,
     name: null,
   });
@@ -48,10 +49,10 @@ export const getOrCreateAccount = async (
   //   -> Create a new account
   //   -> Create a new team
   // Find or create the GitHub account of the sender (buyer)
-  const userGhAccount = await getOrCreateGhAccountFromGhProfile({
-    id: payload.sender.id,
+  const userGhAccount = await getOrCreateGhAccount({
+    githubId: payload.sender.id,
     login: payload.sender.login,
-    type: payload.sender.type,
+    type: getGhAccountType(payload.sender.type),
     email: payload.sender.email,
     name: null,
   });
@@ -99,10 +100,14 @@ export const getOrCreateAccount = async (
 export const getAccount = async (
   payload: PartialMarketplacePurchasePurchasedEventPayload
 ): Promise<Account | null> => {
-  const githubAccount = await getOrCreateGhAccountFromGhProfile({
-    id: payload.marketplace_purchase.account.id,
+  const type = payload.marketplace_purchase.account.type.toLowerCase();
+  if (type !== "user" && type !== "organization") {
+    throw new Error(`Account of "${type}" is not supported`);
+  }
+  const githubAccount = await getOrCreateGhAccount({
+    githubId: payload.marketplace_purchase.account.id,
     login: payload.marketplace_purchase.account.login,
-    type: payload.marketplace_purchase.account.type,
+    type: getGhAccountType(payload.marketplace_purchase.account.type),
     email: payload.marketplace_purchase.account.organization_billing_email,
     name: null,
   });
