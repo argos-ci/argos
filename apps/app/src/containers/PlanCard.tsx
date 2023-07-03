@@ -459,7 +459,7 @@ const ManageSubscriptionButton = ({
   stripeCustomerId,
   paymentProvider,
 }: {
-  stripeCustomerId: string;
+  stripeCustomerId: string | null;
   paymentProvider: PurchaseSource | null;
 }) => {
   if (paymentProvider === PurchaseSource.Github) {
@@ -565,14 +565,12 @@ export const PlanCard = (props: { account: AccountFragment }) => {
           <ContactLink />
         ) : (
           <div className="flex items-center justify-between">
-            {stripeCustomerId && (
-              <div>
-                <ManageSubscriptionButton
-                  stripeCustomerId={stripeCustomerId}
-                  paymentProvider={paymentProvider ?? null}
-                />
-              </div>
-            )}
+            <div>
+              <ManageSubscriptionButton
+                stripeCustomerId={stripeCustomerId ?? null}
+                paymentProvider={paymentProvider ?? null}
+              />
+            </div>
 
             <div className="flex items-center gap-4">
               Custom needs?
