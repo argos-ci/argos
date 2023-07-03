@@ -788,7 +788,7 @@ ALTER SEQUENCE public.screenshot_diffs_id_seq OWNED BY public.screenshot_diffs.i
 CREATE TABLE public.screenshots (
     id bigint NOT NULL,
     "screenshotBucketId" bigint NOT NULL,
-    name character varying(255) NOT NULL,
+    name character varying(1024) NOT NULL,
     "s3Id" character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
@@ -917,7 +917,7 @@ CREATE TABLE public.tests (
     id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    name character varying(255) NOT NULL,
+    name character varying(1024) NOT NULL,
     "buildName" character varying(255) NOT NULL,
     status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
     "resolvedDate" timestamp with time zone,
@@ -988,6 +988,43 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
+-- Name: vercel_checks; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.vercel_checks (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "vercelId" character varying(255) NOT NULL,
+    "vercelDeploymentId" bigint NOT NULL,
+    "buildId" bigint
+);
+
+
+ALTER TABLE public.vercel_checks OWNER TO postgres;
+
+--
+-- Name: vercel_checks_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.vercel_checks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.vercel_checks_id_seq OWNER TO postgres;
+
+--
+-- Name: vercel_checks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.vercel_checks_id_seq OWNED BY public.vercel_checks.id;
+
+
+--
 -- Name: vercel_configurations; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1023,6 +1060,46 @@ ALTER TABLE public.vercel_configurations_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.vercel_configurations_id_seq OWNED BY public.vercel_configurations.id;
+
+
+--
+-- Name: vercel_deployments; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.vercel_deployments (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "vercelId" character varying(255) NOT NULL,
+    url character varying(255) NOT NULL,
+    "githubCommitRef" character varying(255),
+    "githubCommitSha" character varying(255),
+    "githubPrId" character varying(255),
+    "vercelProjectId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.vercel_deployments OWNER TO postgres;
+
+--
+-- Name: vercel_deployments_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.vercel_deployments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.vercel_deployments_id_seq OWNER TO postgres;
+
+--
+-- Name: vercel_deployments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.vercel_deployments_id_seq OWNED BY public.vercel_deployments.id;
 
 
 --
@@ -1258,10 +1335,24 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
+-- Name: vercel_checks id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.vercel_checks ALTER COLUMN id SET DEFAULT nextval('public.vercel_checks_id_seq'::regclass);
+
+
+--
 -- Name: vercel_configurations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.vercel_configurations ALTER COLUMN id SET DEFAULT nextval('public.vercel_configurations_id_seq'::regclass);
+
+
+--
+-- Name: vercel_deployments id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.vercel_deployments ALTER COLUMN id SET DEFAULT nextval('public.vercel_deployments_id_seq'::regclass);
 
 
 --
@@ -1519,6 +1610,22 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: vercel_checks vercel_checks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.vercel_checks
+    ADD CONSTRAINT vercel_checks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: vercel_checks vercel_checks_vercelid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.vercel_checks
+    ADD CONSTRAINT vercel_checks_vercelid_unique UNIQUE ("vercelId");
+
+
+--
 -- Name: vercel_configurations vercel_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1532,6 +1639,22 @@ ALTER TABLE ONLY public.vercel_configurations
 
 ALTER TABLE ONLY public.vercel_configurations
     ADD CONSTRAINT vercel_configurations_vercelid_unique UNIQUE ("vercelId");
+
+
+--
+-- Name: vercel_deployments vercel_deployments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.vercel_deployments
+    ADD CONSTRAINT vercel_deployments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: vercel_deployments vercel_deployments_vercelid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.vercel_deployments
+    ADD CONSTRAINT vercel_deployments_vercelid_unique UNIQUE ("vercelId");
 
 
 --
@@ -1923,6 +2046,27 @@ CREATE INDEX tests_projectid_index ON public.tests USING btree ("projectId");
 
 
 --
+-- Name: vercel_checks_buildid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX vercel_checks_buildid_index ON public.vercel_checks USING btree ("buildId");
+
+
+--
+-- Name: vercel_checks_verceldeploymentid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX vercel_checks_verceldeploymentid_index ON public.vercel_checks USING btree ("vercelDeploymentId");
+
+
+--
+-- Name: vercel_deployments_vercelprojectid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX vercel_deployments_vercelprojectid_index ON public.vercel_deployments USING btree ("vercelProjectId");
+
+
+--
 -- Name: vercel_project_configurations_vercelconfigurationid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2217,6 +2361,30 @@ ALTER TABLE ONLY public.tests
 
 
 --
+-- Name: vercel_checks vercel_checks_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.vercel_checks
+    ADD CONSTRAINT vercel_checks_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
+
+
+--
+-- Name: vercel_checks vercel_checks_verceldeploymentid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.vercel_checks
+    ADD CONSTRAINT vercel_checks_verceldeploymentid_foreign FOREIGN KEY ("vercelDeploymentId") REFERENCES public.vercel_deployments(id);
+
+
+--
+-- Name: vercel_deployments vercel_deployments_vercelprojectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.vercel_deployments
+    ADD CONSTRAINT vercel_deployments_vercelprojectid_foreign FOREIGN KEY ("vercelProjectId") REFERENCES public.vercel_projects(id);
+
+
+--
 -- Name: vercel_project_configurations vercel_project_configurations_vercelconfigurationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2320,3 +2488,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023050
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230504075127_buckets_complete_default_false.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230505112219_add_purchase_payment_method_filled.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230524074946_build-reference.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230625185103_vercel-checks.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230703200439_test-name-length.js', 1, NOW());
