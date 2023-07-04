@@ -34,3 +34,5 @@ yarn-error.log*
 # E2E screenshots
 cypress/screenshots
 cypress/downloads
+
+tsconfig.tsbuildinfo

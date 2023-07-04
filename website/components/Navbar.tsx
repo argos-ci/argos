@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Dialog, DialogDisclosure, useDialogState } from "ariakit/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Burger } from "./Burger";
 import { Container } from "./Container";
 import { Link } from "./Link";
 
-import type { DialogState } from "ariakit/dialog";
 import clsx from "clsx";
 
 const NavbarSecondary: React.FC<{ children: React.ReactNode }> = ({
@@ -19,29 +18,6 @@ export const NavbarLink: React.FC<{
   href: string;
   children: React.ReactNode;
 }> = (props) => <Link className="block py-3" {...props} />;
-
-interface MobileMenuProps {
-  children: React.ReactNode;
-  dialog: DialogState;
-}
-
-const MobileMenu: React.FC<MobileMenuProps> = ({ children, dialog }) => {
-  return (
-    <Dialog
-      onClick={(event) => {
-        if ((event.target as HTMLElement).tagName === "A") {
-          dialog.hide();
-        }
-      }}
-      aria-label="Menu"
-      state={dialog}
-    >
-      <div className="fixed bg-black top-[68px] right-0 bottom-0 left-0 z-10 overflow-auto p-6 flex flex-col gap-3 md:hidden">
-        {children}
-      </div>
-    </Dialog>
-  );
-};
 
 interface NavbarProps {
   primary: React.ReactNode;
@@ -71,11 +47,11 @@ const useScrollListener = (listener: (event: Event) => void) => {
 };
 
 export const Navbar: React.FC<NavbarProps> = ({ primary, secondary }) => {
-  const dialog = useDialogState();
   const [scrolled, setScrolled] = useState(false);
   useScrollListener(() => {
     setScrolled(window.scrollY > 0);
   });
+  const [open, setOpen] = useState(false);
 
   return (
     <nav
@@ -84,16 +60,31 @@ export const Navbar: React.FC<NavbarProps> = ({ primary, secondary }) => {
         scrolled && "border-b-slate-800"
       )}
     >
-      <MobileMenu dialog={dialog}>{secondary}</MobileMenu>
-      <Container className="flex items-center justify-between md:justify-start">
-        {primary}
-        <NavbarSecondary>{secondary}</NavbarSecondary>
-        <DialogDisclosure
-          state={dialog}
-          aria-label="Toggle navigation"
-          as={Burger}
-        />
-      </Container>
+      <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Content
+            onClick={(event) => {
+              if ((event.target as HTMLElement).tagName === "A") {
+                setOpen(false);
+              }
+            }}
+            aria-label="Menu"
+            className={clsx(
+              "fixed bg-black inset-0 top-[68px] z-10 overflow-auto p-6 flex flex-col gap-3 md:hidden",
+              "duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+            )}
+          >
+            {secondary}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+        <Container className="flex items-center justify-between md:justify-start">
+          {primary}
+          <NavbarSecondary>{secondary}</NavbarSecondary>
+          <DialogPrimitive.Trigger asChild>
+            <Burger />
+          </DialogPrimitive.Trigger>
+        </Container>
+      </DialogPrimitive.Root>
     </nav>
   );
 };

@@ -1,17 +1,17 @@
-import { Button as AriakitButton } from "ariakit/button";
-import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
 import { forwardRef } from "react";
+import { Slot } from "@radix-ui/react-slot";
 
 export type ButtonColor = "primary" | "neutral";
 export type ButtonVariant = "contained" | "outline";
 export type ButtonSize = "base" | "small" | "large";
 
-export interface ButtonProps extends AriakitButtonProps<"button"> {
+export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   color?: ButtonColor;
   variant?: ButtonVariant;
   size?: ButtonSize;
-}
+  asChild?: boolean;
+};
 
 const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
   contained: {
@@ -42,10 +42,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = "base",
       children,
       className,
+      asChild,
       ...props
     },
     ref
   ) => {
+    const Comp = asChild ? Slot : "button";
     const colorClassNames = variantClassNames[variant];
     if (!colorClassNames) {
       throw new Error(`Invalid variant: ${variant}`);
@@ -59,9 +61,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       throw new Error(`Invalid size: ${color}`);
     }
     return (
-      <AriakitButton
+      <Comp
         ref={ref}
-        as="button"
         className={clsx(
           className,
           variantClassName,
@@ -71,7 +72,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {children}
-      </AriakitButton>
+      </Comp>
     );
   }
 );

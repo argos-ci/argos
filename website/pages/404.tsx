@@ -19,12 +19,8 @@ export default function NotFound() {
               But dont worry, you can find plenty of other things on our
               homepage.
             </p>
-            <Button>
-              {(buttonProps) => (
-                <Link {...buttonProps} href="/">
-                  Back to homepage
-                </Link>
-              )}
+            <Button asChild>
+              <Link href="/">Back to homepage</Link>
             </Button>
           </div>
         </div>

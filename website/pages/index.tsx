@@ -61,19 +61,11 @@ export default function Home() {
               regressions.
             </p>
             <div className="flex gap-4 sm:gap-6 mt-6 mx-auto">
-              <Button color="neutral" variant="outline">
-                {(buttonProps) => (
-                  <a {...buttonProps} href="/docs">
-                    Documentation
-                  </a>
-                )}
+              <Button color="neutral" variant="outline" asChild>
+                <a href="/docs">Documentation</a>
               </Button>
-              <Button>
-                {(buttonProps) => (
-                  <a {...buttonProps} href="https://app.argos-ci.com/signup">
-                    Get Started
-                  </a>
-                )}
+              <Button asChild>
+                <a href="https://app.argos-ci.com/signup">Get Started</a>
               </Button>
             </div>
           </div>
@@ -218,13 +210,11 @@ export default function Home() {
             Argos is open source and community driven. Supported by a network of
             early advocates, contributors, and champions.
           </p>
-          <Button className="flex gap-1 w-fit">
-            {(buttonProps) => (
-              <a {...buttonProps} href="https://argos-ci.com/discord">
-                <ChatBubbleLeftRightIcon className="w-4 h-4" />
-                Join us on Discord
-              </a>
-            )}
+          <Button className="flex gap-1 w-fit" asChild>
+            <a href="https://argos-ci.com/discord">
+              <ChatBubbleLeftRightIcon className="w-4 h-4" />
+              Join us on Discord
+            </a>
           </Button>
         </section>
       </Container>
