@@ -1,5 +1,6 @@
 import {
   Build,
+  BuildNotification,
   Capture,
   Crawl,
   Project,
@@ -48,6 +49,10 @@ export const deleteProject = async (args: {
   await Screenshot.query()
     .joinRelated("screenshotBucket")
     .where("screenshotBucket.projectId", project.id)
+    .delete();
+  await BuildNotification.query()
+    .joinRelated("build")
+    .where("build.projectId", project.id)
     .delete();
   await Build.query().where("projectId", project.id).delete();
   await ScreenshotBucket.query().where("projectId", project.id).delete();
