@@ -11,15 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
         with:
-          fetch-depth: 2
+          version: 8
 
       - name: Install dependencies and launch Cypress tests
-        uses: cypress-io/github-action@v4
+        uses: cypress-io/github-action@v5
         with:
-          build: npm run build
-          start: npm start
+          build: pnpm run build
+          start: pnpm run start
 
       - name: Argos screenshots upload
         if: ${{ always() }}
-        run: npx @argos-ci/cli upload cypress/screenshots
+        run: pnpm exec argos upload cypress/screenshots
