@@ -7,11 +7,7 @@ import { Container } from "@/components/Container";
 import { Head } from "@/components/Head";
 import { Link } from "@/components/Link";
 import { Tooltip } from "@/components/Tooltip";
-import {
-  CheckCircleIcon,
-  ChevronDownIcon,
-  CurrencyDollarIcon,
-} from "@heroicons/react/24/solid";
+import { CheckCircleIcon, CurrencyDollarIcon } from "@heroicons/react/24/solid";
 import clsx from "clsx";
 import {
   Accordion,
