@@ -1,48 +1,72 @@
+import type { RestEndpointMethodTypes } from "@argos-ci/github";
+
 import { Account } from "../models/Account.js";
 import { GithubAccount } from "../models/GithubAccount.js";
 import { User } from "../models/User.js";
 import { transaction } from "../transaction.js";
 
-export type PartialGithubProfile = {
-  id: number;
+export const getGhAccountType = (strType: string) => {
+  const type = strType.toLowerCase();
+  if (type !== "user" && type !== "organization") {
+    throw new Error(`Account of "${type}" is not supported`);
+  }
+  return type;
+};
+
+export type GetOrCreateGhAccountProps = {
+  githubId: number;
   login: string;
   email: string | null;
   name: string | null;
-  type: string;
+  type: "user" | "organization";
 };
 
-export const getOrCreateGhAccountFromGhProfile = async (
-  profile: PartialGithubProfile
+export const getOrCreateGhAccount = async (
+  props: GetOrCreateGhAccountProps
 ) => {
   const existing = await GithubAccount.query().findOne({
-    githubId: profile.id,
+    githubId: props.githubId,
   });
   if (existing) {
     if (
-      existing.login !== profile.login ||
-      existing.email !== profile.email ||
-      existing.name !== profile.name
+      existing.login !== props.login ||
+      existing.email !== props.email ||
+      existing.name !== props.name
     ) {
       return existing.$query().patchAndFetch({
-        login: profile.login,
-        email: profile.email,
-        name: profile.name,
+        login: props.login,
+        email: props.email,
+        name: props.name,
       });
     }
     return existing;
   }
-  const type = profile.type.toLowerCase();
-
-  if (type !== "user" && type !== "organization") {
-    throw new Error(`Account of "${type}" is not supported`);
-  }
 
   return GithubAccount.query().insertAndFetch({
+    githubId: props.githubId,
+    login: props.login,
+    type: props.type,
+    email: props.email,
+    name: props.name,
+  });
+};
+
+export const getOrCreateGhAccountFromGhProfile = async (
+  profile: RestEndpointMethodTypes["users"]["getAuthenticated"]["response"]["data"],
+  emails: RestEndpointMethodTypes["users"]["listEmailsForAuthenticatedUser"]["response"]["data"]
+) => {
+  const email =
+    emails.find((e) => e.primary && e.verified)?.email ??
+    emails.find((e) => e.verified)?.email ??
+    emails[0]?.email ??
+    profile.email;
+
+  return getOrCreateGhAccount({
     githubId: profile.id,
     login: profile.login,
-    type: "user",
-    email: profile.email,
+    email,
     name: profile.name,
+    type: getGhAccountType(profile.type),
   });
 };
 

@@ -22,8 +22,14 @@ router.use(cors());
 
 async function registerAccountFromGithub(accessToken: string) {
   const octokit = getTokenOctokit(accessToken);
-  const profile = await octokit.users.getAuthenticated();
-  const ghAccount = await getOrCreateGhAccountFromGhProfile(profile.data);
+  const [profile, emails] = await Promise.all([
+    octokit.users.getAuthenticated(),
+    octokit.users.listEmailsForAuthenticatedUser(),
+  ]);
+  const ghAccount = await getOrCreateGhAccountFromGhProfile(
+    profile.data,
+    emails.data
+  );
   const account = await getOrCreateUserAccountFromGhAccount(
     ghAccount,
     accessToken
