@@ -3,20 +3,15 @@ const withMDX = require("@next/mdx")({
   options: {
     remarkPlugins: [],
     rehypePlugins: [],
-    providerImportSource: "@mdx-js/react",
   },
 });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = withMDX({
   reactStrictMode: true,
-  swcMinify: true,
   i18n: {
     locales: ["en"],
     defaultLocale: "en",
-  },
-  images: {
-    unoptimized: true,
   },
   pageExtensions: ["ts", "tsx", "js", "jsx", "md", "mdx"],
   redirects: async () => {
