@@ -14,9 +14,6 @@ dependencies:
   '@mdx-js/react':
     specifier: ^2.3.0
     version: 2.3.0(react@18.2.0)
-  '@next/font':
-    specifier: ^13.4.8
-    version: 13.4.8
   '@next/mdx':
     specifier: ^13.4.8
     version: 13.4.8(@mdx-js/loader@2.3.0)(@mdx-js/react@2.3.0)
@@ -583,10 +580,6 @@ packages:
     dependencies:
       glob: 7.1.7
     dev: true
-
-  /@next/font@13.4.8:
-    resolution: {integrity: sha512-LQ/58mU8N0FDfNGbre1JeL9WAOup10TIy8Nr8P+gX+OKigLok21kxAj8Bi4pxNqfs31ePsdIpzr52WN1dZlPWg==}
-    dev: false
 
   /@next/mdx@13.4.8(@mdx-js/loader@2.3.0)(@mdx-js/react@2.3.0):
     resolution: {integrity: sha512-8h0mjPlSKC/KpREJOVhVht6cjXDp5oGBiJw6lYVbRBlFcGSLEt4aehHw8y/aZ2a5o2SThAjh5QOlVbeCz2N1ug==}

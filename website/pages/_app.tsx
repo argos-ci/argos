@@ -3,7 +3,7 @@ import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { AppNavbar } from "@/containers/AppNavbar";
 import { AppFooter } from "@/containers/AppFooter";
-import { Inter } from "@next/font/google";
+import { Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/Tooltip";
 
 // If loading a variable font, you don't need to specify the font weight
