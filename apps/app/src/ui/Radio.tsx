@@ -27,7 +27,7 @@ export const RadioField = forwardRef<HTMLInputElement, RadioFieldProps>(
     return (
       <label className="flex items-baseline gap-4 text-left">
         <Radio ref={ref} value={value} className="peer" {...props} />
-        <div className="border-l border-border px-2 hover:border-on-light peer-checked:border-on">
+        <div className="border-l px-2 hover:border-on-light peer-checked:border-on">
           <div className={clsx(scaleClassName, "font-semibold")}>{label}</div>
           <p>{children}</p>
         </div>

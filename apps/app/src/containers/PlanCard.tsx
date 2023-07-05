@@ -357,7 +357,7 @@ const ConsumptionBlock = ({
   const max = isPrivate ? screenshotsLimitPerMonth : Infinity;
 
   return (
-    <div className="flex flex-col gap-2 rounded border border-border p-4">
+    <div className="flex flex-col gap-2 rounded border p-4">
       <div className="font-medium">
         {isPrivate ? "Private" : "Public"} projects
       </div>

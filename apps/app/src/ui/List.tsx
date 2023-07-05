@@ -17,10 +17,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(
       <div
         ref={ref}
         role="table"
-        className={clsx(
-          "flex flex-col rounded border border-border",
-          className
-        )}
+        className={clsx("flex flex-col rounded border", className)}
         {...props}
       />
     );

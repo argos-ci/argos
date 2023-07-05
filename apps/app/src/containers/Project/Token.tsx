@@ -30,9 +30,7 @@ export const ProjectToken = (props: ProjectTokenProps) => {
           Use this <Code>ARGOS_TOKEN</Code> to authenticate your project when
           you send screenshots to Argos.
         </CardParagraph>
-        <Pre>
-          <code>ARGOS_TOKEN={project.token}</code>
-        </Pre>
+        <Pre code={`ARGOS_TOKEN=${project.token}`} />
         <CardParagraph>
           <strong>
             This token should be kept secret. Do not expose it publicly.

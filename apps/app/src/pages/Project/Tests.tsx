@@ -132,7 +132,7 @@ const Thumbnail = ({ screenshot }: { screenshot: Screenshot }) => {
     ? `${screenshot.url}?tr=w-${screenshot.width},h-${screenshot.height},c-at_max,dpr-2`
     : null;
   return (
-    <div className="h-16 w-28 min-w-fit overflow-hidden rounded border border-border">
+    <div className="h-16 w-28 min-w-fit overflow-hidden rounded border">
       {screenshotSrc && (
         <img
           src={screenshotSrc}

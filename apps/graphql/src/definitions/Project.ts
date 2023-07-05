@@ -39,6 +39,8 @@ export const typeDefs = gql`
     builds(first: Int = 30, after: Int = 0): BuildConnection!
     "A single build linked to the repository"
     build(number: Int!): Build
+    "Reference build"
+    latestReferenceBuild: Build
     "Tests associated to the repository"
     tests(first: Int!, after: Int!): TestConnection!
     "Determine if the current user has write access to the project"
@@ -61,6 +63,8 @@ export const typeDefs = gql`
     totalScreenshots: Int!
     "Vercel project"
     vercelProject: VercelProject
+    "Project slug"
+    slug: String!
   }
 
   extend type Query {
@@ -259,6 +263,17 @@ export const resolvers: IResolvers = {
       if (!hasWritePermission) return null;
       return project.token;
     },
+    latestReferenceBuild: async (project) => {
+      const lastestReferenceBuild = await Build.query()
+        .where("projectId", project.id)
+        .where("type", "reference")
+        .orderBy([
+          { column: "createdAt", order: "desc" },
+          { column: "number", order: "desc" },
+        ])
+        .first();
+      return lastestReferenceBuild ?? null;
+    },
     builds: async (project, { first, after }) => {
       const result = await Build.query()
         .where({ projectId: project.id })
@@ -339,6 +354,10 @@ export const resolvers: IResolvers = {
         .joinRelated("screenshotBucket")
         .where("screenshotBucket.projectId", project.id)
         .resultSize();
+    },
+    slug: async (project, _args, ctx) => {
+      const account = await ctx.loaders.Account.load(project.accountId);
+      return `${account.slug}/${project.name}`;
     },
   },
   Query: {

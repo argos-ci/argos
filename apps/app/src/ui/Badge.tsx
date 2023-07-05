@@ -13,7 +13,7 @@ export const Badge = forwardRef<HTMLDivElement, BadgeProps>(
         ref={ref}
         className={clsx(
           className,
-          "rounded-lg border border-border px-[7px] py-[3px] text-xxs font-semibold tabular-nums leading-none text-on-light"
+          "rounded-lg border px-[7px] py-[3px] text-xxs font-semibold tabular-nums leading-none text-on-light"
         )}
       >
         {children}

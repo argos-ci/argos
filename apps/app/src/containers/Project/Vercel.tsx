@@ -130,7 +130,7 @@ export const ProjectVercel = (props: ProjectVercelProps) => {
           deploying on Vercel.
         </CardParagraph>
         {project.vercelProject ? (
-          <div className="flex items-center gap-4 rounded border border-border p-4">
+          <div className="flex items-center gap-4 rounded border p-4">
             <VercelLogo height={24} />
             <div className="flex-1 font-semibold">
               <a
@@ -151,7 +151,7 @@ export const ProjectVercel = (props: ProjectVercelProps) => {
             accountId={project.account.id}
           />
         ) : (
-          <div className="flex items-center justify-between gap-4 rounded border border-border p-4">
+          <div className="flex items-center justify-between gap-4 rounded border p-4">
             <Button color="neutral" onClick={() => setStarted(true)}>
               <ButtonIcon>
                 <VercelLogo />

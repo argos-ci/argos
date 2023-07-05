@@ -443,6 +443,8 @@ export type IProject = INode & {
   /** Repositories associated to the project */
   ghRepository?: Maybe<IGithubRepository>;
   id: Scalars['ID'];
+  /** Reference build */
+  latestReferenceBuild?: Maybe<IBuild>;
   name: Scalars['String'];
   /** Determine if the current user has write access to the project */
   permissions: Array<IPermission>;
@@ -452,6 +454,8 @@ export type IProject = INode & {
   public: Scalars['Boolean'];
   /** Reference branch */
   referenceBranch?: Maybe<Scalars['String']>;
+  /** Project slug */
+  slug: Scalars['String'];
   /** Tests associated to the repository */
   tests: ITestConnection;
   token?: Maybe<Scalars['String']>;
@@ -1351,11 +1355,13 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghRepository?: Resolver<Maybe<IResolversTypes['GithubRepository']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  latestReferenceBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   private?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   public?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   referenceBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   tests?: Resolver<IResolversTypes['TestConnection'], ParentType, ContextType, RequireFields<IProjectTestsArgs, 'after' | 'first'>>;
   token?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   totalScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
