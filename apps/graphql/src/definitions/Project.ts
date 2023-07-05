@@ -39,6 +39,8 @@ export const typeDefs = gql`
     builds(first: Int = 30, after: Int = 0): BuildConnection!
     "A single build linked to the repository"
     build(number: Int!): Build
+    "Reference build"
+    latestReferenceBuild: Build
     "Tests associated to the repository"
     tests(first: Int!, after: Int!): TestConnection!
     "Determine if the current user has write access to the project"
@@ -258,6 +260,17 @@ export const resolvers: IResolvers = {
       );
       if (!hasWritePermission) return null;
       return project.token;
+    },
+    latestReferenceBuild: async (project) => {
+      const lastestReferenceBuild = await Build.query()
+        .where("projectId", project.id)
+        .where("type", "reference")
+        .orderBy([
+          { column: "createdAt", order: "desc" },
+          { column: "number", order: "desc" },
+        ])
+        .first();
+      return lastestReferenceBuild ?? null;
     },
     builds: async (project, { first, after }) => {
       const result = await Build.query()
