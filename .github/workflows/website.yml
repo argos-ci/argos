@@ -1,10 +1,14 @@
-name: CI
+name: Website CI
 
 on:
   push:
     branches: [main]
+    paths:
+      - "website/**"
   pull_request:
     branches: [main]
+    paths:
+      - "website/**"
 
 jobs:
   build:
