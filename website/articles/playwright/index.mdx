@@ -1,0 +1,142 @@
+---
+title: Automating Visual Testing with Playwright, Argos and GitHub Actions
+description: How to automate visual testing with Playwright, Argos, and GitHub CI to review pull-request's visual changes and fix bugs before they make it into production.
+slug: playwright
+category: Integration
+author: Jeremy Sfez
+date: 2023-01-24
+image: ./main.jpg
+imageAlt: Black mask — Photo by John Noonan
+---
+
+<MainImage
+  credit={
+    <>
+      Photo by{" "}
+      <a href="https://unsplash.com/@theonlynoonan?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">
+        John Noonan
+      </a>{" "}
+      on{" "}
+      <a href="https://unsplash.com/fr/photos/QM_LE41VJJ4?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">
+        Unsplash
+      </a>
+    </>
+  }
+/>
+
+Visual testing allows developers to identify and fix visual bugs in applications before they become a problem. By automating visual testing, developers can ensure that their web applications look and function as intended when they make changes and updates.
+
+In this guide, we will show how to automate visual testing with [Playwright](https://playwright.dev/docs/intro), [Argos](https://argos-ci.com/), and [GitHub Actions](https://github.com/features/actions). The goal is to be notified of visual changes on each pull-request directly within GitHub, and fix visual bugs before they make it into production.
+
+## Install the Argos GitHub App
+
+To get started with Argos, you'll first need to install the Argos GitHub App. This will allow Argos to access your repositories, add test statuses on pull-request, and notify you when visual changes are detected.
+
+To install Argos app, go to the [GitHub Marketplace](https://github.com/marketplace/argos-ci), subscribe to an Argos plan and complete the installation.
+
+## Playwright and Argos setup
+
+[Playwright](https://playwright.dev/docs/intro) is a powerful testing framework that provides a great developer experience and good out-of-the-box features for end-to-end testing. To install Playwright, execute the following command in your terminal and answer the questions in the prompt:
+
+```sh
+npm init playwright@latest
+```
+
+To use Playwright with Argos, you will also have to install the following packages:
+
+```sh
+npm install --save-dev @argos-ci/cli  @argos-ci/playwright
+```
+
+- [@argos-ci/cli](https://argos-ci.com/docs/argos-cli): easiest and fastest way to upload screenshots to the Argos.
+- [@argos-ci/playwright](https://argos-ci.com/docs/playwright): improve screenshot stability and expose CSS to hide content.
+
+## Capture the screenshots
+
+Once Playwright and Argos app are installed, you can create test files to capture screenshots of your application. Use the `argosScreenshot` function provided by `@argos-ci/playwright` insure stable screenshots.
+
+For example, the following test file will take a screenshot of your homepage:
+
+```js
+// tests/homepage.spec.ts
+import { test } from "@playwright/test";
+import { argosScreenshot } from "@argos-ci/playwright";
+test.describe("Homepage", () => {
+  test("take screenshot", async ({ page }) => {
+    await page.goto("http://localhost:3000/");
+    await argosScreenshot(page, "homepage");
+  });
+});
+```
+
+To run the test, use the playwright test command:
+
+```sh
+npx playwright test
+```
+
+If everything is set up correctly, the test should pass and you should find a new screenshot in the `/screenshots` folder.
+
+## Integrate with GitHub Actions
+
+With the screenshots captured, you can now integrate the Visual Testing into your GitHub Actions Continuous Integration. To do this, you have to create a new GitHub Actions workflow file that runs Playwright tests and uploads screenshots to Argos.
+
+Create a new file called `.github/workflows/main.yml` in the root directory of your repository with the following content:
+
+```yml
+# file: .github/workflows/main.yml
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npx playwright test
+      - name: Upload screenshots to Argos
+        run: npx @argos-ci/cli upload screenshots
+```
+
+This workflow defines a job that runs on pull requests to the main branch. The job does the following:
+
+- Checkout the code from GitHub
+- Setup Node.js 18
+- Install dependencies
+- Run the tests with Playwright
+- Upload the screenshots to Argos
+
+Once you have added the workflow file, you can commit and push the changes to your repository. GitHub will automatically start running the workflow on each pull request.
+
+## Monitor Visual Changes
+
+You can now start monitoring visual changes in your web application. Argos will detect and report any visual changes between your pull request branch and your `main` branch.
+
+**GitHub check status**
+![GitHub check status](https://res.cloudinary.com/smooth/image/upload/c_scale,w_700,dpr_2/v1674471231/Argos/github-check-status.png)
+By clicking on "Details" link, you can review the results of the comparison in Argos.
+
+**Argos example build**
+![argos-build](https://res.cloudinary.com/smooth/image/upload/v1674471477/Argos/argos-build-example.png)
+
+Read [this documentation](https://argos-ci.com/docs/visual-testing) if you need more information about visual testing workflow.
+
+## Conclusion
+
+In this guide, we have shown you how to automate visual testing with Playwright, Argos, and GitHub Actions. By integrating visual testing into your CI workflow, you can catch and fix visual bugs before they make it into production. With Argos, you can easily configure baseline, monitor visual changes, and collaborate with your team to fix issues. By following the steps outlined in this guide, you can be sure that your web application looks and functions as intended, even as you make changes and updates.
+
+---
+
+We hope this post has been helpful. If you're interested in learning about how Argos can help you improve the quality of your web applications, take a look at our [documentation](https://argos-ci.com/docs/installation). And if you're ready to start automating your visual testing, feel free to sign up for a [free trial](https://github.com/marketplace/argos-ci) and see how Argos can help you catch bugs.
+
+If you need more information about Visual Testing, it would be a pleasure to help you on our [Discord community](https://argos-ci.com/discord).
