@@ -109,6 +109,9 @@ module.exports = {
       aria: {
         invalid: 'invalid="true"',
       },
+      borderColor: {
+        DEFAULT: colors.slate[700],
+      },
     },
   },
 };

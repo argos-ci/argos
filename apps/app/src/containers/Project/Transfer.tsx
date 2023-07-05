@@ -420,10 +420,9 @@ const TransferDialogButton = (props: TransferDialogButtonProps) => {
                 <SuccessStep
                   accountName={project.account.name || project.account.slug}
                   onContinue={() => {
-                    navigate(
-                      `/${project.account.slug}/${project.name}/settings`,
-                      { replace: true }
-                    );
+                    navigate(`/${project.slug}/settings`, {
+                      replace: true,
+                    });
                   }}
                 />
               );
@@ -438,6 +437,7 @@ const ProjectFragment = graphql(`
   fragment ProjectTransfer_Project on Project {
     id
     name
+    slug
     account {
       id
       name

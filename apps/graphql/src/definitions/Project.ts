@@ -63,6 +63,8 @@ export const typeDefs = gql`
     totalScreenshots: Int!
     "Vercel project"
     vercelProject: VercelProject
+    "Project slug"
+    slug: String!
   }
 
   extend type Query {
@@ -352,6 +354,10 @@ export const resolvers: IResolvers = {
         .joinRelated("screenshotBucket")
         .where("screenshotBucket.projectId", project.id)
         .resultSize();
+    },
+    slug: async (project, _args, ctx) => {
+      const account = await ctx.loaders.Account.load(project.accountId);
+      return `${account.slug}/${project.name}`;
     },
   },
   Query: {

@@ -11,7 +11,7 @@ export const Card = ({ className, intent, ...props }: CardProps) => {
       className={clsx(
         className,
         "w-full overflow-hidden rounded border  bg-slate-900/50",
-        intent === "danger" ? "border-danger-500" : "border-border"
+        intent === "danger" && "border-danger-500"
       )}
       {...props}
     />

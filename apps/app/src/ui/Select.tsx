@@ -42,7 +42,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
         ref={ref}
         className={clsx(
           className,
-          "focus:shadow-outline flex appearance-none items-center gap-2 rounded border border-border bg-slate-900 px-3 py-2 leading-tight text-on shadow invalid:border-red-800 focus:outline-none disabled:opacity-disabled"
+          "focus:shadow-outline flex appearance-none items-center gap-2 rounded border bg-slate-900 px-3 py-2 leading-tight text-on shadow invalid:border-red-800 focus:outline-none disabled:opacity-disabled"
         )}
         {...props}
       />

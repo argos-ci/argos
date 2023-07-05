@@ -119,7 +119,7 @@ export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
           pull-requests.
         </CardParagraph>
         {project.ghRepository ? (
-          <div className="flex items-center gap-4 rounded border border-border p-4">
+          <div className="flex items-center gap-4 rounded border p-4">
             <MarkGithubIcon size={24} className="shrink-0" />
             <div className="flex-1 font-semibold">
               <a
@@ -137,7 +137,7 @@ export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
         ) : started ? (
           <LinkRepository projectId={project.id} />
         ) : (
-          <div className="flex items-center justify-between gap-4 rounded border border-border p-4">
+          <div className="flex items-center justify-between gap-4 rounded border p-4">
             <Button color="neutral" onClick={() => setStarted(true)}>
               <ButtonIcon>
                 <MarkGithubIcon />

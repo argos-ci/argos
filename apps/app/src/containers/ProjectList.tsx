@@ -11,6 +11,7 @@ const ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
     id
     name
+    slug
     account {
       id
       slug
@@ -50,7 +51,7 @@ const ProjectRow = ({ project }: { project: Project }) => {
   return (
     <RouterLink
       key={project.id}
-      to={`/${project.account.slug}/${project.name}`}
+      to={`/${project.slug}`}
       className="flex items-center justify-between rounded bg-slate-900/70 p-3 font-medium text-on-light transition hover:bg-slate-900"
     >
       <div className="flex shrink-0 gap-1">

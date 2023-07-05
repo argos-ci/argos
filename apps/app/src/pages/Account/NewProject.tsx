@@ -17,11 +17,7 @@ const CreateProjectMutation = graphql(`
       input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }
     ) {
       id
-      name
-      account {
-        id
-        slug
-      }
+      slug
     }
   }
 `);
@@ -33,7 +29,7 @@ export const AccountNewProject = () => {
     onCompleted: (result) => {
       if (result) {
         const project = result.createProject;
-        navigate(`/${project.account.slug}/${project.name}`);
+        navigate(`/${project.slug}`);
       }
     },
   });
