@@ -30,6 +30,7 @@ jobs:
       - name: Get pnpm store directory
         id: pnpm-cache
         shell: bash
+        working-directory: website
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
@@ -44,16 +45,16 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: pnpm install --frozen-lockfile
-        working-directory: frontend
+        working-directory: website
 
       - name: Install dependencies and launch Cypress tests
         uses: cypress-io/github-action@v5
         with:
           build: pnpm run build
           start: pnpm run start
-          working-directory: frontend
+          working-directory: website
 
       - name: Argos screenshots upload
         if: ${{ always() }}
         run: pnpm exec argos upload --build-name website cypress/screenshots
-        working-directory: frontend
+        working-directory: website
