@@ -6,6 +6,7 @@
 
 _Argos is a visual testing solution that fits in your workflow to avoid visual regression. Takes screenshots on each commit and be notified if something changes._
 
+[![Argos Visual Testing](https://argos-ci.com/badge.svg)](https://app.argos-ci.com/argos-ci/argos/reference)
 [![CI](https://github.com/argos-ci/argos/actions/workflows/ci.yml/badge.svg)](https://github.com/argos-ci/argos/actions/workflows/ci.yml)
 
 ## Links
