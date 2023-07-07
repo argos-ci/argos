@@ -36,7 +36,7 @@ export const BuildFragment = graphql(`
 
 export const BuildSidebar = memo(
   (props: {
-    githubRepoUrl: string;
+    githubRepoUrl: string | null;
     build: FragmentType<typeof BuildFragment>;
   }) => {
     const build = useFragment(BuildFragment, props.build);
@@ -81,13 +81,18 @@ export const BuildSidebar = memo(
         <TabPanel
           state={tab}
           tabId="screenshots"
-          tabIndex={-1}
+          focusable={false}
           className="flex min-h-0 flex-1 flex-col"
         >
           <BuildDiffList />
         </TabPanel>
 
-        <TabPanel state={tab} tabId="info" className="flex-1 p-4">
+        <TabPanel
+          state={tab}
+          tabId="info"
+          className="flex-1 p-4"
+          focusable={false}
+        >
           <BuildInfos build={build} githubRepoUrl={props.githubRepoUrl} />
         </TabPanel>
       </div>

@@ -18,6 +18,7 @@ const ProjectFragment = graphql(`
     ghRepository {
       id
       fullName
+      url
     }
   }
 `);
@@ -124,7 +125,7 @@ export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
             <div className="flex-1 font-semibold">
               <a
                 className="text-white no-underline hover:underline"
-                href={`https://github.com/${project.ghRepository.fullName}`}
+                href={project.ghRepository.url}
                 target="_blank"
                 rel="noopener noreferrer"
               >

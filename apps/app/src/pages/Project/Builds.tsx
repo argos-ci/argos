@@ -1,7 +1,15 @@
 import { useQuery } from "@apollo/client";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { CSSProperties, memo, useCallback, useEffect, useRef } from "react";
+import clsx from "clsx";
+import {
+  CSSProperties,
+  HTMLAttributes,
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { Helmet } from "react-helmet";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
@@ -23,6 +31,10 @@ const ProjectQuery = graphql(`
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       permissions
+      ghRepository {
+        id
+        url
+      }
       ...GettingStarted_Project
       ...BuildStatusChip_Project
     }
@@ -67,6 +79,25 @@ type ProjectBuildsDocument = DocumentType<typeof ProjectBuildsQuery>;
 type Builds = NonNullable<ProjectBuildsDocument["project"]>["builds"];
 type Build = Builds["edges"][0];
 
+const FakeLink = ({
+  className,
+  href,
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { href: string | undefined }) => {
+  if (!href) {
+    return <div className={className} {...props} />;
+  }
+  return (
+    <div
+      className={clsx("text-on-light transition hover:text-on", className)}
+      onClick={(event) => {
+        event.preventDefault();
+        window.open(href, "_blank")?.focus();
+      }}
+      {...props}
+    />
+  );
+};
 const BuildRow = memo(
   ({
     build,
@@ -95,46 +126,38 @@ const BuildRow = memo(
           <div className="flex-1" />
           <div className="relative hidden w-24 md:block">
             {build.compareScreenshotBucket && (
-              <div
-                className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on"
+              <FakeLink
+                className="inline-flex max-w-full items-center gap-1"
                 title={build.compareScreenshotBucket.commit}
-                onClick={(event) => {
-                  event.preventDefault();
-                  window
-                    .open(
-                      `https://github.com/${accountSlug}/${projectName}/commit/${build.compareScreenshotBucket.commit}`,
-                      "_blank"
-                    )
-                    ?.focus();
-                }}
+                href={
+                  project.ghRepository
+                    ? `${project.ghRepository.url}/commit/${build.compareScreenshotBucket.commit}`
+                    : undefined
+                }
               >
                 <GitCommitIcon className="shrink-0" />
                 <span className="overflow-hidden text-ellipsis whitespace-nowrap">
                   {build.compareScreenshotBucket.commit.slice(0, 7)}
                 </span>
-              </div>
+              </FakeLink>
             )}
           </div>
           <div className="relative hidden w-28 sm:block lg:w-80">
             {build.compareScreenshotBucket && (
-              <div
-                className="inline-flex max-w-full items-center gap-1 text-on-light transition hover:text-on"
-                onClick={(event) => {
-                  event.preventDefault();
-                  window
-                    .open(
-                      `https://github.com/${accountSlug}/${projectName}/tree/${build.compareScreenshotBucket.branch}`,
-                      "_blank"
-                    )
-                    ?.focus();
-                }}
+              <FakeLink
+                className="inline-flex max-w-full items-center gap-1"
+                href={
+                  project.ghRepository
+                    ? `${project.ghRepository.url}/tree/${build.compareScreenshotBucket.branch}`
+                    : undefined
+                }
                 title={build.compareScreenshotBucket.branch}
               >
                 <GitBranchIcon className="shrink-0" />
                 <span className="overflow-hidden text-ellipsis whitespace-nowrap">
                   {build.compareScreenshotBucket.branch}
                 </span>
-              </div>
+              </FakeLink>
             )}
           </div>
           <div className="hidden w-32 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-right text-on-light sm:block">
