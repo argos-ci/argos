@@ -77,6 +77,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    name: E2E
 
     services:
       redis:
