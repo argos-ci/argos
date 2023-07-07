@@ -100,18 +100,11 @@ const strategy = {
       );
     }
 
-    const githubJob = githubRun.data.jobs.find(
-      (job) => job.name === authData.jobId
+    const hasInProgressJob = githubRun.data.jobs.some(
+      (job) => job.status === "in_progress"
     );
 
-    if (!githubJob) {
-      throw new HttpError(
-        404,
-        `GitHub job not found (token: "${bearerToken}")`
-      );
-    }
-
-    if (githubJob.status !== "in_progress") {
+    if (!hasInProgressJob) {
       throw new HttpError(
         401,
         `GitHub job is not in progress (token: "${bearerToken}")`
