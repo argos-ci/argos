@@ -11,6 +11,7 @@ export const typeDefs = gql`
     defaultBranch: String!
     private: Boolean!
     fullName: String!
+    url: String!
   }
 `;
 
@@ -21,6 +22,12 @@ export const resolvers: IResolvers = {
         repository.githubAccountId
       );
       return `${account.login}/${repository.name}`;
+    },
+    url: async (repository, _args, ctx) => {
+      const account = await ctx.loaders.GithubAccount.load(
+        repository.githubAccountId
+      );
+      return `https://github.com/${account.login}/${repository.name}`;
     },
   },
 };

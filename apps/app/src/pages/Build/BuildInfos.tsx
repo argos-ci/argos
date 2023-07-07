@@ -14,12 +14,16 @@ const CommitLink = ({
   githubRepoUrl,
   commit,
 }: {
-  githubRepoUrl: string;
+  githubRepoUrl: string | null;
   commit: string;
 }) => {
+  const shortCommit = commit.slice(0, 7);
+  if (!githubRepoUrl) {
+    return <>{shortCommit}</>;
+  }
   return (
     <Anchor className="font-mono" href={`${githubRepoUrl}/commit/${commit}`}>
-      {commit.slice(0, 7)}
+      {shortCommit}
     </Anchor>
   );
 };
@@ -28,9 +32,10 @@ const BranchLink = ({
   githubRepoUrl,
   branch,
 }: {
-  githubRepoUrl: string;
+  githubRepoUrl: string | null;
   branch: string;
 }) => {
+  if (!githubRepoUrl) return <>{branch}</>;
   return (
     <Anchor className="font-mono" href={`${githubRepoUrl}/tree/${branch}`}>
       {branch}
@@ -72,7 +77,7 @@ export const BuildFragment = graphql(`
 `);
 
 export const BuildInfos = (props: {
-  githubRepoUrl: string;
+  githubRepoUrl: string | null;
   build: FragmentType<typeof BuildFragment>;
 }) => {
   const build = useFragment(BuildFragment, props.build);
@@ -87,7 +92,7 @@ export const BuildInfos = (props: {
       <Dt>Total screenshots count</Dt>
       <Dd>{build ? build.stats.total : "-"}</Dd>
 
-      {build && build.prNumber ? (
+      {build?.prNumber && props.githubRepoUrl ? (
         <>
           <Dt>Pull request</Dt>
           <Dd>

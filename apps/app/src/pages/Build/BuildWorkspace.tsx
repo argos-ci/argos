@@ -39,6 +39,10 @@ export const BuildFragment = graphql(`
 export const ProjectFragment = graphql(`
   fragment BuildWorkspace_Project on Project {
     ...BuildStatusDescription_Project
+    ghRepository {
+      id
+      url
+    }
   }
 `);
 
@@ -49,7 +53,7 @@ export const BuildWorkspace = (props: {
 }) => {
   const build = useFragment(BuildFragment, props.build);
   const project = useFragment(ProjectFragment, props.project);
-  const githubRepoUrl = `https://github.com/${props.params.accountSlug}/${props.params.projectName}`;
+  const githubRepoUrl = project.ghRepository?.url ?? null;
 
   switch (build.status) {
     case "aborted":

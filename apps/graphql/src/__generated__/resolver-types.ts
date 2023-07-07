@@ -217,6 +217,7 @@ export type IGithubRepository = INode & {
   fullName: Scalars['String'];
   id: Scalars['ID'];
   private: Scalars['Boolean'];
+  url: Scalars['String'];
 };
 
 export enum IJobStatus {
@@ -1294,6 +1295,7 @@ export type IGithubRepositoryResolvers<ContextType = Context, ParentType extends
   fullName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   private?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
