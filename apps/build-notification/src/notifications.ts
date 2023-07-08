@@ -1,9 +1,17 @@
+import type { Octokit } from "@octokit/rest";
+
 import { TransactionOrKnex, runAfterTransaction } from "@argos-ci/database";
-import { Build, BuildNotification } from "@argos-ci/database/models";
+import {
+  Build,
+  BuildNotification,
+  ScreenshotBucket,
+} from "@argos-ci/database/models";
 import { getInstallationOctokit } from "@argos-ci/github";
 import { UnretryableError } from "@argos-ci/job-core";
 import { createVercelClient } from "@argos-ci/vercel";
 
+import { PullRequest } from "../../database/src/models/PullRequest.js";
+import { getRedisLock } from "../../web/src/redis/index.js";
 import { job as buildNotificationJob } from "./job.js";
 
 const getStatsMessage = async (buildId: string) => {
@@ -193,6 +201,90 @@ export async function pushBuildNotification({
   return buildNotification;
 }
 
+const getPrCommentMessage = async ({
+  builds,
+}: {
+  builds: Build[];
+}): Promise<string> => {
+  const aggregateStatuses = await getAggregateStatuses(builds);
+  const buildRows = await Promise.all(
+    builds.map(async (build, index) => {
+      const [stats, url] = await Promise.all([
+        // Build.getStats(build.id),
+        getStatsMessage(build.id),
+        build.getUrl(),
+      ]);
+      return `| ${build.name} | ${aggregateStatuses[index]} | ${stats} | [Inspect](${url}) |`;
+    })
+  );
+  return [
+    `| Build name | Status | Details | Inspect |`,
+    `| :--------- | :----- | :------ | :------ |`,
+    ...buildRows.sort(),
+  ].join("\n");
+};
+
+const createOrUpdatePrComment = async ({
+  build,
+  owner,
+  repo,
+  octokit,
+}: {
+  build: Build;
+  owner: string;
+  repo: string;
+  octokit: Octokit;
+}) => {
+  try {
+    const pullRequest = await build.$relatedQuery("pullRequest");
+
+    const lock = await getRedisLock();
+    await lock.acquire(pullRequest.id, async () => {
+      const builds = await ScreenshotBucket.relatedQuery<Build>("builds").where(
+        { commit: build.compareScreenshotBucket!.commit }
+      );
+      const commentMessage = await getPrCommentMessage({ builds });
+
+      if (pullRequest.commentId) {
+        await octokit.issues.updateComment({
+          owner,
+          repo,
+          comment_id: pullRequest.commentId,
+          body: commentMessage,
+        });
+        return;
+      }
+
+      const { data } = await octokit.issues.createComment({
+        owner,
+        repo,
+        issue_number: pullRequest.number,
+        body: commentMessage,
+      });
+      await pullRequest.$query().patch({ commentId: data.id });
+      return;
+    });
+  } catch (error: any) {
+    // The comment has been deleted by a user
+    if (error.status === 404) {
+      return;
+    }
+    throw error;
+  }
+};
+
+const getAggregateStatuses = async (builds: Build[]) => {
+  const buildIds = builds.map((build) => build.id);
+  const statuses = await Build.getStatuses(builds);
+  const conclusions = await Build.getConclusions(buildIds, statuses);
+  const reviewStatuses = await Build.getReviewStatuses(buildIds, conclusions);
+  return builds.map((_build, index) => {
+    if (reviewStatuses[index]) return reviewStatuses[index];
+    if (conclusions[index]) return conclusions[index];
+    return statuses[index];
+  });
+};
+
 type Context = {
   buildNotification: BuildNotification;
   build: Build;
@@ -241,7 +333,7 @@ const sendGithubNotification = async (ctx: Context) => {
 
   try {
     // https://developer.github.com/v3/repos/statuses/
-    return await octokit.repos.createCommitStatus({
+    const commitStatus = await octokit.repos.createCommitStatus({
       owner: githubAccount.login,
       repo: githubRepository.name,
       sha: build.compareScreenshotBucket.commit,
@@ -250,12 +342,24 @@ const sendGithubNotification = async (ctx: Context) => {
       description: notification.description, // Short description of the status.
       context: build.name === "default" ? "argos" : `argos/${build.name}`,
     });
+
+    if (build.project.prCommentEnabled) {
+      await createOrUpdatePrComment({
+        build: build,
+        owner: githubAccount.login,
+        repo: githubRepository.name,
+        octokit,
+      });
+    }
+
+    return commitStatus;
   } catch (error: any) {
     // It happens if a push-force occurs before sending the notification, it is not considered as an error
     // No commit found for SHA: xxx
     if (error.status === 422) {
       return null;
     }
+
     throw error;
   }
 };

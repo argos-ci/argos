@@ -16,6 +16,7 @@ import {
   timestampsSchema,
 } from "../util/schemas.js";
 import { Project } from "./Project.js";
+import { PullRequest } from "./PullRequest.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
 import { User } from "./User.js";
@@ -36,7 +37,7 @@ export class Build extends Model {
   static override tableName = "builds";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
-    required: ["compareScreenshotBucketId", "projectId"],
+    required: ["compareScreenshotBucketId", "projectId", "pullRequestId"],
     properties: {
       name: { type: "string", maxLength: 255 },
       baseScreenshotBucketId: { type: ["string", "null"] },
@@ -50,10 +51,13 @@ export class Build extends Model {
         type: ["string", "null"],
         enum: ["reference", "check", "orphan"],
       },
+      // TODO: remove prNumber
       prNumber: { type: ["integer", "null"] },
       prHeadCommit: { type: ["string", "null"] },
+      pullRequestId: { type: ["string", "null"] },
       referenceCommit: { type: ["string", "null"] },
       referenceBranch: { type: ["string", "null"] },
+      githubCommentId: { type: ["number", "null"] },
     },
   });
 
@@ -71,6 +75,7 @@ export class Build extends Model {
   prHeadCommit!: string | null;
   referenceCommit!: string | null;
   referenceBranch!: string | null;
+  githubCommentId!: number | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -114,6 +119,14 @@ export class Build extends Model {
           to: "screenshot_diffs.buildId",
         },
       },
+      pullRequest: {
+        relation: Model.HasOneRelation,
+        modelClass: PullRequest,
+        join: {
+          from: "builds.pullRequestId",
+          to: "pull_requests.id",
+        },
+      },
     };
   }
 
@@ -122,6 +135,7 @@ export class Build extends Model {
   vercelCheck?: VercelCheck | null;
   project?: Project;
   screenshotDiffs?: ScreenshotDiff[];
+  pullRequest?: PullRequest | null;
 
   override $afterValidate(json: Pojo) {
     if (
