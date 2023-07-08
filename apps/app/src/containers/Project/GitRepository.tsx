@@ -146,7 +146,7 @@ export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
               GitHub
             </Button>
             <div>
-              Use another provider?{" "}
+              Need another provider?{" "}
               <Anchor href={`mailto:${config.get("contactEmail")}`}>
                 Contact us
               </Anchor>
