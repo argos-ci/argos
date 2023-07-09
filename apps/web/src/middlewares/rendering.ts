@@ -80,6 +80,9 @@ export const rendering = (additionalClientData?: any) => {
           vercel: {
             integrationUrl: config.get("vercel.integrationUrl"),
           },
+          server: {
+            url: config.get("server.url"),
+          },
         },
         ...additionalClientData,
       }),

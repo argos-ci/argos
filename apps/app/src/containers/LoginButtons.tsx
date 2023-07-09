@@ -25,7 +25,7 @@ export const LoginButtons = (props: LoginButtonsProps) => {
       <p className="mt-6 text-left text-sm text-on-light">
         Argos only supports GitHub as account provider.
         <br />
-        Use another provider?{" "}
+        Need another provider?{" "}
         <Anchor href={`mailto:${config.get("contactEmail")}`}>
           Contact us
         </Anchor>
