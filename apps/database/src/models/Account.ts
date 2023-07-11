@@ -146,7 +146,7 @@ export class Account extends Model {
   async $getActivePurchase() {
     if (!this.id) return null;
 
-    const purchase = await Purchase.query()
+    const query = Purchase.query()
       .where("accountId", this.id)
       .whereRaw("?? < now()", "startDate")
       .where((query) =>
@@ -155,6 +155,8 @@ export class Account extends Model {
       .withGraphJoined("plan")
       .orderBy("plan.screenshotsLimitPerMonth", "DESC")
       .first();
+
+    const purchase = await query;
 
     return purchase ?? null;
   }

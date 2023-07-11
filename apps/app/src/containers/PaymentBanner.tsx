@@ -83,7 +83,11 @@ const BannerCta = ({
 
     case "stripePortalSession":
       return stripeCustomerId ? (
-        <StripePortalLink stripeCustomerId={stripeCustomerId} asButton>
+        <StripePortalLink
+          accountId={accountId}
+          stripeCustomerId={stripeCustomerId}
+          asButton
+        >
           {children}
         </StripePortalLink>
       ) : null;

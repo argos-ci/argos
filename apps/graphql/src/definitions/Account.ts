@@ -5,9 +5,9 @@ import type { PartialModelObject } from "objection";
 import { knex } from "@argos-ci/database";
 import { Account, Plan, Project, Purchase } from "@argos-ci/database/models";
 import {
-  getCustomerSubscriptionOrThrow,
+  encodeStripeClientReferenceId,
   terminateStripeTrial,
-  timestampToDate,
+  updatePurchaseFromSubscription,
 } from "@argos-ci/stripe";
 
 import {
@@ -158,7 +158,7 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw new Error("Unauthorized");
       }
-      return Purchase.encodeStripeClientReferenceId({
+      return encodeStripeClientReferenceId({
         accountId: account.id,
         purchaserId: ctx.auth.user.id,
       });
@@ -372,34 +372,32 @@ export const resolvers: IResolvers = {
         id: accountId,
         user: ctx.auth?.user,
       });
+
       const purchase = await account.$getActivePurchase();
+
+      // No purchase
+      if (!purchase) {
+        return account;
+      }
+
+      // Not a stripe purchase
+      if (purchase.source !== "stripe" || !purchase.stripeSubscriptionId) {
+        return account;
+      }
+
+      // Not a trial
       if (
-        !purchase ||
         purchase.trialEndDate === null ||
         new Date(purchase.trialEndDate) < new Date()
       ) {
         return account;
       }
 
-      if (!account.stripeCustomerId) {
-        throw new Error("No stripe customer id");
-      }
-
-      const subscription = await getCustomerSubscriptionOrThrow(
-        account.stripeCustomerId
+      const subscription = await terminateStripeTrial(
+        purchase.stripeSubscriptionId
       );
-      await terminateStripeTrial(subscription.id);
-      const updatedSubscription = await getCustomerSubscriptionOrThrow(
-        account.stripeCustomerId
-      );
-      const trialEndDate = updatedSubscription.trial_end
-        ? timestampToDate(updatedSubscription.trial_end)
-        : new Date().toISOString();
-      await Purchase.query().findById(purchase.id).patch({ trialEndDate });
-      const updatedAccount = await account
-        .$query()
-        .throwIfNotFound({ message: "Account not found" });
-      return updatedAccount;
+      await updatePurchaseFromSubscription(purchase, subscription);
+      return account;
     },
   },
 };
