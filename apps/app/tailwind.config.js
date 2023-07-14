@@ -23,6 +23,7 @@ module.exports = {
         "on-light": colors.slate[400],
         "on-danger": colors.red[400],
         border: colors.slate[700],
+        "border-hover": colors.slate[600],
         text: colors.slate[50],
 
         // Components

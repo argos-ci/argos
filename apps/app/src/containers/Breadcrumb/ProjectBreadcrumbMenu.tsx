@@ -1,10 +1,10 @@
 import { useQuery } from "@apollo/client";
+import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { RepoIcon } from "@primer/octicons-react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import { graphql } from "@/gql";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
-import { Link } from "@/ui/Link";
 import {
   Menu,
   MenuItem,
@@ -82,11 +82,16 @@ export const ProjectBreadcrumbMenu = () => {
       <Menu aria-label={title} state={menu}>
         <MenuTitle>{title}</MenuTitle>
         {menu.open && <Repositories accountSlug={accountSlug} menu={menu} />}
-        <MenuText>
-          Don&apos;t see your repo?
-          <br />
-          <Link to={`/${accountSlug}`}>Be sure to activate it →</Link>
-        </MenuText>
+        <MenuItem state={menu} pointer>
+          {(menuItemProps) => (
+            <RouterLink {...menuItemProps} to={`/${accountSlug}/new`}>
+              <MenuItemIcon>
+                <PlusCircleIcon />
+              </MenuItemIcon>
+              Create a Project
+            </RouterLink>
+          )}
+        </MenuItem>
       </Menu>
     </>
   );

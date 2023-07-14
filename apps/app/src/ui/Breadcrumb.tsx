@@ -15,7 +15,7 @@ export const Breadcrumb = (props: { children: React.ReactNode }) => {
 };
 
 export const BreadcrumbItem = (props: HTMLProps<HTMLLIElement>) => {
-  return <li className="flex shrink-0 items-center gap-1" {...props} />;
+  return <li className="flex shrink-0 items-center gap-2" {...props} />;
 };
 
 export const BreadcrumbLink = (props: ComponentProps<typeof Link>) => {
@@ -38,7 +38,7 @@ export const BreadcrumbItemIcon = (props: { children: React.ReactNode }) => {
 export const BreadcrumbSeparator = () => {
   return (
     <span
-      className="text-2xl leading-none text-on-light"
+      className="select-none text-2xl leading-none text-on-light"
       role="separator"
       aria-orientation="vertical"
     >
@@ -51,7 +51,7 @@ export const BreadcrumbMenuButton = (props: { state: MenuState }) => {
   return (
     <MenuButton
       state={props.state}
-      className="cursor-pointer rounded-md border border-border p-0.5 text-on-light transition hover:text-on aria-expanded:bg-slate-800 aria-expanded:text-on"
+      className="cursor-default rounded-md border border-border px-0.5 py-1 text-on-light transition hover:border-border-hover hover:text-on aria-expanded:border-border-hover aria-expanded:bg-slate-800 aria-expanded:text-on"
     >
       <ChevronUpDownIcon className="h-4 w-4" />
     </MenuButton>
