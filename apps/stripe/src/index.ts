@@ -123,18 +123,40 @@ const createPurchaseFromCheckoutSession = async ({
   });
 };
 
+const getCustomerFromSubscription = async (
+  subscription: Stripe.Subscription
+) => {
+  if (typeof subscription.customer === "string") {
+    return stripe.customers.retrieve(subscription.customer);
+  }
+  return subscription.customer;
+};
+
+const checkSubscriptionPaymentMethodFilled = async (
+  subscription: Stripe.Subscription
+) => {
+  if (subscription.default_payment_method !== null) {
+    return true;
+  }
+  const customer = await getCustomerFromSubscription(subscription);
+  if (customer.deleted) return false;
+  return customer.invoice_settings.default_payment_method !== null;
+};
+
 const getPurchaseDataFromSubscription = async (
   subscription: Stripe.Subscription
 ): Promise<Objection.PartialModelObject<Purchase>> => {
   const stripeProductId = getFirstProductIdFromSubscription(subscription);
-  const plan = await getPlanFromStripeProductId(stripeProductId);
+  const [plan, paymentMethodFilled] = await Promise.all([
+    getPlanFromStripeProductId(stripeProductId),
+    checkSubscriptionPaymentMethodFilled(subscription),
+  ]);
   const startDate = timestampToISOString(subscription.current_period_start);
   const trialEndDate = subscription.trial_end
     ? timestampToISOString(subscription.trial_end)
     : null;
   const rawEndDate = subscription.ended_at || subscription.cancel_at;
   const endDate = rawEndDate ? timestampToISOString(rawEndDate) : null;
-  const paymentMethodFilled = subscription.default_payment_method !== null;
 
   return {
     planId: plan.id,
