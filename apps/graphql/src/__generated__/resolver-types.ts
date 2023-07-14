@@ -72,14 +72,18 @@ export type IBuild = INode & {
   baseScreenshotBucket?: Maybe<IScreenshotBucket>;
   /** Received batch count  */
   batchCount?: Maybe<Scalars['Int']>;
-  /** The screenshot bucket of the build commit */
-  compareScreenshotBucket: IScreenshotBucket;
+  /** Branch */
+  branch: Scalars['String'];
+  /** Commit */
+  commit: Scalars['String'];
   createdAt: Scalars['DateTime'];
   id: Scalars['ID'];
   /** Build name */
   name: Scalars['String'];
   /** Continuous number. It is incremented after each build */
   number: Scalars['Int'];
+  /** Pull request head commit */
+  prHeadCommit?: Maybe<Scalars['String']>;
   /** Pull request number */
   prNumber?: Maybe<Scalars['Int']>;
   /** The screenshot diffs between the base screenshot bucket of the compare screenshot bucket */
@@ -1200,11 +1204,13 @@ export type IAccountAvatarResolvers<ContextType = Context, ParentType extends IR
 export type IBuildResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Build'] = IResolversParentTypes['Build']> = ResolversObject<{
   baseScreenshotBucket?: Resolver<Maybe<IResolversTypes['ScreenshotBucket']>, ParentType, ContextType>;
   batchCount?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
-  compareScreenshotBucket?: Resolver<IResolversTypes['ScreenshotBucket'], ParentType, ContextType>;
+  branch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   number?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  prHeadCommit?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   prNumber?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   screenshotDiffs?: Resolver<IResolversTypes['ScreenshotDiffConnection'], ParentType, ContextType, RequireFields<IBuildScreenshotDiffsArgs, 'after' | 'first'>>;
   stats?: Resolver<IResolversTypes['BuildStats'], ParentType, ContextType>;

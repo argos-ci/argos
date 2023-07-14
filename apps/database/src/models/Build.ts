@@ -51,6 +51,7 @@ export class Build extends Model {
         enum: ["reference", "check", "orphan"],
       },
       prNumber: { type: ["integer", "null"] },
+      prHeadCommit: { type: ["string", "null"] },
       referenceCommit: { type: ["string", "null"] },
       referenceBranch: { type: ["string", "null"] },
     },
@@ -67,6 +68,7 @@ export class Build extends Model {
   totalBatch!: number | null;
   type!: BuildType | null;
   prNumber!: number | null;
+  prHeadCommit!: string | null;
   referenceCommit!: string | null;
   referenceBranch!: string | null;
 
