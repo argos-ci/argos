@@ -291,6 +291,22 @@ export const handleStripeEvent = async ({
 
       return;
     }
+    case "customer.updated": {
+      const customer = data.object as Stripe.Customer;
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customer.id,
+      });
+
+      for (const subscription of subscriptions.data) {
+        const purchase = await getPurchaseFromStripeSubscriptionId(
+          subscription.id
+        );
+        await updatePurchaseFromSubscription(purchase, subscription);
+      }
+
+      return;
+    }
+
     case "checkout.session.completed": {
       const session = data.object as Stripe.Checkout.Session;
 
