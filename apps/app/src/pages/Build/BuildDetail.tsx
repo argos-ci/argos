@@ -105,7 +105,7 @@ const getImgAttributes = ({
 }) => {
   return {
     key: url,
-    src: url,
+    src: `${url}?tr=lo-true`,
     style: { aspectRatio: width && height ? `${width}/${height}` : undefined },
   };
 };
