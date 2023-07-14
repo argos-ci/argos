@@ -186,6 +186,10 @@ export const resolvers: IResolvers = {
       return account.$getCurrentConsumptionStartDate();
     },
     periodEndDate: async (account) => {
+      const activePurchase = await account.$getActivePurchase();
+      if (activePurchase?.$isTrialActive()) {
+        return activePurchase.trialEndDate;
+      }
       return account.$getCurrentConsumptionEndDate();
     },
     purchase: async (account) => {
@@ -386,10 +390,7 @@ export const resolvers: IResolvers = {
       }
 
       // Not a trial
-      if (
-        purchase.trialEndDate === null ||
-        new Date(purchase.trialEndDate) < new Date()
-      ) {
+      if (!purchase.$isTrialActive()) {
         return account;
       }
 

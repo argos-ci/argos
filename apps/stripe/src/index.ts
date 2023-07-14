@@ -378,7 +378,7 @@ export const createStripeCheckoutSession = async ({
     }),
     success_url: successUrl,
     cancel_url: cancelUrl,
-    payment_method_collection: "if_required",
+    payment_method_collection: trial ? "if_required" : "always",
     ...(teamAccount.stripeCustomerId && {
       customer: teamAccount.stripeCustomerId,
     }),
