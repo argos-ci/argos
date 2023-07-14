@@ -119,7 +119,7 @@ const getImgAttributes = (
 ) => {
   const src = dimensions
     ? `${url}?tr=w-${dimensions.width},h-${dimensions.height},c-at_max,dpr-2`
-    : url;
+    : `${url}?tr=lo-true`;
   return {
     key: src,
     src,
