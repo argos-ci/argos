@@ -175,6 +175,7 @@ CREATE TABLE public.builds (
     "projectId" bigint NOT NULL,
     "referenceCommit" character varying(255),
     "referenceBranch" character varying(255),
+    "prHeadCommit" character varying(255),
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
 
@@ -2501,3 +2502,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023052
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230625185103_vercel-checks.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230703200439_test-name-length.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230712193423_purchase-subscription-id.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230714125556_build-pr-head-commit.js', 1, NOW());

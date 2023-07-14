@@ -7,6 +7,7 @@ import type {
   IBuildStatus,
   IResolvers,
 } from "../__generated__/resolver-types.js";
+import type { Context } from "../context.js";
 import { APIError } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
@@ -60,8 +61,6 @@ export const typeDefs = gql`
     screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
     "The screenshot bucket of the baselineBranch"
     baseScreenshotBucket: ScreenshotBucket
-    "The screenshot bucket of the build commit"
-    compareScreenshotBucket: ScreenshotBucket!
     "Continuous number. It is incremented after each build"
     number: Int!
     "Review status, conclusion or job status"
@@ -78,6 +77,12 @@ export const typeDefs = gql`
     batchCount: Int
     "Expected batch count"
     totalBatch: Int
+    "Pull request head commit"
+    prHeadCommit: String
+    "Commit"
+    commit: String!
+    "Branch"
+    branch: String!
   }
 
   type BuildConnection implements Connection {
@@ -94,6 +99,16 @@ export const typeDefs = gql`
   }
 `;
 
+const getCompareScreenshotBucket = async (ctx: Context, build: Build) => {
+  const bucket = await ctx.loaders.ScreenshotBucket.load(
+    build.compareScreenshotBucketId
+  );
+  if (!bucket) {
+    throw new Error("Invariant: compare bucket not found");
+  }
+  return bucket;
+};
+
 export const resolvers: IResolvers = {
   Build: {
     async screenshotDiffs(build, { first, after }) {
@@ -108,9 +123,6 @@ export const resolvers: IResolvers = {
 
       return paginateResult({ result, first, after });
     },
-    compareScreenshotBucket: async (build, _args, ctx) => {
-      return ctx.loaders.ScreenshotBucket.load(build.compareScreenshotBucketId);
-    },
     baseScreenshotBucket: async (build, _args, ctx) => {
       if (!build.baseScreenshotBucketId) return null;
       return ctx.loaders.ScreenshotBucket.load(build.baseScreenshotBucketId);
@@ -122,6 +134,15 @@ export const resolvers: IResolvers = {
     },
     stats: async (build) => {
       return Build.getStats(build.id);
+    },
+    commit: async (build, _args, ctx) => {
+      if (build.prHeadCommit) return build.prHeadCommit;
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      return compareBucket.commit;
+    },
+    branch: async (build, _args, ctx) => {
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      return compareBucket.branch;
     },
   },
   Mutation: {

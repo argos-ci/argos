@@ -27,6 +27,7 @@ type CreateRequest = Request<
     parallel?: string | null;
     parallelNonce?: string | null;
     prNumber?: number | null;
+    prHeadCommit?: string | null;
   }
 > & { authProject: Project };
 
@@ -37,6 +38,7 @@ export const createBuild = async (params: {
   buildName?: string | null;
   parallel?: { nonce: string } | null;
   prNumber?: number | null;
+  prHeadCommit?: string | null;
   referenceCommit?: string | null;
   referenceBranch?: string | null;
 }) => {
@@ -89,6 +91,7 @@ export const createBuild = async (params: {
       projectId: params.project.id,
       name: buildName,
       prNumber: params.prNumber ?? null,
+      prHeadCommit: params.prHeadCommit ?? null,
       referenceCommit: params.referenceCommit ?? null,
       referenceBranch: params.referenceBranch ?? null,
       compareScreenshotBucketId: bucket.id,
@@ -134,6 +137,7 @@ export const createBuildFromRequest = async ({
         ? { nonce: req.body.parallelNonce }
         : null,
     prNumber: req.body.prNumber ?? null,
+    prHeadCommit: req.body.prHeadCommit ?? null,
     referenceCommit: req.body.referenceCommit ?? null,
     referenceBranch: req.body.referenceBranch ?? null,
   });

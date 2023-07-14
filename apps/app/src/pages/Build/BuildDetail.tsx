@@ -30,11 +30,9 @@ export const BuildFragment = graphql(`
     stats {
       total
     }
+    createdAt
+    branch
     baseScreenshotBucket {
-      branch
-      createdAt
-    }
-    compareScreenshotBucket {
       branch
       createdAt
     }
@@ -309,8 +307,8 @@ const BuildScreenshots = memo(
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
             <BuildScreenshotHeader
               label="Changes"
-              branch={props.build.compareScreenshotBucket.branch}
-              date={props.build.compareScreenshotBucket.createdAt}
+              branch={props.build.branch}
+              date={props.build.createdAt}
             />
             <div className="flex min-h-0 flex-1 justify-center">
               <CompareScreenshot diff={props.diff} />

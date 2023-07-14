@@ -62,14 +62,12 @@ export const BuildFragment = graphql(`
     createdAt
     name
     prNumber
+    commit
+    branch
     stats {
       total
     }
     baseScreenshotBucket {
-      commit
-      branch
-    }
-    compareScreenshotBucket {
       commit
       branch
     }
@@ -133,7 +131,7 @@ export const BuildInfos = (props: {
         {build ? (
           <BranchLink
             githubRepoUrl={props.githubRepoUrl}
-            branch={build.compareScreenshotBucket.branch}
+            branch={build.branch}
           />
         ) : (
           "-"
@@ -145,7 +143,7 @@ export const BuildInfos = (props: {
         {build ? (
           <CommitLink
             githubRepoUrl={props.githubRepoUrl}
-            commit={build.compareScreenshotBucket.commit}
+            commit={build.commit}
           />
         ) : (
           "-"

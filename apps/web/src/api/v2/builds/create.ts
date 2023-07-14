@@ -52,6 +52,10 @@ const validateRoute = validate({
         minimum: 1,
         nullable: true,
       },
+      prHeadCommit: {
+        type: "string",
+        nullable: true,
+      },
       referenceCommit: {
         type: "string",
         nullable: true,
@@ -75,6 +79,7 @@ type CreateRequest = express.Request<
     parallel?: string | null;
     parallelNonce?: string | null;
     prNumber: number | null;
+    prHeadCommit?: string | null;
     referenceCommit?: string | null;
     referenceBranch?: string | null;
   }

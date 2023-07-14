@@ -1,7 +1,7 @@
 import { useQuery } from "@apollo/client";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { clsx } from "clsx";
+import clsx from "clsx";
 import {
   CSSProperties,
   HTMLAttributes,
@@ -63,11 +63,8 @@ const ProjectBuildsQuery = graphql(`
           number
           createdAt
           name
-          compareScreenshotBucket {
-            id
-            branch
-            commit
-          }
+          branch
+          commit
           ...BuildStatusChip_Build
         }
       }
@@ -125,40 +122,36 @@ const BuildRow = memo(
           </div>
           <div className="flex-1" />
           <div className="relative hidden w-24 md:block">
-            {build.compareScreenshotBucket && (
-              <FakeLink
-                className="inline-flex max-w-full items-center gap-1"
-                title={build.compareScreenshotBucket.commit}
-                href={
-                  project.ghRepository
-                    ? `${project.ghRepository.url}/commit/${build.compareScreenshotBucket.commit}`
-                    : undefined
-                }
-              >
-                <GitCommitIcon className="shrink-0" />
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                  {build.compareScreenshotBucket.commit.slice(0, 7)}
-                </span>
-              </FakeLink>
-            )}
+            <FakeLink
+              className="inline-flex max-w-full items-center gap-1"
+              title={build.commit}
+              href={
+                project.ghRepository
+                  ? `${project.ghRepository.url}/commit/${build.commit}`
+                  : undefined
+              }
+            >
+              <GitCommitIcon className="shrink-0" />
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                {build.commit.slice(0, 7)}
+              </span>
+            </FakeLink>
           </div>
           <div className="relative hidden w-28 sm:block lg:w-80">
-            {build.compareScreenshotBucket && (
-              <FakeLink
-                className="inline-flex max-w-full items-center gap-1"
-                href={
-                  project.ghRepository
-                    ? `${project.ghRepository.url}/tree/${build.compareScreenshotBucket.branch}`
-                    : undefined
-                }
-                title={build.compareScreenshotBucket.branch}
-              >
-                <GitBranchIcon className="shrink-0" />
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                  {build.compareScreenshotBucket.branch}
-                </span>
-              </FakeLink>
-            )}
+            <FakeLink
+              className="inline-flex max-w-full items-center gap-1"
+              href={
+                project.ghRepository
+                  ? `${project.ghRepository.url}/tree/${build.branch}`
+                  : undefined
+              }
+              title={build.branch}
+            >
+              <GitBranchIcon className="shrink-0" />
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                {build.branch}
+              </span>
+            </FakeLink>
           </div>
           <div className="hidden w-32 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-right text-on-light sm:block">
             <Time date={build.createdAt} />
