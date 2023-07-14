@@ -73,7 +73,7 @@ const getNotificationStatus = (
       return {
         githubState: isReference
           ? GithubNotificationState.Success
-          : GithubNotificationState.Pending,
+          : GithubNotificationState.Failure,
         vercelStatus: VercelStatus.Completed,
         vercelConclusion: isReference
           ? VercelConclusion.Succeeded
