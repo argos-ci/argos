@@ -23,9 +23,9 @@ export const Login = () => {
       </Helmet>
 
       <Container className="mt-12 flex flex-col items-center justify-center px-4">
-        <BrandLogoVertical className="w-28 md:w-72" />
+        <BrandLogoVertical className="w-28 md:w-64" />
 
-        <p className="mb-8 text-lg font-medium md:text-xl">
+        <p className="my-8 text-lg font-medium md:text-xl">
           Ship flawless apps with Argos Visual Testing
         </p>
 

@@ -84,8 +84,8 @@ module.exports = {
             "hover-on": colors.red[500],
           },
           item: {
-            "hover-bg": colors.slate[800],
-            "selected-bg": colors.slate[700],
+            "hover-bg": colors.slate[700],
+            "selected-bg": colors.slate[800],
           },
         },
       },

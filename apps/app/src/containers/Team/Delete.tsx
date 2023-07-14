@@ -1,4 +1,5 @@
 import { useApolloClient } from "@apollo/client";
+import { forwardRef } from "react";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -46,13 +47,15 @@ const DeleteTeamMutation = graphql(`
   }
 `);
 
-const DeleteButton = (props: Omit<ButtonProps, "color">) => {
-  return (
-    <Button color="danger" {...props}>
-      Delete
-    </Button>
-  );
-};
+const DeleteButton = forwardRef<HTMLButtonElement, Omit<ButtonProps, "color">>(
+  (props, ref) => {
+    return (
+      <Button ref={ref} color="danger" {...props}>
+        Delete
+      </Button>
+    );
+  }
+);
 
 type DeleteTeamButtonProps = {
   teamAccountId: string;

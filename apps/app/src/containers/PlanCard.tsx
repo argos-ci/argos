@@ -117,7 +117,7 @@ const ConfirmTrialEndDialog = ({
       style={{ width: 560 }}
       aria-label="Confirm early trial termination"
     >
-      <DialogBody confirm>
+      <DialogBody>
         <DialogTitle>Terminate Trial Early</DialogTitle>
         <DialogText>
           You are about to terminate your trial early. This will initiate your
@@ -275,7 +275,7 @@ const PlanStatusDescription = ({
           <Paragraph>
             To remove the screenshot limitation and enable usage-based pricing,
             you can{" "}
-            <Anchor className="cursor-default" onClick={openTrialEndDialog}>
+            <Anchor className="cursor-pointer" onClick={openTrialEndDialog}>
               terminate the trial early
             </Anchor>
             .

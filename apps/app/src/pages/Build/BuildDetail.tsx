@@ -246,8 +246,8 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
           title="Removed screenshot"
           description={
             <>
-              This screenshot was removed in this build that&quot;s why it has
-              no changes to compare with.
+              This screenshot was removed in this build that's why it has no
+              changes to compare with.
             </>
           }
           icon={getGroupIcon("removed")}

@@ -33,7 +33,7 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
     neutral:
       "text-neutral-300 border-neutral-600 bg-transparent [&:not([aria-disabled])]:hover:bg-neutral-800",
     white:
-      "text-white-300 border-white-300 bg-transparent [&:not([aria-disabled])]:hover:bg-white [&:not([aria-disabled])]:hover:text-neutral-800",
+      "text-white border-white bg-transparent [&:not([aria-disabled])]:hover:bg-white [&:not([aria-disabled])]:hover:text-neutral-800",
   },
 };
 

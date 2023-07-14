@@ -14,6 +14,7 @@ const AccountFragment = graphql(`
 
 export type PlanChipProps = {
   account: FragmentType<typeof AccountFragment>;
+  className?: string;
 };
 
 export const AccountPlanChip = (props: PlanChipProps) => {
@@ -37,5 +38,9 @@ export const AccountPlanChip = (props: PlanChipProps) => {
   if (!chipProps) {
     return null;
   }
-  return <Chip scale="xs" {...chipProps} />;
+  return (
+    <span className={props.className}>
+      <Chip scale="xs" {...chipProps} />
+    </span>
+  );
 };

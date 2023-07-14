@@ -51,7 +51,9 @@ const AccountBreadcrumbLink = ({ accountSlug }: { accountSlug: string }) => {
         ) : null}
       </BreadcrumbItemIcon>
       {data?.account?.name || accountSlug}
-      {data?.account && <AccountPlanChip account={data.account} />}
+      {data?.account && (
+        <AccountPlanChip account={data.account} className="mr-1" />
+      )}
     </BreadcrumbLink>
   );
 };
