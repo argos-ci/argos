@@ -1,7 +1,7 @@
 import { useQuery } from "@apollo/client";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import clsx from "clsx";
+import { clsx } from "clsx";
 import {
   CSSProperties,
   HTMLAttributes,
