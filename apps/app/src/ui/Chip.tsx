@@ -10,8 +10,7 @@ export type ChipColor =
   | "danger"
   | "warning";
 
-export interface ChipProps
-  extends Omit<React.ComponentProps<"div">, "className"> {
+export interface ChipProps extends React.ComponentProps<"div"> {
   color?: ChipColor;
   icon?: React.ComponentType<any> | null;
   scale?: "xs" | "sm" | "md" | undefined;
@@ -29,7 +28,14 @@ const colorClassNames: Record<ChipColor, string> = {
 
 export const Chip = forwardRef<HTMLDivElement, ChipProps>(
   (
-    { children, icon: Icon, color = "primary", scale = "md", ...props },
+    {
+      children,
+      icon: Icon,
+      color = "primary",
+      scale = "md",
+      className,
+      ...props
+    },
     ref
   ) => {
     const colorClassName = colorClassNames[color];
@@ -44,7 +50,8 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(
           scale === "xs" && "px-2 text-xs",
           scale === "sm" && "px-3 py-1 text-xs",
           scale === "md" && "px-4 py-2 text-sm",
-          "no-wrap inline-flex select-none items-center gap-2 whitespace-nowrap rounded-chip border font-medium leading-4"
+          "no-wrap inline-flex select-none items-center gap-2 whitespace-nowrap rounded-chip border font-medium leading-4",
+          className
         )}
         {...props}
       >

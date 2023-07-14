@@ -38,9 +38,5 @@ export const AccountPlanChip = (props: PlanChipProps) => {
   if (!chipProps) {
     return null;
   }
-  return (
-    <span className={props.className}>
-      <Chip scale="xs" {...chipProps} />
-    </span>
-  );
+  return <Chip scale="xs" className={props.className} {...chipProps} />;
 };
