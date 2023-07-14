@@ -266,10 +266,7 @@ export const updateStripeUsage = async ({
 
   try {
     const subscription = await stripe.subscriptions.retrieve(
-      purchase.stripeSubscriptionId,
-      {
-        expand: ["data.items"],
-      }
+      purchase.stripeSubscriptionId
     );
 
     const item = getFirstItemFromSubscription(subscription);

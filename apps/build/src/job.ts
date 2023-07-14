@@ -23,11 +23,9 @@ export const performBuild = async (build: Build) => {
   const isPublic = await project.$checkIsPublic();
   if (!isPublic) {
     const account = await project.$relatedQuery("account").throwIfNotFound();
-
-    const hasExceedLimit = await account.$hasExceedScreenshotsMonthlyLimit();
     const hasUsageBasedPlan = await account.$hasUsageBasedPlan();
     const totalScreenshots = await account.$getScreenshotsCurrentConsumption();
-    if (hasExceedLimit && hasUsageBasedPlan) {
+    if (hasUsageBasedPlan) {
       await updateStripeUsage({ account, totalScreenshots });
     }
   }

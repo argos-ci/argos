@@ -60,11 +60,11 @@ export const createBuild = async (params: {
   }
 
   if (!isPublic) {
-    const [hasExceedLimit, hasUsageBasedPlan] = await Promise.all([
+    const [hasExceededLimit, hasUsageBasedPlan] = await Promise.all([
       account.$hasExceedScreenshotsMonthlyLimit(),
       account.$hasUsageBasedPlan(),
     ]);
-    if (hasExceedLimit && !hasUsageBasedPlan) {
+    if (hasExceededLimit && !hasUsageBasedPlan) {
       throw new HttpError(
         402,
         `Build rejected for insufficient credit. Please upgrade your Plan.`
