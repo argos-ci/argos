@@ -48,7 +48,7 @@ router.post(
   bodyParser.json(),
   asyncHandler(async (req, res) => {
     try {
-      const { stripeCustomerId } = req.body;
+      const { stripeCustomerId, accountId } = req.body;
       const user = req.auth?.user;
 
       if (!user) {
@@ -59,11 +59,17 @@ router.post(
         throw new Error("Stripe customer id missing");
       }
 
+      if (!accountId) {
+        throw new Error("Account id missing");
+      }
+
       const account = await Account.query()
-        .findOne({ stripeCustomerId })
-        .throwIfNotFound({
-          message: `No account found with stripeCustomerId: "${stripeCustomerId}"`,
-        });
+        .findById(accountId)
+        .throwIfNotFound();
+
+      if (account.stripeCustomerId !== stripeCustomerId) {
+        throw new Error("Stripe customer id mismatch");
+      }
 
       if (!account.$checkWritePermission(user)) {
         throw new Error("Unauthorized");
@@ -123,7 +129,7 @@ router.post(
 
       const session = await createStripeCheckoutSession({
         plan: proPlan,
-        account: teamAccount,
+        teamAccount,
         purchaserAccount: req.auth.account,
         successUrl,
         cancelUrl,

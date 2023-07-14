@@ -8,7 +8,7 @@ import { createTeamAccount } from "@argos-ci/database/services/team";
 import {
   createPurchaseFromSubscription,
   createStripeCheckoutSession,
-  getOrCreateUserCustomerId,
+  getCustomerIdFromUserAccount,
   getStripePriceFromPlanOrThrow,
   getStripeProPlanOrThrow,
   getTrialSubscriptionConfig,
@@ -227,13 +227,14 @@ export const resolvers: IResolvers = {
 
       const redirectToStripe = async ({ trial }: { trial: boolean }) => {
         const session = await createStripeCheckoutSession({
-          account: teamAccount,
+          teamAccount,
           plan,
           purchaserAccount: auth.account,
           trial,
           successUrl: teamUrl,
           cancelUrl: `${teamUrl}?checkout=cancel`,
         });
+
         if (!session.url) {
           throw new Error("session.url is null");
         }
@@ -249,7 +250,7 @@ export const resolvers: IResolvers = {
       // Else we will try to setup trial server-side
 
       // Try to get or create a Stripe customer for the user
-      const stripeCustomerId = await getOrCreateUserCustomerId(auth.account);
+      const stripeCustomerId = await getCustomerIdFromUserAccount(auth.account);
 
       // If we failed to create a customer (no email), we will redirect to checkout page
       if (!stripeCustomerId) {

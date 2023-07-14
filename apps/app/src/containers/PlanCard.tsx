@@ -246,7 +246,10 @@ const PlanStatusDescription = ({
     return (
       <Paragraph>
         Please{" "}
-        <StripePortalLink stripeCustomerId={stripeCustomerId}>
+        <StripePortalLink
+          stripeCustomerId={stripeCustomerId}
+          accountId={account.id}
+        >
           add a payment method
         </StripePortalLink>{" "}
         to retain access to team features after the trial ends on{" "}
@@ -457,8 +460,10 @@ const Paragraph = ({ children }: { children: ReactNode }) => (
 
 const ManageSubscriptionButton = ({
   stripeCustomerId,
+  accountId,
   paymentProvider,
 }: {
+  accountId: string;
   stripeCustomerId: string | null;
   paymentProvider: PurchaseSource | null;
 }) => {
@@ -472,7 +477,10 @@ const ManageSubscriptionButton = ({
 
   if (paymentProvider === PurchaseSource.Stripe && stripeCustomerId) {
     return (
-      <StripePortalLink stripeCustomerId={stripeCustomerId}>
+      <StripePortalLink
+        stripeCustomerId={stripeCustomerId}
+        accountId={accountId}
+      >
         Manage your subscription
       </StripePortalLink>
     );
@@ -567,6 +575,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
           <div className="flex items-center justify-between">
             <div>
               <ManageSubscriptionButton
+                accountId={account.id}
                 stripeCustomerId={stripeCustomerId ?? null}
                 paymentProvider={paymentProvider ?? null}
               />

@@ -669,7 +669,9 @@ CREATE TABLE public.purchases (
     source character varying(255) NOT NULL,
     "purchaserId" bigint,
     "trialEndDate" timestamp with time zone,
-    "paymentMethodFilled" boolean
+    "paymentMethodFilled" boolean,
+    "stripeSubscriptionId" character varying(255),
+    CONSTRAINT check_stripe_subscription CHECK ((((source)::text <> 'stripe'::text) OR ("stripeSubscriptionId" IS NOT NULL)))
 );
 
 
@@ -1551,6 +1553,14 @@ ALTER TABLE ONLY public.projects
 
 ALTER TABLE ONLY public.purchases
     ADD CONSTRAINT purchases_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: purchases purchases_stripesubscriptionid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_stripesubscriptionid_unique UNIQUE ("stripeSubscriptionId");
 
 
 --
@@ -2490,3 +2500,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023050
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230524074946_build-reference.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230625185103_vercel-checks.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230703200439_test-name-length.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230712193423_purchase-subscription-id.js', 1, NOW());

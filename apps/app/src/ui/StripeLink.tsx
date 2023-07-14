@@ -10,10 +10,12 @@ import { useEventCallback } from "./useEventCallback";
 
 async function getStripePortalLink({
   token,
-  ...props
+  stripeCustomerId,
+  accountId,
 }: {
-  stripeCustomerId: string;
   token: string;
+  stripeCustomerId: string;
+  accountId: string;
 }) {
   const response = await fetch("/stripe/create-customer-portal-session", {
     method: "POST",
@@ -21,13 +23,16 @@ async function getStripePortalLink({
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(props),
+    body: JSON.stringify({ stripeCustomerId, accountId }),
   });
   const json = await response.json();
   return json;
 }
 
-export type UseRedirectToStripePortalProps = { stripeCustomerId: string };
+export type UseRedirectToStripePortalProps = {
+  stripeCustomerId: string;
+  accountId: string;
+};
 
 export const useRedirectToStripePortal = () => {
   const token = useAuthToken();
@@ -40,6 +45,7 @@ export const useRedirectToStripePortal = () => {
     getStripePortalLink({
       token,
       stripeCustomerId: props.stripeCustomerId,
+      accountId: props.accountId,
     })
       .then((result) => {
         window.location.href = result.sessionUrl;
@@ -54,12 +60,14 @@ export const useRedirectToStripePortal = () => {
 
 export type StripePortalButtonProps = {
   stripeCustomerId: string;
+  accountId: string;
   asButton?: boolean;
   children: React.ReactNode;
 };
 
 export const StripePortalLink = ({
   stripeCustomerId,
+  accountId,
   asButton,
   children,
 }: StripePortalButtonProps) => {
@@ -68,7 +76,7 @@ export const StripePortalLink = ({
   const disabled = status === "loading";
 
   const handleClick = useEventCallback(() => {
-    redirect({ stripeCustomerId });
+    redirect({ stripeCustomerId, accountId });
   });
 
   return asButton ? (
@@ -85,7 +93,7 @@ export const StripePortalLink = ({
     <button
       type="button"
       disabled={disabled}
-      className={clsx(anchorClassNames, "flex items-center")}
+      className={clsx(anchorClassNames, "inline-flex items-center")}
       onClick={handleClick}
     >
       {children}

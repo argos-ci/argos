@@ -84,10 +84,9 @@ export const TeamNewForm = (props: TeamNewFormProps) => {
           autoComplete="off"
         />
         <p className={clsx("mt-4 font-medium text-on", !data && "invisible")}>
-          You will be redirected to Stripe to{" "}
           {!data?.me?.hasSubscribedToTrial
-            ? "start a 14-day Pro plan trial"
-            : "complete the subscription"}
+            ? "Continue will start a 14-day Pro plan trial"
+            : "You will be redirected to Stripe to complete the subscription"}
           .
         </p>
         <div className="mt-8 flex items-center justify-end gap-4">
