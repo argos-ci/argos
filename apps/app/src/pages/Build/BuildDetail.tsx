@@ -1,6 +1,18 @@
 /* eslint-disable react/no-unescaped-entities */
 import { clsx } from "clsx";
-import { memo, useLayoutEffect, useRef, useState } from "react";
+import { select } from "d3-selection";
+import { zoom } from "d3-zoom";
+import {
+  createContext,
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { checkIsBuildEmpty } from "@/containers/Build";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
@@ -120,6 +132,93 @@ const NeutralLink = ({
   </a>
 );
 
+type ZoomPaneInstance = {
+  setTransformState: (state: TransformState) => void;
+};
+
+type CoordinatorContextValue = {
+  register: (instance: ZoomPaneInstance) => () => void;
+  broadcast: (state: TransformState) => void;
+};
+
+const CoordinatorContext = createContext<CoordinatorContextValue | null>(null);
+
+const CoordinatorProvider = (props: { children: React.ReactNode }) => {
+  const refInstances = useRef<ZoomPaneInstance[]>([]);
+  const register = useCallback((instance: ZoomPaneInstance) => {
+    refInstances.current.push(instance);
+    return () => {
+      refInstances.current = refInstances.current.filter((i) => i !== instance);
+    };
+  }, []);
+  const broadcast = useCallback((state: TransformState) => {
+    refInstances.current.forEach((i) => {
+      i.setTransformState(state);
+    });
+  }, []);
+  const value = useMemo(() => {
+    return { register, broadcast };
+  }, [register, broadcast]);
+  return (
+    <CoordinatorContext.Provider value={value}>
+      {props.children}
+    </CoordinatorContext.Provider>
+  );
+};
+
+const useCoordinatorContext = () => {
+  const ctx = useContext(CoordinatorContext);
+  if (!ctx) {
+    throw new Error("Missing CoordinatorProvider");
+  }
+  return ctx;
+};
+
+type TransformState = {
+  scale: number;
+  positionX: number;
+  positionY: number;
+};
+
+const Transform = (props: { children: React.ReactNode }) => {
+  const zoomPaneRef = useRef<HTMLDivElement>(null);
+  const { register, broadcast } = useCoordinatorContext();
+  const [transformState, setTransformState] = useState<TransformState>({
+    scale: 1,
+    positionX: 0,
+    positionY: 0,
+  });
+  useEffect(() => {
+    const zoomInstance = zoom().on("zoom", (event) => {
+      const transformState: TransformState = {
+        scale: event.transform.k,
+        positionX: event.transform.x,
+        positionY: event.transform.y,
+      };
+      setTransformState(transformState);
+      broadcast(transformState);
+    });
+    select(zoomPaneRef.current as Element).call(zoomInstance);
+    const zoomPaneInstance: ZoomPaneInstance = { setTransformState };
+    return register(zoomPaneInstance);
+  }, [register, broadcast]);
+  return (
+    <div
+      ref={zoomPaneRef}
+      className="flex min-h-0 flex-1 cursor-grab overflow-hidden bg-zinc-800/50"
+    >
+      <div
+        className="relative origin-top-left"
+        style={{
+          transform: `translate(${transformState.positionX}px, ${transformState.positionY}px) scale(${transformState.scale})`,
+        }}
+      >
+        {props.children}
+      </div>
+    </div>
+  );
+};
+
 const BaseScreenshot = ({ diff }: { diff: Diff }) => {
   switch (diff.status) {
     case "added":
@@ -175,23 +274,23 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "changed":
       return (
-        <div className="relative">
-          <NeutralLink href={diff.baseScreenshot!.url}>
-            <img
-              className="relative max-h-full opacity-0"
-              {...getImgAttributes({
-                url: diff.url!,
-                width: diff.width,
-                height: diff.height,
-              })}
-            />
-            <img
-              className="absolute left-0 top-0"
-              alt="Baseline screenshot"
-              {...getImgAttributes(diff.baseScreenshot!)}
-            />
-          </NeutralLink>
-        </div>
+        <Transform key={diff.id}>
+          {/* <NeutralLink href={diff.baseScreenshot!.url}> */}
+          <img
+            className="relative max-h-full opacity-0"
+            {...getImgAttributes({
+              url: diff.url!,
+              width: diff.width,
+              height: diff.height,
+            })}
+          />
+          <img
+            className="absolute left-0 top-0"
+            alt="Baseline screenshot"
+            {...getImgAttributes(diff.baseScreenshot!)}
+          />
+          {/* </NeutralLink> */}
+        </Transform>
       );
     default:
       return null;
@@ -253,29 +352,27 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "changed":
       return (
-        <div className="relative">
-          <NeutralLink href={diff.compareScreenshot!.url}>
-            <img
-              className="absolute"
-              {...getImgAttributes(diff.compareScreenshot!)}
-            />
-            <div
-              className={clsx(
-                opacity,
-                "absolute inset-0 bg-black bg-opacity-70"
-              )}
-            />
-            <img
-              className={clsx(opacity, "relative z-10 max-h-full")}
-              alt="Changes screenshot"
-              {...getImgAttributes({
-                url: diff.url!,
-                width: diff.width,
-                height: diff.height,
-              })}
-            />
-          </NeutralLink>
-        </div>
+        <Transform key={diff.id}>
+          {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
+          <img
+            className="absolute"
+            {...getImgAttributes(diff.compareScreenshot!)}
+          />
+          <div
+            className={clsx(opacity, "absolute inset-0 bg-black bg-opacity-70")}
+          />
+
+          <img
+            className={clsx(opacity, "relative z-10 max-h-full")}
+            alt="Changes screenshot"
+            {...getImgAttributes({
+              url: diff.url!,
+              width: diff.width,
+              height: diff.height,
+            })}
+          />
+          {/* </NeutralLink> */}
+        </Transform>
       );
     default:
       return null;
@@ -290,32 +387,34 @@ const BuildScreenshots = memo(
     const showChanges = viewMode === "split" || viewMode === "changes";
 
     return (
-      <div className={clsx(contained && "min-h-0 flex-1", "flex gap-4 px-4")}>
-        {props.build.baseScreenshotBucket && showBaseline ? (
-          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-            <BuildScreenshotHeader
-              label="Baseline"
-              branch={props.build.baseScreenshotBucket.branch}
-              date={props.build.baseScreenshotBucket.createdAt}
-            />
-            <div className="flex min-h-0 flex-1 justify-center">
-              <BaseScreenshot diff={props.diff} />
+      <CoordinatorProvider>
+        <div className={clsx(contained && "min-h-0 flex-1", "flex gap-4 px-4")}>
+          {props.build.baseScreenshotBucket && showBaseline ? (
+            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+              <BuildScreenshotHeader
+                label="Baseline"
+                branch={props.build.baseScreenshotBucket.branch}
+                date={props.build.baseScreenshotBucket.createdAt}
+              />
+              <div className="relative flex min-h-0 flex-1 justify-center">
+                <BaseScreenshot diff={props.diff} />
+              </div>
             </div>
-          </div>
-        ) : null}
-        {showChanges ? (
-          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-            <BuildScreenshotHeader
-              label="Changes"
-              branch={props.build.branch}
-              date={props.build.createdAt}
-            />
-            <div className="flex min-h-0 flex-1 justify-center">
-              <CompareScreenshot diff={props.diff} />
+          ) : null}
+          {showChanges ? (
+            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+              <BuildScreenshotHeader
+                label="Changes"
+                branch={props.build.branch}
+                date={props.build.createdAt}
+              />
+              <div className="relative flex min-h-0 flex-1 justify-center">
+                <CompareScreenshot diff={props.diff} />
+              </div>
             </div>
-          </div>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
+      </CoordinatorProvider>
     );
   }
 );
