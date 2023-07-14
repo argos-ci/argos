@@ -93,7 +93,7 @@ export const StripePortalLink = ({
     <button
       type="button"
       disabled={disabled}
-      className={clsx(anchorClassNames, "align-flex items-center")}
+      className={clsx(anchorClassNames, "inline-flex items-center")}
       onClick={handleClick}
     >
       {children}
