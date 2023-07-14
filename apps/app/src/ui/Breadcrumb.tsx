@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from "@primer/octicons-react";
+import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { ComponentProps, HTMLProps } from "react";
 import { Link } from "react-router-dom";
 
@@ -51,9 +51,9 @@ export const BreadcrumbMenuButton = (props: { state: MenuState }) => {
   return (
     <MenuButton
       state={props.state}
-      className="cursor-default p-1 text-on-light transition hover:text-on aria-expanded:text-on"
+      className="cursor-pointer rounded-md border border-border p-0.5 text-on-light transition hover:text-on aria-expanded:bg-slate-800 aria-expanded:text-on"
     >
-      <ChevronDownIcon size={18} />
+      <ChevronUpDownIcon className="h-4 w-4" />
     </MenuButton>
   );
 };

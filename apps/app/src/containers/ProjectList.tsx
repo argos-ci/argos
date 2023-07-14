@@ -1,6 +1,5 @@
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
-import { HTMLProps } from "react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
@@ -31,45 +30,24 @@ const ProjectFragment = graphql(`
 type Project = DocumentType<typeof ProjectFragment>;
 type ProjectFragmentType = FragmentType<typeof ProjectFragment>;
 
-const FakeRouterLink = ({
-  to,
-  ...props
-}: HTMLProps<HTMLDivElement> & { to: string }) => {
-  const navigate = useNavigate();
-  return (
-    <div
-      onClick={(event) => {
-        event.preventDefault();
-        navigate(to);
-      }}
-      {...props}
-    />
-  );
-};
-
 const ProjectRow = ({ project }: { project: Project }) => {
   return (
     <RouterLink
       key={project.id}
       to={`/${project.slug}`}
-      className="flex items-center justify-between rounded bg-slate-900/70 p-3 font-medium text-on-light transition hover:bg-slate-900"
+      className="flex items-center justify-between rounded bg-slate-800/90 p-3 font-medium text-on-light transition hover:bg-slate-800 hover:text-on"
     >
       <div className="flex shrink-0 gap-1">
-        <FakeRouterLink
-          to={`/${project.account.slug}`}
-          className="transition hover:text-on hover:brightness-125"
-        >
-          <span className="flex gap-2">
-            <AccountAvatar
-              avatar={project.account.avatar}
-              size={24}
-              className="shrink-0"
-            />
-            {project.account.name}
-          </span>
-        </FakeRouterLink>
+        <span className="flex gap-2">
+          <AccountAvatar
+            avatar={project.account.avatar}
+            size={24}
+            className="shrink-0"
+          />
+          {project.account.name}
+        </span>
         <span className="text-on-light">/</span>
-        <span className="transition hover:text-on">{project.name}</span>
+        <span>{project.name}</span>
       </div>
       <div className="">
         <Badge>
