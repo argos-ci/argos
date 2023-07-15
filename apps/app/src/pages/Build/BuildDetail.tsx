@@ -147,7 +147,8 @@ class Zoomer {
 
   constructor(element: Element) {
     this.listeners = [];
-    this.zoom = zoom();
+    this.zoom = zoom().scaleExtent([0.1, 15]);
+
     this.zoom.on("zoom", (event) => {
       const state: Transform = {
         scale: event.transform.k,
@@ -163,7 +164,10 @@ class Zoomer {
       });
     });
     this.selection = select(element);
-    this.selection.call(this.zoom);
+    this.selection
+      .call(this.zoom)
+      // Always prevent scrolling on wheel input regardless of the scale extent
+      .on("wheel", (event) => event.preventDefault());
   }
 
   update(state: Transform): void {
