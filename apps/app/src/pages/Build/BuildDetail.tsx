@@ -1,4 +1,5 @@
 /* eslint-disable react/no-unescaped-entities */
+import { init } from "@sentry/browser";
 import { clsx } from "clsx";
 import { Selection, select } from "d3-selection";
 import { ZoomBehavior, zoom, zoomIdentity } from "d3-zoom";
@@ -134,25 +135,24 @@ const NeutralLink = ({
 );
 
 type ZoomPaneEvent = {
-  state: TransformState;
+  state: Transform;
   sourceEvent: MouseEvent | TouchEvent | null;
 };
 type ZoomPaneListener = (event: ZoomPaneEvent) => void;
 
-class ZoomPane {
+class Zoomer {
   zoom: ZoomBehavior<Element, unknown>;
   selection: Selection<Element, unknown, null, undefined>;
   listeners: ZoomPaneListener[];
 
   constructor(element: Element) {
     this.listeners = [];
-
     this.zoom = zoom();
     this.zoom.on("zoom", (event) => {
-      const state: TransformState = {
+      const state: Transform = {
         scale: event.transform.k,
-        positionX: event.transform.x,
-        positionY: event.transform.y,
+        x: event.transform.x,
+        y: event.transform.y,
       };
 
       this.listeners.forEach((listener) => {
@@ -166,12 +166,10 @@ class ZoomPane {
     this.selection.call(this.zoom);
   }
 
-  update(state: TransformState): void {
+  update(state: Transform): void {
     this.zoom.transform(
       this.selection,
-      zoomIdentity
-        .translate(state.positionX, state.positionY)
-        .scale(state.scale)
+      zoomIdentity.translate(state.x, state.y).scale(state.scale)
     );
   }
 
@@ -184,94 +182,102 @@ class ZoomPane {
   }
 }
 
-type CoordinatorContextValue = {
-  register: (instance: ZoomPane) => () => void;
+type ZoomerSyncContextValue = {
+  register: (instance: Zoomer) => () => void;
 };
 
-const CoordinatorContext = createContext<CoordinatorContextValue | null>(null);
+const ZoomerSyncContext = createContext<ZoomerSyncContextValue | null>(null);
 
-const CoordinatorProvider = (props: { children: React.ReactNode }) => {
-  const refInstances = useRef<ZoomPane[]>([]);
-  const register = useCallback((instance: ZoomPane) => {
-    refInstances.current.push(instance);
-    const unsubscribe = instance.subscribe((event) => {
+const ZoomerSyncProvider = (props: { children: React.ReactNode }) => {
+  const refInstances = useRef<Zoomer[]>([]);
+  const register = useCallback((zoomer: Zoomer) => {
+    refInstances.current.push(zoomer);
+    const unsubscribe = zoomer.subscribe((event) => {
       if (event.sourceEvent) {
         refInstances.current.forEach((i) => {
-          if (i !== instance) {
+          if (i !== zoomer) {
             i.update(event.state);
           }
         });
       }
     });
     return () => {
-      refInstances.current = refInstances.current.filter((i) => i !== instance);
+      refInstances.current = refInstances.current.filter((i) => i !== zoomer);
       unsubscribe();
     };
   }, []);
   const value = useMemo(() => ({ register }), [register]);
   return (
-    <CoordinatorContext.Provider value={value}>
+    <ZoomerSyncContext.Provider value={value}>
       {props.children}
-    </CoordinatorContext.Provider>
+    </ZoomerSyncContext.Provider>
   );
 };
 
-const useCoordinatorContext = () => {
-  const ctx = useContext(CoordinatorContext);
+const useZoomerSyncContext = () => {
+  const ctx = useContext(ZoomerSyncContext);
   if (!ctx) {
-    throw new Error("Missing CoordinatorProvider");
+    throw new Error("Missing ZoomerSyncProvider");
   }
   return ctx;
 };
 
-type TransformState = {
+type Transform = {
   scale: number;
-  positionX: number;
-  positionY: number;
+  x: number;
+  y: number;
 };
 
-const checkIsTransformStateEqual = (
-  a: TransformState,
-  b: TransformState
-): boolean => {
-  return (
-    a.scale === b.scale &&
-    a.positionX === b.positionX &&
-    a.positionY === b.positionY
-  );
+const checkIsTransformEqual = (a: Transform, b: Transform): boolean => {
+  return a.scale === b.scale && a.x === b.x && a.y === b.y;
 };
 
-const Transform = (props: { children: React.ReactNode }) => {
-  const zoomPaneRef = useRef<HTMLDivElement>(null);
-  const { register } = useCoordinatorContext();
-  const [transformState, setTransformState] = useState<TransformState>({
-    scale: 1,
-    positionX: 0,
-    positionY: 0,
-  });
-  const getTransformState = useEventCallback(() => transformState);
-  useEffect(() => {
-    const zoomPane = new ZoomPane(zoomPaneRef.current as Element);
-    zoomPane.subscribe((event) => {
-      setTransformState((previous) => {
-        if (checkIsTransformStateEqual(previous, event.state)) {
+const transformToCss = (transform: Transform): string => {
+  return `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
+};
+
+const identityTransform: Transform = {
+  scale: 1,
+  x: 0,
+  y: 0,
+};
+
+const ZoomPane = (props: { children: React.ReactNode }) => {
+  const paneRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { register } = useZoomerSyncContext();
+  const [transform, setTransform] = useState<Transform>(identityTransform);
+  useLayoutEffect(() => {
+    const pane = paneRef.current as Element;
+    const paneRect = pane.getBoundingClientRect();
+    const content = contentRef.current as Element;
+    const contentRect = content.getBoundingClientRect();
+    const initialTransform: Transform = {
+      scale: 1,
+      x: paneRect.width / 2 - contentRect.width / 2,
+      y: 0,
+    };
+    const zoomer = new Zoomer(pane);
+    zoomer.subscribe((event) => {
+      setTransform((previous) => {
+        if (checkIsTransformEqual(previous, event.state)) {
           return previous;
         }
         return event.state;
       });
     });
-    return register(zoomPane);
-  }, [register, getTransformState]);
+    zoomer.update(initialTransform);
+    return register(zoomer);
+  }, [register]);
   return (
     <div
-      ref={zoomPaneRef}
+      ref={paneRef}
       className="flex min-h-0 flex-1 cursor-grab overflow-hidden bg-zinc-800/50"
     >
       <div
+        ref={contentRef}
         className="relative origin-top-left"
-        style={{
-          transform: `translate(${transformState.positionX}px, ${transformState.positionY}px) scale(${transformState.scale})`,
-        }}
+        style={{ transform: transformToCss(transform) }}
       >
         {props.children}
       </div>
@@ -334,7 +340,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "changed":
       return (
-        <Transform key={diff.id}>
+        <ZoomPane key={diff.id}>
           {/* <NeutralLink href={diff.baseScreenshot!.url}> */}
           <img
             className="relative max-h-full opacity-0"
@@ -350,7 +356,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             {...getImgAttributes(diff.baseScreenshot!)}
           />
           {/* </NeutralLink> */}
-        </Transform>
+        </ZoomPane>
       );
     default:
       return null;
@@ -412,7 +418,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "changed":
       return (
-        <Transform key={diff.id}>
+        <ZoomPane key={diff.id}>
           {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
           <img
             className="absolute"
@@ -432,7 +438,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             })}
           />
           {/* </NeutralLink> */}
-        </Transform>
+        </ZoomPane>
       );
     default:
       return null;
@@ -447,7 +453,7 @@ const BuildScreenshots = memo(
     const showChanges = viewMode === "split" || viewMode === "changes";
 
     return (
-      <CoordinatorProvider>
+      <ZoomerSyncProvider>
         <div className={clsx(contained && "min-h-0 flex-1", "flex gap-4 px-4")}>
           {props.build.baseScreenshotBucket && showBaseline ? (
             <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
@@ -474,7 +480,7 @@ const BuildScreenshots = memo(
             </div>
           ) : null}
         </div>
-      </CoordinatorProvider>
+      </ZoomerSyncProvider>
     );
   }
 );
