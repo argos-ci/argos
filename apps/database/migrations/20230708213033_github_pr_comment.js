@@ -4,10 +4,12 @@
 export const up = async (knex) => {
   await knex.schema.createTable("pull_requests", async (table) => {
     table.increments("id").primary();
+    table.dateTime("createdAt").notNullable();
+    table.dateTime("updatedAt").notNullable();
     table.bigInteger("projectId").unsigned().notNullable();
     table.foreign("projectId").references("projects.id");
     table.string("number").notNullable();
-    table.bigInteger("commentId").unsigned().notNullable();
+    table.bigInteger("commentId").unsigned();
   });
 
   await knex.schema.alterTable("builds", async (table) => {

@@ -4,6 +4,7 @@ import type { ModelClass } from "objection";
 import {
   Account,
   Build,
+  BuildAggregatedStatus,
   File,
   GithubAccount,
   GithubRepository,
@@ -31,36 +32,10 @@ const createModelLoader = <TModelClass extends ModelClass<Model>>(
   });
 };
 
-type AggregatedStatus =
-  | "accepted"
-  | "rejected"
-  | "diffDetected"
-  | "stable"
-  | "expired"
-  | "pending"
-  | "progress"
-  | "complete"
-  | "error"
-  | "aborted";
-
 const createBuildAggregatedStatusLoader = () =>
-  new DataLoader<Build, AggregatedStatus>(async (builds) => {
-    const statuses = await Build.getStatuses(builds as Build[]);
-    const conclusions = await Build.getConclusions(
-      builds.map((b) => b.id),
-      statuses
-    );
-    const reviewStatuses = await Build.getReviewStatuses(
-      builds.map((b) => b.id),
-      conclusions
-    );
-
-    return builds.map((_build, index) => {
-      if (reviewStatuses[index]) return reviewStatuses[index];
-      if (conclusions[index]) return conclusions[index];
-      return statuses[index];
-    }) as AggregatedStatus[];
-  });
+  new DataLoader<Build, BuildAggregatedStatus>(async (builds) =>
+    Build.getAggregatedBuildStatuses(builds as Build[])
+  );
 
 const createLastScreenshotDiffLoader = () =>
   new DataLoader<string, ScreenshotDiff | null>(async (testIds) => {

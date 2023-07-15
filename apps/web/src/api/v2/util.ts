@@ -9,11 +9,32 @@ import {
   Build,
   Crawl,
   Project,
+  PullRequest,
   ScreenshotBucket,
 } from "@argos-ci/database/models";
+import { getRedisLock } from "@argos-ci/web";
 
 export const getBuildName = (name: string | undefined | null) =>
   name || "default";
+
+const getOrCreatePullRequest = async ({
+  projectId,
+  number,
+}: {
+  projectId: string;
+  number: number;
+}) => {
+  const lockKey = `pullRequestCreation-${projectId}:${number}`;
+  const lock = await getRedisLock();
+  return lock.acquire(lockKey, async () => {
+    const pullRequest = await PullRequest.query().findOne({
+      projectId,
+      number,
+    });
+    if (pullRequest) return pullRequest;
+    return PullRequest.query().insertAndFetch({ projectId, number });
+  });
+};
 
 type CreateRequest = Request<
   Record<string, never>,
@@ -74,6 +95,13 @@ export const createBuild = async (params: {
 
   const buildName = params.buildName || "default";
 
+  const pullRequest = params.prNumber
+    ? await getOrCreatePullRequest({
+        projectId: params.project.id,
+        number: params.prNumber,
+      })
+    : null;
+
   return transaction(async (trx) => {
     const bucket = await ScreenshotBucket.query(trx).insertAndFetch({
       name: buildName,
@@ -92,6 +120,7 @@ export const createBuild = async (params: {
       name: buildName,
       prNumber: params.prNumber ?? null,
       prHeadCommit: params.prHeadCommit ?? null,
+      pullRequestId: pullRequest?.id ? String(pullRequest?.id) : null,
       referenceCommit: params.referenceCommit ?? null,
       referenceBranch: params.referenceBranch ?? null,
       compareScreenshotBucketId: bucket.id,

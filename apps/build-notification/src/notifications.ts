@@ -1,5 +1,3 @@
-import type { Octokit } from "@octokit/rest";
-
 import { TransactionOrKnex, runAfterTransaction } from "@argos-ci/database";
 import {
   Build,
@@ -10,8 +8,10 @@ import { getInstallationOctokit } from "@argos-ci/github";
 import { UnretryableError } from "@argos-ci/job-core";
 import { createVercelClient } from "@argos-ci/vercel";
 
-import { PullRequest } from "../../database/src/models/PullRequest.js";
-import { getRedisLock } from "../../web/src/redis/index.js";
+import {
+  createOrUpdatePrComment,
+  getBuildStatusLabel,
+} from "./githubPrComment.js";
 import { job as buildNotificationJob } from "./job.js";
 
 const getStatsMessage = async (buildId: string) => {
@@ -202,19 +202,22 @@ export async function pushBuildNotification({
 }
 
 const getPrCommentMessage = async ({
-  builds,
+  commit,
 }: {
-  builds: Build[];
+  commit: string;
 }): Promise<string> => {
-  const aggregateStatuses = await getAggregateStatuses(builds);
+  const builds = await ScreenshotBucket.relatedQuery<Build>("builds").where({
+    commit,
+  });
+  const aggregateStatuses = await Build.getAggregatedBuildStatuses(builds);
   const buildRows = await Promise.all(
     builds.map(async (build, index) => {
       const [stats, url] = await Promise.all([
-        // Build.getStats(build.id),
         getStatsMessage(build.id),
         build.getUrl(),
       ]);
-      return `| ${build.name} | ${aggregateStatuses[index]} | ${stats} | [Inspect](${url}) |`;
+      const statusMessage = getBuildStatusLabel(aggregateStatuses[index]!);
+      return `| ${build.name} | ${statusMessage} | ${stats} | [Inspect](${url}) |`;
     })
   );
   return [
@@ -222,67 +225,6 @@ const getPrCommentMessage = async ({
     `| :--------- | :----- | :------ | :------ |`,
     ...buildRows.sort(),
   ].join("\n");
-};
-
-const createOrUpdatePrComment = async ({
-  build,
-  owner,
-  repo,
-  octokit,
-}: {
-  build: Build;
-  owner: string;
-  repo: string;
-  octokit: Octokit;
-}) => {
-  try {
-    const pullRequest = await build.$relatedQuery("pullRequest");
-
-    const lock = await getRedisLock();
-    await lock.acquire(pullRequest.id, async () => {
-      const builds = await ScreenshotBucket.relatedQuery<Build>("builds").where(
-        { commit: build.compareScreenshotBucket!.commit }
-      );
-      const commentMessage = await getPrCommentMessage({ builds });
-
-      if (pullRequest.commentId) {
-        await octokit.issues.updateComment({
-          owner,
-          repo,
-          comment_id: pullRequest.commentId,
-          body: commentMessage,
-        });
-        return;
-      }
-
-      const { data } = await octokit.issues.createComment({
-        owner,
-        repo,
-        issue_number: pullRequest.number,
-        body: commentMessage,
-      });
-      await pullRequest.$query().patch({ commentId: data.id });
-      return;
-    });
-  } catch (error: any) {
-    // The comment has been deleted by a user
-    if (error.status === 404) {
-      return;
-    }
-    throw error;
-  }
-};
-
-const getAggregateStatuses = async (builds: Build[]) => {
-  const buildIds = builds.map((build) => build.id);
-  const statuses = await Build.getStatuses(builds);
-  const conclusions = await Build.getConclusions(buildIds, statuses);
-  const reviewStatuses = await Build.getReviewStatuses(buildIds, conclusions);
-  return builds.map((_build, index) => {
-    if (reviewStatuses[index]) return reviewStatuses[index];
-    if (conclusions[index]) return conclusions[index];
-    return statuses[index];
-  });
 };
 
 type Context = {
@@ -343,12 +285,18 @@ const sendGithubNotification = async (ctx: Context) => {
       context: build.name === "default" ? "argos" : `argos/${build.name}`,
     });
 
-    if (build.project.prCommentEnabled) {
+    const pullRequest = await build.$relatedQuery("pullRequest");
+    if (pullRequest && build.project.prCommentEnabled) {
+      const prCommentMessage = await getPrCommentMessage({
+        commit: build.compareScreenshotBucket.commit,
+      });
       await createOrUpdatePrComment({
-        build: build,
-        owner: githubAccount.login,
-        repo: githubRepository.name,
+        githubAccountLogin: githubAccount.login,
+        repositoryName: githubRepository.name,
         octokit,
+        commit: build.compareScreenshotBucket.commit,
+        pullRequest,
+        message: prCommentMessage,
       });
     }
 

@@ -32,12 +32,15 @@ export type BuildStatus =
   | "aborted";
 export type BuildConclusion = "stable" | "diffDetected" | null;
 export type BuildReviewStatus = "accepted" | "rejected" | null;
+export type BuildAggregatedStatus = NonNullable<
+  BuildReviewStatus | BuildConclusion | Exclude<BuildStatus, "complete">
+>;
 
 export class Build extends Model {
   static override tableName = "builds";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
-    required: ["compareScreenshotBucketId", "projectId", "pullRequestId"],
+    required: ["compareScreenshotBucketId", "projectId"],
     properties: {
       name: { type: "string", maxLength: 255 },
       baseScreenshotBucketId: { type: ["string", "null"] },
@@ -51,13 +54,12 @@ export class Build extends Model {
         type: ["string", "null"],
         enum: ["reference", "check", "orphan"],
       },
-      // TODO: remove prNumber
+      // TODO: get prNumber from related pull request
       prNumber: { type: ["integer", "null"] },
       prHeadCommit: { type: ["string", "null"] },
       pullRequestId: { type: ["string", "null"] },
       referenceCommit: { type: ["string", "null"] },
       referenceBranch: { type: ["string", "null"] },
-      githubCommentId: { type: ["number", "null"] },
     },
   });
 
@@ -73,9 +75,9 @@ export class Build extends Model {
   type!: BuildType | null;
   prNumber!: number | null;
   prHeadCommit!: string | null;
+  pullRequestId!: string | null;
   referenceCommit!: string | null;
   referenceBranch!: string | null;
-  githubCommentId!: number | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -345,5 +347,16 @@ export class Build extends Model {
     const pathname = `/${project.account.slug}/${project.name}/builds/${this.number}`;
 
     return `${config.get("server.url")}${pathname}`;
+  }
+
+  static async getAggregatedBuildStatuses(builds: Build[]) {
+    const buildIds = builds.map((build) => build.id);
+    const statuses = await Build.getStatuses(builds);
+    const conclusions = await Build.getConclusions(buildIds, statuses);
+    const reviewStatuses = await Build.getReviewStatuses(buildIds, conclusions);
+    return builds.map(
+      (_build, index) =>
+        reviewStatuses[index] || conclusions[index] || statuses[index]
+    ) as BuildAggregatedStatus[];
   }
 }
