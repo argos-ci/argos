@@ -289,6 +289,14 @@ const ZoomPane = (props: { children: React.ReactNode }) => {
   );
 };
 
+const ConditionalZoomPane = (props: { children: React.ReactNode }) => {
+  const { contained } = useBuildDiffFitState();
+  if (contained) {
+    return <ZoomPane>{props.children}</ZoomPane>;
+  }
+  return <div className="relative">{props.children}</div>;
+};
+
 const BaseScreenshot = ({ diff }: { diff: Diff }) => {
   switch (diff.status) {
     case "added":
@@ -332,19 +340,19 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "removed":
       return (
-        <div>
-          <NeutralLink href={diff.baseScreenshot!.url}>
-            <img
-              className="max-h-full"
-              alt="Baseline screenshot"
-              {...getImgAttributes(diff.baseScreenshot!)}
-            />
-          </NeutralLink>
-        </div>
+        <ConditionalZoomPane key={diff.id}>
+          {/* <NeutralLink href={diff.baseScreenshot!.url}> */}
+          <img
+            className="max-h-full"
+            alt="Baseline screenshot"
+            {...getImgAttributes(diff.baseScreenshot!)}
+          />
+          {/* </NeutralLink> */}
+        </ConditionalZoomPane>
       );
     case "changed":
       return (
-        <ZoomPane key={diff.id}>
+        <ConditionalZoomPane key={diff.id}>
           {/* <NeutralLink href={diff.baseScreenshot!.url}> */}
           <img
             className="relative max-h-full opacity-0"
@@ -360,7 +368,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             {...getImgAttributes(diff.baseScreenshot!)}
           />
           {/* </NeutralLink> */}
-        </ZoomPane>
+        </ConditionalZoomPane>
       );
     default:
       return null;
@@ -373,27 +381,31 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
   switch (diff.status) {
     case "added":
       return (
-        <div>
-          <NeutralLink href={diff.compareScreenshot!.url}>
-            <img
-              className="max-h-full"
-              alt="Changes screenshot"
-              {...getImgAttributes(diff.compareScreenshot!)}
-            />
-          </NeutralLink>
-        </div>
+        // <div>
+        <ConditionalZoomPane key={diff.id}>
+          {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
+          <img
+            className="max-h-full"
+            alt="Changes screenshot"
+            {...getImgAttributes(diff.compareScreenshot!)}
+          />
+          {/* </NeutralLink> */}
+        </ConditionalZoomPane>
+        // </div>
       );
     case "failure":
       return (
-        <div>
-          <NeutralLink href={diff.compareScreenshot!.url}>
-            <img
-              className="max-h-full"
-              alt="Failure screenshot"
-              {...getImgAttributes(diff.compareScreenshot!)}
-            />
-          </NeutralLink>
-        </div>
+        // <div>
+        <ConditionalZoomPane key={diff.id}>
+          {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
+          <img
+            className="max-h-full"
+            alt="Failure screenshot"
+            {...getImgAttributes(diff.compareScreenshot!)}
+          />
+          {/* </NeutralLink> */}
+        </ConditionalZoomPane>
+        // </div>
       );
     case "unchanged":
       return (
@@ -422,7 +434,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "changed":
       return (
-        <ZoomPane key={diff.id}>
+        <ConditionalZoomPane key={diff.id}>
           {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
           <img
             className="absolute"
@@ -442,7 +454,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             })}
           />
           {/* </NeutralLink> */}
-        </ZoomPane>
+        </ConditionalZoomPane>
       );
     default:
       return null;
