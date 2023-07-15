@@ -15,8 +15,8 @@ import {
   mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
+import { PullRequest } from "./GithubPullRequest.js";
 import { Project } from "./Project.js";
-import { PullRequest } from "./PullRequest.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
 import { User } from "./User.js";
@@ -57,7 +57,7 @@ export class Build extends Model {
       // TODO: get prNumber from related pull request
       prNumber: { type: ["integer", "null"] },
       prHeadCommit: { type: ["string", "null"] },
-      pullRequestId: { type: ["string", "null"] },
+      githubPullRequestId: { type: ["string", "null"] },
       referenceCommit: { type: ["string", "null"] },
       referenceBranch: { type: ["string", "null"] },
     },
@@ -75,7 +75,7 @@ export class Build extends Model {
   type!: BuildType | null;
   prNumber!: number | null;
   prHeadCommit!: string | null;
-  pullRequestId!: string | null;
+  githubPullRequestId!: string | null;
   referenceCommit!: string | null;
   referenceBranch!: string | null;
 
@@ -122,11 +122,11 @@ export class Build extends Model {
         },
       },
       pullRequest: {
-        relation: Model.HasOneRelation,
+        relation: Model.BelongsToOneRelation,
         modelClass: PullRequest,
         join: {
-          from: "builds.pullRequestId",
-          to: "pull_requests.id",
+          from: "builds.githubPullRequestId",
+          to: "github_pull_requests.id",
         },
       },
     };

@@ -11,7 +11,7 @@ export * from "./GithubRepositoryInstallation.js";
 export * from "./GithubSynchronization.js";
 export * from "./Plan.js";
 export * from "./Project.js";
-export * from "./PullRequest.js";
+export * from "./GithubPullRequest.js";
 export * from "./Purchase.js";
 export * from "./Screenshot.js";
 export * from "./ScreenshotBucket.js";

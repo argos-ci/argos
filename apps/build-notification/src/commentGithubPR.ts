@@ -1,10 +1,14 @@
 import type { Octokit } from "@octokit/rest";
 
-import type {
-  BuildAggregatedStatus,
+import { getRedisLock } from "@argos-ci/common";
+import {
+  Build,
+  type BuildAggregatedStatus,
   PullRequest,
+  ScreenshotBucket,
 } from "@argos-ci/database/models";
-import { getRedisLock } from "@argos-ci/web";
+
+import { getStatsMessage } from "./utils.js";
 
 export const getBuildStatusLabel = (status: BuildAggregatedStatus): string => {
   switch (status) {
@@ -29,6 +33,32 @@ export const getBuildStatusLabel = (status: BuildAggregatedStatus): string => {
     default:
       throw new Error("Unknown build status");
   }
+};
+
+export const getGithubPrMessage = async ({
+  commit,
+}: {
+  commit: string;
+}): Promise<string> => {
+  const builds = await ScreenshotBucket.relatedQuery<Build>("builds").where({
+    commit,
+  });
+  const aggregateStatuses = await Build.getAggregatedBuildStatuses(builds);
+  const buildRows = await Promise.all(
+    builds.map(async (build, index) => {
+      const [stats, url] = await Promise.all([
+        getStatsMessage(build.id),
+        build.getUrl(),
+      ]);
+      const statusMessage = getBuildStatusLabel(aggregateStatuses[index]!);
+      return `| ${build.name} | ${statusMessage} | ${stats} | [Inspect](${url}) |`;
+    })
+  );
+  return [
+    `| Build name | Status | Details | Inspect |`,
+    `| :--------- | :----- | :------ | :------ |`,
+    ...buildRows.sort(),
+  ].join("\n");
 };
 
 const createPrComment = async ({
@@ -73,48 +103,50 @@ const updatePrComment = async ({
   });
 };
 
-export const createOrUpdatePrComment = async ({
+export const commentGithubPr = async ({
   githubAccountLogin,
+  message,
   octokit,
   pullRequest,
   repositoryName,
-  message,
 }: {
-  commit: string;
   githubAccountLogin: string;
+  message: string;
   octokit: Octokit;
   pullRequest: PullRequest;
   repositoryName: string;
-  message: string;
 }) => {
   try {
     const lock = await getRedisLock();
     const commentId = await lock.acquire(pullRequest.id, async () => {
-      if (pullRequest.commentId) return pullRequest.commentId;
+      await pullRequest.$query();
+      if (pullRequest?.commentId) {
+        return pullRequest.commentId;
+      }
+
       const { data } = await createPrComment({
+        body: message,
+        number: pullRequest.number,
         octokit,
         owner: githubAccountLogin,
         repo: repositoryName,
-        number: pullRequest.number,
-        body: message,
       });
       await pullRequest.$clone().$query().patch({ commentId: data.id });
-      return;
+      return null;
     });
 
     if (commentId) {
       await updatePrComment({
+        body: message,
+        commentId,
         octokit,
         owner: githubAccountLogin,
         repo: repositoryName,
-        commentId,
-        body: message,
       });
     }
   } catch (error: any) {
-    // ignore if comment has been deleted by a user
     if (error.status === 404) {
-      return;
+      await pullRequest.$clone().$query().patch({ commentDeleted: true });
     } else {
       throw error;
     }

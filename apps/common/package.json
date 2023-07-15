@@ -1,16 +1,14 @@
 {
-  "name": "@argos-ci/build-notification",
+  "name": "@argos-ci/common",
   "version": "2.0.0",
   "private": true,
   "type": "module",
   "exports": "./dist/index.js",
   "dependencies": {
     "@argos-ci/config": "*",
-    "@argos-ci/common": "*",
     "@argos-ci/database": "*",
-    "@argos-ci/github": "*",
-    "@argos-ci/job-core": "*",
-    "@octokit/rest": "^19.0.7"
+    "@argos-ci/logger": "*",
+    "redis": "^4.6.7"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",

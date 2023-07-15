@@ -1,30 +1,18 @@
+import type { Octokit } from "@octokit/rest";
+
 import { TransactionOrKnex, runAfterTransaction } from "@argos-ci/database";
 import {
   Build,
   BuildNotification,
-  ScreenshotBucket,
+  PullRequest,
 } from "@argos-ci/database/models";
 import { getInstallationOctokit } from "@argos-ci/github";
 import { UnretryableError } from "@argos-ci/job-core";
 import { createVercelClient } from "@argos-ci/vercel";
 
-import {
-  createOrUpdatePrComment,
-  getBuildStatusLabel,
-} from "./githubPrComment.js";
+import { commentGithubPr, getGithubPrMessage } from "./commentGithubPR.js";
 import { job as buildNotificationJob } from "./job.js";
-
-const getStatsMessage = async (buildId: string) => {
-  const stats = await Build.getStats(buildId);
-  const parts = [];
-  if (stats.changed) {
-    parts.push(`${stats.changed} change${stats.changed > 1 ? "s" : ""}`);
-  }
-  if (stats.failure) {
-    parts.push(`${stats.failure} failure${stats.failure > 1 ? "s" : ""}`);
-  }
-  return parts.join(", ");
-};
+import { getStatsMessage } from "./utils.js";
 
 enum GithubNotificationState {
   Pending = "pending",
@@ -201,37 +189,51 @@ export async function pushBuildNotification({
   return buildNotification;
 }
 
-const getPrCommentMessage = async ({
-  commit,
-}: {
-  commit: string;
-}): Promise<string> => {
-  const builds = await ScreenshotBucket.relatedQuery<Build>("builds").where({
-    commit,
-  });
-  const aggregateStatuses = await Build.getAggregatedBuildStatuses(builds);
-  const buildRows = await Promise.all(
-    builds.map(async (build, index) => {
-      const [stats, url] = await Promise.all([
-        getStatsMessage(build.id),
-        build.getUrl(),
-      ]);
-      const statusMessage = getBuildStatusLabel(aggregateStatuses[index]!);
-      return `| ${build.name} | ${statusMessage} | ${stats} | [Inspect](${url}) |`;
-    })
-  );
-  return [
-    `| Build name | Status | Details | Inspect |`,
-    `| :--------- | :----- | :------ | :------ |`,
-    ...buildRows.sort(),
-  ].join("\n");
-};
-
 type Context = {
   buildNotification: BuildNotification;
   build: Build;
   buildUrl: string;
   notification: NotificationPayload;
+};
+
+const createCommitStatus = async ({
+  buildName,
+  buildUrl,
+  commit,
+  description,
+  githubAccountLogin,
+  octokit,
+  repositoryName,
+  state,
+}: {
+  buildName: string;
+  buildUrl: string;
+  commit: string;
+  description: string;
+  githubAccountLogin: string;
+  octokit: Octokit;
+  repositoryName: string;
+  state: GithubNotificationState;
+}) => {
+  try {
+    return octokit.repos.createCommitStatus({
+      owner: githubAccountLogin,
+      repo: repositoryName,
+      sha: commit,
+      state,
+      target_url: buildUrl,
+      description,
+      context: buildName === "default" ? "argos" : `argos/${buildName}`,
+    });
+  } catch (error: any) {
+    // It happens if a push-force occurs before sending the notification, it is not considered as an error
+    // No commit found for SHA: xxx
+    if (error.status === 422) {
+      return null;
+    }
+
+    throw error;
+  }
 };
 
 const sendGithubNotification = async (ctx: Context) => {
@@ -273,43 +275,42 @@ const sendGithubNotification = async (ctx: Context) => {
     return;
   }
 
-  try {
-    // https://developer.github.com/v3/repos/statuses/
-    const commitStatus = await octokit.repos.createCommitStatus({
-      owner: githubAccount.login,
-      repo: githubRepository.name,
-      sha: build.compareScreenshotBucket.commit,
+  await Promise.all([
+    createCommitStatus({
+      buildName: build.name,
+      buildUrl,
+      commit: build.compareScreenshotBucket.commit,
+      description: notification.description,
+      githubAccountLogin: githubAccount.login,
+      octokit,
+      repositoryName: githubRepository.name,
       state: notification.githubState,
-      target_url: buildUrl,
-      description: notification.description, // Short description of the status.
-      context: build.name === "default" ? "argos" : `argos/${build.name}`,
-    });
+    }),
+    async () => {
+      const { githubPullRequestId } = build;
+      if (!githubPullRequestId || !githubRepository.prCommentEnabled) {
+        return;
+      }
 
-    const pullRequest = await build.$relatedQuery("pullRequest");
-    if (pullRequest && build.project.prCommentEnabled) {
-      const prCommentMessage = await getPrCommentMessage({
-        commit: build.compareScreenshotBucket.commit,
+      const pullRequest = await PullRequest.query().findById(
+        githubPullRequestId
+      );
+      if (!pullRequest || pullRequest.commentDeleted) {
+        return;
+      }
+
+      const message = await getGithubPrMessage({
+        commit: build.compareScreenshotBucket!.commit,
       });
-      await createOrUpdatePrComment({
+      await commentGithubPr({
         githubAccountLogin: githubAccount.login,
-        repositoryName: githubRepository.name,
+        message,
         octokit,
-        commit: build.compareScreenshotBucket.commit,
         pullRequest,
-        message: prCommentMessage,
+        repositoryName: githubRepository.name,
       });
-    }
-
-    return commitStatus;
-  } catch (error: any) {
-    // It happens if a push-force occurs before sending the notification, it is not considered as an error
-    // No commit found for SHA: xxx
-    if (error.status === 422) {
-      return null;
-    }
-
-    throw error;
-  }
+    },
+  ]);
 };
 
 const sendVercelNotification = async (ctx: Context) => {

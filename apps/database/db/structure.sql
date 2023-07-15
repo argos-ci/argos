@@ -175,7 +175,7 @@ CREATE TABLE public.builds (
     "projectId" bigint NOT NULL,
     "referenceCommit" character varying(255),
     "referenceBranch" character varying(255),
-    "pullRequestId" bigint,
+    "githubPullRequestId" bigint,
     "prHeadCommit" character varying(255),
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
@@ -393,6 +393,45 @@ ALTER TABLE public.github_installations_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.github_installations_id_seq OWNED BY public.github_installations.id;
+
+
+--
+-- Name: github_pull_requests; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.github_pull_requests (
+    id integer NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "commentDeleted" boolean DEFAULT false NOT NULL,
+    "commentId" integer,
+    "githubRepositoryId" bigint NOT NULL,
+    number integer NOT NULL
+);
+
+
+ALTER TABLE public.github_pull_requests OWNER TO postgres;
+
+--
+-- Name: github_pull_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.github_pull_requests_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.github_pull_requests_id_seq OWNER TO postgres;
+
+--
+-- Name: github_pull_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.github_pull_requests_id_seq OWNED BY public.github_pull_requests.id;
 
 
 --
@@ -630,7 +669,7 @@ CREATE TABLE public.projects (
     "accountId" bigint NOT NULL,
     "githubRepositoryId" bigint,
     "vercelProjectId" bigint,
-    "prCommentEnabled" boolean
+    "prCommentEnabled" boolean DEFAULT true NOT NULL
 );
 
 
@@ -655,44 +694,6 @@ ALTER TABLE public.projects_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.projects_id_seq OWNED BY public.projects.id;
-
-
---
--- Name: pull_requests; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.pull_requests (
-    id integer NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "projectId" bigint NOT NULL,
-    number character varying(255) NOT NULL,
-    "commentId" bigint
-);
-
-
-ALTER TABLE public.pull_requests OWNER TO postgres;
-
---
--- Name: pull_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.pull_requests_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.pull_requests_id_seq OWNER TO postgres;
-
---
--- Name: pull_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.pull_requests_id_seq OWNED BY public.pull_requests.id;
 
 
 --
@@ -1273,6 +1274,13 @@ ALTER TABLE ONLY public.github_installations ALTER COLUMN id SET DEFAULT nextval
 
 
 --
+-- Name: github_pull_requests id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_pull_requests ALTER COLUMN id SET DEFAULT nextval('public.github_pull_requests_id_seq'::regclass);
+
+
+--
 -- Name: github_repositories id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1319,13 +1327,6 @@ ALTER TABLE ONLY public.plans ALTER COLUMN id SET DEFAULT nextval('public.plans_
 --
 
 ALTER TABLE ONLY public.projects ALTER COLUMN id SET DEFAULT nextval('public.projects_id_seq'::regclass);
-
-
---
--- Name: pull_requests id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.pull_requests ALTER COLUMN id SET DEFAULT nextval('public.pull_requests_id_seq'::regclass);
 
 
 --
@@ -1532,6 +1533,14 @@ ALTER TABLE ONLY public.github_installations
 
 
 --
+-- Name: github_pull_requests github_pull_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_pull_requests
+    ADD CONSTRAINT github_pull_requests_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: github_repositories github_repositories_githubid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1593,14 +1602,6 @@ ALTER TABLE ONLY public.plans
 
 ALTER TABLE ONLY public.projects
     ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
-
-
---
--- Name: pull_requests pull_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.pull_requests
-    ADD CONSTRAINT pull_requests_pkey PRIMARY KEY (id);
 
 
 --
@@ -2211,19 +2212,19 @@ ALTER TABLE ONLY public.builds
 
 
 --
+-- Name: builds builds_githubpullrequestid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.builds
+    ADD CONSTRAINT builds_githubpullrequestid_foreign FOREIGN KEY ("githubPullRequestId") REFERENCES public.github_pull_requests(id);
+
+
+--
 -- Name: builds builds_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
-
-
---
--- Name: builds builds_pullrequestid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.builds
-    ADD CONSTRAINT builds_pullrequestid_foreign FOREIGN KEY ("pullRequestId") REFERENCES public.pull_requests(id);
 
 
 --
@@ -2256,6 +2257,14 @@ ALTER TABLE ONLY public.captures
 
 ALTER TABLE ONLY public.crawls
     ADD CONSTRAINT crawls_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
+
+
+--
+-- Name: github_pull_requests github_pull_requests_githubrepositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_pull_requests
+    ADD CONSTRAINT github_pull_requests_githubrepositoryid_foreign FOREIGN KEY ("githubRepositoryId") REFERENCES public.github_repositories(id);
 
 
 --
@@ -2312,14 +2321,6 @@ ALTER TABLE ONLY public.projects
 
 ALTER TABLE ONLY public.projects
     ADD CONSTRAINT projects_vercelprojectid_foreign FOREIGN KEY ("vercelProjectId") REFERENCES public.vercel_projects(id);
-
-
---
--- Name: pull_requests pull_requests_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.pull_requests
-    ADD CONSTRAINT pull_requests_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
 
 
 --
