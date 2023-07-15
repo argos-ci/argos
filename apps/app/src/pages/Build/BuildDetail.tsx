@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 import { clsx } from "clsx";
-import { select } from "d3-selection";
-import { zoom } from "d3-zoom";
+import { Selection, select } from "d3-selection";
+import { ZoomBehavior, zoom, zoomIdentity } from "d3-zoom";
 import {
   createContext,
   memo,
@@ -19,6 +19,7 @@ import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Code } from "@/ui/Code";
 import { Anchor } from "@/ui/Link";
 import { Time } from "@/ui/Time";
+import { useEventCallback } from "@/ui/useEventCallback";
 import { useScrollListener } from "@/ui/useScrollListener";
 
 import { BuildDetailToolbar } from "./BuildDetailToolbar";
@@ -132,33 +133,82 @@ const NeutralLink = ({
   </a>
 );
 
-type ZoomPaneInstance = {
-  setTransformState: (state: TransformState) => void;
+type ZoomPaneEvent = {
+  state: TransformState;
+  sourceEvent: MouseEvent | TouchEvent | null;
 };
+type ZoomPaneListener = (event: ZoomPaneEvent) => void;
+
+class ZoomPane {
+  zoom: ZoomBehavior<Element, unknown>;
+  selection: Selection<Element, unknown, null, undefined>;
+  listeners: ZoomPaneListener[];
+
+  constructor(element: Element) {
+    this.listeners = [];
+
+    this.zoom = zoom();
+    this.zoom.on("zoom", (event) => {
+      const state: TransformState = {
+        scale: event.transform.k,
+        positionX: event.transform.x,
+        positionY: event.transform.y,
+      };
+
+      this.listeners.forEach((listener) => {
+        listener({
+          state,
+          sourceEvent: event.sourceEvent,
+        });
+      });
+    });
+    this.selection = select(element);
+    this.selection.call(this.zoom);
+  }
+
+  update(state: TransformState): void {
+    this.zoom.transform(
+      this.selection,
+      zoomIdentity
+        .translate(state.positionX, state.positionY)
+        .scale(state.scale)
+    );
+  }
+
+  subscribe(listener: ZoomPaneListener): () => void {
+    this.listeners.push(listener);
+    const unsubscribe = () => {
+      this.listeners = this.listeners.filter((l) => l !== listener);
+    };
+    return unsubscribe;
+  }
+}
 
 type CoordinatorContextValue = {
-  register: (instance: ZoomPaneInstance) => () => void;
-  broadcast: (state: TransformState) => void;
+  register: (instance: ZoomPane) => () => void;
 };
 
 const CoordinatorContext = createContext<CoordinatorContextValue | null>(null);
 
 const CoordinatorProvider = (props: { children: React.ReactNode }) => {
-  const refInstances = useRef<ZoomPaneInstance[]>([]);
-  const register = useCallback((instance: ZoomPaneInstance) => {
+  const refInstances = useRef<ZoomPane[]>([]);
+  const register = useCallback((instance: ZoomPane) => {
     refInstances.current.push(instance);
+    const unsubscribe = instance.subscribe((event) => {
+      if (event.sourceEvent) {
+        refInstances.current.forEach((i) => {
+          if (i !== instance) {
+            i.update(event.state);
+          }
+        });
+      }
+    });
     return () => {
       refInstances.current = refInstances.current.filter((i) => i !== instance);
+      unsubscribe();
     };
   }, []);
-  const broadcast = useCallback((state: TransformState) => {
-    refInstances.current.forEach((i) => {
-      i.setTransformState(state);
-    });
-  }, []);
-  const value = useMemo(() => {
-    return { register, broadcast };
-  }, [register, broadcast]);
+  const value = useMemo(() => ({ register }), [register]);
   return (
     <CoordinatorContext.Provider value={value}>
       {props.children}
@@ -180,28 +230,38 @@ type TransformState = {
   positionY: number;
 };
 
+const checkIsTransformStateEqual = (
+  a: TransformState,
+  b: TransformState
+): boolean => {
+  return (
+    a.scale === b.scale &&
+    a.positionX === b.positionX &&
+    a.positionY === b.positionY
+  );
+};
+
 const Transform = (props: { children: React.ReactNode }) => {
   const zoomPaneRef = useRef<HTMLDivElement>(null);
-  const { register, broadcast } = useCoordinatorContext();
+  const { register } = useCoordinatorContext();
   const [transformState, setTransformState] = useState<TransformState>({
     scale: 1,
     positionX: 0,
     positionY: 0,
   });
+  const getTransformState = useEventCallback(() => transformState);
   useEffect(() => {
-    const zoomInstance = zoom().on("zoom", (event) => {
-      const transformState: TransformState = {
-        scale: event.transform.k,
-        positionX: event.transform.x,
-        positionY: event.transform.y,
-      };
-      setTransformState(transformState);
-      broadcast(transformState);
+    const zoomPane = new ZoomPane(zoomPaneRef.current as Element);
+    zoomPane.subscribe((event) => {
+      setTransformState((previous) => {
+        if (checkIsTransformStateEqual(previous, event.state)) {
+          return previous;
+        }
+        return event.state;
+      });
     });
-    select(zoomPaneRef.current as Element).call(zoomInstance);
-    const zoomPaneInstance: ZoomPaneInstance = { setTransformState };
-    return register(zoomPaneInstance);
-  }, [register, broadcast]);
+    return register(zoomPane);
+  }, [register, getTransformState]);
   return (
     <div
       ref={zoomPaneRef}
