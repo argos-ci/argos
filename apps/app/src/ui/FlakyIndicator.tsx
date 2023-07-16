@@ -4,8 +4,6 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/20/solid";
 import moment from "moment";
-import { Fragment } from "react";
-import { Link } from "react-router-dom";
 
 import { Test } from "@/gql/graphql";
 
@@ -55,15 +53,10 @@ export const getFlakyIndicatorProps = (
 export const FlakyChip = ({
   test,
   className,
-  link,
 }: {
   test: Pick<Test, "status" | "unstable" | "resolvedDate"> | null;
   className?: string;
-  link?: string | null;
 }) => {
-  const ConditionalLink = (props: any) =>
-    link ? <Link to={link} {...props} /> : <Fragment {...props} />;
-
   if (!test || !test.status) {
     return null;
   }
@@ -75,13 +68,9 @@ export const FlakyChip = ({
 
   return (
     <MagicTooltip tooltip={tooltip}>
-      <div className={className}>
-        <ConditionalLink>
-          <Chip icon={Icon} color={color} scale="sm">
-            {label}
-          </Chip>
-        </ConditionalLink>
-      </div>
+      <Chip icon={Icon} color={color} scale="sm" className={className}>
+        {label}
+      </Chip>
     </MagicTooltip>
   );
 };

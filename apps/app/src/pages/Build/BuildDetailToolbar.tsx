@@ -6,7 +6,6 @@ import {
 } from "@heroicons/react/20/solid";
 import { clsx } from "clsx";
 import { memo } from "react";
-import { useParams } from "react-router-dom";
 
 import { Test } from "@/gql/graphql";
 import { ButtonGroup } from "@/ui/ButtonGroup";
@@ -187,7 +186,6 @@ export interface BuildDetailToolbarProps {
 
 export const BuildDetailToolbar = memo(
   ({ name, bordered, test }: BuildDetailToolbarProps) => {
-    const { accountSlug, projectName } = useParams();
     const borderClassName = bordered
       ? "border-b-border"
       : "border-b-transparent";
@@ -210,11 +208,7 @@ export const BuildDetailToolbar = memo(
           >
             {name}
           </div>
-          <FlakyChip
-            test={test}
-            className="mt-0.5"
-            link={`/${accountSlug}/${projectName}/tests`}
-          />
+          <FlakyChip test={test} className="mt-0.5" />
         </div>
         <div className="flex gap-2">
           <BuildVisibleDiffButtonGroup />
