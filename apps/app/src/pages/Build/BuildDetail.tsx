@@ -7,6 +7,7 @@ import {
   memo,
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -281,16 +282,8 @@ const ZoomPane = (props: {
   const contentRef = useRef<HTMLDivElement>(null);
   const { register } = useZoomerSyncContext();
   const [transform, setTransform] = useState<Transform>(identityTransform);
-  useLayoutEffect(() => {
+  useEffect(() => {
     const pane = paneRef.current as Element;
-    const paneRect = pane.getBoundingClientRect();
-    const content = contentRef.current as Element;
-    const contentRect = content.getBoundingClientRect();
-    const initialTransform: Transform = {
-      scale: 1,
-      x: paneRect.width / 2 - contentRect.width / 2,
-      y: 0,
-    };
     const zoomer = new Zoomer(pane, { allowScroll: props.allowScroll });
     zoomer.subscribe((event) => {
       setTransform((previous) => {
@@ -300,7 +293,6 @@ const ZoomPane = (props: {
         return event.state;
       });
     });
-    zoomer.update(initialTransform);
     return register(zoomer);
   }, [register, props.allowScroll]);
   return (
@@ -310,10 +302,10 @@ const ZoomPane = (props: {
     >
       <div
         ref={contentRef}
-        className="relative origin-top-left"
+        className="flex min-h-0 flex-1 origin-top-left justify-center"
         style={{ transform: transformToCss(transform) }}
       >
-        {props.children}
+        <div className="relative">{props.children}</div>
       </div>
     </div>
   );
