@@ -83,6 +83,11 @@ export const hotkeys = {
     displayKeys: ["→"],
     description: "Show changes only",
   } as Hotkey,
+  fitView: {
+    keys: ["Digit0"],
+    displayKeys: ["0"],
+    description: "Fit view into screen",
+  } as Hotkey,
   toggleHotkeysDialog: {
     keys: ["?"],
     displayKeys: ["?"],

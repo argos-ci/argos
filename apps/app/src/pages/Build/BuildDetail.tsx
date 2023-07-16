@@ -1,18 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 import { clsx } from "clsx";
-import { Selection, select } from "d3-selection";
-import { ZoomBehavior, zoom, zoomIdentity } from "d3-zoom";
-import {
-  createContext,
-  memo,
-  useCallback,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { memo, useLayoutEffect, useRef, useState } from "react";
 
 import { checkIsBuildEmpty } from "@/containers/Build";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
@@ -32,6 +20,7 @@ import {
   BuildDiffVisibleStateProvider,
   useBuildDiffVisibleState,
 } from "./BuildDiffVisibleState";
+import { ZoomPane, ZoomerSyncProvider } from "./Zoomer";
 import {
   BuildDiffViewModeStateProvider,
   useBuildDiffViewModeState,
@@ -132,185 +121,6 @@ const NeutralLink = ({
   </a>
 );
 
-type ZoomPaneEvent = {
-  state: Transform;
-  sourceEvent: MouseEvent | TouchEvent | null;
-};
-type ZoomPaneListener = (event: ZoomPaneEvent) => void;
-
-type ZoomerOptions = {
-  allowScroll?: boolean;
-};
-
-// Default filter from d3-zoom
-const defaultFilter = (event: any) =>
-  (!event.ctrlKey || event.type === "wheel") && !event.button;
-
-const allowScrollFilter = (event: any) => {
-  if (event.button) return false;
-
-  if (event.type === "wheel") {
-    // Only allow zooming with the wheel when the meta key or ctrl key is pressed
-    return event.metaKey || event.ctrlKey;
-  }
-
-  return defaultFilter(event);
-};
-
-class Zoomer {
-  zoom: ZoomBehavior<Element, unknown>;
-  selection: Selection<Element, unknown, null, undefined>;
-  listeners: ZoomPaneListener[];
-
-  constructor(element: Element, options?: ZoomerOptions) {
-    this.listeners = [];
-    this.zoom = zoom()
-      .scaleExtent([0.1, 15])
-      .filter(options?.allowScroll ? allowScrollFilter : defaultFilter);
-
-    this.zoom.on("zoom", (event) => {
-      const state: Transform = {
-        scale: event.transform.k,
-        x: event.transform.x,
-        y: event.transform.y,
-      };
-
-      this.listeners.forEach((listener) => {
-        listener({
-          state,
-          sourceEvent: event.sourceEvent,
-        });
-      });
-    });
-    this.selection = select(element);
-    this.selection
-      .call(this.zoom)
-      // Always prevent scrolling on wheel input regardless of the scale extent
-      .on("scroll", (event) => {
-        if (options?.allowScroll) {
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault();
-          }
-          return;
-        }
-
-        event.preventDefault();
-      });
-  }
-
-  update(state: Transform): void {
-    this.zoom.transform(
-      this.selection,
-      zoomIdentity.translate(state.x, state.y).scale(state.scale)
-    );
-  }
-
-  subscribe(listener: ZoomPaneListener): () => void {
-    this.listeners.push(listener);
-    const unsubscribe = () => {
-      this.listeners = this.listeners.filter((l) => l !== listener);
-    };
-    return unsubscribe;
-  }
-}
-
-type ZoomerSyncContextValue = {
-  register: (instance: Zoomer) => () => void;
-};
-
-const ZoomerSyncContext = createContext<ZoomerSyncContextValue | null>(null);
-
-const ZoomerSyncProvider = (props: { children: React.ReactNode }) => {
-  const refInstances = useRef<Zoomer[]>([]);
-  const register = useCallback((zoomer: Zoomer) => {
-    refInstances.current.push(zoomer);
-    const unsubscribe = zoomer.subscribe((event) => {
-      if (event.sourceEvent) {
-        refInstances.current.forEach((i) => {
-          if (i !== zoomer) {
-            i.update(event.state);
-          }
-        });
-      }
-    });
-    return () => {
-      refInstances.current = refInstances.current.filter((i) => i !== zoomer);
-      unsubscribe();
-    };
-  }, []);
-  const value = useMemo(() => ({ register }), [register]);
-  return (
-    <ZoomerSyncContext.Provider value={value}>
-      {props.children}
-    </ZoomerSyncContext.Provider>
-  );
-};
-
-const useZoomerSyncContext = () => {
-  const ctx = useContext(ZoomerSyncContext);
-  if (!ctx) {
-    throw new Error("Missing ZoomerSyncProvider");
-  }
-  return ctx;
-};
-
-type Transform = {
-  scale: number;
-  x: number;
-  y: number;
-};
-
-const checkIsTransformEqual = (a: Transform, b: Transform): boolean => {
-  return a.scale === b.scale && a.x === b.x && a.y === b.y;
-};
-
-const transformToCss = (transform: Transform): string => {
-  return `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
-};
-
-const identityTransform: Transform = {
-  scale: 1,
-  x: 0,
-  y: 0,
-};
-
-const ZoomPane = (props: {
-  children: React.ReactNode;
-  allowScroll?: boolean;
-}) => {
-  const paneRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const { register } = useZoomerSyncContext();
-  const [transform, setTransform] = useState<Transform>(identityTransform);
-  useEffect(() => {
-    const pane = paneRef.current as Element;
-    const zoomer = new Zoomer(pane, { allowScroll: props.allowScroll });
-    zoomer.subscribe((event) => {
-      setTransform((previous) => {
-        if (checkIsTransformEqual(previous, event.state)) {
-          return previous;
-        }
-        return event.state;
-      });
-    });
-    return register(zoomer);
-  }, [register, props.allowScroll]);
-  return (
-    <div
-      ref={paneRef}
-      className="flex min-h-0 flex-1 cursor-grab overflow-hidden bg-zinc-800/50"
-    >
-      <div
-        ref={contentRef}
-        className="flex min-h-0 flex-1 origin-top-left justify-center"
-        style={{ transform: transformToCss(transform) }}
-      >
-        <div className="relative">{props.children}</div>
-      </div>
-    </div>
-  );
-};
-
 const ConditionalZoomPane = (props: { children: React.ReactNode }) => {
   const { contained } = useBuildDiffFitState();
   return <ZoomPane allowScroll={!contained}>{props.children}</ZoomPane>;
@@ -359,7 +169,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "removed":
       return (
-        <ConditionalZoomPane key={diff.id}>
+        <ConditionalZoomPane>
           {/* <NeutralLink href={diff.baseScreenshot!.url}> */}
           <img
             className="max-h-full"
@@ -371,7 +181,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "changed":
       return (
-        <ConditionalZoomPane key={diff.id}>
+        <ConditionalZoomPane>
           {/* <NeutralLink href={diff.baseScreenshot!.url}> */}
           <img
             className="relative max-h-full opacity-0"
@@ -401,7 +211,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
     case "added":
       return (
         // <div>
-        <ConditionalZoomPane key={diff.id}>
+        <ConditionalZoomPane>
           {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
           <img
             className="max-h-full"
@@ -415,7 +225,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
     case "failure":
       return (
         // <div>
-        <ConditionalZoomPane key={diff.id}>
+        <ConditionalZoomPane>
           {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
           <img
             className="max-h-full"
@@ -453,7 +263,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "changed":
       return (
-        <ConditionalZoomPane key={diff.id}>
+        <ConditionalZoomPane>
           {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
           <img
             className="absolute"
@@ -488,34 +298,36 @@ const BuildScreenshots = memo(
     const showChanges = viewMode === "split" || viewMode === "changes";
 
     return (
-      <ZoomerSyncProvider>
-        <div className={clsx(contained && "min-h-0 flex-1", "flex gap-4 px-4")}>
-          {props.build.baseScreenshotBucket && showBaseline ? (
-            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-              <BuildScreenshotHeader
-                label="Baseline"
-                branch={props.build.baseScreenshotBucket.branch}
-                date={props.build.baseScreenshotBucket.createdAt}
-              />
-              <div className="relative flex min-h-0 flex-1 justify-center">
-                <BaseScreenshot diff={props.diff} />
-              </div>
+      <div className={clsx(contained && "min-h-0 flex-1", "flex gap-4 px-4")}>
+        {props.build.baseScreenshotBucket ? (
+          <div
+            className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"
+            hidden={!showBaseline}
+          >
+            <BuildScreenshotHeader
+              label="Baseline"
+              branch={props.build.baseScreenshotBucket.branch}
+              date={props.build.baseScreenshotBucket.createdAt}
+            />
+            <div className="relative flex min-h-0 flex-1 justify-center">
+              <BaseScreenshot diff={props.diff} />
             </div>
-          ) : null}
-          {showChanges ? (
-            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-              <BuildScreenshotHeader
-                label="Changes"
-                branch={props.build.branch}
-                date={props.build.createdAt}
-              />
-              <div className="relative flex min-h-0 flex-1 justify-center">
-                <CompareScreenshot diff={props.diff} />
-              </div>
-            </div>
-          ) : null}
+          </div>
+        ) : null}
+        <div
+          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"
+          hidden={!showChanges}
+        >
+          <BuildScreenshotHeader
+            label="Changes"
+            branch={props.build.branch}
+            date={props.build.createdAt}
+          />
+          <div className="relative flex min-h-0 flex-1 justify-center">
+            <CompareScreenshot diff={props.diff} />
+          </div>
         </div>
-      </ZoomerSyncProvider>
+      </div>
     );
   }
 );
@@ -552,18 +364,20 @@ export const BuildDetail = (props: {
       className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-4"
     >
       {activeDiff ? (
-        <BuildDiffVisibleStateProvider>
-          <BuildDiffFitStateProvider>
-            <BuildDiffViewModeStateProvider>
-              <BuildDetailToolbar
-                name={activeDiff.name}
-                bordered={scrolled}
-                test={activeDiff.test ?? null}
-              />
-              <BuildScreenshots build={build} diff={activeDiff} />
-            </BuildDiffViewModeStateProvider>
-          </BuildDiffFitStateProvider>
-        </BuildDiffVisibleStateProvider>
+        <ZoomerSyncProvider id={activeDiff.id}>
+          <BuildDiffVisibleStateProvider>
+            <BuildDiffFitStateProvider>
+              <BuildDiffViewModeStateProvider>
+                <BuildDetailToolbar
+                  name={activeDiff.name}
+                  bordered={scrolled}
+                  test={activeDiff.test ?? null}
+                />
+                <BuildScreenshots build={build} diff={activeDiff} />
+              </BuildDiffViewModeStateProvider>
+            </BuildDiffFitStateProvider>
+          </BuildDiffVisibleStateProvider>
+        </ZoomerSyncProvider>
       ) : checkIsBuildEmpty(build) ? (
         <div className="flex h-full min-h-0 flex-1 items-center justify-center">
           <div className="m-4 max-w-2xl rounded-lg border border-info-600 p-8 text-center text-info-500">
