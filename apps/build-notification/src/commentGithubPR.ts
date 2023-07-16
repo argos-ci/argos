@@ -5,7 +5,6 @@ import {
   Build,
   type BuildAggregatedStatus,
   PullRequest,
-  ScreenshotBucket,
 } from "@argos-ci/database/models";
 
 import { getStatsMessage } from "./utils.js";
@@ -35,14 +34,30 @@ export const getBuildStatusLabel = (status: BuildAggregatedStatus): string => {
   }
 };
 
+const dateFormatter = Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "UTC",
+});
+const formatDate = (date: string): string => {
+  const d = new Date(date);
+  return dateFormatter.format(d);
+};
+
 export const getGithubPrMessage = async ({
   commit,
 }: {
   commit: string;
 }): Promise<string> => {
-  const builds = await ScreenshotBucket.relatedQuery<Build>("builds").where({
-    commit,
-  });
+  const builds = await Build.query()
+    .distinctOn("builds.name")
+    .joinRelated("compareScreenshotBucket")
+    .where("compareScreenshotBucket.commit", commit)
+    .orderBy([
+      { column: "name", order: "desc" },
+      { column: "builds.number", order: "desc" },
+    ]);
+
   const aggregateStatuses = await Build.getAggregatedBuildStatuses(builds);
   const buildRows = await Promise.all(
     builds.map(async (build, index) => {
@@ -50,13 +65,24 @@ export const getGithubPrMessage = async ({
         getStatsMessage(build.id),
         build.getUrl(),
       ]);
-      const statusMessage = getBuildStatusLabel(aggregateStatuses[index]!);
-      return `| ${build.name} | ${statusMessage} | ${stats} | [Inspect](${url}) |`;
+      const status = aggregateStatuses[index];
+      if (!status) {
+        throw new Error("Invariant: unknown build status");
+      }
+      const statusMessage = getBuildStatusLabel(status);
+      const review = status === "diffDetected" ? ` ([Review](${url}))` : "";
+      return `| **${
+        build.name
+      }** ([Inspect](${url})) | ${statusMessage}${review} | ${
+        stats || "-"
+      } | ${formatDate(build.updatedAt)} |`;
     })
   );
   return [
-    `| Build name | Status | Details | Inspect |`,
-    `| :--------- | :----- | :------ | :------ |`,
+    `**The latest updates on your projects.** Learn more about [Argos for Git ↗︎](https://argos-ci.com/docs/)`,
+    "",
+    `| Build | Status | Details | Updated (UTC) |`,
+    `| :---- | :----- | :------ | :------------ |`,
     ...buildRows.sort(),
   ].join("\n");
 };

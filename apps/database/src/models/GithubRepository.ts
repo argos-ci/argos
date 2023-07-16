@@ -23,7 +23,6 @@ export class GithubRepository extends Model {
       defaultBranch: { type: "string" },
       githubId: { type: "number" },
       githubAccountId: { type: "string" },
-      prCommentEnabled: { type: "boolean" },
     },
   });
 
@@ -32,7 +31,6 @@ export class GithubRepository extends Model {
   defaultBranch!: string;
   githubId!: number;
   githubAccountId!: string;
-  prCommentEnabled!: boolean;
 
   static override get relationMappings(): RelationMappings {
     return {

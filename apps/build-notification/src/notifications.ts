@@ -243,15 +243,17 @@ const sendGithubNotification = async (ctx: Context) => {
     throw new UnretryableError("Invariant: no build found");
   }
 
-  if (!build.compareScreenshotBucket) {
+  const { project, compareScreenshotBucket } = build;
+
+  if (!compareScreenshotBucket) {
     throw new UnretryableError("Invariant: no compare screenshot bucket found");
   }
 
-  if (!build.project) {
+  if (!project) {
     throw new UnretryableError("Invariant: no project found");
   }
 
-  const githubRepository = build.project.githubRepository;
+  const { githubRepository } = project;
 
   if (!githubRepository) {
     return;
@@ -275,41 +277,43 @@ const sendGithubNotification = async (ctx: Context) => {
     return;
   }
 
+  const createGhComment = async () => {
+    if (!project.prCommentEnabled || !build.githubPullRequestId) {
+      return;
+    }
+
+    const pullRequest = await PullRequest.query().findById(
+      build.githubPullRequestId
+    );
+
+    if (!pullRequest || pullRequest.commentDeleted) {
+      return;
+    }
+
+    const message = await getGithubPrMessage({
+      commit: compareScreenshotBucket.commit,
+    });
+    await commentGithubPr({
+      githubAccountLogin: githubAccount.login,
+      message,
+      octokit,
+      pullRequest,
+      repositoryName: githubRepository.name,
+    });
+  };
+
   await Promise.all([
     createCommitStatus({
       buildName: build.name,
       buildUrl,
-      commit: build.compareScreenshotBucket.commit,
+      commit: compareScreenshotBucket.commit,
       description: notification.description,
       githubAccountLogin: githubAccount.login,
       octokit,
       repositoryName: githubRepository.name,
       state: notification.githubState,
     }),
-    async () => {
-      const { githubPullRequestId } = build;
-      if (!githubPullRequestId || !githubRepository.prCommentEnabled) {
-        return;
-      }
-
-      const pullRequest = await PullRequest.query().findById(
-        githubPullRequestId
-      );
-      if (!pullRequest || pullRequest.commentDeleted) {
-        return;
-      }
-
-      const message = await getGithubPrMessage({
-        commit: build.compareScreenshotBucket!.commit,
-      });
-      await commentGithubPr({
-        githubAccountLogin: githubAccount.login,
-        message,
-        octokit,
-        pullRequest,
-        repositoryName: githubRepository.name,
-      });
-    },
+    createGhComment(),
   ]);
 };
 
