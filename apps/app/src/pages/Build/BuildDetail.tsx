@@ -1,12 +1,15 @@
 /* eslint-disable react/no-unescaped-entities */
+import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { clsx } from "clsx";
 import { memo, useLayoutEffect, useRef, useState } from "react";
 
 import { checkIsBuildEmpty } from "@/containers/Build";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Code } from "@/ui/Code";
+import { IconButton } from "@/ui/IconButton";
 import { Anchor } from "@/ui/Link";
 import { Time } from "@/ui/Time";
+import { MagicTooltip } from "@/ui/Tooltip";
 import { useScrollListener } from "@/ui/useScrollListener";
 
 import { BuildDetailToolbar } from "./BuildDetailToolbar";
@@ -41,6 +44,25 @@ export const BuildFragment = graphql(`
 `);
 
 type BuildFragmentDocument = DocumentType<typeof BuildFragment>;
+
+const ScreenshotControls = memo((props: { url: string; tooltip: string }) => {
+  return (
+    <div className="absolute bottom-2 right-2 flex items-center gap-2">
+      <MagicTooltip tooltip={props.tooltip}>
+        <IconButton asChild>
+          <a
+            href={`${props.url}?tr=orig-true&ik-attachment=true`}
+            download
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <ArrowDownTrayIcon />
+          </a>
+        </IconButton>
+      </MagicTooltip>
+    </div>
+  );
+});
 
 const BuildScreenshotHeader = memo(
   ({
@@ -121,9 +143,16 @@ const NeutralLink = ({
   </a>
 );
 
-const ConditionalZoomPane = (props: { children: React.ReactNode }) => {
+const ConditionalZoomPane = (props: {
+  children: React.ReactNode;
+  controls: React.ReactNode;
+}) => {
   const { contained } = useBuildDiffFitState();
-  return <ZoomPane allowScroll={!contained}>{props.children}</ZoomPane>;
+  return (
+    <ZoomPane allowScroll={!contained} controls={props.controls}>
+      {props.children}
+    </ZoomPane>
+  );
 };
 
 const BaseScreenshot = ({ diff }: { diff: Diff }) => {
@@ -169,20 +198,31 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "removed":
       return (
-        <ConditionalZoomPane>
-          {/* <NeutralLink href={diff.baseScreenshot!.url}> */}
+        <ConditionalZoomPane
+          controls={
+            <ScreenshotControls
+              url={diff.baseScreenshot!.url}
+              tooltip="Download baseline screenshot"
+            />
+          }
+        >
           <img
             className="max-h-full"
             alt="Baseline screenshot"
             {...getImgAttributes(diff.baseScreenshot!)}
           />
-          {/* </NeutralLink> */}
         </ConditionalZoomPane>
       );
     case "changed":
       return (
-        <ConditionalZoomPane>
-          {/* <NeutralLink href={diff.baseScreenshot!.url}> */}
+        <ConditionalZoomPane
+          controls={
+            <ScreenshotControls
+              url={diff.baseScreenshot!.url}
+              tooltip="Download baseline screenshot"
+            />
+          }
+        >
           <img
             className="relative max-h-full opacity-0"
             {...getImgAttributes({
@@ -196,7 +236,6 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             alt="Baseline screenshot"
             {...getImgAttributes(diff.baseScreenshot!)}
           />
-          {/* </NeutralLink> */}
         </ConditionalZoomPane>
       );
     default:
@@ -210,35 +249,48 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
   switch (diff.status) {
     case "added":
       return (
-        // <div>
-        <ConditionalZoomPane>
-          {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
+        <ConditionalZoomPane
+          controls={
+            <ScreenshotControls
+              url={diff.compareScreenshot!.url}
+              tooltip="Download changes screenshot"
+            />
+          }
+        >
           <img
             className="max-h-full"
             alt="Changes screenshot"
             {...getImgAttributes(diff.compareScreenshot!)}
           />
-          {/* </NeutralLink> */}
         </ConditionalZoomPane>
-        // </div>
       );
     case "failure":
       return (
-        // <div>
-        <ConditionalZoomPane>
-          {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
+        <ConditionalZoomPane
+          controls={
+            <ScreenshotControls
+              url={diff.compareScreenshot!.url}
+              tooltip="Download changes screenshot"
+            />
+          }
+        >
           <img
             className="max-h-full"
             alt="Failure screenshot"
             {...getImgAttributes(diff.compareScreenshot!)}
           />
-          {/* </NeutralLink> */}
         </ConditionalZoomPane>
-        // </div>
       );
     case "unchanged":
       return (
-        <div>
+        <ConditionalZoomPane
+          controls={
+            <ScreenshotControls
+              url={diff.compareScreenshot!.url}
+              tooltip="Download changes screenshot"
+            />
+          }
+        >
           <NeutralLink href={diff.compareScreenshot!.url}>
             <img
               className="max-h-full"
@@ -246,7 +298,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
               {...getImgAttributes(diff.compareScreenshot!)}
             />
           </NeutralLink>
-        </div>
+        </ConditionalZoomPane>
       );
     case "removed":
       return (
@@ -263,8 +315,14 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "changed":
       return (
-        <ConditionalZoomPane>
-          {/* <NeutralLink href={diff.compareScreenshot!.url}> */}
+        <ConditionalZoomPane
+          controls={
+            <ScreenshotControls
+              url={diff.compareScreenshot!.url}
+              tooltip="Download changes screenshot"
+            />
+          }
+        >
           <img
             className="absolute"
             {...getImgAttributes(diff.compareScreenshot!)}
@@ -272,7 +330,6 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
           <div
             className={clsx(opacity, "absolute inset-0 bg-black bg-opacity-70")}
           />
-
           <img
             className={clsx(opacity, "relative z-10 max-h-full")}
             alt="Changes screenshot"
@@ -282,7 +339,6 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
               height: diff.height,
             })}
           />
-          {/* </NeutralLink> */}
         </ConditionalZoomPane>
       );
     default:

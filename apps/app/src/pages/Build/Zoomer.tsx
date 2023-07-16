@@ -181,6 +181,7 @@ const identityTransform: Transform = {
 
 export const ZoomPane = (props: {
   children: React.ReactNode;
+  controls?: React.ReactNode;
   allowScroll?: boolean;
 }) => {
   const paneRef = useRef<HTMLDivElement>(null);
@@ -207,7 +208,7 @@ export const ZoomPane = (props: {
   return (
     <div
       ref={paneRef}
-      className="flex min-h-0 flex-1 cursor-grab overflow-hidden bg-zinc-800/50"
+      className="group/pane flex min-h-0 flex-1 cursor-grab overflow-hidden bg-zinc-800/50"
     >
       <div
         ref={contentRef}
@@ -216,6 +217,11 @@ export const ZoomPane = (props: {
       >
         <div className="relative">{props.children}</div>
       </div>
+      {props.controls && (
+        <div className="opacity-0 transition group-hover/pane:opacity-100">
+          {props.controls}
+        </div>
+      )}
     </div>
   );
 };

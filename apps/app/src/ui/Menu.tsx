@@ -1,5 +1,8 @@
+import { ChevronUpDownIcon } from "@heroicons/react/24/outline";
 import {
   Menu as AriakitMenu,
+  MenuButton as AriakitMenuButton,
+  MenuButtonProps as AriakitMenuButtonProps,
   MenuItem as AriakitMenuItem,
   MenuItemProps as AriakitMenuItemProps,
   MenuProps as AriakitMenuProps,
@@ -105,5 +108,24 @@ export const MenuText = (props: { children: React.ReactNode }) => {
         {props.children}
       </div>
     </>
+  );
+};
+
+export type UpDownMenuButtonProps = Omit<AriakitMenuButtonProps, "children">;
+
+export const UpDownMenuButton = ({
+  className,
+  ...props
+}: UpDownMenuButtonProps) => {
+  return (
+    <AriakitMenuButton
+      className={clsx(
+        "rounded-md border border-border p-0.5 text-on-light transition hover:text-on aria-expanded:bg-slate-800 aria-expanded:text-on",
+        className
+      )}
+      {...props}
+    >
+      <ChevronUpDownIcon className="h-4 w-4" />
+    </AriakitMenuButton>
   );
 };

@@ -108,8 +108,11 @@ const BuildVisibleDiffButtonGroup = memo(() => {
 
 const BuildSplitViewToggle = memo(() => {
   const { viewMode, setViewMode } = useBuildDiffViewModeState();
-  const toggleSplitView = () =>
+  const { reset } = useZoomerSyncContext();
+  const toggleSplitView = () => {
     setViewMode((viewMode) => (viewMode === "split" ? "changes" : "split"));
+    reset();
+  };
   const hotkey = useBuildHotkey("toggleSplitView", toggleSplitView, {
     preventDefault: true,
   });
