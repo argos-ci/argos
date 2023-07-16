@@ -79,7 +79,7 @@ export const getGithubPrMessage = async ({
     })
   );
   return [
-    `**The latest updates on your projects.** Learn more about [Argos for Git ↗︎](https://argos-ci.com/docs/)`,
+    `**The latest updates on your projects.** Learn more about [Argos notifications ↗︎](https://argos-ci.com/docs/notifications)`,
     "",
     `| Build | Status | Details | Updated (UTC) |`,
     `| :---- | :----- | :------ | :------------ |`,
