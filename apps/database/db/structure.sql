@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.2
+-- Dumped by pg_dump version 14.7 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -175,6 +175,7 @@ CREATE TABLE public.builds (
     "projectId" bigint NOT NULL,
     "referenceCommit" character varying(255),
     "referenceBranch" character varying(255),
+    "githubPullRequestId" bigint,
     "prHeadCommit" character varying(255),
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
@@ -392,6 +393,45 @@ ALTER TABLE public.github_installations_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.github_installations_id_seq OWNED BY public.github_installations.id;
+
+
+--
+-- Name: github_pull_requests; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.github_pull_requests (
+    id integer NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "commentDeleted" boolean DEFAULT false NOT NULL,
+    "commentId" integer,
+    "githubRepositoryId" bigint NOT NULL,
+    number integer NOT NULL
+);
+
+
+ALTER TABLE public.github_pull_requests OWNER TO postgres;
+
+--
+-- Name: github_pull_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.github_pull_requests_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.github_pull_requests_id_seq OWNER TO postgres;
+
+--
+-- Name: github_pull_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.github_pull_requests_id_seq OWNED BY public.github_pull_requests.id;
 
 
 --
@@ -628,7 +668,8 @@ CREATE TABLE public.projects (
     "baselineBranch" character varying(255),
     "accountId" bigint NOT NULL,
     "githubRepositoryId" bigint,
-    "vercelProjectId" bigint
+    "vercelProjectId" bigint,
+    "prCommentEnabled" boolean DEFAULT true NOT NULL
 );
 
 
@@ -1233,6 +1274,13 @@ ALTER TABLE ONLY public.github_installations ALTER COLUMN id SET DEFAULT nextval
 
 
 --
+-- Name: github_pull_requests id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_pull_requests ALTER COLUMN id SET DEFAULT nextval('public.github_pull_requests_id_seq'::regclass);
+
+
+--
 -- Name: github_repositories id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1482,6 +1530,14 @@ ALTER TABLE ONLY public.github_installations
 
 ALTER TABLE ONLY public.github_installations
     ADD CONSTRAINT github_installations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: github_pull_requests github_pull_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_pull_requests
+    ADD CONSTRAINT github_pull_requests_pkey PRIMARY KEY (id);
 
 
 --
@@ -2156,6 +2212,14 @@ ALTER TABLE ONLY public.builds
 
 
 --
+-- Name: builds builds_githubpullrequestid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.builds
+    ADD CONSTRAINT builds_githubpullrequestid_foreign FOREIGN KEY ("githubPullRequestId") REFERENCES public.github_pull_requests(id);
+
+
+--
 -- Name: builds builds_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2193,6 +2257,14 @@ ALTER TABLE ONLY public.captures
 
 ALTER TABLE ONLY public.crawls
     ADD CONSTRAINT crawls_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
+
+
+--
+-- Name: github_pull_requests github_pull_requests_githubrepositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_pull_requests
+    ADD CONSTRAINT github_pull_requests_githubrepositoryid_foreign FOREIGN KEY ("githubRepositoryId") REFERENCES public.github_repositories(id);
 
 
 --
@@ -2501,5 +2573,6 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023050
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230524074946_build-reference.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230625185103_vercel-checks.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230703200439_test-name-length.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230708213033_github_pr_comment.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230712193423_purchase-subscription-id.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230714125556_build-pr-head-commit.js', 1, NOW());

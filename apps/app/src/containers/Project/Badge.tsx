@@ -50,8 +50,9 @@ export const ProjectBadge = (props: ProjectBadgeProps) => {
       <CardBody>
         <CardTitle>Argos Badge</CardTitle>
         <CardParagraph>
-          A live icon that you can embed in code, such as in a README.md, to
-          provide quick access to the latest reference build of your project.
+          Embed Argos' badge in your{" "}
+          <span className="font-medium">README.md</span> to have a quick link to
+          the latest reference build of your project.
         </CardParagraph>
         <div className="flex gap-4">
           <BadgeBlock

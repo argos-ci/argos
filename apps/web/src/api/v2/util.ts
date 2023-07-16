@@ -3,17 +3,38 @@ import type { Request } from "express";
 import { HttpError } from "express-err";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
+import { getRedisLock } from "@argos-ci/common";
 import { job as crawlJob } from "@argos-ci/crawl";
 import { transaction } from "@argos-ci/database";
 import {
   Build,
   Crawl,
   Project,
+  PullRequest,
   ScreenshotBucket,
 } from "@argos-ci/database/models";
 
 export const getBuildName = (name: string | undefined | null) =>
   name || "default";
+
+const getOrCreatePullRequest = async ({
+  githubRepositoryId,
+  number,
+}: {
+  githubRepositoryId: string;
+  number: number;
+}) => {
+  const lockKey = `pullRequestCreation-${githubRepositoryId}:${number}`;
+  const lock = await getRedisLock();
+  return lock.acquire(lockKey, async () => {
+    const pullRequest = await PullRequest.query().findOne({
+      githubRepositoryId,
+      number,
+    });
+    if (pullRequest) return pullRequest;
+    return PullRequest.query().insertAndFetch({ githubRepositoryId, number });
+  });
+};
 
 type CreateRequest = Request<
   Record<string, never>,
@@ -74,6 +95,18 @@ export const createBuild = async (params: {
 
   const buildName = params.buildName || "default";
 
+  const githubRepository = await params.project.$relatedQuery(
+    "githubRepository"
+  );
+
+  const pullRequest =
+    params.prNumber && githubRepository
+      ? await getOrCreatePullRequest({
+          githubRepositoryId: githubRepository.id,
+          number: params.prNumber,
+        })
+      : null;
+
   return transaction(async (trx) => {
     const bucket = await ScreenshotBucket.query(trx).insertAndFetch({
       name: buildName,
@@ -92,6 +125,7 @@ export const createBuild = async (params: {
       name: buildName,
       prNumber: params.prNumber ?? null,
       prHeadCommit: params.prHeadCommit ?? null,
+      githubPullRequestId: pullRequest?.id ? String(pullRequest?.id) : null,
       referenceCommit: params.referenceCommit ?? null,
       referenceBranch: params.referenceBranch ?? null,
       compareScreenshotBucketId: bucket.id,

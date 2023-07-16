@@ -15,6 +15,7 @@ import {
   mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
+import { PullRequest } from "./GithubPullRequest.js";
 import { Project } from "./Project.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
@@ -31,6 +32,9 @@ export type BuildStatus =
   | "aborted";
 export type BuildConclusion = "stable" | "diffDetected" | null;
 export type BuildReviewStatus = "accepted" | "rejected" | null;
+export type BuildAggregatedStatus = NonNullable<
+  BuildReviewStatus | BuildConclusion | Exclude<BuildStatus, "complete">
+>;
 
 export class Build extends Model {
   static override tableName = "builds";
@@ -50,8 +54,10 @@ export class Build extends Model {
         type: ["string", "null"],
         enum: ["reference", "check", "orphan"],
       },
+      // TODO: get prNumber from related pull request
       prNumber: { type: ["integer", "null"] },
       prHeadCommit: { type: ["string", "null"] },
+      githubPullRequestId: { type: ["string", "null"] },
       referenceCommit: { type: ["string", "null"] },
       referenceBranch: { type: ["string", "null"] },
     },
@@ -69,6 +75,7 @@ export class Build extends Model {
   type!: BuildType | null;
   prNumber!: number | null;
   prHeadCommit!: string | null;
+  githubPullRequestId!: string | null;
   referenceCommit!: string | null;
   referenceBranch!: string | null;
 
@@ -114,6 +121,14 @@ export class Build extends Model {
           to: "screenshot_diffs.buildId",
         },
       },
+      pullRequest: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: PullRequest,
+        join: {
+          from: "builds.githubPullRequestId",
+          to: "github_pull_requests.id",
+        },
+      },
     };
   }
 
@@ -122,6 +137,7 @@ export class Build extends Model {
   vercelCheck?: VercelCheck | null;
   project?: Project;
   screenshotDiffs?: ScreenshotDiff[];
+  pullRequest?: PullRequest | null;
 
   override $afterValidate(json: Pojo) {
     if (
@@ -331,5 +347,16 @@ export class Build extends Model {
     const pathname = `/${project.account.slug}/${project.name}/builds/${this.number}`;
 
     return `${config.get("server.url")}${pathname}`;
+  }
+
+  static async getAggregatedBuildStatuses(builds: Build[]) {
+    const buildIds = builds.map((build) => build.id);
+    const statuses = await Build.getStatuses(builds);
+    const conclusions = await Build.getConclusions(buildIds, statuses);
+    const reviewStatuses = await Build.getReviewStatuses(buildIds, conclusions);
+    return builds.map(
+      (_build, index) =>
+        reviewStatuses[index] || conclusions[index] || statuses[index]
+    ) as BuildAggregatedStatus[];
   }
 }

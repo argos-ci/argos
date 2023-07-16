@@ -2,6 +2,7 @@ import express, { Router } from "express";
 // @ts-ignore
 import { HttpError } from "express-err";
 
+import { getRedisLock } from "@argos-ci/common";
 import config from "@argos-ci/config";
 import type { Project } from "@argos-ci/database/models";
 import { Build } from "@argos-ci/database/models";
@@ -11,7 +12,6 @@ import { s3 as getS3, getSignedPutObjectUrl } from "@argos-ci/storage";
 import { SHA1_REGEX_STR, SHA256_REGEX_STR } from "../../../constants.js";
 import { repoAuth } from "../../../middlewares/repoAuth.js";
 import { validate } from "../../../middlewares/validate.js";
-import { getRedisLock } from "../../../redis/index.js";
 import { asyncHandler } from "../../../util.js";
 import { createBuildFromRequest, getBuildName } from "../util.js";
 

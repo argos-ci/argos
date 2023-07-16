@@ -4,13 +4,13 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import request from "supertest";
 
+import { quitRedis } from "@argos-ci/common";
 import { Account, Build, Project, Purchase } from "@argos-ci/database/models";
 import { factory, useDatabase } from "@argos-ci/database/testing";
 import { quitAmqp } from "@argos-ci/job-core";
 import { s3 } from "@argos-ci/storage";
 
 import { createApp } from "./app.js";
-import { quitRedis } from "./redis/index.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -71,6 +71,7 @@ describe("api v2", () => {
             ],
             branch: "main",
             name: "current",
+            prNumber: 12,
           })
           // .end(console.log);
           .expect(201);

@@ -32,6 +32,7 @@ export class Project extends Model {
       accountId: { type: "string" },
       githubRepositoryId: { type: ["null", "string"] },
       vercelProjectId: { type: ["null", "string"] },
+      prCommentEnabled: { type: "boolean" },
     },
   });
 
@@ -42,6 +43,7 @@ export class Project extends Model {
   accountId!: string;
   githubRepositoryId!: string | null;
   vercelProjectId!: string | null;
+  prCommentEnabled!: boolean;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);
