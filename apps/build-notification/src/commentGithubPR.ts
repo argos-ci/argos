@@ -120,7 +120,7 @@ export const commentGithubPr = async ({
     const lock = await getRedisLock();
     const commentId = await lock.acquire(pullRequest.id, async () => {
       await pullRequest.$query();
-      if (pullRequest?.commentId) {
+      if (pullRequest.commentId) {
         return pullRequest.commentId;
       }
 
