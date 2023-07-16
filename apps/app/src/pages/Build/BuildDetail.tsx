@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-import { init } from "@sentry/browser";
 import { clsx } from "clsx";
 import { Selection, select } from "d3-selection";
 import { ZoomBehavior, zoom, zoomIdentity } from "d3-zoom";
@@ -8,7 +7,6 @@ import {
   memo,
   useCallback,
   useContext,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -20,7 +18,6 @@ import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Code } from "@/ui/Code";
 import { Anchor } from "@/ui/Link";
 import { Time } from "@/ui/Time";
-import { useEventCallback } from "@/ui/useEventCallback";
 import { useScrollListener } from "@/ui/useScrollListener";
 
 import { BuildDetailToolbar } from "./BuildDetailToolbar";
@@ -140,14 +137,35 @@ type ZoomPaneEvent = {
 };
 type ZoomPaneListener = (event: ZoomPaneEvent) => void;
 
+type ZoomerOptions = {
+  allowScroll?: boolean;
+};
+
+// Default filter from d3-zoom
+const defaultFilter = (event: any) =>
+  (!event.ctrlKey || event.type === "wheel") && !event.button;
+
+const allowScrollFilter = (event: any) => {
+  if (event.button) return false;
+
+  if (event.type === "wheel") {
+    // Only allow zooming with the wheel when the meta key or ctrl key is pressed
+    return event.metaKey || event.ctrlKey;
+  }
+
+  return defaultFilter(event);
+};
+
 class Zoomer {
   zoom: ZoomBehavior<Element, unknown>;
   selection: Selection<Element, unknown, null, undefined>;
   listeners: ZoomPaneListener[];
 
-  constructor(element: Element) {
+  constructor(element: Element, options?: ZoomerOptions) {
     this.listeners = [];
-    this.zoom = zoom().scaleExtent([0.1, 15]);
+    this.zoom = zoom()
+      .scaleExtent([0.1, 15])
+      .filter(options?.allowScroll ? allowScrollFilter : defaultFilter);
 
     this.zoom.on("zoom", (event) => {
       const state: Transform = {
@@ -167,7 +185,16 @@ class Zoomer {
     this.selection
       .call(this.zoom)
       // Always prevent scrolling on wheel input regardless of the scale extent
-      .on("wheel", (event) => event.preventDefault());
+      .on("scroll", (event) => {
+        if (options?.allowScroll) {
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+          }
+          return;
+        }
+
+        event.preventDefault();
+      });
   }
 
   update(state: Transform): void {
@@ -246,7 +273,10 @@ const identityTransform: Transform = {
   y: 0,
 };
 
-const ZoomPane = (props: { children: React.ReactNode }) => {
+const ZoomPane = (props: {
+  children: React.ReactNode;
+  allowScroll?: boolean;
+}) => {
   const paneRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const { register } = useZoomerSyncContext();
@@ -261,7 +291,7 @@ const ZoomPane = (props: { children: React.ReactNode }) => {
       x: paneRect.width / 2 - contentRect.width / 2,
       y: 0,
     };
-    const zoomer = new Zoomer(pane);
+    const zoomer = new Zoomer(pane, { allowScroll: props.allowScroll });
     zoomer.subscribe((event) => {
       setTransform((previous) => {
         if (checkIsTransformEqual(previous, event.state)) {
@@ -272,7 +302,7 @@ const ZoomPane = (props: { children: React.ReactNode }) => {
     });
     zoomer.update(initialTransform);
     return register(zoomer);
-  }, [register]);
+  }, [register, props.allowScroll]);
   return (
     <div
       ref={paneRef}
@@ -291,10 +321,7 @@ const ZoomPane = (props: { children: React.ReactNode }) => {
 
 const ConditionalZoomPane = (props: { children: React.ReactNode }) => {
   const { contained } = useBuildDiffFitState();
-  if (contained) {
-    return <ZoomPane>{props.children}</ZoomPane>;
-  }
-  return <div className="relative">{props.children}</div>;
+  return <ZoomPane allowScroll={!contained}>{props.children}</ZoomPane>;
 };
 
 const BaseScreenshot = ({ diff }: { diff: Diff }) => {
