@@ -291,6 +291,8 @@ export type IMutation = {
   updateAccount: IAccount;
   /** Update Project */
   updateProject: IProject;
+  /** Set project pull request comment */
+  updateProjectPrComment: IProject;
   /** Update test statuses */
   updateTestStatuses: IUpdatedTestStatuses;
 };
@@ -399,6 +401,11 @@ export type IMutationUpdateProjectArgs = {
 };
 
 
+export type IMutationUpdateProjectPrCommentArgs = {
+  input: IUpdateProjectPrCommentInput;
+};
+
+
 export type IMutationUpdateTestStatusesArgs = {
   ids: Array<Scalars['String']>;
   status: ITestStatus;
@@ -453,6 +460,8 @@ export type IProject = INode & {
   name: Scalars['String'];
   /** Determine if the current user has write access to the project */
   permissions: Array<IPermission>;
+  /** Pull request comment enabled */
+  prCommentEnabled: Scalars['Boolean'];
   /** Override repository's Github privacy */
   private?: Maybe<Scalars['Boolean']>;
   /** Check if the project is public or not */
@@ -791,6 +800,11 @@ export type IUpdateProjectInput = {
   private?: InputMaybe<Scalars['Boolean']>;
 };
 
+export type IUpdateProjectPrCommentInput = {
+  enable: Scalars['Boolean'];
+  id: Scalars['ID'];
+};
+
 export type IUpdatedTestStatuses = {
   __typename?: 'UpdatedTestStatuses';
   ids: Array<Scalars['String']>;
@@ -1075,6 +1089,7 @@ export type IResolversTypes = ResolversObject<{
   UnlinkVercelProjectInput: IUnlinkVercelProjectInput;
   UpdateAccountInput: IUpdateAccountInput;
   UpdateProjectInput: IUpdateProjectInput;
+  UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
   UpdatedTestStatuses: ResolverTypeWrapper<IUpdatedTestStatuses>;
   User: ResolverTypeWrapper<Account>;
   UserConnection: ResolverTypeWrapper<Omit<IUserConnection, 'edges'> & { edges: Array<IResolversTypes['User']> }>;
@@ -1151,6 +1166,7 @@ export type IResolversParentTypes = ResolversObject<{
   UnlinkVercelProjectInput: IUnlinkVercelProjectInput;
   UpdateAccountInput: IUpdateAccountInput;
   UpdateProjectInput: IUpdateProjectInput;
+  UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
   UpdatedTestStatuses: IUpdatedTestStatuses;
   User: Account;
   UserConnection: Omit<IUserConnection, 'edges'> & { edges: Array<IResolversParentTypes['User']> };
@@ -1327,6 +1343,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   unlinkVercelProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkVercelProjectArgs, 'input'>>;
   updateAccount?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUpdateAccountArgs, 'input'>>;
   updateProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectArgs, 'input'>>;
+  updateProjectPrComment?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectPrCommentArgs, 'input'>>;
   updateTestStatuses?: Resolver<IResolversTypes['UpdatedTestStatuses'], ParentType, ContextType, RequireFields<IMutationUpdateTestStatusesArgs, 'ids' | 'status'>>;
 }>;
 
@@ -1366,6 +1383,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   latestReferenceBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
+  prCommentEnabled?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   private?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   public?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   referenceBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;

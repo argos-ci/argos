@@ -70,10 +70,10 @@ export const ProjectSettings = () => {
 
           return (
             <SettingsLayout>
-              <ProjectGitRepository project={project} />
-              {/* <ProjectVercel project={project} /> */}
               <ProjectChangeName project={project} />
               <ProjectToken project={project} />
+              {/* <ProjectVercel project={project} /> */}
+              <ProjectGitRepository project={project} />
               <ProjectReferenceBranch project={project} />
               <ProjectBadge project={project} />
               <ProjectVisibility project={project} />

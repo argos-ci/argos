@@ -41,9 +41,10 @@ const documents = {
     "\n  query ConnectVercelProject_account($accountId: ID!) {\n    account: accountById(id: $accountId) {\n      id\n      vercelConfiguration {\n        id\n        url\n        apiProjects {\n          projects {\n            id\n            ...VercelProjectList_VercelApiProject\n          }\n        }\n      }\n    }\n  }\n": types.ConnectVercelProject_AccountDocument,
     "\n  mutation DeleteProjectMutation($projectId: ID!) {\n    deleteProject(id: $projectId)\n  }\n": types.DeleteProjectMutationDocument,
     "\n  fragment ProjectDelete_Project on Project {\n    id\n    name\n    account {\n      id\n      slug\n    }\n  }\n": types.ProjectDelete_ProjectFragmentDoc,
-    "\n  fragment ProjectGitRepository_Project on Project {\n    id\n    ghRepository {\n      id\n      fullName\n      url\n    }\n  }\n": types.ProjectGitRepository_ProjectFragmentDoc,
+    "\n  fragment ProjectGitRepository_Project on Project {\n    id\n    ghRepository {\n      id\n      fullName\n      url\n    }\n    prCommentEnabled\n  }\n": types.ProjectGitRepository_ProjectFragmentDoc,
     "\n  mutation ProjectGitRepository_unlinkRepository($projectId: ID!) {\n    unlinkRepository(input: { projectId: $projectId }) {\n      id\n      ...ProjectGitRepository_Project\n    }\n  }\n": types.ProjectGitRepository_UnlinkRepositoryDocument,
     "\n  mutation ProjectGitRepository_linkRepository(\n    $projectId: ID!\n    $repo: String!\n    $owner: String!\n  ) {\n    linkRepository(\n      input: { projectId: $projectId, repo: $repo, owner: $owner }\n    ) {\n      id\n      ...ProjectGitRepository_Project\n    }\n  }\n": types.ProjectGitRepository_LinkRepositoryDocument,
+    "\n  mutation ProjectGitRepository_updateEnablePrComment(\n    $id: ID!\n    $enable: Boolean!\n  ) {\n    updateProjectPrComment(input: { id: $id, enable: $enable }) {\n      id\n      prCommentEnabled\n    }\n  }\n": types.ProjectGitRepository_UpdateEnablePrCommentDocument,
     "\n  mutation ProjectReferenceBranch_updateProject(\n    $id: ID!\n    $baselineBranch: String\n  ) {\n    updateProject(input: { id: $id, baselineBranch: $baselineBranch }) {\n      id\n      baselineBranch\n    }\n  }\n": types.ProjectReferenceBranch_UpdateProjectDocument,
     "\n  fragment ProjectReferenceBranch_Project on Project {\n    id\n    baselineBranch\n    ghRepository {\n      id\n      defaultBranch\n    }\n  }\n": types.ProjectReferenceBranch_ProjectFragmentDoc,
     "\n  fragment ProjectToken_Project on Project {\n    token\n  }\n": types.ProjectToken_ProjectFragmentDoc,
@@ -238,7 +239,7 @@ export function graphql(source: "\n  fragment ProjectDelete_Project on Project {
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment ProjectGitRepository_Project on Project {\n    id\n    ghRepository {\n      id\n      fullName\n      url\n    }\n  }\n"): (typeof documents)["\n  fragment ProjectGitRepository_Project on Project {\n    id\n    ghRepository {\n      id\n      fullName\n      url\n    }\n  }\n"];
+export function graphql(source: "\n  fragment ProjectGitRepository_Project on Project {\n    id\n    ghRepository {\n      id\n      fullName\n      url\n    }\n    prCommentEnabled\n  }\n"): (typeof documents)["\n  fragment ProjectGitRepository_Project on Project {\n    id\n    ghRepository {\n      id\n      fullName\n      url\n    }\n    prCommentEnabled\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -247,6 +248,10 @@ export function graphql(source: "\n  mutation ProjectGitRepository_unlinkReposit
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation ProjectGitRepository_linkRepository(\n    $projectId: ID!\n    $repo: String!\n    $owner: String!\n  ) {\n    linkRepository(\n      input: { projectId: $projectId, repo: $repo, owner: $owner }\n    ) {\n      id\n      ...ProjectGitRepository_Project\n    }\n  }\n"): (typeof documents)["\n  mutation ProjectGitRepository_linkRepository(\n    $projectId: ID!\n    $repo: String!\n    $owner: String!\n  ) {\n    linkRepository(\n      input: { projectId: $projectId, repo: $repo, owner: $owner }\n    ) {\n      id\n      ...ProjectGitRepository_Project\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ProjectGitRepository_updateEnablePrComment(\n    $id: ID!\n    $enable: Boolean!\n  ) {\n    updateProjectPrComment(input: { id: $id, enable: $enable }) {\n      id\n      prCommentEnabled\n    }\n  }\n"): (typeof documents)["\n  mutation ProjectGitRepository_updateEnablePrComment(\n    $id: ID!\n    $enable: Boolean!\n  ) {\n    updateProjectPrComment(input: { id: $id, enable: $enable }) {\n      id\n      prCommentEnabled\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -65,6 +65,8 @@ export const typeDefs = gql`
     vercelProject: VercelProject
     "Project slug"
     slug: String!
+    "Pull request comment enabled"
+    prCommentEnabled: Boolean!
   }
 
   extend type Query {
@@ -118,6 +120,11 @@ export const typeDefs = gql`
     vercelProjectId: ID!
   }
 
+  input UpdateProjectPrCommentInput {
+    id: ID!
+    enable: Boolean!
+  }
+
   extend type Mutation {
     "Create a Project"
     createProject(input: CreateProjectInput!): Project!
@@ -135,6 +142,8 @@ export const typeDefs = gql`
     transferProject(input: TransferProjectInput!): Project!
     "Delete Project"
     deleteProject(id: ID!): Boolean!
+    "Set project pull request comment"
+    updateProjectPrComment(input: UpdateProjectPrCommentInput!): Project!
   }
 `;
 
@@ -513,6 +522,16 @@ export const resolvers: IResolvers = {
     deleteProject: async (_root, args, ctx) => {
       await deleteProject({ id: args.id, user: ctx.auth?.user });
       return true;
+    },
+    updateProjectPrComment: async (_root, args, ctx) => {
+      const project = await getWritableProject({
+        id: args.input.id,
+        user: ctx.auth?.user,
+      });
+
+      return project
+        .$query()
+        .patchAndFetch({ prCommentEnabled: args.input.enable });
     },
   },
 };

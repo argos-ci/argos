@@ -17,10 +17,10 @@ const UpdatePrivateMutation = graphql(`
 `);
 
 type Inputs = {
-  visiblity: "default" | "public" | "private";
+  visibility: "default" | "public" | "private";
 };
 
-const formatVisiblity = (isPrivate: boolean | null): Inputs["visiblity"] => {
+const formatVisibility = (isPrivate: boolean | null): Inputs["visibility"] => {
   switch (isPrivate) {
     case null:
       return "default";
@@ -31,8 +31,8 @@ const formatVisiblity = (isPrivate: boolean | null): Inputs["visiblity"] => {
   }
 };
 
-const parseVisibility = (visiblity: Inputs["visiblity"]): boolean | null => {
-  switch (visiblity) {
+const parseVisibility = (visibility: Inputs["visibility"]): boolean | null => {
+  switch (visibility) {
     case "default":
       return null;
     case "public":
@@ -61,7 +61,7 @@ export const ProjectVisibility = (props: ProjectVisibilityProps) => {
   const project = useFragment(ProjectFragment, props.project);
   const form = useForm<Inputs>({
     defaultValues: {
-      visiblity: formatVisiblity(project.private ?? null),
+      visibility: formatVisibility(project.private ?? null),
     },
   });
 
@@ -71,7 +71,7 @@ export const ProjectVisibility = (props: ProjectVisibilityProps) => {
       mutation: UpdatePrivateMutation,
       variables: {
         id: project.id,
-        private: parseVisibility(data.visiblity),
+        private: parseVisibility(data.visibility),
       },
     });
   };
@@ -89,9 +89,9 @@ export const ProjectVisibility = (props: ProjectVisibilityProps) => {
             <CardParagraph>
               This will also mark the screenshots as private and use up credit.
             </CardParagraph>
-            <FormRadioGroup>
+            <FormRadioGroup className="rounded p-4">
               <FormRadio
-                {...form.register("visiblity")}
+                {...form.register("visibility")}
                 value="default"
                 label={
                   <>
@@ -107,12 +107,12 @@ export const ProjectVisibility = (props: ProjectVisibilityProps) => {
                 }
               />
               <FormRadio
-                {...form.register("visiblity")}
+                {...form.register("visibility")}
                 value="private"
                 label="Visible only from Team members"
               />
               <FormRadio
-                {...form.register("visiblity")}
+                {...form.register("visibility")}
                 value="public"
                 label="Visible from everyone"
               />
