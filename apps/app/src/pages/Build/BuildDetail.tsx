@@ -324,11 +324,8 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
           }
         >
           <img
-            className="absolute"
+            className={clsx("absolute", visible && "opacity-30")}
             {...getImgAttributes(diff.compareScreenshot!)}
-          />
-          <div
-            className={clsx(opacity, "absolute inset-0 bg-black bg-opacity-70")}
           />
           <img
             className={clsx(opacity, "relative z-10 max-h-full")}
