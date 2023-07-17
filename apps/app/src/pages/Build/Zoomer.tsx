@@ -14,9 +14,7 @@ import {
 
 type ZoomPaneEvent = {
   state: Transform;
-  sourceEvent: MouseEvent | TouchEvent | null;
 };
-type ZoomPaneListener = (event: ZoomPaneEvent) => void;
 
 type ZoomerOptions = {
   allowScroll?: boolean;
@@ -35,6 +33,11 @@ const allowScrollFilter = (event: any) => {
   }
 
   return defaultFilter(event);
+};
+
+type ZoomPaneListener = {
+  fn: (event: ZoomPaneEvent) => void;
+  ignoreUpdate: boolean;
 };
 
 class Zoomer {
@@ -56,10 +59,7 @@ class Zoomer {
       };
 
       this.listeners.forEach((listener) => {
-        listener({
-          state,
-          sourceEvent: event.sourceEvent,
-        });
+        listener.fn({ state });
       });
     });
     this.selection = select(element);
@@ -79,20 +79,34 @@ class Zoomer {
   }
 
   update(state: Transform): void {
+    const listeners = this.listeners;
+    this.listeners = this.listeners.filter((l) => !l.ignoreUpdate);
+
     this.zoom.transform(
       this.selection,
       zoomIdentity.translate(state.x, state.y).scale(state.scale)
     );
+
+    this.listeners = listeners;
   }
 
   reset(): void {
     this.zoom.transform(this.selection, zoomIdentity);
   }
 
-  subscribe(listener: ZoomPaneListener): () => void {
-    this.listeners.push(listener);
+  subscribe(
+    fn: ZoomPaneListener["fn"],
+    options?: {
+      ignoreUpdate?: boolean;
+    }
+  ): () => void {
+    const desc: ZoomPaneListener = {
+      fn,
+      ignoreUpdate: Boolean(options?.ignoreUpdate),
+    };
+    this.listeners.push(desc);
     const unsubscribe = () => {
-      this.listeners = this.listeners.filter((l) => l !== listener);
+      this.listeners = this.listeners.filter((l) => l !== desc);
     };
     return unsubscribe;
   }
@@ -114,16 +128,17 @@ export const ZoomerSyncProvider = (props: {
   const transformRef = useRef<Transform | null>(null);
   const register = useCallback((zoomer: Zoomer) => {
     refInstances.current.push(zoomer);
-    const unsubscribe = zoomer.subscribe((event) => {
-      if (event.sourceEvent) {
+    const unsubscribe = zoomer.subscribe(
+      (event) => {
         transformRef.current = event.state;
         refInstances.current.forEach((i) => {
           if (i !== zoomer) {
             i.update(event.state);
           }
         });
-      }
-    });
+      },
+      { ignoreUpdate: true }
+    );
     return () => {
       unsubscribe();
       refInstances.current = refInstances.current.filter((i) => i !== zoomer);
