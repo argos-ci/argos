@@ -306,7 +306,7 @@ const sendGithubNotification = async (ctx: Context) => {
     createCommitStatus({
       buildName: build.name,
       buildUrl,
-      commit: compareScreenshotBucket.commit,
+      commit: build.prHeadCommit ?? compareScreenshotBucket.commit,
       description: notification.description,
       githubAccountLogin: githubAccount.login,
       octokit,
