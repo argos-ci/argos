@@ -1,7 +1,7 @@
 import { Button as AriakitButton } from "ariakit/button";
 import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
-import { forwardRef } from "react";
+import { cloneElement, forwardRef } from "react";
 
 export type IconButtonColor = "primary" | "danger" | "success" | "neutral";
 
@@ -11,6 +11,7 @@ export type IconButtonProps = Omit<
 > & {
   color?: IconButtonColor;
   children: React.ReactNode;
+  asChild?: boolean;
 };
 
 const colorClassNames: Record<IconButtonColor, string> = {
@@ -25,7 +26,7 @@ const colorClassNames: Record<IconButtonColor, string> = {
 };
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ color = "neutral", children, ...props }, ref) => {
+  ({ color = "neutral", children, asChild, ...props }, ref) => {
     const variantClassName = colorClassNames[color];
     if (!variantClassName) {
       throw new Error(`Invalid color: ${color}`);
@@ -43,7 +44,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         )}
         {...props}
       >
-        {children}
+        {asChild
+          ? (p) => cloneElement(children as React.ReactElement, p)
+          : children}
       </AriakitButton>
     );
   }

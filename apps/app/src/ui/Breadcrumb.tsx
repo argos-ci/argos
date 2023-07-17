@@ -1,8 +1,8 @@
-import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
+import { clsx } from "clsx";
 import { ComponentProps, HTMLProps } from "react";
 import { Link } from "react-router-dom";
 
-import { MenuButton, MenuState } from "./Menu";
+import { UpDownMenuButton, UpDownMenuButtonProps } from "./Menu";
 
 export const Breadcrumb = (props: { children: React.ReactNode }) => {
   return (
@@ -47,13 +47,11 @@ export const BreadcrumbSeparator = () => {
   );
 };
 
-export const BreadcrumbMenuButton = (props: { state: MenuState }) => {
+export const BreadcrumbMenuButton = ({
+  className,
+  ...props
+}: UpDownMenuButtonProps) => {
   return (
-    <MenuButton
-      state={props.state}
-      className="cursor-default rounded-md border border-border px-0.5 py-1 text-on-light transition hover:border-border-hover hover:text-on aria-expanded:border-border-hover aria-expanded:bg-slate-800 aria-expanded:text-on"
-    >
-      <ChevronUpDownIcon className="h-4 w-4" />
-    </MenuButton>
+    <UpDownMenuButton className={clsx("shrink-0", className)} {...props} />
   );
 };
