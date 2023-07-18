@@ -13,7 +13,7 @@ const BuildProgress = memo(() => {
     <div className="flex flex-1 flex-col items-center gap-10 p-10">
       <div className="text-4xl">Your build is cooking...</div>
       <div>
-        <div className="egg-loader" />
+        <div className="egg-loader" data-visual-test="transparent" />
       </div>
     </div>
   );
