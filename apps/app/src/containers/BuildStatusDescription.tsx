@@ -28,6 +28,21 @@ export const BuildStatusDescription = (props: {
   const build = useFragment(BuildFragment, props.build);
   const project = useFragment(ProjectFragment, props.project);
 
+  if (build.status === "expired") {
+    if (checkIsBuildIncomplete(build)) {
+      return (
+        <>
+          Build has been killed because it took too much time to receive all
+          batches.
+          <br />
+          Be sure that argos upload is called up to the number specified in
+          parallel total.
+        </>
+      );
+    }
+    return <>Build has been killed because it took too much time.</>;
+  }
+
   switch (build.type) {
     case "orphan":
       return (
@@ -73,21 +88,6 @@ export const BuildStatusDescription = (props: {
             );
           }
           return <>This build is stable: no screenshot change detected.</>;
-        }
-
-        case "expired": {
-          if (checkIsBuildIncomplete(build)) {
-            return (
-              <>
-                Build has been killed because it took too much time to receive
-                all batches.
-                <br />
-                Be sure that argos upload is called up to the number specified
-                in parallel total.
-              </>
-            );
-          }
-          return <>Build has been killed because it took too much time.</>;
         }
 
         case "error":
