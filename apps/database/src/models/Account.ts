@@ -145,6 +145,7 @@ export class Account extends Model {
 
   async $getActivePurchase() {
     if (!this.id) return null;
+    if (this.forcedPlanId) return null;
 
     const query = Purchase.query()
       .where("accountId", this.id)
