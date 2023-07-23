@@ -3,7 +3,6 @@ import {
   ArrowUpIcon,
   ArrowsPointingInIcon,
   EyeIcon,
-  ViewfinderCircleIcon,
 } from "@heroicons/react/20/solid";
 import { clsx } from "clsx";
 import { memo } from "react";
@@ -43,7 +42,11 @@ const BuildDiffChangesOverlayToggle = memo(() => {
 
 const BuildDiffFitToggle = memo(() => {
   const { contained, setContained } = useBuildDiffFitState();
-  const toggle = () => setContained((contained) => !contained);
+  const { reset } = useZoomerSyncContext();
+  const toggle = () => {
+    setContained((contained) => !contained);
+    reset();
+  };
   const hotkey = useBuildHotkey("toggleDiffFit", toggle, {
     preventDefault: true,
   });
@@ -180,20 +183,6 @@ const PreviousDiffButton = memo(() => {
   );
 });
 
-const BuildResetView = memo(() => {
-  const { reset } = useZoomerSyncContext();
-  const hotkey = useBuildHotkey("fitView", reset, {
-    preventDefault: true,
-  });
-  return (
-    <HotkeyTooltip description="Fit view" keys={hotkey.displayKeys}>
-      <IconButton onClick={reset}>
-        <ViewfinderCircleIcon />
-      </IconButton>
-    </HotkeyTooltip>
-  );
-});
-
 export interface BuildDetailToolbarProps {
   name: string;
   bordered: boolean;
@@ -230,7 +219,6 @@ export const BuildDetailToolbar = memo(
           <FlakyChip test={test} className="mt-0.5" />
         </div>
         <div className="flex gap-2">
-          <BuildResetView />
           <BuildVisibleDiffButtonGroup />
           <BuildSplitViewToggle />
           <BuildDiffFitToggle />
