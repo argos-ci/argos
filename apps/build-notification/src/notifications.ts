@@ -4,13 +4,13 @@ import { TransactionOrKnex, runAfterTransaction } from "@argos-ci/database";
 import {
   Build,
   BuildNotification,
-  PullRequest,
+  GithubPullRequest,
 } from "@argos-ci/database/models";
-import { getInstallationOctokit } from "@argos-ci/github";
+import { commentGithubPr, getInstallationOctokit } from "@argos-ci/github";
 import { UnretryableError } from "@argos-ci/job-core";
 import { createVercelClient } from "@argos-ci/vercel";
 
-import { commentGithubPr, getGithubPrMessage } from "./commentGithubPR.js";
+import { getCommentBody } from "./comment.js";
 import { job as buildNotificationJob } from "./job.js";
 import { getStatsMessage } from "./utils.js";
 
@@ -282,7 +282,7 @@ const sendGithubNotification = async (ctx: Context) => {
       return;
     }
 
-    const pullRequest = await PullRequest.query().findById(
+    const pullRequest = await GithubPullRequest.query().findById(
       build.githubPullRequestId
     );
 
@@ -290,15 +290,15 @@ const sendGithubNotification = async (ctx: Context) => {
       return;
     }
 
-    const message = await getGithubPrMessage({
+    const body = await getCommentBody({
       commit: compareScreenshotBucket.commit,
     });
     await commentGithubPr({
-      githubAccountLogin: githubAccount.login,
-      message,
+      owner: githubAccount.login,
+      repo: githubRepository.name,
+      body,
       octokit,
       pullRequest,
-      repositoryName: githubRepository.name,
     });
   };
 

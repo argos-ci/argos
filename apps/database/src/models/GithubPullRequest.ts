@@ -5,7 +5,7 @@ import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Build } from "./Build.js";
 import { GithubRepository } from "./GithubRepository.js";
 
-export class PullRequest extends Model {
+export class GithubPullRequest extends Model {
   static override tableName = "github_pull_requests";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {

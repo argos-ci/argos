@@ -9,8 +9,8 @@ import { transaction } from "@argos-ci/database";
 import {
   Build,
   Crawl,
+  GithubPullRequest,
   Project,
-  PullRequest,
   ScreenshotBucket,
 } from "@argos-ci/database/models";
 
@@ -27,12 +27,15 @@ const getOrCreatePullRequest = async ({
   const lockKey = `pullRequestCreation-${githubRepositoryId}:${number}`;
   const lock = await getRedisLock();
   return lock.acquire(lockKey, async () => {
-    const pullRequest = await PullRequest.query().findOne({
+    const pullRequest = await GithubPullRequest.query().findOne({
       githubRepositoryId,
       number,
     });
     if (pullRequest) return pullRequest;
-    return PullRequest.query().insertAndFetch({ githubRepositoryId, number });
+    return GithubPullRequest.query().insertAndFetch({
+      githubRepositoryId,
+      number,
+    });
   });
 };
 
