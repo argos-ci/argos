@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unescaped-entities */
 import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { clsx } from "clsx";
 import { memo, useLayoutEffect, useRef, useState } from "react";
@@ -45,11 +44,11 @@ export const BuildFragment = graphql(`
 
 type BuildFragmentDocument = DocumentType<typeof BuildFragment>;
 
-const ScreenshotControls = memo((props: { url: string; tooltip: string }) => {
-  return (
-    <div className="absolute bottom-2 right-2 flex items-center gap-2">
+const DownloadScreenshotButton = memo(
+  (props: { url: string; tooltip: string }) => {
+    return (
       <MagicTooltip tooltip={props.tooltip}>
-        <IconButton asChild>
+        <IconButton variant="contained" asChild>
           <a
             href={`${props.url}?tr=orig-true&ik-attachment=true`}
             download
@@ -60,9 +59,9 @@ const ScreenshotControls = memo((props: { url: string; tooltip: string }) => {
           </a>
         </IconButton>
       </MagicTooltip>
-    </div>
-  );
-});
+    );
+  }
+);
 
 const BuildScreenshotHeader = memo(
   ({
@@ -77,7 +76,9 @@ const BuildScreenshotHeader = memo(
     return (
       <div className="flex shrink-0 flex-col items-center gap-0.5 text-on-light">
         <div className="flex max-w-full items-center gap-1">
-          <div className="shrink-0 text-xs font-medium">{label} from</div>
+          <div className="shrink-0 select-none text-xs font-medium">
+            {label} from
+          </div>
           <Code
             className="overflow-hidden text-ellipsis whitespace-nowrap"
             title={branch}
@@ -143,19 +144,8 @@ const NeutralLink = ({
   </a>
 );
 
-const ConditionalZoomPane = (props: {
-  children: React.ReactNode;
-  controls: React.ReactNode;
-}) => {
-  const { contained } = useBuildDiffFitState();
-  return (
-    <ZoomPane allowScroll={!contained} controls={props.controls}>
-      {props.children}
-    </ZoomPane>
-  );
-};
-
 const BaseScreenshot = ({ diff }: { diff: Diff }) => {
+  const { contained } = useBuildDiffFitState();
   switch (diff.status) {
     case "added":
       return (
@@ -198,33 +188,33 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "removed":
       return (
-        <ConditionalZoomPane
+        <ZoomPane
           controls={
-            <ScreenshotControls
+            <DownloadScreenshotButton
               url={diff.baseScreenshot!.url}
               tooltip="Download baseline screenshot"
             />
           }
         >
           <img
-            className="max-h-full"
+            className={clsx(contained && "max-h-full")}
             alt="Baseline screenshot"
             {...getImgAttributes(diff.baseScreenshot!)}
           />
-        </ConditionalZoomPane>
+        </ZoomPane>
       );
     case "changed":
       return (
-        <ConditionalZoomPane
+        <ZoomPane
           controls={
-            <ScreenshotControls
+            <DownloadScreenshotButton
               url={diff.baseScreenshot!.url}
               tooltip="Download baseline screenshot"
             />
           }
         >
           <img
-            className="relative max-h-full opacity-0"
+            className={clsx("relative opacity-0", contained && "max-h-full")}
             {...getImgAttributes({
               url: diff.url!,
               width: diff.width,
@@ -236,7 +226,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             alt="Baseline screenshot"
             {...getImgAttributes(diff.baseScreenshot!)}
           />
-        </ConditionalZoomPane>
+        </ZoomPane>
       );
     default:
       return null;
@@ -245,47 +235,48 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
 
 const CompareScreenshot = ({ diff }: { diff: Diff }) => {
   const { visible } = useBuildDiffVisibleState();
+  const { contained } = useBuildDiffFitState();
   const opacity = visible ? "" : "opacity-0";
   switch (diff.status) {
     case "added":
       return (
-        <ConditionalZoomPane
+        <ZoomPane
           controls={
-            <ScreenshotControls
+            <DownloadScreenshotButton
               url={diff.compareScreenshot!.url}
               tooltip="Download changes screenshot"
             />
           }
         >
           <img
-            className="max-h-full"
+            className={clsx(contained && "max-h-full")}
             alt="Changes screenshot"
             {...getImgAttributes(diff.compareScreenshot!)}
           />
-        </ConditionalZoomPane>
+        </ZoomPane>
       );
     case "failure":
       return (
-        <ConditionalZoomPane
+        <ZoomPane
           controls={
-            <ScreenshotControls
+            <DownloadScreenshotButton
               url={diff.compareScreenshot!.url}
               tooltip="Download changes screenshot"
             />
           }
         >
           <img
-            className="max-h-full"
+            className={clsx(contained && "max-h-full")}
             alt="Failure screenshot"
             {...getImgAttributes(diff.compareScreenshot!)}
           />
-        </ConditionalZoomPane>
+        </ZoomPane>
       );
     case "unchanged":
       return (
-        <ConditionalZoomPane
+        <ZoomPane
           controls={
-            <ScreenshotControls
+            <DownloadScreenshotButton
               url={diff.compareScreenshot!.url}
               tooltip="Download changes screenshot"
             />
@@ -293,12 +284,12 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
         >
           <NeutralLink href={diff.compareScreenshot!.url}>
             <img
-              className="max-h-full"
+              className={clsx(contained && "max-h-full")}
               alt="Baseline screenshot"
               {...getImgAttributes(diff.compareScreenshot!)}
             />
           </NeutralLink>
-        </ConditionalZoomPane>
+        </ZoomPane>
       );
     case "removed":
       return (
@@ -315,20 +306,24 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
       );
     case "changed":
       return (
-        <ConditionalZoomPane
+        <ZoomPane
           controls={
-            <ScreenshotControls
+            <DownloadScreenshotButton
               url={diff.compareScreenshot!.url}
               tooltip="Download changes screenshot"
             />
           }
         >
           <img
-            className={clsx("absolute", visible && "opacity-30")}
+            className={clsx("absolute", visible && "opacity-disabled")}
             {...getImgAttributes(diff.compareScreenshot!)}
           />
           <img
-            className={clsx(opacity, "relative z-10 max-h-full")}
+            className={clsx(
+              opacity,
+              "relative z-10",
+              contained && "max-h-full"
+            )}
             alt="Changes screenshot"
             {...getImgAttributes({
               url: diff.url!,
@@ -336,7 +331,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
               height: diff.height,
             })}
           />
-        </ConditionalZoomPane>
+        </ZoomPane>
       );
     default:
       return null;
@@ -345,13 +340,13 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
 
 const BuildScreenshots = memo(
   (props: { diff: Diff; build: BuildFragmentDocument }) => {
-    const { contained } = useBuildDiffFitState();
+    // const { contained } = useBuildDiffFitState();
     const { viewMode } = useBuildDiffViewModeState();
     const showBaseline = viewMode === "split" || viewMode === "baseline";
     const showChanges = viewMode === "split" || viewMode === "changes";
 
     return (
-      <div className={clsx(contained && "min-h-0 flex-1", "flex gap-4 px-4")}>
+      <div className={clsx("min-h-0 flex-1", "flex gap-4 px-4")}>
         {props.build.baseScreenshotBucket ? (
           <div
             className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"

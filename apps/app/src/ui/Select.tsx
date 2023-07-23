@@ -82,7 +82,7 @@ export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
       <AriakitSelectItem
         ref={ref}
         className={clsx(
-          "flex select-none items-center rounded px-3 py-1.5 text-sm text-menu-on transition hover:bg-menu-item-hover-bg hover:text-menu-hover-on focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-70"
+          "flex select-none items-center rounded px-3 py-1.5 text-sm text-menu-on transition hover:bg-menu-item-hover-bg hover:text-menu-hover-on focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-disabled"
         )}
         {...props}
       />
