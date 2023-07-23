@@ -1,7 +1,13 @@
 /* eslint-disable default-case */
 import type { EmitterWebhookEvent } from "@octokit/webhooks";
 
-import { Purchase } from "@argos-ci/database/models";
+import { getPendingCommentBody } from "@argos-ci/database";
+import {
+  GithubPullRequest,
+  GithubRepository,
+  Purchase,
+} from "@argos-ci/database/models";
+import { getInstallationOctokit } from "@argos-ci/github";
 import logger from "@argos-ci/logger";
 
 import { synchronizeFromInstallationId } from "../helpers.js";
@@ -115,6 +121,47 @@ export const handleGitHubEvents = async ({
             await synchronizeFromInstallationId(installation.id);
             return;
           }
+        }
+        return;
+      }
+      case "pull_request": {
+        if (payload.action === "synchronize") {
+          if (!payload.installation) return;
+
+          const repository = await GithubRepository.query().findOne({
+            githubId: payload.repository.id,
+          });
+
+          if (!repository) return;
+
+          const pr = await GithubPullRequest.query()
+            .findOne({
+              githubRepositoryId: repository.id,
+              number: payload.pull_request.number,
+            })
+            .whereNotNull("commentId");
+
+          if (!pr || !pr.commentId) return;
+
+          const installation = await getOrCreateInstallation({
+            githubId: payload.installation.id,
+            deleted: false,
+          });
+
+          const octokit = await getInstallationOctokit(installation.id);
+
+          if (!octokit) {
+            return;
+          }
+
+          await octokit.issues.updateComment({
+            owner: payload.repository.owner.login,
+            repo: payload.repository.name,
+            comment_id: pr.commentId,
+            body: getPendingCommentBody(),
+          });
+
+          return;
         }
         return;
       }

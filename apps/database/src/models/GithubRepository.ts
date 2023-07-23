@@ -4,6 +4,7 @@ import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";
 import { GithubInstallation } from "./GithubInstallation.js";
+import { GithubPullRequest } from "./GithubPullRequest.js";
 import { Project } from "./Project.js";
 
 export class GithubRepository extends Model {
@@ -63,6 +64,14 @@ export class GithubRepository extends Model {
         },
         modify(builder) {
           builder.where("github_installations.deleted", false);
+        },
+      },
+      pullRequests: {
+        relation: Model.HasManyRelation,
+        modelClass: GithubPullRequest,
+        join: {
+          from: "github_repositories.id",
+          to: "github_pull_requests.githubRepositoryId",
         },
       },
     };

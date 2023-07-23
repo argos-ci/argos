@@ -15,7 +15,7 @@ import {
   mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
-import { PullRequest } from "./GithubPullRequest.js";
+import { GithubPullRequest } from "./GithubPullRequest.js";
 import { Project } from "./Project.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
@@ -123,7 +123,7 @@ export class Build extends Model {
       },
       pullRequest: {
         relation: Model.BelongsToOneRelation,
-        modelClass: PullRequest,
+        modelClass: GithubPullRequest,
         join: {
           from: "builds.githubPullRequestId",
           to: "github_pull_requests.id",
@@ -137,7 +137,7 @@ export class Build extends Model {
   vercelCheck?: VercelCheck | null;
   project?: Project;
   screenshotDiffs?: ScreenshotDiff[];
-  pullRequest?: PullRequest | null;
+  pullRequest?: GithubPullRequest | null;
 
   override $afterValidate(json: Pojo) {
     if (

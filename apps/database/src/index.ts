@@ -4,3 +4,4 @@ export { raw } from "objection";
 export type { Objection };
 export * from "./knex.js";
 export * from "./transaction.js";
+export * from "./services/comment.js";
