@@ -75,7 +75,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           className,
           variantClassName,
           sizeClassName,
-          "align-center inline-flex whitespace-nowrap border font-sans font-medium leading-none transition aria-disabled:opacity-70 [&:is(button)]:cursor-default"
+          "align-center inline-flex whitespace-nowrap border font-sans font-medium leading-none transition aria-disabled:opacity-disabled [&:is(button)]:cursor-default"
         )}
         {...props}
       >

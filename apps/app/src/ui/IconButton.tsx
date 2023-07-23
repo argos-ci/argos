@@ -60,7 +60,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           /* Group */
           "group-[]/button-group:rounded-none group-[]/button-group:first:rounded-l-lg group-[]/button-group:last:rounded-r-lg",
           /* Base */
-          "flex h-8 cursor-default items-center gap-2 rounded-lg border border-transparent p-[7px] text-sm text-icon-button-on transition disabled:opacity-70 [&>*]:h-4 [&>*]:w-4"
+          "flex h-8 cursor-default items-center gap-2 rounded-lg border border-transparent p-[7px] text-sm text-icon-button-on transition disabled:opacity-disabled [&>*]:h-4 [&>*]:w-4"
         )}
         {...props}
       >

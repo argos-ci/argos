@@ -85,7 +85,7 @@ class Zoomer {
           const pinchDelta =
             -event.deltaY *
             (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002) *
-            10;
+            2;
           const zoom = currentZoom * Math.pow(2, pinchDelta);
           this.zoom.scaleTo(this.selection, zoom, point);
 
@@ -312,7 +312,7 @@ export const ZoomPane = (props: {
   return (
     <div
       ref={paneRef}
-      className="group/pane flex min-h-0 flex-1 cursor-grab overflow-hidden bg-zinc-800/50"
+      className="group/pane flex min-h-0 flex-1 cursor-grab select-none overflow-hidden bg-zinc-800/50"
     >
       <div
         ref={contentRef}

@@ -74,7 +74,7 @@ const InteractiveStatCount = ({
         as="div"
         className={clsx(
           colorClassName,
-          "flex cursor-default items-center gap-1 p-2 transition aria-disabled:opacity-70"
+          "flex cursor-default items-center gap-1 p-2 transition aria-disabled:opacity-disabled"
         )}
         onClick={onActive}
         disabled={count === 0}

@@ -66,7 +66,7 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
           pointerClassName,
           selectedClassName,
           menuItemVariantClasses[props.variant ?? "default"],
-          "flex items-center rounded px-3 py-1.5 text-sm transition hover:bg-menu-item-hover-bg focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-70 aria-disabled:hover:bg-transparent"
+          "flex items-center rounded px-3 py-1.5 text-sm transition hover:bg-menu-item-hover-bg focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-disabled aria-disabled:hover:bg-transparent"
         )}
         {...props}
       />
