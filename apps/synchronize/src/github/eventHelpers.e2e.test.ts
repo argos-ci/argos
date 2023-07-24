@@ -1,10 +1,14 @@
-import { useDatabase } from "@argos-ci/database/testing";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { setupDatabase } from "@argos-ci/database/testing";
 
 import { ORGANIZATION_PURCHASE_EVENT_PAYLOAD } from "../fixtures/purchase-event-payload.js";
 import { getOrCreateAccount } from "./eventHelpers.js";
 
 describe("#getOrCreateAccount", () => {
-  useDatabase();
+  beforeEach(async () => {
+    await setupDatabase();
+  });
 
   it("creates an account", async () => {
     const teamAccount = await getOrCreateAccount(

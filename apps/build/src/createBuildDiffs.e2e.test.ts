@@ -1,4 +1,4 @@
-import { setTimeout as delay } from "node:timers/promises";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   Build,
@@ -7,19 +7,11 @@ import {
   ScreenshotDiff,
 } from "@argos-ci/database/models";
 import type { File, Project } from "@argos-ci/database/models";
-import { factory, useDatabase } from "@argos-ci/database/testing";
-import { quitAmqp } from "@argos-ci/job-core";
+import { factory, setupDatabase } from "@argos-ci/database/testing";
 
 import { createBuildDiffs, getStabilityScores } from "./createBuildDiffs.js";
 
 describe("#createBuildDiffs", () => {
-  useDatabase();
-
-  afterAll(async () => {
-    await delay(500);
-    await quitAmqp();
-  });
-
   let build: Build;
   let compareBucket: ScreenshotBucket;
   let newScreenshot: Screenshot | undefined;
@@ -28,20 +20,21 @@ describe("#createBuildDiffs", () => {
   let files: File[];
 
   beforeEach(async () => {
-    project = await factory.create<Project>("Project");
-    compareBucket = await factory.create<ScreenshotBucket>("ScreenshotBucket", {
+    await setupDatabase();
+    project = await factory.Project.create();
+    compareBucket = await factory.ScreenshotBucket.create({
       branch: "BUGS-123",
       projectId: project.id,
     });
-    build = await factory.create<Build>("Build", {
+    build = await factory.Build.create({
       baseScreenshotBucketId: null,
       compareScreenshotBucketId: compareBucket.id,
       projectId: project.id,
       jobStatus: "pending",
     });
-    files = await factory.createMany<File>("File", 10);
+    files = await factory.File.createMany(10);
     [newScreenshot, newScreenshotWithoutFile] =
-      await factory.createMany<Screenshot>("Screenshot", [
+      await factory.Screenshot.createMany(2, [
         {
           name: "new-screenshot",
           s3Id: "s3Id-a",
@@ -65,19 +58,19 @@ describe("#createBuildDiffs", () => {
 
     describe("on a build with low usage (less than 10 builds in a week)", () => {
       beforeEach(async () => {
-        const project = await factory.create<Project>("Project");
+        const project = await factory.Project.create();
         [builds, screenshot] = await Promise.all([
-          factory.createMany<Build>("Build", 2, {
+          factory.Build.createMany(2, {
             projectId: project.id,
           }),
-          factory.create<Screenshot>("Screenshot", { name: screenshotName }),
+          factory.Screenshot.create({ name: screenshotName }),
         ]);
         unchangedScreenshotDiff = {
           compareScreenshotId: screenshot.id,
           score: 0,
         };
         changedScreenshotDiff = { ...unchangedScreenshotDiff, score: 0.3 };
-        await factory.createMany<ScreenshotDiff>("ScreenshotDiff", [
+        await factory.ScreenshotDiff.createMany(2, [
           { buildId: builds[0]!.id, ...unchangedScreenshotDiff },
           { buildId: builds[1]!.id, ...unchangedScreenshotDiff },
         ]);
@@ -92,9 +85,10 @@ describe("#createBuildDiffs", () => {
       });
 
       it("returns always max stability score", async () => {
-        await factory.createMany<ScreenshotDiff>("ScreenshotDiff", [
-          { buildId: build.id, ...changedScreenshotDiff },
-        ]);
+        await factory.ScreenshotDiff.create({
+          buildId: build.id,
+          ...changedScreenshotDiff,
+        });
         const stabilityScores = await getStabilityScores({
           buildName: build.name,
           projectId: project.id,
@@ -105,22 +99,19 @@ describe("#createBuildDiffs", () => {
 
     describe("on a build with high usage (more than 10 builds in a week)", () => {
       beforeEach(async () => {
-        const screenshotBuckets = await factory.createMany<ScreenshotBucket>(
-          "ScreenshotBucket",
-          [
-            { branch: "main" },
-            { branch: "feature-branch" },
-            { branch: "feature-branch-2" },
-            { branch: "feature-branch-3" },
-          ]
-        );
+        const screenshotBuckets = await factory.ScreenshotBucket.createMany(4, [
+          { branch: "main" },
+          { branch: "feature-branch" },
+          { branch: "feature-branch-2" },
+          { branch: "feature-branch-3" },
+        ]);
         [builds, screenshot] = await Promise.all([
-          factory.createMany<Build>("Build", 8, {
+          factory.Build.createMany(8, {
             projectId: project.id,
             compareScreenshotBucketId: screenshotBuckets[0]!.id,
           }),
-          factory.create<Screenshot>("Screenshot", { name: screenshotName }),
-          factory.createMany<Build>("Build", [
+          factory.Screenshot.create({ name: screenshotName }),
+          factory.Build.createMany(3, [
             {
               projectId: project.id,
               compareScreenshotBucketId: screenshotBuckets[1]!.id,
@@ -140,7 +131,7 @@ describe("#createBuildDiffs", () => {
           score: 0,
         };
         changedScreenshotDiff = { ...unchangedScreenshotDiff, score: 0.3 };
-        await factory.createMany<ScreenshotDiff>("ScreenshotDiff", [
+        await factory.ScreenshotDiff.createMany(2, [
           { buildId: builds[0]!.id, ...unchangedScreenshotDiff },
           { buildId: builds[1]!.id, ...unchangedScreenshotDiff },
         ]);
@@ -155,9 +146,10 @@ describe("#createBuildDiffs", () => {
       });
 
       it("returns high stability score after first screenshot update", async () => {
-        await factory.createMany<ScreenshotDiff>("ScreenshotDiff", [
-          { buildId: build.id, ...changedScreenshotDiff },
-        ]);
+        await factory.ScreenshotDiff.create({
+          buildId: build.id,
+          ...changedScreenshotDiff,
+        });
         const stabilityScores = await getStabilityScores({
           buildName: build.name,
           projectId: project.id,
@@ -166,7 +158,7 @@ describe("#createBuildDiffs", () => {
       });
 
       it("returns low stability score for a flaky screenshot", async () => {
-        await factory.createMany<ScreenshotDiff>("ScreenshotDiff", [
+        await factory.ScreenshotDiff.createMany(5, [
           { buildId: builds[3]!.id, ...changedScreenshotDiff },
           { buildId: builds[4]!.id, ...changedScreenshotDiff },
           { buildId: builds[5]!.id, ...changedScreenshotDiff },
@@ -195,7 +187,7 @@ describe("#createBuildDiffs", () => {
     let sameFileScreenshotCompare: Screenshot | undefined;
 
     beforeEach(async () => {
-      baseBucket = await factory.create<ScreenshotBucket>("ScreenshotBucket", {
+      baseBucket = await factory.ScreenshotBucket.create({
         branch: "master",
         projectId: project.id,
       });
@@ -213,7 +205,7 @@ describe("#createBuildDiffs", () => {
         noFileCompareScreenshotCompare,
         sameFileScreenshotBase,
         sameFileScreenshotCompare,
-      ] = await factory.createMany<Screenshot>("Screenshot", [
+      ] = await factory.Screenshot.createMany(9, [
         {
           name: "classic-diff",
           s3Id: "s3Id-c",

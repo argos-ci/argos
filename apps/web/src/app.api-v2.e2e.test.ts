@@ -3,10 +3,11 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import request from "supertest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { quitRedis } from "@argos-ci/common";
-import { Account, Build, Project, Purchase } from "@argos-ci/database/models";
-import { factory, useDatabase } from "@argos-ci/database/testing";
+import { Build, Project } from "@argos-ci/database/models";
+import { factory, setupDatabase } from "@argos-ci/database/testing";
 import { quitAmqp } from "@argos-ci/job-core";
 import { s3 } from "@argos-ci/storage";
 
@@ -15,8 +16,6 @@ import { createApp } from "./app.js";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 describe("api v2", () => {
-  useDatabase();
-
   let app: Express.Application;
 
   beforeAll(async () => {
@@ -25,6 +24,10 @@ describe("api v2", () => {
 
   afterAll(async () => {
     await Promise.all([quitRedis(), s3().destroy(), quitAmqp()]);
+  });
+
+  beforeEach(async () => {
+    await setupDatabase();
   });
 
   describe("POST /v2/builds", () => {
@@ -47,11 +50,11 @@ describe("api v2", () => {
       let project: Project;
 
       beforeEach(async () => {
-        const account = await factory.create<Account>("TeamAccount", {
+        const account = await factory.TeamAccount.create({
           slug: "argos-ci",
         });
-        await factory.create<Purchase>("Purchase", { accountId: account.id });
-        project = await factory.create<Project>("Project", {
+        await factory.Purchase.create({ accountId: account.id });
+        project = await factory.Project.create({
           name: "argos",
           accountId: account.id,
           token: "awesome-token",
@@ -120,11 +123,11 @@ describe("api v2", () => {
       let project: Project;
 
       beforeEach(async () => {
-        const account = await factory.create<Account>("TeamAccount", {
+        const account = await factory.TeamAccount.create({
           slug: "argos-ci",
         });
-        await factory.create<Purchase>("Purchase", { accountId: account.id });
-        project = await factory.create<Project>("Project", {
+        await factory.Purchase.create({ accountId: account.id });
+        project = await factory.Project.create({
           name: "argos",
           accountId: account.id,
           token: "awesome-token",
@@ -260,11 +263,11 @@ describe("api v2", () => {
       ];
 
       beforeEach(async () => {
-        const account = await factory.create<Account>("TeamAccount", {
+        const account = await factory.TeamAccount.create({
           slug: "argos-ci",
         });
-        await factory.create<Purchase>("Purchase", { accountId: account.id });
-        project = await factory.create<Project>("Project", {
+        await factory.Purchase.create({ accountId: account.id });
+        project = await factory.Project.create({
           name: "argos",
           accountId: account.id,
           token: "awesome-token",

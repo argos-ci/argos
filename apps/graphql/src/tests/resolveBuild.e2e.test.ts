@@ -1,21 +1,22 @@
 import request from "supertest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import type {
   Account,
   Build,
   Project,
   Screenshot,
-  ScreenshotDiff,
-  TeamUser,
 } from "@argos-ci/database/models";
-import { factory, useDatabase } from "@argos-ci/database/testing";
+import { factory, setupDatabase } from "@argos-ci/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo.js";
 import { expectNoGraphQLError } from "../testing.js";
 import { createApolloServerApp } from "./util.js";
 
 describe("GraphQL", () => {
-  useDatabase();
+  beforeEach(async () => {
+    await setupDatabase();
+  });
 
   describe("resolveBuild", () => {
     let userAccount: Account;
@@ -25,31 +26,31 @@ describe("GraphQL", () => {
     let screenshot2: Screenshot;
 
     beforeEach(async () => {
-      userAccount = await factory.create<Account>("UserAccount");
+      userAccount = await factory.UserAccount.create();
       await userAccount.$fetchGraph("user");
-      teamAccount = await factory.create<Account>("TeamAccount");
+      teamAccount = await factory.TeamAccount.create();
       await teamAccount.$fetchGraph("team");
-      project = await factory.create<Project>("Project", {
+      project = await factory.Project.create({
         accountId: teamAccount.id,
       });
-      await factory.create<TeamUser>("TeamUser", {
+      await factory.TeamUser.create({
         teamId: teamAccount.teamId!,
         userId: userAccount.userId!,
         userLevel: "owner",
       });
-      build = await factory.create<Build>("Build", {
+      build = await factory.Build.create({
         projectId: project.id,
       });
-      const screenshot1 = await factory.create<Screenshot>("Screenshot", {
+      const screenshot1 = await factory.Screenshot.create({
         name: "email_deleted",
       });
-      screenshot2 = await factory.create<Screenshot>("Screenshot", {
+      screenshot2 = await factory.Screenshot.create({
         name: "email_deleted",
       });
-      const screenshot3 = await factory.create<Screenshot>("Screenshot", {
+      const screenshot3 = await factory.Screenshot.create({
         name: "email_added",
       });
-      await factory.createMany<ScreenshotDiff>("ScreenshotDiff", [
+      await factory.ScreenshotDiff.createMany(3, [
         {
           buildId: build.id,
           baseScreenshotId: screenshot1.id,
@@ -64,7 +65,7 @@ describe("GraphQL", () => {
         },
         {
           buildId: build.id,
-          baseScreenshotId: screenshot3.id,
+          baseScreenshotId: screenshot1.id,
           compareScreenshotId: screenshot3.id,
           score: 0,
         },
@@ -110,7 +111,7 @@ describe("GraphQL", () => {
           status: "changed",
         },
         {
-          name: "email_added",
+          name: "email_deleted",
           status: "unchanged",
         },
         {

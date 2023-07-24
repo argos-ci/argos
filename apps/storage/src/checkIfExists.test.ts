@@ -1,6 +1,7 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import config from "@argos-ci/config";
 

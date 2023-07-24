@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// @ts-ignore
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { rimraf } from "rimraf";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { LocalImageFile } from "@argos-ci/storage";
 
@@ -38,7 +37,7 @@ async function compareLocalImages(params: {
   });
 }
 
-describe("e2e", () => {
+describe("diff E2E", () => {
   beforeAll(async () => {
     // Clean up actual-files
     await rimraf.sync(join(__dirname, "/actual-files"));

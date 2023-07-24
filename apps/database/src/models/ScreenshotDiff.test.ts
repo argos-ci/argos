@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
 
 const baseData = {

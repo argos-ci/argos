@@ -1,5 +1,5 @@
-/* eslint-env jest */
 import type { Response } from "supertest";
+import { expect } from "vitest";
 
 export function expectNoGraphQLError(res: Response) {
   if (res.body.errors !== undefined) {

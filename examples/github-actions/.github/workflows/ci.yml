@@ -31,4 +31,4 @@ jobs:
 
       - name: Upload screenshots to argos-ci.com
         continue-on-error: true
-        run: npx @argos-ci/cli upload ./screenshots
+        run: npm exec argos upload ./screenshots

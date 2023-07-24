@@ -1,58 +1,29 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import { factory } from "factory-girl";
+import { FactoryGirl, ModelAdapter } from "factory-girl-ts";
 import moment from "moment";
 import { randomBytes } from "node:crypto";
 import type { Model, ModelClass, PartialModelObject } from "objection";
 
-import {
-  Account,
-  Build,
-  BuildNotification,
-  File,
-  GithubAccount,
-  GithubRepository,
-  GithubSynchronization,
-  Plan,
-  Project,
-  Purchase,
-  Screenshot,
-  ScreenshotBucket,
-  ScreenshotDiff,
-  Team,
-  TeamUser,
-  Test,
-  User,
-} from "../models/index.js";
+import * as models from "../models/index.js";
 
-class ObjectionAdapter {
-  build<TModel extends Model>(Model: ModelClass<TModel>, json: object) {
-    return Model.fromJson(json, { skipValidation: true });
-  }
-
-  async save<TModel extends Model>(
-    insert: PartialModelObject<TModel>,
-    Model: ModelClass<TModel>
-  ) {
-    return Model.query().insertAndFetch(insert);
-  }
-
-  async destroy<TModel extends Model>(
-    attrs: { id: number },
-    Model: ModelClass<TModel>
-  ) {
-    return Model.query().deleteById(attrs.id);
-  }
-
-  get<TModel extends Model>(model: TModel, key: keyof TModel) {
+class ObjectionAdapter<TEntity extends Model, T extends ModelClass<TEntity>>
+  implements ModelAdapter<T, Model>
+{
+  get<K extends keyof Model>(model: Model, key: K): Model[K] {
     return model[key];
   }
 
-  set<TModel extends Model>(attrs: PartialModelObject<TModel>, model: TModel) {
-    return Object.assign(model, attrs);
+  build(ModelClass: T, props: PartialModelObject<TEntity>): TEntity {
+    return ModelClass.fromJson(props);
+  }
+
+  async save(model: Model, ModelClass: T): Promise<Model> {
+    const saved = await ModelClass.query().insertAndFetch(model.toJSON());
+    return saved;
   }
 }
 
-factory.setAdapter(new ObjectionAdapter());
+FactoryGirl.setAdapter(new ObjectionAdapter());
 
 // Taken from uuid/bytesToUuid.js
 const bytesToString = (bytes: Buffer) => {
@@ -63,142 +34,142 @@ const bytesToString = (bytes: Buffer) => {
   return output;
 };
 
-factory.define("ScreenshotBucket", ScreenshotBucket, {
-  name: "default",
-  commit: () => bytesToString(randomBytes(20)),
-  branch: "master",
-  projectId: factory.assoc("Project", "id"),
-  complete: true,
-  screenshotCount: 0,
-});
+const defineFactory = <
+  TModel extends Model,
+  TModelClass extends ModelClass<TModel>
+>(
+  modelClass: TModelClass,
+  definition: () => PartialModelObject<TModel>
+) => {
+  const factory = FactoryGirl.define<TModelClass, PartialModelObject<TModel>>(
+    modelClass,
+    definition
+  );
+  return factory;
+};
 
-factory.define<Build>(
-  "Build",
-  Build,
-  {
-    jobStatus: "complete",
-    projectId: factory.assoc("Project", "id"),
-  },
-  {
-    async afterBuild(model: Build) {
-      if (!model.compareScreenshotBucketId) {
-        const compareScreenshotBucket = await factory.create<ScreenshotBucket>(
-          "ScreenshotBucket",
-          {
-            projectId: model.projectId,
-          }
-        );
-        model.compareScreenshotBucketId = compareScreenshotBucket.id;
-      }
+export const Team = defineFactory(models.Team, () => ({}));
 
-      return model;
-    },
-  }
-);
+export const User = defineFactory(models.User, () => ({
+  email: FactoryGirl.sequence("user.email", (n) => `user-${n}@email.com`),
+}));
 
-factory.define("GithubAccount", GithubAccount, {
-  login: factory.sequence("githubAccount.login", (n) => `login-${n}`),
-  githubId: factory.sequence("githubAccount.githubId", (n) => n),
+export const GithubAccount = defineFactory(models.GithubAccount, () => ({
+  login: FactoryGirl.sequence("githubAccount.login", (n) => `login-${n}`),
+  githubId: FactoryGirl.sequence("githubAccount.githubId", (n) => n),
   type: "user",
-});
+}));
 
-factory.define("GithubRepository", GithubRepository, {
-  name: factory.sequence("githubRepository.name", (n) => `repo-${n}`),
+export const GithubRepository = defineFactory(models.GithubRepository, () => ({
+  name: FactoryGirl.sequence("githubRepository.name", (n) => `repo-${n}`),
   private: true,
   defaultBranch: "main",
-  githubId: factory.sequence("githubRepository.githubId", (n) => n),
-  githubAccountId: factory.assoc("GithubAccount", "id"),
-});
+  githubId: FactoryGirl.sequence("githubRepository.githubId", (n) => n),
+  githubAccountId: GithubAccount.associate("id"),
+}));
 
-factory.define("BuildNotification", BuildNotification, {
-  buildId: factory.assoc("Build", "id"),
-  jobStatus: "complete",
-  type: "no-diff-detected",
-});
+export const UserAccount = defineFactory(models.Account, () => ({
+  userId: User.associate("id"),
+  name: FactoryGirl.sequence("account.slug", (n) => `Account ${n}`),
+  slug: FactoryGirl.sequence("account.slug", (n) => `account-${n}`),
+  githubAccountId: GithubAccount.extend(() => ({ type: "user" })).associate(
+    "id"
+  ),
+}));
 
-factory.define("User", User, {
-  email: factory.sequence("user.email", (n) => `user-${n}@email.com`),
-});
-
-factory.define("Team", Team, {});
-
-factory.define("Project", Project, {
-  name: "Default",
-  baselineBranch: null,
-  accountId: factory.assoc("TeamAccount", "id"),
-  githubRepositoryId: factory.assoc("GithubRepository", "id"),
-});
-
-factory.define("TeamUser", TeamUser, {
-  userId: factory.assoc("User", "id"),
-  teamId: factory.assoc("Team", "id"),
-  userLevel: "owner",
-});
-
-factory.define("ScreenshotDiff", ScreenshotDiff, {
-  buildId: factory.assoc("Build", "id"),
-  baseScreenshotId: factory.assoc("Screenshot", "id"),
-  compareScreenshotId: factory.assoc("Screenshot", "id"),
-  jobStatus: "complete",
-  validationStatus: "accepted",
-  score: 0,
-});
-
-factory.define("Test", Test, {
-  name: factory.chance("animal"),
-  projectId: factory.assoc("Project", "id"),
-  buildName: "default",
-  status: "pending",
-});
-
-factory.define("Screenshot", Screenshot, {
-  name: factory.sequence("repository.name", (n) => `screen-${n}`),
-  s3Id: "test-s3-id",
-  screenshotBucketId: factory.assoc("ScreenshotBucket", "id"),
-  testId: factory.assoc("Test", "id"),
-});
-
-factory.define("File", File, {
-  key: factory.sequence("file.key", (n) => `key-${n}`),
-  width: 10,
-  height: 10,
-});
-
-factory.define("GithubSynchronization", GithubSynchronization, {
-  installationId: factory.assoc("Installation", "id"),
-  jobStatus: "complete",
-});
-
-factory.define("Plan", Plan, {
-  name: factory.chance("pickone", ["Free", "Standard", "Pro", "Enterprise"]),
-  screenshotsLimitPerMonth: factory.chance("pickone", [7000, 5e4, 1e5, 1e7]),
-  githubId: factory.sequence("plan.githubId", (n) => n),
-  usageBased: false,
-});
-
-factory.define("TeamAccount", Account, {
-  teamId: factory.assoc("Team", "id"),
-  name: factory.sequence("account.slug", (n) => `Account ${n}`),
-  slug: factory.sequence("account.slug", (n) => `account-${n}`),
-  githubAccountId: factory.assoc("GithubAccount", "id", {
-    type: "organization",
-  }),
-});
-
-factory.define("UserAccount", Account, {
-  userId: factory.assoc("User", "id"),
-  name: factory.sequence("account.slug", (n) => `Account ${n}`),
-  slug: factory.sequence("account.slug", (n) => `account-${n}`),
-  githubAccountId: factory.assoc("GithubAccount", "id", { type: "user" }),
-});
-
-factory.define("Purchase", Purchase, {
-  planId: factory.assoc("Plan", "id"),
-  accountId: factory.assoc("UserAccount", "id"),
+export const Purchase = defineFactory(models.Purchase, () => ({
+  planId: Plan.associate("id"),
+  accountId: UserAccount.associate("id"),
   startDate: moment().startOf("day").subtract(2, "months").toISOString(),
   endDate: null,
   source: "github",
   paymentMethodFilled: false,
+}));
+
+export const TeamAccount = defineFactory(models.Account, () => ({
+  teamId: Team.associate("id"),
+  name: FactoryGirl.sequence("account.slug", (n) => `Account ${n}`),
+  slug: FactoryGirl.sequence("account.slug", (n) => `account-${n}`),
+  githubAccountId: GithubAccount.extend(() => ({
+    type: "organization",
+  })).associate("id"),
+}));
+
+export const Project = defineFactory(models.Project, () => ({
+  name: "Default",
+  baselineBranch: null,
+  accountId: TeamAccount.associate("id"),
+  githubRepositoryId: GithubRepository.associate("id"),
+}));
+
+export const ScreenshotBucket = defineFactory(models.ScreenshotBucket, () => ({
+  name: "default",
+  commit: bytesToString(randomBytes(20)),
+  branch: "master",
+  projectId: Project.associate("id"),
+  complete: true,
+  screenshotCount: 0,
+}));
+
+export const Build = defineFactory(models.Build, () => {
+  const projectId = Project.associate("id");
+  return {
+    createdAt: new Date().toISOString(),
+    jobStatus: "complete",
+    projectId,
+    compareScreenshotBucketId: ScreenshotBucket.extend(() => ({
+      projectId,
+    })).associate("id"),
+  };
 });
 
-export { factory };
+export const BuildNotification = defineFactory(
+  models.BuildNotification,
+  () => ({
+    buildId: Build.associate("id"),
+    jobStatus: "complete",
+    type: "no-diff-detected",
+  })
+);
+
+export const TeamUser = defineFactory(models.TeamUser, () => ({
+  userId: User.associate("id"),
+  teamId: Team.associate("id"),
+  userLevel: "owner",
+}));
+
+export const ScreenshotDiff = defineFactory(models.ScreenshotDiff, () => ({
+  buildId: Build.associate("id"),
+  baseScreenshotId: Screenshot.associate("id"),
+  compareScreenshotId: Screenshot.associate("id"),
+  jobStatus: "complete",
+  validationStatus: "accepted",
+  score: 0,
+}));
+
+export const Test = defineFactory(models.Test, () => ({
+  name: "test",
+  projectId: Project.associate("id"),
+  buildName: "default",
+  status: "pending",
+}));
+
+export const Screenshot = defineFactory(models.Screenshot, () => ({
+  name: FactoryGirl.sequence("repository.name", (n) => `screen-${n}`),
+  s3Id: "test-s3-id",
+  screenshotBucketId: ScreenshotBucket.associate("id"),
+  testId: Test.associate("id"),
+}));
+
+export const File = defineFactory(models.File, () => ({
+  key: FactoryGirl.sequence("file.key", (n) => `key-${n}`),
+  width: 10,
+  height: 10,
+}));
+
+export const Plan = defineFactory(models.Plan, () => ({
+  name: "pro",
+  screenshotsLimitPerMonth: 7000,
+  githubId: FactoryGirl.sequence("plan.githubId", (n) => n),
+  usageBased: false,
+}));

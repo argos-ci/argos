@@ -1,18 +1,17 @@
-import { jest } from "@jest/globals";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import config from "@argos-ci/config";
 import {
   Build,
   Project,
-  Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
   Test,
 } from "@argos-ci/database/models";
-import { factory, useDatabase } from "@argos-ci/database/testing";
+import { factory, setupDatabase } from "@argos-ci/database/testing";
 import { quitAmqp } from "@argos-ci/job-core";
 import { s3 as getS3, uploadFromFilePath } from "@argos-ci/storage";
 import type { S3Client } from "@argos-ci/storage";
@@ -22,9 +21,6 @@ import { computeScreenshotDiff } from "./computeScreenshotDiff.js";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 describe("#computeScreenshotDiff", () => {
-  useDatabase();
-  jest.setTimeout(10000);
-
   let s3: S3Client;
   let baseBucket: ScreenshotBucket;
   let build: Build;
@@ -49,20 +45,25 @@ describe("#computeScreenshotDiff", () => {
   });
 
   beforeEach(async () => {
-    project = await factory.create<Project>("Project", {
+    await setupDatabase();
+    project = await factory.Project.create({
       token: "xx",
     });
-    compareBucket = await factory.create<ScreenshotBucket>("ScreenshotBucket", {
-      name: "test-bucket",
-      branch: "test-branch",
-      projectId: project.id,
-    });
-    baseBucket = await factory.create<ScreenshotBucket>("ScreenshotBucket", {
-      name: "base-bucket",
-      branch: "master",
-      projectId: project.id,
-    });
-    build = await factory.create<Build>("Build", {
+    const buckets = await factory.ScreenshotBucket.createMany(2, [
+      {
+        name: "test-bucket",
+        branch: "test-branch",
+        projectId: project.id,
+      },
+      {
+        name: "base-bucket",
+        branch: "master",
+        projectId: project.id,
+      },
+    ]);
+    compareBucket = buckets[0]!;
+    baseBucket = buckets[1]!;
+    build = await factory.Build.create({
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,
       projectId: project.id,
@@ -77,23 +78,23 @@ describe("#computeScreenshotDiff", () => {
   describe("with two different screenshots", () => {
     let test: Test;
     beforeEach(async () => {
-      const compareScreenshot = await factory.create<Screenshot>("Screenshot", {
+      const compareScreenshot = await factory.Screenshot.create({
         name: "penelope",
         s3Id: "penelope-argos.png",
         screenshotBucketId: compareBucket.id,
       });
-      const baseScreenshot = await factory.create<Screenshot>("Screenshot", {
+      const baseScreenshot = await factory.Screenshot.create({
         name: "penelope",
         s3Id: "penelope.png",
         screenshotBucketId: baseBucket.id,
       });
-      test = await factory.create<Test>("Test", {
+      test = await factory.Test.create({
         name: compareScreenshot.name,
         projectId: project.id,
         buildName: "default",
         status: "pending",
       });
-      screenshotDiff = await factory.create<ScreenshotDiff>("ScreenshotDiff", {
+      screenshotDiff = await factory.ScreenshotDiff.create({
         buildId: build.id,
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot.id,
@@ -137,17 +138,17 @@ describe("#computeScreenshotDiff", () => {
 
   describe("with two same screenshots", () => {
     beforeEach(async () => {
-      const compareScreenshot = await factory.create<Screenshot>("Screenshot", {
+      const compareScreenshot = await factory.Screenshot.create({
         name: "penelope",
         s3Id: "penelope.png",
         screenshotBucketId: compareBucket.id,
       });
-      const baseScreenshot = await factory.create<Screenshot>("Screenshot", {
+      const baseScreenshot = await factory.Screenshot.create({
         name: "penelope",
         s3Id: "penelope.png",
         screenshotBucketId: baseBucket.id,
       });
-      screenshotDiff = await factory.create<ScreenshotDiff>("ScreenshotDiff", {
+      screenshotDiff = await factory.ScreenshotDiff.create({
         buildId: build.id,
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot.id,
