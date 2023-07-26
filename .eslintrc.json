@@ -23,16 +23,8 @@
   "overrides": [
     {
       "files": ["*.test.?(m)js"],
-      "plugins": ["jest"],
-      "extends": ["plugin:jest/recommended"],
-      "env": {
-        "jest": true
-      },
-      "rules": {
-        "jest/no-conditional-expect": "off",
-        "no-import-assign": "off",
-        "import/namespace": "off"
-      }
+      "plugins": ["vitest"],
+      "extends": ["plugin:vitest/recommended"]
     }
   ],
   "rules": {

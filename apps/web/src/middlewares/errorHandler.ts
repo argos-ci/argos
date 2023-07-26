@@ -3,6 +3,8 @@ import type { ErrorRequestHandler } from "express";
 // @ts-ignore
 import expressErr from "express-err";
 
+const interopRequireDefault = (mod: any) => mod.default || mod;
+
 export function errorHandler({ formatters }: any) {
   const handlers: ErrorRequestHandler[] = [
     Sentry.Handlers.errorHandler(),
@@ -12,7 +14,7 @@ export function errorHandler({ formatters }: any) {
       }
       next(error);
     },
-    expressErr.default({
+    interopRequireDefault(expressErr)({
       exitOnUncaughtException: false,
       formatters,
     }),

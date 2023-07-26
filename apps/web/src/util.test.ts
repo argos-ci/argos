@@ -1,5 +1,5 @@
-import { jest } from "@jest/globals";
 import type { Request, Response } from "express";
+import { describe, expect, it, vi } from "vitest";
 
 import { asyncHandler } from "./util.js";
 
@@ -7,7 +7,7 @@ describe("util", () => {
   describe("#asyncHandler", () => {
     it("should fall back to the code", () => {
       const status = 401;
-      const next = jest.fn();
+      const next = vi.fn();
 
       asyncHandler(() => {
         const githubError = new Error("");

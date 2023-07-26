@@ -1,6 +1,6 @@
-import { jest } from "@jest/globals";
 import { setTimeout as delay } from "node:timers/promises";
 import { RedisClientType, createClient } from "redis";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import config from "@argos-ci/config";
 
@@ -31,8 +31,8 @@ describe("redis-lock", () => {
   it("takes lock", async () => {
     const lock = createRedisLock(client);
     const p1 = createResolvablePromise();
-    const spy1 = jest.fn();
-    const spy2 = jest.fn();
+    const spy1 = vi.fn();
+    const spy2 = vi.fn();
     lock.acquire("x", async () => p1).then(spy1);
     lock.acquire("x", async () => "second", { retryDelay: 30 }).then(spy2);
     await delay(10);

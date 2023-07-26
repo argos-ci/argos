@@ -19,7 +19,7 @@ jobs:
 
       - run:
           name: Upload screenshots to argos-ci.com
-          command: npx @argos-ci/cli upload ./screenshots
+          command: npm exec argos upload ./screenshots
 
 workflows:
   ci:

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { dirSync } from "tmp";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import config from "@argos-ci/config";
 
@@ -19,8 +20,8 @@ describe("#download", () => {
   const s3 = new S3Client({ region: "eu-west-1" });
   let tmpDirectory: string;
 
-  beforeAll(() => {
-    return uploadFromFilePath({
+  beforeAll(async () => {
+    await uploadFromFilePath({
       s3,
       Bucket: config.get("s3.screenshotsBucket"),
       Key: "hello.txt",

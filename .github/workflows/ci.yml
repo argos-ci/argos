@@ -7,11 +7,55 @@ on:
     branches: [main]
 
 jobs:
-  unit:
+  static-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js & install dependencies
+        uses: ./.github/actions/setup-npm
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check types
+        run: npm exec turbo run check-types
+
+      - name: Check Prettier
+        run: npm exec prettier --check .
+
+  unit-test:
     runs-on: ubuntu-latest
 
     env:
       NODE_ENV: test
+      TZ: utc
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js & install dependencies
+        uses: ./.github/actions/setup-npm
+
+      - name: Build
+        run: npm run build
+
+      - name: Run unit tests
+        run: npm exec vitest -- -c vitest.unit.config.ts
+
+  integration-test:
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+      TZ: utc
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     services:
       redis:
@@ -45,23 +89,8 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Check types
-        run: npx turbo run check-types
-
-      - name: Check Prettier
-        run: npx prettier --check .
+      - name: Setup Node.js & install dependencies
+        uses: ./.github/actions/setup-npm
 
       - name: Build
         run: npm run build
@@ -70,12 +99,9 @@ jobs:
         run: npm run setup
 
       - name: Test
-        run: npm run test -- --ci
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: npm exec vitest -- -c vitest.e2e.config.ts
 
-  e2e:
+  e2e-test:
     runs-on: ubuntu-latest
 
     services:
@@ -103,19 +129,16 @@ jobs:
 
     env:
       NODE_ENV: test
+      TZ: utc
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Node.js & install dependencies
+        uses: ./.github/actions/setup-npm
 
       - name: Setup
         run: npm run setup
@@ -123,16 +146,13 @@ jobs:
       - name: Truncate and seed database
         run: npm run e2e:setup
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
 
       - name: Run Playwright tests
-        run: npx playwright test
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: npm exec playwright test
 
       - name: Run Argos
         continue-on-error: true
         if: ${{ always() }}
-        run: npx @argos-ci/cli upload screenshots
+        run: npm exec argos upload screenshots

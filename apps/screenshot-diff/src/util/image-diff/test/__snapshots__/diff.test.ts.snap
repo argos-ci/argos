@@ -1,0 +1,57 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`diff E2E > generates different images 1`] = `
+{
+  "height": 10,
+  "value": 0.45,
+  "width": 10,
+}
+`;
+
+exports[`diff E2E > generates different sizes images 1`] = `
+{
+  "height": 15,
+  "value": 0.551111111111,
+  "width": 15,
+}
+`;
+
+exports[`diff E2E > generates images with big diff 1`] = `
+{
+  "height": 4469,
+  "value": 0.846446632356,
+  "width": 1000,
+}
+`;
+
+exports[`diff E2E > generates the same image 1`] = `
+{
+  "height": 10,
+  "value": 0,
+  "width": 10,
+}
+`;
+
+exports[`diff E2E > generates the same image where 1 has a transparent background 1`] = `
+{
+  "height": 10,
+  "value": 0.5,
+  "width": 10,
+}
+`;
+
+exports[`diff E2E > takes into account colors in comparison 1`] = `
+{
+  "height": 10,
+  "value": 1,
+  "width": 10,
+}
+`;
+
+exports[`diff E2E > works with large size image 1`] = `
+{
+  "height": 13358,
+  "value": 0.24803904443400002,
+  "width": 900,
+}
+`;

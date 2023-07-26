@@ -1,12 +1,9 @@
 import type { RequestHandler } from "express";
 import request from "supertest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import type {
-  GithubAccount,
-  GithubRepository,
-  Project,
-} from "@argos-ci/database/models";
-import { factory, useDatabase } from "@argos-ci/database/testing";
+import type { Project } from "@argos-ci/database/models";
+import { factory, setupDatabase } from "@argos-ci/database/testing";
 
 import { createTestApp } from "../test-util.js";
 import { repoAuth } from "./repoAuth.js";
@@ -34,11 +31,13 @@ const encodeToken = ({
 describe("repoAuth", () => {
   let project: Project;
 
-  useDatabase();
+  beforeEach(async () => {
+    await setupDatabase();
+  });
 
   describe("Argos token", () => {
     beforeEach(async () => {
-      project = await factory.create<Project>("Project", {
+      project = await factory.Project.create({
         token: "the-awesome-token",
       });
     });
@@ -55,7 +54,6 @@ describe("repoAuth", () => {
         .expect(401);
     });
 
-    // eslint-disable-next-line jest/expect-expect
     it("puts authProject in req with a valid token", async () => {
       await request(app)
         .get("/")
@@ -69,16 +67,13 @@ describe("repoAuth", () => {
 
   describe("GitHub token", () => {
     beforeEach(async () => {
-      const ghAccount = await factory.create<GithubAccount>("GithubAccount", {
+      const ghAccount = await factory.GithubAccount.create({
         login: "argos-ci",
       });
-      const repository = await factory.create<GithubRepository>(
-        "GithubRepository",
-        {
-          githubAccountId: ghAccount.id,
-        }
-      );
-      project = await factory.create<Project>("Project", {
+      const repository = await factory.GithubRepository.create({
+        githubAccountId: ghAccount.id,
+      });
+      project = await factory.Project.create({
         name: "argos",
         token: "the-awesome-token",
         githubRepositoryId: repository.id,

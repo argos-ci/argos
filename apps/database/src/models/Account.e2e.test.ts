@@ -1,7 +1,9 @@
-import { factory, useDatabase } from "../testing/index.js";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { factory, setupDatabase } from "../testing/index.js";
 import { Account } from "./Account.js";
 import { Plan } from "./Plan.js";
-import type { Project, Purchase, ScreenshotBucket, Team } from "./index.js";
+import type { ScreenshotBucket } from "./index.js";
 
 describe("Account", () => {
   let plans: Plan[];
@@ -11,35 +13,39 @@ describe("Account", () => {
     bucket3: ScreenshotBucket,
     bucketOtherOrga: ScreenshotBucket;
 
-  useDatabase();
-
   beforeEach(async () => {
-    const teams = await factory.createMany<Team>("Team", 2);
-    // @ts-ignore
-    plans = await factory.createMany<Plan>("Plan", [
-      { name: "free", screenshotsLimitPerMonth: -1 },
-      { name: "standard", screenshotsLimitPerMonth: 10 },
-      { name: "pro", screenshotsLimitPerMonth: 100 },
+    await setupDatabase();
+    const [teams, localPlans] = await Promise.all([
+      factory.Team.createMany(2),
+      factory.Plan.createMany(3, [
+        { name: "free", screenshotsLimitPerMonth: -1 },
+        { name: "standard", screenshotsLimitPerMonth: 10 },
+        { name: "pro", screenshotsLimitPerMonth: 100 },
+      ]),
     ]);
-    // @ts-ignore
-    [account, vipAccount] = await factory.createMany<Account>("TeamAccount", [
+    plans = localPlans;
+    const accounts = await factory.TeamAccount.createMany(2, [
       { teamId: teams[0]!.id },
       { teamId: teams[1]!.id, forcedPlanId: plans[2]!.id },
     ]);
-    const projects = await factory.createMany<Project>("Project", [
+    account = accounts[0]!;
+    vipAccount = accounts[1]!;
+    const projects = await factory.Project.createMany(4, [
       { accountId: account.id, private: true },
       { accountId: account.id, private: true },
       { accountId: account.id, private: false },
       { accountId: vipAccount.id, private: true },
     ]);
-    // @ts-ignore
-    [bucket1, bucket2, bucket3, bucketOtherOrga] =
-      await factory.createMany<ScreenshotBucket>("ScreenshotBucket", [
-        { projectId: projects[0]!.id },
-        { projectId: projects[1]!.id },
-        { projectId: projects[2]!.id },
-        { projectId: projects[3]!.id },
-      ]);
+    const buckets = await factory.ScreenshotBucket.createMany(4, [
+      { projectId: projects[0]!.id },
+      { projectId: projects[1]!.id },
+      { projectId: projects[2]!.id },
+      { projectId: projects[3]!.id },
+    ]);
+    bucket1 = buckets[0]!;
+    bucket2 = buckets[1]!;
+    bucket3 = buckets[2]!;
+    bucketOtherOrga = buckets[3]!;
   });
 
   describe("#$getActivePurchase", () => {
@@ -49,7 +55,7 @@ describe("Account", () => {
     });
 
     it("returns null when only old purchase found", async () => {
-      await factory.create<Purchase>("Purchase", {
+      await factory.Purchase.create({
         planId: plans[1]!.id,
         accountId: account.id,
         endDate: new Date(2010, 1, 1).toISOString(),
@@ -59,7 +65,7 @@ describe("Account", () => {
     });
 
     it("returns active purchase", async () => {
-      await factory.create<Purchase>("Purchase", {
+      await factory.Purchase.create({
         planId: plans[1]!.id,
         accountId: account.id,
       });
@@ -84,10 +90,10 @@ describe("Account", () => {
       const subscriptionDay = 10;
 
       beforeEach(async () => {
-        await factory.create("Purchase", {
+        await factory.Purchase.create({
           planId: plans[1]!.id,
           accountId: account.id,
-          startDate: new Date(2018, 3, subscriptionDay),
+          startDate: new Date(2018, 3, subscriptionDay).toISOString(),
         });
       });
 
@@ -159,7 +165,7 @@ describe("Account", () => {
   describe("#getPlan", () => {
     describe("with purchase", () => {
       it("returns purchased plan", async () => {
-        await factory.create("Purchase", {
+        await factory.Purchase.create({
           planId: plans[1]!.id,
           accountId: account.id,
         });
@@ -168,7 +174,7 @@ describe("Account", () => {
       });
 
       it("with forced plan returns forced plan", async () => {
-        await factory.create("Purchase", {
+        await factory.Purchase.create({
           planId: plans[1]!.id,
           accountId: vipAccount.id,
         });

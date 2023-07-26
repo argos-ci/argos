@@ -1,24 +1,18 @@
-import { setTimeout as delay } from "node:timers/promises";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import type {
   Build,
-  File,
   Project,
-  Screenshot,
   ScreenshotBucket,
 } from "@argos-ci/database/models";
 import { BuildNotification, ScreenshotDiff } from "@argos-ci/database/models";
-import { factory, useDatabase } from "@argos-ci/database/testing";
-import { quitAmqp } from "@argos-ci/job-core";
+import { factory, setupDatabase } from "@argos-ci/database/testing";
 
 import { performBuild } from "./index.js";
 
 describe("build", () => {
-  useDatabase();
-
-  afterAll(async () => {
-    await delay(500);
-    await quitAmqp();
+  beforeEach(async () => {
+    await setupDatabase();
   });
 
   describe("performBuild", () => {
@@ -27,21 +21,18 @@ describe("build", () => {
     let compareBucket: ScreenshotBucket;
 
     beforeEach(async () => {
-      project = await factory.create<Project>("Project");
-      compareBucket = await factory.create<ScreenshotBucket>(
-        "ScreenshotBucket",
-        {
-          projectId: project.id,
-        }
-      );
-      build = await factory.create<Build>("Build", {
+      project = await factory.Project.create();
+      compareBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+      });
+      build = await factory.Build.create({
         baseScreenshotBucketId: null,
         compareScreenshotBucketId: compareBucket.id,
         projectId: project.id,
         jobStatus: "pending",
       });
-      const file = await factory.create<File>("File");
-      await factory.create<Screenshot>("Screenshot", {
+      const file = await factory.File.create();
+      await factory.Screenshot.create({
         name: "b",
         screenshotBucketId: compareBucket.id,
         fileId: file.id,
@@ -49,7 +40,7 @@ describe("build", () => {
     });
 
     it("works", async () => {
-      await factory.create("ScreenshotBucket", {
+      await factory.ScreenshotBucket.create({
         projectId: project.id,
       });
 

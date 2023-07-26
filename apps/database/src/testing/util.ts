@@ -1,4 +1,3 @@
-/* eslint-env jest */
 import type { Knex } from "knex";
 
 import { knex } from "../knex.js";
@@ -38,12 +37,6 @@ export async function truncateAll(knex: Knex) {
   return knex.raw(query);
 }
 
-export const useDatabase = () => {
-  beforeEach(async () => {
-    await truncateAll(knex);
-  });
-
-  afterAll(() => {
-    knex.destroy();
-  });
+export const setupDatabase = async () => {
+  await truncateAll(knex);
 };

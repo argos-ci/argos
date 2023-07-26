@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import request from "supertest";
+import { describe, expect, it } from "vitest";
 
 import { createTestApp } from "../test-util.js";
 import { bearerAuth } from "./bearerAuth.js";
@@ -40,7 +41,6 @@ describe("bearerAuth", () => {
       .expect(400);
   });
 
-  // eslint-disable-next-line jest/expect-expect
   it("puts bearerToken in req if everything good", async () => {
     await request(app)
       .get("/")

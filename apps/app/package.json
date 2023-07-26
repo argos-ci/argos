@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "NODE_ENV=production webpack",
-    "check-types": "npx tsc --noEmit",
+    "check-types": "npm exec tsc --noEmit",
     "watch-build": "webpack-dev-server"
   },
   "sideEffects": false,
