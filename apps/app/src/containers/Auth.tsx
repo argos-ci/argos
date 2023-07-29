@@ -1,19 +1,38 @@
+import Cookie from "js-cookie";
 import jwt_decode from "jwt-decode";
-import { createContext, useCallback, useContext, useMemo } from "react";
-
-import { useStoreState } from "./Store";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 type Token = null | string;
 
 interface AuthContextValue {
   token: Token;
-  setToken: React.Dispatch<React.SetStateAction<Token>>;
+  setToken: (token: Token) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const COOKIE_NAME = "argos_jwt";
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [token, setToken] = useStoreState<Token>("token", null);
+  const [token, setStateToken] = useState<string | null>(() => {
+    return Cookie.get(COOKIE_NAME) ?? null;
+  });
+  const setToken = useCallback((newToken: Token) => {
+    setStateToken(newToken);
+    if (newToken === null) {
+      Cookie.remove(COOKIE_NAME);
+    } else {
+      Cookie.set(COOKIE_NAME, newToken, {
+        domain: process.env["NODE_ENV"] === "production" ? ".argos-ci.com" : "",
+      });
+    }
+  }, []);
   const value = useMemo(() => ({ token, setToken }), [token, setToken]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
