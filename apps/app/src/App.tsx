@@ -2,10 +2,8 @@ import { Helmet } from "react-helmet";
 import {
   Navigate,
   Outlet,
-  Route,
   RouterProvider,
   createBrowserRouter,
-  createRoutesFromElements,
 } from "react-router-dom";
 
 import { Layout, Main } from "@/containers/Layout";
@@ -30,60 +28,108 @@ import { ProjectSettings } from "./pages/Project/Settings";
 // import { Tests } from "./pages/Project/Tests";
 import { Signup } from "./pages/Signup";
 import { VercelCallback } from "./pages/Vercel";
+import { TooltipProvider } from "./ui/Tooltip";
 
-const router = createBrowserRouter(
-  createRoutesFromElements(
-    <>
-      <Route path="/auth/github/callback" element={<AuthCallback />} />
-      <Route path="/vercel/callback" element={<VercelCallback />} />
-      <Route
-        path="/:accountSlug/:projectName/builds/:buildNumber"
-        element={<Build />}
-      />
-      <Route
-        path="/:accountSlug/:projectName/builds/:buildNumber/:diffId"
-        element={<Build />}
-      />
-      <Route
-        path="/"
-        element={
-          <Layout>
-            <Outlet />
-          </Layout>
-        }
-      >
-        <Route index element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/invite/:inviteToken" element={<Invite />} />
-        <Route
-          path="/teams/new"
-          element={
-            <>
-              <hr className="border-t-border" />
-              <Main>
-                <NewTeam />
-              </Main>
-            </>
-          }
-        />
-        <Route path=":accountSlug/:projectName" element={<Project />}>
-          <Route path="" element={<ProjectBuilds />} />
-          <Route path="reference" element={<ProjectReference />} />
-          <Route path="builds" element={<Navigate to=".." replace={true} />} />
-          {/* <Route path="tests" element={<Tests />} /> */}
-          <Route path="settings" element={<ProjectSettings />} />
-        </Route>
-        <Route id="account" path=":accountSlug" element={<Account />}>
-          <Route path="" element={<AccountProjects />} />
-          <Route path="new" element={<AccountNewProject />} />
-          <Route path="settings" element={<AccountSettings />} />
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </>
-  )
-);
+const router = createBrowserRouter([
+  {
+    path: "/auth/github/callback",
+    element: <AuthCallback />,
+  },
+  {
+    path: "/vercel/callback",
+    element: <VercelCallback />,
+  },
+  {
+    path: "/:accountSlug/:projectName/builds/:buildNumber",
+    element: <Build />,
+  },
+  {
+    path: "/:accountSlug/:projectName/builds/:buildNumber/:diffId",
+    element: <Build />,
+  },
+  {
+    path: "/",
+    element: (
+      <Layout>
+        <Outlet />
+      </Layout>
+    ),
+    children: [
+      {
+        index: true,
+        element: <Home />,
+      },
+      {
+        path: "login",
+        element: <Login />,
+      },
+      {
+        path: "signup",
+        element: <Signup />,
+      },
+      {
+        path: "invite/:inviteToken",
+        element: <Invite />,
+      },
+      {
+        path: "teams/new",
+        element: (
+          <>
+            <hr className="border-t-border" />
+            <Main>
+              <NewTeam />
+            </Main>
+          </>
+        ),
+      },
+      {
+        path: ":accountSlug/:projectName",
+        element: <Project />,
+        children: [
+          {
+            index: true,
+            element: <ProjectBuilds />,
+          },
+          {
+            path: "reference",
+            element: <ProjectReference />,
+          },
+          {
+            path: "builds",
+            element: <Navigate to=".." replace={true} />,
+          },
+          {
+            path: "settings",
+            element: <ProjectSettings />,
+          },
+        ],
+      },
+      {
+        id: "account",
+        path: ":accountSlug",
+        element: <Account />,
+        children: [
+          {
+            index: true,
+            element: <AccountProjects />,
+          },
+          {
+            path: "new",
+            element: <AccountNewProject />,
+          },
+          {
+            path: "settings",
+            element: <AccountSettings />,
+          },
+        ],
+      },
+      {
+        path: "*",
+        element: <NotFound />,
+      },
+    ],
+  },
+]);
 
 export const App = () => {
   return (
@@ -91,7 +137,9 @@ export const App = () => {
       <Helmet defaultTitle="Argos" />
       <AuthProvider>
         <ApolloInitializer>
-          <RouterProvider router={router} />
+          <TooltipProvider>
+            <RouterProvider router={router} />
+          </TooltipProvider>
         </ApolloInitializer>
       </AuthProvider>
     </>

@@ -25,7 +25,7 @@ import {
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 const TeamFragment = graphql(`
   fragment TeamDelete_Team on Team {
@@ -170,9 +170,9 @@ export const TeamDelete = (props: {
             A purchase is active on the team. Please cancel your purchase before
             deleting the team.
           </div>
-          <MagicTooltip tooltip="Cancel your purchase before deleting the team.">
+          <Tooltip content="Cancel your purchase before deleting the team.">
             <DeleteButton disabled accessibleWhenDisabled />
-          </MagicTooltip>
+          </Tooltip>
         </CardFooter>
       ) : (
         <CardFooter className="flex items-center justify-end">

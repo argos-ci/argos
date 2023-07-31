@@ -1,6 +1,6 @@
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Chip, ChipProps } from "@/ui/Chip";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 import { getBuildColor, getBuildIcon, getBuildLabel } from "./Build";
 import { BuildStatusDescription } from "./BuildStatusDescription";
@@ -27,9 +27,9 @@ export const BuildStatusChip = (props: {
   const build = useFragment(BuildFragment, props.build);
   const project = useFragment(ProjectFragment, props.project);
   return (
-    <MagicTooltip
+    <Tooltip
       variant="info"
-      tooltip={<BuildStatusDescription build={build} project={project} />}
+      content={<BuildStatusDescription build={build} project={project} />}
     >
       <Chip
         icon={getBuildIcon(build.type, build.status)}
@@ -38,6 +38,6 @@ export const BuildStatusChip = (props: {
       >
         {getBuildLabel(build.type, build.status)}
       </Chip>
-    </MagicTooltip>
+    </Tooltip>
   );
 };

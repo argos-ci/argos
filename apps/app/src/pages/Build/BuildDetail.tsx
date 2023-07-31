@@ -8,7 +8,7 @@ import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
 import { Anchor } from "@/ui/Link";
 import { Time } from "@/ui/Time";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 import { useScrollListener } from "@/ui/useScrollListener";
 
 import { BuildDetailToolbar } from "./BuildDetailToolbar";
@@ -47,7 +47,7 @@ type BuildFragmentDocument = DocumentType<typeof BuildFragment>;
 const DownloadScreenshotButton = memo(
   (props: { url: string; tooltip: string }) => {
     return (
-      <MagicTooltip tooltip={props.tooltip}>
+      <Tooltip content={props.tooltip}>
         <IconButton variant="contained" asChild>
           <a
             href={`${props.url}?tr=orig-true&ik-attachment=true`}
@@ -58,7 +58,7 @@ const DownloadScreenshotButton = memo(
             <ArrowDownTrayIcon />
           </a>
         </IconButton>
-      </MagicTooltip>
+      </Tooltip>
     );
   }
 );

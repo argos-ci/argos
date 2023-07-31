@@ -1,7 +1,7 @@
 import { BugAntIcon } from "@heroicons/react/20/solid";
 
 import { Button, ButtonIcon } from "@/ui/Button";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 export const FlakyButton = ({
   onClick,
@@ -13,8 +13,8 @@ export const FlakyButton = ({
   onlyFlakySelected: boolean;
 }) => {
   return (
-    <MagicTooltip
-      tooltip={
+    <Tooltip
+      content={
         disabled
           ? "Select a test to mark it as flaky"
           : onlyFlakySelected
@@ -35,6 +35,6 @@ export const FlakyButton = ({
         </ButtonIcon>
         {onlyFlakySelected ? "Cancel Flaky Flag" : "Mark as Flaky"}
       </Button>
-    </MagicTooltip>
+    </Tooltip>
   );
 };

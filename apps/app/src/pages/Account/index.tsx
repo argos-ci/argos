@@ -1,5 +1,6 @@
 import { Outlet, useOutletContext, useParams } from "react-router-dom";
 
+import { useVisitAccount } from "@/containers/AccountHistory";
 import { Query } from "@/containers/Apollo";
 import { Main } from "@/containers/Layout";
 import { PaymentBanner } from "@/containers/PaymentBanner";
@@ -55,8 +56,9 @@ const AccountTabs = ({ account }: { account: Account }) => {
 export const Account = () => {
   const { accountSlug } = useParams();
   if (!accountSlug) {
-    return <NotFound />;
+    throw new Error("Missing accountSlug");
   }
+  useVisitAccount(accountSlug);
   return (
     <Query
       fallback={<PageLoader />}

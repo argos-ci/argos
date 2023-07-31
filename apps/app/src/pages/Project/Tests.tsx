@@ -34,7 +34,7 @@ import { List, ListHeader, ListRow, ListRowLoader } from "@/ui/List";
 import { MuteIndicator } from "@/ui/MuteIndicator";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 import { NotFound } from "../NotFound";
 
@@ -154,11 +154,11 @@ const BuildNameField = ({ buildName }: { buildName: string }) => {
 
 const LastSeenField = ({ lastSeen }: { lastSeen: string | null }) => {
   return lastSeen ? (
-    <MagicTooltip tooltip={`Last seen: ${moment(lastSeen).format("LLL")}`}>
+    <Tooltip content={`Last seen: ${moment(lastSeen).format("LLL")}`}>
       <div className="flex whitespace-nowrap">
         <Time date={lastSeen} showTitle={false} />
       </div>
-    </MagicTooltip>
+    </Tooltip>
   ) : null;
 };
 
@@ -174,9 +174,9 @@ const DailyVariationGraphCell = ({
       <div className="items-bottom flex h-8 flex-auto justify-between gap-1">
         {dailyChanges.map(({ date, count }) => {
           return (
-            <MagicTooltip
+            <Tooltip
               key={String(date)}
-              tooltip={`${moment(date).format("LL")}: ${count} ${pluralize(
+              content={`${moment(date).format("LL")}: ${count} ${pluralize(
                 count,
                 "variation",
                 "variations"
@@ -190,7 +190,7 @@ const DailyVariationGraphCell = ({
                   }}
                 />
               </div>
-            </MagicTooltip>
+            </Tooltip>
           );
         })}
       </div>
@@ -208,8 +208,8 @@ const VariationsCell = ({
   const totalChanges = dailyChanges.reduce((sum, { count }) => sum + count, 0);
   return (
     <Cell className={columns.variations}>
-      <MagicTooltip
-        tooltip={`Over the last 7 days: ${totalChanges} screenshot 
+      <Tooltip
+        content={`Over the last 7 days: ${totalChanges} screenshot 
         ${pluralize(totalChanges, "change", "changes")} / ${totalBuilds} total 
         ${pluralize(totalBuilds, "build", "builds")}`}
       >
@@ -219,7 +219,7 @@ const VariationsCell = ({
             {totalBuilds}
           </span>
         </div>
-      </MagicTooltip>
+      </Tooltip>
     </Cell>
   );
 };
@@ -232,8 +232,8 @@ const StabilityCell = ({
   unstable: boolean;
 }) => (
   <Cell className={columns.score}>
-    <MagicTooltip
-      tooltip={"A test with a stability score lower than 60 is unstable"}
+    <Tooltip
+      content={"A test with a stability score lower than 60 is unstable"}
     >
       <div>
         <span
@@ -246,7 +246,7 @@ const StabilityCell = ({
         </span>
         /<span className="ml-0.5">100</span>
       </div>
-    </MagicTooltip>
+    </Tooltip>
   </Cell>
 );
 
@@ -455,15 +455,15 @@ const TestsList = ({
           />
         </div>
 
-        <MagicTooltip tooltip="Screenshot variations over the last 7 days">
+        <Tooltip content="Screenshot variations over the last 7 days">
           <div
             role="columnheader"
             className={clsx(columns.graph, "flex items-center")}
           >
             Graph
           </div>
-        </MagicTooltip>
-        <MagicTooltip tooltip="Screenshot variations out of the total number of builds over the last 7 days">
+        </Tooltip>
+        <Tooltip content="Screenshot variations out of the total number of builds over the last 7 days">
           <div
             role="columnheader"
             className={clsx(
@@ -473,15 +473,15 @@ const TestsList = ({
           >
             Variations
           </div>
-        </MagicTooltip>
-        <MagicTooltip tooltip="Higher scores indicating greater stability over the last 7 days">
+        </Tooltip>
+        <Tooltip content="Higher scores indicating greater stability over the last 7 days">
           <div
             role="columnheader"
             className={clsx(columns.score, "flex items-center justify-end")}
           >
             Stability score
           </div>
-        </MagicTooltip>
+        </Tooltip>
       </ListHeader>
 
       <div ref={parentRef} className="min-h-0 flex-1 overflow-auto">
