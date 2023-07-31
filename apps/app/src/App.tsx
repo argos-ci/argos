@@ -28,6 +28,7 @@ import { ProjectSettings } from "./pages/Project/Settings";
 // import { Tests } from "./pages/Project/Tests";
 import { Signup } from "./pages/Signup";
 import { VercelCallback } from "./pages/Vercel";
+import { TooltipProvider } from "./ui/Tooltip";
 
 const router = createBrowserRouter([
   {
@@ -136,7 +137,9 @@ export const App = () => {
       <Helmet defaultTitle="Argos" />
       <AuthProvider>
         <ApolloInitializer>
-          <RouterProvider router={router} />
+          <TooltipProvider>
+            <RouterProvider router={router} />
+          </TooltipProvider>
         </ApolloInitializer>
       </AuthProvider>
     </>

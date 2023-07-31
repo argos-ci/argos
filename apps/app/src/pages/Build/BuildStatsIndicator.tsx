@@ -4,7 +4,7 @@ import { memo } from "react";
 
 import type { BuildStats } from "@/containers/Build";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 import {
   GROUPS,
@@ -107,7 +107,7 @@ const StatCount = ({ icon, count, color, tooltip }: StatCountProps) => {
     </div>
   );
   if (!tooltip) return element;
-  return <MagicTooltip tooltip={tooltip}>{element}</MagicTooltip>;
+  return <Tooltip content={tooltip}>{element}</Tooltip>;
 };
 
 export interface BuildStatsIndicatorProps {

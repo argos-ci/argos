@@ -14,7 +14,7 @@ import {
   MenuItemIcon,
   useMenuState,
 } from "@/ui/Menu";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 type muteOption = {
   label: string;
@@ -78,8 +78,8 @@ export const MuteTestDropdown = ({
 
   return (
     <>
-      <MagicTooltip
-        tooltip={
+      <Tooltip
+        content={
           disabled
             ? "Select a test to mute it"
             : "Mute a test to prevent it from triggering the GitHub status check"
@@ -102,11 +102,11 @@ export const MuteTestDropdown = ({
             </Button>
           )}
         </MenuButton>
-      </MagicTooltip>
+      </Tooltip>
       <Menu state={menu} aria-label="Mute options">
         {muteOptions.map(
           ({ label, tooltip, icon: Icon, muted, muteUntil }, index) => (
-            <MagicTooltip tooltip={tooltip} key={index}>
+            <Tooltip content={tooltip} key={index}>
               <MenuItem
                 state={menu}
                 onClick={() => {
@@ -120,7 +120,7 @@ export const MuteTestDropdown = ({
                 </MenuItemIcon>
                 {label}
               </MenuItem>
-            </MagicTooltip>
+            </Tooltip>
           )
         )}
       </Menu>

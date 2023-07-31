@@ -37,7 +37,7 @@ import {
   SelectPopover,
   useSelectState,
 } from "@/ui/Select";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "../AccountAvatar";
 import { useAuthTokenPayload } from "../Auth";
@@ -274,8 +274,8 @@ const ActionsMenu = (props: ActionsMenuProps) => {
       </MenuButton>
       <Menu state={menu} aria-label="Member actions">
         {props.isMe ? (
-          <MagicTooltip
-            tooltip={
+          <Tooltip
+            content={
               props.lastOne
                 ? "You are the last user of this team, you can't leave it"
                 : null
@@ -293,7 +293,7 @@ const ActionsMenu = (props: ActionsMenuProps) => {
             >
               Leave Team
             </MenuItem>
-          </MagicTooltip>
+          </Tooltip>
         ) : (
           <MenuItem
             variant="danger"

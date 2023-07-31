@@ -19,7 +19,7 @@ import {
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildHotkey } from "./BuildHotkeys";
 
@@ -257,7 +257,7 @@ const FitViewButton = memo(() => {
 const ZoomInButton = memo((props: { disabled: boolean }) => {
   const { zoomIn } = useZoomerSyncContext();
   return (
-    <MagicTooltip tooltip="Zoom in">
+    <Tooltip content="Zoom in">
       <IconButton
         variant="contained"
         onClick={zoomIn}
@@ -265,14 +265,14 @@ const ZoomInButton = memo((props: { disabled: boolean }) => {
       >
         <PlusIcon />
       </IconButton>
-    </MagicTooltip>
+    </Tooltip>
   );
 });
 
 const ZoomOutButton = memo((props: { disabled: boolean }) => {
   const { zoomOut } = useZoomerSyncContext();
   return (
-    <MagicTooltip tooltip="Zoom out">
+    <Tooltip content="Zoom out">
       <IconButton
         variant="contained"
         onClick={zoomOut}
@@ -280,7 +280,7 @@ const ZoomOutButton = memo((props: { disabled: boolean }) => {
       >
         <MinusIcon />
       </IconButton>
-    </MagicTooltip>
+    </Tooltip>
   );
 });
 

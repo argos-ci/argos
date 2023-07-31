@@ -1,153 +1,49 @@
-import {
-  Tooltip as AriakitTooltip,
-  TooltipAnchor as AriakitTooltipAnchor,
-  TooltipStateProps,
-  useTooltipState as useAriakitTooltipState,
-} from "ariakit/tooltip";
-import type {
-  TooltipAnchorProps as AriakitTooltipAnchorProps,
-  TooltipProps as AriakitTooltipProps,
-} from "ariakit/tooltip";
+"use client";
+
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { clsx } from "clsx";
-import {
-  Children,
-  cloneElement,
-  forwardRef,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
-
-import { useEventCallback } from "./useEventCallback";
-
-const useTooltipState = (props?: TooltipStateProps) =>
-  useAriakitTooltipState({ timeout: 800, ...props });
-
-type TooltipAnchorProps = AriakitTooltipAnchorProps;
-const TooltipAnchor = AriakitTooltipAnchor;
+import * as React from "react";
 
 export type TooltipVariant = "default" | "info";
-
-type TooltipProps = {
-  variant?: TooltipVariant | undefined;
-} & AriakitTooltipProps<"div">;
 
 const variantClassNames: Record<TooltipVariant, string> = {
   default: "text-xxs py-1 px-2",
   info: "text-sm p-2 [&_strong]:font-medium",
 };
 
-const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(
-  ({ variant = "default", ...props }, ref) => {
-    const variantClassName = variantClassNames[variant];
-    if (!variantClassName) {
-      throw new Error(`Invalid variant: ${variant}`);
-    }
-    return (
-      <AriakitTooltip
-        ref={ref}
-        className={clsx(
-          variantClassName,
-          "z-50 rounded border border-tooltip-border bg-tooltip-bg text-tooltip-on"
-        )}
-        {...props}
-      />
-    );
-  }
-);
-
-export type MagicTooltipProps = {
-  tooltip: React.ReactNode;
+export type TooltipProps = {
+  content: React.ReactNode;
+  children: React.ReactNode;
   variant?: TooltipVariant;
-  children: React.ReactElement;
-  placement?: TooltipStateProps["placement"];
-} & Omit<TooltipAnchorProps, "children" | "state">;
-
-type ActiveMagicTooltipProps = MagicTooltipProps & {
-  focusRef: React.MutableRefObject<boolean>;
-  hoverRef: React.MutableRefObject<boolean>;
 };
 
-const ActiveMagicTooltip = forwardRef<HTMLDivElement, ActiveMagicTooltipProps>(
-  (props, ref) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { tooltip, children, hoverRef, focusRef, placement, ...restProps } =
-      props;
-    const state = useTooltipState({ placement });
-    const { render, show } = state;
-    useLayoutEffect(() => {
-      if (hoverRef.current || focusRef.current) {
-        render();
-        show();
-      }
-    }, [render, show, hoverRef, focusRef]);
-    return (
-      <>
-        <TooltipAnchor ref={ref} state={state} {...restProps}>
-          {(referenceProps) => cloneElement(children, referenceProps)}
-        </TooltipAnchor>
-        <Tooltip state={state}>{tooltip}</Tooltip>
-      </>
-    );
+export const TooltipProvider = TooltipPrimitive.Provider;
+
+export const Tooltip = ({
+  children,
+  variant = "default",
+  content,
+}: TooltipProps) => {
+  const variantClassName = variantClassNames[variant];
+  if (!variantClassName) {
+    throw new Error(`Invalid variant: ${variant}`);
   }
-);
-
-export const MagicTooltip = forwardRef<HTMLDivElement, MagicTooltipProps>(
-  ({ children, ...props }, ref) => {
-    const [active, setActive] = useState(false);
-    const hoverRef = useRef(false);
-    const handleMouseEnter = useEventCallback(
-      (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        props.onMouseEnter?.(event);
-        hoverRef.current = true;
-        setActive(true);
-      }
-    );
-    const handleMouseLeave = useEventCallback(
-      (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        props.onMouseLeave?.(event);
-        hoverRef.current = false;
-      }
-    );
-    const focusRef = useRef(false);
-    const handleFocus = useEventCallback(
-      (event: React.FocusEvent<HTMLDivElement>) => {
-        props.onFocus?.(event);
-        focusRef.current = true;
-        setActive(true);
-      }
-    );
-    const handleBlur = useEventCallback(
-      (event: React.FocusEvent<HTMLDivElement>) => {
-        props.onBlur?.(event);
-        focusRef.current = false;
-      }
-    );
-
-    const child = Children.only(children);
-    if (!props.tooltip) {
-      return cloneElement(child, props);
-    }
-    if (!active) {
-      const childProps = {
-        ...props,
-        tooltip: undefined,
-        ref,
-        onMouseEnter: handleMouseEnter,
-        onMouseLeave: handleMouseLeave,
-        onFocus: handleFocus,
-        onBlur: handleBlur,
-      } as Record<string, any>;
-      if (typeof props.tooltip === "string" && !child.props["aria-label"]) {
-        childProps["aria-label"] = props["aria-label"] ?? props.tooltip;
-      }
-      return cloneElement(child, childProps);
-    }
-
-    return (
-      <ActiveMagicTooltip {...props} hoverRef={hoverRef} focusRef={focusRef}>
-        {child}
-      </ActiveMagicTooltip>
-    );
-  }
-);
+  if (!content) return <>{children}</>;
+  return (
+    <TooltipPrimitive.Root>
+      <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Portal>
+        <TooltipPrimitive.Content
+          sideOffset={4}
+          className={clsx(
+            "z-50 overflow-hidden rounded-md border border-tooltip-border bg-tooltip-bg text-tooltip-on shadow-md",
+            "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+            variantClassName
+          )}
+        >
+          {content}
+        </TooltipPrimitive.Content>
+      </TooltipPrimitive.Portal>
+    </TooltipPrimitive.Root>
+  );
+};

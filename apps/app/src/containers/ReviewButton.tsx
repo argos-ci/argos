@@ -10,7 +10,7 @@ import {
   MenuItemIcon,
   useMenuState,
 } from "@/ui/Menu";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 import { getBuildIcon } from "./Build";
 
@@ -133,11 +133,11 @@ const DisabledReviewButton = ({
   tooltip,
 }: DisabledReviewButtonProps) => {
   return (
-    <MagicTooltip tooltip={tooltip} variant="info">
+    <Tooltip content={tooltip} variant="info">
       <div className="flex">
         <BaseReviewButton build={build} disabled />
       </div>
-    </MagicTooltip>
+    </Tooltip>
   );
 };
 

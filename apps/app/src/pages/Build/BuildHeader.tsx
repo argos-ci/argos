@@ -7,7 +7,7 @@ import { GitHubLoginButton } from "@/containers/GitHub";
 import { ReviewButton } from "@/containers/ReviewButton";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BrandShield } from "@/ui/BrandShield";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 const BrandLink = memo(
   ({
@@ -18,14 +18,14 @@ const BrandLink = memo(
     projectName: string;
   }) => {
     return (
-      <MagicTooltip tooltip="See all builds">
+      <Tooltip content="See all builds">
         <Link
           to={`/${accountSlug}/${projectName}/builds`}
           className="transition hover:brightness-125"
         >
           <BrandShield height={32} />
         </Link>
-      </MagicTooltip>
+      </Tooltip>
     );
   }
 );
@@ -39,14 +39,14 @@ const ProjectLink = memo(
     projectName: string;
   }) => {
     return (
-      <MagicTooltip tooltip="See all builds">
+      <Tooltip content="See all builds">
         <Link
           to={`/${accountSlug}/${projectName}/builds`}
           className="text-xs leading-none text-on-light transition hover:brightness-125"
         >
           {accountSlug}/{projectName}
         </Link>
-      </MagicTooltip>
+      </Tooltip>
     );
   }
 );

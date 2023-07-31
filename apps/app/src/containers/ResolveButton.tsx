@@ -1,7 +1,7 @@
 import { CheckCircleIcon } from "@heroicons/react/20/solid";
 
 import { Button, ButtonIcon } from "@/ui/Button";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 export const ResolveButton = ({
   onClick,
@@ -11,8 +11,8 @@ export const ResolveButton = ({
   disabled: boolean;
 }) => {
   return (
-    <MagicTooltip
-      tooltip={
+    <Tooltip
+      content={
         disabled
           ? "Select a test to mark it as resolved"
           : "Mark flaky test as resolved after addressing the issue"
@@ -31,6 +31,6 @@ export const ResolveButton = ({
         </ButtonIcon>
         Resolve
       </Button>
-    </MagicTooltip>
+    </Tooltip>
   );
 };

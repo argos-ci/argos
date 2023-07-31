@@ -8,7 +8,7 @@ import moment from "moment";
 import { Test } from "@/gql/graphql";
 
 import { Chip } from "./Chip";
-import { MagicTooltip } from "./Tooltip";
+import { Tooltip } from "./Tooltip";
 
 export const getFlakyIndicatorProps = (
   test: Pick<Test, "status" | "unstable" | "resolvedDate">
@@ -67,10 +67,10 @@ export const FlakyChip = ({
   }
 
   return (
-    <MagicTooltip tooltip={tooltip}>
+    <Tooltip content={tooltip}>
       <Chip icon={Icon} color={color} scale="sm" className={className}>
         {label}
       </Chip>
-    </MagicTooltip>
+    </Tooltip>
   );
 };

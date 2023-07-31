@@ -20,7 +20,7 @@ import {
   MenuSeparator,
   useMenuState,
 } from "@/ui/Menu";
-import { MagicTooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 
 import { GitHubLoginButton } from "./GitHub";
 import { ImageAvatar } from "./ImageAvatar";
@@ -104,11 +104,11 @@ export const Navbar = () => {
   return (
     <nav className="container mx-auto flex items-center justify-between p-4">
       <div className="flex shrink-0 items-center">
-        <MagicTooltip tooltip="Go to home">
+        <Tooltip content="Go to home">
           <RouterLink to="/" className="transition hover:brightness-125">
             <BrandLogo height={32} className="max-w-none" />
           </RouterLink>
-        </MagicTooltip>
+        </Tooltip>
         <SubNavbar />
       </div>
 
