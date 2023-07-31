@@ -97,6 +97,13 @@ export const hotkeys = {
 
 export type HotkeyName = keyof typeof hotkeys;
 
+const checkIsModifiedPressed = (event: KeyboardEvent) => {
+  if (isMacOS) {
+    return event.metaKey;
+  }
+  return event.ctrlKey;
+};
+
 export const useBuildHotkey = (
   name: HotkeyName,
   callback: (event: KeyboardEvent) => void,
@@ -117,12 +124,11 @@ export const useBuildHotkey = (
     const listener = (event: KeyboardEvent) => {
       const { options, callback } = refs.current;
       if (!options.enabled) return;
+      const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
+      if (modifierShouldBePressed !== checkIsModifiedPressed(event)) return;
       const matchKeys = hotkey.keys.every((key) => {
-        if (key === "⌘") {
-          if (isMacOS && event.metaKey) return true;
-          if (!isMacOS && event.ctrlKey) return true;
-          return false;
-        }
+        // Ignore modifier keys
+        if (key === "⌘") return true;
         return key === event.code || key === event.key;
       });
       if (!matchKeys) return;
