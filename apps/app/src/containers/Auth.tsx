@@ -18,6 +18,8 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const COOKIE_NAME = "argos_jwt";
+const COOKIE_DOMAIN =
+  process.env["NODE_ENV"] === "production" ? ".argos-ci.com" : "";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [token, setStateToken] = useState<string | null>(() => {
@@ -26,10 +28,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const setToken = useCallback((newToken: Token) => {
     setStateToken(newToken);
     if (newToken === null) {
-      Cookie.remove(COOKIE_NAME);
+      Cookie.remove(COOKIE_NAME, {
+        domain: COOKIE_DOMAIN,
+      });
     } else {
       Cookie.set(COOKIE_NAME, newToken, {
-        domain: process.env["NODE_ENV"] === "production" ? ".argos-ci.com" : "",
+        domain: COOKIE_DOMAIN,
       });
     }
   }, []);
