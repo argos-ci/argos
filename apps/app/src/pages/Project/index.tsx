@@ -1,5 +1,6 @@
 import { Outlet, useOutletContext, useParams } from "react-router-dom";
 
+import { useVisitAccount } from "@/containers/AccountHistory";
 import { Query } from "@/containers/Apollo";
 import { Main } from "@/containers/Layout";
 import { PaymentBanner } from "@/containers/PaymentBanner";
@@ -73,6 +74,7 @@ export const useProjectContext = () => {
 
 export const Project = () => {
   const { accountSlug, projectName } = useParams();
+  useVisitAccount(accountSlug ?? null);
   if (!accountSlug || !projectName) {
     return <NotFound />;
   }

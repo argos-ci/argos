@@ -1,12 +1,15 @@
 import { Navigate } from "react-router-dom";
 
+import { getLatestVisitedAccount } from "@/containers/AccountHistory";
 import { AuthGuard } from "@/containers/AuthGuard";
 
 export const Home = () => {
   return (
     <AuthGuard>
       {({ authPayload }) => {
-        return <Navigate replace to={`/${authPayload.account.slug}`} />;
+        const accountSlug =
+          getLatestVisitedAccount() ?? authPayload.account.slug;
+        return <Navigate replace to={`/${accountSlug}`} />;
       }}
     </AuthGuard>
   );
