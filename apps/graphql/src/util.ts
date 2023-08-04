@@ -15,3 +15,11 @@ export const forbidden = () => {
     },
   });
 };
+
+export const unauthenticated = () => {
+  return new GraphQLError("unauthenticated", {
+    extensions: {
+      code: "UNAUTHENTICATED",
+    },
+  });
+};

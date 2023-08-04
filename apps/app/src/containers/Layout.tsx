@@ -1,17 +1,39 @@
+import { ApolloError } from "@apollo/client";
+import { captureException } from "@sentry/browser";
 import { clsx } from "clsx";
 import { HTMLProps, forwardRef } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { useMatch } from "react-router-dom";
 
 import { ErrorPage } from "@/pages/ErrorPage";
-import { Catch } from "@/ui/Catch";
 
+import { useLogout } from "./Auth";
 import { Navbar } from "./Navbar";
 
 export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
   (props: { children: React.ReactNode }, ref) => {
+    const logout = useLogout();
     return (
       <main ref={ref} className="flex min-h-0 flex-1 flex-col py-6">
-        <Catch fallback={<ErrorPage />}>{props.children}</Catch>
+        <ErrorBoundary
+          fallback={<ErrorPage />}
+          onError={(error) => {
+            if (error instanceof ApolloError) {
+              // Ignore unauthenticated errors & logout the user
+              if (
+                error.graphQLErrors.some(
+                  (error) => error.extensions?.code === "UNAUTHENTICATED"
+                )
+              ) {
+                logout();
+                return;
+              }
+            }
+            captureException(error);
+          }}
+        >
+          {props.children}
+        </ErrorBoundary>
       </main>
     );
   }

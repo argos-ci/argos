@@ -106,7 +106,7 @@ router.post(
       const { accountId, successUrl, cancelUrl } = req.body;
 
       if (!req.auth) {
-        throw new Error("Forbidden");
+        throw new Error("Unauthenticated");
       }
 
       if (!accountId) {

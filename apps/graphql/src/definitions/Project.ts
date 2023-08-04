@@ -18,7 +18,7 @@ import { getTokenOctokit } from "@argos-ci/github";
 
 import { IPermission, IResolvers } from "../__generated__/resolver-types.js";
 import { deleteProject, getWritableProject } from "../services/project.js";
-import { forbidden } from "../util.js";
+import { unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 import { linkVercelProject } from "./Vercel.js";
 
@@ -404,7 +404,7 @@ export const resolvers: IResolvers = {
   Mutation: {
     createProject: async (_root, args, ctx) => {
       if (!ctx.auth) {
-        throw forbidden();
+        throw unauthenticated();
       }
       return createProject({
         accountSlug: args.input.accountSlug,
@@ -451,7 +451,7 @@ export const resolvers: IResolvers = {
     },
     linkRepository: async (_root, args, ctx) => {
       if (!ctx.auth) {
-        throw forbidden();
+        throw unauthenticated();
       }
 
       const project = await getWritableProject({
@@ -471,7 +471,7 @@ export const resolvers: IResolvers = {
     },
     linkVercelProject: async (_root, args, ctx) => {
       if (!ctx.auth) {
-        throw forbidden();
+        throw unauthenticated();
       }
 
       const vercelConfiguration = await VercelConfiguration.query()

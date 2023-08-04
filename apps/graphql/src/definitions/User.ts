@@ -4,7 +4,7 @@ import { Account, Purchase, User } from "@argos-ci/database/models";
 import { GhApiInstallation, getTokenOctokit } from "@argos-ci/github";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
-import { forbidden } from "../util.js";
+import { unauthenticated } from "../util.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -87,7 +87,7 @@ export const resolvers: IResolvers = {
     },
     ghInstallations: async (account, _args, ctx) => {
       if (!ctx.auth) {
-        throw forbidden();
+        throw unauthenticated();
       }
       if (account.id !== ctx.auth.account.id) {
         throw new Error(

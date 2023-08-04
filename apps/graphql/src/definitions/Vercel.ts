@@ -20,7 +20,7 @@ import {
   IResolvers,
   IVercelApiProjectStatus,
 } from "../__generated__/resolver-types.js";
-import { forbidden } from "../util.js";
+import { unauthenticated } from "../util.js";
 
 const { gql } = gqlTag;
 
@@ -272,7 +272,7 @@ export const resolvers: IResolvers = {
   VercelApiProject: {
     status: async (vercelProject, args, ctx) => {
       if (!ctx.auth) {
-        throw forbidden();
+        throw unauthenticated();
       }
 
       const link = vercelProject.link;
@@ -319,13 +319,13 @@ export const resolvers: IResolvers = {
     },
     linkedProject: async (vercelProject, _args, ctx) => {
       if (!ctx.auth) {
-        throw forbidden();
+        throw unauthenticated();
       }
       return getLinkedProject(vercelProject);
     },
     project: async (vercelProject, _args, ctx) => {
       if (!ctx.auth) {
-        throw forbidden();
+        throw unauthenticated();
       }
       return ctx.loaders.ProjectFromVercelProject.load(vercelProject.id);
     },
@@ -379,7 +379,7 @@ export const resolvers: IResolvers = {
     },
     setupVercelIntegration: async (_root, args, ctx) => {
       if (!ctx.auth) {
-        throw forbidden();
+        throw unauthenticated();
       }
 
       const vercelConfiguration = await linkVercelConfiguration({
