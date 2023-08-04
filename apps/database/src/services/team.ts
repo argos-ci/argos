@@ -28,7 +28,7 @@ export const resolveTeamSlug = async (
 export const createTeamAccount = async (props: {
   name: string;
   ownerId: string;
-  githubAccountId?: string;
+  githubAccountId?: string | null;
 }) => {
   const slug = await resolveTeamSlug(props.name);
   return transaction(async (trx) => {
