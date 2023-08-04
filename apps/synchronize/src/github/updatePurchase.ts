@@ -2,7 +2,7 @@ import { transaction } from "@argos-ci/database";
 import { Purchase } from "@argos-ci/database/models";
 import type { Account } from "@argos-ci/database/models";
 
-import { getNewPlanOrThrow } from "./eventHelpers.js";
+import { getGithubPlan } from "./eventHelpers.js";
 
 export const updatePurchase = async (
   payload: {
@@ -14,7 +14,7 @@ export const updatePurchase = async (
   },
   account: Account
 ) => {
-  const plan = await getNewPlanOrThrow(payload);
+  const plan = await getGithubPlan(payload);
   const activePurchase = await account.$getActivePurchase();
   const effectiveDate = payload.effective_date || new Date().toISOString();
 

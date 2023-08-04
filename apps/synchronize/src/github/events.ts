@@ -7,15 +7,15 @@ import {
   GithubRepository,
   Purchase,
 } from "@argos-ci/database/models";
-import { getInstallationOctokit } from "@argos-ci/github";
+import { commentGithubPr, getInstallationOctokit } from "@argos-ci/github";
 import logger from "@argos-ci/logger";
 
 import { synchronizeFromInstallationId } from "../helpers.js";
 import {
   cancelPurchase,
   getAccount,
-  getNewPlanOrThrow,
-  getOrCreateAccount,
+  getGithubPlan,
+  getOrCreateAccountFromEvent,
   getOrCreateInstallation,
 } from "./eventHelpers.js";
 import { updatePurchase } from "./updatePurchase.js";
@@ -30,17 +30,17 @@ export const handleGitHubEvents = async ({
       case "marketplace_purchase": {
         switch (payload.action) {
           case "purchased": {
-            const [newPlan, account] = await Promise.all([
-              getNewPlanOrThrow(payload),
-              getOrCreateAccount(payload),
+            const [plan, account] = await Promise.all([
+              getGithubPlan(payload),
+              getOrCreateAccountFromEvent(payload),
             ]);
 
             const activePurchase = await account.$getActivePurchase();
-            if (activePurchase && activePurchase.planId === newPlan.id) return;
+            if (activePurchase && activePurchase.planId === plan.id) return;
 
             await Purchase.query().insert({
               accountId: account.id,
-              planId: newPlan.id,
+              planId: plan.id,
               startDate: payload.effective_date,
               source: "github",
               trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
@@ -154,11 +154,12 @@ export const handleGitHubEvents = async ({
             return;
           }
 
-          await octokit.issues.updateComment({
+          await commentGithubPr({
             owner: payload.repository.owner.login,
             repo: payload.repository.name,
-            comment_id: pr.commentId,
+            octokit,
             body: getPendingCommentBody(),
+            pullRequest: pr,
           });
 
           return;

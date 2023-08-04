@@ -20,6 +20,7 @@ import type {
   ITeamUserLevel,
 } from "../__generated__/resolver-types.js";
 import { deleteAccount, getWritableAccount } from "../services/account.js";
+import { forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
@@ -145,10 +146,10 @@ export const resolvers: IResolvers = {
         throw new Error("Invariant: account.teamId is undefined");
       }
       if (!ctx.auth) {
-        throw new Error("Forbidden");
+        throw unauthenticated();
       }
       if (!Team.checkReadPermission(account.teamId, ctx.auth.user)) {
-        throw new Error("Forbidden");
+        throw forbidden();
       }
 
       return TeamUser.query()
@@ -162,10 +163,10 @@ export const resolvers: IResolvers = {
         throw new Error("Invariant: account.teamId is undefined");
       }
       if (!ctx.auth) {
-        throw new Error("Forbidden");
+        throw unauthenticated();
       }
       if (!Team.checkReadPermission(account.teamId, ctx.auth.user)) {
-        throw new Error("Forbidden");
+        throw forbidden();
       }
       const { first, after } = args;
       const result = await TeamUser.query()
@@ -186,10 +187,10 @@ export const resolvers: IResolvers = {
         throw new Error("Invariant: account.teamId is undefined");
       }
       if (!ctx.auth) {
-        throw new Error("Forbidden");
+        throw unauthenticated();
       }
       if (!Team.checkWritePermission(account.teamId, ctx.auth.user)) {
-        throw new Error("Forbidden");
+        throw forbidden();
       }
       const team = await account.$relatedQuery("team");
       return team.$getInviteLink();
@@ -209,7 +210,7 @@ export const resolvers: IResolvers = {
       const { auth } = ctx;
 
       if (!auth) {
-        throw new Error("Forbidden");
+        throw unauthenticated();
       }
 
       const teamAccount = await createTeamAccount({
@@ -282,7 +283,7 @@ export const resolvers: IResolvers = {
     },
     leaveTeam: async (_root, args, ctx) => {
       if (!ctx.auth) {
-        throw new Error("Forbidden");
+        throw unauthenticated();
       }
 
       const account = await Account.query()
@@ -301,7 +302,7 @@ export const resolvers: IResolvers = {
 
       await transaction(async (trx) => {
         if (!ctx.auth) {
-          throw new Error("Forbidden");
+          throw unauthenticated();
         }
 
         await TeamUser.query(trx).delete().where({
@@ -321,7 +322,7 @@ export const resolvers: IResolvers = {
     },
     removeUserFromTeam: async (_root, args, ctx) => {
       if (!ctx.auth) {
-        throw new Error("Forbidden");
+        throw unauthenticated();
       }
       const [teamAccount, userAccount] = await Promise.all([
         getWritableAccount({
@@ -349,7 +350,7 @@ export const resolvers: IResolvers = {
 
       await transaction(async (trx) => {
         if (!ctx.auth) {
-          throw new Error("Forbidden");
+          throw unauthenticated();
         }
 
         const teamUser = await TeamUser.query(trx)
@@ -376,7 +377,7 @@ export const resolvers: IResolvers = {
     },
     acceptInvitation: async (_root, args, ctx): Promise<Account> => {
       if (!ctx.auth) {
-        throw new Error("Forbidden");
+        throw unauthenticated();
       }
       const team = await Team.verifyInviteToken(args.token);
       if (!team) {
@@ -408,7 +409,7 @@ export const resolvers: IResolvers = {
     },
     setTeamMemberLevel: async (_root, args, ctx) => {
       if (!ctx.auth) {
-        throw new Error("Forbidden");
+        throw unauthenticated();
       }
       const [teamAccount, userAccount] = await Promise.all([
         getWritableAccount({

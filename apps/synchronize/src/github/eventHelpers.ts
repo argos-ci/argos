@@ -2,6 +2,7 @@ import type { MarketplacePurchasePurchasedEvent } from "@octokit/webhooks-types"
 
 import {
   Account,
+  GithubAccount,
   GithubInstallation,
   Plan,
   Purchase,
@@ -24,40 +25,27 @@ type PartialMarketplacePurchasePurchasedEventPayload = {
   };
 };
 
-export const getOrCreateAccount = async (
+const getOrCreateGhAccountFromEvent = async (
   payload: MarketplacePurchasePurchasedEvent
-): Promise<Account> => {
+): Promise<GithubAccount> => {
+  const accountType = getGhAccountType(
+    payload.marketplace_purchase.account.type
+  );
   const ghAccount = await getOrCreateGhAccount({
     githubId: payload.marketplace_purchase.account.id,
     login: payload.marketplace_purchase.account.login,
-    type: getGhAccountType(payload.marketplace_purchase.account.type),
+    type: accountType,
     email: payload.marketplace_purchase.account.organization_billing_email,
     name: null,
   });
-  const teamAccount = await ghAccount.$relatedQuery("account").first();
-  // If there is a team account found, fine we return it
-  if (teamAccount) {
-    return teamAccount;
-  }
-  // If there is no team account found, then we will try several things:
-  // -> The buyer has an account on Argos
-  //   -> The buyer has a team containing projects linked to the GitHub organization
-  //      -> Use this team
-  //   -> The buyer has no relevant team
-  //      -> Create a new team
-  // -> The buyer hasn't an account on Argos
-  //   -> Create a new account
-  //   -> Create a new team
-  // Find or create the GitHub account of the sender (buyer)
-  const userGhAccount = await getOrCreateGhAccount({
-    githubId: payload.sender.id,
-    login: payload.sender.login,
-    type: getGhAccountType(payload.sender.type),
-    email: payload.sender.email,
-    name: null,
-  });
-  // Find or create the Argos account linked to the GitHub account of the sender (buyer)
-  const userAccount = await getOrCreateUserAccountFromGhAccount(userGhAccount);
+  return ghAccount;
+};
+
+const findRelevantUserTeam = async (
+  userAccount: Account,
+  payload: MarketplacePurchasePurchasedEvent,
+  githubAccountId: null | string
+): Promise<Account> => {
   // Got the user entity linked to this account (to get teams)
   const user = await userAccount.$relatedQuery("user").first();
   // Got the teams owned by the user
@@ -92,9 +80,47 @@ export const getOrCreateAccount = async (
   const team = await createTeamAccount({
     name: payload.marketplace_purchase.account.login,
     ownerId: user.id,
-    githubAccountId: ghAccount.id,
+    githubAccountId,
   });
   return team;
+};
+
+export const getOrCreateAccountFromEvent = async (
+  payload: MarketplacePurchasePurchasedEvent
+): Promise<Account> => {
+  const ghAccount = await getOrCreateGhAccountFromEvent(payload);
+  const account = await ghAccount.$relatedQuery("account").first();
+  // If the account is already linked to a team or a user
+  if (account) {
+    // If there is a team account found, fine we return it
+    if (account.type === "team") {
+      return account;
+    }
+
+    // If the account is linked to a user, we will try to find a team account
+    return findRelevantUserTeam(account, payload, null);
+  }
+
+  // If there is no team account found, then we will try several things:
+  // -> The buyer has an account on Argos
+  //   -> The buyer has a team containing projects linked to the GitHub organization
+  //      -> Use this team
+  //   -> The buyer has no relevant team
+  //      -> Create a new team
+  // -> The buyer hasn't an account on Argos
+  //   -> Create a new account
+  //   -> Create a new team
+  // Find or create the GitHub account of the sender (buyer)
+  const userGhAccount = await getOrCreateGhAccount({
+    githubId: payload.sender.id,
+    login: payload.sender.login,
+    type: getGhAccountType(payload.sender.type),
+    email: payload.sender.email,
+    name: null,
+  });
+  // Find or create the Argos account linked to the GitHub account of the sender (buyer)
+  const userAccount = await getOrCreateUserAccountFromGhAccount(userGhAccount);
+  return findRelevantUserTeam(userAccount, payload, ghAccount.id);
 };
 
 export const getAccount = async (
@@ -115,7 +141,7 @@ export const getAccount = async (
   return account ?? null;
 };
 
-export const getNewPlanOrThrow = async (payload: {
+export const getGithubPlan = async (payload: {
   marketplace_purchase: { plan?: { id: number } };
 }) => {
   const githubId = payload.marketplace_purchase.plan?.id;

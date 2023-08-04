@@ -8,7 +8,7 @@ import type {
   IResolvers,
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
-import { APIError } from "../util.js";
+import { APIError, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
@@ -148,7 +148,7 @@ export const resolvers: IResolvers = {
   Mutation: {
     setValidationStatus: async (_root, args, ctx) => {
       if (!ctx.auth) {
-        throw new APIError("Invalid user identification");
+        throw unauthenticated();
       }
 
       const { buildId, validationStatus } = args;

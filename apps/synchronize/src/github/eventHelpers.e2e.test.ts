@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { setupDatabase } from "@argos-ci/database/testing";
 
 import { ORGANIZATION_PURCHASE_EVENT_PAYLOAD } from "../fixtures/purchase-event-payload.js";
-import { getOrCreateAccount } from "./eventHelpers.js";
+import { getOrCreateAccountFromEvent } from "./eventHelpers.js";
 
 describe("#getOrCreateAccount", () => {
   beforeEach(async () => {
@@ -11,7 +11,7 @@ describe("#getOrCreateAccount", () => {
   });
 
   it("creates an account", async () => {
-    const teamAccount = await getOrCreateAccount(
+    const teamAccount = await getOrCreateAccountFromEvent(
       ORGANIZATION_PURCHASE_EVENT_PAYLOAD
     );
     await teamAccount.$fetchGraph(
