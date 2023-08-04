@@ -7,7 +7,7 @@ import {
   GithubRepository,
   Purchase,
 } from "@argos-ci/database/models";
-import { getInstallationOctokit } from "@argos-ci/github";
+import { commentGithubPr, getInstallationOctokit } from "@argos-ci/github";
 import logger from "@argos-ci/logger";
 
 import { synchronizeFromInstallationId } from "../helpers.js";
@@ -154,11 +154,12 @@ export const handleGitHubEvents = async ({
             return;
           }
 
-          await octokit.issues.updateComment({
+          await commentGithubPr({
             owner: payload.repository.owner.login,
             repo: payload.repository.name,
-            comment_id: pr.commentId,
+            octokit,
             body: getPendingCommentBody(),
+            pullRequest: pr,
           });
 
           return;
