@@ -19,6 +19,7 @@ import {
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
 import { getWritableAccount } from "../services/account.js";
+import { forbidden } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
@@ -156,7 +157,7 @@ export const resolvers: IResolvers = {
     },
     stripeClientReferenceId: (account, _args, ctx) => {
       if (!ctx.auth) {
-        throw new Error("Unauthorized");
+        throw forbidden();
       }
       return encodeStripeClientReferenceId({
         accountId: account.id,
