@@ -28,11 +28,11 @@ export const AccountVercel = (props: {
           Connect your account to Vercel to link your projects.
         </CardParagraph>
         {account.vercelConfiguration ? (
-          <div className="flex items-center gap-4 rounded border p-4">
+          <div className="flex items-center gap-2 rounded border p-4">
             <VercelLogo height={24} />
             <div className="flex-1 font-semibold">
               <a
-                className="text-white no-underline hover:underline"
+                className="text no-underline hover:underline"
                 href={account.vercelConfiguration.url}
                 target="_blank"
                 rel="noopener noreferrer"

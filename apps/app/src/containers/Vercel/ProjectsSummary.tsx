@@ -231,7 +231,7 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
 
   return (
     <div>
-      <p className="mb-6 text-center text-on-light">
+      <p className="mb-6 text-center text-low">
         Vercel projects are automatically synced with Argos.
       </p>
       <List style={{ maxHeight: 400 }} className="w-full overflow-auto">
@@ -243,9 +243,7 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
                   <div className="text-sm font-semibold">{project.name}</div>
                 </div>
                 {project.link && (
-                  <div className="text-xs text-slate-500">
-                    {project.link.type}
-                  </div>
+                  <div className="text-xs text-low">{project.link.type}</div>
                 )}
               </div>
               <div className="text-sm font-semibold">

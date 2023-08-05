@@ -194,14 +194,11 @@ export interface BuildDetailToolbarProps {
 
 export const BuildDetailToolbar = memo(
   ({ name, bordered, test }: BuildDetailToolbarProps) => {
-    const borderClassName = bordered
-      ? "border-b-border"
-      : "border-b-transparent";
     return (
       <div
         className={clsx(
-          borderClassName,
-          "b sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b bg-black/80 p-4 backdrop-blur-[5px] backdrop-saturate-[180%] transition-colors"
+          "sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b p-4 transition-colors",
+          !bordered && "border-b-transparent"
         )}
       >
         <div className="flex items-start gap-2">

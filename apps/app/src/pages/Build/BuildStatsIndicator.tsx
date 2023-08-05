@@ -23,14 +23,14 @@ const getStatCountColorClassName = (
 ) => {
   switch (color) {
     case "danger":
-      return clsx("text-danger-600", interactive && "hover:text-danger-400");
+      return clsx("text-danger-low", interactive && "hover:text-danger");
     case "warning":
-      return clsx("text-warning-600", interactive && "hover:text-warning-400");
+      return clsx("text-warning-low", interactive && "hover:text-warning");
     case "success":
-      return clsx("text-success-600", interactive && "hover:text-success-400");
+      return clsx("text-success-low", interactive && "hover:text-success");
     case "neutral":
     default:
-      return clsx("text-neutral-400", interactive && "hover:text-neutral-200");
+      return clsx("text-low", interactive && "hover:text");
   }
 };
 

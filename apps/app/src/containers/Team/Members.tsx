@@ -228,7 +228,7 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
             />
             <div>
               <div className="text-sm font-semibold">{user.name}</div>
-              <div className="text-xs text-slate-500">{user.slug}</div>
+              <div className="text-xs text-low">{user.slug}</div>
             </div>
           </ListRow>
         </List>
@@ -373,7 +373,7 @@ const LevelSelect = (props: {
 
   return (
     <>
-      <Select state={select} className="w-full text-sm text-on-light">
+      <Select state={select} className="w-full text-sm text-low">
         <div className="flex w-full items-center justify-between gap-2">
           {levelLabel[value]}
           <SelectArrow />
@@ -384,13 +384,13 @@ const LevelSelect = (props: {
         <SelectItem state={select} value="member">
           <div className="flex flex-col">
             <div>Member</div>
-            <div className="text-on-light">See and review builds</div>
+            <div className="text-low">See and review builds</div>
           </div>
         </SelectItem>
         <SelectItem state={select} value="owner">
           <div className="flex flex-col">
             <div>Owner</div>
-            <div className="text-on-light">
+            <div className="text-low">
               Admin level access to the entire team
             </div>
           </div>
@@ -503,10 +503,10 @@ export const TeamMembers = (props: {
                     <div className="flex items-center gap-2">
                       <div className="text-sm font-semibold">{user.name}</div>
                     </div>
-                    <div className="text-xs text-slate-500">{user.slug}</div>
+                    <div className="text-xs text-low">{user.slug}</div>
                   </div>
                   {isMe || !amOwner ? (
-                    <div className="text-sm text-on-light">
+                    <div className="text-sm text-low">
                       {levelLabel[member.level]}
                     </div>
                   ) : (

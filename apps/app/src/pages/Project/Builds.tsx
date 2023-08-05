@@ -86,7 +86,7 @@ const FakeLink = ({
   }
   return (
     <div
-      className={clsx("text-on-light transition hover:text-on", className)}
+      className={clsx("text-low transition hover:text", className)}
       onClick={(event) => {
         event.preventDefault();
         window.open(href, "_blank")?.focus();
@@ -111,10 +111,10 @@ const BuildRow = memo(
         <RouterLink
           to={`/${accountSlug}/${projectName}/builds/${build.number}`}
         >
-          <div className="w-[7ch] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-on-light">
+          <div className="w-[7ch] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-low">
             <span>#{build.number}</span>
           </div>
-          <div className="w-20 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums text-on-light lg:w-40">
+          <div className="w-20 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums text-low lg:w-40">
             {build.name !== "default" ? build.name : ""}
           </div>
           <div className="w-48 shrink-0">
@@ -153,7 +153,7 @@ const BuildRow = memo(
               </span>
             </FakeLink>
           </div>
-          <div className="hidden w-32 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-right text-on-light sm:block">
+          <div className="hidden w-32 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-right text-low sm:block">
             <Time date={build.createdAt} />
           </div>
         </RouterLink>

@@ -61,7 +61,7 @@ const BannerCta = ({
   switch (action) {
     case "settings":
       return (
-        <Button color="white" variant="outline">
+        <Button>
           {(buttonProps) => (
             <RouterLink to={`/${accountSlug}/settings`} {...buttonProps}>
               {children}
@@ -72,11 +72,7 @@ const BannerCta = ({
 
     case "stripeCheckoutSession":
       return (
-        <TeamUpgradeDialogButton
-          initialAccountId={accountId}
-          color="white"
-          variant="outline"
-        >
+        <TeamUpgradeDialogButton initialAccountId={accountId}>
           {children}
         </TeamUpgradeDialogButton>
       );

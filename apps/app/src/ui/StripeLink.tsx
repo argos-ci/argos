@@ -80,13 +80,7 @@ export const StripePortalLink = ({
   });
 
   return asButton ? (
-    <Button
-      type="button"
-      variant="outline"
-      color="white"
-      disabled={disabled}
-      onClick={handleClick}
-    >
+    <Button type="button" disabled={disabled} onClick={handleClick}>
       {children}
     </Button>
   ) : (

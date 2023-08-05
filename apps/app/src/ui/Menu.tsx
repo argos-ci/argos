@@ -22,7 +22,7 @@ export const MenuSeparator = forwardRef<HTMLHRElement, MenuSeparatorProps>(
     return (
       <AriakitMenuSeparator
         ref={ref}
-        className="-mx-1 my-1 border-t border-t-menu-border"
+        className="-mx-1 my-1 border-t"
         {...props}
       />
     );
@@ -35,7 +35,7 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>((props, ref) => {
   return (
     <AriakitMenu
       ref={ref}
-      className="z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border border-menu-border bg-menu-bg p-1 focus:outline-none"
+      className="z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border bg-subtle p-1 focus:outline-none"
       {...props}
     />
   );
@@ -50,23 +50,20 @@ export type MenuItemProps = Omit<AriakitMenuItemProps, "className"> & {
 };
 
 const menuItemVariantClasses: Record<MenuItemVariant, string> = {
-  default: "text-menu-on hover:text-menu-hover-on",
-  danger: "text-menu-danger-on hover:text-menu-danger-hover-on",
+  default: "text hover:bg-active focus:bg-active",
+  danger: "text-danger-low hover:bg-danger-active focus:bg-danger-active",
 };
 
 export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
-  ({ pointer, selected = false, ...props }, ref) => {
+  ({ pointer, ...props }, ref) => {
     const pointerClassName = pointer ? "cursor-pointer" : "cursor-default";
-    const selectedClassName = selected ? "bg-menu-item-selected-bg" : "";
     return (
       <AriakitMenuItem
         ref={ref}
-        aria-checked={selected}
         className={clsx(
           pointerClassName,
-          selectedClassName,
           menuItemVariantClasses[props.variant ?? "default"],
-          "flex items-center rounded px-3 py-1.5 text-sm transition hover:bg-menu-item-hover-bg focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-disabled aria-disabled:hover:bg-transparent"
+          "flex items-center rounded px-3 py-1.5 text-sm transition focus:outline-none aria-disabled:opacity-disabled aria-disabled:hover:bg-transparent"
         )}
         {...props}
       />
@@ -94,7 +91,7 @@ export const MenuItemIcon = ({
 
 export const MenuTitle = (props: { children: React.ReactNode }) => {
   return (
-    <div className="px-2 py-1.5 text-xs font-medium text-menu-on-title">
+    <div className="px-2 py-1.5 text-xs font-medium text-low">
       {props.children}
     </div>
   );
@@ -104,9 +101,7 @@ export const MenuText = (props: { children: React.ReactNode }) => {
   return (
     <>
       <MenuSeparator />
-      <div className="px-2 py-1.5 text-xs text-menu-on-title">
-        {props.children}
-      </div>
+      <div className="px-2 py-1.5 text-xs text-low">{props.children}</div>
     </>
   );
 };
@@ -120,7 +115,7 @@ export const UpDownMenuButton = ({
   return (
     <AriakitMenuButton
       className={clsx(
-        "rounded-md border border-border p-0.5 text-on-light transition hover:text-on aria-expanded:bg-slate-800 aria-expanded:text-on",
+        "border-border rounded-md border p-0.5 text-low hover:border-hover hover:text aria-expanded:bg-active aria-expanded:text",
         className
       )}
       {...props}

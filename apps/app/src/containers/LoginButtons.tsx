@@ -22,7 +22,7 @@ export const LoginButtons = (props: LoginButtonsProps) => {
       >
         Continue with GitHub
       </GitHubLoginButton>
-      <p className="mt-6 text-left text-sm text-on-light">
+      <p className="mt-6 text-left text-sm text-low">
         Argos only supports GitHub as account provider.
         <br />
         Need another provider?{" "}

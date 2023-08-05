@@ -6,7 +6,7 @@ import type { LinkProps as ReactRouterLinkProps } from "react-router-dom";
 
 export type LinkProps = ReactRouterLinkProps;
 
-export const anchorClassNames = "text-sky-400 no-underline hover:underline";
+export const anchorClassNames = "text-primary-low no-underline hover:underline";
 
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>(
   ({ className, ...props }, ref) => {

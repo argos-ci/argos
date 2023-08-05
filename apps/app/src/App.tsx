@@ -75,7 +75,7 @@ const router = createBrowserRouter([
         path: "teams/new",
         element: (
           <>
-            <hr className="border-t-border" />
+            <hr className="border-t" />
             <Main>
               <NewTeam />
             </Main>

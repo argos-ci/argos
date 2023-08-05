@@ -10,8 +10,10 @@ export const Card = ({ className, intent, ...props }: CardProps) => {
     <div
       className={clsx(
         className,
-        "w-full overflow-hidden rounded border  bg-slate-900/50",
-        intent === "danger" && "border-danger-500"
+        "w-full overflow-hidden rounded border border-[--card-border] bg-app",
+        intent === "danger"
+          ? "[--card-border:theme(borderColor.danger.hover)] [--card-footer-bg:theme(backgroundColor.danger.ui)]"
+          : "[--card-border:theme(borderColor.DEFAULT)]"
       )}
       {...props}
     />
@@ -28,7 +30,10 @@ export const CardFooter = ({
 }: HTMLProps<HTMLDivElement>) => {
   return (
     <div
-      className={clsx(className, "bg-slate-900/70 p-4 text-sm")}
+      className={clsx(
+        "border-t border-[--card-border] bg-[--card-footer-bg,theme(backgroundColor.subtle)] p-4 text-sm",
+        className
+      )}
       {...props}
     />
   );
@@ -53,7 +58,7 @@ export const CardSeparator = ({
     <div
       role="separator"
       aria-orientation="horizontal"
-      className={clsx(className, "border-t border-t-menu-border")}
+      className={clsx(className, "border-t")}
       {...props}
     />
   );

@@ -55,7 +55,7 @@ const ProjectTabs = ({
         {/* {hasTests && <TabLink to="tests">Tests</TabLink>} */}
         {hasWritePermission && <TabLink to="settings">Settings</TabLink>}
       </TabLinkList>
-      <hr className="border-t-border" />
+      <hr className="border-t" />
       <PaymentBanner account={account} />
       <TabLinkPanel state={tab} as={Main} tabId={tab.selectedId || null}>
         <Outlet context={{ hasWritePermission } as OutletContext} />

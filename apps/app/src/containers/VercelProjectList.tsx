@@ -39,7 +39,7 @@ export const VercelProjectList = (props: {
               <div className="text-sm font-semibold">{project.name}</div>
             </div>
             {project.link && (
-              <div className="text-xs text-slate-500">{project.link.type}</div>
+              <div className="text-xs text-low">{project.link.type}</div>
             )}
           </div>
           {project.project ? (

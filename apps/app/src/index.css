@@ -6,11 +6,10 @@
   html,
   body {
     font-family: theme("fontFamily.sans");
-    background-color: theme("colors.bg");
-    color: theme("colors.on");
+    background-color: theme("backgroundColor.app");
+    color: theme("textColor.DEFAULT");
     height: 100%;
     -webkit-font-smoothing: antialiased;
-    color-scheme: dark;
   }
 
   #root {
@@ -18,7 +17,8 @@
   }
 
   [data-backdrop] {
-    @apply bg-black/70;
+    @apply bg-app/60;
+    @apply backdrop-blur-sm;
   }
 }
 

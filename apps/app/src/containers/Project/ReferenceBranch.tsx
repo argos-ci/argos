@@ -93,13 +93,13 @@ export const ProjectReferenceBranch = (props: ProjectReferenceBranchProps) => {
             <FormCheckbox
               {...form.register("useDefaultBranch")}
               label="Use GitHub default branch"
-              className="my-4"
             />
             {!useDefaultBranch && (
               <FormTextInput
                 {...baselineBranchFieldProps}
                 ref={baselineBranchRef}
                 label="Custom reference branch"
+                className="mt-4"
               />
             )}
           </CardBody>

@@ -19,7 +19,7 @@ const Tab = forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
   return (
     <AriakitTab
       ref={ref}
-      className="cursor-default px-2 text-sm font-medium leading-10 text-tab-on transition hover:text-tab-hover-on aria-selected:text-tab-selected-on"
+      className="cursor-default px-2 text-sm font-medium leading-10 text-low transition hover:text aria-selected:text"
       {...props}
     />
   );
@@ -52,11 +52,11 @@ export const BuildSidebar = memo(
       { preventDefault: true }
     );
     return (
-      <div className="group/sidebar flex w-[295px] shrink-0 flex-col border-r border-r-border">
+      <div className="group/sidebar flex w-[295px] shrink-0 flex-col border-r">
         <TabList
           state={tab}
           aria-label="Build details"
-          className="flex shrink-0 border-b border-b-border px-2"
+          className="flex shrink-0 border-b px-2"
         >
           <HotkeyTooltip
             keys={hotkey.displayKeys}

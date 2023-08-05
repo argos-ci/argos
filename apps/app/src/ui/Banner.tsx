@@ -6,12 +6,9 @@ export interface BannerProps extends HTMLProps<HTMLDivElement> {
 }
 
 const colorClassNames = {
-  neutral:
-    "bg-gradient-to-r from-neutral-800 via-primary-900/80 to-neutral-800",
-  danger:
-    "bg-gradient-to-r from-neutral-800 via-red-900 to-neutral-800 text-red-200",
-  warning:
-    "bg-gradient-to-r from-neutral-800 via-warning-900 to-neutral-800 text-warning-200",
+  neutral: "bg-ui text",
+  danger: "bg-danger-ui text-danger-low",
+  warning: "bg-warning-ui text-warning-low",
 };
 
 export const Banner = forwardRef<HTMLDivElement, BannerProps>(

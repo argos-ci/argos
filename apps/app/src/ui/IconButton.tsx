@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 import { cloneElement, forwardRef } from "react";
 
 export type IconButtonVariant = "contained" | "outline";
-export type IconButtonColor = "primary" | "danger" | "success" | "neutral";
+export type IconButtonColor = "danger" | "neutral";
 
 export type IconButtonProps = Omit<
   AriakitButtonProps<"button">,
@@ -21,24 +21,15 @@ const colorClassNames: Record<
   Record<IconButtonColor, string>
 > = {
   contained: {
-    primary:
-      "hover:text-icon-button-primary-hover-on hover:border-icon-button-primary-hover-border text-icon-button-primary-hover-on bg-icon-button-primary-active-bg/70",
     neutral:
-      "hover:text-icon-button-neutral-hover-on hover:border-icon-button-neutral-hover-border text-icon-button-neutral-hover-on bg-icon-button-neutral-active-bg/70",
-    success:
-      "hover:text-icon-button-success-hover-on hover:border-icon-button-success-hover-border text-icon-button-success-hover-on bg-icon-button-success-active-bg/70",
-    danger:
-      "hover:text-icon-button-danger-hover-on hover:border-icon-button-danger-hover-border text-icon-button-danger-hover-on bg-icon-button-danger-active-bg/70",
+      "hover:border-hover hover:bg-ui text-low hover:text bg-ui/60 focus-visible:ring-default",
+    danger: "", // not used
   },
   outline: {
-    primary:
-      "hover:text-icon-button-primary-hover-on hover:border-icon-button-primary-hover-border aria-pressed:text-icon-button-primary-hover-on aria-pressed:bg-icon-button-primary-active-bg",
     neutral:
-      "hover:text-icon-button-neutral-hover-on hover:border-icon-button-neutral-hover-border aria-pressed:text-icon-button-neutral-hover-on aria-pressed:bg-icon-button-neutral-active-bg",
-    success:
-      "hover:text-icon-button-success-hover-on hover:border-icon-button-success-hover-border aria-pressed:text-icon-button-success-hover-on aria-pressed:bg-icon-button-success-active-bg",
+      "hover:border-hover text-low aria-pressed:bg-active aria-pressed:text focus-visible:ring-default",
     danger:
-      "hover:text-icon-button-danger-hover-on hover:border-icon-button-danger-hover-border aria-pressed:text-icon-button-danger-hover-on aria-pressed:bg-icon-button-danger-active-bg",
+      "hover:border-danger-hover text-danger-low aria-pressed:bg-danger-active focus-visible:ring-danger",
   },
 };
 
@@ -60,7 +51,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           /* Group */
           "group-[]/button-group:rounded-none group-[]/button-group:first:rounded-l-lg group-[]/button-group:last:rounded-r-lg",
           /* Base */
-          "flex h-8 cursor-default items-center gap-2 rounded-lg border border-transparent p-[7px] text-sm text-icon-button-on transition disabled:opacity-disabled [&>*]:h-4 [&>*]:w-4"
+          "flex h-8 cursor-default items-center gap-2 rounded-lg border border-transparent p-[7px] text-sm transition disabled:opacity-disabled [&>*]:h-4 [&>*]:w-4",
+          /* Focus */
+          "focus:outline-none focus-visible:ring-4"
         )}
         {...props}
       >

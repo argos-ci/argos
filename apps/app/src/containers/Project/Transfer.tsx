@@ -240,7 +240,7 @@ const ReviewStep = (props: ReviewStepProps) => {
               </div>
               <div className="flex items-center justify-center">
                 <ArrowRightCircleIcon
-                  className="text-on-light"
+                  className="text-low"
                   style={{ width: 64, height: 64 }}
                 />
               </div>

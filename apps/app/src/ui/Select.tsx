@@ -26,7 +26,7 @@ export const SelectSeparator = forwardRef<HTMLHRElement, SelectSeparatorProps>(
     return (
       <AriakitSelectSeparator
         ref={ref}
-        className="-mx-1 my-1 border-t border-t-menu-border"
+        className="-mx-1 my-1 border-t"
         {...props}
       />
     );
@@ -42,7 +42,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
         ref={ref}
         className={clsx(
           className,
-          "focus:shadow-outline flex appearance-none items-center gap-2 rounded border bg-slate-900 px-3 py-2 leading-tight text-on shadow invalid:border-red-800 focus:outline-none disabled:opacity-disabled"
+          "flex appearance-none items-center gap-2 rounded border bg-app px-3 py-2 leading-tight text invalid:border-danger hover:border-hover focus:border-active focus:outline-none disabled:opacity-disabled"
         )}
         {...props}
       />
@@ -66,7 +66,7 @@ export const SelectPopover = forwardRef<HTMLDivElement, SelectPopoverProps>(
         as="div"
         className={clsx(
           className,
-          "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border border-menu-border bg-menu-bg p-1 focus:outline-none"
+          "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border bg-subtle p-1 focus:outline-none"
         )}
         {...props}
       />
@@ -82,7 +82,7 @@ export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
       <AriakitSelectItem
         ref={ref}
         className={clsx(
-          "flex select-none items-center rounded px-3 py-1.5 text-sm text-menu-on transition hover:bg-menu-item-hover-bg hover:text-menu-hover-on focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-disabled"
+          "flex select-none items-center rounded px-3 py-1.5 text-sm text transition hover:bg-active focus:bg-active focus:outline-none aria-disabled:opacity-disabled"
         )}
         {...props}
       />
@@ -94,9 +94,7 @@ export const SelectText = (props: { children: React.ReactNode }) => {
   return (
     <>
       <SelectSeparator />
-      <div className="px-2 py-1.5 text-xs text-menu-on-title">
-        {props.children}
-      </div>
+      <div className="px-2 py-1.5 text-xs text-low">{props.children}</div>
     </>
   );
 };

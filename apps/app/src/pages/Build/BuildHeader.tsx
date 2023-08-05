@@ -42,7 +42,7 @@ const ProjectLink = memo(
       <Tooltip content="See all builds">
         <Link
           to={`/${accountSlug}/${projectName}/builds`}
-          className="text-xs leading-none text-on-light transition hover:brightness-125"
+          className="text-xs leading-none text-low transition hover:brightness-125"
         >
           {accountSlug}/{projectName}
         </Link>
@@ -87,7 +87,7 @@ export const BuildHeader = memo(
     const build = useFragment(BuildFragment, props.build);
     const project = useFragment(ProjectFragment, props.project);
     return (
-      <div className="flex flex-none flex-grow-0 items-center justify-between border-b border-b-border p-4">
+      <div className="flex flex-none flex-grow-0 items-center justify-between border-b p-4">
         <div className="flex h-[32px] items-center gap-4">
           <BrandLink
             accountSlug={props.accountSlug}

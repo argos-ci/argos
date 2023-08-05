@@ -51,7 +51,7 @@ export const RepositoryList = (props: {
               <ListRow key={repo.id} className="justify-between p-4">
                 <div>
                   {repo.name} •{" "}
-                  <Time date={repo.updated_at} className="text-on-light" />
+                  <Time date={repo.updated_at} className="text-low" />
                 </div>
                 <Button
                   onClick={() => {

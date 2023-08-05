@@ -21,7 +21,7 @@ export const BreadcrumbItem = (props: HTMLProps<HTMLLIElement>) => {
 export const BreadcrumbLink = (props: ComponentProps<typeof Link>) => {
   return (
     <Link
-      className="flex min-h-[28px] items-center gap-2 font-medium text-on-light transition hover:text-on aria-[current=page]:cursor-default aria-[current=page]:text-on"
+      className="flex min-h-[28px] items-center gap-2 font-medium text-low transition hover:text aria-[current=page]:cursor-default aria-[current=page]:text"
       {...props}
     />
   );
@@ -38,7 +38,7 @@ export const BreadcrumbItemIcon = (props: { children: React.ReactNode }) => {
 export const BreadcrumbSeparator = () => {
   return (
     <span
-      className="select-none text-2xl leading-none text-on-light"
+      className="select-none text-2xl leading-none text-low"
       role="separator"
       aria-orientation="vertical"
     >

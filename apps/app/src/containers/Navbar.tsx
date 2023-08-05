@@ -117,7 +117,7 @@ export const Navbar = () => {
           href="https://argos-ci.com/discord"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-medium text-on-light transition hover:text-on"
+          className="font-medium text-low transition hover:text"
         >
           Help & Community
         </a>
@@ -125,7 +125,7 @@ export const Navbar = () => {
           href="https://argos-ci.com/docs"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-medium text-on-light transition hover:text-on"
+          className="font-medium text-low transition hover:text"
         >
           Docs
         </a>

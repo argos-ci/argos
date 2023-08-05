@@ -20,10 +20,7 @@ export type DialogHeaderProps = {
 export const DialogHeader = forwardRef<HTMLDivElement, DialogHeaderProps>(
   ({ children }, ref) => {
     return (
-      <div
-        ref={ref}
-        className="flex items-center justify-between border-b border-b-dialog-border p-4"
-      >
+      <div ref={ref} className="flex items-center justify-between border-b p-4">
         {children}
       </div>
     );
@@ -39,7 +36,7 @@ export const DialogFooter = forwardRef<HTMLDivElement, DialogFooterProps>(
     return (
       <div
         ref={ref}
-        className="flex items-center justify-end gap-4 border-t border-t-dialog-border p-4"
+        className="flex items-center justify-end gap-4 border-t bg-subtle p-4"
       >
         {children}
       </div>
@@ -88,7 +85,7 @@ export type DialogTitleProps = {
 export const DialogTitle = forwardRef<HTMLHeadingElement, DialogTitleProps>(
   ({ children }, ref) => {
     return (
-      <h2 ref={ref} className="text-lg font-medium">
+      <h2 ref={ref} className="text-xl font-medium">
         {children}
       </h2>
     );
@@ -134,7 +131,7 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(
         ref={ref}
         className={clsx(
           className,
-          "bordered absolute left-[50%] top-[50%] z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-auto rounded-lg border border-dialog-border bg-dialog-bg text-sm shadow-md"
+          "bordered absolute left-[50%] top-[50%] z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-auto rounded-lg border bg-app text-sm shadow-lg"
         )}
         {...props}
       >

@@ -14,5 +14,5 @@ export const Headline = ({
   className,
   ...props
 }: HTMLProps<HTMLParagraphElement>) => {
-  return <p className={clsx(className, "text-sm text-on-light")} {...props} />;
+  return <p className={clsx(className, "text-sm text-low")} {...props} />;
 };

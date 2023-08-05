@@ -35,7 +35,7 @@ const ProjectRow = ({ project }: { project: Project }) => {
     <RouterLink
       key={project.id}
       to={`/${project.slug}`}
-      className="flex items-center justify-between rounded bg-slate-800/90 p-3 font-medium text-on-light transition hover:bg-slate-800 hover:text-on"
+      className="flex items-center justify-between rounded border bg-app p-3 font-medium hover:border-hover"
     >
       <div className="flex shrink-0 gap-1">
         <span className="flex gap-2">
@@ -46,7 +46,7 @@ const ProjectRow = ({ project }: { project: Project }) => {
           />
           {project.account.name}
         </span>
-        <span className="text-on-light">/</span>
+        <span className="text-low">/</span>
         <span>{project.name}</span>
       </div>
       <div className="">
@@ -81,9 +81,7 @@ export const ProjectList = (props: { projects: ProjectFragmentType[] }) => {
     return (
       <div className="flex flex-col items-center justify-center">
         <div className="mb-2 text-2xl font-medium">No projects yet!</div>
-        <div className="mb-4 text-on-light">
-          Start by creating a new project.
-        </div>
+        <div className="mb-4 text-low">Start by creating a new project.</div>
         <CreateProjectButton />
       </div>
     );
