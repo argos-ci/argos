@@ -1,3 +1,4 @@
+import { CheckIcon } from "@heroicons/react/24/outline";
 import {
   Select as AriakitSelect,
   SelectArrow as AriakitSelectArrow,
@@ -33,16 +34,22 @@ export const SelectSeparator = forwardRef<HTMLHRElement, SelectSeparatorProps>(
   }
 );
 
-export type SelectProps = AriakitSelectProps;
+export type SelectProps = AriakitSelectProps & {
+  size?: "sm" | "md";
+};
 
 export const Select = forwardRef<HTMLButtonElement, SelectProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, size = "md", ...props }, ref) => {
     return (
       <AriakitSelect
         ref={ref}
         className={clsx(
-          className,
-          "flex appearance-none items-center gap-2 rounded border bg-app px-3 py-2 leading-tight text invalid:border-danger hover:border-hover focus:border-active focus:outline-none disabled:opacity-disabled"
+          "flex appearance-none items-center gap-2 rounded border bg-app leading-tight text invalid:border-danger hover:border-hover focus:border-active focus:outline-none disabled:opacity-disabled",
+          {
+            md: "px-3 py-2 text-base",
+            sm: "px-2 py-1 text-sm",
+          }[size],
+          className
         )}
         {...props}
       />
@@ -77,15 +84,21 @@ export const SelectPopover = forwardRef<HTMLDivElement, SelectPopoverProps>(
 export type SelectItemProps = Omit<AriakitSelectItemProps, "className">;
 
 export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
-  (props, ref) => {
+  ({ children, ...props }, ref) => {
     return (
       <AriakitSelectItem
         ref={ref}
         className={clsx(
-          "flex select-none items-center rounded px-3 py-1.5 text-sm text transition hover:bg-active focus:bg-active focus:outline-none aria-disabled:opacity-disabled"
+          "group/item",
+          "flex select-none items-center gap-2 rounded px-3 py-1.5 text-sm text transition hover:bg-active focus:bg-active focus:outline-none aria-disabled:opacity-disabled"
         )}
         {...props}
-      />
+      >
+        <>
+          <CheckIcon className="h-4 w-4 text opacity-0 group-aria-selected/item:opacity-100" />
+          {children}
+        </>
+      </AriakitSelectItem>
     );
   }
 );

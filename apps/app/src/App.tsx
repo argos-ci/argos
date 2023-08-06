@@ -10,6 +10,7 @@ import { Layout, Main } from "@/containers/Layout";
 
 import { ApolloInitializer } from "./containers/Apollo";
 import { AuthProvider } from "./containers/Auth";
+import { ColorModeProvider } from "./containers/ColorMode";
 import { Account } from "./pages/Account";
 import { AccountNewProject } from "./pages/Account/NewProject";
 import { AccountProjects } from "./pages/Account/Projects";
@@ -135,13 +136,15 @@ export const App = () => {
   return (
     <>
       <Helmet defaultTitle="Argos" />
-      <AuthProvider>
-        <ApolloInitializer>
-          <TooltipProvider>
-            <RouterProvider router={router} />
-          </TooltipProvider>
-        </ApolloInitializer>
-      </AuthProvider>
+      <ColorModeProvider>
+        <AuthProvider>
+          <ApolloInitializer>
+            <TooltipProvider>
+              <RouterProvider router={router} />
+            </TooltipProvider>
+          </ApolloInitializer>
+        </AuthProvider>
+      </ColorModeProvider>
     </>
   );
 };

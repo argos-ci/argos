@@ -29,17 +29,22 @@ export const MenuSeparator = forwardRef<HTMLHRElement, MenuSeparatorProps>(
   }
 );
 
-export type MenuProps = Omit<AriakitMenuProps, "className">;
+export type MenuProps = AriakitMenuProps;
 
-export const Menu = forwardRef<HTMLDivElement, MenuProps>((props, ref) => {
-  return (
-    <AriakitMenu
-      ref={ref}
-      className="z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border bg-subtle p-1 focus:outline-none"
-      {...props}
-    />
-  );
-});
+export const Menu = forwardRef<HTMLDivElement, MenuProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <AriakitMenu
+        ref={ref}
+        className={clsx(
+          "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border bg-subtle p-1 focus:outline-none",
+          className
+        )}
+        {...props}
+      />
+    );
+  }
+);
 
 type MenuItemVariant = "default" | "danger";
 

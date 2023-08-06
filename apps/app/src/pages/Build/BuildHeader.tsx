@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
-import { GitHubLoginButton } from "@/containers/GitHub";
+import { NavUserControl } from "@/containers/NavUserControl";
 import { ReviewButton } from "@/containers/ReviewButton";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BrandShield } from "@/ui/BrandShield";
@@ -54,11 +54,8 @@ const ProjectLink = memo(
 const BuildReviewButton = memo(
   (props: { project: ComponentProps<typeof ReviewButton>["project"] }) => {
     const loggedIn = useIsLoggedIn();
-    return loggedIn ? (
-      <ReviewButton project={props.project} />
-    ) : (
-      <GitHubLoginButton />
-    );
+    if (!loggedIn) return null;
+    return <ReviewButton project={props.project} />;
   }
 );
 
@@ -107,7 +104,10 @@ export const BuildHeader = memo(
             <BuildStatusChip build={build} project={project} />
           ) : null}
         </div>
-        {project && <BuildReviewButton project={project} />}
+        <div className="flex gap-4">
+          {project && <BuildReviewButton project={project} />}
+          <NavUserControl />
+        </div>
       </div>
     );
   }
