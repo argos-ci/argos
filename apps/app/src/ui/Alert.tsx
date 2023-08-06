@@ -20,9 +20,7 @@ export const AlertText = ({
   className,
   ...props
 }: HTMLProps<HTMLHeadingElement>) => {
-  return (
-    <p className={clsx(className, "my-2 text-sm text-on-light")} {...props} />
-  );
+  return <p className={clsx(className, "my-2 text-sm text-low")} {...props} />;
 };
 
 export const AlertActions = ({

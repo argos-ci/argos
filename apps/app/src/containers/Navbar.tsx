@@ -1,104 +1,10 @@
-import {
-  ArrowLeftOnRectangleIcon,
-  Cog6ToothIcon,
-  PlusCircleIcon,
-  UserPlusIcon,
-} from "@heroicons/react/24/outline";
 import { Link as RouterLink } from "react-router-dom";
 
-import {
-  useAuthTokenPayload,
-  useIsLoggedIn,
-  useLogout,
-} from "@/containers/Auth";
 import { BrandLogo } from "@/ui/BrandLogo";
-import {
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItemIcon,
-  MenuSeparator,
-  useMenuState,
-} from "@/ui/Menu";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { GitHubLoginButton } from "./GitHub";
-import { ImageAvatar } from "./ImageAvatar";
+import { NavUserControl } from "./NavUserControl";
 import { SubNavbar } from "./SubNavbar";
-
-const UserMenu = () => {
-  const authPayload = useAuthTokenPayload();
-  const logout = useLogout();
-  const menu = useMenuState({
-    placement: "bottom-end",
-    gutter: 4,
-  });
-
-  if (!authPayload) return null;
-
-  return (
-    <>
-      <MenuButton
-        state={menu}
-        className="rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
-      >
-        <ImageAvatar
-          url={`https://github.com/${authPayload.account.slug}.png`}
-        />
-      </MenuButton>
-      <Menu aria-label="User settings" state={menu}>
-        <MenuItem state={menu} pointer>
-          {(menuItemProps) => (
-            <RouterLink
-              {...menuItemProps}
-              to={`/${authPayload.account.slug}/new`}
-            >
-              <MenuItemIcon>
-                <PlusCircleIcon />
-              </MenuItemIcon>
-              New Project
-            </RouterLink>
-          )}
-        </MenuItem>
-        <MenuItem state={menu} pointer>
-          {(menuItemProps) => (
-            <RouterLink {...menuItemProps} to={`/teams/new`}>
-              <MenuItemIcon>
-                <UserPlusIcon />
-              </MenuItemIcon>
-              New Team
-            </RouterLink>
-          )}
-        </MenuItem>
-        <MenuItem state={menu} pointer>
-          {(menuItemProps) => (
-            <RouterLink
-              {...menuItemProps}
-              to={`/${authPayload.account.slug}/settings`}
-            >
-              <MenuItemIcon>
-                <Cog6ToothIcon />
-              </MenuItemIcon>
-              Personal Settings
-            </RouterLink>
-          )}
-        </MenuItem>
-        <MenuSeparator />
-        <MenuItem state={menu} pointer onClick={() => logout()}>
-          <MenuItemIcon>
-            <ArrowLeftOnRectangleIcon />
-          </MenuItemIcon>
-          Logout
-        </MenuItem>
-      </Menu>
-    </>
-  );
-};
-
-const UserControl = () => {
-  const loggedIn = useIsLoggedIn();
-  return loggedIn ? <UserMenu /> : <GitHubLoginButton />;
-};
 
 export const Navbar = () => {
   return (
@@ -117,7 +23,7 @@ export const Navbar = () => {
           href="https://argos-ci.com/discord"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-medium text-on-light transition hover:text-on"
+          className="font-medium text-low transition hover:text"
         >
           Help & Community
         </a>
@@ -125,11 +31,11 @@ export const Navbar = () => {
           href="https://argos-ci.com/docs"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-medium text-on-light transition hover:text-on"
+          className="font-medium text-low transition hover:text"
         >
           Docs
         </a>
-        <UserControl />
+        <NavUserControl />
       </div>
     </nav>
   );

@@ -47,7 +47,7 @@ type BuildFragmentDocument = DocumentType<typeof BuildFragment>;
 const DownloadScreenshotButton = memo(
   (props: { url: string; tooltip: string }) => {
     return (
-      <Tooltip content={props.tooltip}>
+      <Tooltip side="left" content={props.tooltip}>
         <IconButton variant="contained" asChild>
           <a
             href={`${props.url}?tr=orig-true&ik-attachment=true`}
@@ -74,7 +74,7 @@ const BuildScreenshotHeader = memo(
     date: string;
   }) => {
     return (
-      <div className="flex shrink-0 flex-col items-center gap-0.5 text-on-light">
+      <div className="flex shrink-0 flex-col items-center gap-0.5 text-low">
         <div className="flex max-w-full items-center gap-1">
           <div className="shrink-0 select-none text-xs font-medium">
             {label} from
@@ -104,12 +104,12 @@ const MissingScreenshotInfo = memo(
   }) => {
     return (
       <div className="w-full">
-        <div className="text-s flex flex-col items-center gap-4 rounded bg-slate-900 p-8 text-center">
+        <div className="text-s flex flex-col items-center gap-4 rounded border bg-app p-8 text-center">
           <div className="flex flex-col items-center gap-2">
             <div className="[&>*]:h-10 [&>*]:w-10">{icon}</div>
             <div className="text-base font-medium">{title}</div>
           </div>
-          <p className="text-sm text-on-light">{description}</p>
+          <p className="text-sm text-low">{description}</p>
         </div>
       </div>
     );
@@ -409,7 +409,7 @@ export const BuildDetail = (props: {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-4"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-subtle pb-4"
     >
       {activeDiff ? (
         <ZoomerSyncProvider id={activeDiff.id}>
@@ -428,7 +428,7 @@ export const BuildDetail = (props: {
         </ZoomerSyncProvider>
       ) : checkIsBuildEmpty(build) ? (
         <div className="flex h-full min-h-0 flex-1 items-center justify-center">
-          <div className="m-4 max-w-2xl rounded-lg border border-info-600 p-8 text-center text-info-500">
+          <div className="m-4 max-w-2xl rounded-lg border border-info bg-info-app p-8 text-center text-info-low">
             <div className="mb-2 text-lg font-semibold">
               No screenshot found
             </div>

@@ -1,93 +1,137 @@
 /* eslint-env node */
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const colors = require("tailwindcss/colors");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  darkMode: "class",
   theme: {
     extend: {
-      colors: {
-        // Color classes
-        primary: colors.violet,
-        info: colors.sky,
-        warning: colors.orange,
-        danger: colors.red,
-        success: colors.green,
-        neutral: colors.gray,
-        pending: colors.amber,
-
-        // Global colors
-        bg: colors.black,
-        on: colors.slate[100],
-        "on-light": colors.slate[400],
-        "on-danger": colors.red[400],
-        border: colors.slate[700],
-        "border-hover": colors.slate[600],
-        text: colors.slate[50],
-
-        // Components
-        tooltip: {
-          bg: colors.slate[900],
-          border: colors.slate[800],
-          on: colors.slate[50],
+      backgroundColor: {
+        app: "hsl(var(--mauve1) / <alpha-value>)",
+        subtle: "hsl(var(--mauve2) / <alpha-value>)",
+        ui: "hsl(var(--mauve3) / <alpha-value>)",
+        hover: "hsl(var(--mauve4) / <alpha-value>)",
+        active: "hsl(var(--mauve5) / <alpha-value>)",
+        solid: {
+          DEFAULT: "hsl(var(--mauve9) / <alpha-value>)",
+          hover: "hsl(var(--mauve10) / <alpha-value>)",
+          active: "hsl(var(--mauve11) / <alpha-value>)",
         },
-
-        dialog: {
-          bg: colors.slate[900],
-          border: colors.slate[800],
-          on: colors.slate[50],
-        },
-
-        code: {
-          bg: colors.slate[700],
-          on: colors.slate[50],
-        },
-
-        "icon-button": {
-          on: colors.slate[400],
-          primary: {
-            "hover-border": colors.purple[700],
-            "hover-on": colors.purple[300],
-            "active-bg": colors.purple[800],
-          },
-          neutral: {
-            "hover-border": colors.slate[700],
-            "hover-on": colors.slate[300],
-            "active-bg": colors.slate[800],
-          },
-          danger: {
-            "hover-border": colors.red[700],
-            "hover-on": colors.red[300],
-            "active-bg": colors.red[900],
-          },
-          success: {
-            "hover-border": colors.green[700],
-            "hover-on": colors.green[300],
-            "active-bg": colors.green[900],
+        primary: {
+          app: "hsl(var(--violet1) / <alpha-value>)",
+          ui: "hsl(var(--violet3) / <alpha-value>)",
+          active: "hsl(var(--violet5) / <alpha-value>)",
+          solid: {
+            DEFAULT: "hsl(var(--violet9) / <alpha-value>)",
+            hover: "hsl(var(--violet10) / <alpha-value>)",
+            active: "hsl(var(--violet11) / <alpha-value>)",
           },
         },
-
-        tab: {
-          on: colors.slate[400],
-          "hover-on": colors.slate[200],
-          "selected-on": colors.slate[50],
+        danger: {
+          app: "hsl(var(--tomato1) / <alpha-value>)",
+          subtle: "hsl(var(--tomato2) / <alpha-value>)",
+          ui: "hsl(var(--tomato3) / <alpha-value>)",
+          hover: "hsl(var(--tomato4) / <alpha-value>)",
+          active: "hsl(var(--tomato5) / <alpha-value>)",
+          solid: {
+            DEFAULT: "hsl(var(--tomato9) / <alpha-value>)",
+            hover: "hsl(var(--tomato10) / <alpha-value>)",
+            active: "hsl(var(--tomato11) / <alpha-value>)",
+          },
         },
-
-        menu: {
-          bg: colors.slate[900],
-          border: colors.slate[600],
-          on: colors.slate[300],
-          "on-title": colors.slate[400],
-          "hover-on": colors.slate[50],
-          danger: {
-            on: colors.red[500],
-            "hover-on": colors.red[500],
+        warning: {
+          app: "hsl(var(--amber1) / <alpha-value>)",
+          ui: "hsl(var(--amber3) / <alpha-value>)",
+          active: "hsl(var(--amber5) / <alpha-value>)",
+          solid: {
+            DEFAULT: "hsl(var(--amber9) / <alpha-value>)",
+            hover: "hsl(var(--amber10) / <alpha-value>)",
+            active: "hsl(var(--amber11) / <alpha-value>)",
           },
-          item: {
-            "hover-bg": colors.slate[700],
-            "selected-bg": colors.slate[800],
-          },
+        },
+        info: {
+          app: "hsl(var(--blue1) / <alpha-value>)",
+        },
+        pending: {
+          app: "hsl(var(--amber1) / <alpha-value>)",
+        },
+        success: {
+          app: "hsl(var(--grass1) / <alpha-value>)",
+        },
+      },
+      textColor: {
+        DEFAULT: "hsl(var(--mauve12) / <alpha-value>)",
+        low: "hsl(var(--mauve11) / <alpha-value>)",
+        primary: {
+          DEFAULT: "hsl(var(--violet12) / <alpha-value>)",
+          low: "hsl(var(--violet11) / <alpha-value>)",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--tomato12) / <alpha-value>)",
+          low: "hsl(var(--tomato11) / <alpha-value>)",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--amber12) / <alpha-value>)",
+          low: "hsl(var(--amber11) / <alpha-value>)",
+        },
+        info: {
+          DEFAULT: "hsl(var(--blue12) / <alpha-value>)",
+          low: "hsl(var(--blue11) / <alpha-value>)",
+        },
+        pending: {
+          DEFAULT: "hsl(var(--amber12) / <alpha-value>)",
+          low: "hsl(var(--amber11) / <alpha-value>)",
+        },
+        success: {
+          DEFAULT: "hsl(var(--grass12) / <alpha-value>)",
+          low: "hsl(var(--grass11) / <alpha-value>)",
+        },
+      },
+      ringColor: {
+        DEFAULT: "hsl(var(--mauve6) / <alpha-value>)",
+        default: "hsl(var(--mauve6) / <alpha-value>)",
+        hover: "hsl(var(--mauve8) / <alpha-value>)",
+        active: "hsl(var(--mauve9) / <alpha-value>)",
+        primary: {
+          DEFAULT: "hsl(var(--violet6) / <alpha-value>)",
+          ui: "hsl(var(--violet7) / <alpha-value>)",
+          hover: "hsl(var(--violet8) / <alpha-value>)",
+          active: "hsl(var(--violet9) / <alpha-value>)",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--tomato6) / <alpha-value>)",
+          hover: "hsl(var(--tomato8) / <alpha-value>)",
+        },
+      },
+      borderColor: {
+        DEFAULT: "hsl(var(--mauve6) / <alpha-value>)",
+        hover: "hsl(var(--mauve8) / <alpha-value>)",
+        active: "hsl(var(--mauve9) / <alpha-value>)",
+        primary: {
+          DEFAULT: "hsl(var(--violet6) / <alpha-value>)",
+          ui: "hsl(var(--violet7) / <alpha-value>)",
+          hover: "hsl(var(--violet8) / <alpha-value>)",
+          active: "hsl(var(--violet9) / <alpha-value>)",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--tomato6) / <alpha-value>)",
+          hover: "hsl(var(--tomato8) / <alpha-value>)",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--amber6) / <alpha-value>)",
+          hover: "hsl(var(--amber8) / <alpha-value>)",
+        },
+        info: {
+          DEFAULT: "hsl(var(--blue6) / <alpha-value>)",
+          hover: "hsl(var(--blue8) / <alpha-value>)",
+        },
+        pending: {
+          DEFAULT: "hsl(var(--amber6) / <alpha-value>)",
+          hover: "hsl(var(--amber8) / <alpha-value>)",
+        },
+        success: {
+          DEFAULT: "hsl(var(--grass6) / <alpha-value>)",
+          hover: "hsl(var(--grass8) / <alpha-value>)",
         },
       },
       fontSize: {
@@ -99,7 +143,7 @@ module.exports = {
         ],
       },
       opacity: {
-        disabled: ".38",
+        disabled: 0.38,
       },
       fontFamily: {
         sans: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif',
@@ -110,10 +154,7 @@ module.exports = {
       aria: {
         invalid: 'invalid="true"',
       },
-      borderColor: {
-        DEFAULT: colors.slate[700],
-      },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("windy-radix-palette"), require("tailwindcss-animate")],
 };

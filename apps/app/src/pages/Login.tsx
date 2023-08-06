@@ -3,7 +3,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginButtons } from "@/containers/LoginButtons";
-import { BrandLogoVertical } from "@/ui/BrandLogoVertical";
+import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
 
 export const Login = () => {
@@ -23,11 +23,9 @@ export const Login = () => {
       </Helmet>
 
       <Container className="mt-12 flex flex-col items-center justify-center px-4">
-        <BrandLogoVertical className="w-28 md:w-60" />
+        <BrandShield className="mb-6 w-28" />
 
-        <p className="my-8 text-lg font-medium md:text-xl">
-          Ship flawless apps with Argos Visual Testing
-        </p>
+        <div className="mb-10 text-3xl">Login to Argos</div>
 
         <LoginButtons redirect={redirect} />
       </Container>

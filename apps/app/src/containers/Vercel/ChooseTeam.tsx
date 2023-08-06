@@ -39,7 +39,7 @@ export const ChooseTeam = (props: ChooseTeamProps) => {
 
   return (
     <div>
-      <p className="mb-6 text-center text-on-light">
+      <p className="mb-6 text-center text-low">
         Select an existing Argos team to link your Vercel's one:
       </p>
       <List style={{ maxHeight: 400 }} className="w-full overflow-auto">
@@ -55,7 +55,7 @@ export const ChooseTeam = (props: ChooseTeamProps) => {
                 <div className="flex items-center gap-2">
                   <div className="text-sm font-semibold">{team.name}</div>
                 </div>
-                <div className="text-xs text-slate-500">{team.slug}</div>
+                <div className="text-xs text-low">{team.slug}</div>
               </div>
               <div>
                 <Button
@@ -73,7 +73,7 @@ export const ChooseTeam = (props: ChooseTeamProps) => {
           );
         })}
       </List>
-      <p className="my-6 text-center text-on-light">or create a new Team:</p>
+      <p className="my-6 text-center text-low">or create a new Team:</p>
       <TeamNewForm
         defaultTeamName=""
         successUrl={(team) =>

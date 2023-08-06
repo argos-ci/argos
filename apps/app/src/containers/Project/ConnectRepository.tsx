@@ -93,7 +93,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
         if (!me.ghInstallations.edges.length) {
           return (
             <Card className="flex h-full flex-col items-center justify-center py-4">
-              <div className="mb-4 text-on-light">
+              <div className="mb-4 text-low">
                 Install GitHub application to import an existing project from a
                 Git repository.
               </div>

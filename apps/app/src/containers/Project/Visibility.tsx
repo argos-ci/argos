@@ -96,7 +96,7 @@ export const ProjectVisibility = (props: ProjectVisibilityProps) => {
                 label={
                   <>
                     Use GitHub visibility settings{" "}
-                    <span className="text-on-light">
+                    <span className="text-low">
                       {project.ghRepository
                         ? `(currently ${
                             project.ghRepository.private ? "private" : "public"

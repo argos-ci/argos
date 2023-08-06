@@ -215,9 +215,7 @@ const VariationsCell = ({
       >
         <div>
           <span className="mr-2 text-lg font-bold">{totalChanges}</span> /
-          <span className="ml-0.5 font-medium text-on-light">
-            {totalBuilds}
-          </span>
+          <span className="ml-0.5 font-medium text-low">{totalBuilds}</span>
         </div>
       </Tooltip>
     </Cell>

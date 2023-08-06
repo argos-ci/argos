@@ -1,3 +1,4 @@
+import { CheckIcon } from "@heroicons/react/24/outline";
 import {
   Select as AriakitSelect,
   SelectArrow as AriakitSelectArrow,
@@ -26,23 +27,29 @@ export const SelectSeparator = forwardRef<HTMLHRElement, SelectSeparatorProps>(
     return (
       <AriakitSelectSeparator
         ref={ref}
-        className="-mx-1 my-1 border-t border-t-menu-border"
+        className="-mx-1 my-1 border-t"
         {...props}
       />
     );
   }
 );
 
-export type SelectProps = AriakitSelectProps;
+export type SelectProps = AriakitSelectProps & {
+  size?: "sm" | "md";
+};
 
 export const Select = forwardRef<HTMLButtonElement, SelectProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, size = "md", ...props }, ref) => {
     return (
       <AriakitSelect
         ref={ref}
         className={clsx(
-          className,
-          "focus:shadow-outline flex appearance-none items-center gap-2 rounded border bg-slate-900 px-3 py-2 leading-tight text-on shadow invalid:border-red-800 focus:outline-none disabled:opacity-disabled"
+          "flex appearance-none items-center gap-2 rounded border bg-app leading-tight text invalid:border-danger hover:border-hover focus:border-active focus:outline-none disabled:opacity-disabled",
+          {
+            md: "px-3 py-2 text-base",
+            sm: "px-2 py-1 text-sm",
+          }[size],
+          className
         )}
         {...props}
       />
@@ -66,7 +73,7 @@ export const SelectPopover = forwardRef<HTMLDivElement, SelectPopoverProps>(
         as="div"
         className={clsx(
           className,
-          "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border border-menu-border bg-menu-bg p-1 focus:outline-none"
+          "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border bg-subtle p-1 focus:outline-none"
         )}
         {...props}
       />
@@ -77,15 +84,21 @@ export const SelectPopover = forwardRef<HTMLDivElement, SelectPopoverProps>(
 export type SelectItemProps = Omit<AriakitSelectItemProps, "className">;
 
 export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
-  (props, ref) => {
+  ({ children, ...props }, ref) => {
     return (
       <AriakitSelectItem
         ref={ref}
         className={clsx(
-          "flex select-none items-center rounded px-3 py-1.5 text-sm text-menu-on transition hover:bg-menu-item-hover-bg hover:text-menu-hover-on focus:bg-menu-item-hover-bg focus:outline-none aria-disabled:opacity-disabled"
+          "group/item",
+          "flex select-none items-center gap-2 rounded px-3 py-1.5 text-sm text transition hover:bg-active focus:bg-active focus:outline-none aria-disabled:opacity-disabled"
         )}
         {...props}
-      />
+      >
+        <>
+          <CheckIcon className="h-4 w-4 text opacity-0 group-aria-selected/item:opacity-100" />
+          {children}
+        </>
+      </AriakitSelectItem>
     );
   }
 );
@@ -94,9 +107,7 @@ export const SelectText = (props: { children: React.ReactNode }) => {
   return (
     <>
       <SelectSeparator />
-      <div className="px-2 py-1.5 text-xs text-menu-on-title">
-        {props.children}
-      </div>
+      <div className="px-2 py-1.5 text-xs text-low">{props.children}</div>
     </>
   );
 };

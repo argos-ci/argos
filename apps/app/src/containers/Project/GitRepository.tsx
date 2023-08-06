@@ -149,19 +149,17 @@ const GithubOptionsForm = ({ project }: GithubOptionsFormProps) => {
   };
 
   return (
-    <>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <div className="mx-4 mb-4 px-4 pb-4">
-            <FormCheckbox
-              {...form.register("prCommentEnabled")}
-              label="Enable pull request comments"
-            />
-          </div>
-          <FormCardFooter />
-        </Form>
-      </FormProvider>
-    </>
+    <FormProvider {...form}>
+      <Form onSubmit={onSubmit}>
+        <div className="mx-4 mb-4">
+          <FormCheckbox
+            {...form.register("prCommentEnabled")}
+            label="Enable pull request comments"
+          />
+        </div>
+        <FormCardFooter />
+      </Form>
+    </FormProvider>
   );
 };
 
@@ -179,11 +177,11 @@ export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
         </CardParagraph>
         {project.ghRepository ? (
           <div>
-            <div className="flex items-center gap-4 rounded border p-4">
+            <div className="flex items-center gap-2 rounded border p-4">
               <MarkGithubIcon size={24} className="shrink-0" />
               <div className="flex-1 font-semibold">
                 <a
-                  className="text-white no-underline hover:underline"
+                  className="text no-underline hover:underline"
                   href={project.ghRepository.url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -214,7 +212,6 @@ export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
           </div>
         )}
       </CardBody>
-
       {project.ghRepository ? <GithubOptionsForm project={project} /> : null}
     </Card>
   );

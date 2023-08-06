@@ -370,7 +370,7 @@ const ConsumptionBlock = ({
             {screenshotsSum.toLocaleString()}{" "}
             {screenshotsSum > 1 ? "screenshots" : "screenshot"}
           </div>
-          <div className="text-on-light">
+          <div className="text-low">
             / {max === Infinity ? "Unlimited" : max.toLocaleString()}
           </div>
         </div>
@@ -380,7 +380,7 @@ const ConsumptionBlock = ({
       <Disclosure
         state={disclosure}
         className={clsx(
-          "text-sm text-on-light transition hover:text-on focus:outline-none",
+          "text-sm text-low transition hover:text focus:outline-none",
           projects.length === 0 ? "hidden" : ""
         )}
       >
@@ -391,12 +391,12 @@ const ConsumptionBlock = ({
       <DisclosureContent
         state={disclosure}
         as="ul"
-        className="mt-2 text-sm text-on-light"
+        className="mt-2 text-sm text-low"
       >
         {projects.map((project) => (
           <li
             key={project.id}
-            className="flex items-center justify-between border-b border-b-border px-1 py-1 last:border-b-0"
+            className="flex items-center justify-between border-b px-1 py-1 last:border-b-0"
           >
             <span>{project.name}</span>
             <span className="tabular-nums">
@@ -455,7 +455,7 @@ const groupByPrivacy = (projects: Project[]) => {
 };
 
 const Paragraph = ({ children }: { children: ReactNode }) => (
-  <p className="mt-2 text-on-light">{children}</p>
+  <p className="mt-2 text-low">{children}</p>
 );
 
 const ManageSubscriptionButton = ({

@@ -15,6 +15,8 @@ export type TooltipProps = {
   content: React.ReactNode;
   children: React.ReactNode;
   variant?: TooltipVariant;
+  side?: TooltipPrimitive.TooltipContentProps["side"];
+  align?: TooltipPrimitive.TooltipContentProps["align"];
 };
 
 export const TooltipProvider = TooltipPrimitive.Provider;
@@ -23,6 +25,8 @@ export const Tooltip = ({
   children,
   variant = "default",
   content,
+  align,
+  side,
 }: TooltipProps) => {
   const variantClassName = variantClassNames[variant];
   if (!variantClassName) {
@@ -35,8 +39,10 @@ export const Tooltip = ({
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content
           sideOffset={4}
+          align={align}
+          side={side}
           className={clsx(
-            "z-50 overflow-hidden rounded-md border border-tooltip-border bg-tooltip-bg text-tooltip-on shadow-md",
+            "z-50 overflow-hidden rounded-md border bg-subtle text shadow-md",
             "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
             variantClassName
           )}

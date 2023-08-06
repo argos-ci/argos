@@ -4,7 +4,7 @@ import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
 import { Children, cloneElement, forwardRef, memo } from "react";
 
-export type ButtonColor = "primary" | "danger" | "neutral" | "white";
+export type ButtonColor = "primary" | "danger" | "neutral";
 export type ButtonVariant = "contained" | "outline";
 export type ButtonSize = "base" | "small" | "large";
 
@@ -17,23 +17,19 @@ export type ButtonProps = AriakitButtonProps<"button"> & {
 const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
   contained: {
     primary:
-      "text-white border-transparent bg-primary-600 [&:not([aria-disabled])]:hover:bg-primary-700 [&:not([aria-disabled])]:active:bg-primary-800 aria-expanded:bg-primary-800",
+      "focus-visible:ring-primary text-white border-transparent bg-primary-solid [&:not([aria-disabled])]:hover:bg-primary-solid-hover [&:not([aria-disabled])]:active:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
     danger:
-      "text-white border-transparent bg-danger-600 [&:not([aria-disabled])]:hover:bg-danger-700 [&:not([aria-disabled])]:active:bg-danger-800 aria-expanded:bg-danger-800",
+      "focus-visible:ring-danger text-white border-transparent bg-danger-solid [&:not([aria-disabled])]:hover:bg-danger-solid-hover [&:not([aria-disabled])]:active:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
     neutral:
-      "text-white border-transparent bg-neutral-600 [&:not([aria-disabled])]:hover:bg-neutral-700 [&:not([aria-disabled])]:active:bg-neutral-800 aria-expanded:bg-neutral-800",
-    white:
-      "text-neutral-800 border-transparent bg-white [&:not([aria-disabled])]:hover:bg-neutral-700 [&:not([aria-disabled])]:hover:text-white [&:not([aria-disabled])]:active:bg-neutral-800 [&:not([aria-disabled])]:active:bg-neutral-800:text-white aria-expanded:bg-neutral-800 aria-expanded:text-white",
+      "focus-visible:ring-default text bg-subtle [&:not([aria-disabled])]:hover:bg-app [&:not([aria-disabled])]:active:bg-app aria-expanded:bg-app",
   },
   outline: {
     primary:
-      "text-primary-300 border-primary-300 bg-transparent [&:not([aria-disabled])]:hover:bg-primary-800",
+      "focus-visible:ring-primary text-primary border-primary bg-transparent [&:not([aria-disabled])]:hover:bg-primary-hover [&:not([aria-disabled])]:hover:border-primary-hover",
     danger:
-      "text-danger-300 border-danger-300 bg-transparent [&:not([aria-disabled])]:hover:bg-danger-800",
+      "focus-visible:ring-danger text-danger border-danger bg-transparent [&:not([aria-disabled])]:hover:bg-danger-hover [&:not([aria-disabled])]:hover:border-danger-hover",
     neutral:
-      "text-neutral-300 border-neutral-600 bg-transparent [&:not([aria-disabled])]:hover:bg-neutral-800",
-    white:
-      "text-white border-white bg-transparent [&:not([aria-disabled])]:hover:bg-white [&:not([aria-disabled])]:hover:text-neutral-800",
+      "focus-visible:ring-default text border bg-transparent [&:not([aria-disabled])]:hover:bg-hover [&:not([aria-disabled])]:hover:border-hover",
   },
 };
 
@@ -75,6 +71,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           className,
           variantClassName,
           sizeClassName,
+          "focus:outline-none focus-visible:ring-4",
           "align-center inline-flex whitespace-nowrap border font-sans font-medium leading-none transition aria-disabled:opacity-disabled [&:is(button)]:cursor-default"
         )}
         {...props}

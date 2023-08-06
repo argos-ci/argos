@@ -17,13 +17,13 @@ export interface ChipProps extends React.ComponentProps<"div"> {
 }
 
 const colorClassNames: Record<ChipColor, string> = {
-  primary: "text-primary-300 border-primary-900",
-  info: "text-info-300 border-info-900",
-  success: "text-success-300 border-success-900",
-  neutral: "text-neutral-300 border-neutral-600",
-  pending: "text-pending-300 border-pending-900",
-  danger: "text-danger-300 border-danger-900",
-  warning: "text-warning-300 border-warning-900",
+  primary: "text-primary-low border-primary bg-primary-app",
+  info: "text-info-low border-info bg-info-app",
+  success: "text-success-low border-success bg-success-app",
+  neutral: "text-low border bg-app",
+  pending: "text-pending-low border-pending bg-pending-app",
+  danger: "text-danger-low border-danger bg-danger-app",
+  warning: "text-warning-low border-warning bg-warning-app",
 };
 
 export const Chip = forwardRef<HTMLDivElement, ChipProps>(

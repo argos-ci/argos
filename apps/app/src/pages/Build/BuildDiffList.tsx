@@ -91,18 +91,18 @@ const ListHeader = ({
       as="div"
       className={clsx(
         borderB,
-        "z-10 flex cursor-default select-none items-center border-t border-t-border bg-black pr-4 hover:bg-slate-900"
+        "border-t-border z-10 flex cursor-default select-none items-center border-t bg-app pr-4 hover:bg-subtle"
       )}
       style={style}
       onClick={onClick}
     >
       <ChevronDownIcon
         className={clsx(
-          "m-0.5 h-3 w-3 shrink-0 transform text-on-light opacity-0 transition group-hover/sidebar:opacity-100",
+          "m-0.5 h-3 w-3 shrink-0 transform text-low opacity-0 transition group-hover/sidebar:opacity-100",
           !item.expanded && "rotate-[-90deg]"
         )}
       />
-      <div className="flex-1 text-sm font-medium text-on">
+      <div className="flex-1 text-sm font-medium text">
         {getGroupLabel(item.name)}
       </div>
       <Badge className="shrink-0">
@@ -222,9 +222,9 @@ const ListItem = ({
   const pt = item.first ? "pt-4" : "pt-2";
   const pb = item.last ? "pb-4" : "pb-2";
   const ring = active
-    ? "ring-1 ring-inset ring-sky-500"
+    ? "ring-1 ring-inset ring-primary-active"
     : item.diff
-    ? "ring-1 ring-inset ring-transparent group-hover/item:ring-sky-800"
+    ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
     : "";
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -256,12 +256,12 @@ const ListItem = ({
         }
       }}
     >
-      <div className="relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-slate-800/50">
+      <div className="relative flex h-full items-center justify-center overflow-hidden rounded-lg">
         {item.diff ? (
           <>
             <FlakyFlag test={item?.diff?.test ?? null} />
             <DiffImage diff={item.diff} />{" "}
-            <div className="absolute bottom-0 left-0 right-0 z-10 truncate bg-gradient-to-b from-transparent to-black/70 px-2 pb-2 pt-4 text-xxs font-medium opacity-0 transition group-hover/sidebar:opacity-100">
+            <div className="absolute bottom-0 left-0 right-0 z-10 truncate bg-app/70 bg-gradient-to-b px-2 py-1.5 text-xxs font-medium opacity-0 transition group-hover/sidebar:opacity-100">
               {item.diff.name}
             </div>
           </>
@@ -310,7 +310,7 @@ const useInViewportIndices = (containerRef: React.RefObject<HTMLElement>) => {
 
 const MAX_HEIGHT = 400;
 const MIN_HEIGHT = 100;
-const MAX_WIDTH = 247;
+const MAX_WIDTH = 262;
 const DEFAULT_IMAGE_HEIGHT = 300;
 
 const constraint = ({ width, height }: { width: number; height: number }) => {
@@ -503,7 +503,7 @@ const InternalBuildDiffList = memo(() => {
     <>
       {stats && (
         <BuildStatsIndicator
-          className="flex shrink-0 items-center border-b border-b-border px-2"
+          className="border-b-border flex shrink-0 items-center border-b px-2"
           stats={stats}
           onClickGroup={openGroup}
         />

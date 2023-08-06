@@ -42,7 +42,7 @@ export const TabLink = forwardRef<HTMLAnchorElement, TabLinkProps>(
         as="a"
         className={clsx(
           className,
-          "z-10 -mb-[1px] inline-block border-b border-b-transparent px-3 py-3 text-sm font-medium text-on-light transition hover:text-on aria-selected:cursor-default aria-selected:border-b-white aria-selected:text-on"
+          "z-10 -mb-px inline-block border-b-2 border-b-transparent px-3 py-3 text-sm font-medium text-low transition hover:text aria-selected:cursor-default aria-selected:border-b-current aria-selected:text"
         )}
         href={href}
         onClick={onClick}

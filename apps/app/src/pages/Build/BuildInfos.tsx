@@ -3,11 +3,11 @@ import { Anchor } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
 const Dt = ({ children }: { children: React.ReactNode }) => {
-  return <dt className="mb-1 text-xs font-medium text-on-light">{children}</dt>;
+  return <dt className="mb-1 text-xs font-medium text-low">{children}</dt>;
 };
 
 const Dd = ({ children }: { children: React.ReactNode }) => {
-  return <dd className="mb-6 text-sm font-medium text-on">{children}</dd>;
+  return <dd className="mb-6 text-sm font-medium text">{children}</dd>;
 };
 
 const CommitLink = ({

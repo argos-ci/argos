@@ -5,7 +5,7 @@ export const PageLoader = () => {
   const visible = useDelayedVisible(400);
   return (
     <Container
-      className="flex flex-col items-center gap-4 py-10 text-on-light"
+      className="flex flex-col items-center gap-4 py-10 text-low"
       style={{
         visibility: visible ? "visible" : "hidden",
       }}

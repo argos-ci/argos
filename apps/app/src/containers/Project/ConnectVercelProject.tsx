@@ -61,7 +61,7 @@ export const ConnectVercelProject = (props: ConnectVercelProjectProps) => {
   if (!configuration?.apiProjects) {
     return (
       <Card className="flex h-full flex-col items-center justify-center py-4">
-        <div className="mb-4 text-on-light">
+        <div className="mb-4 text-low">
           Setup Vercel integration to continue.
         </div>
         <Button color="neutral">

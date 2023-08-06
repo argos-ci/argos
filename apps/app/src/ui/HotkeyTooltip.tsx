@@ -1,10 +1,11 @@
-import { Tooltip } from "./Tooltip";
+import { Tooltip, TooltipProps } from "./Tooltip";
 
 export interface HotkeyTooltipProps {
   description: React.ReactNode;
   keys: string[];
   children: React.ReactElement;
   keysEnabled?: boolean;
+  side?: TooltipProps["side"];
 }
 
 export const HotkeyTooltip = ({
@@ -12,19 +13,21 @@ export const HotkeyTooltip = ({
   keys,
   children,
   keysEnabled = true,
+  side,
 }: HotkeyTooltipProps) => {
   return (
     <Tooltip
+      side={side}
       content={
         <div className="flex items-center gap-1">
           <span>{description}</span>
           {keysEnabled && (
             <>
-              <span className="text-on-light">·</span>
+              <span className="text-low">·</span>
               {keys.map((key) => (
                 <kbd
                   key={key}
-                  className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded bg-slate-700 px-1 text-xxs text-slate-300"
+                  className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded bg-active px-1 text-xxs text"
                 >
                   {key}
                 </kbd>

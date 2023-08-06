@@ -246,7 +246,7 @@ const FitViewButton = memo(() => {
     preventDefault: true,
   });
   return (
-    <HotkeyTooltip description="Fit view" keys={hotkey.displayKeys}>
+    <HotkeyTooltip side="left" description="Fit view" keys={hotkey.displayKeys}>
       <IconButton variant="contained" onClick={reset}>
         <ViewfinderCircleIcon />
       </IconButton>
@@ -257,7 +257,7 @@ const FitViewButton = memo(() => {
 const ZoomInButton = memo((props: { disabled: boolean }) => {
   const { zoomIn } = useZoomerSyncContext();
   return (
-    <Tooltip content="Zoom in">
+    <Tooltip side="left" content="Zoom in">
       <IconButton
         variant="contained"
         onClick={zoomIn}
@@ -272,7 +272,7 @@ const ZoomInButton = memo((props: { disabled: boolean }) => {
 const ZoomOutButton = memo((props: { disabled: boolean }) => {
   const { zoomOut } = useZoomerSyncContext();
   return (
-    <Tooltip content="Zoom out">
+    <Tooltip side="left" content="Zoom out">
       <IconButton
         variant="contained"
         onClick={zoomOut}
@@ -312,7 +312,7 @@ export const ZoomPane = (props: {
   return (
     <div
       ref={paneRef}
-      className="group/pane flex min-h-0 flex-1 cursor-grab select-none overflow-hidden bg-zinc-800/50"
+      className="group/pane flex min-h-0 flex-1 cursor-grab select-none overflow-hidden rounded border bg-app"
     >
       <div
         ref={contentRef}
@@ -322,7 +322,7 @@ export const ZoomPane = (props: {
         <div className="relative">{props.children}</div>
       </div>
       {props.controls && (
-        <div className="opacity-0 transition group-hover/pane:opacity-100">
+        <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">
           <div className="zoomer-controls absolute bottom-2 right-2 flex flex-col items-center gap-1">
             {props.controls}
             <FitViewButton />
