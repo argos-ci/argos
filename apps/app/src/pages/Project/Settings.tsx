@@ -50,7 +50,7 @@ export const ProjectSettings = () => {
   }
 
   return (
-    <Container>
+    <Container className="py-10">
       <Helmet>
         <title>
           {accountSlug}/{projectName} • Settings

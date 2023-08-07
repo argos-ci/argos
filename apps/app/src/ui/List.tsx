@@ -38,7 +38,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(
       ref,
       role: "row",
       className: clsx(
-        "flex items-center gap-4 border-b last:border-b-0",
+        "flex gap-4 border-b last:border-b-0 bg-app",
         clickable && "hover:bg-hover",
         className
       ),
@@ -89,7 +89,10 @@ export const ListRowLoader = forwardRef<HTMLDivElement, ListRowLoaderProps>(
     return (
       <ListRow
         ref={ref}
-        className={clsx(className, "justify-center gap-2 text-sm text-low")}
+        className={clsx(
+          className,
+          "items-center justify-center gap-2 text-low"
+        )}
         {...props}
       >
         <ListLoader>{children}</ListLoader>

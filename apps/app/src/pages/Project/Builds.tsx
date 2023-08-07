@@ -107,53 +107,55 @@ const BuildRow = memo(
   }) => {
     const { accountSlug, projectName } = useParams();
     return (
-      <ListRow asChild clickable className="px-4 py-2 text-sm" style={style}>
+      <ListRow asChild clickable className="p-4 text-sm" style={style}>
         <RouterLink
           to={`/${accountSlug}/${projectName}/builds/${build.number}`}
         >
-          <div className="w-[7ch] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs tabular-nums text-low">
-            <span>#{build.number}</span>
+          <div className="w-20 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap">
+            <div className="tabular-nums">#{build.number}</div>
+            <div className="text-low">
+              {build.name !== "default" ? build.name : ""}
+            </div>
           </div>
-          <div className="w-20 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums text-low lg:w-40">
-            {build.name !== "default" ? build.name : ""}
-          </div>
-          <div className="w-48 shrink-0">
-            <BuildStatusChip scale="sm" build={build} project={project} />
+          <div className="flex shrink-0 flex-col items-start">
+            <BuildStatusChip build={build} project={project} />
           </div>
           <div className="flex-1" />
           <div className="relative hidden w-24 md:block">
-            <FakeLink
-              className="inline-flex max-w-full items-center gap-1"
-              title={build.commit}
-              href={
-                project.ghRepository
-                  ? `${project.ghRepository.url}/commit/${build.commit}`
-                  : undefined
-              }
-            >
-              <GitCommitIcon className="shrink-0" />
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                {build.commit.slice(0, 7)}
-              </span>
-            </FakeLink>
+            <div>
+              <FakeLink
+                className="inline-flex max-w-full items-center gap-1"
+                href={
+                  project.ghRepository
+                    ? `${project.ghRepository.url}/tree/${build.branch}`
+                    : undefined
+                }
+                title={build.branch}
+              >
+                <GitBranchIcon className="shrink-0" />
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                  {build.branch}
+                </span>
+              </FakeLink>
+            </div>
+            <div>
+              <FakeLink
+                className="inline-flex max-w-full items-center gap-1"
+                title={build.commit}
+                href={
+                  project.ghRepository
+                    ? `${project.ghRepository.url}/commit/${build.commit}`
+                    : undefined
+                }
+              >
+                <GitCommitIcon className="shrink-0" />
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                  {build.commit.slice(0, 7)}
+                </span>
+              </FakeLink>
+            </div>
           </div>
-          <div className="relative hidden w-28 sm:block lg:w-80">
-            <FakeLink
-              className="inline-flex max-w-full items-center gap-1"
-              href={
-                project.ghRepository
-                  ? `${project.ghRepository.url}/tree/${build.branch}`
-                  : undefined
-              }
-              title={build.branch}
-            >
-              <GitBranchIcon className="shrink-0" />
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                {build.branch}
-              </span>
-            </FakeLink>
-          </div>
-          <div className="hidden w-32 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-right text-low sm:block">
+          <div className="w-32 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-right text-low">
             <Time date={build.createdAt} />
           </div>
         </RouterLink>
@@ -178,7 +180,7 @@ const BuildsList = ({
   const displayCount = builds.edges.length;
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? displayCount + 1 : displayCount,
-    estimateSize: () => 43,
+    estimateSize: () => 79,
     getScrollElement: () => parentRef.current,
     overscan: 20,
   });
@@ -211,6 +213,7 @@ const BuildsList = ({
       >
         {virtualItems.map((virtualRow) => {
           const build = builds.edges[virtualRow.index];
+
           if (!build) {
             return (
               <ListRowLoader
@@ -238,7 +241,7 @@ const BuildsList = ({
                 top: 0,
                 left: 0,
                 width: "100%",
-                height: virtualRow.size,
+                // height: virtualRow.size,
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             />
@@ -307,7 +310,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
 
   if (!projectResult.data || !buildsResult.data) {
     return (
-      <Container>
+      <Container className="py-10">
         <PageLoader />
       </Container>
     );
@@ -318,7 +321,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
 
   if (!project || !builds) {
     return (
-      <Container>
+      <Container className="py-10">
         <NotFound />
       </Container>
     );
@@ -327,13 +330,13 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   if (builds.pageInfo.totalCount === 0) {
     if (hasWritePermission) {
       return (
-        <Container>
+        <Container className="py-10">
           <GettingStarted project={project} />
         </Container>
       );
     } else {
       return (
-        <Container>
+        <Container className="py-10">
           <Alert>
             <AlertTitle>No build</AlertTitle>
             <AlertText>There is no build yet on this project.</AlertText>
@@ -353,7 +356,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   }
 
   return (
-    <Container className="flex flex-1">
+    <Container className="flex flex-1 pb-10 pt-4">
       <div className="relative flex-1">
         <BuildsList
           project={project}
@@ -374,13 +377,13 @@ export const ProjectBuilds = () => {
   }
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col bg-subtle">
       <Helmet>
         <title>
           {accountSlug}/{projectName} • Builds
         </title>
       </Helmet>
       <PageContent accountSlug={accountSlug} projectName={projectName} />
-    </>
+    </div>
   );
 };

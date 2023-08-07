@@ -43,7 +43,7 @@ export const AccountNewProject = () => {
       <Helmet>
         <title>New Project</title>
       </Helmet>
-      <Container>
+      <Container className="py-10">
         <Heading>Create a new Project</Heading>
         <Headline>
           To add visual testing a new Project, import an existing Git

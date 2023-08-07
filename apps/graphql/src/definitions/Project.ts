@@ -42,6 +42,8 @@ export const typeDefs = gql`
     build(number: Int!): Build
     "Reference build"
     latestReferenceBuild: Build
+    "Latest build"
+    latestBuild: Build
     "Tests associated to the repository"
     tests(first: Int!, after: Int!): TestConnection!
     "Determine if the current user has write access to the project"
@@ -283,6 +285,9 @@ export const resolvers: IResolvers = {
         ])
         .first();
       return lastestReferenceBuild ?? null;
+    },
+    latestBuild: async (project, _args, ctx) => {
+      return ctx.loaders.LatestProjectBuild.load(project.id);
     },
     builds: async (project, { first, after }) => {
       const result = await Build.query()

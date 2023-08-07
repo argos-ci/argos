@@ -37,6 +37,21 @@ const createBuildAggregatedStatusLoader = () =>
     Build.getAggregatedBuildStatuses(builds as Build[])
   );
 
+const createLatestProjectBuildLoader = () =>
+  new DataLoader<string, Build | null>(async (projectIds) => {
+    const latestBuilds = await Build.query()
+      .select("*")
+      .whereIn("projectId", projectIds as string[])
+      .distinctOn("projectId")
+      .orderBy("projectId")
+      .orderBy("createdAt", "desc");
+    const latestBuildsMap: Record<string, Build> = {};
+    for (const build of latestBuilds) {
+      latestBuildsMap[build.projectId!] = build;
+    }
+    return projectIds.map((id) => latestBuildsMap[id] ?? null);
+  });
+
 const createLastScreenshotDiffLoader = () =>
   new DataLoader<string, ScreenshotDiff | null>(async (testIds) => {
     const lastScreenshotDiffs = await ScreenshotDiff.query()
@@ -133,6 +148,7 @@ export const createLoaders = () => ({
   File: createModelLoader(File),
   GithubAccount: createModelLoader(GithubAccount),
   GithubRepository: createModelLoader(GithubRepository),
+  LatestProjectBuild: createLatestProjectBuildLoader(),
   LastScreenshot: createLastScreenshotLoader(),
   LastScreenshotDiff: createLastScreenshotDiffLoader(),
   Plan: createModelLoader(Plan),
