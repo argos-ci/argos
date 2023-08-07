@@ -20,7 +20,7 @@ export const Banner = forwardRef<HTMLDivElement, BannerProps>(
         className={clsx(
           className,
           colorClassNames[color],
-          "min-h-[40px] p-2 text-sm font-medium"
+          "p-2 text-sm font-medium"
         )}
         {...props}
       >

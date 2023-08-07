@@ -36,26 +36,24 @@ export const AccountProjects = () => {
   }
 
   return (
-    <>
-      <Helmet>
-        <title>{accountSlug} • Projects</title>
-      </Helmet>
-      <Query
-        fallback={<PageLoader />}
-        query={AccountQuery}
-        variables={{ slug: accountSlug }}
-      >
-        {({ account }) => {
-          if (!account) return <NotFound />;
+    <div className="flex-1 bg-subtle">
+      <Container className="pb-10 pt-4">
+        <Helmet>
+          <title>{accountSlug} • Projects</title>
+        </Helmet>
+        <Query
+          fallback={<PageLoader />}
+          query={AccountQuery}
+          variables={{ slug: accountSlug }}
+        >
+          {({ account }) => {
+            if (!account) return <NotFound />;
 
-          return (
-            <Container>
-              <ProjectList projects={account.projects.edges} />
-            </Container>
-          );
-        }}
-      </Query>
-      <CheckoutStatusDialog dialog={dialog} checkoutStatus={checkoutStatus} />
-    </>
+            return <ProjectList projects={account.projects.edges} />;
+          }}
+        </Query>
+        <CheckoutStatusDialog dialog={dialog} checkoutStatus={checkoutStatus} />
+      </Container>
+    </div>
   );
 };

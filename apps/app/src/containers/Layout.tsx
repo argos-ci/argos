@@ -14,7 +14,7 @@ export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
   (props: { children: React.ReactNode }, ref) => {
     const logout = useLogout();
     return (
-      <main ref={ref} className="flex min-h-0 flex-1 flex-col py-6">
+      <main ref={ref} className="contents">
         <ErrorBoundary
           fallback={<ErrorPage />}
           onError={(error) => {
@@ -46,7 +46,7 @@ export const Layout = (props: { children: React.ReactNode }) => {
       <header className="flex-shrink-0">
         <Navbar />
       </header>
-      {props.children}
+      <Main>{props.children}</Main>
     </div>
   );
 };

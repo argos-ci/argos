@@ -6,7 +6,7 @@ import {
   createBrowserRouter,
 } from "react-router-dom";
 
-import { Layout, Main } from "@/containers/Layout";
+import { Layout } from "@/containers/Layout";
 
 import { ApolloInitializer } from "./containers/Apollo";
 import { AuthProvider } from "./containers/Auth";
@@ -77,9 +77,7 @@ const router = createBrowserRouter([
         element: (
           <>
             <hr className="border-t" />
-            <Main>
-              <NewTeam />
-            </Main>
+            <NewTeam />
           </>
         ),
       },

@@ -55,7 +55,7 @@ export const AccountSettings = () => {
   }
 
   return (
-    <Container>
+    <Container className="py-10">
       <Helmet>
         <title>{accountSlug} • Settings</title>
       </Helmet>

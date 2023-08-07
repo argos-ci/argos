@@ -455,6 +455,8 @@ export type IProject = INode & {
   /** Repositories associated to the project */
   ghRepository?: Maybe<IGithubRepository>;
   id: Scalars['ID'];
+  /** Latest build */
+  latestBuild?: Maybe<IBuild>;
   /** Reference build */
   latestReferenceBuild?: Maybe<IBuild>;
   name: Scalars['String'];
@@ -1380,6 +1382,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghRepository?: Resolver<Maybe<IResolversTypes['GithubRepository']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  latestBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   latestReferenceBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;

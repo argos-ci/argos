@@ -1,10 +1,11 @@
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
+import { MarkGithubIcon } from "@primer/octicons-react";
 import { Link as RouterLink } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
-import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
+import { Time } from "@/ui/Time";
 
 const ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
@@ -19,10 +20,13 @@ const ProjectFragment = graphql(`
         ...AccountAvatarFragment
       }
     }
-    builds(first: 0, after: 0) {
-      pageInfo {
-        totalCount
-      }
+    ghRepository {
+      id
+      fullName
+    }
+    latestBuild {
+      id
+      createdAt
     }
   }
 `);
@@ -30,30 +34,37 @@ const ProjectFragment = graphql(`
 type Project = DocumentType<typeof ProjectFragment>;
 type ProjectFragmentType = FragmentType<typeof ProjectFragment>;
 
-const ProjectRow = ({ project }: { project: Project }) => {
+const ProjectCard = ({ project }: { project: Project }) => {
   return (
     <RouterLink
       key={project.id}
       to={`/${project.slug}`}
-      className="flex items-center justify-between rounded border bg-app p-3 font-medium hover:border-hover"
+      className="flex flex-col gap-4 rounded-md border bg-app p-4 hover:border-hover"
     >
-      <div className="flex shrink-0 gap-1">
-        <span className="flex gap-2">
+      <div className="flex justify-between">
+        <div className="flex items-center gap-4">
           <AccountAvatar
             avatar={project.account.avatar}
-            size={24}
+            size={32}
             className="shrink-0"
           />
-          {project.account.name}
-        </span>
-        <span className="text-low">/</span>
-        <span>{project.name}</span>
+          <div>
+            <div className="font-medium">{project.name}</div>
+            <div className="text-sm text-low">
+              {project.ghRepository?.fullName ?? "-"}
+            </div>
+          </div>
+        </div>
+        <MarkGithubIcon className="h-6 w-6 shrink-0" />
       </div>
-      <div className="">
-        <Badge>
-          {project.builds.pageInfo.totalCount}{" "}
-          {project.builds.pageInfo.totalCount > 1 ? "builds" : "build"}
-        </Badge>
+      <div className="text-sm text-low">
+        {project.latestBuild ? (
+          <>
+            Last build <Time date={project.latestBuild.createdAt} />
+          </>
+        ) : (
+          "-"
+        )}
       </div>
     </RouterLink>
   );
@@ -92,9 +103,9 @@ export const ProjectList = (props: { projects: ProjectFragmentType[] }) => {
       <div className="flex justify-end">
         <CreateProjectButton variant="outline" color="neutral" />
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-4">
         {projects.map((project) => (
-          <ProjectRow key={project.id} project={project} />
+          <ProjectCard key={project.id} project={project} />
         ))}
       </div>
     </div>

@@ -2,7 +2,6 @@ import { Outlet, useOutletContext, useParams } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
 import { Query } from "@/containers/Apollo";
-import { Main } from "@/containers/Layout";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { Permission } from "@/gql/graphql";
@@ -57,7 +56,11 @@ const ProjectTabs = ({
       </TabLinkList>
       <hr className="border-t" />
       <PaymentBanner account={account} />
-      <TabLinkPanel state={tab} as={Main} tabId={tab.selectedId || null}>
+      <TabLinkPanel
+        state={tab}
+        tabId={tab.selectedId || null}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <Outlet context={{ hasWritePermission } as OutletContext} />
       </TabLinkPanel>
     </>

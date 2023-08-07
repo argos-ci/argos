@@ -8,7 +8,7 @@ import { Anchor } from "@/ui/Link";
 
 export const ErrorPage = () => {
   return (
-    <Container>
+    <Container className="py-10">
       <Helmet>
         <title>Error</title>
       </Helmet>
