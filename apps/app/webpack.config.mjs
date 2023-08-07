@@ -76,10 +76,10 @@ export default {
           allowedHosts: "all",
           https: {
             key: readFileSync(
-              join(__dirname, "../../_wildcard.argos-ci.dev-key.pem")
+              join(__dirname, "../../_wildcard.argos-ci.dev-key.pem"),
             ),
             cert: readFileSync(
-              join(__dirname, "../../_wildcard.argos-ci.dev.pem")
+              join(__dirname, "../../_wildcard.argos-ci.dev.pem"),
             ),
           },
           host: "app.argos-ci.dev",

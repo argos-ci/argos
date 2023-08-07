@@ -11,10 +11,10 @@ export const up = async (knex) => {
   });
 
   await knex.raw(
-    `update accounts set "githubAccountId" = users."githubAccountId", "name" = users.name, "slug" = users.slug from users where accounts."userId" = users."id"`
+    `update accounts set "githubAccountId" = users."githubAccountId", "name" = users.name, "slug" = users.slug from users where accounts."userId" = users."id"`,
   );
   await knex.raw(
-    `update accounts set "githubAccountId" = teams."githubAccountId", "name" = teams.name, "slug" = teams.slug from teams where accounts."teamId" = teams."id"`
+    `update accounts set "githubAccountId" = teams."githubAccountId", "name" = teams.name, "slug" = teams.slug from teams where accounts."teamId" = teams."id"`,
   );
 
   await knex.raw('ALTER TABLE accounts ALTER COLUMN "slug" SET NOT NULL');

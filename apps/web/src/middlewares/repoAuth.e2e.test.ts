@@ -25,7 +25,7 @@ const encodeToken = ({
 }) =>
   Buffer.from(
     JSON.stringify({ owner, repository, jobId, runId }),
-    "utf8"
+    "utf8",
   ).toString("base64");
 
 describe("repoAuth", () => {
@@ -48,7 +48,7 @@ describe("repoAuth", () => {
         .set("Authorization", "Bearer invalid-token")
         .expect((res) => {
           expect(res.text).toBe(
-            `Repository not found (token: "invalid-token")`
+            `Repository not found (token: "invalid-token")`,
           );
         })
         .expect(401);
@@ -86,7 +86,7 @@ describe("repoAuth", () => {
         .set("Authorization", "Bearer tokenless-github-invalid-format")
         .expect((res) => {
           expect(res.text).toBe(
-            `Invalid token (token: "tokenless-github-invalid-format")`
+            `Invalid token (token: "tokenless-github-invalid-format")`,
           );
         })
         .expect(401);
@@ -105,7 +105,7 @@ describe("repoAuth", () => {
         .set("Authorization", `Bearer tokenless-github-${encodedToken}`)
         .expect((res) => {
           expect(res.text).toBe(
-            `Repository not found (token: "tokenless-github-${encodedToken}")`
+            `Repository not found (token: "tokenless-github-${encodedToken}")`,
           );
         })
         .expect(401);
@@ -124,7 +124,7 @@ describe("repoAuth", () => {
         .set("Authorization", `Bearer tokenless-github-${encodedToken}`)
         .expect((res) => {
           expect(res.text).toBe(
-            `Repository not found (token: "tokenless-github-${encodedToken}")`
+            `Repository not found (token: "tokenless-github-${encodedToken}")`,
           );
         })
         .expect(401);

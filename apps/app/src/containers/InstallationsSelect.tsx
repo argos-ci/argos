@@ -37,7 +37,7 @@ export const InstallationsSelect = (props: {
   });
   const title = "Organizations";
   const activeInstallation = installations.find(
-    (installation) => installation.id === props.value
+    (installation) => installation.id === props.value,
   );
 
   if (!activeInstallation) {
@@ -76,9 +76,9 @@ export const InstallationsSelect = (props: {
           Don't see your org?{" "}
           <Anchor
             href={`${config.get(
-              "github.appUrl"
+              "github.appUrl",
             )}/installations/new?state=${encodeURIComponent(
-              window.location.pathname
+              window.location.pathname,
             )}`}
             external
           >

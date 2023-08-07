@@ -17,7 +17,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 interface AnchorProps extends HTMLProps<HTMLAnchorElement> {
@@ -42,5 +42,5 @@ export const Anchor = forwardRef<HTMLAnchorElement, AnchorProps>(
         )}
       </a>
     );
-  }
+  },
 );

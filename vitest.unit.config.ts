@@ -17,5 +17,5 @@ export default mergeConfig(
         "**/*.e2e.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
       ],
     },
-  }) as UserConfig
+  }) as UserConfig,
 );

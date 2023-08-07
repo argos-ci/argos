@@ -25,7 +25,7 @@ export const useCheckoutStatusDialog = () => {
       ? checkoutParam
       : null;
   const [showCheckoutDialog, setShowCheckoutDialog] = useState<boolean>(
-    checkoutStatus !== null
+    checkoutStatus !== null,
   );
 
   const dialog = useDialogState({

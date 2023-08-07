@@ -25,7 +25,7 @@ type StripeClientReferenceIdPayload = z.infer<
 >;
 
 export const encodeStripeClientReferenceId = (
-  payload: StripeClientReferenceIdPayload
+  payload: StripeClientReferenceIdPayload,
 ) => {
   return Buffer.from(JSON.stringify(payload), "utf8")
     .toString("base64")
@@ -35,7 +35,7 @@ export const encodeStripeClientReferenceId = (
 const decodeStripeClientReferenceId = (clientReferenceId: string) => {
   const json = Buffer.from(
     clientReferenceId.replaceAll(/_/g, "="),
-    "base64"
+    "base64",
   ).toString("utf-8");
   return StripeClientReferenceIdPayloadSchema.parse(JSON.parse(json));
 };
@@ -44,7 +44,7 @@ const getClientReferenceIdFromSession = (session: Stripe.Checkout.Session) => {
   const clientReferenceId = session.client_reference_id;
   if (!clientReferenceId) {
     throw new Error(
-      `empty clientReferenceId in stripe session "${session.id}"`
+      `empty clientReferenceId in stripe session "${session.id}"`,
     );
   }
   return decodeStripeClientReferenceId(clientReferenceId);
@@ -64,7 +64,7 @@ const getCustomerIdFromSession = (session: Stripe.Checkout.Session) => {
 
 const getSubscriptionFromSession = async (
   session: Stripe.Checkout.Session,
-  stripe: Stripe
+  stripe: Stripe,
 ): Promise<Stripe.Subscription> => {
   if (!session.subscription) {
     throw new Error(`empty subscription in stripe session "${session.id}"`);
@@ -86,7 +86,7 @@ const getFirstItemFromSubscription = (subscription: Stripe.Subscription) => {
 };
 
 const getFirstProductIdFromSubscription = (
-  subscription: Stripe.Subscription
+  subscription: Stripe.Subscription,
 ) => {
   const first = getFirstItemFromSubscription(subscription);
   const { product } = first.price;
@@ -124,7 +124,7 @@ const createPurchaseFromCheckoutSession = async ({
 };
 
 const getCustomerFromSubscription = async (
-  subscription: Stripe.Subscription
+  subscription: Stripe.Subscription,
 ) => {
   if (typeof subscription.customer === "string") {
     return stripe.customers.retrieve(subscription.customer);
@@ -133,7 +133,7 @@ const getCustomerFromSubscription = async (
 };
 
 const checkSubscriptionPaymentMethodFilled = async (
-  subscription: Stripe.Subscription
+  subscription: Stripe.Subscription,
 ) => {
   if (subscription.default_payment_method !== null) {
     return true;
@@ -144,7 +144,7 @@ const checkSubscriptionPaymentMethodFilled = async (
 };
 
 const getPurchaseDataFromSubscription = async (
-  subscription: Stripe.Subscription
+  subscription: Stripe.Subscription,
 ): Promise<Objection.PartialModelObject<Purchase>> => {
   const stripeProductId = getFirstProductIdFromSubscription(subscription);
   const [plan, paymentMethodFilled] = await Promise.all([
@@ -187,7 +187,7 @@ export const createPurchaseFromSubscription = async ({
 };
 
 const getPurchaseFromStripeSubscriptionId = async (
-  stripeSubscriptionId: string
+  stripeSubscriptionId: string,
 ) => {
   const purchase = await Purchase.query().findOne({
     stripeSubscriptionId,
@@ -195,7 +195,7 @@ const getPurchaseFromStripeSubscriptionId = async (
 
   if (!purchase) {
     throw new Error(
-      `Purchase not found for subscription ${stripeSubscriptionId}`
+      `Purchase not found for subscription ${stripeSubscriptionId}`,
     );
   }
 
@@ -217,7 +217,7 @@ export const getStripePriceFromPlanOrThrow = async (plan: Plan) => {
 
   if (prices.data.length > 1) {
     throw new Error(
-      `stripe return multiple active prices found for plan ${plan.id}`
+      `stripe return multiple active prices found for plan ${plan.id}`,
     );
   }
 
@@ -266,7 +266,7 @@ export const updateStripeUsage = async ({
 
   try {
     const subscription = await stripe.subscriptions.retrieve(
-      purchase.stripeSubscriptionId
+      purchase.stripeSubscriptionId,
     );
 
     const item = getFirstItemFromSubscription(subscription);
@@ -290,7 +290,7 @@ export const getStripeProPlanOrThrow = async () => {
 
 export const updatePurchaseFromSubscription = async (
   purchase: Purchase,
-  subscription: Stripe.Subscription
+  subscription: Stripe.Subscription,
 ) => {
   const purchaseData = await getPurchaseDataFromSubscription(subscription);
   return purchase.$query().patchAndFetch(purchaseData);
@@ -318,7 +318,7 @@ export const handleStripeEvent = async ({
 
       for (const subscription of subscriptions.data) {
         const purchase = await getPurchaseFromStripeSubscriptionId(
-          subscription.id
+          subscription.id,
         );
         await updatePurchaseFromSubscription(purchase, subscription);
       }
@@ -355,7 +355,7 @@ export const handleStripeEvent = async ({
     case "customer.subscription.deleted": {
       const subscription = data.object as Stripe.Subscription;
       const purchase = await getPurchaseFromStripeSubscriptionId(
-        subscription.id
+        subscription.id,
       );
       await updatePurchaseFromSubscription(purchase, subscription);
       return;
@@ -421,7 +421,7 @@ export const createStripeCheckoutSession = async ({
 };
 
 export const getCustomerByEmail = async (
-  email: string
+  email: string,
 ): Promise<Stripe.Customer | null> => {
   const customers = await stripe.customers.list({ email });
   const first = customers.data[0];
@@ -433,7 +433,7 @@ export const getCustomerByEmail = async (
 };
 
 export const getOrCreateCustomerByEmail = async (
-  email: string
+  email: string,
 ): Promise<Stripe.Customer> => {
   const existingCustomer = await getCustomerByEmail(email);
   if (existingCustomer) {
@@ -443,7 +443,7 @@ export const getOrCreateCustomerByEmail = async (
 };
 
 export const getCustomerIdFromUserAccount = async (
-  userAccount: Account
+  userAccount: Account,
 ): Promise<string | null> => {
   if (userAccount.stripeCustomerId) {
     return userAccount.stripeCustomerId;

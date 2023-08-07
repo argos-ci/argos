@@ -110,7 +110,7 @@ export const useBuildHotkey = (
   options?: {
     preventDefault?: boolean;
     enabled?: boolean;
-  }
+  },
 ) => {
   const hotkey = hotkeys[name];
   const { preventDefault = true, enabled = true } = options ?? {};

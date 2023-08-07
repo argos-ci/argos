@@ -270,7 +270,7 @@ export const resolvers: IResolvers = {
     token: async (project, _args, ctx) => {
       if (!ctx.auth) return null;
       const hasWritePermission = await project.$checkWritePermission(
-        ctx.auth.user
+        ctx.auth.user,
       );
       if (!hasWritePermission) return null;
       return project.token;
@@ -313,10 +313,10 @@ export const resolvers: IResolvers = {
         .whereNot((builder) =>
           builder.whereRaw(`"name" ~ :regexp`, {
             regexp: ScreenshotDiff.screenshotFailureRegexp,
-          })
+          }),
         )
         .orderByRaw(
-          `(select "stabilityScore" from screenshot_diffs where screenshot_diffs."testId" = tests.id order by "id" desc limit 1) asc nulls last`
+          `(select "stabilityScore" from screenshot_diffs where screenshot_diffs."testId" = tests.id order by "id" desc limit 1) asc nulls last`,
         )
         .range(after, after + first - 1);
 
@@ -325,7 +325,7 @@ export const resolvers: IResolvers = {
     permissions: async (project, _args, ctx) => {
       if (!ctx.auth) return [IPermission.Read];
       const hasWritePermission = await project.$checkWritePermission(
-        ctx.auth.user
+        ctx.auth.user,
       );
       return hasWritePermission
         ? [IPermission.Read, IPermission.Write]
@@ -341,7 +341,7 @@ export const resolvers: IResolvers = {
     vercelProject: async (project, _args, ctx) => {
       if (!project.vercelProjectId) return null;
       const vercelProject = await ctx.loaders.VercelProject.load(
-        project.vercelProjectId
+        project.vercelProjectId,
       );
       const activeConfiguration = await vercelProject
         .$relatedQuery("activeConfiguration")
@@ -385,7 +385,7 @@ export const resolvers: IResolvers = {
       if (!project) return null;
 
       const hasReadPermission = await project.$checkReadPermission(
-        ctx.auth?.user ?? null
+        ctx.auth?.user ?? null,
       );
       if (!hasReadPermission) return null;
 
@@ -399,7 +399,7 @@ export const resolvers: IResolvers = {
       if (!project) return null;
 
       const hasReadPermission = await project.$checkReadPermission(
-        ctx.auth?.user ?? null
+        ctx.auth?.user ?? null,
       );
       if (!hasReadPermission) return null;
 

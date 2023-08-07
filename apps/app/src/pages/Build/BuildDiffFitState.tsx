@@ -11,7 +11,7 @@ export const useBuildDiffFitState = () => {
   const context = useContext(DiffFitContext);
   if (context === null) {
     throw new Error(
-      "useBuildDiffFitState must be used within a BuildDiffFitStateProvider"
+      "useBuildDiffFitState must be used within a BuildDiffFitStateProvider",
     );
   }
   return context;
@@ -25,7 +25,7 @@ export const BuildDiffFitStateProvider = ({
   const [contained, setContained] = useState(true);
   const value = useMemo(
     (): DiffFitContextValue => ({ contained, setContained }),
-    [contained, setContained]
+    [contained, setContained],
   );
   return (
     <DiffFitContext.Provider value={value}>{children}</DiffFitContext.Provider>

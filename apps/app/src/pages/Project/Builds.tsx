@@ -161,7 +161,7 @@ const BuildRow = memo(
         </RouterLink>
       </ListRow>
     );
-  }
+  },
 );
 
 const BuildsList = ({

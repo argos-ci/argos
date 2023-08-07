@@ -19,7 +19,7 @@ type StatCountColor = "danger" | "warning" | "success" | "neutral";
 
 const getStatCountColorClassName = (
   color: StatCountColor,
-  interactive: boolean
+  interactive: boolean,
 ) => {
   switch (color) {
     case "danger":
@@ -74,7 +74,7 @@ const InteractiveStatCount = ({
         as="div"
         className={clsx(
           colorClassName,
-          "flex cursor-default items-center gap-1 p-2 transition aria-disabled:opacity-disabled"
+          "flex cursor-default items-center gap-1 p-2 transition aria-disabled:opacity-disabled",
         )}
         onClick={onActive}
         disabled={count === 0}
@@ -99,7 +99,7 @@ const StatCount = ({ icon, count, color, tooltip }: StatCountProps) => {
     <div
       className={clsx(
         colorClassName,
-        "flex w-16 items-center gap-1 tabular-nums"
+        "flex w-16 items-center gap-1 tabular-nums",
       )}
     >
       <span className="[&>*]:h-4 [&>*]:w-4">{icon}</span>
@@ -152,5 +152,5 @@ export const BuildStatsIndicator = memo(
         })}
       </div>
     );
-  }
+  },
 );

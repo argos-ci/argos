@@ -8,62 +8,64 @@ export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
+export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
+export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 export type RequireFields<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: string;
-  String: string;
-  Boolean: boolean;
-  Int: number;
-  Float: number;
-  Date: any;
-  DateTime: any;
-  Time: any;
+  ID: { input: string; output: string; }
+  String: { input: string; output: string; }
+  Boolean: { input: boolean; output: boolean; }
+  Int: { input: number; output: number; }
+  Float: { input: number; output: number; }
+  Date: { input: any; output: any; }
+  DateTime: { input: any; output: any; }
+  Time: { input: any; output: any; }
 };
 
 export type IAccount = {
   avatar: IAccountAvatar;
-  consumptionRatio?: Maybe<Scalars['Float']>;
-  currentMonthUsedScreenshots: Scalars['Int'];
+  consumptionRatio?: Maybe<Scalars['Float']['output']>;
+  currentMonthUsedScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<IGithubAccount>;
-  hasForcedPlan: Scalars['Boolean'];
-  hasPaidPlan: Scalars['Boolean'];
-  id: Scalars['ID'];
-  name?: Maybe<Scalars['String']>;
+  hasForcedPlan: Scalars['Boolean']['output'];
+  hasPaidPlan: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  name?: Maybe<Scalars['String']['output']>;
   paymentProvider?: Maybe<IPurchaseSource>;
-  pendingCancelAt?: Maybe<Scalars['DateTime']>;
-  periodEndDate?: Maybe<Scalars['DateTime']>;
-  periodStartDate?: Maybe<Scalars['DateTime']>;
+  pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
+  periodEndDate?: Maybe<Scalars['DateTime']['output']>;
+  periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   purchase?: Maybe<IPurchase>;
   purchaseStatus?: Maybe<IPurchaseStatus>;
-  screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
-  slug: Scalars['String'];
-  stripeClientReferenceId: Scalars['String'];
-  stripeCustomerId?: Maybe<Scalars['String']>;
+  screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
+  slug: Scalars['String']['output'];
+  stripeClientReferenceId: Scalars['String']['output'];
+  stripeCustomerId?: Maybe<Scalars['String']['output']>;
   trialStatus?: Maybe<ITrialStatus>;
   vercelConfiguration?: Maybe<IVercelConfiguration>;
 };
 
 
 export type IAccountProjectsArgs = {
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 };
 
 export type IAccountAvatar = {
   __typename?: 'AccountAvatar';
-  color: Scalars['String'];
-  initial: Scalars['String'];
-  url?: Maybe<Scalars['String']>;
+  color: Scalars['String']['output'];
+  initial: Scalars['String']['output'];
+  url?: Maybe<Scalars['String']['output']>;
 };
 
 
 export type IAccountAvatarUrlArgs = {
-  size: Scalars['Int'];
+  size: Scalars['Int']['input'];
 };
 
 export type IBuild = INode & {
@@ -71,21 +73,21 @@ export type IBuild = INode & {
   /** The screenshot bucket of the baselineBranch */
   baseScreenshotBucket?: Maybe<IScreenshotBucket>;
   /** Received batch count  */
-  batchCount?: Maybe<Scalars['Int']>;
+  batchCount?: Maybe<Scalars['Int']['output']>;
   /** Branch */
-  branch: Scalars['String'];
+  branch: Scalars['String']['output'];
   /** Commit */
-  commit: Scalars['String'];
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
+  commit: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
   /** Build name */
-  name: Scalars['String'];
+  name: Scalars['String']['output'];
   /** Continuous number. It is incremented after each build */
-  number: Scalars['Int'];
+  number: Scalars['Int']['output'];
   /** Pull request head commit */
-  prHeadCommit?: Maybe<Scalars['String']>;
+  prHeadCommit?: Maybe<Scalars['String']['output']>;
   /** Pull request number */
-  prNumber?: Maybe<Scalars['Int']>;
+  prNumber?: Maybe<Scalars['Int']['output']>;
   /** The screenshot diffs between the base screenshot bucket of the compare screenshot bucket */
   screenshotDiffs: IScreenshotDiffConnection;
   /** Build stats */
@@ -93,16 +95,16 @@ export type IBuild = INode & {
   /** Review status, conclusion or job status */
   status: IBuildStatus;
   /** Expected batch count */
-  totalBatch?: Maybe<Scalars['Int']>;
+  totalBatch?: Maybe<Scalars['Int']['output']>;
   /** Build type */
   type?: Maybe<IBuildType>;
-  updatedAt: Scalars['DateTime'];
+  updatedAt: Scalars['DateTime']['output'];
 };
 
 
 export type IBuildScreenshotDiffsArgs = {
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 };
 
 export type IBuildConnection = IConnection & {
@@ -113,12 +115,12 @@ export type IBuildConnection = IConnection & {
 
 export type IBuildStats = {
   __typename?: 'BuildStats';
-  added: Scalars['Int'];
-  changed: Scalars['Int'];
-  failure: Scalars['Int'];
-  removed: Scalars['Int'];
-  total: Scalars['Int'];
-  unchanged: Scalars['Int'];
+  added: Scalars['Int']['output'];
+  changed: Scalars['Int']['output'];
+  failure: Scalars['Int']['output'];
+  removed: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+  unchanged: Scalars['Int']['output'];
 };
 
 export enum IBuildStatus {
@@ -157,36 +159,36 @@ export type IConnection = {
 };
 
 export type ICreateProjectInput = {
-  accountSlug: Scalars['String'];
-  owner: Scalars['String'];
-  repo: Scalars['String'];
+  accountSlug: Scalars['String']['input'];
+  owner: Scalars['String']['input'];
+  repo: Scalars['String']['input'];
 };
 
 export type ICreateTeamInput = {
-  name: Scalars['String'];
+  name: Scalars['String']['input'];
 };
 
 export type ICreateTeamResult = {
   __typename?: 'CreateTeamResult';
-  redirectUrl: Scalars['String'];
+  redirectUrl: Scalars['String']['output'];
   team: ITeam;
 };
 
 export type IDeleteTeamInput = {
-  accountId: Scalars['ID'];
+  accountId: Scalars['ID']['input'];
 };
 
 export type IGhApiInstallation = INode & {
   __typename?: 'GhApiInstallation';
   account: IGhApiInstallationAccount;
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
 };
 
 export type IGhApiInstallationAccount = INode & {
   __typename?: 'GhApiInstallationAccount';
-  id: Scalars['ID'];
-  login: Scalars['String'];
-  name?: Maybe<Scalars['String']>;
+  id: Scalars['ID']['output'];
+  login: Scalars['String']['output'];
+  name?: Maybe<Scalars['String']['output']>;
 };
 
 export type IGhApiInstallationConnection = IConnection & {
@@ -197,10 +199,10 @@ export type IGhApiInstallationConnection = IConnection & {
 
 export type IGhApiRepository = INode & {
   __typename?: 'GhApiRepository';
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  owner_login: Scalars['String'];
-  updated_at: Scalars['String'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  owner_login: Scalars['String']['output'];
+  updated_at: Scalars['String']['output'];
 };
 
 export type IGhApiRepositoryConnection = IConnection & {
@@ -211,17 +213,17 @@ export type IGhApiRepositoryConnection = IConnection & {
 
 export type IGithubAccount = INode & {
   __typename?: 'GithubAccount';
-  id: Scalars['ID'];
-  login: Scalars['String'];
+  id: Scalars['ID']['output'];
+  login: Scalars['String']['output'];
 };
 
 export type IGithubRepository = INode & {
   __typename?: 'GithubRepository';
-  defaultBranch: Scalars['String'];
-  fullName: Scalars['String'];
-  id: Scalars['ID'];
-  private: Scalars['Boolean'];
-  url: Scalars['String'];
+  defaultBranch: Scalars['String']['output'];
+  fullName: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  private: Scalars['Boolean']['output'];
+  url: Scalars['String']['output'];
 };
 
 export enum IJobStatus {
@@ -233,19 +235,19 @@ export enum IJobStatus {
 }
 
 export type ILeaveTeamInput = {
-  teamAccountId: Scalars['ID'];
+  teamAccountId: Scalars['ID']['input'];
 };
 
 export type ILinkRepositoryInput = {
-  owner: Scalars['String'];
-  projectId: Scalars['ID'];
-  repo: Scalars['String'];
+  owner: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
+  repo: Scalars['String']['input'];
 };
 
 export type ILinkVercelProjectInput = {
-  configurationId: Scalars['ID'];
-  projectId: Scalars['ID'];
-  vercelProjectId: Scalars['ID'];
+  configurationId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  vercelProjectId: Scalars['ID']['input'];
 };
 
 export type IMutation = {
@@ -257,18 +259,18 @@ export type IMutation = {
   /** Create a team */
   createTeam: ICreateTeamResult;
   /** Delete Project */
-  deleteProject: Scalars['Boolean'];
+  deleteProject: Scalars['Boolean']['output'];
   /** Delete team and all its projects */
-  deleteTeam: Scalars['Boolean'];
+  deleteTeam: Scalars['Boolean']['output'];
   /** Leave a team */
-  leaveTeam: Scalars['Boolean'];
+  leaveTeam: Scalars['Boolean']['output'];
   /** Link Repository */
   linkRepository: IProject;
   /** Link Vercel project */
   linkVercelProject: IProject;
   /** Mute or unmute tests */
   muteTests: IMuteUpdateTest;
-  ping: Scalars['Boolean'];
+  ping: Scalars['Boolean']['output'];
   /** Remove a user from a team */
   removeUserFromTeam: IRemoveUserFromTeamPayload;
   /** Retrieve a Vercel API token from a code */
@@ -278,7 +280,7 @@ export type IMutation = {
   /** Change the validationStatus on a build */
   setValidationStatus: IBuild;
   /** Finish the Vercel integration setup */
-  setupVercelIntegration?: Maybe<Scalars['Boolean']>;
+  setupVercelIntegration?: Maybe<Scalars['Boolean']['output']>;
   /** Terminate trial early */
   terminateTrial: IAccount;
   /** Transfer Project to another account */
@@ -299,7 +301,7 @@ export type IMutation = {
 
 
 export type IMutationAcceptInvitationArgs = {
-  token: Scalars['String'];
+  token: Scalars['String']['input'];
 };
 
 
@@ -314,7 +316,7 @@ export type IMutationCreateTeamArgs = {
 
 
 export type IMutationDeleteProjectArgs = {
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
 };
 
 
@@ -339,9 +341,9 @@ export type IMutationLinkVercelProjectArgs = {
 
 
 export type IMutationMuteTestsArgs = {
-  ids: Array<Scalars['String']>;
-  muteUntil?: InputMaybe<Scalars['String']>;
-  muted: Scalars['Boolean'];
+  ids: Array<Scalars['String']['input']>;
+  muteUntil?: InputMaybe<Scalars['String']['input']>;
+  muted: Scalars['Boolean']['input'];
 };
 
 
@@ -351,7 +353,7 @@ export type IMutationRemoveUserFromTeamArgs = {
 
 
 export type IMutationRetrieveVercelTokenArgs = {
-  code: Scalars['String'];
+  code: Scalars['String']['input'];
 };
 
 
@@ -361,7 +363,7 @@ export type IMutationSetTeamMemberLevelArgs = {
 
 
 export type IMutationSetValidationStatusArgs = {
-  buildId: Scalars['ID'];
+  buildId: Scalars['ID']['input'];
   validationStatus: IValidationStatus;
 };
 
@@ -372,7 +374,7 @@ export type IMutationSetupVercelIntegrationArgs = {
 
 
 export type IMutationTerminateTrialArgs = {
-  accountId: Scalars['ID'];
+  accountId: Scalars['ID']['input'];
 };
 
 
@@ -407,25 +409,25 @@ export type IMutationUpdateProjectPrCommentArgs = {
 
 
 export type IMutationUpdateTestStatusesArgs = {
-  ids: Array<Scalars['String']>;
+  ids: Array<Scalars['String']['input']>;
   status: ITestStatus;
 };
 
 export type IMuteUpdateTest = {
   __typename?: 'MuteUpdateTest';
-  ids: Array<Scalars['String']>;
-  mute: Scalars['Boolean'];
-  muteUntil?: Maybe<Scalars['String']>;
+  ids: Array<Scalars['String']['output']>;
+  mute: Scalars['Boolean']['output'];
+  muteUntil?: Maybe<Scalars['String']['output']>;
 };
 
 export type INode = {
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
 };
 
 export type IPageInfo = {
   __typename?: 'PageInfo';
-  hasNextPage: Scalars['Boolean'];
-  totalCount: Scalars['Int'];
+  hasNextPage: Scalars['Boolean']['output'];
+  totalCount: Scalars['Int']['output'];
 };
 
 export enum IPermission {
@@ -435,9 +437,9 @@ export enum IPermission {
 
 export type IPlan = INode & {
   __typename?: 'Plan';
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  screenshotsLimitPerMonth: Scalars['Int'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  screenshotsLimitPerMonth: Scalars['Int']['output'];
 };
 
 export type IProject = INode & {
@@ -445,57 +447,57 @@ export type IProject = INode & {
   /** Owner of the repository */
   account: IAccount;
   /** Override branch name */
-  baselineBranch?: Maybe<Scalars['String']>;
+  baselineBranch?: Maybe<Scalars['String']['output']>;
   /** A single build linked to the repository */
   build?: Maybe<IBuild>;
   /** Builds associated to the repository */
   builds: IBuildConnection;
   /** Current month used screenshots */
-  currentMonthUsedScreenshots: Scalars['Int'];
+  currentMonthUsedScreenshots: Scalars['Int']['output'];
   /** Repositories associated to the project */
   ghRepository?: Maybe<IGithubRepository>;
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
   /** Latest build */
   latestBuild?: Maybe<IBuild>;
   /** Reference build */
   latestReferenceBuild?: Maybe<IBuild>;
-  name: Scalars['String'];
+  name: Scalars['String']['output'];
   /** Determine if the current user has write access to the project */
   permissions: Array<IPermission>;
   /** Pull request comment enabled */
-  prCommentEnabled: Scalars['Boolean'];
+  prCommentEnabled: Scalars['Boolean']['output'];
   /** Override repository's Github privacy */
-  private?: Maybe<Scalars['Boolean']>;
+  private?: Maybe<Scalars['Boolean']['output']>;
   /** Check if the project is public or not */
-  public: Scalars['Boolean'];
+  public: Scalars['Boolean']['output'];
   /** Reference branch */
-  referenceBranch?: Maybe<Scalars['String']>;
+  referenceBranch?: Maybe<Scalars['String']['output']>;
   /** Project slug */
-  slug: Scalars['String'];
+  slug: Scalars['String']['output'];
   /** Tests associated to the repository */
   tests: ITestConnection;
-  token?: Maybe<Scalars['String']>;
+  token?: Maybe<Scalars['String']['output']>;
   /** Total screenshots used */
-  totalScreenshots: Scalars['Int'];
+  totalScreenshots: Scalars['Int']['output'];
   /** Vercel project */
   vercelProject?: Maybe<IVercelProject>;
 };
 
 
 export type IProjectBuildArgs = {
-  number: Scalars['Int'];
+  number: Scalars['Int']['input'];
 };
 
 
 export type IProjectBuildsArgs = {
-  after?: InputMaybe<Scalars['Int']>;
-  first?: InputMaybe<Scalars['Int']>;
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
 export type IProjectTestsArgs = {
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 };
 
 export type IProjectConnection = IConnection & {
@@ -506,10 +508,10 @@ export type IProjectConnection = IConnection & {
 
 export type IPurchase = INode & {
   __typename?: 'Purchase';
-  id: Scalars['ID'];
-  paymentMethodFilled: Scalars['Boolean'];
+  id: Scalars['ID']['output'];
+  paymentMethodFilled: Scalars['Boolean']['output'];
   source: IPurchaseSource;
-  trialDaysRemaining?: Maybe<Scalars['Int']>;
+  trialDaysRemaining?: Maybe<Scalars['Int']['output']>;
 };
 
 export enum IPurchaseSource {
@@ -540,7 +542,7 @@ export type IQuery = {
   invitation?: Maybe<ITeam>;
   /** Get the authenticated user */
   me?: Maybe<IUser>;
-  ping: Scalars['Boolean'];
+  ping: Scalars['Boolean']['output'];
   /** Get a project */
   project?: Maybe<IProject>;
   /** Get a project */
@@ -555,94 +557,94 @@ export type IQuery = {
 
 
 export type IQueryAccountArgs = {
-  slug: Scalars['String'];
+  slug: Scalars['String']['input'];
 };
 
 
 export type IQueryAccountByIdArgs = {
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
 };
 
 
 export type IQueryGhApiInstallationRepositoriesArgs = {
-  installationId: Scalars['ID'];
-  page: Scalars['Int'];
+  installationId: Scalars['ID']['input'];
+  page: Scalars['Int']['input'];
 };
 
 
 export type IQueryInvitationArgs = {
-  token: Scalars['String'];
+  token: Scalars['String']['input'];
 };
 
 
 export type IQueryProjectArgs = {
-  accountSlug: Scalars['String'];
-  projectName: Scalars['String'];
+  accountSlug: Scalars['String']['input'];
+  projectName: Scalars['String']['input'];
 };
 
 
 export type IQueryProjectByIdArgs = {
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
 };
 
 
 export type IQueryTeamByIdArgs = {
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
 };
 
 
 export type IQueryVercelApiProjectsArgs = {
-  accessToken: Scalars['String'];
-  limit?: InputMaybe<Scalars['Int']>;
-  teamId?: InputMaybe<Scalars['ID']>;
+  accessToken: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  teamId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
 export type IQueryVercelApiTeamArgs = {
-  accessToken: Scalars['String'];
-  id: Scalars['ID'];
+  accessToken: Scalars['String']['input'];
+  id: Scalars['ID']['input'];
 };
 
 export type IRemoveUserFromTeamInput = {
-  teamAccountId: Scalars['ID'];
-  userAccountId: Scalars['ID'];
+  teamAccountId: Scalars['ID']['input'];
+  userAccountId: Scalars['ID']['input'];
 };
 
 export type IRemoveUserFromTeamPayload = {
   __typename?: 'RemoveUserFromTeamPayload';
-  teamMemberId: Scalars['ID'];
+  teamMemberId: Scalars['ID']['output'];
 };
 
 export type IScreenshot = INode & {
   __typename?: 'Screenshot';
-  height?: Maybe<Scalars['Int']>;
-  id: Scalars['ID'];
-  url: Scalars['String'];
-  width?: Maybe<Scalars['Int']>;
+  height?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  url: Scalars['String']['output'];
+  width?: Maybe<Scalars['Int']['output']>;
 };
 
 export type IScreenshotBucket = INode & {
   __typename?: 'ScreenshotBucket';
-  branch: Scalars['String'];
-  commit: Scalars['String'];
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
+  branch: Scalars['String']['output'];
+  commit: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
 };
 
 export type IScreenshotDiff = INode & {
   __typename?: 'ScreenshotDiff';
   baseScreenshot?: Maybe<IScreenshot>;
   compareScreenshot?: Maybe<IScreenshot>;
-  createdAt: Scalars['DateTime'];
-  flakyDetected: Scalars['Boolean'];
-  height?: Maybe<Scalars['Int']>;
-  id: Scalars['ID'];
-  name: Scalars['String'];
+  createdAt: Scalars['DateTime']['output'];
+  flakyDetected: Scalars['Boolean']['output'];
+  height?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
   status: IScreenshotDiffStatus;
   test?: Maybe<ITest>;
-  url?: Maybe<Scalars['String']>;
-  validationStatus?: Maybe<Scalars['String']>;
-  width?: Maybe<Scalars['Int']>;
+  url?: Maybe<Scalars['String']['output']>;
+  validationStatus?: Maybe<Scalars['String']['output']>;
+  width?: Maybe<Scalars['Int']['output']>;
 };
 
 export type IScreenshotDiffConnection = IConnection & {
@@ -661,69 +663,69 @@ export enum IScreenshotDiffStatus {
 
 export type ISetTeamMemberLevelInput = {
   level: ITeamUserLevel;
-  teamAccountId: Scalars['ID'];
-  userAccountId: Scalars['ID'];
+  teamAccountId: Scalars['ID']['input'];
+  userAccountId: Scalars['ID']['input'];
 };
 
 export type ISetupVercelIntegrationInput = {
-  accountId: Scalars['ID'];
+  accountId: Scalars['ID']['input'];
   projects: Array<ISetupVercelIntegrationProjectInput>;
-  vercelAccessToken: Scalars['String'];
-  vercelConfigurationId: Scalars['ID'];
-  vercelTeamId?: InputMaybe<Scalars['ID']>;
+  vercelAccessToken: Scalars['String']['input'];
+  vercelConfigurationId: Scalars['ID']['input'];
+  vercelTeamId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type ISetupVercelIntegrationProjectInput = {
-  projectId: Scalars['ID'];
-  vercelProjectId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
+  vercelProjectId: Scalars['ID']['input'];
 };
 
 export type ITeam = IAccount & INode & {
   __typename?: 'Team';
   avatar: IAccountAvatar;
-  consumptionRatio?: Maybe<Scalars['Float']>;
-  currentMonthUsedScreenshots: Scalars['Int'];
+  consumptionRatio?: Maybe<Scalars['Float']['output']>;
+  currentMonthUsedScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<IGithubAccount>;
-  hasForcedPlan: Scalars['Boolean'];
-  hasPaidPlan: Scalars['Boolean'];
-  id: Scalars['ID'];
-  inviteLink: Scalars['String'];
+  hasForcedPlan: Scalars['Boolean']['output'];
+  hasPaidPlan: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  inviteLink: Scalars['String']['output'];
   me: ITeamMember;
   members: ITeamMemberConnection;
-  name?: Maybe<Scalars['String']>;
+  name?: Maybe<Scalars['String']['output']>;
   oldPaidPurchase?: Maybe<IPurchase>;
   paymentProvider?: Maybe<IPurchaseSource>;
-  pendingCancelAt?: Maybe<Scalars['DateTime']>;
-  periodEndDate?: Maybe<Scalars['DateTime']>;
-  periodStartDate?: Maybe<Scalars['DateTime']>;
+  pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
+  periodEndDate?: Maybe<Scalars['DateTime']['output']>;
+  periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   purchase?: Maybe<IPurchase>;
   purchaseStatus?: Maybe<IPurchaseStatus>;
-  screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
-  slug: Scalars['String'];
-  stripeClientReferenceId: Scalars['String'];
-  stripeCustomerId?: Maybe<Scalars['String']>;
+  screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
+  slug: Scalars['String']['output'];
+  stripeClientReferenceId: Scalars['String']['output'];
+  stripeCustomerId?: Maybe<Scalars['String']['output']>;
   trialStatus?: Maybe<ITrialStatus>;
   vercelConfiguration?: Maybe<IVercelConfiguration>;
 };
 
 
 export type ITeamMembersArgs = {
-  after?: InputMaybe<Scalars['Int']>;
-  first?: InputMaybe<Scalars['Int']>;
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
 export type ITeamProjectsArgs = {
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 };
 
 export type ITeamMember = INode & {
   __typename?: 'TeamMember';
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
   level: ITeamUserLevel;
   user: IUser;
 };
@@ -741,19 +743,19 @@ export enum ITeamUserLevel {
 
 export type ITest = INode & {
   __typename?: 'Test';
-  buildName: Scalars['String'];
+  buildName: Scalars['String']['output'];
   dailyChanges: Array<IDailyCount>;
-  id: Scalars['ID'];
-  lastSeen?: Maybe<Scalars['DateTime']>;
-  mute: Scalars['Boolean'];
-  muteUntil?: Maybe<Scalars['DateTime']>;
-  name: Scalars['String'];
-  resolvedDate?: Maybe<Scalars['DateTime']>;
+  id: Scalars['ID']['output'];
+  lastSeen?: Maybe<Scalars['DateTime']['output']>;
+  mute: Scalars['Boolean']['output'];
+  muteUntil?: Maybe<Scalars['DateTime']['output']>;
+  name: Scalars['String']['output'];
+  resolvedDate?: Maybe<Scalars['DateTime']['output']>;
   screenshot?: Maybe<IScreenshot>;
-  stabilityScore?: Maybe<Scalars['Int']>;
+  stabilityScore?: Maybe<Scalars['Int']['output']>;
   status: ITestStatus;
-  totalBuilds: Scalars['Int'];
-  unstable: Scalars['Boolean'];
+  totalBuilds: Scalars['Int']['output'];
+  unstable: Scalars['Boolean']['output'];
 };
 
 export type ITestConnection = IConnection & {
@@ -769,9 +771,9 @@ export enum ITestStatus {
 }
 
 export type ITransferProjectInput = {
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  targetAccountId: Scalars['ID'];
+  id: Scalars['ID']['input'];
+  name: Scalars['String']['input'];
+  targetAccountId: Scalars['ID']['input'];
 };
 
 export enum ITrialStatus {
@@ -782,64 +784,64 @@ export enum ITrialStatus {
 }
 
 export type IUnlinkRepositoryInput = {
-  projectId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type IUnlinkVercelProjectInput = {
-  projectId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type IUpdateAccountInput = {
-  id: Scalars['ID'];
-  name?: InputMaybe<Scalars['String']>;
-  slug?: InputMaybe<Scalars['String']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  slug?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type IUpdateProjectInput = {
-  baselineBranch?: InputMaybe<Scalars['String']>;
-  id: Scalars['ID'];
-  name?: InputMaybe<Scalars['String']>;
-  private?: InputMaybe<Scalars['Boolean']>;
+  baselineBranch?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  private?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type IUpdateProjectPrCommentInput = {
-  enable: Scalars['Boolean'];
-  id: Scalars['ID'];
+  enable: Scalars['Boolean']['input'];
+  id: Scalars['ID']['input'];
 };
 
 export type IUpdatedTestStatuses = {
   __typename?: 'UpdatedTestStatuses';
-  ids: Array<Scalars['String']>;
+  ids: Array<Scalars['String']['output']>;
   status: ITestStatus;
 };
 
 export type IUser = IAccount & INode & {
   __typename?: 'User';
   avatar: IAccountAvatar;
-  consumptionRatio?: Maybe<Scalars['Float']>;
-  currentMonthUsedScreenshots: Scalars['Int'];
+  consumptionRatio?: Maybe<Scalars['Float']['output']>;
+  currentMonthUsedScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<IGithubAccount>;
   ghInstallations: IGhApiInstallationConnection;
-  hasForcedPlan: Scalars['Boolean'];
-  hasPaidPlan: Scalars['Boolean'];
-  hasSubscribedToTrial: Scalars['Boolean'];
-  id: Scalars['ID'];
+  hasForcedPlan: Scalars['Boolean']['output'];
+  hasPaidPlan: Scalars['Boolean']['output'];
+  hasSubscribedToTrial: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
   lastPurchase?: Maybe<IPurchase>;
-  name?: Maybe<Scalars['String']>;
+  name?: Maybe<Scalars['String']['output']>;
   oldPaidPurchase?: Maybe<IPurchase>;
   paymentProvider?: Maybe<IPurchaseSource>;
-  pendingCancelAt?: Maybe<Scalars['DateTime']>;
-  periodEndDate?: Maybe<Scalars['DateTime']>;
-  periodStartDate?: Maybe<Scalars['DateTime']>;
+  pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
+  periodEndDate?: Maybe<Scalars['DateTime']['output']>;
+  periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   purchase?: Maybe<IPurchase>;
   purchaseStatus?: Maybe<IPurchaseStatus>;
-  screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
-  slug: Scalars['String'];
-  stripeClientReferenceId: Scalars['String'];
-  stripeCustomerId?: Maybe<Scalars['String']>;
+  screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
+  slug: Scalars['String']['output'];
+  stripeClientReferenceId: Scalars['String']['output'];
+  stripeCustomerId?: Maybe<Scalars['String']['output']>;
   teams: Array<ITeam>;
   trialStatus?: Maybe<ITrialStatus>;
   vercelConfiguration?: Maybe<IVercelConfiguration>;
@@ -847,8 +849,8 @@ export type IUser = IAccount & INode & {
 
 
 export type IUserProjectsArgs = {
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 };
 
 export type IUserConnection = IConnection & {
@@ -865,24 +867,24 @@ export enum IValidationStatus {
 
 export type IVercelApiPagination = {
   __typename?: 'VercelApiPagination';
-  count: Scalars['Int'];
-  next?: Maybe<Scalars['ID']>;
-  prev?: Maybe<Scalars['ID']>;
+  count: Scalars['Int']['output'];
+  next?: Maybe<Scalars['ID']['output']>;
+  prev?: Maybe<Scalars['ID']['output']>;
 };
 
 export type IVercelApiProject = {
   __typename?: 'VercelApiProject';
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
   link?: Maybe<IVercelApiProjectLink>;
   linkedProject?: Maybe<IProject>;
-  name: Scalars['String'];
+  name: Scalars['String']['output'];
   project?: Maybe<IProject>;
   status: IVercelApiProjectStatus;
 };
 
 
 export type IVercelApiProjectStatusArgs = {
-  accountId: Scalars['ID'];
+  accountId: Scalars['ID']['input'];
 };
 
 export type IVercelApiProjectConnection = {
@@ -892,20 +894,20 @@ export type IVercelApiProjectConnection = {
 };
 
 export type IVercelApiProjectLink = {
-  type: Scalars['String'];
+  type: Scalars['String']['output'];
 };
 
 export type IVercelApiProjectLinkGithub = IVercelApiProjectLink & {
   __typename?: 'VercelApiProjectLinkGithub';
-  org: Scalars['String'];
-  repo: Scalars['String'];
-  repoId: Scalars['Int'];
-  type: Scalars['String'];
+  org: Scalars['String']['output'];
+  repo: Scalars['String']['output'];
+  repoId: Scalars['Int']['output'];
+  type: Scalars['String']['output'];
 };
 
 export type IVercelApiProjectLinkOther = IVercelApiProjectLink & {
   __typename?: 'VercelApiProjectLinkOther';
-  type: Scalars['String'];
+  type: Scalars['String']['output'];
 };
 
 export enum IVercelApiProjectStatus {
@@ -920,37 +922,37 @@ export enum IVercelApiProjectStatus {
 
 export type IVercelApiTeam = {
   __typename?: 'VercelApiTeam';
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  slug: Scalars['String'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
 };
 
 export type IVercelApiToken = {
   __typename?: 'VercelApiToken';
-  access_token: Scalars['String'];
-  installation_id: Scalars['String'];
-  team_id?: Maybe<Scalars['String']>;
-  user_id: Scalars['String'];
+  access_token: Scalars['String']['output'];
+  installation_id: Scalars['String']['output'];
+  team_id?: Maybe<Scalars['String']['output']>;
+  user_id: Scalars['String']['output'];
 };
 
 export type IVercelConfiguration = {
   __typename?: 'VercelConfiguration';
   apiProjects?: Maybe<IVercelApiProjectConnection>;
-  id: Scalars['ID'];
-  url: Scalars['String'];
-  vercelId: Scalars['ID'];
+  id: Scalars['ID']['output'];
+  url: Scalars['String']['output'];
+  vercelId: Scalars['ID']['output'];
 };
 
 export type IVercelProject = {
   __typename?: 'VercelProject';
   configuration: IVercelConfiguration;
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
 };
 
 export type IDailyCount = {
   __typename?: 'dailyCount';
-  count: Scalars['Int'];
-  date: Scalars['Date'];
+  count: Scalars['Int']['output'];
+  date: Scalars['Date']['output'];
 };
 
 export type WithIndex<TObject> = TObject & Record<string, any>;
@@ -1022,25 +1024,32 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 ) => TResult | Promise<TResult>;
 
 
+/** Mapping of interface types */
+export type IResolversInterfaceTypes<RefType extends Record<string, unknown>> = ResolversObject<{
+  Account: ( Account ) | ( Account );
+  Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<RefType['GhApiRepository']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<RefType['Project']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<RefType['ScreenshotDiff']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<RefType['User']> } );
+  Node: ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubRepository ) | ( Plan ) | ( Project ) | ( Purchase ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( TeamUser ) | ( Test ) | ( Account );
+  VercelApiProjectLink: ( IVercelApiProjectLinkGithub ) | ( IVercelApiProjectLinkOther );
+}>;
 
 /** Mapping between all available schema types and the resolvers types */
 export type IResolversTypes = ResolversObject<{
-  Account: IResolversTypes['Team'] | IResolversTypes['User'];
+  Account: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Account']>;
   AccountAvatar: ResolverTypeWrapper<AccountAvatar>;
-  Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
+  Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Build: ResolverTypeWrapper<Build>;
   BuildConnection: ResolverTypeWrapper<Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversTypes['Build']> }>;
   BuildStats: ResolverTypeWrapper<IBuildStats>;
   BuildStatus: IBuildStatus;
   BuildType: IBuildType;
-  Connection: IResolversTypes['BuildConnection'] | IResolversTypes['GhApiInstallationConnection'] | IResolversTypes['GhApiRepositoryConnection'] | IResolversTypes['ProjectConnection'] | IResolversTypes['ScreenshotDiffConnection'] | IResolversTypes['TeamMemberConnection'] | IResolversTypes['TestConnection'] | IResolversTypes['UserConnection'];
+  Connection: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Connection']>;
   CreateProjectInput: ICreateProjectInput;
   CreateTeamInput: ICreateTeamInput;
   CreateTeamResult: ResolverTypeWrapper<Omit<ICreateTeamResult, 'team'> & { team: IResolversTypes['Team'] }>;
-  Date: ResolverTypeWrapper<Scalars['Date']>;
-  DateTime: ResolverTypeWrapper<Scalars['DateTime']>;
+  Date: ResolverTypeWrapper<Scalars['Date']['output']>;
+  DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   DeleteTeamInput: IDeleteTeamInput;
-  Float: ResolverTypeWrapper<Scalars['Float']>;
+  Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   GhApiInstallation: ResolverTypeWrapper<GhApiInstallation>;
   GhApiInstallationAccount: ResolverTypeWrapper<IGhApiInstallationAccount>;
   GhApiInstallationConnection: ResolverTypeWrapper<Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<IResolversTypes['GhApiInstallation']> }>;
@@ -1048,15 +1057,15 @@ export type IResolversTypes = ResolversObject<{
   GhApiRepositoryConnection: ResolverTypeWrapper<Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<IResolversTypes['GhApiRepository']> }>;
   GithubAccount: ResolverTypeWrapper<GithubAccount>;
   GithubRepository: ResolverTypeWrapper<GithubRepository>;
-  ID: ResolverTypeWrapper<Scalars['ID']>;
-  Int: ResolverTypeWrapper<Scalars['Int']>;
+  ID: ResolverTypeWrapper<Scalars['ID']['output']>;
+  Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   JobStatus: IJobStatus;
   LeaveTeamInput: ILeaveTeamInput;
   LinkRepositoryInput: ILinkRepositoryInput;
   LinkVercelProjectInput: ILinkVercelProjectInput;
   Mutation: ResolverTypeWrapper<{}>;
   MuteUpdateTest: ResolverTypeWrapper<IMuteUpdateTest>;
-  Node: IResolversTypes['Build'] | IResolversTypes['GhApiInstallation'] | IResolversTypes['GhApiInstallationAccount'] | IResolversTypes['GhApiRepository'] | IResolversTypes['GithubAccount'] | IResolversTypes['GithubRepository'] | IResolversTypes['Plan'] | IResolversTypes['Project'] | IResolversTypes['Purchase'] | IResolversTypes['Screenshot'] | IResolversTypes['ScreenshotBucket'] | IResolversTypes['ScreenshotDiff'] | IResolversTypes['Team'] | IResolversTypes['TeamMember'] | IResolversTypes['Test'] | IResolversTypes['User'];
+  Node: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Node']>;
   PageInfo: ResolverTypeWrapper<IPageInfo>;
   Permission: IPermission;
   Plan: ResolverTypeWrapper<Plan>;
@@ -1076,7 +1085,7 @@ export type IResolversTypes = ResolversObject<{
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
   SetupVercelIntegrationInput: ISetupVercelIntegrationInput;
   SetupVercelIntegrationProjectInput: ISetupVercelIntegrationProjectInput;
-  String: ResolverTypeWrapper<Scalars['String']>;
+  String: ResolverTypeWrapper<Scalars['String']['output']>;
   Team: ResolverTypeWrapper<Account>;
   TeamMember: ResolverTypeWrapper<TeamUser>;
   TeamMemberConnection: ResolverTypeWrapper<Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamMember']> }>;
@@ -1084,7 +1093,7 @@ export type IResolversTypes = ResolversObject<{
   Test: ResolverTypeWrapper<Test>;
   TestConnection: ResolverTypeWrapper<Omit<ITestConnection, 'edges'> & { edges: Array<IResolversTypes['Test']> }>;
   TestStatus: ITestStatus;
-  Time: ResolverTypeWrapper<Scalars['Time']>;
+  Time: ResolverTypeWrapper<Scalars['Time']['output']>;
   TransferProjectInput: ITransferProjectInput;
   TrialStatus: ITrialStatus;
   UnlinkRepositoryInput: IUnlinkRepositoryInput;
@@ -1099,7 +1108,7 @@ export type IResolversTypes = ResolversObject<{
   VercelApiPagination: ResolverTypeWrapper<IVercelApiPagination>;
   VercelApiProject: ResolverTypeWrapper<VercelApiProject>;
   VercelApiProjectConnection: ResolverTypeWrapper<Omit<IVercelApiProjectConnection, 'projects'> & { projects: Array<IResolversTypes['VercelApiProject']> }>;
-  VercelApiProjectLink: IResolversTypes['VercelApiProjectLinkGithub'] | IResolversTypes['VercelApiProjectLinkOther'];
+  VercelApiProjectLink: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['VercelApiProjectLink']>;
   VercelApiProjectLinkGithub: ResolverTypeWrapper<IVercelApiProjectLinkGithub>;
   VercelApiProjectLinkOther: ResolverTypeWrapper<IVercelApiProjectLinkOther>;
   VercelApiProjectStatus: IVercelApiProjectStatus;
@@ -1112,20 +1121,20 @@ export type IResolversTypes = ResolversObject<{
 
 /** Mapping between all available schema types and the resolvers parents */
 export type IResolversParentTypes = ResolversObject<{
-  Account: IResolversParentTypes['Team'] | IResolversParentTypes['User'];
+  Account: IResolversInterfaceTypes<IResolversParentTypes>['Account'];
   AccountAvatar: AccountAvatar;
-  Boolean: Scalars['Boolean'];
+  Boolean: Scalars['Boolean']['output'];
   Build: Build;
   BuildConnection: Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversParentTypes['Build']> };
   BuildStats: IBuildStats;
-  Connection: IResolversParentTypes['BuildConnection'] | IResolversParentTypes['GhApiInstallationConnection'] | IResolversParentTypes['GhApiRepositoryConnection'] | IResolversParentTypes['ProjectConnection'] | IResolversParentTypes['ScreenshotDiffConnection'] | IResolversParentTypes['TeamMemberConnection'] | IResolversParentTypes['TestConnection'] | IResolversParentTypes['UserConnection'];
+  Connection: IResolversInterfaceTypes<IResolversParentTypes>['Connection'];
   CreateProjectInput: ICreateProjectInput;
   CreateTeamInput: ICreateTeamInput;
   CreateTeamResult: Omit<ICreateTeamResult, 'team'> & { team: IResolversParentTypes['Team'] };
-  Date: Scalars['Date'];
-  DateTime: Scalars['DateTime'];
+  Date: Scalars['Date']['output'];
+  DateTime: Scalars['DateTime']['output'];
   DeleteTeamInput: IDeleteTeamInput;
-  Float: Scalars['Float'];
+  Float: Scalars['Float']['output'];
   GhApiInstallation: GhApiInstallation;
   GhApiInstallationAccount: IGhApiInstallationAccount;
   GhApiInstallationConnection: Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<IResolversParentTypes['GhApiInstallation']> };
@@ -1133,14 +1142,14 @@ export type IResolversParentTypes = ResolversObject<{
   GhApiRepositoryConnection: Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<IResolversParentTypes['GhApiRepository']> };
   GithubAccount: GithubAccount;
   GithubRepository: GithubRepository;
-  ID: Scalars['ID'];
-  Int: Scalars['Int'];
+  ID: Scalars['ID']['output'];
+  Int: Scalars['Int']['output'];
   LeaveTeamInput: ILeaveTeamInput;
   LinkRepositoryInput: ILinkRepositoryInput;
   LinkVercelProjectInput: ILinkVercelProjectInput;
   Mutation: {};
   MuteUpdateTest: IMuteUpdateTest;
-  Node: IResolversParentTypes['Build'] | IResolversParentTypes['GhApiInstallation'] | IResolversParentTypes['GhApiInstallationAccount'] | IResolversParentTypes['GhApiRepository'] | IResolversParentTypes['GithubAccount'] | IResolversParentTypes['GithubRepository'] | IResolversParentTypes['Plan'] | IResolversParentTypes['Project'] | IResolversParentTypes['Purchase'] | IResolversParentTypes['Screenshot'] | IResolversParentTypes['ScreenshotBucket'] | IResolversParentTypes['ScreenshotDiff'] | IResolversParentTypes['Team'] | IResolversParentTypes['TeamMember'] | IResolversParentTypes['Test'] | IResolversParentTypes['User'];
+  Node: IResolversInterfaceTypes<IResolversParentTypes>['Node'];
   PageInfo: IPageInfo;
   Plan: Plan;
   Project: Project;
@@ -1156,13 +1165,13 @@ export type IResolversParentTypes = ResolversObject<{
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
   SetupVercelIntegrationInput: ISetupVercelIntegrationInput;
   SetupVercelIntegrationProjectInput: ISetupVercelIntegrationProjectInput;
-  String: Scalars['String'];
+  String: Scalars['String']['output'];
   Team: Account;
   TeamMember: TeamUser;
   TeamMemberConnection: Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamMember']> };
   Test: Test;
   TestConnection: Omit<ITestConnection, 'edges'> & { edges: Array<IResolversParentTypes['Test']> };
-  Time: Scalars['Time'];
+  Time: Scalars['Time']['output'];
   TransferProjectInput: ITransferProjectInput;
   UnlinkRepositoryInput: IUnlinkRepositoryInput;
   UnlinkVercelProjectInput: IUnlinkVercelProjectInput;
@@ -1175,7 +1184,7 @@ export type IResolversParentTypes = ResolversObject<{
   VercelApiPagination: IVercelApiPagination;
   VercelApiProject: VercelApiProject;
   VercelApiProjectConnection: Omit<IVercelApiProjectConnection, 'projects'> & { projects: Array<IResolversParentTypes['VercelApiProject']> };
-  VercelApiProjectLink: IResolversParentTypes['VercelApiProjectLinkGithub'] | IResolversParentTypes['VercelApiProjectLinkOther'];
+  VercelApiProjectLink: IResolversInterfaceTypes<IResolversParentTypes>['VercelApiProjectLink'];
   VercelApiProjectLinkGithub: IVercelApiProjectLinkGithub;
   VercelApiProjectLinkOther: IVercelApiProjectLinkOther;
   VercelApiTeam: VercelApiTeam;

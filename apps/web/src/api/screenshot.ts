@@ -18,7 +18,7 @@ router.get(
       expiresIn: 3600,
     });
     res.redirect(url);
-  })
+  }),
 );
 
 export { router as screenshots };

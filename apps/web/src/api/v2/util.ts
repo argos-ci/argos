@@ -79,7 +79,7 @@ export const createBuild = async (params: {
   if (account.type === "team" && (!plan || plan.name === "free")) {
     throw new HttpError(
       402,
-      `Build rejected: upgrade to Pro to use Team features.`
+      `Build rejected: upgrade to Pro to use Team features.`,
     );
   }
 
@@ -91,7 +91,7 @@ export const createBuild = async (params: {
     if (hasExceededLimit && !hasUsageBasedPlan) {
       throw new HttpError(
         402,
-        `Build rejected for insufficient credit. Please upgrade your Plan.`
+        `Build rejected for insufficient credit. Please upgrade your Plan.`,
       );
     }
   }
@@ -99,7 +99,7 @@ export const createBuild = async (params: {
   const buildName = params.buildName || "default";
 
   const githubRepository = await params.project.$relatedQuery(
-    "githubRepository"
+    "githubRepository",
   );
 
   const pullRequest =

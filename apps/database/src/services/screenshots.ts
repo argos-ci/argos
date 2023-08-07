@@ -19,7 +19,7 @@ const getOrCreateTests = async ({
     .whereIn("name", screenshotNames);
   const testNames = tests.map(({ name }: Test) => name);
   const testNamesToAdd = screenshotNames.filter(
-    (screenshotName) => !testNames.includes(screenshotName)
+    (screenshotName) => !testNames.includes(screenshotName),
   );
   if (testNamesToAdd.length === 0) {
     return tests;
@@ -30,7 +30,7 @@ const getOrCreateTests = async ({
       name: name,
       projectId,
       buildName,
-    }))
+    })),
   );
   return [...tests, ...addedTests];
 };
@@ -55,7 +55,7 @@ type InsertFilesAndScreenshotsParams = {
  * @returns The number of screenshots inserted
  */
 export const insertFilesAndScreenshots = async (
-  params: InsertFilesAndScreenshotsParams
+  params: InsertFilesAndScreenshotsParams,
 ): Promise<number> => {
   return await transaction(params.trx, async (trx) => {
     if (params.screenshots.length === 0) return 0;
@@ -63,7 +63,7 @@ export const insertFilesAndScreenshots = async (
     const unknownKeys =
       params.unknownKeys ||
       (await getUnknownScreenshotKeys(
-        params.screenshots.map((screenshot) => screenshot.key)
+        params.screenshots.map((screenshot) => screenshot.key),
       ));
 
     if (unknownKeys.length > 0) {
@@ -75,7 +75,7 @@ export const insertFilesAndScreenshots = async (
     }
 
     const screenshotKeys = params.screenshots.map(
-      (screenshot) => screenshot.key
+      (screenshot) => screenshot.key,
     );
     const [files, tests, duplicates] = await Promise.all([
       File.query(trx).whereIn("key", screenshotKeys),
@@ -83,7 +83,7 @@ export const insertFilesAndScreenshots = async (
         projectId: params.build.projectId,
         buildName: params.build.name,
         screenshotNames: params.screenshots.map(
-          (screenshot) => screenshot.name
+          (screenshot) => screenshot.name,
         ),
         trx,
       }),
@@ -100,8 +100,8 @@ export const insertFilesAndScreenshots = async (
         `Screenshots already uploaded for ${duplicates
           .map((screenshot) => screenshot.name)
           .join(
-            ", "
-          )}. Please ensure to not upload a screenshot with the same name multiple times.`
+            ", ",
+          )}. Please ensure to not upload a screenshot with the same name multiple times.`,
       );
     }
 
@@ -123,7 +123,7 @@ export const insertFilesAndScreenshots = async (
           fileId: file.id,
           testId: test.id,
         };
-      })
+      }),
     );
 
     return params.screenshots.length;

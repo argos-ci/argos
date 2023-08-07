@@ -11,7 +11,7 @@ export const FormLabel = ({ className, invalid, ...props }: FormLabelProps) => {
       className={clsx(
         className,
         "mb-2 inline-block text-sm font-medium",
-        invalid ? "text-danger-low" : "text-low"
+        invalid ? "text-danger-low" : "text-low",
       )}
       {...props}
     />

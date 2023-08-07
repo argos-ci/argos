@@ -193,7 +193,7 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
                   edges: existingMembers.edges.filter(
                     (userRef: any) =>
                       readField("id", userRef) !==
-                      data.removeUserFromTeam.teamMemberId
+                      data.removeUserFromTeam.teamMemberId,
                   ),
                   pageInfo: {
                     ...existingMembers.pageInfo,
@@ -209,7 +209,7 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
         teamAccountId: props.teamAccountId,
         userAccountId: user.id,
       },
-    }
+    },
   );
   return (
     <>
@@ -579,7 +579,7 @@ export const TeamMembers = (props: {
                   teamAccountId={team.id}
                   user={
                     members.find(
-                      (member) => member.user.id === removeAccountId
+                      (member) => member.user.id === removeAccountId,
                     )!.user
                   }
                   state={removeTeamDialog}

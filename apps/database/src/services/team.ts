@@ -8,7 +8,7 @@ import { transaction } from "../transaction.js";
 
 export const resolveTeamSlug = async (
   name: string,
-  index = 0
+  index = 0,
 ): Promise<string> => {
   const nameSlug = slugify(name);
   const slug = index ? `${nameSlug}-${index}` : nameSlug;

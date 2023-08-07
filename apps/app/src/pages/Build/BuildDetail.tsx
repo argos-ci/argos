@@ -60,7 +60,7 @@ const DownloadScreenshotButton = memo(
         </IconButton>
       </Tooltip>
     );
-  }
+  },
 );
 
 const BuildScreenshotHeader = memo(
@@ -89,7 +89,7 @@ const BuildScreenshotHeader = memo(
         <Time date={date} className="text-xxs" />
       </div>
     );
-  }
+  },
 );
 
 const MissingScreenshotInfo = memo(
@@ -113,7 +113,7 @@ const MissingScreenshotInfo = memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 const getImgAttributes = ({
@@ -322,7 +322,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             className={clsx(
               opacity,
               "relative z-10",
-              contained && "max-h-full"
+              contained && "max-h-full",
             )}
             alt="Changes screenshot"
             {...getImgAttributes({
@@ -377,12 +377,12 @@ const BuildScreenshots = memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 const useScrollToTop = (
   ref: React.RefObject<HTMLElement>,
-  activeDiff: Diff | null
+  activeDiff: Diff | null,
 ) => {
   useLayoutEffect(() => {
     if (activeDiff && ref.current) {
@@ -403,7 +403,7 @@ export const BuildDetail = (props: {
   const [scrolled, setScrolled] = useState(false);
   useScrollListener((event) => {
     setScrolled(
-      event.target ? (event.target as HTMLDivElement).scrollTop > 0 : false
+      event.target ? (event.target as HTMLDivElement).scrollTop > 0 : false,
     );
   }, containerRef);
   return (

@@ -176,7 +176,7 @@ export const resolvers: IResolvers = {
            ELSE "id"
            END) ASC
           `,
-          ctx.auth.user.id
+          ctx.auth.user.id,
         )
         .range(after, after + first - 1);
 
@@ -296,7 +296,7 @@ export const resolvers: IResolvers = {
 
       if (count === 1) {
         throw new GraphQLError(
-          "You are the last user of this team, you can't leave it"
+          "You are the last user of this team, you can't leave it",
         );
       }
 

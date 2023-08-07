@@ -22,19 +22,19 @@ import {
 } from "@argos-ci/database/models";
 
 const createModelLoader = <TModelClass extends ModelClass<Model>>(
-  Model: TModelClass
+  Model: TModelClass,
 ) => {
   return new DataLoader<string, InstanceType<TModelClass>>(async (ids) => {
     const models = await Model.query().findByIds(ids as string[]);
     return ids.map((id) =>
-      models.find((model: Model) => model.id === id)
+      models.find((model: Model) => model.id === id),
     ) as InstanceType<TModelClass>[];
   });
 };
 
 const createBuildAggregatedStatusLoader = () =>
   new DataLoader<Build, BuildAggregatedStatus>(async (builds) =>
-    Build.getAggregatedBuildStatuses(builds as Build[])
+    Build.getAggregatedBuildStatuses(builds as Build[]),
   );
 
 const createLatestProjectBuildLoader = () =>
@@ -74,7 +74,7 @@ const createLastScreenshotLoader = () =>
         "id",
         Test.query()
           .select("projectId")
-          .where("id", testIds[0] as string)
+          .where("id", testIds[0] as string),
       )
       .first();
     const referenceBranch = await project!.$getReferenceBranch();
@@ -86,7 +86,7 @@ const createLastScreenshotLoader = () =>
       .orderBy("testId")
       .orderByRaw(
         `CASE WHEN "screenshotBucket".branch = ? THEN 0 ELSE 1 END`,
-        referenceBranch
+        referenceBranch,
       )
       .orderBy("screenshots.createdAt", "desc");
     const lastScreenshotMap: Record<string, Screenshot> = {};
@@ -126,7 +126,7 @@ const createAccountFromRelationLoader = () => {
         }
         return null;
       });
-    }
+    },
   );
 };
 
@@ -136,7 +136,7 @@ const createProjectFromVercelProjectLoader = () => {
       .joinRelated("vercelProject")
       .whereIn("vercelProject.vercelId", vercelProjectIds as string[]);
     return vercelProjectIds.map(
-      (id) => projects.find((p) => p.vercelProjectId === id) ?? null
+      (id) => projects.find((p) => p.vercelProjectId === id) ?? null,
     );
   });
 };

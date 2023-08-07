@@ -3,7 +3,7 @@
  */
 export const up = async (knex) => {
   await knex.raw(
-    'ALTER TABLE screenshot_diffs ALTER COLUMN "score" TYPE DECIMAL(10, 5)'
+    'ALTER TABLE screenshot_diffs ALTER COLUMN "score" TYPE DECIMAL(10, 5)',
   );
 };
 
@@ -12,6 +12,6 @@ export const up = async (knex) => {
  */
 export const down = async (knex) => {
   await knex.raw(
-    'ALTER TABLE screenshot_diffs ALTER COLUMN "score" TYPE INTEGER'
+    'ALTER TABLE screenshot_diffs ALTER COLUMN "score" TYPE INTEGER',
   );
 };

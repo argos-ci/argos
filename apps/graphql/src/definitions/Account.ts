@@ -133,7 +133,7 @@ const RESERVED_SLUGS = [
 const accountById = async (
   _root: unknown,
   args: { id: string },
-  ctx: Context
+  ctx: Context,
 ) => {
   if (!ctx.auth) return null;
   const account = await Account.query().findById(args.id);
@@ -311,7 +311,7 @@ export const resolvers: IResolvers = {
     vercelConfiguration: async (account, _args, ctx) => {
       if (!account.vercelConfigurationId) return null;
       const configuration = await ctx.loaders.VercelConfiguration.load(
-        account.vercelConfigurationId
+        account.vercelConfigurationId,
       );
       if (!configuration) return null;
       if (configuration.deleted) return null;
@@ -329,7 +329,7 @@ export const resolvers: IResolvers = {
       const account = await Account.query().findOne({ slug: args.slug });
       if (!account) return null;
       const hasReadPermission = await account.$checkReadPermission(
-        ctx.auth.user
+        ctx.auth.user,
       );
       if (!hasReadPermission) return null;
       return account;
@@ -396,7 +396,7 @@ export const resolvers: IResolvers = {
       }
 
       const subscription = await terminateStripeTrial(
-        purchase.stripeSubscriptionId
+        purchase.stripeSubscriptionId,
       );
       await updatePurchaseFromSubscription(purchase, subscription);
       return account;

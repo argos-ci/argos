@@ -36,7 +36,7 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(
       className,
       ...props
     },
-    ref
+    ref,
   ) => {
     const colorClassName = colorClassNames[color];
     if (!colorClassName) {
@@ -51,7 +51,7 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(
           scale === "sm" && "px-3 py-1 text-xs",
           scale === "md" && "px-4 py-2 text-sm",
           "no-wrap inline-flex select-none items-center gap-2 whitespace-nowrap rounded-chip border font-medium leading-4",
-          className
+          className,
         )}
         {...props}
       >
@@ -59,5 +59,5 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(
         {children}
       </div>
     );
-  }
+  },
 );

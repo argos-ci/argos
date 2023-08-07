@@ -36,9 +36,9 @@
   },
   "dependencies": {
     "@argos-ci/config": "*",
-    "knex": "^2.4.2",
-    "objection": "^3.0.1",
-    "pg": "^8.10.0"
+    "knex": "^2.5.1",
+    "objection": "^3.1.1",
+    "pg": "^8.11.2"
   },
   "devDependencies": {
     "@types/factory-girl": "^5.0.8",

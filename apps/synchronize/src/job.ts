@@ -8,5 +8,5 @@ export const job = createModelJob(
   GithubSynchronization,
   async (synchronization) => {
     return synchronizeInstallation(synchronization.githubInstallationId);
-  }
+  },
 );

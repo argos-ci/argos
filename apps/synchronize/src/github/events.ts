@@ -52,7 +52,7 @@ export const handleGitHubEvents = async ({
             if (!account) {
               logger.error(
                 "Cannot update purchase, account not found",
-                payload
+                payload,
               );
               return;
             }
@@ -64,7 +64,7 @@ export const handleGitHubEvents = async ({
             if (!account) {
               logger.error(
                 "Cannot cancel purchase, account not found",
-                payload
+                payload,
               );
               return;
             }

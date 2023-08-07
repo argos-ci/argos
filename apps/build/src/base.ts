@@ -24,7 +24,7 @@ const getMergeBaseCommitSha = async (params: {
         repo: params.repo,
         basehead: `${params.base}...${params.head}`,
         per_page: 1,
-      }
+      },
     );
     return data.merge_base_commit.sha;
   } catch (error: any) {
@@ -57,7 +57,7 @@ const listParentCommitShas = async (params: {
   } catch (error: any) {
     if (error.status === 404) {
       const notFoundError = new Error(
-        `"${params.sha}" not found on repository "${params.repo}"`
+        `"${params.sha}" not found on repository "${params.repo}"`,
       );
       // @ts-ignore
       notFoundError.retryable = false;
@@ -93,8 +93,8 @@ const getBucketFromCommits = async (params: {
     .whereIn("commit", params.shas)
     .joinRaw(
       `join (values ${params.shas.map(
-        (sha, index) => `('${sha}',${index})`
-      )}) as ordering(sha, rank) on commit = ordering.sha`
+        (sha, index) => `('${sha}',${index})`,
+      )}) as ordering(sha, rank) on commit = ordering.sha`,
     )
     .orderBy("ordering.rank")
     .first();
@@ -136,7 +136,7 @@ export const getBaseScreenshotBucket = async ({
   const richBuild = await build
     .$query(trx)
     .withGraphFetched(
-      "[project.githubRepository.[githubAccount, activeInstallation], compareScreenshotBucket]"
+      "[project.githubRepository.[githubAccount, activeInstallation], compareScreenshotBucket]",
     );
 
   if (!richBuild) {

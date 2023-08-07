@@ -13,7 +13,7 @@ export const performBuild = async (build: Build) => {
   const screenshotDiffJobs = await Promise.all(
     screenshotDiffs
       .filter(({ jobStatus }) => jobStatus !== "complete")
-      .map(({ id }) => screenshotDiffJob.push(id))
+      .map(({ id }) => screenshotDiffJob.push(id)),
   );
 
   const project = await Project.query()

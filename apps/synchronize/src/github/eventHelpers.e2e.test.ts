@@ -12,15 +12,15 @@ describe("#getOrCreateAccount", () => {
 
   it("creates an account", async () => {
     const teamAccount = await getOrCreateAccountFromEvent(
-      ORGANIZATION_PURCHASE_EVENT_PAYLOAD
+      ORGANIZATION_PURCHASE_EVENT_PAYLOAD,
     );
     await teamAccount.$fetchGraph(
-      "[githubAccount,team.[owners.account.githubAccount,users]]"
+      "[githubAccount,team.[owners.account.githubAccount,users]]",
     );
 
     // Has one owner that is the sender
     expect(teamAccount.team?.users?.map((user) => user.id)).toEqual(
-      teamAccount.team?.owners?.map((user) => user.id)
+      teamAccount.team?.owners?.map((user) => user.id),
     );
     expect(teamAccount.team?.owners).toHaveLength(1);
     const user = teamAccount.team?.owners?.[0];

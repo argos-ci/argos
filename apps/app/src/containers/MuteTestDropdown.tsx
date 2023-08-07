@@ -121,7 +121,7 @@ export const MuteTestDropdown = ({
                 {label}
               </MenuItem>
             </Tooltip>
-          )
+          ),
         )}
       </Menu>
     </>

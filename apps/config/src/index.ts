@@ -260,7 +260,7 @@ const config = convict({
         doc: "Maximum connections per pool",
         format: Number,
         default: Math.floor(
-          (maxConnectionsAllowed - freeConnectionsForThirdTools) / workers
+          (maxConnectionsAllowed - freeConnectionsForThirdTools) / workers,
         ),
       },
     },
@@ -290,7 +290,7 @@ config.validate();
 
 config.set(
   "github.privateKey",
-  config.get("github.privateKey").replace(/\\n/g, "\n")
+  config.get("github.privateKey").replace(/\\n/g, "\n"),
 );
 
 if (process.env["DATABASE_URL"]) {

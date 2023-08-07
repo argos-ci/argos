@@ -27,14 +27,14 @@ export const createApp = async () => {
       Sentry.configureScope((scope) => {
         scope.setTag(
           "clientReleaseVersion",
-          req.headers["x-argos-release-version"] as string
+          req.headers["x-argos-release-version"] as string,
         );
       });
     } else if (req.headers["x-argos-cli-version"]) {
       Sentry.configureScope((scope) => {
         scope.setTag(
           "clientCliVersion",
-          req.headers["x-argos-cli-version"] as string
+          req.headers["x-argos-cli-version"] as string,
         );
       });
     }
@@ -69,7 +69,7 @@ export const createApp = async () => {
       setHeaders: (res) => {
         res.set("Cache-Control", "no-cache");
       },
-    })
+    }),
   );
 
   app.use(
@@ -82,7 +82,7 @@ export const createApp = async () => {
       frameguard: {
         action: "deny", // Disallow embedded iframe
       },
-    })
+    }),
   );
 
   installApiRouter(app);

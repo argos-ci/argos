@@ -20,5 +20,5 @@ export const ImageAvatar = forwardRef<HTMLImageElement, ImageAvatarProps>(
         width={size}
       />
     );
-  }
+  },
 );

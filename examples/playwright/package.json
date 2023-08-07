@@ -4,7 +4,7 @@
     "test": "playwright test"
   },
   "devDependencies": {
-    "@argos-ci/playwright": "^0.0.4",
-    "@playwright/test": "^1.32.3"
+    "@argos-ci/playwright": "^0.0.6",
+    "@playwright/test": "^1.36.2"
   }
 }

@@ -65,5 +65,5 @@ router.post(
       build: { id: build.id, url: buildUrl },
       crawl: { id: crawl.id, baseUrl: crawl.baseUrl },
     });
-  })
+  }),
 );

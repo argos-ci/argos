@@ -9,10 +9,10 @@ const useLoginUrl = (redirect: string | null | undefined) => {
   const { origin } = window.location;
   const { pathname } = useLocation();
   const callbackUrl = `${origin}/auth/github/callback?r=${encodeURIComponent(
-    redirect ?? pathname
+    redirect ?? pathname,
   )}`;
   return `${config.get("github.loginUrl")}&redirect_uri=${encodeURIComponent(
-    callbackUrl
+    callbackUrl,
   )}`;
 };
 
@@ -36,5 +36,5 @@ export const GitHubLoginButton = memo<GitHubLoginButtonProps>(
         )}
       </Button>
     );
-  }
+  },
 );

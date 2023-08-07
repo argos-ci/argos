@@ -12,7 +12,7 @@ export const Pre = ({ className, code, ...props }: PreProps) => {
     <pre
       className={clsx(
         className,
-        "relative whitespace-pre-wrap rounded bg-ui p-4"
+        "relative whitespace-pre-wrap rounded bg-ui p-4",
       )}
       {...props}
     >

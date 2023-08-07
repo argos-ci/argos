@@ -12,7 +12,7 @@ import { uploadFromBuffer, uploadFromFilePath } from "./upload.js";
 export const tmpName = promisify(
   (options: TmpNameOptions, cb: TmpNameCallback) => {
     cbTmpName(options, cb);
-  }
+  },
 );
 
 interface Dimensions {

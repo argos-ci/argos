@@ -138,7 +138,7 @@ export class ScreenshotDiff extends Model {
     END ASC`;
 
   $getDiffStatus = async (
-    loadScreenshot: (screenshotId: string) => Promise<Screenshot>
+    loadScreenshot: (screenshotId: string) => Promise<Screenshot>,
   ) => {
     if (!this.compareScreenshotId) return "removed";
 

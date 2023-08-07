@@ -90,7 +90,7 @@ const handleUpdateParallel = async ({
   if (!req.body.parallelTotal) {
     throw new HttpError(
       400,
-      "`parallelTotal` is required when `parallel` is `true`"
+      "`parallelTotal` is required when `parallel` is `true`",
     );
   }
 
@@ -178,7 +178,7 @@ router.put(
     if (!build.compareScreenshotBucket) {
       throw new HttpError(
         500,
-        "Could not find compareScreenshotBucket for build"
+        "Could not find compareScreenshotBucket for build",
       );
     }
 
@@ -204,5 +204,5 @@ router.put(
     const buildUrl = await build.getUrl();
 
     res.send({ build: { id: build.id, url: buildUrl } });
-  })
+  }),
 );

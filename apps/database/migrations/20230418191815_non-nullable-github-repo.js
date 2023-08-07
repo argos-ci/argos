@@ -4,7 +4,7 @@
  */
 export const up = async (knex) => {
   await knex.raw(
-    'ALTER TABLE github_repositories ALTER COLUMN "githubAccountId" SET NOT NULL'
+    'ALTER TABLE github_repositories ALTER COLUMN "githubAccountId" SET NOT NULL',
   );
 };
 
@@ -14,6 +14,6 @@ export const up = async (knex) => {
  */
 export const down = async (knex) => {
   await knex.raw(
-    'ALTER TABLE github_repositories ALTER COLUMN "githubAccountId" DROP NOT NULL'
+    'ALTER TABLE github_repositories ALTER COLUMN "githubAccountId" DROP NOT NULL',
   );
 };

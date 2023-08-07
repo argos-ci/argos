@@ -59,5 +59,5 @@ export const Form = forwardRef<HTMLFormElement, FormProps>(
         {...props}
       />
     );
-  }
+  },
 );

@@ -147,7 +147,7 @@ const getBannerProps = ({
       action,
       buttonLabel: `Reactivate ${subscriptionType}`,
       message: `Your ${subscriptionType} has been canceled. You can still use team features until the trial ends on ${moment(
-        pendingCancelAt
+        pendingCancelAt,
       ).format("LL")}.`,
     };
   }
@@ -194,7 +194,7 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
   } = account;
 
   const missingPaymentMethod = Boolean(
-    purchase && !purchase.paymentMethodFilled
+    purchase && !purchase.paymentMethodFilled,
   );
 
   const { message, buttonLabel, bannerColor, action } = getBannerProps({

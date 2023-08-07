@@ -64,12 +64,12 @@ const strategy = {
     if (repository.projects.length > 1) {
       throw new HttpError(
         500,
-        `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a Project token.`
+        `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a Project token.`,
       );
     }
 
     const octokit = await getInstallationOctokit(
-      repository.activeInstallation.id
+      repository.activeInstallation.id,
     );
 
     if (!octokit) {
@@ -96,18 +96,18 @@ const strategy = {
     if (!githubRun) {
       throw new HttpError(
         404,
-        `GitHub run not found (token: "${bearerToken}")`
+        `GitHub run not found (token: "${bearerToken}")`,
       );
     }
 
     const hasInProgressJob = githubRun.data.jobs.some(
-      (job) => job.status === "in_progress"
+      (job) => job.status === "in_progress",
     );
 
     if (!hasInProgressJob) {
       throw new HttpError(
         401,
-        `GitHub job is not in progress (token: "${bearerToken}")`
+        `GitHub job is not in progress (token: "${bearerToken}")`,
       );
     }
 

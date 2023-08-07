@@ -35,7 +35,7 @@ export interface BuildStats {
 
 export const getBuildColor = (
   type: BuildType | null | undefined,
-  status: BuildStatus
+  status: BuildStatus,
 ) => {
   switch (type) {
     case "reference":
@@ -83,7 +83,7 @@ export const getBuildColor = (
 
 export const getBuildIcon = (
   type: BuildType | null | undefined,
-  status: BuildStatus
+  status: BuildStatus,
 ): React.ComponentType<any> => {
   switch (type) {
     case "reference":
@@ -134,7 +134,7 @@ export const getBuildIcon = (
 
 export const getBuildLabel = (
   type: BuildType | null | undefined,
-  status: BuildStatus
+  status: BuildStatus,
 ): string => {
   switch (type) {
     case "orphan":

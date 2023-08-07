@@ -5,60 +5,62 @@ export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
+export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
+export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: string;
-  String: string;
-  Boolean: boolean;
-  Int: number;
-  Float: number;
-  Date: any;
-  DateTime: any;
-  Time: any;
+  ID: { input: string; output: string; }
+  String: { input: string; output: string; }
+  Boolean: { input: boolean; output: boolean; }
+  Int: { input: number; output: number; }
+  Float: { input: number; output: number; }
+  Date: { input: any; output: any; }
+  DateTime: { input: any; output: any; }
+  Time: { input: any; output: any; }
 };
 
 export type Account = {
   avatar: AccountAvatar;
-  consumptionRatio?: Maybe<Scalars['Float']>;
-  currentMonthUsedScreenshots: Scalars['Int'];
+  consumptionRatio?: Maybe<Scalars['Float']['output']>;
+  currentMonthUsedScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<GithubAccount>;
-  hasForcedPlan: Scalars['Boolean'];
-  hasPaidPlan: Scalars['Boolean'];
-  id: Scalars['ID'];
-  name?: Maybe<Scalars['String']>;
+  hasForcedPlan: Scalars['Boolean']['output'];
+  hasPaidPlan: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  name?: Maybe<Scalars['String']['output']>;
   paymentProvider?: Maybe<PurchaseSource>;
-  pendingCancelAt?: Maybe<Scalars['DateTime']>;
-  periodEndDate?: Maybe<Scalars['DateTime']>;
-  periodStartDate?: Maybe<Scalars['DateTime']>;
+  pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
+  periodEndDate?: Maybe<Scalars['DateTime']['output']>;
+  periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<Permission>;
   plan?: Maybe<Plan>;
   projects: ProjectConnection;
   purchase?: Maybe<Purchase>;
   purchaseStatus?: Maybe<PurchaseStatus>;
-  screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
-  slug: Scalars['String'];
-  stripeClientReferenceId: Scalars['String'];
-  stripeCustomerId?: Maybe<Scalars['String']>;
+  screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
+  slug: Scalars['String']['output'];
+  stripeClientReferenceId: Scalars['String']['output'];
+  stripeCustomerId?: Maybe<Scalars['String']['output']>;
   trialStatus?: Maybe<TrialStatus>;
   vercelConfiguration?: Maybe<VercelConfiguration>;
 };
 
 
 export type AccountProjectsArgs = {
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 };
 
 export type AccountAvatar = {
   __typename?: 'AccountAvatar';
-  color: Scalars['String'];
-  initial: Scalars['String'];
-  url?: Maybe<Scalars['String']>;
+  color: Scalars['String']['output'];
+  initial: Scalars['String']['output'];
+  url?: Maybe<Scalars['String']['output']>;
 };
 
 
 export type AccountAvatarUrlArgs = {
-  size: Scalars['Int'];
+  size: Scalars['Int']['input'];
 };
 
 export type Build = Node & {
@@ -66,21 +68,21 @@ export type Build = Node & {
   /** The screenshot bucket of the baselineBranch */
   baseScreenshotBucket?: Maybe<ScreenshotBucket>;
   /** Received batch count  */
-  batchCount?: Maybe<Scalars['Int']>;
+  batchCount?: Maybe<Scalars['Int']['output']>;
   /** Branch */
-  branch: Scalars['String'];
+  branch: Scalars['String']['output'];
   /** Commit */
-  commit: Scalars['String'];
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
+  commit: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
   /** Build name */
-  name: Scalars['String'];
+  name: Scalars['String']['output'];
   /** Continuous number. It is incremented after each build */
-  number: Scalars['Int'];
+  number: Scalars['Int']['output'];
   /** Pull request head commit */
-  prHeadCommit?: Maybe<Scalars['String']>;
+  prHeadCommit?: Maybe<Scalars['String']['output']>;
   /** Pull request number */
-  prNumber?: Maybe<Scalars['Int']>;
+  prNumber?: Maybe<Scalars['Int']['output']>;
   /** The screenshot diffs between the base screenshot bucket of the compare screenshot bucket */
   screenshotDiffs: ScreenshotDiffConnection;
   /** Build stats */
@@ -88,16 +90,16 @@ export type Build = Node & {
   /** Review status, conclusion or job status */
   status: BuildStatus;
   /** Expected batch count */
-  totalBatch?: Maybe<Scalars['Int']>;
+  totalBatch?: Maybe<Scalars['Int']['output']>;
   /** Build type */
   type?: Maybe<BuildType>;
-  updatedAt: Scalars['DateTime'];
+  updatedAt: Scalars['DateTime']['output'];
 };
 
 
 export type BuildScreenshotDiffsArgs = {
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 };
 
 export type BuildConnection = Connection & {
@@ -108,12 +110,12 @@ export type BuildConnection = Connection & {
 
 export type BuildStats = {
   __typename?: 'BuildStats';
-  added: Scalars['Int'];
-  changed: Scalars['Int'];
-  failure: Scalars['Int'];
-  removed: Scalars['Int'];
-  total: Scalars['Int'];
-  unchanged: Scalars['Int'];
+  added: Scalars['Int']['output'];
+  changed: Scalars['Int']['output'];
+  failure: Scalars['Int']['output'];
+  removed: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+  unchanged: Scalars['Int']['output'];
 };
 
 export enum BuildStatus {
@@ -152,36 +154,36 @@ export type Connection = {
 };
 
 export type CreateProjectInput = {
-  accountSlug: Scalars['String'];
-  owner: Scalars['String'];
-  repo: Scalars['String'];
+  accountSlug: Scalars['String']['input'];
+  owner: Scalars['String']['input'];
+  repo: Scalars['String']['input'];
 };
 
 export type CreateTeamInput = {
-  name: Scalars['String'];
+  name: Scalars['String']['input'];
 };
 
 export type CreateTeamResult = {
   __typename?: 'CreateTeamResult';
-  redirectUrl: Scalars['String'];
+  redirectUrl: Scalars['String']['output'];
   team: Team;
 };
 
 export type DeleteTeamInput = {
-  accountId: Scalars['ID'];
+  accountId: Scalars['ID']['input'];
 };
 
 export type GhApiInstallation = Node & {
   __typename?: 'GhApiInstallation';
   account: GhApiInstallationAccount;
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
 };
 
 export type GhApiInstallationAccount = Node & {
   __typename?: 'GhApiInstallationAccount';
-  id: Scalars['ID'];
-  login: Scalars['String'];
-  name?: Maybe<Scalars['String']>;
+  id: Scalars['ID']['output'];
+  login: Scalars['String']['output'];
+  name?: Maybe<Scalars['String']['output']>;
 };
 
 export type GhApiInstallationConnection = Connection & {
@@ -192,10 +194,10 @@ export type GhApiInstallationConnection = Connection & {
 
 export type GhApiRepository = Node & {
   __typename?: 'GhApiRepository';
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  owner_login: Scalars['String'];
-  updated_at: Scalars['String'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  owner_login: Scalars['String']['output'];
+  updated_at: Scalars['String']['output'];
 };
 
 export type GhApiRepositoryConnection = Connection & {
@@ -206,17 +208,17 @@ export type GhApiRepositoryConnection = Connection & {
 
 export type GithubAccount = Node & {
   __typename?: 'GithubAccount';
-  id: Scalars['ID'];
-  login: Scalars['String'];
+  id: Scalars['ID']['output'];
+  login: Scalars['String']['output'];
 };
 
 export type GithubRepository = Node & {
   __typename?: 'GithubRepository';
-  defaultBranch: Scalars['String'];
-  fullName: Scalars['String'];
-  id: Scalars['ID'];
-  private: Scalars['Boolean'];
-  url: Scalars['String'];
+  defaultBranch: Scalars['String']['output'];
+  fullName: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  private: Scalars['Boolean']['output'];
+  url: Scalars['String']['output'];
 };
 
 export enum JobStatus {
@@ -228,19 +230,19 @@ export enum JobStatus {
 }
 
 export type LeaveTeamInput = {
-  teamAccountId: Scalars['ID'];
+  teamAccountId: Scalars['ID']['input'];
 };
 
 export type LinkRepositoryInput = {
-  owner: Scalars['String'];
-  projectId: Scalars['ID'];
-  repo: Scalars['String'];
+  owner: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
+  repo: Scalars['String']['input'];
 };
 
 export type LinkVercelProjectInput = {
-  configurationId: Scalars['ID'];
-  projectId: Scalars['ID'];
-  vercelProjectId: Scalars['ID'];
+  configurationId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  vercelProjectId: Scalars['ID']['input'];
 };
 
 export type Mutation = {
@@ -252,18 +254,18 @@ export type Mutation = {
   /** Create a team */
   createTeam: CreateTeamResult;
   /** Delete Project */
-  deleteProject: Scalars['Boolean'];
+  deleteProject: Scalars['Boolean']['output'];
   /** Delete team and all its projects */
-  deleteTeam: Scalars['Boolean'];
+  deleteTeam: Scalars['Boolean']['output'];
   /** Leave a team */
-  leaveTeam: Scalars['Boolean'];
+  leaveTeam: Scalars['Boolean']['output'];
   /** Link Repository */
   linkRepository: Project;
   /** Link Vercel project */
   linkVercelProject: Project;
   /** Mute or unmute tests */
   muteTests: MuteUpdateTest;
-  ping: Scalars['Boolean'];
+  ping: Scalars['Boolean']['output'];
   /** Remove a user from a team */
   removeUserFromTeam: RemoveUserFromTeamPayload;
   /** Retrieve a Vercel API token from a code */
@@ -273,7 +275,7 @@ export type Mutation = {
   /** Change the validationStatus on a build */
   setValidationStatus: Build;
   /** Finish the Vercel integration setup */
-  setupVercelIntegration?: Maybe<Scalars['Boolean']>;
+  setupVercelIntegration?: Maybe<Scalars['Boolean']['output']>;
   /** Terminate trial early */
   terminateTrial: Account;
   /** Transfer Project to another account */
@@ -294,7 +296,7 @@ export type Mutation = {
 
 
 export type MutationAcceptInvitationArgs = {
-  token: Scalars['String'];
+  token: Scalars['String']['input'];
 };
 
 
@@ -309,7 +311,7 @@ export type MutationCreateTeamArgs = {
 
 
 export type MutationDeleteProjectArgs = {
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
 };
 
 
@@ -334,9 +336,9 @@ export type MutationLinkVercelProjectArgs = {
 
 
 export type MutationMuteTestsArgs = {
-  ids: Array<Scalars['String']>;
-  muteUntil?: InputMaybe<Scalars['String']>;
-  muted: Scalars['Boolean'];
+  ids: Array<Scalars['String']['input']>;
+  muteUntil?: InputMaybe<Scalars['String']['input']>;
+  muted: Scalars['Boolean']['input'];
 };
 
 
@@ -346,7 +348,7 @@ export type MutationRemoveUserFromTeamArgs = {
 
 
 export type MutationRetrieveVercelTokenArgs = {
-  code: Scalars['String'];
+  code: Scalars['String']['input'];
 };
 
 
@@ -356,7 +358,7 @@ export type MutationSetTeamMemberLevelArgs = {
 
 
 export type MutationSetValidationStatusArgs = {
-  buildId: Scalars['ID'];
+  buildId: Scalars['ID']['input'];
   validationStatus: ValidationStatus;
 };
 
@@ -367,7 +369,7 @@ export type MutationSetupVercelIntegrationArgs = {
 
 
 export type MutationTerminateTrialArgs = {
-  accountId: Scalars['ID'];
+  accountId: Scalars['ID']['input'];
 };
 
 
@@ -402,25 +404,25 @@ export type MutationUpdateProjectPrCommentArgs = {
 
 
 export type MutationUpdateTestStatusesArgs = {
-  ids: Array<Scalars['String']>;
+  ids: Array<Scalars['String']['input']>;
   status: TestStatus;
 };
 
 export type MuteUpdateTest = {
   __typename?: 'MuteUpdateTest';
-  ids: Array<Scalars['String']>;
-  mute: Scalars['Boolean'];
-  muteUntil?: Maybe<Scalars['String']>;
+  ids: Array<Scalars['String']['output']>;
+  mute: Scalars['Boolean']['output'];
+  muteUntil?: Maybe<Scalars['String']['output']>;
 };
 
 export type Node = {
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
 };
 
 export type PageInfo = {
   __typename?: 'PageInfo';
-  hasNextPage: Scalars['Boolean'];
-  totalCount: Scalars['Int'];
+  hasNextPage: Scalars['Boolean']['output'];
+  totalCount: Scalars['Int']['output'];
 };
 
 export enum Permission {
@@ -430,9 +432,9 @@ export enum Permission {
 
 export type Plan = Node & {
   __typename?: 'Plan';
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  screenshotsLimitPerMonth: Scalars['Int'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  screenshotsLimitPerMonth: Scalars['Int']['output'];
 };
 
 export type Project = Node & {
@@ -440,57 +442,57 @@ export type Project = Node & {
   /** Owner of the repository */
   account: Account;
   /** Override branch name */
-  baselineBranch?: Maybe<Scalars['String']>;
+  baselineBranch?: Maybe<Scalars['String']['output']>;
   /** A single build linked to the repository */
   build?: Maybe<Build>;
   /** Builds associated to the repository */
   builds: BuildConnection;
   /** Current month used screenshots */
-  currentMonthUsedScreenshots: Scalars['Int'];
+  currentMonthUsedScreenshots: Scalars['Int']['output'];
   /** Repositories associated to the project */
   ghRepository?: Maybe<GithubRepository>;
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
   /** Latest build */
   latestBuild?: Maybe<Build>;
   /** Reference build */
   latestReferenceBuild?: Maybe<Build>;
-  name: Scalars['String'];
+  name: Scalars['String']['output'];
   /** Determine if the current user has write access to the project */
   permissions: Array<Permission>;
   /** Pull request comment enabled */
-  prCommentEnabled: Scalars['Boolean'];
+  prCommentEnabled: Scalars['Boolean']['output'];
   /** Override repository's Github privacy */
-  private?: Maybe<Scalars['Boolean']>;
+  private?: Maybe<Scalars['Boolean']['output']>;
   /** Check if the project is public or not */
-  public: Scalars['Boolean'];
+  public: Scalars['Boolean']['output'];
   /** Reference branch */
-  referenceBranch?: Maybe<Scalars['String']>;
+  referenceBranch?: Maybe<Scalars['String']['output']>;
   /** Project slug */
-  slug: Scalars['String'];
+  slug: Scalars['String']['output'];
   /** Tests associated to the repository */
   tests: TestConnection;
-  token?: Maybe<Scalars['String']>;
+  token?: Maybe<Scalars['String']['output']>;
   /** Total screenshots used */
-  totalScreenshots: Scalars['Int'];
+  totalScreenshots: Scalars['Int']['output'];
   /** Vercel project */
   vercelProject?: Maybe<VercelProject>;
 };
 
 
 export type ProjectBuildArgs = {
-  number: Scalars['Int'];
+  number: Scalars['Int']['input'];
 };
 
 
 export type ProjectBuildsArgs = {
-  after?: InputMaybe<Scalars['Int']>;
-  first?: InputMaybe<Scalars['Int']>;
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
 export type ProjectTestsArgs = {
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 };
 
 export type ProjectConnection = Connection & {
@@ -501,10 +503,10 @@ export type ProjectConnection = Connection & {
 
 export type Purchase = Node & {
   __typename?: 'Purchase';
-  id: Scalars['ID'];
-  paymentMethodFilled: Scalars['Boolean'];
+  id: Scalars['ID']['output'];
+  paymentMethodFilled: Scalars['Boolean']['output'];
   source: PurchaseSource;
-  trialDaysRemaining?: Maybe<Scalars['Int']>;
+  trialDaysRemaining?: Maybe<Scalars['Int']['output']>;
 };
 
 export enum PurchaseSource {
@@ -535,7 +537,7 @@ export type Query = {
   invitation?: Maybe<Team>;
   /** Get the authenticated user */
   me?: Maybe<User>;
-  ping: Scalars['Boolean'];
+  ping: Scalars['Boolean']['output'];
   /** Get a project */
   project?: Maybe<Project>;
   /** Get a project */
@@ -550,94 +552,94 @@ export type Query = {
 
 
 export type QueryAccountArgs = {
-  slug: Scalars['String'];
+  slug: Scalars['String']['input'];
 };
 
 
 export type QueryAccountByIdArgs = {
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
 };
 
 
 export type QueryGhApiInstallationRepositoriesArgs = {
-  installationId: Scalars['ID'];
-  page: Scalars['Int'];
+  installationId: Scalars['ID']['input'];
+  page: Scalars['Int']['input'];
 };
 
 
 export type QueryInvitationArgs = {
-  token: Scalars['String'];
+  token: Scalars['String']['input'];
 };
 
 
 export type QueryProjectArgs = {
-  accountSlug: Scalars['String'];
-  projectName: Scalars['String'];
+  accountSlug: Scalars['String']['input'];
+  projectName: Scalars['String']['input'];
 };
 
 
 export type QueryProjectByIdArgs = {
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
 };
 
 
 export type QueryTeamByIdArgs = {
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
 };
 
 
 export type QueryVercelApiProjectsArgs = {
-  accessToken: Scalars['String'];
-  limit?: InputMaybe<Scalars['Int']>;
-  teamId?: InputMaybe<Scalars['ID']>;
+  accessToken: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  teamId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
 export type QueryVercelApiTeamArgs = {
-  accessToken: Scalars['String'];
-  id: Scalars['ID'];
+  accessToken: Scalars['String']['input'];
+  id: Scalars['ID']['input'];
 };
 
 export type RemoveUserFromTeamInput = {
-  teamAccountId: Scalars['ID'];
-  userAccountId: Scalars['ID'];
+  teamAccountId: Scalars['ID']['input'];
+  userAccountId: Scalars['ID']['input'];
 };
 
 export type RemoveUserFromTeamPayload = {
   __typename?: 'RemoveUserFromTeamPayload';
-  teamMemberId: Scalars['ID'];
+  teamMemberId: Scalars['ID']['output'];
 };
 
 export type Screenshot = Node & {
   __typename?: 'Screenshot';
-  height?: Maybe<Scalars['Int']>;
-  id: Scalars['ID'];
-  url: Scalars['String'];
-  width?: Maybe<Scalars['Int']>;
+  height?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  url: Scalars['String']['output'];
+  width?: Maybe<Scalars['Int']['output']>;
 };
 
 export type ScreenshotBucket = Node & {
   __typename?: 'ScreenshotBucket';
-  branch: Scalars['String'];
-  commit: Scalars['String'];
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
+  branch: Scalars['String']['output'];
+  commit: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
 };
 
 export type ScreenshotDiff = Node & {
   __typename?: 'ScreenshotDiff';
   baseScreenshot?: Maybe<Screenshot>;
   compareScreenshot?: Maybe<Screenshot>;
-  createdAt: Scalars['DateTime'];
-  flakyDetected: Scalars['Boolean'];
-  height?: Maybe<Scalars['Int']>;
-  id: Scalars['ID'];
-  name: Scalars['String'];
+  createdAt: Scalars['DateTime']['output'];
+  flakyDetected: Scalars['Boolean']['output'];
+  height?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
   status: ScreenshotDiffStatus;
   test?: Maybe<Test>;
-  url?: Maybe<Scalars['String']>;
-  validationStatus?: Maybe<Scalars['String']>;
-  width?: Maybe<Scalars['Int']>;
+  url?: Maybe<Scalars['String']['output']>;
+  validationStatus?: Maybe<Scalars['String']['output']>;
+  width?: Maybe<Scalars['Int']['output']>;
 };
 
 export type ScreenshotDiffConnection = Connection & {
@@ -656,69 +658,69 @@ export enum ScreenshotDiffStatus {
 
 export type SetTeamMemberLevelInput = {
   level: TeamUserLevel;
-  teamAccountId: Scalars['ID'];
-  userAccountId: Scalars['ID'];
+  teamAccountId: Scalars['ID']['input'];
+  userAccountId: Scalars['ID']['input'];
 };
 
 export type SetupVercelIntegrationInput = {
-  accountId: Scalars['ID'];
+  accountId: Scalars['ID']['input'];
   projects: Array<SetupVercelIntegrationProjectInput>;
-  vercelAccessToken: Scalars['String'];
-  vercelConfigurationId: Scalars['ID'];
-  vercelTeamId?: InputMaybe<Scalars['ID']>;
+  vercelAccessToken: Scalars['String']['input'];
+  vercelConfigurationId: Scalars['ID']['input'];
+  vercelTeamId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type SetupVercelIntegrationProjectInput = {
-  projectId: Scalars['ID'];
-  vercelProjectId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
+  vercelProjectId: Scalars['ID']['input'];
 };
 
 export type Team = Account & Node & {
   __typename?: 'Team';
   avatar: AccountAvatar;
-  consumptionRatio?: Maybe<Scalars['Float']>;
-  currentMonthUsedScreenshots: Scalars['Int'];
+  consumptionRatio?: Maybe<Scalars['Float']['output']>;
+  currentMonthUsedScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<GithubAccount>;
-  hasForcedPlan: Scalars['Boolean'];
-  hasPaidPlan: Scalars['Boolean'];
-  id: Scalars['ID'];
-  inviteLink: Scalars['String'];
+  hasForcedPlan: Scalars['Boolean']['output'];
+  hasPaidPlan: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  inviteLink: Scalars['String']['output'];
   me: TeamMember;
   members: TeamMemberConnection;
-  name?: Maybe<Scalars['String']>;
+  name?: Maybe<Scalars['String']['output']>;
   oldPaidPurchase?: Maybe<Purchase>;
   paymentProvider?: Maybe<PurchaseSource>;
-  pendingCancelAt?: Maybe<Scalars['DateTime']>;
-  periodEndDate?: Maybe<Scalars['DateTime']>;
-  periodStartDate?: Maybe<Scalars['DateTime']>;
+  pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
+  periodEndDate?: Maybe<Scalars['DateTime']['output']>;
+  periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<Permission>;
   plan?: Maybe<Plan>;
   projects: ProjectConnection;
   purchase?: Maybe<Purchase>;
   purchaseStatus?: Maybe<PurchaseStatus>;
-  screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
-  slug: Scalars['String'];
-  stripeClientReferenceId: Scalars['String'];
-  stripeCustomerId?: Maybe<Scalars['String']>;
+  screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
+  slug: Scalars['String']['output'];
+  stripeClientReferenceId: Scalars['String']['output'];
+  stripeCustomerId?: Maybe<Scalars['String']['output']>;
   trialStatus?: Maybe<TrialStatus>;
   vercelConfiguration?: Maybe<VercelConfiguration>;
 };
 
 
 export type TeamMembersArgs = {
-  after?: InputMaybe<Scalars['Int']>;
-  first?: InputMaybe<Scalars['Int']>;
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
 export type TeamProjectsArgs = {
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 };
 
 export type TeamMember = Node & {
   __typename?: 'TeamMember';
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
   level: TeamUserLevel;
   user: User;
 };
@@ -736,19 +738,19 @@ export enum TeamUserLevel {
 
 export type Test = Node & {
   __typename?: 'Test';
-  buildName: Scalars['String'];
+  buildName: Scalars['String']['output'];
   dailyChanges: Array<DailyCount>;
-  id: Scalars['ID'];
-  lastSeen?: Maybe<Scalars['DateTime']>;
-  mute: Scalars['Boolean'];
-  muteUntil?: Maybe<Scalars['DateTime']>;
-  name: Scalars['String'];
-  resolvedDate?: Maybe<Scalars['DateTime']>;
+  id: Scalars['ID']['output'];
+  lastSeen?: Maybe<Scalars['DateTime']['output']>;
+  mute: Scalars['Boolean']['output'];
+  muteUntil?: Maybe<Scalars['DateTime']['output']>;
+  name: Scalars['String']['output'];
+  resolvedDate?: Maybe<Scalars['DateTime']['output']>;
   screenshot?: Maybe<Screenshot>;
-  stabilityScore?: Maybe<Scalars['Int']>;
+  stabilityScore?: Maybe<Scalars['Int']['output']>;
   status: TestStatus;
-  totalBuilds: Scalars['Int'];
-  unstable: Scalars['Boolean'];
+  totalBuilds: Scalars['Int']['output'];
+  unstable: Scalars['Boolean']['output'];
 };
 
 export type TestConnection = Connection & {
@@ -764,9 +766,9 @@ export enum TestStatus {
 }
 
 export type TransferProjectInput = {
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  targetAccountId: Scalars['ID'];
+  id: Scalars['ID']['input'];
+  name: Scalars['String']['input'];
+  targetAccountId: Scalars['ID']['input'];
 };
 
 export enum TrialStatus {
@@ -777,64 +779,64 @@ export enum TrialStatus {
 }
 
 export type UnlinkRepositoryInput = {
-  projectId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type UnlinkVercelProjectInput = {
-  projectId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type UpdateAccountInput = {
-  id: Scalars['ID'];
-  name?: InputMaybe<Scalars['String']>;
-  slug?: InputMaybe<Scalars['String']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  slug?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateProjectInput = {
-  baselineBranch?: InputMaybe<Scalars['String']>;
-  id: Scalars['ID'];
-  name?: InputMaybe<Scalars['String']>;
-  private?: InputMaybe<Scalars['Boolean']>;
+  baselineBranch?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  private?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type UpdateProjectPrCommentInput = {
-  enable: Scalars['Boolean'];
-  id: Scalars['ID'];
+  enable: Scalars['Boolean']['input'];
+  id: Scalars['ID']['input'];
 };
 
 export type UpdatedTestStatuses = {
   __typename?: 'UpdatedTestStatuses';
-  ids: Array<Scalars['String']>;
+  ids: Array<Scalars['String']['output']>;
   status: TestStatus;
 };
 
 export type User = Account & Node & {
   __typename?: 'User';
   avatar: AccountAvatar;
-  consumptionRatio?: Maybe<Scalars['Float']>;
-  currentMonthUsedScreenshots: Scalars['Int'];
+  consumptionRatio?: Maybe<Scalars['Float']['output']>;
+  currentMonthUsedScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<GithubAccount>;
   ghInstallations: GhApiInstallationConnection;
-  hasForcedPlan: Scalars['Boolean'];
-  hasPaidPlan: Scalars['Boolean'];
-  hasSubscribedToTrial: Scalars['Boolean'];
-  id: Scalars['ID'];
+  hasForcedPlan: Scalars['Boolean']['output'];
+  hasPaidPlan: Scalars['Boolean']['output'];
+  hasSubscribedToTrial: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
   lastPurchase?: Maybe<Purchase>;
-  name?: Maybe<Scalars['String']>;
+  name?: Maybe<Scalars['String']['output']>;
   oldPaidPurchase?: Maybe<Purchase>;
   paymentProvider?: Maybe<PurchaseSource>;
-  pendingCancelAt?: Maybe<Scalars['DateTime']>;
-  periodEndDate?: Maybe<Scalars['DateTime']>;
-  periodStartDate?: Maybe<Scalars['DateTime']>;
+  pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
+  periodEndDate?: Maybe<Scalars['DateTime']['output']>;
+  periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<Permission>;
   plan?: Maybe<Plan>;
   projects: ProjectConnection;
   purchase?: Maybe<Purchase>;
   purchaseStatus?: Maybe<PurchaseStatus>;
-  screenshotsLimitPerMonth?: Maybe<Scalars['Int']>;
-  slug: Scalars['String'];
-  stripeClientReferenceId: Scalars['String'];
-  stripeCustomerId?: Maybe<Scalars['String']>;
+  screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
+  slug: Scalars['String']['output'];
+  stripeClientReferenceId: Scalars['String']['output'];
+  stripeCustomerId?: Maybe<Scalars['String']['output']>;
   teams: Array<Team>;
   trialStatus?: Maybe<TrialStatus>;
   vercelConfiguration?: Maybe<VercelConfiguration>;
@@ -842,8 +844,8 @@ export type User = Account & Node & {
 
 
 export type UserProjectsArgs = {
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 };
 
 export type UserConnection = Connection & {
@@ -860,24 +862,24 @@ export enum ValidationStatus {
 
 export type VercelApiPagination = {
   __typename?: 'VercelApiPagination';
-  count: Scalars['Int'];
-  next?: Maybe<Scalars['ID']>;
-  prev?: Maybe<Scalars['ID']>;
+  count: Scalars['Int']['output'];
+  next?: Maybe<Scalars['ID']['output']>;
+  prev?: Maybe<Scalars['ID']['output']>;
 };
 
 export type VercelApiProject = {
   __typename?: 'VercelApiProject';
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
   link?: Maybe<VercelApiProjectLink>;
   linkedProject?: Maybe<Project>;
-  name: Scalars['String'];
+  name: Scalars['String']['output'];
   project?: Maybe<Project>;
   status: VercelApiProjectStatus;
 };
 
 
 export type VercelApiProjectStatusArgs = {
-  accountId: Scalars['ID'];
+  accountId: Scalars['ID']['input'];
 };
 
 export type VercelApiProjectConnection = {
@@ -887,20 +889,20 @@ export type VercelApiProjectConnection = {
 };
 
 export type VercelApiProjectLink = {
-  type: Scalars['String'];
+  type: Scalars['String']['output'];
 };
 
 export type VercelApiProjectLinkGithub = VercelApiProjectLink & {
   __typename?: 'VercelApiProjectLinkGithub';
-  org: Scalars['String'];
-  repo: Scalars['String'];
-  repoId: Scalars['Int'];
-  type: Scalars['String'];
+  org: Scalars['String']['output'];
+  repo: Scalars['String']['output'];
+  repoId: Scalars['Int']['output'];
+  type: Scalars['String']['output'];
 };
 
 export type VercelApiProjectLinkOther = VercelApiProjectLink & {
   __typename?: 'VercelApiProjectLinkOther';
-  type: Scalars['String'];
+  type: Scalars['String']['output'];
 };
 
 export enum VercelApiProjectStatus {
@@ -915,37 +917,37 @@ export enum VercelApiProjectStatus {
 
 export type VercelApiTeam = {
   __typename?: 'VercelApiTeam';
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  slug: Scalars['String'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
 };
 
 export type VercelApiToken = {
   __typename?: 'VercelApiToken';
-  access_token: Scalars['String'];
-  installation_id: Scalars['String'];
-  team_id?: Maybe<Scalars['String']>;
-  user_id: Scalars['String'];
+  access_token: Scalars['String']['output'];
+  installation_id: Scalars['String']['output'];
+  team_id?: Maybe<Scalars['String']['output']>;
+  user_id: Scalars['String']['output'];
 };
 
 export type VercelConfiguration = {
   __typename?: 'VercelConfiguration';
   apiProjects?: Maybe<VercelApiProjectConnection>;
-  id: Scalars['ID'];
-  url: Scalars['String'];
-  vercelId: Scalars['ID'];
+  id: Scalars['ID']['output'];
+  url: Scalars['String']['output'];
+  vercelId: Scalars['ID']['output'];
 };
 
 export type VercelProject = {
   __typename?: 'VercelProject';
   configuration: VercelConfiguration;
-  id: Scalars['ID'];
+  id: Scalars['ID']['output'];
 };
 
 export type DailyCount = {
   __typename?: 'dailyCount';
-  count: Scalars['Int'];
-  date: Scalars['Date'];
+  count: Scalars['Int']['output'];
+  date: Scalars['Date']['output'];
 };
 
 type AccountChangeName_Account_Team_Fragment = { __typename?: 'Team', id: string, name?: string | null, slug: string } & { ' $fragmentName'?: 'AccountChangeName_Account_Team_Fragment' };
@@ -955,8 +957,8 @@ type AccountChangeName_Account_User_Fragment = { __typename?: 'User', id: string
 export type AccountChangeName_AccountFragment = AccountChangeName_Account_Team_Fragment | AccountChangeName_Account_User_Fragment;
 
 export type AccountChangeName_UpdateAccountMutationVariables = Exact<{
-  id: Scalars['ID'];
-  name: Scalars['String'];
+  id: Scalars['ID']['input'];
+  name: Scalars['String']['input'];
 }>;
 
 
@@ -969,8 +971,8 @@ type AccountChangeSlug_Account_User_Fragment = { __typename?: 'User', id: string
 export type AccountChangeSlug_AccountFragment = AccountChangeSlug_Account_Team_Fragment | AccountChangeSlug_Account_User_Fragment;
 
 export type AccountChangeSlug_UpdateAccountMutationVariables = Exact<{
-  id: Scalars['ID'];
-  slug: Scalars['String'];
+  id: Scalars['ID']['input'];
+  slug: Scalars['String']['input'];
 }>;
 
 
@@ -1009,7 +1011,7 @@ type AccountPlanChip_Account_User_Fragment = { __typename?: 'User', purchaseStat
 export type AccountPlanChip_AccountFragment = AccountPlanChip_Account_Team_Fragment | AccountPlanChip_Account_User_Fragment;
 
 export type AccountBreadcrumb_AccountQueryVariables = Exact<{
-  slug: Scalars['String'];
+  slug: Scalars['String']['input'];
 }>;
 
 
@@ -1051,7 +1053,7 @@ export type AccountBreadcrumbMenu_MeQuery = { __typename?: 'Query', me?: (
   ) | null };
 
 export type ProjectBreadcrumbMenu_AccountQueryVariables = Exact<{
-  slug: Scalars['String'];
+  slug: Scalars['String']['input'];
 }>;
 
 
@@ -1085,7 +1087,7 @@ export type PaymentBanner_MeQueryVariables = Exact<{ [key: string]: never; }>;
 export type PaymentBanner_MeQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: string, hasSubscribedToTrial: boolean } | null };
 
 export type TerminateTrialMutationVariables = Exact<{
-  accountId: Scalars['ID'];
+  accountId: Scalars['ID']['input'];
 }>;
 
 
@@ -1102,8 +1104,8 @@ export type ProjectBadge_ProjectFragment = { __typename?: 'Project', id: string,
 export type ProjectChangeName_ProjectFragment = { __typename?: 'Project', id: string, name: string, account: { __typename?: 'Team', id: string, slug: string } | { __typename?: 'User', id: string, slug: string } } & { ' $fragmentName'?: 'ProjectChangeName_ProjectFragment' };
 
 export type ProjectChangeName_UpdateProjectMutationVariables = Exact<{
-  id: Scalars['ID'];
-  name: Scalars['String'];
+  id: Scalars['ID']['input'];
+  name: Scalars['String']['input'];
 }>;
 
 
@@ -1118,7 +1120,7 @@ export type ConnectRepository_MeQuery = { __typename?: 'Query', me?: { __typenam
       )>, pageInfo: { __typename?: 'PageInfo', totalCount: number } } } | null };
 
 export type ConnectVercelProject_AccountQueryVariables = Exact<{
-  accountId: Scalars['ID'];
+  accountId: Scalars['ID']['input'];
 }>;
 
 
@@ -1131,7 +1133,7 @@ export type ConnectVercelProject_AccountQuery = { __typename?: 'Query', account?
         )> } | null } | null } | null };
 
 export type DeleteProjectMutationMutationVariables = Exact<{
-  projectId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
 }>;
 
 
@@ -1142,7 +1144,7 @@ export type ProjectDelete_ProjectFragment = { __typename?: 'Project', id: string
 export type ProjectGitRepository_ProjectFragment = { __typename?: 'Project', id: string, prCommentEnabled: boolean, ghRepository?: { __typename?: 'GithubRepository', id: string, fullName: string, url: string } | null } & { ' $fragmentName'?: 'ProjectGitRepository_ProjectFragment' };
 
 export type ProjectGitRepository_UnlinkRepositoryMutationVariables = Exact<{
-  projectId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
 }>;
 
 
@@ -1152,9 +1154,9 @@ export type ProjectGitRepository_UnlinkRepositoryMutation = { __typename?: 'Muta
   ) };
 
 export type ProjectGitRepository_LinkRepositoryMutationVariables = Exact<{
-  projectId: Scalars['ID'];
-  repo: Scalars['String'];
-  owner: Scalars['String'];
+  projectId: Scalars['ID']['input'];
+  repo: Scalars['String']['input'];
+  owner: Scalars['String']['input'];
 }>;
 
 
@@ -1164,16 +1166,16 @@ export type ProjectGitRepository_LinkRepositoryMutation = { __typename?: 'Mutati
   ) };
 
 export type ProjectGitRepository_UpdateEnablePrCommentMutationVariables = Exact<{
-  id: Scalars['ID'];
-  enable: Scalars['Boolean'];
+  id: Scalars['ID']['input'];
+  enable: Scalars['Boolean']['input'];
 }>;
 
 
 export type ProjectGitRepository_UpdateEnablePrCommentMutation = { __typename?: 'Mutation', updateProjectPrComment: { __typename?: 'Project', id: string, prCommentEnabled: boolean } };
 
 export type ProjectReferenceBranch_UpdateProjectMutationVariables = Exact<{
-  id: Scalars['ID'];
-  baselineBranch?: InputMaybe<Scalars['String']>;
+  id: Scalars['ID']['input'];
+  baselineBranch?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -1207,9 +1209,9 @@ type ProjectTransfer_Account_User_Fragment = { __typename?: 'User', id: string, 
 export type ProjectTransfer_AccountFragment = ProjectTransfer_Account_Team_Fragment | ProjectTransfer_Account_User_Fragment;
 
 export type ProjectTransfer_ReviewQueryVariables = Exact<{
-  projectId: Scalars['ID'];
-  actualAccountId: Scalars['ID'];
-  targetAccountId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
+  actualAccountId: Scalars['ID']['input'];
+  targetAccountId: Scalars['ID']['input'];
 }>;
 
 
@@ -1228,9 +1230,9 @@ export type ProjectTransfer_ReviewQuery = { __typename?: 'Query', projectById?: 
   ) | null };
 
 export type ProjectTransfer_TransferProjectMutationVariables = Exact<{
-  projectId: Scalars['ID'];
-  targetAccountId: Scalars['ID'];
-  name: Scalars['String'];
+  projectId: Scalars['ID']['input'];
+  targetAccountId: Scalars['ID']['input'];
+  name: Scalars['String']['input'];
 }>;
 
 
@@ -1241,7 +1243,7 @@ export type ProjectTransfer_ProjectFragment = { __typename?: 'Project', id: stri
 export type ProjectVercel_ProjectFragment = { __typename?: 'Project', id: string, account: { __typename?: 'Team', id: string } | { __typename?: 'User', id: string }, vercelProject?: { __typename?: 'VercelProject', id: string, configuration: { __typename?: 'VercelConfiguration', id: string, url: string } } | null } & { ' $fragmentName'?: 'ProjectVercel_ProjectFragment' };
 
 export type ProjectVercel_UnlinkVercelProjectMutationVariables = Exact<{
-  projectId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
 }>;
 
 
@@ -1251,9 +1253,9 @@ export type ProjectVercel_UnlinkVercelProjectMutation = { __typename?: 'Mutation
   ) };
 
 export type ProjectVercel_LinkVercelProjectMutationVariables = Exact<{
-  projectId: Scalars['ID'];
-  configurationId: Scalars['ID'];
-  vercelProjectId: Scalars['ID'];
+  projectId: Scalars['ID']['input'];
+  configurationId: Scalars['ID']['input'];
+  vercelProjectId: Scalars['ID']['input'];
 }>;
 
 
@@ -1263,8 +1265,8 @@ export type ProjectVercel_LinkVercelProjectMutation = { __typename?: 'Mutation',
   ) };
 
 export type ProjectVisibility_UpdateProjectMutationVariables = Exact<{
-  id: Scalars['ID'];
-  private?: InputMaybe<Scalars['Boolean']>;
+  id: Scalars['ID']['input'];
+  private?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -1281,8 +1283,8 @@ export type ProjectList_ProjectFragment = { __typename?: 'Project', id: string, 
     ) }, ghRepository?: { __typename?: 'GithubRepository', id: string, fullName: string } | null, latestBuild?: { __typename?: 'Build', id: string, createdAt: any } | null } & { ' $fragmentName'?: 'ProjectList_ProjectFragment' };
 
 export type RepositoryList_GhApiInstallationRepositoriesQueryVariables = Exact<{
-  installationId: Scalars['ID'];
-  page: Scalars['Int'];
+  installationId: Scalars['ID']['input'];
+  page: Scalars['Int']['input'];
 }>;
 
 
@@ -1291,7 +1293,7 @@ export type RepositoryList_GhApiInstallationRepositoriesQuery = { __typename?: '
 export type ReviewButton_ProjectFragment = { __typename?: 'Project', name: string, permissions: Array<Permission>, public: boolean, account: { __typename?: 'Team', id: string, slug: string } | { __typename?: 'User', id: string, slug: string }, build?: { __typename?: 'Build', id: string, status: BuildStatus } | null } & { ' $fragmentName'?: 'ReviewButton_ProjectFragment' };
 
 export type SetValidationStatusMutationVariables = Exact<{
-  buildId: Scalars['ID'];
+  buildId: Scalars['ID']['input'];
   validationStatus: ValidationStatus;
 }>;
 
@@ -1301,16 +1303,16 @@ export type SetValidationStatusMutation = { __typename?: 'Mutation', setValidati
 export type TeamDelete_TeamFragment = { __typename?: 'Team', id: string, slug: string, purchaseStatus?: PurchaseStatus | null, pendingCancelAt?: any | null } & { ' $fragmentName'?: 'TeamDelete_TeamFragment' };
 
 export type DeleteTeamMutationMutationVariables = Exact<{
-  teamAccountId: Scalars['ID'];
+  teamAccountId: Scalars['ID']['input'];
 }>;
 
 
 export type DeleteTeamMutationMutation = { __typename?: 'Mutation', deleteTeam: boolean };
 
 export type TeamMembers_TeamMembersQueryVariables = Exact<{
-  id: Scalars['ID'];
-  first: Scalars['Int'];
-  after: Scalars['Int'];
+  id: Scalars['ID']['input'];
+  first: Scalars['Int']['input'];
+  after: Scalars['Int']['input'];
 }>;
 
 
@@ -1337,15 +1339,15 @@ export type TeamMembers_TeamFragment = { __typename?: 'Team', id: string, name?:
   ) } & { ' $fragmentName'?: 'TeamMembers_TeamFragment' };
 
 export type TeamMembers_LeaveTeamMutationVariables = Exact<{
-  teamAccountId: Scalars['ID'];
+  teamAccountId: Scalars['ID']['input'];
 }>;
 
 
 export type TeamMembers_LeaveTeamMutation = { __typename?: 'Mutation', leaveTeam: boolean };
 
 export type TeamMembers_RemoveUserFromTeamMutationVariables = Exact<{
-  teamAccountId: Scalars['ID'];
-  userAccountId: Scalars['ID'];
+  teamAccountId: Scalars['ID']['input'];
+  userAccountId: Scalars['ID']['input'];
 }>;
 
 
@@ -1357,8 +1359,8 @@ export type RemoveFromTeamDialog_UserFragment = { __typename?: 'User', id: strin
   ) } & { ' $fragmentName'?: 'RemoveFromTeamDialog_UserFragment' };
 
 export type SetTeamMemberLevelMutationMutationVariables = Exact<{
-  teamAccountId: Scalars['ID'];
-  userAccountId: Scalars['ID'];
+  teamAccountId: Scalars['ID']['input'];
+  userAccountId: Scalars['ID']['input'];
   level: TeamUserLevel;
 }>;
 
@@ -1368,7 +1370,7 @@ export type SetTeamMemberLevelMutationMutation = { __typename?: 'Mutation', setT
 export type LevelSelect_TeamMemberFragment = { __typename?: 'TeamMember', id: string, level: TeamUserLevel, user: { __typename?: 'User', id: string } } & { ' $fragmentName'?: 'LevelSelect_TeamMemberFragment' };
 
 export type NewTeam_CreateTeamMutationVariables = Exact<{
-  name: Scalars['String'];
+  name: Scalars['String']['input'];
 }>;
 
 
@@ -1391,15 +1393,15 @@ export type UpgradeDialog_MeQuery = { __typename?: 'Query', me?: (
   ) | null };
 
 export type Vercel_VercelApiTeamQueryVariables = Exact<{
-  id: Scalars['ID'];
-  accessToken: Scalars['String'];
+  id: Scalars['ID']['input'];
+  accessToken: Scalars['String']['input'];
 }>;
 
 
 export type Vercel_VercelApiTeamQuery = { __typename?: 'Query', vercelApiTeam?: { __typename?: 'VercelApiTeam', id: string, name: string, slug: string } | null };
 
 export type Vercel_CreateTeamMutationVariables = Exact<{
-  name: Scalars['String'];
+  name: Scalars['String']['input'];
 }>;
 
 
@@ -1419,18 +1421,18 @@ export type FromTeam_MeQuery = { __typename?: 'Query', me?: { __typename?: 'User
     )> } | null };
 
 export type VercelProjectsSummary_Me_VercelApiProjectsQueryVariables = Exact<{
-  teamId?: InputMaybe<Scalars['ID']>;
-  accessToken: Scalars['String'];
-  accountId: Scalars['ID'];
+  teamId?: InputMaybe<Scalars['ID']['input']>;
+  accessToken: Scalars['String']['input'];
+  accountId: Scalars['ID']['input'];
 }>;
 
 
 export type VercelProjectsSummary_Me_VercelApiProjectsQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: string, ghInstallations: { __typename?: 'GhApiInstallationConnection', pageInfo: { __typename?: 'PageInfo', totalCount: number } } } | null, vercelApiProjects: { __typename?: 'VercelApiProjectConnection', projects: Array<{ __typename?: 'VercelApiProject', id: string, name: string, status: VercelApiProjectStatus, linkedProject?: { __typename?: 'Project', id: string } | null, link?: { __typename: 'VercelApiProjectLinkGithub', org: string, repo: string, repoId: number, type: string } | { __typename: 'VercelApiProjectLinkOther', type: string } | null }> } };
 
 export type VercelProjectsSummary_CreateProjectMutationVariables = Exact<{
-  repo: Scalars['String'];
-  owner: Scalars['String'];
-  accountSlug: Scalars['String'];
+  repo: Scalars['String']['input'];
+  owner: Scalars['String']['input'];
+  accountSlug: Scalars['String']['input'];
 }>;
 
 
@@ -1444,7 +1446,7 @@ export type VercelProjectsSummary_SetupVercelIntegrationMutationVariables = Exac
 export type VercelProjectsSummary_SetupVercelIntegrationMutation = { __typename?: 'Mutation', setupVercelIntegration?: boolean | null };
 
 export type Vercel_RetrieveVercelTokenMutationVariables = Exact<{
-  code: Scalars['String'];
+  code: Scalars['String']['input'];
 }>;
 
 
@@ -1453,16 +1455,16 @@ export type Vercel_RetrieveVercelTokenMutation = { __typename?: 'Mutation', retr
 export type VercelProjectList_VercelApiProjectFragment = { __typename?: 'VercelApiProject', id: string, name: string, link?: { __typename: 'VercelApiProjectLinkGithub', org: string, repo: string, repoId: number, type: string } | { __typename: 'VercelApiProjectLinkOther', type: string } | null, project?: { __typename?: 'Project', id: string, name: string } | null } & { ' $fragmentName'?: 'VercelProjectList_VercelApiProjectFragment' };
 
 export type NewProject_CreateProjectMutationVariables = Exact<{
-  repo: Scalars['String'];
-  owner: Scalars['String'];
-  accountSlug: Scalars['String'];
+  repo: Scalars['String']['input'];
+  owner: Scalars['String']['input'];
+  accountSlug: Scalars['String']['input'];
 }>;
 
 
 export type NewProject_CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string, slug: string } };
 
 export type AccountProjects_AccountQueryVariables = Exact<{
-  slug: Scalars['String'];
+  slug: Scalars['String']['input'];
 }>;
 
 
@@ -1475,7 +1477,7 @@ export type AccountProjects_AccountQuery = { __typename?: 'Query', account?: { _
       )> } } | null };
 
 export type AccountSettings_AccountQueryVariables = Exact<{
-  slug: Scalars['String'];
+  slug: Scalars['String']['input'];
 }>;
 
 
@@ -1488,7 +1490,7 @@ export type AccountSettings_AccountQuery = { __typename?: 'Query', account?: (
   ) | null };
 
 export type Account_AccountQueryVariables = Exact<{
-  slug: Scalars['String'];
+  slug: Scalars['String']['input'];
 }>;
 
 
@@ -1503,11 +1505,11 @@ export type Account_AccountQuery = { __typename?: 'Query', account?: (
 export type BuildDetail_BuildFragment = { __typename?: 'Build', createdAt: any, branch: string, stats: { __typename?: 'BuildStats', total: number }, baseScreenshotBucket?: { __typename?: 'ScreenshotBucket', branch: string, createdAt: any } | null } & { ' $fragmentName'?: 'BuildDetail_BuildFragment' };
 
 export type BuildDiffState_ProjectQueryVariables = Exact<{
-  accountSlug: Scalars['String'];
-  projectName: Scalars['String'];
-  buildNumber: Scalars['Int'];
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  accountSlug: Scalars['String']['input'];
+  projectName: Scalars['String']['input'];
+  buildNumber: Scalars['Int']['input'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 }>;
 
 
@@ -1526,9 +1528,9 @@ export type BuildHeader_ProjectFragment = (
 export type BuildInfos_BuildFragment = { __typename?: 'Build', createdAt: any, name: string, prNumber?: number | null, commit: string, branch: string, stats: { __typename?: 'BuildStats', total: number }, baseScreenshotBucket?: { __typename?: 'ScreenshotBucket', commit: string, branch: string } | null } & { ' $fragmentName'?: 'BuildInfos_BuildFragment' };
 
 export type BuildPage_ProjectQueryVariables = Exact<{
-  accountSlug: Scalars['String'];
-  projectName: Scalars['String'];
-  buildNumber: Scalars['Int'];
+  accountSlug: Scalars['String']['input'];
+  projectName: Scalars['String']['input'];
+  buildNumber: Scalars['Int']['input'];
 }>;
 
 
@@ -1568,7 +1570,7 @@ type OvercapacityBanner_Account_User_Fragment = { __typename?: 'User', consumpti
 export type OvercapacityBanner_AccountFragment = OvercapacityBanner_Account_Team_Fragment | OvercapacityBanner_Account_User_Fragment;
 
 export type Invite_InvitationQueryVariables = Exact<{
-  token: Scalars['String'];
+  token: Scalars['String']['input'];
 }>;
 
 
@@ -1578,15 +1580,15 @@ export type Invite_InvitationQuery = { __typename?: 'Query', invitation?: { __ty
     ) } | null, me?: { __typename?: 'User', id: string, teams: Array<{ __typename?: 'Team', id: string }> } | null };
 
 export type Invite_AcceptInvitationMutationVariables = Exact<{
-  token: Scalars['String'];
+  token: Scalars['String']['input'];
 }>;
 
 
 export type Invite_AcceptInvitationMutation = { __typename?: 'Mutation', acceptInvitation: { __typename?: 'Team', id: string, slug: string } };
 
 export type ProjectBuilds_ProjectQueryVariables = Exact<{
-  accountSlug: Scalars['String'];
-  projectName: Scalars['String'];
+  accountSlug: Scalars['String']['input'];
+  projectName: Scalars['String']['input'];
 }>;
 
 
@@ -1596,10 +1598,10 @@ export type ProjectBuilds_ProjectQuery = { __typename?: 'Query', project?: (
   ) | null };
 
 export type ProjectBuilds_Project_BuildsQueryVariables = Exact<{
-  accountSlug: Scalars['String'];
-  projectName: Scalars['String'];
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  accountSlug: Scalars['String']['input'];
+  projectName: Scalars['String']['input'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 }>;
 
 
@@ -1611,16 +1613,16 @@ export type ProjectBuilds_Project_BuildsQuery = { __typename?: 'Query', project?
 export type GettingStarted_ProjectFragment = { __typename?: 'Project', token?: string | null } & { ' $fragmentName'?: 'GettingStarted_ProjectFragment' };
 
 export type ProjectReference_ProjectQueryVariables = Exact<{
-  accountSlug: Scalars['String'];
-  projectName: Scalars['String'];
+  accountSlug: Scalars['String']['input'];
+  projectName: Scalars['String']['input'];
 }>;
 
 
 export type ProjectReference_ProjectQuery = { __typename?: 'Query', project?: { __typename?: 'Project', id: string, latestReferenceBuild?: { __typename?: 'Build', id: string, number: number } | null } | null };
 
 export type ProjectSettings_ProjectQueryVariables = Exact<{
-  accountSlug: Scalars['String'];
-  projectName: Scalars['String'];
+  accountSlug: Scalars['String']['input'];
+  projectName: Scalars['String']['input'];
 }>;
 
 
@@ -1630,26 +1632,26 @@ export type ProjectSettings_ProjectQuery = { __typename?: 'Query', project?: (
   ) | null };
 
 export type FlakyTests_Project_TestsQueryVariables = Exact<{
-  accountSlug: Scalars['String'];
-  projectName: Scalars['String'];
-  after: Scalars['Int'];
-  first: Scalars['Int'];
+  accountSlug: Scalars['String']['input'];
+  projectName: Scalars['String']['input'];
+  after: Scalars['Int']['input'];
+  first: Scalars['Int']['input'];
 }>;
 
 
 export type FlakyTests_Project_TestsQuery = { __typename?: 'Query', project?: { __typename?: 'Project', id: string, tests: { __typename?: 'TestConnection', pageInfo: { __typename?: 'PageInfo', totalCount: number, hasNextPage: boolean }, edges: Array<{ __typename?: 'Test', id: string, name: string, buildName: string, status: TestStatus, resolvedDate?: any | null, mute: boolean, muteUntil?: any | null, stabilityScore?: number | null, lastSeen?: any | null, unstable: boolean, totalBuilds: number, dailyChanges: Array<{ __typename?: 'dailyCount', date: any, count: number }>, screenshot?: { __typename?: 'Screenshot', id: string, url: string, width?: number | null, height?: number | null } | null }> } } | null };
 
 export type MuteTestsMutationVariables = Exact<{
-  ids: Array<Scalars['String']> | Scalars['String'];
-  muted: Scalars['Boolean'];
-  muteUntil?: InputMaybe<Scalars['String']>;
+  ids: Array<Scalars['String']['input']> | Scalars['String']['input'];
+  muted: Scalars['Boolean']['input'];
+  muteUntil?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
 export type MuteTestsMutation = { __typename?: 'Mutation', muteTests: { __typename?: 'MuteUpdateTest', ids: Array<string>, mute: boolean, muteUntil?: string | null } };
 
 export type UpdateStatusesMutationMutationVariables = Exact<{
-  ids: Array<Scalars['String']> | Scalars['String'];
+  ids: Array<Scalars['String']['input']> | Scalars['String']['input'];
   status: TestStatus;
 }>;
 
@@ -1657,8 +1659,8 @@ export type UpdateStatusesMutationMutationVariables = Exact<{
 export type UpdateStatusesMutationMutation = { __typename?: 'Mutation', updateTestStatuses: { __typename?: 'UpdatedTestStatuses', ids: Array<string>, status: TestStatus } };
 
 export type Project_ProjectQueryVariables = Exact<{
-  accountSlug: Scalars['String'];
-  projectName: Scalars['String'];
+  accountSlug: Scalars['String']['input'];
+  projectName: Scalars['String']['input'];
 }>;
 
 

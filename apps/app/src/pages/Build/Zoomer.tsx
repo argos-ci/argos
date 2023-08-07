@@ -101,10 +101,10 @@ class Zoomer {
         this.zoom.translateBy(
           this.selection,
           -(deltaX / currentZoom) * 0.5,
-          -(deltaY / currentZoom) * 0.5
+          -(deltaY / currentZoom) * 0.5,
         );
       },
-      { passive: false }
+      { passive: false },
     );
   }
 
@@ -114,7 +114,7 @@ class Zoomer {
 
     this.zoom.transform(
       this.selection,
-      zoomIdentity.translate(state.x, state.y).scale(state.scale)
+      zoomIdentity.translate(state.x, state.y).scale(state.scale),
     );
 
     this.listeners = listeners;
@@ -136,7 +136,7 @@ class Zoomer {
     fn: ZoomPaneListener["fn"],
     options?: {
       ignoreUpdate?: boolean;
-    }
+    },
   ): () => void {
     const desc: ZoomPaneListener = {
       fn,
@@ -177,7 +177,7 @@ export const ZoomerSyncProvider = (props: {
           }
         });
       },
-      { ignoreUpdate: true }
+      { ignoreUpdate: true },
     );
     return () => {
       unsubscribe();
@@ -203,7 +203,7 @@ export const ZoomerSyncProvider = (props: {
   }, []);
   const value = useMemo(
     () => ({ register, getInitialTransform, reset, zoomIn, zoomOut }),
-    [register, getInitialTransform, reset, zoomIn, zoomOut]
+    [register, getInitialTransform, reset, zoomIn, zoomOut],
   );
   return (
     <ZoomerSyncContext.Provider value={value}>

@@ -34,7 +34,7 @@ export const bearerAuth: RequestHandler = (req, _res, next) => {
   if (authorization.scheme !== "Bearer") {
     throw new HttpError(
       400,
-      `Invalid authorization header scheme "${authorization.scheme}", please use "Bearer"`
+      `Invalid authorization header scheme "${authorization.scheme}", please use "Bearer"`,
     );
   }
   req.bearerToken = authorization.token as string;

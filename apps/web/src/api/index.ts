@@ -29,7 +29,7 @@ export const installApiRouter = (app: Application) => {
         json: formatters.json,
         default: formatters.json,
       },
-    })
+    }),
   );
 
   app.use(router);

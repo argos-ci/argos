@@ -40,7 +40,7 @@ const bearerToken: RequestHandler = (req, _res, next) => {
 };
 
 const getAccountFromToken = async (
-  token: string | null
+  token: string | null,
 ): Promise<Account | null> => {
   if (!token) return null;
   const jwt = verifyJWT(token);

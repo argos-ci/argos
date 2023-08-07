@@ -9,7 +9,7 @@ export const createModelJob = <TModelConstructor extends ModelClass<any>>(
   queue: string,
   Model: TModelConstructor,
   perform: (model: InstanceType<TModelConstructor>) => void | Promise<void>,
-  params?: JobParams
+  params?: JobParams,
 ) => {
   return createJob(
     queue,
@@ -32,6 +32,6 @@ export const createModelJob = <TModelConstructor extends ModelClass<any>>(
         await Model.query().patch({ jobStatus: "complete" }).where({ id });
       },
     },
-    params
+    params,
   );
 };

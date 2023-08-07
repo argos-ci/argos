@@ -31,7 +31,7 @@ router.post(
       const event: Stripe.Event = stripe.webhooks.constructEvent(
         req.body,
         signature,
-        config.get("stripe.webhookSecret")
+        config.get("stripe.webhookSecret"),
       );
       logger.info("Stripe event", event.type);
       await handleStripeEvent(event);
@@ -39,7 +39,7 @@ router.post(
       throw new HttpError(400, "Stripe webhook signature verification failed");
     }
     res.sendStatus(200);
-  })
+  }),
 );
 
 router.post(
@@ -79,7 +79,7 @@ router.post(
         customer: stripeCustomerId,
         return_url: new URL(
           `/${account.slug}/settings`,
-          config.get("server.url")
+          config.get("server.url"),
         ).href,
       });
       if (!session.url) {
@@ -90,11 +90,11 @@ router.post(
     } catch (err) {
       logger.error(
         "An error occurred while creating Stripe portal session.",
-        err
+        err,
       );
       res.redirect(302, "/error");
     }
-  })
+  }),
 );
 
 router.post(
@@ -120,7 +120,7 @@ router.post(
       ]);
 
       const hasWritePermission = await teamAccount.$checkWritePermission(
-        req.auth.user
+        req.auth.user,
       );
 
       if (!hasWritePermission) {
@@ -144,11 +144,11 @@ router.post(
     } catch (err) {
       logger.error(
         "An error occurred while creating Stripe checkout session.",
-        err
+        err,
       );
       res.redirect(302, "/error");
     }
-  })
+  }),
 );
 
 export default router;

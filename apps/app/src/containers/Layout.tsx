@@ -22,7 +22,7 @@ export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
               // Ignore unauthenticated errors & logout the user
               if (
                 error.graphQLErrors.some(
-                  (error) => error.extensions?.code === "UNAUTHENTICATED"
+                  (error) => error.extensions?.code === "UNAUTHENTICATED",
                 )
               ) {
                 logout();
@@ -36,7 +36,7 @@ export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
         </ErrorBoundary>
       </main>
     );
-  }
+  },
 );
 
 export const Layout = (props: { children: React.ReactNode }) => {

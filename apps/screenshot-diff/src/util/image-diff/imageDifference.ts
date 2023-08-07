@@ -16,7 +16,7 @@ const createDifference = async (options: {
     {
       outputDiffMask: true,
       threshold: 0.061,
-    }
+    },
   );
 
   if (result.match) {
@@ -37,7 +37,7 @@ const createDifference = async (options: {
 
 async function getMaxDimensions(images: ImageFile[]) {
   const imagesDimensions = await Promise.all(
-    images.map(async (image) => image.getDimensions())
+    images.map(async (image) => image.getDimensions()),
   );
 
   return {

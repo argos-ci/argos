@@ -28,11 +28,11 @@ async function registerAccountFromGithub(accessToken: string) {
   ]);
   const ghAccount = await getOrCreateGhAccountFromGhProfile(
     profile.data,
-    emails.data
+    emails.data,
   );
   const account = await getOrCreateUserAccountFromGhAccount(
     ghAccount,
-    accessToken
+    accessToken,
   );
   return account;
 }
@@ -52,7 +52,7 @@ router.post(
         headers: {
           accept: "application/json",
         },
-      }
+      },
     );
 
     if (result.data.error) {
@@ -72,5 +72,5 @@ router.post(
         },
       }),
     });
-  })
+  }),
 );

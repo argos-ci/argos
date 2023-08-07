@@ -52,8 +52,8 @@ export const validate = (routeSchema: {
         throw new HttpError(
           400,
           `Request URL parameters validation failed: ${ajv.errorsText(
-            validators.params.errors
-          )}`
+            validators.params.errors,
+          )}`,
         );
       }
     }
@@ -64,8 +64,8 @@ export const validate = (routeSchema: {
         throw new HttpError(
           400,
           `Request query validation failed: ${ajv.errorsText(
-            validators.query.errors
-          )}`
+            validators.query.errors,
+          )}`,
         );
       }
     }
@@ -76,8 +76,8 @@ export const validate = (routeSchema: {
         throw new HttpError(
           400,
           `Request body validation failed: ${ajv.errorsText(
-            validators.body.errors
-          )}`
+            validators.body.errors,
+          )}`,
         );
       }
     }

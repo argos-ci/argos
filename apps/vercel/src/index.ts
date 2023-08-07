@@ -17,11 +17,11 @@ export const retrieveToken = async (code: string) => {
   params.append("code", code);
   params.append(
     "redirect_uri",
-    new URL("/vercel/callback", config.get("server.url")).href
+    new URL("/vercel/callback", config.get("server.url")).href,
   );
   const result = await axios.post<VercelTokenResponse>(
     "https://api.vercel.com/v2/oauth/access_token",
-    params
+    params,
   );
   return result.data;
 };
@@ -131,13 +131,13 @@ export const createVercelClient = (params: VercelClientParams) => {
   return {
     getTeam: async (id: string) => {
       const result = await request.get<VercelGetTeamResponse>(
-        `/v2/teams/${id}`
+        `/v2/teams/${id}`,
       );
       return result.data;
     },
     findProject: async (idOrName: string) => {
       const result = await request.get<VercelFindProjectResponse>(
-        `/v9/projects/${idOrName}`
+        `/v9/projects/${idOrName}`,
       );
       return result.data;
     },
@@ -145,7 +145,7 @@ export const createVercelClient = (params: VercelClientParams) => {
       options: {
         teamId?: string | undefined | null;
         limit?: number | undefined | null;
-      } = {}
+      } = {},
     ) => {
       const result = await request.get<VercelListProjectsResponse>(
         `/v9/projects`,
@@ -154,7 +154,7 @@ export const createVercelClient = (params: VercelClientParams) => {
             teamId: options.teamId,
             limit: options.limit,
           },
-        }
+        },
       );
       return result.data;
     },
@@ -163,7 +163,7 @@ export const createVercelClient = (params: VercelClientParams) => {
         `/v1/integrations/configuration/${id}`,
         {
           params: { teamId },
-        }
+        },
       );
       return result.data;
     },
@@ -177,7 +177,7 @@ export const createVercelClient = (params: VercelClientParams) => {
         params,
         {
           params: { teamId },
-        }
+        },
       );
       return result.data;
     },
@@ -193,7 +193,7 @@ export const createVercelClient = (params: VercelClientParams) => {
           params,
           {
             params: { teamId },
-          }
+          },
         )
         .catch((error) => {
           console.log(error.response.data);

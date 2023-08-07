@@ -145,7 +145,7 @@ export const useRedirectToStripeCheckout = () => {
           console.error(e);
           setStatus("error");
         });
-    }
+    },
   );
   return { status, redirect };
 };

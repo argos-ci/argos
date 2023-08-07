@@ -10,7 +10,7 @@ import { diffImages } from "./util/image-diff/index.js";
 
 const getOrCreateFile = async (
   values: { key: string; width: number; height: number },
-  trx: TransactionOrKnex
+  trx: TransactionOrKnex,
 ) => {
   const file = await File.query(trx).findOne({ key: values.key });
   if (file) {
@@ -42,7 +42,7 @@ async function completeFile({
           ...dimensions,
           key: screenshot.s3Id,
         },
-        trx
+        trx,
       );
       await Screenshot.query(trx).findById(screenshot.id).patch({
         fileId: file.id,
@@ -53,14 +53,14 @@ async function completeFile({
 
 export const computeScreenshotDiff = async (
   poorScreenshotDiff: ScreenshotDiff,
-  { s3, bucket }: { s3: S3Client; bucket: string }
+  { s3, bucket }: { s3: S3Client; bucket: string },
 ) => {
   if (poorScreenshotDiff.jobStatus === "complete") return;
 
   const screenshotDiff = await poorScreenshotDiff
     .$query()
     .withGraphFetched(
-      "[build, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]"
+      "[build, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]",
     );
 
   if (!screenshotDiff) {
@@ -69,7 +69,7 @@ export const computeScreenshotDiff = async (
 
   if (!screenshotDiff.compareScreenshot) {
     throw new Error(
-      `Invariant violation: compareScreenshot should be defined for screenshotDiff id: \`${screenshotDiff.id}\``
+      `Invariant violation: compareScreenshot should be defined for screenshotDiff id: \`${screenshotDiff.id}\``,
     );
   }
 
@@ -167,8 +167,8 @@ export const computeScreenshotDiff = async (
             OR muted = FALSE 
             OR (muted = TRUE AND test."muteUntil" > now())
           )
-        ) > 0 AS diff`
-      )
+        ) > 0 AS diff`,
+      ),
     )
     .leftJoinRelated("test")
     .where("buildId", screenshotDiff.buildId)

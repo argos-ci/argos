@@ -26,7 +26,7 @@ export const MenuSeparator = forwardRef<HTMLHRElement, MenuSeparatorProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 export type MenuProps = AriakitMenuProps;
@@ -38,12 +38,12 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(
         ref={ref}
         className={clsx(
           "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border bg-subtle p-1 focus:outline-none",
-          className
+          className,
         )}
         {...props}
       />
     );
-  }
+  },
 );
 
 type MenuItemVariant = "default" | "danger";
@@ -68,12 +68,12 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
         className={clsx(
           pointerClassName,
           menuItemVariantClasses[props.variant ?? "default"],
-          "flex items-center rounded px-3 py-1.5 text-sm transition focus:outline-none aria-disabled:opacity-disabled aria-disabled:hover:bg-transparent"
+          "flex items-center rounded px-3 py-1.5 text-sm transition focus:outline-none aria-disabled:opacity-disabled aria-disabled:hover:bg-transparent",
         )}
         {...props}
       />
     );
-  }
+  },
 );
 
 export interface MenuItemIconProps {
@@ -121,7 +121,7 @@ export const UpDownMenuButton = ({
     <AriakitMenuButton
       className={clsx(
         "border-border rounded-md border p-0.5 text-low hover:border-hover hover:text aria-expanded:bg-active aria-expanded:text",
-        className
+        className,
       )}
       {...props}
     >

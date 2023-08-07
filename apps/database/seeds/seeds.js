@@ -206,7 +206,7 @@ export const seed = async (knex) => {
     .innerJoin(
       "screenshot_buckets",
       "screenshot_buckets.id",
-      "screenshots.screenshotBucketId"
+      "screenshots.screenshotBucketId",
     );
 
   await knex("tests").insert(
@@ -216,7 +216,7 @@ export const seed = async (knex) => {
       buildName: "default",
       status: "pending",
       projectId: screenshotBucket.projectId,
-    }))
+    })),
   );
 
   const test = await knex("tests").select("tests.id", "tests.name");
@@ -227,7 +227,7 @@ export const seed = async (knex) => {
       if (testId) {
         return knex("screenshots").update({ testId });
       }
-    })
+    }),
   );
 
   const dummiesFilesDimensions = [
@@ -285,7 +285,7 @@ export const seed = async (knex) => {
         name: file.key,
         s3Id: file.key,
         fileId: file.id,
-      }))
+      })),
     );
 
   const bearScreenshotIds = bearScreenshots.map(({ id }) => id);
@@ -409,22 +409,22 @@ export const seed = async (knex) => {
       { ...addedScreenshotDiff, validationStatus: "accepted" },
       ...duplicate(
         { ...stableScreenshotDiff, validationStatus: "accepted" },
-        3
+        3,
       ),
       ...duplicate(
         { ...updatedScreenshotDiff, validationStatus: "accepted" },
-        2
+        2,
       ),
     ],
     [rejectedBuildId]: [
       { ...addedScreenshotDiff, validationStatus: "rejected" },
       ...duplicate(
         { ...stableScreenshotDiff, validationStatus: "rejected" },
-        3
+        3,
       ),
       ...duplicate(
         { ...updatedScreenshotDiff, validationStatus: "rejected" },
-        3
+        3,
       ),
     ],
     [inProgressBuildId]: [{ ...updatedScreenshotDiff, jobStatus: "pending" }],
@@ -445,8 +445,8 @@ export const seed = async (knex) => {
         ...screenshotDiff,
         stabilityScore: 100,
         buildId,
-      }))
-    )
+      })),
+    ),
   );
 
   const screenshotDiffs = await knex("screenshot_diffs")
@@ -454,13 +454,13 @@ export const seed = async (knex) => {
     .join(
       "screenshots",
       "screenshot_diffs.compareScreenshotId",
-      "screenshots.id"
+      "screenshots.id",
     );
 
   await Promise.all(
     screenshotDiffs.map(async ({ id, testId }) =>
-      knex("screenshot_diffs").update({ testId }).where({ id: id })
-    )
+      knex("screenshot_diffs").update({ testId }).where({ id: id }),
+    ),
   );
 
   await knex("plans").insert([

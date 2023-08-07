@@ -68,13 +68,13 @@ const BuildVisibleDiffButtonGroup = memo(() => {
   const showBaselineOnlyHotkey = useBuildHotkey(
     "showBaselineOnly",
     showBaselineOnly,
-    { preventDefault: true }
+    { preventDefault: true },
   );
   const showChangesOnly = () => setViewMode("changes");
   const showChangesOnlyHotkey = useBuildHotkey(
     "showChangesOnly",
     showChangesOnly,
-    { preventDefault: true }
+    { preventDefault: true },
   );
 
   if (viewMode === "split") {
@@ -198,7 +198,7 @@ export const BuildDetailToolbar = memo(
       <div
         className={clsx(
           "sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b p-4 transition-colors",
-          !bordered && "border-b-transparent"
+          !bordered && "border-b-transparent",
         )}
       >
         <div className="flex items-start gap-2">
@@ -223,5 +223,5 @@ export const BuildDetailToolbar = memo(
         </div>
       </div>
     );
-  }
+  },
 );

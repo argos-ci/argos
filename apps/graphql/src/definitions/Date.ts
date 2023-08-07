@@ -1,11 +1,7 @@
-import gqlIsoDate from "graphql-iso-date";
+import { GraphQLDate, GraphQLDateTime, GraphQLTime } from "graphql-scalars";
 import gqlTag from "graphql-tag";
 
-// eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
-
-// eslint-disable-next-line import/no-named-as-default-member
-const { GraphQLDate, GraphQLDateTime, GraphQLTime } = gqlIsoDate;
 
 export const typeDefs = gql`
   scalar Date

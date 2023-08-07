@@ -8,7 +8,7 @@ export const up = async (knex) => {
     .innerJoin(
       "screenshot_buckets",
       "builds.compareScreenshotBucketId",
-      "screenshot_buckets.id"
+      "screenshot_buckets.id",
     )
     .whereNull("builds.type")
     .where((query) =>
@@ -16,13 +16,13 @@ export const up = async (knex) => {
         .where((builder) =>
           builder
             .whereNotNull("repositories.baselineBranch")
-            .whereRaw('"branch" = "baselineBranch"')
+            .whereRaw('"branch" = "baselineBranch"'),
         )
         .orWhere((builder) =>
           builder
             .whereNull("repositories.baselineBranch")
-            .whereRaw('"branch" = "defaultBranch"')
-        )
+            .whereRaw('"branch" = "defaultBranch"'),
+        ),
     );
 
   await knex("builds")

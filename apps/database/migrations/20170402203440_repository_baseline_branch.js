@@ -6,7 +6,7 @@ export const up = async (knex) => {
     table.string("baselineBranch").defaultTo("master").notNullable();
   });
   await knex.schema.raw(
-    'ALTER TABLE repositories ALTER COLUMN "baselineBranch" DROP DEFAULT'
+    'ALTER TABLE repositories ALTER COLUMN "baselineBranch" DROP DEFAULT',
   );
 };
 

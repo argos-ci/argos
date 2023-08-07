@@ -26,10 +26,10 @@ type PartialMarketplacePurchasePurchasedEventPayload = {
 };
 
 const getOrCreateGhAccountFromEvent = async (
-  payload: MarketplacePurchasePurchasedEvent
+  payload: MarketplacePurchasePurchasedEvent,
 ): Promise<GithubAccount> => {
   const accountType = getGhAccountType(
-    payload.marketplace_purchase.account.type
+    payload.marketplace_purchase.account.type,
   );
   const ghAccount = await getOrCreateGhAccount({
     githubId: payload.marketplace_purchase.account.id,
@@ -44,7 +44,7 @@ const getOrCreateGhAccountFromEvent = async (
 const findRelevantUserTeam = async (
   userAccount: Account,
   payload: MarketplacePurchasePurchasedEvent,
-  githubAccountId: null | string
+  githubAccountId: null | string,
 ): Promise<Account> => {
   // Got the user entity linked to this account (to get teams)
   const user = await userAccount.$relatedQuery("user").first();
@@ -86,7 +86,7 @@ const findRelevantUserTeam = async (
 };
 
 export const getOrCreateAccountFromEvent = async (
-  payload: MarketplacePurchasePurchasedEvent
+  payload: MarketplacePurchasePurchasedEvent,
 ): Promise<Account> => {
   const ghAccount = await getOrCreateGhAccountFromEvent(payload);
   const account = await ghAccount.$relatedQuery("account").first();
@@ -124,7 +124,7 @@ export const getOrCreateAccountFromEvent = async (
 };
 
 export const getAccount = async (
-  payload: PartialMarketplacePurchasePurchasedEventPayload
+  payload: PartialMarketplacePurchasePurchasedEventPayload,
 ): Promise<Account | null> => {
   const type = payload.marketplace_purchase.account.type.toLowerCase();
   if (type !== "user" && type !== "organization") {
@@ -153,7 +153,7 @@ export const getGithubPlan = async (payload: {
 
 export const cancelPurchase = async (
   payload: { effective_date: string },
-  account: Account
+  account: Account,
 ) => {
   const activePurchase = await account.$getActivePurchase();
   if (activePurchase && activePurchase.source === "github") {
@@ -178,7 +178,7 @@ export const getOrCreateInstallation = async ({
     if (installation.deleted !== deleted) {
       return GithubInstallation.query().patchAndFetchById(
         installation.id,
-        data
+        data,
       );
     }
     return installation;

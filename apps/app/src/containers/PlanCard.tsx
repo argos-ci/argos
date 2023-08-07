@@ -238,7 +238,7 @@ const PlanStatusDescription = ({
   } = useFragment(PlanCardFragment, account);
 
   const missingPaymentMethod = Boolean(
-    purchase && !purchase.paymentMethodFilled
+    purchase && !purchase.paymentMethodFilled,
   );
   const formattedPeriodEndDate = moment(periodEndDate).format("LL");
 
@@ -355,7 +355,7 @@ const ConsumptionBlock = ({
   const disclosure = useDisclosureState({ defaultOpen: false });
   const screenshotsSum = projects.reduce(
     (sum, project) => project.currentMonthUsedScreenshots + sum,
-    0
+    0,
   );
   const max = isPrivate ? screenshotsLimitPerMonth : Infinity;
 
@@ -381,7 +381,7 @@ const ConsumptionBlock = ({
         state={disclosure}
         className={clsx(
           "text-sm text-low transition hover:text focus:outline-none",
-          projects.length === 0 ? "hidden" : ""
+          projects.length === 0 ? "hidden" : "",
         )}
       >
         {disclosure.open ? "Hide" : "Show"} usage detail{" "}
@@ -450,7 +450,7 @@ const groupByPrivacy = (projects: Project[]) => {
       }
       return [privateProjects, publicProjects];
     },
-    [[], []]
+    [[], []],
   );
 };
 
@@ -522,7 +522,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
           __typename: "Team" as const,
         },
       }),
-    }
+    },
   );
 
   const [privateProjects, publicProjects] = groupByPrivacy(projects.edges);

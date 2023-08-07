@@ -111,7 +111,7 @@ export const Invite = () => {
                 );
               }
               const alreadyJoined = Boolean(
-                data.me?.teams?.some((t) => t.id === team?.id)
+                data.me?.teams?.some((t) => t.id === team?.id),
               );
               if (alreadyJoined) {
                 return (

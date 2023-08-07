@@ -79,14 +79,14 @@ export class Purchase extends Model {
       : new Date(
           Math.min(
             getStartOfPreviousMonth(now).getTime() + purchaseTimeInMonth,
-            startOfMonth.getTime() // end of previous month
-          )
+            startOfMonth.getTime(), // end of previous month
+          ),
         );
   }
 
   $isTrialActive() {
     return Boolean(
-      this.trialEndDate && new Date() < new Date(this.trialEndDate)
+      this.trialEndDate && new Date() < new Date(this.trialEndDate),
     );
   }
 }

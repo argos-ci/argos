@@ -25,7 +25,7 @@ export const Time = forwardRef<HTMLTimeElement, TimeProps>(
           : format
           ? moment(date).format(format)
           : moment(date).fromNow(),
-      [hasChildren, format, date]
+      [hasChildren, format, date],
     );
     const [fromNow, setFromNow] = useState(getFormattedDate);
     useEffect(() => {
@@ -43,5 +43,5 @@ export const Time = forwardRef<HTMLTimeElement, TimeProps>(
         {children ?? fromNow}
       </time>
     );
-  }
+  },
 );

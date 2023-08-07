@@ -8,7 +8,7 @@ type TransactionOrKnexWithPromise = TransactionOrKnex & {
 };
 
 export const checkIsTransaction = (
-  maybeTrx: any
+  maybeTrx: any,
 ): maybeTrx is TransactionOrKnexWithPromise => {
   return Boolean(maybeTrx && maybeTrx.executionPromise);
 };
@@ -25,7 +25,7 @@ export async function waitForTransaction(trx?: TransactionOrKnex) {
  */
 export function runAfterTransaction(
   trx: TransactionOrKnex | undefined,
-  callback: () => void | Promise<void>
+  callback: () => void | Promise<void>,
 ) {
   waitForTransaction(trx).then(
     () => {
@@ -38,7 +38,7 @@ export function runAfterTransaction(
     },
     () => {
       // Ignore transaction error
-    }
+    },
   );
 }
 
@@ -55,7 +55,7 @@ export const transaction = <TReturn>(
     | TransactionOrKnex
     | undefined
     | ((trx: TransactionOrKnex) => Promise<TReturn>),
-  maybeCallback?: (trx: TransactionOrKnex) => Promise<TReturn>
+  maybeCallback?: (trx: TransactionOrKnex) => Promise<TReturn>,
 ): Promise<TReturn> => {
   if (!transactionKnexInstance) {
     throw new Error(`transaction is not initialized`);

@@ -94,7 +94,7 @@ export const Project = () => {
         }
 
         const hasWritePermission = project.permissions.includes(
-          "write" as Permission
+          "write" as Permission,
         );
 
         const hasTests = project.tests.pageInfo.totalCount > 0;

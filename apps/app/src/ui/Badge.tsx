@@ -13,11 +13,11 @@ export const Badge = forwardRef<HTMLDivElement, BadgeProps>(
         ref={ref}
         className={clsx(
           className,
-          "rounded-md border px-2 py-0.5 text-xxs font-semibold tabular-nums leading-none text-low"
+          "rounded-md border px-2 py-0.5 text-xxs font-semibold tabular-nums leading-none text-low",
         )}
       >
         {children}
       </div>
     );
-  }
+  },
 );

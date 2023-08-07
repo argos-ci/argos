@@ -24,7 +24,7 @@ const getBuildType = ({
 
 export const getOrCreateBaseScreenshotBucket = async (
   build: Build,
-  { trx }: { trx?: TransactionOrKnex | undefined } = {}
+  { trx }: { trx?: TransactionOrKnex | undefined } = {},
 ) => {
   if (build.baseScreenshotBucket) {
     return build.baseScreenshotBucket!;
@@ -134,18 +134,18 @@ export const getStabilityScores = async ({
         "diff_screenshots",
         "recent_builds_count"
     `,
-    { projectId, buildName }
+    { projectId, buildName },
   );
 
   return stabilityScores.rows.reduce(
     (
       scores: { [key: string]: number },
-      screenshot: { name: string; stabilityScore: number }
+      screenshot: { name: string; stabilityScore: number },
     ) => {
       scores[screenshot.name] = screenshot.stabilityScore;
       return scores;
     },
-    {}
+    {},
   );
 };
 
@@ -154,7 +154,7 @@ export const createBuildDiffs = async (build: Build) => {
     build
       .$query()
       .withGraphFetched(
-        "[project, baseScreenshotBucket.screenshots.file, compareScreenshotBucket.screenshots.file]"
+        "[project, baseScreenshotBucket.screenshots.file, compareScreenshotBucket.screenshots.file]",
       ),
     getStabilityScores({
       buildName: build.name,
@@ -165,7 +165,7 @@ export const createBuildDiffs = async (build: Build) => {
   return transaction(async (trx) => {
     const baseScreenshotBucket = await getOrCreateBaseScreenshotBucket(
       richBuild,
-      { trx }
+      { trx },
     );
 
     if (!richBuild.project) {
@@ -190,7 +190,7 @@ export const createBuildDiffs = async (build: Build) => {
 
     const sameBucket = Boolean(
       baseScreenshotBucket &&
-        baseScreenshotBucket.id === richBuild.compareScreenshotBucket!.id
+        baseScreenshotBucket.id === richBuild.compareScreenshotBucket!.id,
     );
 
     const inserts = richBuild.compareScreenshotBucket!.screenshots!.map(
@@ -198,14 +198,14 @@ export const createBuildDiffs = async (build: Build) => {
         const baseScreenshot =
           !sameBucket && baseScreenshotBucket
             ? baseScreenshotBucket.screenshots!.find(
-                ({ name }) => name === compareScreenshot.name
+                ({ name }) => name === compareScreenshot.name,
               )
             : null;
         const sameFileId = Boolean(
           baseScreenshot &&
             baseScreenshot.fileId &&
             compareScreenshot.fileId &&
-            baseScreenshot.fileId === compareScreenshot.fileId
+            baseScreenshot.fileId === compareScreenshot.fileId,
         );
 
         return {
@@ -223,7 +223,7 @@ export const createBuildDiffs = async (build: Build) => {
           testId: compareScreenshot.testId,
         };
       },
-      []
+      [],
     );
 
     const compareScreenshotNames =

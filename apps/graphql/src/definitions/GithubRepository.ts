@@ -19,13 +19,13 @@ export const resolvers: IResolvers = {
   GithubRepository: {
     fullName: async (repository, _args, ctx) => {
       const account = await ctx.loaders.GithubAccount.load(
-        repository.githubAccountId
+        repository.githubAccountId,
       );
       return `${account.login}/${repository.name}`;
     },
     url: async (repository, _args, ctx) => {
       const account = await ctx.loaders.GithubAccount.load(
-        repository.githubAccountId
+        repository.githubAccountId,
       );
       return `https://github.com/${account.login}/${repository.name}`;
     },

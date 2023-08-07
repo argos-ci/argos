@@ -43,7 +43,7 @@ const ApolloProvider = (props: {
         }),
         headers: authorization ? { authorization } : {},
       }),
-    [authorization]
+    [authorization],
   );
   return (
     <BaseApolloProvider client={apolloClient}>
@@ -61,10 +61,10 @@ export const ApolloInitializer = (props: { children: React.ReactNode }) => {
 
 export function useQuery<
   TData = any,
-  TVariables extends OperationVariables = OperationVariables
+  TVariables extends OperationVariables = OperationVariables,
 >(
   query: DocumentNode | TypedDocumentNode<TData, TVariables>,
-  options?: QueryHookOptions<TData, TVariables>
+  options?: QueryHookOptions<TData, TVariables>,
 ): QueryResult<TData, TVariables> {
   const { loading, error, data, ...others } = useApolloQuery(query, options);
   if (error) {
@@ -75,7 +75,7 @@ export function useQuery<
 
 export function Query<
   TData = any,
-  TVariables extends OperationVariables = OperationVariables
+  TVariables extends OperationVariables = OperationVariables,
 >({
   fallback = null,
   children,
@@ -83,7 +83,7 @@ export function Query<
   ...options
 }: {
   children: (
-    data: NonNullable<QueryResult<TData, TVariables>["data"]>
+    data: NonNullable<QueryResult<TData, TVariables>["data"]>,
   ) => React.ReactElement | null;
   fallback?: React.ReactElement | null;
   query: DocumentNode | TypedDocumentNode<TData, TVariables>;

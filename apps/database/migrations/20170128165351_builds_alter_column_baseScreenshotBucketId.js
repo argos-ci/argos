@@ -3,7 +3,7 @@
  */
 export const up = async (knex) => {
   await knex.raw(
-    'ALTER TABLE builds ALTER COLUMN "baseScreenshotBucketId" DROP NOT NULL'
+    'ALTER TABLE builds ALTER COLUMN "baseScreenshotBucketId" DROP NOT NULL',
   );
 };
 
@@ -12,6 +12,6 @@ export const up = async (knex) => {
  */
 export const down = async (knex) => {
   await knex.raw(
-    'ALTER TABLE builds ALTER COLUMN "baseScreenshotBucketId" SET NOT NULL'
+    'ALTER TABLE builds ALTER COLUMN "baseScreenshotBucketId" SET NOT NULL',
   );
 };

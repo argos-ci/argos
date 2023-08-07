@@ -8,7 +8,7 @@ let started = false;
 export const createApolloServerApp = async (
   apolloServer: ApolloServer,
   getMiddleware: () => RequestHandler,
-  auth: { user: User; account: Account } | null
+  auth: { user: User; account: Account } | null,
 ) => {
   const app = express();
   app.use(((req, _res, next) => {

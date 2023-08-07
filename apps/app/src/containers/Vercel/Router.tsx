@@ -36,20 +36,20 @@ export const VercelRouter = (props: VercelRouterProps) => {
   const [linkedAccount, setLinkedAccountState] = useState<null | Account>(
     () => {
       const sessionLinkedAccount = window.sessionStorage.getItem(
-        "vercelLinkedAccount"
+        "vercelLinkedAccount",
       );
       if (sessionLinkedAccount) {
         return JSON.parse(sessionLinkedAccount);
       }
       return props.teamId ? null : props.authUserAccount;
-    }
+    },
   );
 
   const setLinkedAccount = useCallback((account: Account) => {
     setLinkedAccountState(account);
     window.sessionStorage.setItem(
       "vercelLinkedAccount",
-      JSON.stringify(account)
+      JSON.stringify(account),
     );
   }, []);
 

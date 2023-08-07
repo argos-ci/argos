@@ -35,7 +35,7 @@ describe("bearerAuth", () => {
       .set("Authorization", "Beee xx")
       .expect((res) => {
         expect(res.text).toBe(
-          `Invalid authorization header scheme "Beee", please use "Bearer"`
+          `Invalid authorization header scheme "Beee", please use "Bearer"`,
         );
       })
       .expect(400);

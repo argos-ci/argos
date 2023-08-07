@@ -50,6 +50,6 @@ export const mergeSchemas = (...schemas: JSONSchema[]): JSONSchema => {
     {
       required: [],
       properties: {},
-    } as JSONSchema
+    } as JSONSchema,
   );
 };
