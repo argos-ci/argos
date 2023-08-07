@@ -18,5 +18,5 @@ _Argos is a visual testing solution that fits in your workflow to avoid visual r
 ## Contributing
 
 Changes and improvements are more than welcome!
-Please make your changes in a specific branch and request to pull into master!
+Please make your changes in a specific branch and request to pull into main!
 To learn more about it, have a look at our [CONTRIBUTING.md](/CONTRIBUTING.md).
