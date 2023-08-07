@@ -21,7 +21,7 @@ type SyncCtx = {
 const linkInstallationRepositories = async (
   installationId: string,
   repositories: GithubRepository[],
-  trx: TransactionOrKnex
+  trx: TransactionOrKnex,
 ) => {
   const links = await GithubRepositoryInstallation.query(trx).where({
     githubInstallationId: installationId,
@@ -30,15 +30,15 @@ const linkInstallationRepositories = async (
   const toLink = repositories.filter(
     (repository) =>
       !links.some(
-        ({ githubRepositoryId }) => githubRepositoryId === repository.id
-      )
+        ({ githubRepositoryId }) => githubRepositoryId === repository.id,
+      ),
   );
 
   const toUnlink = links.filter(
     (link) =>
       !repositories.some(
-        (repository) => repository.id === link.githubRepositoryId
-      )
+        (repository) => repository.id === link.githubRepositoryId,
+      ),
   );
 
   await Promise.all([
@@ -47,14 +47,14 @@ const linkInstallationRepositories = async (
           toLink.map((repository) => ({
             githubInstallationId: installationId,
             githubRepositoryId: repository.id,
-          }))
+          })),
         )
       : null,
     toUnlink.length > 0
       ? GithubRepositoryInstallation.query(trx)
           .whereIn(
             "id",
-            toUnlink.map((link) => link.id)
+            toUnlink.map((link) => link.id),
           )
           .delete()
       : null,
@@ -62,46 +62,54 @@ const linkInstallationRepositories = async (
 };
 
 const extractOwnersFromRepositories = (repositories: ApiRepository[]) => {
-  return repositories.reduce((owners, repo) => {
-    const exist = owners.some(({ id }) => id === repo.owner.id);
+  return repositories.reduce(
+    (owners, repo) => {
+      const exist = owners.some(({ id }) => id === repo.owner.id);
 
-    if (!exist) {
-      const lowerType = repo.owner.type.toLowerCase();
+      if (!exist) {
+        const lowerType = repo.owner.type.toLowerCase();
 
-      if (lowerType !== "organization" && lowerType !== "user") {
-        throw new Error(
-          `Unexpected owner type ${repo.owner.type} for repository ${repo.id}`
-        );
+        if (lowerType !== "organization" && lowerType !== "user") {
+          throw new Error(
+            `Unexpected owner type ${repo.owner.type} for repository ${repo.id}`,
+          );
+        }
+
+        owners.push({
+          id: repo.owner.id,
+          name: repo.owner.name ?? null,
+          login: repo.owner.login,
+          type: lowerType,
+        });
       }
 
-      owners.push({
-        id: repo.owner.id,
-        name: repo.owner.name ?? null,
-        login: repo.owner.login,
-        type: lowerType,
-      });
-    }
-
-    return owners;
-  }, [] as { id: number; name: string | null; login: string; type: "user" | "organization" }[]);
+      return owners;
+    },
+    [] as {
+      id: number;
+      name: string | null;
+      login: string;
+      type: "user" | "organization";
+    }[],
+  );
 };
 
 const saveAccounts = async (
   repositories: ApiRepository[],
-  trx: TransactionOrKnex
+  trx: TransactionOrKnex,
 ) => {
   const owners = extractOwnersFromRepositories(repositories);
   const existingAccounts = owners.length
     ? await GithubAccount.query(trx).whereIn(
         "githubId",
-        owners.map(({ id }) => id)
+        owners.map(({ id }) => id),
       )
     : [];
 
   const [toInsert, toUpdate] = owners.reduce(
     ([toInsert, toUpdate], owner) => {
       const exist = existingAccounts.some(
-        ({ githubId }) => githubId === owner.id
+        ({ githubId }) => githubId === owner.id,
       );
       if (exist) {
         toUpdate.push(owner);
@@ -110,7 +118,7 @@ const saveAccounts = async (
       }
       return [toInsert, toUpdate];
     },
-    [[], []] as [typeof owners, typeof owners]
+    [[], []] as [typeof owners, typeof owners],
   );
 
   await Promise.all([
@@ -121,7 +129,7 @@ const saveAccounts = async (
             name: owner.name,
             login: owner.login,
             type: owner.type,
-          }))
+          })),
         )
       : null,
     ...toUpdate.map((owner) =>
@@ -131,14 +139,14 @@ const saveAccounts = async (
           login: owner.login,
           type: owner.type,
         })
-        .where({ githubId: owner.id })
+        .where({ githubId: owner.id }),
     ),
   ]);
 
   return owners.length
     ? GithubAccount.query(trx).whereIn(
         "githubId",
-        owners.map(({ id }) => id)
+        owners.map(({ id }) => id),
       )
     : ([] as GithubAccount[]);
 };
@@ -146,19 +154,19 @@ const saveAccounts = async (
 const saveRepositories = async (
   accounts: GithubAccount[],
   apiRepositories: ApiRepository[],
-  trx: TransactionOrKnex
+  trx: TransactionOrKnex,
 ) => {
   const existingRepositories = apiRepositories.length
     ? await GithubRepository.query(trx).whereIn(
         "githubId",
-        apiRepositories.map(({ id }) => id)
+        apiRepositories.map(({ id }) => id),
       )
     : [];
 
   const [toInsert, toUpdate] = apiRepositories.reduce(
     ([toInsert, toUpdate], apiRepo) => {
       const exist = existingRepositories.some(
-        ({ githubId }) => githubId === apiRepo.id
+        ({ githubId }) => githubId === apiRepo.id,
       );
       if (exist) {
         toUpdate.push(apiRepo);
@@ -167,17 +175,17 @@ const saveRepositories = async (
       }
       return [toInsert, toUpdate];
     },
-    [[], []] as [typeof apiRepositories, typeof apiRepositories]
+    [[], []] as [typeof apiRepositories, typeof apiRepositories],
   );
 
   const getRepoData = (apiRepo: ApiRepository) => {
     const githubAccountId = accounts.find(
-      ({ githubId }) => githubId === apiRepo.owner.id
+      ({ githubId }) => githubId === apiRepo.owner.id,
     )?.id;
 
     if (!githubAccountId) {
       throw new Error(
-        `Cannot find account ${apiRepo.owner.id} for repository ${apiRepo.id}`
+        `Cannot find account ${apiRepo.owner.id} for repository ${apiRepo.id}`,
       );
     }
 
@@ -193,20 +201,20 @@ const saveRepositories = async (
   await Promise.all([
     toInsert.length > 0
       ? GithubRepository.query(trx).insert(
-          toInsert.map((apiRepo) => getRepoData(apiRepo))
+          toInsert.map((apiRepo) => getRepoData(apiRepo)),
         )
       : null,
     ...toUpdate.map((apiRepo) =>
       GithubRepository.query(trx)
         .patch(getRepoData(apiRepo))
-        .where({ githubId: apiRepo.id })
+        .where({ githubId: apiRepo.id }),
     ),
   ]);
 
   return apiRepositories.length
     ? GithubRepository.query(trx).whereIn(
         "githubId",
-        apiRepositories.map(({ id }) => id)
+        apiRepositories.map(({ id }) => id),
       )
     : ([] as GithubRepository[]);
 };
@@ -215,7 +223,7 @@ const getRepositories = async (ctx: SyncCtx): Promise<ApiRepository[]> => {
   try {
     return (await ctx.octokit.paginate(
       ctx.octokit.apps.listReposAccessibleToInstallation,
-      { installation_id: ctx.installation.githubId }
+      { installation_id: ctx.installation.githubId },
     )) as unknown as ApiRepository[];
   } catch (error: any) {
     if (error.response.status === 404) return [];
@@ -225,7 +233,7 @@ const getRepositories = async (ctx: SyncCtx): Promise<ApiRepository[]> => {
 
 export const synchronizeInstallation = async (installationId: string) => {
   const installation = await GithubInstallation.query().findById(
-    installationId
+    installationId,
   );
 
   if (!installation) {

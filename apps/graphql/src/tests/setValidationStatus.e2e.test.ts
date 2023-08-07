@@ -79,7 +79,7 @@ describe("GraphQL", () => {
         {
           user: userAccount.user!,
           account: userAccount,
-        }
+        },
       );
       let res = await request(app)
         .post("/graphql")
@@ -100,12 +100,12 @@ describe("GraphQL", () => {
           `,
         });
       expect(
-        res.body.data.setValidationStatus.screenshotDiffs.edges
+        res.body.data.setValidationStatus.screenshotDiffs.edges,
       ).toHaveLength(3);
       res.body.data.setValidationStatus.screenshotDiffs.edges.forEach(
         (screenshotDiff: { validationStatus: string }) => {
           expect(screenshotDiff.validationStatus).toBe("rejected");
-        }
+        },
       );
 
       expectNoGraphQLError(res);
@@ -117,7 +117,7 @@ describe("GraphQL", () => {
         {
           user: userAccount.user!,
           account: userAccount,
-        }
+        },
       );
       res = await request(apolloServerApp)
         .post("/graphql")
@@ -163,7 +163,7 @@ describe("GraphQL", () => {
         {
           user: userAccount.user!,
           account: userAccount,
-        }
+        },
       );
       const res = await request(app)
         .post("/graphql")
@@ -185,7 +185,7 @@ describe("GraphQL", () => {
         });
       expect(res.status).toBe(200);
       expect(res.body.errors[0].message).toBe(
-        "You don't have access to this build"
+        "You don't have access to this build",
       );
     });
   });

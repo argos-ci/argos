@@ -101,7 +101,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
                 {(buttonProps) => (
                   <a
                     href={`${config.get(
-                      "github.appUrl"
+                      "github.appUrl",
                     )}/installations/new?state=${encodeURIComponent(pathname)}`}
                     {...buttonProps}
                   >

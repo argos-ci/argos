@@ -11,15 +11,15 @@
     "@argos-ci/github": "*",
     "@argos-ci/job-core": "*",
     "@argos-ci/storage": "*",
-    "@aws-sdk/client-s3": "^3.312.0",
-    "@octokit/rest": "^19.0.7",
-    "objection": "^3.0.1",
+    "@aws-sdk/client-s3": "^3.386.0",
+    "@octokit/rest": "^20.0.1",
+    "objection": "^3.1.1",
     "odiff-bin": "^2.6.1",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
     "@types/tmp": "^0.2.3",
-    "rimraf": "^5.0.0"
+    "rimraf": "^5.0.1"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",

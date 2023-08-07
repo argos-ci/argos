@@ -39,7 +39,9 @@
   box-sizing: border-box;
   transform-origin: 170px 50px;
   border: 4px solid #333;
-  box-shadow: 3px 4px #0003 inset, 0 0 6px #0002 inset;
+  box-shadow:
+    3px 4px #0003 inset,
+    0 0 6px #0002 inset;
   animation: panmov 0.4s ease-in-out infinite alternate;
 }
 .egg-loader::before {
@@ -55,8 +57,13 @@
     radial-gradient(circle 12px, #ffc400 90%, transparent 10%),
     radial-gradient(circle 12px, #ffae00 100%, transparent 0);
   background-repeat: no-repeat;
-  background-position: -4px -6px, -2px -2px, -1px -1px;
-  box-shadow: -2px -3px #0002 inset, 0 0 4px #0003 inset;
+  background-position:
+    -4px -6px,
+    -2px -2px,
+    -1px -1px;
+  box-shadow:
+    -2px -3px #0002 inset,
+    0 0 4px #0003 inset;
   border-radius: 47% 36% 50% 50% / 49% 45% 42% 44%;
   animation: ylmov 0.6s ease-in-out infinite alternate;
 }
@@ -86,6 +93,9 @@
 @keyframes ylmov {
   to {
     border-radius: 50% 36% 50% 50% / 49% 50% 45% 45%;
-    background-position: -2px -4px, 2px 2px, 1px 1px;
+    background-position:
+      -2px -4px,
+      2px 2px,
+      1px 1px;
   }
 }

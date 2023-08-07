@@ -20,13 +20,13 @@ const createServer = (requestListener: RequestListener): Server => {
     return createHttpsServer(
       {
         key: readFileSync(
-          join(__dirname, "../../../../_wildcard.argos-ci.dev-key.pem")
+          join(__dirname, "../../../../_wildcard.argos-ci.dev-key.pem"),
         ),
         cert: readFileSync(
-          join(__dirname, "../../../../_wildcard.argos-ci.dev.pem")
+          join(__dirname, "../../../../_wildcard.argos-ci.dev.pem"),
         ),
       },
-      requestListener
+      requestListener,
     );
   }
 

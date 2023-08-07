@@ -96,8 +96,8 @@ const getScreenshots = async (keys: string[]) => {
         Key: key,
         Bucket: screenshotsBucket,
         expiresIn: 1800, // 30 minutes
-      })
-    )
+      }),
+    ),
   );
   return unknownKeys.map((key, index) => ({
     key,
@@ -115,7 +115,7 @@ const handleCreateParallel = async ({ req }: { req: CreateRequest }) => {
   if (!req.body.parallelNonce) {
     throw new HttpError(
       400,
-      "`parallelNonce` is required when `parallel` is `true`"
+      "`parallelNonce` is required when `parallel` is `true`",
     );
   }
   const screenshots = await getScreenshots(req.body.screenshotKeys);
@@ -169,5 +169,5 @@ router.post(
     res
       .status(201)
       .send({ build: { id: build.id, url: buildUrl }, screenshots });
-  })
+  }),
 );

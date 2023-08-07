@@ -68,7 +68,7 @@ export const getCommentBody = async (props: {
       }** ([Inspect](${url})) | ${statusMessage}${review} | ${
         stats || "-"
       } | ${formatDate(build.updatedAt)} |`;
-    })
+    }),
   );
   return [
     getCommentHeader(),

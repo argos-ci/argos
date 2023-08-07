@@ -104,7 +104,7 @@ export const TeamUpgradeDialogButton = ({
               team
                 ? new URL(
                     `/${team.slug}?checkout=success`,
-                    window.location.origin
+                    window.location.origin,
                   ).href
                 : window.location.href
             }
@@ -112,7 +112,7 @@ export const TeamUpgradeDialogButton = ({
               team
                 ? new URL(
                     `/${team.slug}?checkout=cancel`,
-                    window.location.origin
+                    window.location.origin,
                   ).href
                 : window.location.href
             }

@@ -55,18 +55,18 @@ router.post(
             await Promise.all([
               VercelConfiguration.query().findOne(
                 "vercelId",
-                payload.configuration.id
+                payload.configuration.id,
               ),
               payload.projects.removed.length > 0
                 ? VercelProject.query().whereIn(
                     "vercelId",
-                    payload.projects.removed
+                    payload.projects.removed,
                   )
                 : [],
               payload.projects.added.length > 0
                 ? VercelProject.query().whereIn(
                     "vercelId",
-                    payload.projects.added
+                    payload.projects.added,
                   )
                 : [],
             ]);
@@ -79,13 +79,13 @@ router.post(
                     .where("vercelConfigurationId", configuration.id)
                     .whereIn(
                       "vercelProjectId",
-                      removedProjects.map((p) => p.id)
+                      removedProjects.map((p) => p.id),
                     )
                     .delete()
                 : null,
               ...addedProjects.map(async (project) => {
                 const existing = await VercelProjectConfiguration.query(
-                  trx
+                  trx,
                 ).findOne({
                   vercelConfigurationId: configuration.id,
                   vercelProjectId: project.id,
@@ -162,7 +162,7 @@ router.post(
             vercelId: payload.deployment.id,
           })
           .withGraphFetched(
-            "[vercelCheck,vercelProject.[activeConfiguration,project.account]]"
+            "[vercelCheck,vercelProject.[activeConfiguration,project.account]]",
           );
 
         if (
@@ -217,7 +217,7 @@ router.post(
       }
     }
     res.send("OK");
-  })
+  }),
 );
 
 export const middleware = router;

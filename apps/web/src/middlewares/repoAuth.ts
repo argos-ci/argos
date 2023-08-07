@@ -26,7 +26,7 @@ export const repoAuth = [
     if (!bearerToken) {
       throw new HttpError(
         401,
-        `Missing bearer token. Please provide a token in the Authorization header.`
+        `Missing bearer token. Please provide a token in the Authorization header.`,
       );
     }
 
@@ -41,7 +41,7 @@ export const repoAuth = [
     if (!project) {
       throw new HttpError(
         401,
-        `Repository not found (token: "${bearerToken}")`
+        `Repository not found (token: "${bearerToken}")`,
       );
     }
 

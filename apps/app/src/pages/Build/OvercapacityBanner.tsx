@@ -44,5 +44,5 @@ export const OvercapacityBanner = memo(
         <Link to={`/${accountSlug}/settings`}>Upgrade plan</Link>
       </Banner>
     );
-  }
+  },
 );

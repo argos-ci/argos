@@ -43,7 +43,7 @@ export const createJob = <TArg>(
     complete: (arg: TArg) => void | Promise<void>;
     error: (arg: TArg) => void | Promise<void>;
   },
-  { prefetch = 1 }: JobParams = {}
+  { prefetch = 1 }: JobParams = {},
 ): Job<TArg> => {
   return {
     queue,
@@ -55,7 +55,7 @@ export const createJob = <TArg>(
         serializeMessage({ args: [arg], attempts: 0 }),
         {
           persistent: true,
-        }
+        },
       );
     },
     async process({ channel }: { channel: Channel }) {
@@ -80,7 +80,7 @@ export const createJob = <TArg>(
                   args: payload.args,
                   attempts: payload.attempts + 1,
                 }),
-                { persistent: true }
+                { persistent: true },
               );
               return;
             }

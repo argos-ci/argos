@@ -7,9 +7,9 @@
   "dependencies": {
     "@argos-ci/config": "*",
     "@argos-ci/logger": "*",
-    "@sentry/node": "^7.48.0",
+    "@sentry/node": "^7.61.1",
     "amqplib": "^0.10.3",
-    "objection": "^3.0.1"
+    "objection": "^3.1.1"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.1"

@@ -36,14 +36,14 @@ const bytesToString = (bytes: Buffer) => {
 
 const defineFactory = <
   TModel extends Model,
-  TModelClass extends ModelClass<TModel>
+  TModelClass extends ModelClass<TModel>,
 >(
   modelClass: TModelClass,
-  definition: () => PartialModelObject<TModel>
+  definition: () => PartialModelObject<TModel>,
 ) => {
   const factory = FactoryGirl.define<TModelClass, PartialModelObject<TModel>>(
     modelClass,
-    definition
+    definition,
   );
   return factory;
 };
@@ -73,7 +73,7 @@ export const UserAccount = defineFactory(models.Account, () => ({
   name: FactoryGirl.sequence("account.slug", (n) => `Account ${n}`),
   slug: FactoryGirl.sequence("account.slug", (n) => `account-${n}`),
   githubAccountId: GithubAccount.extend(() => ({ type: "user" })).associate(
-    "id"
+    "id",
   ),
 }));
 
@@ -129,7 +129,7 @@ export const BuildNotification = defineFactory(
     buildId: Build.associate("id"),
     jobStatus: "complete",
     type: "no-diff-detected",
-  })
+  }),
 );
 
 export const TeamUser = defineFactory(models.TeamUser, () => ({

@@ -11,7 +11,7 @@ import { Chip } from "./Chip";
 import { Tooltip } from "./Tooltip";
 
 export const getFlakyIndicatorProps = (
-  test: Pick<Test, "status" | "unstable" | "resolvedDate">
+  test: Pick<Test, "status" | "unstable" | "resolvedDate">,
 ) => {
   const { status, unstable, resolvedDate } = test;
 

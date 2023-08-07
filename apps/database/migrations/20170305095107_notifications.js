@@ -4,7 +4,7 @@
 export const up = async (knex) => {
   await knex.schema
     .raw(
-      `CREATE TYPE build_notifications_type AS ENUM ('progress', 'no-diff-detected', 'diff-detected')`
+      `CREATE TYPE build_notifications_type AS ENUM ('progress', 'no-diff-detected', 'diff-detected')`,
     )
     .createTable("build_notifications", (table) => {
       table.bigIncrements("id").primary();

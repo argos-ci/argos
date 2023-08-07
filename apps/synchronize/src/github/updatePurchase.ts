@@ -12,7 +12,7 @@ export const updatePurchase = async (
       free_trial_ends_on: string | null;
     };
   },
-  account: Account
+  account: Account,
 ) => {
   const plan = await getGithubPlan(payload);
   const activePurchase = await account.$getActivePurchase();

@@ -13,5 +13,5 @@ export const ButtonGroup = forwardRef<HTMLDivElement, ButtonGroupProps>(
         {...rest}
       />
     );
-  }
+  },
 );

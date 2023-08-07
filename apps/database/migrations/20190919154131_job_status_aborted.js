@@ -14,7 +14,7 @@ export const up = async (knex) =>
   ALTER TABLE build_notifications ALTER COLUMN "jobStatus" TYPE job_status USING "jobStatus"::text::job_status;
 
   DROP TYPE job_status_old;
-  `
+  `,
   );
 
 /**
@@ -33,5 +33,5 @@ export const down = async (knex) =>
   ALTER TABLE build_notifications ALTER COLUMN "jobStatus" TYPE job_status USING "jobStatus"::text::job_status;
 
   DROP TYPE job_status_old;
-  `
+  `,
   );

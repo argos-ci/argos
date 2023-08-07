@@ -8,24 +8,24 @@ let truncateQuery: string;
 async function getTruncateQuery(knex: Knex) {
   if (!truncateQuery) {
     const result = await knex.raw<{ rows: { tablename: string }[] }>(
-      "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'"
+      "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'",
     );
 
     const tables = result.rows.reduce(
       (tablesAcc, { tablename }) =>
         KNEX_TABLES.includes(tablename) ? tablesAcc : [...tablesAcc, tablename],
-      [] as string[]
+      [] as string[],
     );
 
     const disableTriggers = tables.map(
-      (table) => `ALTER TABLE ${table} DISABLE TRIGGER ALL`
+      (table) => `ALTER TABLE ${table} DISABLE TRIGGER ALL`,
     );
     const deletes = tables.map((table) => `DELETE FROM ${table}`);
     const enableTriggers = tables.map(
-      (table) => `ALTER TABLE ${table} ENABLE TRIGGER ALL`
+      (table) => `ALTER TABLE ${table} ENABLE TRIGGER ALL`,
     );
     truncateQuery = [...disableTriggers, ...deletes, ...enableTriggers].join(
-      ";"
+      ";",
     );
   }
 

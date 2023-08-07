@@ -49,7 +49,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className,
       ...props
     },
-    ref
+    ref,
   ) => {
     const colorClassNames = variantClassNames[variant];
     if (!colorClassNames) {
@@ -72,14 +72,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           variantClassName,
           sizeClassName,
           "focus:outline-none focus-visible:ring-4",
-          "align-center inline-flex whitespace-nowrap border font-sans font-medium leading-none transition aria-disabled:opacity-disabled [&:is(button)]:cursor-default"
+          "align-center inline-flex whitespace-nowrap border font-sans font-medium leading-none transition aria-disabled:opacity-disabled [&:is(button)]:cursor-default",
         )}
         {...props}
       >
         {children}
       </AriakitButton>
     );
-  }
+  },
 );
 
 export interface ButtonIconProps {

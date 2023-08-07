@@ -25,7 +25,7 @@ export const uploadFromFilePath = async ({
       ContentType,
       Key,
       ...other,
-    })
+    }),
   );
   return { Key };
 };
@@ -49,7 +49,7 @@ export const uploadFromBuffer = async ({
       ContentType: contentType,
       Key,
       ...other,
-    })
+    }),
   );
   return { Key };
 };

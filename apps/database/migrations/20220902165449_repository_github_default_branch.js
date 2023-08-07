@@ -11,7 +11,7 @@ export const up = async (knex) => {
   await knex("repositories").update({ useDefaultBranch: false });
 
   await knex.raw(
-    `ALTER TABLE repositories ADD CONSTRAINT repositories_one_branch_not_null CHECK (coalesce("baselineBranch", '') <> '' or coalesce("defaultBranch", '') <> '')`
+    `ALTER TABLE repositories ADD CONSTRAINT repositories_one_branch_not_null CHECK (coalesce("baselineBranch", '') <> '' or coalesce("defaultBranch", '') <> '')`,
   );
 };
 
@@ -20,7 +20,7 @@ export const up = async (knex) => {
  */
 export const down = async (knex) => {
   await knex.raw(
-    "ALTER TABLE repositories DROP CONSTRAINT IF EXISTS repositories_one_branch_not_null"
+    "ALTER TABLE repositories DROP CONSTRAINT IF EXISTS repositories_one_branch_not_null",
   );
 
   await knex.schema.alterTable("repositories", async (table) => {

@@ -16,7 +16,7 @@ export const createTestApp = (
       }
 
       res.send(_err.message);
-    }) as express.ErrorRequestHandler
+    }) as express.ErrorRequestHandler,
   );
   return app;
 };

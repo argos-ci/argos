@@ -42,10 +42,10 @@ export const up = async (knex) => {
   await knex.raw(`update synchronizations set type = 'user';`);
 
   await knex.raw(
-    `alter table synchronizations alter column type set not null;`
+    `alter table synchronizations alter column type set not null;`,
   );
   await knex.raw(
-    `alter table synchronizations alter column "userId" drop not null;`
+    `alter table synchronizations alter column "userId" drop not null;`,
   );
 
   await knex.raw(`

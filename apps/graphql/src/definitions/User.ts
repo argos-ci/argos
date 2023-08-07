@@ -82,7 +82,7 @@ export const resolvers: IResolvers = {
         ])
         .whereIn(
           "teamId",
-          User.relatedQuery("teams").select("teams.id").for(account.userId)
+          User.relatedQuery("teams").select("teams.id").for(account.userId),
         );
     },
     ghInstallations: async (account, _args, ctx) => {
@@ -91,7 +91,7 @@ export const resolvers: IResolvers = {
       }
       if (account.id !== ctx.auth.account.id) {
         throw new Error(
-          "Invariant: ghInstallations can only be accessed by the authenticated user"
+          "Invariant: ghInstallations can only be accessed by the authenticated user",
         );
       }
       const octokit = getTokenOctokit(ctx.auth.user.accessToken);

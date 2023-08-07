@@ -28,7 +28,7 @@ declare global {
 
 export const ColorModeProvider = (props: { children: React.ReactNode }) => {
   const [colorMode, setColorMode] = React.useState<ColorMode | null>(
-    getStorageTheme
+    getStorageTheme,
   );
 
   const setColorModeAndStore = React.useCallback(
@@ -41,7 +41,7 @@ export const ColorModeProvider = (props: { children: React.ReactNode }) => {
       }
       window.updateColorModeClassName();
     },
-    []
+    [],
   );
 
   const value = React.useMemo(
@@ -49,7 +49,7 @@ export const ColorModeProvider = (props: { children: React.ReactNode }) => {
       colorMode,
       setColorMode: setColorModeAndStore,
     }),
-    [colorMode, setColorModeAndStore]
+    [colorMode, setColorModeAndStore],
   );
 
   return (

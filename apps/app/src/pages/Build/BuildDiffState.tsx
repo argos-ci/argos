@@ -83,7 +83,7 @@ export const useBuildDiffState = () => {
   const context = useContext(BuildDiffContext);
   if (context === null) {
     throw new Error(
-      "useBuildDiffContext must be used within a BuildDiffProvider"
+      "useBuildDiffContext must be used within a BuildDiffProvider",
     );
   }
   return context;
@@ -106,7 +106,7 @@ const useExpandedState = () => {
           : expanded.filter((n) => n !== name);
       });
     },
-    []
+    [],
   );
 
   return { expanded, toggleGroup };
@@ -264,7 +264,7 @@ export const BuildDiffProvider = ({
     if (!params.diffId && firstDiffId) {
       navigate(
         `/${params.accountSlug}/${params.projectName}/builds/${params.buildNumber}/${firstDiffId}`,
-        { replace: true }
+        { replace: true },
       );
       setInitialDiffId(firstDiffId);
     }
@@ -273,25 +273,25 @@ export const BuildDiffProvider = ({
   // Get the initial diff from the screenshot diffs
   const initialDiff = useMemo(
     () => screenshotDiffs.find((diff) => diff.id === initialDiffId) ?? null,
-    [initialDiffId, screenshotDiffs]
+    [initialDiffId, screenshotDiffs],
   );
 
   // Get the active diff from the screenshot diffs
   const activeDiff = useMemo(
     () => screenshotDiffs.find((diff) => diff.id === params.diffId) ?? null,
-    [params.diffId, screenshotDiffs]
+    [params.diffId, screenshotDiffs],
   );
 
   const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
 
   const statsGroups = useMemo(
     () => (stats ? getGroupsFromStats(stats) : []),
-    [stats]
+    [stats],
   );
 
   const hydratedGroups = useMemo(
     () => hydrateGroups(statsGroups, screenshotDiffs),
-    [statsGroups, screenshotDiffs]
+    [statsGroups, screenshotDiffs],
   );
 
   const hydratedGroupsRef = useRef(hydratedGroups);
@@ -300,7 +300,7 @@ export const BuildDiffProvider = ({
   const getDiffGroup = useCallback((diff: Diff | null) => {
     if (!diff) return null;
     const group = hydratedGroupsRef.current.find((group) =>
-      group.diffs.includes(diff)
+      group.diffs.includes(diff),
     ) as DiffGroup;
     return group;
   }, []);
@@ -309,7 +309,7 @@ export const BuildDiffProvider = ({
     (diff: Diff, scroll?: boolean) => {
       navigate(
         `/${params.accountSlug}/${params.projectName}/builds/${params.buildNumber}/${diff.id}`,
-        { replace: true }
+        { replace: true },
       );
       if (scroll) {
         setScrolledDiff(diff);
@@ -324,7 +324,7 @@ export const BuildDiffProvider = ({
       params.projectName,
       getDiffGroup,
       toggleGroup,
-    ]
+    ],
   );
 
   const initialDiffGroup = getDiffGroup(initialDiff);
@@ -364,7 +364,7 @@ export const BuildDiffProvider = ({
       initialDiff,
       ready,
       stats,
-    ]
+    ],
   );
   return (
     <BuildDiffContext.Provider value={value}>

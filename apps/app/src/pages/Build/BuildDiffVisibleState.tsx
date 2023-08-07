@@ -11,7 +11,7 @@ export const useBuildDiffVisibleState = () => {
   const context = useContext(DiffVisibleContext);
   if (context === null) {
     throw new Error(
-      "useBuildDiffVisibleState must be used within a BuildDiffVisibleStateProvider"
+      "useBuildDiffVisibleState must be used within a BuildDiffVisibleStateProvider",
     );
   }
   return context;
@@ -25,7 +25,7 @@ export const BuildDiffVisibleStateProvider = ({
   const [visible, setVisible] = useState(true);
   const value = useMemo(
     (): DiffVisibleContextValue => ({ visible, setVisible }),
-    [visible, setVisible]
+    [visible, setVisible],
   );
   return (
     <DiffVisibleContext.Provider value={value}>

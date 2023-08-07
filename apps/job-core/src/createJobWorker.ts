@@ -10,7 +10,7 @@ export async function createJobWorker(...jobs: Job<any>[]) {
       jobs.map((job) => {
         logger.info(`Start consuming ${job.queue} queue`);
         return job.process({ channel });
-      })
+      }),
     );
   } catch (error) {
     setTimeout(() => {

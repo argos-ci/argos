@@ -8,5 +8,5 @@ export const job = createModelJob(
   BuildNotification,
   async (buildNotification) => {
     await processBuildNotification(buildNotification);
-  }
+  },
 );

@@ -9,5 +9,5 @@ export default mergeConfig(
       singleThread: true,
       include: ["**/*.e2e.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     },
-  }) as UserConfig
+  }) as UserConfig,
 );

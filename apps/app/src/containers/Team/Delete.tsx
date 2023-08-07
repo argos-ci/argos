@@ -54,7 +54,7 @@ const DeleteButton = forwardRef<HTMLButtonElement, Omit<ButtonProps, "color">>(
         Delete
       </Button>
     );
-  }
+  },
 );
 
 type DeleteTeamButtonProps = {

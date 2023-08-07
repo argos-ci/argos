@@ -151,7 +151,7 @@ export class Account extends Model {
       .where("accountId", this.id)
       .whereRaw("?? < now()", "startDate")
       .where((query) =>
-        query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate")
+        query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate"),
       )
       .withGraphJoined("plan")
       .orderBy("plan.screenshotsLimitPerMonth", "DESC")
@@ -197,8 +197,8 @@ export class Account extends Model {
     return new Date(
       Math.min(
         startDate.getTime(),
-        new Date(now.getFullYear(), now.getMonth() + 2, 0).getTime()
-      )
+        new Date(now.getFullYear(), now.getMonth() + 2, 0).getTime(),
+      ),
     );
   }
 
@@ -218,7 +218,7 @@ export class Account extends Model {
               .whereNull("project.private")
               .andWhere("project:githubRepository.private", true);
           })
-          .orWhere("project.private", true)
+          .orWhere("project.private", true),
       )
       .first();
 

@@ -161,13 +161,13 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
   }
 
   const syncingProject = data.vercelApiProjects.projects.find(
-    (project) => project.status === "READY_FOR_LINK"
+    (project) => project.status === "READY_FOR_LINK",
   );
   const requireGithubAccessCount = data.vercelApiProjects.projects.filter(
-    (project) => project.status === "REQUIRE_GITHUB_ACCESS"
+    (project) => project.status === "REQUIRE_GITHUB_ACCESS",
   ).length;
   const linkedProjects = data.vercelApiProjects.projects.filter(
-    (project) => project.status === "LINKED" && project.linkedProject
+    (project) => project.status === "LINKED" && project.linkedProject,
   );
 
   const completeSetupWithVariables = () => {
@@ -211,9 +211,9 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
             {(buttonProps) => (
               <a
                 href={`${config.get(
-                  "github.appUrl"
+                  "github.appUrl",
                 )}/installations/new?state=${encodeURIComponent(
-                  window.location.pathname + window.location.search
+                  window.location.pathname + window.location.search,
                 )}`}
                 {...buttonProps}
               >
@@ -304,7 +304,7 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
                                       };
                                     }
                                     return p;
-                                  }
+                                  },
                                 ),
                               },
                             };
@@ -372,9 +372,9 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
           Please{" "}
           <Anchor
             href={`${config.get(
-              "github.appUrl"
+              "github.appUrl",
             )}/installations/new?state=${encodeURIComponent(
-              window.location.pathname
+              window.location.pathname,
             )}`}
             external
           >

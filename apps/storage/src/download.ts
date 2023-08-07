@@ -5,7 +5,7 @@ import { pipeline } from "node:stream/promises";
 
 export const download = async (
   result: GetObjectCommandOutput,
-  outputPath: string
+  outputPath: string,
 ) => {
   if (!result.Body) {
     throw new Error("No body");

@@ -24,7 +24,7 @@ export const DialogHeader = forwardRef<HTMLDivElement, DialogHeaderProps>(
         {children}
       </div>
     );
-  }
+  },
 );
 
 export type DialogFooterProps = {
@@ -41,7 +41,7 @@ export const DialogFooter = forwardRef<HTMLDivElement, DialogFooterProps>(
         {children}
       </div>
     );
-  }
+  },
 );
 
 export type DialogTextProps = {
@@ -56,7 +56,7 @@ export const DialogText = forwardRef<HTMLDivElement, DialogTextProps>(
         {children}
       </p>
     );
-  }
+  },
 );
 
 export type DialogBodyProps = {
@@ -75,7 +75,7 @@ export const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
         {children}
       </div>
     );
-  }
+  },
 );
 
 export type DialogTitleProps = {
@@ -89,7 +89,7 @@ export const DialogTitle = forwardRef<HTMLHeadingElement, DialogTitleProps>(
         {children}
       </h2>
     );
-  }
+  },
 );
 
 type DialogDismissProps = {
@@ -119,7 +119,7 @@ export const DialogDismiss = forwardRef<HTMLButtonElement, DialogDismissProps>(
         }
       </AriakitDialogDismiss>
     );
-  }
+  },
 );
 
 export type DialogProps = AriakitDialogProps;
@@ -131,12 +131,12 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(
         ref={ref}
         className={clsx(
           className,
-          "bordered absolute left-[50%] top-[50%] z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-auto rounded-lg border bg-app text-sm shadow-lg"
+          "bordered absolute left-[50%] top-[50%] z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-auto rounded-lg border bg-app text-sm shadow-lg",
         )}
         {...props}
       >
         {children}
       </AriakitDialog>
     );
-  }
+  },
 );

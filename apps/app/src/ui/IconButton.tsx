@@ -36,7 +36,7 @@ const colorClassNames: Record<
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   (
     { color = "neutral", variant = "outline", children, asChild, ...props },
-    ref
+    ref,
   ) => {
     const variantClassName = colorClassNames[variant][color];
     if (!variantClassName) {
@@ -53,7 +53,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           /* Base */
           "flex h-8 cursor-default items-center gap-2 rounded-lg border border-transparent p-[7px] text-sm transition disabled:opacity-disabled [&>*]:h-4 [&>*]:w-4",
           /* Focus */
-          "focus:outline-none focus-visible:ring-4"
+          "focus:outline-none focus-visible:ring-4",
         )}
         {...props}
       >
@@ -62,5 +62,5 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           : children}
       </AriakitButton>
     );
-  }
+  },
 );

@@ -69,7 +69,7 @@ const BaseReviewButton = ({
               : BuildStatus.Pending,
         },
       }),
-    }
+    },
   );
 
   const AcceptIcon = getBuildIcon("check", "accepted");

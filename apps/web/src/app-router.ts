@@ -26,7 +26,7 @@ export const installAppRouter = async (app: express.Application) => {
       lastModified: false,
       maxAge: "1 year",
       index: false,
-    })
+    }),
   );
 
   router.use(auth);
@@ -52,7 +52,7 @@ export const installAppRouter = async (app: express.Application) => {
     err,
     req,
     res,
-    next
+    next,
   ) => {
     rendering({
       error: {
@@ -71,7 +71,7 @@ export const installAppRouter = async (app: express.Application) => {
         html: htmlErrorHandler,
         default: htmlErrorHandler,
       },
-    })
+    }),
   );
 
   app.use(router);

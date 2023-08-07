@@ -33,5 +33,5 @@ export const RadioField = forwardRef<HTMLInputElement, RadioFieldProps>(
         </div>
       </label>
     );
-  }
+  },
 );

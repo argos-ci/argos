@@ -35,7 +35,7 @@ enum VercelStatus {
 }
 
 const getNotificationStatus = (
-  buildNotification: BuildNotification
+  buildNotification: BuildNotification,
 ): {
   githubState: GithubNotificationState;
   vercelStatus: VercelStatus | null;
@@ -92,7 +92,7 @@ const getNotificationStatus = (
     }
     default: {
       throw new UnretryableError(
-        `Unknown notification type: ${buildNotification.type}`
+        `Unknown notification type: ${buildNotification.type}`,
       );
     }
   }
@@ -106,7 +106,7 @@ type NotificationPayload = {
 };
 
 const getNotificationPayload = async (
-  buildNotification: BuildNotification
+  buildNotification: BuildNotification,
 ): Promise<NotificationPayload> => {
   const buildType = buildNotification.build!.type;
   switch (buildNotification.type) {
@@ -283,7 +283,7 @@ const sendGithubNotification = async (ctx: Context) => {
     }
 
     const pullRequest = await GithubPullRequest.query().findById(
-      build.githubPullRequestId
+      build.githubPullRequestId,
     );
 
     if (!pullRequest || pullRequest.commentDeleted) {
@@ -364,10 +364,10 @@ const sendVercelNotification = async (ctx: Context) => {
 };
 
 export const processBuildNotification = async (
-  buildNotification: BuildNotification
+  buildNotification: BuildNotification,
 ) => {
   await buildNotification.$fetchGraph(
-    `build.[project.[githubRepository.[githubAccount,activeInstallation], account], compareScreenshotBucket, vercelCheck.vercelDeployment.vercelProject.activeConfiguration]`
+    `build.[project.[githubRepository.[githubAccount,activeInstallation], account], compareScreenshotBucket, vercelCheck.vercelDeployment.vercelProject.activeConfiguration]`,
   );
 
   if (!buildNotification.build) {

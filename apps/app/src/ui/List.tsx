@@ -21,7 +21,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 export type ListRowProps = {
@@ -32,7 +32,7 @@ export type ListRowProps = {
 export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(
   (
     { className, clickable, asChild, children, ...props }: ListRowProps,
-    ref
+    ref,
   ) => {
     const childProps = {
       ref,
@@ -40,7 +40,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(
       className: clsx(
         "flex gap-4 border-b last:border-b-0 bg-app",
         clickable && "hover:bg-hover",
-        className
+        className,
       ),
       ...props,
     };
@@ -51,7 +51,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(
     }
 
     return <div {...childProps}>{children}</div>;
-  }
+  },
 );
 
 export type ListHeaderProps = HTMLAttributes<HTMLDivElement>;
@@ -64,12 +64,12 @@ export const ListHeader = forwardRef<HTMLDivElement, ListHeaderProps>(
         role="rowheader"
         className={clsx(
           "border-b-border whitespace-nowrap border-b bg-subtle text-xs font-medium uppercase text-low",
-          className
+          className,
         )}
         {...props}
       />
     );
-  }
+  },
 );
 
 const ListLoader = memo((props: { children: ReactNode }) => {
@@ -91,12 +91,12 @@ export const ListRowLoader = forwardRef<HTMLDivElement, ListRowLoaderProps>(
         ref={ref}
         className={clsx(
           className,
-          "items-center justify-center gap-2 text-low"
+          "items-center justify-center gap-2 text-low",
         )}
         {...props}
       >
         <ListLoader>{children}</ListLoader>
       </ListRow>
     );
-  }
+  },
 );

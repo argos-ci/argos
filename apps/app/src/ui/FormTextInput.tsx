@@ -22,7 +22,7 @@ export const FormTextInput = forwardRef<HTMLInputElement, FormTextInputProps>(
       className,
       ...props
     },
-    ref
+    ref,
   ) => {
     const form = useFormContext();
     const { isSubmitting } = form.formState;
@@ -53,5 +53,5 @@ export const FormTextInput = forwardRef<HTMLInputElement, FormTextInputProps>(
         )}
       </div>
     );
-  }
+  },
 );

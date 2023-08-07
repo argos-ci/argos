@@ -165,7 +165,7 @@ export class Build extends Model {
     if (json["number"] === -1) {
       json["number"] = this.$knex().raw(
         '(select coalesce(max(number),0) + 1 as number from builds where "projectId" = ?)',
-        this.projectId
+        this.projectId,
       );
     }
     return json;
@@ -238,7 +238,7 @@ export class Build extends Model {
       .leftJoin(
         "screenshots",
         "screenshot_diffs.compareScreenshotId",
-        "screenshots.id"
+        "screenshots.id",
       )
       .select(raw(ScreenshotDiff.selectDiffStatus))
       .count("*")
@@ -250,7 +250,7 @@ export class Build extends Model {
         [status]: Number(count),
         total: Number(count) + res.total,
       }),
-      { failure: 0, added: 0, unchanged: 0, changed: 0, removed: 0, total: 0 }
+      { failure: 0, added: 0, unchanged: 0, changed: 0, removed: 0, total: 0 },
     );
   }
 
@@ -267,10 +267,10 @@ export class Build extends Model {
    */
   static async getConclusions(
     buildIds: string[],
-    statuses: BuildStatus[]
+    statuses: BuildStatus[],
   ): Promise<BuildConclusion[]> {
     const completeBuildIds = buildIds.filter(
-      (_, index) => statuses[index] === "complete"
+      (_, index) => statuses[index] === "complete",
     );
 
     const buildsDiffCount = completeBuildIds.length
@@ -285,7 +285,7 @@ export class Build extends Model {
     return buildIds.map((buildId, index) => {
       if (statuses[index] !== "complete") return null;
       const buildDiffCount = buildsDiffCount.find(
-        (diff) => diff.buildId === buildId
+        (diff) => diff.buildId === buildId,
       );
       // @ts-ignore
       if (buildDiffCount?.count > 0) return "diffDetected";
@@ -298,10 +298,10 @@ export class Build extends Model {
    */
   static async getReviewStatuses(
     buildIds: string[],
-    conclusions: BuildConclusion[]
+    conclusions: BuildConclusion[],
   ): Promise<BuildReviewStatus[]> {
     const diffDetectedBuildIds = buildIds.filter(
-      (_buildId, index) => conclusions[index] === "diffDetected"
+      (_buildId, index) => conclusions[index] === "diffDetected",
     );
 
     const screenshotDiffs = diffDetectedBuildIds.length
@@ -325,7 +325,7 @@ export class Build extends Model {
   static getUsers(buildId: string, { trx }: { trx?: TransactionOrKnex } = {}) {
     return User.query(trx)
       .leftJoinRelated(
-        "[account.projects.builds, teams.account.projects.builds]"
+        "[account.projects.builds, teams.account.projects.builds]",
       )
       .where("account:projects:builds.id", buildId)
       .orWhere("teams:account:projects:builds.id", buildId);
@@ -356,7 +356,7 @@ export class Build extends Model {
     const reviewStatuses = await Build.getReviewStatuses(buildIds, conclusions);
     return builds.map(
       (_build, index) =>
-        reviewStatuses[index] || conclusions[index] || statuses[index]
+        reviewStatuses[index] || conclusions[index] || statuses[index],
     ) as BuildAggregatedStatus[];
   }
 }

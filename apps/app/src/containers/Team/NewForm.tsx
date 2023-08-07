@@ -49,7 +49,7 @@ export const useCreateTeamAndRedirect = () => {
       await new Promise(() => {
         // Infinite promise while we redirect to keep the form in submitting state
       });
-    }
+    },
   );
   return createTeamAndRedirect;
 };

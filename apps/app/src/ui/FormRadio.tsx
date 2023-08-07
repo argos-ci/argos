@@ -17,7 +17,7 @@ export const FormRadio = forwardRef<HTMLInputElement, FormRadioProps>(
         </label>
       </div>
     );
-  }
+  },
 );
 
 export const FormRadioGroup = ({

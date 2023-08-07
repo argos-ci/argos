@@ -6,7 +6,7 @@ export const Code = ({ className, ...props }: ComponentProps<"code">) => {
     <code
       className={clsx(
         className,
-        "rounded bg-hover px-1 py-0.5 text-center font-mono text-[0.8em] text"
+        "rounded bg-hover px-1 py-0.5 text-center font-mono text-[0.8em] text",
       )}
       {...props}
     />

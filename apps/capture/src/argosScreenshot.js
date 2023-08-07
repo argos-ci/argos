@@ -29,11 +29,11 @@ async function ensureNoBusy() {
     Boolean(
       element.offsetWidth ||
         element.offsetHeight ||
-        element.getClientRects().length
+        element.getClientRects().length,
     );
 
   return Array.from(document.querySelectorAll('[aria-busy="true"]')).every(
-    (element) => !checkIsVisible(element)
+    (element) => !checkIsVisible(element),
   );
 }
 

@@ -5,7 +5,7 @@
 export const up = async (knex) => {
   await knex.raw(`ALTER TABLE tests ALTER COLUMN name TYPE varchar(1024)`);
   await knex.raw(
-    `ALTER TABLE screenshots ALTER COLUMN name TYPE varchar(1024)`
+    `ALTER TABLE screenshots ALTER COLUMN name TYPE varchar(1024)`,
   );
 };
 

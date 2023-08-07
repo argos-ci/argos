@@ -18,11 +18,11 @@ export const up = async (knex) => {
   await knex.raw(
     `INSERT INTO github_installations (id, "createdAt", "updatedAt", "githubId", deleted, "githubToken", "githubTokenExpiresAt")
     SELECT id, "createdAt", "updatedAt", "githubId", deleted, "githubToken", "githubTokenExpiresAt"
-    FROM installations`
+    FROM installations`,
   );
 
   await knex.raw(
-    `select setval('"github_installations_id_seq"', (SELECT MAX(id) FROM github_installations))`
+    `select setval('"github_installations_id_seq"', (SELECT MAX(id) FROM github_installations))`,
   );
   // --
 
@@ -40,12 +40,12 @@ export const up = async (knex) => {
   await knex.raw(
     `INSERT INTO github_synchronizations (id, "createdAt", "updatedAt", "jobStatus", "githubInstallationId")
     SELECT id, "createdAt", "updatedAt", "jobStatus", "installationId"
-    FROM synchronizations where "installationId" is not null`
+    FROM synchronizations where "installationId" is not null`,
   );
 
   // update github_synchronizations autoincrement
   await knex.raw(
-    `select setval('"github_synchronizations_id_seq"', (SELECT MAX(id) FROM github_synchronizations))`
+    `select setval('"github_synchronizations_id_seq"', (SELECT MAX(id) FROM github_synchronizations))`,
   );
   //
 
@@ -63,12 +63,12 @@ export const up = async (knex) => {
   await knex.raw(
     `INSERT INTO github_organizations (id, "createdAt", "updatedAt", name, login, "githubId")
     SELECT id, "createdAt", "updatedAt", name, login, "githubId"
-    FROM organizations`
+    FROM organizations`,
   );
 
   // update github_organizations autoincrement
   await knex.raw(
-    `select setval('"github_organizations_id_seq"', (SELECT MAX(id) FROM github_organizations))`
+    `select setval('"github_organizations_id_seq"', (SELECT MAX(id) FROM github_organizations))`,
   );
   // --
 
@@ -87,12 +87,12 @@ export const up = async (knex) => {
   await knex.raw(
     `INSERT INTO github_users (id, "createdAt", "updatedAt", login, name, email, "githubId")
     SELECT id, "createdAt", "updatedAt", login, name, email, "githubId"
-    FROM users`
+    FROM users`,
   );
 
   // update github_users autoincrement
   await knex.raw(
-    `select setval('"github_users_id_seq"', (SELECT MAX(id) FROM github_users))`
+    `select setval('"github_users_id_seq"', (SELECT MAX(id) FROM github_users))`,
   );
   // --
 
@@ -108,19 +108,19 @@ export const up = async (knex) => {
   });
 
   await knex.raw(
-    `ALTER TABLE github_accounts ADD CONSTRAINT github_accounts_only_one_owner CHECK (num_nonnulls("githubUserId", "githubOrganizationId") = 1)`
+    `ALTER TABLE github_accounts ADD CONSTRAINT github_accounts_only_one_owner CHECK (num_nonnulls("githubUserId", "githubOrganizationId") = 1)`,
   );
 
   // move data from accounts to github_accounts
   await knex.raw(
     `INSERT INTO github_accounts (id, "createdAt", "updatedAt", "githubUserId", "githubOrganizationId")
     SELECT id, "createdAt", "updatedAt", "userId", "organizationId"
-    FROM accounts`
+    FROM accounts`,
   );
 
   // update github_accounts autoincrement
   await knex.raw(
-    `select setval('"github_accounts_id_seq"', (SELECT MAX(id) FROM github_accounts))`
+    `select setval('"github_accounts_id_seq"', (SELECT MAX(id) FROM github_accounts))`,
   );
   // --
 
@@ -140,12 +140,12 @@ export const up = async (knex) => {
   // move data from repositories to github_repositories
   await knex.raw(
     `INSERT INTO github_repositories (id, "createdAt", "updatedAt", name, private, "defaultBranch", "githubId", "githubAccountId")
-    select repositories.id, repositories."createdAt", repositories."updatedAt", repositories.name, repositories.private, repositories."defaultBranch", repositories."githubId", accounts.id as "accountId" from repositories join accounts on accounts."userId" = repositories."userId" or accounts."organizationId" = repositories."organizationId"`
+    select repositories.id, repositories."createdAt", repositories."updatedAt", repositories.name, repositories.private, repositories."defaultBranch", repositories."githubId", accounts.id as "accountId" from repositories join accounts on accounts."userId" = repositories."userId" or accounts."organizationId" = repositories."organizationId"`,
   );
 
   // update github_repositories autoincrement
   await knex.raw(
-    `select setval('"github_repositories_id_seq"', (SELECT MAX(id) FROM github_repositories))`
+    `select setval('"github_repositories_id_seq"', (SELECT MAX(id) FROM github_repositories))`,
   );
   // --
 
@@ -164,12 +164,12 @@ export const up = async (knex) => {
   await knex.raw(
     `INSERT INTO github_repository_installations (id, "createdAt", "updatedAt", "githubRepositoryId", "githubInstallationId")
     SELECT id, "createdAt", "updatedAt", "repositoryId", "installationId"
-    FROM installation_repository_rights`
+    FROM installation_repository_rights`,
   );
 
   // update github_repository_installations autoincrement
   await knex.raw(
-    `select setval('"github_repository_installations_id_seq"', (SELECT MAX(id) FROM github_repository_installations))`
+    `select setval('"github_repository_installations_id_seq"', (SELECT MAX(id) FROM github_repository_installations))`,
   );
   // --
 
@@ -188,12 +188,12 @@ export const up = async (knex) => {
   await knex.raw(
     `INSERT INTO github_installation_users (id, "createdAt", "updatedAt", "githubUserId", "githubInstallationId")
     SELECT id, "createdAt", "updatedAt", "userId", "installationId"
-    FROM user_installation_rights`
+    FROM user_installation_rights`,
   );
 
   // update github_installation_users autoincrement
   await knex.raw(
-    `select setval('"github_installation_users_id_seq"', (SELECT MAX(id) FROM github_installation_users))`
+    `select setval('"github_installation_users_id_seq"', (SELECT MAX(id) FROM github_installation_users))`,
   );
   //
 
@@ -222,12 +222,12 @@ export const up = async (knex) => {
   await knex.raw(
     `INSERT INTO teams (id, "createdAt", "updatedAt", name, slug, "githubAccountId")
     SELECT organizations.id, organizations."createdAt", organizations."updatedAt", organizations.name, organizations.login, github_accounts.id
-    FROM organizations join github_accounts on github_accounts."githubOrganizationId" = organizations.id`
+    FROM organizations join github_accounts on github_accounts."githubOrganizationId" = organizations.id`,
   );
 
   // update teams autoincrement
   await knex.raw(
-    `select setval('"teams_id_seq"', (SELECT MAX(id) FROM teams))`
+    `select setval('"teams_id_seq"', (SELECT MAX(id) FROM teams))`,
   );
   // --
 
@@ -244,7 +244,7 @@ export const up = async (knex) => {
     `
     ALTER TABLE accounts DROP CONSTRAINT accounts_only_one_owner;
     ALTER TABLE accounts ADD CONSTRAINT accounts_only_one_owner CHECK (num_nonnulls("userId", "teamId") = 1);
-    `
+    `,
   );
 
   await knex.schema.alterTable("accounts", (table) => {
@@ -267,12 +267,12 @@ export const up = async (knex) => {
   await knex.raw(
     `INSERT INTO team_users (id, "createdAt", "updatedAt", "userId", "teamId", "userLevel")
     SELECT id, "createdAt", "updatedAt", "userId", "organizationId", 'owner' as "userLevel"
-    FROM user_organization_rights`
+    FROM user_organization_rights`,
   );
 
   // update team_users autoincrement
   await knex.raw(
-    `select setval('"team_users_id_seq"', (SELECT MAX(id) FROM team_users))`
+    `select setval('"team_users_id_seq"', (SELECT MAX(id) FROM team_users))`,
   );
   // --
 
@@ -302,12 +302,12 @@ export const up = async (knex) => {
     , repositories."baselineBranch", accounts.id as "accountId", github_repositories.id as "githubRepositoryId"
     FROM repositories
     JOIN accounts ON accounts."userId" = repositories."userId" OR accounts."teamId" = repositories."organizationId"
-    JOIN github_repositories ON github_repositories."githubId" = repositories."githubId"`
+    JOIN github_repositories ON github_repositories."githubId" = repositories."githubId"`,
   );
 
   // update projects autoincrement
   await knex.raw(
-    `select setval('"projects_id_seq"', (SELECT MAX(id) FROM projects))`
+    `select setval('"projects_id_seq"', (SELECT MAX(id) FROM projects))`,
   );
   // --
 
@@ -339,7 +339,7 @@ export const up = async (knex) => {
 
   // make projectId not null
   await knex.raw(
-    'ALTER TABLE screenshot_buckets ALTER COLUMN "projectId" SET NOT NULL'
+    'ALTER TABLE screenshot_buckets ALTER COLUMN "projectId" SET NOT NULL',
   );
 
   await knex.schema.alterTable("screenshot_buckets", (table) => {
@@ -378,17 +378,17 @@ export const up = async (knex) => {
 
   // Remove projects that does not have any builds
   await knex.raw(
-    'delete from projects where id not in (select "projectId" from builds)'
+    'delete from projects where id not in (select "projectId" from builds)',
   );
 
   // Remove team accounts that does not have any projects
   await knex.raw(
-    'delete from accounts where id not in (select "accountId" from projects) and id not in (select "accountId" from purchases) and "teamId" is not null'
+    'delete from accounts where id not in (select "accountId" from projects) and id not in (select "accountId" from purchases) and "teamId" is not null',
   );
 
   // Remove teams that does not have any team accounts
   await knex.raw(
-    'delete from teams where id not in (select "teamId" from accounts)'
+    'delete from teams where id not in (select "teamId" from accounts)',
   );
 };
 

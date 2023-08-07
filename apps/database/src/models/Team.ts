@@ -71,7 +71,7 @@ export class Team extends Model {
   }
 
   static parseInviteToken(
-    token: string
+    token: string,
   ): { teamId: string; secret: string } | null {
     const raw = Buffer.from(token, "base64url").toString("utf8");
     try {

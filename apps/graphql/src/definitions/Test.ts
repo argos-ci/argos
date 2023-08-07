@@ -74,7 +74,7 @@ export const resolvers: IResolvers = {
       }
       const now = new Date();
       const resolvedDateLimit = new Date(
-        now.getTime() - 7 * 24 * 60 * 60 * 1000
+        now.getTime() - 7 * 24 * 60 * 60 * 1000,
       );
       const resolvedDate = new Date(test.resolvedDate!);
       return resolvedDate > resolvedDateLimit
@@ -83,19 +83,19 @@ export const resolvers: IResolvers = {
     },
     lastSeen: async (test, _args, ctx) => {
       const lastScreenshotDiff = await ctx.loaders.LastScreenshotDiff.load(
-        test.id
+        test.id,
       );
       return lastScreenshotDiff?.createdAt ?? null;
     },
     stabilityScore: async (test, _args, ctx) => {
       const lastScreenshotDiff = await ctx.loaders.LastScreenshotDiff.load(
-        test.id
+        test.id,
       );
       return lastScreenshotDiff?.stabilityScore ?? null;
     },
     unstable: async (test, _args, ctx) => {
       const lastScreenshotDiff = await ctx.loaders.LastScreenshotDiff.load(
-        test.id
+        test.id,
       );
       return (lastScreenshotDiff?.stabilityScore ?? 100) < 60;
     },
@@ -117,7 +117,7 @@ export const resolvers: IResolvers = {
             date
           ORDER BY
             date ASC;`,
-        test.id
+        test.id,
       );
       return result.rows;
     },
@@ -175,8 +175,8 @@ export const resolvers: IResolvers = {
               resolvedStabilityScore:
                 lastScreenshotDiffMap[testId]?.stabilityScore ?? null,
             })
-            .where("id", testId)
-        )
+            .where("id", testId),
+        ),
       );
       return { ids: args.ids, status: args.status };
     },

@@ -39,7 +39,7 @@ export const diffImages = async ({
       difference.value <
       Math.min(
         MAXIMUM_SCORE,
-        MAXIMUM_PIXELS_TO_IGNORE / (difference.width * difference.height)
+        MAXIMUM_PIXELS_TO_IGNORE / (difference.width * difference.height),
       )
         ? 0
         : difference.value,

@@ -22,7 +22,7 @@ export type GetOrCreateGhAccountProps = {
 };
 
 export const getOrCreateGhAccount = async (
-  props: GetOrCreateGhAccountProps
+  props: GetOrCreateGhAccountProps,
 ) => {
   const existing = await GithubAccount.query().findOne({
     githubId: props.githubId,
@@ -53,7 +53,7 @@ export const getOrCreateGhAccount = async (
 
 export const getOrCreateGhAccountFromGhProfile = async (
   profile: RestEndpointMethodTypes["users"]["getAuthenticated"]["response"]["data"],
-  emails: RestEndpointMethodTypes["users"]["listEmailsForAuthenticatedUser"]["response"]["data"]
+  emails: RestEndpointMethodTypes["users"]["listEmailsForAuthenticatedUser"]["response"]["data"],
 ) => {
   const email =
     emails.find((e) => e.primary && e.verified)?.email ??
@@ -72,7 +72,7 @@ export const getOrCreateGhAccountFromGhProfile = async (
 
 export const getOrCreateUserAccountFromGhAccount = async (
   ghAccount: GithubAccount,
-  accessToken?: string
+  accessToken?: string,
 ): Promise<Account> => {
   const existingAccount = await Account.query()
     .findOne({

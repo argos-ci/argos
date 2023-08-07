@@ -38,7 +38,7 @@ export const deleteAccount = async (args: {
         id: project.id,
         user: args.user,
       });
-    })
+    }),
   );
   await Purchase.query().where("accountId", account.id).delete();
   await account.$query().delete();

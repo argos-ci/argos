@@ -15,7 +15,7 @@ describe("Purchase", () => {
       const now = new Date("2023-04-26");
       const expectedResetDate = new Date("2023-04-10");
       expect(purchase.getLastResetDate(now).toISOString()).toBe(
-        expectedResetDate.toISOString()
+        expectedResetDate.toISOString(),
       );
     });
 
@@ -26,7 +26,7 @@ describe("Purchase", () => {
       const now = new Date("2023-04-05");
       const expectedResetDate = new Date("2023-03-10");
       expect(purchase.getLastResetDate(now).toISOString()).toBe(
-        expectedResetDate.toISOString()
+        expectedResetDate.toISOString(),
       );
     });
 
@@ -37,7 +37,7 @@ describe("Purchase", () => {
       const now = new Date("2023-01-15");
       const expectedResetDate = new Date("2022-12-31");
       expect(purchase.getLastResetDate(now).toISOString()).toBe(
-        expectedResetDate.toISOString()
+        expectedResetDate.toISOString(),
       );
     });
 
@@ -48,7 +48,7 @@ describe("Purchase", () => {
       const now = new Date("2023-05-10T13:00:00.000Z");
       const expectedResetDate = new Date("2023-04-10T14:00:00.000Z");
       expect(purchase.getLastResetDate(now).toISOString()).toBe(
-        expectedResetDate.toISOString()
+        expectedResetDate.toISOString(),
       );
     });
 
@@ -59,7 +59,7 @@ describe("Purchase", () => {
       const now = new Date("2023-05-10T16:00:00.000Z");
       const expectedResetDate = new Date("2023-05-10T14:00:00.000Z");
       expect(purchase.getLastResetDate(now).toISOString()).toBe(
-        expectedResetDate.toISOString()
+        expectedResetDate.toISOString(),
       );
     });
 
@@ -70,7 +70,7 @@ describe("Purchase", () => {
       const now = new Date("2023-03-05");
       const resetDate = purchase.getLastResetDate(now).toISOString();
       expect(resetDate).toBe(
-        new Date("2023-02-28T24:00:00.000Z").toISOString()
+        new Date("2023-02-28T24:00:00.000Z").toISOString(),
       );
       expect(resetDate).toBe(new Date("2023-03-01").toISOString());
     });
@@ -82,7 +82,7 @@ describe("Purchase", () => {
       const now = new Date("2021-03-15");
       const expectedResetDate = new Date("2021-03-10");
       expect(purchase.getLastResetDate(now).toISOString()).toBe(
-        expectedResetDate.toISOString()
+        expectedResetDate.toISOString(),
       );
     });
   });

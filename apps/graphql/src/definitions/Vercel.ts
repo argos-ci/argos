@@ -215,7 +215,7 @@ export const linkVercelProject = async (input: {
 
   const linkVercelProjectToConfiguration = async (
     vercelProjectId: string,
-    vercelConfigurationId: string
+    vercelConfigurationId: string,
   ) => {
     const link = await VercelProjectConfiguration.query().findOne({
       vercelProjectId,
@@ -232,7 +232,7 @@ export const linkVercelProject = async (input: {
 
   await linkVercelProjectToConfiguration(
     vercelProject.id,
-    vercelConfiguration.id
+    vercelConfiguration.id,
   );
 
   await project.$query().patch({ vercelProjectId: vercelProject.id });

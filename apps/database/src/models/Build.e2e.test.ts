@@ -54,7 +54,7 @@ describe("models/Build", () => {
           compareScreenshotBucketId: "1",
         });
       }).toThrow(
-        "The base screenshot bucket should be different to the compare one."
+        "The base screenshot bucket should be different to the compare one.",
       );
     });
 
@@ -116,7 +116,7 @@ describe("models/Build", () => {
         build = await factory.Build.create({
           jobStatus: "progress",
           createdAt: new Date(
-            new Date().valueOf() - 3 * 3600 * 1000
+            new Date().valueOf() - 3 * 3600 * 1000,
           ).toISOString(),
         });
         expect(await build.$getStatus()).toBe("expired");
@@ -128,7 +128,7 @@ describe("models/Build", () => {
         build = await factory.Build.create({
           jobStatus: "pending",
           createdAt: new Date(
-            new Date().valueOf() - 3 * 3600 * 1000
+            new Date().valueOf() - 3 * 3600 * 1000,
           ).toISOString(),
         });
         expect(await build.$getStatus()).toBe("expired");
@@ -228,7 +228,7 @@ describe("models/Build", () => {
       const statuses = await Build.getStatuses(builds);
       const conclusions = await Build.getConclusions(
         builds.map((b) => b.id),
-        statuses
+        statuses,
       );
       expect(conclusions).toEqual([null, null, null, null]);
     });
@@ -274,7 +274,7 @@ describe("models/Build", () => {
       const conclusions = await Build.getConclusions([build.id], statuses);
       const reviewStatuses = await Build.getReviewStatuses(
         [build.id],
-        conclusions
+        conclusions,
       );
       expect(reviewStatuses).toEqual([null]);
     });
@@ -286,11 +286,11 @@ describe("models/Build", () => {
       const statuses = await Build.getStatuses(builds);
       const conclusions = await Build.getConclusions(
         builds.map((b) => b.id),
-        statuses
+        statuses,
       );
       const reviewStatuses = await Build.getReviewStatuses(
         builds.map((b) => b.id),
-        conclusions
+        conclusions,
       );
       expect(reviewStatuses).toEqual([null, null]);
     });
@@ -305,7 +305,7 @@ describe("models/Build", () => {
       const conclusions = await Build.getConclusions([build.id], statuses);
       const reviewStatuses = await Build.getReviewStatuses(
         [build.id],
-        conclusions
+        conclusions,
       );
       expect(reviewStatuses).toEqual(["accepted"]);
     });
@@ -320,7 +320,7 @@ describe("models/Build", () => {
       const conclusions = await Build.getConclusions([build.id], statuses);
       const reviewStatuses = await Build.getReviewStatuses(
         [build.id],
-        conclusions
+        conclusions,
       );
       expect(reviewStatuses).toEqual(["rejected"]);
     });
@@ -335,7 +335,7 @@ describe("models/Build", () => {
       const conclusions = await Build.getConclusions([build.id], statuses);
       const reviewStatuses = await Build.getReviewStatuses(
         [build.id],
-        conclusions
+        conclusions,
       );
       expect(reviewStatuses).toEqual([null]);
     });
@@ -351,7 +351,7 @@ describe("models/Build", () => {
       expect(url).toMatch(
         `http://localhost:4001/${project!.account!.slug}/${
           project!.name
-        }/builds/${build.number}`
+        }/builds/${build.number}`,
       );
     });
   });

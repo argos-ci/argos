@@ -8,14 +8,14 @@ interface DiffViewModeContextValue {
 }
 
 const DiffViewModeContext = createContext<DiffViewModeContextValue | null>(
-  null
+  null,
 );
 
 export const useBuildDiffViewModeState = () => {
   const context = useContext(DiffViewModeContext);
   if (context === null) {
     throw new Error(
-      "useBuildDiffViewModeState must be used within a BuildDiffViewModeStateProvider"
+      "useBuildDiffViewModeState must be used within a BuildDiffViewModeStateProvider",
     );
   }
   return context;
@@ -32,7 +32,7 @@ export const BuildDiffViewModeStateProvider = ({
       viewMode,
       setViewMode,
     }),
-    [viewMode, setViewMode]
+    [viewMode, setViewMode],
   );
   return (
     <DiffViewModeContext.Provider value={value}>

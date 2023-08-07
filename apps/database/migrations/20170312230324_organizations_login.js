@@ -7,10 +7,10 @@ export const up = async (knex) => {
   });
   await knex.schema.raw("UPDATE organizations SET login = name");
   await knex.schema.raw(
-    'ALTER TABLE organizations ALTER COLUMN "login" SET NOT NULL'
+    'ALTER TABLE organizations ALTER COLUMN "login" SET NOT NULL',
   );
   await knex.schema.raw(
-    'ALTER TABLE organizations ALTER COLUMN "name" DROP NOT NULL'
+    'ALTER TABLE organizations ALTER COLUMN "name" DROP NOT NULL',
   );
 };
 
@@ -22,6 +22,6 @@ export const down = async (knex) => {
     table.dropColumn("login");
   });
   await knex.schema.raw(
-    'ALTER TABLE organizations ALTER COLUMN "name" SET NOT NULL'
+    'ALTER TABLE organizations ALTER COLUMN "name" SET NOT NULL',
   );
 };

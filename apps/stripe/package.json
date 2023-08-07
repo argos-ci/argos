@@ -7,7 +7,7 @@
   "dependencies": {
     "@argos-ci/config": "*",
     "@argos-ci/database": "*",
-    "stripe": "^12.3.0",
+    "stripe": "^12.17.0",
     "zod": "^3.21.4"
   },
   "scripts": {

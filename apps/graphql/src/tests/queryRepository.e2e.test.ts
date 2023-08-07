@@ -51,7 +51,7 @@ describe("GraphQL", () => {
         {
           user: userAccount.user!,
           account: userAccount,
-        }
+        },
       );
       const res = await request(app)
         .post("/graphql")

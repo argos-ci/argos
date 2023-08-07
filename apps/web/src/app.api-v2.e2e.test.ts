@@ -39,7 +39,7 @@ describe("api v2", () => {
           .set("Authorization", "Bearer nop")
           .expect((res) => {
             expect(res.body.error.message).toBe(
-              `Repository not found (token: "nop")`
+              `Repository not found (token: "nop")`,
             );
           })
           .expect(401);
@@ -95,7 +95,7 @@ describe("api v2", () => {
         expect(build.compareScreenshotBucket!.complete).toBe(false);
         expect(build.compareScreenshotBucket!.name).toBe("current");
         expect(build.compareScreenshotBucket!.commit).toBe(
-          "b6bf264029c03888b7fb7e6db7386f3b245b77b0"
+          "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
         );
         expect(build.compareScreenshotBucket!.branch).toBe("main");
         expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
@@ -159,7 +159,7 @@ describe("api v2", () => {
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
             screenshotKeys: Array.from(
-              new Set(screenshots.map((screenshot) => screenshot.key))
+              new Set(screenshots.map((screenshot) => screenshot.key)),
             ),
             branch: "main",
             name: "current",
@@ -171,7 +171,7 @@ describe("api v2", () => {
           createResult.body.screenshots.map(
             async (resScreenshot: { key: string; putUrl: string }) => {
               const path = screenshots.find(
-                (s) => s.key === resScreenshot.key
+                (s) => s.key === resScreenshot.key,
               )!.path;
               const file = await readFile(path);
 
@@ -185,8 +185,8 @@ describe("api v2", () => {
               });
 
               expect(axiosResponse.status).toBe(200);
-            }
-          )
+            },
+          ),
         );
 
         const updateResult = await request(app)
@@ -218,17 +218,17 @@ describe("api v2", () => {
           build.compareScreenshotBucket!.screenshots!.map((s) => ({
             s3Id: s.s3Id,
             name: s.name,
-          }))
+          })),
         ).toEqual(
           screenshots.map((screenshot) => ({
             s3Id: screenshot.key,
             name: screenshot.name,
-          }))
+          })),
         );
         expect(build.compareScreenshotBucket!.complete).toBe(true);
         expect(build.compareScreenshotBucket!.name).toBe("current");
         expect(build.compareScreenshotBucket!.commit).toBe(
-          "b6bf264029c03888b7fb7e6db7386f3b245b77b0"
+          "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
         );
         expect(build.compareScreenshotBucket!.branch).toBe("main");
         expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
@@ -296,7 +296,7 @@ describe("api v2", () => {
               createResult.body.screenshots.map(
                 async (resScreenshot: { key: string; putUrl: string }) => {
                   const path = screenshots.find(
-                    (s) => s.key === resScreenshot.key
+                    (s) => s.key === resScreenshot.key,
                   )!.path;
                   const file = await readFile(path);
 
@@ -310,8 +310,8 @@ describe("api v2", () => {
                   });
 
                   expect(axiosResponse.status).toBe(200);
-                }
-              )
+                },
+              ),
             );
 
             const updateResult = await request(app)
@@ -329,11 +329,11 @@ describe("api v2", () => {
               .expect(200);
 
             return updateResult;
-          })
+          }),
         );
 
         const updateBodies = updateResults.map(
-          (updateResult) => updateResult.body
+          (updateResult) => updateResult.body,
         );
 
         const build = await Build.query()
@@ -355,19 +355,19 @@ describe("api v2", () => {
           build.compareScreenshotBucket!.screenshots!.map((s) => ({
             s3Id: s.s3Id,
             name: s.name,
-          }))
+          })),
         ).toEqual(
           expect.arrayContaining(
             screenshotGroups.flat().map((screenshot) => ({
               s3Id: screenshot.key,
               name: screenshot.name,
-            }))
-          )
+            })),
+          ),
         );
         expect(build.compareScreenshotBucket!.complete).toBe(true);
         expect(build.compareScreenshotBucket!.name).toBe("current");
         expect(build.compareScreenshotBucket!.commit).toBe(
-          "b6bf264029c03888b7fb7e6db7386f3b245b77b0"
+          "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
         );
         expect(build.compareScreenshotBucket!.branch).toBe("main");
         expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
@@ -406,7 +406,7 @@ describe("api v2", () => {
               createResult.body.screenshots.map(
                 async (resScreenshot: { key: string; putUrl: string }) => {
                   const path = screenshots.find(
-                    (s) => s.key === resScreenshot.key
+                    (s) => s.key === resScreenshot.key,
                   )!.path;
                   const file = await readFile(path);
 
@@ -420,8 +420,8 @@ describe("api v2", () => {
                   });
 
                   expect(axiosResponse.status).toBe(200);
-                }
-              )
+                },
+              ),
             );
 
             const updateResult = await request(app)
@@ -438,14 +438,14 @@ describe("api v2", () => {
               });
 
             return updateResult;
-          })
+          }),
         );
 
         expect(updateResults[0]!.statusCode).toBe(200);
         expect(updateResults[1]!.statusCode).toBe(400);
         // @ts-ignore
         expect(JSON.parse(updateResults[1]!.error.text).error.message).toBe(
-          "`parallelTotal` must be the same on every batch"
+          "`parallelTotal` must be the same on every batch",
         );
       });
     });

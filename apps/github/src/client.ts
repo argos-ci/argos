@@ -40,7 +40,7 @@ export const getOAuthOctokit = () => {
 
 export const getInstallationOctokit = async (
   installationId: string,
-  appOctokit = getAppOctokit()
+  appOctokit = getAppOctokit(),
 ): Promise<Octokit | null> => {
   const installation = await GithubInstallation.query()
     .findById(installationId)

@@ -29,7 +29,7 @@ export const AccountAvatar = forwardRef<any, AccountAvatarProps>(
           ref={ref}
           className={clsx(
             props.className,
-            "flex select-none items-center justify-center rounded-full"
+            "flex select-none items-center justify-center rounded-full",
           )}
           style={{
             backgroundColor: avatar.color,
@@ -54,5 +54,5 @@ export const AccountAvatar = forwardRef<any, AccountAvatarProps>(
     return (
       <ImageAvatar url={avatar.url} size={size} className={props.className} />
     );
-  }
+  },
 );

@@ -6,7 +6,7 @@
 export const up = async (knex) => {
   await knex.schema
     .raw(
-      `CREATE TYPE job_status AS ENUM ('pending', 'progress', 'complete', 'error')`
+      `CREATE TYPE job_status AS ENUM ('pending', 'progress', 'complete', 'error')`,
     )
     .raw(`CREATE TYPE service_type AS ENUM ('github')`)
     .alterTable("builds", (table) => {

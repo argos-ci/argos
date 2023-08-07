@@ -27,7 +27,7 @@ const BrandLink = memo(
         </Link>
       </Tooltip>
     );
-  }
+  },
 );
 
 const ProjectLink = memo(
@@ -48,7 +48,7 @@ const ProjectLink = memo(
         </Link>
       </Tooltip>
     );
-  }
+  },
 );
 
 const BuildReviewButton = memo(
@@ -56,7 +56,7 @@ const BuildReviewButton = memo(
     const loggedIn = useIsLoggedIn();
     if (!loggedIn) return null;
     return <ReviewButton project={props.project} />;
-  }
+  },
 );
 
 export const BuildFragment = graphql(`
@@ -110,5 +110,5 @@ export const BuildHeader = memo(
         </div>
       </div>
     );
-  }
+  },
 );

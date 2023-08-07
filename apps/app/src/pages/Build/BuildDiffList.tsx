@@ -44,7 +44,7 @@ type ListRow = ListHeaderRow | ListItemRow;
 
 const getRows = (
   groups: DiffGroup[],
-  expandedGroups: DiffGroup["name"][]
+  expandedGroups: DiffGroup["name"][],
 ): ListRow[] => {
   const filledGroups = groups.filter((group) => group.diffs.length > 0);
   return filledGroups.flatMap((group, groupIndex) => {
@@ -91,7 +91,7 @@ const ListHeader = ({
       as="div"
       className={clsx(
         borderB,
-        "border-t-border z-10 flex cursor-default select-none items-center border-t bg-app pr-4 hover:bg-subtle"
+        "border-t-border z-10 flex cursor-default select-none items-center border-t bg-app pr-4 hover:bg-subtle",
       )}
       style={style}
       onClick={onClick}
@@ -99,7 +99,7 @@ const ListHeader = ({
       <ChevronDownIcon
         className={clsx(
           "m-0.5 h-3 w-3 shrink-0 transform text-low opacity-0 transition group-hover/sidebar:opacity-100",
-          !item.expanded && "rotate-[-90deg]"
+          !item.expanded && "rotate-[-90deg]",
         )}
       />
       <div className="flex-1 text-sm font-medium text">
@@ -115,7 +115,7 @@ const ListHeader = ({
 
 const getImgAttributes = (
   url: string,
-  dimensions?: { width: number; height: number }
+  dimensions?: { width: number; height: number },
 ) => {
   const src = dimensions
     ? `${url}?tr=w-${dimensions.width},h-${dimensions.height},c-at_max,dpr-2`
@@ -203,7 +203,7 @@ const FlakyFlag = ({
     <div
       className={clsx(
         colorClassName,
-        "absolute right-4 top-3 z-30 h-4 w-4 opacity-0 transition group-hover/sidebar:opacity-100"
+        "absolute right-4 top-3 z-30 h-4 w-4 opacity-0 transition group-hover/sidebar:opacity-100",
       )}
     >
       <FlakyIcon />
@@ -247,7 +247,7 @@ const ListItem = ({
       className={clsx(
         pt,
         pb,
-        "group/item w-full cursor-default px-4 focus:outline-none"
+        "group/item w-full cursor-default px-4 focus:outline-none",
       )}
       style={style}
       onClick={() => {
@@ -281,7 +281,7 @@ const useInViewportIndices = (containerRef: React.RefObject<HTMLElement>) => {
       (entries) => {
         entries.forEach((entry) => {
           const index = Number(
-            (entry.target as HTMLDivElement).dataset["index"]
+            (entry.target as HTMLDivElement).dataset["index"],
           );
           if (entry.isIntersecting) {
             inViewportIndices.current.add(index);
@@ -292,7 +292,7 @@ const useInViewportIndices = (containerRef: React.RefObject<HTMLElement>) => {
       },
       {
         root: containerRef.current,
-      }
+      },
     );
     setObserver(observer);
     return () => {
@@ -396,7 +396,7 @@ const InternalBuildDiffList = memo(() => {
   const getDiffIndex = useCallback((diff: Diff | null) => {
     if (!diff) return -1;
     return rowsRef.current.findIndex(
-      (row) => row.type === "item" && row.diff === diff
+      (row) => row.type === "item" && row.diff === diff,
     );
   }, []);
 
@@ -408,7 +408,7 @@ const InternalBuildDiffList = memo(() => {
         setActiveDiff(firstDiff, true);
       }
     },
-    [groups, setActiveDiff]
+    [groups, setActiveDiff],
   );
 
   const stickyIndices = useMemo(() => {
@@ -463,7 +463,7 @@ const InternalBuildDiffList = memo(() => {
 
         return Array.from(next).sort((a, b) => a - b);
       },
-      [stickyIndices]
+      [stickyIndices],
     ),
   });
 
@@ -512,7 +512,7 @@ const InternalBuildDiffList = memo(() => {
         ref={containerRef}
         className={clsx(
           "min-h-0 flex-1 overflow-y-auto",
-          !visible && "opacity-0"
+          !visible && "opacity-0",
         )}
       >
         <div

@@ -3,7 +3,7 @@
  */
 export const up = async (knex) => {
   await knex.raw(
-    'ALTER TABLE repositories ALTER COLUMN "organizationId" TYPE BIGINT'
+    'ALTER TABLE repositories ALTER COLUMN "organizationId" TYPE BIGINT',
   );
 };
 
@@ -12,6 +12,6 @@ export const up = async (knex) => {
  */
 export const down = async (knex) => {
   await knex.raw(
-    'ALTER TABLE repositories ALTER COLUMN "organizationId" TYPE INTEGER'
+    'ALTER TABLE repositories ALTER COLUMN "organizationId" TYPE INTEGER',
   );
 };

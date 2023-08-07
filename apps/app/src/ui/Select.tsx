@@ -31,7 +31,7 @@ export const SelectSeparator = forwardRef<HTMLHRElement, SelectSeparatorProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 export type SelectProps = AriakitSelectProps & {
@@ -49,18 +49,18 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
             md: "px-3 py-2 text-base",
             sm: "px-2 py-1 text-sm",
           }[size],
-          className
+          className,
         )}
         {...props}
       />
     );
-  }
+  },
 );
 
 export const SelectArrow = forwardRef<HTMLSpanElement, AriakitSelectArrowProps>(
   (props, ref) => {
     return <AriakitSelectArrow ref={ref} {...props} />;
-  }
+  },
 );
 
 export type SelectPopoverProps = AriakitSelectPopoverProps;
@@ -73,12 +73,12 @@ export const SelectPopover = forwardRef<HTMLDivElement, SelectPopoverProps>(
         as="div"
         className={clsx(
           className,
-          "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border bg-subtle p-1 focus:outline-none"
+          "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border bg-subtle p-1 focus:outline-none",
         )}
         {...props}
       />
     );
-  }
+  },
 );
 
 export type SelectItemProps = Omit<AriakitSelectItemProps, "className">;
@@ -90,7 +90,7 @@ export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
         ref={ref}
         className={clsx(
           "group/item",
-          "flex select-none items-center gap-2 rounded px-3 py-1.5 text-sm text transition hover:bg-active focus:bg-active focus:outline-none aria-disabled:opacity-disabled"
+          "flex select-none items-center gap-2 rounded px-3 py-1.5 text-sm text transition hover:bg-active focus:bg-active focus:outline-none aria-disabled:opacity-disabled",
         )}
         {...props}
       >
@@ -100,7 +100,7 @@ export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
         </>
       </AriakitSelectItem>
     );
-  }
+  },
 );
 
 export const SelectText = (props: { children: React.ReactNode }) => {

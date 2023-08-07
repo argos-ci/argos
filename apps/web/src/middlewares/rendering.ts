@@ -10,7 +10,7 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 const indexString = readFileSync(
   join(__dirname, "../../templates/index.ejs"),
-  "utf-8"
+  "utf-8",
 );
 
 const getHtmlWebpackPluginConfig = (): {
@@ -22,7 +22,7 @@ const getHtmlWebpackPluginConfig = (): {
   ) {
     const rawAssets = readFileSync(
       join(__dirname, "../../../app/dist/webpack-assets.json"),
-      "utf-8"
+      "utf-8",
     );
     const assets = JSON.parse(rawAssets);
 
@@ -48,7 +48,7 @@ const toPrettyJSON = (data: any) => {
   return JSON.stringify(
     data,
     null,
-    process.env["NODE_ENV"] === "production" ? 0 : 2
+    process.env["NODE_ENV"] === "production" ? 0 : 2,
   );
 };
 

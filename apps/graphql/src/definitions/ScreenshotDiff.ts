@@ -81,13 +81,13 @@ export const resolvers: IResolvers = {
     },
     status: (screenshotDiff, _args, ctx) => {
       return screenshotDiff.$getDiffStatus(
-        ctx.loaders.Screenshot.load.bind(ctx.loaders.Screenshot)
+        ctx.loaders.Screenshot.load.bind(ctx.loaders.Screenshot),
       ) as Promise<IScreenshotDiffStatus>;
     },
     flakyDetected: (screenshotDiff) => {
       return Boolean(
         screenshotDiff.stabilityScore !== null &&
-          screenshotDiff.stabilityScore < 60
+          screenshotDiff.stabilityScore < 60,
       );
     },
     test: async (screenshot, _args, ctx) => {

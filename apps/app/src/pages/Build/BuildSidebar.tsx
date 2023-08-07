@@ -49,7 +49,7 @@ export const BuildSidebar = memo(
       () => {
         tab.setSelectedId(tab.next());
       },
-      { preventDefault: true }
+      { preventDefault: true },
     );
     return (
       <div className="group/sidebar flex w-[295px] shrink-0 flex-col border-r">
@@ -97,5 +97,5 @@ export const BuildSidebar = memo(
         </TabPanel>
       </div>
     );
-  }
+  },
 );

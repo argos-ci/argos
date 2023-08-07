@@ -45,7 +45,7 @@ const Cell = ({ className, ...props }: CellProps) => (
     role="cell"
     className={clsx(
       className,
-      "flex h-16 items-center justify-end whitespace-nowrap"
+      "flex h-16 items-center justify-end whitespace-nowrap",
     )}
     {...props}
   />
@@ -179,7 +179,7 @@ const DailyVariationGraphCell = ({
               content={`${moment(date).format("LL")}: ${count} ${pluralize(
                 count,
                 "variation",
-                "variations"
+                "variations",
               )}`}
             >
               <div className="flex h-full w-full flex-col justify-end">
@@ -237,7 +237,7 @@ const StabilityCell = ({
         <span
           className={clsx(
             unstable ? "text-pending-400" : "",
-            "mr-2 text-lg font-bold"
+            "mr-2 text-lg font-bold",
           )}
         >
           {score}
@@ -288,7 +288,7 @@ const TestRow = memo(
         />
       </ListRow>
     );
-  }
+  },
 );
 
 const TestsList = ({
@@ -313,7 +313,7 @@ const TestsList = ({
 
   const updateTests = (
     cache: ApolloCache<any>,
-    { data }: Partial<FetchResult>
+    { data }: Partial<FetchResult>,
   ) => {
     if (!data) return;
     const updatedData = Object.values(data)[0];
@@ -378,7 +378,7 @@ const TestsList = ({
 
   const [updateStatuses, { loading: updateStatusesLoading }] = useMutation(
     UpdateStatusesMutation,
-    { update: (cache, { data }) => updateTests(cache, { data: data }) }
+    { update: (cache, { data }) => updateTests(cache, { data: data }) },
   );
 
   const rowVirtualizer = useVirtualizer({
@@ -466,7 +466,7 @@ const TestsList = ({
             role="columnheader"
             className={clsx(
               columns.variations,
-              "flex items-center justify-end"
+              "flex items-center justify-end",
             )}
           >
             Variations

@@ -17,5 +17,5 @@ export const FormCheckbox = forwardRef<HTMLInputElement, FormCheckboxProps>(
         </label>
       </div>
     );
-  }
+  },
 );

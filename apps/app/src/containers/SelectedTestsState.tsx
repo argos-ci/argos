@@ -18,14 +18,14 @@ interface SelectedTestsContextValue {
 }
 
 const SelectedTestsContext = createContext<SelectedTestsContextValue | null>(
-  null
+  null,
 );
 
 export const useSelectedTestsState = () => {
   const context = useContext(SelectedTestsContext);
   if (context === null) {
     throw new Error(
-      "useSelectedTestsState must be used within a SelectedTestsStateProvider"
+      "useSelectedTestsState must be used within a SelectedTestsStateProvider",
     );
   }
   return context;
@@ -52,7 +52,7 @@ export const SelectedTestsStateProvider = ({
 
   const selectedTestsArray = useMemo(
     () => Array.from(selectedTests),
-    [selectedTests]
+    [selectedTests],
   );
 
   const value = useMemo(
@@ -66,7 +66,7 @@ export const SelectedTestsStateProvider = ({
         selectedTestsArray.length > 0 &&
         selectedTestsArray.every((test: Test) => test.status === "flaky"),
     }),
-    [selectedTests, toggleTestSelection, selectedTestsArray]
+    [selectedTests, toggleTestSelection, selectedTestsArray],
   );
 
   return (

@@ -28,7 +28,7 @@ const acquireLock = async ({
 export type Acquire = <T>(
   name: string,
   task: () => Promise<T>,
-  options?: { timeout?: number; retryDelay?: number }
+  options?: { timeout?: number; retryDelay?: number },
 ) => Promise<T>;
 
 export interface RedisLock {
@@ -39,7 +39,7 @@ export const createRedisLock = (client: RedisClient): RedisLock => {
   const acquire: Acquire = async (
     name,
     task,
-    { timeout = 20000, retryDelay = 500 } = {}
+    { timeout = 20000, retryDelay = 500 } = {},
   ) => {
     const fullName = `lock.${name}`;
 

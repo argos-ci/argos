@@ -10,7 +10,7 @@
     "@argos-ci/database": "*",
     "@argos-ci/github": "*",
     "@argos-ci/job-core": "*",
-    "@octokit/rest": "^19.0.7"
+    "@octokit/rest": "^20.0.1"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",

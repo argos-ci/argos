@@ -17,7 +17,7 @@ export const up = async (knex) => {
       .leftOuterJoin(
         "accounts",
         "repositories.organizationId",
-        "accounts.organizationId"
+        "accounts.organizationId",
       )
       .whereNull("accounts.id"),
 

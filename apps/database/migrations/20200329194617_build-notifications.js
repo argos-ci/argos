@@ -11,7 +11,7 @@ export const up = async (knex) =>
   ALTER TABLE build_notifications ALTER COLUMN "type" TYPE build_notifications_type USING "type"::text::build_notifications_type;
 
   DROP TYPE build_notifications_type_old;
-  `
+  `,
   );
 
 /**
@@ -27,5 +27,5 @@ export const down = async (knex) =>
   ALTER TABLE build_notifications ALTER COLUMN "type" TYPE build_notifications_type USING "type"::text::build_notifications_type;
 
   DROP TYPE build_notifications_type_old;
-  `
+  `,
   );

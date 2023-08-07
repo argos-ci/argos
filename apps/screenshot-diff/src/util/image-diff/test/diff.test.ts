@@ -47,10 +47,12 @@ describe("diff E2E", () => {
     const baseFilename = "checkerboard.png";
     const compareFilename = "white.png";
 
-    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
-      baseFilepath: join(__dirname, "/test-files", baseFilename),
-      compareFilepath: join(__dirname, "/test-files", compareFilename),
-    });
+    const { filepath: _diffFilepath, ...difference } = await compareLocalImages(
+      {
+        baseFilepath: join(__dirname, "/test-files", baseFilename),
+        compareFilepath: join(__dirname, "/test-files", compareFilename),
+      },
+    );
 
     expect(difference).toMatchSnapshot();
   });
@@ -59,10 +61,12 @@ describe("diff E2E", () => {
     const baseFilename = "checkerboard.png";
     const compareFilename = "checkerboard.png";
 
-    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
-      baseFilepath: join(__dirname, "/test-files", baseFilename),
-      compareFilepath: join(__dirname, "/test-files", compareFilename),
-    });
+    const { filepath: _diffFilepath, ...difference } = await compareLocalImages(
+      {
+        baseFilepath: join(__dirname, "/test-files", baseFilename),
+        compareFilepath: join(__dirname, "/test-files", compareFilename),
+      },
+    );
 
     expect(difference).toMatchSnapshot();
 
@@ -77,10 +81,12 @@ describe("diff E2E", () => {
     const baseFilename = "checkerboard-excess.png";
     const compareFilename = "checkerboard.png";
 
-    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
-      baseFilepath: join(__dirname, "/test-files", baseFilename),
-      compareFilepath: join(__dirname, "/test-files", compareFilename),
-    });
+    const { filepath: _diffFilepath, ...difference } = await compareLocalImages(
+      {
+        baseFilepath: join(__dirname, "/test-files", baseFilename),
+        compareFilepath: join(__dirname, "/test-files", compareFilename),
+      },
+    );
 
     expect(difference).toMatchSnapshot();
   });
@@ -89,10 +95,12 @@ describe("diff E2E", () => {
     const baseFilename = "checkerboard-transparent.png";
     const compareFilename = "checkerboard.png";
 
-    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
-      baseFilepath: join(__dirname, "/test-files", baseFilename),
-      compareFilepath: join(__dirname, "/test-files", compareFilename),
-    });
+    const { filepath: _diffFilepath, ...difference } = await compareLocalImages(
+      {
+        baseFilepath: join(__dirname, "/test-files", baseFilename),
+        compareFilepath: join(__dirname, "/test-files", compareFilename),
+      },
+    );
 
     expect(difference).toMatchSnapshot();
   });
@@ -101,10 +109,12 @@ describe("diff E2E", () => {
     const baseFilename = "old-site.png";
     const compareFilename = "new-site.png";
 
-    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
-      baseFilepath: join(__dirname, "/test-files", baseFilename),
-      compareFilepath: join(__dirname, "/test-files", compareFilename),
-    });
+    const { filepath: _diffFilepath, ...difference } = await compareLocalImages(
+      {
+        baseFilepath: join(__dirname, "/test-files", baseFilename),
+        compareFilepath: join(__dirname, "/test-files", compareFilename),
+      },
+    );
 
     expect(difference).toMatchSnapshot();
   });
@@ -113,10 +123,12 @@ describe("diff E2E", () => {
     const baseFilename = "big-image.png";
     const compareFilename = "big-image2.png";
 
-    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
-      baseFilepath: join(__dirname, "/test-files", baseFilename),
-      compareFilepath: join(__dirname, "/test-files", compareFilename),
-    });
+    const { filepath: _diffFilepath, ...difference } = await compareLocalImages(
+      {
+        baseFilepath: join(__dirname, "/test-files", baseFilename),
+        compareFilepath: join(__dirname, "/test-files", compareFilename),
+      },
+    );
 
     expect(difference).toMatchSnapshot();
   });
@@ -125,10 +137,12 @@ describe("diff E2E", () => {
     const baseFilename = "violet-square.png";
     const compareFilename = "black-square.png";
 
-    const { filepath: diffFilepath, ...difference } = await compareLocalImages({
-      baseFilepath: join(__dirname, "/test-files", baseFilename),
-      compareFilepath: join(__dirname, "/test-files", compareFilename),
-    });
+    const { filepath: _diffFilepath, ...difference } = await compareLocalImages(
+      {
+        baseFilepath: join(__dirname, "/test-files", baseFilename),
+        compareFilepath: join(__dirname, "/test-files", compareFilename),
+      },
+    );
 
     expect(difference).toMatchSnapshot();
   });

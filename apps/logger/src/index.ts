@@ -21,7 +21,7 @@ const logger = {
         typeof args[0] === "string" ? args[0] : "Unknown error",
         {
           extra: { args },
-        }
+        },
       );
     }
     console.error(...args);

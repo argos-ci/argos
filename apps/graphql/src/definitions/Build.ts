@@ -101,7 +101,7 @@ export const typeDefs = gql`
 
 const getCompareScreenshotBucket = async (ctx: Context, build: Build) => {
   const bucket = await ctx.loaders.ScreenshotBucket.load(
-    build.compareScreenshotBucketId
+    build.compareScreenshotBucketId,
   );
   if (!bucket) {
     throw new Error("Invariant: compare bucket not found");
@@ -129,7 +129,7 @@ export const resolvers: IResolvers = {
     },
     status: async (build, _args, ctx) => {
       return ctx.loaders.BuildAggregatedStatus.load(
-        build
+        build,
       ) as Promise<IBuildStatus>;
     },
     stats: async (build) => {
@@ -169,7 +169,7 @@ export const resolvers: IResolvers = {
       }
 
       const hasWriteAccess = await build.project.$checkWritePermission(
-        ctx.auth.user
+        ctx.auth.user,
       );
 
       if (!hasWriteAccess) {

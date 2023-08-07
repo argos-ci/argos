@@ -351,7 +351,7 @@ describe("#createBuildDiffs", () => {
       ];
 
       expect(
-        getJobStatuses([addedDiff!, sameFileDiff!, removedDiff!])
+        getJobStatuses([addedDiff!, sameFileDiff!, removedDiff!]),
       ).toMatchObject(["complete"]);
       expect(
         getJobStatuses([
@@ -359,7 +359,7 @@ describe("#createBuildDiffs", () => {
           addDiffWithoutFile!,
           noFileBaseScreenshotDiff!,
           noFileCompareScreenshotDiff!,
-        ])
+        ]),
       ).toMatchObject(["pending"]);
     });
 

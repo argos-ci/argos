@@ -9,7 +9,7 @@ export const up = async (knex) => {
   });
 
   await knex.raw(
-    `update users set "githubUserId" = github_users.id from github_users where users."githubId" = github_users."githubId"`
+    `update users set "githubUserId" = github_users.id from github_users where users."githubId" = github_users."githubId"`,
   );
   await knex.raw('ALTER TABLE users ALTER COLUMN "githubUserId" SET NOT NULL');
 
