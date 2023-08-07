@@ -41,16 +41,16 @@ const ProjectCard = ({ project }: { project: Project }) => {
       to={`/${project.slug}`}
       className="flex flex-col gap-4 rounded-md border bg-app p-4 hover:border-hover"
     >
-      <div className="flex justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex min-w-0 justify-between">
+        <div className="flex min-w-0 items-center gap-4">
           <AccountAvatar
             avatar={project.account.avatar}
             size={32}
             className="shrink-0"
           />
-          <div>
-            <div className="font-medium">{project.name}</div>
-            <div className="text-sm text-low">
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-medium">{project.name}</div>
+            <div className="truncate text-sm text-low">
               {project.ghRepository?.fullName ?? "-"}
             </div>
           </div>
@@ -103,7 +103,7 @@ export const ProjectList = (props: { projects: ProjectFragmentType[] }) => {
       <div className="flex justify-end">
         <CreateProjectButton variant="outline" color="neutral" />
       </div>
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-3 gap-4">
         {projects.map((project) => (
           <ProjectCard key={project.id} project={project} />
         ))}
