@@ -92,18 +92,27 @@ export const BuildSidebar = React.memo(
         allowInInput: true,
       },
     );
-    useBuildHotkey("enterSearchMode", enterSearchMode, {
-      allowInInput: true,
-    });
+    const searchModeHotKey = useBuildHotkey(
+      "enterSearchMode",
+      enterSearchMode,
+      {
+        allowInInput: true,
+      },
+    );
     return (
       <div className="group/sidebar flex w-[295px] shrink-0 flex-col border-r">
         <div className="flex shrink-0 px-2 border-b items-center">
-          <IconButton
-            onClick={() => enterSearchMode()}
-            aria-pressed={searchMode}
+          <HotkeyTooltip
+            keys={searchModeHotKey.displayKeys}
+            description="Find..."
           >
-            <MagnifyingGlassIcon />
-          </IconButton>
+            <IconButton
+              onClick={() => enterSearchMode()}
+              aria-pressed={searchMode}
+            >
+              <MagnifyingGlassIcon />
+            </IconButton>
+          </HotkeyTooltip>
           {searchMode ? (
             <>
               <SearchInput ref={searchInputRef} />
