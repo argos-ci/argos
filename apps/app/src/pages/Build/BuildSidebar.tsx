@@ -83,7 +83,7 @@ export const BuildSidebar = React.memo(
       searchInputRef.current?.focus();
       searchInputRef.current?.select();
     }, [setSearchMode]);
-    useBuildHotkey(
+    const leaveSearchModeHotKey = useBuildHotkey(
       "leaveSearchMode",
       () => {
         setSearchMode(false);
@@ -116,9 +116,14 @@ export const BuildSidebar = React.memo(
           {searchMode ? (
             <>
               <SearchInput ref={searchInputRef} />
-              <IconButton onClick={() => setSearchMode(false)}>
-                <XMarkIcon />
-              </IconButton>
+              <HotkeyTooltip
+                keys={leaveSearchModeHotKey.displayKeys}
+                description="Exit search mode"
+              >
+                <IconButton onClick={() => setSearchMode(false)}>
+                  <XMarkIcon />
+                </IconButton>
+              </HotkeyTooltip>
             </>
           ) : (
             <TabList
