@@ -69,6 +69,7 @@ export type DiffResult = MatchData<Diff>;
 
 export interface BuildDiffContextValue {
   diffs: Diff[];
+  totalDiffCount: number;
   groups: DiffGroup[];
   expanded: DiffGroup["name"][];
   toggleGroup: (name: DiffGroup["name"], value?: boolean) => void;
@@ -455,6 +456,7 @@ export const BuildDiffProvider = ({
       ready,
       stats,
       results,
+      totalDiffCount: screenshotDiffs.length,
     }),
     [
       groups,
@@ -469,6 +471,7 @@ export const BuildDiffProvider = ({
       ready,
       stats,
       results,
+      screenshotDiffs.length,
     ],
   );
   return (

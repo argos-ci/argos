@@ -27,6 +27,7 @@ import {
   DiffResult,
   useBuildDiffState,
   useSearchModeState,
+  useSearchState,
 } from "./BuildDiffState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 
@@ -428,8 +429,10 @@ const InternalBuildDiffList = memo(() => {
     scrolledDiff,
     stats,
     results,
+    totalDiffCount,
   } = useBuildDiffState();
   const { searchMode } = useSearchModeState();
+  const { search } = useSearchState();
   const rows = useMemo(
     () => getRows(groups, expanded, results),
     [groups, expanded, results],
@@ -538,6 +541,10 @@ const InternalBuildDiffList = memo(() => {
       });
     }
   }, [scrolledDiff, getDiffIndex, getIndicesInViewport]);
+
+  if (searchMode && search && !results.length && totalDiffCount > 0) {
+    return <div className="text-sm p-4">No results</div>;
+  }
 
   return (
     <>
