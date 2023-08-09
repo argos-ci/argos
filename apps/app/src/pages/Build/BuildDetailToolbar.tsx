@@ -149,6 +149,7 @@ const NextDiffButton = memo(() => {
   const hotkey = useBuildHotkey("goToNextDiff", goToNextDiff, {
     preventDefault: true,
     enabled: !disabled,
+    allowInInput: true,
   });
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
@@ -173,6 +174,7 @@ const PreviousDiffButton = memo(() => {
   const hotkey = useBuildHotkey("goToPreviousDiff", goToPreviousDiff, {
     preventDefault: true,
     enabled: !disabled,
+    allowInInput: true,
   });
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
