@@ -5,7 +5,7 @@ import {
   TabProps,
   useTabState,
 } from "ariakit/tab";
-import { forwardRef, memo } from "react";
+import * as React from "react";
 
 import { checkIsBuildEmpty } from "@/containers/Build";
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -14,8 +14,11 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { BuildDiffList } from "./BuildDiffList";
 import { useBuildHotkey } from "./BuildHotkeys";
 import { BuildInfos } from "./BuildInfos";
+import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { IconButton } from "@/ui/IconButton";
+import { useSearchModeState, useSearchState } from "./BuildDiffState";
 
-const Tab = forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
+const Tab = React.forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
   return (
     <AriakitTab
       ref={ref}
@@ -34,7 +37,29 @@ export const BuildFragment = graphql(`
   }
 `);
 
-export const BuildSidebar = memo(
+const SearchInput = React.forwardRef<HTMLInputElement, object>(
+  (_props, ref) => {
+    const { search, setSearch } = useSearchState();
+    return (
+      <input
+        ref={ref}
+        type="text"
+        autoFocus
+        placeholder="Find..."
+        className="flex-1 text text-xs leading-6 py-2 px-2 outline-none placeholder:text-low bg-transparent"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+          }
+        }}
+      />
+    );
+  },
+);
+
+export const BuildSidebar = React.memo(
   (props: {
     githubRepoUrl: string | null;
     build: FragmentType<typeof BuildFragment>;
@@ -51,50 +76,108 @@ export const BuildSidebar = memo(
       },
       { preventDefault: true },
     );
+    const { searchMode, setSearchMode } = useSearchModeState();
+    const searchInputRef = React.useRef<HTMLInputElement>(null);
+    const enterSearchMode = React.useCallback(() => {
+      setSearchMode(true);
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }, [setSearchMode]);
+    const leaveSearchModeHotKey = useBuildHotkey(
+      "leaveSearchMode",
+      () => {
+        setSearchMode(false);
+      },
+      {
+        allowInInput: true,
+      },
+    );
+    const searchModeHotKey = useBuildHotkey(
+      "enterSearchMode",
+      enterSearchMode,
+      {
+        allowInInput: true,
+      },
+    );
     return (
       <div className="group/sidebar flex w-[295px] shrink-0 flex-col border-r">
-        <TabList
-          state={tab}
-          aria-label="Build details"
-          className="flex shrink-0 border-b px-2"
-        >
+        <div className="flex shrink-0 px-2 border-b items-center">
           <HotkeyTooltip
-            keys={hotkey.displayKeys}
-            description="Screenshots"
-            keysEnabled={tab.selectedId !== "screenshots"}
+            keys={searchModeHotKey.displayKeys}
+            description="Find..."
           >
-            <Tab id="screenshots" state={tab}>
-              Screenshots
-            </Tab>
+            <IconButton
+              onClick={() => enterSearchMode()}
+              aria-pressed={searchMode}
+            >
+              <MagnifyingGlassIcon />
+            </IconButton>
           </HotkeyTooltip>
-          <HotkeyTooltip
-            keys={hotkey.displayKeys}
-            description="Info"
-            keysEnabled={tab.selectedId !== "info"}
-          >
-            <Tab id="info" state={tab}>
-              Info
-            </Tab>
-          </HotkeyTooltip>
-        </TabList>
+          {searchMode ? (
+            <>
+              <SearchInput ref={searchInputRef} />
+              <HotkeyTooltip
+                keys={leaveSearchModeHotKey.displayKeys}
+                description="Exit search mode"
+              >
+                <IconButton onClick={() => setSearchMode(false)}>
+                  <XMarkIcon />
+                </IconButton>
+              </HotkeyTooltip>
+            </>
+          ) : (
+            <TabList
+              state={tab}
+              aria-label="Build details"
+              className="flex shrink-0"
+            >
+              <HotkeyTooltip
+                keys={hotkey.displayKeys}
+                description="Screenshots"
+                keysEnabled={tab.selectedId !== "screenshots"}
+              >
+                <Tab id="screenshots" state={tab}>
+                  Screenshots
+                </Tab>
+              </HotkeyTooltip>
+              <HotkeyTooltip
+                keys={hotkey.displayKeys}
+                description="Info"
+                keysEnabled={tab.selectedId !== "info"}
+              >
+                <Tab id="info" state={tab}>
+                  Info
+                </Tab>
+              </HotkeyTooltip>
+            </TabList>
+          )}
+        </div>
 
-        <TabPanel
-          state={tab}
-          tabId="screenshots"
-          focusable={false}
-          className="flex min-h-0 flex-1 flex-col"
-        >
-          <BuildDiffList />
-        </TabPanel>
+        {searchMode ? (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <BuildDiffList />
+          </div>
+        ) : (
+          <>
+            <TabPanel
+              state={tab}
+              tabId="screenshots"
+              focusable={false}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <BuildDiffList />
+            </TabPanel>
 
-        <TabPanel
-          state={tab}
-          tabId="info"
-          className="flex-1 p-4"
-          focusable={false}
-        >
-          <BuildInfos build={build} githubRepoUrl={props.githubRepoUrl} />
-        </TabPanel>
+            <TabPanel
+              state={tab}
+              tabId="info"
+              className="flex-1 p-4"
+              focusable={false}
+            >
+              <BuildInfos build={build} githubRepoUrl={props.githubRepoUrl} />
+            </TabPanel>
+          </>
+        )}
       </div>
     );
   },

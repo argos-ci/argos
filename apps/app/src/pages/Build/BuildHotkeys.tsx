@@ -93,6 +93,16 @@ export const hotkeys = {
     displayKeys: ["?"],
     description: "Open this dialog",
   } as Hotkey,
+  enterSearchMode: {
+    keys: ["⌘", "KeyF"],
+    displayKeys: ["⌘", "F"],
+    description: "Find screenshot",
+  },
+  leaveSearchMode: {
+    keys: ["Escape"],
+    displayKeys: ["Esc"],
+    description: "Exit search",
+  },
 };
 
 export type HotkeyName = keyof typeof hotkeys;
@@ -110,11 +120,16 @@ export const useBuildHotkey = (
   options?: {
     preventDefault?: boolean;
     enabled?: boolean;
+    allowInInput?: boolean;
   },
 ) => {
   const hotkey = hotkeys[name];
-  const { preventDefault = true, enabled = true } = options ?? {};
-  const optionsWithDefaults = { preventDefault, enabled };
+  const {
+    preventDefault = true,
+    enabled = true,
+    allowInInput = false,
+  } = options ?? {};
+  const optionsWithDefaults = { preventDefault, enabled, allowInInput };
   const refs = useRef({ callback, options: optionsWithDefaults });
   useLayoutEffect(() => {
     refs.current.callback = callback;
@@ -123,8 +138,12 @@ export const useBuildHotkey = (
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
       const { options, callback } = refs.current;
-      if (!options.enabled) return;
+      if (!options.allowInInput && event.target instanceof HTMLInputElement) {
+        if (event.target.type === "text") return;
+        if (event.target.type === "textarea") return;
+      }
       const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
+      if (!options.enabled) return;
       if (modifierShouldBePressed !== checkIsModifiedPressed(event)) return;
       const matchKeys = hotkey.keys.every((key) => {
         // Ignore modifier keys
@@ -132,7 +151,9 @@ export const useBuildHotkey = (
         return key === event.code || key === event.key;
       });
       if (!matchKeys) return;
-      if (options.preventDefault) event.preventDefault();
+      if (options.preventDefault) {
+        event.preventDefault();
+      }
       callback(event);
     };
     document.addEventListener("keydown", listener);

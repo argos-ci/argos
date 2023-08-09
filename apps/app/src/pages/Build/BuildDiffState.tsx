@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { MatchData, Searcher } from "fast-fuzzy";
 
 import type { BuildStats } from "@/containers/Build";
 import { graphql } from "@/gql";
@@ -64,8 +65,11 @@ const getGroupsFromStats = (stats: BuildStats): DiffGroup[] => {
   }));
 };
 
-interface BuildDiffContextValue {
+export type DiffResult = MatchData<Diff>;
+
+export interface BuildDiffContextValue {
   diffs: Diff[];
+  totalDiffCount: number;
   groups: DiffGroup[];
   expanded: DiffGroup["name"][];
   toggleGroup: (name: DiffGroup["name"], value?: boolean) => void;
@@ -73,8 +77,10 @@ interface BuildDiffContextValue {
   setActiveDiff: (diff: Diff, scroll?: boolean) => void;
   scrolledDiff: Diff | null;
   initialDiff: Diff | null;
+  firstDiff: Diff | null;
   ready: boolean;
   stats: BuildStats | null;
+  results: DiffResult[];
 }
 
 const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
@@ -89,11 +95,8 @@ export const useBuildDiffState = () => {
   return context;
 };
 
-const useExpandedState = () => {
-  const [expanded, setExpanded] = useState<DiffGroup["name"][]>([
-    "failure",
-    "changed",
-  ]);
+const useExpandedState = (initial: DiffGroup["name"][]) => {
+  const [expanded, setExpanded] = useState<DiffGroup["name"][]>(initial);
   const toggleGroup = useCallback(
     (name: DiffGroup["name"], value?: boolean) => {
       setExpanded((expanded) => {
@@ -109,7 +112,7 @@ const useExpandedState = () => {
     [],
   );
 
-  return { expanded, toggleGroup };
+  return useMemo(() => ({ expanded, toggleGroup }), [expanded, toggleGroup]);
 };
 
 const ProjectQuery = graphql(`
@@ -239,22 +242,103 @@ const hydrateGroups = (groups: DiffGroup[], screenshotDiffs: Diff[]) => {
   });
 };
 
+const groupDiffs = (diffs: Diff[]): DiffGroup[] => {
+  return diffs.reduce<DiffGroup[]>((groups, diff) => {
+    const group = groups.find((group) => group.name === diff.status);
+    if (group) {
+      group.diffs.push(diff);
+    } else {
+      groups.push({
+        name: diff.status,
+        diffs: [diff],
+      });
+    }
+    return groups;
+  }, [] as DiffGroup[]);
+};
+
 export interface BuildDiffProviderProps {
   children: React.ReactNode;
   stats: BuildStats | null;
   params: BuildParams;
 }
 
+type SearchModeContextValue = {
+  searchMode: boolean;
+  setSearchMode: (enabled: boolean) => void;
+};
+
+const SearchModeContext = createContext<SearchModeContextValue | null>(null);
+
+export const useSearchModeState = () => {
+  const context = useContext(SearchModeContext);
+  if (context === null) {
+    throw new Error(
+      "useSearchModeState must be used within a BuildDiffProvider",
+    );
+  }
+  return context;
+};
+
+type SearchContextValue = {
+  search: string;
+  setSearch: (search: string) => void;
+};
+
+const SearchContext = createContext<SearchContextValue | null>(null);
+
+export const useSearchState = () => {
+  const context = useContext(SearchContext);
+  if (context === null) {
+    throw new Error("useSearchState must be used within a BuildDiffProvider");
+  }
+  return context;
+};
+
 export const BuildDiffProvider = ({
   children,
   stats,
   params,
 }: BuildDiffProviderProps) => {
+  const [search, setSearch] = useState("");
+  const [searchMode, setSearchMode] = useState(false);
   const navigate = useNavigate();
-  const { expanded, toggleGroup } = useExpandedState();
+  const expandedState = useExpandedState(["failure", "changed"]);
+  const searchExpandedState = useExpandedState([
+    "failure",
+    "changed",
+    "added",
+    "removed",
+    "unchanged",
+  ]);
+  const { expanded, toggleGroup } = searchMode
+    ? searchExpandedState
+    : expandedState;
   const screenshotDiffs = useDataState(params);
   const complete = Boolean(stats && screenshotDiffs.length === stats?.total);
-  const firstDiffId = screenshotDiffs[0]?.id ?? null;
+  const firstDiff = screenshotDiffs[0] ?? null;
+  const firstDiffId = firstDiff?.id ?? null;
+
+  const searcher = useMemo(() => {
+    return new Searcher(screenshotDiffs, {
+      keySelector: (filter) => [filter.name],
+      threshold: 0.8,
+      returnMatchData: true,
+      ignoreSymbols: false,
+    });
+  }, [screenshotDiffs]);
+
+  const results = useMemo(() => {
+    if (!searchMode) return [];
+    return searcher.search(search);
+  }, [searchMode, searcher, search]);
+
+  const filteredDiffs = useMemo(() => {
+    if (!searchMode) return screenshotDiffs;
+    return results.map((result) => {
+      return result.item;
+    });
+  }, [screenshotDiffs, results, searchMode]);
 
   // Initial diff from the URL params or the first diff
   const [initialDiffId, setInitialDiffId] = useState(params.diffId);
@@ -289,17 +373,19 @@ export const BuildDiffProvider = ({
     [stats],
   );
 
-  const hydratedGroups = useMemo(
-    () => hydrateGroups(statsGroups, screenshotDiffs),
-    [statsGroups, screenshotDiffs],
-  );
+  const groups = useMemo(() => {
+    if (searchMode) {
+      return groupDiffs(filteredDiffs);
+    }
+    return hydrateGroups(statsGroups, filteredDiffs);
+  }, [statsGroups, filteredDiffs, searchMode]);
 
-  const hydratedGroupsRef = useRef(hydratedGroups);
-  hydratedGroupsRef.current = hydratedGroups;
+  const groupsRef = useRef(groups);
+  groupsRef.current = groups;
 
   const getDiffGroup = useCallback((diff: Diff | null) => {
     if (!diff) return null;
-    const group = hydratedGroupsRef.current.find((group) =>
+    const group = groupsRef.current.find((group) =>
       group.diffs.includes(diff),
     ) as DiffGroup;
     return group;
@@ -340,35 +426,61 @@ export const BuildDiffProvider = ({
     }
   }, [complete, initialDiffGroup, toggleGroup]);
 
+  const searchValue = useMemo(
+    (): SearchContextValue => ({
+      search,
+      setSearch,
+    }),
+    [search, setSearch],
+  );
+
+  const searchModeValue = useMemo(
+    (): SearchModeContextValue => ({
+      searchMode,
+      setSearchMode,
+    }),
+    [searchMode, setSearchMode],
+  );
+
   const value = useMemo(
     (): BuildDiffContextValue => ({
-      groups: hydratedGroups,
-      diffs: screenshotDiffs,
+      groups,
+      diffs: filteredDiffs,
       expanded,
       toggleGroup,
       activeDiff,
       setActiveDiff,
       scrolledDiff,
       initialDiff,
+      firstDiff,
       ready,
       stats,
+      results,
+      totalDiffCount: screenshotDiffs.length,
     }),
     [
-      hydratedGroups,
-      screenshotDiffs,
+      groups,
+      filteredDiffs,
       expanded,
       toggleGroup,
       activeDiff,
       setActiveDiff,
       scrolledDiff,
       initialDiff,
+      firstDiff,
       ready,
       stats,
+      results,
+      screenshotDiffs.length,
     ],
   );
   return (
-    <BuildDiffContext.Provider value={value}>
-      {children}
-    </BuildDiffContext.Provider>
+    <SearchModeContext.Provider value={searchModeValue}>
+      <SearchContext.Provider value={searchValue}>
+        <BuildDiffContext.Provider value={value}>
+          {children}
+        </BuildDiffContext.Provider>
+      </SearchContext.Provider>
+    </SearchModeContext.Provider>
   );
 };

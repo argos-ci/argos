@@ -21,7 +21,14 @@ import { Badge } from "@/ui/Badge";
 import { getFlakyIndicatorProps } from "@/ui/FlakyIndicator";
 
 import { getGroupLabel } from "./BuildDiffGroup";
-import { Diff, DiffGroup, useBuildDiffState } from "./BuildDiffState";
+import {
+  Diff,
+  DiffGroup,
+  DiffResult,
+  useBuildDiffState,
+  useSearchModeState,
+  useSearchState,
+} from "./BuildDiffState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 
 interface ListHeaderRow {
@@ -38,6 +45,7 @@ interface ListItemRow {
   first: boolean;
   last: boolean;
   diff: Diff | null;
+  result: DiffResult | null;
 }
 
 type ListRow = ListHeaderRow | ListItemRow;
@@ -45,6 +53,7 @@ type ListRow = ListHeaderRow | ListItemRow;
 const getRows = (
   groups: DiffGroup[],
   expandedGroups: DiffGroup["name"][],
+  results: DiffResult[],
 ): ListRow[] => {
   const filledGroups = groups.filter((group) => group.diffs.length > 0);
   return filledGroups.flatMap((group, groupIndex) => {
@@ -62,12 +71,16 @@ const getRows = (
     if (expanded) {
       return [
         header,
-        ...group.diffs.map((diff, index) => ({
-          type: "item" as const,
-          diff,
-          first: index === 0,
-          last: index === group.diffs.length - 1,
-        })),
+        ...group.diffs.map((diff, index) => {
+          const result = results.find((r) => r.item === diff) ?? null;
+          return {
+            type: "item" as const,
+            diff,
+            first: index === 0,
+            last: index === group.diffs.length - 1,
+            result,
+          };
+        }),
       ];
     }
     return [header];
@@ -237,6 +250,7 @@ const ListItem = ({
     }
     return undefined;
   }, [observer]);
+  const { searchMode } = useSearchModeState();
 
   return (
     <AriakitButton
@@ -261,8 +275,33 @@ const ListItem = ({
           <>
             <FlakyFlag test={item?.diff?.test ?? null} />
             <DiffImage diff={item.diff} />{" "}
-            <div className="absolute bottom-0 left-0 right-0 z-10 truncate bg-app/70 bg-gradient-to-b px-2 py-1.5 text-xxs font-medium opacity-0 transition group-hover/sidebar:opacity-100">
-              {item.diff.name}
+            <div
+              className={clsx(
+                "absolute bottom-0 left-0 right-0 z-10 truncate bg-app/70 bg-gradient-to-b px-2 py-1.5 text-xxs font-medium",
+                !searchMode &&
+                  "opacity-0 transition-opacity group-hover/sidebar:opacity-100",
+              )}
+            >
+              {item.result ? (
+                <>
+                  {item.result.key.slice(
+                    0,
+                    Math.max(item.result.match.index, 0),
+                  )}
+                  <strong>
+                    {item.result.key.slice(
+                      Math.max(item.result.match.index, 0),
+                      item.result.match.index + item.result.match.length,
+                    )}
+                  </strong>
+                  {item.result.key.slice(
+                    item.result.match.index + item.result.match.length,
+                    item.result.key.length,
+                  )}
+                </>
+              ) : (
+                item.diff.name
+              )}
             </div>
           </>
         ) : null}
@@ -386,10 +425,18 @@ const InternalBuildDiffList = memo(() => {
     activeDiff,
     setActiveDiff,
     initialDiff,
+    firstDiff,
     scrolledDiff,
     stats,
+    results,
+    totalDiffCount,
   } = useBuildDiffState();
-  const rows = useMemo(() => getRows(groups, expanded), [groups, expanded]);
+  const { searchMode } = useSearchModeState();
+  const { search } = useSearchState();
+  const rows = useMemo(
+    () => getRows(groups, expanded, results),
+    [groups, expanded, results],
+  );
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -471,9 +518,9 @@ const InternalBuildDiffList = memo(() => {
   const scrollToIndexRef = useRef(scrollToIndex);
   scrollToIndexRef.current = scrollToIndex;
 
-  const [visible, setVisible] = useState(false);
-
   useLayoutEffect(() => {
+    // Don't scroll to the first diff if the user has already scrolled
+    if (firstDiff === initialDiff) return;
     const index = getDiffIndex(initialDiff);
     if (index !== -1) {
       scrollToIndexRef.current(index, {
@@ -481,11 +528,7 @@ const InternalBuildDiffList = memo(() => {
         behavior: "smooth",
       });
     }
-    // This is a hack to ensure that everything is setup before we start
-    setTimeout(() => {
-      setVisible(true);
-    });
-  }, [initialDiff, getDiffIndex]);
+  }, [initialDiff, firstDiff, getDiffIndex]);
 
   const { observer, getIndicesInViewport } = useInViewportIndices(containerRef);
 
@@ -499,22 +542,20 @@ const InternalBuildDiffList = memo(() => {
     }
   }, [scrolledDiff, getDiffIndex, getIndicesInViewport]);
 
+  if (searchMode && search && !results.length && totalDiffCount > 0) {
+    return <div className="text-sm p-4">No results</div>;
+  }
+
   return (
     <>
-      {stats && (
+      {stats && !searchMode && (
         <BuildStatsIndicator
           className="border-b-border flex shrink-0 items-center border-b px-2"
           stats={stats}
           onClickGroup={openGroup}
         />
       )}
-      <div
-        ref={containerRef}
-        className={clsx(
-          "min-h-0 flex-1 overflow-y-auto",
-          !visible && "opacity-0",
-        )}
-      >
+      <div ref={containerRef} className="min-h-0 flex-1 overflow-y-auto">
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,
