@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } else {
       Cookie.set(COOKIE_NAME, newToken, {
         domain: COOKIE_DOMAIN,
+        expires: 60,
       });
     }
   }, []);
