@@ -216,7 +216,7 @@ const createCommitStatus = async ({
   state: GithubNotificationState;
 }) => {
   try {
-    return octokit.repos.createCommitStatus({
+    await octokit.repos.createCommitStatus({
       owner: githubAccountLogin,
       repo: repositoryName,
       sha: commit,
@@ -229,7 +229,7 @@ const createCommitStatus = async ({
     // It happens if a push-force occurs before sending the notification, it is not considered as an error
     // No commit found for SHA: xxx
     if (error.status === 422) {
-      return null;
+      return;
     }
 
     throw error;
