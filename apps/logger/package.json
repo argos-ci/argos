@@ -9,6 +9,6 @@
     "watch-build": "npm run build -- --watch --quiet"
   },
   "dependencies": {
-    "@sentry/node": "^7.61.1"
+    "@sentry/node": "^7.64.0"
   }
 }

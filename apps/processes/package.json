@@ -24,9 +24,9 @@
     "@argos-ci/sentry-node": "*",
     "@argos-ci/synchronize": "*",
     "@argos-ci/web": "*",
-    "@sentry/node": "^7.61.1"
+    "@sentry/node": "^7.64.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.1"
   }
 }

@@ -6,10 +6,10 @@
   "type": "module",
   "dependencies": {
     "@argos-ci/config": "*",
-    "@aws-sdk/client-s3": "^3.386.0",
-    "@aws-sdk/s3-request-presigner": "^3.386.0",
+    "@aws-sdk/client-s3": "^3.398.0",
+    "@aws-sdk/s3-request-presigner": "^3.398.0",
     "mime": "^3.0.0",
-    "sharp": "^0.32.4",
+    "sharp": "^0.32.5",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
