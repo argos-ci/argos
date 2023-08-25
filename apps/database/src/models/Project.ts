@@ -143,7 +143,7 @@ export class Project extends Model {
     const ghRepo =
       this.githubRepository ||
       (await this.$relatedQuery("githubRepository", trx));
-    if (!ghRepo) return null;
+    if (!ghRepo) return "main";
     return ghRepo.defaultBranch;
   }
 }
