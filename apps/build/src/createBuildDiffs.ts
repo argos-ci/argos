@@ -174,10 +174,6 @@ export const createBuildDiffs = async (build: Build) => {
 
     const referenceBranch = await richBuild.project.$getReferenceBranch(trx);
 
-    if (!referenceBranch) {
-      throw new Error("Invariant: no reference branch found for project");
-    }
-
     await Build.query(trx)
       .findById(build.id)
       .patch({
