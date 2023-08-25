@@ -95,7 +95,7 @@ const BaseReviewButton = ({
           }}
           disabled={build.status === "accepted"}
         >
-          <MenuItemIcon className="text-success-500">
+          <MenuItemIcon className="text-success-low">
             <AcceptIcon />
           </MenuItemIcon>
           Approve changes
@@ -113,7 +113,7 @@ const BaseReviewButton = ({
           }}
           disabled={build.status === "rejected"}
         >
-          <MenuItemIcon className="text-danger-500">
+          <MenuItemIcon className="text-danger-low">
             <RejectIcon />
           </MenuItemIcon>
           Reject changes
