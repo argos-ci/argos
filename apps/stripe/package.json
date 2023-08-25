@@ -7,8 +7,8 @@
   "dependencies": {
     "@argos-ci/config": "*",
     "@argos-ci/database": "*",
-    "stripe": "^12.17.0",
-    "zod": "^3.21.4"
+    "stripe": "^13.3.0",
+    "zod": "^3.22.2"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",

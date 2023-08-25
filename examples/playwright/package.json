@@ -5,6 +5,6 @@
   },
   "devDependencies": {
     "@argos-ci/playwright": "^0.0.6",
-    "@playwright/test": "^1.36.2"
+    "@playwright/test": "^1.37.1"
   }
 }

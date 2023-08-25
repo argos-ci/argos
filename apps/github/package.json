@@ -24,7 +24,7 @@
     "@octokit/rest": "^20.0.1"
   },
   "devDependencies": {
-    "nock": "^13.3.2"
+    "nock": "^13.3.3"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",

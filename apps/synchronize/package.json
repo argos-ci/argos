@@ -12,7 +12,7 @@
     "@argos-ci/logger": "*",
     "@octokit/rest": "^20.0.1",
     "@octokit/webhooks": "^12.0.3",
-    "@octokit/webhooks-types": "^7.1.0"
+    "@octokit/webhooks-types": "^7.2.0"
   },
   "devDependencies": {
     "moment": "^2.29.4"
