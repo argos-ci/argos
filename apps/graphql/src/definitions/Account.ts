@@ -77,12 +77,14 @@ export const typeDefs = gql`
     avatar: AccountAvatar!
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
+    gitlabAccessToken: String
   }
 
   input UpdateAccountInput {
     id: ID!
     name: String
     slug: String
+    gitlabAccessToken: String
   }
 
   extend type Query {
@@ -355,6 +357,10 @@ export const resolvers: IResolvers = {
 
       if (input.name !== undefined) {
         data.name = input.name;
+      }
+
+      if (input.gitlabAccessToken !== undefined) {
+        data.gitlabAccessToken = input.gitlabAccessToken;
       }
 
       return account.$query().patchAndFetch(data);

@@ -47,6 +47,7 @@ export class Account extends Model {
   slug!: string;
   githubAccountId!: string | null;
   vercelConfigurationId!: string | null;
+  gitlabAccessToken!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

@@ -55,6 +55,7 @@ export const typeDefs = gql`
     pendingCancelAt: DateTime
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
+    gitlabAccessToken: String
   }
 
   enum TeamUserLevel {

@@ -39,6 +39,7 @@ export const typeDefs = gql`
     pendingCancelAt: DateTime
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
+    gitlabAccessToken: String
   }
 
   type UserConnection implements Connection {

@@ -29,6 +29,7 @@ export type IAccount = {
   consumptionRatio?: Maybe<Scalars['Float']['output']>;
   currentMonthUsedScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<IGithubAccount>;
+  gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   hasForcedPlan: Scalars['Boolean']['output'];
   hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
@@ -686,6 +687,7 @@ export type ITeam = IAccount & INode & {
   consumptionRatio?: Maybe<Scalars['Float']['output']>;
   currentMonthUsedScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<IGithubAccount>;
+  gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   hasForcedPlan: Scalars['Boolean']['output'];
   hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
@@ -792,6 +794,7 @@ export type IUnlinkVercelProjectInput = {
 };
 
 export type IUpdateAccountInput = {
+  gitlabAccessToken?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
@@ -822,6 +825,7 @@ export type IUser = IAccount & INode & {
   currentMonthUsedScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<IGithubAccount>;
   ghInstallations: IGhApiInstallationConnection;
+  gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   hasForcedPlan: Scalars['Boolean']['output'];
   hasPaidPlan: Scalars['Boolean']['output'];
   hasSubscribedToTrial: Scalars['Boolean']['output'];
@@ -1200,6 +1204,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
+  gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
@@ -1483,6 +1488,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
+  gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
@@ -1561,6 +1567,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   ghInstallations?: Resolver<IResolversTypes['GhApiInstallationConnection'], ParentType, ContextType>;
+  gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;

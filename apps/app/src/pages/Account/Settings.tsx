@@ -10,6 +10,7 @@ import { SettingsLayout } from "@/containers/Layout";
 import { PlanCard } from "@/containers/PlanCard";
 import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamMembers } from "@/containers/Team/Members";
+import { AccountGitLab } from "@/containers/Account/GitLab";
 import { graphql } from "@/gql";
 import { Permission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
@@ -35,6 +36,7 @@ const AccountQuery = graphql(`
       ...AccountChangeName_Account
       ...AccountChangeSlug_Account
       ...PlanCard_Account
+      ...AccountGitLab_Account
       # ...AccountVercel_Account
     }
   }
@@ -115,6 +117,7 @@ export const AccountSettings = () => {
               {/* <AccountVercel account={account} /> */}
               {writable && account.plan && <PlanCard account={account} />}
               {isTeam && <TeamMembers team={account} />}
+              <AccountGitLab account={account} />
               {isTeam && <TeamDelete team={account} />}
             </SettingsLayout>
           );
