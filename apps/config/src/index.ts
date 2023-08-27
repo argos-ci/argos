@@ -154,6 +154,24 @@ const config = convict({
       env: "GITHUB_MARKETPLACE_URL",
     },
   },
+  gitlab: {
+    appId: {
+      doc: "App ID",
+      format: String,
+      default: "",
+      env: "GITLAB_APP_ID",
+    },
+    appSecret: {
+      doc: "App Secret",
+      format: String,
+      default: "",
+      env: "GITLAB_APP_SECRET",
+    },
+    loginUrl: {
+      format: String,
+      default: `https://gitlab.com/oauth/authorize?scope=api&response_type=code&client_id=${process.env["GITLAB_APP_ID"]}`,
+    },
+  },
   stripe: {
     url: {
       doc: "Stripe URL",

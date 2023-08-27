@@ -73,6 +73,9 @@ export const rendering = (additionalClientData?: any) => {
             loginUrl: config.get("github.loginUrl"),
             marketplaceUrl: config.get("github.marketplaceUrl"),
           },
+          gitlab: {
+            loginUrl: config.get("gitlab.loginUrl"),
+          },
           stripe: {
             pricingTableId: config.get("stripe.pricingTableId"),
             publishableKey: config.get("stripe.publishableKey"),

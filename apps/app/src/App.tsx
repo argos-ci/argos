@@ -9,7 +9,7 @@ import {
 import { Layout } from "@/containers/Layout";
 
 import { ApolloInitializer } from "./containers/Apollo";
-import { AuthProvider } from "./containers/Auth";
+import { AuthContextProvider, AuthProvider } from "./containers/Auth";
 import { ColorModeProvider } from "./containers/ColorMode";
 import { Account } from "./pages/Account";
 import { AccountNewProject } from "./pages/Account/NewProject";
@@ -33,8 +33,12 @@ import { TooltipProvider } from "./ui/Tooltip";
 
 const router = createBrowserRouter([
   {
-    path: "/auth/github/callback",
-    element: <AuthCallback />,
+    path: `/auth/${AuthProvider.GitHub}/callback`,
+    element: <AuthCallback provider={AuthProvider.GitHub} />,
+  },
+  {
+    path: `/auth/${AuthProvider.GitLab}/callback`,
+    element: <AuthCallback provider={AuthProvider.GitLab} />,
   },
   {
     path: "/vercel/callback",
@@ -135,13 +139,13 @@ export const App = () => {
     <>
       <Helmet defaultTitle="Argos" />
       <ColorModeProvider>
-        <AuthProvider>
+        <AuthContextProvider>
           <ApolloInitializer>
             <TooltipProvider>
               <RouterProvider router={router} />
             </TooltipProvider>
           </ApolloInitializer>
-        </AuthProvider>
+        </AuthContextProvider>
       </ColorModeProvider>
     </>
   );

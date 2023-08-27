@@ -30,6 +30,7 @@ const documents = {
     "\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    batchCount\n    totalBatch\n    stats {\n      total\n    }\n  }\n": types.BuildStatusDescription_BuildFragmentDoc,
     "\n  fragment BuildStatusDescription_Project on Project {\n    referenceBranch\n  }\n": types.BuildStatusDescription_ProjectFragmentDoc,
     "\n  fragment InstallationsSelect_GhApiInstallation on GhApiInstallation {\n    id\n    account {\n      id\n      login\n      name\n    }\n  }\n": types.InstallationsSelect_GhApiInstallationFragmentDoc,
+    "\n  query NavUserControl_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n  }\n": types.NavUserControl_AccountDocument,
     "\n  fragment PaymentBanner_Account on Account {\n    id\n    purchaseStatus\n    permissions\n    stripeCustomerId\n    pendingCancelAt\n\n    purchase {\n      id\n      trialDaysRemaining\n      source\n      paymentMethodFilled\n    }\n  }\n": types.PaymentBanner_AccountFragmentDoc,
     "\n  query PaymentBanner_me {\n    me {\n      id\n      hasSubscribedToTrial\n    }\n  }\n": types.PaymentBanner_MeDocument,
     "\n  mutation terminateTrial($accountId: ID!) {\n    terminateTrial(accountId: $accountId) {\n      id\n      purchaseStatus\n      __typename\n    }\n  }\n": types.TerminateTrialDocument,
@@ -192,6 +193,10 @@ export function graphql(source: "\n  fragment BuildStatusDescription_Project on 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  fragment InstallationsSelect_GhApiInstallation on GhApiInstallation {\n    id\n    account {\n      id\n      login\n      name\n    }\n  }\n"): (typeof documents)["\n  fragment InstallationsSelect_GhApiInstallation on GhApiInstallation {\n    id\n    account {\n      id\n      login\n      name\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query NavUserControl_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n  }\n"): (typeof documents)["\n  query NavUserControl_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

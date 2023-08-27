@@ -1,0 +1,21 @@
+{
+  "name": "@argos-ci/gitlab",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@gitbeaker/rest": "^39.12.0",
+    "axios": "^1.5.0",
+    "zod": "^3.22.2"
+  },
+  "scripts": {
+    "build": "swc src --config-file ../../.swcrc -d dist",
+    "watch-build": "npm run build -- --watch --quiet"
+  }
+}

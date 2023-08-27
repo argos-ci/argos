@@ -21,6 +21,10 @@ import { deleteProject, getWritableProject } from "../services/project.js";
 import { unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 import { linkVercelProject } from "./Vercel.js";
+import {
+  checkProjectName,
+  resolveProjectName,
+} from "@argos-ci/database/services/project";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -150,38 +154,21 @@ export const typeDefs = gql`
   }
 `;
 
-const resolveProjectName = async (args: {
-  name: string;
-  accountId: string;
-  index?: number;
-}): Promise<string> => {
-  const index = args.index || 0;
-  const name = args.index ? `${args.name}-${index}` : args.name;
-
-  const existingProject = await Project.query()
-    .select("id")
-    .findOne({ name, accountId: args.accountId })
-    .first();
-
-  if (!existingProject) {
-    return name;
-  }
-
-  return resolveProjectName({ ...args, index: index + 1 });
-};
-
-const checkProjectName = async (args: { name: string; accountId: string }) => {
-  const sameName = await Project.query()
-    .select("id")
-    .findOne({ name: args.name, accountId: args.accountId })
-    .first();
-  if (sameName) {
-    throw new GraphQLError("Name is already used by another project", {
-      extensions: {
-        code: "BAD_USER_INPUT",
-        field: "name",
-      },
-    });
+const checkGqlProjectName = async (
+  args: Parameters<typeof checkProjectName>[0],
+) => {
+  try {
+    checkProjectName(args);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new GraphQLError(error.message, {
+        extensions: {
+          code: "BAD_USER_INPUT",
+          field: "name",
+        },
+      });
+    }
+    throw error;
   }
 };
 
@@ -435,7 +422,7 @@ export const resolvers: IResolvers = {
       }
 
       if (args.input.name != null && project.name !== args.input.name) {
-        await checkProjectName({
+        await checkGqlProjectName({
           name: args.input.name,
           accountId: project.accountId,
         });
@@ -516,7 +503,7 @@ export const resolvers: IResolvers = {
       if (project.accountId === targetAccountId) {
         throw new Error("Project is already owned by this account");
       }
-      await checkProjectName({
+      await checkGqlProjectName({
         name: args.input.name,
         accountId: targetAccountId,
       });

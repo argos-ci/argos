@@ -21,6 +21,7 @@ import type { Context } from "../context.js";
 import { getWritableAccount } from "../services/account.js";
 import { unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
+import { checkAccountSlug } from "@argos-ci/database/services/account";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -120,15 +121,6 @@ const getAvatarColor = (id: string): string => {
   const randomIndex = Number(id) % colors.length;
   return colors[randomIndex] ?? colors[0] ?? "#000";
 };
-
-const RESERVED_SLUGS = [
-  "auth",
-  "checkout-success",
-  "login",
-  "vercel",
-  "invite",
-  "teams",
-];
 
 const accountById = async (
   _root: unknown,
@@ -345,22 +337,18 @@ export const resolvers: IResolvers = {
       const data: PartialModelObject<Account> = {};
 
       if (input.slug && account.slug !== input.slug) {
-        if (RESERVED_SLUGS.includes(input.slug)) {
-          throw new GraphQLError("Slug is reserved for internal usage", {
-            extensions: {
-              code: "BAD_USER_INPUT",
-              field: "slug",
-            },
-          });
-        }
-        const slugExists = await Account.query().findOne({ slug: input.slug });
-        if (slugExists) {
-          throw new GraphQLError("Slug already exists", {
-            extensions: {
-              code: "BAD_USER_INPUT",
-              field: "slug",
-            },
-          });
+        try {
+          checkAccountSlug(input.slug);
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            throw new GraphQLError(error.message, {
+              extensions: {
+                code: "BAD_USER_INPUT",
+                field: "slug",
+              },
+            });
+          }
+          throw error;
         }
         data.slug = input.slug;
       }

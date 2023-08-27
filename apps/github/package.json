@@ -21,7 +21,8 @@
     "@octokit/core": "^5.0.0",
     "@octokit/openapi-types": "^18.0.0",
     "@octokit/plugin-retry": "^6.0.0",
-    "@octokit/rest": "^20.0.1"
+    "@octokit/rest": "^20.0.1",
+    "zod": "^3.22.2"
   },
   "devDependencies": {
     "nock": "^13.3.3"

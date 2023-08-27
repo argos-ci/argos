@@ -1,9 +1,9 @@
-import { clsx } from "clsx";
 import { forwardRef } from "react";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 
 import { ImageAvatar } from "./ImageAvatar";
+import { InitialAvatar } from "./InitialAvatar";
 
 const AvatarFragment = graphql(`
   fragment AccountAvatarFragment on AccountAvatar {
@@ -25,30 +25,13 @@ export const AccountAvatar = forwardRef<any, AccountAvatarProps>(
     const size = props.size ?? 32;
     if (!avatar.url) {
       return (
-        <div
+        <InitialAvatar
           ref={ref}
-          className={clsx(
-            props.className,
-            "flex select-none items-center justify-center rounded-full",
-          )}
-          style={{
-            backgroundColor: avatar.color,
-            width: size,
-            height: size,
-          }}
-        >
-          <svg width="100%" height="100%" viewBox="-50 -66 100 100">
-            <text
-              fill="white"
-              fontWeight="600"
-              textAnchor="middle"
-              fontSize="50"
-              fontFamily="Inter, sans-serif"
-            >
-              {avatar.initial}
-            </text>
-          </svg>
-        </div>
+          initial={avatar.initial}
+          color={avatar.color}
+          size={size}
+          className={props.className}
+        />
       );
     }
     return (
