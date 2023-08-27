@@ -12,7 +12,7 @@ import { User } from "./User.js";
 import { VercelConfiguration } from "./VercelConfiguration.js";
 
 export type AccountAvatar = {
-  getUrl(args: { size?: number }): string | null;
+  getUrl(args: { size?: number }): string | Promise<string> | null;
   initial: string;
   color: string;
 };

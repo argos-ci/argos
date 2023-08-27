@@ -1,6 +1,7 @@
 import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
+import axios from "axios";
 
 import { knex } from "@argos-ci/database";
 import { Account, Plan, Project, Purchase } from "@argos-ci/database/models";
@@ -281,8 +282,10 @@ export const resolvers: IResolvers = {
       const ghAccount = account.githubAccountId
         ? await ctx.loaders.GithubAccount.load(account.githubAccountId)
         : null;
+
       const initial = ((account.name || account.slug)[0] || "x").toUpperCase();
       const color = getAvatarColor(account.id);
+
       if (ghAccount) {
         return {
           getUrl: ({ size }: { size?: number }) => {
@@ -296,6 +299,29 @@ export const resolvers: IResolvers = {
           color,
         };
       }
+
+      if (account.userId) {
+        const user = await ctx.loaders.User.load(account.userId);
+        if (user.gitlabUserId && user.email) {
+          const email = user.email;
+          return {
+            getUrl: async ({ size }: { size?: number }) => {
+              const url = new URL("https://gitlab.com/api/v4/avatar");
+              url.searchParams.set("email", email);
+              if (size) {
+                url.searchParams.set("size", String(size));
+              }
+              const result = await axios.get<{ avatar_url: string }>(
+                String(url),
+              );
+              return result.data.avatar_url;
+            },
+            initial,
+            color,
+          };
+        }
+      }
+
       return {
         getUrl: () => null,
         initial,
