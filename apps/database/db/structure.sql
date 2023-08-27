@@ -400,7 +400,7 @@ ALTER SEQUENCE public.github_installations_id_seq OWNED BY public.github_install
 --
 
 CREATE TABLE public.github_pull_requests (
-    id integer NOT NULL,
+    id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "commentDeleted" boolean DEFAULT false NOT NULL,
