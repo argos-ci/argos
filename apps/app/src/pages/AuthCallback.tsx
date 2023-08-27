@@ -34,7 +34,12 @@ export const AuthCallback = (props: AuthCallbackProps) => {
   // When the token is present, we want to redirect.
   useEffect(() => {
     if (token) {
-      navigate(r || (state ? decodeURIComponent(state) : "/"));
+      const redirectUrl = r || (state ? decodeURIComponent(state) : "/");
+      if (redirectUrl.startsWith("/")) {
+        navigate(r || (state ? decodeURIComponent(state) : "/"));
+      } else {
+        window.location.replace(redirectUrl);
+      }
     }
   }, [navigate, r, state, token]);
 

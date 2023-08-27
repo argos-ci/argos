@@ -48,7 +48,10 @@ export const RepositoryList = (props: {
         return (
           <List className="overflow-auto">
             {ghApiInstallationRepositories.edges.map((repo) => (
-              <ListRow key={repo.id} className="justify-between p-4">
+              <ListRow
+                key={repo.id}
+                className="justify-between p-4 items-center"
+              >
                 <div>
                   {repo.name} •{" "}
                   <Time date={repo.updated_at} className="text-low" />

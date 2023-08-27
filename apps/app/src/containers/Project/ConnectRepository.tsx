@@ -10,11 +10,13 @@ import { DocumentType, graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Card } from "@/ui/Card";
 import { PageLoader } from "@/ui/PageLoader";
+import { GitHubLoginButton } from "../GitHub";
 
 const MeQuery = graphql(`
   query ConnectRepository_me {
     me {
       id
+      linkedToGithub
       ghInstallations {
         edges {
           id
@@ -90,28 +92,32 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
       {({ me }) => {
         if (!me) return null;
 
-        if (!me.ghInstallations.edges.length) {
+        if (me.ghInstallations.edges.length === 0) {
+          const installationUrl = `${config.get(
+            "github.appUrl",
+          )}/installations/new?state=${encodeURIComponent(pathname)}`;
           return (
             <Card className="flex h-full flex-col items-center justify-center py-4">
               <div className="mb-4 text-low">
                 Install GitHub application to import an existing project from a
                 Git repository.
               </div>
-              <Button color="neutral">
-                {(buttonProps) => (
-                  <a
-                    href={`${config.get(
-                      "github.appUrl",
-                    )}/installations/new?state=${encodeURIComponent(pathname)}`}
-                    {...buttonProps}
-                  >
-                    <ButtonIcon>
-                      <MarkGithubIcon />
-                    </ButtonIcon>
-                    Continue with GitHub
-                  </a>
-                )}
-              </Button>
+              {me.linkedToGithub ? (
+                <Button color="neutral">
+                  {(buttonProps) => (
+                    <a href={installationUrl} {...buttonProps}>
+                      <ButtonIcon>
+                        <MarkGithubIcon />
+                      </ButtonIcon>
+                      Continue with GitHub
+                    </a>
+                  )}
+                </Button>
+              ) : (
+                <GitHubLoginButton redirect={installationUrl}>
+                  Continue with GitHub
+                </GitHubLoginButton>
+              )}
             </Card>
           );
         }

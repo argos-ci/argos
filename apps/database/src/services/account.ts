@@ -144,6 +144,12 @@ export const getOrCreateUserAccountFromGhAccount = async (
         throw new Error("Invariant: account not found");
       }
 
+      if (accessToken) {
+        await existingEmailUser.$clone().$query().patch({
+          accessToken,
+        });
+      }
+
       await existingEmailUser.account.$query().patchAndFetch({
         githubAccountId: ghAccount.id,
       });

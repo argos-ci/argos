@@ -40,7 +40,7 @@ const documents = {
     "\n  fragment ProjectBadge_Project on Project {\n    id\n    slug\n  }\n": types.ProjectBadge_ProjectFragmentDoc,
     "\n  fragment ProjectChangeName_Project on Project {\n    id\n    name\n    account {\n      id\n      slug\n    }\n  }\n": types.ProjectChangeName_ProjectFragmentDoc,
     "\n  mutation ProjectChangeName_updateProject($id: ID!, $name: String!) {\n    updateProject(input: { id: $id, name: $name }) {\n      id\n      name\n    }\n  }\n": types.ProjectChangeName_UpdateProjectDocument,
-    "\n  query ConnectRepository_me {\n    me {\n      id\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n": types.ConnectRepository_MeDocument,
+    "\n  query ConnectRepository_me {\n    me {\n      id\n      linkedToGithub\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n": types.ConnectRepository_MeDocument,
     "\n  query ConnectVercelProject_account($accountId: ID!) {\n    account: accountById(id: $accountId) {\n      id\n      vercelConfiguration {\n        id\n        url\n        apiProjects {\n          projects {\n            id\n            ...VercelProjectList_VercelApiProject\n          }\n        }\n      }\n    }\n  }\n": types.ConnectVercelProject_AccountDocument,
     "\n  mutation DeleteProjectMutation($projectId: ID!) {\n    deleteProject(id: $projectId)\n  }\n": types.DeleteProjectMutationDocument,
     "\n  fragment ProjectDelete_Project on Project {\n    id\n    name\n    account {\n      id\n      slug\n    }\n  }\n": types.ProjectDelete_ProjectFragmentDoc,
@@ -238,7 +238,7 @@ export function graphql(source: "\n  mutation ProjectChangeName_updateProject($i
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query ConnectRepository_me {\n    me {\n      id\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query ConnectRepository_me {\n    me {\n      id\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n"];
+export function graphql(source: "\n  query ConnectRepository_me {\n    me {\n      id\n      linkedToGithub\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query ConnectRepository_me {\n    me {\n      id\n      linkedToGithub\n      ghInstallations {\n        edges {\n          id\n          ...InstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

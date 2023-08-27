@@ -40,6 +40,9 @@ export const typeDefs = gql`
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
+
+    # User specific
+    linkedToGithub: Boolean!
   }
 
   type UserConnection implements Connection {
@@ -60,6 +63,13 @@ export const resolvers: IResolvers = {
     },
   },
   User: {
+    linkedToGithub: async (account, _args, ctx) => {
+      if (!account.userId) {
+        throw new Error("Invariant: account.userId is undefined");
+      }
+      const user = await ctx.loaders.User.load(account.userId);
+      return Boolean(user.accessToken);
+    },
     hasSubscribedToTrial: async (account) => {
       return account.$checkHasSubscribedToTrial();
     },
@@ -94,6 +104,9 @@ export const resolvers: IResolvers = {
         throw new Error(
           "Invariant: ghInstallations can only be accessed by the authenticated user",
         );
+      }
+      if (!ctx.auth.user.accessToken) {
+        return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
       }
       const octokit = getTokenOctokit(ctx.auth.user.accessToken);
       const apiInstallations =

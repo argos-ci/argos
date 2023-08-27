@@ -831,6 +831,7 @@ export type IUser = IAccount & INode & {
   hasSubscribedToTrial: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   lastPurchase?: Maybe<IPurchase>;
+  linkedToGithub: Scalars['Boolean']['output'];
   name?: Maybe<Scalars['String']['output']>;
   oldPaidPurchase?: Maybe<IPurchase>;
   paymentProvider?: Maybe<IPurchaseSource>;
@@ -1573,6 +1574,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   lastPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
+  linkedToGithub?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
   paymentProvider?: Resolver<Maybe<IResolversTypes['PurchaseSource']>, ParentType, ContextType>;
