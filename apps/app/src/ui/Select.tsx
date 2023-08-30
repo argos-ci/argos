@@ -81,21 +81,27 @@ export const SelectPopover = forwardRef<HTMLDivElement, SelectPopoverProps>(
   },
 );
 
-export type SelectItemProps = Omit<AriakitSelectItemProps, "className">;
+export type SelectItemProps = AriakitSelectItemProps & {
+  button?: boolean;
+};
 
 export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
-  ({ children, ...props }, ref) => {
+  ({ children, button = false, className, ...props }, ref) => {
     return (
       <AriakitSelectItem
         ref={ref}
         className={clsx(
+          className,
           "group/item",
           "flex select-none items-center gap-2 rounded px-3 py-1.5 text-sm text transition hover:bg-active focus:bg-active focus:outline-none aria-disabled:opacity-disabled",
         )}
+        value={button ? "" : props.value}
         {...props}
       >
         <>
-          <CheckIcon className="h-4 w-4 text opacity-0 group-aria-selected/item:opacity-100" />
+          {!button && (
+            <CheckIcon className="h-4 w-4 text opacity-0 group-aria-selected/item:opacity-100" />
+          )}
           {children}
         </>
       </AriakitSelectItem>

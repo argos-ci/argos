@@ -13,6 +13,7 @@ import { Build } from "./Build.js";
 import { GithubRepository } from "./GithubRepository.js";
 import type { User } from "./User.js";
 import { VercelProject } from "./VercelProject.js";
+import { GitlabProject } from "./GitlabProject.js";
 
 export class Project extends Model {
   static override tableName = "projects";
@@ -31,6 +32,7 @@ export class Project extends Model {
       baselineBranch: { type: ["null", "string"] },
       accountId: { type: "string" },
       githubRepositoryId: { type: ["null", "string"] },
+      gitlabProjectId: { type: ["null", "string"] },
       vercelProjectId: { type: ["null", "string"] },
       prCommentEnabled: { type: "boolean" },
     },
@@ -42,6 +44,7 @@ export class Project extends Model {
   baselineBranch!: string | null;
   accountId!: string;
   githubRepositoryId!: string | null;
+  gitlabProjectId!: string | null;
   vercelProjectId!: string | null;
   prCommentEnabled!: boolean;
 
@@ -80,6 +83,14 @@ export class Project extends Model {
         join: {
           from: "projects.githubRepositoryId",
           to: "github_repositories.id",
+        },
+      },
+      gitlabProject: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: GitlabProject,
+        join: {
+          from: "projects.gitlabProjectId",
+          to: "gitlab_projects.id",
         },
       },
       vercelProject: {

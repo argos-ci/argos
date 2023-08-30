@@ -53,7 +53,7 @@ export const AccountGitLab = (props: AccountGitLabProps) => {
       <FormProvider {...form}>
         <Form onSubmit={onSubmit}>
           <CardBody>
-            <CardTitle>GitLab</CardTitle>
+            <CardTitle id="gitlab">GitLab</CardTitle>
             <CardParagraph>
               Setup GitLab to get Argos updates in your merge requests.
             </CardParagraph>

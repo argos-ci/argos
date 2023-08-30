@@ -7,7 +7,7 @@ import { Time } from "@/ui/Time";
 import { Query } from "./Apollo";
 
 const InstallationQuery = graphql(`
-  query RepositoryList_ghApiInstallationRepositories(
+  query GithubRepositoryList_ghApiInstallationRepositories(
     $installationId: ID!
     $page: Int!
   ) {
@@ -28,7 +28,7 @@ const InstallationQuery = graphql(`
   }
 `);
 
-export const RepositoryList = (props: {
+export const GithubRepositoryList = (props: {
   installationId: string;
   onSelectRepository: (repo: {
     id: string;

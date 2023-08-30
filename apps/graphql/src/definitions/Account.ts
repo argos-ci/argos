@@ -23,6 +23,7 @@ import { getWritableAccount } from "../services/account.js";
 import { unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 import { checkAccountSlug } from "@argos-ci/database/services/account";
+import { getTokenGitlabClient } from "@argos-ci/gitlab";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -79,6 +80,7 @@ export const typeDefs = gql`
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
+    glNamespaces: GlApiNamespaceConnection
   }
 
   input UpdateAccountInput {
@@ -336,6 +338,18 @@ export const resolvers: IResolvers = {
       if (!configuration) return null;
       if (configuration.deleted) return null;
       return configuration;
+    },
+    glNamespaces: async (account) => {
+      if (!account.gitlabAccessToken) return null;
+      const client = getTokenGitlabClient(account.gitlabAccessToken);
+      const namespaces = await client.Namespaces.all();
+      return {
+        edges: namespaces,
+        pageInfo: {
+          hasNextPage: false,
+          totalCount: namespaces.length,
+        },
+      };
     },
   },
   AccountAvatar: {

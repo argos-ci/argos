@@ -30,19 +30,18 @@ export const typeDefs = gql`
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
     avatar: AccountAvatar!
-    lastPurchase: Purchase
-    teams: [Team!]!
-    ghInstallations: GhApiInstallationConnection!
-    hasSubscribedToTrial: Boolean!
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
+    glNamespaces: GlApiNamespaceConnection!
 
-    # User specific
-    linkedToGithub: Boolean!
+    hasSubscribedToTrial: Boolean!
+    lastPurchase: Purchase
+    teams: [Team!]!
+    ghInstallations: GhApiInstallationConnection!
   }
 
   type UserConnection implements Connection {
@@ -63,13 +62,6 @@ export const resolvers: IResolvers = {
     },
   },
   User: {
-    linkedToGithub: async (account, _args, ctx) => {
-      if (!account.userId) {
-        throw new Error("Invariant: account.userId is undefined");
-      }
-      const user = await ctx.loaders.User.load(account.userId);
-      return Boolean(user.accessToken);
-    },
     hasSubscribedToTrial: async (account) => {
       return account.$checkHasSubscribedToTrial();
     },

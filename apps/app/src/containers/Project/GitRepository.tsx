@@ -1,25 +1,32 @@
 import { useApolloClient, useMutation } from "@apollo/client";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { MarkGithubIcon } from "@primer/octicons-react";
-import { useState } from "react";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { ProjectGitRepository_ProjectFragment } from "@/gql/graphql";
-import { Button, ButtonIcon } from "@/ui/Button";
+import { Button } from "@/ui/Button";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormCheckbox } from "@/ui/FormCheckbox";
-import { Anchor } from "@/ui/Link";
 
 import { ConnectRepository } from "./ConnectRepository";
+import { GitLabLogo } from "../GitLab";
+import { Anchor } from "@/ui/Link";
 
 const ProjectFragment = graphql(`
   fragment ProjectGitRepository_Project on Project {
     id
+    account {
+      id
+      slug
+    }
     ghRepository {
+      id
+      fullName
+      url
+    }
+    glProject {
       id
       fullName
       url
@@ -28,24 +35,47 @@ const ProjectFragment = graphql(`
   }
 `);
 
-const UnlinkRepositoryMutation = graphql(`
-  mutation ProjectGitRepository_unlinkRepository($projectId: ID!) {
-    unlinkRepository(input: { projectId: $projectId }) {
+const LinkGithubRepositoryMutation = graphql(`
+  mutation ProjectGitRepository_linkGithubRepository(
+    $projectId: ID!
+    $repo: String!
+    $owner: String!
+  ) {
+    linkGithubRepository(
+      input: { projectId: $projectId, repo: $repo, owner: $owner }
+    ) {
       id
       ...ProjectGitRepository_Project
     }
   }
 `);
 
-const LinkRepositoryMutation = graphql(`
-  mutation ProjectGitRepository_linkRepository(
+const UnlinkGithubRepositoryMutation = graphql(`
+  mutation ProjectGitRepository_unlinkGithubRepository($projectId: ID!) {
+    unlinkGithubRepository(input: { projectId: $projectId }) {
+      id
+      ...ProjectGitRepository_Project
+    }
+  }
+`);
+
+const LinkGitlabProjectMutation = graphql(`
+  mutation ProjectGitRepository_linkGitlabProject(
     $projectId: ID!
-    $repo: String!
-    $owner: String!
+    $gitlabProjectId: ID!
   ) {
-    linkRepository(
-      input: { projectId: $projectId, repo: $repo, owner: $owner }
+    linkGitlabProject(
+      input: { projectId: $projectId, gitlabProjectId: $gitlabProjectId }
     ) {
+      id
+      ...ProjectGitRepository_Project
+    }
+  }
+`);
+
+const UnlinkGitlabProjectMutation = graphql(`
+  mutation ProjectGitRepository_unlinkGitlabProject($projectId: ID!) {
+    unlinkGitlabProject(input: { projectId: $projectId }) {
       id
       ...ProjectGitRepository_Project
     }
@@ -64,19 +94,46 @@ const UpdateEnablePrCommentMutation = graphql(`
   }
 `);
 
-type UnlinkRepositoryButton = {
+const UnlinkGithubRepositoryButton = (props: {
   project: ProjectGitRepository_ProjectFragment;
-};
-
-const UnlinkRepositoryButton = (props: UnlinkRepositoryButton) => {
-  const [unlink] = useMutation(UnlinkRepositoryMutation, {
+}) => {
+  const [unlink] = useMutation(UnlinkGithubRepositoryMutation, {
     variables: {
       projectId: props.project.id,
     },
     optimisticResponse: {
-      unlinkRepository: {
+      unlinkGithubRepository: {
         id: props.project.id,
         ghRepository: null,
+        glProject: null,
+      } as ProjectGitRepository_ProjectFragment,
+    },
+  });
+  return (
+    <Button
+      variant="outline"
+      color="neutral"
+      onClick={() => {
+        unlink();
+      }}
+    >
+      Disconnect
+    </Button>
+  );
+};
+
+const UnlinkGitlabProjectButton = (props: {
+  project: ProjectGitRepository_ProjectFragment;
+}) => {
+  const [unlink] = useMutation(UnlinkGitlabProjectMutation, {
+    variables: {
+      projectId: props.project.id,
+    },
+    optimisticResponse: {
+      unlinkGitlabProject: {
+        id: props.project.id,
+        ghRepository: null,
+        glProject: null,
       } as ProjectGitRepository_ProjectFragment,
     },
   });
@@ -97,22 +154,39 @@ export type ProjectGitRepositoryProps = {
   project: FragmentType<typeof ProjectFragment>;
 };
 
-const LinkRepository = (props: { projectId: string }) => {
-  const [connectRepository, { loading }] = useMutation(LinkRepositoryMutation, {
-    optimisticResponse: {
-      linkRepository: {
-        id: props.projectId,
-        ghRepository: {
-          id: "new",
-        },
-      } as ProjectGitRepository_ProjectFragment,
-    },
-  });
+const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
+  const [linkGithubRepository, { loading: linkGithubRepositoryLoading }] =
+    useMutation(LinkGithubRepositoryMutation, {
+      optimisticResponse: {
+        linkGithubRepository: {
+          id: props.projectId,
+          ghRepository: {
+            id: "new",
+          },
+          glProject: null,
+        } as ProjectGitRepository_ProjectFragment,
+      },
+    });
+  const [linkGitlabProject, { loading: linkGitlabProjectLoading }] =
+    useMutation(LinkGitlabProjectMutation, {
+      optimisticResponse: {
+        linkGitlabProject: {
+          id: props.projectId,
+          ghRepository: null,
+          glProject: {
+            id: "new",
+          },
+        } as ProjectGitRepository_ProjectFragment,
+      },
+    });
+  const loading = linkGithubRepositoryLoading || linkGitlabProjectLoading;
   return (
     <ConnectRepository
+      variant="link"
+      accountSlug={props.accountSlug}
       disabled={loading}
       onSelectRepository={(repo) => {
-        connectRepository({
+        linkGithubRepository({
           variables: {
             projectId: props.projectId,
             repo: repo.name,
@@ -120,7 +194,14 @@ const LinkRepository = (props: { projectId: string }) => {
           },
         });
       }}
-      connectButtonLabel="Link"
+      onSelectProject={(project) => {
+        linkGitlabProject({
+          variables: {
+            projectId: props.projectId,
+            gitlabProjectId: project.id,
+          },
+        });
+      }}
     />
   );
 };
@@ -129,11 +210,11 @@ type Inputs = {
   prCommentEnabled: boolean;
 };
 
-export type GithubOptionsFormProps = {
+export type GitOptionsFormProps = {
   project: ProjectGitRepository_ProjectFragment;
 };
 
-const GithubOptionsForm = ({ project }: GithubOptionsFormProps) => {
+const GitOptionsForm = ({ project }: GitOptionsFormProps) => {
   const form = useForm<Inputs>({
     defaultValues: { prCommentEnabled: project.prCommentEnabled },
   });
@@ -165,14 +246,13 @@ const GithubOptionsForm = ({ project }: GithubOptionsFormProps) => {
 
 export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
   const project = useFragment(ProjectFragment, props.project);
-
-  const [started, setStarted] = useState(false);
+  const linked = Boolean(project.ghRepository || project.glProject);
   return (
     <Card>
       <CardBody>
         <CardTitle>Connected Git Repository</CardTitle>
         <CardParagraph>
-          Connect a GitHub repository to your project to add status checks on
+          Connect a Git provider to your project to add status checks on
           pull-requests.
         </CardParagraph>
         {project.ghRepository ? (
@@ -180,39 +260,39 @@ export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
             <div className="flex items-center gap-2 rounded border p-4">
               <MarkGithubIcon size={24} className="shrink-0" />
               <div className="flex-1 font-semibold">
-                <a
-                  className="text no-underline hover:underline"
+                <Anchor
                   href={project.ghRepository.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  external
+                  className="!text"
                 >
-                  {project.ghRepository.fullName}{" "}
-                  <ArrowTopRightOnSquareIcon className="inline h-[1em] w-[1em]" />
-                </a>
+                  {project.ghRepository.fullName}
+                </Anchor>
               </div>
-              <UnlinkRepositoryButton project={project} />
+              <UnlinkGithubRepositoryButton project={project} />
             </div>
           </div>
-        ) : started ? (
-          <LinkRepository projectId={project.id} />
+        ) : project.glProject ? (
+          <div>
+            <div className="flex items-center gap-2 rounded border p-4">
+              <GitLabLogo className="shrink-0 w-6 h-6" />
+              <div className="flex-1 font-semibold">
+                <Anchor href={project.glProject.url} external className="!text">
+                  {project.glProject.fullName}
+                </Anchor>
+              </div>
+              <UnlinkGitlabProjectButton project={project} />
+            </div>
+          </div>
         ) : (
-          <div className="flex items-center justify-between gap-4 rounded border p-4">
-            <Button color="neutral" onClick={() => setStarted(true)}>
-              <ButtonIcon>
-                <MarkGithubIcon />
-              </ButtonIcon>
-              GitHub
-            </Button>
-            <div>
-              Need another provider?{" "}
-              <Anchor href={`mailto:${config.get("contactEmail")}`}>
-                Contact us
-              </Anchor>
-            </div>
-          </div>
+          <Card className="p-4">
+            <LinkRepository
+              projectId={project.id}
+              accountSlug={project.account.slug}
+            />
+          </Card>
         )}
       </CardBody>
-      {project.ghRepository ? <GithubOptionsForm project={project} /> : null}
+      {linked && <GitOptionsForm project={project} />}
     </Card>
   );
 };

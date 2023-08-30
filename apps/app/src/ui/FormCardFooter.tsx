@@ -4,7 +4,7 @@ import { FormSubmit } from "./FormSubmit";
 import { FormSuccess } from "./FormSuccess";
 
 export type FormCardFooterProps = {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 };
 
 export const FormCardFooter = (props: FormCardFooterProps) => {

@@ -32,7 +32,7 @@ export const Anchor = forwardRef<HTMLAnchorElement, AnchorProps>(
     return (
       <a
         ref={ref}
-        className={clsx(className, anchorClassNames)}
+        className={clsx(anchorClassNames, className)}
         {...externalAttributes}
         {...props}
       >
