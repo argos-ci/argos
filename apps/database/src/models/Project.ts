@@ -107,6 +107,7 @@ export class Project extends Model {
   builds?: Build[];
   account?: Account;
   githubRepository?: GithubRepository | null;
+  gitlabProject?: GitlabProject | null;
   vercelProject?: VercelProject | null;
 
   override async $beforeInsert(queryContext: QueryContext) {

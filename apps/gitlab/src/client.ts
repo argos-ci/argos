@@ -1,6 +1,9 @@
-import { Gitlab, ExpandedUserSchema } from "@gitbeaker/rest";
+import { Gitlab } from "@gitbeaker/rest";
 
-export type { ExpandedUserSchema };
+export type {
+  ExpandedUserSchema,
+  CommitablePipelineStatus,
+} from "@gitbeaker/rest";
 
 export const getTokenGitlabClient = (oauthToken: string) => {
   return new Gitlab({ oauthToken });

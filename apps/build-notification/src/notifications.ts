@@ -13,12 +13,21 @@ import { createVercelClient } from "@argos-ci/vercel";
 import { getCommentBody } from "./comment.js";
 import { job as buildNotificationJob } from "./job.js";
 import { getStatsMessage } from "./utils.js";
+import { getTokenGitlabClient } from "@argos-ci/gitlab";
 
 enum GithubNotificationState {
   Pending = "pending",
   Success = "success",
   Error = "error",
   Failure = "failure",
+}
+
+enum GitlabNotificationState {
+  Pending = "pending",
+  Running = "running",
+  Success = "success",
+  Failed = "failed",
+  Canceled = "canceled",
 }
 
 enum VercelConclusion {
@@ -38,6 +47,7 @@ const getNotificationStatus = (
   buildNotification: BuildNotification,
 ): {
   githubState: GithubNotificationState;
+  gitlabState: GitlabNotificationState;
   vercelStatus: VercelStatus | null;
   vercelConclusion: VercelConclusion | null;
 } => {
@@ -47,6 +57,7 @@ const getNotificationStatus = (
     case "queued": {
       return {
         githubState: GithubNotificationState.Pending,
+        gitlabState: GitlabNotificationState.Pending,
         vercelStatus: VercelStatus.Running,
         vercelConclusion: null,
       };
@@ -54,6 +65,7 @@ const getNotificationStatus = (
     case "progress": {
       return {
         githubState: GithubNotificationState.Pending,
+        gitlabState: GitlabNotificationState.Running,
         vercelStatus: VercelStatus.Running,
         vercelConclusion: null,
       };
@@ -61,6 +73,7 @@ const getNotificationStatus = (
     case "no-diff-detected": {
       return {
         githubState: GithubNotificationState.Success,
+        gitlabState: GitlabNotificationState.Success,
         vercelStatus: VercelStatus.Completed,
         vercelConclusion: VercelConclusion.Succeeded,
       };
@@ -70,6 +83,9 @@ const getNotificationStatus = (
         githubState: isReference
           ? GithubNotificationState.Success
           : GithubNotificationState.Failure,
+        gitlabState: isReference
+          ? GitlabNotificationState.Success
+          : GitlabNotificationState.Failed,
         vercelStatus: VercelStatus.Completed,
         vercelConclusion: isReference
           ? VercelConclusion.Succeeded
@@ -79,6 +95,7 @@ const getNotificationStatus = (
     case "diff-accepted": {
       return {
         githubState: GithubNotificationState.Success,
+        gitlabState: GitlabNotificationState.Success,
         vercelStatus: null,
         vercelConclusion: null,
       };
@@ -86,6 +103,7 @@ const getNotificationStatus = (
     case "diff-rejected": {
       return {
         githubState: GithubNotificationState.Failure,
+        gitlabState: GitlabNotificationState.Failed,
         vercelStatus: null,
         vercelConclusion: null,
       };
@@ -101,6 +119,7 @@ const getNotificationStatus = (
 type NotificationPayload = {
   description: string;
   githubState: GithubNotificationState;
+  gitlabState: GitlabNotificationState;
   vercelStatus: VercelStatus | null;
   vercelConclusion: VercelConclusion | null;
 };
@@ -196,7 +215,10 @@ type Context = {
   notification: NotificationPayload;
 };
 
-const createCommitStatus = async ({
+const getStatusContext = (buildName: string) =>
+  buildName === "default" ? "argos" : `argos/${buildName}`;
+
+const createGhCommitStatus = async ({
   buildName,
   buildUrl,
   commit,
@@ -223,7 +245,7 @@ const createCommitStatus = async ({
       state,
       target_url: buildUrl,
       description,
-      context: buildName === "default" ? "argos" : `argos/${buildName}`,
+      context: getStatusContext(buildName),
     });
   } catch (error: any) {
     // It happens if a push-force occurs before sending the notification, it is not considered as an error
@@ -303,7 +325,7 @@ const sendGithubNotification = async (ctx: Context) => {
   };
 
   await Promise.all([
-    createCommitStatus({
+    createGhCommitStatus({
       buildName: build.name,
       buildUrl,
       commit: build.prHeadCommit ?? compareScreenshotBucket.commit,
@@ -315,6 +337,55 @@ const sendGithubNotification = async (ctx: Context) => {
     }),
     createGhComment(),
   ]);
+};
+
+const sendGitlabNotification = async (ctx: Context) => {
+  const { build, buildUrl, notification } = ctx;
+
+  if (!build) {
+    throw new UnretryableError("Invariant: no build found");
+  }
+
+  const { project, compareScreenshotBucket } = build;
+
+  if (!compareScreenshotBucket) {
+    throw new UnretryableError("Invariant: no compare screenshot bucket found");
+  }
+
+  if (!project) {
+    throw new UnretryableError("Invariant: no project found");
+  }
+
+  const { gitlabProject, account } = project;
+
+  if (!account) {
+    throw new UnretryableError("Invariant: no account found");
+  }
+
+  if (!account.gitlabAccessToken) {
+    return;
+  }
+
+  if (!gitlabProject) {
+    return;
+  }
+
+  const client = await getTokenGitlabClient(account.gitlabAccessToken);
+
+  if (!client) {
+    return;
+  }
+
+  await client.Commits.editStatus(
+    gitlabProject.gitlabId,
+    build.prHeadCommit ?? compareScreenshotBucket.commit,
+    notification.gitlabState,
+    {
+      context: getStatusContext(build.name),
+      targetUrl: buildUrl,
+      description: notification.description,
+    },
+  );
 };
 
 const sendVercelNotification = async (ctx: Context) => {
@@ -367,7 +438,7 @@ export const processBuildNotification = async (
   buildNotification: BuildNotification,
 ) => {
   await buildNotification.$fetchGraph(
-    `build.[project.[githubRepository.[githubAccount,activeInstallation], account], compareScreenshotBucket, vercelCheck.vercelDeployment.vercelProject.activeConfiguration]`,
+    `build.[project.[gitlabProject, githubRepository.[githubAccount,activeInstallation], account], compareScreenshotBucket, vercelCheck.vercelDeployment.vercelProject.activeConfiguration]`,
   );
 
   if (!buildNotification.build) {
@@ -386,5 +457,9 @@ export const processBuildNotification = async (
     notification,
   };
 
-  await Promise.all([sendGithubNotification(ctx), sendVercelNotification(ctx)]);
+  await Promise.all([
+    sendGithubNotification(ctx),
+    sendGitlabNotification(ctx),
+    sendVercelNotification(ctx),
+  ]);
 };
