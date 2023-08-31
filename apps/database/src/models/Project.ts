@@ -152,10 +152,16 @@ export class Project extends Model {
 
   async $getReferenceBranch(trx?: TransactionOrKnex) {
     if (this.baselineBranch) return this.baselineBranch;
-    const ghRepo =
-      this.githubRepository ||
-      (await this.$relatedQuery("githubRepository", trx));
-    if (!ghRepo) return "main";
-    return ghRepo.defaultBranch;
+    await this.$fetchGraph(
+      "[githubRepository, gitlabProject]",
+      trx ? { transaction: trx, skipFetched: true } : undefined,
+    );
+    if (this.githubRepository) {
+      return this.githubRepository.defaultBranch;
+    }
+    if (this.gitlabProject) {
+      return this.gitlabProject.defaultBranch;
+    }
+    return "main";
   }
 }
