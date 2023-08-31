@@ -267,6 +267,12 @@ export const resolvers: IResolvers = {
         ? [IPermission.Read, IPermission.Write]
         : [IPermission.Read];
     },
+    gitlabAccessToken: async (account, _args, ctx) => {
+      if (!ctx.auth) return null;
+      const writable = await account.$checkWritePermission(ctx.auth.user);
+      if (!writable) return account.gitlabAccessToken ? `••••••••` : null;
+      return account.gitlabAccessToken || null;
+    },
     ghAccount: async (account, _args, ctx) => {
       if (!account.githubAccountId) return null;
       return ctx.loaders.GithubAccount.load(account.githubAccountId);

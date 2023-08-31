@@ -3,7 +3,7 @@ import { HTMLProps } from "react";
 
 export const Alert = ({ className, ...props }: HTMLProps<HTMLDivElement>) => {
   return (
-    <div role="alert" className={clsx(className, "text-center")} {...props} />
+    <div role="alert" className={clsx("text-center", className)} {...props} />
   );
 };
 

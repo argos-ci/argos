@@ -65,6 +65,8 @@ export const AccountSettings = () => {
         {userSlug === accountSlug ? "Personal" : "Team"} Settings
       </Heading>
       <Query
+        // Prevent persistence between pages
+        key={accountSlug}
         fallback={<PageLoader />}
         query={AccountQuery}
         variables={{ slug: accountSlug }}
@@ -118,7 +120,7 @@ export const AccountSettings = () => {
               {writable && account.plan && <PlanCard account={account} />}
               {isTeam && <TeamMembers team={account} />}
               <AccountGitLab account={account} />
-              {isTeam && <TeamDelete team={account} />}
+              {isTeam && writable && <TeamDelete team={account} />}
             </SettingsLayout>
           );
         }}

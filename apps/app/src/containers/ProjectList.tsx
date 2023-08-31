@@ -85,24 +85,35 @@ const CreateProjectButton = (props: ButtonProps) => {
   );
 };
 
-export const ProjectList = (props: { projects: ProjectFragmentType[] }) => {
+export const ProjectList = (props: {
+  projects: ProjectFragmentType[];
+  hasWritePermission: boolean;
+}) => {
   const projects = useFragment(ProjectFragment, props.projects);
 
   if (projects.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center">
         <div className="mb-2 text-2xl font-medium">No projects yet!</div>
-        <div className="mb-4 text-low">Start by creating a new project.</div>
-        <CreateProjectButton />
+        {props.hasWritePermission && (
+          <>
+            <div className="mb-4 text-low">
+              Start by creating a new project.
+            </div>
+            <CreateProjectButton />
+          </>
+        )}
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <CreateProjectButton variant="outline" color="neutral" />
-      </div>
+      {props.hasWritePermission && (
+        <div className="flex justify-end">
+          <CreateProjectButton variant="outline" color="neutral" />
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-4">
         {projects.map((project) => (
           <ProjectCard key={project.id} project={project} />

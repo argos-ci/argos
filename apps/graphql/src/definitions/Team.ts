@@ -53,7 +53,7 @@ export const typeDefs = gql`
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
-    glNamespaces: GlApiNamespaceConnection!
+    glNamespaces: GlApiNamespaceConnection
 
     me: TeamMember!
     members(after: Int = 0, first: Int = 30): TeamMemberConnection!

@@ -36,7 +36,7 @@ export const typeDefs = gql`
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
-    glNamespaces: GlApiNamespaceConnection!
+    glNamespaces: GlApiNamespaceConnection
 
     hasSubscribedToTrial: Boolean!
     lastPurchase: Purchase

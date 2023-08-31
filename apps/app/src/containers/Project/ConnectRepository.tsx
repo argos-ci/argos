@@ -17,6 +17,7 @@ import {
   GitlabProjectListProps,
 } from "../GitlabProjectList";
 import { Anchor } from "@/ui/Link";
+import { Permission } from "@/gql/graphql";
 
 const ConnectRepositoryQuery = graphql(`
   query ConnectRepository($accountSlug: String!) {
@@ -30,6 +31,7 @@ const ConnectRepositoryQuery = graphql(`
           ...GitlabNamespacesSelect_GlApiNamespace
         }
       }
+      permissions
     }
     me {
       id
@@ -251,8 +253,17 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
     throw new Error("Invariant: no account");
   }
 
+  if (!account.permissions.includes(Permission.Write)) {
+    return (
+      <div>
+        You can't import a project in this team. Only team owners can import
+        projects. If you want to import a project, please contact your team
+        owner.
+      </div>
+    );
+  }
+
   const hasGhInstallations = me.ghInstallations.edges.length > 0;
-  const hasGhNamespaces = account.glNamespaces?.edges.length > 0;
 
   if (provider === GitProvider.GitHub && hasGhInstallations) {
     return (
@@ -267,7 +278,11 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
   }
 
   if (provider === GitProvider.GitLab) {
-    if (account.gitlabAccessToken && hasGhNamespaces) {
+    if (
+      account.gitlabAccessToken &&
+      account.glNamespaces &&
+      account.glNamespaces.edges.length > 0
+    ) {
       return (
         <GitlabNamespaces
           gitlabAccessToken={account.gitlabAccessToken}
