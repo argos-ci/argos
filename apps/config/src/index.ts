@@ -169,7 +169,7 @@ const config = convict({
     },
     loginUrl: {
       format: String,
-      default: `https://gitlab.com/oauth/authorize?scope=api&response_type=code&client_id=${process.env["GITLAB_APP_ID"]}`,
+      default: `https://gitlab.com/oauth/authorize?scope=read_user&response_type=code&client_id=${process.env["GITLAB_APP_ID"]}`,
     },
   },
   stripe: {
