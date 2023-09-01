@@ -196,7 +196,7 @@ const LoginButton = () => {
   const { pathname } = useLocation();
   const url = `/login?r=${encodeURIComponent(pathname)}`;
   return (
-    <Button color="neutral">
+    <Button color="neutral" variant="outline">
       {(buttonProps) => (
         <Link {...buttonProps} to={url}>
           Login

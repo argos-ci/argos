@@ -154,7 +154,7 @@ const GitHubButton = (props: {
   const { pathname } = useLocation();
   if (!props.hasInstallations) {
     return (
-      <Button color="neutral" size={props.size}>
+      <Button color="github" size={props.size}>
         {(buttonProps) => (
           <a
             href={`${config.get(
@@ -173,7 +173,7 @@ const GitHubButton = (props: {
     );
   }
   return (
-    <Button color="neutral" size={props.size} onClick={props.onClick}>
+    <Button color="github" size={props.size} onClick={props.onClick}>
       <ButtonIcon>
         <MarkGithubIcon />
       </ButtonIcon>
@@ -187,7 +187,7 @@ const GitLabButton = ({
   ...props
 }: ButtonProps & { children: React.ReactNode }) => {
   return (
-    <Button {...props}>
+    <Button color="gitlab" {...props}>
       <ButtonIcon>
         <GitLabLogo />
       </ButtonIcon>

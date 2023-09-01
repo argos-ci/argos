@@ -50,7 +50,7 @@ export const GitLabLoginButton = React.memo<GitLabLoginButtonProps>(
   ({ children, redirect, ...props }) => {
     const loginUrl = useLoginUrl(redirect);
     return (
-      <Button color="primary" {...props}>
+      <Button color="gitlab" {...props}>
         {(buttonProps) => (
           <a href={loginUrl} {...buttonProps}>
             <ButtonIcon>

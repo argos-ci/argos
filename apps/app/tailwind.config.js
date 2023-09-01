@@ -17,6 +17,16 @@ module.exports = {
           hover: "hsl(var(--mauve10) / <alpha-value>)",
           active: "hsl(var(--mauve11) / <alpha-value>)",
         },
+        github: {
+          DEFAULT: "rgb(36 41 46 / <alpha-value>)",
+          hover: "rgb(85 85 85 / <alpha-value>)",
+          active: "rgb(85 85 85 / <alpha-value>)",
+        },
+        gitlab: {
+          DEFAULT: "rgb(226 67 41 / <alpha-value>)",
+          hover: "rgb(252 109 38 / <alpha-value>)",
+          active: "rgb(252 109 38 / <alpha-value>)",
+        },
         primary: {
           app: "hsl(var(--violet1) / <alpha-value>)",
           ui: "hsl(var(--violet3) / <alpha-value>)",
