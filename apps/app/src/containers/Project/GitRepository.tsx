@@ -292,7 +292,7 @@ export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
           </Card>
         )}
       </CardBody>
-      {linked && <GitOptionsForm project={project} />}
+      {project.ghRepository && <GitOptionsForm project={project} />}
     </Card>
   );
 };
