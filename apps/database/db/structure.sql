@@ -90,6 +90,7 @@ CREATE TABLE public.accounts (
     name character varying(255),
     slug character varying(255) NOT NULL,
     "vercelConfigurationId" bigint,
+    "gitlabAccessToken" character varying(255),
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -546,6 +547,47 @@ ALTER SEQUENCE public.github_synchronizations_id_seq OWNED BY public.github_sync
 
 
 --
+-- Name: gitlab_projects; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.gitlab_projects (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    name character varying(255) NOT NULL,
+    path character varying(255) NOT NULL,
+    "pathWithNamespace" character varying(255) NOT NULL,
+    visibility text NOT NULL,
+    "defaultBranch" character varying(255) NOT NULL,
+    "gitlabId" integer NOT NULL,
+    CONSTRAINT gitlab_projects_visibility_check CHECK ((visibility = ANY (ARRAY['public'::text, 'internal'::text, 'private'::text])))
+);
+
+
+ALTER TABLE public.gitlab_projects OWNER TO postgres;
+
+--
+-- Name: gitlab_projects_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.gitlab_projects_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.gitlab_projects_id_seq OWNER TO postgres;
+
+--
+-- Name: gitlab_projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.gitlab_projects_id_seq OWNED BY public.gitlab_projects.id;
+
+
+--
 -- Name: gitlab_users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -710,7 +752,8 @@ CREATE TABLE public.projects (
     "accountId" bigint NOT NULL,
     "githubRepositoryId" bigint,
     "vercelProjectId" bigint,
-    "prCommentEnabled" boolean DEFAULT true NOT NULL
+    "prCommentEnabled" boolean DEFAULT true NOT NULL,
+    "gitlabProjectId" bigint
 );
 
 
@@ -1344,6 +1387,13 @@ ALTER TABLE ONLY public.github_synchronizations ALTER COLUMN id SET DEFAULT next
 
 
 --
+-- Name: gitlab_projects id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.gitlab_projects ALTER COLUMN id SET DEFAULT nextval('public.gitlab_projects_id_seq'::regclass);
+
+
+--
 -- Name: gitlab_users id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1619,6 +1669,14 @@ ALTER TABLE ONLY public.github_repository_installations
 
 ALTER TABLE ONLY public.github_synchronizations
     ADD CONSTRAINT github_synchronizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gitlab_projects gitlab_projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.gitlab_projects
+    ADD CONSTRAINT gitlab_projects_pkey PRIMARY KEY (id);
 
 
 --
@@ -2373,6 +2431,14 @@ ALTER TABLE ONLY public.projects
 
 
 --
+-- Name: projects projects_gitlabprojectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_gitlabprojectid_foreign FOREIGN KEY ("gitlabProjectId") REFERENCES public.gitlab_projects(id);
+
+
+--
 -- Name: projects projects_vercelprojectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2642,3 +2708,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023070
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230712193423_purchase-subscription-id.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230714125556_build-pr-head-commit.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230826091827_gitlab_users.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230827144239_gitlab_acess_token.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230830151208_gitlab_projects.js', 1, NOW());
