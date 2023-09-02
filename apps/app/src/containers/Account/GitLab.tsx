@@ -7,6 +7,7 @@ import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Permission } from "@/gql/graphql";
+import { Anchor } from "@/ui/Link";
 
 const AccountFragment = graphql(`
   fragment AccountGitLab_Account on Account {
@@ -79,7 +80,12 @@ export const AccountGitLab = (props: AccountGitLabProps) => {
             )}
           </CardBody>
           <FormCardFooter>
-            <div>Learn more about setting up GitLab + Argos integration.</div>
+            <div>
+              Learn more about{" "}
+              <Anchor href="https://argos-ci.com/docs/gitlab" external>
+                setting up GitLab + Argos integration.
+              </Anchor>
+            </div>
           </FormCardFooter>
         </Form>
       </FormProvider>
