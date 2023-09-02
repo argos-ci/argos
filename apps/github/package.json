@@ -22,6 +22,7 @@
     "@octokit/openapi-types": "^18.0.0",
     "@octokit/plugin-retry": "^6.0.0",
     "@octokit/rest": "^20.0.1",
+    "axios": "^1.5.0",
     "zod": "^3.22.2"
   },
   "devDependencies": {
