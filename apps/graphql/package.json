@@ -15,13 +15,15 @@
     "@sentry/node": "^7.64.0",
     "@sindresorhus/slugify": "^2.2.1",
     "@apollo/server": "^4.9.2",
+    "axios": "^1.5.0",
     "dataloader": "^2.2.2",
     "express": "^4.18.2",
     "graphql": "^16.8.0",
     "graphql-scalars": "^1.22.2",
     "graphql-tag": "^2.12.6",
     "moment": "^2.29.4",
-    "objection": "^3.1.1"
+    "objection": "^3.1.1",
+    "zod": "^3.22.2"
   },
   "devDependencies": {
     "@argos-ci/job-core": "*",

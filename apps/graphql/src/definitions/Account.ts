@@ -1,6 +1,7 @@
 import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
+import axios from "axios";
 
 import { knex } from "@argos-ci/database";
 import { Account, Plan, Project, Purchase } from "@argos-ci/database/models";
@@ -21,6 +22,8 @@ import type { Context } from "../context.js";
 import { getWritableAccount } from "../services/account.js";
 import { unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
+import { checkAccountSlug } from "@argos-ci/database/services/account";
+import { getTokenGitlabClient } from "@argos-ci/gitlab";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -76,12 +79,15 @@ export const typeDefs = gql`
     avatar: AccountAvatar!
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
+    gitlabAccessToken: String
+    glNamespaces: GlApiNamespaceConnection
   }
 
   input UpdateAccountInput {
     id: ID!
     name: String
     slug: String
+    gitlabAccessToken: String
   }
 
   extend type Query {
@@ -120,15 +126,6 @@ const getAvatarColor = (id: string): string => {
   const randomIndex = Number(id) % colors.length;
   return colors[randomIndex] ?? colors[0] ?? "#000";
 };
-
-const RESERVED_SLUGS = [
-  "auth",
-  "checkout-success",
-  "login",
-  "vercel",
-  "invite",
-  "teams",
-];
 
 const accountById = async (
   _root: unknown,
@@ -270,6 +267,12 @@ export const resolvers: IResolvers = {
         ? [IPermission.Read, IPermission.Write]
         : [IPermission.Read];
     },
+    gitlabAccessToken: async (account, _args, ctx) => {
+      if (!ctx.auth) return null;
+      const writable = await account.$checkWritePermission(ctx.auth.user);
+      if (!writable) return account.gitlabAccessToken ? `••••••••` : null;
+      return account.gitlabAccessToken || null;
+    },
     ghAccount: async (account, _args, ctx) => {
       if (!account.githubAccountId) return null;
       return ctx.loaders.GithubAccount.load(account.githubAccountId);
@@ -287,8 +290,10 @@ export const resolvers: IResolvers = {
       const ghAccount = account.githubAccountId
         ? await ctx.loaders.GithubAccount.load(account.githubAccountId)
         : null;
+
       const initial = ((account.name || account.slug)[0] || "x").toUpperCase();
       const color = getAvatarColor(account.id);
+
       if (ghAccount) {
         return {
           getUrl: ({ size }: { size?: number }) => {
@@ -302,6 +307,29 @@ export const resolvers: IResolvers = {
           color,
         };
       }
+
+      if (account.userId) {
+        const user = await ctx.loaders.User.load(account.userId);
+        if (user.gitlabUserId && user.email) {
+          const email = user.email;
+          return {
+            getUrl: async ({ size }: { size?: number }) => {
+              const url = new URL("https://gitlab.com/api/v4/avatar");
+              url.searchParams.set("email", email);
+              if (size) {
+                url.searchParams.set("size", String(size));
+              }
+              const result = await axios.get<{ avatar_url: string }>(
+                String(url),
+              );
+              return result.data.avatar_url;
+            },
+            initial,
+            color,
+          };
+        }
+      }
+
       return {
         getUrl: () => null,
         initial,
@@ -316,6 +344,18 @@ export const resolvers: IResolvers = {
       if (!configuration) return null;
       if (configuration.deleted) return null;
       return configuration;
+    },
+    glNamespaces: async (account) => {
+      if (!account.gitlabAccessToken) return null;
+      const client = getTokenGitlabClient(account.gitlabAccessToken);
+      const namespaces = await client.Namespaces.all();
+      return {
+        edges: namespaces,
+        pageInfo: {
+          hasNextPage: false,
+          totalCount: namespaces.length,
+        },
+      };
     },
   },
   AccountAvatar: {
@@ -345,28 +385,28 @@ export const resolvers: IResolvers = {
       const data: PartialModelObject<Account> = {};
 
       if (input.slug && account.slug !== input.slug) {
-        if (RESERVED_SLUGS.includes(input.slug)) {
-          throw new GraphQLError("Slug is reserved for internal usage", {
-            extensions: {
-              code: "BAD_USER_INPUT",
-              field: "slug",
-            },
-          });
-        }
-        const slugExists = await Account.query().findOne({ slug: input.slug });
-        if (slugExists) {
-          throw new GraphQLError("Slug already exists", {
-            extensions: {
-              code: "BAD_USER_INPUT",
-              field: "slug",
-            },
-          });
+        try {
+          checkAccountSlug(input.slug);
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            throw new GraphQLError(error.message, {
+              extensions: {
+                code: "BAD_USER_INPUT",
+                field: "slug",
+              },
+            });
+          }
+          throw error;
         }
         data.slug = input.slug;
       }
 
       if (input.name !== undefined) {
         data.name = input.name;
+      }
+
+      if (input.gitlabAccessToken !== undefined) {
+        data.gitlabAccessToken = input.gitlabAccessToken;
       }
 
       return account.$query().patchAndFetch(data);

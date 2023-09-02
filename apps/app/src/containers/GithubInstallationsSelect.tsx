@@ -2,18 +2,18 @@ import { MarkGithubIcon } from "@primer/octicons-react";
 
 import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Anchor } from "@/ui/Link";
 import {
   Select,
   SelectArrow,
   SelectItem,
   SelectPopover,
-  SelectText,
+  SelectSeparator,
   useSelectState,
 } from "@/ui/Select";
+import { ListBulletIcon, PlusIcon } from "@heroicons/react/24/outline";
 
 const InstallationFragment = graphql(`
-  fragment InstallationsSelect_GhApiInstallation on GhApiInstallation {
+  fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {
     id
     account {
       id
@@ -23,11 +23,12 @@ const InstallationFragment = graphql(`
   }
 `);
 
-export const InstallationsSelect = (props: {
+export const GithubInstallationsSelect = (props: {
   installations: FragmentType<typeof InstallationFragment>[];
   value: string;
   setValue: (value: string) => void;
   disabled?: boolean;
+  onSwitch: () => void;
 }) => {
   const installations = useFragment(InstallationFragment, props.installations);
   const select = useSelectState({
@@ -72,19 +73,42 @@ export const InstallationsSelect = (props: {
             </SelectItem>
           );
         })}
-        <SelectText>
-          Don't see your org?{" "}
-          <Anchor
-            href={`${config.get(
-              "github.appUrl",
-            )}/installations/new?state=${encodeURIComponent(
-              window.location.pathname,
-            )}`}
-            external
-          >
+        <SelectSeparator />
+        <SelectItem
+          state={select}
+          button
+          onClick={(event) => {
+            event.preventDefault();
+            window.open(
+              `${config.get(
+                "github.appUrl",
+              )}/installations/new?state=${encodeURIComponent(
+                window.location.pathname,
+              )}`,
+              "_blank",
+              "noopener noreferrer",
+            );
+          }}
+          className="cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <PlusIcon className="w-[1em] h-[1em]" />
             Add GitHub Account
-          </Anchor>
-        </SelectText>
+          </div>
+        </SelectItem>
+        <SelectItem
+          state={select}
+          button
+          onClick={(event) => {
+            event.preventDefault();
+            props.onSwitch();
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <ListBulletIcon className="w-[1em] h-[1em]" />
+            Switch Git Provider
+          </div>
+        </SelectItem>
       </SelectPopover>
     </>
   );

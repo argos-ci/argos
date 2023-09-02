@@ -30,15 +30,18 @@ export const typeDefs = gql`
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
     avatar: AccountAvatar!
-    lastPurchase: Purchase
-    teams: [Team!]!
-    ghInstallations: GhApiInstallationConnection!
-    hasSubscribedToTrial: Boolean!
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
+    gitlabAccessToken: String
+    glNamespaces: GlApiNamespaceConnection
+
+    hasSubscribedToTrial: Boolean!
+    lastPurchase: Purchase
+    teams: [Team!]!
+    ghInstallations: GhApiInstallationConnection!
   }
 
   type UserConnection implements Connection {
@@ -93,6 +96,9 @@ export const resolvers: IResolvers = {
         throw new Error(
           "Invariant: ghInstallations can only be accessed by the authenticated user",
         );
+      }
+      if (!ctx.auth.user.accessToken) {
+        return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
       }
       const octokit = getTokenOctokit(ctx.auth.user.accessToken);
       const apiInstallations =

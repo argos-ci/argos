@@ -7,7 +7,7 @@ import {
   SunIcon,
   UserPlusIcon,
 } from "@heroicons/react/24/outline";
-import { Link as RouterLink } from "react-router-dom";
+import { Link, Link as RouterLink, useLocation } from "react-router-dom";
 
 import {
   useAuthTokenPayload,
@@ -31,8 +31,11 @@ import {
 } from "@/ui/Select";
 
 import { ColorMode, useColorMode } from "./ColorMode";
-import { GitHubLoginButton } from "./GitHub";
-import { ImageAvatar } from "./ImageAvatar";
+import { Button } from "@/ui/Button";
+import { AccountAvatar } from "./AccountAvatar";
+import { graphql } from "@/gql";
+import { useQuery } from "@apollo/client";
+import { InitialAvatar } from "./InitialAvatar";
 
 const getColorModeLabel = (colorMode: ColorMode | "") => {
   switch (colorMode) {
@@ -88,6 +91,35 @@ const ColorModeSelect = () => {
   );
 };
 
+const AccountQuery = graphql(`
+  query NavUserControl_account($slug: String!) {
+    account(slug: $slug) {
+      id
+      avatar {
+        ...AccountAvatarFragment
+      }
+    }
+  }
+`);
+
+const Avatar = (props: { slug: string }) => {
+  const { data, error } = useQuery(AccountQuery, {
+    variables: { slug: props.slug },
+  });
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return <InitialAvatar initial="" color="#eee" />;
+  }
+
+  if (!data?.account) {
+    throw new Error("Account not found");
+  }
+  return <AccountAvatar avatar={data.account.avatar} />;
+};
+
 const UserMenu = () => {
   const authPayload = useAuthTokenPayload();
   const logout = useLogout();
@@ -104,9 +136,7 @@ const UserMenu = () => {
         state={menu}
         className="rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
       >
-        <ImageAvatar
-          url={`https://github.com/${authPayload.account.slug}.png`}
-        />
+        <Avatar slug={authPayload.account.slug} />
       </MenuButton>
       <Menu aria-label="User settings" state={menu} className="w-52">
         <MenuItem state={menu} pointer>
@@ -162,7 +192,21 @@ const UserMenu = () => {
   );
 };
 
+const LoginButton = () => {
+  const { pathname } = useLocation();
+  const url = `/login?r=${encodeURIComponent(pathname)}`;
+  return (
+    <Button color="neutral" variant="outline">
+      {(buttonProps) => (
+        <Link {...buttonProps} to={url}>
+          Login
+        </Link>
+      )}
+    </Button>
+  );
+};
+
 export const NavUserControl = () => {
   const loggedIn = useIsLoggedIn();
-  return loggedIn ? <UserMenu /> : <GitHubLoginButton />;
+  return loggedIn ? <UserMenu /> : <LoginButton />;
 };

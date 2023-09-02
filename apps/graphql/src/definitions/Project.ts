@@ -1,12 +1,14 @@
 import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
+import { z } from "zod";
 
 import {
   Account,
   Build,
   GithubAccount,
   GithubRepository,
+  GitlabProject,
   Project,
   Screenshot,
   ScreenshotDiff,
@@ -21,6 +23,11 @@ import { deleteProject, getWritableProject } from "../services/project.js";
 import { unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 import { linkVercelProject } from "./Vercel.js";
+import {
+  checkProjectName,
+  resolveProjectName,
+} from "@argos-ci/database/services/project";
+import { getTokenGitlabClient } from "@argos-ci/gitlab";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -50,8 +57,10 @@ export const typeDefs = gql`
     permissions: [Permission!]!
     "Owner of the repository"
     account: Account!
-    "Repositories associated to the project"
+    "Repository associated to the project"
     ghRepository: GithubRepository
+    "Gitlab project associated to the project"
+    glProject: GitlabProject
     "Override branch name"
     baselineBranch: String
     "Reference branch"
@@ -84,9 +93,14 @@ export const typeDefs = gql`
     edges: [Project!]!
   }
 
-  input CreateProjectInput {
+  input ImportGithubProjectInput {
     repo: String!
     owner: String!
+    accountSlug: String!
+  }
+
+  input ImportGitlabProjectInput {
+    gitlabProjectId: ID!
     accountSlug: String!
   }
 
@@ -103,14 +117,23 @@ export const typeDefs = gql`
     targetAccountId: ID!
   }
 
-  input UnlinkRepositoryInput {
-    projectId: ID!
-  }
-
-  input LinkRepositoryInput {
+  input LinkGithubRepositoryInput {
     projectId: ID!
     repo: String!
     owner: String!
+  }
+
+  input UnlinkGithubRepositoryInput {
+    projectId: ID!
+  }
+
+  input LinkGitlabProjectInput {
+    projectId: ID!
+    gitlabProjectId: ID!
+  }
+
+  input UnlinkGitlabProjectInput {
+    projectId: ID!
   }
 
   input UnlinkVercelProjectInput {
@@ -129,14 +152,20 @@ export const typeDefs = gql`
   }
 
   extend type Mutation {
-    "Create a Project"
-    createProject(input: CreateProjectInput!): Project!
+    "Import a project from GitHub"
+    importGithubProject(input: ImportGithubProjectInput!): Project!
+    "Import a project from GitLab"
+    importGitlabProject(input: ImportGitlabProjectInput!): Project!
     "Update Project"
     updateProject(input: UpdateProjectInput!): Project!
-    "Unlink Repository"
-    unlinkRepository(input: UnlinkRepositoryInput!): Project!
-    "Link Repository"
-    linkRepository(input: LinkRepositoryInput!): Project!
+    "Link GitHub Repository"
+    linkGithubRepository(input: LinkGithubRepositoryInput!): Project!
+    "Unlink GitHub Repository"
+    unlinkGithubRepository(input: UnlinkGithubRepositoryInput!): Project!
+    "Link Gitlab Project"
+    linkGitlabProject(input: LinkGitlabProjectInput!): Project!
+    "Unlink Gitlab Project"
+    unlinkGitlabProject(input: UnlinkGitlabProjectInput!): Project!
     "Link Vercel project"
     linkVercelProject(input: LinkVercelProjectInput!): Project!
     "Unlink Vercel project"
@@ -150,38 +179,21 @@ export const typeDefs = gql`
   }
 `;
 
-const resolveProjectName = async (args: {
-  name: string;
-  accountId: string;
-  index?: number;
-}): Promise<string> => {
-  const index = args.index || 0;
-  const name = args.index ? `${args.name}-${index}` : args.name;
-
-  const existingProject = await Project.query()
-    .select("id")
-    .findOne({ name, accountId: args.accountId })
-    .first();
-
-  if (!existingProject) {
-    return name;
-  }
-
-  return resolveProjectName({ ...args, index: index + 1 });
-};
-
-const checkProjectName = async (args: { name: string; accountId: string }) => {
-  const sameName = await Project.query()
-    .select("id")
-    .findOne({ name: args.name, accountId: args.accountId })
-    .first();
-  if (sameName) {
-    throw new GraphQLError("Name is already used by another project", {
-      extensions: {
-        code: "BAD_USER_INPUT",
-        field: "name",
-      },
-    });
+const checkGqlProjectName = async (
+  args: Parameters<typeof checkProjectName>[0],
+) => {
+  try {
+    checkProjectName(args);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new GraphQLError(error.message, {
+        extensions: {
+          code: "BAD_USER_INPUT",
+          field: "name",
+        },
+      });
+    }
+    throw error;
   }
 };
 
@@ -189,7 +201,7 @@ const getOrCreateGithubRepository = async (props: {
   accessToken: string;
   repo: string;
   owner: string;
-}) => {
+}): Promise<GithubRepository> => {
   const octokit = getTokenOctokit(props.accessToken);
   const ghApiRepo = await octokit.repos
     .get({
@@ -232,16 +244,14 @@ const getOrCreateGithubRepository = async (props: {
   });
 };
 
-export const createProject = async (props: {
+const importGithubProject = async (props: {
   accountSlug: string;
+  creator: User;
   repo: string;
   owner: string;
-  creator: User;
 }) => {
   const account = await Account.query()
-    .findOne({
-      slug: props.accountSlug,
-    })
+    .findOne({ slug: props.accountSlug })
     .throwIfNotFound();
   const hasWritePermission = await account.$checkWritePermission(props.creator);
   if (!hasWritePermission) {
@@ -262,6 +272,73 @@ export const createProject = async (props: {
     name,
     accountId: account.id,
     githubRepositoryId: ghRepo.id,
+  });
+};
+
+const getOrCreateGitlabProject = async (props: {
+  accessToken: string;
+  gitlabProjectId: string;
+}): Promise<GitlabProject> => {
+  const client = getTokenGitlabClient(props.accessToken);
+  const gitlabProjectId = Number(props.gitlabProjectId);
+
+  const repo = await GitlabProject.query().findOne({
+    gitlabId: gitlabProjectId,
+  });
+
+  if (repo) {
+    return repo;
+  }
+
+  const glProject = await client.Projects.show(gitlabProjectId);
+  if (!glProject) {
+    throw new Error("GitLab Project not found");
+  }
+
+  const visibility = z
+    .enum(["public", "private", "internal"])
+    .parse(glProject.visibility);
+
+  return GitlabProject.query().insertAndFetch({
+    name: glProject.name,
+    path: glProject.path,
+    pathWithNamespace: glProject.path_with_namespace,
+    visibility,
+    defaultBranch: glProject.default_branch,
+    gitlabId: glProject.id,
+  });
+};
+
+const importGitlabProject = async (props: {
+  accountSlug: string;
+  creator: User;
+  gitlabProjectId: string;
+}) => {
+  const account = await Account.query()
+    .findOne({ slug: props.accountSlug })
+    .throwIfNotFound();
+  const hasWritePermission = await account.$checkWritePermission(props.creator);
+  if (!hasWritePermission) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!account.gitlabAccessToken) {
+    throw new Error("Gitlab access token is missing");
+  }
+
+  const glProject = await getOrCreateGitlabProject({
+    accessToken: account.gitlabAccessToken,
+    gitlabProjectId: props.gitlabProjectId,
+  });
+
+  const name = await resolveProjectName({
+    name: glProject.path,
+    accountId: account.id,
+  });
+  return Project.query().insertAndFetch({
+    name,
+    accountId: account.id,
+    gitlabProjectId: glProject.id,
   });
 };
 
@@ -338,6 +415,10 @@ export const resolvers: IResolvers = {
       if (!project.githubRepositoryId) return null;
       return ctx.loaders.GithubRepository.load(project.githubRepositoryId);
     },
+    glProject: async (project, _args, ctx) => {
+      if (!project.gitlabProjectId) return null;
+      return ctx.loaders.GitlabProject.load(project.gitlabProjectId);
+    },
     vercelProject: async (project, _args, ctx) => {
       if (!project.vercelProjectId) return null;
       const vercelProject = await ctx.loaders.VercelProject.load(
@@ -407,14 +488,24 @@ export const resolvers: IResolvers = {
     },
   },
   Mutation: {
-    createProject: async (_root, args, ctx) => {
+    importGithubProject: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      return createProject({
+      return importGithubProject({
         accountSlug: args.input.accountSlug,
         repo: args.input.repo,
         owner: args.input.owner,
+        creator: ctx.auth.user,
+      });
+    },
+    importGitlabProject: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      return importGitlabProject({
+        accountSlug: args.input.accountSlug,
+        gitlabProjectId: args.input.gitlabProjectId,
         creator: ctx.auth.user,
       });
     },
@@ -435,7 +526,7 @@ export const resolvers: IResolvers = {
       }
 
       if (args.input.name != null && project.name !== args.input.name) {
-        await checkProjectName({
+        await checkGqlProjectName({
           name: args.input.name,
           accountId: project.accountId,
         });
@@ -444,17 +535,7 @@ export const resolvers: IResolvers = {
 
       return project.$query().patchAndFetch(data);
     },
-    unlinkRepository: async (_root, args, ctx) => {
-      const project = await getWritableProject({
-        id: args.input.projectId,
-        user: ctx.auth?.user,
-      });
-
-      return project.$query().patchAndFetch({
-        githubRepositoryId: null,
-      });
-    },
-    linkRepository: async (_root, args, ctx) => {
+    linkGithubRepository: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
       }
@@ -472,6 +553,51 @@ export const resolvers: IResolvers = {
 
       return project.$query().patchAndFetch({
         githubRepositoryId: ghRepo.id,
+      });
+    },
+    unlinkGithubRepository: async (_root, args, ctx) => {
+      const project = await getWritableProject({
+        id: args.input.projectId,
+        user: ctx.auth?.user,
+      });
+
+      return project.$query().patchAndFetch({
+        githubRepositoryId: null,
+      });
+    },
+    linkGitlabProject: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const project = await getWritableProject({
+        id: args.input.projectId,
+        user: ctx.auth.user,
+      });
+
+      const account = await project.$relatedQuery("account");
+
+      if (!account.gitlabAccessToken) {
+        throw new Error("Gitlab access token is missing");
+      }
+
+      const gitlabProject = await getOrCreateGitlabProject({
+        accessToken: account.gitlabAccessToken,
+        gitlabProjectId: args.input.gitlabProjectId,
+      });
+
+      return project.$query().patchAndFetch({
+        gitlabProjectId: gitlabProject.id,
+      });
+    },
+    unlinkGitlabProject: async (_root, args, ctx) => {
+      const project = await getWritableProject({
+        id: args.input.projectId,
+        user: ctx.auth?.user,
+      });
+
+      return project.$query().patchAndFetch({
+        gitlabProjectId: null,
       });
     },
     linkVercelProject: async (_root, args, ctx) => {
@@ -516,7 +642,7 @@ export const resolvers: IResolvers = {
       if (project.accountId === targetAccountId) {
         throw new Error("Project is already owned by this account");
       }
-      await checkProjectName({
+      await checkGqlProjectName({
         name: args.input.name,
         accountId: targetAccountId,
       });

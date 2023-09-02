@@ -4,6 +4,7 @@ import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
 import { Team } from "./Team.js";
+import { GitlabUser } from "./GitlabUser.js";
 
 export class User extends Model {
   static override tableName = "users";
@@ -13,11 +14,13 @@ export class User extends Model {
     properties: {
       email: { type: ["string", "null"] },
       accessToken: { type: "string" },
+      gitlabUserId: { type: ["string", "null"] },
     },
   });
 
   email!: string | null;
   accessToken!: string;
+  gitlabUserId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -54,12 +57,21 @@ export class User extends Model {
           to: "teams.id",
         },
       },
+      gitlabUser: {
+        relation: Model.HasOneRelation,
+        modelClass: GitlabUser,
+        join: {
+          from: "users.gitlabUserId",
+          to: "gitlab_users.id",
+        },
+      },
     };
   }
 
   account?: Account;
   teams?: Team[];
   ownedTeams?: Team[];
+  gitlabUser?: GitlabUser;
 
   $checkWritePermission(user: User) {
     return User.checkWritePermission(this.id, user);

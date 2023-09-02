@@ -35,7 +35,8 @@
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.1",
     "morgan": "^1.10.0",
-    "objection": "^3.1.1"
+    "objection": "^3.1.1",
+    "zod": "^3.22.2"
   },
   "devDependencies": {
     "@types/auth-header": "^1.0.2",

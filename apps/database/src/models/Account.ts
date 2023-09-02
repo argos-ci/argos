@@ -12,7 +12,7 @@ import { User } from "./User.js";
 import { VercelConfiguration } from "./VercelConfiguration.js";
 
 export type AccountAvatar = {
-  getUrl(args: { size?: number }): string | null;
+  getUrl(args: { size?: number }): string | Promise<string> | null;
   initial: string;
   color: string;
 };
@@ -47,6 +47,7 @@ export class Account extends Model {
   slug!: string;
   githubAccountId!: string | null;
   vercelConfigurationId!: string | null;
+  gitlabAccessToken!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

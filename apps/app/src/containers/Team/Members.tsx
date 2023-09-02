@@ -493,7 +493,7 @@ export const TeamMembers = (props: {
               const user = member.user;
               const isMe = authPayload.account.id === user.id;
               return (
-                <ListRow key={user.id} className="px-4 py-2">
+                <ListRow key={user.id} className="px-4 py-2 items-center">
                   <AccountAvatar
                     avatar={user.avatar}
                     size={36}

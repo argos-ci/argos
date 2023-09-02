@@ -8,6 +8,11 @@ import {
   useState,
 } from "react";
 
+export enum AuthProvider {
+  GitHub = "github",
+  GitLab = "gitlab",
+}
+
 type Token = null | string;
 
 interface AuthContextValue {
@@ -21,7 +26,11 @@ const COOKIE_NAME = "argos_jwt";
 const COOKIE_DOMAIN =
   process.env["NODE_ENV"] === "production" ? ".argos-ci.com" : "";
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthContextProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [token, setStateToken] = useState<string | null>(() => {
     return Cookie.get(COOKIE_NAME) ?? null;
   });

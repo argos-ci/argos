@@ -8,6 +8,9 @@ import * as GhApiInstallation from "./GhApiInstallation.js";
 import * as GhApiRepository from "./GhApiRepository.js";
 import * as GithubAccount from "./GithubAccount.js";
 import * as GithubRepository from "./GithubRepository.js";
+import * as GitlabProject from "./GitlabProject.js";
+import * as GlApiNamespace from "./GlApiNamespace.js";
+import * as GlApiProject from "./GlApiProject.js";
 import * as JobStatus from "./JobStatus.js";
 import * as Node from "./Node.js";
 import * as PageInfo from "./PageInfo.js";
@@ -30,10 +33,13 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Build,
   Connection,
   DateDefs,
-  GithubAccount,
-  GithubRepository,
   GhApiInstallation,
   GhApiRepository,
+  GithubAccount,
+  GithubRepository,
+  GitlabProject,
+  GlApiNamespace,
+  GlApiProject,
   JobStatus,
   Node,
   PageInfo,

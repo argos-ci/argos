@@ -12,11 +12,13 @@ import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
 
 import { NotFound } from "../NotFound";
+import { Permission } from "@/gql/graphql";
 
 const AccountQuery = graphql(`
   query AccountProjects_account($slug: String!) {
     account(slug: $slug) {
       id
+      permissions
       projects(first: 100, after: 0) {
         edges {
           id
@@ -49,7 +51,14 @@ export const AccountProjects = () => {
           {({ account }) => {
             if (!account) return <NotFound />;
 
-            return <ProjectList projects={account.projects.edges} />;
+            return (
+              <ProjectList
+                projects={account.projects.edges}
+                hasWritePermission={account.permissions.includes(
+                  Permission.Write,
+                )}
+              />
+            );
           }}
         </Query>
         <CheckoutStatusDialog dialog={dialog} checkoutStatus={checkoutStatus} />

@@ -54,13 +54,13 @@ const VercelProjectsQuery = graphql(`
   }
 `);
 
-const CreateProjectMutation = graphql(`
-  mutation VercelProjectsSummary_createProject(
+const ImportGithubProjectMutation = graphql(`
+  mutation VercelProjectsSummary_importGithubProject(
     $repo: String!
     $owner: String!
     $accountSlug: String!
   ) {
-    createProject(
+    importGithubProject(
       input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }
     ) {
       id
@@ -90,23 +90,26 @@ type SyncProjectProps = {
 };
 
 const SyncProject = (props: SyncProjectProps) => {
-  const [createProject, { error }] = useMutation(CreateProjectMutation, {
-    variables: {
-      repo: props.repo,
-      owner: props.org,
-      accountSlug: props.accountSlug,
+  const [importGithubProject, { error }] = useMutation(
+    ImportGithubProjectMutation,
+    {
+      variables: {
+        repo: props.repo,
+        owner: props.org,
+        accountSlug: props.accountSlug,
+      },
+      onCompleted(data) {
+        props.onSynced(data.importGithubProject.id);
+      },
+      onError() {
+        props.onError();
+      },
     },
-    onCompleted(data) {
-      props.onSynced(data.createProject.id);
-    },
-    onError() {
-      props.onError();
-    },
-  });
+  );
 
   useEffect(() => {
-    createProject();
-  }, [createProject]);
+    importGithubProject();
+  }, [importGithubProject]);
 
   if (error) {
     return (

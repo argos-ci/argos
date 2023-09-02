@@ -47,14 +47,17 @@ export const typeDefs = gql`
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
     avatar: AccountAvatar!
-    members(after: Int = 0, first: Int = 30): TeamMemberConnection!
-    me: TeamMember!
-    inviteLink: String!
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
     paymentProvider: PurchaseSource
     vercelConfiguration: VercelConfiguration
+    gitlabAccessToken: String
+    glNamespaces: GlApiNamespaceConnection
+
+    me: TeamMember!
+    members(after: Int = 0, first: Int = 30): TeamMemberConnection!
+    inviteLink: String!
   }
 
   enum TeamUserLevel {

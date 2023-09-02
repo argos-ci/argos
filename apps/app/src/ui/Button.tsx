@@ -4,7 +4,12 @@ import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
 import { Children, cloneElement, forwardRef, memo } from "react";
 
-export type ButtonColor = "primary" | "danger" | "neutral";
+export type ButtonColor =
+  | "primary"
+  | "danger"
+  | "neutral"
+  | "github"
+  | "gitlab";
 export type ButtonVariant = "contained" | "outline";
 export type ButtonSize = "base" | "small" | "large";
 
@@ -21,7 +26,11 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
     danger:
       "focus-visible:ring-danger text-white border-transparent bg-danger-solid [&:not([aria-disabled])]:hover:bg-danger-solid-hover [&:not([aria-disabled])]:active:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
     neutral:
-      "focus-visible:ring-default text bg-subtle [&:not([aria-disabled])]:hover:bg-app [&:not([aria-disabled])]:active:bg-app aria-expanded:bg-app",
+      "focus-visible:ring-default text-white border-transparent bg-solid [&:not([aria-disabled])]:hover:bg-solid-hover [&:not([aria-disabled])]:active:bg-solid-active aria-expanded:bg-solid-active",
+    github:
+      "focus-visible:ring-default text-white border-transparent bg-github [&:not([aria-disabled])]:hover:bg-github-hover [&:not([aria-disabled])]:active:bg-github-active aria-expanded:bg-github-active",
+    gitlab:
+      "focus-visible:ring-default text-white border-transparent bg-gitlab [&:not([aria-disabled])]:hover:bg-gitlab-hover [&:not([aria-disabled])]:active:bg-gitlab-active aria-expanded:bg-gitlab-active",
   },
   outline: {
     primary:
@@ -30,6 +39,8 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
       "focus-visible:ring-danger text-danger border-danger bg-transparent [&:not([aria-disabled])]:hover:bg-danger-hover [&:not([aria-disabled])]:hover:border-danger-hover",
     neutral:
       "focus-visible:ring-default text border bg-transparent [&:not([aria-disabled])]:hover:bg-hover [&:not([aria-disabled])]:hover:border-hover",
+    github: "", // not used
+    gitlab: "", // not used
   },
 };
 
@@ -72,7 +83,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           variantClassName,
           sizeClassName,
           "focus:outline-none focus-visible:ring-4",
-          "align-center inline-flex whitespace-nowrap border font-sans font-medium leading-none transition aria-disabled:opacity-disabled [&:is(button)]:cursor-default",
+          "align-center select-none inline-flex whitespace-nowrap border font-sans font-medium leading-none transition aria-disabled:opacity-disabled [&:is(button)]:cursor-default",
         )}
         {...props}
       >

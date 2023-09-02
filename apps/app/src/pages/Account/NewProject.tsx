@@ -7,14 +7,28 @@ import { graphql } from "@/gql";
 import { Container } from "@/ui/Container";
 import { Heading, Headline } from "@/ui/Typography";
 
-const CreateProjectMutation = graphql(`
-  mutation NewProject_createProject(
+const ImportGithubProjectMutation = graphql(`
+  mutation NewProject_importGithubProject(
     $repo: String!
     $owner: String!
     $accountSlug: String!
   ) {
-    createProject(
+    importGithubProject(
       input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }
+    ) {
+      id
+      slug
+    }
+  }
+`);
+
+const ImportGitlabProjectMutation = graphql(`
+  mutation NewProject_importGitlabProject(
+    $gitlabProjectId: ID!
+    $accountSlug: String!
+  ) {
+    importGitlabProject(
+      input: { gitlabProjectId: $gitlabProjectId, accountSlug: $accountSlug }
     ) {
       id
       slug
@@ -25,14 +39,31 @@ const CreateProjectMutation = graphql(`
 export const AccountNewProject = () => {
   const { accountSlug } = useParams();
   const navigate = useNavigate();
-  const [createProject, { loading }] = useMutation(CreateProjectMutation, {
-    onCompleted: (result) => {
-      if (result) {
-        const project = result.createProject;
-        navigate(`/${project.slug}`);
-      }
+  const [importGithubProject, { loading: githubImportLoading }] = useMutation(
+    ImportGithubProjectMutation,
+    {
+      onCompleted: (result) => {
+        if (result) {
+          const project = result.importGithubProject;
+          navigate(`/${project.slug}`);
+        }
+      },
     },
-  });
+  );
+
+  const [importGitLabProject, { loading: gitlabImportLoading }] = useMutation(
+    ImportGitlabProjectMutation,
+    {
+      onCompleted: (result) => {
+        if (result) {
+          const project = result.importGitlabProject;
+          navigate(`/${project.slug}`);
+        }
+      },
+    },
+  );
+
+  const loading = githubImportLoading || gitlabImportLoading;
 
   if (!accountSlug) {
     return null;
@@ -43,28 +74,39 @@ export const AccountNewProject = () => {
       <Helmet>
         <title>New Project</title>
       </Helmet>
-      <Container className="py-10">
-        <Heading>Create a new Project</Heading>
-        <Headline>
-          To add visual testing a new Project, import an existing Git
-          Repository.
-        </Headline>
-        <div className="relative mt-8 max-w-2xl" style={{ height: 382 }}>
-          <ConnectRepository
-            disabled={loading}
-            onSelectRepository={(repo) => {
-              createProject({
-                variables: {
-                  repo: repo.name,
-                  owner: repo.owner_login,
-                  accountSlug: accountSlug,
-                },
-              });
-            }}
-            connectButtonLabel="Import"
-          />
-        </div>
-      </Container>
+      <div className="flex-1 bg-subtle">
+        <Container className="py-10">
+          <Heading>Create a new Project</Heading>
+          <Headline>
+            To add visual testing a new Project, import an existing Git
+            Repository.
+          </Headline>
+          <div className="relative mt-8 max-w-2xl" style={{ height: 382 }}>
+            <ConnectRepository
+              variant="import"
+              disabled={loading}
+              accountSlug={accountSlug}
+              onSelectRepository={(repo) => {
+                importGithubProject({
+                  variables: {
+                    repo: repo.name,
+                    owner: repo.owner_login,
+                    accountSlug: accountSlug,
+                  },
+                });
+              }}
+              onSelectProject={(glProject) => {
+                importGitLabProject({
+                  variables: {
+                    gitlabProjectId: glProject.id,
+                    accountSlug: accountSlug,
+                  },
+                });
+              }}
+            />
+          </div>
+        </Container>
+      </div>
     </>
   );
 };

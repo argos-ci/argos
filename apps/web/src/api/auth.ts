@@ -2,16 +2,25 @@ import axios from "axios";
 import bodyParser from "body-parser";
 import cors from "cors";
 import { Router } from "express";
-
 import config from "@argos-ci/config";
 import {
   getOrCreateGhAccountFromGhProfile,
   getOrCreateUserAccountFromGhAccount,
+  getOrCreateUserAccountFromGitlabUser,
 } from "@argos-ci/database/services/account";
-import { getTokenOctokit } from "@argos-ci/github";
+import {
+  getTokenOctokit,
+  retrieveOAuthToken as retrieveGithubOAuthToken,
+} from "@argos-ci/github";
 
 import { createJWT } from "../jwt.js";
 import { asyncHandler } from "../util.js";
+import {
+  getTokenGitlabClient,
+  retrieveOAuthToken as retrieveGitlabOAuthToken,
+} from "@argos-ci/gitlab";
+import { getOrCreateGitlabUser } from "@argos-ci/database/services/gitlabUser";
+import type { Account } from "@argos-ci/database/models";
 
 const router = Router();
 
@@ -20,57 +29,81 @@ export default router;
 // @TODO be more restrictive on cors
 router.use(cors());
 
-async function registerAccountFromGithub(accessToken: string) {
-  const octokit = getTokenOctokit(accessToken);
-  const [profile, emails] = await Promise.all([
-    octokit.users.getAuthenticated(),
-    octokit.users.listEmailsForAuthenticatedUser(),
-  ]);
-  const ghAccount = await getOrCreateGhAccountFromGhProfile(
-    profile.data,
-    emails.data,
-  );
-  const account = await getOrCreateUserAccountFromGhAccount(
-    ghAccount,
-    accessToken,
-  );
-  return account;
+function createJWTFromAccount(account: Account) {
+  return createJWT({
+    version: 1,
+    account: {
+      id: account.id,
+      name: account.name,
+      slug: account.slug,
+    },
+  });
+}
+
+function handleOAuth(retrieveAccount: (body: any) => Promise<Account>) {
+  return asyncHandler(async (req, res) => {
+    try {
+      const account = await retrieveAccount(req.body);
+      res.send({ jwt: createJWTFromAccount(account) });
+    } catch (error) {
+      if (error instanceof axios.AxiosError && error.response) {
+        res.status(error.response.status);
+        res.send(error.response.data);
+        return;
+      }
+      throw error;
+    }
+  });
 }
 
 router.post(
   "/auth/github",
   bodyParser.json(),
-  asyncHandler(async (req, res) => {
-    const result = await axios.post(
-      "https://github.com/login/oauth/access_token",
-      {
-        client_id: config.get("github.clientId"),
-        client_secret: config.get("github.clientSecret"),
-        code: req.body.code,
-      },
-      {
-        headers: {
-          accept: "application/json",
-        },
-      },
-    );
-
-    if (result.data.error) {
-      res.status(400);
-      res.send(result.data);
-      return;
-    }
-
-    const account = await registerAccountFromGithub(result.data.access_token);
-    res.send({
-      jwt: createJWT({
-        version: 1,
-        account: {
-          id: account.id,
-          name: account.name,
-          slug: account.slug,
-        },
-      }),
+  handleOAuth(async (body) => {
+    const result = await retrieveGithubOAuthToken({
+      clientId: config.get("github.clientId"),
+      clientSecret: config.get("github.clientSecret"),
+      code: body.code,
     });
+
+    const octokit = getTokenOctokit(result.access_token);
+    const [profile, emails] = await Promise.all([
+      octokit.users.getAuthenticated(),
+      octokit.users.listEmailsForAuthenticatedUser(),
+    ]);
+    const ghAccount = await getOrCreateGhAccountFromGhProfile(
+      profile.data,
+      emails.data,
+    );
+    const account = await getOrCreateUserAccountFromGhAccount(
+      ghAccount,
+      result.access_token,
+    );
+    return account;
+  }),
+);
+
+router.post(
+  "/auth/gitlab",
+  bodyParser.json(),
+  handleOAuth(async (body) => {
+    const response = await retrieveGitlabOAuthToken({
+      clientId: config.get("gitlab.appId"),
+      clientSecret: config.get("gitlab.appSecret"),
+      code: body.code,
+      redirectUri: `${config.get(
+        "server.url",
+      )}/auth/gitlab/callback?r=${encodeURIComponent(body.r)}`,
+    });
+
+    const api = getTokenGitlabClient(response.access_token);
+    const apiUser = await api.Users.showCurrentUser();
+    const glUser = await getOrCreateGitlabUser(apiUser, {
+      accessToken: response.access_token,
+      accessTokenExpiresAt: new Date(Date.now() + response.expires_in * 1000),
+      refreshToken: response.refresh_token,
+    });
+    const account = await getOrCreateUserAccountFromGitlabUser(glUser);
+    return account;
   }),
 );

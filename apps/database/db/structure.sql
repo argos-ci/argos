@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.7 (Homebrew)
+-- Dumped by pg_dump version 14.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -175,8 +175,8 @@ CREATE TABLE public.builds (
     "projectId" bigint NOT NULL,
     "referenceCommit" character varying(255),
     "referenceBranch" character varying(255),
-    "githubPullRequestId" bigint,
     "prHeadCommit" character varying(255),
+    "githubPullRequestId" bigint,
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
 
@@ -543,6 +543,47 @@ ALTER TABLE public.github_synchronizations_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.github_synchronizations_id_seq OWNED BY public.github_synchronizations.id;
+
+
+--
+-- Name: gitlab_users; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.gitlab_users (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    name character varying(255) NOT NULL,
+    email character varying(255) NOT NULL,
+    username character varying(255) NOT NULL,
+    "gitlabId" integer NOT NULL,
+    "accessToken" character varying(255) NOT NULL,
+    "accessTokenExpiresAt" timestamp with time zone NOT NULL,
+    "refreshToken" character varying(255) NOT NULL
+);
+
+
+ALTER TABLE public.gitlab_users OWNER TO postgres;
+
+--
+-- Name: gitlab_users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.gitlab_users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.gitlab_users_id_seq OWNER TO postgres;
+
+--
+-- Name: gitlab_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.gitlab_users_id_seq OWNED BY public.gitlab_users.id;
 
 
 --
@@ -1004,7 +1045,8 @@ CREATE TABLE public.users (
     email character varying(255),
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "accessToken" character varying(255)
+    "accessToken" character varying(255),
+    "gitlabUserId" bigint
 );
 
 
@@ -1302,6 +1344,13 @@ ALTER TABLE ONLY public.github_synchronizations ALTER COLUMN id SET DEFAULT next
 
 
 --
+-- Name: gitlab_users id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.gitlab_users ALTER COLUMN id SET DEFAULT nextval('public.gitlab_users_id_seq'::regclass);
+
+
+--
 -- Name: knex_migrations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1570,6 +1619,14 @@ ALTER TABLE ONLY public.github_repository_installations
 
 ALTER TABLE ONLY public.github_synchronizations
     ADD CONSTRAINT github_synchronizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gitlab_users gitlab_users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.gitlab_users
+    ADD CONSTRAINT gitlab_users_pkey PRIMARY KEY (id);
 
 
 --
@@ -2444,6 +2501,14 @@ ALTER TABLE ONLY public.tests
 
 
 --
+-- Name: users users_gitlabuserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_gitlabuserid_foreign FOREIGN KEY ("gitlabUserId") REFERENCES public.gitlab_users(id);
+
+
+--
 -- Name: vercel_checks vercel_checks_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2576,3 +2641,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023070
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230708213033_github_pr_comment.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230712193423_purchase-subscription-id.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230714125556_build-pr-head-commit.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230826091827_gitlab_users.js', 1, NOW());

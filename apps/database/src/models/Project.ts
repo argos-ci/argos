@@ -13,6 +13,7 @@ import { Build } from "./Build.js";
 import { GithubRepository } from "./GithubRepository.js";
 import type { User } from "./User.js";
 import { VercelProject } from "./VercelProject.js";
+import { GitlabProject } from "./GitlabProject.js";
 
 export class Project extends Model {
   static override tableName = "projects";
@@ -31,6 +32,7 @@ export class Project extends Model {
       baselineBranch: { type: ["null", "string"] },
       accountId: { type: "string" },
       githubRepositoryId: { type: ["null", "string"] },
+      gitlabProjectId: { type: ["null", "string"] },
       vercelProjectId: { type: ["null", "string"] },
       prCommentEnabled: { type: "boolean" },
     },
@@ -42,6 +44,7 @@ export class Project extends Model {
   baselineBranch!: string | null;
   accountId!: string;
   githubRepositoryId!: string | null;
+  gitlabProjectId!: string | null;
   vercelProjectId!: string | null;
   prCommentEnabled!: boolean;
 
@@ -82,6 +85,14 @@ export class Project extends Model {
           to: "github_repositories.id",
         },
       },
+      gitlabProject: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: GitlabProject,
+        join: {
+          from: "projects.gitlabProjectId",
+          to: "gitlab_projects.id",
+        },
+      },
       vercelProject: {
         relation: Model.BelongsToOneRelation,
         modelClass: VercelProject,
@@ -96,6 +107,7 @@ export class Project extends Model {
   builds?: Build[];
   account?: Account;
   githubRepository?: GithubRepository | null;
+  gitlabProject?: GitlabProject | null;
   vercelProject?: VercelProject | null;
 
   override async $beforeInsert(queryContext: QueryContext) {
@@ -140,10 +152,16 @@ export class Project extends Model {
 
   async $getReferenceBranch(trx?: TransactionOrKnex) {
     if (this.baselineBranch) return this.baselineBranch;
-    const ghRepo =
-      this.githubRepository ||
-      (await this.$relatedQuery("githubRepository", trx));
-    if (!ghRepo) return "main";
-    return ghRepo.defaultBranch;
+    await this.$fetchGraph(
+      "[githubRepository, gitlabProject]",
+      trx ? { transaction: trx, skipFetched: true } : undefined,
+    );
+    if (this.githubRepository) {
+      return this.githubRepository.defaultBranch;
+    }
+    if (this.gitlabProject) {
+      return this.gitlabProject.defaultBranch;
+    }
+    return "main";
   }
 }

@@ -4,6 +4,40 @@ import { Account } from "../models/Account.js";
 import { GithubAccount } from "../models/GithubAccount.js";
 import { User } from "../models/User.js";
 import { transaction } from "../transaction.js";
+import type { GitlabUser } from "../models/GitlabUser.js";
+
+const RESERVED_SLUGS = [
+  "auth",
+  "checkout-success",
+  "login",
+  "vercel",
+  "invite",
+  "teams",
+];
+
+export const checkAccountSlug = async (slug: string) => {
+  if (RESERVED_SLUGS.includes(slug)) {
+    throw new Error("Slug is reserved for internal usage");
+  }
+  const slugExists = await Account.query().findOne({ slug });
+  if (slugExists) {
+    throw new Error("Slug is already used by another account");
+  }
+};
+
+export const resolveAccountSlug = async (
+  slug: string,
+  index: number = 0,
+): Promise<string> => {
+  const nextSlug = index ? `${slug}-${index}` : slug;
+  try {
+    await checkAccountSlug(nextSlug);
+  } catch (e) {
+    return resolveAccountSlug(slug, index + 1);
+  }
+
+  return nextSlug;
+};
 
 export const getGhAccountType = (strType: string) => {
   const type = strType.toLowerCase();
@@ -74,6 +108,7 @@ export const getOrCreateUserAccountFromGhAccount = async (
   ghAccount: GithubAccount,
   accessToken?: string,
 ): Promise<Account> => {
+  const email = ghAccount.email?.toLowerCase() ?? null;
   const existingAccount = await Account.query()
     .findOne({
       githubAccountId: ghAccount.id,
@@ -88,27 +123,102 @@ export const getOrCreateUserAccountFromGhAccount = async (
     if (
       (accessToken !== undefined &&
         existingAccount.user.accessToken !== accessToken) ||
-      existingAccount.user.email !== ghAccount.email
+      existingAccount.user.email !== email
     ) {
       await existingAccount.user.$query().patchAndFetch({
         accessToken: accessToken ?? existingAccount.user.accessToken,
-        email: ghAccount.email,
+        email,
       });
     }
 
     return existingAccount;
   }
 
+  if (email) {
+    const existingEmailUser = await User.query()
+      .findOne({ email })
+      .withGraphFetched("account");
+
+    if (existingEmailUser) {
+      if (!existingEmailUser.account) {
+        throw new Error("Invariant: account not found");
+      }
+
+      if (accessToken) {
+        await existingEmailUser.$clone().$query().patch({
+          accessToken,
+        });
+      }
+
+      await existingEmailUser.account.$query().patchAndFetch({
+        githubAccountId: ghAccount.id,
+      });
+
+      return existingEmailUser.account;
+    }
+  }
+
+  const slug = await resolveAccountSlug(ghAccount.login.toLowerCase());
+
   return transaction(async (trx) => {
-    const data = accessToken
-      ? { email: ghAccount.email, accessToken }
-      : { email: ghAccount.email };
-    const user = await User.query(trx).insertAndFetch(data);
+    const user = await User.query(trx).insertAndFetch(
+      accessToken ? { email, accessToken } : { email },
+    );
     return Account.query(trx).insertAndFetch({
       userId: user.id,
       githubAccountId: ghAccount.id,
       name: ghAccount.name,
-      slug: ghAccount.login.toLowerCase(),
+      slug,
+    });
+  });
+};
+
+export const getOrCreateUserAccountFromGitlabUser = async (
+  gitlabUser: GitlabUser,
+): Promise<Account> => {
+  const email = gitlabUser.email.toLowerCase();
+
+  const existingUser = await User.query()
+    .withGraphFetched("account")
+    .findOne({ gitlabUserId: gitlabUser.id });
+
+  if (existingUser) {
+    if (!existingUser.account) {
+      throw new Error("Invariant: account not found");
+    }
+
+    await existingUser.$clone().$query().patch({ email });
+
+    return existingUser.account;
+  }
+
+  const existingEmailUser = await User.query()
+    .withGraphFetched("account")
+    .findOne({ email });
+
+  if (existingEmailUser) {
+    if (!existingEmailUser.account) {
+      throw new Error("Invariant: account not found");
+    }
+
+    await existingEmailUser.$clone().$query().patch({
+      gitlabUserId: gitlabUser.id,
+    });
+
+    return existingEmailUser.account;
+  }
+
+  const slug = await resolveAccountSlug(gitlabUser.username.toLowerCase());
+
+  return transaction(async (trx) => {
+    const user = await User.query(trx).insertAndFetch({
+      email: gitlabUser.email,
+      gitlabUserId: gitlabUser.id,
+    });
+    return Account.query(trx).insertAndFetch({
+      userId: user.id,
+      name: gitlabUser.name,
+      slug,
     });
   });
 };
