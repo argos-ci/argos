@@ -40,7 +40,7 @@ export const NewTeam = () => {
       <AuthGuard>
         {() => {
           return (
-            <Container>
+            <Container className="py-10">
               <Heading>Create a Team</Heading>
               <Headline>
                 A team alllows you to collaborate on one or several projects.
