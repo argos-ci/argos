@@ -306,8 +306,12 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
         <div className="flex gap-4 items-center justify-center">
           <Button>
             {(buttonProps) => (
-              <a {...buttonProps} href="#">
-                {/* TODO: Link to GitLab access token setup */}
+              <a
+                {...buttonProps}
+                href="https://argos-ci.com/docs/gitlab"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Setup GitLab Access token
               </a>
             )}

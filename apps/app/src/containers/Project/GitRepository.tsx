@@ -246,7 +246,6 @@ const GitOptionsForm = ({ project }: GitOptionsFormProps) => {
 
 export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
   const project = useFragment(ProjectFragment, props.project);
-  const linked = Boolean(project.ghRepository || project.glProject);
   return (
     <Card>
       <CardBody>

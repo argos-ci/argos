@@ -69,16 +69,11 @@ export const GitlabNamespacesSelect = (props: {
           button
           onClick={(event) => {
             event.preventDefault();
-            // TODO: open link to docs
-            // window.open(
-            //   `${config.get(
-            //     "github.appUrl",
-            //   )}/installations/new?state=${encodeURIComponent(
-            //     window.location.pathname,
-            //   )}`,
-            //   "_blank",
-            //   "noopener noreferrer",
-            // );
+            window.open(
+              "https://argos-ci.com/docs/gitlab",
+              "_blank",
+              "noopener noreferrer",
+            );
           }}
           className="cursor-pointer"
         >

@@ -54,7 +54,6 @@ export class Build extends Model {
         type: ["string", "null"],
         enum: ["reference", "check", "orphan"],
       },
-      // TODO: get prNumber from related pull request
       prNumber: { type: ["integer", "null"] },
       prHeadCommit: { type: ["string", "null"] },
       githubPullRequestId: { type: ["string", "null"] },
