@@ -171,7 +171,8 @@ export class Account extends Model {
 
     const activePurchase = await this.$getActivePurchase();
     if (activePurchase) {
-      const plan = await activePurchase.$relatedQuery("plan");
+      const plan =
+        activePurchase.plan ?? (await activePurchase.$relatedQuery("plan"));
       return plan;
     }
 
@@ -258,8 +259,7 @@ export class Account extends Model {
     }
 
     const plan =
-      activePurchase.plan ??
-      (await activePurchase.$relatedQuery<Plan>("plan").first());
+      activePurchase.plan ?? (await activePurchase.$relatedQuery("plan"));
 
     return Boolean(plan?.usageBased);
   }

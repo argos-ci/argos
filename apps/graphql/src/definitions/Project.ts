@@ -1,7 +1,6 @@
 import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
-import { z } from "zod";
 
 import {
   Account,
@@ -27,7 +26,7 @@ import {
   checkProjectName,
   resolveProjectName,
 } from "@argos-ci/database/services/project";
-import { getGitlabClientFromAccount } from "@argos-ci/gitlab";
+import { formatGlProject, getGitlabClientFromAccount } from "@argos-ci/gitlab";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -296,18 +295,7 @@ const getOrCreateGitlabProject = async (props: {
     throw new Error("GitLab Project not found");
   }
 
-  const visibility = z
-    .enum(["public", "private", "internal"])
-    .parse(glProject.visibility);
-
-  return GitlabProject.query().insertAndFetch({
-    name: glProject.name,
-    path: glProject.path,
-    pathWithNamespace: glProject.path_with_namespace,
-    visibility,
-    defaultBranch: glProject.default_branch,
-    gitlabId: glProject.id,
-  });
+  return GitlabProject.query().insertAndFetch(formatGlProject(glProject));
 };
 
 const importGitlabProject = async (props: {
