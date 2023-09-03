@@ -99,6 +99,7 @@ export interface ButtonIconProps {
 
 export const ButtonIcon = ({ children }: ButtonIconProps) => {
   return cloneElement(Children.only(children), {
+    "aria-hidden": true,
     className: "h-[1em] w-[1em] mr-2",
   });
 };

@@ -6,7 +6,7 @@ import type { IResolvers } from "../__generated__/resolver-types.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type GitlabProject implements Node {
+  type GitlabProject implements Node & Repository {
     id: ID!
     defaultBranch: String!
     private: Boolean!
@@ -22,12 +22,6 @@ export const resolvers: IResolvers = {
     },
     fullName: (gitlabProject) => {
       return gitlabProject.pathWithNamespace;
-    },
-    private: (gitlabProject) => {
-      return (
-        gitlabProject.visibility === "private" ||
-        gitlabProject.visibility === "internal"
-      );
     },
   },
 };

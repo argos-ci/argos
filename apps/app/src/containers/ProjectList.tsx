@@ -1,11 +1,11 @@
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
-import { MarkGithubIcon } from "@primer/octicons-react";
 import { Link as RouterLink } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { Time } from "@/ui/Time";
+import { getRepositoryIcon } from "./Repository";
 
 const ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
@@ -20,7 +20,8 @@ const ProjectFragment = graphql(`
         ...AccountAvatarFragment
       }
     }
-    ghRepository {
+    repository {
+      __typename
       id
       fullName
     }
@@ -35,6 +36,10 @@ type Project = DocumentType<typeof ProjectFragment>;
 type ProjectFragmentType = FragmentType<typeof ProjectFragment>;
 
 const ProjectCard = ({ project }: { project: Project }) => {
+  const repositoryType = project.repository?.__typename;
+  const RepositoryIcon = repositoryType
+    ? getRepositoryIcon(repositoryType)
+    : null;
   return (
     <RouterLink
       key={project.id}
@@ -51,11 +56,11 @@ const ProjectCard = ({ project }: { project: Project }) => {
           <div className="min-w-0 flex-1">
             <div className="truncate font-medium">{project.name}</div>
             <div className="truncate text-sm text-low">
-              {project.ghRepository?.fullName ?? "-"}
+              {project.repository?.fullName ?? "-"}
             </div>
           </div>
         </div>
-        <MarkGithubIcon className="h-6 w-6 shrink-0" />
+        {RepositoryIcon && <RepositoryIcon className="h-6 w-6 shrink-0" />}
       </div>
       <div className="text-sm text-low">
         {project.latestBuild ? (

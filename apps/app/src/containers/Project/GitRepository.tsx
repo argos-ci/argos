@@ -1,5 +1,4 @@
 import { useApolloClient, useMutation } from "@apollo/client";
-import { MarkGithubIcon } from "@primer/octicons-react";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -11,8 +10,8 @@ import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormCheckbox } from "@/ui/FormCheckbox";
 
 import { ConnectRepository } from "./ConnectRepository";
-import { GitLabLogo } from "../GitLab";
 import { Anchor } from "@/ui/Link";
+import { getRepositoryIcon } from "../Repository";
 
 const ProjectFragment = graphql(`
   fragment ProjectGitRepository_Project on Project {
@@ -21,12 +20,8 @@ const ProjectFragment = graphql(`
       id
       slug
     }
-    ghRepository {
-      id
-      fullName
-      url
-    }
-    glProject {
+    repository {
+      __typename
       id
       fullName
       url
@@ -104,8 +99,7 @@ const UnlinkGithubRepositoryButton = (props: {
     optimisticResponse: {
       unlinkGithubRepository: {
         id: props.project.id,
-        ghRepository: null,
-        glProject: null,
+        repository: null,
       } as ProjectGitRepository_ProjectFragment,
     },
   });
@@ -132,8 +126,7 @@ const UnlinkGitlabProjectButton = (props: {
     optimisticResponse: {
       unlinkGitlabProject: {
         id: props.project.id,
-        ghRepository: null,
-        glProject: null,
+        repository: null,
       } as ProjectGitRepository_ProjectFragment,
     },
   });
@@ -160,10 +153,10 @@ const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
       optimisticResponse: {
         linkGithubRepository: {
           id: props.projectId,
-          ghRepository: {
+          repository: {
+            __typename: "GithubRepository",
             id: "new",
           },
-          glProject: null,
         } as ProjectGitRepository_ProjectFragment,
       },
     });
@@ -172,8 +165,8 @@ const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
       optimisticResponse: {
         linkGitlabProject: {
           id: props.projectId,
-          ghRepository: null,
-          glProject: {
+          repository: {
+            __typename: "GitlabProject",
             id: "new",
           },
         } as ProjectGitRepository_ProjectFragment,
@@ -246,6 +239,9 @@ const GitOptionsForm = ({ project }: GitOptionsFormProps) => {
 
 export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
   const project = useFragment(ProjectFragment, props.project);
+  const RepoIcon = project.repository
+    ? getRepositoryIcon(project.repository.__typename)
+    : null;
   return (
     <Card>
       <CardBody>
@@ -254,32 +250,29 @@ export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
           Connect a Git provider to your project to enable status checks on pull
           requests.
         </CardParagraph>
-        {project.ghRepository ? (
+        {project.repository && RepoIcon ? (
           <div>
             <div className="flex items-center gap-2 rounded border p-4">
-              <MarkGithubIcon size={24} className="shrink-0" />
+              <RepoIcon className="shrink-0 w-6 h-6" />
               <div className="flex-1 font-semibold">
                 <Anchor
-                  href={project.ghRepository.url}
+                  href={project.repository.url}
                   external
                   className="!text"
                 >
-                  {project.ghRepository.fullName}
+                  {project.repository.fullName}
                 </Anchor>
               </div>
-              <UnlinkGithubRepositoryButton project={project} />
-            </div>
-          </div>
-        ) : project.glProject ? (
-          <div>
-            <div className="flex items-center gap-2 rounded border p-4">
-              <GitLabLogo className="shrink-0 w-6 h-6" />
-              <div className="flex-1 font-semibold">
-                <Anchor href={project.glProject.url} external className="!text">
-                  {project.glProject.fullName}
-                </Anchor>
-              </div>
-              <UnlinkGitlabProjectButton project={project} />
+              {(() => {
+                switch (project.repository.__typename) {
+                  case "GithubRepository":
+                    return <UnlinkGithubRepositoryButton project={project} />;
+                  case "GitlabProject":
+                    return <UnlinkGitlabProjectButton project={project} />;
+                  default:
+                    return null;
+                }
+              })()}
             </div>
           </div>
         ) : (
@@ -291,7 +284,9 @@ export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
           </Card>
         )}
       </CardBody>
-      {project.ghRepository && <GitOptionsForm project={project} />}
+      {project.repository?.__typename === "GithubRepository" && (
+        <GitOptionsForm project={project} />
+      )}
     </Card>
   );
 };

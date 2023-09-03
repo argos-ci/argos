@@ -37,6 +37,10 @@
       "Test",
       "User"
     ],
+    "Repository": [
+      "GithubRepository",
+      "GitlabProject"
+    ],
     "VercelApiProjectLink": [
       "VercelApiProjectLinkGithub",
       "VercelApiProjectLinkOther"

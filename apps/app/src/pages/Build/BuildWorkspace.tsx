@@ -39,7 +39,7 @@ export const BuildFragment = graphql(`
 export const ProjectFragment = graphql(`
   fragment BuildWorkspace_Project on Project {
     ...BuildStatusDescription_Project
-    ghRepository {
+    repository {
       id
       url
     }
@@ -53,7 +53,7 @@ export const BuildWorkspace = (props: {
 }) => {
   const build = useFragment(BuildFragment, props.build);
   const project = useFragment(ProjectFragment, props.project);
-  const githubRepoUrl = project.ghRepository?.url ?? null;
+  const repoUrl = project.repository?.url ?? null;
 
   switch (build.status) {
     case "aborted":
@@ -71,7 +71,7 @@ export const BuildWorkspace = (props: {
       return (
         <BuildDiffProvider params={props.params} stats={build?.stats ?? null}>
           <div className="flex min-h-0 flex-1">
-            <BuildSidebar build={build} githubRepoUrl={githubRepoUrl} />
+            <BuildSidebar build={build} repoUrl={repoUrl} />
             {build ? <BuildDetail build={build} /> : null}
           </div>
         </BuildDiffProvider>

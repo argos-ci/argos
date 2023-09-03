@@ -6,6 +6,7 @@ import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormRadio, FormRadioGroup } from "@/ui/FormRadio";
+import { getRepositoryLabel } from "../Repository";
 
 const UpdatePrivateMutation = graphql(`
   mutation ProjectVisibility_updateProject($id: ID!, $private: Boolean) {
@@ -46,7 +47,8 @@ const ProjectFragment = graphql(`
   fragment ProjectVisibility_Project on Project {
     id
     private
-    ghRepository {
+    repository {
+      __typename
       id
       private
     }
@@ -76,6 +78,10 @@ export const ProjectVisibility = (props: ProjectVisibilityProps) => {
     });
   };
 
+  const repositoryLabel = project.repository
+    ? getRepositoryLabel(project.repository.__typename)
+    : null;
+
   return (
     <Card>
       <FormProvider {...form}>
@@ -95,11 +101,11 @@ export const ProjectVisibility = (props: ProjectVisibilityProps) => {
                 value="default"
                 label={
                   <>
-                    Use GitHub visibility settings{" "}
+                    Use {repositoryLabel ?? "Git provider"} visibility settings{" "}
                     <span className="text-low">
-                      {project.ghRepository
+                      {project.repository
                         ? `(currently ${
-                            project.ghRepository.private ? "private" : "public"
+                            project.repository.private ? "private" : "public"
                           })`
                         : `(currently unknown)`}
                     </span>
