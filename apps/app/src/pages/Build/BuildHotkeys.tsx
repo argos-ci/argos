@@ -165,7 +165,7 @@ export const useBuildHotkey = (
 };
 
 const Kbd = ({ children }: { children: React.ReactNode }) => (
-  <kbd className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-slate-700 px-1 text-xs text-slate-200">
+  <kbd className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-ui px-1 text-xs">
     {children}
   </kbd>
 );
