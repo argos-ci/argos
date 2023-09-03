@@ -47,14 +47,14 @@ const documents = {
     "\n  query ConnectVercelProject_account($accountId: ID!) {\n    account: accountById(id: $accountId) {\n      id\n      vercelConfiguration {\n        id\n        url\n        apiProjects {\n          projects {\n            id\n            ...VercelProjectList_VercelApiProject\n          }\n        }\n      }\n    }\n  }\n": types.ConnectVercelProject_AccountDocument,
     "\n  mutation DeleteProjectMutation($projectId: ID!) {\n    deleteProject(id: $projectId)\n  }\n": types.DeleteProjectMutationDocument,
     "\n  fragment ProjectDelete_Project on Project {\n    id\n    name\n    account {\n      id\n      slug\n    }\n  }\n": types.ProjectDelete_ProjectFragmentDoc,
-    "\n  fragment ProjectGitRepository_Project on Project {\n    id\n    account {\n      id\n      slug\n    }\n    ghRepository {\n      id\n      fullName\n      url\n    }\n    glProject {\n      id\n      fullName\n      url\n    }\n    prCommentEnabled\n  }\n": types.ProjectGitRepository_ProjectFragmentDoc,
+    "\n  fragment ProjectGitRepository_Project on Project {\n    id\n    account {\n      id\n      slug\n    }\n    repository {\n      __typename\n      id\n      fullName\n      url\n    }\n    prCommentEnabled\n  }\n": types.ProjectGitRepository_ProjectFragmentDoc,
     "\n  mutation ProjectGitRepository_linkGithubRepository(\n    $projectId: ID!\n    $repo: String!\n    $owner: String!\n  ) {\n    linkGithubRepository(\n      input: { projectId: $projectId, repo: $repo, owner: $owner }\n    ) {\n      id\n      ...ProjectGitRepository_Project\n    }\n  }\n": types.ProjectGitRepository_LinkGithubRepositoryDocument,
     "\n  mutation ProjectGitRepository_unlinkGithubRepository($projectId: ID!) {\n    unlinkGithubRepository(input: { projectId: $projectId }) {\n      id\n      ...ProjectGitRepository_Project\n    }\n  }\n": types.ProjectGitRepository_UnlinkGithubRepositoryDocument,
     "\n  mutation ProjectGitRepository_linkGitlabProject(\n    $projectId: ID!\n    $gitlabProjectId: ID!\n  ) {\n    linkGitlabProject(\n      input: { projectId: $projectId, gitlabProjectId: $gitlabProjectId }\n    ) {\n      id\n      ...ProjectGitRepository_Project\n    }\n  }\n": types.ProjectGitRepository_LinkGitlabProjectDocument,
     "\n  mutation ProjectGitRepository_unlinkGitlabProject($projectId: ID!) {\n    unlinkGitlabProject(input: { projectId: $projectId }) {\n      id\n      ...ProjectGitRepository_Project\n    }\n  }\n": types.ProjectGitRepository_UnlinkGitlabProjectDocument,
     "\n  mutation ProjectGitRepository_updateEnablePrComment(\n    $id: ID!\n    $enable: Boolean!\n  ) {\n    updateProjectPrComment(input: { id: $id, enable: $enable }) {\n      id\n      prCommentEnabled\n    }\n  }\n": types.ProjectGitRepository_UpdateEnablePrCommentDocument,
     "\n  mutation ProjectReferenceBranch_updateProject(\n    $id: ID!\n    $baselineBranch: String\n  ) {\n    updateProject(input: { id: $id, baselineBranch: $baselineBranch }) {\n      id\n      baselineBranch\n    }\n  }\n": types.ProjectReferenceBranch_UpdateProjectDocument,
-    "\n  fragment ProjectReferenceBranch_Project on Project {\n    id\n    baselineBranch\n    ghRepository {\n      id\n      defaultBranch\n    }\n  }\n": types.ProjectReferenceBranch_ProjectFragmentDoc,
+    "\n  fragment ProjectReferenceBranch_Project on Project {\n    id\n    baselineBranch\n    repository {\n      __typename\n      id\n      defaultBranch\n    }\n  }\n": types.ProjectReferenceBranch_ProjectFragmentDoc,
     "\n  fragment ProjectToken_Project on Project {\n    token\n  }\n": types.ProjectToken_ProjectFragmentDoc,
     "\n  query TransferProject_me {\n    me {\n      id\n      ...AccountItem_Account\n      teams {\n        id\n        ...AccountItem_Account\n      }\n    }\n  }\n": types.TransferProject_MeDocument,
     "\n  fragment ProjectTransfer_Account on Account {\n    id\n    name\n    slug\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n": types.ProjectTransfer_AccountFragmentDoc,
@@ -65,8 +65,8 @@ const documents = {
     "\n  mutation ProjectVercel_unlinkVercelProject($projectId: ID!) {\n    unlinkVercelProject(input: { projectId: $projectId }) {\n      id\n      ...ProjectVercel_Project\n    }\n  }\n": types.ProjectVercel_UnlinkVercelProjectDocument,
     "\n  mutation ProjectVercel_linkVercelProject(\n    $projectId: ID!\n    $configurationId: ID!\n    $vercelProjectId: ID!\n  ) {\n    linkVercelProject(\n      input: {\n        projectId: $projectId\n        configurationId: $configurationId\n        vercelProjectId: $vercelProjectId\n      }\n    ) {\n      id\n      ...ProjectVercel_Project\n    }\n  }\n": types.ProjectVercel_LinkVercelProjectDocument,
     "\n  mutation ProjectVisibility_updateProject($id: ID!, $private: Boolean) {\n    updateProject(input: { id: $id, private: $private }) {\n      id\n      private\n    }\n  }\n": types.ProjectVisibility_UpdateProjectDocument,
-    "\n  fragment ProjectVisibility_Project on Project {\n    id\n    private\n    ghRepository {\n      id\n      private\n    }\n  }\n": types.ProjectVisibility_ProjectFragmentDoc,
-    "\n  fragment ProjectList_Project on Project {\n    id\n    name\n    slug\n    account {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n    ghRepository {\n      id\n      fullName\n    }\n    latestBuild {\n      id\n      createdAt\n    }\n  }\n": types.ProjectList_ProjectFragmentDoc,
+    "\n  fragment ProjectVisibility_Project on Project {\n    id\n    private\n    repository {\n      __typename\n      id\n      private\n    }\n  }\n": types.ProjectVisibility_ProjectFragmentDoc,
+    "\n  fragment ProjectList_Project on Project {\n    id\n    name\n    slug\n    account {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n    repository {\n      __typename\n      id\n      fullName\n    }\n    latestBuild {\n      id\n      createdAt\n    }\n  }\n": types.ProjectList_ProjectFragmentDoc,
     "\n  fragment ReviewButton_Project on Project {\n    name\n    permissions\n    public\n    account {\n      id\n      slug\n    }\n    build(number: $buildNumber) {\n      id\n      status\n    }\n  }\n": types.ReviewButton_ProjectFragmentDoc,
     "\n  mutation setValidationStatus(\n    $buildId: ID!\n    $validationStatus: ValidationStatus!\n  ) {\n    setValidationStatus(\n      buildId: $buildId\n      validationStatus: $validationStatus\n    ) {\n      id\n      status\n    }\n  }\n": types.SetValidationStatusDocument,
     "\n  fragment TeamDelete_Team on Team {\n    id\n    slug\n    purchaseStatus\n    pendingCancelAt\n  }\n": types.TeamDelete_TeamFragmentDoc,
@@ -103,11 +103,11 @@ const documents = {
     "\n  query BuildPage_Project(\n    $accountSlug: String!\n    $projectName: String!\n    $buildNumber: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      ...BuildHeader_Project\n      ...BuildWorkspace_Project\n      account {\n        id\n        ...OvercapacityBanner_Account\n        ...PaymentBanner_Account\n      }\n      build(number: $buildNumber) {\n        id\n        status\n        ...BuildHeader_Build\n        ...BuildWorkspace_Build\n      }\n    }\n  }\n": types.BuildPage_ProjectDocument,
     "\n  fragment BuildSidebar_Build on Build {\n    ...BuildInfos_Build\n    stats {\n      total\n    }\n  }\n": types.BuildSidebar_BuildFragmentDoc,
     "\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n  }\n": types.BuildWorkspace_BuildFragmentDoc,
-    "\n  fragment BuildWorkspace_Project on Project {\n    ...BuildStatusDescription_Project\n    ghRepository {\n      id\n      url\n    }\n  }\n": types.BuildWorkspace_ProjectFragmentDoc,
+    "\n  fragment BuildWorkspace_Project on Project {\n    ...BuildStatusDescription_Project\n    repository {\n      id\n      url\n    }\n  }\n": types.BuildWorkspace_ProjectFragmentDoc,
     "\n  fragment OvercapacityBanner_Account on Account {\n    plan {\n      id\n      name\n    }\n    consumptionRatio\n  }\n": types.OvercapacityBanner_AccountFragmentDoc,
     "\n  query Invite_invitation($token: String!) {\n    invitation(token: $token) {\n      id\n      name\n      slug\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n\n    me {\n      id\n      teams {\n        id\n      }\n    }\n  }\n": types.Invite_InvitationDocument,
     "\n  mutation Invite_acceptInvitation($token: String!) {\n    acceptInvitation(token: $token) {\n      id\n      slug\n    }\n  }\n": types.Invite_AcceptInvitationDocument,
-    "\n  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      ghRepository {\n        id\n        url\n      }\n      ...GettingStarted_Project\n      ...BuildStatusChip_Project\n    }\n  }\n": types.ProjectBuilds_ProjectDocument,
+    "\n  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      repository {\n        id\n        url\n      }\n      ...GettingStarted_Project\n      ...BuildStatusChip_Project\n    }\n  }\n": types.ProjectBuilds_ProjectDocument,
     "\n  query ProjectBuilds_project_Builds(\n    $accountSlug: String!\n    $projectName: String!\n    $after: Int!\n    $first: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      builds(first: $first, after: $after) {\n        pageInfo {\n          totalCount\n          hasNextPage\n        }\n        edges {\n          id\n          number\n          createdAt\n          name\n          branch\n          commit\n          ...BuildStatusChip_Build\n        }\n      }\n    }\n  }\n": types.ProjectBuilds_Project_BuildsDocument,
     "\n  fragment GettingStarted_Project on Project {\n    token\n  }\n": types.GettingStarted_ProjectFragmentDoc,
     "\n  query ProjectReference_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      latestReferenceBuild {\n        id\n        number\n      }\n    }\n  }\n": types.ProjectReference_ProjectDocument,
@@ -271,7 +271,7 @@ export function graphql(source: "\n  fragment ProjectDelete_Project on Project {
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment ProjectGitRepository_Project on Project {\n    id\n    account {\n      id\n      slug\n    }\n    ghRepository {\n      id\n      fullName\n      url\n    }\n    glProject {\n      id\n      fullName\n      url\n    }\n    prCommentEnabled\n  }\n"): (typeof documents)["\n  fragment ProjectGitRepository_Project on Project {\n    id\n    account {\n      id\n      slug\n    }\n    ghRepository {\n      id\n      fullName\n      url\n    }\n    glProject {\n      id\n      fullName\n      url\n    }\n    prCommentEnabled\n  }\n"];
+export function graphql(source: "\n  fragment ProjectGitRepository_Project on Project {\n    id\n    account {\n      id\n      slug\n    }\n    repository {\n      __typename\n      id\n      fullName\n      url\n    }\n    prCommentEnabled\n  }\n"): (typeof documents)["\n  fragment ProjectGitRepository_Project on Project {\n    id\n    account {\n      id\n      slug\n    }\n    repository {\n      __typename\n      id\n      fullName\n      url\n    }\n    prCommentEnabled\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -299,7 +299,7 @@ export function graphql(source: "\n  mutation ProjectReferenceBranch_updateProje
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment ProjectReferenceBranch_Project on Project {\n    id\n    baselineBranch\n    ghRepository {\n      id\n      defaultBranch\n    }\n  }\n"): (typeof documents)["\n  fragment ProjectReferenceBranch_Project on Project {\n    id\n    baselineBranch\n    ghRepository {\n      id\n      defaultBranch\n    }\n  }\n"];
+export function graphql(source: "\n  fragment ProjectReferenceBranch_Project on Project {\n    id\n    baselineBranch\n    repository {\n      __typename\n      id\n      defaultBranch\n    }\n  }\n"): (typeof documents)["\n  fragment ProjectReferenceBranch_Project on Project {\n    id\n    baselineBranch\n    repository {\n      __typename\n      id\n      defaultBranch\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -343,11 +343,11 @@ export function graphql(source: "\n  mutation ProjectVisibility_updateProject($i
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment ProjectVisibility_Project on Project {\n    id\n    private\n    ghRepository {\n      id\n      private\n    }\n  }\n"): (typeof documents)["\n  fragment ProjectVisibility_Project on Project {\n    id\n    private\n    ghRepository {\n      id\n      private\n    }\n  }\n"];
+export function graphql(source: "\n  fragment ProjectVisibility_Project on Project {\n    id\n    private\n    repository {\n      __typename\n      id\n      private\n    }\n  }\n"): (typeof documents)["\n  fragment ProjectVisibility_Project on Project {\n    id\n    private\n    repository {\n      __typename\n      id\n      private\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment ProjectList_Project on Project {\n    id\n    name\n    slug\n    account {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n    ghRepository {\n      id\n      fullName\n    }\n    latestBuild {\n      id\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  fragment ProjectList_Project on Project {\n    id\n    name\n    slug\n    account {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n    ghRepository {\n      id\n      fullName\n    }\n    latestBuild {\n      id\n      createdAt\n    }\n  }\n"];
+export function graphql(source: "\n  fragment ProjectList_Project on Project {\n    id\n    name\n    slug\n    account {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n    repository {\n      __typename\n      id\n      fullName\n    }\n    latestBuild {\n      id\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  fragment ProjectList_Project on Project {\n    id\n    name\n    slug\n    account {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n    repository {\n      __typename\n      id\n      fullName\n    }\n    latestBuild {\n      id\n      createdAt\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -495,7 +495,7 @@ export function graphql(source: "\n  fragment BuildWorkspace_Build on Build {\n 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment BuildWorkspace_Project on Project {\n    ...BuildStatusDescription_Project\n    ghRepository {\n      id\n      url\n    }\n  }\n"): (typeof documents)["\n  fragment BuildWorkspace_Project on Project {\n    ...BuildStatusDescription_Project\n    ghRepository {\n      id\n      url\n    }\n  }\n"];
+export function graphql(source: "\n  fragment BuildWorkspace_Project on Project {\n    ...BuildStatusDescription_Project\n    repository {\n      id\n      url\n    }\n  }\n"): (typeof documents)["\n  fragment BuildWorkspace_Project on Project {\n    ...BuildStatusDescription_Project\n    repository {\n      id\n      url\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -511,7 +511,7 @@ export function graphql(source: "\n  mutation Invite_acceptInvitation($token: St
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      ghRepository {\n        id\n        url\n      }\n      ...GettingStarted_Project\n      ...BuildStatusChip_Project\n    }\n  }\n"): (typeof documents)["\n  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      ghRepository {\n        id\n        url\n      }\n      ...GettingStarted_Project\n      ...BuildStatusChip_Project\n    }\n  }\n"];
+export function graphql(source: "\n  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      repository {\n        id\n        url\n      }\n      ...GettingStarted_Project\n      ...BuildStatusChip_Project\n    }\n  }\n"): (typeof documents)["\n  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      repository {\n        id\n        url\n      }\n      ...GettingStarted_Project\n      ...BuildStatusChip_Project\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -18,6 +18,7 @@ import * as Permission from "./Permission.js";
 import * as Plan from "./Plan.js";
 import * as Project from "./Project.js";
 import * as Purchase from "./Purchase.js";
+import * as Repository from "./Repository.js";
 import * as Screenshot from "./Screenshot.js";
 import * as ScreenshotBucket from "./ScreenshotBucket.js";
 import * as ScreenshotDiff from "./ScreenshotDiff.js";
@@ -47,6 +48,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Plan,
   Project,
   Purchase,
+  Repository,
   schema,
   Screenshot,
   ScreenshotBucket,

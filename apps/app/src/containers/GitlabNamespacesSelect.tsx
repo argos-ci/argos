@@ -45,7 +45,7 @@ export const GitlabNamespacesSelect = (props: {
       <Select state={select} className="w-full" disabled={props.disabled}>
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2">
-            <GitLabLogo />
+            <GitLabLogo aria-hidden />
             {activeNamespace.name || activeNamespace.path}
           </div>
           <SelectArrow />
@@ -57,7 +57,7 @@ export const GitlabNamespacesSelect = (props: {
           return (
             <SelectItem state={select} key={namespace.id} value={namespace.id}>
               <div className="flex items-center gap-2">
-                <GitLabLogo />
+                <GitLabLogo aria-hidden />
                 {namespace.name || namespace.path}
               </div>
             </SelectItem>

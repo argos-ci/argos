@@ -7,6 +7,7 @@ import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormCheckbox } from "@/ui/FormCheckbox";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { getRepositoryLabel } from "../Repository";
 
 const UpdateBaselineBranchMutation = graphql(`
   mutation ProjectReferenceBranch_updateProject(
@@ -29,7 +30,8 @@ const ProjectFragment = graphql(`
   fragment ProjectReferenceBranch_Project on Project {
     id
     baselineBranch
-    ghRepository {
+    repository {
+      __typename
       id
       defaultBranch
     }
@@ -46,7 +48,7 @@ export const ProjectReferenceBranch = (props: ProjectReferenceBranchProps) => {
     defaultValues: {
       useDefaultBranch: project.baselineBranch === null,
       baselineBranch:
-        project.baselineBranch || project.ghRepository?.defaultBranch || "main",
+        project.baselineBranch || project.repository?.defaultBranch || "main",
     },
   });
 
@@ -80,6 +82,10 @@ export const ProjectReferenceBranch = (props: ProjectReferenceBranchProps) => {
     }
   };
 
+  const defaultLabel = project.repository
+    ? `Use ${getRepositoryLabel(project.repository.__typename)} default branch`
+    : "Use main branch";
+
   return (
     <Card>
       <FormProvider {...form}>
@@ -92,7 +98,7 @@ export const ProjectReferenceBranch = (props: ProjectReferenceBranchProps) => {
             </CardParagraph>
             <FormCheckbox
               {...form.register("useDefaultBranch")}
-              label="Use GitHub default branch"
+              label={defaultLabel}
             />
             {!useDefaultBranch && (
               <FormTextInput

@@ -6,7 +6,7 @@ import type { IResolvers } from "../__generated__/resolver-types.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type GithubRepository implements Node {
+  type GithubRepository implements Node & Repository {
     id: ID!
     defaultBranch: String!
     private: Boolean!

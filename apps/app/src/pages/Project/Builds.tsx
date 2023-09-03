@@ -31,7 +31,7 @@ const ProjectQuery = graphql(`
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       permissions
-      ghRepository {
+      repository {
         id
         url
       }
@@ -126,8 +126,8 @@ const BuildRow = memo(
               <FakeLink
                 className="inline-flex max-w-full items-center gap-1"
                 href={
-                  project.ghRepository
-                    ? `${project.ghRepository.url}/tree/${build.branch}`
+                  project.repository
+                    ? `${project.repository.url}/tree/${build.branch}`
                     : undefined
                 }
                 title={build.branch}
@@ -143,8 +143,8 @@ const BuildRow = memo(
                 className="inline-flex max-w-full items-center gap-1"
                 title={build.commit}
                 href={
-                  project.ghRepository
-                    ? `${project.ghRepository.url}/commit/${build.commit}`
+                  project.repository
+                    ? `${project.repository.url}/commit/${build.commit}`
                     : undefined
                 }
               >

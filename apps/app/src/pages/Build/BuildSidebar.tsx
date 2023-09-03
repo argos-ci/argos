@@ -61,7 +61,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, object>(
 
 export const BuildSidebar = React.memo(
   (props: {
-    githubRepoUrl: string | null;
+    repoUrl: string | null;
     build: FragmentType<typeof BuildFragment>;
   }) => {
     const build = useFragment(BuildFragment, props.build);
@@ -174,7 +174,7 @@ export const BuildSidebar = React.memo(
               className="flex-1 p-4"
               focusable={false}
             >
-              <BuildInfos build={build} githubRepoUrl={props.githubRepoUrl} />
+              <BuildInfos build={build} repoUrl={props.repoUrl} />
             </TabPanel>
           </>
         )}

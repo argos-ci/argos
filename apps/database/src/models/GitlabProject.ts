@@ -47,4 +47,10 @@ export class GitlabProject extends Model {
   }
 
   projects?: Project[] | null;
+
+  static override virtualAttributes = ["private"];
+
+  get private() {
+    return this.visibility === "private" || this.visibility === "internal";
+  }
 }

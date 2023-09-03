@@ -214,7 +214,7 @@ export type IGithubAccount = INode & {
   login: Scalars['String']['output'];
 };
 
-export type IGithubRepository = INode & {
+export type IGithubRepository = INode & IRepository & {
   __typename?: 'GithubRepository';
   defaultBranch: Scalars['String']['output'];
   fullName: Scalars['String']['output'];
@@ -223,7 +223,7 @@ export type IGithubRepository = INode & {
   url: Scalars['String']['output'];
 };
 
-export type IGitlabProject = INode & {
+export type IGitlabProject = INode & IRepository & {
   __typename?: 'GitlabProject';
   defaultBranch: Scalars['String']['output'];
   fullName: Scalars['String']['output'];
@@ -525,10 +525,6 @@ export type IProject = INode & {
   builds: IBuildConnection;
   /** Current month used screenshots */
   currentMonthUsedScreenshots: Scalars['Int']['output'];
-  /** Repository associated to the project */
-  ghRepository?: Maybe<IGithubRepository>;
-  /** Gitlab project associated to the project */
-  glProject?: Maybe<IGitlabProject>;
   id: Scalars['ID']['output'];
   /** Latest build */
   latestBuild?: Maybe<IBuild>;
@@ -545,6 +541,8 @@ export type IProject = INode & {
   public: Scalars['Boolean']['output'];
   /** Reference branch */
   referenceBranch?: Maybe<Scalars['String']['output']>;
+  /** Repository associated to the project */
+  repository?: Maybe<IRepository>;
   /** Project slug */
   slug: Scalars['String']['output'];
   /** Tests associated to the repository */
@@ -695,6 +693,14 @@ export type IRemoveUserFromTeamInput = {
 export type IRemoveUserFromTeamPayload = {
   __typename?: 'RemoveUserFromTeamPayload';
   teamMemberId: Scalars['ID']['output'];
+};
+
+export type IRepository = {
+  defaultBranch: Scalars['String']['output'];
+  fullName: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  private: Scalars['Boolean']['output'];
+  url: Scalars['String']['output'];
 };
 
 export type IScreenshot = INode & {
@@ -1120,6 +1126,7 @@ export type IResolversInterfaceTypes<RefType extends Record<string, unknown>> = 
   Account: ( Account ) | ( Account );
   Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<RefType['Project']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<RefType['ScreenshotDiff']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<RefType['User']> } );
   Node: ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( Purchase ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( TeamUser ) | ( Test ) | ( Account );
+  Repository: ( GithubRepository ) | ( GitlabProject );
   VercelApiProjectLink: ( IVercelApiProjectLinkGithub ) | ( IVercelApiProjectLinkOther );
 }>;
 
@@ -1175,6 +1182,7 @@ export type IResolversTypes = ResolversObject<{
   Query: ResolverTypeWrapper<{}>;
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: ResolverTypeWrapper<IRemoveUserFromTeamPayload>;
+  Repository: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Repository']>;
   Screenshot: ResolverTypeWrapper<Screenshot>;
   ScreenshotBucket: ResolverTypeWrapper<ScreenshotBucket>;
   ScreenshotDiff: ResolverTypeWrapper<ScreenshotDiff>;
@@ -1264,6 +1272,7 @@ export type IResolversParentTypes = ResolversObject<{
   Query: {};
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: IRemoveUserFromTeamPayload;
+  Repository: IResolversInterfaceTypes<IResolversParentTypes>['Repository'];
   Screenshot: Screenshot;
   ScreenshotBucket: ScreenshotBucket;
   ScreenshotDiff: ScreenshotDiff;
@@ -1538,8 +1547,6 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   build?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType, RequireFields<IProjectBuildArgs, 'number'>>;
   builds?: Resolver<IResolversTypes['BuildConnection'], ParentType, ContextType, RequireFields<IProjectBuildsArgs, 'after' | 'first'>>;
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  ghRepository?: Resolver<Maybe<IResolversTypes['GithubRepository']>, ParentType, ContextType>;
-  glProject?: Resolver<Maybe<IResolversTypes['GitlabProject']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   latestBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   latestReferenceBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
@@ -1549,6 +1556,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   private?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   public?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   referenceBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  repository?: Resolver<Maybe<IResolversTypes['Repository']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   tests?: Resolver<IResolversTypes['TestConnection'], ParentType, ContextType, RequireFields<IProjectTestsArgs, 'after' | 'first'>>;
   token?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -1589,6 +1597,15 @@ export type IQueryResolvers<ContextType = Context, ParentType extends IResolvers
 export type IRemoveUserFromTeamPayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['RemoveUserFromTeamPayload'] = IResolversParentTypes['RemoveUserFromTeamPayload']> = ResolversObject<{
   teamMemberId?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IRepositoryResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Repository'] = IResolversParentTypes['Repository']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'GithubRepository' | 'GitlabProject', ParentType, ContextType>;
+  defaultBranch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  fullName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  private?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type IScreenshotResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Screenshot'] = IResolversParentTypes['Screenshot']> = ResolversObject<{
@@ -1856,6 +1873,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   Purchase?: IPurchaseResolvers<ContextType>;
   Query?: IQueryResolvers<ContextType>;
   RemoveUserFromTeamPayload?: IRemoveUserFromTeamPayloadResolvers<ContextType>;
+  Repository?: IRepositoryResolvers<ContextType>;
   Screenshot?: IScreenshotResolvers<ContextType>;
   ScreenshotBucket?: IScreenshotBucketResolvers<ContextType>;
   ScreenshotDiff?: IScreenshotDiffResolvers<ContextType>;

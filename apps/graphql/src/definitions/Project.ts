@@ -58,9 +58,7 @@ export const typeDefs = gql`
     "Owner of the repository"
     account: Account!
     "Repository associated to the project"
-    ghRepository: GithubRepository
-    "Gitlab project associated to the project"
-    glProject: GitlabProject
+    repository: Repository
     "Override branch name"
     baselineBranch: String
     "Reference branch"
@@ -414,13 +412,14 @@ export const resolvers: IResolvers = {
     account: async (project, _args, ctx) => {
       return ctx.loaders.Account.load(project.accountId);
     },
-    ghRepository: async (project, _args, ctx) => {
-      if (!project.githubRepositoryId) return null;
-      return ctx.loaders.GithubRepository.load(project.githubRepositoryId);
-    },
-    glProject: async (project, _args, ctx) => {
-      if (!project.gitlabProjectId) return null;
-      return ctx.loaders.GitlabProject.load(project.gitlabProjectId);
+    repository: async (project, _args, ctx) => {
+      if (project.githubRepositoryId) {
+        return ctx.loaders.GithubRepository.load(project.githubRepositoryId);
+      }
+      if (project.gitlabProjectId) {
+        return ctx.loaders.GitlabProject.load(project.gitlabProjectId);
+      }
+      return null;
     },
     vercelProject: async (project, _args, ctx) => {
       if (!project.vercelProjectId) return null;
@@ -556,6 +555,7 @@ export const resolvers: IResolvers = {
 
       return project.$query().patchAndFetch({
         githubRepositoryId: ghRepo.id,
+        gitlabProjectId: null,
       });
     },
     unlinkGithubRepository: async (_root, args, ctx) => {
@@ -591,6 +591,7 @@ export const resolvers: IResolvers = {
 
       return project.$query().patchAndFetch({
         gitlabProjectId: gitlabProject.id,
+        githubRepositoryId: null,
       });
     },
     unlinkGitlabProject: async (_root, args, ctx) => {

@@ -130,12 +130,19 @@ export class Project extends Model {
   async $checkIsPublic(trx?: TransactionOrKnex) {
     if (this.private === false) return true;
     if (this.private === true) return false;
-    const repository =
-      this.githubRepository === undefined
-        ? await this.$relatedQuery("githubRepository", trx)
-        : this.githubRepository;
-    if (!repository) return false;
-    return !repository.private;
+
+    await this.$fetchGraph(
+      "[githubRepository, gitlabProject]",
+      trx ? { transaction: trx, skipFetched: true } : undefined,
+    );
+
+    if (this.githubRepository) {
+      return !this.githubRepository.private;
+    }
+    if (this.gitlabProject) {
+      return !this.gitlabProject.private;
+    }
+    return false;
   }
 
   static async generateToken() {

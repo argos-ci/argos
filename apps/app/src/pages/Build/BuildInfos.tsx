@@ -11,47 +11,47 @@ const Dd = ({ children }: { children: React.ReactNode }) => {
 };
 
 const CommitLink = ({
-  githubRepoUrl,
+  repoUrl,
   commit,
 }: {
-  githubRepoUrl: string | null;
+  repoUrl: string | null;
   commit: string;
 }) => {
   const shortCommit = commit.slice(0, 7);
-  if (!githubRepoUrl) {
+  if (!repoUrl) {
     return <>{shortCommit}</>;
   }
   return (
-    <Anchor className="font-mono" href={`${githubRepoUrl}/commit/${commit}`}>
+    <Anchor className="font-mono" href={`${repoUrl}/commit/${commit}`}>
       {shortCommit}
     </Anchor>
   );
 };
 
 const BranchLink = ({
-  githubRepoUrl,
+  repoUrl,
   branch,
 }: {
-  githubRepoUrl: string | null;
+  repoUrl: string | null;
   branch: string;
 }) => {
-  if (!githubRepoUrl) return <>{branch}</>;
+  if (!repoUrl) return <>{branch}</>;
   return (
-    <Anchor className="font-mono" href={`${githubRepoUrl}/tree/${branch}`}>
+    <Anchor className="font-mono" href={`${repoUrl}/tree/${branch}`}>
       {branch}
     </Anchor>
   );
 };
 
 const PullRequestLink = ({
-  githubRepoUrl,
+  repoUrl,
   prNumber,
 }: {
-  githubRepoUrl: string;
+  repoUrl: string;
   prNumber: number;
 }) => {
   return (
-    <Anchor className="font-mono" href={`${githubRepoUrl}/pull/${prNumber}`}>
+    <Anchor className="font-mono" href={`${repoUrl}/pull/${prNumber}`}>
       #{prNumber}
     </Anchor>
   );
@@ -75,7 +75,7 @@ export const BuildFragment = graphql(`
 `);
 
 export const BuildInfos = (props: {
-  githubRepoUrl: string | null;
+  repoUrl: string | null;
   build: FragmentType<typeof BuildFragment>;
 }) => {
   const build = useFragment(BuildFragment, props.build);
@@ -90,12 +90,12 @@ export const BuildInfos = (props: {
       <Dt>Total screenshots count</Dt>
       <Dd>{build ? build.stats.total : "-"}</Dd>
 
-      {build?.prNumber && props.githubRepoUrl ? (
+      {build?.prNumber && props.repoUrl ? (
         <>
           <Dt>Pull request</Dt>
           <Dd>
             <PullRequestLink
-              githubRepoUrl={props.githubRepoUrl}
+              repoUrl={props.repoUrl}
               prNumber={build.prNumber}
             />
           </Dd>
@@ -106,7 +106,7 @@ export const BuildInfos = (props: {
       <Dd>
         {build?.baseScreenshotBucket ? (
           <BranchLink
-            githubRepoUrl={props.githubRepoUrl}
+            repoUrl={props.repoUrl}
             branch={build.baseScreenshotBucket.branch}
           />
         ) : (
@@ -118,7 +118,7 @@ export const BuildInfos = (props: {
       <Dd>
         {build?.baseScreenshotBucket ? (
           <CommitLink
-            githubRepoUrl={props.githubRepoUrl}
+            repoUrl={props.repoUrl}
             commit={build.baseScreenshotBucket.commit}
           />
         ) : (
@@ -129,10 +129,7 @@ export const BuildInfos = (props: {
       <Dt>Changes branch</Dt>
       <Dd>
         {build ? (
-          <BranchLink
-            githubRepoUrl={props.githubRepoUrl}
-            branch={build.branch}
-          />
+          <BranchLink repoUrl={props.repoUrl} branch={build.branch} />
         ) : (
           "-"
         )}
@@ -141,10 +138,7 @@ export const BuildInfos = (props: {
       <Dt>Changes commit</Dt>
       <Dd>
         {build ? (
-          <CommitLink
-            githubRepoUrl={props.githubRepoUrl}
-            commit={build.commit}
-          />
+          <CommitLink repoUrl={props.repoUrl} commit={build.commit} />
         ) : (
           "-"
         )}
