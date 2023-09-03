@@ -102,13 +102,11 @@ export const ProjectVisibility = (props: ProjectVisibilityProps) => {
                 label={
                   <>
                     Use {repositoryLabel ?? "Git provider"} visibility settings{" "}
-                    <span className="text-low">
-                      {project.repository
-                        ? `(currently ${
-                            project.repository.private ? "private" : "public"
-                          })`
-                        : `(currently unknown)`}
-                    </span>
+                    {project.repository ? (
+                      <span className="text-low">
+                        ({project.repository.private ? "private" : "public"})
+                      </span>
+                    ) : null}
                   </>
                 }
               />
