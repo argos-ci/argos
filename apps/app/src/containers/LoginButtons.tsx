@@ -4,17 +4,19 @@ import config from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { GitLabLoginButton } from "@/containers/GitLab";
 import { Anchor } from "@/ui/Link";
+import clsx from "clsx";
 
 export type LoginButtonsProps = {
   redirect?: string | null;
   disabled?: boolean;
+  className?: string;
 };
 
 export const LoginButtons = (props: LoginButtonsProps) => {
   const location = useLocation();
   const redirect = props.redirect ?? location.pathname + location.search;
   return (
-    <div style={{ width: 400 }}>
+    <div className={clsx("w-full max-w-sm", props.className)}>
       <div className="flex flex-col gap-4">
         <GitHubLoginButton
           redirect={redirect}
