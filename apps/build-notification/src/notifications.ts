@@ -13,7 +13,7 @@ import { createVercelClient } from "@argos-ci/vercel";
 import { getCommentBody } from "./comment.js";
 import { job as buildNotificationJob } from "./job.js";
 import { getStatsMessage } from "./utils.js";
-import { getTokenGitlabClient } from "@argos-ci/gitlab";
+import { getGitlabClientFromAccount } from "@argos-ci/gitlab";
 
 enum GithubNotificationState {
   Pending = "pending",
@@ -370,7 +370,7 @@ const sendGitlabNotification = async (ctx: Context) => {
     return;
   }
 
-  const client = await getTokenGitlabClient(account.gitlabAccessToken);
+  const client = await getGitlabClientFromAccount(account);
 
   if (!client) {
     return;

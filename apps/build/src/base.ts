@@ -4,7 +4,7 @@ import { ScreenshotBucket } from "@argos-ci/database/models";
 import type { Build, Project } from "@argos-ci/database/models";
 import { getInstallationOctokit } from "@argos-ci/github";
 import { UnretryableError } from "@argos-ci/job-core";
-import { getTokenGitlabClient } from "@argos-ci/gitlab";
+import { GitlabClient, getGitlabClientFromAccount } from "@argos-ci/gitlab";
 
 type Octokit = NonNullable<Awaited<ReturnType<typeof getInstallationOctokit>>>;
 
@@ -126,7 +126,7 @@ const GithubStrategy: MergeBaseStrategy<{
 };
 
 const GitlabStrategy: MergeBaseStrategy<{
-  client: ReturnType<typeof getTokenGitlabClient>;
+  client: GitlabClient;
   gitlabProjectId: number;
 }> = {
   detect: (project: Project) => Boolean(project.gitlabProject),
@@ -139,9 +139,9 @@ const GitlabStrategy: MergeBaseStrategy<{
       throw new UnretryableError("Invariant: no gitlab project found");
     }
 
-    if (!project.account.gitlabAccessToken) return null;
+    const client = await getGitlabClientFromAccount(project.account);
 
-    const client = getTokenGitlabClient(project.account.gitlabAccessToken);
+    if (!client) return null;
 
     return { client, gitlabProjectId: project.gitlabProject.gitlabId };
   },

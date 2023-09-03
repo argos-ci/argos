@@ -23,7 +23,10 @@ import { getWritableAccount } from "../services/account.js";
 import { unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 import { checkAccountSlug } from "@argos-ci/database/services/account";
-import { getTokenGitlabClient } from "@argos-ci/gitlab";
+import {
+  getGitlabClientFromAccount,
+  getTokenGitlabClient,
+} from "@argos-ci/gitlab";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -346,8 +349,8 @@ export const resolvers: IResolvers = {
       return configuration;
     },
     glNamespaces: async (account) => {
-      if (!account.gitlabAccessToken) return null;
-      const client = getTokenGitlabClient(account.gitlabAccessToken);
+      const client = await getGitlabClientFromAccount(account);
+      if (!client) return null;
       const namespaces = await client.Namespaces.all();
       return {
         edges: namespaces,
@@ -405,8 +408,44 @@ export const resolvers: IResolvers = {
         data.name = input.name;
       }
 
-      if (input.gitlabAccessToken !== undefined) {
+      if (
+        input.gitlabAccessToken !== undefined &&
+        account.gitlabAccessToken !== input.gitlabAccessToken
+      ) {
         data.gitlabAccessToken = input.gitlabAccessToken;
+
+        if (input.gitlabAccessToken) {
+          const gitlabClient = getTokenGitlabClient(input.gitlabAccessToken);
+          try {
+            const res = await gitlabClient.PersonalAccessTokens.show();
+            if (!res.scopes?.includes("api")) {
+              throw new GraphQLError(
+                "The provided GitLab access token does not have the `api` scope. Please create a new one with the `api` scope.",
+                {
+                  extensions: {
+                    code: "BAD_USER_INPUT",
+                    field: "gitlabAccessToken",
+                  },
+                },
+              );
+            }
+          } catch (error: unknown) {
+            if (error instanceof Error) {
+              if (error.message === "Unauthorized") {
+                throw new GraphQLError(
+                  "The provided GitLab access token is not valid.",
+                  {
+                    extensions: {
+                      code: "BAD_USER_INPUT",
+                      field: "gitlabAccessToken",
+                    },
+                  },
+                );
+              }
+            }
+            throw error;
+          }
+        }
       }
 
       return account.$query().patchAndFetch(data);
