@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import * as Sentry from "@sentry/browser";
 
 import { AuthProvider, useAuth } from "@/containers/Auth";
+import { UniversalNavigate } from "@/containers/Redirect";
 
 const api = axios.create({
   baseURL: process.env["API_BASE_URL"] as string,
@@ -19,8 +20,10 @@ export const AuthCallback = (props: AuthCallbackProps) => {
   const code = params.get("code");
   const state = params.get("state");
   const r = params.get("r");
+  const error = params.get("error");
   const { setToken, token } = useAuth();
   useEffect(() => {
+    if (!code) return;
     api
       .post(`/auth/${props.provider}`, { code, r })
       .then((result) => {
@@ -31,17 +34,12 @@ export const AuthCallback = (props: AuthCallbackProps) => {
         navigate("/login");
       });
   }, [props.provider, r, code, setToken, navigate]);
-  // When the token is present, we want to redirect.
-  useEffect(() => {
-    if (token) {
-      const redirectUrl = r || (state ? decodeURIComponent(state) : "/");
-      if (redirectUrl.startsWith("/")) {
-        navigate(r || (state ? decodeURIComponent(state) : "/"));
-      } else {
-        window.location.replace(redirectUrl);
-      }
-    }
-  }, [navigate, r, state, token]);
-
+  if (token) {
+    const redirectUrl = r || (state ? decodeURIComponent(state) : "/");
+    return <UniversalNavigate to={redirectUrl} replace />;
+  }
+  if (error) {
+    return <UniversalNavigate to="/login" replace />;
+  }
   return null;
 };
