@@ -37,11 +37,16 @@ export const useAccountContext = () => {
 
 const AccountTabs = ({ account }: { account: Account }) => {
   const tab = useTabLinkState();
+
   return (
     <>
       <TabLinkList state={tab} aria-label="Sections">
         <TabLink to="">Projects</TabLink>
-        <TabLink to="settings">Settings</TabLink>
+        <TabLink to="settings">
+          {account.__typename === "User"
+            ? "Personal Settings"
+            : "Team Settings"}
+        </TabLink>
       </TabLinkList>
       <hr className="border-t-border" />
       <PaymentBanner account={account} />
