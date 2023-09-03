@@ -82,9 +82,15 @@ export const ProjectReferenceBranch = (props: ProjectReferenceBranchProps) => {
     }
   };
 
-  const defaultLabel = project.repository
-    ? `Use ${getRepositoryLabel(project.repository.__typename)} default branch`
-    : "Use main branch";
+  const defaultLabel = project.repository ? (
+    <>
+      Use linked {getRepositoryLabel(project.repository.__typename)} repository
+      default branch{" "}
+      <span className="text-low">({project.repository.defaultBranch})</span>
+    </>
+  ) : (
+    "Use main branch"
+  );
 
   return (
     <Card>

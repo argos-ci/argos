@@ -76,6 +76,11 @@ export const handleGitHubEvents = async ({
       }
       case "repository": {
         switch (payload.action) {
+          case "deleted":
+          case "edited":
+          case "privatized":
+          case "publicized":
+          case "transferred":
           case "renamed": {
             if (payload.installation?.id) {
               const installation = await getOrCreateInstallation({
