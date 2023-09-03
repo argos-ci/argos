@@ -61,7 +61,14 @@ export const AccountGitLab = (props: AccountGitLabProps) => {
               Setup GitLab to get Argos updates in your merge requests.
             </CardParagraph>
             <FormTextInput
-              {...form.register("gitlabAccessToken")}
+              {...form.register("gitlabAccessToken", {
+                validate: (value) => {
+                  if (value && !/^(glpat-)?[a-zA-Z0-9]{20,}$/.test(value)) {
+                    return "Invalid GitLab personal access token, please be sure to enter a valid one ([a-zA-Z0-9]{20,}).";
+                  }
+                  return true;
+                },
+              })}
               label="Personal access token"
               disabled={!writable}
             />

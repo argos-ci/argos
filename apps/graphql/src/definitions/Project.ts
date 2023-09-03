@@ -27,7 +27,7 @@ import {
   checkProjectName,
   resolveProjectName,
 } from "@argos-ci/database/services/project";
-import { getTokenGitlabClient } from "@argos-ci/gitlab";
+import { getGitlabClientFromAccount } from "@argos-ci/gitlab";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -276,18 +276,21 @@ const importGithubProject = async (props: {
 };
 
 const getOrCreateGitlabProject = async (props: {
-  accessToken: string;
+  account: Account;
   gitlabProjectId: string;
 }): Promise<GitlabProject> => {
-  const client = getTokenGitlabClient(props.accessToken);
+  const client = await getGitlabClientFromAccount(props.account);
+  if (!client) {
+    throw new Error("Gitlab client not found");
+  }
   const gitlabProjectId = Number(props.gitlabProjectId);
 
-  const repo = await GitlabProject.query().findOne({
+  const gitlabProject = await GitlabProject.query().findOne({
     gitlabId: gitlabProjectId,
   });
 
-  if (repo) {
-    return repo;
+  if (gitlabProject) {
+    return gitlabProject;
   }
 
   const glProject = await client.Projects.show(gitlabProjectId);
@@ -327,7 +330,7 @@ const importGitlabProject = async (props: {
   }
 
   const glProject = await getOrCreateGitlabProject({
-    accessToken: account.gitlabAccessToken,
+    account,
     gitlabProjectId: props.gitlabProjectId,
   });
 
@@ -582,7 +585,7 @@ export const resolvers: IResolvers = {
       }
 
       const gitlabProject = await getOrCreateGitlabProject({
-        accessToken: account.gitlabAccessToken,
+        account,
         gitlabProjectId: args.input.gitlabProjectId,
       });
 
