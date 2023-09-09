@@ -6,7 +6,7 @@
   "type": "module",
   "dependencies": {
     "@argos-ci/config": "*",
-    "axios": "^1.4.0"
+    "axios": "^1.5.0"
   },
   "scripts": {
     "build": "swc src --config-file ../../.swcrc -d dist",
