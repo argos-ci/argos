@@ -10,6 +10,6 @@
   },
   "dependencies": {
     "@argos-ci/config": "*",
-    "@sentry/node": "^7.64.0"
+    "@sentry/node": "^7.68.0"
   }
 }
