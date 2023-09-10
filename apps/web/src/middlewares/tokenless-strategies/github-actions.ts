@@ -63,7 +63,7 @@ const strategy = {
 
     if (repository.projects.length > 1) {
       throw new HttpError(
-        500,
+        400,
         `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a Project token.`,
       );
     }
