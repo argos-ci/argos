@@ -16,7 +16,7 @@ export const Pre = ({ className, code, ...props }: PreProps) => {
       )}
       {...props}
     >
-      <CopyButton className="absolute right-2 top-2 text-base" text={code} />
+      <CopyButton className="absolute right-2 top-4 text-lg" text={code} />
       <code>{code}</code>
     </pre>
   );

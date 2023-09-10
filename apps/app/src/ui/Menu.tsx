@@ -120,7 +120,7 @@ export const UpDownMenuButton = ({
   return (
     <AriakitMenuButton
       className={clsx(
-        "border-border rounded-md border p-0.5 text-low hover:border-hover hover:text aria-expanded:bg-active aria-expanded:text",
+        "border-border rounded-md border p-0.5 text-low hover:border-hover hover:text aria-expanded:bg-active aria-expanded:text cursor-default",
         className,
       )}
       {...props}
