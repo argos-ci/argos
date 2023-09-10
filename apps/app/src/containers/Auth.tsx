@@ -78,8 +78,22 @@ const jwtDecode = (t: string) => {
   }
 };
 
+export class AuthenticationError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export function useAuthToken() {
   const { token } = useAuth();
+  return token;
+}
+
+export function useAssertAuthToken() {
+  const token = useAuthToken();
+  if (!token) {
+    throw new AuthenticationError("Missing auth token");
+  }
   return token;
 }
 
@@ -88,16 +102,10 @@ export function useAuthTokenPayload() {
   return token ? jwtDecode(token) : null;
 }
 
-export class AuthenticationError extends Error {
-  constructor(message: string) {
-    super(message);
-  }
-}
-
 export function useAssertAuthTokenPayload() {
   const payload = useAuthTokenPayload();
   if (!payload) {
-    throw new AuthenticationError("Missing auth token");
+    throw new AuthenticationError("Invalid auth token payload");
   }
   return payload;
 }
