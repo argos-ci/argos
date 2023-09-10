@@ -11,15 +11,16 @@ const variantClassNames: Record<TooltipVariant, string> = {
   info: "text-sm p-2 [&_strong]:font-medium",
 };
 
+export const TooltipProvider = TooltipPrimitive.Provider;
+
 export type TooltipProps = {
   content: React.ReactNode;
   children: React.ReactNode;
   variant?: TooltipVariant;
   side?: TooltipPrimitive.TooltipContentProps["side"];
   align?: TooltipPrimitive.TooltipContentProps["align"];
+  preventPointerDownOutside?: boolean;
 };
-
-export const TooltipProvider = TooltipPrimitive.Provider;
 
 export const Tooltip = ({
   children,
@@ -27,6 +28,7 @@ export const Tooltip = ({
   content,
   align,
   side,
+  preventPointerDownOutside,
 }: TooltipProps) => {
   const variantClassName = variantClassNames[variant];
   if (!variantClassName) {
@@ -41,6 +43,11 @@ export const Tooltip = ({
           sideOffset={4}
           align={align}
           side={side}
+          onPointerDownOutside={(event) => {
+            if (preventPointerDownOutside) {
+              event.preventDefault();
+            }
+          }}
           className={clsx(
             "z-50 overflow-hidden rounded-md border bg-subtle text shadow-md",
             "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",

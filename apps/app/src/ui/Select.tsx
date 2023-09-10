@@ -44,7 +44,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
       <AriakitSelect
         ref={ref}
         className={clsx(
-          "flex appearance-none items-center gap-2 rounded border bg-app leading-tight text invalid:border-danger hover:border-hover focus:border-active focus:outline-none disabled:opacity-disabled",
+          "flex appearance-none items-center gap-2 rounded border bg-app leading-tight text invalid:border-danger hover:border-hover focus:border-active focus:outline-none disabled:opacity-disabled cursor-default",
           {
             md: "px-3 py-2 text-base",
             sm: "px-2 py-1 text-sm",
