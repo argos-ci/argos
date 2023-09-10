@@ -40,7 +40,7 @@ import {
 import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "../AccountAvatar";
-import { useAuthTokenPayload } from "../Auth";
+import { useAssertAuthTokenPayload } from "../Auth";
 
 const NB_MEMBERS_PER_PAGE = 10;
 
@@ -450,10 +450,7 @@ const levelLabel: Record<TeamUserLevel, string> = {
 export const TeamMembers = (props: {
   team: FragmentType<typeof TeamFragment>;
 }) => {
-  const authPayload = useAuthTokenPayload();
-  if (!authPayload) {
-    throw new Error("Forbidden");
-  }
+  const authPayload = useAssertAuthTokenPayload();
   const team = useFragment(TeamFragment, props.team);
   const [removeAccountId, setRemoveAccountId] = useState<string | null>(null);
   const removeTeamDialog = useDialogState({

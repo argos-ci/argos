@@ -88,16 +88,37 @@ export function useAuthTokenPayload() {
   return token ? jwtDecode(token) : null;
 }
 
+export class AuthenticationError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+export function useAssertAuthTokenPayload() {
+  const payload = useAuthTokenPayload();
+  if (!payload) {
+    throw new AuthenticationError("Missing auth token");
+  }
+  return payload;
+}
+
 export function useIsLoggedIn() {
   return useAuthTokenPayload() !== null;
 }
 
+export function useRedirectToLogin() {
+  return useCallback(() => {
+    window.location.replace(
+      `/login?r=${encodeURIComponent(window.location.pathname)}`,
+    );
+  }, []);
+}
+
 export function useLogout() {
   const { setToken } = useAuth();
+  const redirectToLogin = useRedirectToLogin();
   return useCallback(() => {
     setToken(null);
-    if (process.env["NODE_ENV"] === "production") {
-      window.location.replace("https://argos-ci.com");
-    }
-  }, [setToken]);
+    redirectToLogin();
+  }, [setToken, redirectToLogin]);
 }

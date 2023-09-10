@@ -17,6 +17,7 @@ import { PageLoader } from "@/ui/PageLoader";
 
 import { useQuery } from "../Apollo";
 import { VercelAccountContext } from "./Router";
+import { AuthenticationError } from "../Auth";
 
 const VercelProjectsQuery = graphql(`
   query VercelProjectsSummary_me_vercelApiProjects(
@@ -160,7 +161,7 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
   }
 
   if (!data.me) {
-    throw new Error("Forbidden");
+    throw new AuthenticationError("User not connected");
   }
 
   const syncingProject = data.vercelApiProjects.projects.find(
