@@ -7,7 +7,7 @@ import { useMatch } from "react-router-dom";
 
 import { ErrorPage } from "@/pages/ErrorPage";
 
-import { useLogout } from "./Auth";
+import { AuthenticationError, useLogout } from "./Auth";
 import { Navbar } from "./Navbar";
 
 export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
@@ -18,6 +18,10 @@ export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
         <ErrorBoundary
           fallback={<ErrorPage />}
           onError={(error) => {
+            if (error instanceof AuthenticationError) {
+              logout();
+              return;
+            }
             if (error instanceof ApolloError) {
               // Ignore unauthenticated errors & logout the user
               if (

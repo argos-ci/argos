@@ -2,7 +2,7 @@ import { LinkExternalIcon } from "@primer/octicons-react";
 import { clsx } from "clsx";
 import { useState } from "react";
 
-import { useAuthToken } from "@/containers/Auth";
+import { useAssertAuthToken } from "@/containers/Auth";
 
 import { Button, ButtonProps } from "./Button";
 import { anchorClassNames } from "./Link";
@@ -35,10 +35,7 @@ export type UseRedirectToStripePortalProps = {
 };
 
 export const useRedirectToStripePortal = () => {
-  const token = useAuthToken();
-  if (!token) {
-    throw new Error(`Invalid token`);
-  }
+  const token = useAssertAuthToken();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const redirect = useEventCallback((props: UseRedirectToStripePortalProps) => {
     setStatus("loading");
@@ -124,10 +121,7 @@ export type UseRedirectToStripeCheckoutSessionProps = {
 };
 
 export const useRedirectToStripeCheckout = () => {
-  const token = useAuthToken();
-  if (!token) {
-    throw new Error(`Invalid token`);
-  }
+  const token = useAssertAuthToken();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const redirect = useEventCallback(
     (props: UseRedirectToStripeCheckoutSessionProps) => {
