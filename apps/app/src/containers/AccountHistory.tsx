@@ -1,17 +1,30 @@
 import * as React from "react";
-import { useAuthTokenPayload } from "./Auth";
+import {
+  decodeAuthToken,
+  readAuthTokenCookie,
+  useAuthTokenPayload,
+} from "./Auth";
 
-const STORAGE_KEY = "visitedAccount";
+const getStorageKey = (accountId: string) => {
+  return `${accountId}:lastVisitedAccount`;
+};
 
 export const useVisitAccount = (accountSlug: string | null) => {
   const payload = useAuthTokenPayload();
   React.useEffect(() => {
-    if (accountSlug) {
-      window.localStorage.setItem(STORAGE_KEY, accountSlug);
+    if (accountSlug && payload) {
+      window.localStorage.setItem(
+        getStorageKey(payload.account.id),
+        accountSlug,
+      );
     }
   }, [accountSlug, payload]);
 };
 
 export const getLatestVisitedAccount = () => {
-  return window.localStorage.getItem(STORAGE_KEY);
+  const token = readAuthTokenCookie();
+  if (!token) return null;
+  const payload = decodeAuthToken(token);
+  if (!payload) return null;
+  return window.localStorage.getItem(getStorageKey(payload.account.id));
 };

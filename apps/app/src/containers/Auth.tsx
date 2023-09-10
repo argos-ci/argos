@@ -26,25 +26,37 @@ const COOKIE_NAME = "argos_jwt";
 const COOKIE_DOMAIN =
   process.env["NODE_ENV"] === "production" ? ".argos-ci.com" : "";
 
+export const readAuthTokenCookie = () => {
+  return Cookie.get(COOKIE_NAME) ?? null;
+};
+
+export const removeAuthTokenCookie = () => {
+  Cookie.remove(COOKIE_NAME, {
+    domain: COOKIE_DOMAIN,
+  });
+};
+
+export const setAuthTokenCookie = (token: string) => {
+  Cookie.set(COOKIE_NAME, token, {
+    domain: COOKIE_DOMAIN,
+    expires: 60,
+  });
+};
+
 export const AuthContextProvider = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
-  const [token, setStateToken] = useState<string | null>(() => {
-    return Cookie.get(COOKIE_NAME) ?? null;
-  });
+  const [token, setStateToken] = useState<string | null>(() =>
+    readAuthTokenCookie(),
+  );
   const setToken = useCallback((newToken: Token) => {
     setStateToken(newToken);
     if (newToken === null) {
-      Cookie.remove(COOKIE_NAME, {
-        domain: COOKIE_DOMAIN,
-      });
+      removeAuthTokenCookie();
     } else {
-      Cookie.set(COOKIE_NAME, newToken, {
-        domain: COOKIE_DOMAIN,
-        expires: 60,
-      });
+      setAuthTokenCookie(newToken);
     }
   }, []);
   const value = useMemo(() => ({ token, setToken }), [token, setToken]);
@@ -68,7 +80,7 @@ export type JWTData = {
   };
 };
 
-const jwtDecode = (t: string) => {
+export const decodeAuthToken = (t: string) => {
   try {
     const value = jwt_decode<JWTData>(t);
     if (value?.version !== 1) return null;
@@ -99,7 +111,7 @@ export function useAssertAuthToken() {
 
 export function useAuthTokenPayload() {
   const token = useAuthToken();
-  return token ? jwtDecode(token) : null;
+  return token ? decodeAuthToken(token) : null;
 }
 
 export function useAssertAuthTokenPayload() {
