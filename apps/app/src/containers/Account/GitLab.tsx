@@ -64,8 +64,8 @@ export const AccountGitLab = (props: AccountGitLabProps) => {
             <FormTextInput
               {...form.register("gitlabAccessToken", {
                 validate: (value) => {
-                  if (value && !/^(glpat-)?[a-zA-Z0-9]{20,}$/.test(value)) {
-                    return "Invalid GitLab personal access token, please be sure to enter a valid one ([a-zA-Z0-9]{20,}).";
+                  if (value && !/^(glpat-)?[a-zA-Z0-9_]{20,}$/.test(value)) {
+                    return "Invalid GitLab personal access token, please be sure to enter a valid one ([a-zA-Z0-9_]{20,}).";
                   }
                   return true;
                 },
