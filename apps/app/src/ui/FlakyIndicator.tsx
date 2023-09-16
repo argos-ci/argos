@@ -1,8 +1,4 @@
-import {
-  BugAntIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/20/solid";
+import { BugIcon, CheckCircle2Icon, AlertTriangleIcon } from "lucide-react";
 import moment from "moment";
 
 import { Test } from "@/gql/graphql";
@@ -21,7 +17,7 @@ export const getFlakyIndicatorProps = (
         ? {
             label: "Test unstable",
             color: "neutral" as const,
-            icon: ExclamationTriangleIcon,
+            icon: AlertTriangleIcon,
             tooltip:
               "High instability and potential flakiness detected in the past 7 days",
           }
@@ -31,7 +27,7 @@ export const getFlakyIndicatorProps = (
       return {
         label: "Flaky",
         color: "warning" as const,
-        icon: BugAntIcon,
+        icon: BugIcon,
         tooltip: "Unreliable test that may have false positives",
       };
 
@@ -39,7 +35,7 @@ export const getFlakyIndicatorProps = (
       return {
         label: "Resolved",
         color: "success" as const,
-        icon: CheckCircleIcon,
+        icon: CheckCircle2Icon,
         tooltip: `This test has been resolved and its stability score reset${
           resolvedDate ? ` on: ${moment(resolvedDate).format("LLL")}` : ""
         }`,

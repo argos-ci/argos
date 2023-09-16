@@ -14,7 +14,7 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { BuildDiffList } from "./BuildDiffList";
 import { useBuildHotkey } from "./BuildHotkeys";
 import { BuildInfos } from "./BuildInfos";
-import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { SearchIcon, XIcon } from "lucide-react";
 import { IconButton } from "@/ui/IconButton";
 import { useSearchModeState, useSearchState } from "./BuildDiffState";
 
@@ -110,7 +110,7 @@ export const BuildSidebar = React.memo(
               onClick={() => enterSearchMode()}
               aria-pressed={searchMode}
             >
-              <MagnifyingGlassIcon />
+              <SearchIcon />
             </IconButton>
           </HotkeyTooltip>
           {searchMode ? (
@@ -121,7 +121,7 @@ export const BuildSidebar = React.memo(
                 description="Exit search mode"
               >
                 <IconButton onClick={() => setSearchMode(false)}>
-                  <XMarkIcon />
+                  <XIcon />
                 </IconButton>
               </HotkeyTooltip>
             </>

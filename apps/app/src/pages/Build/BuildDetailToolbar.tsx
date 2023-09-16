@@ -1,9 +1,4 @@
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ArrowsPointingInIcon,
-  EyeIcon,
-} from "@heroicons/react/20/solid";
+import { ShrinkIcon, ArrowDownIcon, ArrowUpIcon, EyeIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { memo } from "react";
 
@@ -56,7 +51,7 @@ const BuildDiffFitToggle = memo(() => {
       keys={hotkey.displayKeys}
     >
       <IconButton aria-pressed={contained} onClick={toggle}>
-        <ArrowsPointingInIcon />
+        <ShrinkIcon />
       </IconButton>
     </HotkeyTooltip>
   );

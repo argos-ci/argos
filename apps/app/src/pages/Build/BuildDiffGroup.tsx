@@ -1,10 +1,10 @@
 import {
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-  MinusCircleIcon,
-  PlusCircleIcon,
+  CheckCircle2Icon,
   XCircleIcon,
-} from "@heroicons/react/20/solid";
+  PlusCircleIcon,
+  MinusCircleIcon,
+  AlertCircleIcon,
+} from "lucide-react";
 
 import type { DiffGroup } from "./BuildDiffState";
 
@@ -57,9 +57,9 @@ export const getGroupIcon = (name: DiffGroup["name"]) => {
     case "removed":
       return <MinusCircleIcon />;
     case "changed":
-      return <ExclamationCircleIcon />;
+      return <AlertCircleIcon />;
     case "unchanged":
-      return <CheckCircleIcon />;
+      return <CheckCircle2Icon />;
     case "failure":
       return <XCircleIcon />;
     default:

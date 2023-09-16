@@ -1,8 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import {
-  ArrowRightCircleIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+import { ArrowRightCircleIcon, CheckCircle2Icon } from "lucide-react";
 import { useState } from "react";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -342,7 +339,7 @@ const SuccessStep = (props: SuccessStepProps) => {
       <DialogBody>
         <DialogTitle>Transfer Project</DialogTitle>
         <div className="my-8 flex justify-center">
-          <CheckCircleIcon
+          <CheckCircle2Icon
             className="text-success-500"
             style={{ width: 80, height: 80 }}
           />

@@ -10,7 +10,7 @@ import {
   SelectSeparator,
   useSelectState,
 } from "@/ui/Select";
-import { ListBulletIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { ListIcon, PlusIcon } from "lucide-react";
 
 const InstallationFragment = graphql(`
   fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {
@@ -105,7 +105,7 @@ export const GithubInstallationsSelect = (props: {
           }}
         >
           <div className="flex items-center gap-2">
-            <ListBulletIcon className="w-[1em] h-[1em]" />
+            <ListIcon className="w-[1em] h-[1em]" />
             Switch Git Provider
           </div>
         </SelectItem>

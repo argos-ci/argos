@@ -1,9 +1,10 @@
 import { useMutation } from "@apollo/client";
 import {
-  CheckCircleIcon,
-  EllipsisHorizontalCircleIcon,
-  ExclamationCircleIcon,
-} from "@heroicons/react/24/solid";
+  CheckCircle2Icon,
+  CircleEllipsisIcon,
+  AlertCircleIcon,
+} from "lucide-react";
+
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { useEffect } from "react";
 
@@ -115,7 +116,7 @@ const SyncProject = (props: SyncProjectProps) => {
   if (error) {
     return (
       <div className="flex items-center gap-1">
-        <ExclamationCircleIcon className="h-4 w-4 text-red-500" />
+        <AlertCircleIcon className="h-4 w-4 text-red-500" />
         Error while syncing
       </div>
     );
@@ -123,7 +124,7 @@ const SyncProject = (props: SyncProjectProps) => {
 
   return (
     <div className="flex items-center gap-1">
-      <EllipsisHorizontalCircleIcon className="h-4 w-4 text-blue-500" />
+      <CircleEllipsisIcon className="h-4 w-4 text-blue-500" />
       Syncing...
     </div>
   );
@@ -256,21 +257,21 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
                     case VercelApiProjectStatus.Linked:
                       return (
                         <div className="flex items-center gap-1">
-                          <CheckCircleIcon className="h-4 w-4 text-success-500" />
+                          <CheckCircle2Icon className="h-4 w-4 text-success-500" />
                           Ready
                         </div>
                       );
                     case VercelApiProjectStatus.LinkedToOtherTeam:
                       return (
                         <div className="flex items-center gap-1">
-                          <ExclamationCircleIcon className="h-4 w-4 text-warning-500" />
+                          <AlertCircleIcon className="h-4 w-4 text-warning-500" />
                           Linked to another team
                         </div>
                       );
                     case VercelApiProjectStatus.RequireGithubAccess:
                       return (
                         <div className="flex items-center gap-1">
-                          <ExclamationCircleIcon className="h-4 w-4 text-warning-500" />
+                          <AlertCircleIcon className="h-4 w-4 text-warning-500" />
                           Require GitHub Access
                         </div>
                       );
@@ -338,7 +339,7 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
                       }
                       return (
                         <div className="flex items-center gap-1">
-                          <EllipsisHorizontalCircleIcon className="h-4 w-4 text-blue-500" />
+                          <CircleEllipsisIcon className="h-4 w-4 text-blue-500" />
                           Waiting for sync
                         </div>
                       );
@@ -346,7 +347,7 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
                     case VercelApiProjectStatus.UnknownError:
                       return (
                         <div className="flex items-center gap-1">
-                          <ExclamationCircleIcon className="h-4 w-4 text-danger-500" />
+                          <AlertCircleIcon className="h-4 w-4 text-danger-500" />
                           Error while syncing
                         </div>
                       );
@@ -354,7 +355,7 @@ export const ProjectsSummary = (props: ProjectSummaryProps) => {
                     case VercelApiProjectStatus.NoProvider:
                       return (
                         <div className="flex items-center gap-1">
-                          <ExclamationCircleIcon className="h-4 w-4 text-danger-500" />
+                          <AlertCircleIcon className="h-4 w-4 text-danger-500" />
                           Not linked to GitHub
                         </div>
                       );

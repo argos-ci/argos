@@ -1,4 +1,4 @@
-import { XMarkIcon } from "@heroicons/react/24/solid";
+import { XIcon } from "lucide-react";
 import {
   Dialog as AriakitDialog,
   DialogDismiss as AriakitDialogDismiss,
@@ -113,7 +113,7 @@ export const DialogDismiss = forwardRef<HTMLButtonElement, DialogDismissProps>(
             </Button>
           ) : (
             <IconButton {...dialogDismissProps} color="neutral">
-              <XMarkIcon />
+              <XIcon />
             </IconButton>
           )
         }

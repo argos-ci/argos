@@ -1,4 +1,4 @@
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { ExternalLinkIcon } from "lucide-react";
 
 import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -38,7 +38,7 @@ export const AccountVercel = (props: {
                 rel="noopener noreferrer"
               >
                 Manage on Vercel{" "}
-                <ArrowTopRightOnSquareIcon className="inline h-[1em] w-[1em]" />
+                <ExternalLinkIcon className="inline h-[1em] w-[1em]" />
               </a>
             </div>
           </div>

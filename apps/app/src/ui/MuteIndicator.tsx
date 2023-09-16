@@ -1,4 +1,4 @@
-import { SpeakerXMarkIcon } from "@heroicons/react/20/solid";
+import { VolumeXIcon } from "lucide-react";
 import { clsx } from "clsx";
 import moment from "moment";
 
@@ -22,7 +22,7 @@ export const MuteIndicator = ({
           test.muteUntil ? ` until ${moment(test.muteUntil).format("LLL")}` : ""
         }`}
       >
-        <SpeakerXMarkIcon className="h-4 w-4 text-danger-500" />
+        <VolumeXIcon className="h-4 w-4 text-danger-500" />
       </Tooltip>
     </div>
   ) : null;

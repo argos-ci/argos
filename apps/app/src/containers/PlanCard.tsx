@@ -1,5 +1,5 @@
 import { FetchResult, useMutation } from "@apollo/client";
-import { UserPlusIcon } from "@heroicons/react/24/outline";
+import { UserPlus2Icon } from "lucide-react";
 import { ChevronDownIcon, ChevronRightIcon } from "@primer/octicons-react";
 import {
   Disclosure,
@@ -422,7 +422,7 @@ const PrimaryCta = ({
         {(buttonProps) => (
           <RouterLink to="/teams/new" {...buttonProps}>
             <ButtonIcon>
-              <UserPlusIcon />
+              <UserPlus2Icon />
             </ButtonIcon>
             Create a Team
           </RouterLink>

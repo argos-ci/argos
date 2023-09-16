@@ -1,4 +1,4 @@
-import { PlusCircleIcon } from "@heroicons/react/24/outline";
+import { PlusCircleIcon } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";

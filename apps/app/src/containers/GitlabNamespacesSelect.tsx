@@ -7,7 +7,7 @@ import {
   SelectSeparator,
   useSelectState,
 } from "@/ui/Select";
-import { ListBulletIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { ListIcon, PlusIcon } from "lucide-react";
 import { GitLabLogo } from "./GitLab";
 
 const NamespaceFragment = graphql(`
@@ -91,7 +91,7 @@ export const GitlabNamespacesSelect = (props: {
           }}
         >
           <div className="flex items-center gap-2">
-            <ListBulletIcon className="w-[1em] h-[1em]" />
+            <ListIcon className="w-[1em] h-[1em]" />
             Switch Git Provider
           </div>
         </SelectItem>

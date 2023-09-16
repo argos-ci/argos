@@ -1,12 +1,13 @@
 import {
-  ArrowLeftOnRectangleIcon,
-  Cog6ToothIcon,
-  ComputerDesktopIcon,
+  LogOutIcon,
+  SettingsIcon,
+  SunMoonIcon,
   MoonIcon,
-  PlusCircleIcon,
   SunIcon,
-  UserPlusIcon,
-} from "@heroicons/react/24/outline";
+  UserPlus2Icon,
+  PlusCircleIcon,
+} from "lucide-react";
+
 import { Link, Link as RouterLink, useLocation } from "react-router-dom";
 
 import {
@@ -54,7 +55,7 @@ const getColorModeLabel = (colorMode: ColorMode | "") => {
     default:
       return (
         <>
-          <ComputerDesktopIcon className="h-[1em] w-[1em]" /> System
+          <SunMoonIcon className="h-[1em] w-[1em]" /> System
         </>
       );
   }
@@ -156,7 +157,7 @@ const UserMenu = () => {
           {(menuItemProps) => (
             <RouterLink {...menuItemProps} to={`/teams/new`}>
               <MenuItemIcon>
-                <UserPlusIcon />
+                <UserPlus2Icon />
               </MenuItemIcon>
               New Team
             </RouterLink>
@@ -169,7 +170,7 @@ const UserMenu = () => {
               to={`/${authPayload.account.slug}/settings`}
             >
               <MenuItemIcon>
-                <Cog6ToothIcon />
+                <SettingsIcon />
               </MenuItemIcon>
               Personal Settings
             </RouterLink>
@@ -183,7 +184,7 @@ const UserMenu = () => {
         <MenuSeparator />
         <MenuItem state={menu} pointer onClick={() => logout()}>
           <MenuItemIcon>
-            <ArrowLeftOnRectangleIcon />
+            <LogOutIcon />
           </MenuItemIcon>
           Logout
         </MenuItem>

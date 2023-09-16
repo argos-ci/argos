@@ -1,9 +1,10 @@
 import {
   CalendarDaysIcon,
   ClockIcon,
-  SpeakerWaveIcon,
-  SpeakerXMarkIcon,
-} from "@heroicons/react/20/solid";
+  Volume1Icon,
+  VolumeXIcon,
+} from "lucide-react";
+
 import moment from "moment";
 
 import { Button, ButtonArrow, ButtonIcon } from "@/ui/Button";
@@ -27,7 +28,7 @@ type muteOption = {
 const muteOptions: muteOption[] = [
   {
     label: "Unmute",
-    icon: SpeakerWaveIcon,
+    icon: Volume1Icon,
     muted: false,
     muteUntil: null,
   },
@@ -51,7 +52,7 @@ const muteOptions: muteOption[] = [
   },
   {
     label: "Mute indefinitely",
-    icon: SpeakerXMarkIcon,
+    icon: VolumeXIcon,
     muted: true,
     muteUntil: null,
     tooltip:
@@ -95,7 +96,7 @@ export const MuteTestDropdown = ({
               accessibleWhenDisabled
             >
               <ButtonIcon>
-                <SpeakerXMarkIcon />
+                <VolumeXIcon />
               </ButtonIcon>
               Mute
               <ButtonArrow />

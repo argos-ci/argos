@@ -1,4 +1,4 @@
-import { CheckIcon } from "@heroicons/react/24/outline";
+import { CheckIcon } from "lucide-react";
 import {
   Select as AriakitSelect,
   SelectArrow as AriakitSelectArrow,
