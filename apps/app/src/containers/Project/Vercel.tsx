@@ -1,5 +1,5 @@
 import { useMutation } from "@apollo/client";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { ExternalLinkIcon } from "lucide-react";
 import { useState } from "react";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -140,7 +140,7 @@ export const ProjectVercel = (props: ProjectVercelProps) => {
                 rel="noopener noreferrer"
               >
                 Manage on Vercel{" "}
-                <ArrowTopRightOnSquareIcon className="inline h-[1em] w-[1em]" />
+                <ExternalLinkIcon className="inline h-[1em] w-[1em] mb-0.5" />
               </a>
             </div>
             <UnlinkVercelButton project={project} />

@@ -1,4 +1,4 @@
-import { ChevronUpDownIcon } from "@heroicons/react/24/outline";
+import { ChevronsUpDownIcon } from "lucide-react";
 import {
   Menu as AriakitMenu,
   MenuButton as AriakitMenuButton,
@@ -125,7 +125,7 @@ export const UpDownMenuButton = ({
       )}
       {...props}
     >
-      <ChevronUpDownIcon className="h-4 w-4" />
+      <ChevronsUpDownIcon className="h-4 w-4" />
     </AriakitMenuButton>
   );
 };

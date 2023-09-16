@@ -1,4 +1,4 @@
-import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { DownloadIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { memo, useLayoutEffect, useRef, useState } from "react";
 
@@ -55,7 +55,7 @@ const DownloadScreenshotButton = memo(
             rel="noopener noreferrer"
             target="_blank"
           >
-            <ArrowDownTrayIcon />
+            <DownloadIcon />
           </a>
         </IconButton>
       </Tooltip>

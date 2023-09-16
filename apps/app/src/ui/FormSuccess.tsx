@@ -1,4 +1,4 @@
-import { CheckIcon } from "@heroicons/react/24/outline";
+import { CheckIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { HTMLProps } from "react";
 import { useFormContext } from "react-hook-form";

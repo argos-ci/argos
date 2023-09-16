@@ -1,5 +1,5 @@
 import { useMutation } from "@apollo/client";
-import { EllipsisVerticalIcon } from "@heroicons/react/20/solid";
+import { MoreVerticalIcon } from "lucide-react";
 import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -270,7 +270,7 @@ const ActionsMenu = (props: ActionsMenuProps) => {
         state={menu}
         className="flex shrink-0 items-center justify-center"
       >
-        <EllipsisVerticalIcon className="h-4 w-4" />
+        <MoreVerticalIcon className="h-4 w-4" />
       </MenuButton>
       <Menu state={menu} aria-label="Member actions">
         {props.isMe ? (

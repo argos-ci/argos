@@ -1,4 +1,4 @@
-import { BugAntIcon } from "@heroicons/react/20/solid";
+import { BugIcon } from "lucide-react";
 
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
@@ -31,7 +31,7 @@ export const FlakyButton = ({
         accessibleWhenDisabled
       >
         <ButtonIcon>
-          <BugAntIcon />
+          <BugIcon />
         </ButtonIcon>
         {onlyFlakySelected ? "Cancel Flaky Flag" : "Mark as Flaky"}
       </Button>

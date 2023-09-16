@@ -1,4 +1,4 @@
-import { CheckCircleIcon } from "@heroicons/react/20/solid";
+import { CheckCircle2Icon } from "lucide-react";
 
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
@@ -27,7 +27,7 @@ export const ResolveButton = ({
         accessibleWhenDisabled
       >
         <ButtonIcon>
-          <CheckCircleIcon />
+          <CheckCircle2Icon />
         </ButtonIcon>
         Resolve
       </Button>

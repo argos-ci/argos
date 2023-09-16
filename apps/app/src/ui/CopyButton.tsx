@@ -1,4 +1,4 @@
-import { CheckIcon, ClipboardDocumentIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, ClipboardIcon } from "lucide-react";
 import { Button as AriakitButton, ButtonProps } from "ariakit/button";
 import clsx from "clsx";
 import { useClipboard } from "use-clipboard-copy";
@@ -33,7 +33,7 @@ export const CopyButton = ({
         {clipboard.copied ? (
           <CheckIcon style={{ width: "1em", height: "1em" }} />
         ) : (
-          <ClipboardDocumentIcon style={{ width: "1em", height: "1em" }} />
+          <ClipboardIcon style={{ width: "1em", height: "1em" }} />
         )}
       </AriakitButton>
     </Tooltip>

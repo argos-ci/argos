@@ -1,4 +1,4 @@
-import { LinkExternalIcon } from "@primer/octicons-react";
+import { ExternalLinkIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { useState } from "react";
 
@@ -88,7 +88,7 @@ export const StripePortalLink = ({
       onClick={handleClick}
     >
       {children}
-      <LinkExternalIcon className="ml-[0.5ex] h-[1em] w-[1em]" />
+      <ExternalLinkIcon className="ml-1 h-[1em] w-[1em] inline mb-0.5" />
     </button>
   );
 };
