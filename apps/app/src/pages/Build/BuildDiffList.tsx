@@ -235,7 +235,7 @@ const ListItem = ({
   const pt = item.first ? "pt-4" : "pt-2";
   const pb = item.last ? "pb-4" : "pb-2";
   const ring = active
-    ? "ring-1 ring-inset ring-primary-active"
+    ? "ring-2 ring-inset ring-primary-active"
     : item.diff
     ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
     : "";
