@@ -235,7 +235,7 @@ const ListItem = ({
   const pt = item.first ? "pt-4" : "pt-2";
   const pb = item.last ? "pb-4" : "pb-2";
   const ring = active
-    ? "ring-2 ring-inset ring-primary-active"
+    ? "ring-3 ring-inset ring-primary-active"
     : item.diff
     ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
     : "";
@@ -306,6 +306,12 @@ const ListItem = ({
           </>
         ) : null}
         <div className={clsx(ring, "absolute inset-0 z-20 rounded-lg")} />
+        <div
+          className={clsx(
+            active && "ring-inset ring-1 ring-primary-highlight/90",
+            "absolute inset-0 z-20 rounded-lg",
+          )}
+        />
       </div>
     </AriakitButton>
   );
