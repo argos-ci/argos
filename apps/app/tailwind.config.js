@@ -107,6 +107,7 @@ module.exports = {
           ui: "hsl(var(--violet7) / <alpha-value>)",
           hover: "hsl(var(--violet8) / <alpha-value>)",
           active: "hsl(var(--violet9) / <alpha-value>)",
+          highlight: "hsl(var(--violet12) / <alpha-value>)",
         },
         danger: {
           DEFAULT: "hsl(var(--tomato6) / <alpha-value>)",
@@ -163,6 +164,9 @@ module.exports = {
       },
       aria: {
         invalid: 'invalid="true"',
+      },
+      ringWidth: {
+        3: "3px",
       },
     },
   },
