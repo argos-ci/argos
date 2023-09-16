@@ -1,15 +1,15 @@
 import {
-  AlertIcon,
+  AlertTriangleIcon,
   DotIcon,
-  IssueClosedIcon,
-  IssueOpenedIcon,
-  IssueReopenedIcon,
-  SkipIcon,
-  ThumbsdownIcon,
-  ThumbsupIcon,
-  VerifiedIcon,
+  CheckCircle2Icon,
+  CircleDotIcon,
+  RefreshCcwDotIcon,
+  CircleSlashIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+  BadgeCheckIcon,
   XCircleIcon,
-} from "@primer/octicons-react";
+} from "lucide-react";
 
 export type BuildType = "reference" | "check" | "orphan";
 
@@ -87,16 +87,16 @@ export const getBuildIcon = (
 ): React.ComponentType<any> => {
   switch (type) {
     case "reference":
-      return VerifiedIcon;
+      return BadgeCheckIcon;
     case "orphan":
-      return SkipIcon;
+      return CircleSlashIcon;
     case "check": {
       switch (status) {
         case "accepted":
-          return ThumbsupIcon;
+          return ThumbsUpIcon;
 
         case "stable":
-          return IssueClosedIcon;
+          return CheckCircle2Icon;
 
         case "error":
         case "expired":
@@ -104,16 +104,16 @@ export const getBuildIcon = (
           return XCircleIcon;
 
         case "rejected":
-          return ThumbsdownIcon;
+          return ThumbsDownIcon;
 
         case "progress":
-          return IssueReopenedIcon;
+          return RefreshCcwDotIcon;
 
         case "pending":
-          return IssueOpenedIcon;
+          return CircleDotIcon;
 
         case "diffDetected":
-          return AlertIcon;
+          return AlertTriangleIcon;
 
         default:
           throw new Error(`Invalid status: ${status}`);

@@ -1,4 +1,4 @@
-import { LinkExternalIcon } from "@primer/octicons-react";
+import { ExternalLinkIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { HTMLProps, forwardRef } from "react";
 import { Link as ReactRouterLink } from "react-router-dom";
@@ -38,7 +38,7 @@ export const Anchor = forwardRef<HTMLAnchorElement, AnchorProps>(
       >
         {children}
         {external && (
-          <LinkExternalIcon className="ml-[0.5ex] h-[1em] w-[1em]" />
+          <ExternalLinkIcon className="ml-1 h-[1em] w-[1em] inline mb-0.5" />
         )}
       </a>
     );

@@ -1,4 +1,4 @@
-import { ChevronDownIcon, ChevronRightIcon } from "@primer/octicons-react";
+import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import {
   Disclosure,
   DisclosureContent,
@@ -48,8 +48,12 @@ const ProPlanWarning = () => {
         state={disclosure}
         className="flex items-center gap-2 text-sm font-medium"
       >
-        {disclosure.open ? <ChevronDownIcon /> : <ChevronRightIcon />}Continuing
-        will start a 14-day Pro plan trial.
+        {disclosure.open ? (
+          <ChevronDownIcon className="inline h-[1em] w-[1em]" />
+        ) : (
+          <ChevronRightIcon className="inline h-[1em] w-[1em]" />
+        )}
+        Continuing will start a 14-day Pro plan trial.
       </Disclosure>
       <DisclosureContent state={disclosure} className="ml-6 mt-2 text-sm">
         Once the trial period ends for your new Argos team, you can continue on

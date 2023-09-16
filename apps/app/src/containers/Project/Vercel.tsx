@@ -140,7 +140,7 @@ export const ProjectVercel = (props: ProjectVercelProps) => {
                 rel="noopener noreferrer"
               >
                 Manage on Vercel{" "}
-                <ExternalLinkIcon className="inline h-[1em] w-[1em]" />
+                <ExternalLinkIcon className="inline h-[1em] w-[1em] mb-0.5" />
               </a>
             </div>
             <UnlinkVercelButton project={project} />

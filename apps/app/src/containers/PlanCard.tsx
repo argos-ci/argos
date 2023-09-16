@@ -1,6 +1,5 @@
 import { FetchResult, useMutation } from "@apollo/client";
-import { UserPlus2Icon } from "lucide-react";
-import { ChevronDownIcon, ChevronRightIcon } from "@primer/octicons-react";
+import { UserPlus2Icon, ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import {
   Disclosure,
   DisclosureContent,
@@ -385,7 +384,11 @@ const ConsumptionBlock = ({
         )}
       >
         {disclosure.open ? "Hide" : "Show"} usage detail{" "}
-        {disclosure.open ? <ChevronDownIcon /> : <ChevronRightIcon />}
+        {disclosure.open ? (
+          <ChevronDownIcon className="inline h-[1em] w-[1em]" />
+        ) : (
+          <ChevronRightIcon className="inline h-[1em] w-[1em]" />
+        )}
       </Disclosure>
 
       <DisclosureContent

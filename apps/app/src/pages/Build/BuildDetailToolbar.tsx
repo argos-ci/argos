@@ -1,10 +1,15 @@
-import { ShrinkIcon, ArrowDownIcon, ArrowUpIcon, EyeIcon } from "lucide-react";
+import {
+  ShrinkIcon,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  EyeIcon,
+  ColumnsIcon,
+} from "lucide-react";
 import { clsx } from "clsx";
 import { memo } from "react";
 
 import { Test } from "@/gql/graphql";
 import { ButtonGroup } from "@/ui/ButtonGroup";
-import { ColumnsIcon } from "@/ui/ColumnsIcon";
 import { FlakyChip } from "@/ui/FlakyIndicator";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
