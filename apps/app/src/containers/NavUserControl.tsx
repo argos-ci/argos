@@ -1,7 +1,7 @@
 import {
   LogOutIcon,
   SettingsIcon,
-  SunMoonIcon,
+  MonitorIcon,
   MoonIcon,
   SunIcon,
   UserPlus2Icon,
@@ -55,7 +55,7 @@ const getColorModeLabel = (colorMode: ColorMode | "") => {
     default:
       return (
         <>
-          <SunMoonIcon className="h-[1em] w-[1em]" /> System
+          <MonitorIcon className="h-[1em] w-[1em]" /> System
         </>
       );
   }
