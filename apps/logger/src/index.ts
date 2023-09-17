@@ -10,15 +10,26 @@ const logger = {
     console.info(...args);
   },
   error: (...args: any[]) => {
+    const firstArg = args[0];
+
     if (process.env["NODE_ENV"] === "test") {
-      throw new Error(args[0]);
+      if (firstArg instanceof Error) {
+        throw firstArg;
+      } else {
+        throw new Error("Unknown error: " + firstArg);
+      }
     }
 
-    if (args[0] instanceof Error) {
-      Sentry.captureException(args[0]);
+    if (firstArg instanceof Error) {
+      Sentry.captureException(firstArg, (scope) => {
+        if (firstArg.cause) {
+          scope.setExtra("cause", firstArg.cause);
+        }
+        return scope;
+      });
     } else {
       Sentry.captureMessage(
-        typeof args[0] === "string" ? args[0] : "Unknown error",
+        typeof firstArg === "string" ? firstArg : "Unknown error",
         {
           extra: { args },
         },
