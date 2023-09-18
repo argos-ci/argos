@@ -87,12 +87,11 @@ export const AccountGitLab = (props: AccountGitLabProps) => {
             )}
           </CardBody>
           <FormCardFooter>
-            <div>
-              Learn more about{" "}
-              <Anchor href="https://argos-ci.com/docs/gitlab" external>
-                setting up GitLab + Argos integration.
-              </Anchor>
-            </div>
+            Learn more about{" "}
+            <Anchor href="https://argos-ci.com/docs/gitlab" external>
+              setting up GitLab + Argos integration
+            </Anchor>
+            .
           </FormCardFooter>
         </Form>
       </FormProvider>

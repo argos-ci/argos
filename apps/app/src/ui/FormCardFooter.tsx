@@ -10,7 +10,7 @@ export type FormCardFooterProps = {
 export const FormCardFooter = (props: FormCardFooterProps) => {
   return (
     <CardFooter className="flex items-center justify-between">
-      {props.children}
+      <div>{props.children}</div>
       <div className="flex items-center justify-end gap-4">
         <FormRootError />
         <FormSuccess>Saved</FormSuccess>
