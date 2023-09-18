@@ -8,6 +8,7 @@ import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormCheckbox } from "@/ui/FormCheckbox";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { getRepositoryLabel } from "../Repository";
+import { Anchor } from "@/ui/Link";
 
 const UpdateBaselineBranchMutation = graphql(`
   mutation ProjectReferenceBranch_updateProject(
@@ -115,7 +116,13 @@ export const ProjectReferenceBranch = (props: ProjectReferenceBranchProps) => {
               />
             )}
           </CardBody>
-          <FormCardFooter />
+          <FormCardFooter>
+            Learn more about{" "}
+            <Anchor href="https://argos-ci.com/docs/reference-build" external>
+              reference branch
+            </Anchor>
+            .
+          </FormCardFooter>
         </Form>
       </FormProvider>
     </Card>
