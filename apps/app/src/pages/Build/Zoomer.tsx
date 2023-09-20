@@ -1,4 +1,4 @@
-import { MinusIcon, PlusIcon, LocateFixedIcon } from "lucide-react";
+import { MinusIcon, PlusIcon, MaximizeIcon } from "lucide-react";
 import { Selection, pointer, select } from "d3-selection";
 import { ZoomBehavior, zoom, zoomIdentity } from "d3-zoom";
 import {
@@ -244,7 +244,7 @@ const FitViewButton = memo(() => {
   return (
     <HotkeyTooltip side="left" description="Fit view" keys={hotkey.displayKeys}>
       <IconButton variant="contained" onClick={reset}>
-        <LocateFixedIcon />
+        <MaximizeIcon />
       </IconButton>
     </HotkeyTooltip>
   );
