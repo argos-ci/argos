@@ -40,7 +40,7 @@ import {
 import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "../AccountAvatar";
-import { useAssertAuthTokenPayload } from "../Auth";
+import { useAssertAuthTokenPayload, useAuthTokenPayload } from "../Auth";
 
 const NB_MEMBERS_PER_PAGE = 10;
 
@@ -121,6 +121,7 @@ type LeaveTeamDialogProps = {
 };
 
 const LeaveTeamDialog = memo<LeaveTeamDialogProps>((props) => {
+  const authPayload = useAuthTokenPayload();
   const [leaveTeam, { loading, error }] = useMutation(LeaveTeamMutation, {
     variables: {
       teamAccountId: props.teamAccountId,
@@ -146,7 +147,7 @@ const LeaveTeamDialog = memo<LeaveTeamDialogProps>((props) => {
           onClick={async () => {
             await leaveTeam();
             props.state.hide();
-            navigate("/");
+            navigate(authPayload ? `${authPayload.account.slug}` : "/");
           }}
         >
           Leave Team
