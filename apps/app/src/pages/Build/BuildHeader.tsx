@@ -8,6 +8,10 @@ import { ReviewButton } from "@/containers/ReviewButton";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Tooltip } from "@/ui/Tooltip";
+import { Button, ButtonIcon } from "@/ui/Button";
+import { Undo2Icon } from "lucide-react";
+import clsx from "clsx";
+import { getPullRequestUrl } from "./BuildInfos";
 
 const BrandLink = memo(
   ({
@@ -62,6 +66,8 @@ const BuildReviewButton = memo(
 export const BuildFragment = graphql(`
   fragment BuildHeader_Build on Build {
     name
+    status
+    prNumber
     ...BuildStatusChip_Build
   }
 `);
@@ -70,8 +76,42 @@ export const ProjectFragment = graphql(`
   fragment BuildHeader_Project on Project {
     ...BuildStatusChip_Project
     ...ReviewButton_Project
+    repository {
+      id
+      url
+    }
   }
 `);
+
+const BackToPrButton = ({
+  repoUrl,
+  prNumber,
+  show,
+}: {
+  repoUrl: string;
+  prNumber: number;
+  show: boolean;
+}) => {
+  return (
+    <Button
+      color="neutral"
+      variant="outline"
+      className={clsx(
+        "transition-opacity",
+        show ? "opacity-100 visible" : "opacity-0 invisible",
+      )}
+    >
+      {(buttonProps) => (
+        <Link {...buttonProps} to={getPullRequestUrl({ repoUrl, prNumber })}>
+          <ButtonIcon>
+            <Undo2Icon />
+          </ButtonIcon>
+          Back to PR
+        </Link>
+      )}
+    </Button>
+  );
+};
 
 export const BuildHeader = memo(
   (props: {
@@ -104,7 +144,14 @@ export const BuildHeader = memo(
             <BuildStatusChip build={build} project={project} />
           ) : null}
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          {project?.repository?.url && build?.prNumber && build?.status && (
+            <BackToPrButton
+              repoUrl={project.repository.url}
+              prNumber={build.prNumber}
+              show={build.status === "accepted" || build.status === "rejected"}
+            />
+          )}
           {project && <BuildReviewButton project={project} />}
           <NavUserControl />
         </div>

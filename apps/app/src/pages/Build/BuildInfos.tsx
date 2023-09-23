@@ -43,19 +43,13 @@ const BranchLink = ({
   );
 };
 
-const PullRequestLink = ({
+export const getPullRequestUrl = ({
   repoUrl,
   prNumber,
 }: {
   repoUrl: string;
   prNumber: number;
-}) => {
-  return (
-    <Anchor className="font-mono" href={`${repoUrl}/pull/${prNumber}`}>
-      #{prNumber}
-    </Anchor>
-  );
-};
+}) => `${repoUrl}/pull/${prNumber}`;
 
 export const BuildFragment = graphql(`
   fragment BuildInfos_Build on Build {
@@ -94,10 +88,15 @@ export const BuildInfos = (props: {
         <>
           <Dt>Pull request</Dt>
           <Dd>
-            <PullRequestLink
-              repoUrl={props.repoUrl}
-              prNumber={build.prNumber}
-            />
+            <Anchor
+              className="font-mono"
+              href={getPullRequestUrl({
+                repoUrl: props.repoUrl,
+                prNumber: build.prNumber,
+              })}
+            >
+              #{build.prNumber}
+            </Anchor>
           </Dd>
         </>
       ) : null}
