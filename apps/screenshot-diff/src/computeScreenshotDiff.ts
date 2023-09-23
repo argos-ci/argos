@@ -1,12 +1,27 @@
 import type { S3Client } from "@aws-sdk/client-s3";
 import type { TransactionOrKnex } from "objection";
+import { createReadStream } from "node:fs";
+import { createHash } from "node:crypto";
 
 import { pushBuildNotification } from "@argos-ci/build-notification";
 import { raw, transaction } from "@argos-ci/database";
 import { File, Screenshot, ScreenshotDiff } from "@argos-ci/database/models";
 import { S3ImageFile } from "@argos-ci/storage";
+import { getRedisLock } from "@argos-ci/common";
 
 import { diffImages } from "./util/image-diff/index.js";
+
+export const hashFile = async (filepath: string): Promise<string> => {
+  const fileStream = createReadStream(filepath);
+  const hash = createHash("sha256");
+  await new Promise((resolve, reject) => {
+    fileStream.on("error", reject);
+    hash.on("error", reject);
+    hash.on("finish", resolve);
+    fileStream.pipe(hash);
+  });
+  return hash.digest("hex");
+};
 
 const getOrCreateFile = async (
   values: { key: string; width: number; height: number },
@@ -117,27 +132,41 @@ export const computeScreenshotDiff = async (
   });
 
   if (baseImage && baseImage.key !== compareImage.key && !screenshotDiff.s3Id) {
-    const diffResult = await diffImages({
-      baseImage,
-      compareImage,
-    });
+    const diffResult = await diffImages({ baseImage, compareImage });
 
     if (diffResult.score > 0) {
+      // Hash the diff file and find if a duplicate exists
+      const key = await hashFile(diffResult.filepath);
+      const duplicateFile = await File.query().findOne({ key });
+
       const diffImage = new S3ImageFile({
         s3,
         bucket: bucket,
         filepath: diffResult.filepath,
+        key,
       });
-      const key = await diffImage.upload();
+
+      // Upload the file if it doesn't exist
+      if (!duplicateFile) {
+        const lockKey = `diffUpload-${key}`;
+        const lock = await getRedisLock();
+        await lock.acquire(lockKey, async () => {
+          await diffImage.upload();
+        });
+      }
+
+      // Delete the local file
       await diffImage.unlink();
+
       await transaction(async (trx) => {
-        const diffFile = await File.query(trx)
-          .insert({
-            key,
-            width: diffResult.width,
-            height: diffResult.height,
-          })
-          .returning("*");
+        // Create the file if it doesn't exist
+        const diffFile =
+          duplicateFile ||
+          (await File.query(trx)
+            .insert({ key, width: diffResult.width, height: diffResult.height })
+            .returning("*"));
+
+        // Create the screenshot diff
         await ScreenshotDiff.query(trx).findById(screenshotDiff.id).patch({
           score: diffResult.score,
           s3Id: diffFile.key,
@@ -163,8 +192,8 @@ export const computeScreenshotDiff = async (
       raw(
         `count(*) FILTER (
           WHERE score > 0 AND (
-            muted IS NULL 
-            OR muted = FALSE 
+            muted IS NULL
+            OR muted = FALSE
             OR (muted = TRUE AND test."muteUntil" > now())
           )
         ) > 0 AS diff`,

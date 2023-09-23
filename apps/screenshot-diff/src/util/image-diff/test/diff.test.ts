@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { rimraf } from "rimraf";
@@ -10,18 +8,6 @@ import { LocalImageFile } from "@argos-ci/storage";
 import imageDifference from "../imageDifference.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
-
-export const hashFile = async (filepath: string) => {
-  const fileStream = createReadStream(filepath);
-  const hash = createHash("sha256");
-  await new Promise((resolve, reject) => {
-    fileStream.on("error", reject);
-    hash.on("error", reject);
-    hash.on("finish", resolve);
-    fileStream.pipe(hash);
-  });
-  return hash.read().toString("hex");
-};
 
 async function compareLocalImages(params: {
   baseFilepath: string;
