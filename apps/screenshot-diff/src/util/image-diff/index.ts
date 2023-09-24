@@ -22,13 +22,20 @@ const MAXIMUM_SCORE = 0.0002;
 // We want to ignore a maximum of 20 pixels whatever the image size is:
 const MAXIMUM_PIXELS_TO_IGNORE = 20;
 
+export type ImageDiffResult = {
+  score: number;
+  width: number;
+  height: number;
+  filepath: string;
+};
+
 export const diffImages = async ({
   baseImage,
   compareImage,
 }: {
   baseImage: ImageFile;
   compareImage: ImageFile;
-}) => {
+}): Promise<ImageDiffResult> => {
   const difference = await imageDifference({
     baseImage,
     compareImage,
