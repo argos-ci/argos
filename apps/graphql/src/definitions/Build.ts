@@ -116,6 +116,7 @@ export const resolvers: IResolvers = {
         .$relatedQuery("screenshotDiffs")
         .leftJoinRelated("[baseScreenshot, compareScreenshot]")
         .orderByRaw(ScreenshotDiff.sortDiffByStatus)
+        .orderBy("screenshot_diffs.s3Id", "asc")
         .orderBy("compareScreenshot.name", "asc")
         .orderBy("baseScreenshot.name", "asc")
         .orderBy("screenshot_diffs.id", "asc")
