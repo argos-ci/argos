@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, CornerDownRightIcon } from "lucide-react";
 import {
   Range,
   defaultRangeExtractor,
@@ -30,6 +30,7 @@ import {
   useSearchState,
 } from "./BuildDiffState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
+import { Button, ButtonProps } from "@/ui/Button";
 
 interface ListHeaderRow {
   type: "header";
@@ -48,43 +49,144 @@ interface ListItemRow {
   result: DiffResult | null;
 }
 
-type ListRow = ListHeaderRow | ListItemRow;
+interface ListGroupItemRow {
+  type: "group-item";
+  first: boolean;
+  last: boolean;
+  diff: Diff | null;
+  result: DiffResult | null;
+  expanded: boolean;
+  group: Diff[];
+}
+
+type ListRow = ListHeaderRow | ListItemRow | ListGroupItemRow;
+
+const createHeaderRow = ({
+  group,
+  expanded,
+  borderBottom,
+}: {
+  group: DiffGroup;
+  expanded: boolean;
+  borderBottom: boolean;
+}): ListHeaderRow => ({
+  type: "header",
+  name: group.name,
+  count: group.diffs.length,
+  expanded,
+  borderBottom,
+  group,
+});
+
+const createListItemRow = ({
+  diff,
+  first,
+  last,
+  result,
+}: {
+  diff: Diff | null;
+  first: boolean;
+  last: boolean;
+  result: DiffResult | null;
+}): ListItemRow => ({
+  type: "item",
+  diff,
+  first,
+  last,
+  result,
+});
+
+const createGroupItemRow = ({
+  diff,
+  first,
+  last,
+  expanded,
+  result,
+}: {
+  diff: Diff;
+  first: boolean;
+  last: boolean;
+  expanded: boolean;
+  result: DiffResult | null;
+}): ListGroupItemRow => ({
+  type: "group-item",
+  diff,
+  first,
+  last,
+  result,
+  expanded,
+  group: [diff],
+});
 
 const getRows = (
   groups: DiffGroup[],
-  expandedGroups: DiffGroup["name"][],
+  expandedGroups: string[],
   results: DiffResult[],
 ): ListRow[] => {
-  const filledGroups = groups.filter((group) => group.diffs.length > 0);
-  return filledGroups.flatMap((group, groupIndex) => {
-    const last = groupIndex === filledGroups.length - 1;
-    const expanded = expandedGroups.includes(group.name);
-    const borderBottom = last || expanded;
-    const header: ListHeaderRow = {
-      type: "header" as const,
-      name: group.name,
-      count: group.diffs.length,
-      expanded,
-      borderBottom,
-      group,
-    };
-    if (expanded) {
-      return [
-        header,
-        ...group.diffs.map((diff, index) => {
+  return (
+    groups
+      // Filter out empty groups
+      .filter((group) => group.diffs.length > 0)
+      .flatMap((group, groupIndex, filteredGroups) => {
+        const isLastGroup = groupIndex === filteredGroups.length - 1;
+        const isGroupExpanded = expandedGroups.includes(group.name);
+
+        // Create the header row
+        const initialRows: ListRow[] = [
+          createHeaderRow({
+            group,
+            expanded: isGroupExpanded,
+            borderBottom: isLastGroup || isGroupExpanded,
+          }),
+        ];
+
+        // If the group is not expanded, return the header row only
+        if (!isGroupExpanded) return initialRows;
+
+        return group.diffs.reduce((acc, diff, index, diffs) => {
+          const first = index === 0;
+          const last = index === diffs.length - 1;
           const result = results.find((r) => r.item === diff) ?? null;
-          return {
-            type: "item" as const,
-            diff,
-            first: index === 0,
-            last: index === group.diffs.length - 1,
-            result,
-          };
-        }),
-      ];
-    }
-    return [header];
-  });
+
+          // If the diff is not part of a group, return a single item row
+          if (!diff?.group) {
+            return [...acc, createListItemRow({ diff, first, last, result })];
+          }
+
+          const previousGroupItem = acc.findLast(
+            (row) => row.type === "group-item",
+          ) as ListGroupItemRow | undefined;
+          const isSameGroup =
+            previousGroupItem && diff.group === previousGroupItem.diff?.group;
+          const expanded = expandedGroups.includes(diff.group);
+
+          // If the diff is part of an expanded group, at an item row
+          if (isSameGroup && expanded) {
+            return [
+              ...acc,
+              createListItemRow({
+                diff,
+                first,
+                last,
+                result,
+              }),
+            ];
+          }
+
+          // If the diff is part of a collapsed group, return a group item row
+          if (isSameGroup) {
+            previousGroupItem.last = last;
+            return acc;
+          }
+
+          // Otherwise, create a new group item row
+          return [
+            ...acc,
+            createGroupItemRow({ diff, first, last, expanded, result }),
+          ];
+        }, initialRows as ListRow[]);
+      })
+  );
 };
 
 const ListHeader = ({
@@ -112,7 +214,7 @@ const ListHeader = ({
       <ChevronDownIcon
         className={clsx(
           "m-0.5 h-3 w-3 shrink-0 transform text-low opacity-0 transition group-hover/sidebar:opacity-100",
-          !item.expanded && "rotate-[-90deg]",
+          !item.expanded && "-rotate-90",
         )}
       />
       <div className="flex-1 text-sm font-medium text">
@@ -187,15 +289,6 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
   }
 });
 
-interface ListItemProps {
-  style: React.HTMLProps<HTMLDivElement>["style"];
-  item: ListItemRow;
-  index: number;
-  active: boolean;
-  setActiveDiff: (diff: Diff) => void;
-  observer: IntersectionObserver | null;
-}
-
 const FlakyFlag = ({
   test,
 }: {
@@ -224,21 +317,97 @@ const FlakyFlag = ({
   );
 };
 
+const CardStack = ({
+  isFirst,
+  isLast,
+}: {
+  isFirst: boolean;
+  isLast: boolean;
+}) => {
+  return (
+    <div
+      className={clsx(
+        "absolute -z-10 border block  border-border rounded-lg w-[262px] right-2 bg-hover",
+        isFirst ? "top-6" : "top-4",
+        isLast ? "bottom-2" : "bottom-0",
+      )}
+      tabIndex={-1}
+    />
+  );
+};
+
+const ShowSubItemToggle = (
+  props: ButtonProps & { count: number; open: boolean },
+) => {
+  if (!props.count) return null;
+
+  return (
+    <Button
+      color="neutral"
+      size="small"
+      className="absolute bottom-8 left-2 z-30 items-start flex gap-1"
+      {...props}
+    >
+      <ChevronDownIcon
+        size="1em"
+        className={clsx("transition", !props.open && "-rotate-90")}
+      />
+      {props.count} matching changes
+    </Button>
+  );
+};
+
+interface ListItemProps {
+  style: React.HTMLProps<HTMLDivElement>["style"];
+  item: ListItemRow | ListGroupItemRow;
+  index: number;
+  active: boolean;
+  setActiveDiff: (diff: Diff) => void;
+  observer: IntersectionObserver | null;
+  onOpenGroupItem: (groupId: string | null) => void;
+}
+
+const DiffCard = ({
+  children,
+  active,
+  ...props
+}: React.HTMLProps<HTMLDivElement> & {
+  active: boolean;
+}) => {
+  const ring = active
+    ? "ring-3 ring-inset ring-primary-active"
+    : children
+    ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
+    : "";
+
+  return (
+    <div
+      className="relative flex h-full items-center justify-center rounded-lg overflow-hidden bg-app"
+      {...props}
+    >
+      {children}
+      <div className={clsx(ring, "absolute inset-0 z-20 rounded-lg")} />
+      <div
+        className={clsx(
+          active && "ring-inset ring-1 ring-primary-highlight/90",
+          "absolute inset-0 z-20 rounded-lg",
+        )}
+      />
+    </div>
+  );
+};
+
 const ListItem = ({
   style,
   item,
   index,
   active,
   setActiveDiff,
+  onOpenGroupItem,
   observer,
 }: ListItemProps) => {
   const pt = item.first ? "pt-4" : "pt-2";
   const pb = item.last ? "pb-4" : "pb-2";
-  const ring = active
-    ? "ring-3 ring-inset ring-primary-active"
-    : item.diff
-    ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
-    : "";
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = ref.current;
@@ -251,6 +420,8 @@ const ListItem = ({
     return undefined;
   }, [observer]);
   const { searchMode } = useSearchModeState();
+  const isGroupItem = item.type === "group-item";
+  const isSubItem = item.type === "item" && item.diff?.group;
 
   return (
     <AriakitButton
@@ -261,7 +432,8 @@ const ListItem = ({
       className={clsx(
         pt,
         pb,
-        "group/item w-full cursor-default px-4 focus:outline-none",
+        "group/item w-full cursor-default px-4 focus:outline-none relative",
+        isSubItem && "pl-10",
       )}
       style={style}
       onClick={() => {
@@ -270,10 +442,26 @@ const ListItem = ({
         }
       }}
     >
-      <div className="relative flex h-full items-center justify-center overflow-hidden rounded-lg">
+      {isSubItem && (
+        <CornerDownRightIcon
+          size="1em"
+          className="left-4 top-4 absolute text-low"
+        />
+      )}
+
+      {isGroupItem && <CardStack isFirst={item.first} isLast={item.last} />}
+
+      <DiffCard active={active}>
         {item.diff ? (
           <>
-            <FlakyFlag test={item?.diff?.test ?? null} />
+            <FlakyFlag test={item.diff?.test ?? null} />
+            {isGroupItem && (
+              <ShowSubItemToggle
+                onClick={() => onOpenGroupItem(item.diff?.group ?? null)}
+                count={item.diff?.group?.length ?? 0}
+                open={item.expanded}
+              />
+            )}
             <DiffImage diff={item.diff} />{" "}
             <div
               className={clsx(
@@ -305,14 +493,7 @@ const ListItem = ({
             </div>
           </>
         ) : null}
-        <div className={clsx(ring, "absolute inset-0 z-20 rounded-lg")} />
-        <div
-          className={clsx(
-            active && "ring-inset ring-1 ring-primary-highlight/90",
-            "absolute inset-0 z-20 rounded-lg",
-          )}
-        />
-      </div>
+      </DiffCard>
     </AriakitButton>
   );
 };
@@ -411,7 +592,7 @@ const preloadImage = (src: string) => {
   }
 };
 
-const preloadListItemRow = (row: ListItemRow) => {
+const preloadListItemRow = (row: ListItemRow | ListGroupItemRow) => {
   if (row.diff?.baseScreenshot?.url) {
     preloadImage(row.diff.baseScreenshot.url);
   }
@@ -485,7 +666,8 @@ const InternalBuildDiffList = memo(() => {
           const headerHeight = 34;
           return headerHeight - (row.borderBottom ? 0 : 1);
         }
-        case "item": {
+        case "item":
+        case "group-item": {
           const dimensions = getDiffDimensions(row.diff);
           const height = Math.max(dimensions.height, MIN_HEIGHT);
           const gap = 16;
@@ -603,7 +785,8 @@ const InternalBuildDiffList = memo(() => {
                       }}
                     />
                   );
-                case "item": {
+                case "item":
+                case "group-item": {
                   preloadListItemRow(item);
                   return (
                     <ListItem
@@ -620,6 +803,11 @@ const InternalBuildDiffList = memo(() => {
                       active={activeDiff === item.diff}
                       setActiveDiff={setActiveDiff}
                       observer={observer}
+                      onOpenGroupItem={(groupId) => {
+                        if (groupId) {
+                          toggleGroup(groupId);
+                        }
+                      }}
                     />
                   );
                 }
