@@ -1,5 +1,5 @@
 import { useQuery } from "@apollo/client";
-import { UserPlus2Icon } from "lucide-react";
+import { PlusCircleIcon } from "lucide-react";
 import { Link as RouterLink, matchPath, useLocation } from "react-router-dom";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -85,7 +85,7 @@ const MenuContent = (props: { menu: MenuState }) => {
         {(menuItemProps) => (
           <RouterLink {...menuItemProps} to="/teams/new">
             <MenuItemIcon>
-              <UserPlus2Icon />
+              <PlusCircleIcon />
             </MenuItemIcon>
             Create a Team
           </RouterLink>

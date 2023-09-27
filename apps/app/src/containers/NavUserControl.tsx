@@ -4,7 +4,6 @@ import {
   MonitorIcon,
   MoonIcon,
   SunIcon,
-  UserPlus2Icon,
   PlusCircleIcon,
 } from "lucide-react";
 
@@ -157,7 +156,7 @@ const UserMenu = () => {
           {(menuItemProps) => (
             <RouterLink {...menuItemProps} to={`/teams/new`}>
               <MenuItemIcon>
-                <UserPlus2Icon />
+                <PlusCircleIcon />
               </MenuItemIcon>
               New Team
             </RouterLink>
