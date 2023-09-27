@@ -30,6 +30,7 @@ import {
   useSearchState,
 } from "./BuildDiffState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
+import { Button } from "@/ui/Button";
 
 interface ListHeaderRow {
   type: "header";
@@ -48,7 +49,59 @@ interface ListItemRow {
   result: DiffResult | null;
 }
 
-type ListRow = ListHeaderRow | ListItemRow;
+interface ListGroupItemRow extends Omit<ListItemRow, "type"> {
+  type: "group-item";
+  count: number;
+  expanded: boolean;
+  group: Diff[];
+}
+
+type ListRow = ListHeaderRow | ListItemRow | ListGroupItemRow;
+
+const groupItemsByUrl = ({
+  diffs,
+  results,
+}: {
+  diffs: (Diff | null)[];
+  results: DiffResult[];
+}) => {
+  let currentDiffUrl: string | null = null;
+
+  return diffs.reduce((acc, diff, index) => {
+    const result = results.find((r) => r.item === diff) ?? null;
+    const isSameDiff = diff?.url && currentDiffUrl === diff.url;
+    const item: ListItemRow = {
+      type: "item" as const,
+      diff,
+      first: index === 0,
+      last: index === diffs.length - 1,
+      result,
+    };
+    currentDiffUrl = diff?.url ?? null;
+    if (!isSameDiff) {
+      return [...acc, item];
+    }
+
+    // If the previous item is a group item, add this diff to the group
+    const lastItem = acc[acc.length - 1];
+    if (lastItem?.type === "group-item") {
+      const newGroup = [...lastItem.group, diff];
+      lastItem.count = newGroup.length;
+      lastItem.group = newGroup;
+      return [...acc.slice(0, -1), lastItem];
+    }
+
+    // Otherwise, create a new group item
+    const newGroupItem: ListGroupItemRow = {
+      ...item,
+      type: "group-item",
+      count: 1,
+      expanded: false,
+      group: [diff],
+    };
+    return [...acc.slice(0, -1), newGroupItem];
+  }, [] as ListRow[]);
+};
 
 const getRows = (
   groups: DiffGroup[],
@@ -68,22 +121,10 @@ const getRows = (
       borderBottom,
       group,
     };
-    if (expanded) {
-      return [
-        header,
-        ...group.diffs.map((diff, index) => {
-          const result = results.find((r) => r.item === diff) ?? null;
-          return {
-            type: "item" as const,
-            diff,
-            first: index === 0,
-            last: index === group.diffs.length - 1,
-            result,
-          };
-        }),
-      ];
-    }
-    return [header];
+
+    return expanded
+      ? [header, ...groupItemsByUrl({ diffs: group.diffs, results })]
+      : [header];
   });
 };
 
@@ -187,15 +228,6 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
   }
 });
 
-interface ListItemProps {
-  style: React.HTMLProps<HTMLDivElement>["style"];
-  item: ListItemRow;
-  index: number;
-  active: boolean;
-  setActiveDiff: (diff: Diff) => void;
-  observer: IntersectionObserver | null;
-}
-
 const FlakyFlag = ({
   test,
 }: {
@@ -223,6 +255,15 @@ const FlakyFlag = ({
     </div>
   );
 };
+interface ListItemProps {
+  style: React.HTMLProps<HTMLDivElement>["style"];
+  item: ListItemRow | ListGroupItemRow;
+  index: number;
+  active: boolean;
+  setActiveDiff: (diff: Diff) => void;
+  observer: IntersectionObserver | null;
+  onOpenGroupItem: (groupItem: ListGroupItemRow) => void;
+}
 
 const ListItem = ({
   style,
@@ -230,6 +271,7 @@ const ListItem = ({
   index,
   active,
   setActiveDiff,
+  onOpenGroupItem,
   observer,
 }: ListItemProps) => {
   const pt = item.first ? "pt-4" : "pt-2";
@@ -252,6 +294,8 @@ const ListItem = ({
   }, [observer]);
   const { searchMode } = useSearchModeState();
 
+  const count = (item as ListGroupItemRow).count;
+
   return (
     <AriakitButton
       ref={ref}
@@ -261,7 +305,7 @@ const ListItem = ({
       className={clsx(
         pt,
         pb,
-        "group/item w-full cursor-default px-4 focus:outline-none",
+        "group/item w-full cursor-default px-4 focus:outline-none relative bg-subtle",
       )}
       style={style}
       onClick={() => {
@@ -270,10 +314,30 @@ const ListItem = ({
         }
       }}
     >
-      <div className="relative flex h-full items-center justify-center overflow-hidden rounded-lg">
+      {count && (
+        <div
+          className="absolute -z-10 border block h-[calc(100%-20px)] top-1 border-border rounded-lg w-[262px] right-3 bg-ui"
+          onClick={() => onOpenGroupItem(item as ListGroupItemRow)}
+          tabIndex={-1}
+        />
+      )}
+
+      <div className="relative flex h-full items-center justify-center rounded-lg overflow-hidden bg-ui">
         {item.diff ? (
           <>
-            <FlakyFlag test={item?.diff?.test ?? null} />
+            <FlakyFlag test={item.diff?.test ?? null} />
+            {count && (
+              <Button
+                color="neutral"
+                size="small"
+                className="absolute bottom-8 left-4 z-10 items-start flex gap-1"
+                onClick={() => {
+                  console.log("click");
+                }}
+              >
+                {count} matching changes <ChevronDownIcon size="1em" />
+              </Button>
+            )}
             <DiffImage diff={item.diff} />{" "}
             <div
               className={clsx(
@@ -411,7 +475,7 @@ const preloadImage = (src: string) => {
   }
 };
 
-const preloadListItemRow = (row: ListItemRow) => {
+const preloadListItemRow = (row: ListItemRow | ListGroupItemRow) => {
   if (row.diff?.baseScreenshot?.url) {
     preloadImage(row.diff.baseScreenshot.url);
   }
@@ -485,7 +549,8 @@ const InternalBuildDiffList = memo(() => {
           const headerHeight = 34;
           return headerHeight - (row.borderBottom ? 0 : 1);
         }
-        case "item": {
+        case "item":
+        case "group-item": {
           const dimensions = getDiffDimensions(row.diff);
           const height = Math.max(dimensions.height, MIN_HEIGHT);
           const gap = 16;
@@ -603,7 +668,8 @@ const InternalBuildDiffList = memo(() => {
                       }}
                     />
                   );
-                case "item": {
+                case "item":
+                case "group-item": {
                   preloadListItemRow(item);
                   return (
                     <ListItem
