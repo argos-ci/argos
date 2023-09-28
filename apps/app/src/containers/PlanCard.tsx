@@ -1,5 +1,9 @@
 import { FetchResult, useMutation } from "@apollo/client";
-import { UserPlus2Icon, ChevronDownIcon, ChevronRightIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  PlusCircleIcon,
+} from "lucide-react";
 import {
   Disclosure,
   DisclosureContent,
@@ -425,7 +429,7 @@ const PrimaryCta = ({
         {(buttonProps) => (
           <RouterLink to="/teams/new" {...buttonProps}>
             <ButtonIcon>
-              <UserPlus2Icon />
+              <PlusCircleIcon />
             </ButtonIcon>
             Create a Team
           </RouterLink>
@@ -492,7 +496,10 @@ const ManageSubscriptionButton = ({
   return null;
 };
 
-export const PlanCard = (props: { account: AccountFragment }) => {
+export const PlanCard = (props: {
+  account: AccountFragment;
+  isTeam: boolean;
+}) => {
   const account = useFragment(PlanCardFragment, props.account);
   const {
     plan,
@@ -569,6 +576,20 @@ export const PlanCard = (props: { account: AccountFragment }) => {
             </div>
           </>
         ) : null}
+        {!props.isTeam && (
+          <>
+            <CardSeparator className="my-6" />
+            <p className="my-4 text-sm text-low">
+              Your plan includes a limited amount of free screenshots. If the
+              usage on your projects exceeds the allotted limit, you will need
+              to upgrade to a Pro team.
+            </p>
+            <div className="border rounded p-2 mt-4 text-sm">
+              To take advantage of collaboration, create a new Pro team and
+              transfer your projects.
+            </div>
+          </>
+        )}
       </CardBody>
 
       <CardFooter>
@@ -584,8 +605,12 @@ export const PlanCard = (props: { account: AccountFragment }) => {
               />
             </div>
 
-            <div className="flex items-center gap-4">
-              Custom needs?
+            <div
+              className={clsx(
+                "flex items-center gap-4",
+                !props.isTeam && "w-full justify-between",
+              )}
+            >
               <Button color="neutral" variant="outline">
                 {(buttonProps) => (
                   <a
@@ -596,10 +621,16 @@ export const PlanCard = (props: { account: AccountFragment }) => {
                   </a>
                 )}
               </Button>
-              <PrimaryCta
-                purchaseStatus={purchaseStatus}
-                accountId={account.id}
-              />
+
+              {!props.isTeam && (
+                <div className="flex items-center gap-4">
+                  Want to collaborate?{" "}
+                  <PrimaryCta
+                    purchaseStatus={purchaseStatus}
+                    accountId={account.id}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
