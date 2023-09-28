@@ -1,6 +1,5 @@
 import { FetchResult, useMutation } from "@apollo/client";
 import {
-  UserPlus2Icon,
   ChevronDownIcon,
   ChevronRightIcon,
   PlusCircleIcon,
@@ -8,7 +7,6 @@ import {
 import {
   Disclosure,
   DisclosureContent,
-  DisclosureState,
   useDisclosureState,
 } from "ariakit/disclosure";
 import { clsx } from "clsx";
@@ -34,7 +32,6 @@ import { ContactLink } from "@/ui/ContactLink";
 import {
   Dialog,
   DialogBody,
-  DialogDisclosure,
   DialogDismiss,
   DialogFooter,
   DialogState,
@@ -499,53 +496,6 @@ const ManageSubscriptionButton = ({
   return null;
 };
 
-const CollaborationWarningButton = ({
-  dialog,
-}: {
-  dialog: DisclosureState;
-}) => {
-  return (
-    <>
-      <DialogDisclosure state={dialog}>
-        {(disclosureProps) => (
-          <Button {...disclosureProps} color="neutral" variant="outline">
-            <ButtonIcon>
-              <UserPlus2Icon />
-            </ButtonIcon>
-            Invite member
-          </Button>
-        )}
-      </DialogDisclosure>
-      <Dialog
-        state={dialog}
-        style={{ width: 560 }}
-        aria-label="Collaboration Warning"
-      >
-        <DialogBody>
-          <DialogTitle>Let's create a Team!</DialogTitle>
-          <DialogText>
-            You are on a personal account. To invite members and collaborate,
-            create a team and transfer your project there.
-          </DialogText>
-        </DialogBody>
-        <DialogFooter>
-          <DialogDismiss>Maybe Later</DialogDismiss>
-          <Button>
-            {(buttonProps) => (
-              <RouterLink to="/teams/new" {...buttonProps}>
-                <ButtonIcon>
-                  <PlusCircleIcon />
-                </ButtonIcon>
-                Create a Team
-              </RouterLink>
-            )}
-          </Button>
-        </DialogFooter>
-      </Dialog>
-    </>
-  );
-};
-
 export const PlanCard = (props: {
   account: AccountFragment;
   isTeam: boolean;
@@ -561,8 +511,6 @@ export const PlanCard = (props: {
     trialStatus,
     paymentProvider,
   } = account;
-
-  const collaborationWarningDialog = useDialogState();
 
   const [showTrialEndDialog, setShowTrialEndDialog] = useState(false);
   const confirmTrialEndDialogState = useDialogState({
@@ -628,6 +576,20 @@ export const PlanCard = (props: {
             </div>
           </>
         ) : null}
+        {!props.isTeam && (
+          <>
+            <CardSeparator className="my-6" />
+            <p className="my-4 text-sm text-low">
+              Your plan includes a limited amount of free screenshots. If the
+              usage on your projects exceeds the allotted limit, you will need
+              to upgrade to a Pro team.
+            </p>
+            <div className="border rounded p-2 mt-4 text-sm">
+              To take advantage of collaboration, create a new Pro team and
+              transfer your projects.
+            </div>
+          </>
+        )}
       </CardBody>
 
       <CardFooter>
@@ -649,31 +611,26 @@ export const PlanCard = (props: {
                 !props.isTeam && "w-full justify-between",
               )}
             >
-              <div className="flex items-center gap-4">
-                Custom needs?
-                <Button color="neutral" variant="outline">
-                  {(buttonProps) => (
-                    <a
-                      href={`mailto:${config.get("contactEmail")}`}
-                      {...buttonProps}
-                    >
-                      Contact Sales
-                    </a>
-                  )}
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-4">
-                {!props.isTeam && (
-                  <CollaborationWarningButton
-                    dialog={collaborationWarningDialog}
-                  />
+              <Button color="neutral" variant="outline">
+                {(buttonProps) => (
+                  <a
+                    href={`mailto:${config.get("contactEmail")}`}
+                    {...buttonProps}
+                  >
+                    Contact Sales
+                  </a>
                 )}
-                <PrimaryCta
-                  purchaseStatus={purchaseStatus}
-                  accountId={account.id}
-                />
-              </div>
+              </Button>
+
+              {!props.isTeam && (
+                <div className="flex items-center gap-4">
+                  Want to collaborate?{" "}
+                  <PrimaryCta
+                    purchaseStatus={purchaseStatus}
+                    accountId={account.id}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
