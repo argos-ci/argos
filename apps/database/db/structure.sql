@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.2
+-- Dumped by pg_dump version 14.7 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -176,8 +176,8 @@ CREATE TABLE public.builds (
     "projectId" bigint NOT NULL,
     "referenceCommit" character varying(255),
     "referenceBranch" character varying(255),
-    "prHeadCommit" character varying(255),
     "githubPullRequestId" bigint,
+    "prHeadCommit" character varying(255),
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
 
@@ -882,7 +882,8 @@ CREATE TABLE public.screenshot_diffs (
     "s3Id" character varying(255),
     "fileId" bigint,
     "stabilityScore" integer,
-    "testId" bigint
+    "testId" bigint,
+    "group" character varying(255)
 );
 
 
@@ -2710,3 +2711,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023071
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230826091827_gitlab_users.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230827144239_gitlab_acess_token.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230830151208_gitlab_projects.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230930081123_add_diffs_group.js', 1, NOW());
