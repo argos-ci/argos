@@ -93,7 +93,7 @@ async function lockAndUploadDiffFile({
  * Processes the diff result. Returns the existing file if found.
  * If not, uploads the new diff using a lock to avoid concurrency issues.
  */
-async function generateDiffFile({
+async function getOrCreateDiffFile({
   diffResult,
   s3,
   bucket,
@@ -195,6 +195,8 @@ export const computeScreenshotDiff = async (
         : null,
   });
 
+  const { buildId } = screenshotDiff;
+
   // Patching cannot be done in parallel since the file can be the same and must be created only
   if (baseImage && screenshotDiff.baseScreenshot) {
     await ensureFileDimensionsAndPreload({
@@ -217,7 +219,12 @@ export const computeScreenshotDiff = async (
         .patch({ score: diffResult.score });
     } else {
       const key = await hashFile(diffResult.filepath);
-      const diffFile = await generateDiffFile({ diffResult, s3, bucket, key });
+      const diffFile = await getOrCreateDiffFile({
+        diffResult,
+        s3,
+        bucket,
+        key,
+      });
       await ScreenshotDiff.query()
         .findById(screenshotDiff.id)
         .patch({ s3Id: key, score: diffResult.score, fileId: diffFile.id });
@@ -229,14 +236,24 @@ export const computeScreenshotDiff = async (
     .findById(screenshotDiff.id)
     .patch({ jobStatus: "complete" });
 
+  // Patch group on screenshot diffs
+  const similarDiffCount = await ScreenshotDiff.query()
+    .where({ buildId, s3Id: screenshotDiff.s3Id })
+    .resultSize();
+  if (similarDiffCount > 1) {
+    await ScreenshotDiff.query()
+      .where({ buildId, s3Id: screenshotDiff.s3Id, group: null })
+      .patch({ group: screenshotDiff.s3Id });
+  }
+
   // Unlink images
   await Promise.all([baseImage?.unlink(), compareImage.unlink()]);
 
   // Push notification if all screenshot diffs are completed
-  const { complete, diff } = await areAllDiffsCompleted(screenshotDiff.buildId);
+  const { complete, diff } = await areAllDiffsCompleted(buildId);
   if (complete) {
     await pushBuildNotification({
-      buildId: screenshotDiff.buildId,
+      buildId,
       type: diff ? "diff-detected" : "no-diff-detected",
     });
   }

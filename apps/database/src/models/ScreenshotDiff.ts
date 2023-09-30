@@ -36,6 +36,7 @@ export class ScreenshotDiff extends Model {
         enum: ["unknown", "accepted", "rejected"],
       },
       testId: { type: ["string", "null"] },
+      group: { type: ["string", "null"] },
     },
   });
 
@@ -49,6 +50,7 @@ export class ScreenshotDiff extends Model {
   jobStatus!: JobStatus;
   validationStatus!: "unknown" | "accepted" | "rejected";
   testId!: string | null;
+  group!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -109,32 +111,32 @@ export class ScreenshotDiff extends Model {
     WHEN "compareScreenshotId" IS NULL
       THEN 'removed'
     WHEN "baseScreenshotId" IS NULL
-      THEN (CASE 
+      THEN (CASE
         WHEN "name" ~ '${ScreenshotDiff.screenshotFailureRegexp}'
           THEN 'failure'
         ELSE 'added'
-      END)   
+      END)
     WHEN "score" IS NOT NULL AND "score" > 0
       THEN 'changed'
-    ELSE 'unchanged' 
+    ELSE 'unchanged'
     END
     AS status`;
 
-  static sortDiffByStatus = `CASE 
-    WHEN "compareScreenshotId" IS NULL THEN 30 -- removed 
+  static sortDiffByStatus = `CASE
+    WHEN "compareScreenshotId" IS NULL THEN 30 -- removed
     WHEN "baseScreenshotId" IS NULL
-      THEN (CASE 
+      THEN (CASE
         WHEN "compareScreenshot"."name" ~ '${ScreenshotDiff.screenshotFailureRegexp}'
-          THEN 0 -- failure 
+          THEN 0 -- failure
         ELSE 20 -- added
       END)
     WHEN "score" IS NOT NULL AND "score" > 0 -- changed
       THEN (CASE
         WHEN "stabilityScore" IS NOT NULL AND "stabilityScore" < 60
           THEN 11 -- flaky
-        ELSE 10 -- not flaky 
+        ELSE 10 -- not flaky
       END)
-    ELSE 40 -- unchanged 
+    ELSE 40 -- unchanged
     END ASC`;
 
   $getDiffStatus = async (
