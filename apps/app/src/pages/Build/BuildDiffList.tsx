@@ -160,21 +160,17 @@ const getRows = (
             previousGroupItem && diff.group === previousGroupItem.diff?.group;
           const expanded = expandedGroups.includes(diff.group);
 
-          // If the diff is part of an expanded group, at an item row
-          if (isSameGroup && expanded) {
-            return [
-              ...acc,
-              createListItemRow({
-                diff,
-                first,
-                last,
-                result,
-              }),
-            ];
-          }
-
-          // If the diff is part of a collapsed group, return a group item row
+          // If the diff is part the last group
           if (isSameGroup) {
+            // update the group count
+            previousGroupItem.group.push(diff);
+
+            // If the group is expanded, add an item row
+            if (expanded) {
+              return [...acc, createListItemRow({ diff, first, last, result })];
+            }
+
+            // If the diff is collapsed, update the last flag
             previousGroupItem.last = last;
             return acc;
           }
@@ -458,7 +454,7 @@ const ListItem = ({
             {isGroupItem && (
               <ShowSubItemToggle
                 onClick={() => onOpenGroupItem(item.diff?.group ?? null)}
-                count={item.diff?.group?.length ?? 0}
+                count={item.group.length}
                 open={item.expanded}
               />
             )}
