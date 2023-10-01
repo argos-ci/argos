@@ -149,7 +149,7 @@ const getRows = (
           const result = results.find((r) => r.item === diff) ?? null;
 
           // If the diff is not part of a group, return a single item row
-          if (!diff?.group) {
+          if (!diff?.group || Boolean(result)) {
             return [...acc, createListItemRow({ diff, first, last, result })];
           }
 
@@ -421,7 +421,7 @@ const ListItem = ({
   }, [observer]);
   const { searchMode } = useSearchModeState();
   const isGroupItem = item.type === "group-item";
-  const isSubItem = item.type === "item" && item.diff?.group;
+  const isSubItem = !searchMode && item.type === "item" && item.diff?.group;
 
   return (
     <AriakitButton
