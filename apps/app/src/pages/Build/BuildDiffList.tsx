@@ -348,7 +348,7 @@ const ShowSubItemToggle = (
         size="1em"
         className={clsx("transition", !props.open && "-rotate-90")}
       />
-      {props.count} matching changes
+      {props.count} similar changes
     </Button>
   );
 };
@@ -453,7 +453,10 @@ const ListItem = ({
             <FlakyFlag test={item.diff?.test ?? null} />
             {isGroupItem && (
               <ShowSubItemToggle
-                onClick={() => onOpenGroupItem(item.diff?.group ?? null)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenGroupItem(item.diff?.group ?? null);
+                }}
                 count={item.group.length}
                 open={item.expanded}
               />
