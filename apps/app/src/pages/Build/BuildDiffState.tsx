@@ -417,11 +417,14 @@ export const BuildDiffProvider = ({
   useLayoutEffect(() => {
     if (initialDiffGroup) {
       toggleGroup(initialDiffGroup.name, true);
+      if (initialDiff?.group) {
+        toggleGroup(initialDiff.group, true);
+      }
       setReady(true);
     } else if (complete) {
       setReady(true);
     }
-  }, [complete, initialDiffGroup, toggleGroup]);
+  }, [complete, initialDiffGroup, toggleGroup, initialDiff]);
 
   const searchValue = useMemo(
     (): SearchContextValue => ({
