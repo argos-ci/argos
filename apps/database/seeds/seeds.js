@@ -403,7 +403,10 @@ export const seed = async (knex) => {
         compareScreenshotId: largeDummyScreenshotId,
         fileId: dummiesDiffFileIds[1].id,
       },
-      ...duplicate(updatedScreenshotDiff, 30),
+      ...duplicate(
+        { ...updatedScreenshotDiff, group: updatedScreenshotDiff.s3Id },
+        4,
+      ),
     ],
     [acceptedBuildId]: [
       { ...addedScreenshotDiff, validationStatus: "accepted" },
