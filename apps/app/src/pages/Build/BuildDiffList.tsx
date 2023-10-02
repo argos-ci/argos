@@ -31,6 +31,8 @@ import {
 } from "./BuildDiffState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 import { Button, ButtonProps } from "@/ui/Button";
+import { useBuildHotkey } from "./BuildHotkeys";
+import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 
 interface ListHeaderRow {
   type: "header";
@@ -333,35 +335,50 @@ const CardStack = ({
 };
 
 const ShowSubItemToggle = (
-  props: ButtonProps & { count: number; open: boolean },
+  props: ButtonProps & {
+    count: number;
+    open: boolean;
+    onToggleGroupItem: () => void;
+  },
 ) => {
+  const { open, onToggleGroupItem } = props;
+
+  const expandDiff = useBuildHotkey(
+    "expandDiffGroup",
+    () => !open && onToggleGroupItem(),
+    { preventDefault: true },
+  );
+  const collapseDiff = useBuildHotkey(
+    "collapseDiffGroup",
+    () => open && onToggleGroupItem(),
+    { preventDefault: true },
+  );
+
   if (!props.count) return null;
 
   return (
-    <Button
-      color="neutral"
-      size="small"
-      className="absolute bottom-8 left-2 z-30 items-start flex gap-1"
-      {...props}
+    <HotkeyTooltip
+      description={open ? collapseDiff.description : expandDiff.description}
+      keys={open ? collapseDiff.displayKeys : expandDiff.displayKeys}
     >
-      <ChevronDownIcon
-        size="1em"
-        className={clsx("transition", !props.open && "-rotate-90")}
-      />
-      {props.count} similar changes
-    </Button>
+      <Button
+        color="neutral"
+        size="small"
+        className="absolute bottom-8 left-2 z-30 items-start flex gap-1"
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggleGroupItem();
+        }}
+      >
+        <ChevronDownIcon
+          size="1em"
+          className={clsx("transition", !open && "-rotate-90")}
+        />
+        {props.count} similar changes
+      </Button>
+    </HotkeyTooltip>
   );
 };
-
-interface ListItemProps {
-  style: React.HTMLProps<HTMLDivElement>["style"];
-  item: ListItemRow | ListGroupItemRow;
-  index: number;
-  active: boolean;
-  setActiveDiff: (diff: Diff) => void;
-  observer: IntersectionObserver | null;
-  onOpenGroupItem: (groupId: string | null) => void;
-}
 
 const DiffCard = ({
   children,
@@ -393,13 +410,23 @@ const DiffCard = ({
   );
 };
 
+interface ListItemProps {
+  style: React.HTMLProps<HTMLDivElement>["style"];
+  item: ListItemRow | ListGroupItemRow;
+  index: number;
+  active: boolean;
+  setActiveDiff: (diff: Diff) => void;
+  observer: IntersectionObserver | null;
+  onToggleGroupItem: (groupId: string | null) => void;
+}
+
 const ListItem = ({
   style,
   item,
   index,
   active,
   setActiveDiff,
-  onOpenGroupItem,
+  onToggleGroupItem,
   observer,
 }: ListItemProps) => {
   const pt = item.first ? "pt-4" : "pt-2";
@@ -455,8 +482,11 @@ const ListItem = ({
               <ShowSubItemToggle
                 onClick={(event) => {
                   event.stopPropagation();
-                  onOpenGroupItem(item.diff?.group ?? null);
+                  onToggleGroupItem(item.diff?.group ?? null);
                 }}
+                onToggleGroupItem={() =>
+                  onToggleGroupItem(item.diff?.group ?? null)
+                }
                 count={item.group.length}
                 open={item.expanded}
               />
@@ -802,7 +832,7 @@ const InternalBuildDiffList = memo(() => {
                       active={activeDiff === item.diff}
                       setActiveDiff={setActiveDiff}
                       observer={observer}
-                      onOpenGroupItem={(groupId) => {
+                      onToggleGroupItem={(groupId) => {
                         if (groupId) {
                           toggleGroup(groupId);
                         }

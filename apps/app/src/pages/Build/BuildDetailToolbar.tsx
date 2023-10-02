@@ -64,16 +64,14 @@ const BuildDiffFitToggle = memo(() => {
 
 const BuildVisibleDiffButtonGroup = memo(() => {
   const { viewMode, setViewMode } = useBuildDiffViewModeState();
-  const showBaselineOnly = () => setViewMode("baseline");
-  const showBaselineOnlyHotkey = useBuildHotkey(
-    "showBaselineOnly",
-    showBaselineOnly,
-    { preventDefault: true },
-  );
-  const showChangesOnly = () => setViewMode("changes");
-  const showChangesOnlyHotkey = useBuildHotkey(
-    "showChangesOnly",
-    showChangesOnly,
+  const toggleBaselineChanges = () => {
+    setViewMode((viewMode) =>
+      viewMode === "changes" ? "baseline" : "changes",
+    );
+  };
+  const hotkey = useBuildHotkey(
+    "toggleBaselineChanges",
+    toggleBaselineChanges,
     { preventDefault: true },
   );
 
@@ -84,23 +82,25 @@ const BuildVisibleDiffButtonGroup = memo(() => {
   return (
     <ButtonGroup>
       <HotkeyTooltip
-        description={showBaselineOnlyHotkey.description}
-        keys={showBaselineOnlyHotkey.displayKeys}
+        description={hotkey.description}
+        keys={hotkey.displayKeys}
+        keysEnabled={viewMode !== "baseline"}
       >
         <IconButton
           aria-pressed={viewMode === "baseline"}
-          onClick={showBaselineOnly}
+          onClick={toggleBaselineChanges}
         >
           Baseline
         </IconButton>
       </HotkeyTooltip>
       <HotkeyTooltip
-        description={showChangesOnlyHotkey.description}
-        keys={showChangesOnlyHotkey.displayKeys}
+        description={hotkey.description}
+        keys={hotkey.displayKeys}
+        keysEnabled={viewMode !== "changes"}
       >
         <IconButton
           aria-pressed={viewMode === "changes"}
-          onClick={showChangesOnly}
+          onClick={toggleBaselineChanges}
         >
           Changes
         </IconButton>
@@ -136,14 +136,27 @@ const BuildSplitViewToggle = memo(() => {
 });
 
 const NextDiffButton = memo(() => {
-  const { diffs, activeDiff, setActiveDiff } = useBuildDiffState();
+  const { diffs, activeDiff, setActiveDiff, expanded } = useBuildDiffState();
   const activeDiffIndex = activeDiff ? diffs.indexOf(activeDiff) : -1;
   const disabled = activeDiffIndex >= diffs.length - 1;
   const goToNextDiff = () => {
     if (disabled) return;
-    const nextDiff = diffs[activeDiffIndex + 1];
-    if (nextDiff) {
-      setActiveDiff(nextDiff, true);
+
+    const isGroupExpanded =
+      !activeDiff?.group || expanded.includes(activeDiff.group);
+    if (isGroupExpanded) {
+      const nextDiff = diffs[activeDiffIndex + 1];
+      if (nextDiff) setActiveDiff(nextDiff, true);
+      return;
+    }
+
+    const offsetIndex = activeDiffIndex + 1;
+    const nextDiffIndex = diffs
+      .slice(offsetIndex)
+      .findIndex((diff) => diff.group !== activeDiff.group);
+    if (nextDiffIndex !== -1) {
+      const nextDiff = diffs[nextDiffIndex + offsetIndex];
+      if (nextDiff) setActiveDiff(nextDiff, true);
     }
   };
   const hotkey = useBuildHotkey("goToNextDiff", goToNextDiff, {
@@ -161,14 +174,29 @@ const NextDiffButton = memo(() => {
 });
 
 const PreviousDiffButton = memo(() => {
-  const { diffs, activeDiff, setActiveDiff } = useBuildDiffState();
+  const { diffs, activeDiff, setActiveDiff, expanded } = useBuildDiffState();
   const activeDiffIndex = activeDiff ? diffs.indexOf(activeDiff) : -1;
   const disabled = activeDiffIndex <= 0;
   const goToPreviousDiff = () => {
     if (disabled) return;
-    const previousDiff = diffs[activeDiffIndex - 1];
-    if (previousDiff) {
+
+    const previousDiffIndex = activeDiffIndex - 1;
+    const previousDiff = diffs[previousDiffIndex];
+    if (!previousDiff) return;
+
+    const isGroupExpanded =
+      !previousDiff.group || expanded.includes(previousDiff.group);
+    if (isGroupExpanded) {
       setActiveDiff(previousDiff, true);
+      return;
+    }
+
+    const newDiffIndex = diffs
+      .slice(0, previousDiffIndex)
+      .findIndex((diff) => diff.group === previousDiff.group);
+    if (newDiffIndex !== -1) {
+      const newDiff = diffs[newDiffIndex];
+      if (newDiff) setActiveDiff(newDiff, true);
     }
   };
   const hotkey = useBuildHotkey("goToPreviousDiff", goToPreviousDiff, {
