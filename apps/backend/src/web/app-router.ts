@@ -21,7 +21,7 @@ export const installAppRouter = async (app: express.Application) => {
   // Static directory
   router.use(
     "/static/app",
-    serveStatic(join(__dirname, "../../app/dist"), {
+    serveStatic(join(__dirname, "../../../frontend/dist"), {
       etag: true,
       lastModified: false,
       maxAge: "1 year",
