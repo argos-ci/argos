@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/default
 import ejs from "ejs";
 import type { RequestHandler } from "express";
 import { readFileSync } from "node:fs";

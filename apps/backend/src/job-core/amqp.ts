@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/default
 import amqp from "amqplib";
 
 // import { callbackify } from "node:util";

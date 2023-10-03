@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/default
 import type Objection from "objection";
 
 export { raw } from "objection";
