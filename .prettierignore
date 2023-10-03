@@ -5,6 +5,6 @@ node_modules/
 /public/
 .cache
 # Generated
-apps/app/src/gql
-apps/app/src/gql-fragments.json
-apps/graphql/src/__generated__/resolver-types.ts
+apps/frontend/src/*
+apps/backend/src/graphql/__generated__/*
+apps/backend/db/migrations/*

@@ -6,5 +6,5 @@ node_modules/
 /examples
 .cache
 # Generated
-apps/app/src/gql
-apps/graphql/src/__generated__/resolver-types.ts
+apps/frontend/src/gql
+apps/backend/src/graphql/__generated__/*

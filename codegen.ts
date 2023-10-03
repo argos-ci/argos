@@ -15,7 +15,7 @@ const config: CodegenConfig = {
     "apps/frontend/src/gql-fragments.json": {
       plugins: ["fragment-matcher"],
     },
-    "apps/background/src/graphql/__generated__/resolver-types.ts": {
+    "apps/backend/src/graphql/__generated__/resolver-types.ts": {
       plugins: ["typescript", "typescript-resolvers"],
       config: {
         useIndexSignature: true,
