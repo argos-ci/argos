@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@tsconfig/node18-strictest-esm/tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "noEmit": true,
+    "ignoreDeprecations": "5.0"
+  },
+  "exclude": [
+    "./db/seeds",
+    "./dist",
+    "cypress",
+    "@testing-library/cypress",
+    "**/*.spec.js"
+  ]
+}
