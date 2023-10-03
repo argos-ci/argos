@@ -16,6 +16,7 @@
     "./dist",
     "cypress",
     "@testing-library/cypress",
-    "**/*.spec.js"
+    "**/*.spec.js",
+    "knexfile.js"
   ]
 }

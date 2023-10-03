@@ -22,7 +22,7 @@ const getHtmlWebpackPluginConfig = (): {
     process.env["NODE_ENV"] === "test"
   ) {
     const rawAssets = readFileSync(
-      join(__dirname, "../../../frontend/dist/webpack-assets.json"),
+      join(__dirname, "../../../../frontend/dist/webpack-assets.json"),
       "utf-8",
     );
     const assets = JSON.parse(rawAssets);
