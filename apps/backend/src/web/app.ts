@@ -63,7 +63,7 @@ export const createApp = async () => {
 
   // Public directory
   app.use(
-    serveStatic(join(__dirname, "../../../public"), {
+    serveStatic(join(__dirname, "../../../../public"), {
       etag: true,
       lastModified: false,
       setHeaders: (res) => {
