@@ -1,8 +1,8 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Build, GithubAccount, GithubRepository, GitlabProject, Plan, Purchase, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, Test, VercelConfiguration, VercelProject } from '@/database/models/index.js';
-import type { GhApiInstallation, GhApiRepository } from '@/github/index.js';
-import type { GlApiNamespace, GlApiProject } from '@/gitlab/index.js';
-import type { VercelApiProject, VercelApiTeam } from '@/vercel/index.js';
+import type { AccountAvatar, Build, GithubAccount, GithubRepository, GitlabProject, Plan, Purchase, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, Test, VercelConfiguration, VercelProject } from '../../database/models/index.js';
+import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
+import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
+import type { VercelApiProject, VercelApiTeam } from '../../vercel/index.js';
 import type { Context } from '../context.js';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
