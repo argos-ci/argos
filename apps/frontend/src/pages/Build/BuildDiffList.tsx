@@ -659,7 +659,7 @@ const InternalBuildDiffList = memo(() => {
   const getDiffIndex = useCallback((diff: Diff | null) => {
     if (!diff) return -1;
     return rowsRef.current.findIndex(
-      (row) => row.type === "item" && row.diff === diff,
+      (row) => (row.type === "item" || row.type === "group-item") && row.diff === diff,
     );
   }, []);
 
