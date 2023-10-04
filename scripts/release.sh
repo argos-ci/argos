@@ -3,7 +3,7 @@
 set -e
 
 # Run migrations
-npm run -w @argos-ci/database db:migrate:latest
+npm run -w @argos-ci/backend db:migrate:latest
 
 if [ "$SENTRY_RELEASE_DISABLED" != "true" ]; then
   # Setup releases on Sentry
@@ -11,10 +11,10 @@ if [ "$SENTRY_RELEASE_DISABLED" != "true" ]; then
   export SENTRY_ORG=argos
 
   # Create a release
-  npx @sentry/cli releases new -p argos-browser -p argos-server $VERSION	
+  npx @sentry/cli releases new -p argos-browser -p argos-server $VERSION
 
   # Associate commits with the release
-  npx @sentry/cli releases set-commits $VERSION --commit "argos-ci/argos@$VERSION" 
+  npx @sentry/cli releases set-commits $VERSION --commit "argos-ci/argos@$VERSION"
 
   # Finalize the version
   npx @sentry/cli releases finalize $VERSION
