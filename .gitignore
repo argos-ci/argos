@@ -5,7 +5,7 @@ node_modules/
 .env
 diff_tmp.png
 examples/*/package-lock.json
-apps/screenshot-diff/src/util/image-diff/test/actual-files/*
+apps/backend/src/screenshot-diff/util/image-diff/test/actual-files/*
 /test-results/
 /playwright-report/
 /playwright/.cache/

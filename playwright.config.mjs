@@ -2,8 +2,7 @@
 // @ts-check
 import { devices } from "@playwright/test";
 
-// @ts-ignore
-import argosConfig from "@argos-ci/config";
+import argosConfig from "./apps/backend/src/config/index.js";
 
 /**
  * Read environment variables from file.
@@ -105,7 +104,7 @@ const config = {
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "node apps/processes/dist/proc/web.js",
+    command: "node apps/backend/dist/processes/proc/web.js",
     port: 4001,
     timeout: 10 * 1000,
     reuseExistingServer: false,

@@ -16,10 +16,6 @@
       "dependsOn": [],
       "outputs": []
     },
-    "//#check-types": {
-      "dependsOn": [],
-      "outputs": []
-    },
     "watch-build": {
       "persistent": true,
       "outputs": ["dist/**"]
@@ -32,6 +28,5 @@
       "persistent": true,
       "cache": false
     }
-  },
-  "globalDependencies": ["tsconfig.json", ".swcrc"]
+  }
 }
