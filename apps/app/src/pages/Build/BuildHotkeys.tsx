@@ -6,8 +6,8 @@ import {
   DialogDismiss,
   DialogHeader,
   DialogTitle,
-  useDialogState,
 } from "@/ui/Dialog";
+import { DisclosureState } from "ariakit/ts/disclosure";
 
 interface Hotkey {
   keys: string[];
@@ -48,40 +48,20 @@ export const hotkeys = {
     displayKeys: ["B"],
     description: "Toggle info/screenshots sidebar panel",
   } as Hotkey,
-  goToNextDiff: {
-    keys: ["ArrowDown"],
-    displayKeys: ["↓"],
-    description: "Go to next screenshot",
-  } as Hotkey,
   goToPreviousDiff: {
     keys: ["ArrowUp"],
     displayKeys: ["↑"],
     description: "Go to previous screenshot",
   } as Hotkey,
-  toggleChangesOverlay: {
-    keys: ["KeyD"],
-    displayKeys: ["D"],
-    description: "Toggle changes overlay",
+  goToNextDiff: {
+    keys: ["ArrowDown"],
+    displayKeys: ["↓"],
+    description: "Go to next screenshot",
   } as Hotkey,
   toggleDiffFit: {
     keys: ["Space"],
     displayKeys: ["Space"],
     description: "Toggle fit to screen",
-  } as Hotkey,
-  toggleSplitView: {
-    keys: ["KeyS"],
-    displayKeys: ["S"],
-    description: "Toggle side by side mode",
-  } as Hotkey,
-  showBaselineOnly: {
-    keys: ["ArrowLeft"],
-    displayKeys: ["←"],
-    description: "Show baseline only",
-  } as Hotkey,
-  showChangesOnly: {
-    keys: ["ArrowRight"],
-    displayKeys: ["→"],
-    description: "Show changes only",
   } as Hotkey,
   fitView: {
     keys: ["Digit0"],
@@ -103,6 +83,31 @@ export const hotkeys = {
     displayKeys: ["Esc"],
     description: "Exit search",
   },
+  collapseDiffGroup: {
+    keys: ["ArrowLeft"],
+    displayKeys: ["←"],
+    description: "Collapse group",
+  } as Hotkey,
+  expandDiffGroup: {
+    keys: ["ArrowRight"],
+    displayKeys: ["→"],
+    description: "Expand group",
+  } as Hotkey,
+  toggleBaselineChanges: {
+    keys: ["KeyA"],
+    displayKeys: ["Q", "A"],
+    description: "Toggle baseline/changes",
+  } as Hotkey,
+  toggleSplitView: {
+    keys: ["KeyS"],
+    displayKeys: ["S"],
+    description: "Toggle side by side mode",
+  } as Hotkey,
+  toggleChangesOverlay: {
+    keys: ["KeyD"],
+    displayKeys: ["D"],
+    description: "Toggle changes overlay",
+  } as Hotkey,
 };
 
 export type HotkeyName = keyof typeof hotkeys;
@@ -170,38 +175,40 @@ const Kbd = ({ children }: { children: React.ReactNode }) => (
   </kbd>
 );
 
-export const BuildHotkeysDialog = memo(() => {
-  const dialog = useDialogState();
-  useBuildHotkey("toggleHotkeysDialog", () => {
-    dialog.toggle();
-  });
-  return (
-    <Dialog state={dialog}>
-      <DialogHeader>
-        <DialogTitle>Keyboard Shortcuts</DialogTitle>
-        <DialogDismiss />
-      </DialogHeader>
+export const BuildHotkeysDialog = memo(
+  ({ dialog }: { dialog: DisclosureState }) => {
+    const toggle = () => {
+      dialog.toggle();
+    };
+    useBuildHotkey("toggleHotkeysDialog", toggle);
+    return (
+      <Dialog state={dialog}>
+        <DialogHeader>
+          <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          <DialogDismiss />
+        </DialogHeader>
 
-      <DialogBody>
-        <div className="flex flex-col gap-2">
-          {Object.entries(hotkeys)
-            .filter(([, hotKey]) => hotKey.description)
-            .map(([name, hotKey]) => {
-              return (
-                <div key={name} className="flex items-center gap-2">
-                  <div className="w-[400px] text-sm font-medium">
-                    {hotKey.description}
+        <DialogBody>
+          <div className="flex flex-col gap-2">
+            {Object.entries(hotkeys)
+              .filter(([, hotKey]) => hotKey.description)
+              .map(([name, hotKey]) => {
+                return (
+                  <div key={name} className="flex items-center gap-2">
+                    <div className="w-[400px] text-sm font-medium">
+                      {hotKey.description}
+                    </div>
+                    <div className="flex flex-1 justify-end gap-2">
+                      {hotKey.displayKeys.map((key) => (
+                        <Kbd key={key}>{key}</Kbd>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex flex-1 justify-end gap-2">
-                    {hotKey.displayKeys.map((key) => (
-                      <Kbd key={key}>{key}</Kbd>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-      </DialogBody>
-    </Dialog>
-  );
-});
+                );
+              })}
+          </div>
+        </DialogBody>
+      </Dialog>
+    );
+  },
+);

@@ -10,6 +10,7 @@ import { BuildNotFound } from "./BuildNotFound";
 import type { BuildParams } from "./BuildParams";
 import { BuildWorkspace } from "./BuildWorkspace";
 import { OvercapacityBanner } from "./OvercapacityBanner";
+import { useBuildHotkeysDialogState } from "./BuildHotkeysDialogState";
 
 const ProjectQuery = graphql(`
   query BuildPage_Project(
@@ -51,6 +52,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
     build?.status &&
       (build.status === "pending" || build.status === "progress"),
   );
+  const { hotkeysDialog } = useBuildHotkeysDialogState();
 
   useEffect(() => {
     if (buildStatusProgress) {
@@ -73,7 +75,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
 
   return (
     <>
-      <BuildHotkeysDialog />
+      {hotkeysDialog && <BuildHotkeysDialog dialog={hotkeysDialog} />}
       <div className="m flex h-screen min-h-0 flex-col">
         {data?.project?.account && (
           <>

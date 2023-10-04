@@ -5,6 +5,9 @@ import {
   MoonIcon,
   SunIcon,
   PlusCircleIcon,
+  CommandIcon,
+  MessagesSquareIcon,
+  FileTextIcon,
 } from "lucide-react";
 
 import { Link, Link as RouterLink, useLocation } from "react-router-dom";
@@ -19,6 +22,7 @@ import {
   MenuButton,
   MenuItem,
   MenuItemIcon,
+  MenuItemShortcut,
   MenuSeparator,
   useMenuState,
 } from "@/ui/Menu";
@@ -36,6 +40,7 @@ import { AccountAvatar } from "./AccountAvatar";
 import { graphql } from "@/gql";
 import { useQuery } from "@apollo/client";
 import { InitialAvatar } from "./InitialAvatar";
+import { useBuildHotkeysDialogState } from "@/pages/Build/BuildHotkeysDialogState";
 
 const getColorModeLabel = (colorMode: ColorMode | "") => {
   switch (colorMode) {
@@ -127,6 +132,7 @@ const UserMenu = () => {
     placement: "bottom-end",
     gutter: 4,
   });
+  const { hotkeysDialog } = useBuildHotkeysDialogState();
 
   if (!authPayload) return null;
 
@@ -138,7 +144,7 @@ const UserMenu = () => {
       >
         <Avatar slug={authPayload.account.slug} />
       </MenuButton>
-      <Menu aria-label="User settings" state={menu} className="w-52">
+      <Menu aria-label="User settings" state={menu} className="w-60">
         <MenuItem state={menu} pointer>
           {(menuItemProps) => (
             <RouterLink
@@ -180,6 +186,39 @@ const UserMenu = () => {
           Theme
           <ColorModeSelect />
         </div>
+        <MenuSeparator />
+        {hotkeysDialog && (
+          <MenuItem state={menu} pointer onClick={() => hotkeysDialog.toggle()}>
+            <MenuItemIcon>
+              <CommandIcon />
+            </MenuItemIcon>
+            Keyboard shortcuts
+            <MenuItemShortcut>?</MenuItemShortcut>
+          </MenuItem>
+        )}
+        <MenuItem state={menu} pointer>
+          {(menuItemProps) => (
+            <RouterLink
+              {...menuItemProps}
+              to="https://argos-ci.com/docs/open-source"
+            >
+              <MenuItemIcon>
+                <FileTextIcon />
+              </MenuItemIcon>
+              Documentation
+            </RouterLink>
+          )}
+        </MenuItem>
+        <MenuItem state={menu} pointer>
+          {(menuItemProps) => (
+            <RouterLink {...menuItemProps} to="https://argos-ci.com/discord">
+              <MenuItemIcon>
+                <MessagesSquareIcon />
+              </MenuItemIcon>
+              Join Discord community
+            </RouterLink>
+          )}
+        </MenuItem>
         <MenuSeparator />
         <MenuItem state={menu} pointer onClick={() => logout()}>
           <MenuItemIcon>

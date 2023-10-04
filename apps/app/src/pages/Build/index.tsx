@@ -6,6 +6,7 @@ import { useVisitAccount } from "@/containers/AccountHistory";
 import { BuildNotFound } from "./BuildNotFound";
 import { BuildPage } from "./BuildPage";
 import { useBuildParams } from "./BuildParams";
+import { BuildHotkeysDialogStateProvider } from "./BuildHotkeysDialogState";
 
 export const Build = memo(() => {
   const params = useBuildParams();
@@ -20,7 +21,9 @@ export const Build = memo(() => {
       <Helmet>
         <title>{`Build ${params.buildNumber} • ${params.projectName}`}</title>
       </Helmet>
-      <BuildPage params={params} />
+      <BuildHotkeysDialogStateProvider>
+        <BuildPage params={params} />
+      </BuildHotkeysDialogStateProvider>
     </>
   );
 });

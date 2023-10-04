@@ -10,7 +10,7 @@ import {
   MenuSeparatorProps as AriakitMenuSeparatorProps,
 } from "ariakit/menu";
 import { clsx } from "clsx";
-import { Children, cloneElement, forwardRef } from "react";
+import { Children, HTMLProps, cloneElement, forwardRef } from "react";
 
 export { MenuButton, useMenuState } from "ariakit/menu";
 export type { MenuState } from "ariakit/menu";
@@ -90,6 +90,17 @@ export const MenuItemIcon = ({
       {cloneElement(Children.only(children), {
         className: clsx(className, "h-[1em] w-[1em] mx-auto"),
       })}
+    </div>
+  );
+};
+
+export const MenuItemShortcut = ({
+  children,
+  ...props
+}: HTMLProps<HTMLDivElement>) => {
+  return (
+    <div {...props} className="text-low absolute right-5">
+      {children}
     </div>
   );
 };

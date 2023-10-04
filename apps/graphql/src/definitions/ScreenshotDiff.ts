@@ -32,6 +32,7 @@ export const typeDefs = gql`
     validationStatus: String
     flakyDetected: Boolean!
     test: Test
+    group: String
   }
 
   type ScreenshotDiffConnection implements Connection {

@@ -725,6 +725,7 @@ export type IScreenshotDiff = INode & {
   compareScreenshot?: Maybe<IScreenshot>;
   createdAt: Scalars['DateTime']['output'];
   flakyDetected: Scalars['Boolean']['output'];
+  group?: Maybe<Scalars['String']['output']>;
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
@@ -1629,6 +1630,7 @@ export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends I
   compareScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   flakyDetected?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  group?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   height?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;

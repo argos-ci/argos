@@ -27,6 +27,7 @@ export interface Diff {
   width?: number | null;
   height?: number | null;
   flakyDetected: boolean;
+  group?: string | null;
   compareScreenshot?: {
     id: string;
     url: string;
@@ -71,8 +72,8 @@ export interface BuildDiffContextValue {
   diffs: Diff[];
   totalDiffCount: number;
   groups: DiffGroup[];
-  expanded: DiffGroup["name"][];
-  toggleGroup: (name: DiffGroup["name"], value?: boolean) => void;
+  expanded: string[];
+  toggleGroup: (name: string, value?: boolean) => void;
   activeDiff: Diff | null;
   setActiveDiff: (diff: Diff, scroll?: boolean) => void;
   scrolledDiff: Diff | null;
@@ -95,22 +96,17 @@ export const useBuildDiffState = () => {
   return context;
 };
 
-const useExpandedState = (initial: DiffGroup["name"][]) => {
-  const [expanded, setExpanded] = useState<DiffGroup["name"][]>(initial);
-  const toggleGroup = useCallback(
-    (name: DiffGroup["name"], value?: boolean) => {
-      setExpanded((expanded) => {
-        const included = expanded.includes(name);
-        const expand = value !== undefined ? value : !included;
-        if (expand && included) return expanded;
-        if (!expand && !included) return expanded;
-        return expand
-          ? [...expanded, name]
-          : expanded.filter((n) => n !== name);
-      });
-    },
-    [],
-  );
+const useExpandedState = (initial: string[]) => {
+  const [expanded, setExpanded] = useState<string[]>(initial);
+  const toggleGroup = useCallback((name: string, value?: boolean) => {
+    setExpanded((expanded) => {
+      const included = expanded.includes(name);
+      const expand = value !== undefined ? value : !included;
+      if (expand && included) return expanded;
+      if (!expand && !included) return expanded;
+      return expand ? [...expanded, name] : expanded.filter((n) => n !== name);
+    });
+  }, []);
 
   return useMemo(() => ({ expanded, toggleGroup }), [expanded, toggleGroup]);
 };
@@ -139,6 +135,7 @@ const ProjectQuery = graphql(`
             width
             height
             flakyDetected
+            group
             baseScreenshot {
               id
               url
@@ -420,11 +417,14 @@ export const BuildDiffProvider = ({
   useLayoutEffect(() => {
     if (initialDiffGroup) {
       toggleGroup(initialDiffGroup.name, true);
+      if (initialDiff?.group) {
+        toggleGroup(initialDiff.group, true);
+      }
       setReady(true);
     } else if (complete) {
       setReady(true);
     }
-  }, [complete, initialDiffGroup, toggleGroup]);
+  }, [complete, initialDiffGroup, toggleGroup, initialDiff]);
 
   const searchValue = useMemo(
     (): SearchContextValue => ({
