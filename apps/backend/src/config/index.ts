@@ -261,7 +261,14 @@ const config = convict({
       directory: {
         doc: "Migrations directory",
         format: String,
-        default: join(__dirname, "../../database/migrations"),
+        default: join(__dirname, "../../db/migrations"),
+      },
+    },
+    seeds: {
+      directory: {
+        doc: "Seeds directory",
+        format: String,
+        default: join(__dirname, "../../db/seeds"),
       },
     },
     client: {

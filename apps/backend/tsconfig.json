@@ -12,7 +12,7 @@
     "ignoreDeprecations": "5.0"
   },
   "exclude": [
-    "./seeds",
+    "./db/seeds",
     "./dist",
     "cypress",
     "@testing-library/cypress",
