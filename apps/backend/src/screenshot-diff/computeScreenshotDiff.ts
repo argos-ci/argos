@@ -236,15 +236,16 @@ export const computeScreenshotDiff = async (
     .findById(screenshotDiff.id)
     .patch({ jobStatus: "complete" });
 
-  // Patch group on screenshot diffs
-  const similarDiffCount = await ScreenshotDiff.query()
-    .where({ buildId, s3Id: screenshotDiff.s3Id })
-    .resultSize();
-  if (similarDiffCount > 1) {
-    await ScreenshotDiff.query()
-      .where({ buildId, s3Id: screenshotDiff.s3Id, group: null })
-      .patch({ group: screenshotDiff.s3Id });
-  }
+  // // Patch group on screenshot diffs
+  // const similarDiffCount = await ScreenshotDiff.query()
+  //   .where({ buildId, s3Id: screenshotDiff.s3Id })
+  //   .resultSize();
+
+  // if (similarDiffCount > 1) {
+  //   await ScreenshotDiff.query()
+  //     .where({ buildId, s3Id: screenshotDiff.s3Id, group: null })
+  //     .patch({ group: screenshotDiff.s3Id });
+  // }
 
   // Unlink images
   await Promise.all([baseImage?.unlink(), compareImage.unlink()]);
