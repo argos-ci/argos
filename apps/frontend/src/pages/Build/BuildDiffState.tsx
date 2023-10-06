@@ -148,14 +148,6 @@ const ProjectQuery = graphql(`
               width
               height
             }
-            test {
-              id
-              status
-              unstable
-              resolvedDate
-              mute
-              muteUntil
-            }
           }
         }
       }
