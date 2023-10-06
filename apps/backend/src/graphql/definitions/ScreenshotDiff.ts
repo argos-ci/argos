@@ -80,15 +80,15 @@ export const resolvers: IResolvers = {
       const file = await ctx.loaders.File.load(screenshot.fileId);
       return file.height;
     },
-    status: (screenshotDiff, _args, ctx) => {
-      return screenshotDiff.$getDiffStatus(
-        ctx.loaders.Screenshot.load.bind(ctx.loaders.Screenshot),
+    status: async (screenshotDiff, _args, ctx) => {
+      return screenshotDiff.$getDiffStatus((id) =>
+        ctx.loaders.Screenshot.load(id),
       ) as Promise<IScreenshotDiffStatus>;
     },
     flakyDetected: (screenshotDiff) => {
-      return Boolean(
+      return (
         screenshotDiff.stabilityScore !== null &&
-          screenshotDiff.stabilityScore < 60,
+        screenshotDiff.stabilityScore < 60
       );
     },
     test: async (screenshot, _args, ctx) => {
