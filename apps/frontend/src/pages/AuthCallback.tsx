@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import * as Sentry from "@sentry/browser";
@@ -12,6 +12,17 @@ const api = axios.create({
 
 export type AuthCallbackProps = {
   provider: AuthProvider;
+};
+
+const getLoginUrl = (error: unknown) => {
+  if (isAxiosError(error)) {
+    if (error.response?.data?.error?.message) {
+      return `/login?error=${encodeURIComponent(
+        error.response.data.error.message,
+      )}`;
+    }
+  }
+  return "/login";
 };
 
 export const AuthCallback = (props: AuthCallbackProps) => {
@@ -31,7 +42,7 @@ export const AuthCallback = (props: AuthCallbackProps) => {
       })
       .catch((error) => {
         Sentry.captureException(error);
-        navigate("/login");
+        navigate(getLoginUrl(error));
       });
   }, [props.provider, r, code, setToken, navigate]);
   if (token) {
