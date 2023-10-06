@@ -12,8 +12,7 @@ export const createApolloServerApp = async (
 ) => {
   const app = express();
   app.use(((req, _res, next) => {
-    // @ts-ignore
-    req.auth = auth;
+    (req as any).__MOCKED_AUTH__ = auth;
     next();
   }) as express.RequestHandler);
 

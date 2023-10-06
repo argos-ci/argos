@@ -2,13 +2,41 @@ import type { BaseContext } from "@apollo/server";
 import type { Request } from "express";
 
 import { createLoaders } from "./loaders.js";
+import {
+  AuthError,
+  AuthPayload,
+  getAuthPayloadFromRequest,
+} from "@/auth/request.js";
+import { GraphQLError } from "graphql";
 
 export type Context = BaseContext & {
-  auth: Request["auth"];
+  auth: AuthPayload | null;
   loaders: ReturnType<typeof createLoaders>;
 };
 
-export const getContext = ({ req }: { req: Request }): Context => ({
-  auth: req.auth,
-  loaders: createLoaders(),
-});
+async function getContextAuth(request: Request): Promise<AuthPayload | null> {
+  if (process.env["NODE_ENV"] === "test") {
+    return (request as any).__MOCKED_AUTH__ ?? null;
+  }
+
+  return getAuthPayloadFromRequest(request);
+}
+
+export async function getContext(request: Request): Promise<Context> {
+  try {
+    const auth = await getContextAuth(request);
+    return { auth, loaders: createLoaders() };
+  } catch (error) {
+    if (error instanceof AuthError) {
+      throw new GraphQLError("User is not authenticated", {
+        originalError: error,
+        extensions: {
+          code: "UNAUTHENTICATED",
+          http: { status: 401 },
+        },
+      });
+    }
+
+    throw error;
+  }
+}

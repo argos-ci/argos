@@ -48,5 +48,5 @@ export const apolloServer = new ApolloServer({
 
 export const createApolloMiddleware = () =>
   expressMiddleware(apolloServer, {
-    context: async ({ req }) => getContext({ req }),
+    context: async ({ req }) => getContext(req),
   });
