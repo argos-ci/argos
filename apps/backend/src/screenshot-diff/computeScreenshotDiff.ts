@@ -236,16 +236,25 @@ export const computeScreenshotDiff = async (
     .findById(screenshotDiff.id)
     .patch({ jobStatus: "complete" });
 
-  // // Patch group on screenshot diffs
-  // const similarDiffCount = await ScreenshotDiff.query()
-  //   .where({ buildId, s3Id: screenshotDiff.s3Id })
-  //   .resultSize();
+  const similarDiffCount = await ScreenshotDiff.query()
+    .where({ buildId, s3Id: screenshotDiff.s3Id })
+    .resultSize();
 
-  // if (similarDiffCount > 1) {
-  //   await ScreenshotDiff.query()
-  //     .where({ buildId, s3Id: screenshotDiff.s3Id, group: null })
-  //     .patch({ group: screenshotDiff.s3Id });
-  // }
+  // Patch group on screenshot diffs
+  if (similarDiffCount > 1) {
+    // Collect diffs to update
+    const diffs = await ScreenshotDiff.query()
+      .select("id")
+      .where({ buildId, s3Id: screenshotDiff.s3Id, group: null });
+    const diffIds = diffs.map(({ id }) => id);
+
+    // Update diffs
+    // We don't do the where in this query because of deadlock issues
+    // Having `s3Id` in the where clause causes a deadlock
+    await ScreenshotDiff.query()
+      .whereIn("id", diffIds)
+      .patch({ group: screenshotDiff.s3Id });
+  }
 
   // Unlink images
   await Promise.all([baseImage?.unlink(), compareImage.unlink()]);
