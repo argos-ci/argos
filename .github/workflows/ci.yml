@@ -24,7 +24,7 @@ jobs:
         run: npm run check-types
 
       - name: Check Prettier
-        run: npm exec prettier --check .
+        run: npm exec prettier -- --check .
 
   unit-test:
     runs-on: ubuntu-latest
