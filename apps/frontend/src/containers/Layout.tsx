@@ -7,12 +7,11 @@ import { useMatch } from "react-router-dom";
 
 import { ErrorPage } from "@/pages/ErrorPage";
 
-import { AuthenticationError, useLogout } from "./Auth";
+import { AuthenticationError, logout } from "./Auth";
 import { Navbar } from "./Navbar";
 
 export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
   (props: { children: React.ReactNode }, ref) => {
-    const logout = useLogout();
     return (
       <main ref={ref} className="contents">
         <ErrorBoundary

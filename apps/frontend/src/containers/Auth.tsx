@@ -126,19 +126,13 @@ export function useIsLoggedIn() {
   return useAuthTokenPayload() !== null;
 }
 
-export function useRedirectToLogin() {
-  return useCallback(() => {
-    window.location.replace(
-      `/login?r=${encodeURIComponent(window.location.pathname)}`,
-    );
-  }, []);
+export function redirectToLogin() {
+  window.location.replace(
+    `/login?r=${encodeURIComponent(window.location.pathname)}`,
+  );
 }
 
-export function useLogout() {
-  const { setToken } = useAuth();
-  const redirectToLogin = useRedirectToLogin();
-  return useCallback(() => {
-    setToken(null);
-    redirectToLogin();
-  }, [setToken, redirectToLogin]);
+export function logout() {
+  removeAuthTokenCookie();
+  redirectToLogin();
 }

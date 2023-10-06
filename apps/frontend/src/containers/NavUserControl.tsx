@@ -12,11 +12,7 @@ import {
 
 import { Link, Link as RouterLink, useLocation } from "react-router-dom";
 
-import {
-  useAuthTokenPayload,
-  useIsLoggedIn,
-  useLogout,
-} from "@/containers/Auth";
+import { useAuthTokenPayload, useIsLoggedIn, logout } from "@/containers/Auth";
 import {
   Menu,
   MenuButton,
@@ -120,14 +116,14 @@ const Avatar = (props: { slug: string }) => {
   }
 
   if (!data?.account) {
-    throw new Error("Account not found");
+    return null;
   }
+
   return <AccountAvatar avatar={data.account.avatar} />;
 };
 
 const UserMenu = () => {
   const authPayload = useAuthTokenPayload();
-  const logout = useLogout();
   const menu = useMenuState({
     placement: "bottom-end",
     gutter: 4,

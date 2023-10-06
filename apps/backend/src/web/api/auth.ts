@@ -13,7 +13,7 @@ import {
   retrieveOAuthToken as retrieveGithubOAuthToken,
 } from "@/github/index.js";
 
-import { createJWT } from "../jwt.js";
+import { createJWT } from "@/auth/jwt.js";
 import { asyncHandler } from "../util.js";
 import {
   getTokenGitlabClient,

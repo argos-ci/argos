@@ -2,6 +2,7 @@ import {
   ApolloClient,
   ApolloProvider as BaseApolloProvider,
   DocumentNode,
+  HttpLink,
   InMemoryCache,
   OperationVariables,
   QueryHookOptions,
@@ -9,42 +10,54 @@ import {
   TypedDocumentNode,
   useQuery as useApolloQuery,
 } from "@apollo/client";
+import { onError } from "@apollo/client/link/error";
 import { useMemo } from "react";
-
 import fragments from "@/gql-fragments.json";
 
-import { useAuthToken } from "./Auth";
+import { logout, useAuthToken } from "./Auth";
 
 const ApolloProvider = (props: {
   children: React.ReactNode;
   authToken: string | null;
 }) => {
   const authorization = props.authToken ? `Bearer ${props.authToken}` : null;
-  const apolloClient = useMemo(
-    () =>
-      new ApolloClient({
-        uri: `/graphql`,
-        cache: new InMemoryCache({
-          possibleTypes: fragments.possibleTypes,
-          typePolicies: {
-            Team: {
-              keyFields: (obj) => {
-                if (!obj.id) throw new Error("Team.id is undefined");
-                return `Account:${obj.id}`;
-              },
-            },
-            User: {
-              keyFields: (obj) => {
-                if (!obj.id) throw new Error("User.id is undefined");
-                return `Account:${obj.id}`;
-              },
+  const apolloClient = useMemo(() => {
+    const logoutLink = onError(({ networkError }) => {
+      if (
+        networkError &&
+        "statusCode" in networkError &&
+        networkError.statusCode === 401
+      ) {
+        logout();
+      }
+    });
+
+    const httpLink = new HttpLink({
+      uri: "/graphql",
+      headers: authorization ? { authorization } : {},
+    });
+
+    return new ApolloClient({
+      cache: new InMemoryCache({
+        possibleTypes: fragments.possibleTypes,
+        typePolicies: {
+          Team: {
+            keyFields: (obj) => {
+              if (!obj.id) throw new Error("Team.id is undefined");
+              return `Account:${obj.id}`;
             },
           },
-        }),
-        headers: authorization ? { authorization } : {},
+          User: {
+            keyFields: (obj) => {
+              if (!obj.id) throw new Error("User.id is undefined");
+              return `Account:${obj.id}`;
+            },
+          },
+        },
       }),
-    [authorization],
-  );
+      link: logoutLink.concat(httpLink),
+    });
+  }, [authorization]);
   return (
     <BaseApolloProvider client={apolloClient}>
       {props.children}

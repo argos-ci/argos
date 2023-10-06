@@ -29,6 +29,9 @@ export const installAppRouter = async (app: express.Application) => {
     }),
   );
 
+  await apolloServer.start();
+  router.use("/graphql", express.json(), createApolloMiddleware());
+
   router.use(auth);
 
   router.get("/auth/logout", (req, res) => {
@@ -42,9 +45,6 @@ export const installAppRouter = async (app: express.Application) => {
   });
 
   router.use(vercel);
-
-  await apolloServer.start();
-  router.use("/graphql", express.json(), createApolloMiddleware());
 
   router.get("*", rendering());
 
