@@ -14,9 +14,17 @@ export type Context = BaseContext & {
   loaders: ReturnType<typeof createLoaders>;
 };
 
-export async function getContext(props: { req: Request }): Promise<Context> {
+async function getContextAuth(request: Request): Promise<AuthPayload | null> {
+  if (process.env["NODE_ENV"] === "test") {
+    return (request as any).__MOCKED_AUTH__ ?? null;
+  }
+
+  return getAuthPayloadFromRequest(request);
+}
+
+export async function getContext(request: Request): Promise<Context> {
   try {
-    const auth = await getAuthPayloadFromRequest(props.req);
+    const auth = await getContextAuth(request);
     return { auth, loaders: createLoaders() };
   } catch (error) {
     if (error instanceof AuthError) {
