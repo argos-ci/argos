@@ -707,6 +707,7 @@ export type IScreenshot = INode & {
   __typename?: 'Screenshot';
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  metadata?: Maybe<IScreenshotMetadata>;
   url: Scalars['String']['output'];
   width?: Maybe<Scalars['Int']['output']>;
 };
@@ -749,6 +750,67 @@ export enum IScreenshotDiffStatus {
   Removed = 'removed',
   Unchanged = 'unchanged'
 }
+
+export type IScreenshotMetadata = {
+  __typename?: 'ScreenshotMetadata';
+  automationLibrary: IScreenshotMetadataAutomationLibrary;
+  browser?: Maybe<IScreenshotMetadataBrowser>;
+  colorScheme?: Maybe<IScreenshotMetadataColorScheme>;
+  mediaType?: Maybe<IScreenshotMetadataMediaType>;
+  sdk: IScreenshotMetadataSdk;
+  test?: Maybe<IScreenshotMetadataTest>;
+  url?: Maybe<Scalars['String']['output']>;
+  viewport?: Maybe<IScreenshotMetadataViewport>;
+};
+
+export type IScreenshotMetadataAutomationLibrary = {
+  __typename?: 'ScreenshotMetadataAutomationLibrary';
+  name: Scalars['String']['output'];
+  version: Scalars['String']['output'];
+};
+
+export type IScreenshotMetadataBrowser = {
+  __typename?: 'ScreenshotMetadataBrowser';
+  name: Scalars['String']['output'];
+  version: Scalars['String']['output'];
+};
+
+export enum IScreenshotMetadataColorScheme {
+  Dark = 'dark',
+  Light = 'light'
+}
+
+export type IScreenshotMetadataLocation = {
+  __typename?: 'ScreenshotMetadataLocation';
+  column: Scalars['Int']['output'];
+  file: Scalars['String']['output'];
+  line: Scalars['Int']['output'];
+};
+
+export enum IScreenshotMetadataMediaType {
+  Print = 'print',
+  Screen = 'screen'
+}
+
+export type IScreenshotMetadataSdk = {
+  __typename?: 'ScreenshotMetadataSDK';
+  name: Scalars['String']['output'];
+  version: Scalars['String']['output'];
+};
+
+export type IScreenshotMetadataTest = {
+  __typename?: 'ScreenshotMetadataTest';
+  id?: Maybe<Scalars['String']['output']>;
+  location?: Maybe<IScreenshotMetadataLocation>;
+  title: Scalars['String']['output'];
+  titlePath: Array<Scalars['String']['output']>;
+};
+
+export type IScreenshotMetadataViewport = {
+  __typename?: 'ScreenshotMetadataViewport';
+  height: Scalars['Int']['output'];
+  width: Scalars['Int']['output'];
+};
 
 export type ISetTeamMemberLevelInput = {
   level: ITeamUserLevel;
@@ -1189,6 +1251,15 @@ export type IResolversTypes = ResolversObject<{
   ScreenshotDiff: ResolverTypeWrapper<ScreenshotDiff>;
   ScreenshotDiffConnection: ResolverTypeWrapper<Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<IResolversTypes['ScreenshotDiff']> }>;
   ScreenshotDiffStatus: IScreenshotDiffStatus;
+  ScreenshotMetadata: ResolverTypeWrapper<IScreenshotMetadata>;
+  ScreenshotMetadataAutomationLibrary: ResolverTypeWrapper<IScreenshotMetadataAutomationLibrary>;
+  ScreenshotMetadataBrowser: ResolverTypeWrapper<IScreenshotMetadataBrowser>;
+  ScreenshotMetadataColorScheme: IScreenshotMetadataColorScheme;
+  ScreenshotMetadataLocation: ResolverTypeWrapper<IScreenshotMetadataLocation>;
+  ScreenshotMetadataMediaType: IScreenshotMetadataMediaType;
+  ScreenshotMetadataSDK: ResolverTypeWrapper<IScreenshotMetadataSdk>;
+  ScreenshotMetadataTest: ResolverTypeWrapper<IScreenshotMetadataTest>;
+  ScreenshotMetadataViewport: ResolverTypeWrapper<IScreenshotMetadataViewport>;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
   SetupVercelIntegrationInput: ISetupVercelIntegrationInput;
   SetupVercelIntegrationProjectInput: ISetupVercelIntegrationProjectInput;
@@ -1278,6 +1349,13 @@ export type IResolversParentTypes = ResolversObject<{
   ScreenshotBucket: ScreenshotBucket;
   ScreenshotDiff: ScreenshotDiff;
   ScreenshotDiffConnection: Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<IResolversParentTypes['ScreenshotDiff']> };
+  ScreenshotMetadata: IScreenshotMetadata;
+  ScreenshotMetadataAutomationLibrary: IScreenshotMetadataAutomationLibrary;
+  ScreenshotMetadataBrowser: IScreenshotMetadataBrowser;
+  ScreenshotMetadataLocation: IScreenshotMetadataLocation;
+  ScreenshotMetadataSDK: IScreenshotMetadataSdk;
+  ScreenshotMetadataTest: IScreenshotMetadataTest;
+  ScreenshotMetadataViewport: IScreenshotMetadataViewport;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
   SetupVercelIntegrationInput: ISetupVercelIntegrationInput;
   SetupVercelIntegrationProjectInput: ISetupVercelIntegrationProjectInput;
@@ -1612,6 +1690,7 @@ export type IRepositoryResolvers<ContextType = Context, ParentType extends IReso
 export type IScreenshotResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Screenshot'] = IResolversParentTypes['Screenshot']> = ResolversObject<{
   height?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  metadata?: Resolver<Maybe<IResolversTypes['ScreenshotMetadata']>, ParentType, ContextType>;
   url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   width?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1645,6 +1724,57 @@ export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends I
 export type IScreenshotDiffConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotDiffConnection'] = IResolversParentTypes['ScreenshotDiffConnection']> = ResolversObject<{
   edges?: Resolver<Array<IResolversTypes['ScreenshotDiff']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IScreenshotMetadataResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadata'] = IResolversParentTypes['ScreenshotMetadata']> = ResolversObject<{
+  automationLibrary?: Resolver<IResolversTypes['ScreenshotMetadataAutomationLibrary'], ParentType, ContextType>;
+  browser?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataBrowser']>, ParentType, ContextType>;
+  colorScheme?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataColorScheme']>, ParentType, ContextType>;
+  mediaType?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataMediaType']>, ParentType, ContextType>;
+  sdk?: Resolver<IResolversTypes['ScreenshotMetadataSDK'], ParentType, ContextType>;
+  test?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataTest']>, ParentType, ContextType>;
+  url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  viewport?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataViewport']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IScreenshotMetadataAutomationLibraryResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataAutomationLibrary'] = IResolversParentTypes['ScreenshotMetadataAutomationLibrary']> = ResolversObject<{
+  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  version?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IScreenshotMetadataBrowserResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataBrowser'] = IResolversParentTypes['ScreenshotMetadataBrowser']> = ResolversObject<{
+  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  version?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IScreenshotMetadataLocationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataLocation'] = IResolversParentTypes['ScreenshotMetadataLocation']> = ResolversObject<{
+  column?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  file?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  line?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IScreenshotMetadataSdkResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataSDK'] = IResolversParentTypes['ScreenshotMetadataSDK']> = ResolversObject<{
+  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  version?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IScreenshotMetadataTestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataTest'] = IResolversParentTypes['ScreenshotMetadataTest']> = ResolversObject<{
+  id?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  location?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataLocation']>, ParentType, ContextType>;
+  title?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  titlePath?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IScreenshotMetadataViewportResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataViewport'] = IResolversParentTypes['ScreenshotMetadataViewport']> = ResolversObject<{
+  height?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  width?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1880,6 +2010,13 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   ScreenshotBucket?: IScreenshotBucketResolvers<ContextType>;
   ScreenshotDiff?: IScreenshotDiffResolvers<ContextType>;
   ScreenshotDiffConnection?: IScreenshotDiffConnectionResolvers<ContextType>;
+  ScreenshotMetadata?: IScreenshotMetadataResolvers<ContextType>;
+  ScreenshotMetadataAutomationLibrary?: IScreenshotMetadataAutomationLibraryResolvers<ContextType>;
+  ScreenshotMetadataBrowser?: IScreenshotMetadataBrowserResolvers<ContextType>;
+  ScreenshotMetadataLocation?: IScreenshotMetadataLocationResolvers<ContextType>;
+  ScreenshotMetadataSDK?: IScreenshotMetadataSdkResolvers<ContextType>;
+  ScreenshotMetadataTest?: IScreenshotMetadataTestResolvers<ContextType>;
+  ScreenshotMetadataViewport?: IScreenshotMetadataViewportResolvers<ContextType>;
   Team?: ITeamResolvers<ContextType>;
   TeamMember?: ITeamMemberResolvers<ContextType>;
   TeamMemberConnection?: ITeamMemberConnectionResolvers<ContextType>;

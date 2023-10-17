@@ -1,4 +1,3 @@
-// ts-ignore
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "exclude": ["node_modules", "dist"],

@@ -20,6 +20,7 @@ export type TooltipProps = {
   side?: TooltipPrimitive.TooltipContentProps["side"];
   align?: TooltipPrimitive.TooltipContentProps["align"];
   preventPointerDownOutside?: boolean;
+  disableHoverableContent?: boolean;
 };
 
 export const Tooltip = ({
@@ -28,6 +29,7 @@ export const Tooltip = ({
   content,
   align,
   side,
+  disableHoverableContent,
   preventPointerDownOutside,
 }: TooltipProps) => {
   const variantClassName = variantClassNames[variant];
@@ -36,7 +38,7 @@ export const Tooltip = ({
   }
   if (!content) return <>{children}</>;
   return (
-    <TooltipPrimitive.Root>
+    <TooltipPrimitive.Root disableHoverableContent={disableHoverableContent}>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content

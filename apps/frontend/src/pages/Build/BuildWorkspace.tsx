@@ -72,7 +72,7 @@ export const BuildWorkspace = (props: {
         <BuildDiffProvider params={props.params} stats={build?.stats ?? null}>
           <div className="flex min-h-0 flex-1">
             <BuildSidebar build={build} repoUrl={repoUrl} />
-            {build ? <BuildDetail build={build} /> : null}
+            {build ? <BuildDetail build={build} repoUrl={repoUrl} /> : null}
           </div>
         </BuildDiffProvider>
       );

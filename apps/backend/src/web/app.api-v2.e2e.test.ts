@@ -145,6 +145,15 @@ describe("api v2", () => {
             key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
             name: "second",
             path: join(__dirname, "__fixtures__", "screenshot_test_2.jpg"),
+            metadata: {
+              url: "https://localhost:3000/test",
+              viewport: { width: 1024, height: 768 },
+              colorScheme: "light",
+              mediaType: "screen",
+              browser: { name: "chromium", version: "119.0.6045.9" },
+              automationLibrary: { name: "playwright", version: "1.39.0" },
+              sdk: { name: "@argos-ci/playwright", version: "0.0.7" },
+            },
           },
           {
             key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
@@ -197,6 +206,7 @@ describe("api v2", () => {
             screenshots: screenshots.map((screenshot) => ({
               key: screenshot.key,
               name: screenshot.name,
+              metadata: screenshot.metadata,
             })),
           })
           .expect(200);
@@ -208,6 +218,20 @@ describe("api v2", () => {
         if (!build) {
           throw new Error("Build not found");
         }
+
+        const screenshotWithMetadata =
+          build.compareScreenshotBucket!.screenshots!.find(
+            (screenshot) => screenshot.name === "second",
+          );
+        expect(screenshotWithMetadata!.metadata).toEqual({
+          url: "https://localhost:3000/test",
+          viewport: { width: 1024, height: 768 },
+          colorScheme: "light",
+          mediaType: "screen",
+          browser: { name: "chromium", version: "119.0.6045.9" },
+          automationLibrary: { name: "playwright", version: "1.39.0" },
+          sdk: { name: "@argos-ci/playwright", version: "0.0.7" },
+        });
 
         expect(build.jobStatus).toBe("pending");
         expect(build.name).toBe("current");

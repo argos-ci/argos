@@ -16,7 +16,7 @@ export const getFlakyIndicatorProps = (
       return unstable
         ? {
             label: "Test unstable",
-            color: "neutral" as const,
+            color: "warning" as const,
             icon: AlertTriangleIcon,
             tooltip:
               "High instability and potential flakiness detected in the past 7 days",
@@ -64,7 +64,7 @@ export const FlakyChip = ({
 
   return (
     <Tooltip content={tooltip}>
-      <Chip icon={Icon} color={color} scale="sm" className={className}>
+      <Chip icon={Icon} color={color} scale="xs" className={className}>
         {label}
       </Chip>
     </Tooltip>

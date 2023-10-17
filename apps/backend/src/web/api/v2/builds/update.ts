@@ -4,7 +4,12 @@ import { HttpError } from "express-err";
 
 import { job as buildJob } from "@/build/index.js";
 import { raw, transaction } from "@/database/index.js";
-import { Build, Project, Screenshot } from "@/database/models/index.js";
+import {
+  Build,
+  Project,
+  Screenshot,
+  ScreenshotMetadata,
+} from "@/database/models/index.js";
 import {
   getUnknownScreenshotKeys,
   insertFilesAndScreenshots,
@@ -46,6 +51,54 @@ const validateRoute = validate({
             name: {
               type: "string",
             },
+            metadata: {
+              type: ["object", "null"],
+              required: [
+                "viewport",
+                "colorScheme",
+                "mediaType",
+                "browser",
+                "automationLibrary",
+                "sdk",
+              ],
+              properties: {
+                url: { type: ["string", "null"] },
+                viewport: {
+                  type: "object",
+                  required: ["width", "height"],
+                  properties: {
+                    width: { type: "integer" },
+                    height: { type: "integer" },
+                  },
+                },
+                colorScheme: { type: "string", enum: ["light", "dark"] },
+                mediaType: { type: "string", enum: ["screen", "print"] },
+                browser: {
+                  type: "object",
+                  required: ["name", "version"],
+                  properties: {
+                    name: { type: "string" },
+                    version: { type: "string" },
+                  },
+                },
+                automationLibrary: {
+                  type: "object",
+                  required: ["name", "version"],
+                  properties: {
+                    name: { type: "string" },
+                    version: { type: "string" },
+                  },
+                },
+                sdk: {
+                  type: "object",
+                  required: ["name", "version"],
+                  properties: {
+                    name: { type: "string" },
+                    version: { type: "string" },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -72,6 +125,7 @@ type UpdateRequest = express.Request<
     screenshots: {
       key: string;
       name: string;
+      metadata: ScreenshotMetadata | null;
     }[];
     parallel?: boolean;
     parallelTotal?: number;

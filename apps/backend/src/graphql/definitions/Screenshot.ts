@@ -8,11 +8,66 @@ import type { IResolvers } from "../__generated__/resolver-types.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
+  type ScreenshotMetadataViewport {
+    width: Int!
+    height: Int!
+  }
+
+  enum ScreenshotMetadataColorScheme {
+    light
+    dark
+  }
+
+  enum ScreenshotMetadataMediaType {
+    screen
+    print
+  }
+
+  type ScreenshotMetadataLocation {
+    file: String!
+    line: Int!
+    column: Int!
+  }
+
+  type ScreenshotMetadataTest {
+    id: String
+    title: String!
+    titlePath: [String!]!
+    location: ScreenshotMetadataLocation
+  }
+
+  type ScreenshotMetadataBrowser {
+    name: String!
+    version: String!
+  }
+
+  type ScreenshotMetadataAutomationLibrary {
+    name: String!
+    version: String!
+  }
+
+  type ScreenshotMetadataSDK {
+    name: String!
+    version: String!
+  }
+
+  type ScreenshotMetadata {
+    url: String
+    viewport: ScreenshotMetadataViewport
+    colorScheme: ScreenshotMetadataColorScheme
+    mediaType: ScreenshotMetadataMediaType
+    test: ScreenshotMetadataTest
+    browser: ScreenshotMetadataBrowser
+    automationLibrary: ScreenshotMetadataAutomationLibrary!
+    sdk: ScreenshotMetadataSDK!
+  }
+
   type Screenshot implements Node {
     id: ID!
     url: String!
     width: Int
     height: Int
+    metadata: ScreenshotMetadata
   }
 `;
 

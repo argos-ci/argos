@@ -1,8 +1,9 @@
 {
   "server": {
     "logFormat": "",
-    "url": "http://localhost:4001",
-    "secure": false
+    "url": "http://localhost:3000",
+    "secure": false,
+    "port": 3000
   },
   "s3": {
     "screenshotsBucket": "argos-ci-test",

@@ -1,14 +1,11 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-
-const { test, expect } = require("@playwright/test");
-const { goto } = require("./utils");
+import { expect, test } from "@playwright/test";
 
 test("private team projects", async ({ page }) => {
-  await goto({ page, link: "/smooth" });
+  await page.goto("/smooth");
   await expect(page.getByText("Page not found")).toBeVisible();
 });
 
 test("private team settings", async ({ page }) => {
-  await goto({ page, link: "/smooth/settings" });
+  await page.goto("/smooth/settings");
   await expect(page.getByText("Page not found")).toBeVisible();
 });
