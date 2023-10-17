@@ -1,9 +1,19 @@
-export const retryable = Symbol("retryable");
+import { invariant } from "@/util/invariant.js";
+
+export const retryableSymbol = Symbol("retryable");
 
 export class UnretryableError extends Error {
-  [retryable] = false;
+  [retryableSymbol] = false;
+}
+
+export function unretryable(
+  condition: any,
+  message?: string,
+): asserts condition {
+  // @ts-ignore
+  invariant(condition, message, UnretryableError);
 }
 
 export const checkIsRetryable = (error: any): boolean => {
-  return error[retryable] !== false;
+  return error[retryableSymbol] !== false;
 };

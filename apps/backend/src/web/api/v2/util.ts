@@ -13,6 +13,7 @@ import {
   Project,
   ScreenshotBucket,
 } from "@/database/models/index.js";
+import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 
 export const getBuildName = (name: string | undefined | null) =>
   name || "default";
@@ -27,15 +28,24 @@ const getOrCreatePullRequest = async ({
   const lockKey = `pullRequestCreation-${githubRepositoryId}:${number}`;
   const lock = await getRedisLock();
   return lock.acquire(lockKey, async () => {
-    const pullRequest = await GithubPullRequest.query().findOne({
+    const existingPr = await GithubPullRequest.query().findOne({
       githubRepositoryId,
       number,
     });
-    if (pullRequest) return pullRequest;
-    return GithubPullRequest.query().insertAndFetch({
+
+    if (existingPr) {
+      return existingPr;
+    }
+
+    const pr = await GithubPullRequest.query().insertAndFetch({
       githubRepositoryId,
       number,
+      jobStatus: "pending",
     });
+
+    await githubPullRequestJob.push(pr.id);
+
+    return pr;
   });
 };
 

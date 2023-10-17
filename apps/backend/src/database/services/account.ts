@@ -5,6 +5,7 @@ import { GithubAccount } from "../models/GithubAccount.js";
 import { User } from "../models/User.js";
 import { transaction } from "../transaction.js";
 import type { GitlabUser } from "../models/GitlabUser.js";
+import type { PartialModelObject } from "objection";
 
 const RESERVED_SLUGS = [
   "auth",
@@ -50,8 +51,8 @@ export const getGhAccountType = (strType: string) => {
 export type GetOrCreateGhAccountProps = {
   githubId: number;
   login: string;
-  email: string | null;
-  name: string | null;
+  email?: string | null;
+  name?: string | null;
   type: "user" | "organization";
 };
 
@@ -64,14 +65,19 @@ export const getOrCreateGhAccount = async (
   if (existing) {
     if (
       existing.login !== props.login ||
-      existing.email !== props.email ||
-      existing.name !== props.name
+      (existing.email !== props.email && props.email) ||
+      (existing.name !== props.name && props.name)
     ) {
-      return existing.$query().patchAndFetch({
+      const toUpdate: PartialModelObject<GithubAccount> = {
         login: props.login,
-        email: props.email,
-        name: props.name,
-      });
+      };
+      if (props.email) {
+        toUpdate.email = props.email;
+      }
+      if (props.name) {
+        toUpdate.name = props.name;
+      }
+      return existing.$query().patchAndFetch(toUpdate);
     }
     return existing;
   }
@@ -80,8 +86,8 @@ export const getOrCreateGhAccount = async (
     githubId: props.githubId,
     login: props.login,
     type: props.type,
-    email: props.email,
-    name: props.name,
+    email: props.email ?? null,
+    name: props.name ?? null,
   });
 };
 
