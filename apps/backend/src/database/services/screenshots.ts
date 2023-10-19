@@ -1,7 +1,13 @@
-import type { TransactionOrKnex } from "objection";
+import type { PartialModelObject, TransactionOrKnex } from "objection";
 
 import { transaction } from "@/database/index.js";
-import { Build, File, Screenshot, Test } from "@/database/models/index.js";
+import {
+  Build,
+  File,
+  Screenshot,
+  ScreenshotMetadata,
+  Test,
+} from "@/database/models/index.js";
 
 const getOrCreateTests = async ({
   projectId,
@@ -45,6 +51,7 @@ type InsertFilesAndScreenshotsParams = {
   screenshots: {
     key: string;
     name: string;
+    metadata: ScreenshotMetadata | null;
   }[];
   build: Build;
   unknownKeys?: string[];
@@ -107,7 +114,7 @@ export const insertFilesAndScreenshots = async (
 
     // Insert screenshots
     await Screenshot.query(trx).insert(
-      params.screenshots.map((screenshot) => {
+      params.screenshots.map((screenshot): PartialModelObject<Screenshot> => {
         const file = files.find((f) => f.key === screenshot.key);
         if (!file) {
           throw new Error(`File not found for key ${screenshot.key}`);
@@ -122,6 +129,7 @@ export const insertFilesAndScreenshots = async (
           s3Id: screenshot.key,
           fileId: file.id,
           testId: test.id,
+          metadata: screenshot.metadata,
         };
       }),
     );

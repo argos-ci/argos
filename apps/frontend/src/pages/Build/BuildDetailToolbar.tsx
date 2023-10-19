@@ -8,19 +8,25 @@ import {
 import { clsx } from "clsx";
 import { memo } from "react";
 
-import { Test } from "@/gql/graphql";
 import { ButtonGroup } from "@/ui/ButtonGroup";
-import { FlakyChip } from "@/ui/FlakyIndicator";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
-import { MuteIndicator } from "@/ui/MuteIndicator";
+import { FlakyChip } from "@/ui/FlakyIndicator";
 
 import { useBuildDiffFitState } from "./BuildDiffFitState";
-import { useBuildDiffState } from "./BuildDiffState";
+import { Diff, useBuildDiffState } from "./BuildDiffState";
 import { useBuildDiffVisibleState } from "./BuildDiffVisibleState";
 import { useBuildHotkey } from "./BuildHotkeys";
 import { useZoomerSyncContext } from "./Zoomer";
 import { useBuildDiffViewModeState } from "./useBuildDiffViewModeState";
+import { AutomationLibraryIndicator } from "./metadata/automationLibrary/AutomationLibraryIndicator";
+import { BrowserIndicator } from "./metadata/browser/BrowserIndicator";
+import { SdkIndicator } from "./metadata/sdk/SdkIndicator";
+import { ViewportIndicator } from "./metadata/viewport/ViewportIndicator";
+import { UrlIndicator } from "./metadata/url/UrlIndicator";
+import { ColorSchemeIndicator } from "./metadata/colorScheme/ColorSchemeIndicator";
+import { MediaTypeIndicator } from "./metadata/mediaType/MediaTypeIndicator";
+import { TestIndicator } from "./metadata/test/TestIndicator";
 
 const BuildDiffChangesOverlayToggle = memo(() => {
   const { visible, setVisible } = useBuildDiffVisibleState();
@@ -214,16 +220,57 @@ const PreviousDiffButton = memo(() => {
 });
 
 export interface BuildDetailToolbarProps {
-  name: string;
+  activeDiff: Diff;
   bordered: boolean;
-  test: Pick<
-    Test,
-    "status" | "unstable" | "resolvedDate" | "mute" | "muteUntil"
-  > | null;
+  repoUrl: string | null;
+  baseBranch: string | null;
+  compareBranch: string | null;
 }
 
 export const BuildDetailToolbar = memo(
-  ({ name, bordered, test }: BuildDetailToolbarProps) => {
+  ({
+    activeDiff,
+    baseBranch,
+    compareBranch,
+    bordered,
+    repoUrl,
+  }: BuildDetailToolbarProps) => {
+    const automationLibrary =
+      activeDiff.compareScreenshot?.metadata?.automationLibrary ??
+      activeDiff.baseScreenshot?.metadata?.automationLibrary ??
+      null;
+    const browser =
+      activeDiff.compareScreenshot?.metadata?.browser ??
+      activeDiff.baseScreenshot?.metadata?.browser ??
+      null;
+    const sdk =
+      activeDiff.compareScreenshot?.metadata?.sdk ??
+      activeDiff.baseScreenshot?.metadata?.sdk ??
+      null;
+    const viewport =
+      activeDiff.compareScreenshot?.metadata?.viewport ??
+      activeDiff.baseScreenshot?.metadata?.viewport ??
+      null;
+    const url =
+      activeDiff.compareScreenshot?.metadata?.url ??
+      activeDiff.baseScreenshot?.metadata?.url ??
+      null;
+    const colorScheme =
+      activeDiff.compareScreenshot?.metadata?.colorScheme ??
+      activeDiff.baseScreenshot?.metadata?.colorScheme ??
+      null;
+    const mediaType =
+      activeDiff.compareScreenshot?.metadata?.mediaType ??
+      activeDiff.baseScreenshot?.metadata?.mediaType ??
+      null;
+    const test =
+      activeDiff.compareScreenshot?.metadata?.test ??
+      activeDiff.baseScreenshot?.metadata?.test ??
+      null;
+    const branch =
+      test === activeDiff.baseScreenshot?.metadata?.test
+        ? baseBranch
+        : compareBranch;
     return (
       <div
         className={clsx(
@@ -231,19 +278,45 @@ export const BuildDetailToolbar = memo(
           !bordered && "border-b-transparent",
         )}
       >
-        <div className="flex items-start gap-2">
+        <div className="flex items-center gap-2">
           <div className="flex gap-1">
             <PreviousDiffButton />
             <NextDiffButton />
           </div>
-          <MuteIndicator test={test} className="mt-1" />
-          <div
-            role="heading"
-            className="mr-2 mt-1 line-clamp-2 text-sm font-medium"
-          >
-            {name}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div role="heading" className="line-clamp-2 text-xs font-medium">
+                {activeDiff.name}
+              </div>
+              <FlakyChip test={activeDiff.test ?? null} className="mt-0.5" />
+            </div>
+            <div className="flex flex-wrap gap-1.5 items-center">
+              {sdk && <SdkIndicator sdk={sdk} className="w-4 h-4" />}
+              {automationLibrary && (
+                <AutomationLibraryIndicator
+                  automationLibrary={automationLibrary}
+                  className="w-4 h-4"
+                />
+              )}
+              {browser && (
+                <BrowserIndicator browser={browser} className="w-4 h-4" />
+              )}
+              {colorScheme && (
+                <ColorSchemeIndicator
+                  colorScheme={colorScheme}
+                  className="w-4 h-4"
+                />
+              )}
+              {mediaType && (
+                <MediaTypeIndicator mediaType={mediaType} className="w-4 h-4" />
+              )}
+              {viewport && <ViewportIndicator viewport={viewport} />}
+              {url && <UrlIndicator url={url} />}
+              {test && (
+                <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
+              )}
+            </div>
           </div>
-          <FlakyChip test={test} className="mt-0.5" />
         </div>
         <div className="flex gap-2">
           <BuildVisibleDiffButtonGroup />

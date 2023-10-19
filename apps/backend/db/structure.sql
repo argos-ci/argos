@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.7 (Homebrew)
+-- Dumped by pg_dump version 14.9 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -922,7 +922,8 @@ CREATE TABLE public.screenshots (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "fileId" bigint,
-    "testId" bigint
+    "testId" bigint,
+    metadata jsonb
 );
 
 
@@ -2712,3 +2713,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023082
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230827144239_gitlab_acess_token.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230830151208_gitlab_projects.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230930081123_add_diffs_group.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231017142204_screenshot_metadata.js', 1, NOW());

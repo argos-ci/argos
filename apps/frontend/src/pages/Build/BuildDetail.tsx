@@ -395,6 +395,7 @@ const useScrollToTop = (
 
 export const BuildDetail = (props: {
   build: FragmentType<typeof BuildFragment>;
+  repoUrl: string | null;
 }) => {
   const build = useFragment(BuildFragment, props.build);
   const { activeDiff } = useBuildDiffState();
@@ -417,9 +418,11 @@ export const BuildDetail = (props: {
             <BuildDiffFitStateProvider>
               <BuildDiffViewModeStateProvider>
                 <BuildDetailToolbar
-                  name={activeDiff.name}
+                  activeDiff={activeDiff}
+                  repoUrl={props.repoUrl}
+                  baseBranch={build.baseScreenshotBucket?.branch ?? null}
+                  compareBranch={build.branch}
                   bordered={scrolled}
-                  test={activeDiff.test ?? null}
                 />
                 <BuildScreenshots build={build} diff={activeDiff} />
               </BuildDiffViewModeStateProvider>

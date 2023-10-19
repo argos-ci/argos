@@ -14,41 +14,103 @@ import { MatchData, Searcher } from "fast-fuzzy";
 
 import type { BuildStats } from "@/containers/Build";
 import { graphql } from "@/gql";
-import { ScreenshotDiffStatus, TestStatus } from "@/gql/graphql";
 
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
+import { ResultOf } from "@graphql-typed-document-node/core";
 
-export interface Diff {
-  id: string;
-  url?: string | null;
-  status: ScreenshotDiffStatus;
-  name: string;
-  width?: number | null;
-  height?: number | null;
-  flakyDetected: boolean;
-  group?: string | null;
-  compareScreenshot?: {
-    id: string;
-    url: string;
-    width?: number | null;
-    height?: number | null;
-  } | null;
-  baseScreenshot?: {
-    id: string;
-    url: string;
-    width?: number | null;
-    height?: number | null;
-  } | null;
-  test?: {
-    id: string;
-    status: TestStatus;
-    unstable: boolean;
-    resolvedDate?: string | null;
-    mute: boolean;
-    muteUntil?: string | null;
-  } | null;
-}
+const ScreenshotDiffFragment = graphql(`
+  fragment BuildDiffState_ScreenshotDiff on ScreenshotDiff {
+    id
+    status
+    url
+    name
+    width
+    height
+    flakyDetected
+    group
+    test {
+      id
+      status
+      unstable
+      resolvedDate
+    }
+    baseScreenshot {
+      id
+      url
+      width
+      height
+      metadata {
+        url
+        colorScheme
+        mediaType
+        automationLibrary {
+          name
+          version
+        }
+        browser {
+          name
+          version
+        }
+        sdk {
+          name
+          version
+        }
+        viewport {
+          width
+          height
+        }
+        test {
+          id
+          title
+          titlePath
+          location {
+            file
+            line
+          }
+        }
+      }
+    }
+    compareScreenshot {
+      id
+      url
+      width
+      height
+      metadata {
+        url
+        colorScheme
+        mediaType
+        automationLibrary {
+          name
+          version
+        }
+        browser {
+          name
+          version
+        }
+        sdk {
+          name
+          version
+        }
+        viewport {
+          width
+          height
+        }
+        test {
+          id
+          title
+          titlePath
+          location {
+            file
+            line
+          }
+        }
+      }
+    }
+  }
+`);
+
+export type Diff = ResultOf<typeof ScreenshotDiffFragment>;
 
 export interface DiffGroup {
   name: "failure" | "changed" | "added" | "removed" | "unchanged";
@@ -128,26 +190,7 @@ const ProjectQuery = graphql(`
             hasNextPage
           }
           edges {
-            id
-            status
-            url
-            name
-            width
-            height
-            flakyDetected
-            group
-            baseScreenshot {
-              id
-              url
-              width
-              height
-            }
-            compareScreenshot {
-              id
-              url
-              width
-              height
-            }
+            ...BuildDiffState_ScreenshotDiff
           }
         }
       }
@@ -211,9 +254,8 @@ const useDataState = ({
       });
     }
   }, [data, loading, fetchMore]);
-  const screenshotDiffs: Diff[] =
-    data?.project?.build?.screenshotDiffs.edges ?? [];
-
+  const screenshotDiffs = (data?.project?.build?.screenshotDiffs.edges ??
+    []) as Diff[];
   return screenshotDiffs;
 };
 

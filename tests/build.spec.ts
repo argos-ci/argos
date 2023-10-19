@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-const { test, expect } = require("@playwright/test");
-const { goto } = require("./utils");
-const { argosScreenshot } = require("@argos-ci/playwright");
+import { test, expect } from "@playwright/test";
+import { argosScreenshot } from "@argos-ci/playwright";
 
 const buildExamples = [
   { name: "orphan", number: 1 },
@@ -21,7 +19,7 @@ const buildExamples = [
 
 buildExamples.forEach((build) => {
   test(build.name, async ({ page, browserName }) => {
-    await goto({ page, link: `/smooth/big/builds/${build.number}` });
+    await page.goto(`/smooth/big/builds/${build.number}`);
     await expect(page.getByText(`Build ${build.number}`)).toBeVisible();
     if (build.compare === undefined || build.compare) {
       await expect(page.getByText(`Changes from`)).toBeVisible();
