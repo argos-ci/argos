@@ -1,6 +1,6 @@
 import { useMutation } from "@apollo/client";
 import { MoreVerticalIcon } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useQuery } from "@/containers/Apollo";
@@ -180,6 +180,9 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
   const [removeFromTeam, { loading, error }] = useMutation(
     RemoveUserFromTeamMutation,
     {
+      onCompleted() {
+        props.state.hide();
+      },
       update(cache, { data }) {
         if (data?.removeUserFromTeam) {
           cache.modify({
@@ -242,9 +245,8 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
         <Button
           disabled={loading}
           color="danger"
-          onClick={async () => {
-            await removeFromTeam();
-            props.state.hide();
+          onClick={() => {
+            removeFromTeam();
           }}
         >
           Remove from Team
@@ -471,6 +473,9 @@ export const TeamMembers = (props: {
       first: NB_MEMBERS_PER_PAGE,
     },
   });
+  const removedUserRef = useRef<FragmentType<
+    typeof RemoveFromTeamDialogUserFragment
+  > | null>(null);
   if (!data) return null;
   if (data.team?.__typename !== "Team") {
     throw new Error("Invariant: Invalid team");
@@ -478,6 +483,14 @@ export const TeamMembers = (props: {
   const teamName = team.name || team.slug;
   const lastOne = data.team.members.pageInfo.totalCount === 1;
   const members = Array.from(data.team.members.edges);
+  if (removeAccountId) {
+    const removedUser =
+      members.find((member) => member.user.id === removeAccountId)?.user ??
+      null;
+    removedUserRef.current = removedUser ?? removedUserRef.current;
+  } else {
+    removedUserRef.current = null;
+  }
   return (
     <Card>
       <form>
@@ -564,7 +577,7 @@ export const TeamMembers = (props: {
             </div>
           )}
           <Dialog state={removeTeamDialog}>
-            {removeAccountId ? (
+            {removedUserRef.current ? (
               authPayload.account.id === removeAccountId ? (
                 <LeaveTeamDialog
                   teamName={teamName}
@@ -575,11 +588,7 @@ export const TeamMembers = (props: {
                 <RemoveFromTeamDialog
                   teamName={teamName}
                   teamAccountId={team.id}
-                  user={
-                    members.find(
-                      (member) => member.user.id === removeAccountId,
-                    )!.user
-                  }
+                  user={removedUserRef.current}
                   state={removeTeamDialog}
                 />
               )
