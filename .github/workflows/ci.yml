@@ -151,8 +151,3 @@ jobs:
 
       - name: Run Playwright tests
         run: npm exec playwright test
-
-      - name: Run Argos
-        continue-on-error: true
-        if: ${{ always() }}
-        run: npm exec argos upload screenshots

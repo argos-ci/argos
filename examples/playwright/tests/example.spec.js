@@ -10,10 +10,6 @@ import { argosScreenshot } from "@argos-ci/playwright";
 // When this test is executed, a new screenshot will be created
 // for each configured browser.
 
-// The screenshots are stored into the "screenshots" folder.
-
-const screenshotsFolder = "screenshots";
-
 test.describe("playwright.dev", () => {
   const url = "https://playwright.dev/";
 

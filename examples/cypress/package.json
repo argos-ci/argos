@@ -5,6 +5,6 @@
   },
   "devDependencies": {
     "@argos-ci/cypress": "latest",
-    "cypress": "^13.1.0"
+    "cypress": "latest"
   }
 }
