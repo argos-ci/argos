@@ -324,19 +324,18 @@ const sendGithubNotification = async (ctx: Context) => {
     });
   };
 
-  await Promise.all([
-    createGhCommitStatus({
-      buildName: build.name,
-      buildUrl,
-      commit: build.prHeadCommit ?? compareScreenshotBucket.commit,
-      description: notification.description,
-      githubAccountLogin: githubAccount.login,
-      octokit,
-      repositoryName: githubRepository.name,
-      state: notification.githubState,
-    }),
-    createGhComment(),
-  ]);
+  await createGhCommitStatus({
+    buildName: build.name,
+    buildUrl,
+    commit: build.prHeadCommit ?? compareScreenshotBucket.commit,
+    description: notification.description,
+    githubAccountLogin: githubAccount.login,
+    octokit,
+    repositoryName: githubRepository.name,
+    state: notification.githubState,
+  });
+
+  await createGhComment();
 };
 
 const sendGitlabNotification = async (ctx: Context) => {
