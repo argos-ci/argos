@@ -284,11 +284,8 @@ export const BuildDetailToolbar = memo(
             <NextDiffButton />
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div role="heading" className="line-clamp-2 text-xs font-medium">
-                {activeDiff.name}
-              </div>
-              <FlakyChip test={activeDiff.test ?? null} className="mt-0.5" />
+            <div role="heading" className="line-clamp-2 text-xs font-medium">
+              {activeDiff.name}
             </div>
             <div className="flex flex-wrap gap-1.5 items-center">
               {sdk && <SdkIndicator sdk={sdk} className="w-4 h-4" />}
@@ -315,6 +312,7 @@ export const BuildDetailToolbar = memo(
               {test && (
                 <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
               )}
+              <FlakyChip test={activeDiff.test ?? null} />
             </div>
           </div>
         </div>
