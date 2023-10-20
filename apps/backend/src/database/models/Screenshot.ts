@@ -38,6 +38,113 @@ export type ScreenshotMetadata = {
   };
 };
 
+export const ScreenshotMetadataJsonSchema = {
+  type: ["object", "null"],
+  properties: {
+    url: {
+      type: "string",
+    },
+    viewport: {
+      type: "object",
+      properties: {
+        width: {
+          type: "number",
+        },
+        height: {
+          type: "number",
+        },
+      },
+      required: ["width", "height"],
+    },
+    colorScheme: {
+      type: "string",
+      enum: ["light", "dark"],
+    },
+    mediaType: {
+      type: "string",
+      enum: ["screen", "print"],
+    },
+    test: {
+      oneOf: [
+        {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+            },
+            title: {
+              type: "string",
+            },
+            titlePath: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
+            location: {
+              type: "object",
+              properties: {
+                file: {
+                  type: "string",
+                },
+                line: {
+                  type: "number",
+                },
+                column: {
+                  type: "number",
+                },
+              },
+              required: ["file", "line", "column"],
+            },
+          },
+          required: ["title", "titlePath"],
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    browser: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+        },
+        version: {
+          type: "string",
+        },
+      },
+      required: ["name", "version"],
+    },
+    automationLibrary: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+        },
+        version: {
+          type: "string",
+        },
+      },
+      required: ["name", "version"],
+    },
+    sdk: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+        },
+        version: {
+          type: "string",
+        },
+      },
+      required: ["name", "version"],
+    },
+  },
+  required: ["sdk", "automationLibrary"],
+  additionalProperties: false,
+};
+
 export class Screenshot extends Model {
   static override tableName = "screenshots";
 
@@ -49,112 +156,7 @@ export class Screenshot extends Model {
       screenshotBucketId: { type: "string" },
       fileId: { type: ["string", "null"] },
       testId: { type: ["string", "null"] },
-      metadata: {
-        type: "object",
-        properties: {
-          url: {
-            type: "string",
-          },
-          viewport: {
-            type: "object",
-            properties: {
-              width: {
-                type: "number",
-              },
-              height: {
-                type: "number",
-              },
-            },
-            required: ["width", "height"],
-          },
-          colorScheme: {
-            type: "string",
-            enum: ["light", "dark"],
-          },
-          mediaType: {
-            type: "string",
-            enum: ["screen", "print"],
-          },
-          test: {
-            oneOf: [
-              {
-                type: "object",
-                properties: {
-                  id: {
-                    type: "string",
-                  },
-                  title: {
-                    type: "string",
-                  },
-                  titlePath: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                  },
-                  location: {
-                    type: "object",
-                    properties: {
-                      file: {
-                        type: "string",
-                      },
-                      line: {
-                        type: "number",
-                      },
-                      column: {
-                        type: "number",
-                      },
-                    },
-                    required: ["file", "line", "column"],
-                  },
-                },
-                required: ["title", "titlePath"],
-              },
-              {
-                type: "null",
-              },
-            ],
-          },
-          browser: {
-            type: "object",
-            properties: {
-              name: {
-                type: "string",
-              },
-              version: {
-                type: "string",
-              },
-            },
-            required: ["name", "version"],
-          },
-          automationLibrary: {
-            type: "object",
-            properties: {
-              name: {
-                type: "string",
-              },
-              version: {
-                type: "string",
-              },
-            },
-            required: ["name", "version"],
-          },
-          sdk: {
-            type: "object",
-            properties: {
-              name: {
-                type: "string",
-              },
-              version: {
-                type: "string",
-              },
-            },
-            required: ["name", "version"],
-          },
-        },
-        required: ["sdk", "automationLibrary"],
-        additionalProperties: false,
-      },
+      metadata: ScreenshotMetadataJsonSchema,
     },
   });
 
