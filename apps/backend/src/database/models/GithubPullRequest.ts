@@ -1,27 +1,50 @@
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import {
+  JobStatus,
+  jobModelSchema,
+  mergeSchemas,
+  timestampsSchema,
+} from "../util/schemas.js";
 import { Build } from "./Build.js";
 import { GithubRepository } from "./GithubRepository.js";
+import { GithubAccount } from "./GithubAccount.js";
 
 export class GithubPullRequest extends Model {
   static override tableName = "github_pull_requests";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
+  static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
     required: ["githubRepositoryId", "number"],
     properties: {
       commentDeleted: { type: "boolean" },
       commentId: { type: ["number", "null"] },
       githubRepositoryId: { type: "string" },
       number: { type: "integer" },
+      title: { type: ["string", "null"] },
+      baseRef: { type: ["string", "null"] },
+      baseSha: { type: ["string", "null"] },
+      state: { type: ["string", "null"], enum: ["open", "closed"] },
+      date: { type: ["string", "null"] },
+      closedAt: { type: ["string", "null"] },
+      mergedAt: { type: ["string", "null"] },
+      creatorId: { type: ["string", "null"] },
     },
   });
 
   commentDeleted!: boolean;
   commentId!: number | null;
+  jobStatus!: JobStatus;
   githubRepositoryId!: string;
   number!: number;
+  title!: string | null;
+  baseRef!: string | null;
+  baseSha!: string | null;
+  state!: "open" | "closed" | null;
+  date!: string | null;
+  closedAt!: string | null;
+  mergedAt!: string | null;
+  creatorId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -32,6 +55,7 @@ export class GithubPullRequest extends Model {
           from: "github_pull_requests.id",
           to: "builds.githubPullRequestId",
         },
+        modify: (query) => query.orderBy("id", "desc"),
       },
       githubRepository: {
         relation: Model.BelongsToOneRelation,
@@ -41,9 +65,18 @@ export class GithubPullRequest extends Model {
           to: "github_repositories.id",
         },
       },
+      creator: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: GithubAccount,
+        join: {
+          from: "github_pull_requests.creatorId",
+          to: "github_accounts.id",
+        },
+      },
     };
   }
 
   builds?: Build[];
   githubRepository?: GithubRepository;
+  creator?: GithubAccount;
 }

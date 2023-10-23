@@ -130,24 +130,45 @@ export const handleGitHubEvents = async ({
         return;
       }
       case "pull_request": {
-        if (payload.action === "synchronize") {
+        if (
+          !["closed", "edited", "reopened", "synchronize"].includes(
+            payload.action,
+          )
+        ) {
+          return;
+        }
+
+        const repository = await GithubRepository.query().findOne({
+          githubId: payload.repository.id,
+        });
+
+        if (!repository) return;
+
+        const pr = await GithubPullRequest.query().findOne({
+          githubRepositoryId: repository.id,
+          number: payload.pull_request.number,
+        });
+
+        if (!pr) return;
+
+        if (["closed", "edited", "reopened"].includes(payload.action)) {
+          await pr
+            .$clone()
+            .$query()
+            .patch({
+              title: payload.pull_request.title,
+              baseRef: payload.pull_request.base.ref,
+              baseSha: payload.pull_request.base.sha,
+              state: payload.pull_request.state,
+              date: payload.pull_request.created_at,
+              closedAt: payload.pull_request.closed_at ?? null,
+              mergedAt: payload.pull_request.merged_at ?? null,
+            });
+          return;
+        }
+
+        if (payload.action === "synchronize" && pr.commentId) {
           if (!payload.installation) return;
-
-          const repository = await GithubRepository.query().findOne({
-            githubId: payload.repository.id,
-          });
-
-          if (!repository) return;
-
-          const pr = await GithubPullRequest.query()
-            .findOne({
-              githubRepositoryId: repository.id,
-              number: payload.pull_request.number,
-            })
-            .whereNotNull("commentId");
-
-          if (!pr || !pr.commentId) return;
-
           const installation = await getOrCreateInstallation({
             githubId: payload.installation.id,
             deleted: false,
@@ -166,9 +187,8 @@ export const handleGitHubEvents = async ({
             body: getPendingCommentBody(),
             pullRequest: pr,
           });
-
-          return;
         }
+
         return;
       }
     }

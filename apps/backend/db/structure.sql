@@ -401,13 +401,23 @@ ALTER SEQUENCE public.github_installations_id_seq OWNED BY public.github_install
 --
 
 CREATE TABLE public.github_pull_requests (
-    id bigint NOT NULL,
+    id integer NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "commentDeleted" boolean DEFAULT false NOT NULL,
     "commentId" integer,
     "githubRepositoryId" bigint NOT NULL,
-    number integer NOT NULL
+    number integer NOT NULL,
+    "jobStatus" character varying(255) NOT NULL,
+    title character varying(255),
+    "baseRef" character varying(255),
+    "baseSha" character varying(255),
+    state text,
+    date timestamp with time zone,
+    "closedAt" timestamp with time zone,
+    "mergedAt" timestamp with time zone,
+    "creatorId" bigint,
+    CONSTRAINT github_pull_requests_state_check CHECK ((state = ANY (ARRAY['open'::text, 'closed'::text])))
 );
 
 
@@ -2377,6 +2387,14 @@ ALTER TABLE ONLY public.crawls
 
 
 --
+-- Name: github_pull_requests github_pull_requests_creatorid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_pull_requests
+    ADD CONSTRAINT github_pull_requests_creatorid_foreign FOREIGN KEY ("creatorId") REFERENCES public.github_accounts(id);
+
+
+--
 -- Name: github_pull_requests github_pull_requests_githubrepositoryid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2714,3 +2732,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023082
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230830151208_gitlab_projects.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230930081123_add_diffs_group.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231017142204_screenshot_metadata.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231020163248_github-pull-request-job-status.js', 1, NOW());
