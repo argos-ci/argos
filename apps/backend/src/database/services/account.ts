@@ -42,7 +42,7 @@ export const resolveAccountSlug = async (
 
 export const getGhAccountType = (strType: string) => {
   const type = strType.toLowerCase();
-  if (type !== "user" && type !== "organization") {
+  if (type !== "user" && type !== "organization" && type !== "bot") {
     throw new Error(`Account of "${type}" is not supported`);
   }
   return type;
@@ -53,7 +53,7 @@ export type GetOrCreateGhAccountProps = {
   login: string;
   email?: string | null;
   name?: string | null;
-  type: "user" | "organization";
+  type: GithubAccount["type"];
 };
 
 export const getOrCreateGhAccount = async (

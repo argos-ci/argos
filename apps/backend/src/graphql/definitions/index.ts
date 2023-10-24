@@ -7,6 +7,7 @@ import * as DateDefs from "./Date.js";
 import * as GhApiInstallation from "./GhApiInstallation.js";
 import * as GhApiRepository from "./GhApiRepository.js";
 import * as GithubAccount from "./GithubAccount.js";
+import * as GithubPullRequest from "./GithubPullRequest.js";
 import * as GithubRepository from "./GithubRepository.js";
 import * as GitlabProject from "./GitlabProject.js";
 import * as GlApiNamespace from "./GlApiNamespace.js";
@@ -17,6 +18,7 @@ import * as PageInfo from "./PageInfo.js";
 import * as Permission from "./Permission.js";
 import * as Plan from "./Plan.js";
 import * as Project from "./Project.js";
+import * as PullRequest from "./PullRequest.js";
 import * as Purchase from "./Purchase.js";
 import * as Repository from "./Repository.js";
 import * as Screenshot from "./Screenshot.js";
@@ -37,6 +39,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   GhApiInstallation,
   GhApiRepository,
   GithubAccount,
+  GithubPullRequest,
   GithubRepository,
   GitlabProject,
   GlApiNamespace,
@@ -47,6 +50,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Permission,
   Plan,
   Project,
+  PullRequest,
   Purchase,
   Repository,
   schema,

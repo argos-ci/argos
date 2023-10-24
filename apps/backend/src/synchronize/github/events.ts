@@ -163,6 +163,8 @@ export const handleGitHubEvents = async ({
               date: payload.pull_request.created_at,
               closedAt: payload.pull_request.closed_at ?? null,
               mergedAt: payload.pull_request.merged_at ?? null,
+              merged: payload.pull_request.merged,
+              draft: payload.pull_request.draft,
             });
           return;
         }

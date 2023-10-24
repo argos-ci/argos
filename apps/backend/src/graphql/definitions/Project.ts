@@ -27,6 +27,7 @@ import {
   resolveProjectName,
 } from "@/database/services/project.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
+import { invariant } from "@/util/invariant.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -398,7 +399,9 @@ export const resolvers: IResolvers = {
         : [IPermission.Read];
     },
     account: async (project, _args, ctx) => {
-      return ctx.loaders.Account.load(project.accountId);
+      const account = await ctx.loaders.Account.load(project.accountId);
+      invariant(account, "Account not found");
+      return account;
     },
     repository: async (project, _args, ctx) => {
       if (project.githubRepositoryId) {
@@ -414,6 +417,7 @@ export const resolvers: IResolvers = {
       const vercelProject = await ctx.loaders.VercelProject.load(
         project.vercelProjectId,
       );
+      invariant(vercelProject, "Vercel project not found");
       const activeConfiguration = await vercelProject
         .$relatedQuery("activeConfiguration")
         .first();
@@ -431,6 +435,7 @@ export const resolvers: IResolvers = {
     },
     currentMonthUsedScreenshots: async (project, _args, ctx) => {
       const account = await ctx.loaders.Account.load(project.accountId);
+      invariant(account, "Account not found");
       return account.$getScreenshotsCurrentConsumption({
         projectId: project.id,
       });
@@ -443,6 +448,7 @@ export const resolvers: IResolvers = {
     },
     slug: async (project, _args, ctx) => {
       const account = await ctx.loaders.Account.load(project.accountId);
+      invariant(account, "Account not found");
       return `${account.slug}/${project.name}`;
     },
   },

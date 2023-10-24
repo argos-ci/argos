@@ -1,5 +1,5 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Build, GithubAccount, GithubRepository, GitlabProject, Plan, Purchase, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, Test, VercelConfiguration, VercelProject } from '../../database/models/index.js';
+import type { AccountAvatar, Build, GithubAccount, GithubPullRequest, GithubRepository, GitlabProject, Plan, Purchase, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, Test, VercelConfiguration, VercelProject } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
 import type { VercelApiProject, VercelApiTeam } from '../../vercel/index.js';
@@ -91,6 +91,8 @@ export type IBuild = INode & {
   prHeadCommit?: Maybe<Scalars['String']['output']>;
   /** Pull request number */
   prNumber?: Maybe<Scalars['Int']['output']>;
+  /** Pull request */
+  pullRequest?: Maybe<IPullRequest>;
   /** The screenshot diffs between the base screenshot bucket of the compare screenshot bucket */
   screenshotDiffs: IScreenshotDiffConnection;
   /** Build stats */
@@ -212,6 +214,17 @@ export type IGithubAccount = INode & {
   __typename?: 'GithubAccount';
   id: Scalars['ID']['output'];
   login: Scalars['String']['output'];
+};
+
+export type IGithubPullRequest = INode & IPullRequest & {
+  __typename?: 'GithubPullRequest';
+  draft: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  merged: Scalars['Boolean']['output'];
+  number: Scalars['Int']['output'];
+  state: IPullRequestState;
+  title: Scalars['String']['output'];
+  url: Scalars['String']['output'];
 };
 
 export type IGithubRepository = INode & IRepository & {
@@ -576,6 +589,21 @@ export type IProjectConnection = IConnection & {
   edges: Array<IProject>;
   pageInfo: IPageInfo;
 };
+
+export type IPullRequest = {
+  draft: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  merged: Scalars['Boolean']['output'];
+  number: Scalars['Int']['output'];
+  state: IPullRequestState;
+  title: Scalars['String']['output'];
+  url: Scalars['String']['output'];
+};
+
+export enum IPullRequestState {
+  Closed = 'CLOSED',
+  Open = 'OPEN'
+}
 
 export type IPurchase = INode & {
   __typename?: 'Purchase';
@@ -1188,7 +1216,8 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type IResolversInterfaceTypes<RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
   Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<RefType['Project']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<RefType['ScreenshotDiff']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<RefType['User']> } );
-  Node: ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( Purchase ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( TeamUser ) | ( Test ) | ( Account );
+  Node: ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( Purchase ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( TeamUser ) | ( Test ) | ( Account );
+  PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
   VercelApiProjectLink: ( IVercelApiProjectLinkGithub ) | ( IVercelApiProjectLinkOther );
 }>;
@@ -1216,6 +1245,7 @@ export type IResolversTypes = ResolversObject<{
   GhApiRepository: ResolverTypeWrapper<GhApiRepository>;
   GhApiRepositoryConnection: ResolverTypeWrapper<Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<IResolversTypes['GhApiRepository']> }>;
   GithubAccount: ResolverTypeWrapper<GithubAccount>;
+  GithubPullRequest: ResolverTypeWrapper<GithubPullRequest>;
   GithubRepository: ResolverTypeWrapper<GithubRepository>;
   GitlabProject: ResolverTypeWrapper<GitlabProject>;
   GlApiNamespace: ResolverTypeWrapper<GlApiNamespace>;
@@ -1239,6 +1269,8 @@ export type IResolversTypes = ResolversObject<{
   Plan: ResolverTypeWrapper<Plan>;
   Project: ResolverTypeWrapper<Project>;
   ProjectConnection: ResolverTypeWrapper<Omit<IProjectConnection, 'edges'> & { edges: Array<IResolversTypes['Project']> }>;
+  PullRequest: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['PullRequest']>;
+  PullRequestState: IPullRequestState;
   Purchase: ResolverTypeWrapper<Purchase>;
   PurchaseSource: IPurchaseSource;
   PurchaseStatus: IPurchaseStatus;
@@ -1319,6 +1351,7 @@ export type IResolversParentTypes = ResolversObject<{
   GhApiRepository: GhApiRepository;
   GhApiRepositoryConnection: Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<IResolversParentTypes['GhApiRepository']> };
   GithubAccount: GithubAccount;
+  GithubPullRequest: GithubPullRequest;
   GithubRepository: GithubRepository;
   GitlabProject: GitlabProject;
   GlApiNamespace: GlApiNamespace;
@@ -1340,6 +1373,7 @@ export type IResolversParentTypes = ResolversObject<{
   Plan: Plan;
   Project: Project;
   ProjectConnection: Omit<IProjectConnection, 'edges'> & { edges: Array<IResolversParentTypes['Project']> };
+  PullRequest: IResolversInterfaceTypes<IResolversParentTypes>['PullRequest'];
   Purchase: Purchase;
   Query: {};
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
@@ -1436,6 +1470,7 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   number?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   prHeadCommit?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   prNumber?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  pullRequest?: Resolver<Maybe<IResolversTypes['PullRequest']>, ParentType, ContextType>;
   screenshotDiffs?: Resolver<IResolversTypes['ScreenshotDiffConnection'], ParentType, ContextType, RequireFields<IBuildScreenshotDiffsArgs, 'after' | 'first'>>;
   stats?: Resolver<IResolversTypes['BuildStats'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['BuildStatus'], ParentType, ContextType>;
@@ -1517,6 +1552,17 @@ export type IGhApiRepositoryConnectionResolvers<ContextType = Context, ParentTyp
 export type IGithubAccountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['GithubAccount'] = IResolversParentTypes['GithubAccount']> = ResolversObject<{
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   login?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IGithubPullRequestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['GithubPullRequest'] = IResolversParentTypes['GithubPullRequest']> = ResolversObject<{
+  draft?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  merged?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  number?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  state?: Resolver<IResolversTypes['PullRequestState'], ParentType, ContextType>;
+  title?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1603,7 +1649,7 @@ export type IMuteUpdateTestResolvers<ContextType = Context, ParentType extends I
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'Purchase' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'Purchase' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
@@ -1648,6 +1694,17 @@ export type IProjectConnectionResolvers<ContextType = Context, ParentType extend
   edges?: Resolver<Array<IResolversTypes['Project']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IPullRequestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['PullRequest'] = IResolversParentTypes['PullRequest']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'GithubPullRequest', ParentType, ContextType>;
+  draft?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  merged?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  number?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  state?: Resolver<IResolversTypes['PullRequestState'], ParentType, ContextType>;
+  title?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type IPurchaseResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Purchase'] = IResolversParentTypes['Purchase']> = ResolversObject<{
@@ -1989,6 +2046,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   GhApiRepository?: IGhApiRepositoryResolvers<ContextType>;
   GhApiRepositoryConnection?: IGhApiRepositoryConnectionResolvers<ContextType>;
   GithubAccount?: IGithubAccountResolvers<ContextType>;
+  GithubPullRequest?: IGithubPullRequestResolvers<ContextType>;
   GithubRepository?: IGithubRepositoryResolvers<ContextType>;
   GitlabProject?: IGitlabProjectResolvers<ContextType>;
   GlApiNamespace?: IGlApiNamespaceResolvers<ContextType>;
@@ -2002,6 +2060,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   Plan?: IPlanResolvers<ContextType>;
   Project?: IProjectResolvers<ContextType>;
   ProjectConnection?: IProjectConnectionResolvers<ContextType>;
+  PullRequest?: IPullRequestResolvers<ContextType>;
   Purchase?: IPurchaseResolvers<ContextType>;
   Query?: IQueryResolvers<ContextType>;
   RemoveUserFromTeamPayload?: IRemoveUserFromTeamPayloadResolvers<ContextType>;

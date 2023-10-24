@@ -95,12 +95,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
 export interface ButtonIconProps {
   children: React.ReactElement;
+  className?: string;
 }
 
-export const ButtonIcon = ({ children }: ButtonIconProps) => {
+export const ButtonIcon = ({ children, className }: ButtonIconProps) => {
   return cloneElement(Children.only(children), {
     "aria-hidden": true,
-    className: "h-[1em] w-[1em] mr-2",
+    className: clsx("h-[1em] w-[1em] mr-2", className),
   });
 };
 

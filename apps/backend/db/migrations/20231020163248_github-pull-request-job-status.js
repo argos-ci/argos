@@ -25,5 +25,13 @@ export const up = async (knex) => {
 export const down = async (knex) => {
   await knex.schema.table("github_pull_requests", (table) => {
     table.dropColumn("jobStatus");
+    table.dropColumn("title");
+    table.dropColumn("baseRef");
+    table.dropColumn("baseSha");
+    table.dropColumn("state");
+    table.dropColumn("date");
+    table.dropColumn("closedAt");
+    table.dropColumn("mergedAt");
+    table.dropColumn("creatorId");
   });
 };

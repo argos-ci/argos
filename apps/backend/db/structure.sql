@@ -401,7 +401,7 @@ ALTER SEQUENCE public.github_installations_id_seq OWNED BY public.github_install
 --
 
 CREATE TABLE public.github_pull_requests (
-    id integer NOT NULL,
+    id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "commentDeleted" boolean DEFAULT false NOT NULL,
@@ -417,6 +417,8 @@ CREATE TABLE public.github_pull_requests (
     "closedAt" timestamp with time zone,
     "mergedAt" timestamp with time zone,
     "creatorId" bigint,
+    merged boolean,
+    draft boolean,
     CONSTRAINT github_pull_requests_state_check CHECK ((state = ANY (ARRAY['open'::text, 'closed'::text])))
 );
 
@@ -2733,3 +2735,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023083
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20230930081123_add_diffs_group.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231017142204_screenshot_metadata.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231020163248_github-pull-request-job-status.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231024072202_github-draft-merged.js', 1, NOW());

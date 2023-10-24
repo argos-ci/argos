@@ -29,6 +29,8 @@ export class GithubPullRequest extends Model {
       closedAt: { type: ["string", "null"] },
       mergedAt: { type: ["string", "null"] },
       creatorId: { type: ["string", "null"] },
+      merged: { type: ["boolean", "null"] },
+      draft: { type: ["boolean", "null"] },
     },
   });
 
@@ -45,6 +47,8 @@ export class GithubPullRequest extends Model {
   closedAt!: string | null;
   mergedAt!: string | null;
   creatorId!: string | null;
+  merged!: boolean | null;
+  draft!: boolean | null;
 
   static override get relationMappings(): RelationMappings {
     return {

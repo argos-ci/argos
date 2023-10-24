@@ -69,6 +69,8 @@ export const typeDefs = gql`
     name: String!
     "Pull request number"
     prNumber: Int
+    "Pull request"
+    pullRequest: PullRequest
     "Build stats"
     stats: BuildStats!
     "Build type"
@@ -144,6 +146,10 @@ export const resolvers: IResolvers = {
     branch: async (build, _args, ctx) => {
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
       return compareBucket.branch;
+    },
+    pullRequest: async (build, _args, ctx) => {
+      if (!build.githubPullRequestId) return null;
+      return ctx.loaders.GithubPullRequest.load(build.githubPullRequestId);
     },
   },
   Mutation: {

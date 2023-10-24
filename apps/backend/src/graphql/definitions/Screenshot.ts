@@ -3,6 +3,7 @@ import gqlTag from "graphql-tag";
 import { getPublicUrl } from "@/storage/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
+import { invariant } from "@/util/invariant.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -79,11 +80,13 @@ export const resolvers: IResolvers = {
     width: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) return null;
       const file = await ctx.loaders.File.load(screenshot.fileId);
+      invariant(file, "File not found");
       return file.width;
     },
     height: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) return null;
       const file = await ctx.loaders.File.load(screenshot.fileId);
+      invariant(file, "File not found");
       return file.height;
     },
   },
