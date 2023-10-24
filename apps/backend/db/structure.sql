@@ -331,7 +331,7 @@ CREATE TABLE public.github_accounts (
     login character varying(255) NOT NULL,
     "githubId" integer NOT NULL,
     type text NOT NULL,
-    CONSTRAINT github_accounts_type_check CHECK ((type = ANY (ARRAY['user'::text, 'organization'::text])))
+    CONSTRAINT github_accounts_type_check CHECK ((type = ANY (ARRAY['user'::text, 'organization'::text, 'bot'::text])))
 );
 
 
@@ -2736,3 +2736,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023093
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231017142204_screenshot_metadata.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231020163248_github-pull-request-job-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231024072202_github-draft-merged.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231024085955_fix-github-account-type-constraint.js', 1, NOW());
