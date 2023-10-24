@@ -1,3 +1,4 @@
+import { getItem, setItem, removeItem } from "@/util/storage";
 import * as React from "react";
 
 const STORAGE_KEY = "theme";
@@ -15,7 +16,7 @@ type ColorModeContextType = {
 const ColorModeContext = React.createContext<ColorModeContextType | null>(null);
 
 const getStorageTheme = () => {
-  const value = window.localStorage.getItem(STORAGE_KEY);
+  const value = getItem(STORAGE_KEY);
   if (!value) return null;
   return value as ColorMode;
 };
@@ -35,9 +36,9 @@ export const ColorModeProvider = (props: { children: React.ReactNode }) => {
     (colorMode: ColorMode | null) => {
       setColorMode(colorMode);
       if (colorMode) {
-        window.localStorage.setItem(STORAGE_KEY, colorMode);
+        setItem(STORAGE_KEY, colorMode);
       } else {
-        window.localStorage.removeItem(STORAGE_KEY);
+        removeItem(STORAGE_KEY);
       }
       window.updateColorModeClassName();
     },

@@ -18,6 +18,7 @@ import {
 } from "../GitlabProjectList";
 import { Anchor } from "@/ui/Link";
 import { Permission } from "@/gql/graphql";
+import { getItem, removeItem, setItem } from "@/util/storage";
 
 const ConnectRepositoryQuery = graphql(`
   query ConnectRepository($accountSlug: String!) {
@@ -211,15 +212,15 @@ const buttonLabels: Record<ConnectRepositoryProps["variant"], string> = {
 
 export const ConnectRepository = (props: ConnectRepositoryProps) => {
   const [provider, setProvider] = React.useState<GitProvider | null>(
-    window.localStorage.getItem("gitProvider") as GitProvider | null,
+    getItem("gitProvider") as GitProvider | null,
   );
   const setAndStoreProvider = React.useCallback(
     (provider: GitProvider | null) => {
       setProvider(provider);
       if (provider) {
-        window.localStorage.setItem("gitProvider", provider);
+        setItem("gitProvider", provider);
       } else {
-        window.localStorage.removeItem("gitProvider");
+        removeItem("gitProvider");
       }
     },
     [],
