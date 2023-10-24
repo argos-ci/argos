@@ -68,7 +68,7 @@ export const AccountChangeSlug = (props: AccountChangeSlugProps) => {
                   message: "Account slugs must be 48 characters or less",
                 },
                 pattern: {
-                  value: /^[a-z0-9]+(?:[-a-z0-9]+)*$/,
+                  value: /^[-a-z0-9]+$/,
                   message:
                     "Account slugs must be lowercase, begin with an alphanumeric character followed by more alphanumeric characters or dashes and ending with an alphanumeric character.",
                 },
