@@ -287,7 +287,7 @@ export const BuildDetailToolbar = memo(
             <div role="heading" className="line-clamp-2 text-xs font-medium">
               {activeDiff.name}
             </div>
-            <div className="flex flex-wrap gap-1.5 items-center">
+            <div className="flex flex-wrap gap-1.5 items-center empty:hidden mt-1">
               {sdk && <SdkIndicator sdk={sdk} className="w-4 h-4" />}
               {automationLibrary && (
                 <AutomationLibraryIndicator
