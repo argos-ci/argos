@@ -5,9 +5,7 @@ import config from "@/config/index.js";
 
 import { transaction } from "./transaction.js";
 
-const createKnex = typeof Knex === "function" ? Knex : Knex.default;
-
-export const knex = createKnex(config.get("pg"));
+export const knex = Knex(config.get("pg"));
 transaction.knex(knex);
 
 // process.on("SIGTERM", () => {
