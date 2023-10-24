@@ -62,6 +62,8 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
       date: pullRequestData.created_at,
       closedAt: pullRequestData.closed_at ?? null,
       mergedAt: pullRequestData.merged_at ?? null,
+      merged: pullRequestData.merged,
+      draft: pullRequestData.draft ?? false,
       creatorId: githubAccount.id,
     });
 }

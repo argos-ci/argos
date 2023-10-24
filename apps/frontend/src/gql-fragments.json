@@ -22,6 +22,7 @@
       "GhApiInstallationAccount",
       "GhApiRepository",
       "GithubAccount",
+      "GithubPullRequest",
       "GithubRepository",
       "GitlabProject",
       "GlApiNamespace",
@@ -36,6 +37,9 @@
       "TeamMember",
       "Test",
       "User"
+    ],
+    "PullRequest": [
+      "GithubPullRequest"
     ],
     "Repository": [
       "GithubRepository",

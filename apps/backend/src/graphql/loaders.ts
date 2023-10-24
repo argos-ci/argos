@@ -7,6 +7,7 @@ import {
   BuildAggregatedStatus,
   File,
   GithubAccount,
+  GithubPullRequest,
   GithubRepository,
   GitlabProject,
   Model,
@@ -25,12 +26,14 @@ import {
 const createModelLoader = <TModelClass extends ModelClass<Model>>(
   Model: TModelClass,
 ) => {
-  return new DataLoader<string, InstanceType<TModelClass>>(async (ids) => {
-    const models = await Model.query().findByIds(ids as string[]);
-    return ids.map((id) =>
-      models.find((model: Model) => model.id === id),
-    ) as InstanceType<TModelClass>[];
-  });
+  return new DataLoader<string, InstanceType<TModelClass> | null>(
+    async (ids) => {
+      const models = await Model.query().findByIds(ids as string[]);
+      return ids.map(
+        (id) => models.find((model: Model) => model.id === id) ?? null,
+      ) as InstanceType<TModelClass>[];
+    },
+  );
 };
 
 const createBuildAggregatedStatusLoader = () =>
@@ -148,6 +151,7 @@ export const createLoaders = () => ({
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
   File: createModelLoader(File),
   GithubAccount: createModelLoader(GithubAccount),
+  GithubPullRequest: createModelLoader(GithubPullRequest),
   GithubRepository: createModelLoader(GithubRepository),
   GitlabProject: createModelLoader(GitlabProject),
   LatestProjectBuild: createLatestProjectBuildLoader(),

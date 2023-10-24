@@ -43,19 +43,10 @@ const BranchLink = ({
   );
 };
 
-export const getPullRequestUrl = ({
-  repoUrl,
-  prNumber,
-}: {
-  repoUrl: string;
-  prNumber: number;
-}) => `${repoUrl}/pull/${prNumber}`;
-
 export const BuildFragment = graphql(`
   fragment BuildInfos_Build on Build {
     createdAt
     name
-    prNumber
     commit
     branch
     stats {
@@ -64,6 +55,11 @@ export const BuildFragment = graphql(`
     baseScreenshotBucket {
       commit
       branch
+    }
+    pullRequest {
+      id
+      url
+      number
     }
   }
 `);
@@ -84,18 +80,12 @@ export const BuildInfos = (props: {
       <Dt>Total screenshots count</Dt>
       <Dd>{build ? build.stats.total : "-"}</Dd>
 
-      {build?.prNumber && props.repoUrl ? (
+      {build?.pullRequest ? (
         <>
           <Dt>Pull request</Dt>
           <Dd>
-            <Anchor
-              className="font-mono"
-              href={getPullRequestUrl({
-                repoUrl: props.repoUrl,
-                prNumber: build.prNumber,
-              })}
-            >
-              #{build.prNumber}
+            <Anchor className="font-mono" href={build.pullRequest.url}>
+              #{build.pullRequest.number}
             </Anchor>
           </Dd>
         </>

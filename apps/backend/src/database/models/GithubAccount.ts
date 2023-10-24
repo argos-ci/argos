@@ -14,7 +14,7 @@ export class GithubAccount extends Model {
       email: { type: ["string", "null"] },
       login: { type: "string" },
       githubId: { type: "number" },
-      type: { type: "string", enum: ["user", "organization"] },
+      type: { type: "string", enum: ["user", "organization", "bot"] },
     },
   });
 
@@ -22,7 +22,7 @@ export class GithubAccount extends Model {
   email!: string | null;
   login!: string;
   githubId!: number;
-  type!: "user" | "organization";
+  type!: "user" | "organization" | "bot";
 
   static override get relationMappings(): RelationMappings {
     return {

@@ -27,6 +27,7 @@ import {
   getGitlabClientFromAccount,
   getTokenGitlabClient,
 } from "@/gitlab/index.js";
+import { invariant } from "@/util/invariant.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -313,6 +314,7 @@ export const resolvers: IResolvers = {
 
       if (account.userId) {
         const user = await ctx.loaders.User.load(account.userId);
+        invariant(user, "User not found");
         if (user.gitlabUserId && user.email) {
           const email = user.email;
           return {

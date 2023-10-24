@@ -98,14 +98,16 @@ const documents = {
     "\n  fragment BuildDetail_Build on Build {\n    stats {\n      total\n    }\n    createdAt\n    branch\n    baseScreenshotBucket {\n      branch\n      createdAt\n    }\n  }\n": types.BuildDetail_BuildFragmentDoc,
     "\n  fragment BuildDiffState_ScreenshotDiff on ScreenshotDiff {\n    id\n    status\n    url\n    name\n    width\n    height\n    flakyDetected\n    group\n    test {\n      id\n      status\n      unstable\n      resolvedDate\n    }\n    baseScreenshot {\n      id\n      url\n      width\n      height\n      metadata {\n        url\n        colorScheme\n        mediaType\n        automationLibrary {\n          name\n          version\n        }\n        browser {\n          name\n          version\n        }\n        sdk {\n          name\n          version\n        }\n        viewport {\n          width\n          height\n        }\n        test {\n          id\n          title\n          titlePath\n          location {\n            file\n            line\n          }\n        }\n      }\n    }\n    compareScreenshot {\n      id\n      url\n      width\n      height\n      metadata {\n        url\n        colorScheme\n        mediaType\n        automationLibrary {\n          name\n          version\n        }\n        browser {\n          name\n          version\n        }\n        sdk {\n          name\n          version\n        }\n        viewport {\n          width\n          height\n        }\n        test {\n          id\n          title\n          titlePath\n          location {\n            file\n            line\n          }\n        }\n      }\n    }\n  }\n": types.BuildDiffState_ScreenshotDiffFragmentDoc,
     "\n  query BuildDiffState_Project(\n    $accountSlug: String!\n    $projectName: String!\n    $buildNumber: Int!\n    $after: Int!\n    $first: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      build(number: $buildNumber) {\n        id\n        screenshotDiffs(after: $after, first: $first) {\n          pageInfo {\n            hasNextPage\n          }\n          edges {\n            ...BuildDiffState_ScreenshotDiff\n          }\n        }\n      }\n    }\n  }\n": types.BuildDiffState_ProjectDocument,
-    "\n  fragment BuildHeader_Build on Build {\n    name\n    status\n    prNumber\n    ...BuildStatusChip_Build\n  }\n": types.BuildHeader_BuildFragmentDoc,
-    "\n  fragment BuildHeader_Project on Project {\n    ...BuildStatusChip_Project\n    ...ReviewButton_Project\n    repository {\n      id\n      url\n    }\n  }\n": types.BuildHeader_ProjectFragmentDoc,
-    "\n  fragment BuildInfos_Build on Build {\n    createdAt\n    name\n    prNumber\n    commit\n    branch\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n      branch\n    }\n  }\n": types.BuildInfos_BuildFragmentDoc,
+    "\n  fragment BuildInfos_Build on Build {\n    createdAt\n    name\n    commit\n    branch\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n      branch\n    }\n    pullRequest {\n      id\n      url\n      number\n    }\n  }\n": types.BuildInfos_BuildFragmentDoc,
     "\n  query BuildPage_Project(\n    $accountSlug: String!\n    $projectName: String!\n    $buildNumber: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      ...BuildHeader_Project\n      ...BuildWorkspace_Project\n      account {\n        id\n        ...OvercapacityBanner_Account\n        ...PaymentBanner_Account\n      }\n      build(number: $buildNumber) {\n        id\n        status\n        ...BuildHeader_Build\n        ...BuildWorkspace_Build\n      }\n    }\n  }\n": types.BuildPage_ProjectDocument,
     "\n  fragment BuildSidebar_Build on Build {\n    ...BuildInfos_Build\n    stats {\n      total\n    }\n  }\n": types.BuildSidebar_BuildFragmentDoc,
     "\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n  }\n": types.BuildWorkspace_BuildFragmentDoc,
     "\n  fragment BuildWorkspace_Project on Project {\n    ...BuildStatusDescription_Project\n    repository {\n      id\n      url\n    }\n  }\n": types.BuildWorkspace_ProjectFragmentDoc,
     "\n  fragment OvercapacityBanner_Account on Account {\n    plan {\n      id\n      name\n    }\n    consumptionRatio\n  }\n": types.OvercapacityBanner_AccountFragmentDoc,
+    "\n  fragment BuildHeader_Build on Build {\n    name\n    status\n    pullRequest {\n      ...PullRequestButton_PullRequest\n    }\n    ...BuildStatusChip_Build\n  }\n": types.BuildHeader_BuildFragmentDoc,
+    "\n  fragment BuildHeader_Project on Project {\n    ...BuildStatusChip_Project\n    ...ReviewButton_Project\n    repository {\n      id\n      url\n    }\n  }\n": types.BuildHeader_ProjectFragmentDoc,
+    "\n  fragment PullRequestStatusIcon_PullRequest on PullRequest {\n    draft\n    merged\n    state\n  }\n": types.PullRequestStatusIcon_PullRequestFragmentDoc,
+    "\n  fragment PullRequestButton_PullRequest on PullRequest {\n    title\n    number\n    url\n    ...PullRequestStatusIcon_PullRequest\n  }\n": types.PullRequestButton_PullRequestFragmentDoc,
     "\n  query Invite_invitation($token: String!) {\n    invitation(token: $token) {\n      id\n      name\n      slug\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n\n    me {\n      id\n      teams {\n        id\n      }\n    }\n  }\n": types.Invite_InvitationDocument,
     "\n  mutation Invite_acceptInvitation($token: String!) {\n    acceptInvitation(token: $token) {\n      id\n      slug\n    }\n  }\n": types.Invite_AcceptInvitationDocument,
     "\n  query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      repository {\n        id\n        url\n      }\n      ...GettingStarted_Project\n      ...BuildStatusChip_Project\n    }\n  }\n": types.ProjectBuilds_ProjectDocument,
@@ -476,15 +478,7 @@ export function graphql(source: "\n  query BuildDiffState_Project(\n    $account
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment BuildHeader_Build on Build {\n    name\n    status\n    prNumber\n    ...BuildStatusChip_Build\n  }\n"): (typeof documents)["\n  fragment BuildHeader_Build on Build {\n    name\n    status\n    prNumber\n    ...BuildStatusChip_Build\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  fragment BuildHeader_Project on Project {\n    ...BuildStatusChip_Project\n    ...ReviewButton_Project\n    repository {\n      id\n      url\n    }\n  }\n"): (typeof documents)["\n  fragment BuildHeader_Project on Project {\n    ...BuildStatusChip_Project\n    ...ReviewButton_Project\n    repository {\n      id\n      url\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  fragment BuildInfos_Build on Build {\n    createdAt\n    name\n    prNumber\n    commit\n    branch\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n      branch\n    }\n  }\n"): (typeof documents)["\n  fragment BuildInfos_Build on Build {\n    createdAt\n    name\n    prNumber\n    commit\n    branch\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n      branch\n    }\n  }\n"];
+export function graphql(source: "\n  fragment BuildInfos_Build on Build {\n    createdAt\n    name\n    commit\n    branch\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n      branch\n    }\n    pullRequest {\n      id\n      url\n      number\n    }\n  }\n"): (typeof documents)["\n  fragment BuildInfos_Build on Build {\n    createdAt\n    name\n    commit\n    branch\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n      branch\n    }\n    pullRequest {\n      id\n      url\n      number\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -505,6 +499,22 @@ export function graphql(source: "\n  fragment BuildWorkspace_Project on Project 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  fragment OvercapacityBanner_Account on Account {\n    plan {\n      id\n      name\n    }\n    consumptionRatio\n  }\n"): (typeof documents)["\n  fragment OvercapacityBanner_Account on Account {\n    plan {\n      id\n      name\n    }\n    consumptionRatio\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment BuildHeader_Build on Build {\n    name\n    status\n    pullRequest {\n      ...PullRequestButton_PullRequest\n    }\n    ...BuildStatusChip_Build\n  }\n"): (typeof documents)["\n  fragment BuildHeader_Build on Build {\n    name\n    status\n    pullRequest {\n      ...PullRequestButton_PullRequest\n    }\n    ...BuildStatusChip_Build\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment BuildHeader_Project on Project {\n    ...BuildStatusChip_Project\n    ...ReviewButton_Project\n    repository {\n      id\n      url\n    }\n  }\n"): (typeof documents)["\n  fragment BuildHeader_Project on Project {\n    ...BuildStatusChip_Project\n    ...ReviewButton_Project\n    repository {\n      id\n      url\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment PullRequestStatusIcon_PullRequest on PullRequest {\n    draft\n    merged\n    state\n  }\n"): (typeof documents)["\n  fragment PullRequestStatusIcon_PullRequest on PullRequest {\n    draft\n    merged\n    state\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment PullRequestButton_PullRequest on PullRequest {\n    title\n    number\n    url\n    ...PullRequestStatusIcon_PullRequest\n  }\n"): (typeof documents)["\n  fragment PullRequestButton_PullRequest on PullRequest {\n    title\n    number\n    url\n    ...PullRequestStatusIcon_PullRequest\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { graphql } from "@/gql";
 
-import { BuildHeader } from "./BuildHeader";
+import { BuildHeader } from "./header/BuildHeader";
 import { BuildHotkeysDialog } from "./BuildHotkeys";
 import { BuildNotFound } from "./BuildNotFound";
 import type { BuildParams } from "./BuildParams";

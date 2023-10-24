@@ -136,7 +136,7 @@ const UserMenu = () => {
     <>
       <MenuButton
         state={menu}
-        className="rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
+        className="rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125 shrink-0"
       >
         <Avatar slug={authPayload.account.slug} />
       </MenuButton>
@@ -231,7 +231,7 @@ const LoginButton = () => {
   const { pathname } = useLocation();
   const url = `/login?r=${encodeURIComponent(pathname)}`;
   return (
-    <Button color="neutral" variant="outline">
+    <Button className="shrink-0" color="neutral" variant="outline">
       {(buttonProps) => (
         <Link {...buttonProps} to={url}>
           Login

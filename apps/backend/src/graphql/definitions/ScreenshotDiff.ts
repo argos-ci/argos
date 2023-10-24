@@ -6,6 +6,7 @@ import type {
   IResolvers,
   IScreenshotDiffStatus,
 } from "../__generated__/resolver-types.js";
+import { invariant } from "@/util/invariant.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -73,17 +74,21 @@ export const resolvers: IResolvers = {
     width: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) return null;
       const file = await ctx.loaders.File.load(screenshot.fileId);
+      invariant(file, "File not found");
       return file.width;
     },
     height: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) return null;
       const file = await ctx.loaders.File.load(screenshot.fileId);
+      invariant(file, "File not found");
       return file.height;
     },
     status: async (screenshotDiff, _args, ctx) => {
-      return screenshotDiff.$getDiffStatus((id) =>
-        ctx.loaders.Screenshot.load(id),
-      ) as Promise<IScreenshotDiffStatus>;
+      return screenshotDiff.$getDiffStatus(async (id) => {
+        const screenshot = await ctx.loaders.Screenshot.load(id);
+        invariant(screenshot, "Screenshot not found");
+        return screenshot;
+      }) as Promise<IScreenshotDiffStatus>;
     },
     flakyDetected: (screenshotDiff) => {
       return (

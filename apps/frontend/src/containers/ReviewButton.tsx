@@ -77,7 +77,12 @@ const BaseReviewButton = ({
 
   return (
     <>
-      <MenuButton state={menu} as={Button} disabled={disabled || loading}>
+      <MenuButton
+        className="shrink-0"
+        state={menu}
+        as={Button}
+        disabled={disabled || loading}
+      >
         Review changes
         <ButtonArrow />
       </MenuButton>
@@ -134,9 +139,7 @@ const DisabledReviewButton = ({
 }: DisabledReviewButtonProps) => {
   return (
     <Tooltip content={tooltip} variant="info">
-      <div className="flex">
-        <BaseReviewButton build={build} disabled />
-      </div>
+      <BaseReviewButton build={build} disabled />
     </Tooltip>
   );
 };
