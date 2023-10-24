@@ -218,12 +218,12 @@ export type IGithubAccount = INode & {
 
 export type IGithubPullRequest = INode & IPullRequest & {
   __typename?: 'GithubPullRequest';
-  draft: Scalars['Boolean']['output'];
+  draft?: Maybe<Scalars['Boolean']['output']>;
   id: Scalars['ID']['output'];
-  merged: Scalars['Boolean']['output'];
+  merged?: Maybe<Scalars['Boolean']['output']>;
   number: Scalars['Int']['output'];
-  state: IPullRequestState;
-  title: Scalars['String']['output'];
+  state?: Maybe<IPullRequestState>;
+  title?: Maybe<Scalars['String']['output']>;
   url: Scalars['String']['output'];
 };
 
@@ -591,12 +591,12 @@ export type IProjectConnection = IConnection & {
 };
 
 export type IPullRequest = {
-  draft: Scalars['Boolean']['output'];
+  draft?: Maybe<Scalars['Boolean']['output']>;
   id: Scalars['ID']['output'];
-  merged: Scalars['Boolean']['output'];
+  merged?: Maybe<Scalars['Boolean']['output']>;
   number: Scalars['Int']['output'];
-  state: IPullRequestState;
-  title: Scalars['String']['output'];
+  state?: Maybe<IPullRequestState>;
+  title?: Maybe<Scalars['String']['output']>;
   url: Scalars['String']['output'];
 };
 
@@ -1556,12 +1556,12 @@ export type IGithubAccountResolvers<ContextType = Context, ParentType extends IR
 }>;
 
 export type IGithubPullRequestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['GithubPullRequest'] = IResolversParentTypes['GithubPullRequest']> = ResolversObject<{
-  draft?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  draft?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  merged?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  merged?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   number?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  state?: Resolver<IResolversTypes['PullRequestState'], ParentType, ContextType>;
-  title?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  state?: Resolver<Maybe<IResolversTypes['PullRequestState']>, ParentType, ContextType>;
+  title?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1698,12 +1698,12 @@ export type IProjectConnectionResolvers<ContextType = Context, ParentType extend
 
 export type IPullRequestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['PullRequest'] = IResolversParentTypes['PullRequest']> = ResolversObject<{
   __resolveType: TypeResolveFn<'GithubPullRequest', ParentType, ContextType>;
-  draft?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  draft?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  merged?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  merged?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   number?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  state?: Resolver<IResolversTypes['PullRequestState'], ParentType, ContextType>;
-  title?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  state?: Resolver<Maybe<IResolversTypes['PullRequestState']>, ParentType, ContextType>;
+  title?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
 }>;
 

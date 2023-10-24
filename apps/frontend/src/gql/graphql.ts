@@ -212,12 +212,12 @@ export type GithubAccount = Node & {
 
 export type GithubPullRequest = Node & PullRequest & {
   __typename?: 'GithubPullRequest';
-  draft: Scalars['Boolean']['output'];
+  draft?: Maybe<Scalars['Boolean']['output']>;
   id: Scalars['ID']['output'];
-  merged: Scalars['Boolean']['output'];
+  merged?: Maybe<Scalars['Boolean']['output']>;
   number: Scalars['Int']['output'];
-  state: PullRequestState;
-  title: Scalars['String']['output'];
+  state?: Maybe<PullRequestState>;
+  title?: Maybe<Scalars['String']['output']>;
   url: Scalars['String']['output'];
 };
 
@@ -585,12 +585,12 @@ export type ProjectConnection = Connection & {
 };
 
 export type PullRequest = {
-  draft: Scalars['Boolean']['output'];
+  draft?: Maybe<Scalars['Boolean']['output']>;
   id: Scalars['ID']['output'];
-  merged: Scalars['Boolean']['output'];
+  merged?: Maybe<Scalars['Boolean']['output']>;
   number: Scalars['Int']['output'];
-  state: PullRequestState;
-  title: Scalars['String']['output'];
+  state?: Maybe<PullRequestState>;
+  title?: Maybe<Scalars['String']['output']>;
   url: Scalars['String']['output'];
 };
 
@@ -1840,10 +1840,10 @@ export type BuildHeader_ProjectFragment = (
   & { ' $fragmentRefs'?: { 'BuildStatusChip_ProjectFragment': BuildStatusChip_ProjectFragment;'ReviewButton_ProjectFragment': ReviewButton_ProjectFragment } }
 ) & { ' $fragmentName'?: 'BuildHeader_ProjectFragment' };
 
-export type PullRequestStatusIcon_PullRequestFragment = { __typename?: 'GithubPullRequest', draft: boolean, merged: boolean, state: PullRequestState } & { ' $fragmentName'?: 'PullRequestStatusIcon_PullRequestFragment' };
+export type PullRequestStatusIcon_PullRequestFragment = { __typename?: 'GithubPullRequest', draft?: boolean | null, merged?: boolean | null, state?: PullRequestState | null } & { ' $fragmentName'?: 'PullRequestStatusIcon_PullRequestFragment' };
 
 export type PullRequestButton_PullRequestFragment = (
-  { __typename?: 'GithubPullRequest', title: string, number: number, url: string }
+  { __typename?: 'GithubPullRequest', title?: string | null, number: number, url: string }
   & { ' $fragmentRefs'?: { 'PullRequestStatusIcon_PullRequestFragment': PullRequestStatusIcon_PullRequestFragment } }
 ) & { ' $fragmentName'?: 'PullRequestButton_PullRequestFragment' };
 
