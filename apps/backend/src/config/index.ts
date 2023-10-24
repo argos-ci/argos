@@ -183,7 +183,7 @@ const config = convict({
     apiKey: {
       doc: "Stripe API key",
       format: String,
-      default: "sk_test_i5PgYTDIrpJbKJwY0DXzAB6s",
+      default: "",
       env: "STRIPE_API_KEY",
     },
     pricingTableId: {
