@@ -13,10 +13,10 @@ export const typeDefs = gql`
   interface PullRequest implements Node {
     id: ID!
     number: Int!
-    title: String!
-    state: PullRequestState!
-    merged: Boolean!
-    draft: Boolean!
+    title: String
+    state: PullRequestState
+    merged: Boolean
+    draft: Boolean
     url: String!
   }
 `;

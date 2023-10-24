@@ -12,10 +12,10 @@ export const typeDefs = gql`
   type GithubPullRequest implements Node & PullRequest {
     id: ID!
     number: Int!
-    title: String!
-    state: PullRequestState!
-    merged: Boolean!
-    draft: Boolean!
+    title: String
+    state: PullRequestState
+    merged: Boolean
+    draft: Boolean
     url: String!
   }
 `;

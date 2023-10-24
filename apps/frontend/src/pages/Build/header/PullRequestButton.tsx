@@ -49,13 +49,12 @@ const PullRequestStatusIcon = (props: {
       );
     }
     case PullRequestState.Open:
+    default:
       return (
         <ButtonIcon className="text-success-low">
           <GitPullRequestIcon />
         </ButtonIcon>
       );
-    default:
-      return null;
   }
 };
 
@@ -78,12 +77,16 @@ export const PullRequestButton = (props: {
         {(buttonProps) => (
           <Link {...buttonProps} to={pullRequest.url}>
             <PullRequestStatusIcon pullRequest={pullRequest} />
-            <span className="flex gap-1 min-w-0 max-w-prose">
-              <span className="flex-1 min-w-0 truncate">
-                {pullRequest.title}
+            {pullRequest.title ? (
+              <span className="flex gap-1 min-w-0 max-w-prose">
+                <span className="flex-1 min-w-0 truncate">
+                  {pullRequest.title}
+                </span>
+                <span className="text-low">#{pullRequest.number}</span>
               </span>
-              <span className="text-low">#{pullRequest.number}</span>
-            </span>
+            ) : (
+              <>#{pullRequest.number}</>
+            )}
           </Link>
         )}
       </Button>
