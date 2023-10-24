@@ -225,6 +225,7 @@ export interface BuildDetailToolbarProps {
   repoUrl: string | null;
   baseBranch: string | null;
   compareBranch: string | null;
+  prMerged: boolean;
 }
 
 export const BuildDetailToolbar = memo(
@@ -234,6 +235,7 @@ export const BuildDetailToolbar = memo(
     compareBranch,
     bordered,
     repoUrl,
+    prMerged,
   }: BuildDetailToolbarProps) => {
     const automationLibrary =
       activeDiff.compareScreenshot?.metadata?.automationLibrary ??
@@ -268,7 +270,7 @@ export const BuildDetailToolbar = memo(
       activeDiff.baseScreenshot?.metadata?.test ??
       null;
     const branch =
-      test === activeDiff.baseScreenshot?.metadata?.test
+      prMerged || test === activeDiff.baseScreenshot?.metadata?.test
         ? baseBranch
         : compareBranch;
     return (
