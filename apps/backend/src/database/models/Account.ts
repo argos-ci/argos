@@ -32,7 +32,7 @@ export class Account extends Model {
         type: "string",
         minLength: 1,
         maxLength: 48,
-        pattern: "^[a-z0-9]+(?:[-a-z0-9]+)*$",
+        pattern: "^[-a-z0-9]+$",
       },
       githubAccountId: { type: ["string", "null"] },
       vercelConfigurationId: { type: "string" },

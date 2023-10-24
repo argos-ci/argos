@@ -48,7 +48,6 @@ function handleOAuth(retrieveAccount: (body: any) => Promise<Account>) {
     } catch (error) {
       if (error instanceof axios.AxiosError && error.response) {
         res.status(error.response.status);
-        res.send(error.response.data);
         return;
       }
       throw error;
