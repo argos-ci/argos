@@ -65,6 +65,7 @@ export const BuildFragment = graphql(`
     name
     status
     pullRequest {
+      id
       ...PullRequestButton_PullRequest
     }
     ...BuildStatusChip_Build

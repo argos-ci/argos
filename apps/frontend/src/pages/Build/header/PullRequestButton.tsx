@@ -85,7 +85,7 @@ export const PullRequestButton = (props: {
             {pullRequest.title ? (
               <span className="flex gap-2 min-w-0 max-w-prose items-center">
                 <span className="flex-1 min-w-0 truncate">
-                  {pullRequest.title} ggg
+                  {pullRequest.title}
                 </span>
                 <span className="text-low font-normal">
                   #{pullRequest.number}
