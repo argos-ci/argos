@@ -23,12 +23,14 @@ export const typeDefs = gql`
 export const resolvers: IResolvers = {
   GithubPullRequest: {
     state: (pullRequest) => {
+      if (!pullRequest.state) {
+        return null;
+      }
       switch (pullRequest.state) {
         case "open":
           return IPullRequestState.Open;
-        case "closed": {
+        case "closed":
           return IPullRequestState.Closed;
-        }
         default:
           throw new Error(`Unknown state: ${pullRequest.state}`);
       }
