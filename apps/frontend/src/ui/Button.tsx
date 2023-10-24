@@ -45,9 +45,9 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {
-  base: "rounded-lg py-2 px-3 text-sm",
-  small: "rounded py-1 px-2 text-xs leading-4",
-  large: "rounded py-4 px-8 text-base",
+  base: "group/button-base rounded-lg py-1.5 px-3 text-sm",
+  small: "group/button-small rounded py-1 px-2 text-xs",
+  large: "group/button-large rounded py-3 px-8 text-base",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -83,7 +83,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           variantClassName,
           sizeClassName,
           "focus:outline-none focus-visible:ring-4",
-          "align-center select-none inline-flex whitespace-nowrap border font-sans font-medium leading-none transition aria-disabled:opacity-disabled [&:is(button)]:cursor-default",
+          "align-center select-none inline-flex whitespace-nowrap border font-sans font-medium transition aria-disabled:opacity-disabled [&:is(button)]:cursor-default",
         )}
         {...props}
       >
@@ -101,7 +101,13 @@ export interface ButtonIconProps {
 export const ButtonIcon = ({ children, className }: ButtonIconProps) => {
   return cloneElement(Children.only(children), {
     "aria-hidden": true,
-    className: clsx("h-[1em] w-[1em] mr-2", className),
+    className: clsx(
+      "h-[1em] w-[1em]",
+      "group-[]/button-base:my-[0.1875rem] group-[]/button-base:mr-2",
+      "group-[]/button-small:my-0.5 group-[]/button-small:mr-1.5",
+      "group-[]/button-large:my-1 group-[]/button-large:mr-2.5",
+      className,
+    ),
   });
 };
 

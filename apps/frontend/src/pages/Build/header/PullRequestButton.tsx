@@ -73,16 +73,23 @@ export const PullRequestButton = (props: {
   const pullRequest = useFragment(PullRequestButtonFragment, props.pullRequest);
   return (
     <Tooltip content="View pull request on GitHub">
-      <Button color="neutral" variant="outline" className="min-w-0">
+      <Button
+        color="neutral"
+        variant="outline"
+        size="small"
+        className="min-w-0"
+      >
         {(buttonProps) => (
           <Link {...buttonProps} to={pullRequest.url}>
             <PullRequestStatusIcon pullRequest={pullRequest} />
             {pullRequest.title ? (
-              <span className="flex gap-1 min-w-0 max-w-prose">
+              <span className="flex gap-2 min-w-0 max-w-prose items-center">
                 <span className="flex-1 min-w-0 truncate">
-                  {pullRequest.title}
+                  {pullRequest.title} ggg
                 </span>
-                <span className="text-low">#{pullRequest.number}</span>
+                <span className="text-low font-normal">
+                  #{pullRequest.number}
+                </span>
               </span>
             ) : (
               <>#{pullRequest.number}</>
