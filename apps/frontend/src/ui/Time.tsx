@@ -17,7 +17,7 @@ export interface TimeProps extends HTMLProps<HTMLTimeElement> {
 }
 
 export const Time = forwardRef<HTMLTimeElement, TimeProps>(
-  ({ date, format, children, tooltip = true, ...props }, ref) => {
+  ({ date, format, children, tooltip = "tooltip", ...props }, ref) => {
     const hasChildren = Children.count(children) > 0;
     const getFormattedDate = useCallback(
       () =>
