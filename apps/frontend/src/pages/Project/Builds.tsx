@@ -2,14 +2,7 @@ import { useQuery } from "@apollo/client";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
-import {
-  CSSProperties,
-  HTMLAttributes,
-  memo,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
+import * as React from "react";
 import { Helmet } from "react-helmet";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
@@ -25,6 +18,8 @@ import { Time } from "@/ui/Time";
 import { useProjectContext } from ".";
 import { NotFound } from "../NotFound";
 import { GettingStarted } from "./GettingStarted";
+import { PullRequestButton } from "@/containers/PullRequestButton";
+import { Truncable } from "@/ui/Truncable";
 
 const ProjectQuery = graphql(`
   query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {
@@ -32,6 +27,7 @@ const ProjectQuery = graphql(`
       id
       permissions
       repository {
+        __typename
         id
         url
       }
@@ -65,6 +61,10 @@ const ProjectBuildsQuery = graphql(`
           name
           branch
           commit
+          pullRequest {
+            id
+            ...PullRequestButton_PullRequest
+          }
           ...BuildStatusChip_Build
         }
       }
@@ -76,26 +76,33 @@ type ProjectBuildsDocument = DocumentType<typeof ProjectBuildsQuery>;
 type Builds = NonNullable<ProjectBuildsDocument["project"]>["builds"];
 type Build = Builds["edges"][0];
 
-const FakeLink = ({
-  className,
-  href,
-  ...props
-}: HTMLAttributes<HTMLDivElement> & { href: string | undefined }) => {
-  if (!href) {
-    return <div className={className} {...props} />;
-  }
-  return (
-    <div
-      className={clsx("text-low transition hover:text", className)}
-      onClick={(event) => {
-        event.preventDefault();
-        window.open(href, "_blank")?.focus();
-      }}
-      {...props}
-    />
-  );
-};
-const BuildRow = memo(
+const FakeLink = React.forwardRef(
+  (
+    {
+      className,
+      href,
+      ...props
+    }: React.HTMLAttributes<HTMLDivElement> & { href: string | undefined },
+    ref: React.ForwardedRef<HTMLDivElement>,
+  ) => {
+    if (!href) {
+      return <div ref={ref} className={className} {...props} />;
+    }
+    return (
+      <div
+        ref={ref}
+        className={clsx("text-low transition hover:text", className)}
+        onClick={(event) => {
+          event.preventDefault();
+          window.open(href, "_blank")?.focus();
+        }}
+        {...props}
+      />
+    );
+  },
+);
+
+const BuildRow = React.memo(
   ({
     build,
     project,
@@ -103,11 +110,16 @@ const BuildRow = memo(
   }: {
     build: Build;
     project: Project;
-    style: CSSProperties;
+    style: React.CSSProperties;
   }) => {
     const { accountSlug, projectName } = useParams();
     return (
-      <ListRow asChild clickable className="p-4 text-sm" style={style}>
+      <ListRow
+        asChild
+        clickable
+        className="p-4 text-sm items-center"
+        style={style}
+      >
         <RouterLink
           to={`/${accountSlug}/${projectName}/builds/${build.number}`}
         >
@@ -121,37 +133,36 @@ const BuildRow = memo(
             <BuildStatusChip build={build} project={project} />
           </div>
           <div className="flex-1" />
-          <div className="relative hidden w-32 md:block">
+          <div className="hidden xl:block w-96">
+            {build.pullRequest && (
+              <PullRequestButton fakeAnchor pullRequest={build.pullRequest} />
+            )}
+          </div>
+          <div className="relative hidden w-60 md:block">
             <div>
               <FakeLink
-                className="inline-flex max-w-full items-center gap-1"
+                className="inline-flex items-center max-w-full gap-2"
                 href={
                   project.repository
                     ? `${project.repository.url}/tree/${build.branch}`
                     : undefined
                 }
-                title={build.branch}
               >
-                <GitBranchIcon className="shrink-0" />
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                  {build.branch}
-                </span>
+                <GitBranchIcon className="shrink-0 w-3 h-3" />
+                <Truncable>{build.branch}</Truncable>
               </FakeLink>
             </div>
             <div>
               <FakeLink
-                className="inline-flex max-w-full items-center gap-1"
-                title={build.commit}
+                className="inline-flex items-center max-w-full gap-2"
                 href={
                   project.repository
                     ? `${project.repository.url}/commit/${build.commit}`
                     : undefined
                 }
               >
-                <GitCommitIcon className="shrink-0" />
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                  {build.commit.slice(0, 7)}
-                </span>
+                <GitCommitIcon className="shrink-0 w-3 h-3" />
+                <span className="truncate">{build.commit.slice(0, 7)}</span>
               </FakeLink>
             </div>
           </div>
@@ -175,12 +186,12 @@ const BuildsList = ({
   fetching: boolean;
   fetchNextPage: () => void;
 }) => {
-  const parentRef = useRef<HTMLDivElement | null>(null);
+  const parentRef = React.useRef<HTMLDivElement | null>(null);
   const { hasNextPage } = builds.pageInfo;
   const displayCount = builds.edges.length;
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? displayCount + 1 : displayCount,
-    estimateSize: () => 79,
+    estimateSize: () => 75,
     getScrollElement: () => parentRef.current,
     overscan: 20,
   });
@@ -188,7 +199,7 @@ const BuildsList = ({
   const virtualItems = rowVirtualizer.getVirtualItems();
 
   const lastItem = virtualItems[virtualItems.length - 1];
-  useEffect(() => {
+  React.useEffect(() => {
     if (
       lastItem &&
       lastItem.index === displayCount &&
@@ -241,7 +252,7 @@ const BuildsList = ({
                 top: 0,
                 left: 0,
                 width: "100%",
-                // height: virtualRow.size,
+                height: virtualRow.size,
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             />
@@ -275,14 +286,14 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   });
 
   const { fetchMore } = buildsResult;
-  const buildResultRef = useRef(buildsResult);
+  const buildResultRef = React.useRef(buildsResult);
   buildResultRef.current = buildsResult;
 
   if (buildsResult.error) {
     throw buildsResult.error;
   }
 
-  const fetchNextPage = useCallback(() => {
+  const fetchNextPage = React.useCallback(() => {
     const displayCount =
       buildResultRef.current.data?.project?.builds.edges.length;
     fetchMore({

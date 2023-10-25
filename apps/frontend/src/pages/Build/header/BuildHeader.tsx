@@ -8,7 +8,7 @@ import { ReviewButton } from "@/containers/ReviewButton";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Tooltip } from "@/ui/Tooltip";
-import { PullRequestButton } from "./PullRequestButton";
+import { PullRequestButton } from "@/containers/PullRequestButton";
 
 const BrandLink = memo(
   ({
@@ -116,7 +116,7 @@ export const BuildHeader = memo(
         </div>
         <div className="flex gap-4 items-center min-w-0">
           {build?.pullRequest ? (
-            <PullRequestButton pullRequest={build.pullRequest} />
+            <PullRequestButton pullRequest={build.pullRequest} size="small" />
           ) : null}
           {project && <BuildReviewButton project={project} />}
           <NavUserControl />

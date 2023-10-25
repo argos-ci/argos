@@ -15,8 +15,12 @@ export const typeDefs = gql`
     title: String
     state: PullRequestState
     merged: Boolean
+    mergedAt: DateTime
+    closedAt: DateTime
     draft: Boolean
     url: String!
+    date: DateTime
+    creator: GithubAccount
   }
 `;
 
@@ -45,6 +49,13 @@ export const resolvers: IResolvers = {
       );
       invariant(account, "Account not found");
       return `https://github.com/${account.login}/${repo.name}/pull/${pullRequest.number}`;
+    },
+    creator: async (pullRequest, _args, ctx) => {
+      if (!pullRequest.creatorId) return null;
+      const creator = await ctx.loaders.GithubAccount.load(
+        pullRequest.creatorId,
+      );
+      return creator;
     },
   },
 };

@@ -28,7 +28,6 @@ export function AutomationLibraryIndicator({
   return (
     <Tooltip
       content={`${automationLibrary.name} v${automationLibrary.version}`}
-      disableHoverableContent
     >
       <img src={icon} alt={automationLibrary.name} {...props} />
     </Tooltip>

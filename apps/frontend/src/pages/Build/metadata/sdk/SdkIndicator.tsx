@@ -12,7 +12,7 @@ export function SdkIndicator({
   };
 }) {
   return (
-    <Tooltip content={`${sdk.name} v${sdk.version}`} disableHoverableContent>
+    <Tooltip content={`${sdk.name} v${sdk.version}`}>
       <BrandShield {...props} />
     </Tooltip>
   );

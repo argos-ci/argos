@@ -156,7 +156,7 @@ const LastSeenField = ({ lastSeen }: { lastSeen: string | null }) => {
   return lastSeen ? (
     <Tooltip content={`Last seen: ${moment(lastSeen).format("LLL")}`}>
       <div className="flex whitespace-nowrap">
-        <Time date={lastSeen} showTitle={false} />
+        <Time date={lastSeen} tooltip="none" />
       </div>
     </Tooltip>
   ) : null;

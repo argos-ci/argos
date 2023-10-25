@@ -23,42 +23,68 @@ export type TooltipProps = {
   disableHoverableContent?: boolean;
 };
 
+export const TooltipTrigger = TooltipPrimitive.Trigger;
+export const TooltipRoot = TooltipPrimitive.Root;
+export const TooltipPortal = TooltipPrimitive.Portal;
+export const TooltipContent = React.forwardRef(
+  (
+    {
+      className,
+      variant = "default",
+      ...props
+    }: TooltipPrimitive.TooltipContentProps & {
+      variant?: TooltipVariant;
+    },
+    ref: React.ForwardedRef<HTMLDivElement>,
+  ) => {
+    const variantClassName = variantClassNames[variant];
+    if (!variantClassName) {
+      throw new Error(`Invalid variant: ${variant}`);
+    }
+    return (
+      <TooltipPrimitive.Content
+        ref={ref}
+        sideOffset={4}
+        {...props}
+        className={clsx(
+          "z-50 overflow-hidden rounded-md border bg-subtle text shadow-md",
+          "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          variantClassName,
+          className,
+        )}
+      />
+    );
+  },
+);
+
 export const Tooltip = ({
   children,
   variant = "default",
   content,
   align,
   side,
-  disableHoverableContent,
+  disableHoverableContent = true,
   preventPointerDownOutside,
 }: TooltipProps) => {
-  const variantClassName = variantClassNames[variant];
-  if (!variantClassName) {
-    throw new Error(`Invalid variant: ${variant}`);
-  }
   if (!content) return <>{children}</>;
   return (
-    <TooltipPrimitive.Root disableHoverableContent={disableHoverableContent}>
-      <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
-      <TooltipPrimitive.Portal>
-        <TooltipPrimitive.Content
+    <TooltipRoot disableHoverableContent={disableHoverableContent}>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipPortal>
+        <TooltipContent
           sideOffset={4}
           align={align}
           side={side}
+          variant={variant}
           onPointerDownOutside={(event) => {
             if (preventPointerDownOutside) {
               event.preventDefault();
             }
           }}
-          className={clsx(
-            "z-50 overflow-hidden rounded-md border bg-subtle text shadow-md",
-            "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-            variantClassName,
-          )}
         >
           {content}
-        </TooltipPrimitive.Content>
-      </TooltipPrimitive.Portal>
-    </TooltipPrimitive.Root>
+        </TooltipContent>
+      </TooltipPortal>
+    </TooltipRoot>
   );
 };
