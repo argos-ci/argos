@@ -39,7 +39,7 @@ const getOrCreateFile = async (
  * Ensures that the associated file of the screenshot has dimensions,
  * and if not, it adds them, preparing the files for CDN.
  */
-async function ensureFileDimensionsAndPreload({
+async function ensureFileDimensions({
   s3Image,
   screenshot,
 }: {
@@ -124,15 +124,7 @@ async function areAllDiffsCompleted(buildId: string): Promise<{
   diff: boolean;
 }> {
   const isComplete = raw(`bool_and("jobStatus" = 'complete') as complete`);
-  const hasDiff = raw(
-    `count(*) FILTER (
-      WHERE score > 0 AND (
-        muted IS NULL
-        OR muted = FALSE
-        OR (muted = TRUE AND test."muteUntil" > now())
-      )
-    ) > 0 AS diff`,
-  );
+  const hasDiff = raw(`count(*) FILTER (WHERE score > 0) > 0 AS diff`);
   const result = await ScreenshotDiff.query()
     .select(isComplete, hasDiff)
     .leftJoinRelated("test")
@@ -200,13 +192,13 @@ export const computeScreenshotDiff = async (
 
   // Patching cannot be done in parallel since the file can be the same and must be created only
   if (baseImage && screenshotDiff.baseScreenshot) {
-    await ensureFileDimensionsAndPreload({
+    await ensureFileDimensions({
       screenshot: screenshotDiff.baseScreenshot,
       s3Image: baseImage,
     });
   }
 
-  await ensureFileDimensionsAndPreload({
+  await ensureFileDimensions({
     screenshot: screenshotDiff.compareScreenshot,
     s3Image: compareImage,
   });
@@ -250,6 +242,7 @@ export const computeScreenshotDiff = async (
       const diffs = await ScreenshotDiff.query()
         .select("id")
         .where({ buildId, s3Id: diffKey, group: null });
+
       const diffIds = diffs.map(({ id }) => id);
 
       // Update diffs
