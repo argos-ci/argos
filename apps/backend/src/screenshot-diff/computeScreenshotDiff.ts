@@ -83,6 +83,7 @@ async function lockAndUploadDiffFile({
     if (existingDiffFile) return existingDiffFile;
 
     await diffImage.upload();
+
     return File.query()
       .insert({ key, width: diffResult.width, height: diffResult.height })
       .returning("*");
@@ -210,6 +211,8 @@ export const computeScreenshotDiff = async (
     s3Image: compareImage,
   });
 
+  let diffKey: string | null = null;
+
   if (baseImage && baseImage.key !== compareImage.key && !screenshotDiff.s3Id) {
     const diffResult = await diffImages({ baseImage, compareImage });
 
@@ -218,16 +221,16 @@ export const computeScreenshotDiff = async (
         .findById(screenshotDiff.id)
         .patch({ score: diffResult.score });
     } else {
-      const key = await hashFile(diffResult.filepath);
+      diffKey = await hashFile(diffResult.filepath);
       const diffFile = await getOrCreateDiffFile({
         diffResult,
         s3,
         bucket,
-        key,
+        key: diffKey,
       });
       await ScreenshotDiff.query()
         .findById(screenshotDiff.id)
-        .patch({ s3Id: key, score: diffResult.score, fileId: diffFile.id });
+        .patch({ s3Id: diffKey, score: diffResult.score, fileId: diffFile.id });
     }
   }
 
@@ -236,24 +239,26 @@ export const computeScreenshotDiff = async (
     .findById(screenshotDiff.id)
     .patch({ jobStatus: "complete" });
 
-  const similarDiffCount = await ScreenshotDiff.query()
-    .where({ buildId, s3Id: screenshotDiff.s3Id })
-    .resultSize();
+  if (diffKey) {
+    const similarDiffCount = await ScreenshotDiff.query()
+      .where({ buildId, s3Id: diffKey })
+      .resultSize();
 
-  // Patch group on screenshot diffs
-  if (similarDiffCount > 1) {
-    // Collect diffs to update
-    const diffs = await ScreenshotDiff.query()
-      .select("id")
-      .where({ buildId, s3Id: screenshotDiff.s3Id, group: null });
-    const diffIds = diffs.map(({ id }) => id);
+    // Patch group on screenshot diffs
+    if (similarDiffCount > 1) {
+      // Collect diffs to update
+      const diffs = await ScreenshotDiff.query()
+        .select("id")
+        .where({ buildId, s3Id: diffKey, group: null });
+      const diffIds = diffs.map(({ id }) => id);
 
-    // Update diffs
-    // We don't do the where in this query because of deadlock issues
-    // Having `s3Id` in the where clause causes a deadlock
-    await ScreenshotDiff.query()
-      .whereIn("id", diffIds)
-      .patch({ group: screenshotDiff.s3Id });
+      // Update diffs
+      // We don't do the where in this query because of deadlock issues
+      // Having `s3Id` in the where clause causes a deadlock
+      await ScreenshotDiff.query()
+        .whereIn("id", diffIds)
+        .patch({ group: diffKey });
+    }
   }
 
   // Unlink images
