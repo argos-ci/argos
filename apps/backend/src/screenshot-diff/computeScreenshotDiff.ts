@@ -10,6 +10,7 @@ import { S3ImageFile } from "@/storage/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
 
 import { ImageDiffResult, diffImages } from "./util/image-diff/index.js";
+import { chunk } from "@/util/chunk.js";
 
 export const hashFile = async (filepath: string): Promise<string> => {
   const fileStream = createReadStream(filepath);
@@ -39,7 +40,7 @@ const getOrCreateFile = async (
  * Ensures that the associated file of the screenshot has dimensions,
  * and if not, it adds them, preparing the files for CDN.
  */
-async function ensureFileDimensionsAndPreload({
+async function ensureFileDimensions({
   s3Image,
   screenshot,
 }: {
@@ -83,6 +84,7 @@ async function lockAndUploadDiffFile({
     if (existingDiffFile) return existingDiffFile;
 
     await diffImage.upload();
+
     return File.query()
       .insert({ key, width: diffResult.width, height: diffResult.height })
       .returning("*");
@@ -123,15 +125,7 @@ async function areAllDiffsCompleted(buildId: string): Promise<{
   diff: boolean;
 }> {
   const isComplete = raw(`bool_and("jobStatus" = 'complete') as complete`);
-  const hasDiff = raw(
-    `count(*) FILTER (
-      WHERE score > 0 AND (
-        muted IS NULL
-        OR muted = FALSE
-        OR (muted = TRUE AND test."muteUntil" > now())
-      )
-    ) > 0 AS diff`,
-  );
+  const hasDiff = raw(`count(*) FILTER (WHERE score > 0) > 0 AS diff`);
   const result = await ScreenshotDiff.query()
     .select(isComplete, hasDiff)
     .leftJoinRelated("test")
@@ -199,16 +193,18 @@ export const computeScreenshotDiff = async (
 
   // Patching cannot be done in parallel since the file can be the same and must be created only
   if (baseImage && screenshotDiff.baseScreenshot) {
-    await ensureFileDimensionsAndPreload({
+    await ensureFileDimensions({
       screenshot: screenshotDiff.baseScreenshot,
       s3Image: baseImage,
     });
   }
 
-  await ensureFileDimensionsAndPreload({
+  await ensureFileDimensions({
     screenshot: screenshotDiff.compareScreenshot,
     s3Image: compareImage,
   });
+
+  let diffKey: string | null = null;
 
   if (baseImage && baseImage.key !== compareImage.key && !screenshotDiff.s3Id) {
     const diffResult = await diffImages({ baseImage, compareImage });
@@ -218,16 +214,16 @@ export const computeScreenshotDiff = async (
         .findById(screenshotDiff.id)
         .patch({ score: diffResult.score });
     } else {
-      const key = await hashFile(diffResult.filepath);
+      diffKey = await hashFile(diffResult.filepath);
       const diffFile = await getOrCreateDiffFile({
         diffResult,
         s3,
         bucket,
-        key,
+        key: diffKey,
       });
       await ScreenshotDiff.query()
         .findById(screenshotDiff.id)
-        .patch({ s3Id: key, score: diffResult.score, fileId: diffFile.id });
+        .patch({ s3Id: diffKey, score: diffResult.score, fileId: diffFile.id });
     }
   }
 
@@ -236,24 +232,31 @@ export const computeScreenshotDiff = async (
     .findById(screenshotDiff.id)
     .patch({ jobStatus: "complete" });
 
-  const similarDiffCount = await ScreenshotDiff.query()
-    .where({ buildId, s3Id: screenshotDiff.s3Id })
-    .resultSize();
+  if (diffKey) {
+    const similarDiffCount = await ScreenshotDiff.query()
+      .where({ buildId, s3Id: diffKey })
+      .resultSize();
 
-  // Patch group on screenshot diffs
-  if (similarDiffCount > 1) {
-    // Collect diffs to update
-    const diffs = await ScreenshotDiff.query()
-      .select("id")
-      .where({ buildId, s3Id: screenshotDiff.s3Id, group: null });
-    const diffIds = diffs.map(({ id }) => id);
+    // Patch group on screenshot diffs
+    if (similarDiffCount > 1) {
+      // Collect diffs to update
+      const diffs = await ScreenshotDiff.query()
+        .select("id")
+        .where({ buildId, s3Id: diffKey, group: null });
 
-    // Update diffs
-    // We don't do the where in this query because of deadlock issues
-    // Having `s3Id` in the where clause causes a deadlock
-    await ScreenshotDiff.query()
-      .whereIn("id", diffIds)
-      .patch({ group: screenshotDiff.s3Id });
+      const diffIds = diffs.map(({ id }) => id);
+
+      const diffIdsChunks = chunk(diffIds, 50);
+
+      for (const diffIdsChunk of diffIdsChunks) {
+        // Update diffs
+        // We don't do the where in this query because of deadlock issues
+        // Having `s3Id` in the where clause causes a deadlock
+        await ScreenshotDiff.query()
+          .whereIn("id", diffIdsChunk)
+          .patch({ group: diffKey });
+      }
+    }
   }
 
   // Unlink images
