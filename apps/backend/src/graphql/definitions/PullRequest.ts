@@ -16,8 +16,11 @@ export const typeDefs = gql`
     title: String
     state: PullRequestState
     merged: Boolean
+    mergedAt: DateTime
+    closedAt: DateTime
     draft: Boolean
     url: String!
+    date: DateTime
   }
 `;
 

@@ -7,16 +7,17 @@ import {
   useEffect,
   useState,
 } from "react";
+import { Tooltip } from "./Tooltip";
 
 export interface TimeProps extends HTMLProps<HTMLTimeElement> {
   date: string;
   format?: string;
-  showTitle?: boolean;
+  tooltip?: "title" | "tooltip" | "none";
   children?: React.ReactNode;
 }
 
 export const Time = forwardRef<HTMLTimeElement, TimeProps>(
-  ({ date, format, children, showTitle = true, ...props }, ref) => {
+  ({ date, format, children, tooltip = true, ...props }, ref) => {
     const hasChildren = Children.count(children) > 0;
     const getFormattedDate = useCallback(
       () =>
@@ -33,15 +34,19 @@ export const Time = forwardRef<HTMLTimeElement, TimeProps>(
       return () => clearInterval(id);
     }, [getFormattedDate]);
     return (
-      <time
-        ref={ref}
-        dateTime={moment(date).toISOString()}
-        title={showTitle ? moment(date).format("LLLL") : ""}
-        data-visual-test="transparent"
-        {...props}
+      <Tooltip
+        content={tooltip === "tooltip" ? moment(date).format("LLLL") : null}
       >
-        {children ?? fromNow}
-      </time>
+        <time
+          ref={ref}
+          dateTime={moment(date).toISOString()}
+          data-visual-test="transparent"
+          title={tooltip === "title" ? moment(date).format("LLLL") : undefined}
+          {...props}
+        >
+          {children ?? fromNow}
+        </time>
+      </Tooltip>
     );
   },
 );

@@ -32,10 +32,7 @@ export function BrowserIndicator({
   }
 
   return (
-    <Tooltip
-      content={`${browser.name} v${browser.version}`}
-      disableHoverableContent
-    >
+    <Tooltip content={`${browser.name} v${browser.version}`}>
       <img src={icon} alt={browser.name} {...props} />
     </Tooltip>
   );

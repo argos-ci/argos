@@ -7,5 +7,6 @@ export const typeDefs = gql`
   type GithubAccount implements Node {
     id: ID!
     login: String!
+    name: String
   }
 `;

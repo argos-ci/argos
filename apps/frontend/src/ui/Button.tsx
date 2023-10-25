@@ -95,22 +95,43 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
 export interface ButtonIconProps {
   children: React.ReactElement;
+  position?: "left" | "right";
   className?: string;
 }
 
-export const ButtonIcon = ({ children, className }: ButtonIconProps) => {
+export const ButtonIcon = ({
+  children,
+  position = "left",
+  className,
+}: ButtonIconProps) => {
   return cloneElement(Children.only(children), {
     "aria-hidden": true,
     className: clsx(
       "h-[1em] w-[1em]",
-      "group-[]/button-base:my-[0.1875rem] group-[]/button-base:mr-2",
-      "group-[]/button-small:my-0.5 group-[]/button-small:mr-1.5",
-      "group-[]/button-large:my-1 group-[]/button-large:mr-2.5",
+      "group-[]/button-base:my-[0.1875rem]",
+      "group-[]/button-small:my-0.5",
+      "group-[]/button-large:my-1",
+      position === "left" &&
+        clsx(
+          "group-[]/button-base:mr-2",
+          "group-[]/button-small:mr-1.5",
+          "group-[]/button-large:mr-2.5",
+        ),
+      position === "right" &&
+        clsx(
+          "group-[]/button-base:ml-2",
+          "group-[]/button-small:ml-1.5",
+          "group-[]/button-large:ml-2.5",
+        ),
       className,
     ),
   });
 };
 
 export const ButtonArrow = memo(() => {
-  return <ChevronDownIcon className="ml-2 mr-[-4px] h-[1em] w-[1em]" />;
+  return (
+    <ButtonIcon position="right">
+      <ChevronDownIcon />
+    </ButtonIcon>
+  );
 });

@@ -38,7 +38,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(
       ref,
       role: "row",
       className: clsx(
-        "flex gap-4 border-b last:border-b-0 bg-app",
+        "flex gap-6 border-b last:border-b-0 bg-app",
         clickable && "hover:bg-hover",
         className,
       ),
