@@ -135,7 +135,11 @@ const BuildRow = React.memo(
           <div className="flex-1" />
           <div className="hidden xl:block w-96">
             {build.pullRequest && (
-              <PullRequestButton fakeAnchor pullRequest={build.pullRequest} />
+              <PullRequestButton
+                fakeAnchor
+                pullRequest={build.pullRequest}
+                className="max-w-full"
+              />
             )}
           </div>
           <div className="relative hidden w-60 md:block">

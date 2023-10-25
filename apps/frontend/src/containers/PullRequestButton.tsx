@@ -11,6 +11,7 @@ import { PullRequestState } from "@/gql/graphql";
 import * as React from "react";
 import { ImageAvatar } from "./ImageAvatar";
 import { Time } from "@/ui/Time";
+import { clsx } from "clsx";
 
 const PullRequestStatusIconFragment = graphql(`
   fragment PullRequestStatusIcon_PullRequest on PullRequest {
@@ -185,6 +186,7 @@ export const PullRequestButton = (props: {
   pullRequest: FragmentType<typeof PullRequestButtonFragment>;
   size?: ButtonSize;
   fakeAnchor?: boolean;
+  className?: string;
 }) => {
   const pullRequest = useFragment(PullRequestButtonFragment, props.pullRequest);
   const Anchor = props.fakeAnchor ? FakeAnchor : "a";
@@ -192,13 +194,15 @@ export const PullRequestButton = (props: {
     <Tooltip
       variant="info"
       disableHoverableContent={false}
-      content={<PullRequestInfo pullRequest={pullRequest} />}
+      content={
+        pullRequest.title && <PullRequestInfo pullRequest={pullRequest} />
+      }
     >
       <Button
         color="neutral"
         variant="outline"
         size={props.size}
-        className="min-w-0 !bg-app"
+        className={clsx("min-w-0 !bg-app", props.className)}
       >
         {(buttonProps) => (
           <Anchor {...buttonProps} href={pullRequest.url}>
