@@ -10,6 +10,7 @@ import { S3ImageFile } from "@/storage/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
 
 import { ImageDiffResult, diffImages } from "./util/image-diff/index.js";
+import { chunk } from "@/util/chunk.js";
 
 export const hashFile = async (filepath: string): Promise<string> => {
   const fileStream = createReadStream(filepath);
@@ -245,12 +246,16 @@ export const computeScreenshotDiff = async (
 
       const diffIds = diffs.map(({ id }) => id);
 
-      // Update diffs
-      // We don't do the where in this query because of deadlock issues
-      // Having `s3Id` in the where clause causes a deadlock
-      await ScreenshotDiff.query()
-        .whereIn("id", diffIds)
-        .patch({ group: diffKey });
+      const diffIdsChunks = chunk(diffIds, 50);
+
+      for (const diffIdsChunk of diffIdsChunks) {
+        // Update diffs
+        // We don't do the where in this query because of deadlock issues
+        // Having `s3Id` in the where clause causes a deadlock
+        await ScreenshotDiff.query()
+          .whereIn("id", diffIdsChunk)
+          .patch({ group: diffKey });
+      }
     }
   }
 
