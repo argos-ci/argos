@@ -10,10 +10,15 @@ export class File extends Model {
       key: { type: ["string"] },
       width: { type: ["number", "null"], minimum: 0 },
       height: { type: ["number", "null"], minimum: 0 },
+      type: {
+        type: ["string", "null"],
+        enum: ["screenshot", "playwrightTrace"],
+      },
     },
   });
 
   key!: string;
   width!: number | null;
   height!: number | null;
+  type!: "screenshot" | "playwrightTrace" | null;
 }

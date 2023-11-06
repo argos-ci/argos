@@ -81,11 +81,11 @@ const config = convict({
       default: "argos-ci-development",
       env: "AWS_SCREENSHOTS_BUCKET",
     },
-    publicBaseUrl: {
-      doc: "Public url for screenshots",
+    publicImageBaseUrl: {
+      doc: "Public URL for screenshots",
       format: String,
       default: "https://ik.imagekit.io/argos/development/",
-      env: "S3_PUBLIC_BASE_URL",
+      env: "S3_PUBLIC_IMAGE_BASE_URL",
     },
   },
   github: {

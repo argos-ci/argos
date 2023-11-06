@@ -11,7 +11,6 @@ import { memo } from "react";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
-import { FlakyChip } from "@/ui/FlakyIndicator";
 
 import { useBuildDiffFitState } from "./BuildDiffFitState";
 import { Diff, useBuildDiffState } from "./BuildDiffState";
@@ -27,6 +26,8 @@ import { UrlIndicator } from "./metadata/url/UrlIndicator";
 import { ColorSchemeIndicator } from "./metadata/colorScheme/ColorSchemeIndicator";
 import { MediaTypeIndicator } from "./metadata/mediaType/MediaTypeIndicator";
 import { TestIndicator } from "./metadata/test/TestIndicator";
+import { TraceIndicator } from "./metadata/trace/TraceIndicator";
+import { FlakyChip } from "@/ui/FlakyIndicator";
 
 const BuildDiffChangesOverlayToggle = memo(() => {
   const { visible, setVisible } = useBuildDiffVisibleState();
@@ -273,6 +274,8 @@ export const BuildDetailToolbar = memo(
       prMerged || test === activeDiff.baseScreenshot?.metadata?.test
         ? baseBranch
         : compareBranch;
+    const playwrightTraceUrl =
+      activeDiff.compareScreenshot?.playwrightTraceUrl ?? null;
     return (
       <div
         className={clsx(
@@ -313,6 +316,9 @@ export const BuildDetailToolbar = memo(
               {url && <UrlIndicator url={url} />}
               {test && (
                 <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
+              )}
+              {playwrightTraceUrl && (
+                <TraceIndicator traceUrl={playwrightTraceUrl} />
               )}
               <FlakyChip test={activeDiff.test ?? null} />
             </div>

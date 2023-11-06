@@ -744,6 +744,7 @@ export type IScreenshot = INode & {
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   metadata?: Maybe<IScreenshotMetadata>;
+  playwrightTraceUrl?: Maybe<Scalars['String']['output']>;
   url: Scalars['String']['output'];
   width?: Maybe<Scalars['Int']['output']>;
 };
@@ -1764,6 +1765,7 @@ export type IScreenshotResolvers<ContextType = Context, ParentType extends IReso
   height?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<Maybe<IResolversTypes['ScreenshotMetadata']>, ParentType, ContextType>;
+  playwrightTraceUrl?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   width?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

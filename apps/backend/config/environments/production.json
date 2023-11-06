@@ -2,7 +2,7 @@
   "googleAnalytics": "UA-89989315-1",
   "s3": {
     "screenshotsBucket": "argos-ci-production",
-    "publicBaseUrl": "https://ik.imagekit.io/argos/"
+    "publicImageBaseUrl": "https://ik.imagekit.io/argos/"
   },
   "github": {
     "clientId": "8460535e1d4c40dfdf05",

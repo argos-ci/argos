@@ -13,7 +13,7 @@ import {
 } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
 import { quitAmqp } from "@/job-core/index.js";
-import { s3 as getS3, uploadFromFilePath } from "@/storage/index.js";
+import { getS3Client, uploadFromFilePath } from "@/storage/index.js";
 import type { S3Client } from "@/storage/index.js";
 
 import { computeScreenshotDiff } from "./computeScreenshotDiff.js";
@@ -29,7 +29,7 @@ describe("#computeScreenshotDiff", () => {
   let project: Project;
 
   beforeAll(async () => {
-    s3 = getS3();
+    s3 = getS3Client();
     await uploadFromFilePath({
       s3,
       Bucket: config.get("s3.screenshotsBucket"),

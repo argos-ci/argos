@@ -6,14 +6,15 @@ import { getRedisLock } from "@/util/redis/index.js";
 import config from "@/config/index.js";
 import type { Project } from "@/database/models/index.js";
 import { Build } from "@/database/models/index.js";
-import { getUnknownScreenshotKeys } from "@/database/services/screenshots.js";
-import { s3 as getS3, getSignedPutObjectUrl } from "@/storage/index.js";
+import { getUnknownFileKeys } from "@/database/services/file.js";
+import { getS3Client, getSignedPutObjectUrl } from "@/storage/index.js";
 
 import { SHA1_REGEX_STR, SHA256_REGEX_STR } from "@/web/constants.js";
 import { repoAuth } from "../../../middlewares/repoAuth.js";
 import { validate } from "../../../middlewares/validate.js";
 import { asyncHandler } from "../../../util.js";
 import { createBuildFromRequest, getBuildName } from "../util.js";
+import { invariant } from "@/util/invariant.js";
 
 const router = Router();
 export default router;
@@ -31,6 +32,17 @@ const validateRoute = validate({
         type: "array",
         uniqueItems: true,
         items: { type: "string", pattern: SHA256_REGEX_STR },
+      },
+      pwTraces: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["screenshotKey", "traceKey"],
+          properties: {
+            screenshotKey: { type: "string", pattern: SHA256_REGEX_STR },
+            traceKey: { type: "string", pattern: SHA256_REGEX_STR },
+          },
+        },
       },
       branch: {
         type: "string",
@@ -68,28 +80,44 @@ const validateRoute = validate({
   },
 });
 
+type PayloadPwTrace = { screenshotKey: string; traceKey: string };
+
+type RequestPayload = {
+  commit: string;
+  screenshotKeys: string[];
+  pwTraces?: PayloadPwTrace[];
+  branch: string;
+  name?: string | null;
+  parallel?: string | null;
+  parallelNonce?: string | null;
+  prNumber: number | null;
+  prHeadCommit?: string | null;
+  referenceCommit?: string | null;
+  referenceBranch?: string | null;
+};
+
 type CreateRequest = express.Request<
   Record<string, never>,
   Record<string, never>,
-  {
-    commit: string;
-    screenshotKeys: string[];
-    branch: string;
-    name?: string | null;
-    parallel?: string | null;
-    parallelNonce?: string | null;
-    prNumber: number | null;
-    prHeadCommit?: string | null;
-    referenceCommit?: string | null;
-    referenceBranch?: string | null;
-  }
+  RequestPayload
 > & { authProject: Project };
 
-const getScreenshots = async (keys: string[]) => {
-  const unknownKeys = await getUnknownScreenshotKeys(keys);
-  const s3 = getS3();
+const getScreenshots = async (
+  keys: string[],
+  pwTraces: PayloadPwTrace[],
+): Promise<
+  {
+    key: string;
+    putUrl: string;
+    putTraceUrl: string | null;
+  }[]
+> => {
+  const pwTraceKeys = pwTraces.map((pwTrace) => pwTrace.traceKey);
+  const allKeys = [...keys, ...pwTraceKeys];
+  const unknownKeys = await getUnknownFileKeys(allKeys);
+  const s3 = getS3Client();
   const screenshotsBucket = config.get("s3.screenshotsBucket");
-  const signedUrls = await Promise.all(
+  const putUrls = await Promise.all(
     unknownKeys.map((key) =>
       getSignedPutObjectUrl({
         s3,
@@ -99,14 +127,28 @@ const getScreenshots = async (keys: string[]) => {
       }),
     ),
   );
-  return unknownKeys.map((key, index) => ({
-    key,
-    putUrl: signedUrls[index],
-  }));
+  const putUrlByKey = Object.fromEntries(
+    unknownKeys.map((key, index) => [key, putUrls[index]]),
+  );
+  const screenshotUnknownKeys = unknownKeys.filter((key) => keys.includes(key));
+  return screenshotUnknownKeys.map((key) => {
+    const putUrl = putUrlByKey[key];
+    invariant(putUrl, `putUrl missing for key ${key}`);
+    const trace = pwTraces.find((pwTrace) => pwTrace.screenshotKey === key);
+    const putTraceUrl = trace ? putUrlByKey[trace.traceKey] ?? null : null;
+    return {
+      key,
+      putUrl,
+      putTraceUrl,
+    };
+  });
 };
 
 const handleCreateSingle = async ({ req }: { req: CreateRequest }) => {
-  const screenshots = await getScreenshots(req.body.screenshotKeys);
+  const screenshots = await getScreenshots(
+    req.body.screenshotKeys,
+    req.body.pwTraces ?? [],
+  );
   const build = await createBuildFromRequest({ req });
   return { build, screenshots };
 };
@@ -118,7 +160,10 @@ const handleCreateParallel = async ({ req }: { req: CreateRequest }) => {
       "`parallelNonce` is required when `parallel` is `true`",
     );
   }
-  const screenshots = await getScreenshots(req.body.screenshotKeys);
+  const screenshots = await getScreenshots(
+    req.body.screenshotKeys,
+    req.body.pwTraces ?? [],
+  );
   const buildName = getBuildName(req.body.name);
   const parallelNonce = req.body.parallelNonce;
 

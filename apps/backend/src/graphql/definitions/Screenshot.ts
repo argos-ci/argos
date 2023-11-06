@@ -1,6 +1,6 @@
 import gqlTag from "graphql-tag";
 
-import { getPublicUrl } from "@/storage/index.js";
+import { getPublicImageUrl, getPublicUrl } from "@/storage/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { invariant } from "@/util/invariant.js";
@@ -69,13 +69,14 @@ export const typeDefs = gql`
     width: Int
     height: Int
     metadata: ScreenshotMetadata
+    playwrightTraceUrl: String
   }
 `;
 
 export const resolvers: IResolvers = {
   Screenshot: {
-    url: (screenshot) => {
-      return getPublicUrl(screenshot.s3Id);
+    url: async (screenshot) => {
+      return getPublicImageUrl(screenshot.s3Id);
     },
     width: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) return null;
@@ -88,6 +89,18 @@ export const resolvers: IResolvers = {
       const file = await ctx.loaders.File.load(screenshot.fileId);
       invariant(file, "File not found");
       return file.height;
+    },
+    playwrightTraceUrl: async (screenshot, _args, ctx) => {
+      if (!screenshot.playwrightTraceFileId) return null;
+      const file = await ctx.loaders.File.load(
+        screenshot.playwrightTraceFileId,
+      );
+      invariant(file, "File not found");
+      const url = await getPublicUrl(file.key);
+      const searchParams = new URLSearchParams();
+      searchParams.set("trace", url);
+      console.log(url, `https://trace.playwright.dev/?${searchParams}`);
+      return `https://trace.playwright.dev/?${searchParams}`;
     },
   },
 };
