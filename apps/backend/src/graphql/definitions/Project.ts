@@ -181,7 +181,7 @@ const checkGqlProjectName = async (
   args: Parameters<typeof checkProjectName>[0],
 ) => {
   try {
-    checkProjectName(args);
+    await checkProjectName(args);
   } catch (error: unknown) {
     if (error instanceof Error) {
       throw new GraphQLError(error.message, {
