@@ -83,10 +83,10 @@ export default {
             ),
           },
           host: "app.argos-ci.dev",
-          port: config.get("client.port"),
+          port: 4002,
           proxy: {
             "**": {
-              target: `https://app.argos-ci.dev:${config.get("server.port")}`,
+              target: `https://app.argos-ci.dev:4001`,
               secure: false,
             },
           },

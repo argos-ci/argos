@@ -18,11 +18,5 @@
     "secure": true,
     "url": "https://app.argos-ci.com",
     "httpsRedirect": true
-  },
-  "api": {
-    "subdomain": "api"
-  },
-  "app": {
-    "subdomain": "app"
   }
 }

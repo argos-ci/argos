@@ -10,10 +10,13 @@ import { webhooksMiddleware } from "./github.js";
 import { screenshots } from "./screenshot.js";
 import stripe from "./stripe.js";
 import v2 from "./v2/index.js";
+import status from "./status.js";
+import { subdomain } from "../util.js";
 
 export const installApiRouter = (app: Application) => {
   const router = Router();
 
+  router.use(status);
   router.use("/v2", v2);
   router.use(builds);
   router.use(auth);
@@ -32,5 +35,5 @@ export const installApiRouter = (app: Application) => {
     }),
   );
 
-  app.use(router);
+  app.use(subdomain(router, "api"));
 };

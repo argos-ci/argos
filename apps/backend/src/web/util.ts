@@ -18,3 +18,15 @@ export const asyncHandler = (requestHandler: RequestHandler) => {
   };
   return wrappedHandler;
 };
+
+export const subdomain =
+  (requestHandler: RequestHandler, subdomain: string): RequestHandler =>
+  (...args) => {
+    const req = args[0];
+    const next = args[2];
+    if (req.subdomains[0] === subdomain || req.subdomains.length === 0) {
+      return requestHandler(...args);
+    } else {
+      return next();
+    }
+  };

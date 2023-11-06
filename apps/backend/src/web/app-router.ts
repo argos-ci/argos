@@ -10,6 +10,7 @@ import { auth } from "./middlewares/auth.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { rendering } from "./middlewares/rendering.js";
 import { middleware as vercel } from "./vercel.js";
+import { subdomain } from "./util.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -74,5 +75,5 @@ export const installAppRouter = async (app: express.Application) => {
     }),
   );
 
-  app.use(router);
+  app.use(subdomain(router, "app"));
 };
