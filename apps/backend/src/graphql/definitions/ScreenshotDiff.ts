@@ -1,6 +1,6 @@
 import gqlTag from "graphql-tag";
 
-import { getPublicUrl } from "@/storage/index.js";
+import { getPublicImageUrl } from "@/storage/index.js";
 
 import type {
   IResolvers,
@@ -52,9 +52,9 @@ export const resolvers: IResolvers = {
       if (!screenshotDiff.compareScreenshotId) return null;
       return ctx.loaders.Screenshot.load(screenshotDiff.compareScreenshotId);
     },
-    url: (screenshotDiff) => {
+    url: async (screenshotDiff) => {
       if (!screenshotDiff.s3Id) return null;
-      return getPublicUrl(screenshotDiff.s3Id);
+      return getPublicImageUrl(screenshotDiff.s3Id);
     },
     name: async (screenshotDiff, _args, ctx) => {
       const [baseScreenshot, compareScreenshot] = await Promise.all([

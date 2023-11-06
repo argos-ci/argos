@@ -7,7 +7,6 @@ import { errorHandler } from "../middlewares/errorHandler.js";
 import auth from "./auth.js";
 import builds from "./builds.js";
 import { webhooksMiddleware } from "./github.js";
-import { screenshots } from "./screenshot.js";
 import stripe from "./stripe.js";
 import v2 from "./v2/index.js";
 import status from "./status.js";
@@ -22,7 +21,6 @@ export const installApiRouter = (app: Application) => {
   router.use(auth);
   router.use(webhooksMiddleware);
   router.use(stripe);
-  router.use("/screenshots", screenshots);
 
   router.use(Sentry.Handlers.errorHandler());
 

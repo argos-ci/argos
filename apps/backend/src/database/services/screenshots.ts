@@ -8,6 +8,8 @@ import {
   ScreenshotMetadata,
   Test,
 } from "@/database/models/index.js";
+import { getUnknownFileKeys } from "./file.js";
+import { invariant } from "@/util/invariant.js";
 
 const getOrCreateTests = async ({
   projectId,
@@ -41,20 +43,14 @@ const getOrCreateTests = async ({
   return [...tests, ...addedTests];
 };
 
-export const getUnknownScreenshotKeys = async (keys: string[]) => {
-  const existingFiles = await File.query().select("key").whereIn("key", keys);
-  const existingKeys = existingFiles.map((file) => file.key);
-  return Array.from(new Set(keys.filter((key) => !existingKeys.includes(key))));
-};
-
 type InsertFilesAndScreenshotsParams = {
   screenshots: {
     key: string;
     name: string;
-    metadata: ScreenshotMetadata | null;
+    metadata?: ScreenshotMetadata | null;
+    pwTraceKey?: string | null;
   }[];
   build: Build;
-  unknownKeys?: string[];
   trx?: TransactionOrKnex;
 };
 
@@ -64,28 +60,46 @@ type InsertFilesAndScreenshotsParams = {
 export const insertFilesAndScreenshots = async (
   params: InsertFilesAndScreenshotsParams,
 ): Promise<number> => {
+  const screenshots = params.screenshots;
+
+  if (screenshots.length === 0) {
+    return 0;
+  }
+
+  const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
+  const pwTraceKeys = screenshots
+    .map((screenshot) => screenshot.pwTraceKey)
+    .filter(Boolean) as string[];
+
+  const unknownKeys = await getUnknownFileKeys(
+    [...screenshotKeys, ...pwTraceKeys],
+    params.trx,
+  );
+
   return await transaction(params.trx, async (trx) => {
     if (params.screenshots.length === 0) return 0;
 
-    const unknownKeys =
-      params.unknownKeys ||
-      (await getUnknownScreenshotKeys(
-        params.screenshots.map((screenshot) => screenshot.key),
-      ));
-
     if (unknownKeys.length > 0) {
-      // Insert unknown files
       await File.query(trx)
-        .insert(unknownKeys.map((key) => ({ key })))
+        .insert(
+          unknownKeys.map((key) => {
+            const isPwTrace = pwTraceKeys.includes(key);
+            return {
+              key,
+              type: isPwTrace
+                ? ("playwrightTrace" as const)
+                : ("screenshot" as const),
+            };
+          }),
+        )
         .onConflict("key")
         .ignore();
     }
 
-    const screenshotKeys = params.screenshots.map(
-      (screenshot) => screenshot.key,
-    );
     const [files, tests, duplicates] = await Promise.all([
-      File.query(trx).whereIn("key", screenshotKeys),
+      File.query(trx)
+        .select("id", "key", "type")
+        .whereIn("key", [...screenshotKeys, ...pwTraceKeys]),
       getOrCreateTests({
         projectId: params.build.projectId,
         buildName: params.build.name,
@@ -116,20 +130,37 @@ export const insertFilesAndScreenshots = async (
     await Screenshot.query(trx).insert(
       params.screenshots.map((screenshot): PartialModelObject<Screenshot> => {
         const file = files.find((f) => f.key === screenshot.key);
-        if (!file) {
-          throw new Error(`File not found for key ${screenshot.key}`);
-        }
+        invariant(file, `File not found for key ${screenshot.key}`);
+
         const test = tests.find((t) => t.name === screenshot.name);
-        if (!test) {
-          throw new Error(`Test not found for screenshot ${screenshot.name}`);
-        }
+        invariant(test, `Test not found for screenshot ${screenshot.name}`);
+
+        const pwTraceFile = (() => {
+          if (screenshot.pwTraceKey) {
+            const pwTraceFile = files.find(
+              (f) => f.key === screenshot.pwTraceKey,
+            );
+            invariant(
+              pwTraceFile,
+              `File not found for key ${screenshot.pwTraceKey}`,
+            );
+            invariant(
+              pwTraceFile.type === "playwrightTrace",
+              `File ${screenshot.pwTraceKey} is not a playwright trace`,
+            );
+            return pwTraceFile;
+          }
+          return null;
+        })();
+
         return {
           screenshotBucketId: params.build.compareScreenshotBucketId,
           name: screenshot.name,
           s3Id: screenshot.key,
           fileId: file.id,
           testId: test.id,
-          metadata: screenshot.metadata,
+          metadata: screenshot.metadata ?? null,
+          playwrightTraceFileId: pwTraceFile?.id ?? null,
         };
       }),
     );

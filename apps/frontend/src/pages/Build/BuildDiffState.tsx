@@ -106,6 +106,7 @@ const ScreenshotDiffFragment = graphql(`
           }
         }
       }
+      playwrightTraceUrl
     }
   }
 `);

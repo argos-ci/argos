@@ -157,6 +157,7 @@ export class Screenshot extends Model {
       fileId: { type: ["string", "null"] },
       testId: { type: ["string", "null"] },
       metadata: ScreenshotMetadataJsonSchema,
+      playwrightTraceFileId: { type: ["string", "null"] },
     },
   });
 
@@ -166,6 +167,7 @@ export class Screenshot extends Model {
   fileId!: string | null;
   testId!: string | null;
   metadata!: ScreenshotMetadata | null;
+  playwrightTraceFileId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

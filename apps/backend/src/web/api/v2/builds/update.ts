@@ -11,11 +11,7 @@ import {
   ScreenshotMetadata,
   ScreenshotMetadataJsonSchema,
 } from "@/database/models/index.js";
-import {
-  getUnknownScreenshotKeys,
-  insertFilesAndScreenshots,
-} from "@/database/services/screenshots.js";
-
+import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
 import { SHA256_REGEX_STR } from "@/web/constants.js";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { validate } from "@/web/middlewares/validate.js";
@@ -40,7 +36,6 @@ const validateRoute = validate({
     properties: {
       screenshots: {
         type: "array",
-        uniqueItems: true,
         items: {
           type: "object",
           required: ["key", "name"],
@@ -79,7 +74,8 @@ type UpdateRequest = express.Request<
     screenshots: {
       key: string;
       name: string;
-      metadata: ScreenshotMetadata | null;
+      metadata?: ScreenshotMetadata | null;
+      pwTraceKey?: string | null;
     }[];
     parallel?: boolean;
     parallelTotal?: number;
@@ -89,11 +85,9 @@ type UpdateRequest = express.Request<
 const handleUpdateParallel = async ({
   req,
   build,
-  unknownKeys,
 }: {
   req: UpdateRequest;
   build: Build;
-  unknownKeys: string[];
 }) => {
   if (!req.body.parallelTotal) {
     throw new HttpError(
@@ -112,7 +106,6 @@ const handleUpdateParallel = async ({
     await insertFilesAndScreenshots({
       screenshots: req.body.screenshots,
       build,
-      unknownKeys,
       trx,
     });
 
@@ -144,17 +137,14 @@ const handleUpdateParallel = async ({
 const handleUpdateSingle = async ({
   req,
   build,
-  unknownKeys,
 }: {
   req: UpdateRequest;
   build: Build;
-  unknownKeys: string[];
 }) => {
   await transaction(async (trx) => {
     const screenshotCount = await insertFilesAndScreenshots({
       screenshots: req.body.screenshots,
       build,
-      unknownKeys,
       trx,
     });
 
@@ -198,11 +188,7 @@ router.put(
       throw new HttpError(403, "Build does not belong to project");
     }
 
-    const screenshots = req.body.screenshots;
-    const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
-    const unknownKeys = await getUnknownScreenshotKeys(screenshotKeys);
-
-    const ctx = { req, build, unknownKeys };
+    const ctx = { req, build };
     if (req.body.parallel) {
       await handleUpdateParallel(ctx);
     } else {

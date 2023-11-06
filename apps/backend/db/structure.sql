@@ -291,7 +291,9 @@ CREATE TABLE public.files (
     "updatedAt" timestamp with time zone NOT NULL,
     key character varying(255) NOT NULL,
     width integer,
-    height integer
+    height integer,
+    type text,
+    CONSTRAINT files_type_check CHECK ((type = ANY (ARRAY['screenshot'::text, 'playwrightTrace'::text])))
 );
 
 
@@ -935,7 +937,8 @@ CREATE TABLE public.screenshots (
     "updatedAt" timestamp with time zone NOT NULL,
     "fileId" bigint,
     "testId" bigint,
-    metadata jsonb
+    metadata jsonb,
+    "playwrightTraceFileId" bigint
 );
 
 
@@ -2549,6 +2552,14 @@ ALTER TABLE ONLY public.screenshots
 
 
 --
+-- Name: screenshots screenshots_playwrighttracefileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.screenshots
+    ADD CONSTRAINT screenshots_playwrighttracefileid_foreign FOREIGN KEY ("playwrightTraceFileId") REFERENCES public.files(id);
+
+
+--
 -- Name: screenshots screenshots_screenshotbucketid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2737,3 +2748,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023101
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231020163248_github-pull-request-job-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231024072202_github-draft-merged.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231024085955_fix-github-account-type-constraint.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231106114751_pw-traces.js', 1, NOW());
