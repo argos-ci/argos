@@ -31,20 +31,6 @@ const config = convict({
     doc: "The contact email",
     default: "contact@argos-ci.com",
   },
-  api: {
-    subdomain: {
-      format: String,
-      default: "api.dev",
-      env: "API_SUBDOMAIN",
-    },
-  },
-  app: {
-    subdomain: {
-      format: String,
-      default: "app.dev",
-      env: "APP_SUBDOMAIN",
-    },
-  },
   server: {
     port: {
       doc: "The server port number",
@@ -78,13 +64,6 @@ const config = convict({
       doc: "Specify if an https redirection should occur.",
       format: Boolean,
       default: false,
-    },
-  },
-  client: {
-    port: {
-      doc: "The client port number",
-      format: "port",
-      default: 4002,
     },
   },
   amqp: {

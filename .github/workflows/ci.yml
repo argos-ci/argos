@@ -128,6 +128,7 @@ jobs:
           --health-retries 5
 
     env:
+      API_BASE_URL: http://localhost:3000
       NODE_ENV: test
       TZ: utc
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -148,10 +149,6 @@ jobs:
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
-
-      - name: Add hosts to /etc/hosts
-        run: |
-          sudo echo "127.0.0.1 app.argos-ci.dev" | sudo tee -a /etc/hosts
 
       - name: Run Playwright tests
         run: npm exec playwright test
