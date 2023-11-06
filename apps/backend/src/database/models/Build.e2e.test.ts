@@ -349,7 +349,7 @@ describe("models/Build", () => {
         .$relatedQuery("project")
         .withGraphFetched("account");
       expect(url).toMatch(
-        `http://localhost:3000/${project!.account!.slug}/${
+        `http://app.argos-ci.dev:3000/${project!.account!.slug}/${
           project!.name
         }/builds/${build.number}`,
       );

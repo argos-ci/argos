@@ -149,5 +149,9 @@ jobs:
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
+      - name: Add hosts to /etc/hosts
+        run: |
+          sudo echo "127.0.0.1 app.argos-ci.dev" | sudo tee -a /etc/hosts
+
       - name: Run Playwright tests
         run: npm exec playwright test
