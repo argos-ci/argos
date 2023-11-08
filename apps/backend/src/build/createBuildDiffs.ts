@@ -13,11 +13,11 @@ const getBuildType = ({
   compareScreenshotBucket: ScreenshotBucket;
   referenceBranch: string;
 }): BuildType => {
-  if (!baseScreenshotBucket) {
-    return "orphan";
-  }
   if (compareScreenshotBucket.branch === referenceBranch) {
     return "reference";
+  }
+  if (!baseScreenshotBucket) {
+    return "orphan";
   }
   return "check";
 };
