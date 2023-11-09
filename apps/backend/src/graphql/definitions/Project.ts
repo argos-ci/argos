@@ -379,7 +379,7 @@ export const resolvers: IResolvers = {
         .where("projectId", project.id)
         .whereNot((builder) =>
           builder.whereRaw(`"name" ~ :regexp`, {
-            regexp: ScreenshotDiff.screenshotFailureRegexp,
+            regexp: ScreenshotDiff.screenshotFailureRegexp.source,
           }),
         )
         .orderByRaw(
