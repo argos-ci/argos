@@ -6,6 +6,7 @@ import { Tooltip } from "@/ui/Tooltip";
 
 const Icons: Record<string, string> = {
   playwright: playwrightIcon,
+  "@playwright/test": playwrightIcon,
   cypress: cypressIcon,
   puppeteer: puppeteerIcon,
 };
