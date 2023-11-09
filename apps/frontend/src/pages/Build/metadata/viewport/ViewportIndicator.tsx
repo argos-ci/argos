@@ -1,5 +1,5 @@
 import { Chip, ChipProps } from "@/ui/Chip";
-import clsx from "clsx";
+import { clsx } from "clsx";
 import { AppWindow } from "lucide-react";
 
 export function ViewportIndicator({
