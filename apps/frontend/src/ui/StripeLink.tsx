@@ -17,14 +17,17 @@ async function getStripePortalLink({
   stripeCustomerId: string;
   accountId: string;
 }) {
-  const response = await fetch("/stripe/create-customer-portal-session", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    process.env["API_BASE_URL"] + "/stripe/create-customer-portal-session",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ stripeCustomerId, accountId }),
     },
-    body: JSON.stringify({ stripeCustomerId, accountId }),
-  });
+  );
   const json = await response.json();
   return json;
 }
@@ -102,14 +105,17 @@ async function getCheckoutSessionLink({
   successUrl: string;
   cancelUrl: string;
 }) {
-  const response = await fetch("/stripe/create-checkout-session", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    process.env["API_BASE_URL"] + "/stripe/create-checkout-session",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(props),
     },
-    body: JSON.stringify(props),
-  });
+  );
   const json = await response.json();
   return json;
 }
