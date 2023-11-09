@@ -170,8 +170,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
           description={
             <>
               A failure screenshot has no baseline to compare with. A screenshot
-              is detected as a failure when its name contains "-failed-" or end
-              by "(failed)".
+              is detected as a failure when its name ends by "(failed)".
             </>
           }
           icon={getGroupIcon("failure")}
