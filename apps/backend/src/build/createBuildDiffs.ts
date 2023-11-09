@@ -191,12 +191,18 @@ export const createBuildDiffs = async (build: Build) => {
 
     const inserts = richBuild.compareScreenshotBucket!.screenshots!.map(
       (compareScreenshot) => {
-        const baseScreenshot =
-          !sameBucket && baseScreenshotBucket
-            ? baseScreenshotBucket.screenshots!.find(
-                ({ name }) => name === compareScreenshot.name,
-              )
-            : null;
+        const baseScreenshot = (() => {
+          if (sameBucket) return null;
+          if (!baseScreenshotBucket) return null;
+          if (
+            ScreenshotDiff.screenshotFailureRegexp.test(compareScreenshot.name)
+          ) {
+            return null;
+          }
+          return baseScreenshotBucket.screenshots!.find(
+            ({ name }) => name === compareScreenshot.name,
+          );
+        })();
         const sameFileId = Boolean(
           baseScreenshot &&
             baseScreenshot.fileId &&

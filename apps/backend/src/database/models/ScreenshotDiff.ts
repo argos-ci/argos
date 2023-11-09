@@ -102,17 +102,14 @@ export class ScreenshotDiff extends Model {
   compareScreenshot?: Screenshot | null;
   test?: Test | null;
 
-  static screenshotFailureRegexp = `(${Object.values({
-    cypress: " \\(failed\\)\\.",
-    playwright: "-failed-",
-  }).join("|")})`;
+  static screenshotFailureRegexp = / \(failed\)\./;
 
   static selectDiffStatus = `CASE
     WHEN "compareScreenshotId" IS NULL
       THEN 'removed'
     WHEN "baseScreenshotId" IS NULL
       THEN (CASE
-        WHEN "name" ~ '${ScreenshotDiff.screenshotFailureRegexp}'
+        WHEN "name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
           THEN 'failure'
         ELSE 'added'
       END)
@@ -126,7 +123,7 @@ export class ScreenshotDiff extends Model {
     WHEN "compareScreenshotId" IS NULL THEN 30 -- removed
     WHEN "baseScreenshotId" IS NULL
       THEN (CASE
-        WHEN "compareScreenshot"."name" ~ '${ScreenshotDiff.screenshotFailureRegexp}'
+        WHEN "compareScreenshot"."name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
           THEN 0 -- failure
         ELSE 20 -- added
       END)
@@ -146,7 +143,7 @@ export class ScreenshotDiff extends Model {
 
     if (!this.baseScreenshotId) {
       const { name } = await loadScreenshot(this.compareScreenshotId);
-      return name.match(ScreenshotDiff.screenshotFailureRegexp)
+      return ScreenshotDiff.screenshotFailureRegexp.test(name)
         ? "failure"
         : "added";
     }
