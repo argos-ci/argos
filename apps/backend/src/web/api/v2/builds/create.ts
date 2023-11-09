@@ -33,16 +33,10 @@ const validateRoute = validate({
         uniqueItems: true,
         items: { type: "string", pattern: SHA256_REGEX_STR },
       },
-      pwTraces: {
+      pwTraceKeys: {
         type: "array",
-        items: {
-          type: "object",
-          required: ["screenshotKey", "traceKey"],
-          properties: {
-            screenshotKey: { type: "string", pattern: SHA256_REGEX_STR },
-            traceKey: { type: "string", pattern: SHA256_REGEX_STR },
-          },
-        },
+        uniqueItems: true,
+        items: { type: "string", pattern: SHA256_REGEX_STR },
       },
       branch: {
         type: "string",
@@ -80,12 +74,10 @@ const validateRoute = validate({
   },
 });
 
-type PayloadPwTrace = { screenshotKey: string; traceKey: string };
-
 type RequestPayload = {
   commit: string;
   screenshotKeys: string[];
-  pwTraces?: PayloadPwTrace[];
+  pwTraceKeys?: string[];
   branch: string;
   name?: string | null;
   parallel?: string | null;
@@ -102,19 +94,13 @@ type CreateRequest = express.Request<
   RequestPayload
 > & { authProject: Project };
 
-const getScreenshots = async (
-  keys: string[],
-  pwTraces: PayloadPwTrace[],
-): Promise<
-  {
-    key: string;
-    putUrl: string;
-    putTraceUrl: string | null;
-  }[]
-> => {
-  const pwTraceKeys = pwTraces.map((pwTrace) => pwTrace.traceKey);
-  const allKeys = [...keys, ...pwTraceKeys];
-  const unknownKeys = await getUnknownFileKeys(allKeys);
+type Upload = {
+  key: string;
+  putUrl: string;
+};
+
+const getUploads = async (keys: string[]): Promise<Upload[]> => {
+  const unknownKeys = await getUnknownFileKeys(keys);
   const s3 = getS3Client();
   const screenshotsBucket = config.get("s3.screenshotsBucket");
   const putUrls = await Promise.all(
@@ -127,43 +113,57 @@ const getScreenshots = async (
       }),
     ),
   );
-  const putUrlByKey = Object.fromEntries(
-    unknownKeys.map((key, index) => [key, putUrls[index]]),
-  );
-  const screenshotUnknownKeys = unknownKeys.filter((key) => keys.includes(key));
-  return screenshotUnknownKeys.map((key) => {
-    const putUrl = putUrlByKey[key];
-    invariant(putUrl, `putUrl missing for key ${key}`);
-    const trace = pwTraces.find((pwTrace) => pwTrace.screenshotKey === key);
-    const putTraceUrl = trace ? putUrlByKey[trace.traceKey] ?? null : null;
-    return {
-      key,
-      putUrl,
-      putTraceUrl,
-    };
+  return unknownKeys.map((key, index) => {
+    const putUrl = putUrls[index];
+    invariant(putUrl, "Invariant: putUrl is undefined");
+    return { key, putUrl };
   });
 };
 
-const handleCreateSingle = async ({ req }: { req: CreateRequest }) => {
-  const screenshots = await getScreenshots(
-    req.body.screenshotKeys,
-    req.body.pwTraces ?? [],
-  );
-  const build = await createBuildFromRequest({ req });
-  return { build, screenshots };
+const getScreenshotAndPwTraces = async (params: {
+  screenshotKeys: string[];
+  pwTraceKeys?: string[];
+}): Promise<{ screenshots: Upload[]; pwTraces: Upload[] }> => {
+  const screenshotKeys = params.screenshotKeys;
+  const pwTraceKeys = params.pwTraceKeys ?? [];
+  const fileKeys = [...params.screenshotKeys, ...pwTraceKeys];
+  const uploads = await getUploads(fileKeys);
+  return {
+    screenshots: uploads.filter((upload) =>
+      screenshotKeys.includes(upload.key),
+    ),
+    pwTraces: uploads.filter((upload) => pwTraceKeys.includes(upload.key)),
+  };
 };
 
-const handleCreateParallel = async ({ req }: { req: CreateRequest }) => {
+type CreateResult = {
+  build: Build;
+  screenshots: Upload[];
+  pwTraces: Upload[];
+};
+
+const handleCreateSingle = async ({
+  req,
+}: {
+  req: CreateRequest;
+}): Promise<CreateResult> => {
+  const { screenshots, pwTraces } = await getScreenshotAndPwTraces(req.body);
+  const build = await createBuildFromRequest({ req });
+  return { build, screenshots, pwTraces };
+};
+
+const handleCreateParallel = async ({
+  req,
+}: {
+  req: CreateRequest;
+}): Promise<CreateResult> => {
   if (!req.body.parallelNonce) {
     throw new HttpError(
       400,
       "`parallelNonce` is required when `parallel` is `true`",
     );
   }
-  const screenshots = await getScreenshots(
-    req.body.screenshotKeys,
-    req.body.pwTraces ?? [],
-  );
+  const { screenshots, pwTraces } = await getScreenshotAndPwTraces(req.body);
   const buildName = getBuildName(req.body.name);
   const parallelNonce = req.body.parallelNonce;
 
@@ -189,7 +189,7 @@ const handleCreateParallel = async ({ req }: { req: CreateRequest }) => {
     return createBuildFromRequest({ req });
   });
 
-  return { build, screenshots };
+  return { build, screenshots, pwTraces };
 };
 
 router.post(
@@ -200,7 +200,7 @@ router.post(
   express.json({ limit: "1mb" }),
   validateRoute,
   asyncHandler(async (req, res) => {
-    const { build, screenshots } = await (async () => {
+    const { build, screenshots, pwTraces } = await (async () => {
       const ctx = { req } as { req: CreateRequest };
       if (req.body.parallel) {
         return handleCreateParallel(ctx);
@@ -213,6 +213,6 @@ router.post(
 
     res
       .status(201)
-      .send({ build: { id: build.id, url: buildUrl }, screenshots });
+      .send({ build: { id: build.id, url: buildUrl }, screenshots, pwTraces });
   }),
 );

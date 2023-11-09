@@ -1,6 +1,6 @@
 import { CheckIcon, ClipboardIcon } from "lucide-react";
 import { Button as AriakitButton, ButtonProps } from "ariakit/button";
-import clsx from "clsx";
+import { clsx } from "clsx";
 import { useClipboard } from "use-clipboard-copy";
 import { Tooltip } from "./Tooltip";
 
