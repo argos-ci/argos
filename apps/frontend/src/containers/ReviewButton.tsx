@@ -65,8 +65,8 @@ const BaseReviewButton = ({
             variables.validationStatus === ValidationStatus.Accepted
               ? BuildStatus.Accepted
               : variables.validationStatus === ValidationStatus.Rejected
-              ? BuildStatus.Rejected
-              : BuildStatus.Pending,
+                ? BuildStatus.Rejected
+                : BuildStatus.Pending,
         },
       }),
     },

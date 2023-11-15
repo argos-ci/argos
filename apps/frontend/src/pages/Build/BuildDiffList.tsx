@@ -390,8 +390,8 @@ const DiffCard = ({
   const ring = active
     ? "ring-3 ring-inset ring-primary-active"
     : children
-    ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
-    : "";
+      ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
+      : "";
 
   return (
     <div

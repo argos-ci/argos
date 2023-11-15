@@ -18,8 +18,8 @@ export const FlakyButton = ({
         disabled
           ? "Select a test to mark it as flaky"
           : onlyFlakySelected
-          ? "Remove flaky flag if mistakenly added"
-          : "Mark a test as flaky to highlight its inconsistency for future review"
+            ? "Remove flaky flag if mistakenly added"
+            : "Mark a test as flaky to highlight its inconsistency for future review"
       }
     >
       <Button
