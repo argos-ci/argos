@@ -32,7 +32,9 @@ describe("#createBuildDiffs", () => {
       projectId: project.id,
       jobStatus: "pending",
     });
-    files = await factory.File.createMany(10);
+    files = await factory.File.createMany(10, {
+      type: "screenshot",
+    });
     [newScreenshot, newScreenshotWithoutFile] =
       await factory.Screenshot.createMany(2, [
         {

@@ -292,7 +292,7 @@ CREATE TABLE public.files (
     key character varying(255) NOT NULL,
     width integer,
     height integer,
-    type text,
+    type text NOT NULL,
     CONSTRAINT files_type_check CHECK ((type = ANY (ARRAY['screenshot'::text, 'screenshotDiff'::text, 'playwrightTrace'::text])))
 );
 
@@ -2758,3 +2758,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023102
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231106114751_pw-traces.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115151718_file-type.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115160027_playwrightTraceIndex.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115210334_file-type-not-null.js', 1, NOW());

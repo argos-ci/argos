@@ -5,13 +5,13 @@ export class File extends Model {
   static override tableName = "files";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["key"],
+    required: ["key", "type"],
     properties: {
       key: { type: ["string"] },
       width: { type: ["number", "null"], minimum: 0 },
       height: { type: ["number", "null"], minimum: 0 },
       type: {
-        type: ["string", "null"],
+        type: "string",
         enum: ["screenshot", "screenshotDiff", "playwrightTrace"],
       },
     },
@@ -20,5 +20,5 @@ export class File extends Model {
   key!: string;
   width!: number | null;
   height!: number | null;
-  type!: "screenshot" | "screenshotDiff" | "playwrightTrace" | null;
+  type!: "screenshot" | "screenshotDiff" | "playwrightTrace";
 }

@@ -25,7 +25,7 @@ export const hashFile = async (filepath: string): Promise<string> => {
 };
 
 const getOrCreateFile = async (
-  values: { key: string; width: number; height: number },
+  values: Pick<File, "width" | "height" | "type" | "key">,
   trx: TransactionOrKnex,
 ) => {
   const file = await File.query(trx).findOne({ key: values.key });
@@ -59,7 +59,7 @@ async function ensureFileDimensions({
 
   await transaction(async (trx) => {
     const file = await getOrCreateFile(
-      { ...dimensions, key: screenshot.s3Id },
+      { ...dimensions, type: "screenshot", key: screenshot.s3Id },
       trx,
     );
     await Screenshot.query(trx)

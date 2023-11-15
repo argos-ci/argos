@@ -252,12 +252,14 @@ export const seed = async (knex) => {
     .insert([
       ...dummiesFilesDimensions.map(({ width, height }) => ({
         ...timeStamps,
+        type: "screenshot",
         width,
         height,
         key: `dummy-${width}x${height}.png`,
       })),
       ...bearFilesDimensions.map(({ width, height }) => ({
         ...timeStamps,
+        type: "screenshot",
         width,
         height,
         key: `bear-${width}x${height}.jpg`,
@@ -267,8 +269,20 @@ export const seed = async (knex) => {
   const dummiesDiffFileIds = await knex("files")
     .returning("id")
     .insert([
-      { ...timeStamps, width: 375, height: 1024, key: "diff-1024-to-720.png" },
-      { ...timeStamps, width: 375, height: 1440, key: "diff-1024-to-1440.png" },
+      {
+        ...timeStamps,
+        type: "screenshotDiff",
+        width: 375,
+        height: 1024,
+        key: "diff-1024-to-720.png",
+      },
+      {
+        ...timeStamps,
+        type: "screenshotDiff",
+        width: 375,
+        height: 1440,
+        key: "diff-1024-to-1440.png",
+      },
     ]);
 
   const [
