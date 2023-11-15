@@ -2203,6 +2203,13 @@ CREATE INDEX screenshots_name_index ON public.screenshots USING btree (name);
 
 
 --
+-- Name: screenshots_playwrighttracefileid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshots_playwrighttracefileid_index ON public.screenshots USING btree ("playwrightTraceFileId");
+
+
+--
 -- Name: screenshots_s3id_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2750,3 +2757,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023102
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231024085955_fix-github-account-type-constraint.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231106114751_pw-traces.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115151718_file-type.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115160027_playwrightTraceIndex.js', 1, NOW());
