@@ -293,7 +293,7 @@ CREATE TABLE public.files (
     width integer,
     height integer,
     type text,
-    CONSTRAINT files_type_check CHECK ((type = ANY (ARRAY['screenshot'::text, 'playwrightTrace'::text])))
+    CONSTRAINT files_type_check CHECK ((type = ANY (ARRAY['screenshot'::text, 'screenshotDiff'::text, 'playwrightTrace'::text])))
 );
 
 
@@ -2749,3 +2749,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023102
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231024072202_github-draft-merged.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231024085955_fix-github-account-type-constraint.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231106114751_pw-traces.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115151718_file-type.js', 1, NOW());

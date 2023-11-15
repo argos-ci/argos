@@ -86,7 +86,12 @@ async function lockAndUploadDiffFile({
     await diffImage.upload();
 
     return File.query()
-      .insert({ key, width: diffResult.width, height: diffResult.height })
+      .insert({
+        key,
+        width: diffResult.width,
+        height: diffResult.height,
+        type: "screenshotDiff",
+      })
       .returning("*");
   });
 }
