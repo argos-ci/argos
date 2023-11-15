@@ -1,5 +1,5 @@
 import Cookie from "js-cookie";
-import jwt_decode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import {
   createContext,
   useCallback,
@@ -82,7 +82,7 @@ export type JWTData = {
 
 export const decodeAuthToken = (t: string) => {
   try {
-    const value = jwt_decode<JWTData>(t);
+    const value = jwtDecode<JWTData>(t);
     if (value?.version !== 1) return null;
     return value as JWTData;
   } catch (e) {
