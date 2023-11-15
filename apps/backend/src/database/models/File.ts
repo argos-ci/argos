@@ -12,7 +12,7 @@ export class File extends Model {
       height: { type: ["number", "null"], minimum: 0 },
       type: {
         type: ["string", "null"],
-        enum: ["screenshot", "playwrightTrace"],
+        enum: ["screenshot", "screenshotDiff", "playwrightTrace"],
       },
     },
   });
@@ -20,5 +20,5 @@ export class File extends Model {
   key!: string;
   width!: number | null;
   height!: number | null;
-  type!: "screenshot" | "playwrightTrace" | null;
+  type!: "screenshot" | "screenshotDiff" | "playwrightTrace" | null;
 }
