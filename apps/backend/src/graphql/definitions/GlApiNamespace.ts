@@ -45,7 +45,10 @@ export const resolvers: IResolvers = {
           return client.Users.allProjects(args.userId, options);
         }
         if (args.groupId) {
-          return client.Groups.allProjects(args.groupId, options);
+          return client.Groups.allProjects(args.groupId, {
+            ...options,
+            includeSubgroups: true,
+          });
         }
         throw new Error("Either userId or groupId must be provided");
       })();
