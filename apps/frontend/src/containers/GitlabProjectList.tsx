@@ -10,14 +10,18 @@ const ProjectsQuery = graphql(`
   query GitlabProjectList_glApiProjects(
     $userId: ID
     $groupId: ID
+    $allProjects: Boolean!
     $accessToken: String!
     $page: Int!
+    $search: String
   ) {
     glApiProjects(
       userId: $userId
       groupId: $groupId
+      allProjects: $allProjects
       accessToken: $accessToken
       page: $page
+      search: $search
     ) {
       edges {
         id
@@ -32,32 +36,31 @@ const ProjectsQuery = graphql(`
 `);
 
 export type GitlabProjectListProps = {
-  namespace: {
-    id: string;
-    kind: string;
-  };
   gitlabAccessToken: string;
   onSelectProject: (project: { id: string }) => void;
   disabled?: boolean;
   connectButtonLabel: string;
-};
+  search: string;
+  allProjects: boolean;
+} & (
+  | { groupId: string; userId?: never }
+  | { groupId?: never; userId: string }
+  | { groupId?: never; userId?: never }
+);
 
 export const GitlabProjectList = (props: GitlabProjectListProps) => {
-  const args = (() => {
-    switch (props.namespace.kind) {
-      case "user":
-        return { userId: props.namespace.id };
-      case "group":
-        return { groupId: props.namespace.id };
-      default:
-        throw new Error("Invalid namespace kind");
-    }
-  })();
   return (
     <Query
       fallback={<Loader />}
       query={ProjectsQuery}
-      variables={{ ...args, accessToken: props.gitlabAccessToken, page: 1 }}
+      variables={{
+        userId: props.userId,
+        groupId: props.groupId,
+        allProjects: props.allProjects,
+        accessToken: props.gitlabAccessToken,
+        search: props.search,
+        page: 1,
+      }}
     >
       {({ glApiProjects }) => {
         if (glApiProjects.edges.length === 0) {

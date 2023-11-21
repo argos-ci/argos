@@ -682,8 +682,10 @@ export type IQueryGhApiInstallationRepositoriesArgs = {
 
 export type IQueryGlApiProjectsArgs = {
   accessToken: Scalars['String']['input'];
+  allProjects: Scalars['Boolean']['input'];
   groupId?: InputMaybe<Scalars['ID']['input']>;
   page: Scalars['Int']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
@@ -1736,7 +1738,7 @@ export type IQueryResolvers<ContextType = Context, ParentType extends IResolvers
   account?: Resolver<Maybe<IResolversTypes['Account']>, ParentType, ContextType, RequireFields<IQueryAccountArgs, 'slug'>>;
   accountById?: Resolver<Maybe<IResolversTypes['Account']>, ParentType, ContextType, RequireFields<IQueryAccountByIdArgs, 'id'>>;
   ghApiInstallationRepositories?: Resolver<IResolversTypes['GhApiRepositoryConnection'], ParentType, ContextType, RequireFields<IQueryGhApiInstallationRepositoriesArgs, 'installationId' | 'page'>>;
-  glApiProjects?: Resolver<IResolversTypes['GlApiProjectConnection'], ParentType, ContextType, RequireFields<IQueryGlApiProjectsArgs, 'accessToken' | 'page'>>;
+  glApiProjects?: Resolver<IResolversTypes['GlApiProjectConnection'], ParentType, ContextType, RequireFields<IQueryGlApiProjectsArgs, 'accessToken' | 'allProjects' | 'page'>>;
   invitation?: Resolver<Maybe<IResolversTypes['Team']>, ParentType, ContextType, RequireFields<IQueryInvitationArgs, 'token'>>;
   me?: Resolver<Maybe<IResolversTypes['User']>, ParentType, ContextType>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;

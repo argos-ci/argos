@@ -23,8 +23,10 @@ export const typeDefs = gql`
     glApiProjects(
       userId: ID
       groupId: ID
+      allProjects: Boolean!
       accessToken: String!
       page: Int!
+      search: String
     ): GlApiProjectConnection!
   }
 `;
@@ -40,6 +42,7 @@ export const resolvers: IResolvers = {
           maxPages: 1,
           page: args.page,
           showExpanded: true as const,
+          ...(args.search && args.search.length > 1 && { search: args.search }),
         };
         if (args.userId) {
           return client.Users.allProjects(args.userId, options);
@@ -47,7 +50,12 @@ export const resolvers: IResolvers = {
         if (args.groupId) {
           return client.Groups.allProjects(args.groupId, options);
         }
-        throw new Error("Either userId or groupId must be provided");
+        if (args.allProjects) {
+          return client.Projects.all({ ...options, membership: true });
+        }
+        throw new Error(
+          "Either userId, groupId or allProjects option must be provided",
+        );
       })();
       return {
         edges: projects.data,
