@@ -19,6 +19,7 @@ import {
 import { Anchor } from "@/ui/Link";
 import { Permission } from "@/gql/graphql";
 import { getItem, removeItem, setItem } from "@/util/storage";
+import { ArrowRight, FileText, ShuffleIcon } from "lucide-react";
 
 const ConnectRepositoryQuery = graphql(`
   query ConnectRepository($accountSlug: String!) {
@@ -304,25 +305,41 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
           To import a project from GitLab, you need to setup a GitLab access
           token first.
         </div>
-        <div className="flex gap-4 items-center justify-center">
-          <Button>
+        <div className="flex gap-4 items-center justify-center flex-wrap">
+          <Button variant="outline" className="flex items-center gap-1">
             {(buttonProps) => (
               <a
                 {...buttonProps}
-                href="https://argos-ci.com/docs/gitlab"
+                href="https://argos-ci.com/docs/gitlab#1-generate-a-personal-access-token-in-gitlab"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Setup GitLab Access token
+                <FileText className="h-[1em] w-[1em] shrink-0" />
+                Generate GitLab Access Token
+              </a>
+            )}
+          </Button>
+          <Button className="flex items-center gap-1">
+            {(buttonProps) => (
+              <a
+                {...buttonProps}
+                href="settings"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Enter GitLab Token in Settings
+                <ArrowRight className="h-[1em] w-[1em] shrink-0" />
               </a>
             )}
           </Button>
           <Button
+            className="flex items-center gap-1"
             color="neutral"
             variant="outline"
             onClick={() => setAndStoreProvider(null)}
           >
-            Use another Git provider
+            <ShuffleIcon className="h-[1em] w-[1em]" />
+            Switch Git Provider
           </Button>
         </div>
       </Card>
