@@ -131,9 +131,14 @@ export const handleGitHubEvents = async ({
       }
       case "pull_request": {
         if (
-          !["closed", "edited", "reopened", "synchronize"].includes(
-            payload.action,
-          )
+          ![
+            "closed",
+            "edited",
+            "reopened",
+            "synchronize",
+            "ready_for_review",
+            "converted_to_draft",
+          ].includes(payload.action)
         ) {
           return;
         }
@@ -151,7 +156,15 @@ export const handleGitHubEvents = async ({
 
         if (!pr) return;
 
-        if (["closed", "edited", "reopened"].includes(payload.action)) {
+        if (
+          [
+            "closed",
+            "edited",
+            "reopened",
+            "ready_for_review",
+            "converted_to_draft",
+          ].includes(payload.action)
+        ) {
           await pr
             .$clone()
             .$query()
