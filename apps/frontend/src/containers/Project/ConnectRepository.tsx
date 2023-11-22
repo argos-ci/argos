@@ -19,6 +19,8 @@ import {
 import { Anchor } from "@/ui/Link";
 import { Permission } from "@/gql/graphql";
 import { getItem, removeItem, setItem } from "@/util/storage";
+import { TextInput } from "@/ui/TextInput";
+import { useDebounce } from "use-debounce";
 
 const ConnectRepositoryQuery = graphql(`
   query ConnectRepository($accountSlug: String!) {
@@ -115,12 +117,26 @@ const GitlabNamespaces = (props: GitlabNamespacesProps) => {
     throw new Error("No namespaces");
   }
   const [value, setValue] = React.useState<string>(defaultNamespace.id);
+  const [search, setSearch] = React.useState<string>("");
+  const [debouncedSearch] = useDebounce(search, 500);
   const namespace = props.namespaces.find(
     (namespace) => namespace.id === value,
   );
-  if (!namespace) {
+  if (value !== "all" && !namespace) {
     throw new Error("No active namespace");
   }
+
+  const projectListProps = (() => {
+    switch (namespace?.kind) {
+      case "user":
+        return { userId: namespace.id, groupId: undefined, allProjects: false };
+      case "group":
+        return { userId: undefined, groupId: namespace.id, allProjects: false };
+      default:
+        return { userId: undefined, groupId: undefined, allProjects: true };
+    }
+  })();
+
   return (
     <div className="flex flex-col gap-4 max-w-4xl" style={{ height: 400 }}>
       <GitlabNamespacesSelect
@@ -130,12 +146,24 @@ const GitlabNamespaces = (props: GitlabNamespacesProps) => {
         setValue={setValue}
         onSwitch={props.onSwitch}
       />
+      {value === "all" && (
+        <div className="flex flex-col gap-1 mb-2">
+          <label className="font-medium text-sm">Search</label>
+          <TextInput
+            name="search"
+            placeholder="Project name"
+            onChange={(event) => setSearch(event.target.value)}
+            value={search}
+          />
+        </div>
+      )}
       <GitlabProjectList
-        namespace={namespace}
+        {...projectListProps}
         disabled={props.disabled}
         onSelectProject={props.onSelectProject}
         connectButtonLabel={props.connectButtonLabel}
         gitlabAccessToken={props.gitlabAccessToken}
+        search={debouncedSearch}
       />
     </div>
   );

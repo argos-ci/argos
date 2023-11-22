@@ -7,7 +7,7 @@ import {
   SelectSeparator,
   useSelectState,
 } from "@/ui/Select";
-import { ListIcon, PlusIcon } from "lucide-react";
+import { ListIcon } from "lucide-react";
 import { GitLabLogo } from "./GitLab";
 
 const NamespaceFragment = graphql(`
@@ -36,7 +36,7 @@ export const GitlabNamespacesSelect = (props: {
     (namespace) => namespace.id === props.value,
   );
 
-  if (!activeNamespace) {
+  if (props.value !== "all" && !activeNamespace) {
     throw new Error("No active installation");
   }
 
@@ -46,7 +46,9 @@ export const GitlabNamespacesSelect = (props: {
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2">
             <GitLabLogo aria-hidden />
-            {activeNamespace.name || activeNamespace.path}
+            {activeNamespace
+              ? activeNamespace.name || activeNamespace.path
+              : "All Projects..."}
           </div>
           <SelectArrow />
         </div>
@@ -63,25 +65,13 @@ export const GitlabNamespacesSelect = (props: {
             </SelectItem>
           );
         })}
-        <SelectSeparator />
-        <SelectItem
-          state={select}
-          button
-          onClick={(event) => {
-            event.preventDefault();
-            window.open(
-              "https://argos-ci.com/docs/gitlab",
-              "_blank",
-              "noopener noreferrer",
-            );
-          }}
-          className="cursor-pointer"
-        >
+        <SelectItem value="all">
           <div className="flex items-center gap-2">
-            <PlusIcon className="w-[1em] h-[1em]" />
-            Add GitLab Namespace
+            <GitLabLogo aria-hidden />
+            All Projects...
           </div>
         </SelectItem>
+        <SelectSeparator />
         <SelectItem
           state={select}
           button
