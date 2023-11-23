@@ -11,9 +11,6 @@ import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { StripePortalLink } from "@/ui/StripeLink";
 
-const now = new Date();
-const FREE_PLAN_EXPIRATION_DATE = new Date("2023-06-01");
-
 export const PaymentBannerFragment = graphql(`
   fragment PaymentBanner_Account on Account {
     id
@@ -93,14 +90,14 @@ const BannerCta = ({
   }
 };
 
-const getBannerProps = ({
+const getTeamBannerProps = ({
   purchaseStatus,
   trialDaysRemaining,
   hasGithubPurchase,
   missingPaymentMethod,
   pendingCancelAt,
 }: {
-  purchaseStatus: PurchaseStatus | null;
+  purchaseStatus: PurchaseStatus;
   trialDaysRemaining: number | null;
   hasGithubPurchase: boolean;
   missingPaymentMethod: boolean;
@@ -111,66 +108,63 @@ const getBannerProps = ({
   bannerColor?: BannerProps["color"];
   action: SubmitAction;
 } => {
-  if (
-    (purchaseStatus === PurchaseStatus.Active ||
-      purchaseStatus === PurchaseStatus.Trialing ||
-      purchaseStatus === PurchaseStatus.Unpaid) &&
-    missingPaymentMethod
-  ) {
-    const trialMessage =
-      trialDaysRemaining !== null
-        ? `Your trial ends in ${trialDaysRemaining} days. `
-        : "";
+  switch (purchaseStatus) {
+    case PurchaseStatus.PastDue:
+      return {
+        bannerColor: "warning",
+        message:
+          "Your subscription is past due. Please update your payment info.",
+        buttonLabel: "Manage subscription",
+        action: hasGithubPurchase ? "settings" : "stripeCheckoutSession",
+      };
 
-    return {
-      message: `${trialMessage}Add a payment method to retain access to team features.`,
-      buttonLabel: "Add payment method",
-      bannerColor:
-        !trialDaysRemaining || trialDaysRemaining < 5 ? "warning" : "neutral",
-      action: "stripePortalSession",
-    };
-  }
+    case PurchaseStatus.Canceled:
+    case PurchaseStatus.Missing:
+      return {
+        bannerColor: "danger",
+        message: "Upgrade to Pro plan to use team features.",
+        ...(hasGithubPurchase
+          ? { action: "settings", buttonLabel: "Manage subscription" }
+          : { action: "stripeCheckoutSession", buttonLabel: "Upgrade" }),
+      };
 
-  if (
-    purchaseStatus === PurchaseStatus.Trialing ||
-    purchaseStatus === PurchaseStatus.Active
-  ) {
-    const subscriptionType =
-      purchaseStatus === PurchaseStatus.Trialing ? "trial" : "subscription";
-    const action = "stripePortalSession";
+    case PurchaseStatus.Active:
+    case PurchaseStatus.Trialing: {
+      if (missingPaymentMethod) {
+        const remainingDayMessage = `Your trial ends in ${trialDaysRemaining} days. `;
+        return {
+          message: `${
+            trialDaysRemaining ? remainingDayMessage : ""
+          }Add a payment method to retain access to team features.`,
+          buttonLabel: "Add payment method",
+          bannerColor:
+            !trialDaysRemaining || trialDaysRemaining < 5
+              ? "warning"
+              : "neutral",
+          action: "stripePortalSession",
+        };
+      }
 
-    if (!pendingCancelAt) {
-      return { action, message: "" };
+      if (pendingCancelAt) {
+        const formatDate = (date: string) => moment(date).format("LL");
+        const subscriptionTypeLabel =
+          purchaseStatus === "trialing" ? "trial" : "subscription";
+        return {
+          action: "stripePortalSession",
+          buttonLabel: `Reactivate ${subscriptionTypeLabel}`,
+          message: `Your ${subscriptionTypeLabel} has been canceled. You can still use team features until the trial ends on ${formatDate(
+            pendingCancelAt,
+          )}.`,
+        };
+      }
+
+      // Trial is active
+      return { action: "stripePortalSession", message: "" };
     }
 
-    return {
-      action,
-      buttonLabel: `Reactivate ${subscriptionType}`,
-      message: `Your ${subscriptionType} has been canceled. You can still use team features until the trial ends on ${moment(
-        pendingCancelAt,
-      ).format("LL")}.`,
-    };
+    default:
+      return { action: "stripePortalSession", message: "" };
   }
-
-  const action = hasGithubPurchase ? "settings" : "stripeCheckoutSession";
-  const buttonLabel = hasGithubPurchase ? "Manage subscription" : "Upgrade";
-
-  if (now < FREE_PLAN_EXPIRATION_DATE) {
-    return {
-      action,
-      buttonLabel,
-      bannerColor: "neutral",
-      message:
-        "Starting June 1st, 2023, a Pro plan will be required to use team features.",
-    };
-  }
-
-  return {
-    action,
-    buttonLabel,
-    bannerColor: "danger",
-    message: "Upgrade to Pro plan to use team features.",
-  };
 };
 
 export type PaymentBannerProps = {
@@ -181,10 +175,6 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
   const account = useFragment(PaymentBannerFragment, props.account);
   const { data: { me } = {} } = useQuery(PaymentBannerQuery);
 
-  if (!me || account.__typename === "User") {
-    return null;
-  }
-
   const {
     purchase,
     permissions,
@@ -193,15 +183,14 @@ export const PaymentBanner = memo((props: PaymentBannerProps) => {
     pendingCancelAt,
   } = account;
 
-  const missingPaymentMethod = Boolean(
-    purchase && !purchase.paymentMethodFilled,
-  );
+  // no banner for user account
+  if (!me || !purchaseStatus) return null;
 
-  const { message, buttonLabel, bannerColor, action } = getBannerProps({
-    purchaseStatus: purchaseStatus ?? null,
+  const { message, buttonLabel, bannerColor, action } = getTeamBannerProps({
+    purchaseStatus,
     trialDaysRemaining: purchase?.trialDaysRemaining ?? null,
     hasGithubPurchase: Boolean(purchase && purchase.source === "github"),
-    missingPaymentMethod,
+    missingPaymentMethod: Boolean(purchase && !purchase.paymentMethodFilled),
     pendingCancelAt: pendingCancelAt,
   });
   const userIsOwner = permissions.includes(Permission.Write);

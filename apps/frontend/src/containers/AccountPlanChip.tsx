@@ -27,8 +27,8 @@ export const AccountPlanChip = (props: PlanChipProps) => {
           : null;
       case PurchaseStatus.Trialing:
         return { color: "info", children: "Trial" };
-      case PurchaseStatus.Unpaid:
-        return { color: "danger", children: "Unpaid" };
+      case PurchaseStatus.PastDue:
+        return { color: "danger", children: "Past Due" };
       case null:
         return { color: "neutral", children: "Hobby" };
       default:

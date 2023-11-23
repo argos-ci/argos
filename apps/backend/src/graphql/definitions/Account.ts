@@ -47,7 +47,7 @@ export const typeDefs = gql`
     "No paid purchase"
     missing
     "Payment due"
-    unpaid
+    past_due
     "Post-cancelation date"
     canceled
   }
@@ -198,21 +198,11 @@ export const resolvers: IResolvers = {
       return account.$getActivePurchase();
     },
     purchaseStatus: async (account) => {
-      if (account.forcedPlanId !== null) {
-        return IPurchaseStatus.Active;
-      }
-
+      if (account.forcedPlanId !== null) return IPurchaseStatus.Active;
       if (account.type === "user") return null;
 
       const purchase = await account.$getActivePurchase();
-      const hasPaidPlan =
-        purchase && purchase.plan && purchase.plan.name !== "free";
-
-      if (hasPaidPlan) {
-        if (purchase.$isTrialActive()) return IPurchaseStatus.Trialing;
-        if (!purchase.paymentMethodFilled) return IPurchaseStatus.Unpaid;
-        return IPurchaseStatus.Active;
-      }
+      if (purchase) return purchase.status as IPurchaseStatus;
 
       const hasOldPaidPurchase = await Purchase.query()
         .where("accountId", account.id)
@@ -224,6 +214,8 @@ export const resolvers: IResolvers = {
         .limit(1)
         .resultSize();
       if (hasOldPaidPurchase) return IPurchaseStatus.Canceled;
+
+      // No paid purchase
       return IPurchaseStatus.Missing;
     },
     trialStatus: async (account) => {

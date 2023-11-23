@@ -166,6 +166,7 @@ const getPurchaseDataFromSubscription = async (
     endDate,
     trialEndDate,
     paymentMethodFilled,
+    status: subscription.status,
   };
 };
 

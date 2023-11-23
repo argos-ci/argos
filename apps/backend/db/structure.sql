@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.9 (Homebrew)
+-- Dumped by pg_dump version 14.7 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -811,6 +811,7 @@ CREATE TABLE public.purchases (
     "trialEndDate" timestamp with time zone,
     "paymentMethodFilled" boolean,
     "stripeSubscriptionId" character varying(255),
+    status character varying(255) NOT NULL,
     CONSTRAINT check_stripe_subscription CHECK ((((source)::text <> 'stripe'::text) OR ("stripeSubscriptionId" IS NOT NULL)))
 );
 
@@ -2759,3 +2760,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115151718_file-type.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115160027_playwrightTraceIndex.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115210334_file-type-not-null.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231122143018_add-purchase-status.js', 1, NOW());

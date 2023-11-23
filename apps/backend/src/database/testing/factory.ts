@@ -84,6 +84,7 @@ export const Purchase = defineFactory(models.Purchase, () => ({
   endDate: null,
   source: "github",
   paymentMethodFilled: false,
+  status: "active",
 }));
 
 export const TeamAccount = defineFactory(models.Account, () => ({

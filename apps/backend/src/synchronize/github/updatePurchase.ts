@@ -25,6 +25,7 @@ export const updatePurchase = async (
       startDate: effectiveDate,
       source: "github",
       trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
+      status: "active",
     });
     return;
   }
@@ -38,13 +39,17 @@ export const updatePurchase = async (
   transaction(async (trx) => {
     await Promise.all([
       Purchase.query(trx)
-        .patch({ endDate: effectiveDate })
+        .patch({
+          endDate: effectiveDate,
+          status: new Date(effectiveDate) > new Date() ? "cancelled" : "active",
+        })
         .findById(activePurchase.id),
       Purchase.query(trx).insert({
         accountId: account.id,
         planId: plan.id,
         startDate: effectiveDate,
         source: "github",
+        status: "active",
       }),
     ]);
   });
