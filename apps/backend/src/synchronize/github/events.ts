@@ -44,6 +44,7 @@ export const handleGitHubEvents = async ({
               startDate: payload.effective_date,
               source: "github",
               trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
+              status: "active",
             });
             return;
           }

@@ -627,10 +627,10 @@ export enum PurchaseStatus {
   Canceled = 'canceled',
   /** No paid purchase */
   Missing = 'missing',
-  /** Ongoing trial */
-  Trialing = 'trialing',
   /** Payment due */
-  Unpaid = 'unpaid'
+  PastDue = 'past_due',
+  /** Ongoing trial */
+  Trialing = 'trialing'
 }
 
 export type Query = {

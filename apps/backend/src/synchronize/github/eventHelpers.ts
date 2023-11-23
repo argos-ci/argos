@@ -159,7 +159,7 @@ export const cancelPurchase = async (
   if (activePurchase && activePurchase.source === "github") {
     await Purchase.query()
       .findById(activePurchase.id)
-      .patch({ endDate: payload.effective_date });
+      .patch({ endDate: payload.effective_date, status: "canceled" });
   }
 };
 

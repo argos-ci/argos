@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.9 (Homebrew)
+-- Dumped by pg_dump version 14.7 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -292,7 +292,7 @@ CREATE TABLE public.files (
     key character varying(255) NOT NULL,
     width integer,
     height integer,
-    type text NOT NULL,
+    type text,
     CONSTRAINT files_type_check CHECK ((type = ANY (ARRAY['screenshot'::text, 'screenshotDiff'::text, 'playwrightTrace'::text])))
 );
 
@@ -403,7 +403,7 @@ ALTER SEQUENCE public.github_installations_id_seq OWNED BY public.github_install
 --
 
 CREATE TABLE public.github_pull_requests (
-    id bigint NOT NULL,
+    id integer NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "commentDeleted" boolean DEFAULT false NOT NULL,
@@ -811,6 +811,7 @@ CREATE TABLE public.purchases (
     "trialEndDate" timestamp with time zone,
     "paymentMethodFilled" boolean,
     "stripeSubscriptionId" character varying(255),
+    status character varying(255) NOT NULL,
     CONSTRAINT check_stripe_subscription CHECK ((((source)::text <> 'stripe'::text) OR ("stripeSubscriptionId" IS NOT NULL)))
 );
 
@@ -1606,6 +1607,14 @@ ALTER TABLE ONLY public.files
 
 ALTER TABLE ONLY public.files
     ADD CONSTRAINT files_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: files files_type_not_null_constraint; Type: CHECK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.files
+    ADD CONSTRAINT files_type_not_null_constraint CHECK ((type IS NOT NULL)) NOT VALID;
 
 
 --
@@ -2759,3 +2768,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115151718_file-type.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115160027_playwrightTraceIndex.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115210334_file-type-not-null.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231122143018_add-purchase-status.js', 1, NOW());
