@@ -41,8 +41,7 @@ export const updatePurchase = async (
       Purchase.query(trx)
         .patch({
           endDate: effectiveDate,
-          status:
-            effectiveDate > new Date().toISOString() ? "cancelled" : "active",
+          status: new Date(effectiveDate) > new Date() ? "cancelled" : "active",
         })
         .findById(activePurchase.id),
       Purchase.query(trx).insert({

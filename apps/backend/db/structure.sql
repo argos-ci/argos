@@ -292,7 +292,7 @@ CREATE TABLE public.files (
     key character varying(255) NOT NULL,
     width integer,
     height integer,
-    type text,
+    type text NOT NULL,
     CONSTRAINT files_type_check CHECK ((type = ANY (ARRAY['screenshot'::text, 'screenshotDiff'::text, 'playwrightTrace'::text])))
 );
 
@@ -403,7 +403,7 @@ ALTER SEQUENCE public.github_installations_id_seq OWNED BY public.github_install
 --
 
 CREATE TABLE public.github_pull_requests (
-    id integer NOT NULL,
+    id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "commentDeleted" boolean DEFAULT false NOT NULL,
@@ -1607,14 +1607,6 @@ ALTER TABLE ONLY public.files
 
 ALTER TABLE ONLY public.files
     ADD CONSTRAINT files_pkey PRIMARY KEY (id);
-
-
---
--- Name: files files_type_not_null_constraint; Type: CHECK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.files
-    ADD CONSTRAINT files_type_not_null_constraint CHECK ((type IS NOT NULL)) NOT VALID;
 
 
 --
