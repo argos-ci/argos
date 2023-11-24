@@ -74,6 +74,14 @@ const config = convict({
       env: "CLOUDAMQP_URL",
     },
   },
+  resend: {
+    apiKey: {
+      doc: "Resend API Key",
+      format: String,
+      default: "",
+      env: "RESEND_API_KEY",
+    },
+  },
   s3: {
     screenshotsBucket: {
       doc: "Bucket containing screenshots",

@@ -14,5 +14,5 @@
     "type": "es6",
     "resolveFully": true
   },
-  "sourceMaps": true
+  "sourceMaps": false
 }

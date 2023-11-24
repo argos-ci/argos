@@ -6,6 +6,7 @@ import { User } from "../models/User.js";
 import { transaction } from "../transaction.js";
 import type { GitlabUser } from "../models/GitlabUser.js";
 import type { PartialModelObject } from "objection";
+import { sendWelcomeEmail } from "@/email/send.js";
 
 const RESERVED_SLUGS = [
   "auth",
@@ -166,7 +167,7 @@ export const getOrCreateUserAccountFromGhAccount = async (
 
   const slug = await resolveAccountSlug(ghAccount.login.toLowerCase());
 
-  return transaction(async (trx) => {
+  const account = await transaction(async (trx) => {
     const user = await User.query(trx).insertAndFetch(
       accessToken ? { email, accessToken } : { email },
     );
@@ -177,6 +178,12 @@ export const getOrCreateUserAccountFromGhAccount = async (
       slug,
     });
   });
+
+  if (email) {
+    await sendWelcomeEmail({ to: email });
+  }
+
+  return account;
 };
 
 export const getOrCreateUserAccountFromGitlabUser = async (
@@ -216,7 +223,7 @@ export const getOrCreateUserAccountFromGitlabUser = async (
 
   const slug = await resolveAccountSlug(gitlabUser.username.toLowerCase());
 
-  return transaction(async (trx) => {
+  const account = await transaction(async (trx) => {
     const user = await User.query(trx).insertAndFetch({
       email: gitlabUser.email,
       gitlabUserId: gitlabUser.id,
@@ -227,4 +234,8 @@ export const getOrCreateUserAccountFromGitlabUser = async (
       slug,
     });
   });
+
+  await sendWelcomeEmail({ to: gitlabUser.email });
+
+  return account;
 };
