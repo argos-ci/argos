@@ -2,12 +2,9 @@
   "name": "@argos-ci/email",
   "version": "2.0.0",
   "private": true,
-  "exports": {
-    "./welcome.tsx": "./emails/welcome.tsx"
-  },
   "scripts": {
     "dev": "email dev",
-    "export": "email export"
+    "export": "email export --pretty"
   },
   "dependencies": {
     "@react-email/components": "^0.0.11",

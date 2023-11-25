@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import config from "@/config/index.js";
 import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
+import { emailPreview } from "../email/express.js";
 
 import { auth } from "./middlewares/auth.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -29,6 +30,10 @@ export const installAppRouter = async (app: express.Application) => {
       index: false,
     }),
   );
+
+  if (config.get("env") !== "production") {
+    router.use("/email-preview", emailPreview);
+  }
 
   await apolloServer.start();
   router.use("/graphql", express.json(), createApolloMiddleware());
