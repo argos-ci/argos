@@ -97,7 +97,7 @@ export const WelcomeEmail = ({ baseUrl }: { baseUrl: string }) => {
               </Link>
             </Heading>
             <Text style={{ ...text, margin: 0 }}>
-              Use one of our integrations to integrate Argos into your workflow
+              Use one of our integrations to install Argos into your workflow
               and capture your first screenshot.
             </Text>
           </Section>
@@ -125,15 +125,16 @@ export const WelcomeEmail = ({ baseUrl }: { baseUrl: string }) => {
               </Link>
             </Heading>
             <Text style={{ ...text, margin: 0 }}>
-              Once you've successfully installed Argos, it starts receiving a
-              batch of screenshots each time you create a pull request or update
-              your reference branch.
+              Once you've successfully installed Argos, you can review the
+              visual changes of your app for each pull request. Avoid UI bugs
+              and merge with confidence!
             </Text>
           </Section>
           <Hr style={hr} />
           <Text style={text}>
             We hope you enjoy using Argos! Have a question, feedback or need
-            some guidance? Do reply back to this email.
+            some guidance? Just hit reply, and let's make your Argos experience
+            even better.
           </Text>
           <Text style={text}>— The Argos Team 💌</Text>
           <Hr style={hr} />
