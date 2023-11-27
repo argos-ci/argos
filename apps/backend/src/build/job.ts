@@ -6,6 +6,7 @@ import { updateStripeUsage } from "@/stripe/index.js";
 
 import { createBuildDiffs } from "./createBuildDiffs.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
+import { invariant } from "@/util/invariant.js";
 
 const pushDiffs = async (
   buildId: string,
@@ -27,19 +28,16 @@ const pushDiffs = async (
 
 const updateProjectConsumption = async (project: Project) => {
   const { account } = project;
+  invariant(account, "No account found", UnretryableError);
+  const subscription = account.$getSubscription();
 
-  if (!account) {
-    throw new UnretryableError("Invariant: no account found");
-  }
+  const [usageBased, totalScreenshots] = await Promise.all([
+    subscription.checkIsUsageBasedPlan(),
+    subscription.getCurrentPeriodScreenshots(),
+  ]);
 
-  const isPublic = await project.$checkIsPublic();
-  if (!isPublic) {
-    const hasUsageBasedPlan = await account.$hasUsageBasedPlan();
-    if (hasUsageBasedPlan) {
-      const totalScreenshots =
-        await account.$getScreenshotsCurrentConsumption();
-      await updateStripeUsage({ account, totalScreenshots });
-    }
+  if (usageBased) {
+    await updateStripeUsage({ account, totalScreenshots });
   }
 };
 

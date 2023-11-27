@@ -1,4 +1,5 @@
 import type { Pojo, RelationMappings } from "objection";
+import { memoize } from "lodash-es";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
@@ -10,11 +11,25 @@ import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
 import { VercelConfiguration } from "./VercelConfiguration.js";
+import { invariant } from "@/util/invariant.js";
 
 export type AccountAvatar = {
   getUrl(args: { size?: number }): string | Promise<string> | null;
   initial: string;
   color: string;
+};
+
+type AccountSubscription = {
+  getActivePurchase(): Promise<Purchase | null>;
+  getPlan(): Promise<Plan | null>;
+  checkIsFreePlan(): Promise<boolean>;
+  checkIsTrialing(): Promise<boolean>;
+  checkIsUsageBasedPlan(): Promise<boolean>;
+  getCurrentPeriodStartDate(): Promise<Date>;
+  getCurrentPeriodEndDate(): Promise<Date>;
+  getCurrentPeriodScreenshots(): Promise<number>;
+  getCurrentPeriodConsumptionRatio(): Promise<number | null>;
+  checkIsOutOfCapacity(): Promise<boolean>;
 };
 
 export class Account extends Model {
@@ -121,6 +136,8 @@ export class Account extends Model {
   projects?: Project[];
   activePurchase?: Purchase | null;
 
+  _cachedSubscription?: AccountSubscription;
+
   static override virtualAttributes = ["type"];
 
   get type() {
@@ -144,74 +161,141 @@ export class Account extends Model {
     return purchaseCount > 0;
   }
 
-  async $getActivePurchase() {
-    if (!this.id) return null;
-    if (this.forcedPlanId) return null;
-
-    const query = Purchase.query()
-      .where("accountId", this.id)
-      .whereRaw("?? < now()", "startDate")
-      .where((query) =>
-        query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate"),
-      )
-      .withGraphJoined("plan")
-      .orderBy("plan.screenshotsLimitPerMonth", "DESC")
-      .first();
-
-    const purchase = await query;
-
-    return purchase ?? null;
-  }
-
-  async $getPlan(): Promise<Plan | null> {
-    if (this.forcedPlanId) {
-      const plan = await Plan.query().findById(this.forcedPlanId);
-      return plan ?? null;
+  $getSubscription(): AccountSubscription {
+    if (this._cachedSubscription) {
+      return this._cachedSubscription;
     }
 
-    const activePurchase = await this.$getActivePurchase();
-    if (activePurchase) {
-      const plan =
-        activePurchase.plan ?? (await activePurchase.$relatedQuery("plan"));
-      return plan;
-    }
+    const getActivePurchase = memoize(async () => {
+      if (!this.id) return null;
+      if (this.forcedPlanId) return null;
 
-    return Plan.getFreePlan();
+      const purchase = await Purchase.query()
+        .where("accountId", this.id)
+        .whereRaw("?? < now()", "startDate")
+        .where((query) =>
+          query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate"),
+        )
+        .withGraphJoined("plan")
+        .orderBy("plan.screenshotsLimitPerMonth", "DESC")
+        .first();
+
+      return purchase ?? null;
+    });
+
+    const getPlan = memoize(async () => {
+      if (this.forcedPlanId) {
+        const plan = await Plan.query().findById(this.forcedPlanId);
+        return plan ?? null;
+      }
+      const activePurchase = await getActivePurchase();
+      if (activePurchase) {
+        return activePurchase.plan ?? null;
+      }
+      return Plan.getFreePlan();
+    });
+
+    const getCurrentPeriodStartDate = memoize(async () => {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      if (this.forcedPlanId) {
+        return startOfMonth;
+      }
+      const purchase = await getActivePurchase();
+      return purchase?.startDate ? purchase.getLastResetDate() : startOfMonth;
+    });
+
+    const getCurrentPeriodEndDate = memoize(async () => {
+      const [startDate, activePurchase, trialing] = await Promise.all([
+        getCurrentPeriodStartDate(),
+        getActivePurchase(),
+        checkIsTrialing(),
+      ]);
+
+      if (trialing) {
+        invariant(activePurchase?.trialEndDate);
+        return new Date(activePurchase.trialEndDate);
+      }
+
+      const now = new Date();
+      startDate.setMonth(startDate.getMonth() + 1);
+      return new Date(
+        Math.min(
+          startDate.getTime(),
+          new Date(now.getFullYear(), now.getMonth() + 2, 0).getTime(),
+        ),
+      );
+    });
+
+    const getCurrentPeriodScreenshots = memoize(async () => {
+      const startDate = await getCurrentPeriodStartDate();
+      return this.$getScreenshotCountFromDate(startDate.toISOString());
+    });
+
+    const checkIsFreePlan = memoize(async () => {
+      const plan = await getPlan();
+      return Plan.checkIsFreePlan(plan);
+    });
+
+    const checkIsTrialing = memoize(async () => {
+      const activePurchase = await getActivePurchase();
+      return activePurchase?.$isTrialActive() ?? false;
+    });
+
+    const checkIsUsageBasedPlan = memoize(async () => {
+      const plan = await getPlan();
+      return Boolean(plan?.usageBased);
+    });
+
+    const getCurrentPeriodConsumptionRatio = memoize(async () => {
+      const [plan, screenshotsCount] = await Promise.all([
+        getPlan(),
+        getCurrentPeriodScreenshots(),
+      ]);
+      const monthlyLimit = Plan.getScreenshotMonthlyLimitForPlan(plan);
+      if (monthlyLimit === null) {
+        return null;
+      }
+      return screenshotsCount / monthlyLimit;
+    });
+
+    const checkIsOutOfCapacity = memoize(async () => {
+      const [usageBased, trialing, consumptionRatio] = await Promise.all([
+        checkIsUsageBasedPlan(),
+        checkIsTrialing(),
+        getCurrentPeriodConsumptionRatio(),
+      ]);
+      if (!usageBased && !trialing) return false;
+      if (consumptionRatio === null) return false;
+      return consumptionRatio >= 1.1;
+    });
+
+    this._cachedSubscription = {
+      getActivePurchase,
+      getPlan,
+      checkIsFreePlan,
+      checkIsTrialing,
+      checkIsUsageBasedPlan,
+      getCurrentPeriodStartDate,
+      getCurrentPeriodEndDate,
+      getCurrentPeriodScreenshots,
+      getCurrentPeriodConsumptionRatio,
+      checkIsOutOfCapacity,
+    };
+
+    return this._cachedSubscription;
   }
 
-  async $getCurrentConsumptionStartDate() {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    if (this.forcedPlanId) {
-      return startOfMonth;
-    }
-    const purchase =
-      this.activePurchase === undefined
-        ? await this.$getActivePurchase()
-        : this.activePurchase;
-    return !purchase?.startDate ? startOfMonth : purchase.getLastResetDate();
-  }
-
-  async $getCurrentConsumptionEndDate() {
-    const now = new Date();
-    const startDate = await this.$getCurrentConsumptionStartDate();
-    startDate.setMonth(startDate.getMonth() + 1);
-    return new Date(
-      Math.min(
-        startDate.getTime(),
-        new Date(now.getFullYear(), now.getMonth() + 2, 0).getTime(),
-      ),
-    );
-  }
-
-  async $getScreenshotsCurrentConsumption(options?: {
-    projectId?: string;
-  }): Promise<number> {
-    const startDate = await this.$getCurrentConsumptionStartDate();
+  async $getScreenshotCountFromDate(
+    from: string,
+    options?: {
+      projectId?: string;
+    },
+  ): Promise<number> {
     const query = ScreenshotBucket.query()
       .sum("screenshot_buckets.screenshotCount as total")
       .leftJoinRelated("project.githubRepository")
-      .where("screenshot_buckets.createdAt", ">=", startDate)
+      .where("screenshot_buckets.createdAt", ">=", from)
       .where("project.accountId", this.id)
       .where((builder) =>
         builder
@@ -232,38 +316,6 @@ export class Account extends Model {
     return result.total ? Number(result.total) : 0;
   }
 
-  async $getScreenshotsConsumptionRatio() {
-    const plan = await this.$getPlan();
-    const screenshotsMonthlyLimit = Plan.getScreenshotMonthlyLimitForPlan(plan);
-    if (screenshotsMonthlyLimit === null) {
-      return null;
-    }
-    const screenshotsCurrentConsumption =
-      await this.$getScreenshotsCurrentConsumption();
-    return screenshotsCurrentConsumption / screenshotsMonthlyLimit;
-  }
-
-  async $hasExceedScreenshotsMonthlyLimit() {
-    const screenshotsConsumptionRatio =
-      await this.$getScreenshotsConsumptionRatio();
-    if (screenshotsConsumptionRatio === null) return false;
-    return screenshotsConsumptionRatio >= 1.1;
-  }
-
-  async $hasUsageBasedPlan() {
-    const activePurchase = await this.$getActivePurchase();
-    if (!activePurchase) return false;
-
-    if (activePurchase.$isTrialActive()) {
-      return false;
-    }
-
-    const plan =
-      activePurchase.plan ?? (await activePurchase.$relatedQuery("plan"));
-
-    return Boolean(plan?.usageBased);
-  }
-
   async $checkWritePermission(user: User) {
     return Account.checkWritePermission(this, user);
   }
@@ -282,11 +334,6 @@ export class Account extends Model {
 
   async $checkReadPermission(user: User) {
     return Account.checkReadPermission(this, user);
-  }
-
-  async $hasPaidPlan() {
-    const plan = await this.$getPlan();
-    return Boolean(plan && plan.name !== "free");
   }
 
   static async checkReadPermission(account: Account, user: User) {

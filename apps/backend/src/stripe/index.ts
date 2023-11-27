@@ -246,7 +246,8 @@ export const updateStripeUsage = async ({
   account: Account;
   totalScreenshots: number;
 }) => {
-  const purchase = await account.$getActivePurchase();
+  const accountSubscription = account.$getSubscription();
+  const purchase = await accountSubscription.getActivePurchase();
 
   // No active purchase, nothing to do
   if (!purchase) {
@@ -395,8 +396,10 @@ export const createStripeCheckoutSession = async ({
     throw new Error("Purchaser account must be a user account");
   }
 
+  const accountSubscription = teamAccount.$getSubscription();
+
   const [activePurchase, price] = await Promise.all([
-    teamAccount.$getActivePurchase(),
+    accountSubscription.getActivePurchase(),
     getStripePriceFromPlanOrThrow(plan),
   ]);
 

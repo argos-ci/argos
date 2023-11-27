@@ -348,11 +348,9 @@ const PlanStatusDescription = ({
 
 const ConsumptionBlock = ({
   projects,
-  isPrivate,
   screenshotsLimitPerMonth,
 }: {
   projects: Project[];
-  isPrivate: boolean;
   screenshotsLimitPerMonth: number;
 }) => {
   const disclosure = useDisclosureState({ defaultOpen: false });
@@ -360,13 +358,10 @@ const ConsumptionBlock = ({
     (sum, project) => project.currentMonthUsedScreenshots + sum,
     0,
   );
-  const max = isPrivate ? screenshotsLimitPerMonth : Infinity;
 
   return (
     <div className="flex flex-col gap-2 rounded border p-4">
-      <div className="font-medium">
-        {isPrivate ? "Private" : "Public"} projects
-      </div>
+      <div className="font-medium">Projects</div>
       <div className="flex flex-col gap-1">
         <div className="flex justify-between font-medium">
           <div>
@@ -374,10 +369,14 @@ const ConsumptionBlock = ({
             {screenshotsSum > 1 ? "screenshots" : "screenshot"}
           </div>
           <div className="text-low">
-            / {max === Infinity ? "Unlimited" : max.toLocaleString()}
+            / {screenshotsLimitPerMonth.toLocaleString()}
           </div>
         </div>
-        <Progress value={screenshotsSum} max={max} min={0} />
+        <Progress
+          value={screenshotsSum}
+          max={screenshotsLimitPerMonth}
+          min={0}
+        />
       </div>
 
       <Disclosure
@@ -446,19 +445,6 @@ const PrimaryCta = ({
   }
 
   return null;
-};
-
-const groupByPrivacy = (projects: Project[]) => {
-  return projects.reduce<[Project[], Project[]]>(
-    ([privateProjects, publicProjects], project) => {
-      if (project.currentMonthUsedScreenshots > 0) {
-        const group = project.public ? publicProjects : privateProjects;
-        group.push(project);
-      }
-      return [privateProjects, publicProjects];
-    },
-    [[], []],
-  );
 };
 
 const Paragraph = ({ children }: { children: ReactNode }) => (
@@ -535,8 +521,6 @@ export const PlanCard = (props: {
     },
   );
 
-  const [privateProjects, publicProjects] = groupByPrivacy(projects.edges);
-
   return (
     <Card>
       <CardBody>
@@ -562,15 +546,9 @@ export const PlanCard = (props: {
               - {<Time date={periodEndDate} format="MMM DD" />})
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="mt-4">
               <ConsumptionBlock
-                projects={privateProjects}
-                isPrivate={true}
-                screenshotsLimitPerMonth={plan.screenshotsLimitPerMonth}
-              />
-              <ConsumptionBlock
-                projects={publicProjects}
-                isPrivate={false}
+                projects={projects.edges}
                 screenshotsLimitPerMonth={plan.screenshotsLimitPerMonth}
               />
             </div>

@@ -176,33 +176,44 @@ export const resolvers: IResolvers = {
       });
     },
     hasPaidPlan: async (account) => {
-      return account.$hasPaidPlan();
+      const subscription = account.$getSubscription();
+      const free = await subscription.checkIsFreePlan();
+      return !free;
     },
     consumptionRatio: async (account) => {
-      return account.$getScreenshotsConsumptionRatio();
+      const subscription = account.$getSubscription();
+      return subscription.getCurrentPeriodConsumptionRatio();
     },
     currentMonthUsedScreenshots: async (account) => {
-      return account.$getScreenshotsCurrentConsumption();
+      const subscription = account.$getSubscription();
+      return subscription.getCurrentPeriodScreenshots();
     },
     periodStartDate: async (account) => {
-      return account.$getCurrentConsumptionStartDate();
+      const subscription = account.$getSubscription();
+      return subscription.getCurrentPeriodStartDate();
     },
     periodEndDate: async (account) => {
-      const activePurchase = await account.$getActivePurchase();
-      if (activePurchase?.$isTrialActive()) {
-        return activePurchase.trialEndDate;
-      }
-      return account.$getCurrentConsumptionEndDate();
+      const subscription = account.$getSubscription();
+      return subscription.getCurrentPeriodEndDate();
     },
     purchase: async (account) => {
-      return account.$getActivePurchase();
+      const subscription = account.$getSubscription();
+      return subscription.getActivePurchase();
     },
     purchaseStatus: async (account) => {
-      if (account.forcedPlanId !== null) return IPurchaseStatus.Active;
-      if (account.type === "user") return null;
+      if (account.forcedPlanId !== null) {
+        return IPurchaseStatus.Active;
+      }
+      if (account.type === "user") {
+        return null;
+      }
 
-      const purchase = await account.$getActivePurchase();
-      if (purchase) return purchase.status as IPurchaseStatus;
+      const subscription = account.$getSubscription();
+      const purchase = await subscription.getActivePurchase();
+
+      if (purchase) {
+        return purchase.status as IPurchaseStatus;
+      }
 
       const hasOldPaidPurchase = await Purchase.query()
         .where("accountId", account.id)
@@ -213,20 +224,23 @@ export const resolvers: IResolvers = {
         .orderBy("endDate", "DESC")
         .limit(1)
         .resultSize();
+
       if (hasOldPaidPurchase) return IPurchaseStatus.Canceled;
 
       // No paid purchase
       return IPurchaseStatus.Missing;
     },
     trialStatus: async (account) => {
-      if (account.type === "user") return null;
-      const activePurchase = await account.$getActivePurchase();
-      if (!activePurchase) {
+      if (account.type === "user") {
         return null;
       }
-      if (activePurchase.$isTrialActive()) {
+      const subscription = account.$getSubscription();
+      const trialing = await subscription.checkIsTrialing();
+
+      if (trialing) {
         return ITrialStatus.Active;
       }
+
       const previousPaidPurchase = await Purchase.query()
         .where("accountId", account.id)
         .whereNot({ name: "free" })
@@ -234,24 +248,31 @@ export const resolvers: IResolvers = {
         .joinRelated("plan")
         .orderBy("endDate", "DESC")
         .first();
+
       const purchaseEndsAtTrialEnd =
         previousPaidPurchase &&
         previousPaidPurchase.endDate === previousPaidPurchase.trialEndDate;
+
       return purchaseEndsAtTrialEnd ? ITrialStatus.Expired : null;
     },
     hasForcedPlan: async (account) => {
       return account.forcedPlanId !== null;
     },
     pendingCancelAt: async (account) => {
-      if (account.type === "user") return null;
-      const activePurchase = await account.$getActivePurchase();
+      if (account.type === "user") {
+        return null;
+      }
+      const subscription = account.$getSubscription();
+      const activePurchase = await subscription.getActivePurchase();
       return activePurchase?.endDate ?? null;
     },
     plan: async (account) => {
-      return account.$getPlan();
+      const subscription = account.$getSubscription();
+      return subscription.getPlan();
     },
     screenshotsLimitPerMonth: async (account) => {
-      const plan = await account.$getPlan();
+      const subscription = account.$getSubscription();
+      const plan = await subscription.getPlan();
       return Plan.getScreenshotMonthlyLimitForPlan(plan);
     },
     permissions: async (account, _args, ctx) => {
@@ -450,8 +471,8 @@ export const resolvers: IResolvers = {
         id: accountId,
         user: ctx.auth?.user,
       });
-
-      const purchase = await account.$getActivePurchase();
+      const subscription = account.$getSubscription();
+      const purchase = await subscription.getActivePurchase();
 
       // No purchase
       if (!purchase) {
@@ -468,10 +489,10 @@ export const resolvers: IResolvers = {
         return account;
       }
 
-      const subscription = await terminateStripeTrial(
+      const stripeSubscription = await terminateStripeTrial(
         purchase.stripeSubscriptionId,
       );
-      await updatePurchaseFromSubscription(purchase, subscription);
+      await updatePurchaseFromSubscription(purchase, stripeSubscription);
       return account;
     },
   },

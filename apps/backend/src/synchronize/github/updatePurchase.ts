@@ -15,7 +15,8 @@ export const updatePurchase = async (
   account: Account,
 ) => {
   const plan = await getGithubPlan(payload);
-  const activePurchase = await account.$getActivePurchase();
+  const subscription = account.$getSubscription();
+  const activePurchase = await subscription.getActivePurchase();
   const effectiveDate = payload.effective_date || new Date().toISOString();
 
   if (!activePurchase) {
