@@ -1,7 +1,7 @@
 import { Outlet, useOutletContext, useParams } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
-import { Query } from "@/containers/Apollo";
+import { useQuery } from "@/containers/Apollo";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { Permission } from "@/gql/graphql";
@@ -67,21 +67,18 @@ export const Account = () => {
     throw new Error("Missing accountSlug");
   }
   useVisitAccount(accountSlug);
-  return (
-    <Query
-      fallback={<PageLoader />}
-      query={AccountQuery}
-      variables={{ slug: accountSlug }}
-    >
-      {({ account }) => {
-        if (!account) {
-          return <NotFound />;
-        }
-        if (!account.permissions.includes("read" as Permission)) {
-          return <NotFound />;
-        }
-        return <AccountTabs account={account} />;
-      }}
-    </Query>
-  );
+  const { data, loading } = useQuery(AccountQuery, {
+    variables: { slug: accountSlug },
+  });
+  if (loading) {
+    return <PageLoader />;
+  }
+  const account = data?.account;
+  if (!account) {
+    return <NotFound />;
+  }
+  if (!account.permissions.includes("read" as Permission)) {
+    return <NotFound />;
+  }
+  return <AccountTabs account={account} />;
 };
