@@ -35,8 +35,11 @@ export const handleGitHubEvents = async ({
               getOrCreateAccountFromEvent(payload),
             ]);
 
-            const activePurchase = await account.$getActivePurchase();
-            if (activePurchase && activePurchase.planId === plan.id) return;
+            const subscription = account.$getSubscription();
+            const activePurchase = await subscription.getActivePurchase();
+            if (activePurchase && activePurchase.planId === plan.id) {
+              return;
+            }
 
             await Purchase.query().insert({
               accountId: account.id,

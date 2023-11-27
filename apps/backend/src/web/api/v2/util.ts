@@ -76,34 +76,28 @@ export const createBuild = async (params: {
   referenceCommit?: string | null;
   referenceBranch?: string | null;
 }) => {
-  const [isPublic, account] = await Promise.all([
-    params.project.$checkIsPublic(),
-    params.project.$relatedQuery("account"),
-  ]);
-
+  const account = await params.project.$relatedQuery("account");
   if (!account) {
     throw new HttpError(404, `Account not found.`);
   }
 
-  const plan = await account.$getPlan();
-  if (account.type === "team" && (!plan || plan.name === "free")) {
+  const subscription = account.$getSubscription();
+  const [isFreePlan, outOfCapacity] = await Promise.all([
+    subscription.checkIsFreePlan(),
+    subscription.checkIsOutOfCapacity(),
+  ]);
+  if (account.type === "team" && isFreePlan) {
     throw new HttpError(
       402,
       `Build rejected: upgrade to Pro to use Team features.`,
     );
   }
 
-  if (!isPublic) {
-    const [hasExceededLimit, hasUsageBasedPlan] = await Promise.all([
-      account.$hasExceedScreenshotsMonthlyLimit(),
-      account.$hasUsageBasedPlan(),
-    ]);
-    if (hasExceededLimit && !hasUsageBasedPlan) {
-      throw new HttpError(
-        402,
-        `Build rejected for insufficient credit. Please upgrade your Plan.`,
-      );
-    }
+  if (outOfCapacity) {
+    throw new HttpError(
+      402,
+      `Build rejected for insufficient credit. Please upgrade your Plan.`,
+    );
   }
 
   const buildName = params.buildName || "default";

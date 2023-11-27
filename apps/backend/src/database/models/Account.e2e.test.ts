@@ -50,7 +50,8 @@ describe("Account", () => {
 
   describe("#$getActivePurchase", () => {
     it("returns null when no purchase found", async () => {
-      const activePurchase = await account.$getActivePurchase();
+      const subscription = account.$getSubscription();
+      const activePurchase = await subscription.getActivePurchase();
       expect(activePurchase).toBeNull();
     });
 
@@ -60,7 +61,8 @@ describe("Account", () => {
         accountId: account.id,
         endDate: new Date(2010, 1, 1).toISOString(),
       });
-      const activePurchase = await account.$getActivePurchase();
+      const subscription = account.$getSubscription();
+      const activePurchase = await subscription.getActivePurchase();
       expect(activePurchase).toBeNull();
     });
 
@@ -69,19 +71,20 @@ describe("Account", () => {
         planId: plans[1]!.id,
         accountId: account.id,
       });
-      const activePurchase = await account.$getActivePurchase();
-      const purchasePlan = await activePurchase!.$relatedQuery("plan");
-      expect(purchasePlan!.id).toBe(plans[1]!.id);
+      const subscription = account.$getSubscription();
+      const plan = await subscription.getPlan();
+      expect(plan?.id).toBe(plans[1]!.id);
     });
   });
 
-  describe("#$getCurrentConsumptionStartDate", () => {
+  describe("#getCurrentPeriodStartDate", () => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     describe("without purchase", () => {
       it("returns first day of month", async () => {
-        const startDate = await account.$getCurrentConsumptionStartDate();
+        const subscription = account.$getSubscription();
+        const startDate = await subscription.getCurrentPeriodStartDate();
         expect(startDate).toEqual(startOfMonth);
       });
     });
@@ -98,7 +101,8 @@ describe("Account", () => {
       });
 
       it("returns purchase start date", async () => {
-        const startDate = await account.$getCurrentConsumptionStartDate();
+        const subscription = account.$getSubscription();
+        const startDate = await subscription.getCurrentPeriodStartDate();
         expect(startDate.getDate()).toEqual(subscriptionDay);
         if (now.getDate() >= subscriptionDay) {
           expect(startDate.getMonth()).toEqual(now.getMonth());
@@ -114,13 +118,14 @@ describe("Account", () => {
     });
   });
 
-  describe("#$getScreenshotsCurrentConsumption", () => {
+  describe("#getCurrentPeriodScreenshots", () => {
     it("count screenshots used this month", async () => {
       await bucket1.$query().patch({
         complete: true,
         screenshotCount: 10,
       });
-      const consumption = await account.$getScreenshotsCurrentConsumption();
+      const subscription = account.$getSubscription();
+      const consumption = await subscription.getCurrentPeriodScreenshots();
       expect(consumption).toBe(10);
     });
 
@@ -129,7 +134,8 @@ describe("Account", () => {
         complete: true,
         screenshotCount: 10,
       });
-      const consumption = await account.$getScreenshotsCurrentConsumption();
+      const subscription = account.$getSubscription();
+      const consumption = await subscription.getCurrentPeriodScreenshots();
       expect(consumption).toBe(10);
     });
 
@@ -138,7 +144,8 @@ describe("Account", () => {
         complete: true,
         screenshotCount: 10,
       });
-      const consumption = await account.$getScreenshotsCurrentConsumption();
+      const subscription = account.$getSubscription();
+      const consumption = await subscription.getCurrentPeriodScreenshots();
       expect(consumption).toBe(0);
     });
 
@@ -148,7 +155,8 @@ describe("Account", () => {
         complete: true,
         screenshotCount: 10,
       });
-      const consumption = await account.$getScreenshotsCurrentConsumption();
+      const subscription = account.$getSubscription();
+      const consumption = await subscription.getCurrentPeriodScreenshots();
       expect(consumption).toBe(0);
     });
 
@@ -157,7 +165,8 @@ describe("Account", () => {
         complete: true,
         screenshotCount: 10,
       });
-      const consumption = await account.$getScreenshotsCurrentConsumption();
+      const subscription = account.$getSubscription();
+      const consumption = await subscription.getCurrentPeriodScreenshots();
       expect(consumption).toBe(0);
     });
   });
@@ -169,8 +178,9 @@ describe("Account", () => {
           planId: plans[1]!.id,
           accountId: account.id,
         });
-        const plan = await account.$getPlan();
-        expect(plan!.id).toBe(plans[1]!.id);
+        const subscription = account.$getSubscription();
+        const plan = await subscription.getPlan();
+        expect(plan?.id).toBe(plans[1]!.id);
       });
 
       it("with forced plan returns forced plan", async () => {
@@ -179,26 +189,30 @@ describe("Account", () => {
           accountId: vipAccount.id,
         });
 
-        const plan = await vipAccount.$getPlan();
-        expect(plan!.id).toBe(plans[2]!.id);
+        const subscription = vipAccount.$getSubscription();
+        const plan = await subscription.getPlan();
+        expect(plan?.id).toBe(plans[2]!.id);
       });
     });
 
     describe("without purchase", () => {
       it("with free plan in database returns free plan", async () => {
-        const plan = await account.$getPlan();
+        const subscription = account.$getSubscription();
+        const plan = await subscription.getPlan();
         expect(plan!.id).toBe(plans[0]!.id);
       });
 
       it("with forced plan returns forced plan", async () => {
-        const plan = await vipAccount.$getPlan();
+        const subscription = vipAccount.$getSubscription();
+        const plan = await subscription.getPlan();
         expect(plan!.id).toBe(plans[2]!.id);
       });
 
       it("without free plan in database returns null", async () => {
         await Account.query().patch({ forcedPlanId: null });
         await Plan.query().delete();
-        const plan = await account.$getPlan();
+        const subscription = vipAccount.$getSubscription();
+        const plan = await subscription.getPlan();
         expect(plan).toBeNull();
       });
     });

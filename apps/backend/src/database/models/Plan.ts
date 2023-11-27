@@ -34,7 +34,11 @@ export class Plan extends Model {
   }
 
   static async getFreePlan(): Promise<Plan | null> {
-    const freePlan = await Plan.query().findOne({ name: "free" });
-    return freePlan ?? null;
+    const plan = await Plan.query().findOne({ name: "free" });
+    return plan ?? null;
+  }
+
+  static checkIsFreePlan(plan: Plan | null) {
+    return !plan || plan?.name === "free";
   }
 }
