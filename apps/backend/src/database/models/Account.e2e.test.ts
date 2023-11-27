@@ -10,7 +10,6 @@ describe("Account", () => {
   let account: Account, vipAccount: Account;
   let bucket1: ScreenshotBucket,
     bucket2: ScreenshotBucket,
-    bucket3: ScreenshotBucket,
     bucketOtherOrga: ScreenshotBucket;
 
   beforeEach(async () => {
@@ -44,7 +43,6 @@ describe("Account", () => {
     ]);
     bucket1 = buckets[0]!;
     bucket2 = buckets[1]!;
-    bucket3 = buckets[2]!;
     bucketOtherOrga = buckets[3]!;
   });
 
@@ -137,16 +135,6 @@ describe("Account", () => {
       const subscription = account.$getSubscription();
       const consumption = await subscription.getCurrentPeriodScreenshots();
       expect(consumption).toBe(10);
-    });
-
-    it("ignore screenshots of a public repository", async () => {
-      await bucket3.$query().patch({
-        complete: true,
-        screenshotCount: 10,
-      });
-      const subscription = account.$getSubscription();
-      const consumption = await subscription.getCurrentPeriodScreenshots();
-      expect(consumption).toBe(0);
     });
 
     it("ignore old screenshots", async () => {

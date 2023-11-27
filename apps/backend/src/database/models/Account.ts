@@ -297,15 +297,6 @@ export class Account extends Model {
       .leftJoinRelated("project.githubRepository")
       .where("screenshot_buckets.createdAt", ">=", from)
       .where("project.accountId", this.id)
-      .where((builder) =>
-        builder
-          .where((builder) => {
-            builder
-              .whereNull("project.private")
-              .andWhere("project:githubRepository.private", true);
-          })
-          .orWhere("project.private", true),
-      )
       .first();
 
     if (options?.projectId) {
