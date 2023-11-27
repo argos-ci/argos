@@ -14,6 +14,7 @@ import { GithubRepository } from "./GithubRepository.js";
 import type { User } from "./User.js";
 import { VercelProject } from "./VercelProject.js";
 import { GitlabProject } from "./GitlabProject.js";
+import config from "@/config/index.js";
 
 export class Project extends Model {
   static override tableName = "projects";
@@ -170,5 +171,14 @@ export class Project extends Model {
       return this.gitlabProject.defaultBranch;
     }
     return "main";
+  }
+
+  async getUrl() {
+    if (!this.account) {
+      throw new Error("Account not found");
+    }
+
+    const pathname = `/${this.account.slug}/${this.name}`;
+    return `${config.get("server.url")}${pathname}`;
   }
 }

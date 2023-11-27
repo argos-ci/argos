@@ -18,7 +18,7 @@
     "db:migrate:latest": "npm exec knex migrate:latest",
     "db:migrate:rollback": "npm exec knex migrate:rollback",
     "db:migrate:make": "npm exec knex migrate:make",
-    "db:reset": "npm run db:drop && npm run db:create && npm run db:migrate:latest",
+    "db:reset": "npm run db:drop && npm run db:create && npm run db:load",
     "watch-server-build-and-synchronize": "node --watch ./dist/processes/proc/build-and-synchronize.js",
     "watch-server-crawl-and-capture": "node --watch ./dist/processes/proc/crawl-and-capture.js",
     "watch-server-screenshot-diff": "node --watch ./dist/processes/proc/screenshot-diff.js",
