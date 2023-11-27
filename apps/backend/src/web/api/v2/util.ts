@@ -120,40 +120,44 @@ export const createBuild = async (params: {
       : null;
 
   const lock = await getRedisLock();
-  return lock.acquire(`buildCreation-${params.project.id}`, async () => {
-    return transaction(async (trx) => {
-      const bucket = await ScreenshotBucket.query(trx).insertAndFetch({
-        name: buildName,
-        commit: params.commit,
-        branch: params.branch,
-        projectId: params.project.id,
-        complete: false,
-      });
+  const build = await lock.acquire(
+    `buildCreation-${params.project.id}`,
+    async () => {
+      return transaction(async (trx) => {
+        const bucket = await ScreenshotBucket.query(trx).insertAndFetch({
+          name: buildName,
+          commit: params.commit,
+          branch: params.branch,
+          projectId: params.project.id,
+          complete: false,
+        });
 
-      const build = await Build.query(trx).insertAndFetch({
-        jobStatus: "pending" as const,
-        baseScreenshotBucketId: null,
-        externalId: params.parallel ? params.parallel.nonce : null,
-        batchCount: params.parallel ? 0 : null,
-        projectId: params.project.id,
-        name: buildName,
-        prNumber: params.prNumber ?? null,
-        prHeadCommit: params.prHeadCommit ?? null,
-        githubPullRequestId: pullRequest?.id ? String(pullRequest?.id) : null,
-        referenceCommit: params.referenceCommit ?? null,
-        referenceBranch: params.referenceBranch ?? null,
-        compareScreenshotBucketId: bucket.id,
-      });
+        const build = await Build.query(trx).insertAndFetch({
+          jobStatus: "pending" as const,
+          baseScreenshotBucketId: null,
+          externalId: params.parallel ? params.parallel.nonce : null,
+          batchCount: params.parallel ? 0 : null,
+          projectId: params.project.id,
+          name: buildName,
+          prNumber: params.prNumber ?? null,
+          prHeadCommit: params.prHeadCommit ?? null,
+          githubPullRequestId: pullRequest?.id ? String(pullRequest?.id) : null,
+          referenceCommit: params.referenceCommit ?? null,
+          referenceBranch: params.referenceBranch ?? null,
+          compareScreenshotBucketId: bucket.id,
+        });
 
-      await pushBuildNotification({
-        buildId: build.id,
-        type: "queued",
-        trx,
+        return build;
       });
+    },
+  );
 
-      return build;
-    });
+  await pushBuildNotification({
+    buildId: build.id,
+    type: "queued",
   });
+
+  return build;
 };
 
 export const createCrawl = async (params: {
