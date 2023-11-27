@@ -292,7 +292,10 @@ export const processBuildNotification = async (
       buildNotification.build.getUrl(),
       buildNotification.build.project.getUrl(),
       getNotificationPayload(buildNotification, isReference),
-      getAggregatedNotification(commit, isReference),
+      getAggregatedNotification(
+        buildNotification.build.compareScreenshotBucket.commit,
+        isReference,
+      ),
     ]);
 
   const ctx: Context = {

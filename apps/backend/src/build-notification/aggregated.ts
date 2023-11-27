@@ -19,7 +19,7 @@ export async function getAggregatedNotification(
     .where("sb.commit", commit);
 
   // If there is only one sibling build, then we don't need to aggregate notifications
-  if (siblingBuilds.length === 1) {
+  if (siblingBuilds.length <= 1) {
     return null;
   }
 
