@@ -1,0 +1,20 @@
+{
+  "name": "argos-puppeteer-example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^21.5.2"
+  },
+  "devDependencies": {
+    "@argos-ci/cli": "^1.0.4",
+    "@argos-ci/puppeteer": "^1.1.5"
+  }
+}
