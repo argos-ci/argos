@@ -22,10 +22,10 @@ const getBuildType = ({
   return "check";
 };
 
-export const getOrCreateBaseScreenshotBucket = async (
+async function getOrCreateBaseScreenshotBucket(
   build: Build,
   { trx }: { trx?: TransactionOrKnex | undefined } = {},
-) => {
+) {
   if (build.baseScreenshotBucket) {
     return build.baseScreenshotBucket!;
   }
@@ -44,7 +44,7 @@ export const getOrCreateBaseScreenshotBucket = async (
   }
 
   return null;
-};
+}
 
 const getJobStatus = ({
   baseScreenshot,

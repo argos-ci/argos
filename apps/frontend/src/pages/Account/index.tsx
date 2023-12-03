@@ -27,9 +27,9 @@ const AccountQuery = graphql(`
 
 type Account = NonNullable<DocumentType<typeof AccountQuery>["account"]>;
 
-export interface OutletContext {
+type OutletContext = {
   hasWritePermission: boolean;
-}
+};
 
 export const useAccountContext = () => {
   return useOutletContext<OutletContext>();

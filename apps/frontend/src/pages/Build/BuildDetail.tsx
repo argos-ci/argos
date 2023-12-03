@@ -28,7 +28,7 @@ import {
   useBuildDiffViewModeState,
 } from "./useBuildDiffViewModeState";
 
-export const BuildFragment = graphql(`
+const BuildFragment = graphql(`
   fragment BuildDetail_Build on Build {
     stats {
       total

@@ -13,118 +13,107 @@ import { IconButton } from "./IconButton";
 export { useDialogState, DialogDisclosure } from "ariakit/dialog";
 export type { DialogState } from "ariakit/dialog";
 
-export type DialogHeaderProps = {
-  children: React.ReactNode;
-};
+export const DialogHeader = forwardRef<
+  HTMLDivElement,
+  {
+    children: React.ReactNode;
+  }
+>(({ children }, ref) => {
+  return (
+    <div ref={ref} className="flex items-center justify-between border-b p-4">
+      {children}
+    </div>
+  );
+});
 
-export const DialogHeader = forwardRef<HTMLDivElement, DialogHeaderProps>(
-  ({ children }, ref) => {
-    return (
-      <div ref={ref} className="flex items-center justify-between border-b p-4">
-        {children}
-      </div>
-    );
-  },
-);
+export const DialogFooter = forwardRef<
+  HTMLDivElement,
+  {
+    children: React.ReactNode;
+  }
+>(({ children }, ref) => {
+  return (
+    <div
+      ref={ref}
+      className="flex items-center justify-end gap-4 border-t bg-subtle p-4"
+    >
+      {children}
+    </div>
+  );
+});
 
-export type DialogFooterProps = {
-  children: React.ReactNode;
-};
+export const DialogText = forwardRef<
+  HTMLDivElement,
+  {
+    children: React.ReactNode;
+    className?: string;
+  }
+>(({ children, className }, ref) => {
+  return (
+    <p ref={ref} className={clsx(className, "my-4")}>
+      {children}
+    </p>
+  );
+});
 
-export const DialogFooter = forwardRef<HTMLDivElement, DialogFooterProps>(
-  ({ children }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className="flex items-center justify-end gap-4 border-t bg-subtle p-4"
-      >
-        {children}
-      </div>
-    );
-  },
-);
+export const DialogBody = forwardRef<
+  HTMLDivElement,
+  {
+    children: React.ReactNode;
+    className?: string;
+    confirm?: boolean;
+  }
+>(({ children, className, confirm }, ref) => {
+  return (
+    <div ref={ref} className={clsx(className, confirm && "text-center", "p-4")}>
+      {children}
+    </div>
+  );
+});
 
-export type DialogTextProps = {
-  children: React.ReactNode;
-  className?: string;
-};
+export const DialogTitle = forwardRef<
+  HTMLHeadingElement,
+  {
+    children: React.ReactNode;
+  }
+>(({ children }, ref) => {
+  return (
+    <h2 ref={ref} className="text-xl font-medium">
+      {children}
+    </h2>
+  );
+});
 
-export const DialogText = forwardRef<HTMLDivElement, DialogTextProps>(
-  ({ children, className }, ref) => {
-    return (
-      <p ref={ref} className={clsx(className, "my-4")}>
-        {children}
-      </p>
-    );
-  },
-);
+export const DialogDismiss = forwardRef<
+  HTMLButtonElement,
+  {
+    children?: React.ReactNode;
+    single?: boolean;
+    onClick?: ButtonProps["onClick"];
+  }
+>((props, ref) => {
+  return (
+    <AriakitDialogDismiss
+      ref={ref}
+      className={props.single ? "flex-1 justify-center" : undefined}
+      onClick={props.onClick}
+    >
+      {(dialogDismissProps) =>
+        props.children ? (
+          <Button {...dialogDismissProps} color="neutral" variant="outline">
+            {props.children}
+          </Button>
+        ) : (
+          <IconButton {...dialogDismissProps} color="neutral">
+            <XIcon />
+          </IconButton>
+        )
+      }
+    </AriakitDialogDismiss>
+  );
+});
 
-export type DialogBodyProps = {
-  children: React.ReactNode;
-  className?: string;
-  confirm?: boolean;
-};
-
-export const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
-  ({ children, className, confirm }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={clsx(className, confirm && "text-center", "p-4")}
-      >
-        {children}
-      </div>
-    );
-  },
-);
-
-export type DialogTitleProps = {
-  children: React.ReactNode;
-};
-
-export const DialogTitle = forwardRef<HTMLHeadingElement, DialogTitleProps>(
-  ({ children }, ref) => {
-    return (
-      <h2 ref={ref} className="text-xl font-medium">
-        {children}
-      </h2>
-    );
-  },
-);
-
-type DialogDismissProps = {
-  children?: React.ReactNode;
-  single?: boolean;
-  onClick?: ButtonProps["onClick"];
-};
-
-export const DialogDismiss = forwardRef<HTMLButtonElement, DialogDismissProps>(
-  (props, ref) => {
-    return (
-      <AriakitDialogDismiss
-        ref={ref}
-        className={props.single ? "flex-1 justify-center" : undefined}
-        onClick={props.onClick}
-      >
-        {(dialogDismissProps) =>
-          props.children ? (
-            <Button {...dialogDismissProps} color="neutral" variant="outline">
-              {props.children}
-            </Button>
-          ) : (
-            <IconButton {...dialogDismissProps} color="neutral">
-              <XIcon />
-            </IconButton>
-          )
-        }
-      </AriakitDialogDismiss>
-    );
-  },
-);
-
-export type DialogProps = AriakitDialogProps;
-
-export const Dialog = forwardRef<HTMLDivElement, DialogProps>(
+export const Dialog = forwardRef<HTMLDivElement, AriakitDialogProps>(
   ({ children, className, ...props }, ref) => {
     return (
       <AriakitDialog

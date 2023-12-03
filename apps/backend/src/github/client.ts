@@ -1,5 +1,4 @@
 import { createAppAuth } from "@octokit/auth-app";
-import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { retry } from "@octokit/plugin-retry";
 import { Octokit } from "@octokit/rest";
 
@@ -25,16 +24,6 @@ export const getTokenOctokit = (token: string) => {
   return new Octokit({
     debug: config.get("env") === "development",
     auth: token,
-  });
-};
-
-export const getOAuthOctokit = () => {
-  return new Octokit({
-    authStrategy: createOAuthAppAuth,
-    auth: {
-      clientId: config.get("github.clientId"),
-      clientSecret: config.get("github.clientSecret"),
-    },
   });
 };
 

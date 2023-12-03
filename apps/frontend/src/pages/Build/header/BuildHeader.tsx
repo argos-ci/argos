@@ -60,7 +60,7 @@ const BuildReviewButton = memo(
   },
 );
 
-export const BuildFragment = graphql(`
+const BuildFragment = graphql(`
   fragment BuildHeader_Build on Build {
     name
     status
@@ -72,7 +72,7 @@ export const BuildFragment = graphql(`
   }
 `);
 
-export const ProjectFragment = graphql(`
+const ProjectFragment = graphql(`
   fragment BuildHeader_Project on Project {
     ...BuildStatusChip_Project
     ...ReviewButton_Project

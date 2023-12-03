@@ -32,11 +32,9 @@ type Inputs = {
   name: string;
 };
 
-export type ProjectChangeNameProps = {
+export const ProjectChangeName = (props: {
   project: FragmentType<typeof ProjectFragment>;
-};
-
-export const ProjectChangeName = (props: ProjectChangeNameProps) => {
+}) => {
   const project = useFragment(ProjectFragment, props.project);
   const client = useApolloClient();
   const form = useForm<Inputs>({

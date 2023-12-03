@@ -28,11 +28,7 @@ const CreateTeamMutation = graphql(`
   }
 `);
 
-export type AutoCreateTeamProps = {
-  ctx: VercelNoAccountContext;
-};
-
-export const AutoCreateTeam = (props: AutoCreateTeamProps) => {
+export const AutoCreateTeam = (props: { ctx: VercelNoAccountContext }) => {
   const { accessToken, teamId, setLinkedAccount } = props.ctx;
   if (!teamId) {
     throw new Error("Invariant: missing teamId");

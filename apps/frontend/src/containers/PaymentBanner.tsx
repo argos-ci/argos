@@ -11,7 +11,7 @@ import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { StripePortalLink } from "@/ui/StripeLink";
 
-export const PaymentBannerFragment = graphql(`
+const PaymentBannerFragment = graphql(`
   fragment PaymentBanner_Account on Account {
     id
     purchaseStatus
@@ -28,7 +28,7 @@ export const PaymentBannerFragment = graphql(`
   }
 `);
 
-export const PaymentBannerQuery = graphql(`
+const PaymentBannerQuery = graphql(`
   query PaymentBanner_me {
     me {
       id
@@ -167,52 +167,52 @@ const getTeamBannerProps = ({
   }
 };
 
-export type PaymentBannerProps = {
-  account: FragmentType<typeof PaymentBannerFragment>;
-};
+export const PaymentBanner = memo(
+  (props: { account: FragmentType<typeof PaymentBannerFragment> }) => {
+    const account = useFragment(PaymentBannerFragment, props.account);
+    const { data: { me } = {} } = useQuery(PaymentBannerQuery);
 
-export const PaymentBanner = memo((props: PaymentBannerProps) => {
-  const account = useFragment(PaymentBannerFragment, props.account);
-  const { data: { me } = {} } = useQuery(PaymentBannerQuery);
+    const {
+      purchase,
+      permissions,
+      purchaseStatus,
+      stripeCustomerId,
+      pendingCancelAt,
+    } = account;
 
-  const {
-    purchase,
-    permissions,
-    purchaseStatus,
-    stripeCustomerId,
-    pendingCancelAt,
-  } = account;
+    // no banner for user account
+    if (!me || !purchaseStatus) return null;
 
-  // no banner for user account
-  if (!me || !purchaseStatus) return null;
+    const { message, buttonLabel, bannerColor, action } = getTeamBannerProps({
+      purchaseStatus,
+      trialDaysRemaining: purchase?.trialDaysRemaining ?? null,
+      hasGithubPurchase: Boolean(purchase && purchase.source === "github"),
+      missingPaymentMethod: Boolean(purchase && !purchase.paymentMethodFilled),
+      pendingCancelAt: pendingCancelAt,
+    });
+    const userIsOwner = permissions.includes(Permission.Write);
 
-  const { message, buttonLabel, bannerColor, action } = getTeamBannerProps({
-    purchaseStatus,
-    trialDaysRemaining: purchase?.trialDaysRemaining ?? null,
-    hasGithubPurchase: Boolean(purchase && purchase.source === "github"),
-    missingPaymentMethod: Boolean(purchase && !purchase.paymentMethodFilled),
-    pendingCancelAt: pendingCancelAt,
-  });
-  const userIsOwner = permissions.includes(Permission.Write);
+    if (!message) {
+      return null;
+    }
 
-  if (!message) {
-    return null;
-  }
-
-  return (
-    <Banner className="flex justify-center" color={bannerColor ?? "neutral"}>
-      <Container className="flex items-center justify-center gap-2">
-        <p>{message}</p>
-        {userIsOwner && (
-          <BannerCta
-            stripeCustomerId={stripeCustomerId ?? null}
-            accountId={account.id}
-            action={action}
-          >
-            {buttonLabel || me.hasSubscribedToTrial ? "Upgrade" : "Start trial"}
-          </BannerCta>
-        )}
-      </Container>
-    </Banner>
-  );
-});
+    return (
+      <Banner className="flex justify-center" color={bannerColor ?? "neutral"}>
+        <Container className="flex items-center justify-center gap-2">
+          <p>{message}</p>
+          {userIsOwner && (
+            <BannerCta
+              stripeCustomerId={stripeCustomerId ?? null}
+              accountId={account.id}
+              action={action}
+            >
+              {buttonLabel || me.hasSubscribedToTrial
+                ? "Upgrade"
+                : "Start trial"}
+            </BannerCta>
+          )}
+        </Container>
+      </Banner>
+    );
+  },
+);

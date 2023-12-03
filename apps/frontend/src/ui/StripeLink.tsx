@@ -31,38 +31,27 @@ async function getStripePortalLink({
   const json = await response.json();
   return json;
 }
-
-export type UseRedirectToStripePortalProps = {
-  stripeCustomerId: string;
-  accountId: string;
-};
-
-export const useRedirectToStripePortal = () => {
+const useRedirectToStripePortal = () => {
   const token = useAssertAuthToken();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
-  const redirect = useEventCallback((props: UseRedirectToStripePortalProps) => {
-    setStatus("loading");
-    getStripePortalLink({
-      token,
-      stripeCustomerId: props.stripeCustomerId,
-      accountId: props.accountId,
-    })
-      .then((result) => {
-        window.location.href = result.sessionUrl;
+  const redirect = useEventCallback(
+    (props: { stripeCustomerId: string; accountId: string }) => {
+      setStatus("loading");
+      getStripePortalLink({
+        token,
+        stripeCustomerId: props.stripeCustomerId,
+        accountId: props.accountId,
       })
-      .catch((e) => {
-        console.error(e);
-        setStatus("error");
-      });
-  });
+        .then((result) => {
+          window.location.href = result.sessionUrl;
+        })
+        .catch((e) => {
+          console.error(e);
+          setStatus("error");
+        });
+    },
+  );
   return { status, redirect };
-};
-
-export type StripePortalButtonProps = {
-  stripeCustomerId: string;
-  accountId: string;
-  asButton?: boolean;
-  children: React.ReactNode;
 };
 
 export const StripePortalLink = ({
@@ -70,7 +59,12 @@ export const StripePortalLink = ({
   accountId,
   asButton,
   children,
-}: StripePortalButtonProps) => {
+}: {
+  stripeCustomerId: string;
+  accountId: string;
+  asButton?: boolean;
+  children: React.ReactNode;
+}) => {
   const { redirect, status } = useRedirectToStripePortal();
 
   const disabled = status === "loading";
@@ -120,17 +114,11 @@ async function getCheckoutSessionLink({
   return json;
 }
 
-export type UseRedirectToStripeCheckoutSessionProps = {
-  accountId: string;
-  successUrl: string;
-  cancelUrl: string;
-};
-
-export const useRedirectToStripeCheckout = () => {
+const useRedirectToStripeCheckout = () => {
   const token = useAssertAuthToken();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const redirect = useEventCallback(
-    (props: UseRedirectToStripeCheckoutSessionProps) => {
+    (props: { accountId: string; successUrl: string; cancelUrl: string }) => {
       setStatus("loading");
       getCheckoutSessionLink({
         token,
@@ -150,19 +138,17 @@ export const useRedirectToStripeCheckout = () => {
   return { status, redirect };
 };
 
-export type StripeCheckoutButtonProps = {
-  accountId: string;
-  successUrl: string;
-  cancelUrl: string;
-} & ButtonProps;
-
 export const StripeCheckoutButton = ({
   disabled,
   accountId,
   successUrl,
   cancelUrl,
   ...props
-}: StripeCheckoutButtonProps) => {
+}: ButtonProps & {
+  accountId: string;
+  successUrl: string;
+  cancelUrl: string;
+}) => {
   const { redirect, status } = useRedirectToStripeCheckout();
 
   return (

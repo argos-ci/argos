@@ -16,11 +16,9 @@ const ProjectFragment = graphql(`
   }
 `);
 
-export type ProjectTokenProps = {
+export const ProjectToken = (props: {
   project: FragmentType<typeof ProjectFragment>;
-};
-
-export const ProjectToken = (props: ProjectTokenProps) => {
+}) => {
   const project = useFragment(ProjectFragment, props.project);
   return (
     <Card>

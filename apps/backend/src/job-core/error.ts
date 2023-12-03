@@ -1,6 +1,6 @@
 import { invariant } from "@/util/invariant.js";
 
-export const retryableSymbol = Symbol("retryable");
+const retryableSymbol = Symbol("retryable");
 
 export class UnretryableError extends Error {
   [retryableSymbol] = false;

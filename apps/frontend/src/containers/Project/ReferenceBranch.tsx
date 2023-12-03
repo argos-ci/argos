@@ -39,11 +39,9 @@ const ProjectFragment = graphql(`
   }
 `);
 
-export type ProjectReferenceBranchProps = {
+export const ProjectReferenceBranch = (props: {
   project: FragmentType<typeof ProjectFragment>;
-};
-
-export const ProjectReferenceBranch = (props: ProjectReferenceBranchProps) => {
+}) => {
   const project = useFragment(ProjectFragment, props.project);
   const form = useForm<Inputs>({
     defaultValues: {

@@ -7,8 +7,6 @@ const RetrieveTokenResponseSchema = z.object({
   scope: z.string(),
 });
 
-export type RetrieveTokenResponse = z.infer<typeof RetrieveTokenResponseSchema>;
-
 export async function retrieveOAuthToken(args: {
   clientId: string;
   clientSecret: string;

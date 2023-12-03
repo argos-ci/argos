@@ -3,7 +3,7 @@ import { Build, type BuildAggregatedStatus } from "@/database/models/index.js";
 
 import { getStatsMessage } from "./utils.js";
 
-export const getBuildStatusLabel = (status: BuildAggregatedStatus): string => {
+function getBuildStatusLabel(status: BuildAggregatedStatus): string {
   switch (status) {
     case "accepted":
       return "👍 Changes approved";
@@ -26,7 +26,7 @@ export const getBuildStatusLabel = (status: BuildAggregatedStatus): string => {
     default:
       throw new Error("Unknown build status");
   }
-};
+}
 
 const dateFormatter = Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",

@@ -4,7 +4,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { clsx } from "clsx";
 import * as React from "react";
 
-export type TooltipVariant = "default" | "info";
+type TooltipVariant = "default" | "info";
 
 const variantClassNames: Record<TooltipVariant, string> = {
   default: "text-xxs py-1 px-2",
@@ -25,7 +25,6 @@ export type TooltipProps = {
 
 export const TooltipTrigger = TooltipPrimitive.Trigger;
 export const TooltipRoot = TooltipPrimitive.Root;
-export const TooltipPortal = TooltipPrimitive.Portal;
 export const TooltipContent = React.forwardRef(
   (
     {
@@ -70,7 +69,7 @@ export const Tooltip = ({
   return (
     <TooltipRoot disableHoverableContent={disableHoverableContent}>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipPortal>
+      <TooltipPrimitive.Portal>
         <TooltipContent
           sideOffset={4}
           align={align}
@@ -84,7 +83,7 @@ export const Tooltip = ({
         >
           {content}
         </TooltipContent>
-      </TooltipPortal>
+      </TooltipPrimitive.Portal>
     </TooltipRoot>
   );
 };

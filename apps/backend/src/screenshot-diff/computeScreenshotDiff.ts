@@ -12,7 +12,7 @@ import { getRedisLock } from "@/util/redis/index.js";
 import { ImageDiffResult, diffImages } from "./util/image-diff/index.js";
 import { chunk } from "@/util/chunk.js";
 
-export const hashFile = async (filepath: string): Promise<string> => {
+const hashFile = async (filepath: string): Promise<string> => {
   const fileStream = createReadStream(filepath);
   const hash = createHash("sha256");
   await new Promise((resolve, reject) => {

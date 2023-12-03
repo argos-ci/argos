@@ -30,11 +30,9 @@ type Inputs = {
   gitlabAccessToken: string;
 };
 
-export type AccountGitLabProps = {
+export const AccountGitLab = (props: {
   account: FragmentType<typeof AccountFragment>;
-};
-
-export const AccountGitLab = (props: AccountGitLabProps) => {
+}) => {
   const account = useFragment(AccountFragment, props.account);
   const client = useApolloClient();
   const form = useForm<Inputs>({

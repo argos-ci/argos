@@ -130,11 +130,7 @@ const SyncProject = (props: SyncProjectProps) => {
   );
 };
 
-export type ProjectSummaryProps = {
-  ctx: VercelAccountContext;
-};
-
-export const ProjectsSummary = (props: ProjectSummaryProps) => {
+export const ProjectsSummary = (props: { ctx: VercelAccountContext }) => {
   const { data, updateQuery } = useQuery(VercelProjectsQuery, {
     variables: {
       accessToken: props.ctx.accessToken,

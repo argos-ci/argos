@@ -28,7 +28,7 @@ const Tab = React.forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
   );
 });
 
-export const BuildFragment = graphql(`
+const BuildFragment = graphql(`
   fragment BuildSidebar_Build on Build {
     ...BuildInfos_Build
     stats {

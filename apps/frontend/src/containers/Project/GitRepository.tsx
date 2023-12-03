@@ -143,10 +143,6 @@ const UnlinkGitlabProjectButton = (props: {
   );
 };
 
-export type ProjectGitRepositoryProps = {
-  project: FragmentType<typeof ProjectFragment>;
-};
-
 const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
   const [linkGithubRepository, { loading: linkGithubRepositoryLoading }] =
     useMutation(LinkGithubRepositoryMutation, {
@@ -203,11 +199,11 @@ type Inputs = {
   prCommentEnabled: boolean;
 };
 
-export type GitOptionsFormProps = {
+const GitOptionsForm = ({
+  project,
+}: {
   project: ProjectGitRepository_ProjectFragment;
-};
-
-const GitOptionsForm = ({ project }: GitOptionsFormProps) => {
+}) => {
   const form = useForm<Inputs>({
     defaultValues: { prCommentEnabled: project.prCommentEnabled },
   });
@@ -237,7 +233,9 @@ const GitOptionsForm = ({ project }: GitOptionsFormProps) => {
   );
 };
 
-export const ProjectGitRepository = (props: ProjectGitRepositoryProps) => {
+export const ProjectGitRepository = (props: {
+  project: FragmentType<typeof ProjectFragment>;
+}) => {
   const project = useFragment(ProjectFragment, props.project);
   const RepoIcon = project.repository
     ? getRepositoryIcon(project.repository.__typename)

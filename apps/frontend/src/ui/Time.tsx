@@ -9,12 +9,12 @@ import {
 } from "react";
 import { Tooltip } from "./Tooltip";
 
-export interface TimeProps extends HTMLProps<HTMLTimeElement> {
+type TimeProps = HTMLProps<HTMLTimeElement> & {
   date: string;
   format?: string;
   tooltip?: "title" | "tooltip" | "none";
   children?: React.ReactNode;
-}
+};
 
 export const Time = forwardRef<HTMLTimeElement, TimeProps>(
   ({ date, format, children, tooltip = "tooltip", ...props }, ref) => {

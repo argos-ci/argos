@@ -2,14 +2,14 @@ import type { BuildNotification } from "@/database/models/BuildNotification.js";
 import { UnretryableError } from "@/job-core/error.js";
 import { getStatsMessage } from "./utils.js";
 
-export enum GithubNotificationState {
+enum GithubNotificationState {
   Pending = "pending",
   Success = "success",
   Error = "error",
   Failure = "failure",
 }
 
-export enum GitlabNotificationState {
+enum GitlabNotificationState {
   Pending = "pending",
   Running = "running",
   Success = "success",
@@ -17,12 +17,12 @@ export enum GitlabNotificationState {
   Canceled = "canceled",
 }
 
-export enum VercelStatus {
+enum VercelStatus {
   Completed = "completed",
   Running = "running",
 }
 
-export enum VercelConclusion {
+enum VercelConclusion {
   Neutral = "neutral",
   Succeeded = "succeeded",
   Canceled = "canceled",

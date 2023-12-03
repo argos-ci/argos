@@ -14,7 +14,7 @@ import { Tooltip } from "@/ui/Tooltip";
 
 import { getBuildIcon } from "./Build";
 
-export const ProjectFragment = graphql(`
+const ProjectFragment = graphql(`
   fragment ReviewButton_Project on Project {
     name
     permissions

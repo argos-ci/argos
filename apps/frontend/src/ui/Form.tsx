@@ -2,13 +2,6 @@ import { ApolloError } from "@apollo/client";
 import { forwardRef } from "react";
 import { SubmitHandler, useFormContext } from "react-hook-form";
 
-export type FormProps = Omit<
-  React.FormHTMLAttributes<HTMLFormElement>,
-  "onSubmit"
-> & {
-  onSubmit: SubmitHandler<any>;
-};
-
 const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
 
 export const getGraphQLErrorMessage = (error: unknown): string => {
@@ -35,29 +28,32 @@ const unwrapErrors = (error: unknown) => {
   ];
 };
 
-export const Form = forwardRef<HTMLFormElement, FormProps>(
-  ({ onSubmit, autoComplete = "off", ...props }, ref) => {
-    const { handleSubmit, clearErrors, setError } = useFormContext();
-    return (
-      <form
-        ref={ref}
-        onSubmit={handleSubmit(async (data, event) => {
-          try {
-            clearErrors();
-            await onSubmit(data, event);
-          } catch (error) {
-            const errors = unwrapErrors(error);
-            errors.forEach((error) => {
-              setError(error.field, {
-                type: "manual",
-                message: error.message,
-              });
+export const Form = forwardRef<
+  HTMLFormElement,
+  Omit<React.FormHTMLAttributes<HTMLFormElement>, "onSubmit"> & {
+    onSubmit: SubmitHandler<any>;
+  }
+>(({ onSubmit, autoComplete = "off", ...props }, ref) => {
+  const { handleSubmit, clearErrors, setError } = useFormContext();
+  return (
+    <form
+      ref={ref}
+      onSubmit={handleSubmit(async (data, event) => {
+        try {
+          clearErrors();
+          await onSubmit(data, event);
+        } catch (error) {
+          const errors = unwrapErrors(error);
+          errors.forEach((error) => {
+            setError(error.field, {
+              type: "manual",
+              message: error.message,
             });
-          }
-        })}
-        autoComplete={autoComplete}
-        {...props}
-      />
-    );
-  },
-);
+          });
+        }
+      })}
+      autoComplete={autoComplete}
+      {...props}
+    />
+  );
+});

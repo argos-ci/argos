@@ -4,16 +4,6 @@ import { Link } from "react-router-dom";
 
 import { UpDownMenuButton, UpDownMenuButtonProps } from "./Menu";
 
-export const Breadcrumb = (props: { children: React.ReactNode }) => {
-  return (
-    <nav aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-2 py-4 font-light">
-        {props.children}
-      </ol>
-    </nav>
-  );
-};
-
 export const BreadcrumbItem = (props: HTMLProps<HTMLLIElement>) => {
   return <li className="flex shrink-0 items-center gap-2" {...props} />;
 };

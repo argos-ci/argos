@@ -21,7 +21,6 @@ export * from "./ScreenshotDiff.js";
 export * from "./Team.js";
 export * from "./TeamUser.js";
 export * from "./Test.js";
-export * from "./TestActivity.js";
 export * from "./User.js";
 export * from "./VercelCheck.js";
 export * from "./VercelConfiguration.js";

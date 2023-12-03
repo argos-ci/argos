@@ -6,9 +6,6 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import webpack from "webpack";
 
-// eslint-disable-next-line import/no-unresolved
-import config from "@argos-ci/backend/dist/config/index.js";
-
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const prod = process.env["NODE_ENV"] === "production";
 

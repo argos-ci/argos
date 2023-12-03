@@ -26,6 +26,9 @@ jobs:
       - name: Check Prettier
         run: npm exec prettier -- --check .
 
+      - name: Knip
+        run: npm run knip
+
   unit-test:
     runs-on: ubuntu-latest
 

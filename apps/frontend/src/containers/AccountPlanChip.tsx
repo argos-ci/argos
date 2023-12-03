@@ -12,12 +12,10 @@ const AccountFragment = graphql(`
   }
 `);
 
-export type PlanChipProps = {
+export const AccountPlanChip = (props: {
   account: FragmentType<typeof AccountFragment>;
   className?: string;
-};
-
-export const AccountPlanChip = (props: PlanChipProps) => {
+}) => {
   const account = useFragment(AccountFragment, props.account);
   const chipProps: { color: ChipColor; children: string } | null = (() => {
     switch (account.purchaseStatus) {

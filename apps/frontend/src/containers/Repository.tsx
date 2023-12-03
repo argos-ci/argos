@@ -1,7 +1,7 @@
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { GitLabColoredLogo } from "./GitLab";
 
-export type RepositoryType = "GithubRepository" | "GitlabProject";
+type RepositoryType = "GithubRepository" | "GitlabProject";
 
 const repositoryIcons = {
   GithubRepository: MarkGithubIcon,

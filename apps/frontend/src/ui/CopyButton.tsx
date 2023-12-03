@@ -4,14 +4,12 @@ import { clsx } from "clsx";
 import { useClipboard } from "use-clipboard-copy";
 import { Tooltip } from "./Tooltip";
 
-export type CopyButtonProps = { text: string } & ButtonProps;
-
 export const CopyButton = ({
   text,
   onClick,
   className,
   ...props
-}: CopyButtonProps) => {
+}: { text: string } & ButtonProps) => {
   const clipboard = useClipboard({ copiedTimeout: 2000 });
   return (
     <Tooltip

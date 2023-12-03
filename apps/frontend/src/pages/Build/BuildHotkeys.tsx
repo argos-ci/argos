@@ -17,7 +17,7 @@ interface Hotkey {
 
 const isMacOS = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
-export const hotkeys = {
+const hotkeys = {
   goToFirstFailure: {
     keys: ["Digit1"],
     displayKeys: ["1"],

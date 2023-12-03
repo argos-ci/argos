@@ -5,7 +5,7 @@ import { Tooltip } from "@/ui/Tooltip";
 import { getBuildColor, getBuildIcon, getBuildLabel } from "./Build";
 import { BuildStatusDescription } from "./BuildStatusDescription";
 
-export const BuildFragment = graphql(`
+const BuildFragment = graphql(`
   fragment BuildStatusChip_Build on Build {
     ...BuildStatusDescription_Build
     type
@@ -13,7 +13,7 @@ export const BuildFragment = graphql(`
   }
 `);
 
-export const ProjectFragment = graphql(`
+const ProjectFragment = graphql(`
   fragment BuildStatusChip_Project on Project {
     ...BuildStatusDescription_Project
   }

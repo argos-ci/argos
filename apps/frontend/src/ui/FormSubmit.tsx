@@ -2,15 +2,13 @@ import { useFormContext } from "react-hook-form";
 
 import { Button, ButtonProps } from "./Button";
 
-export type FormSubmitProps = ButtonProps & {
-  disabledIfSubmitted?: boolean;
-};
-
 export const FormSubmit = ({
   children,
   disabledIfSubmitted,
   ...props
-}: FormSubmitProps) => {
+}: ButtonProps & {
+  disabledIfSubmitted?: boolean;
+}) => {
   const { formState } = useFormContext();
   const disabled =
     props.disabled ||

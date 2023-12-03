@@ -220,15 +220,6 @@ const PreviousDiffButton = memo(() => {
   );
 });
 
-export interface BuildDetailToolbarProps {
-  activeDiff: Diff;
-  bordered: boolean;
-  repoUrl: string | null;
-  baseBranch: string | null;
-  compareBranch: string | null;
-  prMerged: boolean;
-}
-
 export const BuildDetailToolbar = memo(
   ({
     activeDiff,
@@ -237,7 +228,14 @@ export const BuildDetailToolbar = memo(
     bordered,
     repoUrl,
     prMerged,
-  }: BuildDetailToolbarProps) => {
+  }: {
+    activeDiff: Diff;
+    bordered: boolean;
+    repoUrl: string | null;
+    baseBranch: string | null;
+    compareBranch: string | null;
+    prMerged: boolean;
+  }) => {
     const automationLibrary =
       activeDiff.compareScreenshot?.metadata?.automationLibrary ??
       activeDiff.baseScreenshot?.metadata?.automationLibrary ??

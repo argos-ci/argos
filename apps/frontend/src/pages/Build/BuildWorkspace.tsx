@@ -19,7 +19,7 @@ const BuildProgress = memo(() => {
   );
 });
 
-export const BuildFragment = graphql(`
+const BuildFragment = graphql(`
   fragment BuildWorkspace_Build on Build {
     ...BuildSidebar_Build
     ...BuildStatusDescription_Build
@@ -36,7 +36,7 @@ export const BuildFragment = graphql(`
   }
 `);
 
-export const ProjectFragment = graphql(`
+const ProjectFragment = graphql(`
   fragment BuildWorkspace_Project on Project {
     ...BuildStatusDescription_Project
     repository {

@@ -10,7 +10,7 @@ import { ErrorPage } from "@/pages/ErrorPage";
 import { AuthenticationError, logout } from "./Auth";
 import { Navbar } from "./Navbar";
 
-export const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
+const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
   (props: { children: React.ReactNode }, ref) => {
     return (
       <main ref={ref} className="contents">

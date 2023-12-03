@@ -25,13 +25,13 @@ const acquireLock = async ({
   }
 };
 
-export type Acquire = <T>(
+type Acquire = <T>(
   name: string,
   task: () => Promise<T>,
   options?: { timeout?: number; retryDelay?: number },
 ) => Promise<T>;
 
-export interface RedisLock {
+interface RedisLock {
   acquire: Acquire;
 }
 

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://unpkg.com/knip@3/schema.json",
+  "workspaces": {
+    "apps/backend": {
+      "entry": [
+        "src/processes/proc/*.ts",
+        "src/build/bin/*.ts",
+        "src/database/testing/index.ts",
+        "src/graphql/definitions/*.ts"
+      ],
+      "ignore": ["db", "knexfile.js", "src/graphql/__generated__"],
+      "ignoreDependencies": ["pg"],
+      "paths": {
+        "@/*": ["./src/*"]
+      }
+    },
+    "apps/frontend": {
+      "entry": ["src/index.tsx"],
+      "ignore": ["src/gql"],
+      "ignoreDependencies": ["webpack-cli"]
+    },
+    "apps/email": {
+      "entry": ["emails/*.tsx"]
+    }
+  },
+  "webpack": {
+    "config": ["webpack.config.mjs"]
+  },
+  "vitest": {
+    "config": ["vitest.config.ts", "vitest.*.config.ts"],
+    "entry": ["**/*.e2e.test.ts?(x)", "**/*.test.ts?(x)"]
+  },
+  "exclude": ["classMembers"],
+  "ignore": ["prettier.config.js", "playwright.config.mjs", "examples"],
+  "ignoreBinaries": ["stripe"],
+  "ignoreDependencies": [
+    "@trivago/prettier-plugin-sort-imports",
+    "prettier-plugin-tailwindcss"
+  ]
+}
