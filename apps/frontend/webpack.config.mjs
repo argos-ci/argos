@@ -66,7 +66,7 @@ export default {
         ]
       : []),
   ],
-  ...(!prod
+  ...(!prod && process.env["CI"] !== "true"
     ? {
         devServer: {
           historyApiFallback: true,
