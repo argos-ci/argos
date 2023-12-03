@@ -63,7 +63,7 @@ type CreateRequest = Request<
   }
 > & { authProject: Project };
 
-export const createBuild = async (params: {
+const createBuild = async (params: {
   project: Project;
   commit: string;
   branch: string;
