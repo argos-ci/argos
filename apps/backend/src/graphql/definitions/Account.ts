@@ -404,7 +404,7 @@ export const resolvers: IResolvers = {
 
       if (input.slug && account.slug !== input.slug) {
         try {
-          checkAccountSlug(input.slug);
+          await checkAccountSlug(input.slug);
         } catch (error: unknown) {
           if (error instanceof Error) {
             throw new GraphQLError(error.message, {
