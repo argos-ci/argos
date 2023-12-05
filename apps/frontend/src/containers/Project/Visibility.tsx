@@ -55,11 +55,9 @@ const ProjectFragment = graphql(`
   }
 `);
 
-export type ProjectVisibilityProps = {
+export const ProjectVisibility = (props: {
   project: FragmentType<typeof ProjectFragment>;
-};
-
-export const ProjectVisibility = (props: ProjectVisibilityProps) => {
+}) => {
   const project = useFragment(ProjectFragment, props.project);
   const form = useForm<Inputs>({
     defaultValues: {

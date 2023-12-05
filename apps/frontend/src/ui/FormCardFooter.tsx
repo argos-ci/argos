@@ -3,11 +3,7 @@ import { FormRootError } from "./FormRootError";
 import { FormSubmit } from "./FormSubmit";
 import { FormSuccess } from "./FormSuccess";
 
-export type FormCardFooterProps = {
-  children?: React.ReactNode;
-};
-
-export const FormCardFooter = (props: FormCardFooterProps) => {
+export const FormCardFooter = (props: { children?: React.ReactNode }) => {
   return (
     <CardFooter className="flex items-center justify-between">
       <div>{props.children}</div>

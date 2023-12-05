@@ -11,9 +11,9 @@ import {
   XCircleIcon,
 } from "lucide-react";
 
-export type BuildType = "reference" | "check" | "orphan";
+type BuildType = "reference" | "check" | "orphan";
 
-export type BuildStatus =
+type BuildStatus =
   | "accepted"
   | "rejected"
   | "stable"

@@ -18,11 +18,7 @@ const TeamsQuery = graphql(`
   }
 `);
 
-export type FromTeamProps = {
-  ctx: VercelNoAccountContext;
-};
-
-export const FromTeam = (props: FromTeamProps) => {
+export const FromTeam = (props: { ctx: VercelNoAccountContext }) => {
   const { data } = useQuery(TeamsQuery);
   if (!data) {
     return <PageLoader />;

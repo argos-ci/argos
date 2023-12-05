@@ -131,7 +131,7 @@ const getGroupsFromStats = (stats: BuildStats): DiffGroup[] => {
 
 export type DiffResult = MatchData<Diff>;
 
-export interface BuildDiffContextValue {
+type BuildDiffContextValue = {
   diffs: Diff[];
   totalDiffCount: number;
   groups: DiffGroup[];
@@ -145,7 +145,7 @@ export interface BuildDiffContextValue {
   ready: boolean;
   stats: BuildStats | null;
   results: DiffResult[];
-}
+};
 
 const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
 
@@ -289,12 +289,6 @@ const groupDiffs = (diffs: Diff[]): DiffGroup[] => {
   }, [] as DiffGroup[]);
 };
 
-export interface BuildDiffProviderProps {
-  children: React.ReactNode;
-  stats: BuildStats | null;
-  params: BuildParams;
-}
-
 type SearchModeContextValue = {
   searchMode: boolean;
   setSearchMode: (enabled: boolean) => void;
@@ -331,7 +325,11 @@ export const BuildDiffProvider = ({
   children,
   stats,
   params,
-}: BuildDiffProviderProps) => {
+}: {
+  children: React.ReactNode;
+  stats: BuildStats | null;
+  params: BuildParams;
+}) => {
   const [search, setSearch] = useState("");
   const [searchMode, setSearchMode] = useState(false);
   const navigate = useNavigate();

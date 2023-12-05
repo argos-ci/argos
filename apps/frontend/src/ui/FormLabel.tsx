@@ -1,11 +1,13 @@
 import { clsx } from "clsx";
 import { HTMLProps } from "react";
 
-export type FormLabelProps = {
+export const FormLabel = ({
+  className,
+  invalid,
+  ...props
+}: {
   invalid?: boolean;
-} & HTMLProps<HTMLLabelElement>;
-
-export const FormLabel = ({ className, invalid, ...props }: FormLabelProps) => {
+} & HTMLProps<HTMLLabelElement>) => {
   return (
     <label
       className={clsx(

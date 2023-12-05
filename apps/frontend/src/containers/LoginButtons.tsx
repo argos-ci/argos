@@ -6,13 +6,11 @@ import { GitLabLoginButton } from "@/containers/GitLab";
 import { Anchor } from "@/ui/Link";
 import { clsx } from "clsx";
 
-export type LoginButtonsProps = {
+export const LoginButtons = (props: {
   redirect?: string | null;
   disabled?: boolean;
   className?: string;
-};
-
-export const LoginButtons = (props: LoginButtonsProps) => {
+}) => {
   const location = useLocation();
   const redirect = props.redirect ?? location.pathname + location.search;
   return (

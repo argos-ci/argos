@@ -16,10 +16,6 @@ const ProjectFragment = graphql(`
   }
 `);
 
-export type ProjectBadgeProps = {
-  project: FragmentType<typeof ProjectFragment>;
-};
-
 const BadgeBlock = (props: {
   title: string;
   url: string;
@@ -43,7 +39,9 @@ const BadgeBlock = (props: {
   );
 };
 
-export const ProjectBadge = (props: ProjectBadgeProps) => {
+export const ProjectBadge = (props: {
+  project: FragmentType<typeof ProjectFragment>;
+}) => {
   const project = useFragment(ProjectFragment, props.project);
   return (
     <Card>

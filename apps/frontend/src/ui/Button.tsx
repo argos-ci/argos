@@ -93,17 +93,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   },
 );
 
-export interface ButtonIconProps {
-  children: React.ReactElement;
-  position?: "left" | "right";
-  className?: string;
-}
-
 export const ButtonIcon = ({
   children,
   position = "left",
   className,
-}: ButtonIconProps) => {
+}: {
+  children: React.ReactElement;
+  position?: "left" | "right";
+  className?: string;
+}) => {
   return cloneElement(Children.only(children), {
     "aria-hidden": true,
     className: clsx(

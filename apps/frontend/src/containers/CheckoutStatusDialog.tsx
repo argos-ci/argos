@@ -14,7 +14,7 @@ import {
 } from "@/ui/Dialog";
 import { Anchor } from "@/ui/Link";
 
-export type CheckoutStatus = "success" | "cancel" | null;
+type CheckoutStatus = "success" | "cancel" | null;
 
 export const useCheckoutStatusDialog = () => {
   const { search } = useLocation();

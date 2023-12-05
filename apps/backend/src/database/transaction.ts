@@ -7,40 +7,11 @@ type TransactionOrKnexWithPromise = TransactionOrKnex & {
   executionPromise: Promise<any>;
 };
 
-export const checkIsTransaction = (
+const checkIsTransaction = (
   maybeTrx: any,
 ): maybeTrx is TransactionOrKnexWithPromise => {
   return Boolean(maybeTrx && maybeTrx.executionPromise);
 };
-
-/**
- * Wait for a transaction to be complete.
- */
-export async function waitForTransaction(trx?: TransactionOrKnex) {
-  return Promise.resolve(checkIsTransaction(trx) ? trx.executionPromise : null);
-}
-
-/**
- * Run a callback when the transaction is done.
- */
-export function runAfterTransaction(
-  trx: TransactionOrKnex | undefined,
-  callback: () => void | Promise<void>,
-) {
-  waitForTransaction(trx).then(
-    () => {
-      // If transaction success, then run action
-      return Promise.resolve(callback()).catch((error) => {
-        setTimeout(() => {
-          throw error;
-        });
-      });
-    },
-    () => {
-      // Ignore transaction error
-    },
-  );
-}
 
 let transactionKnexInstance: Knex | null = null;
 

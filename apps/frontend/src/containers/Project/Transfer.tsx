@@ -443,11 +443,9 @@ const ProjectFragment = graphql(`
   }
 `);
 
-export type ProjectTransferProps = {
+export const ProjectTransfer = (props: {
   project: FragmentType<typeof ProjectFragment>;
-};
-
-export const ProjectTransfer = (props: ProjectTransferProps) => {
+}) => {
   return (
     <Card>
       <CardBody>

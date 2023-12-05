@@ -32,7 +32,7 @@ export type VercelApiTeam = {
   name: string | null;
 };
 
-export type VercelGetTeamResponse = VercelApiTeam;
+type VercelGetTeamResponse = VercelApiTeam;
 
 export type VercelApiProject = {
   id: string;
@@ -52,7 +52,7 @@ export type VercelApiProject = {
       };
 };
 
-export type VercelListProjectsResponse = {
+type VercelListProjectsResponse = {
   projects: VercelApiProject[];
   pagination: {
     count: number;
@@ -61,18 +61,18 @@ export type VercelListProjectsResponse = {
   };
 };
 
-export type VercelFindProjectResponse = VercelApiProject;
+type VercelFindProjectResponse = VercelApiProject;
 
-export type VercelClientParams = {
+type VercelClientParams = {
   accessToken: string;
 };
 
-export type VercelGetConfigurationResponse = {
+type VercelGetConfigurationResponse = {
   id: string;
   slug: string;
 };
 
-export type UpdateCheckParams = {
+type UpdateCheckParams = {
   deploymentId: string;
   checkId: string;
   teamId?: string | null;
@@ -91,12 +91,12 @@ export type UpdateCheckParams = {
   status?: "running" | "completed";
 };
 
-export type VercelCreateCheckResponse = {
+type VercelCreateCheckResponse = {
   id: string;
   deploymentId: string;
 };
 
-export type CreateCheckParams = {
+type CreateCheckParams = {
   deploymentId: string;
   teamId?: string | null;
   blocking: boolean;
@@ -116,7 +116,7 @@ export type CreateCheckParams = {
   status?: "running" | "completed";
 };
 
-export type VercelUpdateCheckResponse = {
+type VercelUpdateCheckResponse = {
   id: string;
   deploymentId: string;
 };

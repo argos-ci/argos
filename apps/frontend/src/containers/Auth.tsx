@@ -30,13 +30,13 @@ export const readAuthTokenCookie = () => {
   return Cookie.get(COOKIE_NAME) ?? null;
 };
 
-export const removeAuthTokenCookie = () => {
+const removeAuthTokenCookie = () => {
   Cookie.remove(COOKIE_NAME, {
     domain: COOKIE_DOMAIN,
   });
 };
 
-export const setAuthTokenCookie = (token: string) => {
+const setAuthTokenCookie = (token: string) => {
   Cookie.set(COOKIE_NAME, token, {
     domain: COOKIE_DOMAIN,
     expires: 60,
@@ -126,7 +126,7 @@ export function useIsLoggedIn() {
   return useAuthTokenPayload() !== null;
 }
 
-export function redirectToLogin() {
+function redirectToLogin() {
   window.location.replace(
     `/login?r=${encodeURIComponent(window.location.pathname)}`,
   );

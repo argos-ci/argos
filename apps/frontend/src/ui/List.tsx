@@ -9,10 +9,8 @@ import {
 
 import { Loader, useDelayedVisible } from "./Loader";
 
-export type ListProps = HTMLAttributes<HTMLDivElement>;
-
-export const List = forwardRef<HTMLDivElement, ListProps>(
-  ({ className, ...props }: ListProps, ref) => {
+export const List = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => {
     return (
       <div
         ref={ref}
@@ -24,53 +22,31 @@ export const List = forwardRef<HTMLDivElement, ListProps>(
   },
 );
 
-export type ListRowProps = {
-  clickable?: boolean;
-  asChild?: boolean;
-} & HTMLAttributes<HTMLDivElement>;
-
-export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(
-  (
-    { className, clickable, asChild, children, ...props }: ListRowProps,
+export const ListRow = forwardRef<
+  HTMLDivElement,
+  {
+    clickable?: boolean;
+    asChild?: boolean;
+  } & HTMLAttributes<HTMLDivElement>
+>(({ className, clickable, asChild, children, ...props }, ref) => {
+  const childProps = {
     ref,
-  ) => {
-    const childProps = {
-      ref,
-      role: "row",
-      className: clsx(
-        "flex gap-6 border-b last:border-b-0 bg-app",
-        clickable && "hover:bg-hover",
-        className,
-      ),
-      ...props,
-    };
+    role: "row",
+    className: clsx(
+      "flex gap-6 border-b last:border-b-0 bg-app",
+      clickable && "hover:bg-hover",
+      className,
+    ),
+    ...props,
+  };
 
-    if (asChild) {
-      const child = children as React.ReactElement;
-      return cloneElement(child, childProps);
-    }
+  if (asChild) {
+    const child = children as React.ReactElement;
+    return cloneElement(child, childProps);
+  }
 
-    return <div {...childProps}>{children}</div>;
-  },
-);
-
-export type ListHeaderProps = HTMLAttributes<HTMLDivElement>;
-
-export const ListHeader = forwardRef<HTMLDivElement, ListHeaderProps>(
-  ({ className, ...props }: ListHeaderProps, ref) => {
-    return (
-      <div
-        ref={ref}
-        role="rowheader"
-        className={clsx(
-          "border-b-border whitespace-nowrap border-b bg-subtle text-xs font-medium uppercase text-low",
-          className,
-        )}
-        {...props}
-      />
-    );
-  },
-);
+  return <div {...childProps}>{children}</div>;
+});
 
 const ListLoader = memo((props: { children: ReactNode }) => {
   const visible = useDelayedVisible(500);
@@ -83,20 +59,17 @@ const ListLoader = memo((props: { children: ReactNode }) => {
   );
 });
 
-export type ListRowLoaderProps = HTMLAttributes<HTMLDivElement>;
-export const ListRowLoader = forwardRef<HTMLDivElement, ListRowLoaderProps>(
-  ({ className, children, ...props }, ref) => {
-    return (
-      <ListRow
-        ref={ref}
-        className={clsx(
-          className,
-          "items-center justify-center gap-2 text-low",
-        )}
-        {...props}
-      >
-        <ListLoader>{children}</ListLoader>
-      </ListRow>
-    );
-  },
-);
+export const ListRowLoader = forwardRef<
+  HTMLDivElement,
+  HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => {
+  return (
+    <ListRow
+      ref={ref}
+      className={clsx(className, "items-center justify-center gap-2 text-low")}
+      {...props}
+    >
+      <ListLoader>{children}</ListLoader>
+    </ListRow>
+  );
+});

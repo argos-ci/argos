@@ -225,7 +225,7 @@ const GitLabButton = ({
   );
 };
 
-export type ConnectRepositoryProps = {
+type ConnectRepositoryProps = {
   onSelectRepository: GithubInstallationsProps["onSelectRepository"];
   onSelectProject: GitlabProjectListProps["onSelectProject"];
   disabled?: boolean;

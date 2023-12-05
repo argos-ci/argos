@@ -4,18 +4,13 @@ import { TooltipContent, TooltipRoot, TooltipTrigger } from "./Tooltip";
 import { TooltipPortal } from "@radix-ui/react-tooltip";
 import { clsx } from "clsx";
 
-export type TruncableProps = Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "children"
-> & {
-  children: React.ReactNode;
-};
-
 export const Truncable = ({
   className,
   children,
   ...props
-}: TruncableProps) => {
+}: Omit<React.HTMLAttributes<HTMLDivElement>, "children"> & {
+  children: React.ReactNode;
+}) => {
   const ref = React.useRef<HTMLButtonElement>(null);
   const [open, setOpen] = React.useState(false);
 

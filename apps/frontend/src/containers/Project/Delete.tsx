@@ -136,11 +136,9 @@ const ProjectFragment = graphql(`
   }
 `);
 
-export type ProjectDeleteProps = {
+export const ProjectDelete = (props: {
   project: FragmentType<typeof ProjectFragment>;
-};
-
-export const ProjectDelete = (props: ProjectDeleteProps) => {
+}) => {
   const project = useFragment(ProjectFragment, props.project);
   return (
     <Card intent="danger">

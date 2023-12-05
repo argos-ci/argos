@@ -3,7 +3,7 @@ import { Code } from "@/ui/Code";
 
 import { checkIsBuildEmpty, checkIsBuildIncomplete } from "./Build";
 
-export const BuildFragment = graphql(`
+const BuildFragment = graphql(`
   fragment BuildStatusDescription_Build on Build {
     type
     status
@@ -15,7 +15,7 @@ export const BuildFragment = graphql(`
   }
 `);
 
-export const ProjectFragment = graphql(`
+const ProjectFragment = graphql(`
   fragment BuildStatusDescription_Project on Project {
     referenceBranch
   }

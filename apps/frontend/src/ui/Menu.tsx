@@ -15,23 +15,20 @@ import { Children, HTMLProps, cloneElement, forwardRef } from "react";
 export { MenuButton, useMenuState } from "ariakit/menu";
 export type { MenuState } from "ariakit/menu";
 
-export type MenuSeparatorProps = Omit<AriakitMenuSeparatorProps, "className">;
+export const MenuSeparator = forwardRef<
+  HTMLHRElement,
+  Omit<AriakitMenuSeparatorProps, "className">
+>((props, ref) => {
+  return (
+    <AriakitMenuSeparator
+      ref={ref}
+      className="-mx-1 my-1 border-t"
+      {...props}
+    />
+  );
+});
 
-export const MenuSeparator = forwardRef<HTMLHRElement, MenuSeparatorProps>(
-  (props, ref) => {
-    return (
-      <AriakitMenuSeparator
-        ref={ref}
-        className="-mx-1 my-1 border-t"
-        {...props}
-      />
-    );
-  },
-);
-
-export type MenuProps = AriakitMenuProps;
-
-export const Menu = forwardRef<HTMLDivElement, MenuProps>(
+export const Menu = forwardRef<HTMLDivElement, AriakitMenuProps>(
   ({ className, ...props }, ref) => {
     return (
       <AriakitMenu
@@ -48,43 +45,40 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(
 
 type MenuItemVariant = "default" | "danger";
 
-export type MenuItemProps = Omit<AriakitMenuItemProps, "className"> & {
-  pointer?: boolean;
-  selected?: boolean;
-  variant?: MenuItemVariant;
-};
-
 const menuItemVariantClasses: Record<MenuItemVariant, string> = {
   default: "text hover:bg-active focus:bg-active",
   danger: "text-danger-low hover:bg-danger-active focus:bg-danger-active",
 };
 
-export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
-  ({ pointer, ...props }, ref) => {
-    const pointerClassName = pointer ? "cursor-pointer" : "cursor-default";
-    return (
-      <AriakitMenuItem
-        ref={ref}
-        className={clsx(
-          pointerClassName,
-          menuItemVariantClasses[props.variant ?? "default"],
-          "flex items-center rounded px-3 py-1.5 text-sm transition focus:outline-none aria-disabled:opacity-disabled aria-disabled:hover:bg-transparent",
-        )}
-        {...props}
-      />
-    );
-  },
-);
-
-export interface MenuItemIconProps {
-  children: React.ReactElement;
-  className?: string;
-}
+export const MenuItem = forwardRef<
+  HTMLDivElement,
+  Omit<AriakitMenuItemProps, "className"> & {
+    pointer?: boolean;
+    selected?: boolean;
+    variant?: MenuItemVariant;
+  }
+>(({ pointer, ...props }, ref) => {
+  const pointerClassName = pointer ? "cursor-pointer" : "cursor-default";
+  return (
+    <AriakitMenuItem
+      ref={ref}
+      className={clsx(
+        pointerClassName,
+        menuItemVariantClasses[props.variant ?? "default"],
+        "flex items-center rounded px-3 py-1.5 text-sm transition focus:outline-none aria-disabled:opacity-disabled aria-disabled:hover:bg-transparent",
+      )}
+      {...props}
+    />
+  );
+});
 
 export const MenuItemIcon = ({
   children,
   className = "",
-}: MenuItemIconProps) => {
+}: {
+  children: React.ReactElement;
+  className?: string;
+}) => {
   return (
     <div className="mr-2 w-[18px]">
       {cloneElement(Children.only(children), {

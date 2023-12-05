@@ -69,7 +69,7 @@ const ProjectTabs = ({
   );
 };
 
-export interface OutletContext {
+interface OutletContext {
   hasWritePermission: boolean;
 }
 

@@ -10,8 +10,6 @@ const RetrieveTokenResponseSchema = z.object({
   created_at: z.number(),
 });
 
-export type RetrieveTokenResponse = z.infer<typeof RetrieveTokenResponseSchema>;
-
 export async function retrieveOAuthToken(args: {
   clientId: string;
   clientSecret: string;

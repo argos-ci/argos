@@ -7,7 +7,7 @@ import { FragmentType, useFragment } from "@/gql/fragment-masking";
 import { Banner } from "@/ui/Banner";
 import { Link } from "@/ui/Link";
 
-export const AccountFragment = graphql(`
+const AccountFragment = graphql(`
   fragment OvercapacityBanner_Account on Account {
     plan {
       id

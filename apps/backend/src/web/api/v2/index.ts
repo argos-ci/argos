@@ -1,7 +1,6 @@
 import express from "express";
 
 import builds from "./builds/index.js";
-import crawls from "./crawls/index.js";
 
 import { rateLimit } from "express-rate-limit";
 
@@ -16,6 +15,5 @@ const limiter = rateLimit({
 
 router.use(limiter);
 router.use(builds);
-router.use(crawls);
 
 export default router;

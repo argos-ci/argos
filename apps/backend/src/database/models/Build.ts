@@ -23,15 +23,15 @@ import { User } from "./User.js";
 import { VercelCheck } from "./VercelCheck.js";
 
 export type BuildType = "orphan" | "reference" | "check";
-export type BuildStatus =
+type BuildStatus =
   | "expired"
   | "pending"
   | "progress"
   | "complete"
   | "error"
   | "aborted";
-export type BuildConclusion = "stable" | "diffDetected" | null;
-export type BuildReviewStatus = "accepted" | "rejected" | null;
+type BuildConclusion = "stable" | "diffDetected" | null;
+type BuildReviewStatus = "accepted" | "rejected" | null;
 export type BuildAggregatedStatus = NonNullable<
   BuildReviewStatus | BuildConclusion | Exclude<BuildStatus, "complete">
 >;

@@ -15,11 +15,6 @@ const useLoginUrl = (redirect: string | null | undefined) => {
   )}`;
 };
 
-export type GitLabLoginButtonProps = Omit<ButtonProps, "children"> & {
-  children?: React.ReactNode;
-  redirect?: string | null;
-};
-
 export const GitLabLogo = (props: React.SVGProps<SVGSVGElement>) => {
   return (
     <svg
@@ -81,20 +76,23 @@ export const GitLabColoredLogo = (props: React.SVGProps<SVGSVGElement>) => {
   );
 };
 
-export const GitLabLoginButton = React.memo<GitLabLoginButtonProps>(
-  ({ children, redirect, ...props }) => {
-    const loginUrl = useLoginUrl(redirect);
-    return (
-      <Button color="gitlab" {...props}>
-        {(buttonProps) => (
-          <a href={loginUrl} {...buttonProps}>
-            <ButtonIcon>
-              <GitLabLogo />
-            </ButtonIcon>
-            {children ?? "Login with GitLab"}
-          </a>
-        )}
-      </Button>
-    );
-  },
-);
+export const GitLabLoginButton = React.memo<
+  Omit<ButtonProps, "children"> & {
+    children?: React.ReactNode;
+    redirect?: string | null;
+  }
+>(({ children, redirect, ...props }) => {
+  const loginUrl = useLoginUrl(redirect);
+  return (
+    <Button color="gitlab" {...props}>
+      {(buttonProps) => (
+        <a href={loginUrl} {...buttonProps}>
+          <ButtonIcon>
+            <GitLabLogo />
+          </ButtonIcon>
+          {children ?? "Login with GitLab"}
+        </a>
+      )}
+    </Button>
+  );
+});

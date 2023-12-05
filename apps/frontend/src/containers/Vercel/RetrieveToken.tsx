@@ -18,7 +18,7 @@ const RetrieveTokenMutation = graphql(`
   }
 `);
 
-export type RetrieveTokenProps = {
+type RetrieveTokenProps = {
   authUserAccount: {
     id: string;
     slug: string;

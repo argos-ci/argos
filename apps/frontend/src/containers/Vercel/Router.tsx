@@ -3,14 +3,12 @@ import { useCallback, useState } from "react";
 import { FromTeam } from "./FromTeam";
 import { ProjectsSummary } from "./ProjectsSummary";
 
-export type Account = {
+type Account = {
   id: string;
   slug: string;
 };
 
-export type SetLinkedAccount = (account: null | Account) => void;
-
-export type VercelRouterProps = {
+type VercelRouterProps = {
   accessToken: string;
   teamId: string | null;
   authUserAccount: Account;

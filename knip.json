@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@3/schema.json",
+  "workspaces": {
+    "apps/backend": {
+      "entry": [
+        "src/processes/proc/*.ts",
+        "src/build/bin/*.ts",
+        "src/database/testing/index.ts",
+        "src/graphql/definitions/*.ts"
+      ],
+      "ignore": ["db", "knexfile.js", "src/graphql/__generated__"],
+      "ignoreDependencies": ["pg"]
+    },
+    "apps/frontend": {
+      "ignore": ["src/gql"]
+    },
+    "apps/email": {
+      "entry": ["emails/*.tsx"]
+    }
+  },
+  "exclude": ["classMembers"],
+  "ignore": ["playwright.config.mjs", "examples"],
+  "ignoreBinaries": ["stripe"]
+}

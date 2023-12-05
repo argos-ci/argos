@@ -110,20 +110,18 @@ const StatCount = ({ icon, count, color, tooltip }: StatCountProps) => {
   return <Tooltip content={tooltip}>{element}</Tooltip>;
 };
 
-export interface BuildStatsIndicatorProps {
-  stats: BuildStats;
-  onClickGroup?: (group: DiffGroup["name"]) => void;
-  className?: string;
-  tooltip?: boolean;
-}
-
 export const BuildStatsIndicator = memo(
   ({
     stats,
     onClickGroup,
     className,
     tooltip = true,
-  }: BuildStatsIndicatorProps) => {
+  }: {
+    stats: BuildStats;
+    onClickGroup?: (group: DiffGroup["name"]) => void;
+    className?: string;
+    tooltip?: boolean;
+  }) => {
     return (
       <div className={clsx(className, "flex items-center")}>
         {GROUPS.map((group) => {

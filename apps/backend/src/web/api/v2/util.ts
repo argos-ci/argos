@@ -4,11 +4,9 @@ import { HttpError } from "express-err";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
-import { job as crawlJob } from "@/crawl/index.js";
 import { transaction } from "@/database/index.js";
 import {
   Build,
-  Crawl,
   GithubPullRequest,
   Project,
   ScreenshotBucket,
@@ -65,7 +63,7 @@ type CreateRequest = Request<
   }
 > & { authProject: Project };
 
-export const createBuild = async (params: {
+const createBuild = async (params: {
   project: Project;
   commit: string;
   branch: string;
@@ -152,21 +150,6 @@ export const createBuild = async (params: {
   });
 
   return build;
-};
-
-export const createCrawl = async (params: {
-  build: Build;
-  baseUrl: string;
-}) => {
-  const crawl = await Crawl.query().insertAndFetch({
-    buildId: params.build.id,
-    jobStatus: "pending",
-    baseUrl: params.baseUrl,
-  });
-
-  await crawlJob.push(crawl.id);
-
-  return crawl;
 };
 
 export const createBuildFromRequest = async ({

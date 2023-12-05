@@ -10,10 +10,6 @@ const api = axios.create({
   baseURL: process.env["API_BASE_URL"] as string,
 });
 
-export type AuthCallbackProps = {
-  provider: AuthProvider;
-};
-
 const getLoginUrl = (error: unknown) => {
   if (isAxiosError(error)) {
     if (error.response?.data?.error?.message) {
@@ -25,7 +21,7 @@ const getLoginUrl = (error: unknown) => {
   return "/login";
 };
 
-export const AuthCallback = (props: AuthCallbackProps) => {
+export const AuthCallback = (props: { provider: AuthProvider }) => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const code = params.get("code");

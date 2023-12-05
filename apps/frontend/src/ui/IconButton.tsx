@@ -3,18 +3,8 @@ import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
 import { cloneElement, forwardRef } from "react";
 
-export type IconButtonVariant = "contained" | "outline";
-export type IconButtonColor = "danger" | "neutral";
-
-export type IconButtonProps = Omit<
-  AriakitButtonProps<"button">,
-  "className" | "children"
-> & {
-  color?: IconButtonColor;
-  variant?: IconButtonVariant;
-  children: React.ReactNode;
-  asChild?: boolean;
-};
+type IconButtonVariant = "contained" | "outline";
+type IconButtonColor = "danger" | "neutral";
 
 const colorClassNames: Record<
   IconButtonVariant,
@@ -33,7 +23,15 @@ const colorClassNames: Record<
   },
 };
 
-export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
+export const IconButton = forwardRef<
+  HTMLButtonElement,
+  Omit<AriakitButtonProps<"button">, "className" | "children"> & {
+    color?: IconButtonColor;
+    variant?: IconButtonVariant;
+    children: React.ReactNode;
+    asChild?: boolean;
+  }
+>(
   (
     { color = "neutral", variant = "outline", children, asChild, ...props },
     ref,

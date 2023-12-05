@@ -27,7 +27,7 @@ export const checkAccountSlug = async (slug: string) => {
   }
 };
 
-export const resolveAccountSlug = async (
+const resolveAccountSlug = async (
   slug: string,
   index: number = 0,
 ): Promise<string> => {
@@ -49,7 +49,7 @@ export const getGhAccountType = (strType: string) => {
   return type;
 };
 
-export type GetOrCreateGhAccountProps = {
+type GetOrCreateGhAccountProps = {
   githubId: number;
   login: string;
   email?: string | null;

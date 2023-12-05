@@ -13,29 +13,28 @@ const AvatarFragment = graphql(`
   }
 `);
 
-export type AccountAvatarProps = {
-  className?: string;
-  size?: number;
-  avatar: FragmentType<typeof AvatarFragment>;
-};
-
-export const AccountAvatar = forwardRef<any, AccountAvatarProps>(
-  (props, ref) => {
-    const avatar = useFragment(AvatarFragment, props.avatar);
-    const size = props.size ?? 32;
-    if (!avatar.url) {
-      return (
-        <InitialAvatar
-          ref={ref}
-          initial={avatar.initial}
-          color={avatar.color}
-          size={size}
-          className={props.className}
-        />
-      );
-    }
+export const AccountAvatar = forwardRef<
+  any,
+  {
+    className?: string;
+    size?: number;
+    avatar: FragmentType<typeof AvatarFragment>;
+  }
+>((props, ref) => {
+  const avatar = useFragment(AvatarFragment, props.avatar);
+  const size = props.size ?? 32;
+  if (!avatar.url) {
     return (
-      <ImageAvatar url={avatar.url} size={size} className={props.className} />
+      <InitialAvatar
+        ref={ref}
+        initial={avatar.initial}
+        color={avatar.color}
+        size={size}
+        className={props.className}
+      />
     );
-  },
-);
+  }
+  return (
+    <ImageAvatar url={avatar.url} size={size} className={props.className} />
+  );
+});

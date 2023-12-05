@@ -424,7 +424,7 @@ export const createStripeCheckoutSession = async ({
   });
 };
 
-export const getCustomerByEmail = async (
+const getCustomerByEmail = async (
   email: string,
 ): Promise<Stripe.Customer | null> => {
   const customers = await stripe.customers.list({ email });
@@ -436,7 +436,7 @@ export const getCustomerByEmail = async (
   return null;
 };
 
-export const getOrCreateCustomerByEmail = async (
+const getOrCreateCustomerByEmail = async (
   email: string,
 ): Promise<Stripe.Customer> => {
   const existingCustomer = await getCustomerByEmail(email);

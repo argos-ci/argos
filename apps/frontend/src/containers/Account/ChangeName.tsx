@@ -28,13 +28,11 @@ type Inputs = {
   name: string;
 };
 
-export type AccountChangeNameProps = {
+export const AccountChangeName = (props: {
   account: FragmentType<typeof AccountFragment>;
   title: React.ReactNode;
   description: React.ReactNode;
-};
-
-export const AccountChangeName = (props: AccountChangeNameProps) => {
+}) => {
   const account = useFragment(AccountFragment, props.account);
   const client = useApolloClient();
   const form = useForm<Inputs>({

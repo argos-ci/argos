@@ -1,20 +1,18 @@
 import { Tooltip, TooltipProps } from "./Tooltip";
 
-export interface HotkeyTooltipProps {
-  description: React.ReactNode;
-  keys: string[];
-  children: React.ReactElement;
-  keysEnabled?: boolean;
-  side?: TooltipProps["side"];
-}
-
 export const HotkeyTooltip = ({
   description,
   keys,
   children,
   keysEnabled = true,
   side,
-}: HotkeyTooltipProps) => {
+}: {
+  description: React.ReactNode;
+  keys: string[];
+  children: React.ReactElement;
+  keysEnabled?: boolean;
+  side?: TooltipProps["side"];
+}) => {
   return (
     <Tooltip
       side={side}

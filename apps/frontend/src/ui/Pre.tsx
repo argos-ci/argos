@@ -3,11 +3,13 @@ import { HTMLAttributes } from "react";
 
 import { CopyButton } from "./CopyButton";
 
-export type PreProps = Omit<HTMLAttributes<HTMLPreElement>, "children"> & {
+export const Pre = ({
+  className,
+  code,
+  ...props
+}: Omit<HTMLAttributes<HTMLPreElement>, "children"> & {
   code: string;
-};
-
-export const Pre = ({ className, code, ...props }: PreProps) => {
+}) => {
   return (
     <pre
       className={clsx(

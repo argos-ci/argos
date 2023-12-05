@@ -6,10 +6,7 @@ import { Team } from "../models/Team.js";
 import { TeamUser } from "../models/TeamUser.js";
 import { transaction } from "../transaction.js";
 
-export const resolveTeamSlug = async (
-  name: string,
-  index = 0,
-): Promise<string> => {
+const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
   const nameSlug = slugify(name);
   const slug = index ? `${nameSlug}-${index}` : nameSlug;
 

@@ -1,9 +1,10 @@
 import { clsx } from "clsx";
-import { HTMLProps } from "react";
+import { ComponentPropsWithoutRef } from "react";
 
-export type FormErrorProps = HTMLProps<HTMLDivElement>;
-
-export const FormError = ({ className, ...props }: FormErrorProps) => {
+export const FormError = ({
+  className,
+  ...props
+}: ComponentPropsWithoutRef<"div">) => {
   return (
     <div
       role="alert"

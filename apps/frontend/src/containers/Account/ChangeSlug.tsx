@@ -28,13 +28,11 @@ type Inputs = {
   slug: string;
 };
 
-export type AccountChangeSlugProps = {
+export const AccountChangeSlug = (props: {
   account: FragmentType<typeof AccountFragment>;
   title: React.ReactNode;
   description: React.ReactNode;
-};
-
-export const AccountChangeSlug = (props: AccountChangeSlugProps) => {
+}) => {
   const account = useFragment(AccountFragment, props.account);
   const client = useApolloClient();
   const form = useForm<Inputs>({

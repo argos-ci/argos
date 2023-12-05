@@ -16,25 +16,23 @@ const useLoginUrl = (redirect: string | null | undefined) => {
   )}`;
 };
 
-export type GitHubLoginButtonProps = Omit<ButtonProps, "children"> & {
-  children?: React.ReactNode;
-  redirect?: string | null;
-};
-
-export const GitHubLoginButton = memo<GitHubLoginButtonProps>(
-  ({ children, redirect, ...props }) => {
-    const loginUrl = useLoginUrl(redirect);
-    return (
-      <Button color="github" {...props}>
-        {(buttonProps) => (
-          <a href={loginUrl} {...buttonProps}>
-            <ButtonIcon>
-              <MarkGithubIcon />
-            </ButtonIcon>
-            {children ?? "Login with GitHub"}
-          </a>
-        )}
-      </Button>
-    );
-  },
-);
+export const GitHubLoginButton = memo<
+  Omit<ButtonProps, "children"> & {
+    children?: React.ReactNode;
+    redirect?: string | null;
+  }
+>(({ children, redirect, ...props }) => {
+  const loginUrl = useLoginUrl(redirect);
+  return (
+    <Button color="github" {...props}>
+      {(buttonProps) => (
+        <a href={loginUrl} {...buttonProps}>
+          <ButtonIcon>
+            <MarkGithubIcon />
+          </ButtonIcon>
+          {children ?? "Login with GitHub"}
+        </a>
+      )}
+    </Button>
+  );
+});

@@ -3,13 +3,11 @@ import { clsx } from "clsx";
 import { HTMLProps } from "react";
 import { useFormContext } from "react-hook-form";
 
-export type FormSuccessProps = HTMLProps<HTMLDivElement>;
-
 export const FormSuccess = ({
   className,
   children,
   ...props
-}: FormSuccessProps) => {
+}: HTMLProps<HTMLDivElement>) => {
   const { formState } = useFormContext();
   if (!formState.isSubmitSuccessful) return null;
   return (

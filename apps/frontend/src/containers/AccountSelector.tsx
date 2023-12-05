@@ -8,15 +8,13 @@ import {
 
 import { AccountItem, AccountItemProps } from "./AccountItem";
 
-export type AccountSelectorProps = {
+export const AccountSelector = (props: {
   value: string;
   setValue: (value: string) => void;
   accounts: AccountItemProps["account"][] | null;
   disabledAccountIds?: string[];
   disabledTooltip?: string;
-};
-
-export const AccountSelector = (props: AccountSelectorProps) => {
+}) => {
   const select = useSelectState({
     gutter: 4,
     value: props.value,

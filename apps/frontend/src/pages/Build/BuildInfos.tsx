@@ -43,7 +43,7 @@ const BranchLink = ({
   );
 };
 
-export const BuildFragment = graphql(`
+const BuildFragment = graphql(`
   fragment BuildInfos_Build on Build {
     createdAt
     name
