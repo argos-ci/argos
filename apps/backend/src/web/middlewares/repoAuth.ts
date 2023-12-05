@@ -38,10 +38,17 @@ export const repoAuth = [
       ? await strategy.getProject(bearerToken)
       : await Project.query().findOne({ token: bearerToken });
 
+    if (!project && strategy) {
+      throw new HttpError(
+        401,
+        `Project not found in Argos. Ensure that your project is configured: https://argos-ci.com. If the issue persists, you can add \`ARGOS_TOKEN\` as environment variable to your CI. (token: "${bearerToken}").`,
+      );
+    }
+
     if (!project) {
       throw new HttpError(
         401,
-        `Repository not found (token: "${bearerToken}")`,
+        `Project not found in Argos. If the issue persists, verify your token. (token: "${bearerToken}").`,
       );
     }
 

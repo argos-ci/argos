@@ -39,7 +39,7 @@ describe("api v2", () => {
           .set("Authorization", "Bearer nop")
           .expect((res) => {
             expect(res.body.error.message).toBe(
-              `Repository not found (token: "nop")`,
+              `Project not found in Argos. If the issue persists, verify your token. (token: "nop").`,
             );
           })
           .expect(401);
