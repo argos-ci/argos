@@ -1,20 +1,13 @@
 import { test } from "@playwright/test";
-
 import { argosScreenshot } from "@argos-ci/playwright";
 
-// Welcome to Playwright + Argos!
+// Read more about streamline page screenshot captures
+// https://argos-ci.com/docs/screenshot-pages-script#playwright
 
-// In this example, we use the `cy.argosSnapshot` command
-// introduced by @argos/playwright package to capture a screenshots.
-
-// When this test is executed, a new screenshot will be created
-// for each configured browser.
-
-test.describe("playwright.dev", () => {
+test("screenshot homepage", async ({ page }, workerInfo) => {
   const url = "https://playwright.dev/";
+  await page.goto(url);
 
-  test("take screenshot", async ({ page, browserName }) => {
-    await page.goto(url);
-    await argosScreenshot(page, `playwright.dev-${browserName}`);
-  });
+  const browserName = workerInfo.project.name;
+  await argosScreenshot(page, `homepage-${browserName}`);
 });
