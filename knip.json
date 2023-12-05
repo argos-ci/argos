@@ -9,32 +9,16 @@
         "src/graphql/definitions/*.ts"
       ],
       "ignore": ["db", "knexfile.js", "src/graphql/__generated__"],
-      "ignoreDependencies": ["pg"],
-      "paths": {
-        "@/*": ["./src/*"]
-      }
+      "ignoreDependencies": ["pg"]
     },
     "apps/frontend": {
-      "entry": ["src/index.tsx"],
-      "ignore": ["src/gql"],
-      "ignoreDependencies": ["webpack-cli"]
+      "ignore": ["src/gql"]
     },
     "apps/email": {
       "entry": ["emails/*.tsx"]
     }
   },
-  "webpack": {
-    "config": ["webpack.config.mjs"]
-  },
-  "vitest": {
-    "config": ["vitest.config.ts", "vitest.*.config.ts"],
-    "entry": ["**/*.e2e.test.ts?(x)", "**/*.test.ts?(x)"]
-  },
   "exclude": ["classMembers"],
-  "ignore": ["prettier.config.js", "playwright.config.mjs", "examples"],
-  "ignoreBinaries": ["stripe"],
-  "ignoreDependencies": [
-    "@trivago/prettier-plugin-sort-imports",
-    "prettier-plugin-tailwindcss"
-  ]
+  "ignore": ["playwright.config.mjs", "examples"],
+  "ignoreBinaries": ["stripe"]
 }
