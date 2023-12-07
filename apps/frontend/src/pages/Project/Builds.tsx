@@ -170,7 +170,7 @@ const BuildRow = React.memo(
               </FakeLink>
             </div>
           </div>
-          <div className="w-32 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-right text-low">
+          <div className="w-32 shrink-0 overflow-hidden truncate whitespace-nowrap text-right text-low">
             <Time date={build.createdAt} />
           </div>
         </RouterLink>
