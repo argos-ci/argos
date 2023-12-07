@@ -19,7 +19,6 @@ const documents = {
     "\n  mutation AccountChangeSlug_updateAccount($id: ID!, $slug: String!) {\n    updateAccount(input: { id: $id, slug: $slug }) {\n      id\n      slug\n    }\n  }\n": types.AccountChangeSlug_UpdateAccountDocument,
     "\n  fragment AccountGitLab_Account on Account {\n    id\n    permissions\n    gitlabAccessToken\n  }\n": types.AccountGitLab_AccountFragmentDoc,
     "\n  mutation AccountGitLab_updateAccount($id: ID!, $gitlabAccessToken: String) {\n    updateAccount(input: { id: $id, gitlabAccessToken: $gitlabAccessToken }) {\n      id\n      gitlabAccessToken\n    }\n  }\n": types.AccountGitLab_UpdateAccountDocument,
-    "\n  fragment AccountVercel_Account on Account {\n    id\n    vercelConfiguration {\n      id\n      url\n    }\n  }\n": types.AccountVercel_AccountFragmentDoc,
     "\n  fragment AccountAvatarFragment on AccountAvatar {\n    url(size: 64)\n    color\n    initial\n  }\n": types.AccountAvatarFragmentFragmentDoc,
     "\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    avatar {\n      ...AccountAvatarFragment\n    }\n    ...AccountPlanChip_Account\n  }\n": types.AccountItem_AccountFragmentDoc,
     "\n  fragment AccountPlanChip_Account on Account {\n    purchaseStatus\n    plan {\n      id\n      name\n    }\n  }\n": types.AccountPlanChip_AccountFragmentDoc,
@@ -44,7 +43,6 @@ const documents = {
     "\n  fragment ProjectChangeName_Project on Project {\n    id\n    name\n    account {\n      id\n      slug\n    }\n  }\n": types.ProjectChangeName_ProjectFragmentDoc,
     "\n  mutation ProjectChangeName_updateProject($id: ID!, $name: String!) {\n    updateProject(input: { id: $id, name: $name }) {\n      id\n      name\n    }\n  }\n": types.ProjectChangeName_UpdateProjectDocument,
     "\n  query ConnectRepository($accountSlug: String!) {\n    account(slug: $accountSlug) {\n      id\n      gitlabAccessToken\n      glNamespaces {\n        edges {\n          id\n          kind\n          ...GitlabNamespacesSelect_GlApiNamespace\n        }\n      }\n      permissions\n    }\n    me {\n      id\n      ghInstallations {\n        edges {\n          id\n          ...GithubInstallationsSelect_GhApiInstallation\n        }\n        pageInfo {\n          totalCount\n        }\n      }\n    }\n  }\n": types.ConnectRepositoryDocument,
-    "\n  query ConnectVercelProject_account($accountId: ID!) {\n    account: accountById(id: $accountId) {\n      id\n      vercelConfiguration {\n        id\n        url\n        apiProjects {\n          projects {\n            id\n            ...VercelProjectList_VercelApiProject\n          }\n        }\n      }\n    }\n  }\n": types.ConnectVercelProject_AccountDocument,
     "\n  mutation DeleteProjectMutation($projectId: ID!) {\n    deleteProject(id: $projectId)\n  }\n": types.DeleteProjectMutationDocument,
     "\n  fragment ProjectDelete_Project on Project {\n    id\n    name\n    account {\n      id\n      slug\n    }\n  }\n": types.ProjectDelete_ProjectFragmentDoc,
     "\n  fragment ProjectGitRepository_Project on Project {\n    id\n    account {\n      id\n      slug\n    }\n    repository {\n      __typename\n      id\n      fullName\n      url\n    }\n    prCommentEnabled\n  }\n": types.ProjectGitRepository_ProjectFragmentDoc,
@@ -61,9 +59,6 @@ const documents = {
     "\n  query ProjectTransfer_Review(\n    $projectId: ID!\n    $actualAccountId: ID!\n    $targetAccountId: ID!\n  ) {\n    projectById(id: $projectId) {\n      id\n      builds {\n        pageInfo {\n          totalCount\n        }\n      }\n      totalScreenshots\n    }\n\n    actualAccount: accountById(id: $actualAccountId) {\n      id\n      ...ProjectTransfer_Account\n      plan {\n        id\n        name\n      }\n    }\n\n    targetAccount: accountById(id: $targetAccountId) {\n      id\n      ...ProjectTransfer_Account\n      plan {\n        id\n        name\n      }\n    }\n  }\n": types.ProjectTransfer_ReviewDocument,
     "\n  mutation ProjectTransfer_TransferProject(\n    $projectId: ID!\n    $targetAccountId: ID!\n    $name: String!\n  ) {\n    transferProject(\n      input: { id: $projectId, targetAccountId: $targetAccountId, name: $name }\n    ) {\n      id\n      name\n      account {\n        id\n        name\n        slug\n      }\n    }\n  }\n": types.ProjectTransfer_TransferProjectDocument,
     "\n  fragment ProjectTransfer_Project on Project {\n    id\n    name\n    slug\n    account {\n      id\n      name\n      slug\n    }\n  }\n": types.ProjectTransfer_ProjectFragmentDoc,
-    "\n  fragment ProjectVercel_Project on Project {\n    id\n    account {\n      id\n    }\n    vercelProject {\n      id\n      configuration {\n        id\n        url\n      }\n    }\n  }\n": types.ProjectVercel_ProjectFragmentDoc,
-    "\n  mutation ProjectVercel_unlinkVercelProject($projectId: ID!) {\n    unlinkVercelProject(input: { projectId: $projectId }) {\n      id\n      ...ProjectVercel_Project\n    }\n  }\n": types.ProjectVercel_UnlinkVercelProjectDocument,
-    "\n  mutation ProjectVercel_linkVercelProject(\n    $projectId: ID!\n    $configurationId: ID!\n    $vercelProjectId: ID!\n  ) {\n    linkVercelProject(\n      input: {\n        projectId: $projectId\n        configurationId: $configurationId\n        vercelProjectId: $vercelProjectId\n      }\n    ) {\n      id\n      ...ProjectVercel_Project\n    }\n  }\n": types.ProjectVercel_LinkVercelProjectDocument,
     "\n  mutation ProjectVisibility_updateProject($id: ID!, $private: Boolean) {\n    updateProject(input: { id: $id, private: $private }) {\n      id\n      private\n    }\n  }\n": types.ProjectVisibility_UpdateProjectDocument,
     "\n  fragment ProjectVisibility_Project on Project {\n    id\n    private\n    repository {\n      __typename\n      id\n      private\n    }\n  }\n": types.ProjectVisibility_ProjectFragmentDoc,
     "\n  fragment ProjectList_Project on Project {\n    id\n    name\n    slug\n    account {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n    repository {\n      __typename\n      id\n      fullName\n    }\n    latestBuild {\n      id\n      createdAt\n    }\n  }\n": types.ProjectList_ProjectFragmentDoc,
@@ -92,7 +87,6 @@ const documents = {
     "\n  mutation VercelProjectsSummary_importGithubProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    importGithubProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      name\n      account {\n        id\n        slug\n      }\n    }\n  }\n": types.VercelProjectsSummary_ImportGithubProjectDocument,
     "\n  mutation VercelProjectsSummary_setupVercelIntegration(\n    $input: SetupVercelIntegrationInput!\n  ) {\n    setupVercelIntegration(input: $input)\n  }\n": types.VercelProjectsSummary_SetupVercelIntegrationDocument,
     "\n  mutation Vercel_retrieveVercelToken($code: String!) {\n    retrieveVercelToken(code: $code) {\n      access_token\n      installation_id\n      user_id\n      team_id\n    }\n  }\n": types.Vercel_RetrieveVercelTokenDocument,
-    "\n  fragment VercelProjectList_VercelApiProject on VercelApiProject {\n    id\n    name\n    link {\n      __typename\n      type\n      ... on VercelApiProjectLinkGithub {\n        org\n        repo\n        repoId\n      }\n    }\n    project {\n      id\n      name\n    }\n  }\n": types.VercelProjectList_VercelApiProjectFragmentDoc,
     "\n  mutation NewProject_importGithubProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    importGithubProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      slug\n    }\n  }\n": types.NewProject_ImportGithubProjectDocument,
     "\n  mutation NewProject_importGitlabProject(\n    $gitlabProjectId: ID!\n    $accountSlug: String!\n  ) {\n    importGitlabProject(\n      input: { gitlabProjectId: $gitlabProjectId, accountSlug: $accountSlug }\n    ) {\n      id\n      slug\n    }\n  }\n": types.NewProject_ImportGitlabProjectDocument,
     "\n  query AccountProjects_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      permissions\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          ...ProjectList_Project\n        }\n      }\n    }\n  }\n": types.AccountProjects_AccountDocument,
@@ -116,9 +110,6 @@ const documents = {
     "\n  fragment GettingStarted_Project on Project {\n    token\n  }\n": types.GettingStarted_ProjectFragmentDoc,
     "\n  query ProjectReference_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      latestReferenceBuild {\n        id\n        number\n      }\n    }\n  }\n": types.ProjectReference_ProjectDocument,
     "\n  query ProjectSettings_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      ...ProjectBadge_Project\n      ...ProjectChangeName_Project\n      ...ProjectToken_Project\n      ...ProjectReferenceBranch_Project\n      ...ProjectVisibility_Project\n      ...ProjectTransfer_Project\n      ...ProjectDelete_Project\n      ...ProjectGitRepository_Project\n      # ...ProjectVercel_Project\n    }\n  }\n": types.ProjectSettings_ProjectDocument,
-    "\n  query FlakyTests_project_tests(\n    $accountSlug: String!\n    $projectName: String!\n    $after: Int!\n    $first: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      tests(first: $first, after: $after) {\n        pageInfo {\n          totalCount\n          hasNextPage\n        }\n        edges {\n          id\n          name\n          buildName\n          status\n          resolvedDate\n          mute\n          muteUntil\n          stabilityScore\n          lastSeen\n          unstable\n          dailyChanges {\n            date\n            count\n          }\n          totalBuilds\n          screenshot {\n            id\n            url\n            width\n            height\n          }\n        }\n      }\n    }\n  }\n": types.FlakyTests_Project_TestsDocument,
-    "\n  mutation muteTests($ids: [String!]!, $muted: Boolean!, $muteUntil: String) {\n    muteTests(ids: $ids, muted: $muted, muteUntil: $muteUntil) {\n      ids\n      mute\n      muteUntil\n    }\n  }\n": types.MuteTestsDocument,
-    "\n  mutation updateStatusesMutation($ids: [String!]!, $status: TestStatus!) {\n    updateTestStatuses(ids: $ids, status: $status) {\n      ids\n      status\n    }\n  }\n": types.UpdateStatusesMutationDocument,
     "\n  query Project_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      tests(first: 0, after: 0) {\n        pageInfo {\n          totalCount\n        }\n      }\n      account {\n        id\n        ...PaymentBanner_Account\n      }\n    }\n  }\n": types.Project_ProjectDocument,
 };
 
@@ -160,10 +151,6 @@ export function graphql(source: "\n  fragment AccountGitLab_Account on Account {
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AccountGitLab_updateAccount($id: ID!, $gitlabAccessToken: String) {\n    updateAccount(input: { id: $id, gitlabAccessToken: $gitlabAccessToken }) {\n      id\n      gitlabAccessToken\n    }\n  }\n"): (typeof documents)["\n  mutation AccountGitLab_updateAccount($id: ID!, $gitlabAccessToken: String) {\n    updateAccount(input: { id: $id, gitlabAccessToken: $gitlabAccessToken }) {\n      id\n      gitlabAccessToken\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  fragment AccountVercel_Account on Account {\n    id\n    vercelConfiguration {\n      id\n      url\n    }\n  }\n"): (typeof documents)["\n  fragment AccountVercel_Account on Account {\n    id\n    vercelConfiguration {\n      id\n      url\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -263,10 +250,6 @@ export function graphql(source: "\n  query ConnectRepository($accountSlug: Strin
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query ConnectVercelProject_account($accountId: ID!) {\n    account: accountById(id: $accountId) {\n      id\n      vercelConfiguration {\n        id\n        url\n        apiProjects {\n          projects {\n            id\n            ...VercelProjectList_VercelApiProject\n          }\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query ConnectVercelProject_account($accountId: ID!) {\n    account: accountById(id: $accountId) {\n      id\n      vercelConfiguration {\n        id\n        url\n        apiProjects {\n          projects {\n            id\n            ...VercelProjectList_VercelApiProject\n          }\n        }\n      }\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
 export function graphql(source: "\n  mutation DeleteProjectMutation($projectId: ID!) {\n    deleteProject(id: $projectId)\n  }\n"): (typeof documents)["\n  mutation DeleteProjectMutation($projectId: ID!) {\n    deleteProject(id: $projectId)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -328,18 +311,6 @@ export function graphql(source: "\n  mutation ProjectTransfer_TransferProject(\n
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  fragment ProjectTransfer_Project on Project {\n    id\n    name\n    slug\n    account {\n      id\n      name\n      slug\n    }\n  }\n"): (typeof documents)["\n  fragment ProjectTransfer_Project on Project {\n    id\n    name\n    slug\n    account {\n      id\n      name\n      slug\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  fragment ProjectVercel_Project on Project {\n    id\n    account {\n      id\n    }\n    vercelProject {\n      id\n      configuration {\n        id\n        url\n      }\n    }\n  }\n"): (typeof documents)["\n  fragment ProjectVercel_Project on Project {\n    id\n    account {\n      id\n    }\n    vercelProject {\n      id\n      configuration {\n        id\n        url\n      }\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation ProjectVercel_unlinkVercelProject($projectId: ID!) {\n    unlinkVercelProject(input: { projectId: $projectId }) {\n      id\n      ...ProjectVercel_Project\n    }\n  }\n"): (typeof documents)["\n  mutation ProjectVercel_unlinkVercelProject($projectId: ID!) {\n    unlinkVercelProject(input: { projectId: $projectId }) {\n      id\n      ...ProjectVercel_Project\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation ProjectVercel_linkVercelProject(\n    $projectId: ID!\n    $configurationId: ID!\n    $vercelProjectId: ID!\n  ) {\n    linkVercelProject(\n      input: {\n        projectId: $projectId\n        configurationId: $configurationId\n        vercelProjectId: $vercelProjectId\n      }\n    ) {\n      id\n      ...ProjectVercel_Project\n    }\n  }\n"): (typeof documents)["\n  mutation ProjectVercel_linkVercelProject(\n    $projectId: ID!\n    $configurationId: ID!\n    $vercelProjectId: ID!\n  ) {\n    linkVercelProject(\n      input: {\n        projectId: $projectId\n        configurationId: $configurationId\n        vercelProjectId: $vercelProjectId\n      }\n    ) {\n      id\n      ...ProjectVercel_Project\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -455,10 +426,6 @@ export function graphql(source: "\n  mutation Vercel_retrieveVercelToken($code: 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment VercelProjectList_VercelApiProject on VercelApiProject {\n    id\n    name\n    link {\n      __typename\n      type\n      ... on VercelApiProjectLinkGithub {\n        org\n        repo\n        repoId\n      }\n    }\n    project {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  fragment VercelProjectList_VercelApiProject on VercelApiProject {\n    id\n    name\n    link {\n      __typename\n      type\n      ... on VercelApiProjectLinkGithub {\n        org\n        repo\n        repoId\n      }\n    }\n    project {\n      id\n      name\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
 export function graphql(source: "\n  mutation NewProject_importGithubProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    importGithubProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      slug\n    }\n  }\n"): (typeof documents)["\n  mutation NewProject_importGithubProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n  ) {\n    importGithubProject(\n      input: { repo: $repo, owner: $owner, accountSlug: $accountSlug }\n    ) {\n      id\n      slug\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -548,18 +515,6 @@ export function graphql(source: "\n  query ProjectReference_project($accountSlug
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query ProjectSettings_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      ...ProjectBadge_Project\n      ...ProjectChangeName_Project\n      ...ProjectToken_Project\n      ...ProjectReferenceBranch_Project\n      ...ProjectVisibility_Project\n      ...ProjectTransfer_Project\n      ...ProjectDelete_Project\n      ...ProjectGitRepository_Project\n      # ...ProjectVercel_Project\n    }\n  }\n"): (typeof documents)["\n  query ProjectSettings_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      ...ProjectBadge_Project\n      ...ProjectChangeName_Project\n      ...ProjectToken_Project\n      ...ProjectReferenceBranch_Project\n      ...ProjectVisibility_Project\n      ...ProjectTransfer_Project\n      ...ProjectDelete_Project\n      ...ProjectGitRepository_Project\n      # ...ProjectVercel_Project\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query FlakyTests_project_tests(\n    $accountSlug: String!\n    $projectName: String!\n    $after: Int!\n    $first: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      tests(first: $first, after: $after) {\n        pageInfo {\n          totalCount\n          hasNextPage\n        }\n        edges {\n          id\n          name\n          buildName\n          status\n          resolvedDate\n          mute\n          muteUntil\n          stabilityScore\n          lastSeen\n          unstable\n          dailyChanges {\n            date\n            count\n          }\n          totalBuilds\n          screenshot {\n            id\n            url\n            width\n            height\n          }\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query FlakyTests_project_tests(\n    $accountSlug: String!\n    $projectName: String!\n    $after: Int!\n    $first: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      tests(first: $first, after: $after) {\n        pageInfo {\n          totalCount\n          hasNextPage\n        }\n        edges {\n          id\n          name\n          buildName\n          status\n          resolvedDate\n          mute\n          muteUntil\n          stabilityScore\n          lastSeen\n          unstable\n          dailyChanges {\n            date\n            count\n          }\n          totalBuilds\n          screenshot {\n            id\n            url\n            width\n            height\n          }\n        }\n      }\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation muteTests($ids: [String!]!, $muted: Boolean!, $muteUntil: String) {\n    muteTests(ids: $ids, muted: $muted, muteUntil: $muteUntil) {\n      ids\n      mute\n      muteUntil\n    }\n  }\n"): (typeof documents)["\n  mutation muteTests($ids: [String!]!, $muted: Boolean!, $muteUntil: String) {\n    muteTests(ids: $ids, muted: $muted, muteUntil: $muteUntil) {\n      ids\n      mute\n      muteUntil\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation updateStatusesMutation($ids: [String!]!, $status: TestStatus!) {\n    updateTestStatuses(ids: $ids, status: $status) {\n      ids\n      status\n    }\n  }\n"): (typeof documents)["\n  mutation updateStatusesMutation($ids: [String!]!, $status: TestStatus!) {\n    updateTestStatuses(ids: $ids, status: $status) {\n      ids\n      status\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

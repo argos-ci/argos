@@ -28,7 +28,7 @@ export const Login = () => {
       <Container className="mt-12 flex flex-col items-center justify-center px-4">
         <BrandShield className="mb-6 w-28" />
 
-        <div className="mb-10 text-3xl">Login to Argos</div>
+        <div className="mb-10 text-3xl font-semibold">Login to Argos</div>
 
         {error && (
           <Alert className="border border-danger p-4 rounded mb-8">

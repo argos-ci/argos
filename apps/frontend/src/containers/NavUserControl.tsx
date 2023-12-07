@@ -207,12 +207,17 @@ const UserMenu = () => {
         </MenuItem>
         <MenuItem state={menu} pointer>
           {(menuItemProps) => (
-            <RouterLink {...menuItemProps} to="https://argos-ci.com/discord">
+            <a
+              {...menuItemProps}
+              href="https://argos-ci.com/discord"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <MenuItemIcon>
                 <MessagesSquareIcon />
               </MenuItemIcon>
               Join Discord community
-            </RouterLink>
+            </a>
           )}
         </MenuItem>
         <MenuSeparator />

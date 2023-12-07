@@ -34,9 +34,7 @@ export const LoginButtons = (props: {
         </GitLabLoginButton>
       </div>
       <p className="mt-6 text-left text-sm text-low">
-        Argos only supports GitHub and GitLab as account provider.
-        <br />
-        Need another provider?{" "}
+        Need another login provider?{" "}
         <Anchor href={`mailto:${config.get("contactEmail")}`}>
           Contact us
         </Anchor>
