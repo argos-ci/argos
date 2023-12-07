@@ -30,6 +30,7 @@ import { ProjectSettings } from "./pages/Project/Settings";
 import { Signup } from "./pages/Signup";
 import { VercelCallback } from "./pages/Vercel";
 import { TooltipProvider } from "./ui/Tooltip";
+import { NewProject } from "./pages/NewProject";
 
 const router = createBrowserRouter([
   {
@@ -63,6 +64,10 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <Home />,
+      },
+      {
+        path: "new",
+        element: <NewProject />,
       },
       {
         path: "login",
