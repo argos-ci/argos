@@ -48,7 +48,7 @@ describe("repoAuth", () => {
         .set("Authorization", "Bearer invalid-token")
         .expect((res) => {
           expect(res.text).toBe(
-            `Repository not found (token: "invalid-token")`,
+            `Project not found in Argos. If the issue persists, verify your token. (token: "invalid-token").`,
           );
         })
         .expect(401);
@@ -105,7 +105,7 @@ describe("repoAuth", () => {
         .set("Authorization", `Bearer tokenless-github-${encodedToken}`)
         .expect((res) => {
           expect(res.text).toBe(
-            `Repository not found (token: "tokenless-github-${encodedToken}")`,
+            `Project not found in Argos. Ensure that your project is configured: https://argos-ci.com. If the issue persists, you can add \`ARGOS_TOKEN\` as environment variable to your CI. (token: "tokenless-github-${encodedToken}").`,
           );
         })
         .expect(401);
@@ -124,7 +124,7 @@ describe("repoAuth", () => {
         .set("Authorization", `Bearer tokenless-github-${encodedToken}`)
         .expect((res) => {
           expect(res.text).toBe(
-            `Repository not found (token: "tokenless-github-${encodedToken}")`,
+            `Project not found in Argos. Ensure that your project is configured: https://argos-ci.com. If the issue persists, you can add \`ARGOS_TOKEN\` as environment variable to your CI. (token: "tokenless-github-${encodedToken}").`,
           );
         })
         .expect(401);
