@@ -39,7 +39,7 @@ import {
   DialogTitle,
   useDialogState,
 } from "@/ui/Dialog";
-import { Anchor } from "@/ui/Link";
+import { Anchor, Link } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
@@ -415,38 +415,6 @@ const ConsumptionBlock = ({
   );
 };
 
-const PrimaryCta = ({
-  purchaseStatus,
-  accountId,
-}: {
-  purchaseStatus: PurchaseStatus | null | undefined;
-  accountId: string;
-}) => {
-  if (!purchaseStatus) {
-    return (
-      <Button>
-        {(buttonProps) => (
-          <RouterLink to="/teams/new" {...buttonProps}>
-            <ButtonIcon>
-              <PlusCircleIcon />
-            </ButtonIcon>
-            Create a Team
-          </RouterLink>
-        )}
-      </Button>
-    );
-  }
-
-  if (
-    purchaseStatus === PurchaseStatus.Missing ||
-    purchaseStatus === PurchaseStatus.Canceled
-  ) {
-    return <TeamUpgradeDialogButton initialAccountId={accountId} />;
-  }
-
-  return null;
-};
-
 const Paragraph = ({ children }: { children: ReactNode }) => (
   <p className="mt-2 text-low">{children}</p>
 );
@@ -482,10 +450,7 @@ const ManageSubscriptionButton = ({
   return null;
 };
 
-export const PlanCard = (props: {
-  account: AccountFragment;
-  isTeam: boolean;
-}) => {
+export const PlanCard = (props: { account: AccountFragment }) => {
   const account = useFragment(PlanCardFragment, props.account);
   const {
     plan,
@@ -508,6 +473,21 @@ export const PlanCard = (props: {
     },
   });
 
+  const ContactSalesLink = ({ isButton }: { isButton: boolean }) => {
+    const contactHref = `mailto:${config.get("contactEmail")}`;
+    return isButton ? (
+      <Button color="neutral" variant="outline">
+        {(buttonProps) => (
+          <a href={contactHref} {...buttonProps}>
+            Contact Sales
+          </a>
+        )}
+      </Button>
+    ) : (
+      <Link to={contactHref}>Contact Sales</Link>
+    );
+  };
+
   const [terminateTrial, { loading: terminateTrialLoading }] = useMutation(
     TerminateTrialMutation,
     {
@@ -520,6 +500,11 @@ export const PlanCard = (props: {
       }),
     },
   );
+
+  const isTeam = Boolean(account.purchaseStatus);
+  const showUpgradeButton =
+    account.purchaseStatus === PurchaseStatus.Canceled ||
+    account.purchaseStatus === PurchaseStatus.Missing;
 
   return (
     <Card>
@@ -554,13 +539,13 @@ export const PlanCard = (props: {
             </div>
           </>
         ) : null}
-        {!props.isTeam && (
+        {!isTeam && (
           <>
             <CardSeparator className="my-6" />
             <p className="my-4 text-sm text-low">
-              Your plan includes a limited amount of free screenshots. If the
-              usage on your projects exceeds the allotted limit, you will need
-              to upgrade to a Pro team.
+              Your plan includes a limited amount of screenshots. If the usage
+              on your projects exceeds the allotted limit, you will need to
+              upgrade to a Pro team.
             </p>
             <div className="border rounded p-2 mt-4 text-sm">
               To take advantage of collaboration, create a new Pro team and
@@ -569,51 +554,38 @@ export const PlanCard = (props: {
           </>
         )}
       </CardBody>
-
       <CardFooter>
         {account.hasForcedPlan ? (
           <ContactLink />
         ) : (
-          <div className="flex items-center justify-between">
-            <div>
-              <ManageSubscriptionButton
-                accountId={account.id}
-                stripeCustomerId={stripeCustomerId ?? null}
-                paymentProvider={paymentProvider ?? null}
-              />
-            </div>
-
-            <div
-              className={clsx(
-                "flex items-center gap-4",
-                !props.isTeam && "w-full justify-between",
-              )}
-            >
-              <Button color="neutral" variant="outline">
-                {(buttonProps) => (
-                  <a
-                    href={`mailto:${config.get("contactEmail")}`}
-                    {...buttonProps}
-                  >
-                    Contact Sales
-                  </a>
-                )}
-              </Button>
-
-              {!props.isTeam && (
-                <div className="flex items-center gap-4">
-                  Want to collaborate?{" "}
-                  <PrimaryCta
-                    purchaseStatus={purchaseStatus}
-                    accountId={account.id}
-                  />
-                </div>
-              )}
-            </div>
+          <div className="flex items-center justify-between gap-4 flex-row-reverse">
+            {isTeam && showUpgradeButton && (
+              <TeamUpgradeDialogButton initialAccountId={account.id} />
+            )}
+            {!isTeam && (
+              <div className="flex items-center justify-between gap-4">
+                Want to collaborate?
+                <Button>
+                  {(buttonProps) => (
+                    <RouterLink to="/teams/new" {...buttonProps}>
+                      <ButtonIcon>
+                        <PlusCircleIcon />
+                      </ButtonIcon>
+                      Create a Team
+                    </RouterLink>
+                  )}
+                </Button>
+              </div>
+            )}
+            <ContactSalesLink isButton={!showUpgradeButton} />
+            <ManageSubscriptionButton
+              accountId={account.id}
+              stripeCustomerId={stripeCustomerId ?? null}
+              paymentProvider={paymentProvider ?? null}
+            />
           </div>
         )}
       </CardFooter>
-
       {purchaseStatus === PurchaseStatus.Trialing && stripeCustomerId && (
         <ConfirmTrialEndDialog
           state={confirmTrialEndDialogState}
