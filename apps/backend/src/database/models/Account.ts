@@ -218,10 +218,11 @@ export class Account extends Model {
       }
 
       const now = new Date();
-      startDate.setMonth(startDate.getMonth() + 1);
+      const endDate = new Date(startDate);
+      endDate.setMonth(startDate.getMonth() + 1);
       return new Date(
         Math.min(
-          startDate.getTime(),
+          endDate.getTime(),
           new Date(now.getFullYear(), now.getMonth() + 2, 0).getTime(),
         ),
       );
