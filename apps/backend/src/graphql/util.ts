@@ -1,23 +1,23 @@
 import { GraphQLError } from "graphql";
 
-export class APIError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = "APIError";
-    Error.captureStackTrace(this, APIError);
-  }
-}
-
-export const forbidden = () => {
-  return new GraphQLError("Forbidden", {
+export const forbidden = (message: string = "Forbidden") => {
+  return new GraphQLError(message, {
     extensions: {
       code: "FORBIDDEN",
     },
   });
 };
 
-export const unauthenticated = () => {
-  return new GraphQLError("unauthenticated", {
+export const notFound = (message: string) => {
+  return new GraphQLError(message, {
+    extensions: {
+      code: "NOT_FOUND",
+    },
+  });
+};
+
+export const unauthenticated = (message: string = "Unauthenticated") => {
+  return new GraphQLError(message, {
     extensions: {
       code: "UNAUTHENTICATED",
     },

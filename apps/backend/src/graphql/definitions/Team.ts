@@ -1,4 +1,3 @@
-import { GraphQLError } from "graphql";
 import gqlTag from "graphql-tag";
 
 import config from "@/config/index.js";
@@ -298,7 +297,7 @@ export const resolvers: IResolvers = {
         .resultSize();
 
       if (count === 1) {
-        throw new GraphQLError(
+        throw forbidden(
           "You are the last user of this team, you can't leave it",
         );
       }
@@ -340,7 +339,7 @@ export const resolvers: IResolvers = {
         .resultSize();
 
       if (count === 1) {
-        throw new Error("Can't remove the last user of a team.");
+        throw forbidden("Can't remove the last user of a team.");
       }
 
       const teamUser = await TeamUser.query()

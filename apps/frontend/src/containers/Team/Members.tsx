@@ -126,6 +126,10 @@ const LeaveTeamDialog = memo<LeaveTeamDialogProps>((props) => {
     variables: {
       teamAccountId: props.teamAccountId,
     },
+    onCompleted() {
+      props.state.hide();
+      navigate(authPayload ? `/${authPayload.account.slug}` : "/");
+    },
   });
   const navigate = useNavigate();
   return (
@@ -144,10 +148,8 @@ const LeaveTeamDialog = memo<LeaveTeamDialogProps>((props) => {
         <Button
           disabled={loading}
           color="danger"
-          onClick={async () => {
-            await leaveTeam();
-            props.state.hide();
-            navigate(authPayload ? `${authPayload.account.slug}` : "/");
+          onClick={() => {
+            leaveTeam().catch(() => {});
           }}
         >
           Leave Team
@@ -246,7 +248,7 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
           disabled={loading}
           color="danger"
           onClick={() => {
-            removeFromTeam();
+            removeFromTeam().catch(() => {});
           }}
         >
           Remove from Team

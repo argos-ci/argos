@@ -10,10 +10,11 @@ const apolloSentryPlugin: ApolloServerPlugin = {
     return {
       didEncounterErrors: async (ctx) => {
         for (const error of ctx.errors) {
-          // Ignore APIError
-          if (error.originalError?.name === "APIError") continue;
-          // Ignore FORBIDDEN error
-          if (error.extensions?.["code"] === "FORBIDDEN") continue;
+          const code = error.extensions?.["code"];
+          // Ignore some errors
+          if (code === "FORBIDDEN" || code === "NOT_FOUND") {
+            continue;
+          }
 
           if (error.path && error.name === "GraphQLError") {
             Sentry.withScope((scope) => {
