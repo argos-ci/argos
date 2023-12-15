@@ -8,7 +8,7 @@ import type {
   IResolvers,
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
-import { APIError, unauthenticated } from "../util.js";
+import { forbidden, notFound, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
@@ -164,7 +164,7 @@ export const resolvers: IResolvers = {
         .withGraphFetched("project.account");
 
       if (!build) {
-        throw new APIError("Build not found");
+        throw notFound("Build not found");
       }
 
       if (!build.project) {
@@ -180,7 +180,7 @@ export const resolvers: IResolvers = {
       );
 
       if (!hasWriteAccess) {
-        throw new APIError("You don't have access to this build");
+        throw forbidden("You don't have access to this build");
       }
 
       await ScreenshotDiff.query()
