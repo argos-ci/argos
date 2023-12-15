@@ -450,6 +450,17 @@ const ManageSubscriptionButton = ({
   return null;
 };
 
+function Period({ start, end }: { start: string; end: string }) {
+  const sameYear = moment(start).isSame(end, "year");
+  const format = sameYear ? "MMM DD" : "MMM DD YYYY";
+  return (
+    <div className="font-medium">
+      Current period ({<Time date={start} format={format} />} -{" "}
+      {<Time date={end} format={format} />})
+    </div>
+  );
+}
+
 export const PlanCard = (props: { account: AccountFragment }) => {
   const account = useFragment(PlanCardFragment, props.account);
   const {
@@ -526,11 +537,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
         {plan ? (
           <>
             <CardSeparator className="my-6" />
-            <div className="font-medium">
-              Current period ({<Time date={periodStartDate} format="MMM DD" />}{" "}
-              - {<Time date={periodEndDate} format="MMM DD" />})
-            </div>
-
+            <Period start={periodStartDate} end={periodEndDate} />
             <div className="mt-4">
               <ConsumptionBlock
                 projects={projects.edges}
