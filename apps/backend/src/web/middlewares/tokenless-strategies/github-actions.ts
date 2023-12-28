@@ -51,6 +51,7 @@ const strategy = {
       .withGraphJoined("[activeInstallation, projects]")
       .where("githubAccount.login", authData.owner)
       .findOne("github_repositories.name", authData.repository)
+      .orderBy("github_repositories.updatedAt", "desc")
       .first();
 
     if (
