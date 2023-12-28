@@ -16,7 +16,10 @@ export async function getAggregatedNotification(
       "builds.compareScreenshotBucketId",
       "sb.id",
     )
-    .where("sb.commit", commit);
+    .where("sb.commit", commit)
+    .distinctOn("builds.name")
+    .orderBy("builds.name")
+    .orderBy("builds.createdAt", "desc");
 
   // If there is only one sibling build, then we don't need to aggregate notifications
   if (siblingBuilds.length <= 1) {
