@@ -27,8 +27,34 @@ describe("#getAggregatedNotification", () => {
       const notification = await getAggregatedNotification(
         "58ca89145e1f072e45e112a6158d17a23f54602d",
         false,
+        "auto",
       );
       expect(notification).toBeNull();
+    });
+
+    it("returns null", async () => {
+      const notification = await getAggregatedNotification(
+        "58ca89145e1f072e45e112a6158d17a23f54602d",
+        false,
+        "auto",
+      );
+      expect(notification).toBeNull();
+    });
+
+    it("returns a notification if config is `always`", async () => {
+      const notification = await getAggregatedNotification(
+        "58ca89145e1f072e45e112a6158d17a23f54602d",
+        false,
+        "always",
+      );
+      console.log(notification);
+      expect(notification).toEqual({
+        description: "No diff detected",
+        githubState: "success",
+        gitlabState: "success",
+        vercelStatus: "completed",
+        vercelConclusion: "succeeded",
+      });
     });
   });
 
@@ -67,6 +93,7 @@ describe("#getAggregatedNotification", () => {
       const notification = await getAggregatedNotification(
         "58ca89145e1f072e45e112a6158d17a23f54602d",
         false,
+        "auto",
       );
       expect(notification).toEqual({
         description: "Diff detected",
@@ -75,6 +102,15 @@ describe("#getAggregatedNotification", () => {
         vercelStatus: "completed",
         vercelConclusion: "failed",
       });
+    });
+
+    it("returns null if config is `never`", async () => {
+      const notification = await getAggregatedNotification(
+        "58ca89145e1f072e45e112a6158d17a23f54602d",
+        false,
+        "never",
+      );
+      expect(notification).toBeNull();
     });
   });
 
@@ -126,6 +162,7 @@ describe("#getAggregatedNotification", () => {
       const notification = await getAggregatedNotification(
         "58ca89145e1f072e45e112a6158d17a23f54602d",
         false,
+        "auto",
       );
       expect(notification).toEqual({
         description: "Diff accepted",

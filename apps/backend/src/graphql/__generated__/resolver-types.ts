@@ -563,6 +563,8 @@ export type IProject = INode & {
   repository?: Maybe<IRepository>;
   /** Project slug */
   slug: Scalars['String']['output'];
+  /** Summary check */
+  summaryCheck: ISummaryCheck;
   /** Tests associated to the repository */
   tests: ITestConnection;
   token?: Maybe<Scalars['String']['output']>;
@@ -870,6 +872,12 @@ export type ISetupVercelIntegrationProjectInput = {
   vercelProjectId: Scalars['ID']['input'];
 };
 
+export enum ISummaryCheck {
+  Always = 'always',
+  Auto = 'auto',
+  Never = 'never'
+}
+
 export type ITeam = IAccount & INode & {
   __typename?: 'Team';
   avatar: IAccountAvatar;
@@ -999,6 +1007,7 @@ export type IUpdateProjectInput = {
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   private?: InputMaybe<Scalars['Boolean']['input']>;
+  summaryCheck?: InputMaybe<ISummaryCheck>;
 };
 
 export type IUpdateProjectPrCommentInput = {
@@ -1307,6 +1316,7 @@ export type IResolversTypes = ResolversObject<{
   SetupVercelIntegrationInput: ISetupVercelIntegrationInput;
   SetupVercelIntegrationProjectInput: ISetupVercelIntegrationProjectInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  SummaryCheck: ISummaryCheck;
   Team: ResolverTypeWrapper<Account>;
   TeamMember: ResolverTypeWrapper<TeamUser>;
   TeamMemberConnection: ResolverTypeWrapper<Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamMember']> }>;
@@ -1699,6 +1709,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   referenceBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   repository?: Resolver<Maybe<IResolversTypes['Repository']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  summaryCheck?: Resolver<IResolversTypes['SummaryCheck'], ParentType, ContextType>;
   tests?: Resolver<IResolversTypes['TestConnection'], ParentType, ContextType, RequireFields<IProjectTestsArgs, 'after' | 'first'>>;
   token?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   totalScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;

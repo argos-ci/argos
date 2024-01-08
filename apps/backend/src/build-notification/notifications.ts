@@ -286,6 +286,7 @@ export const processBuildNotification = async (
     buildNotification.build.compareScreenshotBucket.commit;
 
   const isReference = buildNotification.build.type === "reference";
+  const summaryCheckConfig = buildNotification.build.project.summaryCheck;
 
   const [buildUrl, projectUrl, notification, aggregatedNotification] =
     await Promise.all([
@@ -295,6 +296,7 @@ export const processBuildNotification = async (
       getAggregatedNotification(
         buildNotification.build.compareScreenshotBucket.commit,
         isReference,
+        summaryCheckConfig,
       ),
     ]);
 
