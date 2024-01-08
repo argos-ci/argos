@@ -33,6 +33,12 @@ import { invariant } from "@/util/invariant.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
+  enum SummaryCheck {
+    always
+    never
+    auto
+  }
+
   type GithubRepository implements Node {
     id: ID!
     defaultBranch: String!
@@ -77,6 +83,8 @@ export const typeDefs = gql`
     slug: String!
     "Pull request comment enabled"
     prCommentEnabled: Boolean!
+    "Summary check"
+    summaryCheck: SummaryCheck!
   }
 
   extend type Query {
@@ -107,6 +115,7 @@ export const typeDefs = gql`
     baselineBranch: String
     private: Boolean
     name: String
+    summaryCheck: SummaryCheck
   }
 
   input TransferProjectInput {
@@ -521,6 +530,10 @@ export const resolvers: IResolvers = {
 
       if (args.input.private !== undefined) {
         data.private = args.input.private;
+      }
+
+      if (args.input.summaryCheck != null) {
+        data.summaryCheck = args.input.summaryCheck;
       }
 
       if (args.input.name != null && project.name !== args.input.name) {

@@ -36,6 +36,7 @@ export class Project extends Model {
       gitlabProjectId: { type: ["null", "string"] },
       vercelProjectId: { type: ["null", "string"] },
       prCommentEnabled: { type: "boolean" },
+      summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
     },
   });
 
@@ -48,6 +49,7 @@ export class Project extends Model {
   gitlabProjectId!: string | null;
   vercelProjectId!: string | null;
   prCommentEnabled!: boolean;
+  summaryCheck!: "always" | "never" | "auto";
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

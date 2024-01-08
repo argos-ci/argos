@@ -5,11 +5,17 @@ import {
   getNotificationStatus,
 } from "./notification.js";
 import { assertUnreachable } from "@/util/unreachable.js";
+import type { Project } from "@/database/models/Project.js";
 
 export async function getAggregatedNotification(
   commit: string,
   isReference: boolean,
+  summaryCheckConfig: Project["summaryCheck"],
 ): Promise<NotificationPayload | null> {
+  if (summaryCheckConfig === "never") {
+    return null;
+  }
+
   const siblingBuilds = await Build.query()
     .join(
       "screenshot_buckets as sb",
@@ -22,7 +28,7 @@ export async function getAggregatedNotification(
     .orderBy("builds.createdAt", "desc");
 
   // If there is only one sibling build, then we don't need to aggregate notifications
-  if (siblingBuilds.length <= 1) {
+  if (siblingBuilds.length <= 1 && summaryCheckConfig === "auto") {
     return null;
   }
 

@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 13.10
--- Dumped by pg_dump version 14.7 (Homebrew)
+-- Dumped by pg_dump version 14.10 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -767,7 +767,9 @@ CREATE TABLE public.projects (
     "githubRepositoryId" bigint,
     "vercelProjectId" bigint,
     "prCommentEnabled" boolean DEFAULT true NOT NULL,
-    "gitlabProjectId" bigint
+    "gitlabProjectId" bigint,
+    "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
+    CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
 );
 
 
@@ -2761,3 +2763,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115160027_playwrightTraceIndex.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115210334_file-type-not-null.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231122143018_add-purchase-status.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240108211747_project-status-check.js', 1, NOW());
