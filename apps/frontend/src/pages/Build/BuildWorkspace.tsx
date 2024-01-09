@@ -7,6 +7,7 @@ import { BuildDetail } from "./BuildDetail";
 import { BuildDiffProvider } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
 import { BuildSidebar } from "./BuildSidebar";
+import { BuildOrphanDialog } from "./BuildOrphanDialog";
 
 const BuildProgress = memo(() => {
   return (
@@ -25,6 +26,7 @@ const BuildFragment = graphql(`
     ...BuildStatusDescription_Build
     ...BuildDetail_Build
     status
+    type
     stats {
       total
       failure
@@ -39,6 +41,8 @@ const BuildFragment = graphql(`
 const ProjectFragment = graphql(`
   fragment BuildWorkspace_Project on Project {
     ...BuildStatusDescription_Project
+    referenceBranch
+    slug
     repository {
       id
       url
@@ -72,7 +76,17 @@ export const BuildWorkspace = (props: {
         <BuildDiffProvider params={props.params} stats={build?.stats ?? null}>
           <div className="flex min-h-0 flex-1">
             <BuildSidebar build={build} repoUrl={repoUrl} />
-            {build ? <BuildDetail build={build} repoUrl={repoUrl} /> : null}
+            {build ? (
+              <>
+                <BuildDetail build={build} repoUrl={repoUrl} />
+                {build.type === "orphan" ? (
+                  <BuildOrphanDialog
+                    referenceBranch={project.referenceBranch}
+                    projectSlug={project.slug}
+                  />
+                ) : null}
+              </>
+            ) : null}
           </div>
         </BuildDiffProvider>
       );

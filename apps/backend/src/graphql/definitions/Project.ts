@@ -62,7 +62,7 @@ export const typeDefs = gql`
     "Override branch name"
     baselineBranch: String
     "Reference branch"
-    referenceBranch: String
+    referenceBranch: String!
     "Check if the project is public or not"
     public: Boolean!
     "Override repository's Github privacy"
@@ -343,7 +343,7 @@ export const resolvers: IResolvers = {
       return project.token;
     },
     latestReferenceBuild: async (project) => {
-      const lastestReferenceBuild = await Build.query()
+      const latestReferenceBuild = await Build.query()
         .where("projectId", project.id)
         .where("type", "reference")
         .orderBy([
@@ -351,7 +351,7 @@ export const resolvers: IResolvers = {
           { column: "number", order: "desc" },
         ])
         .first();
-      return lastestReferenceBuild ?? null;
+      return latestReferenceBuild ?? null;
     },
     latestBuild: async (project, _args, ctx) => {
       return ctx.loaders.LatestProjectBuild.load(project.id);
