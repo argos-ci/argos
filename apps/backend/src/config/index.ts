@@ -295,6 +295,14 @@ const config = convict({
       },
     },
   },
+  discord: {
+    webhookUrl: {
+      doc: "Discord Webhook URL",
+      format: String,
+      default: "",
+      env: "DISCORD_WEBHOOK_URL",
+    },
+  },
 });
 
 const env = config.get("env");

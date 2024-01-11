@@ -28,6 +28,8 @@ import {
 } from "@/database/services/project.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { invariant } from "@/util/invariant.js";
+import { notifyDiscord } from "@/discord/index.js";
+import { captureException } from "@sentry/node";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -251,6 +253,24 @@ const getOrCreateGithubRepository = async (props: {
   });
 };
 
+async function notifyProjectCreation(input: {
+  project: Project;
+  account: Account;
+  email: string | null;
+  source: "github" | "gitlab";
+}) {
+  await notifyDiscord({
+    content: `
+New project from ${input.account.name} (${
+      input.email ?? "unknown email"
+    }) imported from ${input.source}:
+${input.account.slug} / ${input.project.name}
+`.trim(),
+  }).catch((error) => {
+    captureException(error);
+  });
+}
+
 const importGithubProject = async (props: {
   accountSlug: string;
   creator: User;
@@ -275,11 +295,21 @@ const importGithubProject = async (props: {
     name: ghRepo.name,
     accountId: account.id,
   });
-  return Project.query().insertAndFetch({
+
+  const project = await Project.query().insertAndFetch({
     name,
     accountId: account.id,
     githubRepositoryId: ghRepo.id,
   });
+
+  await notifyProjectCreation({
+    project,
+    email: props.creator.email,
+    account,
+    source: "github",
+  });
+
+  return project;
 };
 
 const getOrCreateGitlabProject = async (props: {
@@ -334,11 +364,21 @@ const importGitlabProject = async (props: {
     name: glProject.path,
     accountId: account.id,
   });
-  return Project.query().insertAndFetch({
+
+  const project = await Project.query().insertAndFetch({
     name,
     accountId: account.id,
     gitlabProjectId: glProject.id,
   });
+
+  await notifyProjectCreation({
+    project,
+    email: props.creator.email,
+    account,
+    source: "github",
+  });
+
+  return project;
 };
 
 export const resolvers: IResolvers = {
