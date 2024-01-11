@@ -27,7 +27,7 @@
     "node": "18"
   },
   "devDependencies": {
-    "@argos-ci/playwright": "^1.2.2",
+    "@argos-ci/playwright": "^1.6.3",
     "@graphql-codegen/cli": "^5.0.0",
     "@graphql-codegen/client-preset": "^4.1.0",
     "@graphql-codegen/fragment-matcher": "^5.0.0",
