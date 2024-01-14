@@ -558,7 +558,7 @@ export type IProject = INode & {
   /** Check if the project is public or not */
   public: Scalars['Boolean']['output'];
   /** Reference branch */
-  referenceBranch?: Maybe<Scalars['String']['output']>;
+  referenceBranch: Scalars['String']['output'];
   /** Repository associated to the project */
   repository?: Maybe<IRepository>;
   /** Project slug */
@@ -1706,7 +1706,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   prCommentEnabled?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   private?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   public?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  referenceBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  referenceBranch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   repository?: Resolver<Maybe<IResolversTypes['Repository']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   summaryCheck?: Resolver<IResolversTypes['SummaryCheck'], ParentType, ContextType>;
