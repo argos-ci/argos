@@ -29,6 +29,7 @@ export const typeDefs = gql`
     ghApiInstallationRepositories(
       installationId: ID!
       page: Int!
+      reposPerPage: Int
     ): GhApiRepositoryConnection!
   }
 `;
@@ -39,18 +40,20 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
+      const reposPerPage = Math.min(args.reposPerPage || 100, 100);
       const octokit = getTokenOctokit(ctx.auth.user.accessToken);
       const apiRepositories =
         await octokit.apps.listInstallationReposForAuthenticatedUser({
           installation_id: Number(args.installationId),
-          per_page: 100,
+          per_page: reposPerPage,
           page: args.page,
         });
 
       return {
         edges: apiRepositories.data.repositories,
         pageInfo: {
-          hasNextPage: apiRepositories.data.total_count > args.page * 100,
+          hasNextPage:
+            apiRepositories.data.total_count > args.page * reposPerPage,
           totalCount: apiRepositories.data.total_count,
         },
       };
