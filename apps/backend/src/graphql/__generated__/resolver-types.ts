@@ -679,6 +679,7 @@ export type IQueryAccountByIdArgs = {
 export type IQueryGhApiInstallationRepositoriesArgs = {
   installationId: Scalars['ID']['input'];
   page: Scalars['Int']['input'];
+  reposPerPage?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
