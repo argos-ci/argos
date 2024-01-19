@@ -539,6 +539,8 @@ export type IProject = INode & {
   baselineBranch?: Maybe<Scalars['String']['output']>;
   /** A single build linked to the repository */
   build?: Maybe<IBuild>;
+  /** Build names */
+  buildNames: Array<Scalars['String']['output']>;
   /** Builds associated to the repository */
   builds: IBuildConnection;
   /** Current month used screenshots */
@@ -582,6 +584,7 @@ export type IProjectBuildArgs = {
 
 export type IProjectBuildsArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
+  buildName?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -700,6 +703,7 @@ export type IQueryInvitationArgs = {
 
 export type IQueryProjectArgs = {
   accountSlug: Scalars['String']['input'];
+  buildName?: InputMaybe<Scalars['String']['input']>;
   projectName: Scalars['String']['input'];
 };
 
@@ -1697,6 +1701,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   account?: Resolver<IResolversTypes['Account'], ParentType, ContextType>;
   baselineBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   build?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType, RequireFields<IProjectBuildArgs, 'number'>>;
+  buildNames?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
   builds?: Resolver<IResolversTypes['BuildConnection'], ParentType, ContextType, RequireFields<IProjectBuildsArgs, 'after' | 'first'>>;
   currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;

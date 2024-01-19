@@ -4,7 +4,11 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import * as React from "react";
 import { Helmet } from "react-helmet";
-import { Link as RouterLink, useParams } from "react-router-dom";
+import {
+  Link as RouterLink,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { DocumentType, graphql } from "@/gql";
@@ -15,11 +19,18 @@ import { List, ListRow, ListRowLoader } from "@/ui/List";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 
+import { PullRequestButton } from "@/containers/PullRequestButton";
+import {
+  Select,
+  SelectArrow,
+  SelectItem,
+  SelectPopover,
+  useSelectState,
+} from "@/ui/Select";
+import { Truncable } from "@/ui/Truncable";
 import { useProjectContext } from ".";
 import { NotFound } from "../NotFound";
 import { GettingStarted } from "./GettingStarted";
-import { PullRequestButton } from "@/containers/PullRequestButton";
-import { Truncable } from "@/ui/Truncable";
 
 const ProjectQuery = graphql(`
   query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {
@@ -31,6 +42,7 @@ const ProjectQuery = graphql(`
         id
         url
       }
+      buildNames
       ...GettingStarted_Project
       ...BuildStatusChip_Project
     }
@@ -46,10 +58,15 @@ const ProjectBuildsQuery = graphql(`
     $projectName: String!
     $after: Int!
     $first: Int!
+    $buildName: String
   ) {
-    project(accountSlug: $accountSlug, projectName: $projectName) {
+    project(
+      accountSlug: $accountSlug
+      projectName: $projectName
+      buildName: $buildName
+    ) {
       id
-      builds(first: $first, after: $after) {
+      builds(first: $first, after: $after, buildName: $buildName) {
         pageInfo {
           totalCount
           hasNextPage
@@ -270,8 +287,47 @@ const BuildsList = ({
   );
 };
 
+const BuildNameFilter = ({ buildNames }: { buildNames: string[] }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const allBuildsLabel = searchParams.get("buildName") || "All Builds";
+
+  const buildNameSelect = useSelectState({
+    gutter: 4,
+    value: searchParams.get("buildName") || "all",
+    setValue: (value) => {
+      if (value === undefined || value === "all") {
+        searchParams.delete("buildName");
+        setSearchParams(searchParams);
+      } else {
+        setSearchParams({ buildName: value });
+      }
+    },
+  });
+
+  return (
+    <div className="flex gap-3 items-center mb-4">
+      <Select state={buildNameSelect} className="min-w-[8em] justify-between">
+        {allBuildsLabel}
+        <SelectArrow />
+      </Select>
+      <SelectPopover aria-label="Build name" state={buildNameSelect} portal>
+        <SelectItem state={buildNameSelect} value="all">
+          All Builds
+        </SelectItem>
+        {buildNames.map((name) => (
+          <SelectItem key={name} state={buildNameSelect} value={name}>
+            {name}
+          </SelectItem>
+        ))}
+      </SelectPopover>
+    </div>
+  );
+};
+
 const PageContent = (props: { accountSlug: string; projectName: string }) => {
   const { hasWritePermission } = useProjectContext();
+  const [searchParams] = useSearchParams();
+  const buildName = searchParams.get("buildName");
   const projectResult = useQuery(ProjectQuery, {
     variables: {
       accountSlug: props.accountSlug,
@@ -287,6 +343,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
+      buildName,
       after: 0,
       first: 20,
     },
@@ -326,7 +383,10 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     });
   }, [fetchMore]);
 
-  if (!projectResult.data || !buildsResult.data) {
+  if (
+    !(projectResult.data || projectResult.previousData) ||
+    !(buildsResult.data || buildsResult.previousData)
+  ) {
     return (
       <Container className="py-10">
         <PageLoader />
@@ -334,8 +394,11 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     );
   }
 
-  const project = projectResult.data.project;
-  const builds = buildsResult.data.project?.builds;
+  const project =
+    projectResult.data?.project || projectResult.previousData?.project;
+  const builds =
+    buildsResult.data?.project?.builds ||
+    buildsResult.previousData?.project?.builds;
 
   if (!project || !builds) {
     return (
@@ -374,7 +437,10 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   }
 
   return (
-    <Container className="flex flex-1 pb-10 pt-4">
+    <Container className="flex flex-1 flex-col pb-10 pt-4">
+      {project.buildNames.length > 1 ? (
+        <BuildNameFilter buildNames={project.buildNames} />
+      ) : null}
       <div className="relative flex-1">
         <BuildsList
           project={project}

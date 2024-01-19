@@ -52,7 +52,7 @@ export const typeDefs = gql`
     name: String!
     token: String
     "Builds associated to the repository"
-    builds(first: Int = 30, after: Int = 0): BuildConnection!
+    builds(first: Int = 30, after: Int = 0, buildName: String): BuildConnection!
     "A single build linked to the repository"
     build(number: Int!): Build
     "Reference build"
@@ -87,11 +87,17 @@ export const typeDefs = gql`
     prCommentEnabled: Boolean!
     "Summary check"
     summaryCheck: SummaryCheck!
+    "Build names"
+    buildNames: [String!]!
   }
 
   extend type Query {
     "Get a project"
-    project(accountSlug: String!, projectName: String!): Project
+    project(
+      accountSlug: String!
+      projectName: String!
+      buildName: String
+    ): Project
     "Get a project"
     projectById(id: ID!): Project
   }
@@ -405,9 +411,12 @@ export const resolvers: IResolvers = {
     latestBuild: async (project, _args, ctx) => {
       return ctx.loaders.LatestProjectBuild.load(project.id);
     },
-    builds: async (project, { first, after }) => {
+    builds: async (project, { first, after, buildName }) => {
       const result = await Build.query()
         .where({ projectId: project.id })
+        .where((query) =>
+          buildName ? query.where({ name: buildName }) : query,
+        )
         .orderBy([
           { column: "createdAt", order: "desc" },
           { column: "number", order: "desc" },
@@ -501,6 +510,13 @@ export const resolvers: IResolvers = {
       const account = await ctx.loaders.Account.load(project.accountId);
       invariant(account, "Account not found");
       return `${account.slug}/${project.name}`;
+    },
+    buildNames: async (project) => {
+      const builds = await Build.query()
+        .where("projectId", project.id)
+        .select("name")
+        .distinct("name");
+      return builds.map((build) => build.name);
     },
   },
   Query: {
