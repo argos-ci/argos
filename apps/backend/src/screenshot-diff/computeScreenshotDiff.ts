@@ -9,7 +9,7 @@ import { File, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
 import { S3ImageFile } from "@/storage/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
 
-import { ImageDiffResult, diffImages } from "./util/image-diff/index.js";
+import { diffImages } from "./util/image-diff/index.js";
 import { chunk } from "@/util/chunk.js";
 
 const hashFile = async (filepath: string): Promise<string> => {
@@ -68,28 +68,25 @@ async function ensureFileDimensions({
   });
 }
 
-async function lockAndUploadDiffFile({
-  key,
-  diffResult,
-  diffImage,
-}: {
+async function lockAndUploadDiffFile(args: {
   key: string;
-  diffResult: ImageDiffResult;
-  diffImage: S3ImageFile;
+  width: number;
+  height: number;
+  image: S3ImageFile;
 }) {
   const lock = await getRedisLock();
-  return lock.acquire(`diffUpload-${key}`, async () => {
+  return lock.acquire(`diffUpload-${args.key}`, async () => {
     // Check if the diff file has been uploaded by another process
-    const existingDiffFile = await File.query().findOne({ key });
+    const existingDiffFile = await File.query().findOne({ key: args.key });
     if (existingDiffFile) return existingDiffFile;
 
-    await diffImage.upload();
+    await args.image.upload();
 
     return File.query()
       .insert({
-        key,
-        width: diffResult.width,
-        height: diffResult.height,
+        key: args.key,
+        width: args.width,
+        height: args.height,
         type: "screenshotDiff",
       })
       .returning("*");
@@ -100,29 +97,31 @@ async function lockAndUploadDiffFile({
  * Processes the diff result. Returns the existing file if found.
  * If not, uploads the new diff using a lock to avoid concurrency issues.
  */
-async function getOrCreateDiffFile({
-  diffResult,
-  s3,
-  bucket,
-  key,
-}: {
-  diffResult: ImageDiffResult;
+async function getOrCreateDiffFile(args: {
+  filepath: string;
+  width: number;
+  height: number;
   s3: S3Client;
   bucket: string;
   key: string;
 }) {
-  const diffImage = new S3ImageFile({
-    s3,
-    bucket: bucket,
-    filepath: diffResult.filepath,
-    key,
+  const image = new S3ImageFile({
+    s3: args.s3,
+    bucket: args.bucket,
+    filepath: args.filepath,
+    key: args.key,
   });
-  const existingDiffFile = await File.query().findOne({ key });
-  const diffFile =
-    existingDiffFile ||
-    (await lockAndUploadDiffFile({ key, diffResult, diffImage }));
-  await diffImage.unlink();
-  return diffFile;
+  let file = await File.query().findOne({ key: args.key });
+  if (!file) {
+    file = await lockAndUploadDiffFile({
+      key: args.key,
+      width: args.width,
+      height: args.height,
+      image,
+    });
+  }
+  await image.unlink();
+  return file;
 }
 
 async function areAllDiffsCompleted(buildId: string): Promise<{
@@ -212,16 +211,17 @@ export const computeScreenshotDiff = async (
   let diffKey: string | null = null;
 
   if (baseImage && baseImage.key !== compareImage.key && !screenshotDiff.s3Id) {
-    const diffResult = await diffImages({ baseImage, compareImage });
-
-    if (diffResult.score === 0) {
+    const diffResult = await diffImages(baseImage, compareImage);
+    if (diffResult === null) {
       await ScreenshotDiff.query()
         .findById(screenshotDiff.id)
-        .patch({ score: diffResult.score });
+        .patch({ score: 0 });
     } else {
       diffKey = await hashFile(diffResult.filepath);
       const diffFile = await getOrCreateDiffFile({
-        diffResult,
+        filepath: diffResult.filepath,
+        width: diffResult.width,
+        height: diffResult.height,
         s3,
         bucket,
         key: diffKey,

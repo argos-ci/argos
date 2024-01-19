@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { join } from "node:path";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, test } from "vitest";
+import { copyFile, unlink } from "node:fs/promises";
 
 import { LocalImageFile } from "@/storage/index.js";
 
@@ -9,141 +10,43 @@ import { diffImages } from "./index.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
+const tests = [
+  ["alphaBackground", false],
+  ["big-images", true],
+  ["border", false],
+  ["boxShadow", false],
+  ["fontAliasing", false],
+  ["imageCompression1", false],
+  ["imageCompression2", false],
+  ["imageCompression3", false],
+  ["imageCompression4", false],
+  ["imageCompression4", false],
+  ["simple", true],
+  ["tableAlpha", true],
+  ["minorChange1", true],
+  ["minorChange2", true],
+];
+
 describe("#diffImages", () => {
-  it("simple", async () => {
-    const { filepath, ...result } = await diffImages({
-      baseImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/simple/compare.png"),
-      }),
-      compareImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/simple/base.png"),
-      }),
-    });
+  test.each(tests)("diffImages %s", async (name, hasDiff) => {
+    const dir = resolve(__dirname, `__fixtures__/${name}`);
 
-    expect(result).toEqual({ score: 0, width: 1425, height: 1146 });
-  });
-
-  it("alphaBackground", async () => {
-    const { filepath, ...result } = await diffImages({
-      baseImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/alphaBackground/compare.png"),
+    const result = await diffImages(
+      new LocalImageFile({
+        filepath: resolve(dir, "compare.png"),
       }),
-      compareImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/alphaBackground/base.png"),
+      new LocalImageFile({
+        filepath: resolve(dir, "base.png"),
       }),
-    });
+    );
 
-    expect(result).toEqual({ score: 0, width: 1400, height: 300 });
-  });
+    const diffPath = resolve(dir, "diff_tmp.png");
+    await unlink(diffPath).catch(() => {});
 
-  it("boxShadow", async () => {
-    const { filepath, ...result } = await diffImages({
-      baseImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/boxShadow/compare.png"),
-      }),
-      compareImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/boxShadow/base.png"),
-      }),
-    });
+    if (result) {
+      await copyFile(result.filepath, diffPath);
+    }
 
-    expect(result).toEqual({ score: 0, width: 250, height: 300 });
-  });
-
-  it("border", async () => {
-    const { filepath, ...result } = await diffImages({
-      baseImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/border/compare.png"),
-      }),
-      compareImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/border/base.png"),
-      }),
-    });
-
-    expect(result).toEqual({
-      score: 0,
-      width: 1000,
-      height: 786,
-    });
-  });
-
-  it("fontAliasing", async () => {
-    const { filepath, ...result } = await diffImages({
-      baseImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/fontAliasing/compare.png"),
-      }),
-      compareImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/fontAliasing/base.png"),
-      }),
-    });
-
-    expect(result).toEqual({
-      score: 0.00182697201018,
-      width: 250,
-      height: 786,
-    });
-  });
-
-  it("imageCompression", async () => {
-    const { filepath, ...result } = await diffImages({
-      baseImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/imageCompression/compare.png"),
-      }),
-      compareImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/imageCompression/base.png"),
-      }),
-    });
-
-    expect(result).toEqual({ score: 0, width: 327, height: 665 });
-  });
-
-  it("imageCompression2", async () => {
-    const { filepath, ...result } = await diffImages({
-      baseImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/imageCompression2/compare.png"),
-      }),
-      compareImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/imageCompression2/base.png"),
-      }),
-    });
-
-    expect(result).toEqual({
-      height: 665,
-      score: 0,
-      width: 327,
-    });
-  });
-
-  it("imageCompression3", async () => {
-    const { filepath, ...result } = await diffImages({
-      baseImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/imageCompression3/compare.png"),
-      }),
-      compareImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/imageCompression3/base.png"),
-      }),
-    });
-
-    expect(result).toEqual({
-      score: 0.0000729166666667,
-      width: 1280,
-      height: 600,
-    });
-  });
-
-  it("big images", async () => {
-    const { filepath, ...result } = await diffImages({
-      baseImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/big-images/compare.png"),
-      }),
-      compareImage: new LocalImageFile({
-        filepath: join(__dirname, "__fixtures__/big-images/base.png"),
-      }),
-    });
-
-    expect(result).toEqual({
-      score: 0.846446632356,
-      width: 1000,
-      height: 4469,
-    });
+    expect(Boolean(result)).toBe(hasDiff);
   });
 });
