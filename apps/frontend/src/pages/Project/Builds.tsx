@@ -4,11 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import * as React from "react";
 import { Helmet } from "react-helmet";
-import {
-  Link as RouterLink,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
+import { Link as RouterLink, useParams } from "react-router-dom";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { DocumentType, graphql } from "@/gql";
@@ -20,17 +16,11 @@ import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 
 import { PullRequestButton } from "@/containers/PullRequestButton";
-import {
-  Select,
-  SelectArrow,
-  SelectItem,
-  SelectPopover,
-  useSelectState,
-} from "@/ui/Select";
 import { Truncable } from "@/ui/Truncable";
 import { useProjectContext } from ".";
 import { NotFound } from "../NotFound";
 import { GettingStarted } from "./GettingStarted";
+import { BuildNameFilter, useBuildNameFilter } from "./BuildNameFilter";
 
 const ProjectQuery = graphql(`
   query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {
@@ -287,47 +277,9 @@ const BuildsList = ({
   );
 };
 
-const BuildNameFilter = ({ buildNames }: { buildNames: string[] }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const allBuildsLabel = searchParams.get("buildName") || "All Builds";
-
-  const buildNameSelect = useSelectState({
-    gutter: 4,
-    value: searchParams.get("buildName") || "all",
-    setValue: (value) => {
-      if (value === undefined || value === "all") {
-        searchParams.delete("buildName");
-        setSearchParams(searchParams);
-      } else {
-        setSearchParams({ buildName: value });
-      }
-    },
-  });
-
-  return (
-    <div className="flex gap-3 items-center mb-4">
-      <Select state={buildNameSelect} className="min-w-[8em] justify-between">
-        {allBuildsLabel}
-        <SelectArrow />
-      </Select>
-      <SelectPopover aria-label="Build name" state={buildNameSelect} portal>
-        <SelectItem state={buildNameSelect} value="all">
-          All Builds
-        </SelectItem>
-        {buildNames.map((name) => (
-          <SelectItem key={name} state={buildNameSelect} value={name}>
-            {name}
-          </SelectItem>
-        ))}
-      </SelectPopover>
-    </div>
-  );
-};
-
 const PageContent = (props: { accountSlug: string; projectName: string }) => {
   const { hasWritePermission } = useProjectContext();
-  const [searchParams] = useSearchParams();
-  const buildName = searchParams.get("buildName");
+  const [buildName, setBuildName] = useBuildNameFilter();
   const projectResult = useQuery(ProjectQuery, {
     variables: {
       accountSlug: props.accountSlug,
@@ -438,9 +390,13 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
 
   return (
     <Container className="flex flex-1 flex-col pb-10 pt-4">
-      {project.buildNames.length > 1 ? (
-        <BuildNameFilter buildNames={project.buildNames} />
-      ) : null}
+      {project.buildNames.length > 1 && (
+        <BuildNameFilter
+          buildNames={project.buildNames}
+          value={buildName}
+          onChange={setBuildName}
+        />
+      )}
       <div className="relative flex-1">
         <BuildsList
           project={project}
