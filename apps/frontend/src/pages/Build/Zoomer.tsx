@@ -29,7 +29,7 @@ type ZoomPaneListener = {
 };
 
 const MIN_ZOOM_SCALE = 0.1;
-const MAX_ZOOM_SCALE = 30;
+const MAX_ZOOM_SCALE = 34;
 
 const isWrappedWithClass = (event: any, className: string | undefined) =>
   Boolean(event.target.closest(`.${className}`));
@@ -80,7 +80,7 @@ class Zoomer {
           // taken from https://github.com/d3/d3-zoom/blob/master/src/zoom.js
           const pinchDelta =
             -event.deltaY *
-            (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002) *
+            (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.01) *
             2;
           const zoom = currentZoom * Math.pow(2, pinchDelta);
           this.zoom.scaleTo(this.selection, zoom, point);
