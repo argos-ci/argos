@@ -15,11 +15,12 @@ import { List, ListRow, ListRowLoader } from "@/ui/List";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 
+import { PullRequestButton } from "@/containers/PullRequestButton";
+import { Truncable } from "@/ui/Truncable";
 import { useProjectContext } from ".";
 import { NotFound } from "../NotFound";
 import { GettingStarted } from "./GettingStarted";
-import { PullRequestButton } from "@/containers/PullRequestButton";
-import { Truncable } from "@/ui/Truncable";
+import { BuildNameFilter, useBuildNameFilter } from "./BuildNameFilter";
 
 const ProjectQuery = graphql(`
   query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {
@@ -31,6 +32,7 @@ const ProjectQuery = graphql(`
         id
         url
       }
+      buildNames
       ...GettingStarted_Project
       ...BuildStatusChip_Project
     }
@@ -46,10 +48,15 @@ const ProjectBuildsQuery = graphql(`
     $projectName: String!
     $after: Int!
     $first: Int!
+    $buildName: String
   ) {
-    project(accountSlug: $accountSlug, projectName: $projectName) {
+    project(
+      accountSlug: $accountSlug
+      projectName: $projectName
+      buildName: $buildName
+    ) {
       id
-      builds(first: $first, after: $after) {
+      builds(first: $first, after: $after, buildName: $buildName) {
         pageInfo {
           totalCount
           hasNextPage
@@ -272,6 +279,7 @@ const BuildsList = ({
 
 const PageContent = (props: { accountSlug: string; projectName: string }) => {
   const { hasWritePermission } = useProjectContext();
+  const [buildName, setBuildName] = useBuildNameFilter();
   const projectResult = useQuery(ProjectQuery, {
     variables: {
       accountSlug: props.accountSlug,
@@ -287,6 +295,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
+      buildName,
       after: 0,
       first: 20,
     },
@@ -326,7 +335,10 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     });
   }, [fetchMore]);
 
-  if (!projectResult.data || !buildsResult.data) {
+  if (
+    !(projectResult.data || projectResult.previousData) ||
+    !(buildsResult.data || buildsResult.previousData)
+  ) {
     return (
       <Container className="py-10">
         <PageLoader />
@@ -334,8 +346,11 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     );
   }
 
-  const project = projectResult.data.project;
-  const builds = buildsResult.data.project?.builds;
+  const project =
+    projectResult.data?.project || projectResult.previousData?.project;
+  const builds =
+    buildsResult.data?.project?.builds ||
+    buildsResult.previousData?.project?.builds;
 
   if (!project || !builds) {
     return (
@@ -374,7 +389,14 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   }
 
   return (
-    <Container className="flex flex-1 pb-10 pt-4">
+    <Container className="flex flex-1 flex-col pb-10 pt-4">
+      {project.buildNames.length > 1 && (
+        <BuildNameFilter
+          buildNames={project.buildNames}
+          value={buildName}
+          onChange={setBuildName}
+        />
+      )}
       <div className="relative flex-1">
         <BuildsList
           project={project}

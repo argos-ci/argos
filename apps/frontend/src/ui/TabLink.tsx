@@ -21,7 +21,7 @@ export const TabLinkList = forwardRef<HTMLDivElement, TabListProps>(
     return (
       <TabList
         ref={ref}
-        className={clsx(className, "container relative mx-auto px-1")}
+        className={clsx(className, "container relative mx-auto px-4")}
         {...props}
       />
     );
