@@ -152,11 +152,34 @@ const createBuild = async (params: {
   return build;
 };
 
+/**
+ * Special token used to reference the reference branch of the project.
+ * Interpreted by Argos SDKs especially for GitHub Actions with "deployment_status" event.
+ */
+const REFERENCE_BRANCH = "__argos/reference-branch";
+
+/**
+ * Resolves the reference branch if a special token is used.
+ */
+async function resolveReferenceBranch(
+  referenceBranch: string,
+  project: Project,
+) {
+  if (referenceBranch === REFERENCE_BRANCH) {
+    return project.$getReferenceBranch();
+  }
+
+  return null;
+}
+
 export const createBuildFromRequest = async ({
   req,
 }: {
   req: CreateRequest;
 }) => {
+  const referenceBranch = req.body.referenceBranch
+    ? await resolveReferenceBranch(req.body.referenceBranch, req.authProject)
+    : null;
   return createBuild({
     project: req.authProject,
     buildName: req.body.name ?? null,
@@ -169,6 +192,6 @@ export const createBuildFromRequest = async ({
     prNumber: req.body.prNumber ?? null,
     prHeadCommit: req.body.prHeadCommit ?? null,
     referenceCommit: req.body.referenceCommit ?? null,
-    referenceBranch: req.body.referenceBranch ?? null,
+    referenceBranch: referenceBranch,
   });
 };
