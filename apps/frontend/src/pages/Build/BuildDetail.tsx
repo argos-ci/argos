@@ -199,7 +199,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
           }
         >
           <img
-            className={clsx(contained && "max-h-full")}
+            className={clsx(contained && "max-h-full mx-auto")}
             alt="Baseline screenshot"
             {...getImgAttributes(diff.baseScreenshot!)}
           />
@@ -216,7 +216,10 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
           }
         >
           <img
-            className={clsx("relative opacity-0", contained && "max-h-full")}
+            className={clsx(
+              "relative opacity-0 mx-auto",
+              contained && "max-h-full",
+            )}
             {...getImgAttributes({
               url: diff.url!,
               width: diff.width,
@@ -224,7 +227,11 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             })}
           />
           <img
-            className="absolute left-0 top-0"
+            className={clsx(
+              "absolute top-0",
+              contained && "max-h-full",
+              "left-0 right-0 mx-auto",
+            )}
             alt="Baseline screenshot"
             {...getImgAttributes(diff.baseScreenshot!)}
           />
@@ -251,7 +258,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
           }
         >
           <img
-            className={clsx(contained && "max-h-full")}
+            className={clsx(contained && "max-h-full mx-auto")}
             alt="Changes screenshot"
             {...getImgAttributes(diff.compareScreenshot!)}
           />
@@ -268,7 +275,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
           }
         >
           <img
-            className={clsx(contained && "max-h-full")}
+            className={clsx("mx-auto", contained && "max-h-full")}
             alt="Failure screenshot"
             {...getImgAttributes(diff.compareScreenshot!)}
           />
@@ -286,7 +293,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
         >
           <NeutralLink href={diff.compareScreenshot!.url}>
             <img
-              className={clsx(contained && "max-h-full")}
+              className={clsx("mx-auto", contained && "max-h-full")}
               alt="Baseline screenshot"
               {...getImgAttributes(diff.compareScreenshot!)}
             />
@@ -317,13 +324,19 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
           }
         >
           <img
-            className={clsx("absolute", visible && "opacity-disabled")}
+            className={clsx(
+              "absolute",
+              visible && "opacity-disabled",
+              // Firefox fixes
+              contained && "max-h-full",
+              "left-0 right-0 mx-auto",
+            )}
             {...getImgAttributes(diff.compareScreenshot!)}
           />
           <img
             className={clsx(
               opacity,
-              "relative z-10",
+              "relative z-10 mx-auto",
               contained && "max-h-full",
             )}
             alt="Changes screenshot"
