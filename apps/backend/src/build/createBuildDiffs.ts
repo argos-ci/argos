@@ -3,6 +3,7 @@ import { Build, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
 import type { BuildType, ScreenshotBucket } from "@/database/models/index.js";
 
 import { getBaseScreenshotBucket } from "./base.js";
+import { invariant } from "@/util/invariant.js";
 
 const getBuildType = ({
   baseScreenshotBucket,
@@ -27,7 +28,7 @@ async function getOrCreateBaseScreenshotBucket(
   { trx }: { trx?: TransactionOrKnex | undefined } = {},
 ) {
   if (build.baseScreenshotBucket) {
-    return build.baseScreenshotBucket!;
+    return build.baseScreenshotBucket;
   }
 
   const baseScreenshotBucket = await getBaseScreenshotBucket({
@@ -162,92 +163,114 @@ export const createBuildDiffs = async (build: Build) => {
     }),
   ]);
 
+  const project = richBuild.project;
+  invariant(project, "no project found for build");
+
+  const compareScreenshotBucket = richBuild.compareScreenshotBucket;
+  invariant(
+    compareScreenshotBucket,
+    "no compare screenshot bucket found for build",
+  );
+
+  const compareScreenshots = compareScreenshotBucket.screenshots;
+  invariant(compareScreenshots, "no compare screenshots found for build");
+
+  const referenceBranch = await project.$getReferenceBranch();
+
   return transaction(async (trx) => {
     const baseScreenshotBucket = await getOrCreateBaseScreenshotBucket(
       richBuild,
       { trx },
     );
 
-    if (!richBuild.project) {
-      throw new Error("Invariant: no project found for build");
-    }
-
-    const referenceBranch = await richBuild.project.$getReferenceBranch(trx);
-
     await Build.query(trx)
       .findById(build.id)
       .patch({
         type: getBuildType({
           baseScreenshotBucket,
-          compareScreenshotBucket: richBuild.compareScreenshotBucket!,
+          compareScreenshotBucket,
           referenceBranch,
         }),
       });
 
     const sameBucket = Boolean(
       baseScreenshotBucket &&
-        baseScreenshotBucket.id === richBuild.compareScreenshotBucket!.id,
+        baseScreenshotBucket.id === compareScreenshotBucket.id,
     );
 
-    const inserts = richBuild.compareScreenshotBucket!.screenshots!.map(
-      (compareScreenshot) => {
-        const baseScreenshot = (() => {
-          if (sameBucket) return null;
-          if (!baseScreenshotBucket) return null;
-          if (
-            ScreenshotDiff.screenshotFailureRegexp.test(compareScreenshot.name)
-          ) {
-            return null;
-          }
-          return baseScreenshotBucket.screenshots!.find(
-            ({ name }) => name === compareScreenshot.name,
-          );
-        })();
-        const sameFileId = Boolean(
-          baseScreenshot &&
-            baseScreenshot.fileId &&
-            compareScreenshot.fileId &&
-            baseScreenshot.fileId === compareScreenshot.fileId,
+    const inserts = compareScreenshots.map((compareScreenshot) => {
+      const baseScreenshot = (() => {
+        if (sameBucket) {
+          return null;
+        }
+
+        if (!baseScreenshotBucket) {
+          return null;
+        }
+
+        // Don't create diffs for failure screenshots
+        if (
+          ScreenshotDiff.screenshotFailureRegexp.test(compareScreenshot.name)
+        ) {
+          return null;
+        }
+
+        invariant(
+          baseScreenshotBucket.screenshots,
+          "no base screenshots found for build",
         );
 
-        return {
-          buildId: richBuild.id,
-          baseScreenshotId: baseScreenshot ? baseScreenshot.id : null,
-          compareScreenshotId: compareScreenshot.id,
-          jobStatus: getJobStatus({
-            baseScreenshot: baseScreenshot ?? null,
-            sameFileId,
-            compareScreenshot,
-          }),
-          score: sameFileId ? 0 : null,
-          validationStatus: "unknown" as const,
-          stabilityScore: stabilityScores[compareScreenshot.name] ?? 100,
-          testId: compareScreenshot.testId,
-        };
-      },
-      [],
-    );
+        return baseScreenshotBucket.screenshots.find(
+          ({ name }) => name === compareScreenshot.name,
+        );
+      })();
 
-    const compareScreenshotNames =
-      richBuild.compareScreenshotBucket!.screenshots!.map(({ name }) => name);
+      const sameFileId = Boolean(
+        baseScreenshot?.fileId &&
+          compareScreenshot.fileId &&
+          baseScreenshot.fileId === compareScreenshot.fileId,
+      );
+
+      return {
+        buildId: richBuild.id,
+        baseScreenshotId: baseScreenshot ? baseScreenshot.id : null,
+        compareScreenshotId: compareScreenshot.id,
+        jobStatus: getJobStatus({
+          baseScreenshot: baseScreenshot ?? null,
+          sameFileId,
+          compareScreenshot,
+        }),
+        score: sameFileId ? 0 : null,
+        validationStatus: "unknown" as const,
+        stabilityScore: stabilityScores[compareScreenshot.name] ?? 100,
+        testId: compareScreenshot.testId,
+      };
+    });
+
+    const compareScreenshotNames = compareScreenshots.map(({ name }) => name);
 
     const removedScreenshots =
-      baseScreenshotBucket && baseScreenshotBucket.screenshots
-        ? baseScreenshotBucket.screenshots
-            .filter(({ name }) => !compareScreenshotNames.includes(name))
-            .map((baseScreenshot) => ({
-              buildId: richBuild.id,
-              baseScreenshotId: baseScreenshot.id,
-              compareScreenshotId: null,
-              jobStatus: "complete" as const,
-              score: null,
-              validationStatus: "unknown" as const,
-            }))
-        : [];
+      baseScreenshotBucket?.screenshots
+        ?.filter(
+          ({ name }) =>
+            !compareScreenshotNames.includes(name) &&
+            // Don't mark failure screenshots as removed
+            !ScreenshotDiff.screenshotFailureRegexp.test(name),
+        )
+        .map((baseScreenshot) => ({
+          buildId: richBuild.id,
+          baseScreenshotId: baseScreenshot.id,
+          compareScreenshotId: null,
+          jobStatus: "complete" as const,
+          score: null,
+          validationStatus: "unknown" as const,
+        })) ?? [];
 
     const allInserts = [...inserts, ...removedScreenshots];
 
-    if (allInserts.length === 0) return [];
+    if (allInserts.length === 0) {
+      return [];
+    }
 
     return ScreenshotDiff.query(trx).insertAndFetch(allInserts);
   });
