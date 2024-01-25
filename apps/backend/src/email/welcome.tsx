@@ -103,10 +103,7 @@ export const WelcomeEmail = ({ baseUrl }: { baseUrl: string }) => {
           </Section>
           <Section style={guideSection}>
             <Heading as="h2" style={h2}>
-              <Link
-                style={link}
-                href="https://argos-ci.com/docs/argos-cli"
-              >
+              <Link style={link} href="https://argos-ci.com/docs/argos-cli">
                 Setup Argos in your CI →
               </Link>
             </Heading>
@@ -117,10 +114,7 @@ export const WelcomeEmail = ({ baseUrl }: { baseUrl: string }) => {
           </Section>
           <Section style={guideSection}>
             <Heading as="h2" style={h2}>
-              <Link
-                style={link}
-                href="https://argos-ci.com/docs/notifications"
-              >
+              <Link style={link} href="https://argos-ci.com/docs/notifications">
                 Review changes in Argos →
               </Link>
             </Heading>
