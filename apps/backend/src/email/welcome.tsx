@@ -91,7 +91,7 @@ export const WelcomeEmail = ({ baseUrl }: { baseUrl: string }) => {
             <Heading as="h2" style={h2}>
               <Link
                 style={link}
-                href="https://argos-ci.com/docs/capture-screenshots"
+                href="https://argos-ci.com/docs/screenshot-pages-script"
               >
                 Capture your first screenshot →
               </Link>
@@ -105,7 +105,7 @@ export const WelcomeEmail = ({ baseUrl }: { baseUrl: string }) => {
             <Heading as="h2" style={h2}>
               <Link
                 style={link}
-                href="https://argos-ci.com/docs/capture-screenshots"
+                href="https://argos-ci.com/docs/argos-cli"
               >
                 Setup Argos in your CI →
               </Link>
@@ -119,7 +119,7 @@ export const WelcomeEmail = ({ baseUrl }: { baseUrl: string }) => {
             <Heading as="h2" style={h2}>
               <Link
                 style={link}
-                href="https://argos-ci.com/docs/capture-screenshots"
+                href="https://argos-ci.com/docs/notifications"
               >
                 Review changes in Argos →
               </Link>
