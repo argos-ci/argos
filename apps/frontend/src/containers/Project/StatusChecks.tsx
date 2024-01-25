@@ -107,7 +107,7 @@ export const ProjectStatusChecks = (props: {
           </CardBody>
           <FormCardFooter>
             Learn more about{" "}
-            <Anchor href="https://argos-ci.com/docs/summary-check" external>
+            <Anchor href="https://argos-ci.com/docs/summary-checks" external>
               summary checks
             </Anchor>
             .
