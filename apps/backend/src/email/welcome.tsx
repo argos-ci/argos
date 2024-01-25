@@ -84,57 +84,53 @@ export const WelcomeEmail = ({ baseUrl }: { baseUrl: string }) => {
           <Text style={text}>We are excited to have you on board!</Text>
           <Text style={text}>
             Once you're ready to create your own Argos project, follow these
-            guides to integrate visual testing into your workflow:
+            guides to integrate visual testing into your workflow.
           </Text>
           <Hr style={hr} />
           <Section style={guideSection}>
             <Heading as="h2" style={h2}>
               <Link
                 style={link}
-                href="https://argos-ci.com/docs/capture-screenshots"
+                href="https://argos-ci.com/docs/getting-started"
               >
-                Capture your first screenshot →
+                Set up Argos →
               </Link>
             </Heading>
             <Text style={{ ...text, margin: 0 }}>
-              Use one of our integrations to install Argos into your workflow
-              and capture your first screenshot.
+              Use one of our Quickstart guides to install Argos into your
+              project.
             </Text>
           </Section>
           <Section style={guideSection}>
             <Heading as="h2" style={h2}>
               <Link
                 style={link}
-                href="https://argos-ci.com/docs/capture-screenshots"
+                href="https://argos-ci.com/docs/screenshot-pages-script"
               >
-                Setup Argos in your CI →
+                Screenshot your whole app →
               </Link>
             </Heading>
             <Text style={{ ...text, margin: 0 }}>
-              Add the Argos CLI command into your Continuous Integration (CI)
-              pipeline to upload the screenshots to Argos.
+              Discover a script to efficiently cover all your pages against
+              regressions with Argos.
             </Text>
           </Section>
           <Section style={guideSection}>
             <Heading as="h2" style={h2}>
-              <Link
-                style={link}
-                href="https://argos-ci.com/docs/capture-screenshots"
-              >
-                Review changes in Argos →
+              <Link style={link} href="https://youtu.be/QiJk2ZViN7c">
+                Demo Video: Review changes in Argos →
               </Link>
             </Heading>
             <Text style={{ ...text, margin: 0 }}>
-              Once you've successfully installed Argos, you can review the
-              visual changes of your app for each pull request. Avoid UI bugs
-              and merge with confidence!
+              Learn how to review visual changes of your app for a pull request,
+              avoid UI bugs and merge with confidence!
             </Text>
           </Section>
           <Hr style={hr} />
           <Text style={text}>
-            We hope you enjoy using Argos! Have a question, feedback or need
-            some guidance? Just hit reply, and let's make your Argos experience
-            even better.
+            We hope you will enjoy using Argos! Have a question, feedback or
+            need some guidance? Just hit reply, and let's make your Argos
+            experience even better.
           </Text>
           <Text style={text}>— The Argos Team 💌</Text>
           <Hr style={hr} />
