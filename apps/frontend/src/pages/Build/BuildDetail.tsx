@@ -145,17 +145,29 @@ function getImgAttributes({
   };
 }
 
-const NeutralLink = ({
-  href,
+const ScreenshotPlaceholder = ({
+  dimensions,
+  contained,
   children,
 }: {
-  href: string;
+  dimensions: {
+    width?: number | null;
+    height?: number | null;
+  };
+  contained: boolean;
   children: React.ReactNode;
-}) => (
-  <a href={href} rel="noopener noreferrer" target="_blank">
-    {children}
-  </a>
-);
+}) => {
+  return (
+    <div
+      className="relative"
+      style={{
+        aspectRatio: contained ? getAspectRatio(dimensions) : undefined,
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 
 const BaseScreenshot = ({ diff }: { diff: Diff }) => {
   const { contained } = useBuildDiffFitState();
@@ -208,11 +220,16 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <img
-            className={clsx(contained && "max-h-full")}
-            alt="Baseline screenshot"
-            {...getImgAttributes(diff.baseScreenshot!)}
-          />
+          <ScreenshotPlaceholder
+            dimensions={diff.baseScreenshot!}
+            contained={contained}
+          >
+            <img
+              className={clsx("mx-auto", contained && "max-h-full")}
+              alt="Baseline screenshot"
+              {...getImgAttributes(diff.baseScreenshot!)}
+            />
+          </ScreenshotPlaceholder>
         </ZoomPane>
       );
     case "changed":
@@ -225,19 +242,12 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <div
-            className="relative"
-            style={{
-              aspectRatio: contained
-                ? getAspectRatio({
-                    width: diff.width,
-                    height: diff.height,
-                  })
-                : undefined,
-            }}
-          >
+          <ScreenshotPlaceholder dimensions={diff} contained={contained}>
             <img
-              className={clsx("relative opacity-0", contained && "max-h-full")}
+              className={clsx(
+                "relative opacity-0 mx-auto",
+                contained && "max-h-full",
+              )}
               {...getImgAttributes({
                 url: diff.url!,
                 width: diff.width,
@@ -245,11 +255,11 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
               })}
             />
             <img
-              className="absolute left-0 top-0"
+              className="absolute left-0 top-0 right-0 mx-auto"
               alt="Baseline screenshot"
               {...getImgAttributes(diff.baseScreenshot!)}
             />
-          </div>
+          </ScreenshotPlaceholder>
         </ZoomPane>
       );
     default:
@@ -272,11 +282,16 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <img
-            className={clsx(contained && "max-h-full")}
-            alt="Changes screenshot"
-            {...getImgAttributes(diff.compareScreenshot!)}
-          />
+          <ScreenshotPlaceholder
+            dimensions={diff.compareScreenshot!}
+            contained={contained}
+          >
+            <img
+              className={clsx("mx-auto", contained && "max-h-full")}
+              alt="Changes screenshot"
+              {...getImgAttributes(diff.compareScreenshot!)}
+            />
+          </ScreenshotPlaceholder>
         </ZoomPane>
       );
     case "failure":
@@ -289,11 +304,16 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <img
-            className={clsx(contained && "max-h-full")}
-            alt="Failure screenshot"
-            {...getImgAttributes(diff.compareScreenshot!)}
-          />
+          <ScreenshotPlaceholder
+            dimensions={diff.compareScreenshot!}
+            contained={contained}
+          >
+            <img
+              className={clsx("mx-auto", contained && "max-h-full")}
+              alt="Failure screenshot"
+              {...getImgAttributes(diff.compareScreenshot!)}
+            />
+          </ScreenshotPlaceholder>
         </ZoomPane>
       );
     case "unchanged":
@@ -306,13 +326,16 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <NeutralLink href={diff.compareScreenshot!.url}>
+          <ScreenshotPlaceholder
+            dimensions={diff.compareScreenshot!}
+            contained={contained}
+          >
             <img
-              className={clsx(contained && "max-h-full")}
+              className={clsx("mx-auto", contained && "max-h-full")}
               alt="Baseline screenshot"
               {...getImgAttributes(diff.compareScreenshot!)}
             />
-          </NeutralLink>
+          </ScreenshotPlaceholder>
         </ZoomPane>
       );
     case "removed":
@@ -338,20 +361,19 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <div
-            className="relative"
-            style={
-              contained ? { aspectRatio: getAspectRatio(diff) } : undefined
-            }
-          >
+          <ScreenshotPlaceholder dimensions={diff} contained={contained}>
             <img
-              className={clsx("absolute", visible && "opacity-disabled")}
+              className={clsx(
+                "absolute left-0 right-0 mx-auto",
+                visible && "opacity-disabled",
+                contained && "max-h-full",
+              )}
               {...getImgAttributes(diff.compareScreenshot!)}
             />
             <img
               className={clsx(
                 opacity,
-                "relative z-10",
+                "relative z-10 mx-auto",
                 contained && "max-h-full",
               )}
               alt="Changes screenshot"
@@ -361,7 +383,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
                 height: diff.height,
               })}
             />
-          </div>
+          </ScreenshotPlaceholder>
         </ZoomPane>
       );
     default:
