@@ -159,10 +159,18 @@ function ScreenshotContainer({
 }) {
   return (
     <div
-      className="relative min-w-0 min-h-0"
-      style={{
-        aspectRatio: contained ? getAspectRatio(dimensions) : undefined,
-      }}
+      className={clsx(
+        "relative min-w-0 min-h-0",
+        contained && "max-h-full max-w-full",
+      )}
+      style={
+        contained
+          ? {
+              aspectRatio: getAspectRatio(dimensions),
+              height: dimensions.height ?? undefined,
+            }
+          : undefined
+      }
     >
       {children}
     </div>
