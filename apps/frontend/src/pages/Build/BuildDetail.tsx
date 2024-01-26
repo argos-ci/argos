@@ -199,7 +199,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
           }
         >
           <img
-            className={clsx(contained && "max-h-full mx-auto")}
+            className={clsx("mx-auto", contained && "max-h-full")}
             alt="Baseline screenshot"
             {...getImgAttributes(diff.baseScreenshot!)}
           />
@@ -228,9 +228,8 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
           />
           <img
             className={clsx(
-              "absolute top-0",
+              "absolute top-0 left-0 right-0 mx-auto",
               contained && "max-h-full",
-              "left-0 right-0 mx-auto",
             )}
             alt="Baseline screenshot"
             {...getImgAttributes(diff.baseScreenshot!)}
@@ -325,11 +324,9 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
         >
           <img
             className={clsx(
-              "absolute",
+              "absolute left-0 right-0 mx-auto",
               visible && "opacity-disabled",
-              // Firefox fixes
               contained && "max-h-full",
-              "left-0 right-0 mx-auto",
             )}
             {...getImgAttributes(diff.compareScreenshot!)}
           />
