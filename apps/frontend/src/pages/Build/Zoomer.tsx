@@ -312,7 +312,7 @@ export const ZoomPane = (props: {
     >
       <div
         ref={contentRef}
-        className="flex min-h-0 flex-1 origin-top-left justify-center"
+        className="flex min-h-0 min-w-0 flex-1 origin-top-left justify-center"
         style={{ transform: transformToCss(transform) }}
       >
         {props.children}

@@ -145,7 +145,7 @@ function getImgAttributes({
   };
 }
 
-const ScreenshotPlaceholder = ({
+function ScreenshotContainer({
   dimensions,
   contained,
   children,
@@ -156,10 +156,10 @@ const ScreenshotPlaceholder = ({
   };
   contained: boolean;
   children: React.ReactNode;
-}) => {
+}) {
   return (
     <div
-      className="relative"
+      className="relative min-w-0 min-h-0"
       style={{
         aspectRatio: contained ? getAspectRatio(dimensions) : undefined,
       }}
@@ -167,7 +167,7 @@ const ScreenshotPlaceholder = ({
       {children}
     </div>
   );
-};
+}
 
 const BaseScreenshot = ({ diff }: { diff: Diff }) => {
   const { contained } = useBuildDiffFitState();
@@ -220,16 +220,16 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <ScreenshotPlaceholder
+          <ScreenshotContainer
             dimensions={diff.baseScreenshot!}
             contained={contained}
           >
             <img
-              className={clsx("mx-auto", contained && "max-h-full")}
+              className={clsx(contained && "max-h-full")}
               alt="Baseline screenshot"
               {...getImgAttributes(diff.baseScreenshot!)}
             />
-          </ScreenshotPlaceholder>
+          </ScreenshotContainer>
         </ZoomPane>
       );
     case "changed":
@@ -242,12 +242,9 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <ScreenshotPlaceholder dimensions={diff} contained={contained}>
+          <ScreenshotContainer dimensions={diff} contained={contained}>
             <img
-              className={clsx(
-                "relative opacity-0 mx-auto",
-                contained && "max-h-full",
-              )}
+              className={clsx("relative opacity-0", contained && "max-h-full")}
               {...getImgAttributes({
                 url: diff.url!,
                 width: diff.width,
@@ -255,11 +252,11 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
               })}
             />
             <img
-              className="absolute left-0 top-0 right-0 mx-auto"
+              className="absolute left-0 top-0"
               alt="Baseline screenshot"
               {...getImgAttributes(diff.baseScreenshot!)}
             />
-          </ScreenshotPlaceholder>
+          </ScreenshotContainer>
         </ZoomPane>
       );
     default:
@@ -282,16 +279,16 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <ScreenshotPlaceholder
+          <ScreenshotContainer
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
             <img
-              className={clsx("mx-auto", contained && "max-h-full")}
+              className={clsx(contained && "max-h-full max-w-full")}
               alt="Changes screenshot"
               {...getImgAttributes(diff.compareScreenshot!)}
             />
-          </ScreenshotPlaceholder>
+          </ScreenshotContainer>
         </ZoomPane>
       );
     case "failure":
@@ -304,16 +301,16 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <ScreenshotPlaceholder
+          <ScreenshotContainer
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
             <img
-              className={clsx("mx-auto", contained && "max-h-full")}
+              className={clsx(contained && "max-h-full")}
               alt="Failure screenshot"
               {...getImgAttributes(diff.compareScreenshot!)}
             />
-          </ScreenshotPlaceholder>
+          </ScreenshotContainer>
         </ZoomPane>
       );
     case "unchanged":
@@ -326,16 +323,16 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <ScreenshotPlaceholder
+          <ScreenshotContainer
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
             <img
-              className={clsx("mx-auto", contained && "max-h-full")}
+              className={clsx(contained && "max-h-full")}
               alt="Baseline screenshot"
               {...getImgAttributes(diff.compareScreenshot!)}
             />
-          </ScreenshotPlaceholder>
+          </ScreenshotContainer>
         </ZoomPane>
       );
     case "removed":
@@ -361,19 +358,18 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <ScreenshotPlaceholder dimensions={diff} contained={contained}>
+          <ScreenshotContainer dimensions={diff} contained={contained}>
             <img
               className={clsx(
-                "absolute left-0 right-0 mx-auto",
+                "absolute left-0 top-0",
                 visible && "opacity-disabled",
-                contained && "max-h-full",
               )}
               {...getImgAttributes(diff.compareScreenshot!)}
             />
             <img
               className={clsx(
                 opacity,
-                "relative z-10 mx-auto",
+                "relative z-10",
                 contained && "max-h-full",
               )}
               alt="Changes screenshot"
@@ -383,7 +379,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
                 height: diff.height,
               })}
             />
-          </ScreenshotPlaceholder>
+          </ScreenshotContainer>
         </ZoomPane>
       );
     default:
