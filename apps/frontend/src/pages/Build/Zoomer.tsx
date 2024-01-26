@@ -315,7 +315,7 @@ export const ZoomPane = (props: {
         className="flex min-h-0 flex-1 origin-top-left justify-center"
         style={{ transform: transformToCss(transform) }}
       >
-        <div className="relative">{props.children}</div>
+        {props.children}
       </div>
       {props.controls && (
         <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">

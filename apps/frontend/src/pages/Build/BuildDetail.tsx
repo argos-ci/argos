@@ -119,7 +119,17 @@ const MissingScreenshotInfo = memo(
   },
 );
 
-const getImgAttributes = ({
+function getAspectRatio({
+  width,
+  height,
+}: {
+  width?: number | null | undefined;
+  height?: number | null | undefined;
+}) {
+  return width && height ? `${width}/${height}` : undefined;
+}
+
+function getImgAttributes({
   url,
   width,
   height,
@@ -127,13 +137,13 @@ const getImgAttributes = ({
   url: string;
   width?: number | null | undefined;
   height?: number | null | undefined;
-}) => {
+}) {
   return {
     key: url,
     src: `${url}?tr=lo-true`,
-    style: { aspectRatio: width && height ? `${width}/${height}` : undefined },
+    style: { aspectRatio: getAspectRatio({ width, height }) },
   };
-};
+}
 
 const NeutralLink = ({
   href,
@@ -215,19 +225,31 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <img
-            className={clsx("relative opacity-0", contained && "max-h-full")}
-            {...getImgAttributes({
-              url: diff.url!,
-              width: diff.width,
-              height: diff.height,
-            })}
-          />
-          <img
-            className="absolute left-0 top-0"
-            alt="Baseline screenshot"
-            {...getImgAttributes(diff.baseScreenshot!)}
-          />
+          <div
+            className="relative"
+            style={{
+              aspectRatio: contained
+                ? getAspectRatio({
+                    width: diff.width,
+                    height: diff.height,
+                  })
+                : undefined,
+            }}
+          >
+            <img
+              className={clsx("relative opacity-0", contained && "max-h-full")}
+              {...getImgAttributes({
+                url: diff.url!,
+                width: diff.width,
+                height: diff.height,
+              })}
+            />
+            <img
+              className="absolute left-0 top-0"
+              alt="Baseline screenshot"
+              {...getImgAttributes(diff.baseScreenshot!)}
+            />
+          </div>
         </ZoomPane>
       );
     default:
@@ -316,23 +338,30 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             />
           }
         >
-          <img
-            className={clsx("absolute", visible && "opacity-disabled")}
-            {...getImgAttributes(diff.compareScreenshot!)}
-          />
-          <img
-            className={clsx(
-              opacity,
-              "relative z-10",
-              contained && "max-h-full",
-            )}
-            alt="Changes screenshot"
-            {...getImgAttributes({
-              url: diff.url!,
-              width: diff.width,
-              height: diff.height,
-            })}
-          />
+          <div
+            className="relative"
+            style={
+              contained ? { aspectRatio: getAspectRatio(diff) } : undefined
+            }
+          >
+            <img
+              className={clsx("absolute", visible && "opacity-disabled")}
+              {...getImgAttributes(diff.compareScreenshot!)}
+            />
+            <img
+              className={clsx(
+                opacity,
+                "relative z-10",
+                contained && "max-h-full",
+              )}
+              alt="Changes screenshot"
+              {...getImgAttributes({
+                url: diff.url!,
+                width: diff.width,
+                height: diff.height,
+              })}
+            />
+          </div>
         </ZoomPane>
       );
     default:
