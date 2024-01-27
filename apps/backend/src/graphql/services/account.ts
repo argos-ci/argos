@@ -7,6 +7,7 @@ import {
 } from "@/database/models/index.js";
 
 import { deleteProject } from "./project.js";
+import { cancelStripeSubscription } from "@/stripe/index.js";
 
 export const getWritableAccount = async (args: {
   id: string;
@@ -40,6 +41,12 @@ export const deleteAccount = async (args: {
       });
     }),
   );
+  const subscription = account.$getSubscription();
+  const activePurchase = await subscription.getActivePurchase();
+  // Cancel the Stripe subscription if it exists
+  if (activePurchase?.stripeSubscriptionId) {
+    await cancelStripeSubscription(activePurchase.stripeSubscriptionId);
+  }
   await Purchase.query().where("accountId", account.id).delete();
   await account.$query().delete();
 

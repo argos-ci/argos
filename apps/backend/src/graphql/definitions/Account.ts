@@ -50,6 +50,14 @@ export const typeDefs = gql`
     past_due
     "Post-cancelation date"
     canceled
+    "Incomplete"
+    incomplete
+    "Incomplete expired"
+    incomplete_expired
+    "Unpaid"
+    unpaid
+    "Paused"
+    paused
   }
 
   enum TrialStatus {

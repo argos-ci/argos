@@ -42,7 +42,7 @@ export const updatePurchase = async (
       Purchase.query(trx)
         .patch({
           endDate: effectiveDate,
-          status: new Date(effectiveDate) > new Date() ? "cancelled" : "active",
+          status: new Date(effectiveDate) > new Date() ? "canceled" : "active",
         })
         .findById(activePurchase.id),
       Purchase.query(trx).insert({

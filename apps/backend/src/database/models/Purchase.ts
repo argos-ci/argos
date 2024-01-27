@@ -27,7 +27,16 @@ export class Purchase extends Model {
       },
       status: {
         type: ["string"],
-        enum: ["active", "canceled", "trialing", "past_due"],
+        enum: [
+          "active",
+          "canceled",
+          "trialing",
+          "past_due",
+          "incomplete",
+          "unpaid",
+          "incomplete_expired",
+          "paused",
+        ],
       },
       endDate: { type: ["string", "null"] },
       startDate: { type: ["string"] },
@@ -40,12 +49,20 @@ export class Purchase extends Model {
   planId!: string;
   purchaserId!: string | null;
   stripeSubscriptionId!: string | null;
-  source!: string;
+  source!: "github" | "stripe";
   endDate!: string | null;
   startDate!: string;
   trialEndDate!: string | null;
   paymentMethodFilled!: boolean | null;
-  status!: string;
+  status!:
+    | "active"
+    | "canceled"
+    | "trialing"
+    | "past_due"
+    | "incomplete"
+    | "unpaid"
+    | "incomplete_expired"
+    | "paused";
 
   static override get relationMappings(): RelationMappings {
     return {

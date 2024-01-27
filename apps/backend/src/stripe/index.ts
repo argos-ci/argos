@@ -187,6 +187,14 @@ export const createPurchaseFromSubscription = async ({
   });
 };
 
+export async function cancelStripeSubscription(subscriptionId: string) {
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  if (subscription.status === "canceled") {
+    return;
+  }
+  await stripe.subscriptions.cancel(subscriptionId);
+}
+
 const getPurchaseFromStripeSubscriptionId = async (
   stripeSubscriptionId: string,
 ) => {
@@ -194,13 +202,7 @@ const getPurchaseFromStripeSubscriptionId = async (
     stripeSubscriptionId,
   });
 
-  if (!purchase) {
-    throw new Error(
-      `Purchase not found for subscription ${stripeSubscriptionId}`,
-    );
-  }
-
-  return purchase;
+  return purchase ?? null;
 };
 
 export const getStripePriceFromPlanOrThrow = async (plan: Plan) => {
@@ -322,6 +324,11 @@ export const handleStripeEvent = async ({
         const purchase = await getPurchaseFromStripeSubscriptionId(
           subscription.id,
         );
+        if (!purchase) {
+          throw new Error(
+            `No purchase found for stripe subscription id ${subscription.id}`,
+          );
+        }
         await updatePurchaseFromSubscription(purchase, subscription);
       }
 
@@ -353,13 +360,30 @@ export const handleStripeEvent = async ({
 
       return;
     }
-    case "customer.subscription.updated":
+    case "customer.subscription.updated": {
+      const subscription = data.object as Stripe.Subscription;
+      const purchase = await getPurchaseFromStripeSubscriptionId(
+        subscription.id,
+      );
+      if (!purchase) {
+        throw new Error(
+          `No purchase found for stripe subscription id ${subscription.id}`,
+        );
+      }
+      await updatePurchaseFromSubscription(purchase, subscription);
+      return;
+    }
+
     case "customer.subscription.deleted": {
       const subscription = data.object as Stripe.Subscription;
       const purchase = await getPurchaseFromStripeSubscriptionId(
         subscription.id,
       );
-      await updatePurchaseFromSubscription(purchase, subscription);
+      // Purchase can be null in case the team as been deleted
+      if (!purchase) {
+        return;
+      }
+      await purchase.$query().patch({ status: "canceled" });
       return;
     }
 

@@ -630,12 +630,20 @@ export enum PurchaseStatus {
   Active = 'active',
   /** Post-cancelation date */
   Canceled = 'canceled',
+  /** Incomplete */
+  Incomplete = 'incomplete',
+  /** Incomplete expired */
+  IncompleteExpired = 'incomplete_expired',
   /** No paid purchase */
   Missing = 'missing',
   /** Payment due */
   PastDue = 'past_due',
+  /** Paused */
+  Paused = 'paused',
   /** Ongoing trial */
-  Trialing = 'trialing'
+  Trialing = 'trialing',
+  /** Unpaid */
+  Unpaid = 'unpaid'
 }
 
 export type Query = {
