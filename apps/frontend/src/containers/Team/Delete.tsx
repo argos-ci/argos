@@ -91,9 +91,12 @@ const DeleteTeamButton = (props: DeleteTeamButtonProps) => {
             <DialogBody>
               <DialogTitle>Delete Team</DialogTitle>
               <DialogText>
-                Argos will delete all of your Team's projects, along with all of
-                its Builds, Screenshots, Screenshot Diffs, Settings and other
-                resources belonging to your Team.
+                Argos will <strong>delete all of your Team's projects</strong>,
+                along with all of its Builds, Screenshots, Screenshot Diffs,
+                Settings and other resources belonging to your Team.
+              </DialogText>
+              <DialogText>
+                Your existing subscription will be cancelled, and you will no
               </DialogText>
               <DialogText>
                 Argos recommends that you transfer projects you want to keep to
@@ -167,10 +170,10 @@ export const TeamDelete = (props: {
       {hasActivePurchase ? (
         <CardFooter className="flex items-center justify-between">
           <div>
-            A purchase is active on the team. Please cancel your purchase before
-            deleting the team.
+            A subscription is active on the team. Please cancel your
+            subscription before deleting the team.
           </div>
-          <Tooltip content="Cancel your purchase before deleting the team.">
+          <Tooltip content="Cancel your subscription before deleting the team.">
             <DeleteButton disabled accessibleWhenDisabled />
           </Tooltip>
         </CardFooter>
