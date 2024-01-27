@@ -10,8 +10,8 @@ import {
   getCustomerIdFromUserAccount,
   getStripePriceFromPlanOrThrow,
   getStripeProPlanOrThrow,
-  getTrialSubscriptionConfig,
   stripe,
+  getSubscriptionData,
 } from "@/stripe/index.js";
 
 import type {
@@ -269,7 +269,11 @@ export const resolvers: IResolvers = {
       const subscription = await stripe.subscriptions.create({
         customer: stripeCustomerId,
         items: [{ price: price.id }],
-        ...getTrialSubscriptionConfig(),
+        ...getSubscriptionData({
+          trial: true,
+          accountId: teamAccount.id,
+          purchaserId: auth.user.id,
+        }),
       });
 
       await createPurchaseFromSubscription({

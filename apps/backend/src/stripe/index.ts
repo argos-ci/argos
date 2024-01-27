@@ -368,14 +368,29 @@ export const handleStripeEvent = async ({
   }
 };
 
-export const getTrialSubscriptionConfig = () => {
+/**
+ * Get Stripe subscription data common to all subscriptions.
+ */
+export function getSubscriptionData(args: {
+  accountId: string;
+  purchaserId: string;
+  trial: boolean;
+}) {
   return {
-    trial_settings: {
-      end_behavior: { missing_payment_method: "cancel" as const },
+    ...(args.trial
+      ? {
+          trial_settings: {
+            end_behavior: { missing_payment_method: "cancel" as const },
+          },
+          trial_period_days: 14,
+        }
+      : {}),
+    metadata: {
+      accountId: args.accountId,
+      purchaserId: args.purchaserId,
     },
-    trial_period_days: 14,
-  };
-};
+  } satisfies Partial<Stripe.SubscriptionCreateParams>;
+}
 
 export const createStripeCheckoutSession = async ({
   plan,
@@ -409,7 +424,11 @@ export const createStripeCheckoutSession = async ({
 
   return stripe.checkout.sessions.create({
     line_items: [{ price: price.id }],
-    subscription_data: trial ? getTrialSubscriptionConfig() : {},
+    subscription_data: getSubscriptionData({
+      trial,
+      accountId: teamAccount.id,
+      purchaserId: purchaserAccount.userId,
+    }),
     mode: "subscription",
     client_reference_id: encodeStripeClientReferenceId({
       accountId: teamAccount.id,
