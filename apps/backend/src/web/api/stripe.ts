@@ -19,25 +19,29 @@ import { asyncHandler } from "../util.js";
 
 const router = express.Router();
 
+async function parseStripeEvent(req: express.Request) {
+  try {
+    const signature = req.headers["stripe-signature"];
+    if (!signature) {
+      throw new Error("Stripe webhook signature missing");
+    }
+    const event: Stripe.Event = stripe.webhooks.constructEvent(
+      req.body,
+      signature,
+      config.get("stripe.webhookSecret"),
+    );
+    return event;
+  } catch (err) {
+    throw new HttpError(400, "Stripe webhook signature verification failed");
+  }
+}
+
 router.post(
   "/stripe/event-handler",
   bodyParser.raw({ type: "application/json" }),
   asyncHandler(async (req, res) => {
-    try {
-      const signature = req.headers["stripe-signature"];
-      if (!signature) {
-        throw new Error("Stripe webhook signature missing");
-      }
-      const event: Stripe.Event = stripe.webhooks.constructEvent(
-        req.body,
-        signature,
-        config.get("stripe.webhookSecret"),
-      );
-      logger.info("Stripe event", event.type);
-      await handleStripeEvent(event);
-    } catch (err) {
-      throw new HttpError(400, "Stripe webhook signature verification failed");
-    }
+    const event = await parseStripeEvent(req);
+    await handleStripeEvent(event);
     res.sendStatus(200);
   }),
 );
