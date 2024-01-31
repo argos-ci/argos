@@ -9,7 +9,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
-    "@apollo/client": "^3.8.7",
+    "@apollo/client": "^3.9.1",
     "@graphql-typed-document-node/core": "^3.2.0",
     "@primer/octicons-react": "^19.8.0",
     "@radix-ui/colors": "^2.1.0",
