@@ -28,8 +28,8 @@ const BASE_THRESHOLD = 0.15;
 const BASE_MAX_SCORE = 0.0002;
 const MAXIMUM_PIXELS_TO_IGNORE = 20;
 
-const COLOR_SENSIBLE_THRESHOLD = 0.02;
-const COLOR_SENSIBLE_MAX_SCORE = 0.005;
+const COLOR_SENSIBLE_THRESHOLD = 0.0225;
+const COLOR_SENSIBLE_MAX_SCORE = 0.03; // 3% of image is different
 
 /**
  * Compute the diff between two images and returns the score.

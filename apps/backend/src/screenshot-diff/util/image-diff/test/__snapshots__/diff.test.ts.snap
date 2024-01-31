@@ -19,7 +19,7 @@ exports[`diff E2E > generates different sizes images 1`] = `
 exports[`diff E2E > generates images with big diff 1`] = `
 {
   "height": 4469,
-  "score": 0.80979950772,
+  "score": 0.809618035355,
   "width": 1000,
 }
 `;
@@ -35,7 +35,7 @@ exports[`diff E2E > takes into account colors in comparison 1`] = `
 exports[`diff E2E > works with large size image 1`] = `
 {
   "height": 13358,
-  "score": 0.233825506147,
+  "score": 0.233219543844,
   "width": 900,
 }
 `;
