@@ -103,21 +103,19 @@ export async function diffImages(
     compareImage.enlarge(maxDimensions),
   ]);
 
-  // Compute differences for base and color sensitive
-  const [baseScore, colorSensitiveScore] = await Promise.all([
-    computeDiff({
-      basePath,
-      comparePath,
-      diffPath: baseDiffPath,
-      threshold: BASE_THRESHOLD,
-    }),
-    computeDiff({
-      basePath,
-      comparePath,
-      diffPath: colorDiffPath,
-      threshold: COLOR_SENSIBLE_THRESHOLD,
-    }),
-  ]);
+  // Compute diff sequentiall to avoid memory issues
+  const baseScore = await computeDiff({
+    basePath,
+    comparePath,
+    diffPath: baseDiffPath,
+    threshold: BASE_THRESHOLD,
+  });
+  const colorSensitiveScore = await computeDiff({
+    basePath,
+    comparePath,
+    diffPath: colorDiffPath,
+    threshold: COLOR_SENSIBLE_THRESHOLD,
+  });
 
   const maxBaseScore = Math.min(
     BASE_MAX_SCORE,
