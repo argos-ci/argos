@@ -176,6 +176,10 @@ export const resolvers: IResolvers = {
     projects: async (account, args) => {
       const result = await Project.query()
         .where("accountId", account.id)
+        // Sort by most recently created project or build
+        .orderByRaw(
+          `greatest(projects."createdAt", (select max("createdAt") from builds where builds."projectId" = projects.id)) desc`,
+        )
         .range(args.after, args.after + args.first - 1);
       return paginateResult({
         after: args.after,
