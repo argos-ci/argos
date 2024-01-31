@@ -4,6 +4,7 @@ import { z } from "zod";
 import config from "@/config/index.js";
 import type { Objection } from "@/database/index.js";
 import { Account, Plan, Purchase } from "@/database/models/index.js";
+import { invariant } from "@/util/invariant.js";
 
 export type { Stripe };
 
@@ -207,30 +208,21 @@ const getPurchaseFromStripeSubscriptionId = async (
 
 export const getStripePriceFromPlanOrThrow = async (plan: Plan) => {
   const stripePlanId = plan.stripePlanId;
+  invariant(stripePlanId, `"stripePlanId" is empty on plan ${plan.id}`);
 
-  if (!stripePlanId) {
-    throw new Error(`stripePlanId is empty on plan ${plan.id}`);
-  }
-
-  const prices = await stripe.prices.list({
-    limit: 2,
-    active: true,
-    product: plan.stripePlanId,
+  const stripeProduct = await stripe.products.retrieve(stripePlanId, {
+    expand: ["default_price"],
   });
+  invariant(stripeProduct, `stripe product not found for plan ${plan.id}`);
 
-  if (prices.data.length > 1) {
-    throw new Error(
-      `stripe return multiple active prices found for plan ${plan.id}`,
-    );
-  }
+  const defaultPrice = stripeProduct.default_price;
+  invariant(defaultPrice, `stripe default price not found for plan ${plan.id}`);
+  invariant(
+    typeof defaultPrice !== "string",
+    `stripe default price is a string for plan ${plan.id}`,
+  );
 
-  const price = prices.data[0];
-
-  if (!price) {
-    throw new Error(`stripe price not found for plan ${plan.id}`);
-  }
-
-  return price;
+  return defaultPrice;
 };
 
 export const terminateStripeTrial = async (stripeSubscriptionId: string) => {
