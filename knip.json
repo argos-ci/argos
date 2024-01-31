@@ -20,5 +20,5 @@
   },
   "exclude": ["classMembers"],
   "ignore": ["playwright.config.mjs", "examples"],
-  "ignoreBinaries": ["stripe"]
+  "ignoreBinaries": ["stripe", "sleep"]
 }
