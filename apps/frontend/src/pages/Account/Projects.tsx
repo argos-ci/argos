@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
-import { Query } from "@/containers/Apollo";
+import { useQuery } from "@/containers/Apollo";
 import {
   CheckoutStatusDialog,
   useCheckoutStatusDialog,
@@ -13,6 +13,7 @@ import { PageLoader } from "@/ui/PageLoader";
 
 import { NotFound } from "../NotFound";
 import { Permission } from "@/gql/graphql";
+import { invariant } from "@/util/invariant";
 
 const AccountQuery = graphql(`
   query AccountProjects_account($slug: String!) {
@@ -32,10 +33,12 @@ const AccountQuery = graphql(`
 export const AccountProjects = () => {
   const { accountSlug } = useParams();
   const { dialog, checkoutStatus } = useCheckoutStatusDialog();
+  invariant(accountSlug);
 
-  if (!accountSlug) {
-    return null;
-  }
+  const { data } = useQuery(AccountQuery, {
+    variables: { slug: accountSlug },
+    fetchPolicy: "cache-and-network",
+  });
 
   return (
     <div className="flex-1 bg-subtle">
@@ -43,24 +46,20 @@ export const AccountProjects = () => {
         <Helmet>
           <title>{accountSlug} • Projects</title>
         </Helmet>
-        <Query
-          fallback={<PageLoader />}
-          query={AccountQuery}
-          variables={{ slug: accountSlug }}
-        >
-          {({ account }) => {
-            if (!account) return <NotFound />;
-
-            return (
-              <ProjectList
-                projects={account.projects.edges}
-                hasWritePermission={account.permissions.includes(
-                  Permission.Write,
-                )}
-              />
-            );
-          }}
-        </Query>
+        {data ? (
+          data.account ? (
+            <ProjectList
+              projects={data.account.projects.edges}
+              hasWritePermission={data.account.permissions.includes(
+                Permission.Write,
+              )}
+            />
+          ) : (
+            <NotFound />
+          )
+        ) : (
+          <PageLoader />
+        )}
         <CheckoutStatusDialog dialog={dialog} checkoutStatus={checkoutStatus} />
       </Container>
     </div>

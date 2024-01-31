@@ -48,6 +48,15 @@ export const AccountNewProject = () => {
           navigate(`/${project.slug}`);
         }
       },
+      update: (cache) => {
+        cache.modify({
+          fields: {
+            account(_existingAccountRef, { INVALIDATE }) {
+              return INVALIDATE;
+            },
+          },
+        });
+      },
     },
   );
 
@@ -59,6 +68,15 @@ export const AccountNewProject = () => {
           const project = result.importGitlabProject;
           navigate(`/${project.slug}`);
         }
+      },
+      update: (cache) => {
+        cache.modify({
+          fields: {
+            account(_existingAccountRef, { INVALIDATE }) {
+              return INVALIDATE;
+            },
+          },
+        });
       },
     },
   );
