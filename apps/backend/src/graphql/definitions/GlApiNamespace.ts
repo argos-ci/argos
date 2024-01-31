@@ -2,6 +2,7 @@ import gqlTag from "graphql-tag";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { getTokenGitlabClient } from "@/gitlab/index.js";
+import { GraphQLError } from "graphql";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -53,8 +54,8 @@ export const resolvers: IResolvers = {
         if (args.allProjects) {
           return client.Projects.all({ ...options, membership: true });
         }
-        throw new Error(
-          "Either userId, groupId or allProjects option must be provided",
+        throw new GraphQLError(
+          "Either `userId`, `groupId` or `allProjects` option must be provided.",
         );
       })();
       return {
