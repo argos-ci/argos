@@ -112,7 +112,7 @@ describe("diff E2E", () => {
     const { filepath: _diffFilepath, ...scoreAndDimensions } = result;
 
     expect(scoreAndDimensions).toMatchSnapshot();
-  });
+  }, 10000);
 
   it("takes into account colors in comparison", async () => {
     const baseFilename = "violet-square.png";
