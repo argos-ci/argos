@@ -12,7 +12,11 @@ const apolloSentryPlugin: ApolloServerPlugin = {
         for (const error of ctx.errors) {
           const code = error.extensions?.["code"];
           // Ignore some errors
-          if (code === "FORBIDDEN" || code === "NOT_FOUND") {
+          if (
+            code === "FORBIDDEN" ||
+            code === "NOT_FOUND" ||
+            code === "BAD_USER_INPUT"
+          ) {
             continue;
           }
 
