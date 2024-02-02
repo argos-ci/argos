@@ -897,7 +897,7 @@ export type Team = Account & Node & {
   hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   inviteLink: Scalars['String']['output'];
-  me: TeamMember;
+  me?: Maybe<TeamMember>;
   members: TeamMemberConnection;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidPurchase?: Maybe<Purchase>;
@@ -1597,7 +1597,7 @@ export type TeamMembers_TeamMembersQuery = { __typename?: 'Query', team?: { __ty
         & { ' $fragmentRefs'?: { 'LevelSelect_TeamMemberFragment': LevelSelect_TeamMemberFragment } }
       )>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, totalCount: number } } } | null };
 
-export type TeamMembers_TeamFragment = { __typename?: 'Team', id: string, name?: string | null, slug: string, inviteLink: string, me: (
+export type TeamMembers_TeamFragment = { __typename?: 'Team', id: string, name?: string | null, slug: string, inviteLink: string, me?: (
     { __typename?: 'TeamMember', id: string, level: TeamUserLevel, user: (
       { __typename?: 'User', id: string, name?: string | null, slug: string, avatar: (
         { __typename?: 'AccountAvatar' }
@@ -1606,7 +1606,7 @@ export type TeamMembers_TeamFragment = { __typename?: 'Team', id: string, name?:
       & { ' $fragmentRefs'?: { 'RemoveFromTeamDialog_UserFragment': RemoveFromTeamDialog_UserFragment } }
     ) }
     & { ' $fragmentRefs'?: { 'LevelSelect_TeamMemberFragment': LevelSelect_TeamMemberFragment } }
-  ) } & { ' $fragmentName'?: 'TeamMembers_TeamFragment' };
+  ) | null } & { ' $fragmentName'?: 'TeamMembers_TeamFragment' };
 
 export type TeamMembers_LeaveTeamMutationVariables = Exact<{
   teamAccountId: Scalars['ID']['input'];

@@ -903,7 +903,7 @@ export type ITeam = IAccount & INode & {
   hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   inviteLink: Scalars['String']['output'];
-  me: ITeamMember;
+  me?: Maybe<ITeamMember>;
   members: ITeamMemberConnection;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidPurchase?: Maybe<IPurchase>;
@@ -1891,7 +1891,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   inviteLink?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  me?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType>;
+  me?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;

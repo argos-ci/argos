@@ -1109,7 +1109,8 @@ CREATE TABLE public.users (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "accessToken" character varying(255),
-    "gitlabUserId" bigint
+    "gitlabUserId" bigint,
+    staff boolean DEFAULT false
 );
 
 
@@ -2764,3 +2765,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115210334_file-type-not-null.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231122143018_add-purchase-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240108211747_project-status-check.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240202080857_staff-user.js', 1, NOW());

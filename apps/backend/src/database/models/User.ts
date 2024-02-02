@@ -15,12 +15,14 @@ export class User extends Model {
       email: { type: ["string", "null"] },
       accessToken: { type: "string" },
       gitlabUserId: { type: ["string", "null"] },
+      staff: { type: "boolean" },
     },
   });
 
   email!: string | null;
   accessToken!: string;
   gitlabUserId!: string | null;
+  staff!: boolean;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -79,6 +81,7 @@ export class User extends Model {
 
   static checkWritePermission(userId: string, user: User) {
     if (!user) return false;
+    if (user.staff) return true;
     return userId === user.id;
   }
 
@@ -88,6 +91,7 @@ export class User extends Model {
 
   static checkReadPermission(userId: string, user: User) {
     if (!user) return false;
+    if (user.staff) return true;
     return userId === user.id;
   }
 }
