@@ -4,9 +4,10 @@ import type { PlaywrightTestConfig } from "@playwright/test";
  * See https://playwright.dev/docs/test-configuration.
  */
 const config: PlaywrightTestConfig = {
-  // Add Argos reporter.
   reporter: [
-    ["list"],
+    // Use "dot" reporter on CI, "list" otherwise (Playwright default).
+    process.env.CI ? ["dot"] : ["list"],
+    // Add Argos reporter.
     [
       "@argos-ci/playwright/reporter",
       {
