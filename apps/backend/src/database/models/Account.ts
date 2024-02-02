@@ -314,6 +314,7 @@ export class Account extends Model {
 
   static async checkWritePermission(account: Account, user: User) {
     if (!user) return false;
+    if (user.staff) return true;
     switch (account.type) {
       case "user":
         return User.checkWritePermission(account.userId as string, user);
@@ -330,6 +331,7 @@ export class Account extends Model {
 
   static async checkReadPermission(account: Account, user: User) {
     if (!user) return false;
+    if (user.staff) return true;
     switch (account.type) {
       case "user":
         return User.checkReadPermission(account.userId as string, user);

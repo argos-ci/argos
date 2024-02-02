@@ -467,7 +467,7 @@ export const TeamMembers = (props: {
     },
   });
   const me = team.me;
-  const amOwner = me.level === TeamUserLevel.Owner;
+  const amOwner = !!me && me.level === TeamUserLevel.Owner;
   const { data, fetchMore } = useQuery(TeamMembersQuery, {
     variables: {
       id: team.id,

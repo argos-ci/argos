@@ -21,6 +21,7 @@ import type {
 import { deleteAccount, getWritableAccount } from "../services/account.js";
 import { forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
+import { invariant } from "@/util/invariant.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -54,7 +55,7 @@ export const typeDefs = gql`
     gitlabAccessToken: String
     glNamespaces: GlApiNamespaceConnection
 
-    me: TeamMember!
+    me: TeamMember
     members(after: Int = 0, first: Int = 30): TeamMemberConnection!
     inviteLink: String!
   }
@@ -154,11 +155,20 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
 
-      return TeamUser.query()
+      const teamUser = await TeamUser.query()
         .where("teamId", account.teamId)
         .where("userId", ctx.auth.user.id)
-        .first()
-        .throwIfNotFound();
+        .first();
+
+      if (!teamUser) {
+        invariant(
+          ctx.auth.user.staff,
+          "Invariant: user is not staff and teamUser is undefined",
+        );
+        return null;
+      }
+
+      return teamUser;
     },
     members: async (account, args, ctx) => {
       if (!account.teamId) {

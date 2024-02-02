@@ -114,6 +114,7 @@ export class Team extends Model {
 
   static async checkWritePermission(teamId: string, user: User) {
     if (!user) return false;
+    if (user.staff) return true;
     const teamUser = await TeamUser.query()
       .select("id")
       .findOne({ userId: user.id, teamId: teamId, userLevel: "owner" });
@@ -126,6 +127,7 @@ export class Team extends Model {
 
   static async checkReadPermission(teamId: string, user: User) {
     if (!user) return false;
+    if (user.staff) return true;
     const teamUser = await TeamUser.query()
       .select("id")
       .findOne({ userId: user.id, teamId: teamId });
