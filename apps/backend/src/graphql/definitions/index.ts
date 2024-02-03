@@ -1,6 +1,7 @@
 import type { DocumentNode } from "graphql";
 
 import * as Account from "./Account.js";
+import * as AccountSubscription from "./AccountSubscription.js";
 import * as Build from "./Build.js";
 import * as Connection from "./Connection.js";
 import * as DateDefs from "./Date.js";
@@ -19,7 +20,6 @@ import * as Permission from "./Permission.js";
 import * as Plan from "./Plan.js";
 import * as Project from "./Project.js";
 import * as PullRequest from "./PullRequest.js";
-import * as Purchase from "./Purchase.js";
 import * as Repository from "./Repository.js";
 import * as Screenshot from "./Screenshot.js";
 import * as ScreenshotBucket from "./ScreenshotBucket.js";
@@ -33,6 +33,7 @@ import * as schema from "./schema.js";
 
 export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Account,
+  AccountSubscription,
   Build,
   Connection,
   DateDefs,
@@ -51,7 +52,6 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Plan,
   Project,
   PullRequest,
-  Purchase,
   Repository,
   schema,
   Screenshot,

@@ -17,6 +17,7 @@
       "UserConnection"
     ],
     "Node": [
+      "AccountSubscription",
       "Build",
       "GhApiInstallation",
       "GhApiInstallationAccount",
@@ -29,7 +30,6 @@
       "GlApiProject",
       "Plan",
       "Project",
-      "Purchase",
       "Screenshot",
       "ScreenshotBucket",
       "ScreenshotDiff",

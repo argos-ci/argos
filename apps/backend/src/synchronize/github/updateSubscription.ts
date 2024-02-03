@@ -1,10 +1,10 @@
 import { transaction } from "@/database/index.js";
-import { Purchase } from "@/database/models/index.js";
+import { Subscription } from "@/database/models/index.js";
 import type { Account } from "@/database/models/index.js";
 
 import { getGithubPlan } from "./eventHelpers.js";
 
-export const updatePurchase = async (
+export const updateSubscription = async (
   payload: {
     effective_date?: string;
     marketplace_purchase: {
@@ -15,41 +15,44 @@ export const updatePurchase = async (
   account: Account,
 ) => {
   const plan = await getGithubPlan(payload);
-  const subscription = account.$getSubscription();
-  const activePurchase = await subscription.getActivePurchase();
+  const manager = account.$getSubscriptionManager();
+  const activeSubscription = await manager.getActiveSubscription();
   const effectiveDate = payload.effective_date || new Date().toISOString();
 
-  if (!activePurchase) {
-    await Purchase.query().insert({
+  if (!activeSubscription) {
+    await Subscription.query().insert({
       accountId: account.id,
       planId: plan.id,
       startDate: effectiveDate,
-      source: "github",
+      provider: "github",
       trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
       status: "active",
     });
     return;
   }
 
-  await activePurchase.$fetchGraph("plan");
+  await activeSubscription.$fetchGraph("plan");
 
-  if (activePurchase.plan!.githubId === payload.marketplace_purchase.plan?.id) {
+  if (
+    activeSubscription.plan!.githubPlanId ===
+    payload.marketplace_purchase.plan?.id
+  ) {
     return;
   }
 
   transaction(async (trx) => {
     await Promise.all([
-      Purchase.query(trx)
+      Subscription.query(trx)
         .patch({
           endDate: effectiveDate,
           status: new Date(effectiveDate) > new Date() ? "canceled" : "active",
         })
-        .findById(activePurchase.id),
-      Purchase.query(trx).insert({
+        .findById(activeSubscription.id),
+      Subscription.query(trx).insert({
         accountId: account.id,
         planId: plan.id,
         startDate: effectiveDate,
-        source: "github",
+        provider: "github",
         status: "active",
       }),
     ]);

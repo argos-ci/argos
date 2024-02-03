@@ -2,15 +2,14 @@ import Stripe from "stripe";
 import { z } from "zod";
 
 import config from "@/config/index.js";
-import type { Objection } from "@/database/index.js";
-import { Account, Plan, Purchase } from "@/database/models/index.js";
+import { Account, Plan, Subscription } from "@/database/models/index.js";
 import { invariant } from "@/util/invariant.js";
 
 export type { Stripe };
 
 const getPlanFromStripeProductId = async (stripeProductId: string) => {
   return Plan.query()
-    .findOne({ stripePlanId: stripeProductId })
+    .findOne({ stripeProductId })
     .throwIfNotFound({
       message: `can't find plan with stripeProductId: "${stripeProductId}"`,
     });
@@ -18,7 +17,7 @@ const getPlanFromStripeProductId = async (stripeProductId: string) => {
 
 const StripeClientReferenceIdPayloadSchema = z.object({
   accountId: z.string(),
-  purchaserId: z.string(),
+  subscriberId: z.string(),
 });
 
 type StripeClientReferenceIdPayload = z.infer<
@@ -63,7 +62,7 @@ const getCustomerIdFromSession = (session: Stripe.Checkout.Session) => {
   return session.customer.id;
 };
 
-const getSubscriptionFromSession = async (
+const getStripeSubscriptionFromSession = async (
   session: Stripe.Checkout.Session,
   stripe: Stripe,
 ): Promise<Stripe.Subscription> => {
@@ -78,7 +77,9 @@ const getSubscriptionFromSession = async (
   return session.subscription;
 };
 
-const getFirstItemFromSubscription = (subscription: Stripe.Subscription) => {
+const getFirstItemFromStripeSubscription = (
+  subscription: Stripe.Subscription,
+) => {
   const first = subscription.items.data[0];
   if (!first) {
     throw new Error("no item found in Stripe subscription");
@@ -89,7 +90,7 @@ const getFirstItemFromSubscription = (subscription: Stripe.Subscription) => {
 const getFirstProductIdFromSubscription = (
   subscription: Stripe.Subscription,
 ) => {
-  const first = getFirstItemFromSubscription(subscription);
+  const first = getFirstItemFromStripeSubscription(subscription);
   const { product } = first.price;
   if (typeof product === "string") {
     return product;
@@ -105,22 +106,25 @@ export const stripe = new Stripe(config.get("stripe.apiKey"), {
   typescript: true,
 });
 
-const createPurchaseFromCheckoutSession = async ({
+const createArgosSubscriptionFromCheckoutSession = async ({
   account,
-  purchaserId,
+  subscriberId,
   session,
   stripe,
 }: {
   account: Account;
-  purchaserId: string;
+  subscriberId: string;
   session: Stripe.Checkout.Session;
   stripe: Stripe;
 }) => {
-  const subscription = await getSubscriptionFromSession(session, stripe);
-  return createPurchaseFromSubscription({
+  const stripeSubscription = await getStripeSubscriptionFromSession(
+    session,
+    stripe,
+  );
+  return createArgosSubscriptionFromStripe({
     account,
-    purchaserId,
-    subscription,
+    subscriberId,
+    stripeSubscription,
   });
 };
 
@@ -144,9 +148,9 @@ const checkSubscriptionPaymentMethodFilled = async (
   return customer.invoice_settings.default_payment_method !== null;
 };
 
-const getPurchaseDataFromSubscription = async (
+const getArgosSubscriptionDataFromStripeSubscription = async (
   subscription: Stripe.Subscription,
-): Promise<Objection.PartialModelObject<Purchase>> => {
+) => {
   const stripeProductId = getFirstProductIdFromSubscription(subscription);
   const [plan, paymentMethodFilled] = await Promise.all([
     getPlanFromStripeProductId(stripeProductId),
@@ -161,30 +165,31 @@ const getPurchaseDataFromSubscription = async (
 
   return {
     planId: plan.id,
-    source: "stripe",
+    provider: "stripe",
     stripeSubscriptionId: subscription.id,
     startDate,
     endDate,
     trialEndDate,
     paymentMethodFilled,
     status: subscription.status,
-  };
+  } satisfies Partial<Subscription>;
 };
 
-export const createPurchaseFromSubscription = async ({
+export const createArgosSubscriptionFromStripe = async ({
   account,
-  purchaserId,
-  subscription,
+  subscriberId,
+  stripeSubscription,
 }: {
   account: Account;
-  purchaserId: string;
-  subscription: Stripe.Subscription;
+  subscriberId: string;
+  stripeSubscription: Stripe.Subscription;
 }) => {
-  const purchaseData = await getPurchaseDataFromSubscription(subscription);
-  return Purchase.query().insertAndFetch({
-    ...purchaseData,
+  const data =
+    await getArgosSubscriptionDataFromStripeSubscription(stripeSubscription);
+  return Subscription.query().insertAndFetch({
+    ...data,
     accountId: account.id,
-    purchaserId,
+    subscriberId,
   });
 };
 
@@ -196,21 +201,21 @@ export async function cancelStripeSubscription(subscriptionId: string) {
   await stripe.subscriptions.cancel(subscriptionId);
 }
 
-const getPurchaseFromStripeSubscriptionId = async (
+const getArgosSubscriptionFromStripeSubscriptionId = async (
   stripeSubscriptionId: string,
 ) => {
-  const purchase = await Purchase.query().findOne({
+  const subscription = await Subscription.query().findOne({
     stripeSubscriptionId,
   });
 
-  return purchase ?? null;
+  return subscription ?? null;
 };
 
 export const getStripePriceFromPlanOrThrow = async (plan: Plan) => {
-  const stripePlanId = plan.stripePlanId;
-  invariant(stripePlanId, `"stripePlanId" is empty on plan ${plan.id}`);
+  const { stripeProductId } = plan;
+  invariant(stripeProductId, `"stripeProductId" is empty on plan ${plan.id}`);
 
-  const stripeProduct = await stripe.products.retrieve(stripePlanId, {
+  const stripeProduct = await stripe.products.retrieve(stripeProductId, {
     expand: ["default_price"],
   });
   invariant(stripeProduct, `stripe product not found for plan ${plan.id}`);
@@ -240,32 +245,35 @@ export const updateStripeUsage = async ({
   account: Account;
   totalScreenshots: number;
 }) => {
-  const accountSubscription = account.$getSubscription();
-  const purchase = await accountSubscription.getActivePurchase();
+  const manager = account.$getSubscriptionManager();
+  const subscription = await manager.getActiveSubscription();
 
-  // No active purchase, nothing to do
-  if (!purchase) {
+  // No active subscription, nothing to do
+  if (!subscription) {
     return;
   }
 
   // Only update usage for stripe subscriptions
-  if (purchase.source !== "stripe" || !purchase.stripeSubscriptionId) {
+  if (subscription.provider !== "stripe") {
     return;
   }
 
-  const plan = await purchase.$relatedQuery("plan");
+  const plan = await subscription.$relatedQuery("plan");
 
   // Only update usage for usage-based plans
   if (!plan.usageBased) {
     return;
   }
 
+  // If provider is stripe, we should have a stripeSubscriptionId
+  invariant(subscription.stripeSubscriptionId);
+
   try {
-    const subscription = await stripe.subscriptions.retrieve(
-      purchase.stripeSubscriptionId,
+    const stripeSubscription = await stripe.subscriptions.retrieve(
+      subscription.stripeSubscriptionId,
     );
 
-    const item = getFirstItemFromSubscription(subscription);
+    const item = getFirstItemFromStripeSubscription(stripeSubscription);
 
     await stripe.subscriptionItems.createUsageRecord(item.id, {
       action: "set",
@@ -284,12 +292,13 @@ export const getStripeProPlanOrThrow = async () => {
     .throwIfNotFound();
 };
 
-export const updatePurchaseFromSubscription = async (
-  purchase: Purchase,
-  subscription: Stripe.Subscription,
+export const updateArgosSubscriptionFromStripeSubscription = async (
+  argosSubscription: Subscription,
+  stripeSubscription: Stripe.Subscription,
 ) => {
-  const purchaseData = await getPurchaseDataFromSubscription(subscription);
-  return purchase.$query().patchAndFetch(purchaseData);
+  const data =
+    await getArgosSubscriptionDataFromStripeSubscription(stripeSubscription);
+  return argosSubscription.$query().patchAndFetch(data);
 };
 
 export const handleStripeEvent = async ({
@@ -308,20 +317,24 @@ export const handleStripeEvent = async ({
     }
     case "customer.updated": {
       const customer = data.object as Stripe.Customer;
-      const subscriptions = await stripe.subscriptions.list({
+      const stripeSubscriptions = await stripe.subscriptions.list({
         customer: customer.id,
       });
 
-      for (const subscription of subscriptions.data) {
-        const purchase = await getPurchaseFromStripeSubscriptionId(
-          subscription.id,
-        );
-        if (!purchase) {
+      for (const stripeSubscription of stripeSubscriptions.data) {
+        const argosSubscription =
+          await getArgosSubscriptionFromStripeSubscriptionId(
+            stripeSubscription.id,
+          );
+        if (!argosSubscription) {
           throw new Error(
-            `No purchase found for stripe subscription id ${subscription.id}`,
+            `No Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
           );
         }
-        await updatePurchaseFromSubscription(purchase, subscription);
+        await updateArgosSubscriptionFromStripeSubscription(
+          argosSubscription,
+          stripeSubscription,
+        );
       }
 
       return;
@@ -330,7 +343,7 @@ export const handleStripeEvent = async ({
     case "checkout.session.completed": {
       const session = data.object as Stripe.Checkout.Session;
 
-      const { accountId, purchaserId } =
+      const { accountId, subscriberId } =
         getClientReferenceIdFromSession(session);
 
       const stripeCustomerId = getCustomerIdFromSession(session);
@@ -343,9 +356,9 @@ export const handleStripeEvent = async ({
         await account.$clone().$query().patch({ stripeCustomerId });
       }
 
-      await createPurchaseFromCheckoutSession({
+      await createArgosSubscriptionFromCheckoutSession({
         account,
-        purchaserId,
+        subscriberId,
         session,
         stripe,
       });
@@ -353,29 +366,34 @@ export const handleStripeEvent = async ({
       return;
     }
     case "customer.subscription.updated": {
-      const subscription = data.object as Stripe.Subscription;
-      const purchase = await getPurchaseFromStripeSubscriptionId(
-        subscription.id,
-      );
-      if (!purchase) {
+      const stripeSubscription = data.object as Stripe.Subscription;
+      const argosSubscription =
+        await getArgosSubscriptionFromStripeSubscriptionId(
+          stripeSubscription.id,
+        );
+      if (!argosSubscription) {
         throw new Error(
-          `No purchase found for stripe subscription id ${subscription.id}`,
+          `No Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
         );
       }
-      await updatePurchaseFromSubscription(purchase, subscription);
+      await updateArgosSubscriptionFromStripeSubscription(
+        argosSubscription,
+        stripeSubscription,
+      );
       return;
     }
 
     case "customer.subscription.deleted": {
-      const subscription = data.object as Stripe.Subscription;
-      const purchase = await getPurchaseFromStripeSubscriptionId(
-        subscription.id,
-      );
-      // Purchase can be null in case the team as been deleted
-      if (!purchase) {
+      const stripeSubscription = data.object as Stripe.Subscription;
+      const argosSubscription =
+        await getArgosSubscriptionFromStripeSubscriptionId(
+          stripeSubscription.id,
+        );
+      // Subscription can be null in case the team as been deleted
+      if (!argosSubscription) {
         return;
       }
-      await purchase.$query().patch({ status: "canceled" });
+      await argosSubscription.$query().patch({ status: "canceled" });
       return;
     }
 
@@ -389,7 +407,7 @@ export const handleStripeEvent = async ({
  */
 export function getSubscriptionData(args: {
   accountId: string;
-  purchaserId: string;
+  subscriberId: string;
   trial: boolean;
 }) {
   return {
@@ -403,7 +421,7 @@ export function getSubscriptionData(args: {
       : {}),
     metadata: {
       accountId: args.accountId,
-      purchaserId: args.purchaserId,
+      subscriberId: args.subscriberId,
     },
   } satisfies Partial<Stripe.SubscriptionCreateParams>;
 }
@@ -412,30 +430,31 @@ export const createStripeCheckoutSession = async ({
   plan,
   teamAccount,
   trial,
-  purchaserAccount,
+  subscriberAccount,
   successUrl,
   cancelUrl,
 }: {
   plan: Plan;
   teamAccount: Account;
   trial: boolean;
-  purchaserAccount: Account;
+  subscriberAccount: Account;
   successUrl: string;
   cancelUrl: string;
 }) => {
-  if (!purchaserAccount.userId) {
-    throw new Error("Purchaser account must be a user account");
-  }
+  invariant(
+    subscriberAccount.userId,
+    "Subscriber account must be a user account",
+  );
 
-  const accountSubscription = teamAccount.$getSubscription();
+  const manager = teamAccount.$getSubscriptionManager();
 
-  const [activePurchase, price] = await Promise.all([
-    accountSubscription.getActivePurchase(),
+  const [activeSubscription, price] = await Promise.all([
+    manager.getActiveSubscription(),
     getStripePriceFromPlanOrThrow(plan),
   ]);
 
-  if (activePurchase) {
-    throw new Error("Account already has an active purchase");
+  if (activeSubscription) {
+    throw new Error("Account already has an active subscription");
   }
 
   return stripe.checkout.sessions.create({
@@ -443,12 +462,12 @@ export const createStripeCheckoutSession = async ({
     subscription_data: getSubscriptionData({
       trial,
       accountId: teamAccount.id,
-      purchaserId: purchaserAccount.userId,
+      subscriberId: subscriberAccount.userId,
     }),
     mode: "subscription",
     client_reference_id: encodeStripeClientReferenceId({
       accountId: teamAccount.id,
-      purchaserId: purchaserAccount.userId,
+      subscriberId: subscriberAccount.userId,
     }),
     success_url: successUrl,
     cancel_url: cancelUrl,

@@ -1,10 +1,11 @@
 import gqlTag from "graphql-tag";
 
-import { Account, Purchase, User } from "@/database/models/index.js";
+import { Account, Subscription, User } from "@/database/models/index.js";
 import { GhApiInstallation, getTokenOctokit } from "@/github/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { unauthenticated } from "../util.js";
+import { invariant } from "@/util/invariant.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -23,9 +24,9 @@ export const typeDefs = gql`
     plan: Plan
     periodStartDate: DateTime
     periodEndDate: DateTime
-    purchase: Purchase
-    purchaseStatus: PurchaseStatus
-    oldPaidPurchase: Purchase
+    subscription: AccountSubscription
+    subscriptionStatus: AccountSubscriptionStatus
+    oldPaidSubscription: AccountSubscription
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
@@ -33,13 +34,13 @@ export const typeDefs = gql`
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
-    paymentProvider: PurchaseSource
+    paymentProvider: AccountSubscriptionProvider
     vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
     glNamespaces: GlApiNamespaceConnection
 
     hasSubscribedToTrial: Boolean!
-    lastPurchase: Purchase
+    lastSubscription: AccountSubscription
     teams: [Team!]!
     ghInstallations: GhApiInstallationConnection!
   }
@@ -65,19 +66,15 @@ export const resolvers: IResolvers = {
     hasSubscribedToTrial: async (account) => {
       return account.$checkHasSubscribedToTrial();
     },
-    lastPurchase: async (account) => {
-      if (!account.userId) {
-        throw new Error("Invariant: account.userId is undefined");
-      }
-      const purchase = await Purchase.query()
-        .findOne({ purchaserId: account.userId })
+    lastSubscription: async (account) => {
+      invariant(account.userId, "account.userId is undefined");
+      const subscription = await Subscription.query()
+        .findOne({ subscriberId: account.userId })
         .orderBy("updatedAt");
-      return purchase ?? null;
+      return subscription ?? null;
     },
     teams: async (account) => {
-      if (!account.userId) {
-        throw new Error("Invariant: account.userId is undefined");
-      }
+      invariant(account.userId, "account.userId is undefined");
       return Account.query()
         .orderBy([
           { column: "name", order: "asc" },
@@ -92,11 +89,10 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      if (account.id !== ctx.auth.account.id) {
-        throw new Error(
-          "Invariant: ghInstallations can only be accessed by the authenticated user",
-        );
-      }
+      invariant(
+        account.id === ctx.auth.account.id,
+        "ghInstallations can only be accessed by the authenticated user",
+      );
       if (!ctx.auth.user.accessToken) {
         return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
       }

@@ -77,12 +77,12 @@ export const UserAccount = defineFactory(models.Account, () => ({
   ),
 }));
 
-export const Purchase = defineFactory(models.Purchase, () => ({
+export const Subscription = defineFactory(models.Subscription, () => ({
   planId: Plan.associate("id"),
   accountId: UserAccount.associate("id"),
   startDate: moment().startOf("day").subtract(2, "months").toISOString(),
   endDate: null,
-  source: "github",
+  provider: "github",
   paymentMethodFilled: false,
   status: "active",
 }));
@@ -171,6 +171,6 @@ export const File = defineFactory(models.File, () => ({
 export const Plan = defineFactory(models.Plan, () => ({
   name: "pro",
   screenshotsLimitPerMonth: 7000,
-  githubId: FactoryGirl.sequence("plan.githubId", (n) => n),
+  githubPlanId: FactoryGirl.sequence("plan.githubId", (n) => n),
   usageBased: false,
 }));

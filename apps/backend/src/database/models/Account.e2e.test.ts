@@ -46,31 +46,31 @@ describe("Account", () => {
     bucketOtherOrga = buckets[3]!;
   });
 
-  describe("#$getActivePurchase", () => {
-    it("returns null when no purchase found", async () => {
-      const subscription = account.$getSubscription();
-      const activePurchase = await subscription.getActivePurchase();
-      expect(activePurchase).toBeNull();
+  describe("#getActiveSubscription", () => {
+    it("returns null when no subscription found", async () => {
+      const manager = account.$getSubscriptionManager();
+      const subscription = await manager.getActiveSubscription();
+      expect(subscription).toBeNull();
     });
 
-    it("returns null when only old purchase found", async () => {
-      await factory.Purchase.create({
+    it("returns null when only old subscription found", async () => {
+      await factory.Subscription.create({
         planId: plans[1]!.id,
         accountId: account.id,
         endDate: new Date(2010, 1, 1).toISOString(),
       });
-      const subscription = account.$getSubscription();
-      const activePurchase = await subscription.getActivePurchase();
-      expect(activePurchase).toBeNull();
+      const manager = account.$getSubscriptionManager();
+      const subscription = await manager.getActiveSubscription();
+      expect(subscription).toBeNull();
     });
 
-    it("returns active purchase", async () => {
-      await factory.Purchase.create({
+    it("returns active subscription", async () => {
+      await factory.Subscription.create({
         planId: plans[1]!.id,
         accountId: account.id,
       });
-      const subscription = account.$getSubscription();
-      const plan = await subscription.getPlan();
+      const manager = account.$getSubscriptionManager();
+      const plan = await manager.getPlan();
       expect(plan?.id).toBe(plans[1]!.id);
     });
   });
@@ -79,28 +79,28 @@ describe("Account", () => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    describe("without purchase", () => {
+    describe("without subscription", () => {
       it("returns first day of month", async () => {
-        const subscription = account.$getSubscription();
-        const startDate = await subscription.getCurrentPeriodStartDate();
+        const manager = account.$getSubscriptionManager();
+        const startDate = await manager.getCurrentPeriodStartDate();
         expect(startDate).toEqual(startOfMonth);
       });
     });
 
-    describe("with purchase", () => {
+    describe("with subscription", () => {
       const subscriptionDay = 10;
 
       beforeEach(async () => {
-        await factory.Purchase.create({
+        await factory.Subscription.create({
           planId: plans[1]!.id,
           accountId: account.id,
           startDate: new Date(2018, 3, subscriptionDay).toISOString(),
         });
       });
 
-      it("returns purchase start date", async () => {
-        const subscription = account.$getSubscription();
-        const startDate = await subscription.getCurrentPeriodStartDate();
+      it("returns subscription start date", async () => {
+        const manager = account.$getSubscriptionManager();
+        const startDate = await manager.getCurrentPeriodStartDate();
         expect(startDate.getDate()).toEqual(subscriptionDay);
         if (now.getDate() >= subscriptionDay) {
           expect(startDate.getMonth()).toEqual(now.getMonth());
@@ -122,8 +122,8 @@ describe("Account", () => {
         complete: true,
         screenshotCount: 10,
       });
-      const subscription = account.$getSubscription();
-      const consumption = await subscription.getCurrentPeriodScreenshots();
+      const manager = account.$getSubscriptionManager();
+      const consumption = await manager.getCurrentPeriodScreenshots();
       expect(consumption).toBe(10);
     });
 
@@ -132,8 +132,8 @@ describe("Account", () => {
         complete: true,
         screenshotCount: 10,
       });
-      const subscription = account.$getSubscription();
-      const consumption = await subscription.getCurrentPeriodScreenshots();
+      const manager = account.$getSubscriptionManager();
+      const consumption = await manager.getCurrentPeriodScreenshots();
       expect(consumption).toBe(10);
     });
 
@@ -143,8 +143,8 @@ describe("Account", () => {
         complete: true,
         screenshotCount: 10,
       });
-      const subscription = account.$getSubscription();
-      const consumption = await subscription.getCurrentPeriodScreenshots();
+      const manager = account.$getSubscriptionManager();
+      const consumption = await manager.getCurrentPeriodScreenshots();
       expect(consumption).toBe(0);
     });
 
@@ -153,54 +153,54 @@ describe("Account", () => {
         complete: true,
         screenshotCount: 10,
       });
-      const subscription = account.$getSubscription();
-      const consumption = await subscription.getCurrentPeriodScreenshots();
+      const manager = account.$getSubscriptionManager();
+      const consumption = await manager.getCurrentPeriodScreenshots();
       expect(consumption).toBe(0);
     });
   });
 
   describe("#getPlan", () => {
-    describe("with purchase", () => {
-      it("returns purchased plan", async () => {
-        await factory.Purchase.create({
+    describe("with subscription", () => {
+      it("returns subscription plan", async () => {
+        await factory.Subscription.create({
           planId: plans[1]!.id,
           accountId: account.id,
         });
-        const subscription = account.$getSubscription();
-        const plan = await subscription.getPlan();
+        const manager = account.$getSubscriptionManager();
+        const plan = await manager.getPlan();
         expect(plan?.id).toBe(plans[1]!.id);
       });
 
       it("with forced plan returns forced plan", async () => {
-        await factory.Purchase.create({
+        await factory.Subscription.create({
           planId: plans[1]!.id,
           accountId: vipAccount.id,
         });
 
-        const subscription = vipAccount.$getSubscription();
-        const plan = await subscription.getPlan();
+        const manager = vipAccount.$getSubscriptionManager();
+        const plan = await manager.getPlan();
         expect(plan?.id).toBe(plans[2]!.id);
       });
     });
 
-    describe("without purchase", () => {
+    describe("without subscription", () => {
       it("with free plan in database returns free plan", async () => {
-        const subscription = account.$getSubscription();
-        const plan = await subscription.getPlan();
+        const manager = account.$getSubscriptionManager();
+        const plan = await manager.getPlan();
         expect(plan!.id).toBe(plans[0]!.id);
       });
 
       it("with forced plan returns forced plan", async () => {
-        const subscription = vipAccount.$getSubscription();
-        const plan = await subscription.getPlan();
+        const manager = vipAccount.$getSubscriptionManager();
+        const plan = await manager.getPlan();
         expect(plan!.id).toBe(plans[2]!.id);
       });
 
       it("without free plan in database returns null", async () => {
         await Account.query().patch({ forcedPlanId: null });
         await Plan.query().delete();
-        const subscription = vipAccount.$getSubscription();
-        const plan = await subscription.getPlan();
+        const manager = vipAccount.$getSubscriptionManager();
+        const plan = await manager.getPlan();
         expect(plan).toBeNull();
       });
     });

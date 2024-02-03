@@ -5,7 +5,7 @@ import { Link as RouterLink, useParams } from "react-router-dom";
 import { useQuery } from "@/containers/Apollo";
 import { TeamUpgradeDialogButton } from "@/containers/Team/UpgradeDialog";
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Permission, PurchaseStatus } from "@/gql/graphql";
+import { Permission, AccountSubscriptionStatus } from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
 import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
@@ -14,15 +14,15 @@ import { StripePortalLink } from "@/ui/StripeLink";
 const PaymentBannerFragment = graphql(`
   fragment PaymentBanner_Account on Account {
     id
-    purchaseStatus
+    subscriptionStatus
     permissions
     stripeCustomerId
     pendingCancelAt
 
-    purchase {
+    subscription {
       id
       trialDaysRemaining
-      source
+      provider
       paymentMethodFilled
     }
   }
@@ -91,15 +91,15 @@ const BannerCta = ({
 };
 
 const getTeamBannerProps = ({
-  purchaseStatus,
+  subscriptionStatus,
   trialDaysRemaining,
-  hasGithubPurchase,
+  hasGitHubSubscription,
   missingPaymentMethod,
   pendingCancelAt,
 }: {
-  purchaseStatus: PurchaseStatus;
+  subscriptionStatus: AccountSubscriptionStatus;
   trialDaysRemaining: number | null;
-  hasGithubPurchase: boolean;
+  hasGitHubSubscription: boolean;
   missingPaymentMethod: boolean;
   pendingCancelAt: string | null;
 }): {
@@ -108,28 +108,28 @@ const getTeamBannerProps = ({
   bannerColor?: BannerProps["color"];
   action: SubmitAction;
 } => {
-  switch (purchaseStatus) {
-    case PurchaseStatus.PastDue:
+  switch (subscriptionStatus) {
+    case AccountSubscriptionStatus.PastDue:
       return {
         bannerColor: "warning",
         message:
           "Your subscription is past due. Please update your payment info.",
         buttonLabel: "Manage subscription",
-        action: hasGithubPurchase ? "settings" : "stripeCheckoutSession",
+        action: hasGitHubSubscription ? "settings" : "stripeCheckoutSession",
       };
 
-    case PurchaseStatus.Canceled:
-    case PurchaseStatus.Missing:
+    case AccountSubscriptionStatus.Canceled:
+    case AccountSubscriptionStatus.Missing:
       return {
         bannerColor: "danger",
         message: "Upgrade to Pro plan to use team features.",
-        ...(hasGithubPurchase
+        ...(hasGitHubSubscription
           ? { action: "settings", buttonLabel: "Manage subscription" }
           : { action: "stripeCheckoutSession", buttonLabel: "Upgrade" }),
       };
 
-    case PurchaseStatus.Active:
-    case PurchaseStatus.Trialing: {
+    case AccountSubscriptionStatus.Active:
+    case AccountSubscriptionStatus.Trialing: {
       if (missingPaymentMethod) {
         const remainingDayMessage = `Your trial ends in ${trialDaysRemaining} days. `;
         return {
@@ -148,7 +148,7 @@ const getTeamBannerProps = ({
       if (pendingCancelAt) {
         const formatDate = (date: string) => moment(date).format("LL");
         const subscriptionTypeLabel =
-          purchaseStatus === "trialing" ? "trial" : "subscription";
+          subscriptionStatus === "trialing" ? "trial" : "subscription";
         return {
           action: "stripePortalSession",
           buttonLabel: `Reactivate ${subscriptionTypeLabel}`,
@@ -173,21 +173,25 @@ export const PaymentBanner = memo(
     const { data: { me } = {} } = useQuery(PaymentBannerQuery);
 
     const {
-      purchase,
+      subscription,
       permissions,
-      purchaseStatus,
+      subscriptionStatus,
       stripeCustomerId,
       pendingCancelAt,
     } = account;
 
     // no banner for user account
-    if (!me || !purchaseStatus) return null;
+    if (!me || !subscriptionStatus) return null;
 
     const { message, buttonLabel, bannerColor, action } = getTeamBannerProps({
-      purchaseStatus,
-      trialDaysRemaining: purchase?.trialDaysRemaining ?? null,
-      hasGithubPurchase: Boolean(purchase && purchase.source === "github"),
-      missingPaymentMethod: Boolean(purchase && !purchase.paymentMethodFilled),
+      subscriptionStatus,
+      trialDaysRemaining: subscription?.trialDaysRemaining ?? null,
+      hasGitHubSubscription: Boolean(
+        subscription && subscription.provider === "github",
+      ),
+      missingPaymentMethod: Boolean(
+        subscription && !subscription.paymentMethodFilled,
+      ),
       pendingCancelAt: pendingCancelAt,
     });
     const userIsOwner = permissions.includes(Permission.Write);
