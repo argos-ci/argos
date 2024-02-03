@@ -10,3 +10,4 @@ node_modules/
 apps/frontend/src/gql/*.ts
 apps/frontend/src/gql-fragments.json
 apps/backend/src/graphql/__generated__/*
+examples/storybook
