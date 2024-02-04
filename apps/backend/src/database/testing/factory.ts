@@ -170,7 +170,7 @@ export const File = defineFactory(models.File, () => ({
 
 export const Plan = defineFactory(models.Plan, () => ({
   name: "pro",
-  screenshotsLimitPerMonth: 7000,
+  includedScreenshots: 7000,
   githubPlanId: FactoryGirl.sequence("plan.githubId", (n) => n),
   usageBased: false,
 }));

@@ -484,14 +484,14 @@ export const seed = async (knex) => {
     {
       ...timeStamps,
       name: "free",
-      screenshotsLimitPerMonth: 7000,
+      includedScreenshots: 7000,
       githubPlanId: 7772,
       usageBased: false,
     },
     {
       ...timeStamps,
       name: "starter",
-      screenshotsLimitPerMonth: 40000,
+      includedScreenshots: 40000,
       githubPlanId: 7786,
       stripeProductId: "prod_MzEZEfBDYFIc53",
       usageBased: false,
@@ -499,7 +499,7 @@ export const seed = async (knex) => {
     {
       ...timeStamps,
       name: "standard",
-      screenshotsLimitPerMonth: 250000,
+      includedScreenshots: 250000,
       githubPlanId: 7787,
       stripeProductId: "prod_MzEavomA8VeCvW",
       usageBased: false,
@@ -507,7 +507,7 @@ export const seed = async (knex) => {
     {
       ...timeStamps,
       name: "Pro",
-      screenshotsLimitPerMonth: 1000000,
+      includedScreenshots: 1000000,
       githubPlanId: 7788,
       stripeProductId: "prod_MzEawyq1kFcHEn",
       usageBased: false,
@@ -515,7 +515,7 @@ export const seed = async (knex) => {
     {
       ...timeStamps,
       name: "pro",
-      screenshotsLimitPerMonth: 15000,
+      includedScreenshots: 15000,
       githubPlanId: null,
       stripeProductId: "prod_Njgin72JdGT9Yu",
       usageBased: true,

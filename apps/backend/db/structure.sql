@@ -721,7 +721,7 @@ CREATE TABLE public.plans (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
-    "screenshotsLimitPerMonth" integer NOT NULL,
+    "includedScreenshots" integer NOT NULL,
     "githubPlanId" integer,
     "stripeProductId" character varying(255),
     "usageBased" boolean NOT NULL
@@ -941,6 +941,7 @@ CREATE TABLE public.subscriptions (
     "trialEndDate" timestamp with time zone,
     "paymentMethodFilled" boolean,
     status character varying(255) NOT NULL,
+    "includedScreenshots" integer,
     CONSTRAINT check_stripe_fields CHECK (((provider <> 'stripe'::text) OR (("stripeSubscriptionId" IS NOT NULL) AND ("subscriberId" IS NOT NULL)))),
     CONSTRAINT subscriptions_provider_check CHECK ((provider = ANY (ARRAY['stripe'::text, 'github'::text])))
 );
@@ -2775,3 +2776,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023112
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240108211747_project-status-check.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240202080857_staff-user.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240203212814_renaming.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240204080614_subscriptions_included_screenshots.js', 1, NOW());

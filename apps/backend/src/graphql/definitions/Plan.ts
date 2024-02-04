@@ -9,7 +9,7 @@ export const typeDefs = gql`
   type Plan implements Node {
     id: ID!
     name: String!
-    screenshotsLimitPerMonth: Int!
+    usageBased: Boolean!
   }
 `;
 

@@ -204,17 +204,26 @@ export const PaymentBanner = memo(
       <Banner className="flex justify-center" color={bannerColor ?? "neutral"}>
         <Container className="flex items-center justify-center gap-2">
           <p>{message}</p>
-          {userIsOwner && (
-            <BannerCta
-              stripeCustomerId={stripeCustomerId ?? null}
-              accountId={account.id}
-              action={action}
-            >
-              {buttonLabel || me.hasSubscribedToTrial
-                ? "Upgrade"
-                : "Start trial"}
-            </BannerCta>
-          )}
+          {userIsOwner &&
+            (subscriptionStatus === AccountSubscriptionStatus.PastDue &&
+            stripeCustomerId ? (
+              <StripePortalLink
+                stripeCustomerId={stripeCustomerId}
+                accountId={account.id}
+              >
+                Manage your subscription
+              </StripePortalLink>
+            ) : (
+              <BannerCta
+                stripeCustomerId={stripeCustomerId ?? null}
+                accountId={account.id}
+                action={action}
+              >
+                {buttonLabel || me.hasSubscribedToTrial
+                  ? "Upgrade"
+                  : "Start trial"}
+              </BannerCta>
+            ))}
         </Container>
       </Banner>
     );

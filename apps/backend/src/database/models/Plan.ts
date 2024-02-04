@@ -5,10 +5,10 @@ export class Plan extends Model {
   static override tableName = "plans";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["name", "screenshotsLimitPerMonth", "usageBased"],
+    required: ["name", "includedScreenshots", "usageBased"],
     properties: {
       name: { type: "string" },
-      screenshotsLimitPerMonth: { type: "number" },
+      includedScreenshots: { type: "number" },
       githubPlanId: { type: "number" },
       stripeProductId: { type: "string" },
       usageBased: { type: "boolean" },
@@ -16,22 +16,10 @@ export class Plan extends Model {
   });
 
   name!: string;
-  screenshotsLimitPerMonth!: number;
+  includedScreenshots!: number;
   githubPlanId!: number;
   stripeProductId!: string;
   usageBased!: boolean;
-
-  static getScreenshotMonthlyLimitForPlan(plan: Plan | null) {
-    if (!plan) {
-      return 0;
-    }
-
-    if (plan.usageBased) {
-      return null;
-    }
-
-    return plan.screenshotsLimitPerMonth;
-  }
 
   static async getFreePlan(): Promise<Plan | null> {
     const plan = await Plan.query().findOne({ name: "free" });

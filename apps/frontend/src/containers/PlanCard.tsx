@@ -72,11 +72,11 @@ const PlanCardFragment = graphql(`
     hasForcedPlan
     pendingCancelAt
     paymentProvider
+    includedScreenshots
 
     plan {
       id
       name
-      screenshotsLimitPerMonth
     }
 
     subscription {
@@ -89,7 +89,7 @@ const PlanCardFragment = graphql(`
         id
         name
         public
-        currentMonthUsedScreenshots
+        currentPeriodScreenshots
       }
     }
   }
@@ -100,7 +100,7 @@ type Project = {
   id: string;
   name: string;
   public: boolean;
-  currentMonthUsedScreenshots: number;
+  currentPeriodScreenshots: number;
 };
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -232,9 +232,10 @@ const PlanStatusDescription = ({
 }: {
   openTrialEndDialog: () => void;
   hasGitHubSubscription: boolean;
-  account: any;
+  account: FragmentType<typeof PlanCardFragment>;
 }) => {
   const {
+    id: accountId,
     subscriptionStatus,
     stripeCustomerId,
     trialStatus,
@@ -255,7 +256,7 @@ const PlanStatusDescription = ({
         Please{" "}
         <StripePortalLink
           stripeCustomerId={stripeCustomerId}
-          accountId={account.id}
+          accountId={accountId}
         >
           add a payment method
         </StripePortalLink>{" "}
@@ -352,14 +353,14 @@ const PlanStatusDescription = ({
 
 const ConsumptionBlock = ({
   projects,
-  screenshotsLimitPerMonth,
+  includedScreenshots,
 }: {
   projects: Project[];
-  screenshotsLimitPerMonth: number;
+  includedScreenshots: number;
 }) => {
   const disclosure = useDisclosureState({ defaultOpen: false });
   const screenshotsSum = projects.reduce(
-    (sum, project) => project.currentMonthUsedScreenshots + sum,
+    (sum, project) => project.currentPeriodScreenshots + sum,
     0,
   );
 
@@ -373,14 +374,10 @@ const ConsumptionBlock = ({
             {screenshotsSum > 1 ? "screenshots" : "screenshot"}
           </div>
           <div className="text-low">
-            / {screenshotsLimitPerMonth.toLocaleString()}
+            / {includedScreenshots.toLocaleString()}
           </div>
         </div>
-        <Progress
-          value={screenshotsSum}
-          max={screenshotsLimitPerMonth}
-          min={0}
-        />
+        <Progress value={screenshotsSum} max={includedScreenshots} min={0} />
       </div>
 
       <Disclosure
@@ -410,7 +407,7 @@ const ConsumptionBlock = ({
           >
             <span>{project.name}</span>
             <span className="tabular-nums">
-              {project.currentMonthUsedScreenshots.toLocaleString()}
+              {project.currentPeriodScreenshots.toLocaleString()}
             </span>
           </li>
         ))}
@@ -539,7 +536,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
             hasGitHubSubscription={
               paymentProvider === AccountSubscriptionProvider.Github
             }
-            account={account}
+            account={props.account}
           />
         </CardParagraph>
 
@@ -550,7 +547,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
             <div className="mt-4">
               <ConsumptionBlock
                 projects={projects.edges}
-                screenshotsLimitPerMonth={plan.screenshotsLimitPerMonth}
+                includedScreenshots={account.includedScreenshots}
               />
             </div>
           </>

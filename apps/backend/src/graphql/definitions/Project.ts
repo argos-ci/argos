@@ -76,7 +76,7 @@ export const typeDefs = gql`
     "Override repository's Github privacy"
     private: Boolean
     "Current month used screenshots"
-    currentMonthUsedScreenshots: Int!
+    currentPeriodScreenshots: Int!
     "Total screenshots used"
     totalScreenshots: Int!
     "Vercel project"
@@ -491,7 +491,7 @@ export const resolvers: IResolvers = {
         : null;
       return project.$checkIsPublic();
     },
-    currentMonthUsedScreenshots: async (project, _args, ctx) => {
+    currentPeriodScreenshots: async (project, _args, ctx) => {
       const account = await ctx.loaders.Account.load(project.accountId);
       invariant(account, "Account not found");
       const manager = account.$getSubscriptionManager();

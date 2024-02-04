@@ -42,6 +42,7 @@ export class Subscription extends Model {
           "paused",
         ],
       },
+      includedScreenshots: { type: ["number", "null"] },
     },
   });
 
@@ -63,6 +64,7 @@ export class Subscription extends Model {
     | "unpaid"
     | "incomplete_expired"
     | "paused";
+  includedScreenshots!: number | null;
 
   static override get relationMappings(): RelationMappings {
     return {

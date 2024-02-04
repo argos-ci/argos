@@ -17,9 +17,9 @@ describe("Account", () => {
     const [teams, localPlans] = await Promise.all([
       factory.Team.createMany(2),
       factory.Plan.createMany(3, [
-        { name: "free", screenshotsLimitPerMonth: -1 },
-        { name: "standard", screenshotsLimitPerMonth: 10 },
-        { name: "pro", screenshotsLimitPerMonth: 100 },
+        { name: "free", includedScreenshots: -1 },
+        { name: "standard", includedScreenshots: 10 },
+        { name: "pro", includedScreenshots: 100 },
       ]),
     ]);
     plans = localPlans;
