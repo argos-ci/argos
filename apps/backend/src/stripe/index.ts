@@ -148,30 +148,75 @@ const checkSubscriptionPaymentMethodFilled = async (
   return customer.invoice_settings.default_payment_method !== null;
 };
 
-const getArgosSubscriptionDataFromStripeSubscription = async (
-  subscription: Stripe.Subscription,
+type StripeFlatTier = Stripe.Price.Tier & {
+  up_to: number;
+  flat_amount: number;
+  unit_amount: 0 | null;
+};
+
+/**
+ * Check if a tier is a flat tier.
+ * A flat tier has a flat_amount, an up_to value and no unit_amount.
+ */
+function checkIsFlatTier(tier: Stripe.Price.Tier): tier is StripeFlatTier {
+  return Boolean(tier.up_to && tier.flat_amount && !tier.unit_amount);
+}
+
+async function getIncludedScreenshotsFromStripeSubscription(
+  stripeSubscription: Stripe.Subscription,
+) {
+  const firstItem = getFirstItemFromStripeSubscription(stripeSubscription);
+  const price = firstItem.price;
+  if (price.billing_scheme !== "tiered") {
+    return null;
+  }
+
+  const { tiers } = await stripe.prices.retrieve(price.id, {
+    expand: ["tiers"],
+  });
+  invariant(tiers);
+
+  // Find the highest flat tier "up_to" value
+  return tiers.reduce(
+    (max, tier) => {
+      if (!checkIsFlatTier(tier)) {
+        return max;
+      }
+      return Math.max(max ?? 0, tier.up_to);
+    },
+    null as null | number,
+  );
+}
+
+const getArgosSubscriptionDataFromStripe = async (
+  stripeSubscription: Stripe.Subscription,
 ) => {
-  const stripeProductId = getFirstProductIdFromSubscription(subscription);
-  const [plan, paymentMethodFilled] = await Promise.all([
+  const stripeProductId = getFirstProductIdFromSubscription(stripeSubscription);
+  const [plan, paymentMethodFilled, includedScreenshots] = await Promise.all([
     getPlanFromStripeProductId(stripeProductId),
-    checkSubscriptionPaymentMethodFilled(subscription),
+    checkSubscriptionPaymentMethodFilled(stripeSubscription),
+    getIncludedScreenshotsFromStripeSubscription(stripeSubscription),
   ]);
-  const startDate = timestampToISOString(subscription.current_period_start);
-  const trialEndDate = subscription.trial_end
-    ? timestampToISOString(subscription.trial_end)
+  const startDate = timestampToISOString(
+    stripeSubscription.current_period_start,
+  );
+  const trialEndDate = stripeSubscription.trial_end
+    ? timestampToISOString(stripeSubscription.trial_end)
     : null;
-  const rawEndDate = subscription.ended_at || subscription.cancel_at;
+  const rawEndDate =
+    stripeSubscription.ended_at || stripeSubscription.cancel_at;
   const endDate = rawEndDate ? timestampToISOString(rawEndDate) : null;
 
   return {
     planId: plan.id,
     provider: "stripe",
-    stripeSubscriptionId: subscription.id,
+    stripeSubscriptionId: stripeSubscription.id,
     startDate,
     endDate,
     trialEndDate,
     paymentMethodFilled,
-    status: subscription.status,
+    status: stripeSubscription.status,
+    includedScreenshots,
   } satisfies Partial<Subscription>;
 };
 
@@ -184,8 +229,7 @@ export const createArgosSubscriptionFromStripe = async ({
   subscriberId: string;
   stripeSubscription: Stripe.Subscription;
 }) => {
-  const data =
-    await getArgosSubscriptionDataFromStripeSubscription(stripeSubscription);
+  const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
   return Subscription.query().insertAndFetch({
     ...data,
     accountId: account.id,
@@ -292,12 +336,11 @@ export const getStripeProPlanOrThrow = async () => {
     .throwIfNotFound();
 };
 
-export const updateArgosSubscriptionFromStripeSubscription = async (
+export const updateArgosSubscriptionFromStripe = async (
   argosSubscription: Subscription,
   stripeSubscription: Stripe.Subscription,
 ) => {
-  const data =
-    await getArgosSubscriptionDataFromStripeSubscription(stripeSubscription);
+  const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
   return argosSubscription.$query().patchAndFetch(data);
 };
 
@@ -331,7 +374,7 @@ export const handleStripeEvent = async ({
             `No Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
           );
         }
-        await updateArgosSubscriptionFromStripeSubscription(
+        await updateArgosSubscriptionFromStripe(
           argosSubscription,
           stripeSubscription,
         );
@@ -376,7 +419,7 @@ export const handleStripeEvent = async ({
           `No Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
         );
       }
-      await updateArgosSubscriptionFromStripeSubscription(
+      await updateArgosSubscriptionFromStripe(
         argosSubscription,
         stripeSubscription,
       );

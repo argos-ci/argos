@@ -26,7 +26,8 @@ export const OvercapacityBanner = memo(
     const { accountSlug } = props;
     const account = useFragment(AccountFragment, props.account);
     const { plan, consumptionRatio } = account;
-    if (!plan?.usageBased) {
+    const visible = plan && !plan.usageBased && consumptionRatio >= 0.9;
+    if (!visible) {
       return null;
     }
 

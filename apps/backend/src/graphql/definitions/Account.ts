@@ -8,7 +8,7 @@ import { Account, Project, Subscription } from "@/database/models/index.js";
 import {
   encodeStripeClientReferenceId,
   terminateStripeTrial,
-  updateArgosSubscriptionFromStripeSubscription,
+  updateArgosSubscriptionFromStripe,
 } from "@/stripe/index.js";
 
 import {
@@ -514,7 +514,7 @@ export const resolvers: IResolvers = {
       const stripeSubscription = await terminateStripeTrial(
         argosSubscription.stripeSubscriptionId,
       );
-      await updateArgosSubscriptionFromStripeSubscription(
+      await updateArgosSubscriptionFromStripe(
         argosSubscription,
         stripeSubscription,
       );
