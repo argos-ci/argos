@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import request from "supertest";
+import type { Express } from "express";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { quitRedis } from "@/util/redis/index.js";
@@ -16,7 +17,7 @@ import { createApp } from "./app.js";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 describe("api v2", () => {
-  let app: Express.Application;
+  let app: Express;
 
   beforeAll(async () => {
     app = await createApp();

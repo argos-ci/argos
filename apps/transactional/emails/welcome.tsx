@@ -1,3 +1,4 @@
+import * as React from "react";
 import { WelcomeEmail } from "../../backend/src/email/welcome.js";
 
 function ArgosWelcomeExample() {

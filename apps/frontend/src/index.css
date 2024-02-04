@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "@radix-ui/colors/mauve";
+@import "@radix-ui/colors/mauve-dark";
+@import "@radix-ui/colors/violet";
+@import "@radix-ui/colors/violet-dark";
+@import "@radix-ui/colors/tomato";
+@import "@radix-ui/colors/tomato-dark";
+@import "@radix-ui/colors/amber";
+@import "@radix-ui/colors/amber-dark";
+@import "@radix-ui/colors/grass";
+@import "@radix-ui/colors/grass-dark";
+@import "@radix-ui/colors/blue";
+@import "@radix-ui/colors/blue-dark";
+
 @layer base {
   html,
   body {
@@ -16,9 +29,9 @@
     height: 100%;
   }
 
-  [data-backdrop] {
-    @apply bg-app/60;
-    @apply backdrop-blur-sm;
+  [data-backdrop]::after {
+    @apply absolute inset-0 bg-app backdrop-blur-sm opacity-60;
+    content: "";
   }
 }
 

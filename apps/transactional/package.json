@@ -1,5 +1,5 @@
 {
-  "name": "@argos-ci/email",
+  "name": "@argos-ci/transactional",
   "version": "2.0.0",
   "private": true,
   "scripts": {
@@ -7,6 +7,7 @@
     "export": "email export --pretty"
   },
   "dependencies": {
-    "react-email": "^1.9.5"
+    "@react-email/components": "^0.0.14",
+    "react-email": "^2.0.0"
   }
 }
