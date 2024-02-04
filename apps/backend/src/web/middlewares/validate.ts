@@ -1,23 +1,21 @@
-import ajv from "ajv";
+import Ajv, { AnySchema, ValidateFunction } from "ajv";
 // @ts-ignore
 import { HttpError } from "express-err";
 
 import { asyncHandler } from "../util.js";
 
-const Ajv = ajv.default;
-
 /**
  * Returns a middleware with compiled ajv validators
  */
 export const validate = (routeSchema: {
-  body?: ajv.AnySchema;
-  query?: ajv.AnySchema;
-  params?: ajv.AnySchema;
+  body?: AnySchema;
+  query?: AnySchema;
+  params?: AnySchema;
 }) => {
   const validators: {
-    query?: ajv.ValidateFunction;
-    params?: ajv.ValidateFunction;
-    body?: ajv.ValidateFunction;
+    query?: ValidateFunction;
+    params?: ValidateFunction;
+    body?: ValidateFunction;
   } = {};
   const ajv = new Ajv();
 

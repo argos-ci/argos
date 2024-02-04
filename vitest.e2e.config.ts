@@ -6,7 +6,11 @@ export default mergeConfig(
   vitestConfig,
   defineConfig({
     test: {
-      singleThread: true,
+      poolOptions: {
+        threads: {
+          singleThread: true,
+        },
+      },
       include: ["**/*.e2e.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     },
   }) as UserConfig,

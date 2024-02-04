@@ -2,7 +2,8 @@
   "name": "@argos-ci/root",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "apps/transactional/.react-email"
   ],
   "scripts": {
     "dev": "turbo run watch-build watch-server watch-codegen --concurrency 100",
@@ -24,35 +25,36 @@
   },
   "repository": "github:argos-ci/argos",
   "engines": {
-    "node": "18"
+    "node": "20"
   },
   "devDependencies": {
-    "@argos-ci/playwright": "^1.6.3",
+    "@argos-ci/playwright": "^1.9.1",
     "@graphql-codegen/cli": "^5.0.0",
     "@graphql-codegen/client-preset": "^4.1.0",
     "@graphql-codegen/fragment-matcher": "^5.0.0",
     "@graphql-codegen/typescript": "^4.0.1",
     "@graphql-codegen/typescript-resolvers": "^4.0.1",
-    "@parcel/watcher": "^2.3.0",
-    "@playwright/test": "^1.39.0",
-    "@swc/cli": "^0.1.62",
-    "@swc/core": "^1.3.96",
+    "@parcel/watcher": "^2.4.0",
+    "@playwright/test": "^1.41.2",
+    "@swc/cli": "^0.3.6",
+    "@swc/core": "^1.3.107",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
-    "@tsconfig/node18-strictest-esm": "^1.0.1",
-    "@typescript-eslint/eslint-plugin": "^6.11.0",
-    "@typescript-eslint/parser": "^6.11.0",
-    "eslint": "^8.53.0",
+    "@tsconfig/node20": "^20.1.2",
+    "@tsconfig/strictest": "^2.0.2",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "eslint": "^8.56.0",
     "eslint-import-resolver-typescript": "^3.6.1",
-    "eslint-plugin-import": "^2.29.0",
-    "eslint-plugin-vitest": "^0.3.9",
-    "knip": "^3.5.0",
-    "prettier": "^3.1.0",
-    "prettier-plugin-tailwindcss": "^0.5.7",
-    "smee-client": "^1.2.3",
-    "turbo": "^1.10.16",
-    "typescript": "^5.2.2",
-    "vite-tsconfig-paths": "^4.2.1",
-    "vitest": "^0.34.6"
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-vitest": "^0.3.21",
+    "knip": "^4.3.1",
+    "prettier": "^3.2.5",
+    "prettier-plugin-tailwindcss": "^0.5.11",
+    "smee-client": "^2.0.1",
+    "turbo": "^1.12.2",
+    "typescript": "^5.3.3",
+    "vite-tsconfig-paths": "^4.3.1",
+    "vitest": "^1.2.2"
   },
   "volta": {
     "node": "18.17.1"

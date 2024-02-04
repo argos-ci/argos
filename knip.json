@@ -8,17 +8,18 @@
         "src/database/testing/index.ts",
         "src/graphql/definitions/*.ts"
       ],
-      "ignore": ["db", "knexfile.js", "src/graphql/__generated__"],
+      "ignore": ["db/**/*", "knexfile.js", "src/graphql/__generated__/**/*"],
       "ignoreDependencies": ["pg"]
     },
     "apps/frontend": {
-      "ignore": ["src/gql"]
+      "ignore": ["src/gql/**/*"],
+      "ignoreDependencies": ["@radix-ui/colors"]
     },
-    "apps/email": {
+    "apps/transactional": {
       "entry": ["emails/*.tsx"]
     }
   },
   "exclude": ["classMembers"],
-  "ignore": ["playwright.config.mjs", "examples"],
+  "ignore": ["playwright.config.mjs", "examples/**/*"],
   "ignoreBinaries": ["stripe", "sleep"]
 }

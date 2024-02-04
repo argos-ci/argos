@@ -1,3 +1,4 @@
+import * as React from "react";
 import {
   Body,
   Container,
@@ -11,7 +12,6 @@ import {
   Section,
   Text,
 } from "@react-email/components";
-import * as React from "react";
 
 const body = {
   fontFamily: "sans-serif",

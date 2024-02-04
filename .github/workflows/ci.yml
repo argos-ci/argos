@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-npm
@@ -24,7 +24,7 @@ jobs:
         run: npm run check-types
 
       - name: Check Prettier
-        run: npm exec prettier -- --check .
+        run: npm exec -- prettier --check .
 
       - name: Knip
         run: npm run knip
@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-npm
@@ -49,7 +49,7 @@ jobs:
         run: npm run build
 
       - name: Run unit tests
-        run: npm exec vitest -- -c vitest.unit.config.ts
+        run: npm exec -- vitest -c vitest.unit.config.ts
 
   integration-test:
     runs-on: ubuntu-latest
@@ -90,7 +90,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-npm
@@ -102,7 +102,7 @@ jobs:
         run: npm run setup
 
       - name: Test
-        run: npm exec vitest -- -c vitest.e2e.config.ts
+        run: npm exec -- vitest -c vitest.e2e.config.ts
 
   e2e-test:
     runs-on: ubuntu-latest
@@ -139,7 +139,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-npm
@@ -154,4 +154,4 @@ jobs:
         uses: ./.github/actions/setup-playwright
 
       - name: Run Playwright tests
-        run: npm exec playwright test
+        run: npm exec -- playwright test
