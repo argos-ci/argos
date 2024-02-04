@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-npm
@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-npm
@@ -90,7 +90,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-npm
@@ -139,7 +139,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-npm
