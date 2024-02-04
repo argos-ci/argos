@@ -279,8 +279,11 @@ export class Account extends Model {
         checkIsTrialing(),
         getCurrentPeriodConsumptionRatio(),
       ]);
-      if (!usageBased && !trialing) return false;
-      if (consumptionRatio === null) return false;
+      // If the plan is usage based, and the user is not trialing
+      // then we are never out of capacity
+      if (usageBased && !trialing) {
+        return false;
+      }
       return consumptionRatio >= 1.1;
     });
 
