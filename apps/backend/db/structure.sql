@@ -722,8 +722,8 @@ CREATE TABLE public.plans (
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
     "screenshotsLimitPerMonth" integer NOT NULL,
-    "githubId" integer,
-    "stripePlanId" character varying(255),
+    "githubPlanId" integer,
+    "stripeProductId" character varying(255),
     "usageBased" boolean NOT NULL
 );
 
@@ -794,51 +794,6 @@ ALTER TABLE public.projects_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.projects_id_seq OWNED BY public.projects.id;
-
-
---
--- Name: purchases; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.purchases (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "planId" bigint NOT NULL,
-    "accountId" bigint NOT NULL,
-    "startDate" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "endDate" timestamp with time zone,
-    source character varying(255) NOT NULL,
-    "purchaserId" bigint,
-    "trialEndDate" timestamp with time zone,
-    "paymentMethodFilled" boolean,
-    "stripeSubscriptionId" character varying(255),
-    status character varying(255) NOT NULL,
-    CONSTRAINT check_stripe_subscription CHECK ((((source)::text <> 'stripe'::text) OR ("stripeSubscriptionId" IS NOT NULL)))
-);
-
-
-ALTER TABLE public.purchases OWNER TO postgres;
-
---
--- Name: purchases_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.purchases_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.purchases_id_seq OWNER TO postgres;
-
---
--- Name: purchases_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.purchases_id_seq OWNED BY public.purchases.id;
 
 
 --
@@ -966,6 +921,52 @@ ALTER TABLE public.screenshots_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.screenshots_id_seq OWNED BY public.screenshots.id;
+
+
+--
+-- Name: subscriptions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.subscriptions (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "planId" integer NOT NULL,
+    provider text NOT NULL,
+    "stripeSubscriptionId" character varying(255),
+    "accountId" integer NOT NULL,
+    "subscriberId" integer,
+    "startDate" timestamp with time zone NOT NULL,
+    "endDate" timestamp with time zone,
+    "trialEndDate" timestamp with time zone,
+    "paymentMethodFilled" boolean,
+    status character varying(255) NOT NULL,
+    CONSTRAINT check_stripe_fields CHECK (((provider <> 'stripe'::text) OR (("stripeSubscriptionId" IS NOT NULL) AND ("subscriberId" IS NOT NULL)))),
+    CONSTRAINT subscriptions_provider_check CHECK ((provider = ANY (ARRAY['stripe'::text, 'github'::text])))
+);
+
+
+ALTER TABLE public.subscriptions OWNER TO postgres;
+
+--
+-- Name: subscriptions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.subscriptions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.subscriptions_id_seq OWNER TO postgres;
+
+--
+-- Name: subscriptions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.subscriptions_id_seq OWNED BY public.subscriptions.id;
 
 
 --
@@ -1450,13 +1451,6 @@ ALTER TABLE ONLY public.projects ALTER COLUMN id SET DEFAULT nextval('public.pro
 
 
 --
--- Name: purchases id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.purchases ALTER COLUMN id SET DEFAULT nextval('public.purchases_id_seq'::regclass);
-
-
---
 -- Name: screenshot_buckets id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1475,6 +1469,13 @@ ALTER TABLE ONLY public.screenshot_diffs ALTER COLUMN id SET DEFAULT nextval('pu
 --
 
 ALTER TABLE ONLY public.screenshots ALTER COLUMN id SET DEFAULT nextval('public.screenshots_id_seq'::regclass);
+
+
+--
+-- Name: subscriptions id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.subscriptions ALTER COLUMN id SET DEFAULT nextval('public.subscriptions_id_seq'::regclass);
 
 
 --
@@ -1741,22 +1742,6 @@ ALTER TABLE ONLY public.projects
 
 
 --
--- Name: purchases purchases_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_pkey PRIMARY KEY (id);
-
-
---
--- Name: purchases purchases_stripesubscriptionid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_stripesubscriptionid_unique UNIQUE ("stripeSubscriptionId");
-
-
---
 -- Name: screenshot_buckets screenshot_buckets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1778,6 +1763,22 @@ ALTER TABLE ONLY public.screenshot_diffs
 
 ALTER TABLE ONLY public.screenshots
     ADD CONSTRAINT screenshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: subscriptions subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT subscriptions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: subscriptions subscriptions_stripesubscriptionid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT subscriptions_stripesubscriptionid_unique UNIQUE ("stripeSubscriptionId");
 
 
 --
@@ -2056,7 +2057,7 @@ CREATE INDEX github_synchronizations_jobstatus_index ON public.github_synchroniz
 -- Name: plans_githubid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX plans_githubid_index ON public.plans USING btree ("githubId");
+CREATE INDEX plans_githubid_index ON public.plans USING btree ("githubPlanId");
 
 
 --
@@ -2092,20 +2093,6 @@ CREATE INDEX projects_token_index ON public.projects USING btree (token);
 --
 
 CREATE INDEX projects_vercelprojectid_index ON public.projects USING btree ("vercelProjectId");
-
-
---
--- Name: purchases_accountid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX purchases_accountid_index ON public.purchases USING btree ("accountId");
-
-
---
--- Name: purchases_planid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX purchases_planid_index ON public.purchases USING btree ("planId");
 
 
 --
@@ -2232,6 +2219,27 @@ CREATE INDEX screenshots_screenshotbucketid_index ON public.screenshots USING bt
 --
 
 CREATE INDEX screenshots_testid_index ON public.screenshots USING btree ("testId");
+
+
+--
+-- Name: subscriptions_accountid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX subscriptions_accountid_index ON public.subscriptions USING btree ("accountId");
+
+
+--
+-- Name: subscriptions_planid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX subscriptions_planid_index ON public.subscriptions USING btree ("planId");
+
+
+--
+-- Name: subscriptions_subscriberid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX subscriptions_subscriberid_index ON public.subscriptions USING btree ("subscriberId");
 
 
 --
@@ -2483,30 +2491,6 @@ ALTER TABLE ONLY public.projects
 
 
 --
--- Name: purchases purchases_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id);
-
-
---
--- Name: purchases purchases_planid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_planid_foreign FOREIGN KEY ("planId") REFERENCES public.plans(id);
-
-
---
--- Name: purchases purchases_purchaserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_purchaserid_foreign FOREIGN KEY ("purchaserId") REFERENCES public.users(id);
-
-
---
 -- Name: screenshot_buckets screenshot_buckets_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2584,6 +2568,30 @@ ALTER TABLE ONLY public.screenshots
 
 ALTER TABLE ONLY public.screenshots
     ADD CONSTRAINT screenshots_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
+
+
+--
+-- Name: subscriptions subscriptions_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT subscriptions_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id);
+
+
+--
+-- Name: subscriptions subscriptions_planid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT subscriptions_planid_foreign FOREIGN KEY ("planId") REFERENCES public.plans(id);
+
+
+--
+-- Name: subscriptions subscriptions_subscriberid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT subscriptions_subscriberid_foreign FOREIGN KEY ("subscriberId") REFERENCES public.users(id);
 
 
 --
@@ -2766,3 +2774,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231122143018_add-purchase-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240108211747_project-status-check.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240202080857_staff-user.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240203212814_renaming.js', 1, NOW());

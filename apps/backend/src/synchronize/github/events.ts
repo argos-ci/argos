@@ -5,20 +5,20 @@ import { getPendingCommentBody } from "@/database/index.js";
 import {
   GithubPullRequest,
   GithubRepository,
-  Purchase,
+  Subscription,
 } from "@/database/models/index.js";
 import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
 
 import { synchronizeFromInstallationId } from "../helpers.js";
 import {
-  cancelPurchase,
+  cancelSubscription,
   getAccount,
   getGithubPlan,
   getOrCreateAccountFromEvent,
   getOrCreateInstallation,
 } from "./eventHelpers.js";
-import { updatePurchase } from "./updatePurchase.js";
+import { updateSubscription } from "./updateSubscription.js";
 
 export const handleGitHubEvents = async ({
   name,
@@ -35,17 +35,17 @@ export const handleGitHubEvents = async ({
               getOrCreateAccountFromEvent(payload),
             ]);
 
-            const subscription = account.$getSubscription();
-            const activePurchase = await subscription.getActivePurchase();
-            if (activePurchase && activePurchase.planId === plan.id) {
+            const manager = account.$getSubscriptionManager();
+            const activeSubscription = await manager.getActiveSubscription();
+            if (activeSubscription && activeSubscription.planId === plan.id) {
               return;
             }
 
-            await Purchase.query().insert({
+            await Subscription.query().insert({
               accountId: account.id,
               planId: plan.id,
               startDate: payload.effective_date,
-              source: "github",
+              provider: "github",
               trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
               status: "active",
             });
@@ -60,7 +60,7 @@ export const handleGitHubEvents = async ({
               );
               return;
             }
-            await updatePurchase(payload, account);
+            await updateSubscription(payload, account);
             return;
           }
           case "cancelled": {
@@ -72,7 +72,7 @@ export const handleGitHubEvents = async ({
               );
               return;
             }
-            await cancelPurchase(payload, account);
+            await cancelSubscription(payload, account);
             return;
           }
         }

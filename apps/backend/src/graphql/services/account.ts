@@ -1,6 +1,6 @@
 import {
   Account,
-  Purchase,
+  Subscription,
   Team,
   TeamUser,
   User,
@@ -41,13 +41,13 @@ export const deleteAccount = async (args: {
       });
     }),
   );
-  const subscription = account.$getSubscription();
-  const activePurchase = await subscription.getActivePurchase();
+  const manager = account.$getSubscriptionManager();
+  const subscription = await manager.getActiveSubscription();
   // Cancel the Stripe subscription if it exists
-  if (activePurchase?.stripeSubscriptionId) {
-    await cancelStripeSubscription(activePurchase.stripeSubscriptionId);
+  if (subscription?.stripeSubscriptionId) {
+    await cancelStripeSubscription(subscription.stripeSubscriptionId);
   }
-  await Purchase.query().where("accountId", account.id).delete();
+  await Subscription.query().where("accountId", account.id).delete();
   await account.$query().delete();
 
   switch (account.type) {
@@ -58,9 +58,9 @@ export const deleteAccount = async (args: {
     }
     case "user": {
       await TeamUser.query().where("userId", account.userId).delete();
-      await Purchase.query()
-        .where("purchaserId", account.userId)
-        .patch({ purchaserId: null });
+      await Subscription.query()
+        .where("subscriberId", account.userId)
+        .patch({ subscriberId: null });
       await User.query().where("id", account.userId).delete();
       break;
     }

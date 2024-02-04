@@ -6,7 +6,7 @@ import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";
 import { Plan } from "./Plan.js";
 import { Project } from "./Project.js";
-import { Purchase } from "./Purchase.js";
+import { Subscription } from "./Subscription.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
@@ -19,8 +19,8 @@ export type AccountAvatar = {
   color: string;
 };
 
-type AccountSubscription = {
-  getActivePurchase(): Promise<Purchase | null>;
+type AccountSubscriptionManager = {
+  getActiveSubscription(): Promise<Subscription | null>;
   getPlan(): Promise<Plan | null>;
   checkIsFreePlan(): Promise<boolean>;
   checkIsTrialing(): Promise<boolean>;
@@ -109,12 +109,12 @@ export class Account extends Model {
           to: "vercel_configurations.id",
         },
       },
-      purchases: {
+      subscriptions: {
         relation: Model.HasManyRelation,
-        modelClass: Purchase,
+        modelClass: Subscription,
         join: {
           from: "accounts.id",
-          to: "purchases.accountId",
+          to: "subscriptions.accountId",
         },
       },
       projects: {
@@ -132,11 +132,10 @@ export class Account extends Model {
   team?: Team | null;
   githubAccount?: GithubAccount | null;
   vercelConfiguration?: VercelConfiguration | null;
-  purchases?: Purchase[];
+  subscriptions?: Subscription[];
   projects?: Project[];
-  activePurchase?: Purchase | null;
 
-  _cachedSubscription?: AccountSubscription;
+  _cachedSubscriptionManager?: AccountSubscriptionManager;
 
   static override virtualAttributes = ["type"];
 
@@ -153,24 +152,24 @@ export class Account extends Model {
     if (!this.userId) {
       throw new Error("$checkHasSubscribedToTrial can only be called on users");
     }
-    const purchaseCount = await Purchase.query()
-      .where({ purchaserId: this.userId })
+    const subscriptionCount = await Subscription.query()
+      .where({ subscriberId: this.userId })
       .whereNotNull("trialEndDate")
       .limit(1)
       .resultSize();
-    return purchaseCount > 0;
+    return subscriptionCount > 0;
   }
 
-  $getSubscription(): AccountSubscription {
-    if (this._cachedSubscription) {
-      return this._cachedSubscription;
+  $getSubscriptionManager(): AccountSubscriptionManager {
+    if (this._cachedSubscriptionManager) {
+      return this._cachedSubscriptionManager;
     }
 
-    const getActivePurchase = memoize(async () => {
+    const getActiveSubscription = memoize(async () => {
       if (!this.id) return null;
       if (this.forcedPlanId) return null;
 
-      const purchase = await Purchase.query()
+      const subscription = await Subscription.query()
         .where("accountId", this.id)
         .whereRaw("?? < now()", "startDate")
         .where((query) =>
@@ -180,7 +179,7 @@ export class Account extends Model {
         .orderBy("plan.screenshotsLimitPerMonth", "DESC")
         .first();
 
-      return purchase ?? null;
+      return subscription ?? null;
     });
 
     const getPlan = memoize(async () => {
@@ -188,9 +187,9 @@ export class Account extends Model {
         const plan = await Plan.query().findById(this.forcedPlanId);
         return plan ?? null;
       }
-      const activePurchase = await getActivePurchase();
-      if (activePurchase) {
-        return activePurchase.plan ?? null;
+      const subscription = await getActiveSubscription();
+      if (subscription) {
+        return subscription.plan ?? null;
       }
       return Plan.getFreePlan();
     });
@@ -201,20 +200,22 @@ export class Account extends Model {
       if (this.forcedPlanId) {
         return startOfMonth;
       }
-      const purchase = await getActivePurchase();
-      return purchase?.startDate ? purchase.getLastResetDate() : startOfMonth;
+      const subscription = await getActiveSubscription();
+      return subscription?.startDate
+        ? subscription.getLastResetDate()
+        : startOfMonth;
     });
 
     const getCurrentPeriodEndDate = memoize(async () => {
-      const [startDate, activePurchase, trialing] = await Promise.all([
+      const [startDate, activeSubscription, trialing] = await Promise.all([
         getCurrentPeriodStartDate(),
-        getActivePurchase(),
+        getActiveSubscription(),
         checkIsTrialing(),
       ]);
 
       if (trialing) {
-        invariant(activePurchase?.trialEndDate);
-        return new Date(activePurchase.trialEndDate);
+        invariant(activeSubscription?.trialEndDate);
+        return new Date(activeSubscription.trialEndDate);
       }
 
       const now = new Date();
@@ -239,8 +240,8 @@ export class Account extends Model {
     });
 
     const checkIsTrialing = memoize(async () => {
-      const activePurchase = await getActivePurchase();
-      return activePurchase?.$isTrialActive() ?? false;
+      const subscription = await getActiveSubscription();
+      return subscription?.$isTrialActive() ?? false;
     });
 
     const checkIsUsageBasedPlan = memoize(async () => {
@@ -271,8 +272,8 @@ export class Account extends Model {
       return consumptionRatio >= 1.1;
     });
 
-    this._cachedSubscription = {
-      getActivePurchase,
+    this._cachedSubscriptionManager = {
+      getActiveSubscription,
       getPlan,
       checkIsFreePlan,
       checkIsTrialing,
@@ -284,7 +285,7 @@ export class Account extends Model {
       checkIsOutOfCapacity,
     };
 
-    return this._cachedSubscription;
+    return this._cachedSubscriptionManager;
   }
 
   async $getScreenshotCountFromDate(

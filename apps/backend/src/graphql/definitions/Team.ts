@@ -5,7 +5,7 @@ import { transaction } from "@/database/index.js";
 import { Account, Team, TeamUser } from "@/database/models/index.js";
 import { createTeamAccount } from "@/database/services/team.js";
 import {
-  createPurchaseFromSubscription,
+  createArgosSubscriptionFromStripe,
   createStripeCheckoutSession,
   getCustomerIdFromUserAccount,
   getStripePriceFromPlanOrThrow,
@@ -40,9 +40,9 @@ export const typeDefs = gql`
     periodStartDate: DateTime
     periodEndDate: DateTime
     plan: Plan
-    purchase: Purchase
-    purchaseStatus: PurchaseStatus
-    oldPaidPurchase: Purchase
+    subscription: AccountSubscription
+    subscriptionStatus: AccountSubscriptionStatus
+    oldPaidSubscription: AccountSubscription
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
@@ -50,7 +50,7 @@ export const typeDefs = gql`
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
-    paymentProvider: PurchaseSource
+    paymentProvider: AccountSubscriptionProvider
     vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
     glNamespaces: GlApiNamespaceConnection
@@ -242,7 +242,7 @@ export const resolvers: IResolvers = {
         const session = await createStripeCheckoutSession({
           teamAccount,
           plan,
-          purchaserAccount: auth.account,
+          subscriberAccount: auth.account,
           trial,
           successUrl: teamUrl,
           cancelUrl: `${teamUrl}?checkout=cancel`,
@@ -276,20 +276,20 @@ export const resolvers: IResolvers = {
       const price = await getStripePriceFromPlanOrThrow(plan);
 
       // Create a Stripe subscription for the user
-      const subscription = await stripe.subscriptions.create({
+      const stripeSubscription = await stripe.subscriptions.create({
         customer: stripeCustomerId,
         items: [{ price: price.id }],
         ...getSubscriptionData({
           trial: true,
           accountId: teamAccount.id,
-          purchaserId: auth.user.id,
+          subscriberId: auth.user.id,
         }),
       });
 
-      await createPurchaseFromSubscription({
-        subscription,
+      await createArgosSubscriptionFromStripe({
+        stripeSubscription,
         account: teamAccount,
-        purchaserId: auth.user.id,
+        subscriberId: auth.user.id,
       });
 
       return {

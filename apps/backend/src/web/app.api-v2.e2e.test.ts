@@ -53,7 +53,7 @@ describe("api v2", () => {
         const account = await factory.TeamAccount.create({
           slug: "argos-ci",
         });
-        await factory.Purchase.create({ accountId: account.id });
+        await factory.Subscription.create({ accountId: account.id });
         project = await factory.Project.create({
           name: "argos",
           accountId: account.id,
@@ -126,7 +126,7 @@ describe("api v2", () => {
         const account = await factory.TeamAccount.create({
           slug: "argos-ci",
         });
-        await factory.Purchase.create({ accountId: account.id });
+        await factory.Subscription.create({ accountId: account.id });
         project = await factory.Project.create({
           name: "argos",
           accountId: account.id,
@@ -290,7 +290,7 @@ describe("api v2", () => {
         const account = await factory.TeamAccount.create({
           slug: "argos-ci",
         });
-        await factory.Purchase.create({ accountId: account.id });
+        await factory.Subscription.create({ accountId: account.id });
         project = await factory.Project.create({
           name: "argos",
           accountId: account.id,

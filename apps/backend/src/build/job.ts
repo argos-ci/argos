@@ -29,11 +29,11 @@ const pushDiffs = async (
 const updateProjectConsumption = async (project: Project) => {
   const { account } = project;
   invariant(account, "No account found", UnretryableError);
-  const subscription = account.$getSubscription();
+  const manager = account.$getSubscriptionManager();
 
   const [usageBased, totalScreenshots] = await Promise.all([
-    subscription.checkIsUsageBasedPlan(),
-    subscription.getCurrentPeriodScreenshots(),
+    manager.checkIsUsageBasedPlan(),
+    manager.getCurrentPeriodScreenshots(),
   ]);
 
   if (usageBased) {

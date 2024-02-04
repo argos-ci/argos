@@ -134,7 +134,7 @@ router.post(
       const session = await createStripeCheckoutSession({
         plan: proPlan,
         teamAccount,
-        purchaserAccount: req.auth.account,
+        subscriberAccount: req.auth.account,
         successUrl,
         cancelUrl,
         trial: !noTrial,

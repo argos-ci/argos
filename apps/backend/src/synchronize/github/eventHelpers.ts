@@ -5,7 +5,7 @@ import {
   GithubAccount,
   GithubInstallation,
   Plan,
-  Purchase,
+  Subscription,
 } from "@/database/models/index.js";
 import {
   getGhAccountType,
@@ -146,20 +146,20 @@ export const getGithubPlan = async (payload: {
 }) => {
   const githubId = payload.marketplace_purchase.plan?.id;
   if (!githubId) throw new Error(`can't find plan without githubId`);
-  const plan = await Plan.query().findOne({ githubId });
+  const plan = await Plan.query().findOne({ githubPlanId: githubId });
   if (!plan) throw new Error(`missing plan with githubId: '${githubId}'`);
   return plan;
 };
 
-export const cancelPurchase = async (
+export const cancelSubscription = async (
   payload: { effective_date: string },
   account: Account,
 ) => {
-  const subscription = account.$getSubscription();
-  const activePurchase = await subscription.getActivePurchase();
-  if (activePurchase && activePurchase.source === "github") {
-    await Purchase.query()
-      .findById(activePurchase.id)
+  const manager = account.$getSubscriptionManager();
+  const activeSubscription = await manager.getActiveSubscription();
+  if (activeSubscription && activeSubscription.provider === "github") {
+    await Subscription.query()
+      .findById(activeSubscription.id)
       .patch({ endDate: payload.effective_date, status: "canceled" });
   }
 };

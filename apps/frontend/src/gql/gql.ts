@@ -21,7 +21,7 @@ const documents = {
     "\n  mutation AccountGitLab_updateAccount($id: ID!, $gitlabAccessToken: String) {\n    updateAccount(input: { id: $id, gitlabAccessToken: $gitlabAccessToken }) {\n      id\n      gitlabAccessToken\n    }\n  }\n": types.AccountGitLab_UpdateAccountDocument,
     "\n  fragment AccountAvatarFragment on AccountAvatar {\n    url(size: 64)\n    color\n    initial\n  }\n": types.AccountAvatarFragmentFragmentDoc,
     "\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    avatar {\n      ...AccountAvatarFragment\n    }\n    ...AccountPlanChip_Account\n  }\n": types.AccountItem_AccountFragmentDoc,
-    "\n  fragment AccountPlanChip_Account on Account {\n    purchaseStatus\n    plan {\n      id\n      name\n    }\n  }\n": types.AccountPlanChip_AccountFragmentDoc,
+    "\n  fragment AccountPlanChip_Account on Account {\n    subscriptionStatus\n    plan {\n      id\n      name\n    }\n  }\n": types.AccountPlanChip_AccountFragmentDoc,
     "\n  query AccountBreadcrumb_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n      ...AccountPlanChip_Account\n    }\n  }\n": types.AccountBreadcrumb_AccountDocument,
     "\n  fragment AccountBreadcrumbMenu_Account on Account {\n    id\n    slug\n    ...AccountItem_Account\n  }\n": types.AccountBreadcrumbMenu_AccountFragmentDoc,
     "\n  query AccountBreadcrumbMenu_me {\n    me {\n      id\n      ...AccountBreadcrumbMenu_Account\n      teams {\n        id\n        ...AccountBreadcrumbMenu_Account\n      }\n    }\n  }\n": types.AccountBreadcrumbMenu_MeDocument,
@@ -35,10 +35,10 @@ const documents = {
     "\n  fragment GitlabNamespacesSelect_GlApiNamespace on GlApiNamespace {\n    id\n    name\n    path\n  }\n": types.GitlabNamespacesSelect_GlApiNamespaceFragmentDoc,
     "\n  query GitlabProjectList_glApiProjects(\n    $userId: ID\n    $groupId: ID\n    $allProjects: Boolean!\n    $accessToken: String!\n    $page: Int!\n    $search: String\n  ) {\n    glApiProjects(\n      userId: $userId\n      groupId: $groupId\n      allProjects: $allProjects\n      accessToken: $accessToken\n      page: $page\n      search: $search\n    ) {\n      edges {\n        id\n        name\n        last_activity_at\n      }\n      pageInfo {\n        hasNextPage\n      }\n    }\n  }\n": types.GitlabProjectList_GlApiProjectsDocument,
     "\n  query NavUserControl_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n  }\n": types.NavUserControl_AccountDocument,
-    "\n  fragment PaymentBanner_Account on Account {\n    id\n    purchaseStatus\n    permissions\n    stripeCustomerId\n    pendingCancelAt\n\n    purchase {\n      id\n      trialDaysRemaining\n      source\n      paymentMethodFilled\n    }\n  }\n": types.PaymentBanner_AccountFragmentDoc,
+    "\n  fragment PaymentBanner_Account on Account {\n    id\n    subscriptionStatus\n    permissions\n    stripeCustomerId\n    pendingCancelAt\n\n    subscription {\n      id\n      trialDaysRemaining\n      provider\n      paymentMethodFilled\n    }\n  }\n": types.PaymentBanner_AccountFragmentDoc,
     "\n  query PaymentBanner_me {\n    me {\n      id\n      hasSubscribedToTrial\n    }\n  }\n": types.PaymentBanner_MeDocument,
-    "\n  mutation terminateTrial($accountId: ID!) {\n    terminateTrial(accountId: $accountId) {\n      id\n      purchaseStatus\n      __typename\n    }\n  }\n": types.TerminateTrialDocument,
-    "\n  fragment PlanCard_Account on Account {\n    id\n    stripeCustomerId\n    periodStartDate\n    periodEndDate\n    purchaseStatus\n    trialStatus\n    hasForcedPlan\n    pendingCancelAt\n    paymentProvider\n\n    plan {\n      id\n      name\n      screenshotsLimitPerMonth\n    }\n\n    purchase {\n      id\n      paymentMethodFilled\n    }\n\n    projects(first: 100, after: 0) {\n      edges {\n        id\n        name\n        public\n        currentMonthUsedScreenshots\n      }\n    }\n  }\n": types.PlanCard_AccountFragmentDoc,
+    "\n  mutation terminateTrial($accountId: ID!) {\n    terminateTrial(accountId: $accountId) {\n      id\n      subscriptionStatus\n      __typename\n    }\n  }\n": types.TerminateTrialDocument,
+    "\n  fragment PlanCard_Account on Account {\n    id\n    stripeCustomerId\n    periodStartDate\n    periodEndDate\n    subscriptionStatus\n    trialStatus\n    hasForcedPlan\n    pendingCancelAt\n    paymentProvider\n\n    plan {\n      id\n      name\n      screenshotsLimitPerMonth\n    }\n\n    subscription {\n      id\n      paymentMethodFilled\n    }\n\n    projects(first: 100, after: 0) {\n      edges {\n        id\n        name\n        public\n        currentMonthUsedScreenshots\n      }\n    }\n  }\n": types.PlanCard_AccountFragmentDoc,
     "\n  fragment ProjectBadge_Project on Project {\n    id\n    slug\n  }\n": types.ProjectBadge_ProjectFragmentDoc,
     "\n  fragment ProjectChangeName_Project on Project {\n    id\n    name\n    account {\n      id\n      slug\n    }\n  }\n": types.ProjectChangeName_ProjectFragmentDoc,
     "\n  mutation ProjectChangeName_updateProject($id: ID!, $name: String!) {\n    updateProject(input: { id: $id, name: $name }) {\n      id\n      name\n    }\n  }\n": types.ProjectChangeName_UpdateProjectDocument,
@@ -69,7 +69,7 @@ const documents = {
     "\n  fragment PullRequestButton_PullRequest on PullRequest {\n    title\n    number\n    url\n    ...PullRequestStatusIcon_PullRequest\n    ...PullRequestInfo_PullRequest\n  }\n": types.PullRequestButton_PullRequestFragmentDoc,
     "\n  fragment ReviewButton_Project on Project {\n    name\n    permissions\n    public\n    account {\n      id\n      slug\n    }\n    build(number: $buildNumber) {\n      id\n      status\n    }\n  }\n": types.ReviewButton_ProjectFragmentDoc,
     "\n  mutation setValidationStatus(\n    $buildId: ID!\n    $validationStatus: ValidationStatus!\n  ) {\n    setValidationStatus(\n      buildId: $buildId\n      validationStatus: $validationStatus\n    ) {\n      id\n      status\n    }\n  }\n": types.SetValidationStatusDocument,
-    "\n  fragment TeamDelete_Team on Team {\n    id\n    slug\n    purchaseStatus\n    pendingCancelAt\n  }\n": types.TeamDelete_TeamFragmentDoc,
+    "\n  fragment TeamDelete_Team on Team {\n    id\n    slug\n    subscriptionStatus\n    pendingCancelAt\n  }\n": types.TeamDelete_TeamFragmentDoc,
     "\n  mutation DeleteTeamMutation($teamAccountId: ID!) {\n    deleteTeam(input: { accountId: $teamAccountId })\n  }\n": types.DeleteTeamMutationDocument,
     "\n  query TeamMembers_teamMembers($id: ID!, $first: Int!, $after: Int!) {\n    team: teamById(id: $id) {\n      id\n      members(first: $first, after: $after) {\n        edges {\n          id\n          level\n          user {\n            id\n            name\n            slug\n            avatar {\n              ...AccountAvatarFragment\n            }\n            ...RemoveFromTeamDialog_User\n          }\n          ...LevelSelect_TeamMember\n        }\n        pageInfo {\n          hasNextPage\n          totalCount\n        }\n      }\n    }\n  }\n": types.TeamMembers_TeamMembersDocument,
     "\n  fragment TeamMembers_Team on Team {\n    id\n    name\n    slug\n    inviteLink\n    me {\n      id\n      level\n      user {\n        id\n        name\n        slug\n        avatar {\n          ...AccountAvatarFragment\n        }\n        ...RemoveFromTeamDialog_User\n      }\n      ...LevelSelect_TeamMember\n    }\n  }\n": types.TeamMembers_TeamFragmentDoc,
@@ -164,7 +164,7 @@ export function graphql(source: "\n  fragment AccountItem_Account on Account {\n
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment AccountPlanChip_Account on Account {\n    purchaseStatus\n    plan {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  fragment AccountPlanChip_Account on Account {\n    purchaseStatus\n    plan {\n      id\n      name\n    }\n  }\n"];
+export function graphql(source: "\n  fragment AccountPlanChip_Account on Account {\n    subscriptionStatus\n    plan {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  fragment AccountPlanChip_Account on Account {\n    subscriptionStatus\n    plan {\n      id\n      name\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -220,7 +220,7 @@ export function graphql(source: "\n  query NavUserControl_account($slug: String!
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment PaymentBanner_Account on Account {\n    id\n    purchaseStatus\n    permissions\n    stripeCustomerId\n    pendingCancelAt\n\n    purchase {\n      id\n      trialDaysRemaining\n      source\n      paymentMethodFilled\n    }\n  }\n"): (typeof documents)["\n  fragment PaymentBanner_Account on Account {\n    id\n    purchaseStatus\n    permissions\n    stripeCustomerId\n    pendingCancelAt\n\n    purchase {\n      id\n      trialDaysRemaining\n      source\n      paymentMethodFilled\n    }\n  }\n"];
+export function graphql(source: "\n  fragment PaymentBanner_Account on Account {\n    id\n    subscriptionStatus\n    permissions\n    stripeCustomerId\n    pendingCancelAt\n\n    subscription {\n      id\n      trialDaysRemaining\n      provider\n      paymentMethodFilled\n    }\n  }\n"): (typeof documents)["\n  fragment PaymentBanner_Account on Account {\n    id\n    subscriptionStatus\n    permissions\n    stripeCustomerId\n    pendingCancelAt\n\n    subscription {\n      id\n      trialDaysRemaining\n      provider\n      paymentMethodFilled\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -228,11 +228,11 @@ export function graphql(source: "\n  query PaymentBanner_me {\n    me {\n      i
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation terminateTrial($accountId: ID!) {\n    terminateTrial(accountId: $accountId) {\n      id\n      purchaseStatus\n      __typename\n    }\n  }\n"): (typeof documents)["\n  mutation terminateTrial($accountId: ID!) {\n    terminateTrial(accountId: $accountId) {\n      id\n      purchaseStatus\n      __typename\n    }\n  }\n"];
+export function graphql(source: "\n  mutation terminateTrial($accountId: ID!) {\n    terminateTrial(accountId: $accountId) {\n      id\n      subscriptionStatus\n      __typename\n    }\n  }\n"): (typeof documents)["\n  mutation terminateTrial($accountId: ID!) {\n    terminateTrial(accountId: $accountId) {\n      id\n      subscriptionStatus\n      __typename\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment PlanCard_Account on Account {\n    id\n    stripeCustomerId\n    periodStartDate\n    periodEndDate\n    purchaseStatus\n    trialStatus\n    hasForcedPlan\n    pendingCancelAt\n    paymentProvider\n\n    plan {\n      id\n      name\n      screenshotsLimitPerMonth\n    }\n\n    purchase {\n      id\n      paymentMethodFilled\n    }\n\n    projects(first: 100, after: 0) {\n      edges {\n        id\n        name\n        public\n        currentMonthUsedScreenshots\n      }\n    }\n  }\n"): (typeof documents)["\n  fragment PlanCard_Account on Account {\n    id\n    stripeCustomerId\n    periodStartDate\n    periodEndDate\n    purchaseStatus\n    trialStatus\n    hasForcedPlan\n    pendingCancelAt\n    paymentProvider\n\n    plan {\n      id\n      name\n      screenshotsLimitPerMonth\n    }\n\n    purchase {\n      id\n      paymentMethodFilled\n    }\n\n    projects(first: 100, after: 0) {\n      edges {\n        id\n        name\n        public\n        currentMonthUsedScreenshots\n      }\n    }\n  }\n"];
+export function graphql(source: "\n  fragment PlanCard_Account on Account {\n    id\n    stripeCustomerId\n    periodStartDate\n    periodEndDate\n    subscriptionStatus\n    trialStatus\n    hasForcedPlan\n    pendingCancelAt\n    paymentProvider\n\n    plan {\n      id\n      name\n      screenshotsLimitPerMonth\n    }\n\n    subscription {\n      id\n      paymentMethodFilled\n    }\n\n    projects(first: 100, after: 0) {\n      edges {\n        id\n        name\n        public\n        currentMonthUsedScreenshots\n      }\n    }\n  }\n"): (typeof documents)["\n  fragment PlanCard_Account on Account {\n    id\n    stripeCustomerId\n    periodStartDate\n    periodEndDate\n    subscriptionStatus\n    trialStatus\n    hasForcedPlan\n    pendingCancelAt\n    paymentProvider\n\n    plan {\n      id\n      name\n      screenshotsLimitPerMonth\n    }\n\n    subscription {\n      id\n      paymentMethodFilled\n    }\n\n    projects(first: 100, after: 0) {\n      edges {\n        id\n        name\n        public\n        currentMonthUsedScreenshots\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -356,7 +356,7 @@ export function graphql(source: "\n  mutation setValidationStatus(\n    $buildId
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment TeamDelete_Team on Team {\n    id\n    slug\n    purchaseStatus\n    pendingCancelAt\n  }\n"): (typeof documents)["\n  fragment TeamDelete_Team on Team {\n    id\n    slug\n    purchaseStatus\n    pendingCancelAt\n  }\n"];
+export function graphql(source: "\n  fragment TeamDelete_Team on Team {\n    id\n    slug\n    subscriptionStatus\n    pendingCancelAt\n  }\n"): (typeof documents)["\n  fragment TeamDelete_Team on Team {\n    id\n    slug\n    subscriptionStatus\n    pendingCancelAt\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

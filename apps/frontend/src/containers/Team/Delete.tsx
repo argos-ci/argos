@@ -3,7 +3,7 @@ import { forwardRef } from "react";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { PurchaseStatus } from "@/gql/graphql";
+import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Button, ButtonProps } from "@/ui/Button";
 import {
   Card,
@@ -31,7 +31,7 @@ const TeamFragment = graphql(`
   fragment TeamDelete_Team on Team {
     id
     slug
-    purchaseStatus
+    subscriptionStatus
     pendingCancelAt
   }
 `);
@@ -154,8 +154,8 @@ export const TeamDelete = (props: {
   team: FragmentType<typeof TeamFragment>;
 }) => {
   const team = useFragment(TeamFragment, props.team);
-  const hasActivePurchase =
-    team.purchaseStatus === PurchaseStatus.Active &&
+  const hasActiveSubscription =
+    team.subscriptionStatus === AccountSubscriptionStatus.Active &&
     team.pendingCancelAt === null;
   return (
     <Card intent="danger">
@@ -167,7 +167,7 @@ export const TeamDelete = (props: {
           caution.
         </CardParagraph>
       </CardBody>
-      {hasActivePurchase ? (
+      {hasActiveSubscription ? (
         <CardFooter className="flex items-center justify-between">
           <div>
             A subscription is active on the team. Please cancel your

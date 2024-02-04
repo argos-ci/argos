@@ -4,17 +4,22 @@ import type { PartialModelObject } from "objection";
 import axios from "axios";
 
 import { knex } from "@/database/index.js";
-import { Account, Plan, Project, Purchase } from "@/database/models/index.js";
+import {
+  Account,
+  Plan,
+  Project,
+  Subscription,
+} from "@/database/models/index.js";
 import {
   encodeStripeClientReferenceId,
   terminateStripeTrial,
-  updatePurchaseFromSubscription,
+  updateArgosSubscriptionFromStripeSubscription,
 } from "@/stripe/index.js";
 
 import {
   IPermission,
-  IPurchaseSource,
-  IPurchaseStatus,
+  IAccountSubscriptionProvider,
+  IAccountSubscriptionStatus,
   IResolvers,
   ITrialStatus,
 } from "../__generated__/resolver-types.js";
@@ -39,12 +44,12 @@ export const typeDefs = gql`
     color: String!
   }
 
-  enum PurchaseStatus {
-    "Ongoing paid purchase"
+  enum AccountSubscriptionStatus {
+    "Ongoing paid subscription"
     active
     "Ongoing trial"
     trialing
-    "No paid purchase"
+    "No paid subscription"
     missing
     "Payment due"
     past_due
@@ -80,8 +85,8 @@ export const typeDefs = gql`
     plan: Plan
     periodStartDate: DateTime
     periodEndDate: DateTime
-    purchase: Purchase
-    purchaseStatus: PurchaseStatus
+    subscription: AccountSubscription
+    subscriptionStatus: AccountSubscriptionStatus
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
@@ -89,7 +94,7 @@ export const typeDefs = gql`
     projects(after: Int!, first: Int!): ProjectConnection!
     ghAccount: GithubAccount
     avatar: AccountAvatar!
-    paymentProvider: PurchaseSource
+    paymentProvider: AccountSubscriptionProvider
     vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
     glNamespaces: GlApiNamespaceConnection
@@ -170,7 +175,7 @@ export const resolvers: IResolvers = {
       }
       return encodeStripeClientReferenceId({
         accountId: account.id,
-        purchaserId: ctx.auth.user.id,
+        subscriberId: ctx.auth.user.id,
       });
     },
     projects: async (account, args) => {
@@ -188,72 +193,75 @@ export const resolvers: IResolvers = {
       });
     },
     hasPaidPlan: async (account) => {
-      const subscription = account.$getSubscription();
-      const free = await subscription.checkIsFreePlan();
+      const manager = account.$getSubscriptionManager();
+      const free = await manager.checkIsFreePlan();
       return !free;
     },
     consumptionRatio: async (account) => {
-      const subscription = account.$getSubscription();
-      return subscription.getCurrentPeriodConsumptionRatio();
+      const manager = account.$getSubscriptionManager();
+      return manager.getCurrentPeriodConsumptionRatio();
     },
     currentMonthUsedScreenshots: async (account) => {
-      const subscription = account.$getSubscription();
-      return subscription.getCurrentPeriodScreenshots();
+      const manager = account.$getSubscriptionManager();
+      return manager.getCurrentPeriodScreenshots();
     },
     periodStartDate: async (account) => {
-      const subscription = account.$getSubscription();
-      return subscription.getCurrentPeriodStartDate();
+      const manager = account.$getSubscriptionManager();
+      return manager.getCurrentPeriodStartDate();
     },
     periodEndDate: async (account) => {
-      const subscription = account.$getSubscription();
-      return subscription.getCurrentPeriodEndDate();
+      const manager = account.$getSubscriptionManager();
+      return manager.getCurrentPeriodEndDate();
     },
-    purchase: async (account) => {
-      const subscription = account.$getSubscription();
-      return subscription.getActivePurchase();
+    subscription: async (account) => {
+      const manager = account.$getSubscriptionManager();
+      return manager.getActiveSubscription();
     },
-    purchaseStatus: async (account) => {
+    subscriptionStatus: async (account) => {
       if (account.forcedPlanId !== null) {
-        return IPurchaseStatus.Active;
+        return IAccountSubscriptionStatus.Active;
       }
       if (account.type === "user") {
         return null;
       }
 
-      const subscription = account.$getSubscription();
-      const purchase = await subscription.getActivePurchase();
+      const manager = account.$getSubscriptionManager();
+      const subscription = await manager.getActiveSubscription();
 
-      if (purchase) {
-        return purchase.status as IPurchaseStatus;
+      if (subscription) {
+        return subscription.status as IAccountSubscriptionStatus;
       }
 
-      const hasOldPaidPurchase = await Purchase.query()
-        .where("accountId", account.id)
-        .whereNot({ name: "free" })
-        .whereRaw("?? < now()", "endDate")
-        .where("endDate", "<>", knex.ref("trialEndDate"))
-        .joinRelated("plan")
-        .orderBy("endDate", "DESC")
-        .limit(1)
-        .resultSize();
+      const hasOldPaidSubscription =
+        (await Subscription.query()
+          .where("accountId", account.id)
+          .whereNot({ name: "free" })
+          .whereRaw("?? < now()", "endDate")
+          .where("endDate", "<>", knex.ref("trialEndDate"))
+          .joinRelated("plan")
+          .orderBy("endDate", "DESC")
+          .limit(1)
+          .resultSize()) > 0;
 
-      if (hasOldPaidPurchase) return IPurchaseStatus.Canceled;
+      if (hasOldPaidSubscription) {
+        return IAccountSubscriptionStatus.Canceled;
+      }
 
-      // No paid purchase
-      return IPurchaseStatus.Missing;
+      // No paid subscription
+      return IAccountSubscriptionStatus.Missing;
     },
     trialStatus: async (account) => {
       if (account.type === "user") {
         return null;
       }
-      const subscription = account.$getSubscription();
-      const trialing = await subscription.checkIsTrialing();
+      const manager = account.$getSubscriptionManager();
+      const trialing = await manager.checkIsTrialing();
 
       if (trialing) {
         return ITrialStatus.Active;
       }
 
-      const previousPaidPurchase = await Purchase.query()
+      const previousPaidSubscription = await Subscription.query()
         .where("accountId", account.id)
         .whereNot({ name: "free" })
         .whereRaw("?? < now()", "endDate")
@@ -261,11 +269,12 @@ export const resolvers: IResolvers = {
         .orderBy("endDate", "DESC")
         .first();
 
-      const purchaseEndsAtTrialEnd =
-        previousPaidPurchase &&
-        previousPaidPurchase.endDate === previousPaidPurchase.trialEndDate;
+      const subscriptionEndsAtTrialEnd =
+        previousPaidSubscription &&
+        previousPaidSubscription.endDate ===
+          previousPaidSubscription.trialEndDate;
 
-      return purchaseEndsAtTrialEnd ? ITrialStatus.Expired : null;
+      return subscriptionEndsAtTrialEnd ? ITrialStatus.Expired : null;
     },
     hasForcedPlan: async (account) => {
       return account.forcedPlanId !== null;
@@ -274,17 +283,17 @@ export const resolvers: IResolvers = {
       if (account.type === "user") {
         return null;
       }
-      const subscription = account.$getSubscription();
-      const activePurchase = await subscription.getActivePurchase();
-      return activePurchase?.endDate ?? null;
+      const manager = account.$getSubscriptionManager();
+      const subscription = await manager.getActiveSubscription();
+      return subscription?.endDate ?? null;
     },
     plan: async (account) => {
-      const subscription = account.$getSubscription();
-      return subscription.getPlan();
+      const manager = account.$getSubscriptionManager();
+      return manager.getPlan();
     },
     screenshotsLimitPerMonth: async (account) => {
-      const subscription = account.$getSubscription();
-      const plan = await subscription.getPlan();
+      const manager = account.$getSubscriptionManager();
+      const plan = await manager.getPlan();
       return Plan.getScreenshotMonthlyLimitForPlan(plan);
     },
     permissions: async (account, _args, ctx) => {
@@ -307,13 +316,17 @@ export const resolvers: IResolvers = {
       return ctx.loaders.GithubAccount.load(account.githubAccountId);
     },
     paymentProvider: async (account) => {
-      if (account.type === "user") return null;
-      const lastPurchase = await Purchase.query()
+      if (account.type === "user") {
+        return null;
+      }
+      const lastSubscription = await Subscription.query()
         .orderBy("createdAt", "DESC")
         .where("accountId", account.id)
         .first();
-      if (!lastPurchase) return null;
-      return lastPurchase.source as IPurchaseSource;
+      if (!lastSubscription) {
+        return null;
+      }
+      return lastSubscription.provider as IAccountSubscriptionProvider;
     },
     avatar: async (account, _args, ctx) => {
       const ghAccount = account.githubAccountId
@@ -483,28 +496,34 @@ export const resolvers: IResolvers = {
         id: accountId,
         user: ctx.auth?.user,
       });
-      const subscription = account.$getSubscription();
-      const purchase = await subscription.getActivePurchase();
+      const manager = account.$getSubscriptionManager();
+      const argosSubscription = await manager.getActiveSubscription();
 
-      // No purchase
-      if (!purchase) {
+      // No subscription
+      if (!argosSubscription) {
         return account;
       }
 
-      // Not a stripe purchase
-      if (purchase.source !== "stripe" || !purchase.stripeSubscriptionId) {
+      // Not a stripe subscription
+      if (argosSubscription.provider !== "stripe") {
         return account;
       }
 
       // Not a trial
-      if (!purchase.$isTrialActive()) {
+      if (!argosSubscription.$isTrialActive()) {
         return account;
       }
 
+      // Impossible to not have a "stripeSubscriptionId" with a 'stripe' provider
+      invariant(argosSubscription.stripeSubscriptionId);
+
       const stripeSubscription = await terminateStripeTrial(
-        purchase.stripeSubscriptionId,
+        argosSubscription.stripeSubscriptionId,
       );
-      await updatePurchaseFromSubscription(purchase, stripeSubscription);
+      await updateArgosSubscriptionFromStripeSubscription(
+        argosSubscription,
+        stripeSubscription,
+      );
       return account;
     },
   },

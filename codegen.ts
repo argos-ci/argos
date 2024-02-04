@@ -24,6 +24,7 @@ const config: CodegenConfig = {
         typesPrefix: "I",
         mappers: {
           AccountAvatar: "../../database/models/index.js#AccountAvatar",
+          AccountSubscription: "../../database/models/index.js#Subscription",
           Build: "../../database/models/index.js#Build",
           GhApiInstallation: "../../github/index.js#GhApiInstallation",
           GhApiRepository: "../../github/index.js#GhApiRepository",
@@ -34,7 +35,6 @@ const config: CodegenConfig = {
           GlApiNamespace: "../../gitlab/index.js#GlApiNamespace",
           GlApiProject: "../../gitlab/index.js#GlApiProject",
           Plan: "../../database/models/index.js#Plan",
-          Purchase: "../../database/models/index.js#Purchase",
           Screenshot: "../../database/models/index.js#Screenshot",
           ScreenshotBucket: "../../database/models/index.js#ScreenshotBucket",
           ScreenshotDiff: "../../database/models/index.js#ScreenshotDiff",

@@ -79,10 +79,10 @@ const createBuild = async (params: {
     throw new HttpError(404, `Account not found.`);
   }
 
-  const subscription = account.$getSubscription();
+  const manager = account.$getSubscriptionManager();
   const [isFreePlan, outOfCapacity] = await Promise.all([
-    subscription.checkIsFreePlan(),
-    subscription.checkIsOutOfCapacity(),
+    manager.checkIsFreePlan(),
+    manager.checkIsOutOfCapacity(),
   ]);
   if (account.type === "team" && isFreePlan) {
     throw new HttpError(

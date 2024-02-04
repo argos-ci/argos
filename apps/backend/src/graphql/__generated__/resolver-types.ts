@@ -1,5 +1,5 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Build, GithubAccount, GithubPullRequest, GithubRepository, GitlabProject, Plan, Purchase, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, Test, VercelConfiguration, VercelProject } from '../../database/models/index.js';
+import type { AccountAvatar, Subscription, Build, GithubAccount, GithubPullRequest, GithubRepository, GitlabProject, Plan, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, Test, VercelConfiguration, VercelProject } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
 import type { VercelApiProject, VercelApiTeam } from '../../vercel/index.js';
@@ -36,19 +36,19 @@ export type IAccount = {
   hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   name?: Maybe<Scalars['String']['output']>;
-  paymentProvider?: Maybe<IPurchaseSource>;
+  paymentProvider?: Maybe<IAccountSubscriptionProvider>;
   pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
-  purchase?: Maybe<IPurchase>;
-  purchaseStatus?: Maybe<IPurchaseStatus>;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
   slug: Scalars['String']['output'];
   stripeClientReferenceId: Scalars['String']['output'];
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
+  subscription?: Maybe<IAccountSubscription>;
+  subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
   trialStatus?: Maybe<ITrialStatus>;
   vercelConfiguration?: Maybe<IVercelConfiguration>;
 };
@@ -70,6 +70,40 @@ export type IAccountAvatar = {
 export type IAccountAvatarUrlArgs = {
   size: Scalars['Int']['input'];
 };
+
+export type IAccountSubscription = INode & {
+  __typename?: 'AccountSubscription';
+  id: Scalars['ID']['output'];
+  paymentMethodFilled: Scalars['Boolean']['output'];
+  provider: IAccountSubscriptionProvider;
+  trialDaysRemaining?: Maybe<Scalars['Int']['output']>;
+};
+
+export enum IAccountSubscriptionProvider {
+  Github = 'github',
+  Stripe = 'stripe'
+}
+
+export enum IAccountSubscriptionStatus {
+  /** Ongoing paid subscription */
+  Active = 'active',
+  /** Post-cancelation date */
+  Canceled = 'canceled',
+  /** Incomplete */
+  Incomplete = 'incomplete',
+  /** Incomplete expired */
+  IncompleteExpired = 'incomplete_expired',
+  /** No paid subscription */
+  Missing = 'missing',
+  /** Payment due */
+  PastDue = 'past_due',
+  /** Paused */
+  Paused = 'paused',
+  /** Ongoing trial */
+  Trialing = 'trialing',
+  /** Unpaid */
+  Unpaid = 'unpaid'
+}
 
 export type IBuild = INode & {
   __typename?: 'Build';
@@ -618,40 +652,6 @@ export enum IPullRequestState {
   Open = 'OPEN'
 }
 
-export type IPurchase = INode & {
-  __typename?: 'Purchase';
-  id: Scalars['ID']['output'];
-  paymentMethodFilled: Scalars['Boolean']['output'];
-  source: IPurchaseSource;
-  trialDaysRemaining?: Maybe<Scalars['Int']['output']>;
-};
-
-export enum IPurchaseSource {
-  Github = 'github',
-  Stripe = 'stripe'
-}
-
-export enum IPurchaseStatus {
-  /** Ongoing paid purchase */
-  Active = 'active',
-  /** Post-cancelation date */
-  Canceled = 'canceled',
-  /** Incomplete */
-  Incomplete = 'incomplete',
-  /** Incomplete expired */
-  IncompleteExpired = 'incomplete_expired',
-  /** No paid purchase */
-  Missing = 'missing',
-  /** Payment due */
-  PastDue = 'past_due',
-  /** Paused */
-  Paused = 'paused',
-  /** Ongoing trial */
-  Trialing = 'trialing',
-  /** Unpaid */
-  Unpaid = 'unpaid'
-}
-
 export type IQuery = {
   __typename?: 'Query';
   /** Get Account by slug */
@@ -906,20 +906,20 @@ export type ITeam = IAccount & INode & {
   me?: Maybe<ITeamMember>;
   members: ITeamMemberConnection;
   name?: Maybe<Scalars['String']['output']>;
-  oldPaidPurchase?: Maybe<IPurchase>;
-  paymentProvider?: Maybe<IPurchaseSource>;
+  oldPaidSubscription?: Maybe<IAccountSubscription>;
+  paymentProvider?: Maybe<IAccountSubscriptionProvider>;
   pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
-  purchase?: Maybe<IPurchase>;
-  purchaseStatus?: Maybe<IPurchaseStatus>;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
   slug: Scalars['String']['output'];
   stripeClientReferenceId: Scalars['String']['output'];
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
+  subscription?: Maybe<IAccountSubscription>;
+  subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
   trialStatus?: Maybe<ITrialStatus>;
   vercelConfiguration?: Maybe<IVercelConfiguration>;
 };
@@ -1047,22 +1047,22 @@ export type IUser = IAccount & INode & {
   hasPaidPlan: Scalars['Boolean']['output'];
   hasSubscribedToTrial: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  lastPurchase?: Maybe<IPurchase>;
+  lastSubscription?: Maybe<IAccountSubscription>;
   name?: Maybe<Scalars['String']['output']>;
-  oldPaidPurchase?: Maybe<IPurchase>;
-  paymentProvider?: Maybe<IPurchaseSource>;
+  oldPaidSubscription?: Maybe<IAccountSubscription>;
+  paymentProvider?: Maybe<IAccountSubscriptionProvider>;
   pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
-  purchase?: Maybe<IPurchase>;
-  purchaseStatus?: Maybe<IPurchaseStatus>;
   screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
   slug: Scalars['String']['output'];
   stripeClientReferenceId: Scalars['String']['output'];
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
+  subscription?: Maybe<IAccountSubscription>;
+  subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
   teams: Array<ITeam>;
   trialStatus?: Maybe<ITrialStatus>;
   vercelConfiguration?: Maybe<IVercelConfiguration>;
@@ -1249,7 +1249,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type IResolversInterfaceTypes<RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
   Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<RefType['Project']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<RefType['ScreenshotDiff']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<RefType['User']> } );
-  Node: ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( Purchase ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( TeamUser ) | ( Test ) | ( Account );
+  Node: ( Subscription ) | ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( TeamUser ) | ( Test ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
   VercelApiProjectLink: ( IVercelApiProjectLinkGithub ) | ( IVercelApiProjectLinkOther );
@@ -1259,6 +1259,9 @@ export type IResolversInterfaceTypes<RefType extends Record<string, unknown>> = 
 export type IResolversTypes = ResolversObject<{
   Account: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Account']>;
   AccountAvatar: ResolverTypeWrapper<AccountAvatar>;
+  AccountSubscription: ResolverTypeWrapper<Subscription>;
+  AccountSubscriptionProvider: IAccountSubscriptionProvider;
+  AccountSubscriptionStatus: IAccountSubscriptionStatus;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Build: ResolverTypeWrapper<Build>;
   BuildConnection: ResolverTypeWrapper<Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversTypes['Build']> }>;
@@ -1304,9 +1307,6 @@ export type IResolversTypes = ResolversObject<{
   ProjectConnection: ResolverTypeWrapper<Omit<IProjectConnection, 'edges'> & { edges: Array<IResolversTypes['Project']> }>;
   PullRequest: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['PullRequest']>;
   PullRequestState: IPullRequestState;
-  Purchase: ResolverTypeWrapper<Purchase>;
-  PurchaseSource: IPurchaseSource;
-  PurchaseStatus: IPurchaseStatus;
   Query: ResolverTypeWrapper<{}>;
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: ResolverTypeWrapper<IRemoveUserFromTeamPayload>;
@@ -1368,6 +1368,7 @@ export type IResolversTypes = ResolversObject<{
 export type IResolversParentTypes = ResolversObject<{
   Account: IResolversInterfaceTypes<IResolversParentTypes>['Account'];
   AccountAvatar: AccountAvatar;
+  AccountSubscription: Subscription;
   Boolean: Scalars['Boolean']['output'];
   Build: Build;
   BuildConnection: Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversParentTypes['Build']> };
@@ -1408,7 +1409,6 @@ export type IResolversParentTypes = ResolversObject<{
   Project: Project;
   ProjectConnection: Omit<IProjectConnection, 'edges'> & { edges: Array<IResolversParentTypes['Project']> };
   PullRequest: IResolversInterfaceTypes<IResolversParentTypes>['PullRequest'];
-  Purchase: Purchase;
   Query: {};
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: IRemoveUserFromTeamPayload;
@@ -1469,19 +1469,19 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  paymentProvider?: Resolver<Maybe<IResolversTypes['PurchaseSource']>, ParentType, ContextType>;
+  paymentProvider?: Resolver<Maybe<IResolversTypes['AccountSubscriptionProvider']>, ParentType, ContextType>;
   pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IAccountProjectsArgs, 'after' | 'first'>>;
-  purchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
-  purchaseStatus?: Resolver<Maybe<IResolversTypes['PurchaseStatus']>, ParentType, ContextType>;
   screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  subscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
+  subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
   trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
   vercelConfiguration?: Resolver<Maybe<IResolversTypes['VercelConfiguration']>, ParentType, ContextType>;
 }>;
@@ -1490,6 +1490,14 @@ export type IAccountAvatarResolvers<ContextType = Context, ParentType extends IR
   color?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   initial?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType, RequireFields<IAccountAvatarUrlArgs, 'size'>>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IAccountSubscriptionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountSubscription'] = IResolversParentTypes['AccountSubscription']> = ResolversObject<{
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  paymentMethodFilled?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  provider?: Resolver<IResolversTypes['AccountSubscriptionProvider'], ParentType, ContextType>;
+  trialDaysRemaining?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1688,7 +1696,7 @@ export type IMuteUpdateTestResolvers<ContextType = Context, ParentType extends I
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'Purchase' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
@@ -1749,14 +1757,6 @@ export type IPullRequestResolvers<ContextType = Context, ParentType extends IRes
   state?: Resolver<Maybe<IResolversTypes['PullRequestState']>, ParentType, ContextType>;
   title?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-}>;
-
-export type IPurchaseResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Purchase'] = IResolversParentTypes['Purchase']> = ResolversObject<{
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  paymentMethodFilled?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  source?: Resolver<IResolversTypes['PurchaseSource'], ParentType, ContextType>;
-  trialDaysRemaining?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IQueryResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Query'] = IResolversParentTypes['Query']> = ResolversObject<{
@@ -1894,20 +1894,20 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   me?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
-  paymentProvider?: Resolver<Maybe<IResolversTypes['PurchaseSource']>, ParentType, ContextType>;
+  oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
+  paymentProvider?: Resolver<Maybe<IResolversTypes['AccountSubscriptionProvider']>, ParentType, ContextType>;
   pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<ITeamProjectsArgs, 'after' | 'first'>>;
-  purchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
-  purchaseStatus?: Resolver<Maybe<IResolversTypes['PurchaseStatus']>, ParentType, ContextType>;
   screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  subscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
+  subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
   trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
   vercelConfiguration?: Resolver<Maybe<IResolversTypes['VercelConfiguration']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1971,22 +1971,22 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  lastPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
+  lastSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  oldPaidPurchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
-  paymentProvider?: Resolver<Maybe<IResolversTypes['PurchaseSource']>, ParentType, ContextType>;
+  oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
+  paymentProvider?: Resolver<Maybe<IResolversTypes['AccountSubscriptionProvider']>, ParentType, ContextType>;
   pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IUserProjectsArgs, 'after' | 'first'>>;
-  purchase?: Resolver<Maybe<IResolversTypes['Purchase']>, ParentType, ContextType>;
-  purchaseStatus?: Resolver<Maybe<IResolversTypes['PurchaseStatus']>, ParentType, ContextType>;
   screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  subscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
+  subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
   teams?: Resolver<Array<IResolversTypes['Team']>, ParentType, ContextType>;
   trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
   vercelConfiguration?: Resolver<Maybe<IResolversTypes['VercelConfiguration']>, ParentType, ContextType>;
@@ -2078,6 +2078,7 @@ export type IDailyCountResolvers<ContextType = Context, ParentType extends IReso
 export type IResolvers<ContextType = Context> = ResolversObject<{
   Account?: IAccountResolvers<ContextType>;
   AccountAvatar?: IAccountAvatarResolvers<ContextType>;
+  AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
   Build?: IBuildResolvers<ContextType>;
   BuildConnection?: IBuildConnectionResolvers<ContextType>;
   BuildStats?: IBuildStatsResolvers<ContextType>;
@@ -2106,7 +2107,6 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   Project?: IProjectResolvers<ContextType>;
   ProjectConnection?: IProjectConnectionResolvers<ContextType>;
   PullRequest?: IPullRequestResolvers<ContextType>;
-  Purchase?: IPurchaseResolvers<ContextType>;
   Query?: IQueryResolvers<ContextType>;
   RemoveUserFromTeamPayload?: IRemoveUserFromTeamPayloadResolvers<ContextType>;
   Repository?: IRepositoryResolvers<ContextType>;

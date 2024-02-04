@@ -11,20 +11,24 @@ const getStartOfMonth = (date: Date) =>
 const getStartOfPreviousMonth = (date: Date) =>
   new Date(date.getFullYear(), date.getMonth() - 1, 1);
 
-export class Purchase extends Model {
-  static override tableName = "purchases";
+export class Subscription extends Model {
+  static override tableName = "subscriptions";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["accountId", "planId"],
+    required: ["accountId", "planId", "provider", "startDate", "status"],
     properties: {
-      accountId: { type: ["string"] },
       planId: { type: ["string"] },
-      purchaserId: { type: ["string", "null"] },
-      stripeSubscriptionId: { type: ["string", "null"] },
-      source: {
+      provider: {
         type: ["string"],
         enum: ["github", "stripe"],
       },
+      stripeSubscriptionId: { type: ["string", "null"] },
+      accountId: { type: ["string"] },
+      subscriberId: { type: ["string", "null"] },
+      startDate: { type: ["string"] },
+      endDate: { type: ["string", "null"] },
+      trialEndDate: { type: ["string", "null"] },
+      paymentMethodFilled: { type: ["boolean", "null"] },
       status: {
         type: ["string"],
         enum: [
@@ -38,20 +42,16 @@ export class Purchase extends Model {
           "paused",
         ],
       },
-      endDate: { type: ["string", "null"] },
-      startDate: { type: ["string"] },
-      trialEndDate: { type: ["string", "null"] },
-      paymentMethodFilled: { type: ["boolean", "null"] },
     },
   });
 
-  accountId!: string;
   planId!: string;
-  purchaserId!: string | null;
+  provider!: "github" | "stripe";
   stripeSubscriptionId!: string | null;
-  source!: "github" | "stripe";
-  endDate!: string | null;
+  accountId!: string;
+  subscriberId!: string | null;
   startDate!: string;
+  endDate!: string | null;
   trialEndDate!: string | null;
   paymentMethodFilled!: boolean | null;
   status!:
@@ -70,7 +70,7 @@ export class Purchase extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: Account,
         join: {
-          from: "purchases.accountId",
+          from: "subscriptions.accountId",
           to: "accounts.id",
         },
       },
@@ -78,7 +78,7 @@ export class Purchase extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: Plan,
         join: {
-          from: "purchases.planId",
+          from: "subscriptions.planId",
           to: "plans.id",
         },
       },
@@ -90,17 +90,17 @@ export class Purchase extends Model {
 
   getLastResetDate(now = new Date()) {
     const startOfMonth = getStartOfMonth(now);
-    const purchaseDate = new Date(this.startDate);
-    const timeInMonth = now.getTime() - startOfMonth.getTime();
-    const purchaseTimeInMonth =
-      purchaseDate.getTime() - getStartOfMonth(purchaseDate).getTime();
-    const billingHasResetThisMonth = timeInMonth > purchaseTimeInMonth;
+    const startDate = new Date(this.startDate);
+    const monthDuration = now.getTime() - startOfMonth.getTime();
+    const monthSubscriptionDuration =
+      startDate.getTime() - getStartOfMonth(startDate).getTime();
+    const billingHasResetThisMonth = monthDuration > monthSubscriptionDuration;
 
     return billingHasResetThisMonth
-      ? new Date(startOfMonth.getTime() + purchaseTimeInMonth)
+      ? new Date(startOfMonth.getTime() + monthSubscriptionDuration)
       : new Date(
           Math.min(
-            getStartOfPreviousMonth(now).getTime() + purchaseTimeInMonth,
+            getStartOfPreviousMonth(now).getTime() + monthSubscriptionDuration,
             startOfMonth.getTime(), // end of previous month
           ),
         );
