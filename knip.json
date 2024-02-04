@@ -12,7 +12,8 @@
       "ignoreDependencies": ["pg"]
     },
     "apps/frontend": {
-      "ignore": ["src/gql/**/*"]
+      "ignore": ["src/gql/**/*"],
+      "ignoreDependencies": ["@radix-ui/colors"]
     },
     "apps/transactional": {
       "entry": ["emails/*.tsx"]
