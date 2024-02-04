@@ -32,9 +32,9 @@ export const typeDefs = gql`
     stripeCustomerId: String
     stripeClientReferenceId: String!
     hasPaidPlan: Boolean!
-    consumptionRatio: Float
-    currentMonthUsedScreenshots: Int!
-    includedScreenshots: Int
+    consumptionRatio: Float!
+    currentPeriodScreenshots: Int!
+    includedScreenshots: Int!
     slug: String!
     name: String
     periodStartDate: DateTime

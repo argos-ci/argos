@@ -27,15 +27,15 @@ export type Scalars = {
 
 export type IAccount = {
   avatar: IAccountAvatar;
-  consumptionRatio?: Maybe<Scalars['Float']['output']>;
-  currentMonthUsedScreenshots: Scalars['Int']['output'];
+  consumptionRatio: Scalars['Float']['output'];
+  currentPeriodScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<IGithubAccount>;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
   hasForcedPlan: Scalars['Boolean']['output'];
   hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  includedScreenshots?: Maybe<Scalars['Int']['output']>;
+  includedScreenshots: Scalars['Int']['output'];
   name?: Maybe<Scalars['String']['output']>;
   paymentProvider?: Maybe<IAccountSubscriptionProvider>;
   pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
@@ -561,8 +561,8 @@ export enum IPermission {
 export type IPlan = INode & {
   __typename?: 'Plan';
   id: Scalars['ID']['output'];
-  includedScreenshots: Scalars['Int']['output'];
   name: Scalars['String']['output'];
+  usageBased: Scalars['Boolean']['output'];
 };
 
 export type IProject = INode & {
@@ -578,7 +578,7 @@ export type IProject = INode & {
   /** Builds associated to the repository */
   builds: IBuildConnection;
   /** Current month used screenshots */
-  currentMonthUsedScreenshots: Scalars['Int']['output'];
+  currentPeriodScreenshots: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
   /** Latest build */
   latestBuild?: Maybe<IBuild>;
@@ -894,15 +894,15 @@ export enum ISummaryCheck {
 export type ITeam = IAccount & INode & {
   __typename?: 'Team';
   avatar: IAccountAvatar;
-  consumptionRatio?: Maybe<Scalars['Float']['output']>;
-  currentMonthUsedScreenshots: Scalars['Int']['output'];
+  consumptionRatio: Scalars['Float']['output'];
+  currentPeriodScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<IGithubAccount>;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
   hasForcedPlan: Scalars['Boolean']['output'];
   hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  includedScreenshots?: Maybe<Scalars['Int']['output']>;
+  includedScreenshots: Scalars['Int']['output'];
   inviteLink: Scalars['String']['output'];
   me?: Maybe<ITeamMember>;
   members: ITeamMemberConnection;
@@ -1037,8 +1037,8 @@ export type IUpdatedTestStatuses = {
 export type IUser = IAccount & INode & {
   __typename?: 'User';
   avatar: IAccountAvatar;
-  consumptionRatio?: Maybe<Scalars['Float']['output']>;
-  currentMonthUsedScreenshots: Scalars['Int']['output'];
+  consumptionRatio: Scalars['Float']['output'];
+  currentPeriodScreenshots: Scalars['Int']['output'];
   ghAccount?: Maybe<IGithubAccount>;
   ghInstallations: IGhApiInstallationConnection;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
@@ -1047,7 +1047,7 @@ export type IUser = IAccount & INode & {
   hasPaidPlan: Scalars['Boolean']['output'];
   hasSubscribedToTrial: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  includedScreenshots?: Maybe<Scalars['Int']['output']>;
+  includedScreenshots: Scalars['Int']['output'];
   lastSubscription?: Maybe<IAccountSubscription>;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidSubscription?: Maybe<IAccountSubscription>;
@@ -1460,15 +1460,15 @@ export type IResolversParentTypes = ResolversObject<{
 export type IAccountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Account'] = IResolversParentTypes['Account']> = ResolversObject<{
   __resolveType: TypeResolveFn<'Team' | 'User', ParentType, ContextType>;
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
-  consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
-  currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
+  currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  includedScreenshots?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   paymentProvider?: Resolver<Maybe<IResolversTypes['AccountSubscriptionProvider']>, ParentType, ContextType>;
   pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
@@ -1708,8 +1708,8 @@ export type IPageInfoResolvers<ContextType = Context, ParentType extends IResolv
 
 export type IPlanResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Plan'] = IResolversParentTypes['Plan']> = ResolversObject<{
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  usageBased?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1719,7 +1719,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   build?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType, RequireFields<IProjectBuildArgs, 'number'>>;
   buildNames?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
   builds?: Resolver<IResolversTypes['BuildConnection'], ParentType, ContextType, RequireFields<IProjectBuildsArgs, 'after' | 'first'>>;
-  currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   latestBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   latestReferenceBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
@@ -1882,15 +1882,15 @@ export type IScreenshotMetadataViewportResolvers<ContextType = Context, ParentTy
 
 export type ITeamResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Team'] = IResolversParentTypes['Team']> = ResolversObject<{
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
-  consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
-  currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
+  currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  includedScreenshots?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   inviteLink?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   me?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
@@ -1961,8 +1961,8 @@ export type IUpdatedTestStatusesResolvers<ContextType = Context, ParentType exte
 
 export type IUserResolvers<ContextType = Context, ParentType extends IResolversParentTypes['User'] = IResolversParentTypes['User']> = ResolversObject<{
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
-  consumptionRatio?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
-  currentMonthUsedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
+  currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   ghInstallations?: Resolver<IResolversTypes['GhApiInstallationConnection'], ParentType, ContextType>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -1971,7 +1971,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  includedScreenshots?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   lastSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;

@@ -21,18 +21,6 @@ export class Plan extends Model {
   stripeProductId!: string;
   usageBased!: boolean;
 
-  static getIncludedScreenshotsForPlan(plan: Plan | null) {
-    if (!plan) {
-      return 0;
-    }
-
-    if (plan.usageBased) {
-      return null;
-    }
-
-    return plan.includedScreenshots;
-  }
-
   static async getFreePlan(): Promise<Plan | null> {
     const plan = await Plan.query().findOne({ name: "free" });
     return plan ?? null;

@@ -28,8 +28,9 @@ type AccountSubscriptionManager = {
   getCurrentPeriodStartDate(): Promise<Date>;
   getCurrentPeriodEndDate(): Promise<Date>;
   getCurrentPeriodScreenshots(): Promise<number>;
-  getCurrentPeriodConsumptionRatio(): Promise<number | null>;
+  getCurrentPeriodConsumptionRatio(): Promise<number>;
   checkIsOutOfCapacity(): Promise<boolean>;
+  getIncludedScreenshots(): Promise<number>;
 };
 
 export class Account extends Model {
@@ -249,15 +250,26 @@ export class Account extends Model {
       return Boolean(plan?.usageBased);
     });
 
-    const getCurrentPeriodConsumptionRatio = memoize(async () => {
-      const [plan, screenshotsCount] = await Promise.all([
+    const getIncludedScreenshots = memoize(async () => {
+      const [plan, subscription] = await Promise.all([
         getPlan(),
-        getCurrentPeriodScreenshots(),
+        getActiveSubscription(),
       ]);
-      const includedScreenshots = Plan.getIncludedScreenshotsForPlan(plan);
-      if (includedScreenshots === null) {
-        return null;
+      return (
+        subscription?.includedScreenshots ?? plan?.includedScreenshots ?? 0
+      );
+    });
+
+    const getCurrentPeriodConsumptionRatio = memoize(async () => {
+      const [screenshotsCount, includedScreenshots] = await Promise.all([
+        getCurrentPeriodScreenshots(),
+        getIncludedScreenshots(),
+      ]);
+
+      if (includedScreenshots === 0) {
+        return 1;
       }
+
       return screenshotsCount / includedScreenshots;
     });
 
@@ -283,6 +295,7 @@ export class Account extends Model {
       getCurrentPeriodScreenshots,
       getCurrentPeriodConsumptionRatio,
       checkIsOutOfCapacity,
+      getIncludedScreenshots,
     };
 
     return this._cachedSubscriptionManager;

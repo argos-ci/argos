@@ -4,12 +4,7 @@ import type { PartialModelObject } from "objection";
 import axios from "axios";
 
 import { knex } from "@/database/index.js";
-import {
-  Account,
-  Plan,
-  Project,
-  Subscription,
-} from "@/database/models/index.js";
+import { Account, Project, Subscription } from "@/database/models/index.js";
 import {
   encodeStripeClientReferenceId,
   terminateStripeTrial,
@@ -77,9 +72,9 @@ export const typeDefs = gql`
     stripeCustomerId: String
     stripeClientReferenceId: String!
     hasPaidPlan: Boolean!
-    consumptionRatio: Float
-    currentMonthUsedScreenshots: Int!
-    includedScreenshots: Int
+    consumptionRatio: Float!
+    currentPeriodScreenshots: Int!
+    includedScreenshots: Int!
     slug: String!
     name: String
     plan: Plan
@@ -201,9 +196,13 @@ export const resolvers: IResolvers = {
       const manager = account.$getSubscriptionManager();
       return manager.getCurrentPeriodConsumptionRatio();
     },
-    currentMonthUsedScreenshots: async (account) => {
+    currentPeriodScreenshots: async (account) => {
       const manager = account.$getSubscriptionManager();
       return manager.getCurrentPeriodScreenshots();
+    },
+    includedScreenshots: async (account) => {
+      const manager = account.$getSubscriptionManager();
+      return manager.getIncludedScreenshots();
     },
     periodStartDate: async (account) => {
       const manager = account.$getSubscriptionManager();
@@ -290,11 +289,6 @@ export const resolvers: IResolvers = {
     plan: async (account) => {
       const manager = account.$getSubscriptionManager();
       return manager.getPlan();
-    },
-    includedScreenshots: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      const plan = await manager.getPlan();
-      return Plan.getIncludedScreenshotsForPlan(plan);
     },
     permissions: async (account, _args, ctx) => {
       if (!ctx.auth) {

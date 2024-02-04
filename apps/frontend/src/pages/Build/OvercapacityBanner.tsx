@@ -12,6 +12,7 @@ const AccountFragment = graphql(`
     plan {
       id
       name
+      usageBased
     }
     consumptionRatio
   }
@@ -25,10 +26,7 @@ export const OvercapacityBanner = memo(
     const { accountSlug } = props;
     const account = useFragment(AccountFragment, props.account);
     const { plan, consumptionRatio } = account;
-    const visible =
-      plan && typeof consumptionRatio === "number" && consumptionRatio >= 0.9;
-
-    if (!visible) {
+    if (!plan?.usageBased) {
       return null;
     }
 
