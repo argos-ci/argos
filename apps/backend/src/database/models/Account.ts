@@ -176,7 +176,7 @@ export class Account extends Model {
           query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate"),
         )
         .withGraphJoined("plan")
-        .orderBy("plan.screenshotsLimitPerMonth", "DESC")
+        .orderBy("plan.includedScreenshots", "DESC")
         .first();
 
       return subscription ?? null;
@@ -254,11 +254,11 @@ export class Account extends Model {
         getPlan(),
         getCurrentPeriodScreenshots(),
       ]);
-      const monthlyLimit = Plan.getScreenshotMonthlyLimitForPlan(plan);
-      if (monthlyLimit === null) {
+      const includedScreenshots = Plan.getIncludedScreenshotsForPlan(plan);
+      if (includedScreenshots === null) {
         return null;
       }
-      return screenshotsCount / monthlyLimit;
+      return screenshotsCount / includedScreenshots;
     });
 
     const checkIsOutOfCapacity = memoize(async () => {

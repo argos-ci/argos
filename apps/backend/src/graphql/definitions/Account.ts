@@ -79,7 +79,7 @@ export const typeDefs = gql`
     hasPaidPlan: Boolean!
     consumptionRatio: Float
     currentMonthUsedScreenshots: Int!
-    screenshotsLimitPerMonth: Int
+    includedScreenshots: Int
     slug: String!
     name: String
     plan: Plan
@@ -291,10 +291,10 @@ export const resolvers: IResolvers = {
       const manager = account.$getSubscriptionManager();
       return manager.getPlan();
     },
-    screenshotsLimitPerMonth: async (account) => {
+    includedScreenshots: async (account) => {
       const manager = account.$getSubscriptionManager();
       const plan = await manager.getPlan();
-      return Plan.getScreenshotMonthlyLimitForPlan(plan);
+      return Plan.getIncludedScreenshotsForPlan(plan);
     },
     permissions: async (account, _args, ctx) => {
       if (!ctx.auth) {

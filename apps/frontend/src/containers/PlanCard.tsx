@@ -76,7 +76,7 @@ const PlanCardFragment = graphql(`
     plan {
       id
       name
-      screenshotsLimitPerMonth
+      includedScreenshots
     }
 
     subscription {
@@ -352,10 +352,10 @@ const PlanStatusDescription = ({
 
 const ConsumptionBlock = ({
   projects,
-  screenshotsLimitPerMonth,
+  includedScreenshots,
 }: {
   projects: Project[];
-  screenshotsLimitPerMonth: number;
+  includedScreenshots: number;
 }) => {
   const disclosure = useDisclosureState({ defaultOpen: false });
   const screenshotsSum = projects.reduce(
@@ -373,14 +373,10 @@ const ConsumptionBlock = ({
             {screenshotsSum > 1 ? "screenshots" : "screenshot"}
           </div>
           <div className="text-low">
-            / {screenshotsLimitPerMonth.toLocaleString()}
+            / {includedScreenshots.toLocaleString()}
           </div>
         </div>
-        <Progress
-          value={screenshotsSum}
-          max={screenshotsLimitPerMonth}
-          min={0}
-        />
+        <Progress value={screenshotsSum} max={includedScreenshots} min={0} />
       </div>
 
       <Disclosure
@@ -550,7 +546,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
             <div className="mt-4">
               <ConsumptionBlock
                 projects={projects.edges}
-                screenshotsLimitPerMonth={plan.screenshotsLimitPerMonth}
+                includedScreenshots={plan.includedScreenshots}
               />
             </div>
           </>

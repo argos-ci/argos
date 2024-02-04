@@ -35,6 +35,7 @@ export type IAccount = {
   hasForcedPlan: Scalars['Boolean']['output'];
   hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
+  includedScreenshots?: Maybe<Scalars['Int']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   paymentProvider?: Maybe<IAccountSubscriptionProvider>;
   pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
@@ -43,7 +44,6 @@ export type IAccount = {
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
-  screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
   slug: Scalars['String']['output'];
   stripeClientReferenceId: Scalars['String']['output'];
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
@@ -561,8 +561,8 @@ export enum IPermission {
 export type IPlan = INode & {
   __typename?: 'Plan';
   id: Scalars['ID']['output'];
+  includedScreenshots: Scalars['Int']['output'];
   name: Scalars['String']['output'];
-  screenshotsLimitPerMonth: Scalars['Int']['output'];
 };
 
 export type IProject = INode & {
@@ -902,6 +902,7 @@ export type ITeam = IAccount & INode & {
   hasForcedPlan: Scalars['Boolean']['output'];
   hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
+  includedScreenshots?: Maybe<Scalars['Int']['output']>;
   inviteLink: Scalars['String']['output'];
   me?: Maybe<ITeamMember>;
   members: ITeamMemberConnection;
@@ -914,7 +915,6 @@ export type ITeam = IAccount & INode & {
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
-  screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
   slug: Scalars['String']['output'];
   stripeClientReferenceId: Scalars['String']['output'];
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
@@ -1047,6 +1047,7 @@ export type IUser = IAccount & INode & {
   hasPaidPlan: Scalars['Boolean']['output'];
   hasSubscribedToTrial: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
+  includedScreenshots?: Maybe<Scalars['Int']['output']>;
   lastSubscription?: Maybe<IAccountSubscription>;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidSubscription?: Maybe<IAccountSubscription>;
@@ -1057,7 +1058,6 @@ export type IUser = IAccount & INode & {
   permissions: Array<IPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
-  screenshotsLimitPerMonth?: Maybe<Scalars['Int']['output']>;
   slug: Scalars['String']['output'];
   stripeClientReferenceId: Scalars['String']['output'];
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
@@ -1468,6 +1468,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  includedScreenshots?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   paymentProvider?: Resolver<Maybe<IResolversTypes['AccountSubscriptionProvider']>, ParentType, ContextType>;
   pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
@@ -1476,7 +1477,6 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IAccountProjectsArgs, 'after' | 'first'>>;
-  screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -1708,8 +1708,8 @@ export type IPageInfoResolvers<ContextType = Context, ParentType extends IResolv
 
 export type IPlanResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Plan'] = IResolversParentTypes['Plan']> = ResolversObject<{
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  screenshotsLimitPerMonth?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1890,6 +1890,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  includedScreenshots?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   inviteLink?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   me?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
@@ -1902,7 +1903,6 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<ITeamProjectsArgs, 'after' | 'first'>>;
-  screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -1971,6 +1971,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  includedScreenshots?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   lastSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
@@ -1981,7 +1982,6 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IUserProjectsArgs, 'after' | 'first'>>;
-  screenshotsLimitPerMonth?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;

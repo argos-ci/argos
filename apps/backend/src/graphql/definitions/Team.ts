@@ -34,7 +34,7 @@ export const typeDefs = gql`
     hasPaidPlan: Boolean!
     consumptionRatio: Float
     currentMonthUsedScreenshots: Int!
-    screenshotsLimitPerMonth: Int
+    includedScreenshots: Int
     slug: String!
     name: String
     periodStartDate: DateTime
