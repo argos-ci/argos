@@ -6,6 +6,12 @@ module.exports = {
   darkMode: "class",
   theme: {
     extend: {
+      colors: {
+        progress: {
+          from: "var(--violet-8)",
+          to: "var(--violet-10)",
+        },
+      },
       backgroundColor: {
         app: "var(--mauve-1)",
         subtle: "var(--mauve-2)",
