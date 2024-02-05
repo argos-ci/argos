@@ -1,6 +1,8 @@
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 
+const FREE_PLAN_NAME = "free";
+
 export class Plan extends Model {
   static override tableName = "plans";
 
@@ -22,11 +24,11 @@ export class Plan extends Model {
   usageBased!: boolean;
 
   static async getFreePlan(): Promise<Plan | null> {
-    const plan = await Plan.query().findOne({ name: "free" });
+    const plan = await Plan.query().findOne({ name: FREE_PLAN_NAME });
     return plan ?? null;
   }
 
-  static checkIsFreePlan(plan: Plan | null) {
-    return !plan || plan?.name === "free";
+  static checkIsFreePlan(plan: Plan) {
+    return plan.name === FREE_PLAN_NAME;
   }
 }

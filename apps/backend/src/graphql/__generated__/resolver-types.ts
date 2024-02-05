@@ -93,8 +93,6 @@ export enum IAccountSubscriptionStatus {
   Incomplete = 'incomplete',
   /** Incomplete expired */
   IncompleteExpired = 'incomplete_expired',
-  /** No paid subscription */
-  Missing = 'missing',
   /** Payment due */
   PastDue = 'past_due',
   /** Paused */

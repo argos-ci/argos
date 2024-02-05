@@ -22,7 +22,6 @@ export type AccountAvatar = {
 type AccountSubscriptionManager = {
   getActiveSubscription(): Promise<Subscription | null>;
   getPlan(): Promise<Plan | null>;
-  checkIsFreePlan(): Promise<boolean>;
   checkIsTrialing(): Promise<boolean>;
   checkIsUsageBasedPlan(): Promise<boolean>;
   getCurrentPeriodStartDate(): Promise<Date>;
@@ -173,6 +172,7 @@ export class Account extends Model {
       const subscription = await Subscription.query()
         .where("accountId", this.id)
         .whereRaw("?? < now()", "startDate")
+        .whereNot("status", "canceled")
         .where((query) =>
           query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate"),
         )
@@ -188,11 +188,11 @@ export class Account extends Model {
         const plan = await Plan.query().findById(this.forcedPlanId);
         return plan ?? null;
       }
-      const subscription = await getActiveSubscription();
-      if (subscription) {
-        return subscription.plan ?? null;
+      if (this.userId) {
+        return Plan.getFreePlan();
       }
-      return Plan.getFreePlan();
+      const subscription = await getActiveSubscription();
+      return subscription?.plan ?? null;
     });
 
     const getCurrentPeriodStartDate = memoize(async () => {
@@ -233,11 +233,6 @@ export class Account extends Model {
     const getCurrentPeriodScreenshots = memoize(async () => {
       const startDate = await getCurrentPeriodStartDate();
       return this.$getScreenshotCountFromDate(startDate.toISOString());
-    });
-
-    const checkIsFreePlan = memoize(async () => {
-      const plan = await getPlan();
-      return Plan.checkIsFreePlan(plan);
     });
 
     const checkIsTrialing = memoize(async () => {
@@ -290,7 +285,6 @@ export class Account extends Model {
     this._cachedSubscriptionManager = {
       getActiveSubscription,
       getPlan,
-      checkIsFreePlan,
       checkIsTrialing,
       checkIsUsageBasedPlan,
       getCurrentPeriodStartDate,

@@ -3,8 +3,12 @@ import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 import axios from "axios";
 
-import { knex } from "@/database/index.js";
-import { Account, Project, Subscription } from "@/database/models/index.js";
+import {
+  Account,
+  Plan,
+  Project,
+  Subscription,
+} from "@/database/models/index.js";
 import {
   encodeStripeClientReferenceId,
   terminateStripeTrial,
@@ -44,8 +48,6 @@ export const typeDefs = gql`
     active
     "Ongoing trial"
     trialing
-    "No paid subscription"
-    missing
     "Payment due"
     past_due
     "Post-cancelation date"
@@ -189,8 +191,8 @@ export const resolvers: IResolvers = {
     },
     hasPaidPlan: async (account) => {
       const manager = account.$getSubscriptionManager();
-      const free = await manager.checkIsFreePlan();
-      return !free;
+      const plan = await manager.getPlan();
+      return Boolean(plan && !Plan.checkIsFreePlan(plan));
     },
     consumptionRatio: async (account) => {
       const manager = account.$getSubscriptionManager();
@@ -220,6 +222,7 @@ export const resolvers: IResolvers = {
       if (account.forcedPlanId !== null) {
         return IAccountSubscriptionStatus.Active;
       }
+
       if (account.type === "user") {
         return null;
       }
@@ -231,23 +234,7 @@ export const resolvers: IResolvers = {
         return subscription.status as IAccountSubscriptionStatus;
       }
 
-      const hasOldPaidSubscription =
-        (await Subscription.query()
-          .where("accountId", account.id)
-          .whereNot({ name: "free" })
-          .whereRaw("?? < now()", "endDate")
-          .where("endDate", "<>", knex.ref("trialEndDate"))
-          .joinRelated("plan")
-          .orderBy("endDate", "DESC")
-          .limit(1)
-          .resultSize()) > 0;
-
-      if (hasOldPaidSubscription) {
-        return IAccountSubscriptionStatus.Canceled;
-      }
-
-      // No paid subscription
-      return IAccountSubscriptionStatus.Missing;
+      return IAccountSubscriptionStatus.Canceled;
     },
     trialStatus: async (account) => {
       if (account.type === "user") {

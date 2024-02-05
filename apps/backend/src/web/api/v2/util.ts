@@ -80,14 +80,14 @@ const createBuild = async (params: {
   }
 
   const manager = account.$getSubscriptionManager();
-  const [isFreePlan, outOfCapacity] = await Promise.all([
-    manager.checkIsFreePlan(),
+  const [activeSubscription, outOfCapacity] = await Promise.all([
+    manager.getActiveSubscription(),
     manager.checkIsOutOfCapacity(),
   ]);
-  if (account.type === "team" && isFreePlan) {
+  if (account.type === "team" && !activeSubscription) {
     throw new HttpError(
       402,
-      `Build rejected: upgrade to Pro to use Team features.`,
+      `Build rejected: subscribe to a Pro plan to use Team features.`,
     );
   }
 
