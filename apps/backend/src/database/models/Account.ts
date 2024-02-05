@@ -173,6 +173,7 @@ export class Account extends Model {
       const subscription = await Subscription.query()
         .where("accountId", this.id)
         .whereRaw("?? < now()", "startDate")
+        .whereNot("status", "canceled")
         .where((query) =>
           query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate"),
         )
