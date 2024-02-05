@@ -192,17 +192,10 @@ const PlanStatus = ({
   }
 
   switch (subscriptionStatus) {
-    case AccountSubscriptionStatus.Missing:
-      return (
-        <>
-          Your team has no paid plan. <PricingLinks />
-        </>
-      );
-
     case AccountSubscriptionStatus.Canceled:
       return (
         <>
-          Your plan has been cancelled. <PricingLinks />
+          No plan. <PricingLinks />
         </>
       );
 
@@ -325,7 +318,6 @@ const PlanStatusDescription = ({
       );
     }
 
-    case AccountSubscriptionStatus.Missing:
     case AccountSubscriptionStatus.Canceled: {
       return trialStatus === TrialStatus.Expired ? (
         <Paragraph>Subscribe to Pro plan to use team features.</Paragraph>
@@ -518,8 +510,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
 
   const isTeam = Boolean(account.subscriptionStatus);
   const showUpgradeButton =
-    account.subscriptionStatus === AccountSubscriptionStatus.Canceled ||
-    account.subscriptionStatus === AccountSubscriptionStatus.Missing;
+    account.subscriptionStatus === AccountSubscriptionStatus.Canceled;
 
   return (
     <Card>

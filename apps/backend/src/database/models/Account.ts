@@ -189,6 +189,9 @@ export class Account extends Model {
         const plan = await Plan.query().findById(this.forcedPlanId);
         return plan ?? null;
       }
+      if (this.userId) {
+        return Plan.getFreePlan();
+      }
       const subscription = await getActiveSubscription();
       if (subscription) {
         return subscription.plan ?? null;

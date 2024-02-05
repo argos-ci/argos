@@ -119,7 +119,6 @@ const getTeamBannerProps = ({
       };
 
     case AccountSubscriptionStatus.Canceled:
-    case AccountSubscriptionStatus.Missing:
       return {
         bannerColor: "danger",
         message: "Upgrade to Pro plan to use team features.",
