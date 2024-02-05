@@ -184,10 +184,10 @@ describe("Account", () => {
     });
 
     describe("without subscription", () => {
-      it("with free plan in database returns free plan", async () => {
+      it("without plan it returns null", async () => {
         const manager = account.$getSubscriptionManager();
         const plan = await manager.getPlan();
-        expect(plan!.id).toBe(plans[0]!.id);
+        expect(plan).toBe(null);
       });
 
       it("with forced plan returns forced plan", async () => {

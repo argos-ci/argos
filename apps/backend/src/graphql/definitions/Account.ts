@@ -3,7 +3,12 @@ import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 import axios from "axios";
 
-import { Account, Project, Subscription } from "@/database/models/index.js";
+import {
+  Account,
+  Plan,
+  Project,
+  Subscription,
+} from "@/database/models/index.js";
 import {
   encodeStripeClientReferenceId,
   terminateStripeTrial,
@@ -186,8 +191,8 @@ export const resolvers: IResolvers = {
     },
     hasPaidPlan: async (account) => {
       const manager = account.$getSubscriptionManager();
-      const free = await manager.checkIsFreePlan();
-      return !free;
+      const plan = await manager.getPlan();
+      return Boolean(plan && !Plan.checkIsFreePlan(plan));
     },
     consumptionRatio: async (account) => {
       const manager = account.$getSubscriptionManager();

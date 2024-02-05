@@ -117,7 +117,7 @@ export const AccountSettings = () => {
                   return null;
                 })()}
               {/* <AccountVercel account={account} /> */}
-              {writable && account.plan && <PlanCard account={account} />}
+              {writable && <PlanCard account={account} />}
               {isTeam && <TeamMembers team={account} />}
               <AccountGitLab account={account} />
               {isTeam && writable && <TeamDelete team={account} />}

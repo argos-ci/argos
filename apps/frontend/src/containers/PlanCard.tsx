@@ -63,6 +63,7 @@ const TerminateTrialMutation = graphql(`
 
 const PlanCardFragment = graphql(`
   fragment PlanCard_Account on Account {
+    __typename
     id
     stripeCustomerId
     periodStartDate
@@ -508,7 +509,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
     },
   );
 
-  const isTeam = Boolean(account.subscriptionStatus);
+  const isTeam = account.__typename === "Team";
   const showUpgradeButton =
     account.subscriptionStatus === AccountSubscriptionStatus.Canceled;
 

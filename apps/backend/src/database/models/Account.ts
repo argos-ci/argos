@@ -22,7 +22,6 @@ export type AccountAvatar = {
 type AccountSubscriptionManager = {
   getActiveSubscription(): Promise<Subscription | null>;
   getPlan(): Promise<Plan | null>;
-  checkIsFreePlan(): Promise<boolean>;
   checkIsTrialing(): Promise<boolean>;
   checkIsUsageBasedPlan(): Promise<boolean>;
   getCurrentPeriodStartDate(): Promise<Date>;
@@ -193,10 +192,7 @@ export class Account extends Model {
         return Plan.getFreePlan();
       }
       const subscription = await getActiveSubscription();
-      if (subscription) {
-        return subscription.plan ?? null;
-      }
-      return Plan.getFreePlan();
+      return subscription?.plan ?? null;
     });
 
     const getCurrentPeriodStartDate = memoize(async () => {
@@ -237,11 +233,6 @@ export class Account extends Model {
     const getCurrentPeriodScreenshots = memoize(async () => {
       const startDate = await getCurrentPeriodStartDate();
       return this.$getScreenshotCountFromDate(startDate.toISOString());
-    });
-
-    const checkIsFreePlan = memoize(async () => {
-      const plan = await getPlan();
-      return Plan.checkIsFreePlan(plan);
     });
 
     const checkIsTrialing = memoize(async () => {
@@ -294,7 +285,6 @@ export class Account extends Model {
     this._cachedSubscriptionManager = {
       getActiveSubscription,
       getPlan,
-      checkIsFreePlan,
       checkIsTrialing,
       checkIsUsageBasedPlan,
       getCurrentPeriodStartDate,
