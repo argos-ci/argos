@@ -134,7 +134,7 @@ const ReviewQuery = graphql(`
       ...ProjectTransfer_Account
       plan {
         id
-        name
+        displayName
       }
     }
 
@@ -143,7 +143,7 @@ const ReviewQuery = graphql(`
       ...ProjectTransfer_Account
       plan {
         id
-        name
+        displayName
       }
     }
   }
@@ -292,7 +292,7 @@ const ReviewStep = (props: ReviewStepProps) => {
                       <strong>
                         Both accounts are on the same plan
                         {data.actualAccount.plan
-                          ? ` (${data.actualAccount.plan.name})`
+                          ? ` (${data.actualAccount.plan.displayName})`
                           : ""}
                         .
                       </strong>{" "}
@@ -302,9 +302,10 @@ const ReviewStep = (props: ReviewStepProps) => {
                   ) : (
                     <DialogText>
                       The project is actually on the plan{" "}
-                      {data.actualAccount.plan?.name}. The project will be
-                      transfered to the target account and the plan will be
-                      changed to {data.targetAccount.plan?.name}. .
+                      {data.actualAccount.plan?.displayName ?? `"no plan"`}. The
+                      project will be transfered to the target account and the
+                      plan will be changed to{" "}
+                      {data.targetAccount.plan?.displayName ?? `"no plan"`}.
                     </DialogText>
                   )}
                 </>

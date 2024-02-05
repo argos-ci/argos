@@ -12,6 +12,7 @@ import {
   ScreenshotBucket,
 } from "@/database/models/index.js";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
+import { assertUnreachable } from "@/util/unreachable.js";
 
 export const getBuildName = (name: string | undefined | null) =>
   name || "default";
@@ -80,7 +81,7 @@ const createBuild = async (params: {
   }
 
   const manager = account.$getSubscriptionManager();
-  const [plan, outOfCapacity] = await Promise.all([
+  const [plan, outOfCapacityReason] = await Promise.all([
     manager.getPlan(),
     manager.checkIsOutOfCapacity(),
   ]);
@@ -92,11 +93,22 @@ const createBuild = async (params: {
     );
   }
 
-  if (outOfCapacity) {
-    throw new HttpError(
-      402,
-      `Build rejected for insufficient credit. Please upgrade your Plan.`,
-    );
+  switch (outOfCapacityReason) {
+    case null: {
+      break;
+    }
+    case "trialing":
+      throw new HttpError(
+        402,
+        `You have reached the maximum screenshot capacity of your ${plan ? `${plan.displayName} Plan` : "Plan"} trial. Please upgrade your Plan.`,
+      );
+    case "flat-rate":
+      throw new HttpError(
+        402,
+        `You have reached the maximum screenshot capacity included in your ${plan ? `${plan.displayName} Plan` : "Plan"}. Please upgrade your Plan.`,
+      );
+    default:
+      assertUnreachable(outOfCapacityReason);
   }
 
   const buildName = params.buildName || "default";

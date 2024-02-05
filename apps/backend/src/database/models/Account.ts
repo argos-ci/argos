@@ -28,7 +28,7 @@ type AccountSubscriptionManager = {
   getCurrentPeriodEndDate(): Promise<Date>;
   getCurrentPeriodScreenshots(): Promise<number>;
   getCurrentPeriodConsumptionRatio(): Promise<number>;
-  checkIsOutOfCapacity(): Promise<boolean>;
+  checkIsOutOfCapacity(): Promise<"flat-rate" | "trialing" | null>;
   getIncludedScreenshots(): Promise<number>;
 };
 
@@ -269,17 +269,31 @@ export class Account extends Model {
     });
 
     const checkIsOutOfCapacity = memoize(async () => {
-      const [usageBased, trialing, consumptionRatio] = await Promise.all([
-        checkIsUsageBasedPlan(),
-        checkIsTrialing(),
-        getCurrentPeriodConsumptionRatio(),
-      ]);
-      // If the plan is usage based, and the user is not trialing
-      // then we are never out of capacity
-      if (usageBased && !trialing) {
-        return false;
+      const [usageBased, trialing, consumptionRatio, activeSubscription] =
+        await Promise.all([
+          checkIsUsageBasedPlan(),
+          checkIsTrialing(),
+          getCurrentPeriodConsumptionRatio(),
+          getActiveSubscription(),
+        ]);
+
+      if (usageBased) {
+        if (trialing) {
+          invariant(activeSubscription);
+          // If trialing and a payment method is filled
+          // then we allow the user to go over capacity
+          if (activeSubscription.paymentMethodFilled) {
+            return null;
+          }
+          // If trialing and a payment method is not filled
+          // then we don't allow the user to go over capacity
+          return consumptionRatio > 1 ? "trialing" : null;
+        }
+        // If the plan is usage based, and the user is not trialing
+        // then we are never out of capacity
+        return null;
       }
-      return consumptionRatio >= 1.1;
+      return consumptionRatio > 1.1 ? "flat-rate" : null;
     });
 
     this._cachedSubscriptionManager = {

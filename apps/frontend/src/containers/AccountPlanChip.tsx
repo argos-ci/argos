@@ -7,7 +7,7 @@ const AccountFragment = graphql(`
     subscriptionStatus
     plan {
       id
-      name
+      displayName
     }
   }
 `);
@@ -21,7 +21,7 @@ export const AccountPlanChip = (props: {
     switch (account.subscriptionStatus) {
       case AccountSubscriptionStatus.Active:
         return account.plan
-          ? { color: "info", children: account.plan.name }
+          ? { color: "info", children: account.plan.displayName }
           : null;
       case AccountSubscriptionStatus.Trialing:
         return { color: "info", children: "Trial" };

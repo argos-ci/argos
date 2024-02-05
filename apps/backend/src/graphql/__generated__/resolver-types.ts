@@ -558,8 +558,8 @@ export enum IPermission {
 
 export type IPlan = INode & {
   __typename?: 'Plan';
+  displayName: Scalars['String']['output'];
   id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
   usageBased: Scalars['Boolean']['output'];
 };
 
@@ -1705,8 +1705,8 @@ export type IPageInfoResolvers<ContextType = Context, ParentType extends IResolv
 }>;
 
 export type IPlanResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Plan'] = IResolversParentTypes['Plan']> = ResolversObject<{
+  displayName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   usageBased?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

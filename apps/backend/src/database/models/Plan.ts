@@ -1,3 +1,4 @@
+import { firstUpper } from "@/util/string.js";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 
@@ -22,6 +23,12 @@ export class Plan extends Model {
   githubPlanId!: number;
   stripeProductId!: string;
   usageBased!: boolean;
+
+  static override virtualAttributes = ["displayName"];
+
+  get displayName() {
+    return firstUpper(this.name);
+  }
 
   static async getFreePlan(): Promise<Plan | null> {
     const plan = await Plan.query().findOne({ name: FREE_PLAN_NAME });
