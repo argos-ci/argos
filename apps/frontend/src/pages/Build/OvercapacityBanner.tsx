@@ -11,7 +11,7 @@ const AccountFragment = graphql(`
   fragment OvercapacityBanner_Account on Account {
     plan {
       id
-      name
+      displayName
       usageBased
     }
     consumptionRatio
@@ -39,7 +39,7 @@ export const OvercapacityBanner = memo(
         <AlertTriangleIcon className="h-4 w-4" />
         <span>
           You&apos;ve hit {Math.floor(consumptionRatio * 100)}% of the{" "}
-          {plan.name} plan limit.
+          {plan.displayName} plan limit.
         </span>
         <Link to={`/${accountSlug}/settings`}>Upgrade plan</Link>
       </Banner>

@@ -77,7 +77,7 @@ const PlanCardFragment = graphql(`
 
     plan {
       id
-      name
+      displayName
     }
 
     subscription {
@@ -103,8 +103,6 @@ type Project = {
   public: boolean;
   currentPeriodScreenshots: number;
 };
-
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const ConfirmTrialEndDialog = ({
   state,
@@ -168,7 +166,7 @@ const PlanStatus = ({
   trialStatus,
 }: {
   subscriptionStatus: AccountSubscriptionStatus | null | undefined;
-  planName: string;
+  planName: string | null;
   trialStatus: TrialStatus | null;
 }) => {
   if (subscriptionStatus === null) {
@@ -204,7 +202,13 @@ const PlanStatus = ({
       return (
         <>
           Your team is on the{" "}
-          <span className="font-medium">{capitalize(planName)}</span> plan
+          {planName ? (
+            <>
+              <span className="font-medium">{planName}</span> plan
+            </>
+          ) : (
+            "plan"
+          )}
           {subscriptionStatus === AccountSubscriptionStatus.Trialing && (
             <>
               {" "}
@@ -520,7 +524,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
         <CardParagraph>
           <PlanStatus
             subscriptionStatus={subscriptionStatus}
-            planName={plan?.name ?? ""}
+            planName={plan?.displayName ?? null}
             trialStatus={trialStatus ?? null}
           />
           <PlanStatusDescription

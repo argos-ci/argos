@@ -28,7 +28,7 @@ const AccountQuery = graphql(`
 
       plan {
         id
-        name
+        displayName
       }
 
       ...TeamMembers_Team
