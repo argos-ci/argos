@@ -263,7 +263,7 @@ async function notifyProjectCreation(input: {
   project: Project;
   account: Account;
   email: string | null;
-  source: "github" | "gitlab";
+  source: "GitHub" | "GitLab";
 }) {
   await notifyDiscord({
     content: `
@@ -312,7 +312,7 @@ const importGithubProject = async (props: {
     project,
     email: props.creator.email,
     account,
-    source: "github",
+    source: "GitHub",
   });
 
   return project;
@@ -323,9 +323,8 @@ const getOrCreateGitlabProject = async (props: {
   gitlabProjectId: string;
 }): Promise<GitlabProject> => {
   const client = await getGitlabClientFromAccount(props.account);
-  if (!client) {
-    throw new Error("Gitlab client not found");
-  }
+  invariant(client, "Gitlab client not found");
+
   const gitlabProjectId = Number(props.gitlabProjectId);
 
   const gitlabProject = await GitlabProject.query().findOne({
@@ -339,6 +338,17 @@ const getOrCreateGitlabProject = async (props: {
   const glProject = await client.Projects.show(gitlabProjectId);
   if (!glProject) {
     throw new Error("GitLab Project not found");
+  }
+
+  if (!("default_branch" in glProject)) {
+    throw new GraphQLError(
+      `GitLab user behinds the specified access token should have a "developer" role at minimum.`,
+      {
+        extensions: {
+          code: "BAD_USER_INPUT",
+        },
+      },
+    );
   }
 
   return GitlabProject.query().insertAndFetch(formatGlProject(glProject));
@@ -381,7 +391,7 @@ const importGitlabProject = async (props: {
     project,
     email: props.creator.email,
     account,
-    source: "github",
+    source: "GitLab",
   });
 
   return project;

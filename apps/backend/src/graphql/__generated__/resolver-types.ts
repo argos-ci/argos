@@ -285,6 +285,7 @@ export type IGitlabProject = INode & IRepository & {
 export type IGlApiNamespace = INode & {
   __typename?: 'GlApiNamespace';
   id: Scalars['ID']['output'];
+  isProjectToken: Scalars['Boolean']['output'];
   kind: Scalars['String']['output'];
   name: Scalars['String']['output'];
   path: Scalars['String']['output'];
@@ -1631,6 +1632,7 @@ export type IGitlabProjectResolvers<ContextType = Context, ParentType extends IR
 
 export type IGlApiNamespaceResolvers<ContextType = Context, ParentType extends IResolversParentTypes['GlApiNamespace'] = IResolversParentTypes['GlApiNamespace']> = ResolversObject<{
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  isProjectToken?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   kind?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   path?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
