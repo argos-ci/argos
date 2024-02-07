@@ -6,6 +6,7 @@ import { ConnectRepository } from "@/containers/Project/ConnectRepository";
 import { graphql } from "@/gql";
 import { Container } from "@/ui/Container";
 import { Heading, Headline } from "@/ui/Typography";
+import { getGraphQLErrorMessage } from "@/ui/Form";
 
 const ImportGithubProjectMutation = graphql(`
   mutation NewProject_importGithubProject(
@@ -111,6 +112,9 @@ export const AccountNewProject = () => {
                     owner: repo.owner_login,
                     accountSlug: accountSlug,
                   },
+                }).catch((error) => {
+                  // TODO: Show error in UI
+                  alert(getGraphQLErrorMessage(error));
                 });
               }}
               onSelectProject={(glProject) => {
@@ -119,6 +123,9 @@ export const AccountNewProject = () => {
                     gitlabProjectId: glProject.id,
                     accountSlug: accountSlug,
                   },
+                }).catch((error) => {
+                  // TODO: Show error in UI
+                  alert(getGraphQLErrorMessage(error));
                 });
               }}
             />

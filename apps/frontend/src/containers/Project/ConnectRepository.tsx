@@ -31,6 +31,7 @@ const ConnectRepositoryQuery = graphql(`
         edges {
           id
           kind
+          isProjectToken
           ...GitlabNamespacesSelect_GlApiNamespace
         }
       }
@@ -127,6 +128,9 @@ const GitlabNamespaces = (props: GitlabNamespacesProps) => {
   }
 
   const projectListProps = (() => {
+    if (namespace?.isProjectToken) {
+      return { userId: undefined, groupId: undefined, allProjects: true };
+    }
     switch (namespace?.kind) {
       case "user":
         return { userId: namespace.id, groupId: undefined, allProjects: false };
