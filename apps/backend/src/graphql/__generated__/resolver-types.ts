@@ -778,12 +778,14 @@ export type IScreenshotDiff = INode & {
   baseScreenshot?: Maybe<IScreenshot>;
   compareScreenshot?: Maybe<IScreenshot>;
   createdAt: Scalars['DateTime']['output'];
+  /** @deprecated Remove in future release */
   flakyDetected: Scalars['Boolean']['output'];
   group?: Maybe<Scalars['String']['output']>;
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   status: IScreenshotDiffStatus;
+  /** @deprecated Remove in future release */
   test?: Maybe<ITest>;
   url?: Maybe<Scalars['String']['output']>;
   validationStatus?: Maybe<Scalars['String']['output']>;
