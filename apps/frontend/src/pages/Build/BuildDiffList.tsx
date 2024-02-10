@@ -16,9 +16,7 @@ import {
   useState,
 } from "react";
 
-import { Test } from "@/gql/graphql";
 import { Badge } from "@/ui/Badge";
-import { getFlakyIndicatorProps } from "@/ui/FlakyIndicator";
 
 import { getGroupLabel } from "./BuildDiffGroup";
 import {
@@ -287,34 +285,6 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
   }
 });
 
-const FlakyFlag = ({
-  test,
-}: {
-  test: Pick<Test, "status" | "unstable" | "resolvedDate"> | null;
-}) => {
-  if (!test || !test.status) {
-    return null;
-  }
-
-  const { icon: FlakyIcon = null, color: flakyColor = "neutral" } =
-    getFlakyIndicatorProps(test);
-  if (!FlakyIcon) {
-    return null;
-  }
-
-  const colorClassName = `text-${flakyColor}-500`;
-  return (
-    <div
-      className={clsx(
-        colorClassName,
-        "absolute right-4 top-3 z-30 opacity-0 transition group-hover/sidebar:opacity-100",
-      )}
-    >
-      <FlakyIcon className="h-4 w-4" />
-    </div>
-  );
-};
-
 const CardStack = ({
   isFirst,
   isLast,
@@ -477,7 +447,6 @@ const ListItem = ({
       <DiffCard active={active}>
         {item.diff ? (
           <>
-            <FlakyFlag test={item.diff?.test ?? null} />
             {isGroupItem && (
               <ShowSubItemToggle
                 onClick={(event) => {
