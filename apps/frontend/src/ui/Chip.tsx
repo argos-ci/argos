@@ -50,7 +50,7 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(
           scale === "xs" && "px-2 text-xs gap-1",
           scale === "sm" && "px-3 py-1 text-xs gap-1",
           scale === "md" && "px-4 py-2 text-sm gap-2",
-          "no-wrap inline-flex select-none items-center whitespace-nowrap rounded-chip border font-medium leading-4",
+          "min-w-0 no-wrap inline-flex select-none items-center whitespace-nowrap rounded-chip border font-medium leading-4",
           className,
         )}
         {...props}

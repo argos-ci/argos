@@ -281,16 +281,16 @@ export const BuildDetailToolbar = memo(
           !bordered && "border-b-transparent",
         )}
       >
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex gap-1 flex-shrink-0">
             <PreviousDiffButton />
             <NextDiffButton />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <div role="heading" className="line-clamp-2 text-xs font-medium">
               {activeDiff.name}
             </div>
-            <div className="flex flex-wrap gap-1.5 items-center empty:hidden mt-1">
+            <div className="flex flex-wrap gap-1.5 items-center empty:hidden mt-1 min-w-0">
               {sdk && <SdkIndicator sdk={sdk} className="w-4 h-4" />}
               {automationLibrary && (
                 <AutomationLibraryIndicator

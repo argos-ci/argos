@@ -10,7 +10,11 @@ export function UrlIndicator({
 }) {
   return (
     <Chip icon={LinkIcon} scale="xs" className="font-mono" {...props}>
-      <Anchor external href={url}>
+      <Anchor
+        external
+        href={url}
+        className="inline-block text-ellipsis overflow-hidden"
+      >
         {url}
       </Anchor>
     </Chip>
