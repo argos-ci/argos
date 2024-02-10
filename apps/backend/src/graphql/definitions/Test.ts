@@ -1,7 +1,6 @@
 import gqlTag from "graphql-tag";
 
 import { knex } from "@/database/index.js";
-import { ScreenshotDiff, Test } from "@/database/models/index.js";
 
 import { IResolvers, ITestStatus } from "../__generated__/resolver-types.js";
 
@@ -38,31 +37,6 @@ export const typeDefs = gql`
   type TestConnection implements Connection {
     pageInfo: PageInfo!
     edges: [Test!]!
-  }
-
-  type MuteUpdateTest {
-    ids: [String!]!
-    mute: Boolean!
-    muteUntil: String
-  }
-
-  type UpdatedTestStatuses {
-    ids: [String!]!
-    status: TestStatus!
-  }
-
-  extend type Mutation {
-    "Mute or unmute tests"
-    muteTests(
-      ids: [String!]!
-      muted: Boolean!
-      muteUntil: String
-    ): MuteUpdateTest!
-    "Update test statuses"
-    updateTestStatuses(
-      ids: [String!]!
-      status: TestStatus!
-    ): UpdatedTestStatuses!
   }
 `;
 
@@ -124,61 +98,6 @@ export const resolvers: IResolvers = {
     totalBuilds: async (test) => {
       const screenshotDiffs = await test.$relatedQuery("screenshotDiffs");
       return screenshotDiffs.length ?? 0;
-    },
-  },
-  Mutation: {
-    muteTests: async (_root, args) => {
-      const muteUntil = args.muteUntil ?? null;
-      if (args.ids.length > 0) {
-        await Test.query()
-          .patch({ muted: args.muted, muteUntil })
-          .whereIn("id", args.ids);
-      }
-      return {
-        ids: args.ids,
-        mute: args.muted,
-        muteUntil,
-      };
-    },
-    updateTestStatuses: async (_root, args) => {
-      if (args.ids.length === 0) {
-        return { ids: [], status: args.status };
-      }
-
-      if (args.status !== "resolved") {
-        await Test.query()
-          .patch({
-            status: args.status,
-            resolvedDate: null,
-            resolvedStabilityScore: null,
-          })
-          .whereIn("id", args.ids);
-        return { ids: args.ids, status: args.status };
-      }
-
-      const lastScreenshotDiffs = await ScreenshotDiff.query()
-        .select("testId", "stabilityScore", "createdAt")
-        .whereIn("testId", args.ids)
-        .distinctOn("testId")
-        .orderBy("testId")
-        .orderBy("createdAt", "desc");
-      const lastScreenshotDiffMap: Record<string, ScreenshotDiff> = {};
-      for (const lastScreenshotDiff of lastScreenshotDiffs) {
-        lastScreenshotDiffMap[lastScreenshotDiff.testId!] = lastScreenshotDiff;
-      }
-      await Promise.all(
-        args.ids.map(async (testId) =>
-          Test.query()
-            .patch({
-              status: "resolved",
-              resolvedDate: new Date().toISOString(),
-              resolvedStabilityScore:
-                lastScreenshotDiffMap[testId]?.stabilityScore ?? null,
-            })
-            .where("id", testId),
-        ),
-      );
-      return { ids: args.ids, status: args.status };
     },
   },
 };

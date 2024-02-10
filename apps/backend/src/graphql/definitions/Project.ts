@@ -10,7 +10,6 @@ import {
   GitlabProject,
   Project,
   Screenshot,
-  ScreenshotDiff,
   Test,
   User,
   VercelConfiguration,
@@ -61,6 +60,7 @@ export const typeDefs = gql`
     latestBuild: Build
     "Tests associated to the repository"
     tests(first: Int!, after: Int!): TestConnection!
+      @deprecated(reason: "Remove in future release")
     "Determine if the current user has write access to the project"
     permissions: [Permission!]!
     "Owner of the repository"
@@ -443,16 +443,9 @@ export const resolvers: IResolvers = {
       return build ?? null;
     },
     tests: async (project, { first, after }) => {
+      // @TODO remove in future release
       const result = await Test.query()
         .where("projectId", project.id)
-        .whereNot((builder) =>
-          builder.whereRaw(`"name" ~ :regexp`, {
-            regexp: ScreenshotDiff.screenshotFailureRegexp.source,
-          }),
-        )
-        .orderByRaw(
-          `(select "stabilityScore" from screenshot_diffs where screenshot_diffs."testId" = tests.id order by "id" desc limit 1) asc nulls last`,
-        )
         .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });

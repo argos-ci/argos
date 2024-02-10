@@ -112,7 +112,7 @@ const documents = {
     "\n  fragment GettingStarted_Project on Project {\n    token\n  }\n": types.GettingStarted_ProjectFragmentDoc,
     "\n  query ProjectReference_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      latestReferenceBuild {\n        id\n        number\n      }\n    }\n  }\n": types.ProjectReference_ProjectDocument,
     "\n  query ProjectSettings_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      ...ProjectBadge_Project\n      ...ProjectChangeName_Project\n      ...ProjectToken_Project\n      ...ProjectReferenceBranch_Project\n      ...ProjectStatusChecks_Project\n      ...ProjectVisibility_Project\n      ...ProjectTransfer_Project\n      ...ProjectDelete_Project\n      ...ProjectGitRepository_Project\n      # ...ProjectVercel_Project\n    }\n  }\n": types.ProjectSettings_ProjectDocument,
-    "\n  query Project_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      tests(first: 0, after: 0) {\n        pageInfo {\n          totalCount\n        }\n      }\n      account {\n        id\n        ...PaymentBanner_Account\n      }\n    }\n  }\n": types.Project_ProjectDocument,
+    "\n  query Project_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      account {\n        id\n        ...PaymentBanner_Account\n      }\n    }\n  }\n": types.Project_ProjectDocument,
 };
 
 /**
@@ -528,7 +528,7 @@ export function graphql(source: "\n  query ProjectSettings_project($accountSlug:
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query Project_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      tests(first: 0, after: 0) {\n        pageInfo {\n          totalCount\n        }\n      }\n      account {\n        id\n        ...PaymentBanner_Account\n      }\n    }\n  }\n"): (typeof documents)["\n  query Project_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      tests(first: 0, after: 0) {\n        pageInfo {\n          totalCount\n        }\n      }\n      account {\n        id\n        ...PaymentBanner_Account\n      }\n    }\n  }\n"];
+export function graphql(source: "\n  query Project_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      account {\n        id\n        ...PaymentBanner_Account\n      }\n    }\n  }\n"): (typeof documents)["\n  query Project_project($accountSlug: String!, $projectName: String!) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      permissions\n      account {\n        id\n        ...PaymentBanner_Account\n      }\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

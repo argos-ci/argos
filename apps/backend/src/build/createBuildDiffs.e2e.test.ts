@@ -9,7 +9,7 @@ import {
 import type { File, Project } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
 
-import { createBuildDiffs, getStabilityScores } from "./createBuildDiffs.js";
+import { createBuildDiffs } from "./createBuildDiffs.js";
 
 describe("#createBuildDiffs", () => {
   let build: Build;
@@ -49,131 +49,6 @@ describe("#createBuildDiffs", () => {
           screenshotBucketId: compareBucket.id,
         },
       ]);
-  });
-
-  describe("#getStabilityScores", () => {
-    const screenshotName = "checkout-mobile.png";
-    let builds: Array<Build>;
-    let screenshot: Screenshot;
-    let unchangedScreenshotDiff: any;
-    let changedScreenshotDiff: any;
-
-    describe("on a build with low usage (less than 10 builds in a week)", () => {
-      beforeEach(async () => {
-        const project = await factory.Project.create();
-        [builds, screenshot] = await Promise.all([
-          factory.Build.createMany(2, {
-            projectId: project.id,
-          }),
-          factory.Screenshot.create({ name: screenshotName }),
-        ]);
-        unchangedScreenshotDiff = {
-          compareScreenshotId: screenshot.id,
-          score: 0,
-        };
-        changedScreenshotDiff = { ...unchangedScreenshotDiff, score: 0.3 };
-        await factory.ScreenshotDiff.createMany(2, [
-          { buildId: builds[0]!.id, ...unchangedScreenshotDiff },
-          { buildId: builds[1]!.id, ...unchangedScreenshotDiff },
-        ]);
-      });
-
-      it("returns 'undefined' stability score for a never updated screenshot", async () => {
-        const stabilityScores = await getStabilityScores({
-          buildName: build.name,
-          projectId: project.id,
-        });
-        expect(stabilityScores[screenshotName]).toBeUndefined();
-      });
-
-      it("returns always max stability score", async () => {
-        await factory.ScreenshotDiff.create({
-          buildId: build.id,
-          ...changedScreenshotDiff,
-        });
-        const stabilityScores = await getStabilityScores({
-          buildName: build.name,
-          projectId: project.id,
-        });
-        expect(stabilityScores[screenshotName]).toBe(100);
-      });
-    });
-
-    describe("on a build with high usage (more than 10 builds in a week)", () => {
-      beforeEach(async () => {
-        const screenshotBuckets = await factory.ScreenshotBucket.createMany(4, [
-          { branch: "main" },
-          { branch: "feature-branch" },
-          { branch: "feature-branch-2" },
-          { branch: "feature-branch-3" },
-        ]);
-        [builds, screenshot] = await Promise.all([
-          factory.Build.createMany(8, {
-            projectId: project.id,
-            compareScreenshotBucketId: screenshotBuckets[0]!.id,
-          }),
-          factory.Screenshot.create({ name: screenshotName }),
-          factory.Build.createMany(3, [
-            {
-              projectId: project.id,
-              compareScreenshotBucketId: screenshotBuckets[1]!.id,
-            },
-            {
-              projectId: project.id,
-              compareScreenshotBucketId: screenshotBuckets[2]!.id,
-            },
-            {
-              projectId: project.id,
-              compareScreenshotBucketId: screenshotBuckets[3]!.id,
-            },
-          ]),
-        ]);
-        unchangedScreenshotDiff = {
-          compareScreenshotId: screenshot.id,
-          score: 0,
-        };
-        changedScreenshotDiff = { ...unchangedScreenshotDiff, score: 0.3 };
-        await factory.ScreenshotDiff.createMany(2, [
-          { buildId: builds[0]!.id, ...unchangedScreenshotDiff },
-          { buildId: builds[1]!.id, ...unchangedScreenshotDiff },
-        ]);
-      });
-
-      it("returns 'undefined' stability score for a never updated screenshot", async () => {
-        const stabilityScores = await getStabilityScores({
-          buildName: build.name,
-          projectId: project.id,
-        });
-        expect(stabilityScores[screenshotName]).toBeUndefined();
-      });
-
-      it("returns high stability score after first screenshot update", async () => {
-        await factory.ScreenshotDiff.create({
-          buildId: build.id,
-          ...changedScreenshotDiff,
-        });
-        const stabilityScores = await getStabilityScores({
-          buildName: build.name,
-          projectId: project.id,
-        });
-        expect(stabilityScores[screenshotName]).toBe(73);
-      });
-
-      it("returns low stability score for a flaky screenshot", async () => {
-        await factory.ScreenshotDiff.createMany(5, [
-          { buildId: builds[3]!.id, ...changedScreenshotDiff },
-          { buildId: builds[4]!.id, ...changedScreenshotDiff },
-          { buildId: builds[5]!.id, ...changedScreenshotDiff },
-          { buildId: builds[6]!.id, ...changedScreenshotDiff },
-          { buildId: builds[7]!.id, ...changedScreenshotDiff },
-        ]);
-        const stabilityScores = await getStabilityScores({
-          buildName: build.name,
-          projectId: project.id,
-        });
-        expect(stabilityScores[screenshotName]).toBe(47);
-      });
-    });
   });
 
   describe("with base bucket", () => {
@@ -282,7 +157,7 @@ describe("#createBuildDiffs", () => {
         compareScreenshotId: newScreenshot!.id,
         jobStatus: "complete",
         validationStatus: "unknown",
-        stabilityScore: 100,
+        stabilityScore: null,
       });
       expect(addDiffWithoutFile).toMatchObject({
         buildId: build.id,
@@ -290,7 +165,7 @@ describe("#createBuildDiffs", () => {
         compareScreenshotId: newScreenshotWithoutFile!.id,
         jobStatus: "pending",
         validationStatus: "unknown",
-        stabilityScore: 100,
+        stabilityScore: null,
       });
       expect(updatedDiff).toMatchObject({
         buildId: build.id,
@@ -298,7 +173,7 @@ describe("#createBuildDiffs", () => {
         compareScreenshotId: classicDiffCompareScreenshot!.id,
         jobStatus: "pending",
         validationStatus: "unknown",
-        stabilityScore: 100,
+        stabilityScore: null,
       });
       expect(removedDiff).toMatchObject({
         buildId: build.id,
@@ -315,7 +190,7 @@ describe("#createBuildDiffs", () => {
         jobStatus: "pending",
         validationStatus: "unknown",
         score: null,
-        stabilityScore: 100,
+        stabilityScore: null,
       });
       expect(noFileCompareScreenshotDiff).toMatchObject({
         buildId: build.id,
@@ -324,7 +199,7 @@ describe("#createBuildDiffs", () => {
         jobStatus: "pending",
         validationStatus: "unknown",
         score: null,
-        stabilityScore: 100,
+        stabilityScore: null,
       });
       expect(sameFileDiff).toMatchObject({
         buildId: build.id,
@@ -332,7 +207,7 @@ describe("#createBuildDiffs", () => {
         compareScreenshotId: sameFileScreenshotCompare!.id,
         jobStatus: "complete",
         validationStatus: "unknown",
-        stabilityScore: 100,
+        stabilityScore: null,
       });
     });
 
@@ -402,7 +277,7 @@ describe("#createBuildDiffs", () => {
         compareScreenshotId: newScreenshot!.id,
         jobStatus: "complete",
         validationStatus: "unknown",
-        stabilityScore: 100,
+        stabilityScore: null,
       });
       expect(diffs[1]).toMatchObject({
         buildId: build.id,
@@ -410,7 +285,7 @@ describe("#createBuildDiffs", () => {
         compareScreenshotId: newScreenshotWithoutFile!.id,
         jobStatus: "pending",
         validationStatus: "unknown",
-        stabilityScore: 100,
+        stabilityScore: null,
       });
     });
 
