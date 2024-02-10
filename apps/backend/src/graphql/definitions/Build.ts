@@ -113,7 +113,7 @@ const getCompareScreenshotBucket = async (ctx: Context, build: Build) => {
 
 export const resolvers: IResolvers = {
   Build: {
-    async screenshotDiffs(build, { first, after }) {
+    screenshotDiffs: async (build, { first, after }) => {
       const result = await build
         .$relatedQuery("screenshotDiffs")
         .leftJoinRelated("[baseScreenshot, compareScreenshot]")

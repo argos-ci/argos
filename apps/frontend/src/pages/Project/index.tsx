@@ -20,11 +20,6 @@ const ProjectQuery = graphql(`
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       permissions
-      tests(first: 0, after: 0) {
-        pageInfo {
-          totalCount
-        }
-      }
       account {
         id
         ...PaymentBanner_Account
@@ -38,11 +33,9 @@ type Account = NonNullable<
 >;
 
 const ProjectTabs = ({
-  // hasTests,
   hasWritePermission,
   account,
 }: {
-  hasTests: boolean;
   hasWritePermission: boolean;
   account: Account;
 }) => {
@@ -51,7 +44,6 @@ const ProjectTabs = ({
     <>
       <TabLinkList state={tab} aria-label="Sections">
         <TabLink to="">Builds</TabLink>
-        {/* {hasTests && <TabLink to="tests">Tests</TabLink>} */}
         {hasWritePermission && (
           <TabLink to="settings">Project Settings</TabLink>
         )}
@@ -99,13 +91,10 @@ export const Project = () => {
           "write" as Permission,
         );
 
-        const hasTests = project.tests.pageInfo.totalCount > 0;
-
-        if (hasTests || hasWritePermission) {
+        if (hasWritePermission) {
           return (
             <ProjectTabs
               hasWritePermission={hasWritePermission}
-              hasTests={hasTests}
               account={project.account}
             />
           );

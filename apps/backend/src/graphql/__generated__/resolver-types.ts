@@ -373,8 +373,6 @@ export type IMutation = {
   linkGitlabProject: IProject;
   /** Link Vercel project */
   linkVercelProject: IProject;
-  /** Mute or unmute tests */
-  muteTests: IMuteUpdateTest;
   ping: Scalars['Boolean']['output'];
   /** Remove a user from a team */
   removeUserFromTeam: IRemoveUserFromTeamPayload;
@@ -402,8 +400,6 @@ export type IMutation = {
   updateProject: IProject;
   /** Set project pull request comment */
   updateProjectPrComment: IProject;
-  /** Update test statuses */
-  updateTestStatuses: IUpdatedTestStatuses;
 };
 
 
@@ -454,13 +450,6 @@ export type IMutationLinkGitlabProjectArgs = {
 
 export type IMutationLinkVercelProjectArgs = {
   input: ILinkVercelProjectInput;
-};
-
-
-export type IMutationMuteTestsArgs = {
-  ids: Array<Scalars['String']['input']>;
-  muteUntil?: InputMaybe<Scalars['String']['input']>;
-  muted: Scalars['Boolean']['input'];
 };
 
 
@@ -529,19 +518,6 @@ export type IMutationUpdateProjectPrCommentArgs = {
   input: IUpdateProjectPrCommentInput;
 };
 
-
-export type IMutationUpdateTestStatusesArgs = {
-  ids: Array<Scalars['String']['input']>;
-  status: ITestStatus;
-};
-
-export type IMuteUpdateTest = {
-  __typename?: 'MuteUpdateTest';
-  ids: Array<Scalars['String']['output']>;
-  mute: Scalars['Boolean']['output'];
-  muteUntil?: Maybe<Scalars['String']['output']>;
-};
-
 export type INode = {
   id: Scalars['ID']['output'];
 };
@@ -600,7 +576,10 @@ export type IProject = INode & {
   slug: Scalars['String']['output'];
   /** Summary check */
   summaryCheck: ISummaryCheck;
-  /** Tests associated to the repository */
+  /**
+   * Tests associated to the repository
+   * @deprecated Remove in future release
+   */
   tests: ITestConnection;
   token?: Maybe<Scalars['String']['output']>;
   /** Total screenshots used */
@@ -778,12 +757,14 @@ export type IScreenshotDiff = INode & {
   baseScreenshot?: Maybe<IScreenshot>;
   compareScreenshot?: Maybe<IScreenshot>;
   createdAt: Scalars['DateTime']['output'];
+  /** @deprecated Remove in future release */
   flakyDetected: Scalars['Boolean']['output'];
   group?: Maybe<Scalars['String']['output']>;
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   status: IScreenshotDiffStatus;
+  /** @deprecated Remove in future release */
   test?: Maybe<ITest>;
   url?: Maybe<Scalars['String']['output']>;
   validationStatus?: Maybe<Scalars['String']['output']>;
@@ -1025,12 +1006,6 @@ export type IUpdateProjectInput = {
 export type IUpdateProjectPrCommentInput = {
   enable: Scalars['Boolean']['input'];
   id: Scalars['ID']['input'];
-};
-
-export type IUpdatedTestStatuses = {
-  __typename?: 'UpdatedTestStatuses';
-  ids: Array<Scalars['String']['output']>;
-  status: ITestStatus;
 };
 
 export type IUser = IAccount & INode & {
@@ -1297,7 +1272,6 @@ export type IResolversTypes = ResolversObject<{
   LinkGitlabProjectInput: ILinkGitlabProjectInput;
   LinkVercelProjectInput: ILinkVercelProjectInput;
   Mutation: ResolverTypeWrapper<{}>;
-  MuteUpdateTest: ResolverTypeWrapper<IMuteUpdateTest>;
   Node: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Node']>;
   PageInfo: ResolverTypeWrapper<IPageInfo>;
   Permission: IPermission;
@@ -1345,7 +1319,6 @@ export type IResolversTypes = ResolversObject<{
   UpdateAccountInput: IUpdateAccountInput;
   UpdateProjectInput: IUpdateProjectInput;
   UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
-  UpdatedTestStatuses: ResolverTypeWrapper<IUpdatedTestStatuses>;
   User: ResolverTypeWrapper<Account>;
   UserConnection: ResolverTypeWrapper<Omit<IUserConnection, 'edges'> & { edges: Array<IResolversTypes['User']> }>;
   ValidationStatus: IValidationStatus;
@@ -1401,7 +1374,6 @@ export type IResolversParentTypes = ResolversObject<{
   LinkGitlabProjectInput: ILinkGitlabProjectInput;
   LinkVercelProjectInput: ILinkVercelProjectInput;
   Mutation: {};
-  MuteUpdateTest: IMuteUpdateTest;
   Node: IResolversInterfaceTypes<IResolversParentTypes>['Node'];
   PageInfo: IPageInfo;
   Plan: Plan;
@@ -1440,7 +1412,6 @@ export type IResolversParentTypes = ResolversObject<{
   UpdateAccountInput: IUpdateAccountInput;
   UpdateProjectInput: IUpdateProjectInput;
   UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
-  UpdatedTestStatuses: IUpdatedTestStatuses;
   User: Account;
   UserConnection: Omit<IUserConnection, 'edges'> & { edges: Array<IResolversParentTypes['User']> };
   VercelApiPagination: IVercelApiPagination;
@@ -1670,7 +1641,6 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   linkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGithubRepositoryArgs, 'input'>>;
   linkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGitlabProjectArgs, 'input'>>;
   linkVercelProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkVercelProjectArgs, 'input'>>;
-  muteTests?: Resolver<IResolversTypes['MuteUpdateTest'], ParentType, ContextType, RequireFields<IMutationMuteTestsArgs, 'ids' | 'muted'>>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   removeUserFromTeam?: Resolver<IResolversTypes['RemoveUserFromTeamPayload'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
   retrieveVercelToken?: Resolver<IResolversTypes['VercelApiToken'], ParentType, ContextType, RequireFields<IMutationRetrieveVercelTokenArgs, 'code'>>;
@@ -1685,14 +1655,6 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   updateAccount?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUpdateAccountArgs, 'input'>>;
   updateProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectArgs, 'input'>>;
   updateProjectPrComment?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectPrCommentArgs, 'input'>>;
-  updateTestStatuses?: Resolver<IResolversTypes['UpdatedTestStatuses'], ParentType, ContextType, RequireFields<IMutationUpdateTestStatusesArgs, 'ids' | 'status'>>;
-}>;
-
-export type IMuteUpdateTestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['MuteUpdateTest'] = IResolversParentTypes['MuteUpdateTest']> = ResolversObject<{
-  ids?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
-  mute?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  muteUntil?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
@@ -1953,12 +1915,6 @@ export interface ITimeScalarConfig extends GraphQLScalarTypeConfig<IResolversTyp
   name: 'Time';
 }
 
-export type IUpdatedTestStatusesResolvers<ContextType = Context, ParentType extends IResolversParentTypes['UpdatedTestStatuses'] = IResolversParentTypes['UpdatedTestStatuses']> = ResolversObject<{
-  ids?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
-  status?: Resolver<IResolversTypes['TestStatus'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type IUserResolvers<ContextType = Context, ParentType extends IResolversParentTypes['User'] = IResolversParentTypes['User']> = ResolversObject<{
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
@@ -2100,7 +2056,6 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   GlApiProject?: IGlApiProjectResolvers<ContextType>;
   GlApiProjectConnection?: IGlApiProjectConnectionResolvers<ContextType>;
   Mutation?: IMutationResolvers<ContextType>;
-  MuteUpdateTest?: IMuteUpdateTestResolvers<ContextType>;
   Node?: INodeResolvers<ContextType>;
   PageInfo?: IPageInfoResolvers<ContextType>;
   Plan?: IPlanResolvers<ContextType>;
@@ -2127,7 +2082,6 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   Test?: ITestResolvers<ContextType>;
   TestConnection?: ITestConnectionResolvers<ContextType>;
   Time?: GraphQLScalarType;
-  UpdatedTestStatuses?: IUpdatedTestStatusesResolvers<ContextType>;
   User?: IUserResolvers<ContextType>;
   UserConnection?: IUserConnectionResolvers<ContextType>;
   VercelApiPagination?: IVercelApiPaginationResolvers<ContextType>;

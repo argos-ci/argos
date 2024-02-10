@@ -27,14 +27,7 @@ const ScreenshotDiffFragment = graphql(`
     name
     width
     height
-    flakyDetected
     group
-    test {
-      id
-      status
-      unstable
-      resolvedDate
-    }
     baseScreenshot {
       id
       url

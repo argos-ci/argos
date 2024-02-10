@@ -127,19 +127,16 @@ export class ScreenshotDiff extends Model {
           THEN 0 -- failure
         ELSE 20 -- added
       END)
-    WHEN "score" IS NOT NULL AND "score" > 0 -- changed
-      THEN (CASE
-        WHEN "stabilityScore" IS NOT NULL AND "stabilityScore" < 60
-          THEN 11 -- flaky
-        ELSE 10 -- not flaky
-      END)
+    WHEN "score" IS NOT NULL AND "score" > 0 THEN 10 -- changed
     ELSE 40 -- unchanged
     END ASC`;
 
   $getDiffStatus = async (
     loadScreenshot: (screenshotId: string) => Promise<Screenshot>,
   ) => {
-    if (!this.compareScreenshotId) return "removed";
+    if (!this.compareScreenshotId) {
+      return "removed";
+    }
 
     if (!this.baseScreenshotId) {
       const { name } = await loadScreenshot(this.compareScreenshotId);

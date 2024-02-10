@@ -27,7 +27,6 @@ import { ColorSchemeIndicator } from "./metadata/colorScheme/ColorSchemeIndicato
 import { MediaTypeIndicator } from "./metadata/mediaType/MediaTypeIndicator";
 import { TestIndicator } from "./metadata/test/TestIndicator";
 import { TraceIndicator } from "./metadata/trace/TraceIndicator";
-import { FlakyChip } from "@/ui/FlakyIndicator";
 
 const BuildDiffChangesOverlayToggle = memo(() => {
   const { visible, setVisible } = useBuildDiffVisibleState();
@@ -318,7 +317,6 @@ export const BuildDetailToolbar = memo(
               {playwrightTraceUrl && (
                 <TraceIndicator traceUrl={playwrightTraceUrl} />
               )}
-              <FlakyChip test={activeDiff.test ?? null} />
             </div>
           </div>
         </div>

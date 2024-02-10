@@ -31,8 +31,8 @@ export const typeDefs = gql`
     height: Int
     status: ScreenshotDiffStatus!
     validationStatus: String
-    flakyDetected: Boolean!
-    test: Test
+    flakyDetected: Boolean! @deprecated(reason: "Remove in future release")
+    test: Test @deprecated(reason: "Remove in future release")
     group: String
   }
 
@@ -90,15 +90,13 @@ export const resolvers: IResolvers = {
         return screenshot;
       }) as Promise<IScreenshotDiffStatus>;
     },
-    flakyDetected: (screenshotDiff) => {
-      return (
-        screenshotDiff.stabilityScore !== null &&
-        screenshotDiff.stabilityScore < 60
-      );
+    // @TODO: Remove in future release
+    flakyDetected: () => {
+      return false;
     },
-    test: async (screenshot, _args, ctx) => {
-      if (!screenshot.testId) return null;
-      return ctx.loaders.Test.load(screenshot.testId);
+    // @TODO: Remove in future release
+    test: async () => {
+      return null;
     },
   },
 };
