@@ -7,4 +7,5 @@ export default {
   importOrderSeparation: true,
   importOrderSortSpecifiers: true,
   tailwindConfig: "./apps/app/tailwind.config.js",
+  tailwindFunctions: ["clsx", "twc"],
 };
