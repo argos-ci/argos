@@ -173,4 +173,5 @@ export const Plan = defineFactory(models.Plan, () => ({
   includedScreenshots: 7000,
   githubPlanId: FactoryGirl.sequence("plan.githubId", (n) => n),
   usageBased: false,
+  githubSsoIncluded: true,
 }));

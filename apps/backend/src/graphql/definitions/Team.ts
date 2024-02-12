@@ -2,7 +2,13 @@ import gqlTag from "graphql-tag";
 
 import config from "@/config/index.js";
 import { transaction } from "@/database/index.js";
-import { Account, Team, TeamUser } from "@/database/models/index.js";
+import {
+  Account,
+  GithubAccountMember,
+  GithubInstallation,
+  Team,
+  TeamUser,
+} from "@/database/models/index.js";
 import { createTeamAccount } from "@/database/services/team.js";
 import {
   createArgosSubscriptionFromStripe,
@@ -21,7 +27,14 @@ import type {
 import { deleteAccount, getWritableAccount } from "../services/account.js";
 import { forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
+import { getAppOctokit, getInstallationOctokit } from "@/github/client.js";
 import { invariant } from "@/util/invariant.js";
+import {
+  checkUserHasAccessToInstallation,
+  getOrCreateGithubAccount,
+  importOrgMembers,
+} from "../services/github.js";
+import { checkIsEligibleToGithubSso } from "@/database/services/account.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -45,7 +58,6 @@ export const typeDefs = gql`
     oldPaidSubscription: AccountSubscription
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
-    ghAccount: GithubAccount
     avatar: AccountAvatar!
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
@@ -57,7 +69,9 @@ export const typeDefs = gql`
 
     me: TeamMember
     members(after: Int = 0, first: Int = 30): TeamMemberConnection!
-    inviteLink: String!
+    githubMembers(after: Int = 0, first: Int = 30): TeamGithubMemberConnection
+    inviteLink: String
+    ssoGithubAccount: GithubAccount
   }
 
   enum TeamUserLevel {
@@ -74,6 +88,17 @@ export const typeDefs = gql`
     id: ID!
     user: User!
     level: TeamUserLevel!
+  }
+
+  type TeamGithubMemberConnection implements Connection {
+    pageInfo: PageInfo!
+    edges: [TeamGithubMember!]!
+  }
+
+  type TeamGithubMember implements Node {
+    id: ID!
+    githubAccount: GithubAccount!
+    teamMember: TeamMember
   }
 
   type RemoveUserFromTeamPayload {
@@ -108,6 +133,15 @@ export const typeDefs = gql`
     redirectUrl: String!
   }
 
+  input EnableGitHubSSOOnTeamInput {
+    teamAccountId: ID!
+    ghInstallationId: Int!
+  }
+
+  input DisableGitHubSSOOnTeamInput {
+    teamAccountId: ID!
+  }
+
   extend type Query {
     invitation(token: String!): Team
   }
@@ -127,10 +161,26 @@ export const typeDefs = gql`
     setTeamMemberLevel(input: SetTeamMemberLevelInput!): TeamMember!
     "Delete team and all its projects"
     deleteTeam(input: DeleteTeamInput!): Boolean!
+    "Enable GitHub SSO"
+    enableGitHubSSOOnTeam(input: EnableGitHubSSOOnTeamInput!): Team!
+    "Disable GitHub SSO"
+    disableGitHubSSOOnTeam(input: DisableGitHubSSOOnTeamInput!): Team!
   }
 `;
 
 export const resolvers: IResolvers = {
+  TeamGithubMember: {
+    githubAccount: async (githubAccountMember, _args, ctx) => {
+      const githubAccount = await ctx.loaders.GithubAccount.load(
+        githubAccountMember.githubMemberId,
+      );
+      invariant(githubAccount, "GitHub account not found");
+      return githubAccount;
+    },
+    teamMember: async (githubAccountMember, _args, ctx) => {
+      return ctx.loaders.TeamUserFromGithubMember.load(githubAccountMember);
+    },
+  },
   TeamMember: {
     user: async (teamUser, _args, ctx) => {
       const account = await ctx.loaders.AccountFromRelation.load({
@@ -151,9 +201,6 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      if (!Team.checkReadPermission(account.teamId, ctx.auth.user)) {
-        throw forbidden();
-      }
 
       const teamUser = await TeamUser.query()
         .where("teamId", account.teamId)
@@ -171,41 +218,100 @@ export const resolvers: IResolvers = {
       return teamUser;
     },
     members: async (account, args, ctx) => {
-      if (!account.teamId) {
-        throw new Error("Invariant: account.teamId is undefined");
-      }
+      const { first, after } = args;
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      if (!Team.checkReadPermission(account.teamId, ctx.auth.user)) {
-        throw forbidden();
-      }
-      const { first, after } = args;
-      const result = await TeamUser.query()
-        .where("teamId", account.teamId)
+
+      invariant(account.teamId);
+
+      const team = await ctx.loaders.Team.load(account.teamId);
+      invariant(team);
+
+      const hasGithubSSO = Boolean(team.ssoGithubAccountId);
+
+      const query = TeamUser.query()
+        .where("team_users.teamId", account.teamId)
         .orderByRaw(
-          `(CASE WHEN "userId" = ? THEN 0
-           ELSE "id"
-           END) ASC
-          `,
+          `(CASE WHEN team_users."userId" = ? THEN 0
+     ELSE team_users."id"
+     END) ASC
+    `,
           ctx.auth.user.id,
         )
+        .range(after, after + first - 1);
+
+      // If SSO is activated, exclude SSO members.
+      if (hasGithubSSO) {
+        query
+          .withGraphJoined("user.account")
+          .whereNotIn(
+            "user:account.githubAccountId",
+            GithubAccountMember.query()
+              .select("githubMemberId")
+              .where("githubAccountId", team.ssoGithubAccountId),
+          );
+      }
+
+      const result = await query;
+
+      return paginateResult({ result, first, after });
+    },
+    githubMembers: async (account, args, ctx) => {
+      const { first, after } = args;
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      invariant(account.teamId);
+
+      const team = await ctx.loaders.Team.load(account.teamId);
+      invariant(team);
+
+      if (!team.ssoGithubAccountId) {
+        return null;
+      }
+
+      const result = await GithubAccountMember.query()
+        .withGraphJoined("githubMember")
+        .where("githubAccountId", team.ssoGithubAccountId)
+        .orderBy("githubMember.login", "asc")
         .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
     },
     inviteLink: async (account, _args, ctx) => {
-      if (!account.teamId) {
-        throw new Error("Invariant: account.teamId is undefined");
-      }
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      if (!Team.checkWritePermission(account.teamId, ctx.auth.user)) {
-        throw forbidden();
+
+      invariant(account.teamId);
+      const [team, hasWritePermission] = await Promise.all([
+        ctx.loaders.Team.load(account.teamId),
+        Team.checkWritePermission(account.teamId, ctx.auth.user),
+      ]);
+
+      if (!hasWritePermission) {
+        return null;
       }
-      const team = await account.$relatedQuery("team");
-      return team.$getInviteLink();
+
+      invariant(team);
+      const inviteLink = await team.$getInviteLink();
+      return inviteLink;
+    },
+    ssoGithubAccount: async (account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      invariant(account.teamId);
+      const team = await ctx.loaders.Team.load(account.teamId);
+      invariant(team);
+
+      if (!team.ssoGithubAccountId) {
+        return null;
+      }
+
+      return ctx.loaders.GithubAccount.load(team.ssoGithubAccountId);
     },
   },
   Query: {
@@ -453,6 +559,94 @@ export const resolvers: IResolvers = {
     deleteTeam: async (_root, args, ctx) => {
       await deleteAccount({ id: args.input.accountId, user: ctx.auth?.user });
       return true;
+    },
+    enableGitHubSSOOnTeam: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const [installation, hasAccessToInstallation, teamAccount] =
+        await Promise.all([
+          GithubInstallation.query()
+            .findOne("githubId", args.input.ghInstallationId)
+            .where("deleted", false)
+            .throwIfNotFound(),
+          checkUserHasAccessToInstallation(
+            ctx.auth.user,
+            args.input.ghInstallationId,
+          ),
+          getWritableAccount({
+            id: args.input.teamAccountId,
+            user: ctx.auth.user,
+          }),
+        ]);
+
+      if (!hasAccessToInstallation) {
+        throw forbidden("User does not have access to GitHub installation");
+      }
+
+      const eligible = await checkIsEligibleToGithubSso(teamAccount);
+
+      if (!eligible) {
+        throw new Error("Team is not eligible for GitHub SSO");
+      }
+
+      const appOctokit = getAppOctokit();
+
+      const ghInstallation = await appOctokit.apps.getInstallation({
+        installation_id: installation.githubId,
+      });
+      const ghOrg = ghInstallation.data.account;
+      invariant(ghOrg, "GitHub Organization not found");
+      invariant("type" in ghOrg, "GitHub enterprise not supported");
+
+      const githubAccount = await getOrCreateGithubAccount(ghOrg);
+      invariant(githubAccount, "GitHub account not found");
+
+      const octokit = await getInstallationOctokit(installation.id);
+      invariant(octokit, "Invalid installation");
+
+      const { teamId } = teamAccount;
+      invariant(teamId, "Account teamId is undefined");
+
+      const newTeamUserInputs = await importOrgMembers({
+        octokit,
+        org: ghOrg.login,
+        teamId,
+        githubAccount,
+      });
+
+      // Enable SSO and add members in a transaction
+      await transaction(async (trx) => {
+        await Promise.all([
+          Team.query(trx).findById(teamId).patch({
+            ssoGithubAccountId: githubAccount.id,
+          }),
+          newTeamUserInputs.length > 0
+            ? TeamUser.query(trx).insert(newTeamUserInputs)
+            : null,
+        ]);
+      });
+
+      return teamAccount;
+    },
+    disableGitHubSSOOnTeam: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getWritableAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth.user,
+      });
+
+      invariant(teamAccount.teamId, "Account teamId is undefined");
+
+      await Team.query().findById(teamAccount.teamId).patch({
+        ssoGithubAccountId: null,
+      });
+
+      return teamAccount;
     },
   },
 };

@@ -7,6 +7,7 @@ import {
   getOrCreateGhAccountFromGhProfile,
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
+  joinSSOTeams,
 } from "@/database/services/account.js";
 import {
   getTokenOctokit,
@@ -21,6 +22,7 @@ import {
 } from "@/gitlab/index.js";
 import { getOrCreateGitlabUser } from "@/database/services/gitlabUser.js";
 import type { Account } from "@/database/models/index.js";
+import { invariant } from "@/util/invariant.js";
 
 const router = Router();
 
@@ -78,6 +80,11 @@ router.post(
       ghAccount,
       result.access_token,
     );
+    invariant(account.userId, "Expected account to have userId");
+    await joinSSOTeams({
+      githubAccountId: ghAccount.id,
+      userId: account.userId,
+    });
     return account;
   }),
 );

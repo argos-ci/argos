@@ -21,6 +21,7 @@ import { Permission } from "@/gql/graphql";
 import { getItem, removeItem, setItem } from "@/util/storage";
 import { TextInput } from "@/ui/TextInput";
 import { useDebounce } from "use-debounce";
+import { invariant } from "@apollo/client/utilities/globals";
 
 const ConnectRepositoryQuery = graphql(`
   query ConnectRepository($accountSlug: String!) {
@@ -87,7 +88,7 @@ const GithubInstallations = (props: GithubInstallationsProps) => {
         installations={props.installations}
         value={value}
         setValue={setValue}
-        onSwitch={props.onSwitch}
+        onSwitchProvider={props.onSwitch}
       />
       <GithubRepositoryList
         installationId={value}
@@ -278,13 +279,8 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
 
   const { me, account } = result.data;
 
-  if (!me) {
-    throw new Error("Invariant: no me");
-  }
-
-  if (!account) {
-    throw new Error("Invariant: no account");
-  }
+  invariant(me, "Invariant: no me");
+  invariant(account, "Invariant: no account");
 
   if (!account.permissions.includes(Permission.Write)) {
     return (

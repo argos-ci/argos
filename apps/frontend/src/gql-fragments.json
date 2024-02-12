@@ -12,6 +12,7 @@
       "GlApiProjectConnection",
       "ProjectConnection",
       "ScreenshotDiffConnection",
+      "TeamGithubMemberConnection",
       "TeamMemberConnection",
       "TestConnection",
       "UserConnection"
@@ -34,6 +35,7 @@
       "ScreenshotBucket",
       "ScreenshotDiff",
       "Team",
+      "TeamGithubMember",
       "TeamMember",
       "Test",
       "User"

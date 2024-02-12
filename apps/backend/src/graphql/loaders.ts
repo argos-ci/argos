@@ -17,11 +17,13 @@ import {
   ScreenshotBucket,
   ScreenshotDiff,
   Team,
+  TeamUser,
   Test,
   User,
   VercelConfiguration,
   VercelProject,
 } from "@/database/models/index.js";
+import { invariant } from "@/util/invariant.js";
 
 const createModelLoader = <TModelClass extends ModelClass<Model>>(
   Model: TModelClass,
@@ -145,6 +147,65 @@ const createProjectFromVercelProjectLoader = () => {
   });
 };
 
+const createTeamUserFromGithubAccountMemberLoader = () => {
+  return new DataLoader<
+    { githubAccountId: string; githubMemberId: string },
+    TeamUser | null
+  >(async (githubAccountMembers) => {
+    const githubAccountIds = githubAccountMembers.map((m) => m.githubAccountId);
+    const githubMemberIds = githubAccountMembers.map((m) => m.githubMemberId);
+    const [teams, memberAccounts] = await Promise.all([
+      Team.query()
+        .select("id", "ssoGithubAccountId")
+        .whereIn("ssoGithubAccountId", githubAccountIds),
+      Account.query()
+        .select("userId", "githubAccountId")
+        .whereIn("githubAccountId", githubMemberIds),
+    ]);
+    const accountsByTeam = githubAccountMembers.reduce((map, member) => {
+      const team = teams.find(
+        (team) => team.ssoGithubAccountId === member.githubAccountId,
+      );
+      const account = memberAccounts.find(
+        (account) => account.githubAccountId === member.githubMemberId,
+      );
+      if (account && team) {
+        const array = map.get(team) || [];
+        map.set(team, [...array, account]);
+      }
+      return map;
+    }, new Map<Team, Account[]>());
+    const teamMembers = (
+      await Promise.all(
+        Array.from(accountsByTeam).map(async ([team, accounts]) => {
+          const userIds = accounts.map((account) => {
+            invariant(account.userId);
+            return account.userId;
+          });
+          return TeamUser.query()
+            .where("teamId", team.id)
+            .whereIn("userId", userIds);
+        }),
+      )
+    ).flat();
+    return githubAccountMembers.map((member) => {
+      const team = teams.find(
+        (team) => team.ssoGithubAccountId === member.githubAccountId,
+      );
+      const account = memberAccounts.find(
+        (account) => account.githubAccountId === member.githubMemberId,
+      );
+      if (!account || !team) {
+        return null;
+      }
+      const teamMember = teamMembers.find(
+        (m) => m.teamId === team.id && m.userId === account.userId,
+      );
+      return teamMember ?? null;
+    });
+  });
+};
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
@@ -164,6 +225,7 @@ export const createLoaders = () => ({
   ScreenshotBucket: createModelLoader(ScreenshotBucket),
   ScreenshotDiff: createModelLoader(ScreenshotDiff),
   Team: createModelLoader(Team),
+  TeamUserFromGithubMember: createTeamUserFromGithubAccountMemberLoader(),
   Test: createModelLoader(Test),
   User: createModelLoader(User),
   VercelConfiguration: createModelLoader(VercelConfiguration),

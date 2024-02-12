@@ -1,10 +1,10 @@
 import { useMutation } from "@apollo/client";
 import { MoreVerticalIcon } from "lucide-react";
-import { memo, useRef, useState } from "react";
+import * as React from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useQuery } from "@/containers/Apollo";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
@@ -41,6 +41,9 @@ import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "../AccountAvatar";
 import { useAssertAuthTokenPayload, useAuthTokenPayload } from "../Auth";
+import { invariant } from "@/util/invariant";
+import { GithubAccountLink } from "../GithubAccountLink";
+import { MarkGithubIcon } from "@primer/octicons-react";
 
 const NB_MEMBERS_PER_PAGE = 10;
 
@@ -72,12 +75,54 @@ const TeamMembersQuery = graphql(`
   }
 `);
 
+const TeamGithubMembersQuery = graphql(`
+  query TeamMembers_githubMembers($id: ID!, $first: Int!, $after: Int!) {
+    team: teamById(id: $id) {
+      id
+      githubMembers(first: $first, after: $after) {
+        edges {
+          id
+          githubAccount {
+            id
+            login
+            avatar {
+              ...AccountAvatarFragment
+            }
+          }
+          teamMember {
+            id
+            level
+            user {
+              id
+              name
+              slug
+              avatar {
+                ...AccountAvatarFragment
+              }
+              ...RemoveFromTeamDialog_User
+            }
+            ...LevelSelect_TeamMember
+          }
+        }
+        pageInfo {
+          hasNextPage
+          totalCount
+        }
+      }
+    }
+  }
+`);
+
 const TeamFragment = graphql(`
   fragment TeamMembers_Team on Team {
     id
     name
     slug
     inviteLink
+    ssoGithubAccount {
+      id
+      ...TeamGithubMembersList_GithubAccount
+    }
     me {
       id
       level
@@ -120,7 +165,7 @@ type LeaveTeamDialogProps = {
   teamAccountId: string;
 };
 
-const LeaveTeamDialog = memo<LeaveTeamDialogProps>((props) => {
+const LeaveTeamDialog = React.memo<LeaveTeamDialogProps>((props) => {
   const authPayload = useAuthTokenPayload();
   const [leaveTeam, { loading, error }] = useMutation(LeaveTeamMutation, {
     variables: {
@@ -170,15 +215,16 @@ const RemoveFromTeamDialogUserFragment = graphql(`
   }
 `);
 
+type RemovedUser = DocumentType<typeof RemoveFromTeamDialogUserFragment>;
+
 type RemoveFromTeamDialogProps = {
   state: DialogState;
   teamName: string;
   teamAccountId: string;
-  user: FragmentType<typeof RemoveFromTeamDialogUserFragment>;
+  user: RemovedUser;
 };
 
-const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
-  const user = useFragment(RemoveFromTeamDialogUserFragment, props.user);
+const RemoveFromTeamDialog = React.memo<RemoveFromTeamDialogProps>((props) => {
   const [removeFromTeam, { loading, error }] = useMutation(
     RemoveUserFromTeamMutation,
     {
@@ -213,7 +259,7 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
       },
       variables: {
         teamAccountId: props.teamAccountId,
-        userAccountId: user.id,
+        userAccountId: props.user.id,
       },
     },
   );
@@ -228,13 +274,13 @@ const RemoveFromTeamDialog = memo<RemoveFromTeamDialogProps>((props) => {
         <List>
           <ListRow className="px-4 py-2 text-left">
             <AccountAvatar
-              avatar={user.avatar}
+              avatar={props.user.avatar}
               size={36}
               className="shrink-0"
             />
             <div>
-              <div className="text-sm font-semibold">{user.name}</div>
-              <div className="text-xs text-low">{user.slug}</div>
+              <div className="text-sm font-semibold">{props.user.name}</div>
+              <div className="text-xs text-low">{props.user.slug}</div>
             </div>
           </ListRow>
         </List>
@@ -452,47 +498,266 @@ const levelLabel: Record<TeamUserLevel, string> = {
   member: "Member",
 };
 
+function TeamMembersList(props: {
+  teamId: string;
+  teamName: string;
+  amOwner: boolean;
+  onRemove: (user: RemovedUser) => void;
+  hasGithubSSO: boolean;
+}) {
+  const authPayload = useAssertAuthTokenPayload();
+  const { data, fetchMore } = useQuery(TeamMembersQuery, {
+    variables: {
+      id: props.teamId,
+      after: 0,
+      first: NB_MEMBERS_PER_PAGE,
+    },
+  });
+  if (!data) return null;
+  if (data.team?.__typename !== "Team") {
+    throw new Error("Invariant: Invalid team");
+  }
+  const members = Array.from(data.team.members.edges);
+  const lastOne =
+    !props.hasGithubSSO && data.team.members.pageInfo.totalCount === 1;
+  return (
+    <div className="my-4">
+      {props.hasGithubSSO && (
+        <h3 className="font-semibold mb-2 text-sm">Invited members</h3>
+      )}
+      {members.length > 0 ? (
+        <List>
+          {members.map((member) => {
+            const user = member.user;
+            const isMe = authPayload.account.id === user.id;
+            return (
+              <ListRow key={user.id} className="px-4 py-2 items-center">
+                <AccountAvatar
+                  avatar={user.avatar}
+                  size={36}
+                  className="shrink-0"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold">{user.name}</div>
+                  </div>
+                  <div className="text-xs text-low">{user.slug}</div>
+                </div>
+                {isMe || !props.amOwner ? (
+                  <div className="text-sm text-low">
+                    {levelLabel[member.level]}
+                  </div>
+                ) : (
+                  <div>
+                    <LevelSelect teamId={props.teamId} member={member} />
+                  </div>
+                )}
+                {isMe || props.amOwner ? (
+                  <ActionsMenu
+                    teamName={props.teamName}
+                    accountId={props.teamId}
+                    lastOne={lastOne}
+                    onRemove={() => props.onRemove(user)}
+                    isMe={authPayload.account.id === user.id}
+                  />
+                ) : (
+                  <div className="w-4" />
+                )}
+              </ListRow>
+            );
+          })}
+        </List>
+      ) : (
+        <div className="my-2">No invited member</div>
+      )}
+      {data.team.members.pageInfo.hasNextPage && (
+        <div className="pt-2">
+          <Button
+            variant="outline"
+            color="neutral"
+            className="w-full justify-center"
+            onClick={() => {
+              fetchMore({
+                variables: {
+                  after: members.length,
+                },
+                updateQuery: (prev, { fetchMoreResult }) => {
+                  if (!fetchMoreResult) return prev;
+                  if (!fetchMoreResult.team) return prev;
+                  if (!prev.team) return prev;
+                  return {
+                    team: {
+                      ...prev.team,
+                      members: {
+                        ...prev.team.members,
+                        edges: [
+                          ...prev.team.members.edges,
+                          ...fetchMoreResult.team.members.edges,
+                        ],
+                        pageInfo: fetchMoreResult.team.members.pageInfo,
+                      },
+                    },
+                  };
+                },
+              });
+            }}
+          >
+            Load more
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const TeamGithubMembersListGithubAccountFragment = graphql(`
+  fragment TeamGithubMembersList_GithubAccount on GithubAccount {
+    id
+    ...GithubAccountLink_GithubAccount
+  }
+`);
+
+function TeamGithubMembersList(props: {
+  teamId: string;
+  teamName: string;
+  amOwner: boolean;
+  onRemove: (user: RemovedUser) => void;
+  githubAccount: FragmentType<
+    typeof TeamGithubMembersListGithubAccountFragment
+  >;
+}) {
+  const githubAccount = useFragment(
+    TeamGithubMembersListGithubAccountFragment,
+    props.githubAccount,
+  );
+  const authPayload = useAssertAuthTokenPayload();
+  const { data, fetchMore } = useQuery(TeamGithubMembersQuery, {
+    variables: {
+      id: props.teamId,
+      after: 0,
+      first: NB_MEMBERS_PER_PAGE,
+    },
+  });
+  if (!data) return null;
+  invariant(data.team?.__typename === "Team", "Invalid team");
+  if (!data.team.githubMembers) {
+    return null;
+  }
+  const members = Array.from(data.team.githubMembers.edges);
+  return (
+    <div className="my-4">
+      <h3 className="font-semibold mb-2 text-sm">
+        <MarkGithubIcon className="w-4 h-4 mr-1.5" />
+        GitHub members synced from{" "}
+        <GithubAccountLink githubAccount={githubAccount} />
+      </h3>
+      <List>
+        {members.map((member) => {
+          const teamMember = member.teamMember ?? null;
+          const user = teamMember?.user ?? null;
+          const isMe = Boolean(user && authPayload.account.id === user.id);
+          return (
+            <ListRow key={member.id} className="px-4 py-2 items-center">
+              <AccountAvatar
+                avatar={user?.avatar ?? member.githubAccount.avatar}
+                size={36}
+                className="shrink-0"
+              />
+              {user ? (
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold">{user.name}</div>
+                  </div>
+                  <div className="text-xs text-low">{user.slug}</div>
+                </div>
+              ) : (
+                <div className="flex-1 text-sm font-semibold">
+                  {member.githubAccount.login}
+                </div>
+              )}
+              {isMe || !props.amOwner || !teamMember ? (
+                <div className="text-sm text-low">
+                  {teamMember ? (
+                    levelLabel[teamMember.level]
+                  ) : (
+                    <Tooltip content="This user is not yet registered on Argos, you will be able to modify its permissions after its first login.">
+                      <div>Pending</div>
+                    </Tooltip>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <LevelSelect teamId={props.teamId} member={teamMember} />
+                </div>
+              )}
+              <div className="w-4" />
+            </ListRow>
+          );
+        })}
+      </List>
+      {data.team.githubMembers.pageInfo.hasNextPage && (
+        <div className="pt-2">
+          <Button
+            variant="outline"
+            color="neutral"
+            className="w-full justify-center"
+            onClick={() => {
+              fetchMore({
+                variables: {
+                  after: members.length,
+                },
+                updateQuery: (prev, { fetchMoreResult }) => {
+                  if (!fetchMoreResult) return prev;
+                  if (!fetchMoreResult.team) return prev;
+                  if (!prev.team) return prev;
+                  if (!prev.team.githubMembers) return prev;
+                  if (!fetchMoreResult.team.githubMembers) return prev;
+                  return {
+                    team: {
+                      ...prev.team,
+                      members: {
+                        ...prev.team.githubMembers,
+                        edges: [
+                          ...prev.team.githubMembers.edges,
+                          ...fetchMoreResult.team.githubMembers.edges,
+                        ],
+                        pageInfo: fetchMoreResult.team.githubMembers.pageInfo,
+                      },
+                    },
+                  };
+                },
+              });
+            }}
+          >
+            Load more
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export const TeamMembers = (props: {
   team: FragmentType<typeof TeamFragment>;
 }) => {
   const authPayload = useAssertAuthTokenPayload();
   const team = useFragment(TeamFragment, props.team);
-  const [removeAccountId, setRemoveAccountId] = useState<string | null>(null);
+  const [removedUser, setRemovedUser] = React.useState<RemovedUser | null>(
+    null,
+  );
   const removeTeamDialog = useDialogState({
-    open: removeAccountId !== null,
+    open: removedUser !== null,
     setOpen: (open) => {
       if (!open) {
-        setRemoveAccountId(null);
+        setRemovedUser(null);
       }
     },
   });
   const me = team.me;
-  const amOwner = !!me && me.level === TeamUserLevel.Owner;
-  const { data, fetchMore } = useQuery(TeamMembersQuery, {
-    variables: {
-      id: team.id,
-      after: 0,
-      first: NB_MEMBERS_PER_PAGE,
-    },
-  });
-  const removedUserRef = useRef<FragmentType<
-    typeof RemoveFromTeamDialogUserFragment
-  > | null>(null);
-  if (!data) return null;
-  if (data.team?.__typename !== "Team") {
-    throw new Error("Invariant: Invalid team");
-  }
+  const amOwner = Boolean(me && me.level === TeamUserLevel.Owner);
+  const hasGithubSSO = Boolean(team.ssoGithubAccount);
   const teamName = team.name || team.slug;
-  const lastOne = data.team.members.pageInfo.totalCount === 1;
-  const members = Array.from(data.team.members.edges);
-  if (removeAccountId) {
-    const removedUser =
-      members.find((member) => member.user.id === removeAccountId)?.user ??
-      null;
-    removedUserRef.current = removedUser ?? removedUserRef.current;
-  } else {
-    removedUserRef.current = null;
-  }
+
   return (
     <Card>
       <form>
@@ -501,86 +766,25 @@ export const TeamMembers = (props: {
           <CardParagraph>
             Add members to your team to give them access to your projects.
           </CardParagraph>
-          <List className="mt-4">
-            {members.map((member) => {
-              const user = member.user;
-              const isMe = authPayload.account.id === user.id;
-              return (
-                <ListRow key={user.id} className="px-4 py-2 items-center">
-                  <AccountAvatar
-                    avatar={user.avatar}
-                    size={36}
-                    className="shrink-0"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm font-semibold">{user.name}</div>
-                    </div>
-                    <div className="text-xs text-low">{user.slug}</div>
-                  </div>
-                  {isMe || !amOwner ? (
-                    <div className="text-sm text-low">
-                      {levelLabel[member.level]}
-                    </div>
-                  ) : (
-                    <div>
-                      <LevelSelect teamId={team.id} member={member} />
-                    </div>
-                  )}
-                  {isMe || amOwner ? (
-                    <ActionsMenu
-                      teamName={teamName}
-                      accountId={team.id}
-                      lastOne={lastOne}
-                      onRemove={() => setRemoveAccountId(user.id)}
-                      isMe={authPayload.account.id === user.id}
-                    />
-                  ) : (
-                    <div className="w-4" />
-                  )}
-                </ListRow>
-              );
-            })}
-          </List>
-          {data.team.members.pageInfo.hasNextPage && (
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                color="neutral"
-                className="w-full justify-center"
-                onClick={() => {
-                  fetchMore({
-                    variables: {
-                      after: members.length,
-                    },
-                    updateQuery: (prev, { fetchMoreResult }) => {
-                      if (!fetchMoreResult) return prev;
-                      if (!fetchMoreResult.team) return prev;
-                      if (!prev.team) return prev;
-                      return {
-                        team: {
-                          ...prev.team,
-                          members: {
-                            ...prev.team.members,
-                            edges: [
-                              ...prev.team.members.edges,
-                              ...fetchMoreResult.team.members.edges,
-                            ],
-                            pageInfo: fetchMoreResult.team.members.pageInfo,
-                          },
-                        },
-                      };
-                    },
-                  });
-                }}
-              >
-                Load more
-              </Button>
-            </div>
+          <TeamMembersList
+            teamId={team.id}
+            teamName={teamName}
+            amOwner={amOwner}
+            onRemove={setRemovedUser}
+            hasGithubSSO={hasGithubSSO}
+          />
+          {team.ssoGithubAccount && (
+            <TeamGithubMembersList
+              teamId={team.id}
+              teamName={teamName}
+              githubAccount={team.ssoGithubAccount}
+              amOwner={amOwner}
+              onRemove={setRemovedUser}
+            />
           )}
           <Dialog state={removeTeamDialog}>
-            {removedUserRef.current ? (
-              authPayload.account.id === removeAccountId ? (
+            {removedUser ? (
+              authPayload.account.id === removedUser.id ? (
                 <LeaveTeamDialog
                   teamName={teamName}
                   teamAccountId={team.id}
@@ -590,7 +794,7 @@ export const TeamMembers = (props: {
                 <RemoveFromTeamDialog
                   teamName={teamName}
                   teamAccountId={team.id}
-                  user={removedUserRef.current}
+                  user={removedUser}
                   state={removeTeamDialog}
                 />
               )
@@ -599,8 +803,12 @@ export const TeamMembers = (props: {
         </CardBody>
       </form>
       <CardFooter className="flex items-center justify-between">
-        <div>Invite people to collaborate in the Team.</div>
-        <InviteLinkButton inviteLink={team.inviteLink} />
+        {team.inviteLink && (
+          <>
+            <div>Invite people to collaborate in the Team.</div>
+            <InviteLinkButton inviteLink={team.inviteLink} />
+          </>
+        )}
       </CardFooter>
     </Card>
   );

@@ -9,6 +9,8 @@ export type { RestEndpointMethodTypes } from "@octokit/rest";
 
 Octokit.plugin(retry);
 
+export type { Octokit };
+
 export const getAppOctokit = () => {
   return new Octokit({
     debug: config.get("env") === "development",

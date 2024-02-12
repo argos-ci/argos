@@ -10,6 +10,7 @@ import { SettingsLayout } from "@/containers/Layout";
 import { PlanCard } from "@/containers/PlanCard";
 import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamMembers } from "@/containers/Team/Members";
+import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { graphql } from "@/gql";
 import { Permission } from "@/gql/graphql";
@@ -29,6 +30,7 @@ const AccountQuery = graphql(`
       plan {
         id
         displayName
+        githubSsoIncluded
       }
 
       ...TeamMembers_Team
@@ -37,7 +39,7 @@ const AccountQuery = graphql(`
       ...AccountChangeSlug_Account
       ...PlanCard_Account
       ...AccountGitLab_Account
-      # ...AccountVercel_Account
+      ...TeamGitHubSSO_Team
     }
   }
 `);
@@ -116,9 +118,11 @@ export const AccountSettings = () => {
                   }
                   return null;
                 })()}
-              {/* <AccountVercel account={account} /> */}
               {writable && <PlanCard account={account} />}
               {isTeam && <TeamMembers team={account} />}
+              {isTeam && account.plan?.githubSsoIncluded && (
+                <TeamGitHubSSO team={account} />
+              )}
               <AccountGitLab account={account} />
               {isTeam && writable && <TeamDelete team={account} />}
             </SettingsLayout>

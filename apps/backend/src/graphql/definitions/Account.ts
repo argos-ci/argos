@@ -32,6 +32,7 @@ import {
   getTokenGitlabClient,
 } from "@/gitlab/index.js";
 import { invariant } from "@/util/invariant.js";
+import { getAvatarColor, githubAvatarUrlFactory } from "../services/avatar.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -89,7 +90,6 @@ export const typeDefs = gql`
     pendingCancelAt: DateTime
     permissions: [Permission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
-    ghAccount: GithubAccount
     avatar: AccountAvatar!
     paymentProvider: AccountSubscriptionProvider
     vercelConfiguration: VercelConfiguration
@@ -120,26 +120,6 @@ export const typeDefs = gql`
     terminateTrial(accountId: ID!): Account!
   }
 `;
-
-const colors = [
-  "#2a3b4c",
-  "#10418e",
-  "#4527a0",
-  "#8ca1ee",
-  "#65b7d7",
-  "#65b793",
-  "#00796b",
-  "#9c1258",
-  "#c20006",
-  "#ff3d44",
-  "#ffb83d",
-  "#f58f00",
-];
-
-const getAvatarColor = (id: string): string => {
-  const randomIndex = Number(id) % colors.length;
-  return colors[randomIndex] ?? colors[0] ?? "#000";
-};
 
 const accountById = async (
   _root: unknown,
@@ -292,10 +272,6 @@ export const resolvers: IResolvers = {
       if (!writable) return account.gitlabAccessToken ? `••••••••` : null;
       return account.gitlabAccessToken || null;
     },
-    ghAccount: async (account, _args, ctx) => {
-      if (!account.githubAccountId) return null;
-      return ctx.loaders.GithubAccount.load(account.githubAccountId);
-    },
     paymentProvider: async (account) => {
       if (account.type === "user") {
         return null;
@@ -319,13 +295,7 @@ export const resolvers: IResolvers = {
 
       if (ghAccount) {
         return {
-          getUrl: ({ size }: { size?: number }) => {
-            const baseUrl = `https://github.com/${ghAccount.login}.png`;
-            if (!size) {
-              return baseUrl;
-            }
-            return `${baseUrl}?size=${size}`;
-          },
+          getUrl: githubAvatarUrlFactory(ghAccount.login),
           initial,
           color,
         };

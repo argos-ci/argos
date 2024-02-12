@@ -8,6 +8,7 @@ import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
 import { TeamUser } from "./TeamUser.js";
 import { User } from "./User.js";
+import { GithubAccount } from "./GithubAccount.js";
 
 export class Team extends Model {
   static override tableName = "teams";
@@ -16,10 +17,12 @@ export class Team extends Model {
     required: [],
     properties: {
       inviteSecret: { type: ["null", "string"] },
+      ssoGithubAccountId: { type: ["null", "string"] },
     },
   });
 
   inviteSecret!: string | null;
+  ssoGithubAccountId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -44,6 +47,14 @@ export class Team extends Model {
         },
         filter: (query) => query.where({ "team_users.userLevel": "owner" }),
       },
+      teamUsers: {
+        relation: Model.HasManyRelation,
+        modelClass: TeamUser,
+        join: {
+          from: "teams.id",
+          to: "team_users.teamId",
+        },
+      },
       users: {
         relation: Model.ManyToManyRelation,
         modelClass: User,
@@ -56,12 +67,21 @@ export class Team extends Model {
           to: "users.id",
         },
       },
+      ssoGithubAccount: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: GithubAccount,
+        join: {
+          from: "teams.ssoGithubAccountId",
+          to: "github_accounts.id",
+        },
+      },
     };
   }
 
   account?: Account;
   users?: User[];
   owners?: User[];
+  ssoGithubAccount?: GithubAccount | null;
 
   static generateInviteToken(payload: {
     teamId: string;

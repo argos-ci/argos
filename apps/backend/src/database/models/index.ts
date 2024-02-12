@@ -5,6 +5,7 @@ export * from "./Capture.js";
 export * from "./Crawl.js";
 export * from "./File.js";
 export * from "./GithubAccount.js";
+export * from "./GithubAccountMember.js";
 export * from "./GithubInstallation.js";
 export * from "./GithubRepository.js";
 export * from "./GithubRepositoryInstallation.js";

@@ -487,6 +487,7 @@ export const seed = async (knex) => {
       includedScreenshots: 7000,
       githubPlanId: 7772,
       usageBased: false,
+      githubSsoIncluded: true,
     },
     {
       ...timeStamps,
@@ -495,6 +496,7 @@ export const seed = async (knex) => {
       githubPlanId: 7786,
       stripeProductId: "prod_MzEZEfBDYFIc53",
       usageBased: false,
+      githubSsoIncluded: true,
     },
     {
       ...timeStamps,
@@ -503,6 +505,7 @@ export const seed = async (knex) => {
       githubPlanId: 7787,
       stripeProductId: "prod_MzEavomA8VeCvW",
       usageBased: false,
+      githubSsoIncluded: true,
     },
     {
       ...timeStamps,
@@ -511,6 +514,7 @@ export const seed = async (knex) => {
       githubPlanId: 7788,
       stripeProductId: "prod_MzEawyq1kFcHEn",
       usageBased: false,
+      githubSsoIncluded: true,
     },
     {
       ...timeStamps,
@@ -519,6 +523,7 @@ export const seed = async (knex) => {
       githubPlanId: null,
       stripeProductId: "prod_Njgin72JdGT9Yu",
       usageBased: true,
+      githubSsoIncluded: true,
     },
   ]);
 };

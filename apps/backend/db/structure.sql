@@ -321,6 +321,42 @@ ALTER SEQUENCE public.files_id_seq OWNED BY public.files.id;
 
 
 --
+-- Name: github_account_members; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.github_account_members (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "githubAccountId" bigint NOT NULL,
+    "githubMemberId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.github_account_members OWNER TO postgres;
+
+--
+-- Name: github_account_members_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.github_account_members_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.github_account_members_id_seq OWNER TO postgres;
+
+--
+-- Name: github_account_members_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.github_account_members_id_seq OWNED BY public.github_account_members.id;
+
+
+--
 -- Name: github_accounts; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -724,7 +760,8 @@ CREATE TABLE public.plans (
     "includedScreenshots" integer NOT NULL,
     "githubPlanId" integer,
     "stripeProductId" character varying(255),
-    "usageBased" boolean NOT NULL
+    "usageBased" boolean NOT NULL,
+    "githubSsoIncluded" boolean DEFAULT false NOT NULL
 );
 
 
@@ -1016,7 +1053,8 @@ CREATE TABLE public.teams (
     id bigint NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "inviteSecret" character varying(255)
+    "inviteSecret" character varying(255),
+    "ssoGithubAccountId" bigint
 );
 
 
@@ -1368,6 +1406,13 @@ ALTER TABLE ONLY public.files ALTER COLUMN id SET DEFAULT nextval('public.files_
 
 
 --
+-- Name: github_account_members id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_account_members ALTER COLUMN id SET DEFAULT nextval('public.github_account_members_id_seq'::regclass);
+
+
+--
 -- Name: github_accounts id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1615,6 +1660,22 @@ ALTER TABLE ONLY public.files
 
 
 --
+-- Name: github_account_members github_account_members_githubaccountid_githubmemberid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_account_members
+    ADD CONSTRAINT github_account_members_githubaccountid_githubmemberid_unique UNIQUE ("githubAccountId", "githubMemberId");
+
+
+--
+-- Name: github_account_members github_account_members_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_account_members
+    ADD CONSTRAINT github_account_members_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: github_accounts github_accounts_githubid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1788,6 +1849,14 @@ ALTER TABLE ONLY public.subscriptions
 
 ALTER TABLE ONLY public.team_users
     ADD CONSTRAINT team_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: team_users team_users_teamid_userid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_users
+    ADD CONSTRAINT team_users_teamid_userid_unique UNIQUE ("teamId", "userId");
 
 
 --
@@ -2003,6 +2072,20 @@ CREATE INDEX crawls_buildid_index ON public.crawls USING btree ("buildId");
 --
 
 CREATE INDEX crawls_jobstatus_index ON public.crawls USING btree ("jobStatus");
+
+
+--
+-- Name: github_account_members_githubaccountid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_account_members_githubaccountid_index ON public.github_account_members USING btree ("githubAccountId");
+
+
+--
+-- Name: github_account_members_githubmemberid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_account_members_githubmemberid_index ON public.github_account_members USING btree ("githubMemberId");
 
 
 --
@@ -2258,6 +2341,13 @@ CREATE INDEX team_users_userid_index ON public.team_users USING btree ("userId")
 
 
 --
+-- Name: teams_ssogithubaccountid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX teams_ssogithubaccountid_index ON public.teams USING btree ("ssoGithubAccountId");
+
+
+--
 -- Name: tests_projectid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2409,6 +2499,22 @@ ALTER TABLE ONLY public.captures
 
 ALTER TABLE ONLY public.crawls
     ADD CONSTRAINT crawls_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
+
+
+--
+-- Name: github_account_members github_account_members_githubaccountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_account_members
+    ADD CONSTRAINT github_account_members_githubaccountid_foreign FOREIGN KEY ("githubAccountId") REFERENCES public.github_accounts(id);
+
+
+--
+-- Name: github_account_members github_account_members_githubmemberid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_account_members
+    ADD CONSTRAINT github_account_members_githubmemberid_foreign FOREIGN KEY ("githubMemberId") REFERENCES public.github_accounts(id);
 
 
 --
@@ -2612,6 +2718,14 @@ ALTER TABLE ONLY public.team_users
 
 
 --
+-- Name: teams teams_ssogithubaccountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.teams
+    ADD CONSTRAINT teams_ssogithubaccountid_foreign FOREIGN KEY ("ssoGithubAccountId") REFERENCES public.github_accounts(id);
+
+
+--
 -- Name: tests tests_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2774,6 +2888,7 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2023111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231115210334_file-type-not-null.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20231122143018_add-purchase-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240108211747_project-status-check.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240121215150_github-sso.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240202080857_staff-user.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240203212814_renaming.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240204080614_subscriptions_included_screenshots.js', 1, NOW());
