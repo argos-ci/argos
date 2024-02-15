@@ -199,22 +199,9 @@ export const resolvers: IResolvers = {
       return manager.getActiveSubscription();
     },
     subscriptionStatus: async (account) => {
-      if (account.forcedPlanId !== null) {
-        return IAccountSubscriptionStatus.Active;
-      }
-
-      if (account.type === "user") {
-        return null;
-      }
-
       const manager = account.$getSubscriptionManager();
-      const subscription = await manager.getActiveSubscription();
-
-      if (subscription) {
-        return subscription.status as IAccountSubscriptionStatus;
-      }
-
-      return IAccountSubscriptionStatus.Canceled;
+      const status = await manager.getSubscriptionStatus();
+      return status as IAccountSubscriptionStatus;
     },
     trialStatus: async (account) => {
       if (account.type === "user") {
@@ -465,8 +452,10 @@ export const resolvers: IResolvers = {
         return account;
       }
 
-      // Impossible to not have a "stripeSubscriptionId" with a 'stripe' provider
-      invariant(argosSubscription.stripeSubscriptionId);
+      invariant(
+        argosSubscription.stripeSubscriptionId,
+        "no stripeSubscriptionId for stripe subscription",
+      );
 
       const stripeSubscription = await terminateStripeTrial(
         argosSubscription.stripeSubscriptionId,

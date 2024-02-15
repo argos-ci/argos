@@ -68,7 +68,7 @@ export class Team extends Model {
         },
       },
       ssoGithubAccount: {
-        relation: Model.BelongsToOneRelation,
+        relation: Model.HasOneRelation,
         modelClass: GithubAccount,
         join: {
           from: "teams.ssoGithubAccountId",

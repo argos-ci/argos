@@ -34,7 +34,6 @@ import {
   getOrCreateGithubAccount,
   importOrgMembers,
 } from "../services/github.js";
-import { checkIsEligibleToGithubSso } from "@/database/services/account.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -585,12 +584,6 @@ export const resolvers: IResolvers = {
         throw forbidden("User does not have access to GitHub installation");
       }
 
-      const eligible = await checkIsEligibleToGithubSso(teamAccount);
-
-      if (!eligible) {
-        throw new Error("Team is not eligible for GitHub SSO");
-      }
-
       const appOctokit = getAppOctokit();
 
       const ghInstallation = await appOctokit.apps.getInstallation({
@@ -615,6 +608,59 @@ export const resolvers: IResolvers = {
         teamId,
         githubAccount,
       });
+
+      const manager = teamAccount.$getSubscriptionManager();
+      const [plan, subscriptionStatus, subscription] = await Promise.all([
+        manager.getPlan(),
+        manager.getSubscriptionStatus(),
+        manager.getActiveSubscription(),
+      ]);
+
+      if (subscriptionStatus !== "active") {
+        throw forbidden("A valid subscription is required to enable SSO");
+      }
+
+      const priced = !plan?.githubSsoIncluded;
+
+      if (priced) {
+        if (!subscription) {
+          throw forbidden("A valid subscription is required to enable SSO");
+        }
+
+        if (!subscription.stripeSubscriptionId) {
+          throw forbidden("GitHub SSO is not available on your current plan");
+        }
+
+        const [stripeSubscription, stripeProduct] = await Promise.all([
+          stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
+          stripe.products.retrieve(config.get("githubSso.stripeProductId")),
+        ]);
+
+        invariant(
+          stripeSubscription,
+          `Subscription ${subscription.stripeSubscriptionId} not found`,
+        );
+        invariant(
+          stripeProduct,
+          `Product ${config.get("githubSso.stripeProductId")} not found`,
+        );
+        invariant(
+          typeof stripeProduct.default_price === "string",
+          "Product default_price is undefined",
+        );
+
+        const alreadyBought = stripeSubscription.items.data.some(
+          (item) => item.price.product === stripeProduct.id,
+        );
+
+        // If the user has not already bought the SSO product, we will add it to the subscription
+        if (!alreadyBought) {
+          await stripe.subscriptionItems.create({
+            subscription: subscription.stripeSubscriptionId,
+            price: stripeProduct.default_price,
+          });
+        }
+      }
 
       // Enable SSO and add members in a transaction
       await transaction(async (trx) => {
@@ -641,6 +687,35 @@ export const resolvers: IResolvers = {
       });
 
       invariant(teamAccount.teamId, "Account teamId is undefined");
+
+      const manager = teamAccount.$getSubscriptionManager();
+      const subscription = await manager.getActiveSubscription();
+
+      if (subscription?.stripeSubscriptionId) {
+        const [stripeSubscription, stripeProduct] = await Promise.all([
+          stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
+          stripe.products.retrieve(config.get("githubSso.stripeProductId")),
+        ]);
+
+        invariant(
+          stripeSubscription,
+          `Subscription ${subscription.stripeSubscriptionId} not found`,
+        );
+
+        invariant(
+          stripeProduct,
+          `Product ${config.get("githubSso.stripeProductId")} not found`,
+        );
+
+        const item = stripeSubscription.items.data.find(
+          (item) => item.price.product === stripeProduct.id,
+        );
+
+        // If the user has bought the SSO product, we will remove it from the subscription
+        if (item) {
+          await stripe.subscriptionItems.del(item.id);
+        }
+      }
 
       await Team.query().findById(teamAccount.teamId).patch({
         ssoGithubAccountId: null,

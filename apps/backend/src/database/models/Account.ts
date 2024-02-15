@@ -30,6 +30,7 @@ type AccountSubscriptionManager = {
   getCurrentPeriodConsumptionRatio(): Promise<number>;
   checkIsOutOfCapacity(): Promise<"flat-rate" | "trialing" | null>;
   getIncludedScreenshots(): Promise<number>;
+  getSubscriptionStatus(): Promise<Subscription["status"] | null>;
 };
 
 export class Account extends Model {
@@ -268,6 +269,32 @@ export class Account extends Model {
       return screenshotsCount / includedScreenshots;
     });
 
+    const getSubscriptionStatus = memoize(async () => {
+      if (this.forcedPlanId !== null) {
+        return "active";
+      }
+
+      if (this.type === "user") {
+        return null;
+      }
+
+      const [trialing, subscription] = await Promise.all([
+        checkIsUsageBasedPlan(),
+        getActiveSubscription(),
+      ]);
+
+      if (subscription) {
+        // We consider a trialing subscription as active
+        // if the payment method is filled.
+        if (trialing && subscription.paymentMethodFilled) {
+          return "active";
+        }
+        return subscription.status;
+      }
+
+      return "canceled";
+    });
+
     const checkIsOutOfCapacity = memoize(async () => {
       const [usageBased, trialing, consumptionRatio, activeSubscription] =
         await Promise.all([
@@ -307,6 +334,7 @@ export class Account extends Model {
       getCurrentPeriodConsumptionRatio,
       checkIsOutOfCapacity,
       getIncludedScreenshots,
+      getSubscriptionStatus,
     };
 
     return this._cachedSubscriptionManager;

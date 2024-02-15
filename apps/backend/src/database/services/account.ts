@@ -21,14 +21,6 @@ const RESERVED_SLUGS = [
 ];
 
 /**
- * Check if an account is eligible to use GitHub SSO.
- */
-export async function checkIsEligibleToGithubSso(account: Account) {
-  const plan = await account.$getSubscriptionManager().getPlan();
-  return Boolean(plan?.githubSsoIncluded);
-}
-
-/**
  * Get or create a GitHub account member.
  */
 export async function getOrCreateGithubAccountMember(input: {
@@ -49,6 +41,9 @@ export async function joinSSOTeams(input: {
   githubAccountId: string;
   userId: string;
 }) {
+  // Find teams that have SSO enabled
+  // with the given GitHub account as a member
+  // and where the user is not already a member
   const teams = await Team.query()
     .select("teams.id")
     .joinRelated("ssoGithubAccount.members")
@@ -57,8 +52,7 @@ export async function joinSSOTeams(input: {
       TeamUser.query()
         .where("userId", input.userId)
         .whereRaw('team_users."teamId" = teams.id'),
-    )
-    .debug();
+    );
 
   // If we found teams, we join the user to them
   if (teams.length > 0) {

@@ -30,7 +30,6 @@ const AccountQuery = graphql(`
       plan {
         id
         displayName
-        githubSsoIncluded
       }
 
       ...TeamMembers_Team
@@ -120,9 +119,7 @@ export const AccountSettings = () => {
                 })()}
               {writable && <PlanCard account={account} />}
               {isTeam && <TeamMembers team={account} />}
-              {isTeam && account.plan?.githubSsoIncluded && (
-                <TeamGitHubSSO team={account} />
-              )}
+              {isTeam && <TeamGitHubSSO team={account} />}
               <AccountGitLab account={account} />
               {isTeam && writable && <TeamDelete team={account} />}
             </SettingsLayout>
