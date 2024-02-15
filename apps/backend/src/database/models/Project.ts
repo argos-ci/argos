@@ -160,12 +160,11 @@ export class Project extends Model {
     return Project.checkReadPermission(this, user);
   }
 
-  async $getReferenceBranch(trx?: TransactionOrKnex) {
+  async $getReferenceBranch() {
     if (this.baselineBranch) return this.baselineBranch;
-    await this.$fetchGraph(
-      "[githubRepository, gitlabProject]",
-      trx ? { transaction: trx, skipFetched: true } : undefined,
-    );
+    await this.$fetchGraph("[githubRepository, gitlabProject]", {
+      skipFetched: true,
+    });
     if (this.githubRepository) {
       return this.githubRepository.defaultBranch;
     }
