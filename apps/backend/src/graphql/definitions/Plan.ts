@@ -8,5 +8,6 @@ export const typeDefs = gql`
     id: ID!
     displayName: String!
     usageBased: Boolean!
+    githubSsoIncluded: Boolean!
   }
 `;

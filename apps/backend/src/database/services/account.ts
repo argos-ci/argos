@@ -7,6 +7,9 @@ import { transaction } from "../transaction.js";
 import type { GitlabUser } from "../models/GitlabUser.js";
 import type { PartialModelObject } from "objection";
 import { sendWelcomeEmail } from "@/email/send.js";
+import { Team } from "../models/Team.js";
+import { TeamUser } from "../models/TeamUser.js";
+import { GithubAccountMember } from "../models/GithubAccountMember.js";
 
 const RESERVED_SLUGS = [
   "auth",
@@ -16,6 +19,52 @@ const RESERVED_SLUGS = [
   "invite",
   "teams",
 ];
+
+/**
+ * Get or create a GitHub account member.
+ */
+export async function getOrCreateGithubAccountMember(input: {
+  githubAccountId: string;
+  githubMemberId: string;
+}) {
+  const existing = await GithubAccountMember.query().findOne(input);
+  if (existing) {
+    return existing;
+  }
+  return GithubAccountMember.query().insertAndFetch(input);
+}
+
+/**
+ * Join SSO teams if needed.
+ */
+export async function joinSSOTeams(input: {
+  githubAccountId: string;
+  userId: string;
+}) {
+  // Find teams that have SSO enabled
+  // with the given GitHub account as a member
+  // and where the user is not already a member
+  const teams = await Team.query()
+    .select("teams.id")
+    .joinRelated("ssoGithubAccount.members")
+    .where("ssoGithubAccount:members.githubMemberId", input.githubAccountId)
+    .whereNotExists(
+      TeamUser.query()
+        .where("userId", input.userId)
+        .whereRaw('team_users."teamId" = teams.id'),
+    );
+
+  // If we found teams, we join the user to them
+  if (teams.length > 0) {
+    await TeamUser.query().insert(
+      teams.map((team) => ({
+        teamId: team.id,
+        userId: input.userId,
+        userLevel: "member" as const,
+      })),
+    );
+  }
+}
 
 export const checkAccountSlug = async (slug: string) => {
   if (RESERVED_SLUGS.includes(slug)) {
@@ -52,8 +101,8 @@ export const getGhAccountType = (strType: string) => {
 type GetOrCreateGhAccountProps = {
   githubId: number;
   login: string;
-  email?: string | null;
-  name?: string | null;
+  email?: string | null | undefined;
+  name?: string | null | undefined;
   type: GithubAccount["type"];
 };
 
@@ -66,16 +115,16 @@ export const getOrCreateGhAccount = async (
   if (existing) {
     if (
       existing.login !== props.login ||
-      (existing.email !== props.email && props.email) ||
-      (existing.name !== props.name && props.name)
+      (existing.email !== props.email && props.email !== undefined) ||
+      (existing.name !== props.name && props.name !== undefined)
     ) {
       const toUpdate: PartialModelObject<GithubAccount> = {
         login: props.login,
       };
-      if (props.email) {
+      if (props.email !== undefined) {
         toUpdate.email = props.email;
       }
-      if (props.name) {
+      if (props.name !== undefined) {
         toUpdate.name = props.name;
       }
       return existing.$query().patchAndFetch(toUpdate);

@@ -1,5 +1,5 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Subscription, Build, GithubAccount, GithubPullRequest, GithubRepository, GitlabProject, Plan, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, Test, VercelConfiguration, VercelProject } from '../../database/models/index.js';
+import type { AccountAvatar, Subscription, Build, GithubAccount, GithubPullRequest, GithubRepository, GitlabProject, Plan, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, GithubAccountMember, Test, VercelConfiguration, VercelProject } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
 import type { VercelApiProject, VercelApiTeam } from '../../vercel/index.js';
@@ -29,7 +29,6 @@ export type IAccount = {
   avatar: IAccountAvatar;
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: Scalars['Int']['output'];
-  ghAccount?: Maybe<IGithubAccount>;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
   hasForcedPlan: Scalars['Boolean']['output'];
@@ -209,6 +208,15 @@ export type IDeleteTeamInput = {
   accountId: Scalars['ID']['input'];
 };
 
+export type IDisableGitHubSsoOnTeamInput = {
+  teamAccountId: Scalars['ID']['input'];
+};
+
+export type IEnableGitHubSsoOnTeamInput = {
+  ghInstallationId: Scalars['Int']['input'];
+  teamAccountId: Scalars['ID']['input'];
+};
+
 export type IGhApiInstallation = INode & {
   __typename?: 'GhApiInstallation';
   account: IGhApiInstallationAccount;
@@ -244,9 +252,11 @@ export type IGhApiRepositoryConnection = IConnection & {
 
 export type IGithubAccount = INode & {
   __typename?: 'GithubAccount';
+  avatar: IAccountAvatar;
   id: Scalars['ID']['output'];
   login: Scalars['String']['output'];
   name?: Maybe<Scalars['String']['output']>;
+  url: Scalars['String']['output'];
 };
 
 export type IGithubPullRequest = INode & IPullRequest & {
@@ -361,6 +371,10 @@ export type IMutation = {
   deleteProject: Scalars['Boolean']['output'];
   /** Delete team and all its projects */
   deleteTeam: Scalars['Boolean']['output'];
+  /** Disable GitHub SSO */
+  disableGitHubSSOOnTeam: ITeam;
+  /** Enable GitHub SSO */
+  enableGitHubSSOOnTeam: ITeam;
   /** Import a project from GitHub */
   importGithubProject: IProject;
   /** Import a project from GitLab */
@@ -420,6 +434,16 @@ export type IMutationDeleteProjectArgs = {
 
 export type IMutationDeleteTeamArgs = {
   input: IDeleteTeamInput;
+};
+
+
+export type IMutationDisableGitHubSsoOnTeamArgs = {
+  input: IDisableGitHubSsoOnTeamInput;
+};
+
+
+export type IMutationEnableGitHubSsoOnTeamArgs = {
+  input: IEnableGitHubSsoOnTeamInput;
 };
 
 
@@ -536,6 +560,7 @@ export enum IPermission {
 export type IPlan = INode & {
   __typename?: 'Plan';
   displayName: Scalars['String']['output'];
+  githubSsoIncluded: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   usageBased: Scalars['Boolean']['output'];
 };
@@ -876,14 +901,14 @@ export type ITeam = IAccount & INode & {
   avatar: IAccountAvatar;
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: Scalars['Int']['output'];
-  ghAccount?: Maybe<IGithubAccount>;
+  githubMembers?: Maybe<ITeamGithubMemberConnection>;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
   hasForcedPlan: Scalars['Boolean']['output'];
   hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
-  inviteLink: Scalars['String']['output'];
+  inviteLink?: Maybe<Scalars['String']['output']>;
   me?: Maybe<ITeamMember>;
   members: ITeamMemberConnection;
   name?: Maybe<Scalars['String']['output']>;
@@ -896,12 +921,19 @@ export type ITeam = IAccount & INode & {
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   slug: Scalars['String']['output'];
+  ssoGithubAccount?: Maybe<IGithubAccount>;
   stripeClientReferenceId: Scalars['String']['output'];
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
   subscription?: Maybe<IAccountSubscription>;
   subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
   trialStatus?: Maybe<ITrialStatus>;
   vercelConfiguration?: Maybe<IVercelConfiguration>;
+};
+
+
+export type ITeamGithubMembersArgs = {
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -914,6 +946,19 @@ export type ITeamMembersArgs = {
 export type ITeamProjectsArgs = {
   after: Scalars['Int']['input'];
   first: Scalars['Int']['input'];
+};
+
+export type ITeamGithubMember = INode & {
+  __typename?: 'TeamGithubMember';
+  githubAccount: IGithubAccount;
+  id: Scalars['ID']['output'];
+  teamMember?: Maybe<ITeamMember>;
+};
+
+export type ITeamGithubMemberConnection = IConnection & {
+  __typename?: 'TeamGithubMemberConnection';
+  edges: Array<ITeamGithubMember>;
+  pageInfo: IPageInfo;
 };
 
 export type ITeamMember = INode & {
@@ -1013,7 +1058,6 @@ export type IUser = IAccount & INode & {
   avatar: IAccountAvatar;
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: Scalars['Int']['output'];
-  ghAccount?: Maybe<IGithubAccount>;
   ghInstallations: IGhApiInstallationConnection;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
@@ -1222,8 +1266,8 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping of interface types */
 export type IResolversInterfaceTypes<RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
-  Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<RefType['Project']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<RefType['ScreenshotDiff']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<RefType['User']> } );
-  Node: ( Subscription ) | ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( TeamUser ) | ( Test ) | ( Account );
+  Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<RefType['Project']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<RefType['User']> } );
+  Node: ( Subscription ) | ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
   VercelApiProjectLink: ( IVercelApiProjectLinkGithub ) | ( IVercelApiProjectLinkOther );
@@ -1248,6 +1292,8 @@ export type IResolversTypes = ResolversObject<{
   Date: ResolverTypeWrapper<Scalars['Date']['output']>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   DeleteTeamInput: IDeleteTeamInput;
+  DisableGitHubSSOOnTeamInput: IDisableGitHubSsoOnTeamInput;
+  EnableGitHubSSOOnTeamInput: IEnableGitHubSsoOnTeamInput;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   GhApiInstallation: ResolverTypeWrapper<GhApiInstallation>;
   GhApiInstallationAccount: ResolverTypeWrapper<IGhApiInstallationAccount>;
@@ -1304,6 +1350,8 @@ export type IResolversTypes = ResolversObject<{
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   SummaryCheck: ISummaryCheck;
   Team: ResolverTypeWrapper<Account>;
+  TeamGithubMember: ResolverTypeWrapper<GithubAccountMember>;
+  TeamGithubMemberConnection: ResolverTypeWrapper<Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamGithubMember']> }>;
   TeamMember: ResolverTypeWrapper<TeamUser>;
   TeamMemberConnection: ResolverTypeWrapper<Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamMember']> }>;
   TeamUserLevel: ITeamUserLevel;
@@ -1351,6 +1399,8 @@ export type IResolversParentTypes = ResolversObject<{
   Date: Scalars['Date']['output'];
   DateTime: Scalars['DateTime']['output'];
   DeleteTeamInput: IDeleteTeamInput;
+  DisableGitHubSSOOnTeamInput: IDisableGitHubSsoOnTeamInput;
+  EnableGitHubSSOOnTeamInput: IEnableGitHubSsoOnTeamInput;
   Float: Scalars['Float']['output'];
   GhApiInstallation: GhApiInstallation;
   GhApiInstallationAccount: IGhApiInstallationAccount;
@@ -1400,6 +1450,8 @@ export type IResolversParentTypes = ResolversObject<{
   SetupVercelIntegrationProjectInput: ISetupVercelIntegrationProjectInput;
   String: Scalars['String']['output'];
   Team: Account;
+  TeamGithubMember: GithubAccountMember;
+  TeamGithubMemberConnection: Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamGithubMember']> };
   TeamMember: TeamUser;
   TeamMemberConnection: Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamMember']> };
   Test: Test;
@@ -1432,7 +1484,6 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
@@ -1509,7 +1560,7 @@ export type IBuildStatsResolvers<ContextType = Context, ParentType extends IReso
 }>;
 
 export type IConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Connection'] = IResolversParentTypes['Connection']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ScreenshotDiffConnection' | 'TeamMemberConnection' | 'TestConnection' | 'UserConnection', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ScreenshotDiffConnection' | 'TeamGithubMemberConnection' | 'TeamMemberConnection' | 'TestConnection' | 'UserConnection', ParentType, ContextType>;
   edges?: Resolver<Array<IResolversTypes['Node']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
 }>;
@@ -1562,9 +1613,11 @@ export type IGhApiRepositoryConnectionResolvers<ContextType = Context, ParentTyp
 }>;
 
 export type IGithubAccountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['GithubAccount'] = IResolversParentTypes['GithubAccount']> = ResolversObject<{
+  avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   login?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1635,6 +1688,8 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   createTeam?: Resolver<IResolversTypes['CreateTeamResult'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
   deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
   deleteTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteTeamArgs, 'input'>>;
+  disableGitHubSSOOnTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationDisableGitHubSsoOnTeamArgs, 'input'>>;
+  enableGitHubSSOOnTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationEnableGitHubSsoOnTeamArgs, 'input'>>;
   importGithubProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGithubProjectArgs, 'input'>>;
   importGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGitlabProjectArgs, 'input'>>;
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
@@ -1658,7 +1713,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
@@ -1670,6 +1725,7 @@ export type IPageInfoResolvers<ContextType = Context, ParentType extends IResolv
 
 export type IPlanResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Plan'] = IResolversParentTypes['Plan']> = ResolversObject<{
   displayName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  githubSsoIncluded?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   usageBased?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1846,14 +1902,14 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
+  githubMembers?: Resolver<Maybe<IResolversTypes['TeamGithubMemberConnection']>, ParentType, ContextType, RequireFields<ITeamGithubMembersArgs, 'after' | 'first'>>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  inviteLink?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  inviteLink?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -1866,12 +1922,26 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<ITeamProjectsArgs, 'after' | 'first'>>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  ssoGithubAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   subscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
   trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
   vercelConfiguration?: Resolver<Maybe<IResolversTypes['VercelConfiguration']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ITeamGithubMemberResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TeamGithubMember'] = IResolversParentTypes['TeamGithubMember']> = ResolversObject<{
+  githubAccount?: Resolver<IResolversTypes['GithubAccount'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  teamMember?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ITeamGithubMemberConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TeamGithubMemberConnection'] = IResolversParentTypes['TeamGithubMemberConnection']> = ResolversObject<{
+  edges?: Resolver<Array<IResolversTypes['TeamGithubMember']>, ParentType, ContextType>;
+  pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1919,7 +1989,6 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  ghAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   ghInstallations?: Resolver<IResolversTypes['GhApiInstallationConnection'], ParentType, ContextType>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
@@ -2077,6 +2146,8 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   ScreenshotMetadataTest?: IScreenshotMetadataTestResolvers<ContextType>;
   ScreenshotMetadataViewport?: IScreenshotMetadataViewportResolvers<ContextType>;
   Team?: ITeamResolvers<ContextType>;
+  TeamGithubMember?: ITeamGithubMemberResolvers<ContextType>;
+  TeamGithubMemberConnection?: ITeamGithubMemberConnectionResolvers<ContextType>;
   TeamMember?: ITeamMemberResolvers<ContextType>;
   TeamMemberConnection?: ITeamMemberConnectionResolvers<ContextType>;
   Test?: ITestResolvers<ContextType>;

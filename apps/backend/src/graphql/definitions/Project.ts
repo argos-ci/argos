@@ -5,8 +5,6 @@ import type { PartialModelObject } from "objection";
 import {
   Account,
   Build,
-  GithubAccount,
-  GithubRepository,
   GitlabProject,
   Project,
   Screenshot,
@@ -14,7 +12,6 @@ import {
   User,
   VercelConfiguration,
 } from "@/database/models/index.js";
-import { getTokenOctokit } from "@/github/index.js";
 
 import { IPermission, IResolvers } from "../__generated__/resolver-types.js";
 import { deleteProject, getWritableProject } from "../services/project.js";
@@ -29,6 +26,7 @@ import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { invariant } from "@/util/invariant.js";
 import { notifyDiscord } from "@/discord/index.js";
 import { captureException } from "@sentry/node";
+import { getOrCreateGithubRepository } from "@/graphql/services/github.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -210,53 +208,6 @@ const checkGqlProjectName = async (
     }
     throw error;
   }
-};
-
-const getOrCreateGithubRepository = async (props: {
-  accessToken: string;
-  repo: string;
-  owner: string;
-}): Promise<GithubRepository> => {
-  const octokit = getTokenOctokit(props.accessToken);
-  const ghApiRepo = await octokit.repos
-    .get({
-      owner: props.owner,
-      repo: props.repo,
-    })
-    .then((res) => res.data);
-  if (!ghApiRepo) {
-    throw new Error("Repository not found");
-  }
-
-  const getOrCreateAccount = async () => {
-    const account = await GithubAccount.query().findOne({
-      githubId: ghApiRepo.owner.id,
-    });
-    if (account) {
-      return account;
-    }
-    return GithubAccount.query().insertAndFetch({
-      githubId: ghApiRepo.owner.id,
-      login: ghApiRepo.owner.login,
-      type: ghApiRepo.owner.type.toLowerCase() as "user" | "organization",
-      name: ghApiRepo.owner.name ?? null,
-    });
-  };
-
-  const githubAccount = await getOrCreateAccount();
-  const repo = await GithubRepository.query().findOne({
-    githubId: ghApiRepo.id,
-  });
-  if (repo) {
-    return repo;
-  }
-  return GithubRepository.query().insertAndFetch({
-    githubId: ghApiRepo.id,
-    name: ghApiRepo.name,
-    private: ghApiRepo.private,
-    defaultBranch: ghApiRepo.default_branch,
-    githubAccountId: githubAccount.id,
-  });
 };
 
 async function notifyProjectCreation(input: {

@@ -36,7 +36,6 @@ const getOrCreateGhAccountFromEvent = async (
     login: payload.marketplace_purchase.account.login,
     type: accountType,
     email: payload.marketplace_purchase.account.organization_billing_email,
-    name: null,
   });
   return ghAccount;
 };
@@ -116,7 +115,6 @@ export const getOrCreateAccountFromEvent = async (
     login: payload.sender.login,
     type: getGhAccountType(payload.sender.type),
     email: payload.sender.email,
-    name: null,
   });
   // Find or create the Argos account linked to the GitHub account of the sender (buyer)
   const userAccount = await getOrCreateUserAccountFromGhAccount(userGhAccount);
@@ -135,7 +133,6 @@ export const getAccount = async (
     login: payload.marketplace_purchase.account.login,
     type: getGhAccountType(payload.marketplace_purchase.account.type),
     email: payload.marketplace_purchase.account.organization_billing_email,
-    name: null,
   });
   const account = await githubAccount.$relatedQuery("account").first();
   return account ?? null;

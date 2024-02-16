@@ -190,6 +190,14 @@ const config = convict({
       default: "whsec_XXX",
     },
   },
+  githubSso: {
+    stripeProductId: {
+      doc: "GitHub SSO Stripe product ID",
+      format: String,
+      env: "GITHUB_SSO_STRIPE_PRODUCT_ID",
+      default: "prod_PZKO1PwFyJfJyU",
+    },
+  },
   vercel: {
     clientId: {
       doc: "Client ID",

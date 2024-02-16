@@ -3,6 +3,7 @@ import type { RelationMappings } from "objection";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
+import { GithubAccountMember } from "./GithubAccountMember.js";
 
 export class GithubAccount extends Model {
   static override tableName = "github_accounts";
@@ -32,6 +33,14 @@ export class GithubAccount extends Model {
         join: {
           from: "github_accounts.id",
           to: "accounts.githubAccountId",
+        },
+      },
+      members: {
+        relation: Model.HasManyRelation,
+        modelClass: GithubAccountMember,
+        join: {
+          from: "github_accounts.id",
+          to: "github_account_members.githubAccountId",
         },
       },
     };

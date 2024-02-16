@@ -3,9 +3,13 @@ import type { EmitterWebhookEvent } from "@octokit/webhooks";
 
 import { getPendingCommentBody } from "@/database/index.js";
 import {
+  Account,
+  GithubAccountMember,
   GithubPullRequest,
   GithubRepository,
   Subscription,
+  Team,
+  TeamUser,
 } from "@/database/models/index.js";
 import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
@@ -19,6 +23,12 @@ import {
   getOrCreateInstallation,
 } from "./eventHelpers.js";
 import { updateSubscription } from "./updateSubscription.js";
+import {
+  getOrCreateGhAccount,
+  getOrCreateGithubAccountMember,
+  joinSSOTeams,
+} from "@/database/services/account.js";
+import { invariant } from "@/util/invariant.js";
 
 export const handleGitHubEvents = async ({
   name,
@@ -208,6 +218,110 @@ export const handleGitHubEvents = async ({
           });
         }
 
+        return;
+      }
+      case "organization": {
+        switch (payload.action) {
+          case "renamed": {
+            await getOrCreateGhAccount({
+              githubId: payload.organization.id,
+              login: payload.organization.login,
+              type: "organization",
+            });
+            return;
+          }
+          case "member_added": {
+            // Create both the organization and the member if they don't exist.
+            const [orgGithubAccount, memberGithubAccount] = await Promise.all([
+              getOrCreateGhAccount({
+                githubId: payload.organization.id,
+                login: payload.organization.login,
+                type: "organization",
+              }),
+              getOrCreateGhAccount({
+                githubId: payload.membership.user.id,
+                login: payload.membership.user.login,
+                type: "user",
+                email: payload.membership.user.email,
+                name: payload.membership.user.name,
+              }),
+            ]);
+
+            // Create the relationship between the organization and the member.
+            await getOrCreateGithubAccountMember({
+              githubAccountId: orgGithubAccount.id,
+              githubMemberId: memberGithubAccount.id,
+            });
+
+            // Join the member to the organization's teams if the member is already an Argos user.
+            const memberAccount = await memberGithubAccount
+              .$relatedQuery("account")
+              .select("userId");
+            if (memberAccount) {
+              invariant(
+                memberAccount.userId,
+                "Expected account to have userId",
+              );
+              // Not a bid deal to try to join all SSO teams
+              await joinSSOTeams({
+                githubAccountId: memberGithubAccount.id,
+                userId: memberAccount.userId,
+              });
+            }
+
+            return;
+          }
+          case "member_removed": {
+            // Create both the organization and the member if they don't exist.
+            const [orgGithubAccount, memberGithubAccount] = await Promise.all([
+              getOrCreateGhAccount({
+                githubId: payload.organization.id,
+                login: payload.organization.login,
+                type: "organization",
+              }),
+              getOrCreateGhAccount({
+                githubId: payload.membership.user.id,
+                login: payload.membership.user.login,
+                type: "user",
+                email: payload.membership.user.email,
+                name: payload.membership.user.name,
+              }),
+            ]);
+
+            await Promise.all([
+              // Remove the relationship between the organization and the member.
+              GithubAccountMember.query().delete().where({
+                githubAccountId: orgGithubAccount.id,
+                githubMemberId: memberGithubAccount.id,
+              }),
+              // Leave the organization's teams if the member is already an Argos user.
+              (async () => {
+                const memberAccount = await Account.query()
+                  .select("userId")
+                  .findOne("githubAccountId", memberGithubAccount.id);
+
+                if (memberAccount) {
+                  invariant(
+                    memberAccount.userId,
+                    "Expected account to have userId",
+                  );
+                  await TeamUser.query()
+                    .delete()
+                    .whereNot("userLevel", "owner")
+                    .where("userId", memberAccount.userId)
+                    .whereIn(
+                      "teamId",
+                      Team.query()
+                        .select("id")
+                        .where("ssoGithubAccountId", orgGithubAccount.id),
+                    );
+                }
+              })(),
+            ]);
+
+            return;
+          }
+        }
         return;
       }
     }

@@ -41,6 +41,8 @@ const config: CodegenConfig = {
           Project: "../../database/models/index.js#Project",
           Team: "../../database/models/index.js#Account",
           TeamMember: "../../database/models/index.js#TeamUser",
+          TeamGithubMember:
+            "../../database/models/index.js#GithubAccountMember",
           Test: "../../database/models/index.js#Test",
           User: "../../database/models/index.js#Account",
           VercelApiProject: "../../vercel/index.js#VercelApiProject",

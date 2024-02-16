@@ -1,3 +1,4 @@
+import * as React from "react";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
 import config from "@/config";
@@ -11,6 +12,7 @@ import {
   useSelectState,
 } from "@/ui/Select";
 import { ListIcon, PlusIcon } from "lucide-react";
+import { invariant } from "@apollo/client/utilities/globals";
 
 const InstallationFragment = graphql(`
   fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {
@@ -23,13 +25,16 @@ const InstallationFragment = graphql(`
   }
 `);
 
-export const GithubInstallationsSelect = (props: {
-  installations: FragmentType<typeof InstallationFragment>[];
-  value: string;
-  setValue: (value: string) => void;
-  disabled?: boolean;
-  onSwitch: () => void;
-}) => {
+export const GithubInstallationsSelect = React.forwardRef<
+  HTMLButtonElement,
+  {
+    installations: FragmentType<typeof InstallationFragment>[];
+    value: string;
+    setValue: (value: string) => void;
+    disabled?: boolean;
+    onSwitchProvider?: () => void;
+  }
+>(function GithubInstallationsSelect(props, ref) {
   const installations = useFragment(InstallationFragment, props.installations);
   const select = useSelectState({
     gutter: 4,
@@ -37,28 +42,41 @@ export const GithubInstallationsSelect = (props: {
     setValue: props.setValue,
   });
   const title = "Organizations";
-  const activeInstallation = installations.find(
-    (installation) => installation.id === props.value,
-  );
+  const activeInstallation = (() => {
+    if (props.value) {
+      const installation = installations.find(
+        (installation) => installation.id === props.value,
+      );
+      invariant(installation, "Expected installation");
+      return installation;
+    }
 
-  if (!activeInstallation) {
-    throw new Error("No active installation");
-  }
+    return null;
+  })();
 
   return (
     <>
-      <Select state={select} className="w-full" disabled={props.disabled}>
-        <div className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MarkGithubIcon />
-            {activeInstallation.account.name ||
-              activeInstallation.account.login}
+      <Select
+        ref={ref}
+        state={select}
+        className="w-full"
+        disabled={props.disabled}
+      >
+        {activeInstallation ? (
+          <div className="flex w-full items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MarkGithubIcon />
+              {activeInstallation.account.name ||
+                activeInstallation.account.login}
+            </div>
+            <SelectArrow />
           </div>
-          <SelectArrow />
-        </div>
+        ) : (
+          "Select a GitHub account"
+        )}
       </Select>
 
-      <SelectPopover aria-label={title} state={select}>
+      <SelectPopover aria-label={title} state={select} portal>
         {installations.map((installation) => {
           return (
             <SelectItem
@@ -96,20 +114,22 @@ export const GithubInstallationsSelect = (props: {
             Add GitHub Account
           </div>
         </SelectItem>
-        <SelectItem
-          state={select}
-          button
-          onClick={(event) => {
-            event.preventDefault();
-            props.onSwitch();
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <ListIcon className="w-[1em] h-[1em]" />
-            Switch Git Provider
-          </div>
-        </SelectItem>
+        {props.onSwitchProvider && (
+          <SelectItem
+            state={select}
+            button
+            onClick={(event) => {
+              event.preventDefault();
+              props.onSwitchProvider!();
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <ListIcon className="w-[1em] h-[1em]" />
+              Switch Git Provider
+            </div>
+          </SelectItem>
+        )}
       </SelectPopover>
     </>
   );
-};
+});

@@ -8,13 +8,19 @@ export class Plan extends Model {
   static override tableName = "plans";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["name", "includedScreenshots", "usageBased"],
+    required: [
+      "name",
+      "includedScreenshots",
+      "usageBased",
+      "githubSsoIncluded",
+    ],
     properties: {
       name: { type: "string" },
       includedScreenshots: { type: "number" },
       githubPlanId: { type: "number" },
       stripeProductId: { type: "string" },
       usageBased: { type: "boolean" },
+      githubSsoIncluded: { type: "boolean" },
     },
   });
 
@@ -23,6 +29,7 @@ export class Plan extends Model {
   githubPlanId!: number;
   stripeProductId!: string;
   usageBased!: boolean;
+  githubSsoIncluded!: boolean;
 
   static override virtualAttributes = ["displayName"];
 

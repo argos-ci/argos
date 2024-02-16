@@ -110,7 +110,8 @@ export class Subscription extends Model {
 
   $isTrialActive() {
     return Boolean(
-      this.trialEndDate && new Date() < new Date(this.trialEndDate),
+      this.status === "trialing" ||
+        (this.trialEndDate && new Date() < new Date(this.trialEndDate)),
     );
   }
 }
