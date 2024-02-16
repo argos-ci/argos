@@ -1,39 +1,22 @@
-import type { TransactionOrKnex } from "objection";
-
-import { ScreenshotBucket } from "@/database/models/index.js";
-import type { Build, Project } from "@/database/models/index.js";
+import { Build, Project } from "@/database/models/index.js";
 import { getInstallationOctokit } from "@/github/index.js";
 import { UnretryableError } from "@/job-core/index.js";
 import { GitlabClient, getGitlabClientFromAccount } from "@/gitlab/index.js";
+import {
+  getBaseBucketForBuildAndCommit,
+  queryBaseBucket,
+} from "./baseQuery.js";
 
 type Octokit = NonNullable<Awaited<ReturnType<typeof getInstallationOctokit>>>;
 
 /**
- * Query the base bucket from a build.
- */
-const queryBaseBucket = (build: Build, trx?: TransactionOrKnex | undefined) => {
-  if (!build.project) {
-    throw new UnretryableError("Invariant: no project found");
-  }
-  return ScreenshotBucket.query(trx).where({
-    projectId: build.project.id,
-    name: build.name,
-    complete: true,
-  });
-};
-
-/**
  * Get the bucket from a list of commits, ordered by the order of the commits.
  */
-const getBucketFromCommits = async (args: {
-  shas: string[];
-  build: Build;
-  trx?: TransactionOrKnex | undefined;
-}) => {
+async function getBucketFromCommits(args: { shas: string[]; build: Build }) {
   if (args.shas.length === 0) {
     return null;
   }
-  return queryBaseBucket(args.build, args.trx)
+  return queryBaseBucket(args.build)
     .whereIn("commit", args.shas)
     .joinRaw(
       `join (values ${args.shas.map(
@@ -42,7 +25,7 @@ const getBucketFromCommits = async (args: {
     )
     .orderBy("ordering.rank")
     .first();
-};
+}
 
 type MergeBaseStrategy<TCtx> = {
   detect: (project: Project) => boolean;
@@ -165,15 +148,9 @@ const strategies: MergeBaseStrategy<any>[] = [GithubStrategy, GitlabStrategy];
 /**
  * Get the base bucket for a build.
  */
-export const getBaseScreenshotBucket = async ({
-  build,
-  trx,
-}: {
-  build: Build;
-  trx?: TransactionOrKnex | undefined;
-}) => {
+export async function getBaseScreenshotBucket(build: Build) {
   const richBuild = await build
-    .$query(trx)
+    .$query()
     .withGraphFetched(
       "[project.[gitlabProject, githubRepository.[githubAccount, activeInstallation], account], compareScreenshotBucket]",
     );
@@ -190,18 +167,17 @@ export const getBaseScreenshotBucket = async ({
 
   const strategy = strategies.find((s) => s.detect(project));
 
+  // If we don't have a strategy then we could only count on referenceCommit
+  // specified by the user in the build.
   if (!strategy) {
     if (richBuild.referenceCommit) {
-      const mergeBaseBucket = await queryBaseBucket(build, trx)
-        .where({ commit: richBuild.referenceCommit })
-        .first();
-      return mergeBaseBucket ?? null;
+      return getBaseBucketForBuildAndCommit(build, richBuild.referenceCommit);
     }
     return null;
   }
 
   const referenceBranch =
-    richBuild.referenceBranch ?? (await project.$getReferenceBranch(trx));
+    richBuild.referenceBranch ?? (await project.$getReferenceBranch());
   const base = referenceBranch;
   const head = build.compareScreenshotBucket!.commit;
 
@@ -230,12 +206,13 @@ export const getBaseScreenshotBucket = async ({
       ctx,
       sha: mergeBaseCommitSha,
     });
-    return getBucketFromCommits({ shas: shas.slice(1), build: richBuild, trx });
+    return getBucketFromCommits({ shas: shas.slice(1), build: richBuild });
   }
 
-  const mergeBaseBucket = await queryBaseBucket(build, trx).findOne({
-    commit: mergeBaseCommitSha,
-  });
+  const mergeBaseBucket = await getBaseBucketForBuildAndCommit(
+    build,
+    mergeBaseCommitSha,
+  );
 
   // A bucket exists for the merge base commit
   if (mergeBaseBucket) {
@@ -248,5 +225,5 @@ export const getBaseScreenshotBucket = async ({
     ctx,
     sha: mergeBaseCommitSha,
   });
-  return getBucketFromCommits({ shas: shas.slice(1), build: richBuild, trx });
-};
+  return getBucketFromCommits({ shas: shas.slice(1), build: richBuild });
+}
