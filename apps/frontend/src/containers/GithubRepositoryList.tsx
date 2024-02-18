@@ -4,16 +4,16 @@ import { List, ListRow } from "@/ui/List";
 import { Loader } from "@/ui/Loader";
 import { Time } from "@/ui/Time";
 
-import { Query } from "./Apollo";
 import {
   Pagination,
+  PaginationButtonItem,
   PaginationContent,
   PaginationEllipsis,
-  PaginationButtonItem,
   PaginationNext,
   PaginationPrevious,
 } from "@/ui/Pagination";
 import { useState } from "react";
+import { Query } from "./Apollo";
 
 const InstallationQuery = graphql(`
   query GithubRepositoryList_ghApiInstallationRepositories(
@@ -142,7 +142,7 @@ export const GithubRepositoryList = (props: {
 
         return (
           <>
-            <List className="overflow-auto">
+            <List>
               {ghApiInstallationRepositories.edges.map((repo) => (
                 <ListRow
                   key={repo.id}

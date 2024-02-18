@@ -1,8 +1,8 @@
 import { useMutation } from "@apollo/client";
 import {
+  AlertCircleIcon,
   CheckCircle2Icon,
   CircleEllipsisIcon,
-  AlertCircleIcon,
 } from "lucide-react";
 
 import { MarkGithubIcon } from "@primer/octicons-react";
@@ -17,8 +17,8 @@ import { List, ListRow } from "@/ui/List";
 import { PageLoader } from "@/ui/PageLoader";
 
 import { useQuery } from "../Apollo";
-import { VercelAccountContext } from "./Router";
 import { AuthenticationError } from "../Auth";
+import { VercelAccountContext } from "./Router";
 
 const VercelProjectsQuery = graphql(`
   query VercelProjectsSummary_me_vercelApiProjects(
@@ -235,7 +235,7 @@ export const ProjectsSummary = (props: { ctx: VercelAccountContext }) => {
       <p className="mb-6 text-center text-low">
         Vercel projects are automatically synced with Argos.
       </p>
-      <List style={{ maxHeight: 400 }} className="w-full overflow-auto">
+      <List style={{ maxHeight: 400 }} className="w-full">
         {data.vercelApiProjects.projects.map((project) => {
           return (
             <ListRow key={project.id} className="px-4 py-2">
