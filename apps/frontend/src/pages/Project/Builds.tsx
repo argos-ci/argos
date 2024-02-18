@@ -19,8 +19,8 @@ import { PullRequestButton } from "@/containers/PullRequestButton";
 import { Truncable } from "@/ui/Truncable";
 import { useProjectContext } from ".";
 import { NotFound } from "../NotFound";
-import { GettingStarted } from "./GettingStarted";
 import { BuildNameFilter, useBuildNameFilter } from "./BuildNameFilter";
+import { GettingStarted } from "./GettingStarted";
 
 const ProjectQuery = graphql(`
   query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {
@@ -227,7 +227,7 @@ const BuildsList = ({
   return (
     <List
       ref={parentRef}
-      className="absolute max-h-full w-full overflow-auto"
+      className="absolute max-h-full w-full"
       style={{ display: "block" }}
     >
       <div

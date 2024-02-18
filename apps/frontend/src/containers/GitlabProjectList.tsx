@@ -69,7 +69,7 @@ export const GitlabProjectList = (props: GitlabProjectListProps) => {
           );
         }
         return (
-          <List className="overflow-auto">
+          <List>
             {glApiProjects.edges.map((project) => (
               <ListRow
                 key={project.id}

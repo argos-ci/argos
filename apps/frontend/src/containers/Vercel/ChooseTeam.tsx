@@ -42,7 +42,7 @@ export const ChooseTeam = (props: ChooseTeamProps) => {
       <p className="mb-6 text-center text-low">
         Select an existing Argos team to link your Vercel's one:
       </p>
-      <List style={{ maxHeight: 400 }} className="w-full overflow-auto">
+      <List style={{ maxHeight: 400 }} className="w-full">
         {teams.map((team) => {
           return (
             <ListRow key={team.id} className="px-4 py-2">
