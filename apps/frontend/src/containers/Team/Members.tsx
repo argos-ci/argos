@@ -715,7 +715,7 @@ function TeamGithubMembersList(props: {
                   return {
                     team: {
                       ...prev.team,
-                      members: {
+                      githubMembers: {
                         ...prev.team.githubMembers,
                         edges: [
                           ...prev.team.githubMembers.edges,
