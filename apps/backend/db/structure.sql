@@ -971,8 +971,8 @@ CREATE TABLE public.subscriptions (
     "planId" integer NOT NULL,
     provider text NOT NULL,
     "stripeSubscriptionId" character varying(255),
-    "accountId" integer NOT NULL,
-    "subscriberId" integer,
+    "accountId" bigint NOT NULL,
+    "subscriberId" bigint,
     "startDate" timestamp with time zone NOT NULL,
     "endDate" timestamp with time zone,
     "trialEndDate" timestamp with time zone,
@@ -2892,3 +2892,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024012
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240202080857_staff-user.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240203212814_renaming.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240204080614_subscriptions_included_screenshots.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240219213539_subscriptions_big_integer.js', 1, NOW());
