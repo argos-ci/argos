@@ -28,7 +28,7 @@ export class Subscription extends Model {
       startDate: { type: ["string"] },
       endDate: { type: ["string", "null"] },
       trialEndDate: { type: ["string", "null"] },
-      paymentMethodFilled: { type: ["boolean", "null"] },
+      paymentMethodFilled: { type: "boolean" },
       status: {
         type: ["string"],
         enum: [
@@ -54,7 +54,7 @@ export class Subscription extends Model {
   startDate!: string;
   endDate!: string | null;
   trialEndDate!: string | null;
-  paymentMethodFilled!: boolean | null;
+  paymentMethodFilled!: boolean;
   status!:
     | "active"
     | "canceled"
