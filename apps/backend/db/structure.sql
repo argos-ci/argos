@@ -976,7 +976,7 @@ CREATE TABLE public.subscriptions (
     "startDate" timestamp with time zone NOT NULL,
     "endDate" timestamp with time zone,
     "trialEndDate" timestamp with time zone,
-    "paymentMethodFilled" boolean,
+    "paymentMethodFilled" boolean NOT NULL,
     status character varying(255) NOT NULL,
     "includedScreenshots" integer,
     CONSTRAINT check_stripe_fields CHECK (((provider <> 'stripe'::text) OR (("stripeSubscriptionId" IS NOT NULL) AND ("subscriberId" IS NOT NULL)))),
@@ -2893,3 +2893,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024020
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240203212814_renaming.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240204080614_subscriptions_included_screenshots.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240219213539_subscriptions_big_integer.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240222154748_not-nullable-payment-method-filled.js', 1, NOW());
