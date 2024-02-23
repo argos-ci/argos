@@ -30,6 +30,7 @@ import {
 
 const BuildFragment = graphql(`
   fragment BuildDetail_Build on Build {
+    id
     stats {
       total
     }
@@ -48,12 +49,14 @@ const BuildFragment = graphql(`
 type BuildFragmentDocument = DocumentType<typeof BuildFragment>;
 
 const DownloadScreenshotButton = memo(
-  (props: { url: string; tooltip: string }) => {
+  (props: { url: string; tooltip: string; name: string }) => {
+    const downloadUrl = new URL(props.url);
+    downloadUrl.searchParams.append("download", props.name);
     return (
       <Tooltip side="left" content={props.tooltip}>
         <IconButton variant="contained" asChild>
           <a
-            href={`${props.url}?tr=orig-true&ik-attachment=true`}
+            href={downloadUrl.toString()}
             download
             rel="noopener noreferrer"
             target="_blank"
@@ -140,7 +143,7 @@ function getImgAttributes({
 }) {
   return {
     key: url,
-    src: `${url}?tr=lo-true`,
+    src: `${url}`,
     style: { aspectRatio: getAspectRatio({ width, height }) },
   };
 }
@@ -177,7 +180,7 @@ function ScreenshotContainer({
   );
 }
 
-const BaseScreenshot = ({ diff }: { diff: Diff }) => {
+const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
   const { contained } = useBuildDiffFitState();
   switch (diff.status) {
     case "added":
@@ -225,6 +228,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             <DownloadScreenshotButton
               url={diff.baseScreenshot!.url}
               tooltip="Download baseline screenshot"
+              name={`${buildId} - ${diff.name} - baseline.png`}
             />
           }
         >
@@ -247,6 +251,7 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
             <DownloadScreenshotButton
               url={diff.baseScreenshot!.url}
               tooltip="Download baseline screenshot"
+              name={`${buildId} - ${diff.name} - baseline.png`}
             />
           }
         >
@@ -272,7 +277,13 @@ const BaseScreenshot = ({ diff }: { diff: Diff }) => {
   }
 };
 
-const CompareScreenshot = ({ diff }: { diff: Diff }) => {
+const CompareScreenshot = ({
+  diff,
+  buildId,
+}: {
+  diff: Diff;
+  buildId: string;
+}) => {
   const { visible } = useBuildDiffVisibleState();
   const { contained } = useBuildDiffFitState();
   const opacity = visible ? "" : "opacity-0";
@@ -284,6 +295,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             <DownloadScreenshotButton
               url={diff.compareScreenshot!.url}
               tooltip="Download changes screenshot"
+              name={`${buildId} - ${diff.name} - new.png`}
             />
           }
         >
@@ -306,6 +318,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             <DownloadScreenshotButton
               url={diff.compareScreenshot!.url}
               tooltip="Download changes screenshot"
+              name={`${buildId} - ${diff.name} - new.png`}
             />
           }
         >
@@ -328,6 +341,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             <DownloadScreenshotButton
               url={diff.compareScreenshot!.url}
               tooltip="Download changes screenshot"
+              name={`${buildId} - ${diff.name} - new.png`}
             />
           }
         >
@@ -363,6 +377,7 @@ const CompareScreenshot = ({ diff }: { diff: Diff }) => {
             <DownloadScreenshotButton
               url={diff.compareScreenshot!.url}
               tooltip="Download changes screenshot"
+              name={`${buildId} - ${diff.name} - new.png`}
             />
           }
         >
@@ -415,7 +430,7 @@ const BuildScreenshots = memo(
               date={props.build.baseScreenshotBucket.createdAt}
             />
             <div className="relative flex min-h-0 flex-1 justify-center">
-              <BaseScreenshot diff={props.diff} />
+              <BaseScreenshot diff={props.diff} buildId={props.build.id} />
             </div>
           </div>
         ) : null}
@@ -429,7 +444,7 @@ const BuildScreenshots = memo(
             date={props.build.createdAt}
           />
           <div className="relative flex min-h-0 flex-1 justify-center">
-            <CompareScreenshot diff={props.diff} />
+            <CompareScreenshot diff={props.diff} buildId={props.build.id} />
           </div>
         </div>
       </div>
