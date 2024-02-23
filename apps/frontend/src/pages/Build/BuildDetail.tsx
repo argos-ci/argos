@@ -52,12 +52,35 @@ const DownloadScreenshotButton = memo(
   (props: { url: string; tooltip: string; name: string }) => {
     const downloadUrl = new URL(props.url);
     downloadUrl.searchParams.append("download", props.name);
+    const [loading, setLoading] = useState(false);
+
     return (
       <Tooltip side="left" content={props.tooltip}>
-        <IconButton variant="contained" asChild>
+        <IconButton
+          variant="contained"
+          disabled={loading}
+          onClick={(event) => {
+            event.preventDefault();
+            setLoading(true);
+            fetch(downloadUrl)
+              .then((res) => res.blob())
+              .then((blob) => {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = props.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              })
+              .finally(() => {
+                setLoading(false);
+              });
+          }}
+          asChild
+        >
           <a
             href={downloadUrl.toString()}
-            download
+            download={props.name}
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -191,7 +214,7 @@ function DownloadBaseScreenshotButton({
     <DownloadScreenshotButton
       url={diff.baseScreenshot!.url}
       tooltip="Download baseline screenshot"
-      name={`${buildId} - ${diff.name} - baseline.png`}
+      name={`Build #${buildId} - ${diff.name} - baseline.png`}
     />
   );
 }
@@ -296,7 +319,7 @@ function DownloadCompareScreenshotButton({
     <DownloadScreenshotButton
       url={diff.compareScreenshot!.url}
       tooltip="Download changes screenshot"
-      name={`${buildId} - ${diff.name} - new.png`}
+      name={`Build #${buildId} - ${diff.name} - new.png`}
     />
   );
 }
