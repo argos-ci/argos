@@ -143,7 +143,7 @@ function getImgAttributes({
 }) {
   return {
     key: url,
-    src: `${url}`,
+    src: url,
     style: { aspectRatio: getAspectRatio({ width, height }) },
   };
 }
@@ -177,6 +177,22 @@ function ScreenshotContainer({
     >
       {children}
     </div>
+  );
+}
+
+function DownloadBaseScreenshotButton({
+  diff,
+  buildId,
+}: {
+  diff: Diff;
+  buildId: string;
+}) {
+  return (
+    <DownloadScreenshotButton
+      url={diff.baseScreenshot!.url}
+      tooltip="Download baseline screenshot"
+      name={`${buildId} - ${diff.name} - baseline.png`}
+    />
   );
 }
 
@@ -225,11 +241,7 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
       return (
         <ZoomPane
           controls={
-            <DownloadScreenshotButton
-              url={diff.baseScreenshot!.url}
-              tooltip="Download baseline screenshot"
-              name={`${buildId} - ${diff.name} - baseline.png`}
-            />
+            <DownloadBaseScreenshotButton diff={diff} buildId={buildId} />
           }
         >
           <ScreenshotContainer
@@ -248,11 +260,7 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
       return (
         <ZoomPane
           controls={
-            <DownloadScreenshotButton
-              url={diff.baseScreenshot!.url}
-              tooltip="Download baseline screenshot"
-              name={`${buildId} - ${diff.name} - baseline.png`}
-            />
+            <DownloadBaseScreenshotButton diff={diff} buildId={buildId} />
           }
         >
           <ScreenshotContainer dimensions={diff} contained={contained}>
@@ -277,6 +285,22 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
   }
 };
 
+function DownloadCompareScreenshotButton({
+  diff,
+  buildId,
+}: {
+  diff: Diff;
+  buildId: string;
+}) {
+  return (
+    <DownloadScreenshotButton
+      url={diff.compareScreenshot!.url}
+      tooltip="Download changes screenshot"
+      name={`${buildId} - ${diff.name} - new.png`}
+    />
+  );
+}
+
 const CompareScreenshot = ({
   diff,
   buildId,
@@ -292,11 +316,7 @@ const CompareScreenshot = ({
       return (
         <ZoomPane
           controls={
-            <DownloadScreenshotButton
-              url={diff.compareScreenshot!.url}
-              tooltip="Download changes screenshot"
-              name={`${buildId} - ${diff.name} - new.png`}
-            />
+            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
           }
         >
           <ScreenshotContainer
@@ -315,11 +335,7 @@ const CompareScreenshot = ({
       return (
         <ZoomPane
           controls={
-            <DownloadScreenshotButton
-              url={diff.compareScreenshot!.url}
-              tooltip="Download changes screenshot"
-              name={`${buildId} - ${diff.name} - new.png`}
-            />
+            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
           }
         >
           <ScreenshotContainer
@@ -338,11 +354,7 @@ const CompareScreenshot = ({
       return (
         <ZoomPane
           controls={
-            <DownloadScreenshotButton
-              url={diff.compareScreenshot!.url}
-              tooltip="Download changes screenshot"
-              name={`${buildId} - ${diff.name} - new.png`}
-            />
+            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
           }
         >
           <ScreenshotContainer
@@ -374,11 +386,7 @@ const CompareScreenshot = ({
       return (
         <ZoomPane
           controls={
-            <DownloadScreenshotButton
-              url={diff.compareScreenshot!.url}
-              tooltip="Download changes screenshot"
-              name={`${buildId} - ${diff.name} - new.png`}
-            />
+            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
           }
         >
           <ScreenshotContainer dimensions={diff} contained={contained}>
