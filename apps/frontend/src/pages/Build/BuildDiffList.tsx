@@ -229,8 +229,8 @@ const getImgAttributes = (
   dimensions?: { width: number; height: number },
 ) => {
   const src = dimensions
-    ? `${url}?tr=w-${dimensions.width},h-${dimensions.height},c-at_max,dpr-2`
-    : `${url}?tr=lo-true`;
+    ? `${url}?contain-max=${dimensions.width * 2}x${dimensions.height * 2}`
+    : `${url}`;
   return {
     key: src,
     src,

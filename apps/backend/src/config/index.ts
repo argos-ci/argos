@@ -92,7 +92,7 @@ const config = convict({
     publicImageBaseUrl: {
       doc: "Public URL for screenshots",
       format: String,
-      default: "https://ik.imagekit.io/argos/development/",
+      default: "https://argos.twic.pics/development/",
       env: "S3_PUBLIC_IMAGE_BASE_URL",
     },
   },
