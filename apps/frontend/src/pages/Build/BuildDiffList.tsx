@@ -230,7 +230,7 @@ const getImgAttributes = (
 ) => {
   const src = dimensions
     ? `${url}?contain-max=${dimensions.width * 2}x${dimensions.height * 2}`
-    : `${url}`;
+    : url;
   return {
     key: src,
     src,
