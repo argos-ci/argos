@@ -47,7 +47,6 @@ describe("#getAggregatedNotification", () => {
         false,
         "always",
       );
-      console.log(notification);
       expect(notification).toEqual({
         description: "No diff detected",
         githubState: "success",

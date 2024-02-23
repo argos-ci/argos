@@ -1,6 +1,7 @@
 import type { BuildNotification } from "@/database/models/BuildNotification.js";
 import { UnretryableError } from "@/job-core/error.js";
 import { getStatsMessage } from "./utils.js";
+import { assertUnreachable } from "@/util/unreachable.js";
 
 enum GithubNotificationState {
   Pending = "pending",
@@ -30,7 +31,11 @@ enum VercelConclusion {
   Skipped = "skipped",
 }
 
-export const getNotificationStatus = (
+/**
+ * Get the notification status for each platform based on the build
+ * notification type and if it's a reference build.
+ */
+export function getNotificationStatus(
   buildNotificationType: BuildNotification["type"],
   isReference: boolean,
 ): {
@@ -38,7 +43,7 @@ export const getNotificationStatus = (
   gitlabState: GitlabNotificationState;
   vercelStatus: VercelStatus | null;
   vercelConclusion: VercelConclusion | null;
-} => {
+} {
   switch (buildNotificationType) {
     case "queued": {
       return {
@@ -100,7 +105,54 @@ export const getNotificationStatus = (
       );
     }
   }
-};
+}
+
+/**
+ * Get the notification description for each platform based on the build
+ * notification type and if it's a reference build.
+ */
+async function getNotificationDescription(
+  buildNotification: BuildNotification,
+  isReference: boolean,
+): Promise<string> {
+  switch (buildNotification.type) {
+    case "queued":
+      return "Build is queued";
+    case "progress":
+      return "Build in progress...";
+    case "no-diff-detected": {
+      const statsMessage = await getStatsMessage(buildNotification.buildId);
+      if (!statsMessage) {
+        if (isReference) {
+          return "Used as comparison baseline";
+        }
+        return "Everything's good!";
+      }
+      if (isReference) {
+        return `${statsMessage} — used as comparison baseline`;
+      }
+      return `${statsMessage} — no change`;
+    }
+    case "diff-detected": {
+      const statsMessage = await getStatsMessage(buildNotification.buildId);
+      if (isReference) {
+        return `${statsMessage} — used as comparison baseline`;
+      }
+      return `${statsMessage} — waiting for your decision`;
+    }
+    case "diff-accepted": {
+      const statsMessage = await getStatsMessage(buildNotification.buildId);
+      return `${statsMessage} — approved`;
+    }
+    case "diff-rejected": {
+      const statsMessage = await getStatsMessage(buildNotification.buildId);
+      return `${statsMessage} — rejected`;
+    }
+    default: {
+      assertUnreachable(buildNotification.type);
+    }
+  }
+}
 
 export type NotificationPayload = {
   description: string;
@@ -110,65 +162,20 @@ export type NotificationPayload = {
   vercelConclusion: VercelConclusion | null;
 };
 
-export const getNotificationPayload = async (
+/**
+ * Get the notification payload for each platform based on the build.
+ */
+export async function getNotificationPayload(
   buildNotification: BuildNotification,
   isReference: boolean,
-): Promise<NotificationPayload> => {
-  switch (buildNotification.type) {
-    case "queued":
-      return {
-        ...getNotificationStatus(buildNotification.type, isReference),
-        description: "Build is queued",
-      };
-    case "progress":
-      return {
-        ...getNotificationStatus(buildNotification.type, isReference),
-        description: "Build in progress...",
-      };
-    case "no-diff-detected": {
-      const statsMessage = await getStatsMessage(buildNotification.buildId);
-      const description = (() => {
-        if (!statsMessage) {
-          if (isReference) return "Used as new baseline";
-          return "Everything's good!";
-        }
-        if (isReference) return `${statsMessage} — used a new baseline`;
-        return `${statsMessage} — no change`;
-      })();
-      return {
-        ...getNotificationStatus(buildNotification.type, isReference),
-        description,
-      };
-    }
-    case "diff-detected": {
-      const statsMessage = await getStatsMessage(buildNotification.buildId);
-      const description = (() => {
-        if (isReference) {
-          return `${statsMessage} — used as new baseline`;
-        }
-        return `${statsMessage} — waiting for your decision`;
-      })();
-
-      return {
-        ...getNotificationStatus(buildNotification.type, isReference),
-        description,
-      };
-    }
-    case "diff-accepted": {
-      const statsMessage = await getStatsMessage(buildNotification.buildId);
-      return {
-        ...getNotificationStatus(buildNotification.type, isReference),
-        description: `${statsMessage} — changes approved`,
-      };
-    }
-    case "diff-rejected": {
-      const statsMessage = await getStatsMessage(buildNotification.buildId);
-      return {
-        ...getNotificationStatus(buildNotification.type, isReference),
-        description: `${statsMessage} — changes rejected`,
-      };
-    }
-    default:
-      throw new Error(`Unknown notification type: ${buildNotification.type}`);
-  }
-};
+): Promise<NotificationPayload> {
+  const status = getNotificationStatus(buildNotification.type, isReference);
+  const description = await getNotificationDescription(
+    buildNotification,
+    isReference,
+  );
+  return {
+    ...status,
+    description,
+  };
+}

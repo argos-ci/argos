@@ -234,12 +234,8 @@ export class Build extends Model {
   static async getStats(buildId: string) {
     const data = (await ScreenshotDiff.query()
       .where("buildId", buildId)
-      .leftJoin(
-        "screenshots",
-        "screenshot_diffs.compareScreenshotId",
-        "screenshots.id",
-      )
-      .select(raw(ScreenshotDiff.selectDiffStatus))
+      .leftJoinRelated("compareScreenshot")
+      .select(raw(`(${ScreenshotDiff.selectDiffStatus}) as status`))
       .count("*")
       .groupBy("status")) as unknown as { status: string; count: string }[];
 
@@ -272,22 +268,30 @@ export class Build extends Model {
       (_, index) => statuses[index] === "complete",
     );
 
-    const buildsDiffCount = completeBuildIds.length
+    const buildsDiffCount = (completeBuildIds.length
       ? await ScreenshotDiff.query()
           .select("buildId")
-          .count()
-          .where("score", ">", 0)
+          .leftJoinRelated("compareScreenshot")
+          .count("*")
+          .whereIn(raw(ScreenshotDiff.selectDiffStatus), [
+            "added",
+            "changed",
+            "removed",
+          ])
           .whereIn("buildId", completeBuildIds)
           .groupBy("buildId")
-      : [];
+      : []) as unknown as { buildId: string; count: number }[];
 
     return buildIds.map((buildId, index) => {
-      if (statuses[index] !== "complete") return null;
+      if (statuses[index] !== "complete") {
+        return null;
+      }
       const buildDiffCount = buildsDiffCount.find(
         (diff) => diff.buildId === buildId,
       );
-      // @ts-ignore
-      if (buildDiffCount?.count > 0) return "diffDetected";
+      if (buildDiffCount && buildDiffCount.count > 0) {
+        return "diffDetected";
+      }
       return "stable";
     });
   }
@@ -311,12 +315,22 @@ export class Build extends Model {
       : [];
 
     return buildIds.map((buildId, index) => {
-      if (conclusions[index] !== "diffDetected") return null;
+      if (conclusions[index] !== "diffDetected") {
+        return null;
+      }
+
       const status = screenshotDiffs
         .filter((diff) => diff.buildId === buildId)
         .map(({ validationStatus }) => validationStatus);
-      if (status.includes("rejected")) return "rejected";
-      if (status.length === 1 && status[0] === "accepted") return "accepted";
+
+      if (status.length === 1 && status[0] === "accepted") {
+        return "accepted";
+      }
+
+      if (status.includes("rejected")) {
+        return "rejected";
+      }
+
       return null;
     });
   }
