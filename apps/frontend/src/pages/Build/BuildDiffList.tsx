@@ -28,7 +28,7 @@ import {
   useSearchState,
 } from "./BuildDiffState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
-import { Button, ButtonProps } from "@/ui/Button";
+import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { useBuildHotkey } from "./BuildHotkeys";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 
@@ -324,7 +324,9 @@ const ShowSubItemToggle = (
     { preventDefault: true },
   );
 
-  if (!props.count) return null;
+  if (props.count === 0) {
+    return null;
+  }
 
   return (
     <HotkeyTooltip
@@ -334,16 +336,15 @@ const ShowSubItemToggle = (
       <Button
         color="neutral"
         size="small"
-        className="absolute bottom-8 left-2 z-30 items-start flex gap-1"
+        className="absolute bottom-6 left-2 z-30 items-start"
         onClick={(event) => {
           event.stopPropagation();
           onToggleGroupItem();
         }}
       >
-        <ChevronDownIcon
-          size="1em"
-          className={clsx("transition", !open && "-rotate-90")}
-        />
+        <ButtonIcon className={clsx("transition", !open && "-rotate-90")}>
+          <ChevronDownIcon />
+        </ButtonIcon>
         {props.count} similar changes
       </Button>
     </HotkeyTooltip>
