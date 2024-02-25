@@ -12,6 +12,7 @@ import { Build } from "./Build.js";
 import { File } from "./File.js";
 import { Screenshot } from "./Screenshot.js";
 import { Test } from "./Test.js";
+import { invariant } from "@/util/invariant.js";
 
 export class ScreenshotDiff extends Model {
   static override tableName = "screenshot_diffs";
@@ -116,8 +117,7 @@ export class ScreenshotDiff extends Model {
     WHEN "score" IS NOT NULL AND "score" > 0
       THEN 'changed'
     ELSE 'unchanged'
-    END
-    AS status`;
+    END`;
 
   static sortDiffByStatus = `CASE
     WHEN "compareScreenshotId" IS NULL THEN 30 -- removed
@@ -132,20 +132,35 @@ export class ScreenshotDiff extends Model {
     END ASC`;
 
   $getDiffStatus = async (
-    loadScreenshot: (screenshotId: string) => Promise<Screenshot>,
+    loadScreenshot?: (screenshotId: string) => Promise<Screenshot>,
   ) => {
     if (!this.compareScreenshotId) {
       return "removed";
     }
 
     if (!this.baseScreenshotId) {
-      const { name } = await loadScreenshot(this.compareScreenshotId);
+      const compareScreenshot = await (() => {
+        if (this.compareScreenshot) {
+          return this.compareScreenshot;
+        }
+        invariant(
+          loadScreenshot,
+          "compareScreenshot is not loaded and no loader is provided",
+        );
+        return loadScreenshot(this.compareScreenshotId);
+      })();
+
+      const { name } = compareScreenshot;
       return ScreenshotDiff.screenshotFailureRegexp.test(name)
         ? "failure"
         : "added";
     }
 
-    return this.score && this.score > 0 ? "changed" : "unchanged";
+    if (this.score === null) {
+      return "pending";
+    }
+
+    return this.score > 0 ? "changed" : "unchanged";
   };
 
   override $parseDatabaseJson(json: Pojo) {

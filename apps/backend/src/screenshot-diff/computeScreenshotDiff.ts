@@ -129,10 +129,12 @@ async function areAllDiffsCompleted(buildId: string): Promise<{
   diff: boolean;
 }> {
   const isComplete = raw(`bool_and("jobStatus" = 'complete') as complete`);
-  const hasDiff = raw(`count(*) FILTER (WHERE score > 0) > 0 AS diff`);
+  const hasDiff = raw(
+    `count(*) FILTER (WHERE (${ScreenshotDiff.selectDiffStatus}) in ('added', 'changed', 'removed')) > 0 AS diff`,
+  );
   const result = await ScreenshotDiff.query()
     .select(isComplete, hasDiff)
-    .leftJoinRelated("test")
+    .leftJoinRelated("compareScreenshot")
     .where("buildId", buildId)
     .first();
   return result as unknown as { complete: boolean; diff: boolean };

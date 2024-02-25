@@ -39,22 +39,20 @@ describe("build", () => {
         screenshotBucketId: compareBucket.id,
         fileId: file.id,
       });
-    });
-
-    it("works", async () => {
       await factory.ScreenshotBucket.create({
         projectId: project.id,
       });
+    });
 
+    it("works", async () => {
       await performBuild(build);
-
       const notifications = await BuildNotification.query()
         .where("buildId", build.id)
         .orderBy("createdAt", "asc");
 
       expect(notifications).toHaveLength(2);
       expect(notifications[0]).toHaveProperty("type", "progress");
-      expect(notifications[1]).toHaveProperty("type", "no-diff-detected");
+      expect(notifications[1]).toHaveProperty("type", "diff-detected");
 
       const diffs = await ScreenshotDiff.query().where("buildId", build.id);
       expect(diffs).toHaveLength(1);

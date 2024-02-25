@@ -8,25 +8,43 @@ import { createBuildDiffs } from "./createBuildDiffs.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { invariant } from "@/util/invariant.js";
 
-const pushDiffs = async (
-  buildId: string,
-  screenshotDiffs: ScreenshotDiff[],
-) => {
+/**
+ * Pushes the diffs to the screenshot-diff job queue.
+ * If there is no diff to proceed, it pushes a notification.
+ */
+async function pushDiffs(buildId: string, screenshotDiffs: ScreenshotDiff[]) {
+  if (screenshotDiffs.length === 0) {
+    await pushBuildNotification({ buildId, type: "no-diff-detected" });
+    return;
+  }
+
   const toProcessedDiffs = screenshotDiffs
     .filter(({ jobStatus }) => jobStatus !== "complete")
     .map(({ id }) => screenshotDiffJob.push(id));
 
   if (toProcessedDiffs.length > 0) {
     await Promise.all(toProcessedDiffs);
-  } else {
-    await pushBuildNotification({
-      buildId,
-      type: "no-diff-detected",
-    });
+    return;
   }
-};
 
-const updateProjectConsumption = async (project: Project) => {
+  await ScreenshotDiff.fetchGraph(screenshotDiffs, "compareScreenshot");
+  const statuses = await Promise.all(
+    screenshotDiffs.map((screenshotDiff) => screenshotDiff.$getDiffStatus()),
+  );
+
+  const type = statuses.some(
+    (status) => status === "added" || status === "removed",
+  )
+    ? ("diff-detected" as const)
+    : ("no-diff-detected" as const);
+
+  await pushBuildNotification({ buildId, type });
+}
+
+/**
+ * Update the stripe usage if needed.
+ */
+async function updateProjectConsumption(project: Project) {
   const { account } = project;
   invariant(account, "No account found", UnretryableError);
   const manager = account.$getSubscriptionManager();
@@ -39,12 +57,12 @@ const updateProjectConsumption = async (project: Project) => {
   if (usageBased) {
     await updateStripeUsage({ account, totalScreenshots });
   }
-};
+}
 
 /**
  * Sync GitLab project if needed.
  */
-const syncGitlabProject = async (project: Project) => {
+async function syncGitlabProject(project: Project) {
   if (!project.gitlabProjectId) return;
 
   if (!project.gitlabProject) {
@@ -75,9 +93,9 @@ const syncGitlabProject = async (project: Project) => {
     .$clone()
     .$query()
     .patch(formatGlProject(glProject));
-};
+}
 
-export const performBuild = async (build: Build) => {
+export async function performBuild(build: Build) {
   const [, screenshotDiffs, project] = await Promise.all([
     pushBuildNotification({ buildId: build.id, type: "progress" }),
     createBuildDiffs(build),
@@ -92,6 +110,6 @@ export const performBuild = async (build: Build) => {
     updateProjectConsumption(project),
     syncGitlabProject(project),
   ]);
-};
+}
 
 export const job = createModelJob("build", Build, performBuild);
