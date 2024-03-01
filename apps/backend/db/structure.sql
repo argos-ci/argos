@@ -2019,6 +2019,13 @@ CREATE INDEX builds_externalid_index ON public.builds USING btree ("externalId")
 
 
 --
+-- Name: builds_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_jobstatus_index ON public.builds USING btree ("jobStatus");
+
+
+--
 -- Name: builds_number_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2240,6 +2247,13 @@ CREATE INDEX screenshot_diffs_comparescreenshotid_index ON public.screenshot_dif
 --
 
 CREATE INDEX screenshot_diffs_fileid_index ON public.screenshot_diffs USING btree ("fileId");
+
+
+--
+-- Name: screenshot_diffs_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_jobstatus_index ON public.screenshot_diffs USING btree ("jobStatus");
 
 
 --
@@ -2894,3 +2908,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024020
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240204080614_subscriptions_included_screenshots.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240219213539_subscriptions_big_integer.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240222154748_not-nullable-payment-method-filled.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240301151709_screenshot-diffs-index.js', 1, NOW());
