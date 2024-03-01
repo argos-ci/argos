@@ -8,6 +8,7 @@ import {
   CommandIcon,
   MessagesSquareIcon,
   FileTextIcon,
+  ActivitySquareIcon,
 } from "lucide-react";
 
 import { Link, Link as RouterLink, useLocation } from "react-router-dom";
@@ -37,6 +38,7 @@ import { graphql } from "@/gql";
 import { useQuery } from "@apollo/client";
 import { InitialAvatar } from "./InitialAvatar";
 import { useBuildHotkeysDialogState } from "@/pages/Build/BuildHotkeysDialogState";
+import { HeadlessAnchor } from "@/ui/Link";
 
 const getColorModeLabel = (colorMode: ColorMode | "") => {
   switch (colorMode) {
@@ -194,30 +196,44 @@ const UserMenu = () => {
         )}
         <MenuItem state={menu} pointer>
           {(menuItemProps) => (
-            <RouterLink
+            <HeadlessAnchor
               {...menuItemProps}
-              to="https://argos-ci.com/docs/open-source"
+              href="https://argos-ci.com/docs/open-source"
+              external
             >
               <MenuItemIcon>
                 <FileTextIcon />
               </MenuItemIcon>
               Documentation
-            </RouterLink>
+            </HeadlessAnchor>
           )}
         </MenuItem>
         <MenuItem state={menu} pointer>
           {(menuItemProps) => (
-            <a
+            <HeadlessAnchor
               {...menuItemProps}
               href="https://argos-ci.com/discord"
-              target="_blank"
-              rel="noopener noreferrer"
+              external
             >
               <MenuItemIcon>
                 <MessagesSquareIcon />
               </MenuItemIcon>
-              Join Discord community
-            </a>
+              Discord community
+            </HeadlessAnchor>
+          )}
+        </MenuItem>
+        <MenuItem state={menu} pointer>
+          {(menuItemProps) => (
+            <HeadlessAnchor
+              {...menuItemProps}
+              href="https://argos.openstatus.dev"
+              external
+            >
+              <MenuItemIcon>
+                <ActivitySquareIcon />
+              </MenuItemIcon>
+              Status
+            </HeadlessAnchor>
           )}
         </MenuItem>
         <MenuSeparator />
