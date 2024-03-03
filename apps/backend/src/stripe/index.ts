@@ -336,6 +336,27 @@ export const getStripeProPlanOrThrow = async () => {
     .throwIfNotFound();
 };
 
+async function updateSubscriptionsFromCustomer(customerId: string) {
+  const stripeSubscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    expand: ["customer"],
+  });
+
+  for (const stripeSubscription of stripeSubscriptions.data) {
+    const argosSubscription =
+      await getArgosSubscriptionFromStripeSubscriptionId(stripeSubscription.id);
+    if (!argosSubscription) {
+      throw new Error(
+        `No Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
+      );
+    }
+    await updateArgosSubscriptionFromStripe(
+      argosSubscription,
+      stripeSubscription,
+    );
+  }
+}
+
 export const updateArgosSubscriptionFromStripe = async (
   argosSubscription: Subscription,
   stripeSubscription: Stripe.Subscription,
@@ -349,6 +370,24 @@ export const handleStripeEvent = async ({
   type,
 }: Pick<Stripe.Event, "data" | "type">) => {
   switch (type) {
+    case "payment_method.attached": {
+      const paymentMethod = data.object as Stripe.PaymentMethod;
+      invariant(
+        typeof paymentMethod.customer === "string",
+        "customer is not a string",
+      );
+      await updateSubscriptionsFromCustomer(paymentMethod.customer);
+      return;
+    }
+    case "payment_method.detached": {
+      const paymentMethod = data.object as Stripe.PaymentMethod;
+      invariant(
+        typeof paymentMethod.customer === "string",
+        "customer is not a string",
+      );
+      await updateSubscriptionsFromCustomer(paymentMethod.customer);
+      return;
+    }
     case "customer.deleted": {
       const customer = data.object as Stripe.Customer;
 
@@ -360,26 +399,7 @@ export const handleStripeEvent = async ({
     }
     case "customer.updated": {
       const customer = data.object as Stripe.Customer;
-      const stripeSubscriptions = await stripe.subscriptions.list({
-        customer: customer.id,
-      });
-
-      for (const stripeSubscription of stripeSubscriptions.data) {
-        const argosSubscription =
-          await getArgosSubscriptionFromStripeSubscriptionId(
-            stripeSubscription.id,
-          );
-        if (!argosSubscription) {
-          throw new Error(
-            `No Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
-          );
-        }
-        await updateArgosSubscriptionFromStripe(
-          argosSubscription,
-          stripeSubscription,
-        );
-      }
-
+      await updateSubscriptionsFromCustomer(customer.id);
       return;
     }
 
@@ -440,8 +460,9 @@ export const handleStripeEvent = async ({
       return;
     }
 
-    default:
-      console.log(`Unhandled event type ${type}`);
+    default: {
+      throw new Error(`Unhandled event type ${type}`);
+    }
   }
 };
 
