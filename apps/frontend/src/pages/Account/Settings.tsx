@@ -119,8 +119,8 @@ export const AccountSettings = () => {
                 })()}
               {writable && <PlanCard account={account} />}
               {isTeam && <TeamMembers team={account} />}
-              {isTeam && <TeamGitHubSSO team={account} />}
-              <AccountGitLab account={account} />
+              {isTeam && writable && <TeamGitHubSSO team={account} />}
+              {writable && <AccountGitLab account={account} />}
               {isTeam && writable && <TeamDelete team={account} />}
             </SettingsLayout>
           );

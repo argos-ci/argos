@@ -185,7 +185,7 @@ describe("GraphQL", () => {
         });
       expect(res.status).toBe(200);
       expect(res.body.errors[0].message).toBe(
-        "You don't have access to this build",
+        "You cannot approve or reject this build",
       );
     });
   });
