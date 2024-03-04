@@ -179,18 +179,6 @@ export const getBuildLabel = (
   }
 };
 
-export const checkIsBuildIncomplete = (build: {
-  batchCount?: number | null;
-  totalBatch?: number | null;
-}): boolean => {
-  return (
-    build.totalBatch != null &&
-    build.batchCount != null &&
-    build.totalBatch > 0 &&
-    build.batchCount < build.totalBatch
-  );
-};
-
 export const checkIsBuildEmpty = (build: {
   stats: { total: number };
 }): boolean => {

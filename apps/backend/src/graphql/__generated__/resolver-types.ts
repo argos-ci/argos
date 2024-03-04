@@ -106,8 +106,6 @@ export type IBuild = INode & {
   __typename?: 'Build';
   /** The screenshot bucket of the baselineBranch */
   baseScreenshotBucket?: Maybe<IScreenshotBucket>;
-  /** Received batch count  */
-  batchCount?: Maybe<Scalars['Int']['output']>;
   /** Branch */
   branch: Scalars['String']['output'];
   /** Commit */
@@ -132,8 +130,6 @@ export type IBuild = INode & {
   stats: IBuildStats;
   /** Review status, conclusion or job status */
   status: IBuildStatus;
-  /** Expected batch count */
-  totalBatch?: Maybe<Scalars['Int']['output']>;
   /** Build type */
   type?: Maybe<IBuildType>;
   updatedAt: Scalars['DateTime']['output'];
@@ -1535,7 +1531,6 @@ export type IAccountSubscriptionResolvers<ContextType = Context, ParentType exte
 
 export type IBuildResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Build'] = IResolversParentTypes['Build']> = ResolversObject<{
   baseScreenshotBucket?: Resolver<Maybe<IResolversTypes['ScreenshotBucket']>, ParentType, ContextType>;
-  batchCount?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   branch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
@@ -1549,7 +1544,6 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   screenshotDiffs?: Resolver<IResolversTypes['ScreenshotDiffConnection'], ParentType, ContextType, RequireFields<IBuildScreenshotDiffsArgs, 'after' | 'first'>>;
   stats?: Resolver<IResolversTypes['BuildStats'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['BuildStatus'], ParentType, ContextType>;
-  totalBatch?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   type?: Resolver<Maybe<IResolversTypes['BuildType']>, ParentType, ContextType>;
   updatedAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
