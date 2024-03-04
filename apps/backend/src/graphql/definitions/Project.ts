@@ -15,7 +15,7 @@ import {
 
 import { IPermission, IResolvers } from "../__generated__/resolver-types.js";
 import { deleteProject, getWritableProject } from "../services/project.js";
-import { unauthenticated } from "../util.js";
+import { forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 import { linkVercelProject } from "./Vercel.js";
 import {
@@ -239,7 +239,7 @@ const importGithubProject = async (props: {
     .throwIfNotFound();
   const hasWritePermission = await account.$checkWritePermission(props.creator);
   if (!hasWritePermission) {
-    throw new Error("Unauthorized");
+    throw forbidden();
   }
 
   const ghRepo = await getOrCreateGithubRepository({
@@ -313,9 +313,10 @@ const importGitlabProject = async (props: {
   const account = await Account.query()
     .findOne({ slug: props.accountSlug })
     .throwIfNotFound();
+
   const hasWritePermission = await account.$checkWritePermission(props.creator);
   if (!hasWritePermission) {
-    throw new Error("Unauthorized");
+    throw forbidden();
   }
 
   if (!account.gitlabAccessToken) {

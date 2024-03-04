@@ -15,6 +15,7 @@ import type { User } from "./User.js";
 import { VercelProject } from "./VercelProject.js";
 import { GitlabProject } from "./GitlabProject.js";
 import config from "@/config/index.js";
+import { invariant } from "@/util/invariant.js";
 
 export class Project extends Model {
   static override tableName = "projects";
@@ -119,14 +120,19 @@ export class Project extends Model {
   }
 
   static async checkWritePermission(project: Project, user: User | null) {
-    if (!user) return false;
-    const account = project.account ?? (await project.$relatedQuery("account"));
-    return account.$checkReadPermission(user);
+    if (!user) {
+      return false;
+    }
+    await project.$fetchGraph("account", { skipFetched: true });
+    invariant(project.account);
+    return project.account.$checkReadPermission(user);
   }
 
   static async checkReadPermission(project: Project, user: User | null) {
     const isPublic = await project.$checkIsPublic();
-    if (isPublic) return true;
+    if (isPublic) {
+      return true;
+    }
     return Project.checkWritePermission(project, user);
   }
 

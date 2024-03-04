@@ -84,7 +84,7 @@ export const AccountGitLab = (props: {
               </div>
             )}
           </CardBody>
-          <FormCardFooter>
+          <FormCardFooter disabled={!writable}>
             Learn more about{" "}
             <Anchor href="https://argos-ci.com/docs/gitlab" external>
               setting up GitLab + Argos integration

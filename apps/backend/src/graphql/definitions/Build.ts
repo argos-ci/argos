@@ -10,6 +10,7 @@ import type {
 import type { Context } from "../context.js";
 import { forbidden, notFound, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
+import { invariant } from "@/util/invariant.js";
 
 const { gql } = gqlTag;
 
@@ -167,20 +168,14 @@ export const resolvers: IResolvers = {
         throw notFound("Build not found");
       }
 
-      if (!build.project) {
-        throw new Error("Invariant: no project found");
-      }
+      invariant(build.project?.account);
 
-      if (!build.project.account) {
-        throw new Error("Invariant: no project account found");
-      }
-
-      const hasWriteAccess = await build.project.$checkWritePermission(
+      const hasWritePermission = await build.project.$checkWritePermission(
         ctx.auth.user,
       );
 
-      if (!hasWriteAccess) {
-        throw forbidden("You don't have access to this build");
+      if (!hasWritePermission) {
+        throw forbidden("You cannot approve or reject this build");
       }
 
       await ScreenshotDiff.query()

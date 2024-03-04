@@ -803,10 +803,14 @@ export const TeamMembers = (props: {
         </CardBody>
       </form>
       <CardFooter className="flex items-center justify-between">
-        {team.inviteLink && (
+        {team.inviteLink ? (
           <>
             <div>Invite people to collaborate in the Team.</div>
             <InviteLinkButton inviteLink={team.inviteLink} />
+          </>
+        ) : (
+          <>
+            <div>Only a owners can invite people in the Team.</div>
           </>
         )}
       </CardFooter>
