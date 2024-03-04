@@ -339,7 +339,7 @@ export const getStripeProPlanOrThrow = async () => {
 async function updateSubscriptionsFromCustomer(customerId: string) {
   const stripeSubscriptions = await stripe.subscriptions.list({
     customer: customerId,
-    expand: ["customer"],
+    expand: ["data.customer"],
   });
 
   for (const stripeSubscription of stripeSubscriptions.data) {
