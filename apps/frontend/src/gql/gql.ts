@@ -28,7 +28,7 @@ const documents = {
     "\n  query ProjectBreadcrumbMenu_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          name\n        }\n      }\n    }\n  }\n": types.ProjectBreadcrumbMenu_AccountDocument,
     "\n  fragment BuildStatusChip_Build on Build {\n    ...BuildStatusDescription_Build\n    type\n    status\n  }\n": types.BuildStatusChip_BuildFragmentDoc,
     "\n  fragment BuildStatusChip_Project on Project {\n    ...BuildStatusDescription_Project\n  }\n": types.BuildStatusChip_ProjectFragmentDoc,
-    "\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    batchCount\n    totalBatch\n    stats {\n      total\n    }\n  }\n": types.BuildStatusDescription_BuildFragmentDoc,
+    "\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    stats {\n      total\n    }\n    parallel {\n      total\n      received\n      nonce\n    }\n  }\n": types.BuildStatusDescription_BuildFragmentDoc,
     "\n  fragment BuildStatusDescription_Project on Project {\n    referenceBranch\n  }\n": types.BuildStatusDescription_ProjectFragmentDoc,
     "\n  fragment GithubAccountLink_GithubAccount on GithubAccount {\n    login\n    name\n    url\n  }\n": types.GithubAccountLink_GithubAccountFragmentDoc,
     "\n  fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {\n    id\n    account {\n      id\n      login\n      name\n    }\n  }\n": types.GithubInstallationsSelect_GhApiInstallationFragmentDoc,
@@ -107,7 +107,7 @@ const documents = {
     "\n  fragment BuildInfos_Build on Build {\n    createdAt\n    name\n    commit\n    branch\n    stats {\n      total\n    }\n    baseScreenshotBucket {\n      commit\n      branch\n    }\n    pullRequest {\n      id\n      url\n      number\n    }\n  }\n": types.BuildInfos_BuildFragmentDoc,
     "\n  query BuildPage_Project(\n    $accountSlug: String!\n    $projectName: String!\n    $buildNumber: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      ...BuildHeader_Project\n      ...BuildWorkspace_Project\n      account {\n        id\n        ...OvercapacityBanner_Account\n        ...PaymentBanner_Account\n      }\n      build(number: $buildNumber) {\n        id\n        status\n        ...BuildHeader_Build\n        ...BuildWorkspace_Build\n      }\n    }\n  }\n": types.BuildPage_ProjectDocument,
     "\n  fragment BuildSidebar_Build on Build {\n    ...BuildInfos_Build\n    stats {\n      total\n    }\n  }\n": types.BuildSidebar_BuildFragmentDoc,
-    "\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    type\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n  }\n": types.BuildWorkspace_BuildFragmentDoc,
+    "\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    type\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n    parallel {\n      total\n      received\n      nonce\n    }\n  }\n": types.BuildWorkspace_BuildFragmentDoc,
     "\n  fragment BuildWorkspace_Project on Project {\n    ...BuildStatusDescription_Project\n    referenceBranch\n    slug\n    repository {\n      id\n      url\n    }\n  }\n": types.BuildWorkspace_ProjectFragmentDoc,
     "\n  fragment OvercapacityBanner_Account on Account {\n    plan {\n      id\n      displayName\n      usageBased\n    }\n    consumptionRatio\n  }\n": types.OvercapacityBanner_AccountFragmentDoc,
     "\n  fragment BuildHeader_Build on Build {\n    name\n    status\n    pullRequest {\n      id\n      ...PullRequestButton_PullRequest\n    }\n    ...BuildStatusChip_Build\n  }\n": types.BuildHeader_BuildFragmentDoc,
@@ -199,7 +199,7 @@ export function graphql(source: "\n  fragment BuildStatusChip_Project on Project
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    batchCount\n    totalBatch\n    stats {\n      total\n    }\n  }\n"): (typeof documents)["\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    batchCount\n    totalBatch\n    stats {\n      total\n    }\n  }\n"];
+export function graphql(source: "\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    stats {\n      total\n    }\n    parallel {\n      total\n      received\n      nonce\n    }\n  }\n"): (typeof documents)["\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    stats {\n      total\n    }\n    parallel {\n      total\n      received\n      nonce\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -515,7 +515,7 @@ export function graphql(source: "\n  fragment BuildSidebar_Build on Build {\n   
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    type\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n  }\n"): (typeof documents)["\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    type\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n  }\n"];
+export function graphql(source: "\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    type\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n    parallel {\n      total\n      received\n      nonce\n    }\n  }\n"): (typeof documents)["\n  fragment BuildWorkspace_Build on Build {\n    ...BuildSidebar_Build\n    ...BuildStatusDescription_Build\n    ...BuildDetail_Build\n    status\n    type\n    stats {\n      total\n      failure\n      changed\n      added\n      removed\n      unchanged\n    }\n    parallel {\n      total\n      received\n      nonce\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

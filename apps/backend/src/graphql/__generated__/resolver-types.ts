@@ -106,8 +106,6 @@ export type IBuild = INode & {
   __typename?: 'Build';
   /** The screenshot bucket of the baselineBranch */
   baseScreenshotBucket?: Maybe<IScreenshotBucket>;
-  /** Received batch count  */
-  batchCount?: Maybe<Scalars['Int']['output']>;
   /** Branch */
   branch: Scalars['String']['output'];
   /** Commit */
@@ -118,6 +116,8 @@ export type IBuild = INode & {
   name: Scalars['String']['output'];
   /** Continuous number. It is incremented after each build */
   number: Scalars['Int']['output'];
+  /** Parallel infos */
+  parallel?: Maybe<IBuildParallel>;
   /** Pull request head commit */
   prHeadCommit?: Maybe<Scalars['String']['output']>;
   /** Pull request number */
@@ -130,8 +130,6 @@ export type IBuild = INode & {
   stats: IBuildStats;
   /** Review status, conclusion or job status */
   status: IBuildStatus;
-  /** Expected batch count */
-  totalBatch?: Maybe<Scalars['Int']['output']>;
   /** Build type */
   type?: Maybe<IBuildType>;
   updatedAt: Scalars['DateTime']['output'];
@@ -147,6 +145,13 @@ export type IBuildConnection = IConnection & {
   __typename?: 'BuildConnection';
   edges: Array<IBuild>;
   pageInfo: IPageInfo;
+};
+
+export type IBuildParallel = {
+  __typename?: 'BuildParallel';
+  nonce: Scalars['String']['output'];
+  received: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
 };
 
 export type IBuildStats = {
@@ -1283,6 +1288,7 @@ export type IResolversTypes = ResolversObject<{
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Build: ResolverTypeWrapper<Build>;
   BuildConnection: ResolverTypeWrapper<Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversTypes['Build']> }>;
+  BuildParallel: ResolverTypeWrapper<IBuildParallel>;
   BuildStats: ResolverTypeWrapper<IBuildStats>;
   BuildStatus: IBuildStatus;
   BuildType: IBuildType;
@@ -1392,6 +1398,7 @@ export type IResolversParentTypes = ResolversObject<{
   Boolean: Scalars['Boolean']['output'];
   Build: Build;
   BuildConnection: Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversParentTypes['Build']> };
+  BuildParallel: IBuildParallel;
   BuildStats: IBuildStats;
   Connection: IResolversInterfaceTypes<IResolversParentTypes>['Connection'];
   CreateTeamInput: ICreateTeamInput;
@@ -1524,20 +1531,19 @@ export type IAccountSubscriptionResolvers<ContextType = Context, ParentType exte
 
 export type IBuildResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Build'] = IResolversParentTypes['Build']> = ResolversObject<{
   baseScreenshotBucket?: Resolver<Maybe<IResolversTypes['ScreenshotBucket']>, ParentType, ContextType>;
-  batchCount?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   branch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   number?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  parallel?: Resolver<Maybe<IResolversTypes['BuildParallel']>, ParentType, ContextType>;
   prHeadCommit?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   prNumber?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   pullRequest?: Resolver<Maybe<IResolversTypes['PullRequest']>, ParentType, ContextType>;
   screenshotDiffs?: Resolver<IResolversTypes['ScreenshotDiffConnection'], ParentType, ContextType, RequireFields<IBuildScreenshotDiffsArgs, 'after' | 'first'>>;
   stats?: Resolver<IResolversTypes['BuildStats'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['BuildStatus'], ParentType, ContextType>;
-  totalBatch?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   type?: Resolver<Maybe<IResolversTypes['BuildType']>, ParentType, ContextType>;
   updatedAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1546,6 +1552,13 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
 export type IBuildConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['BuildConnection'] = IResolversParentTypes['BuildConnection']> = ResolversObject<{
   edges?: Resolver<Array<IResolversTypes['Build']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IBuildParallelResolvers<ContextType = Context, ParentType extends IResolversParentTypes['BuildParallel'] = IResolversParentTypes['BuildParallel']> = ResolversObject<{
+  nonce?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  received?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2106,6 +2119,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
   Build?: IBuildResolvers<ContextType>;
   BuildConnection?: IBuildConnectionResolvers<ContextType>;
+  BuildParallel?: IBuildParallelResolvers<ContextType>;
   BuildStats?: IBuildStatsResolvers<ContextType>;
   Connection?: IConnectionResolvers<ContextType>;
   CreateTeamResult?: ICreateTeamResultResolvers<ContextType>;

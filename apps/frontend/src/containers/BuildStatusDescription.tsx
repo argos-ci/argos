@@ -1,16 +1,19 @@
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Code } from "@/ui/Code";
 
-import { checkIsBuildEmpty, checkIsBuildIncomplete } from "./Build";
+import { checkIsBuildEmpty } from "./Build";
 
 const BuildFragment = graphql(`
   fragment BuildStatusDescription_Build on Build {
     type
     status
-    batchCount
-    totalBatch
     stats {
       total
+    }
+    parallel {
+      total
+      received
+      nonce
     }
   }
 `);
@@ -29,14 +32,14 @@ export const BuildStatusDescription = (props: {
   const project = useFragment(ProjectFragment, props.project);
 
   if (build.status === "expired") {
-    if (checkIsBuildIncomplete(build)) {
+    if (build.parallel) {
       return (
         <>
-          Build has been killed because it took too much time to receive all
+          The build was aborted because it took too long to receive all the
           batches.
           <br />
-          Be sure that argos upload is called up to the number specified in
-          parallel total.
+          Received {build.parallel.received}/{build.parallel.total} batches with
+          nonce <span className="font-mono">{build.parallel.nonce}</span>.
         </>
       );
     }
