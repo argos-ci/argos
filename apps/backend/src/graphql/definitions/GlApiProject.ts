@@ -36,35 +36,50 @@ export const resolvers: IResolvers = {
   Query: {
     glApiProjects: async (_root, args) => {
       const client = getTokenGitlabClient(args.accessToken);
-      const projects = await (() => {
-        const options = {
-          pagination: "offset" as const,
-          perPage: 100,
-          maxPages: 1,
-          page: args.page,
-          showExpanded: true as const,
-          ...(args.search && args.search.length > 1 && { search: args.search }),
+      try {
+        const projects = await (() => {
+          const options = {
+            pagination: "offset" as const,
+            perPage: 100,
+            maxPages: 1,
+            page: args.page,
+            showExpanded: true as const,
+            ...(args.search &&
+              args.search.length > 1 && { search: args.search }),
+          };
+          if (args.userId) {
+            return client.Users.allProjects(args.userId, options);
+          }
+          if (args.groupId) {
+            return client.Groups.allProjects(args.groupId, options);
+          }
+          if (args.allProjects) {
+            return client.Projects.all({ ...options, membership: true });
+          }
+          throw new GraphQLError(
+            "Either `userId`, `groupId` or `allProjects` option must be provided.",
+          );
+        })();
+        return {
+          edges: projects.data,
+          pageInfo: {
+            hasNextPage: projects.paginationInfo.total > args.page * 100,
+            totalCount: projects.paginationInfo.total,
+          },
         };
-        if (args.userId) {
-          return client.Users.allProjects(args.userId, options);
+      } catch (error) {
+        // Sometimes GitLab API returns 404 when there are no projects
+        if (error instanceof Error && error.message === "Not Found") {
+          return {
+            edges: [],
+            pageInfo: {
+              hasNextPage: false,
+              totalCount: 0,
+            },
+          };
         }
-        if (args.groupId) {
-          return client.Groups.allProjects(args.groupId, options);
-        }
-        if (args.allProjects) {
-          return client.Projects.all({ ...options, membership: true });
-        }
-        throw new GraphQLError(
-          "Either `userId`, `groupId` or `allProjects` option must be provided.",
-        );
-      })();
-      return {
-        edges: projects.data,
-        pageInfo: {
-          hasNextPage: projects.paginationInfo.total > args.page * 100,
-          totalCount: projects.paginationInfo.total,
-        },
-      };
+        throw error;
+      }
     },
   },
 };
