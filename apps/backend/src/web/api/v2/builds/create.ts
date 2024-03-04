@@ -1,6 +1,4 @@
 import express, { Router } from "express";
-// @ts-ignore
-import { HttpError } from "express-err";
 
 import { getRedisLock } from "@/util/redis/index.js";
 import config from "@/config/index.js";
@@ -12,7 +10,7 @@ import { getS3Client, getSignedPutObjectUrl } from "@/storage/index.js";
 import { SHA1_REGEX_STR, SHA256_REGEX_STR } from "@/web/constants.js";
 import { repoAuth } from "../../../middlewares/repoAuth.js";
 import { validate } from "../../../middlewares/validate.js";
-import { asyncHandler } from "../../../util.js";
+import { HTTPError, asyncHandler } from "../../../util.js";
 import { createBuildFromRequest, getBuildName } from "../util.js";
 import { invariant } from "@/util/invariant.js";
 
@@ -158,7 +156,7 @@ const handleCreateParallel = async ({
   req: CreateRequest;
 }): Promise<CreateResult> => {
   if (!req.body.parallelNonce) {
-    throw new HttpError(
+    throw new HTTPError(
       400,
       "`parallelNonce` is required when `parallel` is `true`",
     );
@@ -180,7 +178,7 @@ const handleCreateParallel = async ({
 
     if (existingBuild) {
       if (existingBuild.compareScreenshotBucket!.complete) {
-        throw new HttpError(409, `Build already finalized`);
+        throw new HTTPError(409, `Build already finalized`);
       }
 
       return existingBuild;

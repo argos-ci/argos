@@ -1,8 +1,6 @@
-// @ts-ignore
-import { HttpError } from "express-err";
-
 import { GithubRepository, Project } from "@/database/models/index.js";
 import { getInstallationOctokit } from "@/github/index.js";
+import { HTTPError } from "@/web/util.js";
 
 const marker = "tokenless-github-";
 
@@ -19,7 +17,7 @@ const decodeToken = (bearerToken: string, marker: string) => {
     const payload = Buffer.from(base64, "base64").toString("utf-8");
     return JSON.parse(payload);
   } catch (error) {
-    throw new HttpError(401, `Invalid token (token: "${bearerToken}")`);
+    throw new HTTPError(401, `Invalid token (token: "${bearerToken}")`);
   }
 };
 
@@ -63,7 +61,7 @@ const strategy = {
     }
 
     if (repository.projects.length > 1) {
-      throw new HttpError(
+      throw new HTTPError(
         400,
         `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a Project token.`,
       );
@@ -95,7 +93,7 @@ const strategy = {
     })();
 
     if (!githubRun) {
-      throw new HttpError(
+      throw new HTTPError(
         404,
         `GitHub run not found (token: "${bearerToken}")`,
       );
@@ -106,7 +104,7 @@ const strategy = {
     );
 
     if (!hasInProgressJob) {
-      throw new HttpError(
+      throw new HTTPError(
         401,
         `GitHub job is not in progress (token: "${bearerToken}")`,
       );

@@ -1,7 +1,5 @@
 import bodyParser from "body-parser";
 import express from "express";
-// @ts-ignore
-import { HttpError } from "express-err";
 
 import config from "@/config/index.js";
 import { Account } from "@/database/models/index.js";
@@ -15,7 +13,7 @@ import {
 import type { Stripe } from "@/stripe/index.js";
 
 import { auth } from "../middlewares/auth.js";
-import { asyncHandler } from "../util.js";
+import { HTTPError, asyncHandler } from "../util.js";
 
 const router = express.Router();
 
@@ -32,7 +30,7 @@ async function parseStripeEvent(req: express.Request) {
     );
     return event;
   } catch (err) {
-    throw new HttpError(400, "Stripe webhook signature verification failed");
+    throw new HTTPError(400, "Stripe webhook signature verification failed");
   }
 }
 
@@ -41,7 +39,17 @@ router.post(
   bodyParser.raw({ type: "application/json" }),
   asyncHandler(async (req, res) => {
     const event = await parseStripeEvent(req);
-    await handleStripeEvent(event);
+    try {
+      await handleStripeEvent(event);
+    } catch (error) {
+      throw new HTTPError(
+        500,
+        "An error occurred while handling Stripe event.",
+        {
+          cause: error,
+        },
+      );
+    }
     res.sendStatus(200);
   }),
 );
