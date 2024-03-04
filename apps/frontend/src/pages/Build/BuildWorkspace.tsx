@@ -1,24 +1,14 @@
 import { memo } from "react";
 
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 
 import { BuildDetail } from "./BuildDetail";
 import { BuildDiffProvider } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
 import { BuildSidebar } from "./BuildSidebar";
 import { BuildOrphanDialog } from "./BuildOrphanDialog";
-
-const BuildProgress = memo(() => {
-  return (
-    <div className="flex flex-1 flex-col items-center gap-10 p-10">
-      <div className="text-4xl">Your build is cooking...</div>
-      <div>
-        <div className="egg-loader" data-visual-test="transparent" />
-      </div>
-    </div>
-  );
-});
+import { Progress } from "@/ui/Progress";
 
 const BuildFragment = graphql(`
   fragment BuildWorkspace_Build on Build {
@@ -35,6 +25,11 @@ const BuildFragment = graphql(`
       removed
       unchanged
     }
+    parallel {
+      total
+      received
+      nonce
+    }
   }
 `);
 
@@ -49,6 +44,40 @@ const ProjectFragment = graphql(`
     }
   }
 `);
+
+const BuildProgress = memo(
+  ({
+    parallel,
+  }: {
+    parallel: DocumentType<typeof BuildFragment>["parallel"];
+  }) => {
+    return (
+      <div className="flex flex-1 flex-col items-center gap-10 p-10">
+        <div className="text-4xl">Your build is cooking...</div>
+        <div>
+          <div className="egg-loader" data-visual-test="transparent" />
+        </div>
+        {parallel && (
+          <div className="w-80">
+            <Progress
+              className="mb-2"
+              value={parallel.received}
+              max={parallel.total}
+              min={0}
+            />
+            <div className="flex justify-between tabular-nums font-medium mb-0.5">
+              <div>{parallel.received} batches</div>
+              <div className="text-low">/ {parallel.total}</div>
+            </div>
+            <div className="text-low text-xs mb-1 font-mono">
+              {parallel.nonce}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  },
+);
 
 export const BuildWorkspace = (props: {
   params: BuildParams;
@@ -70,7 +99,7 @@ export const BuildWorkspace = (props: {
       );
     case "pending":
     case "progress":
-      return <BuildProgress />;
+      return <BuildProgress parallel={build.parallel} />;
     default:
       return (
         <BuildDiffProvider params={props.params} stats={build?.stats ?? null}>

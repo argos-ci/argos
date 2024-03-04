@@ -86,6 +86,14 @@ export const typeDefs = gql`
     commit: String!
     "Branch"
     branch: String!
+    "Parallel infos"
+    parallel: BuildParallel
+  }
+
+  type BuildParallel {
+    total: Int!
+    received: Int!
+    nonce: String!
   }
 
   type BuildConnection implements Connection {
@@ -151,6 +159,16 @@ export const resolvers: IResolvers = {
     pullRequest: async (build, _args, ctx) => {
       if (!build.githubPullRequestId) return null;
       return ctx.loaders.GithubPullRequest.load(build.githubPullRequestId);
+    },
+    parallel: (build) => {
+      if (!build.totalBatch || !build.batchCount || !build.externalId) {
+        return null;
+      }
+      return {
+        total: build.totalBatch,
+        received: build.batchCount,
+        nonce: build.externalId,
+      };
     },
   },
   Mutation: {

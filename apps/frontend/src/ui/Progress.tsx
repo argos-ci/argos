@@ -1,8 +1,12 @@
+import clsx from "clsx";
+
 export const Progress = ({
+  className,
   value,
   max,
   min,
 }: {
+  className?: string;
   value: number;
   max: number;
   min: number;
@@ -15,7 +19,7 @@ export const Progress = ({
       aria-valuenow={value}
       aria-valuemin={min}
       aria-valuemax={max}
-      className="h-2 w-full overflow-hidden rounded-md bg-ui"
+      className={clsx("h-2 w-full overflow-hidden rounded-md bg-ui", className)}
     >
       <div
         className="h-2 bg-gradient-to-r from-progress-from to-progress-to"
