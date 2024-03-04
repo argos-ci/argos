@@ -1,6 +1,4 @@
 import type { Request } from "express";
-// @ts-ignore
-import { HttpError } from "express-err";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
@@ -13,6 +11,7 @@ import {
 } from "@/database/models/index.js";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 import { assertUnreachable } from "@/util/unreachable.js";
+import { HTTPError } from "@/web/util.js";
 
 export const getBuildName = (name: string | undefined | null) =>
   name || "default";
@@ -77,7 +76,7 @@ const createBuild = async (params: {
 }) => {
   const account = await params.project.$relatedQuery("account");
   if (!account) {
-    throw new HttpError(404, `Account not found.`);
+    throw new HTTPError(404, `Account not found.`);
   }
 
   const manager = account.$getSubscriptionManager();
@@ -87,7 +86,7 @@ const createBuild = async (params: {
   ]);
 
   if (account.type === "team" && !plan) {
-    throw new HttpError(
+    throw new HTTPError(
       402,
       `Build rejected: subscribe to a Pro plan to use Team features.`,
     );
@@ -98,12 +97,12 @@ const createBuild = async (params: {
       break;
     }
     case "trialing":
-      throw new HttpError(
+      throw new HTTPError(
         402,
         `You have reached the maximum screenshot capacity of your ${plan ? `${plan.displayName} Plan` : "Plan"} trial. Please upgrade your Plan.`,
       );
     case "flat-rate":
-      throw new HttpError(
+      throw new HTTPError(
         402,
         `You have reached the maximum screenshot capacity included in your ${plan ? `${plan.displayName} Plan` : "Plan"}. Please upgrade your Plan.`,
       );

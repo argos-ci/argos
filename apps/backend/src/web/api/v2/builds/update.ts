@@ -1,6 +1,4 @@
 import express, { Router } from "express";
-// @ts-ignore
-import { HttpError } from "express-err";
 
 import { job as buildJob } from "@/build/index.js";
 import { raw, transaction } from "@/database/index.js";
@@ -15,7 +13,7 @@ import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
 import { SHA256_REGEX_STR } from "@/web/constants.js";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { validate } from "@/web/middlewares/validate.js";
-import { asyncHandler } from "@/web/util.js";
+import { HTTPError, asyncHandler } from "@/web/util.js";
 
 const router = Router();
 export default router;
@@ -90,7 +88,7 @@ const handleUpdateParallel = async ({
   build: Build;
 }) => {
   if (!req.body.parallelTotal) {
-    throw new HttpError(
+    throw new HTTPError(
       400,
       "`parallelTotal` is required when `parallel` is `true`",
     );
@@ -99,7 +97,7 @@ const handleUpdateParallel = async ({
   const parallelTotal = Number(req.body.parallelTotal);
 
   if (build.totalBatch && build.totalBatch !== parallelTotal) {
-    throw new HttpError(400, "`parallelTotal` must be the same on every batch");
+    throw new HTTPError(400, "`parallelTotal` must be the same on every batch");
   }
 
   const complete = await transaction(async (trx) => {
@@ -170,22 +168,22 @@ router.put(
       .withGraphFetched("compareScreenshotBucket");
 
     if (!build) {
-      throw new HttpError(404, "Build not found");
+      throw new HTTPError(404, "Build not found");
     }
 
     if (!build.compareScreenshotBucket) {
-      throw new HttpError(
+      throw new HTTPError(
         500,
         "Could not find compareScreenshotBucket for build",
       );
     }
 
     if (build.compareScreenshotBucket.complete) {
-      throw new HttpError(409, "Build is already finalized");
+      throw new HTTPError(409, "Build is already finalized");
     }
 
     if (build.projectId !== req.authProject!.id) {
-      throw new HttpError(403, "Build does not belong to project");
+      throw new HTTPError(403, "Build does not belong to project");
     }
 
     const ctx = { req, build };

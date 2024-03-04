@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { STATUS_CODES } from "node:http";
 
 /**
  * Takes a route handling function and returns
@@ -30,3 +31,14 @@ export const subdomain =
       return next();
     }
   };
+
+/**
+ * HTTPError is a subclass of Error that includes an HTTP status code.
+ */
+export class HTTPError extends Error {
+  public statusCode: number;
+  constructor(statusCode: number, message?: string, options?: ErrorOptions) {
+    super(message || STATUS_CODES[statusCode], options);
+    this.statusCode = statusCode;
+  }
+}
