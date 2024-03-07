@@ -379,15 +379,6 @@ export const handleStripeEvent = async ({
       await updateSubscriptionsFromCustomer(paymentMethod.customer);
       return;
     }
-    case "payment_method.detached": {
-      const paymentMethod = data.object as Stripe.PaymentMethod;
-      invariant(
-        typeof paymentMethod.customer === "string",
-        "customer is not a string",
-      );
-      await updateSubscriptionsFromCustomer(paymentMethod.customer);
-      return;
-    }
     case "customer.deleted": {
       const customer = data.object as Stripe.Customer;
 

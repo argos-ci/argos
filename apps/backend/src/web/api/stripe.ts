@@ -1,6 +1,6 @@
 import bodyParser from "body-parser";
 import express from "express";
-
+import * as Sentry from "@sentry/node";
 import config from "@/config/index.js";
 import { Account } from "@/database/models/index.js";
 import logger from "@/logger/index.js";
@@ -42,6 +42,8 @@ router.post(
     try {
       await handleStripeEvent(event);
     } catch (error) {
+      Sentry.setContext("stripeEvent", event);
+
       throw new HTTPError(
         500,
         "An error occurred while handling Stripe event.",
