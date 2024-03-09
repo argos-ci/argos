@@ -48,7 +48,9 @@ const defineFactory = <
   return factory;
 };
 
-export const Team = defineFactory(models.Team, () => ({}));
+export const Team = defineFactory(models.Team, () => ({
+  defaultUserLevel: "member",
+}));
 
 export const User = defineFactory(models.User, () => ({
   email: FactoryGirl.sequence("user.email", (n) => `user-${n}@email.com`),

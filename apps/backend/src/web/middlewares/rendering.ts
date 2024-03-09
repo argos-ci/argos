@@ -54,7 +54,7 @@ const toPrettyJSON = (data: any) => {
 };
 
 export const rendering = (additionalClientData?: any) => {
-  const handler: RequestHandler = (req, res) => {
+  const handler: RequestHandler = (_req, res) => {
     const output = ejs.render(indexString, {
       cache: true,
       filename: "review/index.ejs",

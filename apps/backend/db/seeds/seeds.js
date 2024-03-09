@@ -8,7 +8,10 @@ function duplicate(obj, count) {
 export const seed = async (knex) => {
   const [smoothTeam, helloTeam] = await knex("teams")
     .returning("id")
-    .insert([timeStamps, timeStamps]);
+    .insert([
+      { ...timeStamps, defaultUserLevel: "member" },
+      { ...timeStamps, defaultUserLevel: "member" },
+    ]);
 
   const [gregUser, jeremyUser] = await knex("users")
     .returning("id")
