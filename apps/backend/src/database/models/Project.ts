@@ -138,7 +138,7 @@ export class Project extends Model {
       if (project.account.userId === user.id) {
         return allPermissions;
       }
-      return [];
+      return defaultPermissions;
     }
 
     const [projectUser, teamUser] = await Promise.all([
