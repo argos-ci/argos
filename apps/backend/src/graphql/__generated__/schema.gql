@@ -1,0 +1,893 @@
+interface Account implements Node {
+  avatar: AccountAvatar!
+  consumptionRatio: Float!
+  currentPeriodScreenshots: Int!
+  gitlabAccessToken: String
+  glNamespaces: GlApiNamespaceConnection
+  hasForcedPlan: Boolean!
+  hasPaidPlan: Boolean!
+  id: ID!
+  includedScreenshots: Int!
+  name: String
+  paymentProvider: AccountSubscriptionProvider
+  pendingCancelAt: DateTime
+  periodEndDate: DateTime
+  periodStartDate: DateTime
+  permissions: [AccountPermission!]!
+  plan: Plan
+  projects(after: Int!, first: Int!): ProjectConnection!
+  slug: String!
+  stripeClientReferenceId: String!
+  stripeCustomerId: String
+  subscription: AccountSubscription
+  subscriptionStatus: AccountSubscriptionStatus
+  trialStatus: TrialStatus
+}
+
+type AccountAvatar {
+  color: String!
+  initial: String!
+  url(size: Int!): String
+}
+
+enum AccountPermission {
+  admin
+  view
+}
+
+type AccountSubscription implements Node {
+  id: ID!
+  paymentMethodFilled: Boolean!
+  provider: AccountSubscriptionProvider!
+  trialDaysRemaining: Int
+}
+
+enum AccountSubscriptionProvider {
+  github
+  stripe
+}
+
+enum AccountSubscriptionStatus {
+  """Ongoing paid subscription"""
+  active
+
+  """Post-cancelation date"""
+  canceled
+
+  """Incomplete"""
+  incomplete
+
+  """Incomplete expired"""
+  incomplete_expired
+
+  """Payment due"""
+  past_due
+
+  """Paused"""
+  paused
+
+  """Ongoing trial"""
+  trialing
+
+  """Unpaid"""
+  unpaid
+}
+
+input AddContributorToProjectInput {
+  level: ProjectUserLevel!
+  projectId: ID!
+  userAccountId: ID!
+}
+
+type Build implements Node {
+  """The screenshot bucket of the baselineBranch"""
+  baseScreenshotBucket: ScreenshotBucket
+
+  """Branch"""
+  branch: String!
+
+  """Commit"""
+  commit: String!
+  createdAt: DateTime!
+  id: ID!
+
+  """Build name"""
+  name: String!
+
+  """Continuous number. It is incremented after each build"""
+  number: Int!
+
+  """Parallel infos"""
+  parallel: BuildParallel
+
+  """Pull request head commit"""
+  prHeadCommit: String
+
+  """Pull request number"""
+  prNumber: Int
+
+  """Pull request"""
+  pullRequest: PullRequest
+
+  """
+  The screenshot diffs between the base screenshot bucket of the compare screenshot bucket
+  """
+  screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
+
+  """Build stats"""
+  stats: BuildStats!
+
+  """Review status, conclusion or job status"""
+  status: BuildStatus!
+
+  """Build type"""
+  type: BuildType
+  updatedAt: DateTime!
+}
+
+type BuildConnection implements Connection {
+  edges: [Build!]!
+  pageInfo: PageInfo!
+}
+
+type BuildParallel {
+  nonce: String!
+  received: Int!
+  total: Int!
+}
+
+type BuildStats {
+  added: Int!
+  changed: Int!
+  failure: Int!
+  removed: Int!
+  total: Int!
+  unchanged: Int!
+}
+
+enum BuildStatus {
+  """job status: aborted"""
+  aborted
+
+  """reviewStatus: accepted"""
+  accepted
+
+  """conclusion: diffDetected"""
+  diffDetected
+
+  """job status: complete"""
+  error
+
+  """job status: expired"""
+  expired
+
+  """job status: pending"""
+  pending
+
+  """job status: progress"""
+  progress
+
+  """reviewStatus: rejected"""
+  rejected
+
+  """conclusion: stable"""
+  stable
+}
+
+enum BuildType {
+  """Comparison build"""
+  check
+
+  """No reference build to compare"""
+  orphan
+
+  """Build on reference branch"""
+  reference
+}
+
+interface Connection {
+  edges: [Node!]!
+  pageInfo: PageInfo!
+}
+
+input CreateTeamInput {
+  name: String!
+}
+
+type CreateTeamResult {
+  redirectUrl: String!
+  team: Team!
+}
+
+scalar Date
+
+scalar DateTime
+
+input DeleteTeamInput {
+  accountId: ID!
+}
+
+input DisableGitHubSSOOnTeamInput {
+  teamAccountId: ID!
+}
+
+input EnableGitHubSSOOnTeamInput {
+  ghInstallationId: Int!
+  teamAccountId: ID!
+}
+
+type GhApiInstallation implements Node {
+  account: GhApiInstallationAccount!
+  id: ID!
+}
+
+type GhApiInstallationAccount implements Node {
+  id: ID!
+  login: String!
+  name: String
+}
+
+type GhApiInstallationConnection implements Connection {
+  edges: [GhApiInstallation!]!
+  pageInfo: PageInfo!
+}
+
+type GhApiRepository implements Node {
+  id: ID!
+  name: String!
+  owner_login: String!
+  updated_at: String!
+}
+
+type GhApiRepositoryConnection implements Connection {
+  edges: [GhApiRepository!]!
+  pageInfo: PageInfo!
+}
+
+type GithubAccount implements Node {
+  avatar: AccountAvatar!
+  id: ID!
+  login: String!
+  name: String
+  url: String!
+}
+
+type GithubPullRequest implements Node & PullRequest {
+  closedAt: DateTime
+  creator: GithubAccount
+  date: DateTime
+  draft: Boolean
+  id: ID!
+  merged: Boolean
+  mergedAt: DateTime
+  number: Int!
+  state: PullRequestState
+  title: String
+  url: String!
+}
+
+type GithubRepository implements Node & Repository {
+  defaultBranch: String!
+  fullName: String!
+  id: ID!
+  private: Boolean!
+  url: String!
+}
+
+type GitlabProject implements Node & Repository {
+  defaultBranch: String!
+  fullName: String!
+  id: ID!
+  private: Boolean!
+  url: String!
+}
+
+type GlApiNamespace implements Node {
+  id: ID!
+  isProjectToken: Boolean!
+  kind: String!
+  name: String!
+  path: String!
+}
+
+type GlApiNamespaceConnection implements Connection {
+  edges: [GlApiNamespace!]!
+  pageInfo: PageInfo!
+}
+
+type GlApiProject implements Node {
+  id: ID!
+  last_activity_at: String!
+  name: String!
+  namespace: GlApiNamespace!
+}
+
+type GlApiProjectConnection implements Connection {
+  edges: [GlApiProject!]!
+  pageInfo: PageInfo!
+}
+
+input ImportGithubProjectInput {
+  accountSlug: String!
+  owner: String!
+  repo: String!
+}
+
+input ImportGitlabProjectInput {
+  accountSlug: String!
+  gitlabProjectId: ID!
+}
+
+enum JobStatus {
+  aborted
+  complete
+  error
+  pending
+  progress
+}
+
+input LeaveTeamInput {
+  teamAccountId: ID!
+}
+
+input LinkGithubRepositoryInput {
+  owner: String!
+  projectId: ID!
+  repo: String!
+}
+
+input LinkGitlabProjectInput {
+  gitlabProjectId: ID!
+  projectId: ID!
+}
+
+type Mutation {
+  """Accept an invitation to join a team"""
+  acceptInvitation(token: String!): Team!
+
+  """Add contributor to project"""
+  addOrUpdateProjectContributor(input: AddContributorToProjectInput!): ProjectContributor!
+
+  """Create a team"""
+  createTeam(input: CreateTeamInput!): CreateTeamResult!
+
+  """Delete Project"""
+  deleteProject(id: ID!): Boolean!
+
+  """Delete team and all its projects"""
+  deleteTeam(input: DeleteTeamInput!): Boolean!
+
+  """Disable GitHub SSO"""
+  disableGitHubSSOOnTeam(input: DisableGitHubSSOOnTeamInput!): Team!
+
+  """Enable GitHub SSO"""
+  enableGitHubSSOOnTeam(input: EnableGitHubSSOOnTeamInput!): Team!
+
+  """Import a project from GitHub"""
+  importGithubProject(input: ImportGithubProjectInput!): Project!
+
+  """Import a project from GitLab"""
+  importGitlabProject(input: ImportGitlabProjectInput!): Project!
+
+  """Leave a team"""
+  leaveTeam(input: LeaveTeamInput!): Boolean!
+
+  """Link GitHub Repository"""
+  linkGithubRepository(input: LinkGithubRepositoryInput!): Project!
+
+  """Link Gitlab Project"""
+  linkGitlabProject(input: LinkGitlabProjectInput!): Project!
+  ping: Boolean!
+  removeContributorFromProject(input: RemoveContributorFromProjectInput!): RemoveContributorFromProjectPayload!
+
+  """Remove a user from a team"""
+  removeUserFromTeam(input: RemoveUserFromTeamInput!): RemoveUserFromTeamPayload!
+
+  """Set team default user level"""
+  setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
+
+  """Set member level"""
+  setTeamMemberLevel(input: SetTeamMemberLevelInput!): TeamMember!
+
+  """Change the validationStatus on a build"""
+  setValidationStatus(buildId: ID!, validationStatus: ValidationStatus!): Build!
+
+  """Terminate trial early"""
+  terminateTrial(accountId: ID!): Account!
+
+  """Transfer Project to another account"""
+  transferProject(input: TransferProjectInput!): Project!
+
+  """Unlink GitHub Repository"""
+  unlinkGithubRepository(input: UnlinkGithubRepositoryInput!): Project!
+
+  """Unlink Gitlab Project"""
+  unlinkGitlabProject(input: UnlinkGitlabProjectInput!): Project!
+
+  """Update Account"""
+  updateAccount(input: UpdateAccountInput!): Account!
+
+  """Update Project"""
+  updateProject(input: UpdateProjectInput!): Project!
+
+  """Set project pull request comment"""
+  updateProjectPrComment(input: UpdateProjectPrCommentInput!): Project!
+}
+
+interface Node {
+  id: ID!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  totalCount: Int!
+}
+
+type Plan implements Node {
+  displayName: String!
+  fineGrainedAccessControlIncluded: Boolean!
+  githubSsoIncluded: Boolean!
+  id: ID!
+  usageBased: Boolean!
+}
+
+type Project implements Node {
+  """Owner of the repository"""
+  account: Account!
+
+  """Override branch name"""
+  baselineBranch: String
+
+  """A single build linked to the repository"""
+  build(number: Int!): Build
+
+  """Build names"""
+  buildNames: [String!]!
+
+  """Builds associated to the repository"""
+  builds(after: Int = 0, buildName: String, first: Int = 30): BuildConnection!
+
+  """Contributors"""
+  contributors(after: Int = 0, first: Int = 30): ProjectContributorConnection!
+
+  """Current month used screenshots"""
+  currentPeriodScreenshots: Int!
+  id: ID!
+
+  """Latest build"""
+  latestBuild: Build
+
+  """Reference build"""
+  latestReferenceBuild: Build
+  name: String!
+
+  """Determine permissions of the current user"""
+  permissions: [ProjectPermission!]!
+
+  """Pull request comment enabled"""
+  prCommentEnabled: Boolean!
+
+  """Override repository's Github privacy"""
+  private: Boolean
+
+  """Check if the project is public or not"""
+  public: Boolean!
+
+  """Reference branch"""
+  referenceBranch: String!
+
+  """Repository associated to the project"""
+  repository: Repository
+
+  """Project slug"""
+  slug: String!
+
+  """Summary check"""
+  summaryCheck: SummaryCheck!
+
+  """Tests associated to the repository"""
+  tests(after: Int!, first: Int!): TestConnection! @deprecated(reason: "Remove in future release")
+  token: String
+
+  """Total screenshots used"""
+  totalScreenshots: Int!
+}
+
+type ProjectConnection implements Connection {
+  edges: [Project!]!
+  pageInfo: PageInfo!
+}
+
+type ProjectContributor implements Node {
+  id: ID!
+  level: ProjectUserLevel!
+  project: Project!
+  user: User!
+}
+
+type ProjectContributorConnection implements Connection {
+  edges: [ProjectContributor!]!
+  pageInfo: PageInfo!
+}
+
+enum ProjectPermission {
+  admin
+  review
+  view
+  view_settings
+}
+
+enum ProjectUserLevel {
+  admin
+  reviewer
+  viewer
+}
+
+interface PullRequest implements Node {
+  closedAt: DateTime
+  date: DateTime
+  draft: Boolean
+  id: ID!
+  merged: Boolean
+  mergedAt: DateTime
+  number: Int!
+  state: PullRequestState
+  title: String
+  url: String!
+}
+
+enum PullRequestState {
+  CLOSED
+  OPEN
+}
+
+type Query {
+  """Get Account by slug"""
+  account(slug: String!): Account
+
+  """Get Account by id"""
+  accountById(id: ID!): Account
+  ghApiInstallationRepositories(installationId: ID!, page: Int!, reposPerPage: Int): GhApiRepositoryConnection!
+  glApiProjects(accessToken: String!, allProjects: Boolean!, groupId: ID, page: Int!, search: String, userId: ID): GlApiProjectConnection!
+  invitation(token: String!): Team
+
+  """Get the authenticated user"""
+  me: User
+  ping: Boolean!
+
+  """Get a project"""
+  project(accountSlug: String!, buildName: String, projectName: String!): Project
+
+  """Get a project"""
+  projectById(id: ID!): Project
+
+  """Get Team by id"""
+  teamById(id: ID!): Team
+}
+
+input RemoveContributorFromProjectInput {
+  projectId: ID!
+  userAccountId: ID!
+}
+
+type RemoveContributorFromProjectPayload {
+  projectContributorId: ID!
+}
+
+input RemoveUserFromTeamInput {
+  teamAccountId: ID!
+  userAccountId: ID!
+}
+
+type RemoveUserFromTeamPayload {
+  teamMemberId: ID!
+}
+
+interface Repository implements Node {
+  defaultBranch: String!
+  fullName: String!
+  id: ID!
+  private: Boolean!
+  url: String!
+}
+
+type Screenshot implements Node {
+  height: Int
+  id: ID!
+  metadata: ScreenshotMetadata
+  playwrightTraceUrl: String
+  url: String!
+  width: Int
+}
+
+type ScreenshotBucket implements Node {
+  branch: String!
+  commit: String!
+  createdAt: DateTime!
+  id: ID!
+}
+
+type ScreenshotDiff implements Node {
+  baseScreenshot: Screenshot
+  compareScreenshot: Screenshot
+  createdAt: DateTime!
+  flakyDetected: Boolean! @deprecated(reason: "Remove in future release")
+  group: String
+  height: Int
+  id: ID!
+  name: String!
+  status: ScreenshotDiffStatus!
+  test: Test @deprecated(reason: "Remove in future release")
+  url: String
+  validationStatus: String
+  width: Int
+}
+
+type ScreenshotDiffConnection implements Connection {
+  edges: [ScreenshotDiff!]!
+  pageInfo: PageInfo!
+}
+
+enum ScreenshotDiffStatus {
+  added
+  changed
+  failure
+  removed
+  unchanged
+}
+
+type ScreenshotMetadata {
+  automationLibrary: ScreenshotMetadataAutomationLibrary!
+  browser: ScreenshotMetadataBrowser
+  colorScheme: ScreenshotMetadataColorScheme
+  mediaType: ScreenshotMetadataMediaType
+  sdk: ScreenshotMetadataSDK!
+  test: ScreenshotMetadataTest
+  url: String
+  viewport: ScreenshotMetadataViewport
+}
+
+type ScreenshotMetadataAutomationLibrary {
+  name: String!
+  version: String!
+}
+
+type ScreenshotMetadataBrowser {
+  name: String!
+  version: String!
+}
+
+enum ScreenshotMetadataColorScheme {
+  dark
+  light
+}
+
+type ScreenshotMetadataLocation {
+  column: Int!
+  file: String!
+  line: Int!
+}
+
+enum ScreenshotMetadataMediaType {
+  print
+  screen
+}
+
+type ScreenshotMetadataSDK {
+  name: String!
+  version: String!
+}
+
+type ScreenshotMetadataTest {
+  id: String
+  location: ScreenshotMetadataLocation
+  title: String!
+  titlePath: [String!]!
+}
+
+type ScreenshotMetadataViewport {
+  height: Int!
+  width: Int!
+}
+
+input SetTeamDefaultUserLevelInput {
+  level: TeamDefaultUserLevel!
+  teamAccountId: ID!
+}
+
+input SetTeamMemberLevelInput {
+  level: TeamUserLevel!
+  teamAccountId: ID!
+  userAccountId: ID!
+}
+
+enum SummaryCheck {
+  always
+  auto
+  never
+}
+
+type Team implements Account & Node {
+  avatar: AccountAvatar!
+  consumptionRatio: Float!
+  currentPeriodScreenshots: Int!
+  defaultUserLevel: TeamDefaultUserLevel!
+  githubMembers(after: Int = 0, first: Int = 30): TeamGithubMemberConnection
+  gitlabAccessToken: String
+  glNamespaces: GlApiNamespaceConnection
+  hasForcedPlan: Boolean!
+  hasPaidPlan: Boolean!
+  id: ID!
+  includedScreenshots: Int!
+  inviteLink: String
+  me: TeamMember
+  members(after: Int = 0, first: Int = 30, search: String, userLevel: TeamUserLevel): TeamMemberConnection!
+  name: String
+  oldPaidSubscription: AccountSubscription
+  paymentProvider: AccountSubscriptionProvider
+  pendingCancelAt: DateTime
+  periodEndDate: DateTime
+  periodStartDate: DateTime
+  permissions: [AccountPermission!]!
+  plan: Plan
+  projects(after: Int!, first: Int!): ProjectConnection!
+  slug: String!
+  ssoGithubAccount: GithubAccount
+  stripeClientReferenceId: String!
+  stripeCustomerId: String
+  subscription: AccountSubscription
+  subscriptionStatus: AccountSubscriptionStatus
+  trialStatus: TrialStatus
+}
+
+enum TeamDefaultUserLevel {
+  contributor
+  member
+}
+
+type TeamGithubMember implements Node {
+  githubAccount: GithubAccount!
+  id: ID!
+  teamMember: TeamMember
+}
+
+type TeamGithubMemberConnection implements Connection {
+  edges: [TeamGithubMember!]!
+  pageInfo: PageInfo!
+}
+
+type TeamMember implements Node {
+  id: ID!
+  level: TeamUserLevel!
+  user: User!
+}
+
+type TeamMemberConnection implements Connection {
+  edges: [TeamMember!]!
+  pageInfo: PageInfo!
+}
+
+enum TeamUserLevel {
+  contributor
+  member
+  owner
+}
+
+type Test implements Node {
+  buildName: String!
+  dailyChanges: [dailyCount!]!
+  id: ID!
+  lastSeen: DateTime
+  mute: Boolean!
+  muteUntil: DateTime
+  name: String!
+  resolvedDate: DateTime
+  screenshot: Screenshot
+  stabilityScore: Int
+  status: TestStatus!
+  totalBuilds: Int!
+  unstable: Boolean!
+}
+
+type TestConnection implements Connection {
+  edges: [Test!]!
+  pageInfo: PageInfo!
+}
+
+enum TestStatus {
+  flaky
+  pending
+  resolved
+}
+
+scalar Time
+
+input TransferProjectInput {
+  id: ID!
+  name: String!
+  targetAccountId: ID!
+}
+
+enum TrialStatus {
+  """Trial is active"""
+  active
+
+  """Subscription ended when trial did"""
+  expired
+}
+
+input UnlinkGithubRepositoryInput {
+  projectId: ID!
+}
+
+input UnlinkGitlabProjectInput {
+  projectId: ID!
+}
+
+input UpdateAccountInput {
+  gitlabAccessToken: String
+  id: ID!
+  name: String
+  slug: String
+}
+
+input UpdateProjectInput {
+  baselineBranch: String
+  id: ID!
+  name: String
+  private: Boolean
+  summaryCheck: SummaryCheck
+}
+
+input UpdateProjectPrCommentInput {
+  enabled: Boolean!
+  projectId: ID!
+}
+
+type User implements Account & Node {
+  avatar: AccountAvatar!
+  consumptionRatio: Float!
+  currentPeriodScreenshots: Int!
+  ghInstallations: GhApiInstallationConnection!
+  gitlabAccessToken: String
+  glNamespaces: GlApiNamespaceConnection
+  hasForcedPlan: Boolean!
+  hasPaidPlan: Boolean!
+  hasSubscribedToTrial: Boolean!
+  id: ID!
+  includedScreenshots: Int!
+  lastSubscription: AccountSubscription
+  name: String
+  oldPaidSubscription: AccountSubscription
+  paymentProvider: AccountSubscriptionProvider
+  pendingCancelAt: DateTime
+  periodEndDate: DateTime
+  periodStartDate: DateTime
+  permissions: [AccountPermission!]!
+  plan: Plan
+  projects(after: Int!, first: Int!): ProjectConnection!
+  projectsContributedOn(after: Int = 0, first: Int = 30, projectId: ID!): ProjectContributorConnection!
+  slug: String!
+  stripeClientReferenceId: String!
+  stripeCustomerId: String
+  subscription: AccountSubscription
+  subscriptionStatus: AccountSubscriptionStatus
+  teams: [Team!]!
+  trialStatus: TrialStatus
+}
+
+type UserConnection implements Connection {
+  edges: [User!]!
+  pageInfo: PageInfo!
+}
+
+enum ValidationStatus {
+  accepted
+  rejected
+  unknown
+}
+
+type dailyCount {
+  count: Int!
+  date: Date!
+}

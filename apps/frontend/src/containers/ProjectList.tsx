@@ -92,7 +92,7 @@ const CreateProjectButton = (props: ButtonProps) => {
 
 export const ProjectList = (props: {
   projects: ProjectFragmentType[];
-  hasWritePermission: boolean;
+  canCreateProject: boolean;
 }) => {
   const projects = useFragment(ProjectFragment, props.projects);
 
@@ -100,7 +100,7 @@ export const ProjectList = (props: {
     return (
       <div className="flex flex-col items-center justify-center">
         <div className="mb-2 text-2xl font-medium">No projects yet!</div>
-        {props.hasWritePermission && (
+        {props.canCreateProject && (
           <>
             <div className="mb-4 text-low">
               Start by creating a new project.
@@ -114,7 +114,7 @@ export const ProjectList = (props: {
 
   return (
     <div className="flex flex-col gap-4">
-      {props.hasWritePermission && (
+      {props.canCreateProject && (
         <div className="flex justify-end">
           <CreateProjectButton variant="outline" color="neutral" />
         </div>

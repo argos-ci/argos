@@ -6,7 +6,7 @@ import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { Permission } from "@/gql/graphql";
+import { AccountPermission } from "@/gql/graphql";
 import { Anchor } from "@/ui/Link";
 
 const AccountFragment = graphql(`
@@ -49,7 +49,7 @@ export const AccountGitLab = (props: {
       },
     });
   };
-  const writable = account.permissions.includes(Permission.Write);
+  const userIsAdmin = account.permissions.includes(AccountPermission.Admin);
   return (
     <Card>
       <FormProvider {...form}>
@@ -69,7 +69,7 @@ export const AccountGitLab = (props: {
                 },
               })}
               label="Personal access token"
-              disabled={!writable}
+              disabled={!userIsAdmin}
             />
             <div className="text-sm text-low mt-2">
               The access token is used to update commit status in GitLab. These
@@ -77,14 +77,14 @@ export const AccountGitLab = (props: {
               token. It must have access to the repository you want to integrate
               with.
             </div>
-            {!writable && (
+            {!userIsAdmin && (
               <div className="mt-4">
                 If you want to setup GitLab integration, please ask your team
                 owner to setup it.
               </div>
             )}
           </CardBody>
-          <FormCardFooter disabled={!writable}>
+          <FormCardFooter disabled={!userIsAdmin}>
             Learn more about{" "}
             <Anchor href="https://argos-ci.com/docs/gitlab" external>
               setting up GitLab + Argos integration

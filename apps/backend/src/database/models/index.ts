@@ -14,6 +14,7 @@ export * from "./GitlabProject.js";
 export * from "./GitlabUser.js";
 export * from "./Plan.js";
 export * from "./Project.js";
+export * from "./ProjectUser.js";
 export * from "./GithubPullRequest.js";
 export * from "./Screenshot.js";
 export * from "./ScreenshotBucket.js";

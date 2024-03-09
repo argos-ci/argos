@@ -28,6 +28,7 @@
     "node": "20"
   },
   "devDependencies": {
+    "@0no-co/graphqlsp": "^1.4.3",
     "@argos-ci/playwright": "^1.9.1",
     "@graphql-codegen/cli": "^5.0.0",
     "@graphql-codegen/client-preset": "^4.1.0",

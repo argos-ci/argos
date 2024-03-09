@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { Loader, useDelayedVisible } from "./Loader";
+import { Button } from "./Button";
 
 export const List = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
@@ -76,3 +77,22 @@ export const ListRowLoader = forwardRef<
     </ListRow>
   );
 });
+
+export function ListLoadMore(props: { onClick: () => void }) {
+  return (
+    <div className="pt-2">
+      <Button
+        variant="outline"
+        color="neutral"
+        className="w-full justify-center"
+        onClick={props.onClick}
+      >
+        Load more
+      </Button>
+    </div>
+  );
+}
+
+export function ListEmpty(props: { children: React.ReactNode }) {
+  return <div className="my-2 font-medium">{props.children}</div>;
+}

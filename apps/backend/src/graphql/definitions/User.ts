@@ -1,11 +1,17 @@
 import gqlTag from "graphql-tag";
 
-import { Account, Subscription, User } from "@/database/models/index.js";
+import {
+  Account,
+  ProjectUser,
+  Subscription,
+  User,
+} from "@/database/models/index.js";
 import { GhApiInstallation, getTokenOctokit } from "@/github/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { unauthenticated } from "../util.js";
 import { invariant } from "@/util/invariant.js";
+import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -27,14 +33,13 @@ export const typeDefs = gql`
     subscription: AccountSubscription
     subscriptionStatus: AccountSubscriptionStatus
     oldPaidSubscription: AccountSubscription
-    permissions: [Permission!]!
+    permissions: [AccountPermission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
     avatar: AccountAvatar!
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
     paymentProvider: AccountSubscriptionProvider
-    vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
     glNamespaces: GlApiNamespaceConnection
 
@@ -42,6 +47,11 @@ export const typeDefs = gql`
     lastSubscription: AccountSubscription
     teams: [Team!]!
     ghInstallations: GhApiInstallationConnection!
+    projectsContributedOn(
+      after: Int = 0
+      first: Int = 30
+      projectId: ID!
+    ): ProjectContributorConnection!
   }
 
   type UserConnection implements Connection {
@@ -107,6 +117,26 @@ export const resolvers: IResolvers = {
           totalCount: apiInstallations.data.total_count,
         },
       };
+    },
+    projectsContributedOn: async (account, args, ctx) => {
+      const { first, after } = args;
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      invariant(account.userId, "account.userId is undefined");
+
+      const query = ProjectUser.query()
+        .where("userId", account.userId)
+        .orderBy("id", "desc")
+        .range(after, after + first - 1);
+
+      if (args.projectId) {
+        query.where("projectId", args.projectId);
+      }
+
+      const result = await query;
+      return paginateResult({ result, first, after });
     },
   },
 };

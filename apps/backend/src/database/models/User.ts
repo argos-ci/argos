@@ -2,7 +2,7 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
-import { Account } from "./Account.js";
+import { Account, AccountPermission } from "./Account.js";
 import { Team } from "./Team.js";
 import { GitlabUser } from "./GitlabUser.js";
 
@@ -75,23 +75,19 @@ export class User extends Model {
   ownedTeams?: Team[];
   gitlabUser?: GitlabUser;
 
-  $checkWritePermission(user: User) {
-    return User.checkWritePermission(this.id, user);
-  }
-
-  static checkWritePermission(userId: string, user: User) {
-    if (!user) return false;
-    if (user.staff) return true;
-    return userId === user.id;
-  }
-
-  $checkReadPermission(user: User) {
-    return User.checkReadPermission(this.id, user);
-  }
-
-  static checkReadPermission(userId: string, user: User) {
-    if (!user) return false;
-    if (user.staff) return true;
-    return userId === user.id;
+  static getPermissions(
+    userId: string,
+    user: User | null,
+  ): AccountPermission[] {
+    if (!user) {
+      return [];
+    }
+    if (user.staff) {
+      return ["admin", "view"];
+    }
+    if (userId === user.id) {
+      return ["admin", "view"];
+    }
+    return [];
   }
 }

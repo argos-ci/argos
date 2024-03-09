@@ -4,7 +4,7 @@ import { useVisitAccount } from "@/containers/AccountHistory";
 import { Query } from "@/containers/Apollo";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
-import { Permission } from "@/gql/graphql";
+import { ProjectPermission } from "@/gql/graphql";
 import { PageLoader } from "@/ui/PageLoader";
 import {
   TabLink,
@@ -33,10 +33,10 @@ type Account = NonNullable<
 >;
 
 const ProjectTabs = ({
-  hasWritePermission,
+  permissions,
   account,
 }: {
-  hasWritePermission: boolean;
+  permissions: ProjectPermission[];
   account: Account;
 }) => {
   const tab = useTabLinkState();
@@ -44,7 +44,7 @@ const ProjectTabs = ({
     <>
       <TabLinkList state={tab} aria-label="Sections">
         <TabLink to="">Builds</TabLink>
-        {hasWritePermission && (
+        {permissions.includes(ProjectPermission.ViewSettings) && (
           <TabLink to="settings">Project Settings</TabLink>
         )}
       </TabLinkList>
@@ -55,14 +55,14 @@ const ProjectTabs = ({
         tabId={tab.selectedId || null}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <Outlet context={{ hasWritePermission } as OutletContext} />
+        <Outlet context={{ permissions } as OutletContext} />
       </TabLinkPanel>
     </>
   );
 };
 
 interface OutletContext {
-  hasWritePermission: boolean;
+  permissions: ProjectPermission[];
 }
 
 export const useProjectContext = () => {
@@ -82,25 +82,28 @@ export const Project = () => {
       variables={{ accountSlug, projectName }}
     >
       {({ project }) => {
-        if (!project) return <NotFound />;
-        if (!project.permissions.includes("read" as Permission)) {
+        if (!project) {
           return <NotFound />;
         }
 
-        const hasWritePermission = project.permissions.includes(
-          "write" as Permission,
-        );
+        if (!project.permissions.includes(ProjectPermission.View)) {
+          return <NotFound />;
+        }
 
-        if (hasWritePermission) {
+        if (project.permissions.includes(ProjectPermission.ViewSettings)) {
           return (
             <ProjectTabs
-              hasWritePermission={hasWritePermission}
+              permissions={project.permissions}
               account={project.account}
             />
           );
         }
 
-        return <Outlet context={{ hasWritePermission } as OutletContext} />;
+        return (
+          <Outlet
+            context={{ permissions: project.permissions } as OutletContext}
+          />
+        );
       }}
     </Query>
   );

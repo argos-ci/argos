@@ -16,14 +16,14 @@ import {
 } from "@/stripe/index.js";
 
 import {
-  IPermission,
+  IAccountPermission,
   IAccountSubscriptionProvider,
   IAccountSubscriptionStatus,
   IResolvers,
   ITrialStatus,
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
-import { getWritableAccount } from "../services/account.js";
+import { getAdminAccount } from "../services/account.js";
 import { unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 import { checkAccountSlug } from "@/database/services/account.js";
@@ -70,6 +70,11 @@ export const typeDefs = gql`
     expired
   }
 
+  enum AccountPermission {
+    admin
+    view
+  }
+
   interface Account implements Node {
     id: ID!
     stripeCustomerId: String
@@ -88,11 +93,10 @@ export const typeDefs = gql`
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
-    permissions: [Permission!]!
+    permissions: [AccountPermission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
     avatar: AccountAvatar!
     paymentProvider: AccountSubscriptionProvider
-    vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
     glNamespaces: GlApiNamespaceConnection
   }
@@ -126,11 +130,17 @@ const accountById = async (
   args: { id: string },
   ctx: Context,
 ) => {
-  if (!ctx.auth) return null;
+  if (!ctx.auth) {
+    return null;
+  }
   const account = await Account.query().findById(args.id);
-  if (!account) return null;
-  const hasReadPermission = await account.$checkReadPermission(ctx.auth.user);
-  if (!hasReadPermission) return null;
+  if (!account) {
+    return null;
+  }
+  const permissions = await account.$getPermissions(ctx.auth.user);
+  if (!permissions.includes("view")) {
+    return null;
+  }
   return account;
 };
 
@@ -245,19 +255,18 @@ export const resolvers: IResolvers = {
       return manager.getPlan();
     },
     permissions: async (account, _args, ctx) => {
-      if (!ctx.auth) {
-        return [];
-      }
-      const writable = await account.$checkWritePermission(ctx.auth.user);
-      return writable
-        ? [IPermission.Read, IPermission.Write]
-        : [IPermission.Read];
+      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+      return permissions as IAccountPermission[];
     },
     gitlabAccessToken: async (account, _args, ctx) => {
-      if (!ctx.auth) return null;
-      const writable = await account.$checkWritePermission(ctx.auth.user);
-      if (!writable) return account.gitlabAccessToken ? `••••••••` : null;
-      return account.gitlabAccessToken || null;
+      if (!account.gitlabAccessToken) {
+        return null;
+      }
+      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+      if (!permissions.includes("admin")) {
+        return `••••••••`;
+      }
+      return account.gitlabAccessToken;
     },
     paymentProvider: async (account) => {
       if (account.type === "user") {
@@ -317,15 +326,6 @@ export const resolvers: IResolvers = {
         color,
       };
     },
-    vercelConfiguration: async (account, _args, ctx) => {
-      if (!account.vercelConfigurationId) return null;
-      const configuration = await ctx.loaders.VercelConfiguration.load(
-        account.vercelConfigurationId,
-      );
-      if (!configuration) return null;
-      if (configuration.deleted) return null;
-      return configuration;
-    },
     glNamespaces: async (account) => {
       const client = await getGitlabClientFromAccount(account);
       if (!client) return null;
@@ -346,13 +346,14 @@ export const resolvers: IResolvers = {
   },
   Query: {
     account: async (_root, args, ctx) => {
-      if (!ctx.auth) return null;
       const account = await Account.query().findOne({ slug: args.slug });
-      if (!account) return null;
-      const hasReadPermission = await account.$checkReadPermission(
-        ctx.auth.user,
-      );
-      if (!hasReadPermission) return null;
+      if (!account) {
+        return null;
+      }
+      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+      if (!permissions.includes("view")) {
+        return null;
+      }
       return account;
     },
     accountById,
@@ -361,7 +362,7 @@ export const resolvers: IResolvers = {
   Mutation: {
     updateAccount: async (_root, args, ctx) => {
       const { id, ...input } = args.input;
-      const account = await getWritableAccount({ id, user: ctx.auth?.user });
+      const account = await getAdminAccount({ id, user: ctx.auth?.user });
 
       const data: PartialModelObject<Account> = {};
 
@@ -430,7 +431,7 @@ export const resolvers: IResolvers = {
     },
     terminateTrial: async (_root, args, ctx) => {
       const { accountId } = args;
-      const account = await getWritableAccount({
+      const account = await getAdminAccount({
         id: accountId,
         user: ctx.auth?.user,
       });

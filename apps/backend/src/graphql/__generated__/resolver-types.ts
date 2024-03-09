@@ -1,8 +1,7 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Subscription, Build, GithubAccount, GithubPullRequest, GithubRepository, GitlabProject, Plan, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, GithubAccountMember, Test, VercelConfiguration, VercelProject } from '../../database/models/index.js';
+import type { AccountAvatar, Subscription, Build, GithubAccount, GithubPullRequest, GithubRepository, GitlabProject, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
-import type { VercelApiProject, VercelApiTeam } from '../../vercel/index.js';
 import type { Context } from '../context.js';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
@@ -40,7 +39,7 @@ export type IAccount = {
   pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
-  permissions: Array<IPermission>;
+  permissions: Array<IAccountPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   slug: Scalars['String']['output'];
@@ -49,7 +48,6 @@ export type IAccount = {
   subscription?: Maybe<IAccountSubscription>;
   subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
   trialStatus?: Maybe<ITrialStatus>;
-  vercelConfiguration?: Maybe<IVercelConfiguration>;
 };
 
 
@@ -69,6 +67,11 @@ export type IAccountAvatar = {
 export type IAccountAvatarUrlArgs = {
   size: Scalars['Int']['input'];
 };
+
+export enum IAccountPermission {
+  Admin = 'admin',
+  View = 'view'
+}
 
 export type IAccountSubscription = INode & {
   __typename?: 'AccountSubscription';
@@ -101,6 +104,12 @@ export enum IAccountSubscriptionStatus {
   /** Unpaid */
   Unpaid = 'unpaid'
 }
+
+export type IAddContributorToProjectInput = {
+  level: IProjectUserLevel;
+  projectId: Scalars['ID']['input'];
+  userAccountId: Scalars['ID']['input'];
+};
 
 export type IBuild = INode & {
   __typename?: 'Build';
@@ -360,16 +369,12 @@ export type ILinkGitlabProjectInput = {
   projectId: Scalars['ID']['input'];
 };
 
-export type ILinkVercelProjectInput = {
-  configurationId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  vercelProjectId: Scalars['ID']['input'];
-};
-
 export type IMutation = {
   __typename?: 'Mutation';
   /** Accept an invitation to join a team */
   acceptInvitation: ITeam;
+  /** Add contributor to project */
+  addOrUpdateProjectContributor: IProjectContributor;
   /** Create a team */
   createTeam: ICreateTeamResult;
   /** Delete Project */
@@ -390,19 +395,16 @@ export type IMutation = {
   linkGithubRepository: IProject;
   /** Link Gitlab Project */
   linkGitlabProject: IProject;
-  /** Link Vercel project */
-  linkVercelProject: IProject;
   ping: Scalars['Boolean']['output'];
+  removeContributorFromProject: IRemoveContributorFromProjectPayload;
   /** Remove a user from a team */
   removeUserFromTeam: IRemoveUserFromTeamPayload;
-  /** Retrieve a Vercel API token from a code */
-  retrieveVercelToken: IVercelApiToken;
+  /** Set team default user level */
+  setTeamDefaultUserLevel: ITeam;
   /** Set member level */
   setTeamMemberLevel: ITeamMember;
   /** Change the validationStatus on a build */
   setValidationStatus: IBuild;
-  /** Finish the Vercel integration setup */
-  setupVercelIntegration?: Maybe<Scalars['Boolean']['output']>;
   /** Terminate trial early */
   terminateTrial: IAccount;
   /** Transfer Project to another account */
@@ -411,8 +413,6 @@ export type IMutation = {
   unlinkGithubRepository: IProject;
   /** Unlink Gitlab Project */
   unlinkGitlabProject: IProject;
-  /** Unlink Vercel project */
-  unlinkVercelProject: IProject;
   /** Update Account */
   updateAccount: IAccount;
   /** Update Project */
@@ -424,6 +424,11 @@ export type IMutation = {
 
 export type IMutationAcceptInvitationArgs = {
   token: Scalars['String']['input'];
+};
+
+
+export type IMutationAddOrUpdateProjectContributorArgs = {
+  input: IAddContributorToProjectInput;
 };
 
 
@@ -477,8 +482,8 @@ export type IMutationLinkGitlabProjectArgs = {
 };
 
 
-export type IMutationLinkVercelProjectArgs = {
-  input: ILinkVercelProjectInput;
+export type IMutationRemoveContributorFromProjectArgs = {
+  input: IRemoveContributorFromProjectInput;
 };
 
 
@@ -487,8 +492,8 @@ export type IMutationRemoveUserFromTeamArgs = {
 };
 
 
-export type IMutationRetrieveVercelTokenArgs = {
-  code: Scalars['String']['input'];
+export type IMutationSetTeamDefaultUserLevelArgs = {
+  input: ISetTeamDefaultUserLevelInput;
 };
 
 
@@ -500,11 +505,6 @@ export type IMutationSetTeamMemberLevelArgs = {
 export type IMutationSetValidationStatusArgs = {
   buildId: Scalars['ID']['input'];
   validationStatus: IValidationStatus;
-};
-
-
-export type IMutationSetupVercelIntegrationArgs = {
-  input: ISetupVercelIntegrationInput;
 };
 
 
@@ -525,11 +525,6 @@ export type IMutationUnlinkGithubRepositoryArgs = {
 
 export type IMutationUnlinkGitlabProjectArgs = {
   input: IUnlinkGitlabProjectInput;
-};
-
-
-export type IMutationUnlinkVercelProjectArgs = {
-  input: IUnlinkVercelProjectInput;
 };
 
 
@@ -557,14 +552,10 @@ export type IPageInfo = {
   totalCount: Scalars['Int']['output'];
 };
 
-export enum IPermission {
-  Read = 'read',
-  Write = 'write'
-}
-
 export type IPlan = INode & {
   __typename?: 'Plan';
   displayName: Scalars['String']['output'];
+  fineGrainedAccessControlIncluded: Scalars['Boolean']['output'];
   githubSsoIncluded: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   usageBased: Scalars['Boolean']['output'];
@@ -582,6 +573,8 @@ export type IProject = INode & {
   buildNames: Array<Scalars['String']['output']>;
   /** Builds associated to the repository */
   builds: IBuildConnection;
+  /** Contributors */
+  contributors: IProjectContributorConnection;
   /** Current month used screenshots */
   currentPeriodScreenshots: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
@@ -590,8 +583,8 @@ export type IProject = INode & {
   /** Reference build */
   latestReferenceBuild?: Maybe<IBuild>;
   name: Scalars['String']['output'];
-  /** Determine if the current user has write access to the project */
-  permissions: Array<IPermission>;
+  /** Determine permissions of the current user */
+  permissions: Array<IProjectPermission>;
   /** Pull request comment enabled */
   prCommentEnabled: Scalars['Boolean']['output'];
   /** Override repository's Github privacy */
@@ -614,8 +607,6 @@ export type IProject = INode & {
   token?: Maybe<Scalars['String']['output']>;
   /** Total screenshots used */
   totalScreenshots: Scalars['Int']['output'];
-  /** Vercel project */
-  vercelProject?: Maybe<IVercelProject>;
 };
 
 
@@ -631,6 +622,12 @@ export type IProjectBuildsArgs = {
 };
 
 
+export type IProjectContributorsArgs = {
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type IProjectTestsArgs = {
   after: Scalars['Int']['input'];
   first: Scalars['Int']['input'];
@@ -641,6 +638,33 @@ export type IProjectConnection = IConnection & {
   edges: Array<IProject>;
   pageInfo: IPageInfo;
 };
+
+export type IProjectContributor = INode & {
+  __typename?: 'ProjectContributor';
+  id: Scalars['ID']['output'];
+  level: IProjectUserLevel;
+  project: IProject;
+  user: IUser;
+};
+
+export type IProjectContributorConnection = IConnection & {
+  __typename?: 'ProjectContributorConnection';
+  edges: Array<IProjectContributor>;
+  pageInfo: IPageInfo;
+};
+
+export enum IProjectPermission {
+  Admin = 'admin',
+  Review = 'review',
+  View = 'view',
+  ViewSettings = 'view_settings'
+}
+
+export enum IProjectUserLevel {
+  Admin = 'admin',
+  Reviewer = 'reviewer',
+  Viewer = 'viewer'
+}
 
 export type IPullRequest = {
   closedAt?: Maybe<Scalars['DateTime']['output']>;
@@ -678,10 +702,6 @@ export type IQuery = {
   projectById?: Maybe<IProject>;
   /** Get Team by id */
   teamById?: Maybe<ITeam>;
-  /** Get Vercel projects from API */
-  vercelApiProjects: IVercelApiProjectConnection;
-  /** Get a Vercel Team From API */
-  vercelApiTeam?: Maybe<IVercelApiTeam>;
 };
 
 
@@ -733,17 +753,14 @@ export type IQueryTeamByIdArgs = {
   id: Scalars['ID']['input'];
 };
 
-
-export type IQueryVercelApiProjectsArgs = {
-  accessToken: Scalars['String']['input'];
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  teamId?: InputMaybe<Scalars['ID']['input']>;
+export type IRemoveContributorFromProjectInput = {
+  projectId: Scalars['ID']['input'];
+  userAccountId: Scalars['ID']['input'];
 };
 
-
-export type IQueryVercelApiTeamArgs = {
-  accessToken: Scalars['String']['input'];
-  id: Scalars['ID']['input'];
+export type IRemoveContributorFromProjectPayload = {
+  __typename?: 'RemoveContributorFromProjectPayload';
+  projectContributorId: Scalars['ID']['output'];
 };
 
 export type IRemoveUserFromTeamInput = {
@@ -876,23 +893,15 @@ export type IScreenshotMetadataViewport = {
   width: Scalars['Int']['output'];
 };
 
+export type ISetTeamDefaultUserLevelInput = {
+  level: ITeamDefaultUserLevel;
+  teamAccountId: Scalars['ID']['input'];
+};
+
 export type ISetTeamMemberLevelInput = {
   level: ITeamUserLevel;
   teamAccountId: Scalars['ID']['input'];
   userAccountId: Scalars['ID']['input'];
-};
-
-export type ISetupVercelIntegrationInput = {
-  accountId: Scalars['ID']['input'];
-  projects: Array<ISetupVercelIntegrationProjectInput>;
-  vercelAccessToken: Scalars['String']['input'];
-  vercelConfigurationId: Scalars['ID']['input'];
-  vercelTeamId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type ISetupVercelIntegrationProjectInput = {
-  projectId: Scalars['ID']['input'];
-  vercelProjectId: Scalars['ID']['input'];
 };
 
 export enum ISummaryCheck {
@@ -906,6 +915,7 @@ export type ITeam = IAccount & INode & {
   avatar: IAccountAvatar;
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: Scalars['Int']['output'];
+  defaultUserLevel: ITeamDefaultUserLevel;
   githubMembers?: Maybe<ITeamGithubMemberConnection>;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
@@ -922,7 +932,7 @@ export type ITeam = IAccount & INode & {
   pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
-  permissions: Array<IPermission>;
+  permissions: Array<IAccountPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   slug: Scalars['String']['output'];
@@ -932,7 +942,6 @@ export type ITeam = IAccount & INode & {
   subscription?: Maybe<IAccountSubscription>;
   subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
   trialStatus?: Maybe<ITrialStatus>;
-  vercelConfiguration?: Maybe<IVercelConfiguration>;
 };
 
 
@@ -945,6 +954,8 @@ export type ITeamGithubMembersArgs = {
 export type ITeamMembersArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  userLevel?: InputMaybe<ITeamUserLevel>;
 };
 
 
@@ -952,6 +963,11 @@ export type ITeamProjectsArgs = {
   after: Scalars['Int']['input'];
   first: Scalars['Int']['input'];
 };
+
+export enum ITeamDefaultUserLevel {
+  Contributor = 'contributor',
+  Member = 'member'
+}
 
 export type ITeamGithubMember = INode & {
   __typename?: 'TeamGithubMember';
@@ -980,6 +996,7 @@ export type ITeamMemberConnection = IConnection & {
 };
 
 export enum ITeamUserLevel {
+  Contributor = 'contributor',
   Member = 'member',
   Owner = 'owner'
 }
@@ -1034,10 +1051,6 @@ export type IUnlinkGitlabProjectInput = {
   projectId: Scalars['ID']['input'];
 };
 
-export type IUnlinkVercelProjectInput = {
-  projectId: Scalars['ID']['input'];
-};
-
 export type IUpdateAccountInput = {
   gitlabAccessToken?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
@@ -1054,8 +1067,8 @@ export type IUpdateProjectInput = {
 };
 
 export type IUpdateProjectPrCommentInput = {
-  enable: Scalars['Boolean']['input'];
-  id: Scalars['ID']['input'];
+  enabled: Scalars['Boolean']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type IUser = IAccount & INode & {
@@ -1078,9 +1091,10 @@ export type IUser = IAccount & INode & {
   pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
-  permissions: Array<IPermission>;
+  permissions: Array<IAccountPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
+  projectsContributedOn: IProjectContributorConnection;
   slug: Scalars['String']['output'];
   stripeClientReferenceId: Scalars['String']['output'];
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
@@ -1088,13 +1102,19 @@ export type IUser = IAccount & INode & {
   subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
   teams: Array<ITeam>;
   trialStatus?: Maybe<ITrialStatus>;
-  vercelConfiguration?: Maybe<IVercelConfiguration>;
 };
 
 
 export type IUserProjectsArgs = {
   after: Scalars['Int']['input'];
   first: Scalars['Int']['input'];
+};
+
+
+export type IUserProjectsContributedOnArgs = {
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  projectId: Scalars['ID']['input'];
 };
 
 export type IUserConnection = IConnection & {
@@ -1108,90 +1128,6 @@ export enum IValidationStatus {
   Rejected = 'rejected',
   Unknown = 'unknown'
 }
-
-export type IVercelApiPagination = {
-  __typename?: 'VercelApiPagination';
-  count: Scalars['Int']['output'];
-  next?: Maybe<Scalars['ID']['output']>;
-  prev?: Maybe<Scalars['ID']['output']>;
-};
-
-export type IVercelApiProject = {
-  __typename?: 'VercelApiProject';
-  id: Scalars['ID']['output'];
-  link?: Maybe<IVercelApiProjectLink>;
-  linkedProject?: Maybe<IProject>;
-  name: Scalars['String']['output'];
-  project?: Maybe<IProject>;
-  status: IVercelApiProjectStatus;
-};
-
-
-export type IVercelApiProjectStatusArgs = {
-  accountId: Scalars['ID']['input'];
-};
-
-export type IVercelApiProjectConnection = {
-  __typename?: 'VercelApiProjectConnection';
-  pagination: IVercelApiPagination;
-  projects: Array<IVercelApiProject>;
-};
-
-export type IVercelApiProjectLink = {
-  type: Scalars['String']['output'];
-};
-
-export type IVercelApiProjectLinkGithub = IVercelApiProjectLink & {
-  __typename?: 'VercelApiProjectLinkGithub';
-  org: Scalars['String']['output'];
-  repo: Scalars['String']['output'];
-  repoId: Scalars['Int']['output'];
-  type: Scalars['String']['output'];
-};
-
-export type IVercelApiProjectLinkOther = IVercelApiProjectLink & {
-  __typename?: 'VercelApiProjectLinkOther';
-  type: Scalars['String']['output'];
-};
-
-export enum IVercelApiProjectStatus {
-  Linked = 'LINKED',
-  LinkedToOtherTeam = 'LINKED_TO_OTHER_TEAM',
-  NoProvider = 'NO_PROVIDER',
-  ProviderNotSupported = 'PROVIDER_NOT_SUPPORTED',
-  ReadyForLink = 'READY_FOR_LINK',
-  RequireGithubAccess = 'REQUIRE_GITHUB_ACCESS',
-  UnknownError = 'UNKNOWN_ERROR'
-}
-
-export type IVercelApiTeam = {
-  __typename?: 'VercelApiTeam';
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  slug: Scalars['String']['output'];
-};
-
-export type IVercelApiToken = {
-  __typename?: 'VercelApiToken';
-  access_token: Scalars['String']['output'];
-  installation_id: Scalars['String']['output'];
-  team_id?: Maybe<Scalars['String']['output']>;
-  user_id: Scalars['String']['output'];
-};
-
-export type IVercelConfiguration = {
-  __typename?: 'VercelConfiguration';
-  apiProjects?: Maybe<IVercelApiProjectConnection>;
-  id: Scalars['ID']['output'];
-  url: Scalars['String']['output'];
-  vercelId: Scalars['ID']['output'];
-};
-
-export type IVercelProject = {
-  __typename?: 'VercelProject';
-  configuration: IVercelConfiguration;
-  id: Scalars['ID']['output'];
-};
 
 export type IDailyCount = {
   __typename?: 'dailyCount';
@@ -1271,20 +1207,21 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping of interface types */
 export type IResolversInterfaceTypes<RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
-  Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<RefType['Project']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<RefType['User']> } );
-  Node: ( Subscription ) | ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( Account );
+  Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<RefType['User']> } );
+  Node: ( Subscription ) | ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
-  VercelApiProjectLink: ( IVercelApiProjectLinkGithub ) | ( IVercelApiProjectLinkOther );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
 export type IResolversTypes = ResolversObject<{
   Account: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Account']>;
   AccountAvatar: ResolverTypeWrapper<AccountAvatar>;
+  AccountPermission: IAccountPermission;
   AccountSubscription: ResolverTypeWrapper<Subscription>;
   AccountSubscriptionProvider: IAccountSubscriptionProvider;
   AccountSubscriptionStatus: IAccountSubscriptionStatus;
+  AddContributorToProjectInput: IAddContributorToProjectInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Build: ResolverTypeWrapper<Build>;
   BuildConnection: ResolverTypeWrapper<Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversTypes['Build']> }>;
@@ -1322,17 +1259,21 @@ export type IResolversTypes = ResolversObject<{
   LeaveTeamInput: ILeaveTeamInput;
   LinkGithubRepositoryInput: ILinkGithubRepositoryInput;
   LinkGitlabProjectInput: ILinkGitlabProjectInput;
-  LinkVercelProjectInput: ILinkVercelProjectInput;
   Mutation: ResolverTypeWrapper<{}>;
   Node: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Node']>;
   PageInfo: ResolverTypeWrapper<IPageInfo>;
-  Permission: IPermission;
   Plan: ResolverTypeWrapper<Plan>;
   Project: ResolverTypeWrapper<Project>;
   ProjectConnection: ResolverTypeWrapper<Omit<IProjectConnection, 'edges'> & { edges: Array<IResolversTypes['Project']> }>;
+  ProjectContributor: ResolverTypeWrapper<ProjectUser>;
+  ProjectContributorConnection: ResolverTypeWrapper<Omit<IProjectContributorConnection, 'edges'> & { edges: Array<IResolversTypes['ProjectContributor']> }>;
+  ProjectPermission: IProjectPermission;
+  ProjectUserLevel: IProjectUserLevel;
   PullRequest: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['PullRequest']>;
   PullRequestState: IPullRequestState;
   Query: ResolverTypeWrapper<{}>;
+  RemoveContributorFromProjectInput: IRemoveContributorFromProjectInput;
+  RemoveContributorFromProjectPayload: ResolverTypeWrapper<IRemoveContributorFromProjectPayload>;
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: ResolverTypeWrapper<IRemoveUserFromTeamPayload>;
   Repository: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Repository']>;
@@ -1350,12 +1291,12 @@ export type IResolversTypes = ResolversObject<{
   ScreenshotMetadataSDK: ResolverTypeWrapper<IScreenshotMetadataSdk>;
   ScreenshotMetadataTest: ResolverTypeWrapper<IScreenshotMetadataTest>;
   ScreenshotMetadataViewport: ResolverTypeWrapper<IScreenshotMetadataViewport>;
+  SetTeamDefaultUserLevelInput: ISetTeamDefaultUserLevelInput;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
-  SetupVercelIntegrationInput: ISetupVercelIntegrationInput;
-  SetupVercelIntegrationProjectInput: ISetupVercelIntegrationProjectInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   SummaryCheck: ISummaryCheck;
   Team: ResolverTypeWrapper<Account>;
+  TeamDefaultUserLevel: ITeamDefaultUserLevel;
   TeamGithubMember: ResolverTypeWrapper<GithubAccountMember>;
   TeamGithubMemberConnection: ResolverTypeWrapper<Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamGithubMember']> }>;
   TeamMember: ResolverTypeWrapper<TeamUser>;
@@ -1369,24 +1310,12 @@ export type IResolversTypes = ResolversObject<{
   TrialStatus: ITrialStatus;
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
   UnlinkGitlabProjectInput: IUnlinkGitlabProjectInput;
-  UnlinkVercelProjectInput: IUnlinkVercelProjectInput;
   UpdateAccountInput: IUpdateAccountInput;
   UpdateProjectInput: IUpdateProjectInput;
   UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
   User: ResolverTypeWrapper<Account>;
   UserConnection: ResolverTypeWrapper<Omit<IUserConnection, 'edges'> & { edges: Array<IResolversTypes['User']> }>;
   ValidationStatus: IValidationStatus;
-  VercelApiPagination: ResolverTypeWrapper<IVercelApiPagination>;
-  VercelApiProject: ResolverTypeWrapper<VercelApiProject>;
-  VercelApiProjectConnection: ResolverTypeWrapper<Omit<IVercelApiProjectConnection, 'projects'> & { projects: Array<IResolversTypes['VercelApiProject']> }>;
-  VercelApiProjectLink: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['VercelApiProjectLink']>;
-  VercelApiProjectLinkGithub: ResolverTypeWrapper<IVercelApiProjectLinkGithub>;
-  VercelApiProjectLinkOther: ResolverTypeWrapper<IVercelApiProjectLinkOther>;
-  VercelApiProjectStatus: IVercelApiProjectStatus;
-  VercelApiTeam: ResolverTypeWrapper<VercelApiTeam>;
-  VercelApiToken: ResolverTypeWrapper<IVercelApiToken>;
-  VercelConfiguration: ResolverTypeWrapper<VercelConfiguration>;
-  VercelProject: ResolverTypeWrapper<VercelProject>;
   dailyCount: ResolverTypeWrapper<IDailyCount>;
 }>;
 
@@ -1395,6 +1324,7 @@ export type IResolversParentTypes = ResolversObject<{
   Account: IResolversInterfaceTypes<IResolversParentTypes>['Account'];
   AccountAvatar: AccountAvatar;
   AccountSubscription: Subscription;
+  AddContributorToProjectInput: IAddContributorToProjectInput;
   Boolean: Scalars['Boolean']['output'];
   Build: Build;
   BuildConnection: Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversParentTypes['Build']> };
@@ -1429,15 +1359,18 @@ export type IResolversParentTypes = ResolversObject<{
   LeaveTeamInput: ILeaveTeamInput;
   LinkGithubRepositoryInput: ILinkGithubRepositoryInput;
   LinkGitlabProjectInput: ILinkGitlabProjectInput;
-  LinkVercelProjectInput: ILinkVercelProjectInput;
   Mutation: {};
   Node: IResolversInterfaceTypes<IResolversParentTypes>['Node'];
   PageInfo: IPageInfo;
   Plan: Plan;
   Project: Project;
   ProjectConnection: Omit<IProjectConnection, 'edges'> & { edges: Array<IResolversParentTypes['Project']> };
+  ProjectContributor: ProjectUser;
+  ProjectContributorConnection: Omit<IProjectContributorConnection, 'edges'> & { edges: Array<IResolversParentTypes['ProjectContributor']> };
   PullRequest: IResolversInterfaceTypes<IResolversParentTypes>['PullRequest'];
   Query: {};
+  RemoveContributorFromProjectInput: IRemoveContributorFromProjectInput;
+  RemoveContributorFromProjectPayload: IRemoveContributorFromProjectPayload;
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: IRemoveUserFromTeamPayload;
   Repository: IResolversInterfaceTypes<IResolversParentTypes>['Repository'];
@@ -1452,9 +1385,8 @@ export type IResolversParentTypes = ResolversObject<{
   ScreenshotMetadataSDK: IScreenshotMetadataSdk;
   ScreenshotMetadataTest: IScreenshotMetadataTest;
   ScreenshotMetadataViewport: IScreenshotMetadataViewport;
+  SetTeamDefaultUserLevelInput: ISetTeamDefaultUserLevelInput;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
-  SetupVercelIntegrationInput: ISetupVercelIntegrationInput;
-  SetupVercelIntegrationProjectInput: ISetupVercelIntegrationProjectInput;
   String: Scalars['String']['output'];
   Team: Account;
   TeamGithubMember: GithubAccountMember;
@@ -1467,22 +1399,11 @@ export type IResolversParentTypes = ResolversObject<{
   TransferProjectInput: ITransferProjectInput;
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
   UnlinkGitlabProjectInput: IUnlinkGitlabProjectInput;
-  UnlinkVercelProjectInput: IUnlinkVercelProjectInput;
   UpdateAccountInput: IUpdateAccountInput;
   UpdateProjectInput: IUpdateProjectInput;
   UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
   User: Account;
   UserConnection: Omit<IUserConnection, 'edges'> & { edges: Array<IResolversParentTypes['User']> };
-  VercelApiPagination: IVercelApiPagination;
-  VercelApiProject: VercelApiProject;
-  VercelApiProjectConnection: Omit<IVercelApiProjectConnection, 'projects'> & { projects: Array<IResolversParentTypes['VercelApiProject']> };
-  VercelApiProjectLink: IResolversInterfaceTypes<IResolversParentTypes>['VercelApiProjectLink'];
-  VercelApiProjectLinkGithub: IVercelApiProjectLinkGithub;
-  VercelApiProjectLinkOther: IVercelApiProjectLinkOther;
-  VercelApiTeam: VercelApiTeam;
-  VercelApiToken: IVercelApiToken;
-  VercelConfiguration: VercelConfiguration;
-  VercelProject: VercelProject;
   dailyCount: IDailyCount;
 }>;
 
@@ -1502,7 +1423,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
+  permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IAccountProjectsArgs, 'after' | 'first'>>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
@@ -1511,7 +1432,6 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   subscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
   trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
-  vercelConfiguration?: Resolver<Maybe<IResolversTypes['VercelConfiguration']>, ParentType, ContextType>;
 }>;
 
 export type IAccountAvatarResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountAvatar'] = IResolversParentTypes['AccountAvatar']> = ResolversObject<{
@@ -1573,7 +1493,7 @@ export type IBuildStatsResolvers<ContextType = Context, ParentType extends IReso
 }>;
 
 export type IConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Connection'] = IResolversParentTypes['Connection']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ScreenshotDiffConnection' | 'TeamGithubMemberConnection' | 'TeamMemberConnection' | 'TestConnection' | 'UserConnection', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ProjectContributorConnection' | 'ScreenshotDiffConnection' | 'TeamGithubMemberConnection' | 'TeamMemberConnection' | 'TestConnection' | 'UserConnection', ParentType, ContextType>;
   edges?: Resolver<Array<IResolversTypes['Node']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
 }>;
@@ -1698,6 +1618,7 @@ export type IGlApiProjectConnectionResolvers<ContextType = Context, ParentType e
 
 export type IMutationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Mutation'] = IResolversParentTypes['Mutation']> = ResolversObject<{
   acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'token'>>;
+  addOrUpdateProjectContributor?: Resolver<IResolversTypes['ProjectContributor'], ParentType, ContextType, RequireFields<IMutationAddOrUpdateProjectContributorArgs, 'input'>>;
   createTeam?: Resolver<IResolversTypes['CreateTeamResult'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
   deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
   deleteTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteTeamArgs, 'input'>>;
@@ -1708,25 +1629,23 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
   linkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGithubRepositoryArgs, 'input'>>;
   linkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGitlabProjectArgs, 'input'>>;
-  linkVercelProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkVercelProjectArgs, 'input'>>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  removeContributorFromProject?: Resolver<IResolversTypes['RemoveContributorFromProjectPayload'], ParentType, ContextType, RequireFields<IMutationRemoveContributorFromProjectArgs, 'input'>>;
   removeUserFromTeam?: Resolver<IResolversTypes['RemoveUserFromTeamPayload'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
-  retrieveVercelToken?: Resolver<IResolversTypes['VercelApiToken'], ParentType, ContextType, RequireFields<IMutationRetrieveVercelTokenArgs, 'code'>>;
+  setTeamDefaultUserLevel?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationSetTeamDefaultUserLevelArgs, 'input'>>;
   setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
   setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
-  setupVercelIntegration?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<IMutationSetupVercelIntegrationArgs, 'input'>>;
   terminateTrial?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationTerminateTrialArgs, 'accountId'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
   unlinkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkGithubRepositoryArgs, 'input'>>;
   unlinkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkGitlabProjectArgs, 'input'>>;
-  unlinkVercelProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkVercelProjectArgs, 'input'>>;
   updateAccount?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUpdateAccountArgs, 'input'>>;
   updateProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectArgs, 'input'>>;
   updateProjectPrComment?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectPrCommentArgs, 'input'>>;
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
@@ -1738,6 +1657,7 @@ export type IPageInfoResolvers<ContextType = Context, ParentType extends IResolv
 
 export type IPlanResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Plan'] = IResolversParentTypes['Plan']> = ResolversObject<{
   displayName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  fineGrainedAccessControlIncluded?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   githubSsoIncluded?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   usageBased?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
@@ -1750,12 +1670,13 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   build?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType, RequireFields<IProjectBuildArgs, 'number'>>;
   buildNames?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
   builds?: Resolver<IResolversTypes['BuildConnection'], ParentType, ContextType, RequireFields<IProjectBuildsArgs, 'after' | 'first'>>;
+  contributors?: Resolver<IResolversTypes['ProjectContributorConnection'], ParentType, ContextType, RequireFields<IProjectContributorsArgs, 'after' | 'first'>>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   latestBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   latestReferenceBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
+  permissions?: Resolver<Array<IResolversTypes['ProjectPermission']>, ParentType, ContextType>;
   prCommentEnabled?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   private?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   public?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
@@ -1766,12 +1687,25 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   tests?: Resolver<IResolversTypes['TestConnection'], ParentType, ContextType, RequireFields<IProjectTestsArgs, 'after' | 'first'>>;
   token?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   totalScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  vercelProject?: Resolver<Maybe<IResolversTypes['VercelProject']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IProjectConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ProjectConnection'] = IResolversParentTypes['ProjectConnection']> = ResolversObject<{
   edges?: Resolver<Array<IResolversTypes['Project']>, ParentType, ContextType>;
+  pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IProjectContributorResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ProjectContributor'] = IResolversParentTypes['ProjectContributor']> = ResolversObject<{
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  level?: Resolver<IResolversTypes['ProjectUserLevel'], ParentType, ContextType>;
+  project?: Resolver<IResolversTypes['Project'], ParentType, ContextType>;
+  user?: Resolver<IResolversTypes['User'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IProjectContributorConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ProjectContributorConnection'] = IResolversParentTypes['ProjectContributorConnection']> = ResolversObject<{
+  edges?: Resolver<Array<IResolversTypes['ProjectContributor']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1801,8 +1735,11 @@ export type IQueryResolvers<ContextType = Context, ParentType extends IResolvers
   project?: Resolver<Maybe<IResolversTypes['Project']>, ParentType, ContextType, RequireFields<IQueryProjectArgs, 'accountSlug' | 'projectName'>>;
   projectById?: Resolver<Maybe<IResolversTypes['Project']>, ParentType, ContextType, RequireFields<IQueryProjectByIdArgs, 'id'>>;
   teamById?: Resolver<Maybe<IResolversTypes['Team']>, ParentType, ContextType, RequireFields<IQueryTeamByIdArgs, 'id'>>;
-  vercelApiProjects?: Resolver<IResolversTypes['VercelApiProjectConnection'], ParentType, ContextType, RequireFields<IQueryVercelApiProjectsArgs, 'accessToken'>>;
-  vercelApiTeam?: Resolver<Maybe<IResolversTypes['VercelApiTeam']>, ParentType, ContextType, RequireFields<IQueryVercelApiTeamArgs, 'accessToken' | 'id'>>;
+}>;
+
+export type IRemoveContributorFromProjectPayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['RemoveContributorFromProjectPayload'] = IResolversParentTypes['RemoveContributorFromProjectPayload']> = ResolversObject<{
+  projectContributorId?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IRemoveUserFromTeamPayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['RemoveUserFromTeamPayload'] = IResolversParentTypes['RemoveUserFromTeamPayload']> = ResolversObject<{
@@ -1915,6 +1852,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  defaultUserLevel?: Resolver<IResolversTypes['TeamDefaultUserLevel'], ParentType, ContextType>;
   githubMembers?: Resolver<Maybe<IResolversTypes['TeamGithubMemberConnection']>, ParentType, ContextType, RequireFields<ITeamGithubMembersArgs, 'after' | 'first'>>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
@@ -1931,7 +1869,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
+  permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<ITeamProjectsArgs, 'after' | 'first'>>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
@@ -1941,7 +1879,6 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   subscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
   trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
-  vercelConfiguration?: Resolver<Maybe<IResolversTypes['VercelConfiguration']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2017,9 +1954,10 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  permissions?: Resolver<Array<IResolversTypes['Permission']>, ParentType, ContextType>;
+  permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IUserProjectsArgs, 'after' | 'first'>>;
+  projectsContributedOn?: Resolver<IResolversTypes['ProjectContributorConnection'], ParentType, ContextType, RequireFields<IUserProjectsContributedOnArgs, 'after' | 'first' | 'projectId'>>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2027,83 +1965,12 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
   teams?: Resolver<Array<IResolversTypes['Team']>, ParentType, ContextType>;
   trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
-  vercelConfiguration?: Resolver<Maybe<IResolversTypes['VercelConfiguration']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IUserConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['UserConnection'] = IResolversParentTypes['UserConnection']> = ResolversObject<{
   edges?: Resolver<Array<IResolversTypes['User']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IVercelApiPaginationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['VercelApiPagination'] = IResolversParentTypes['VercelApiPagination']> = ResolversObject<{
-  count?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  next?: Resolver<Maybe<IResolversTypes['ID']>, ParentType, ContextType>;
-  prev?: Resolver<Maybe<IResolversTypes['ID']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IVercelApiProjectResolvers<ContextType = Context, ParentType extends IResolversParentTypes['VercelApiProject'] = IResolversParentTypes['VercelApiProject']> = ResolversObject<{
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  link?: Resolver<Maybe<IResolversTypes['VercelApiProjectLink']>, ParentType, ContextType>;
-  linkedProject?: Resolver<Maybe<IResolversTypes['Project']>, ParentType, ContextType>;
-  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  project?: Resolver<Maybe<IResolversTypes['Project']>, ParentType, ContextType>;
-  status?: Resolver<IResolversTypes['VercelApiProjectStatus'], ParentType, ContextType, RequireFields<IVercelApiProjectStatusArgs, 'accountId'>>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IVercelApiProjectConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['VercelApiProjectConnection'] = IResolversParentTypes['VercelApiProjectConnection']> = ResolversObject<{
-  pagination?: Resolver<IResolversTypes['VercelApiPagination'], ParentType, ContextType>;
-  projects?: Resolver<Array<IResolversTypes['VercelApiProject']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IVercelApiProjectLinkResolvers<ContextType = Context, ParentType extends IResolversParentTypes['VercelApiProjectLink'] = IResolversParentTypes['VercelApiProjectLink']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'VercelApiProjectLinkGithub' | 'VercelApiProjectLinkOther', ParentType, ContextType>;
-  type?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-}>;
-
-export type IVercelApiProjectLinkGithubResolvers<ContextType = Context, ParentType extends IResolversParentTypes['VercelApiProjectLinkGithub'] = IResolversParentTypes['VercelApiProjectLinkGithub']> = ResolversObject<{
-  org?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  repo?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  repoId?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  type?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IVercelApiProjectLinkOtherResolvers<ContextType = Context, ParentType extends IResolversParentTypes['VercelApiProjectLinkOther'] = IResolversParentTypes['VercelApiProjectLinkOther']> = ResolversObject<{
-  type?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IVercelApiTeamResolvers<ContextType = Context, ParentType extends IResolversParentTypes['VercelApiTeam'] = IResolversParentTypes['VercelApiTeam']> = ResolversObject<{
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IVercelApiTokenResolvers<ContextType = Context, ParentType extends IResolversParentTypes['VercelApiToken'] = IResolversParentTypes['VercelApiToken']> = ResolversObject<{
-  access_token?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  installation_id?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  team_id?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  user_id?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IVercelConfigurationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['VercelConfiguration'] = IResolversParentTypes['VercelConfiguration']> = ResolversObject<{
-  apiProjects?: Resolver<Maybe<IResolversTypes['VercelApiProjectConnection']>, ParentType, ContextType>;
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  vercelId?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IVercelProjectResolvers<ContextType = Context, ParentType extends IResolversParentTypes['VercelProject'] = IResolversParentTypes['VercelProject']> = ResolversObject<{
-  configuration?: Resolver<IResolversTypes['VercelConfiguration'], ParentType, ContextType>;
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2144,8 +2011,11 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   Plan?: IPlanResolvers<ContextType>;
   Project?: IProjectResolvers<ContextType>;
   ProjectConnection?: IProjectConnectionResolvers<ContextType>;
+  ProjectContributor?: IProjectContributorResolvers<ContextType>;
+  ProjectContributorConnection?: IProjectContributorConnectionResolvers<ContextType>;
   PullRequest?: IPullRequestResolvers<ContextType>;
   Query?: IQueryResolvers<ContextType>;
+  RemoveContributorFromProjectPayload?: IRemoveContributorFromProjectPayloadResolvers<ContextType>;
   RemoveUserFromTeamPayload?: IRemoveUserFromTeamPayloadResolvers<ContextType>;
   Repository?: IRepositoryResolvers<ContextType>;
   Screenshot?: IScreenshotResolvers<ContextType>;
@@ -2169,16 +2039,6 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   Time?: GraphQLScalarType;
   User?: IUserResolvers<ContextType>;
   UserConnection?: IUserConnectionResolvers<ContextType>;
-  VercelApiPagination?: IVercelApiPaginationResolvers<ContextType>;
-  VercelApiProject?: IVercelApiProjectResolvers<ContextType>;
-  VercelApiProjectConnection?: IVercelApiProjectConnectionResolvers<ContextType>;
-  VercelApiProjectLink?: IVercelApiProjectLinkResolvers<ContextType>;
-  VercelApiProjectLinkGithub?: IVercelApiProjectLinkGithubResolvers<ContextType>;
-  VercelApiProjectLinkOther?: IVercelApiProjectLinkOtherResolvers<ContextType>;
-  VercelApiTeam?: IVercelApiTeamResolvers<ContextType>;
-  VercelApiToken?: IVercelApiTokenResolvers<ContextType>;
-  VercelConfiguration?: IVercelConfigurationResolvers<ContextType>;
-  VercelProject?: IVercelProjectResolvers<ContextType>;
   dailyCount?: IDailyCountResolvers<ContextType>;
 }>;
 

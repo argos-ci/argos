@@ -13,6 +13,7 @@ export class Plan extends Model {
       "includedScreenshots",
       "usageBased",
       "githubSsoIncluded",
+      "fineGrainedAccessControlIncluded",
     ],
     properties: {
       name: { type: "string" },
@@ -21,6 +22,7 @@ export class Plan extends Model {
       stripeProductId: { type: "string" },
       usageBased: { type: "boolean" },
       githubSsoIncluded: { type: "boolean" },
+      fineGrainedAccessControlIncluded: { type: "boolean" },
     },
   });
 
@@ -30,6 +32,7 @@ export class Plan extends Model {
   stripeProductId!: string;
   usageBased!: boolean;
   githubSsoIncluded!: boolean;
+  fineGrainedAccessControlIncluded!: boolean;
 
   static override virtualAttributes = ["displayName"];
 

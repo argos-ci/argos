@@ -22,9 +22,10 @@ import {
 
 import type {
   IResolvers,
+  ITeamDefaultUserLevel,
   ITeamUserLevel,
 } from "../__generated__/resolver-types.js";
-import { deleteAccount, getWritableAccount } from "../services/account.js";
+import { deleteAccount, getAdminAccount } from "../services/account.js";
 import { forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client.js";
@@ -55,27 +56,38 @@ export const typeDefs = gql`
     subscription: AccountSubscription
     subscriptionStatus: AccountSubscriptionStatus
     oldPaidSubscription: AccountSubscription
-    permissions: [Permission!]!
+    permissions: [AccountPermission!]!
     projects(after: Int!, first: Int!): ProjectConnection!
     avatar: AccountAvatar!
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
     paymentProvider: AccountSubscriptionProvider
-    vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
     glNamespaces: GlApiNamespaceConnection
 
     me: TeamMember
-    members(after: Int = 0, first: Int = 30): TeamMemberConnection!
+    members(
+      after: Int = 0
+      first: Int = 30
+      search: String
+      userLevel: TeamUserLevel
+    ): TeamMemberConnection!
     githubMembers(after: Int = 0, first: Int = 30): TeamGithubMemberConnection
     inviteLink: String
     ssoGithubAccount: GithubAccount
+    defaultUserLevel: TeamDefaultUserLevel!
+  }
+
+  enum TeamDefaultUserLevel {
+    member
+    contributor
   }
 
   enum TeamUserLevel {
     owner
     member
+    contributor
   }
 
   type TeamMemberConnection implements Connection {
@@ -141,6 +153,11 @@ export const typeDefs = gql`
     teamAccountId: ID!
   }
 
+  input SetTeamDefaultUserLevelInput {
+    teamAccountId: ID!
+    level: TeamDefaultUserLevel!
+  }
+
   extend type Query {
     invitation(token: String!): Team
   }
@@ -164,6 +181,8 @@ export const typeDefs = gql`
     enableGitHubSSOOnTeam(input: EnableGitHubSSOOnTeamInput!): Team!
     "Disable GitHub SSO"
     disableGitHubSSOOnTeam(input: DisableGitHubSSOOnTeamInput!): Team!
+    "Set team default user level"
+    setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
   }
 `;
 
@@ -217,7 +236,7 @@ export const resolvers: IResolvers = {
       return teamUser;
     },
     members: async (account, args, ctx) => {
-      const { first, after } = args;
+      const { first, after, userLevel, search } = args;
       if (!ctx.auth) {
         throw unauthenticated();
       }
@@ -239,6 +258,18 @@ export const resolvers: IResolvers = {
           ctx.auth.user.id,
         )
         .range(after, after + first - 1);
+
+      if (userLevel) {
+        query.where("team_users.userLevel", userLevel);
+      }
+
+      if (search) {
+        query.withGraphJoined("user.account").where((qb) => {
+          qb.where("user:account.name", "ilike", `%${search}%`)
+            .orWhere("user:account.slug", "ilike", `%${search}%`)
+            .orWhere("user.email", "ilike", `%${search}%`);
+        });
+      }
 
       // If SSO is activated, exclude SSO members.
       if (hasGithubSSO) {
@@ -285,12 +316,12 @@ export const resolvers: IResolvers = {
       }
 
       invariant(account.teamId);
-      const [team, hasWritePermission] = await Promise.all([
+      const [team, permissions] = await Promise.all([
         ctx.loaders.Team.load(account.teamId),
-        Team.checkWritePermission(account.teamId, ctx.auth.user),
+        Team.getPermissions(account.teamId, ctx.auth.user),
       ]);
 
-      if (!hasWritePermission) {
+      if (!permissions.includes("admin")) {
         return null;
       }
 
@@ -312,14 +343,25 @@ export const resolvers: IResolvers = {
 
       return ctx.loaders.GithubAccount.load(team.ssoGithubAccountId);
     },
+    defaultUserLevel: async (account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      invariant(account.teamId);
+      const team = await ctx.loaders.Team.load(account.teamId);
+      invariant(team);
+
+      return team.defaultUserLevel as ITeamDefaultUserLevel;
+    },
   },
   Query: {
     invitation: async (_root, { token }) => {
-      const team = await Team.verifyInviteToken(token);
-      if (!team) {
-        throw new Error("Invalid token");
-      }
-      return team.$relatedQuery("account");
+      const team = await Team.verifyInviteToken(token, {
+        withGraphFetched: "account",
+      });
+      invariant(team, "Invalid token");
+      invariant(team.account, "Team account not loaded");
+      return team.account;
     },
   },
   Mutation: {
@@ -446,7 +488,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
       const [teamAccount, userAccount] = await Promise.all([
-        getWritableAccount({
+        getAdminAccount({
           id: args.input.teamAccountId,
           user: ctx.auth.user,
         }),
@@ -500,16 +542,11 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      const team = await Team.verifyInviteToken(args.token);
-      if (!team) {
-        throw new Error("Invalid token");
-      }
-
-      const account = await team.$relatedQuery("account");
-
-      if (!account) {
-        throw new Error("Invalid token");
-      }
+      const team = await Team.verifyInviteToken(args.token, {
+        withGraphFetched: "account",
+      });
+      invariant(team, "Invalid token");
+      invariant(team.account, "Team account not loaded");
 
       const teamUser = await TeamUser.query().findOne({
         teamId: team.id,
@@ -517,23 +554,23 @@ export const resolvers: IResolvers = {
       });
 
       if (teamUser) {
-        return account;
+        return team.account;
       }
 
       await TeamUser.query().insert({
         userId: ctx.auth.user.id,
         teamId: team.id,
-        userLevel: "member",
+        userLevel: team.defaultUserLevel,
       });
 
-      return account;
+      return team.account;
     },
     setTeamMemberLevel: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
       }
       const [teamAccount, userAccount] = await Promise.all([
-        getWritableAccount({
+        getAdminAccount({
           id: args.input.teamAccountId,
           user: ctx.auth.user,
         }),
@@ -574,7 +611,7 @@ export const resolvers: IResolvers = {
             ctx.auth.user,
             args.input.ghInstallationId,
           ),
-          getWritableAccount({
+          getAdminAccount({
             id: args.input.teamAccountId,
             user: ctx.auth.user,
           }),
@@ -681,7 +718,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const teamAccount = await getWritableAccount({
+      const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
         user: ctx.auth.user,
       });
@@ -719,6 +756,24 @@ export const resolvers: IResolvers = {
 
       await Team.query().findById(teamAccount.teamId).patch({
         ssoGithubAccountId: null,
+      });
+
+      return teamAccount;
+    },
+    setTeamDefaultUserLevel: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth.user,
+      });
+
+      invariant(teamAccount.teamId, "Account teamId is undefined");
+
+      await Team.query().findById(teamAccount.teamId).patch({
+        defaultUserLevel: args.input.level,
       });
 
       return teamAccount;

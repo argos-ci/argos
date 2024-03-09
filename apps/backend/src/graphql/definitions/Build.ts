@@ -184,11 +184,9 @@ export const resolvers: IResolvers = {
 
       invariant(build.project?.account);
 
-      const hasWritePermission = await build.project.$checkWritePermission(
-        ctx.auth.user,
-      );
+      const permissions = await build.project.$getPermissions(ctx.auth.user);
 
-      if (!hasWritePermission) {
+      if (!permissions.includes("review")) {
         throw forbidden("You cannot approve or reject this build");
       }
 

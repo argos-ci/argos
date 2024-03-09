@@ -16,6 +16,11 @@ import { VercelProject } from "./VercelProject.js";
 import { GitlabProject } from "./GitlabProject.js";
 import config from "@/config/index.js";
 import { invariant } from "@/util/invariant.js";
+import { ProjectUser } from "./ProjectUser.js";
+import { assertUnreachable } from "@/util/unreachable.js";
+import { TeamUser } from "./TeamUser.js";
+
+export type ProjectPermission = "admin" | "review" | "view_settings" | "view";
 
 export class Project extends Model {
   static override tableName = "projects";
@@ -119,51 +124,101 @@ export class Project extends Model {
     this.token = this.token || (await Project.generateToken());
   }
 
-  static async checkWritePermission(project: Project, user: User | null) {
-    if (!user) {
-      return false;
-    }
-    await project.$fetchGraph("account", { skipFetched: true });
+  static async getPermissions(
+    project: Project,
+    user: User | null,
+  ): Promise<ProjectPermission[]> {
+    const [isPublic] = await Promise.all([
+      project.$checkIsPublic(),
+      project.$fetchGraph("account", { skipFetched: true }),
+    ]);
     invariant(project.account);
-    return project.account.$checkReadPermission(user);
+
+    const defaultPermissions: ProjectPermission[] = isPublic ? ["view"] : [];
+    const allPermissions: ProjectPermission[] = [
+      "admin",
+      "review",
+      "view_settings",
+      "view",
+    ];
+
+    if (!user) {
+      return defaultPermissions;
+    }
+
+    if (project.account.type === "user") {
+      if (project.account.userId === user.id) {
+        return allPermissions;
+      }
+      return [];
+    }
+
+    const [projectUser, teamUser] = await Promise.all([
+      ProjectUser.query()
+        .select("userLevel")
+        .findOne({ projectId: project.id, userId: user.id }),
+      TeamUser.query().select("userLevel").findOne({
+        teamId: project.account.teamId,
+        userId: user.id,
+      }),
+    ]);
+
+    if (!teamUser) {
+      return defaultPermissions;
+    }
+
+    switch (teamUser.userLevel) {
+      case "owner":
+      case "member":
+        return allPermissions;
+      case "contributor": {
+        if (!projectUser) {
+          return defaultPermissions;
+        }
+        switch (projectUser.userLevel) {
+          case "admin":
+            return allPermissions;
+          case "reviewer":
+            return ["review", "view_settings", "view"];
+          case "viewer":
+            return ["view", "view_settings"];
+          default:
+            assertUnreachable(projectUser.userLevel);
+        }
+      }
+      // eslint-disable-next-line no-fallthrough
+      default:
+        assertUnreachable(teamUser.userLevel);
+    }
   }
 
-  static async checkReadPermission(project: Project, user: User | null) {
-    const isPublic = await project.$checkIsPublic();
-    if (isPublic) {
-      return true;
-    }
-    return Project.checkWritePermission(project, user);
+  async $getPermissions(user: User | null) {
+    return Project.getPermissions(this, user);
   }
 
   async $checkIsPublic(trx?: TransactionOrKnex) {
-    if (this.private === false) return true;
-    if (this.private === true) return false;
+    if (this.private !== null) {
+      return !this.private;
+    }
 
     await this.$fetchGraph(
       "[githubRepository, gitlabProject]",
-      trx ? { transaction: trx, skipFetched: true } : undefined,
+      trx ? { transaction: trx, skipFetched: true } : { skipFetched: true },
     );
 
     if (this.githubRepository) {
       return !this.githubRepository.private;
     }
+
     if (this.gitlabProject) {
       return !this.gitlabProject.private;
     }
+
     return false;
   }
 
   static async generateToken() {
     return generateRandomHexString();
-  }
-
-  async $checkWritePermission(user: User | null) {
-    return Project.checkWritePermission(this, user);
-  }
-
-  async $checkReadPermission(user: User | null) {
-    return Project.checkReadPermission(this, user);
   }
 
   async $getReferenceBranch() {

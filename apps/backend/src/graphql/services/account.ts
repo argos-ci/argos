@@ -9,7 +9,7 @@ import {
 import { deleteProject } from "./project.js";
 import { cancelStripeSubscription } from "@/stripe/index.js";
 
-export const getWritableAccount = async (args: {
+export const getAdminAccount = async (args: {
   id: string;
   user: User | undefined | null;
 }): Promise<Account> => {
@@ -17,8 +17,8 @@ export const getWritableAccount = async (args: {
     throw new Error("Unauthorized");
   }
   const account = await Account.query().findById(args.id).throwIfNotFound();
-  const hasWritePermission = await account.$checkWritePermission(args.user);
-  if (!hasWritePermission) {
+  const permissions = await account.$getPermissions(args.user);
+  if (!permissions.includes("admin")) {
     throw new Error("Unauthorized");
   }
   return account;
@@ -28,7 +28,7 @@ export const deleteAccount = async (args: {
   id: string;
   user: User | undefined | null;
 }) => {
-  const account = await getWritableAccount({
+  const account = await getAdminAccount({
     id: args.id,
     user: args.user,
   });

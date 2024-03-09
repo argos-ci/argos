@@ -93,7 +93,7 @@ export const ProjectVisibility = (props: {
             <CardParagraph>
               This will also mark the screenshots as private and use up credit.
             </CardParagraph>
-            <FormRadioGroup className="rounded p-4">
+            <FormRadioGroup>
               <FormRadio
                 {...form.register("visibility")}
                 value="default"

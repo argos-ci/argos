@@ -2,7 +2,6 @@ import bodyParser from "body-parser";
 import express from "express";
 
 import config from "@/config/index.js";
-import { Account } from "@/database/models/index.js";
 import logger from "@/logger/index.js";
 import {
   createStripeCheckoutSession,
@@ -14,6 +13,7 @@ import type { Stripe } from "@/stripe/index.js";
 
 import { auth } from "../middlewares/auth.js";
 import { HTTPError, asyncHandler } from "../util.js";
+import { getAdminAccount } from "@/graphql/services/account.js";
 
 const router = express.Router();
 
@@ -75,16 +75,13 @@ router.post(
         throw new Error("Account id missing");
       }
 
-      const account = await Account.query()
-        .findById(accountId)
-        .throwIfNotFound();
+      const account = await getAdminAccount({
+        id: accountId,
+        user,
+      });
 
       if (account.stripeCustomerId !== stripeCustomerId) {
         throw new Error("Stripe customer id mismatch");
-      }
-
-      if (!account.$checkWritePermission(user)) {
-        throw new Error("Unauthorized");
       }
 
       const session = await stripe.billingPortal.sessions.create({
@@ -126,18 +123,10 @@ router.post(
       }
 
       const [teamAccount, proPlan, noTrial] = await Promise.all([
-        Account.query().findById(accountId).throwIfNotFound(),
+        getAdminAccount({ id: accountId, user: req.auth.user }),
         getStripeProPlanOrThrow(),
         req.auth.account.$checkHasSubscribedToTrial(),
       ]);
-
-      const hasWritePermission = await teamAccount.$checkWritePermission(
-        req.auth.user,
-      );
-
-      if (!hasWritePermission) {
-        throw new Error("Unauthorized");
-      }
 
       const session = await createStripeCheckoutSession({
         plan: proPlan,

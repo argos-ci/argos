@@ -29,7 +29,9 @@ export const createTeamAccount = async (props: {
 }) => {
   const slug = await resolveTeamSlug(props.name);
   return transaction(async (trx) => {
-    const team = await Team.query(trx).insertAndFetch({});
+    const team = await Team.query(trx).insertAndFetch({
+      defaultUserLevel: "member",
+    });
     await TeamUser.query(trx).insert({
       userId: props.ownerId,
       teamId: team.id,

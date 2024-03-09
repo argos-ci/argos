@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
-// import { AccountVercel } from "@/containers/Account/Vercel";
 import { Query } from "@/containers/Apollo";
 import { useAuthTokenPayload } from "@/containers/Auth";
 import { SettingsLayout } from "@/containers/Layout";
@@ -13,23 +12,25 @@ import { TeamMembers } from "@/containers/Team/Members";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { graphql } from "@/gql";
-import { Permission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
 import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
 import { Heading } from "@/ui/Typography";
 
 import { useAccountContext } from ".";
+import { TeamAccessRole } from "@/containers/Team/AccessRole";
+import { AccountPermission } from "@/gql/graphql";
 
 const AccountQuery = graphql(`
   query AccountSettings_account($slug: String!) {
     account(slug: $slug) {
       id
-      permissions
 
-      plan {
-        id
-        displayName
+      ... on Team {
+        plan {
+          id
+          fineGrainedAccessControlIncluded
+        }
       }
 
       ...TeamMembers_Team
@@ -39,13 +40,14 @@ const AccountQuery = graphql(`
       ...PlanCard_Account
       ...AccountGitLab_Account
       ...TeamGitHubSSO_Team
+      ...TeamAccessRole_Team
     }
   }
 `);
 
 export const AccountSettings = () => {
   const { accountSlug } = useParams();
-  const { hasWritePermission } = useAccountContext();
+  const { permissions } = useAccountContext();
   const authPayload = useAuthTokenPayload();
   const userSlug = authPayload?.account.slug;
 
@@ -53,9 +55,7 @@ export const AccountSettings = () => {
     return <NotFound />;
   }
 
-  if (!hasWritePermission) {
-    return <NotFound />;
-  }
+  const hasAdminPermission = permissions.includes(AccountPermission.Admin);
 
   return (
     <Container className="py-10">
@@ -73,13 +73,17 @@ export const AccountSettings = () => {
         variables={{ slug: accountSlug }}
       >
         {({ account }) => {
-          if (!account) return <NotFound />;
+          if (!account) {
+            return <NotFound />;
+          }
           const isTeam = account.__typename === "Team";
-          const writable = account.permissions.includes(Permission.Write);
+          const fineGrainedAccessControlIncluded = Boolean(
+            isTeam && account.plan?.fineGrainedAccessControlIncluded,
+          );
 
           return (
             <SettingsLayout>
-              {writable &&
+              {hasAdminPermission &&
                 (() => {
                   switch (account.__typename) {
                     case "User":
@@ -117,11 +121,16 @@ export const AccountSettings = () => {
                   }
                   return null;
                 })()}
-              {writable && <PlanCard account={account} />}
+              {hasAdminPermission && <PlanCard account={account} />}
               {isTeam && <TeamMembers team={account} />}
-              {isTeam && writable && <TeamGitHubSSO team={account} />}
-              {writable && <AccountGitLab account={account} />}
-              {isTeam && writable && <TeamDelete team={account} />}
+              {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
+              {isTeam &&
+                hasAdminPermission &&
+                fineGrainedAccessControlIncluded && (
+                  <TeamAccessRole team={account} />
+                )}
+              {hasAdminPermission && <AccountGitLab account={account} />}
+              {isTeam && hasAdminPermission && <TeamDelete team={account} />}
             </SettingsLayout>
           );
         }}

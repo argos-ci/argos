@@ -1,5 +1,4 @@
-import { useMutation } from "@apollo/client";
-import { MoreVerticalIcon } from "lucide-react";
+import { Reference, useMutation } from "@apollo/client";
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -29,7 +28,6 @@ import {
 import { getGraphQLErrorMessage } from "@/ui/Form";
 import { FormError } from "@/ui/FormError";
 import { List, ListRow } from "@/ui/List";
-import { Menu, MenuButton, MenuItem, useMenuState } from "@/ui/Menu";
 import {
   Select,
   SelectArrow,
@@ -44,6 +42,7 @@ import { useAssertAuthTokenPayload, useAuthTokenPayload } from "../Auth";
 import { invariant } from "@/util/invariant";
 import { GithubAccountLink } from "../GithubAccountLink";
 import { MarkGithubIcon } from "@primer/octicons-react";
+import { RemoveMenu, UserListRow } from "../UserList";
 
 const NB_MEMBERS_PER_PAGE = 10;
 
@@ -57,11 +56,7 @@ const TeamMembersQuery = graphql(`
           level
           user {
             id
-            name
-            slug
-            avatar {
-              ...AccountAvatarFragment
-            }
+            ...UserListRow_user
             ...RemoveFromTeamDialog_User
           }
           ...LevelSelect_TeamMember
@@ -106,7 +101,6 @@ const TeamGithubMembersQuery = graphql(`
         }
         pageInfo {
           hasNextPage
-          totalCount
         }
       }
     }
@@ -123,19 +117,13 @@ const TeamFragment = graphql(`
       id
       ...TeamGithubMembersList_GithubAccount
     }
+    plan {
+      id
+      fineGrainedAccessControlIncluded
+    }
     me {
       id
       level
-      user {
-        id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
-        }
-        ...RemoveFromTeamDialog_User
-      }
-      ...LevelSelect_TeamMember
     }
   }
 `);
@@ -159,210 +147,132 @@ const RemoveUserFromTeamMutation = graphql(`
   }
 `);
 
-type LeaveTeamDialogProps = {
-  state: DialogState;
-  teamName: string;
-  teamAccountId: string;
-};
-
-const LeaveTeamDialog = React.memo<LeaveTeamDialogProps>((props) => {
-  const authPayload = useAuthTokenPayload();
-  const [leaveTeam, { loading, error }] = useMutation(LeaveTeamMutation, {
-    variables: {
-      teamAccountId: props.teamAccountId,
-    },
-    onCompleted() {
-      props.state.hide();
-      navigate(authPayload ? `/${authPayload.account.slug}` : "/");
-    },
-  });
-  const navigate = useNavigate();
-  return (
-    <>
-      <DialogBody confirm>
-        <DialogTitle>Leave Team</DialogTitle>
-        <DialogText>
-          You are about to leave {props.teamName}. In order to regain access at
-          a later time, a Team Owner must invite you.
-        </DialogText>
-        <DialogText>Are you sure you want to continue?</DialogText>
-      </DialogBody>
-      <DialogFooter>
-        {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
-        <DialogDismiss>Cancel</DialogDismiss>
-        <Button
-          disabled={loading}
-          color="danger"
-          onClick={() => {
-            leaveTeam().catch(() => {});
-          }}
-        >
-          Leave Team
-        </Button>
-      </DialogFooter>
-    </>
-  );
-});
+const LeaveTeamDialog = React.memo(
+  (props: { state: DialogState; teamName: string; teamAccountId: string }) => {
+    const authPayload = useAuthTokenPayload();
+    const [leaveTeam, { loading, error }] = useMutation(LeaveTeamMutation, {
+      variables: {
+        teamAccountId: props.teamAccountId,
+      },
+      onCompleted() {
+        props.state.hide();
+        navigate(authPayload ? `/${authPayload.account.slug}` : "/");
+      },
+    });
+    const navigate = useNavigate();
+    return (
+      <>
+        <DialogBody confirm>
+          <DialogTitle>Leave Team</DialogTitle>
+          <DialogText>
+            You are about to leave {props.teamName}. In order to regain access
+            at a later time, a Team Owner must invite you.
+          </DialogText>
+          <DialogText>Are you sure you want to continue?</DialogText>
+        </DialogBody>
+        <DialogFooter>
+          {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
+          <DialogDismiss>Cancel</DialogDismiss>
+          <Button
+            disabled={loading}
+            color="danger"
+            onClick={() => {
+              leaveTeam().catch(() => {});
+            }}
+          >
+            Leave Team
+          </Button>
+        </DialogFooter>
+      </>
+    );
+  },
+);
 
 const RemoveFromTeamDialogUserFragment = graphql(`
   fragment RemoveFromTeamDialog_User on User {
     id
-    name
-    slug
-    avatar {
-      ...AccountAvatarFragment
-    }
+    ...UserListRow_user
   }
 `);
 
 type RemovedUser = DocumentType<typeof RemoveFromTeamDialogUserFragment>;
 
-type RemoveFromTeamDialogProps = {
-  state: DialogState;
-  teamName: string;
-  teamAccountId: string;
-  user: RemovedUser;
-};
-
-const RemoveFromTeamDialog = React.memo<RemoveFromTeamDialogProps>((props) => {
-  const [removeFromTeam, { loading, error }] = useMutation(
-    RemoveUserFromTeamMutation,
-    {
-      onCompleted() {
-        props.state.hide();
-      },
-      update(cache, { data }) {
-        if (data?.removeUserFromTeam) {
-          cache.modify({
-            id: cache.identify({
-              __typename: "Team",
-              id: props.teamAccountId,
-            }),
-            fields: {
-              members: (existingMembers, { readField }) => {
-                return {
-                  ...existingMembers,
-                  edges: existingMembers.edges.filter(
-                    (userRef: any) =>
-                      readField("id", userRef) !==
-                      data.removeUserFromTeam.teamMemberId,
-                  ),
-                  pageInfo: {
-                    ...existingMembers.pageInfo,
-                    totalCount: existingMembers.pageInfo.totalCount - 1,
-                  },
-                };
+const RemoveFromTeamDialog = React.memo(
+  (props: {
+    state: DialogState;
+    teamName: string;
+    teamAccountId: string;
+    user: RemovedUser;
+  }) => {
+    const [removeFromTeam, { loading, error }] = useMutation(
+      RemoveUserFromTeamMutation,
+      {
+        onCompleted() {
+          props.state.hide();
+        },
+        update(cache, { data }) {
+          if (data?.removeUserFromTeam) {
+            cache.modify({
+              id: cache.identify({
+                __typename: "Team",
+                id: props.teamAccountId,
+              }),
+              fields: {
+                members: (existingMembers, { readField }) => {
+                  return {
+                    ...existingMembers,
+                    edges: existingMembers.edges.filter(
+                      (ref: Reference) =>
+                        readField("id", ref) !==
+                        data.removeUserFromTeam.teamMemberId,
+                    ),
+                    pageInfo: {
+                      ...existingMembers.pageInfo,
+                      totalCount: existingMembers.pageInfo.totalCount - 1,
+                    },
+                  };
+                },
               },
-            },
-          });
-        }
+            });
+          }
+        },
+        variables: {
+          teamAccountId: props.teamAccountId,
+          userAccountId: props.user.id,
+        },
       },
-      variables: {
-        teamAccountId: props.teamAccountId,
-        userAccountId: props.user.id,
-      },
-    },
-  );
-  return (
-    <>
-      <DialogBody confirm>
-        <DialogTitle>Remove Team Member</DialogTitle>
-        <DialogText>
-          You are about to remove the following Team Member, are you sure you
-          want to continue?
-        </DialogText>
-        <List>
-          <ListRow className="px-4 py-2 text-left">
-            <AccountAvatar
-              avatar={props.user.avatar}
-              size={36}
-              className="shrink-0"
-            />
-            <div>
-              <div className="text-sm font-semibold">{props.user.name}</div>
-              <div className="text-xs text-low">{props.user.slug}</div>
-            </div>
-          </ListRow>
-        </List>
-      </DialogBody>
-      <DialogFooter>
-        {error && (
-          <FormError>Something went wrong. Please try again.</FormError>
-        )}
-        <DialogDismiss>Cancel</DialogDismiss>
-        <Button
-          disabled={loading}
-          color="danger"
-          onClick={() => {
-            removeFromTeam().catch(() => {});
-          }}
-        >
-          Remove from Team
-        </Button>
-      </DialogFooter>
-    </>
-  );
-});
-
-type ActionsMenuProps = {
-  teamName: string;
-  accountId: string;
-  lastOne: boolean;
-  onRemove: () => void;
-  isMe: boolean;
-};
-
-const ActionsMenu = (props: ActionsMenuProps) => {
-  const menu = useMenuState({ gutter: 4 });
-
-  return (
-    <>
-      <MenuButton
-        state={menu}
-        className="flex shrink-0 items-center justify-center"
-      >
-        <MoreVerticalIcon className="h-4 w-4" />
-      </MenuButton>
-      <Menu state={menu} aria-label="Member actions">
-        {props.isMe ? (
-          <Tooltip
-            content={
-              props.lastOne
-                ? "You are the last user of this team, you can't leave it"
-                : null
-            }
-          >
-            <MenuItem
-              variant="danger"
-              state={menu}
-              onClick={() => {
-                props.onRemove();
-                menu.hide();
-              }}
-              disabled={props.lastOne}
-              accessibleWhenDisabled
-            >
-              Leave Team
-            </MenuItem>
-          </Tooltip>
-        ) : (
-          <MenuItem
-            variant="danger"
-            state={menu}
+    );
+    return (
+      <>
+        <DialogBody confirm>
+          <DialogTitle>Remove Team Member</DialogTitle>
+          <DialogText>
+            You are about to remove the following Team Member, are you sure you
+            want to continue?
+          </DialogText>
+          <List className="text-left">
+            <UserListRow user={props.user} />
+          </List>
+        </DialogBody>
+        <DialogFooter>
+          {error && (
+            <FormError>Something went wrong. Please try again.</FormError>
+          )}
+          <DialogDismiss>Cancel</DialogDismiss>
+          <Button
+            disabled={loading}
+            color="danger"
             onClick={() => {
-              props.onRemove();
-              menu.hide();
+              removeFromTeam().catch(() => {});
             }}
-            disabled={props.lastOne}
-            accessibleWhenDisabled
           >
             Remove from Team
-          </MenuItem>
-        )}
-      </Menu>
-    </>
-  );
-};
+          </Button>
+        </DialogFooter>
+      </>
+    );
+  },
+);
 
 const SetTeamMemberLevelMutation = graphql(`
   mutation SetTeamMemberLevelMutation(
@@ -395,6 +305,7 @@ const LevelSelectTeamMemberFragment = graphql(`
 
 const LevelSelect = (props: {
   teamId: string;
+  hasFineGrainedAccessControl: boolean;
   member: FragmentType<typeof LevelSelectTeamMemberFragment>;
 }) => {
   const member = useFragment(LevelSelectTeamMemberFragment, props.member);
@@ -432,6 +343,16 @@ const LevelSelect = (props: {
       </Select>
 
       <SelectPopover aria-label="Levels" state={select}>
+        {props.hasFineGrainedAccessControl && (
+          <SelectItem state={select} value="contributor">
+            <div className="flex flex-col">
+              <div>Contributor</div>
+              <div className="text-low">
+                Access control at the project level
+              </div>
+            </div>
+          </SelectItem>
+        )}
         <SelectItem state={select} value="member">
           <div className="flex flex-col">
             <div>Member</div>
@@ -496,6 +417,7 @@ const InviteLinkButton = (props: InviteLinkButtonProps) => {
 const levelLabel: Record<TeamUserLevel, string> = {
   owner: "Owner",
   member: "Member",
+  contributor: "Contributor",
 };
 
 function TeamMembersList(props: {
@@ -504,6 +426,7 @@ function TeamMembersList(props: {
   amOwner: boolean;
   onRemove: (user: RemovedUser) => void;
   hasGithubSSO: boolean;
+  hasFineGrainedAccessControl: boolean;
 }) {
   const authPayload = useAssertAuthTokenPayload();
   const { data, fetchMore } = useQuery(TeamMembersQuery, {
@@ -517,7 +440,7 @@ function TeamMembersList(props: {
   if (data.team?.__typename !== "Team") {
     throw new Error("Invariant: Invalid team");
   }
-  const members = Array.from(data.team.members.edges);
+  const members = data.team.members.edges;
   const lastOne =
     !props.hasGithubSSO && data.team.members.pageInfo.totalCount === 1;
   return (
@@ -528,42 +451,41 @@ function TeamMembersList(props: {
       {members.length > 0 ? (
         <List>
           {members.map((member) => {
-            const user = member.user;
+            const { user } = member;
             const isMe = authPayload.account.id === user.id;
             return (
-              <ListRow key={user.id} className="px-4 py-2 items-center">
-                <AccountAvatar
-                  avatar={user.avatar}
-                  size={36}
-                  className="shrink-0"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-semibold">{user.name}</div>
-                  </div>
-                  <div className="text-xs text-low">{user.slug}</div>
-                </div>
+              <UserListRow key={user.id} user={user}>
                 {isMe || !props.amOwner ? (
                   <div className="text-sm text-low">
                     {levelLabel[member.level]}
                   </div>
                 ) : (
                   <div>
-                    <LevelSelect teamId={props.teamId} member={member} />
+                    <LevelSelect
+                      teamId={props.teamId}
+                      member={member}
+                      hasFineGrainedAccessControl={
+                        props.hasFineGrainedAccessControl
+                      }
+                    />
                   </div>
                 )}
                 {isMe || props.amOwner ? (
-                  <ActionsMenu
-                    teamName={props.teamName}
-                    accountId={props.teamId}
-                    lastOne={lastOne}
-                    onRemove={() => props.onRemove(user)}
-                    isMe={authPayload.account.id === user.id}
+                  <RemoveMenu
+                    disabled={lastOne}
+                    tooltip={
+                      isMe && lastOne
+                        ? "You are the last user of this team, you can't leave it"
+                        : null
+                    }
+                    label="Member actions"
+                    actionLabel={isMe ? "Leave Team" : "Remove from Team"}
+                    onRemove={() => props.onRemove(user as RemovedUser)}
                   />
                 ) : (
                   <div className="w-4" />
                 )}
-              </ListRow>
+              </UserListRow>
             );
           })}
         </List>
@@ -625,6 +547,7 @@ function TeamGithubMembersList(props: {
   githubAccount: FragmentType<
     typeof TeamGithubMembersListGithubAccountFragment
   >;
+  hasFineGrainedAccessControl: boolean;
 }) {
   const githubAccount = useFragment(
     TeamGithubMembersListGithubAccountFragment,
@@ -643,7 +566,7 @@ function TeamGithubMembersList(props: {
   if (!data.team.githubMembers) {
     return null;
   }
-  const members = Array.from(data.team.githubMembers.edges);
+  const members = data.team.githubMembers.edges;
   return (
     <div className="my-4">
       <h3 className="font-semibold mb-2 text-sm">
@@ -687,7 +610,13 @@ function TeamGithubMembersList(props: {
                 </div>
               ) : (
                 <div>
-                  <LevelSelect teamId={props.teamId} member={teamMember} />
+                  <LevelSelect
+                    teamId={props.teamId}
+                    member={teamMember}
+                    hasFineGrainedAccessControl={
+                      props.hasFineGrainedAccessControl
+                    }
+                  />
                 </div>
               )}
               <div className="w-4" />
@@ -756,52 +685,55 @@ export const TeamMembers = (props: {
   const me = team.me;
   const amOwner = Boolean(me && me.level === TeamUserLevel.Owner);
   const hasGithubSSO = Boolean(team.ssoGithubAccount);
+  const hasFineGrainedAccessControl = Boolean(
+    team.plan?.fineGrainedAccessControlIncluded,
+  );
   const teamName = team.name || team.slug;
 
   return (
     <Card>
-      <form>
-        <CardBody>
-          <CardTitle>Members</CardTitle>
-          <CardParagraph>
-            Add members to your team to give them access to your projects.
-          </CardParagraph>
-          <TeamMembersList
+      <CardBody>
+        <CardTitle>Members</CardTitle>
+        <CardParagraph>
+          Add members to your team to give them access to your projects.
+        </CardParagraph>
+        <TeamMembersList
+          teamId={team.id}
+          teamName={teamName}
+          amOwner={amOwner}
+          onRemove={setRemovedUser}
+          hasGithubSSO={hasGithubSSO}
+          hasFineGrainedAccessControl={hasFineGrainedAccessControl}
+        />
+        {team.ssoGithubAccount && (
+          <TeamGithubMembersList
             teamId={team.id}
             teamName={teamName}
+            githubAccount={team.ssoGithubAccount}
             amOwner={amOwner}
             onRemove={setRemovedUser}
-            hasGithubSSO={hasGithubSSO}
+            hasFineGrainedAccessControl={hasFineGrainedAccessControl}
           />
-          {team.ssoGithubAccount && (
-            <TeamGithubMembersList
-              teamId={team.id}
-              teamName={teamName}
-              githubAccount={team.ssoGithubAccount}
-              amOwner={amOwner}
-              onRemove={setRemovedUser}
-            />
-          )}
-          <Dialog state={removeTeamDialog}>
-            {removedUser ? (
-              authPayload.account.id === removedUser.id ? (
-                <LeaveTeamDialog
-                  teamName={teamName}
-                  teamAccountId={team.id}
-                  state={removeTeamDialog}
-                />
-              ) : (
-                <RemoveFromTeamDialog
-                  teamName={teamName}
-                  teamAccountId={team.id}
-                  user={removedUser}
-                  state={removeTeamDialog}
-                />
-              )
-            ) : null}
-          </Dialog>
-        </CardBody>
-      </form>
+        )}
+        <Dialog state={removeTeamDialog}>
+          {removedUser ? (
+            authPayload.account.id === removedUser.id ? (
+              <LeaveTeamDialog
+                teamName={teamName}
+                teamAccountId={team.id}
+                state={removeTeamDialog}
+              />
+            ) : (
+              <RemoveFromTeamDialog
+                teamName={teamName}
+                teamAccountId={team.id}
+                user={removedUser}
+                state={removeTeamDialog}
+              />
+            )
+          ) : null}
+        </Dialog>
+      </CardBody>
       <CardFooter className="flex items-center justify-between">
         {team.inviteLink ? (
           <>

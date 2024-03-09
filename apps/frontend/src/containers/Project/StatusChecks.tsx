@@ -66,7 +66,7 @@ export const ProjectStatusChecks = (props: {
               commit is passing or failing or to mark Argos as required for a
               merge.
             </CardParagraph>
-            <FormRadioGroup className="rounded p-4">
+            <FormRadioGroup>
               <FormRadio
                 {...form.register("summaryCheck")}
                 value="auto"
