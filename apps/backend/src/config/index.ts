@@ -198,25 +198,6 @@ const config = convict({
       default: "prod_PZKO1PwFyJfJyU",
     },
   },
-  vercel: {
-    clientId: {
-      doc: "Client ID",
-      format: String,
-      default: "",
-      env: "VERCEL_CLIENT_ID",
-    },
-    clientSecret: {
-      doc: "Client Secret",
-      format: String,
-      default: "",
-      env: "VERCEL_CLIENT_SECRET",
-    },
-    integrationUrl: {
-      format: String,
-      default: "https://vercel.com/integrations/argos-dev",
-      env: "VERCEL_APP_URL",
-    },
-  },
   redis: {
     url: {
       doc: "Redis url",

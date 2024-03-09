@@ -7,7 +7,6 @@ import {
 } from "@/database/models/index.js";
 import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
 import { UnretryableError } from "@/job-core/index.js";
-import { createVercelClient } from "@/vercel/index.js";
 
 import { getCommentBody } from "./comment.js";
 import { job as buildNotificationJob } from "./job.js";
@@ -214,59 +213,11 @@ const sendGitlabNotification = async (ctx: Context) => {
   }
 };
 
-const sendVercelNotification = async (ctx: Context) => {
-  const { build, buildUrl, notification } = ctx;
-
-  if (!build) {
-    throw new UnretryableError("Invariant: no build found");
-  }
-
-  // If the build has no vercel check, we don't send a notification
-  if (!build.vercelCheck) {
-    return;
-  }
-
-  if (!build.vercelCheck.vercelDeployment) {
-    throw new UnretryableError("Invariant: no vercel deployment found");
-  }
-
-  if (!build.vercelCheck.vercelDeployment.vercelProject) {
-    throw new UnretryableError("Invariant: no vercel project found");
-  }
-
-  const configuration =
-    build.vercelCheck.vercelDeployment.vercelProject.activeConfiguration;
-
-  // If the project has no active configuration (or token), we don't send a notification
-  if (!configuration?.vercelAccessToken) {
-    return;
-  }
-
-  const client = createVercelClient({
-    accessToken: configuration.vercelAccessToken,
-  });
-
-  await client.updateCheck({
-    teamId: configuration.vercelTeamId,
-    deploymentId: build.vercelCheck.vercelDeployment.vercelId,
-    checkId: build.vercelCheck.vercelId,
-    detailsUrl: buildUrl,
-    name: notification.description,
-    externalId: build.id,
-    ...(notification.vercelStatus ? { status: notification.vercelStatus } : {}),
-    ...(notification.vercelConclusion
-      ? { conclusion: notification.vercelConclusion }
-      : {}),
-  });
-
-  // Aggregated notification is not relevant for Vercel
-};
-
 export const processBuildNotification = async (
   buildNotification: BuildNotification,
 ) => {
   await buildNotification.$fetchGraph(
-    `build.[project.[gitlabProject, githubRepository.[githubAccount,activeInstallation], account], compareScreenshotBucket, vercelCheck.vercelDeployment.vercelProject.activeConfiguration]`,
+    `build.[project.[gitlabProject, githubRepository.[githubAccount,activeInstallation], account], compareScreenshotBucket]`,
   );
 
   invariant(buildNotification.build, "No build found", UnretryableError);
@@ -310,9 +261,5 @@ export const processBuildNotification = async (
     aggregatedNotification,
   };
 
-  await Promise.all([
-    sendGithubNotification(ctx),
-    sendGitlabNotification(ctx),
-    sendVercelNotification(ctx),
-  ]);
+  await Promise.all([sendGithubNotification(ctx), sendGitlabNotification(ctx)]);
 };

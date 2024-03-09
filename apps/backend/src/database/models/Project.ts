@@ -12,7 +12,6 @@ import { Account } from "./Account.js";
 import { Build } from "./Build.js";
 import { GithubRepository } from "./GithubRepository.js";
 import type { User } from "./User.js";
-import { VercelProject } from "./VercelProject.js";
 import { GitlabProject } from "./GitlabProject.js";
 import config from "@/config/index.js";
 import { invariant } from "@/util/invariant.js";
@@ -20,7 +19,7 @@ import { ProjectUser } from "./ProjectUser.js";
 import { assertUnreachable } from "@/util/unreachable.js";
 import { TeamUser } from "./TeamUser.js";
 
-export type ProjectPermission = "admin" | "review" | "view_settings" | "view";
+type ProjectPermission = "admin" | "review" | "view_settings" | "view";
 
 export class Project extends Model {
   static override tableName = "projects";
@@ -40,7 +39,6 @@ export class Project extends Model {
       accountId: { type: "string" },
       githubRepositoryId: { type: ["null", "string"] },
       gitlabProjectId: { type: ["null", "string"] },
-      vercelProjectId: { type: ["null", "string"] },
       prCommentEnabled: { type: "boolean" },
       summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
     },
@@ -53,7 +51,6 @@ export class Project extends Model {
   accountId!: string;
   githubRepositoryId!: string | null;
   gitlabProjectId!: string | null;
-  vercelProjectId!: string | null;
   prCommentEnabled!: boolean;
   summaryCheck!: "always" | "never" | "auto";
 
@@ -102,14 +99,6 @@ export class Project extends Model {
           to: "gitlab_projects.id",
         },
       },
-      vercelProject: {
-        relation: Model.BelongsToOneRelation,
-        modelClass: VercelProject,
-        join: {
-          from: "projects.vercelProjectId",
-          to: "vercel_projects.id",
-        },
-      },
     };
   }
 
@@ -117,7 +106,6 @@ export class Project extends Model {
   account?: Account;
   githubRepository?: GithubRepository | null;
   gitlabProject?: GitlabProject | null;
-  vercelProject?: VercelProject | null;
 
   override async $beforeInsert(queryContext: QueryContext) {
     await super.$beforeInsert(queryContext);

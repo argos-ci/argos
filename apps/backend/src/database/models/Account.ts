@@ -10,7 +10,6 @@ import { Subscription } from "./Subscription.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
-import { VercelConfiguration } from "./VercelConfiguration.js";
 import { invariant } from "@/util/invariant.js";
 import { assertUnreachable } from "@/util/unreachable.js";
 
@@ -54,7 +53,6 @@ export class Account extends Model {
         pattern: "^[-a-z0-9]+$",
       },
       githubAccountId: { type: ["string", "null"] },
-      vercelConfigurationId: { type: "string" },
     },
   });
 
@@ -65,7 +63,6 @@ export class Account extends Model {
   name!: string | null;
   slug!: string;
   githubAccountId!: string | null;
-  vercelConfigurationId!: string | null;
   gitlabAccessToken!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
@@ -105,14 +102,6 @@ export class Account extends Model {
           to: "github_accounts.id",
         },
       },
-      vercelConfiguration: {
-        relation: Model.HasOneRelation,
-        modelClass: VercelConfiguration,
-        join: {
-          from: "accounts.vercelConfigurationId",
-          to: "vercel_configurations.id",
-        },
-      },
       subscriptions: {
         relation: Model.HasManyRelation,
         modelClass: Subscription,
@@ -135,7 +124,6 @@ export class Account extends Model {
   user?: User | null;
   team?: Team | null;
   githubAccount?: GithubAccount | null;
-  vercelConfiguration?: VercelConfiguration | null;
   subscriptions?: Subscription[];
   projects?: Project[];
 

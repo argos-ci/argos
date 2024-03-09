@@ -89,7 +89,6 @@ CREATE TABLE public.accounts (
     "githubAccountId" bigint,
     name character varying(255),
     slug character varying(255) NOT NULL,
-    "vercelConfigurationId" bigint,
     "gitlabAccessToken" character varying(255),
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
@@ -761,7 +760,8 @@ CREATE TABLE public.plans (
     "githubPlanId" integer,
     "stripeProductId" character varying(255),
     "usageBased" boolean NOT NULL,
-    "githubSsoIncluded" boolean DEFAULT false NOT NULL
+    "githubSsoIncluded" boolean DEFAULT false NOT NULL,
+    "fineGrainedAccessControlIncluded" boolean DEFAULT false NOT NULL
 );
 
 
@@ -789,6 +789,44 @@ ALTER SEQUENCE public.plans_id_seq OWNED BY public.plans.id;
 
 
 --
+-- Name: project_users; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_users (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "userId" bigint NOT NULL,
+    "projectId" bigint NOT NULL,
+    "userLevel" text NOT NULL,
+    CONSTRAINT "project_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text])))
+);
+
+
+ALTER TABLE public.project_users OWNER TO postgres;
+
+--
+-- Name: project_users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.project_users_id_seq OWNER TO postgres;
+
+--
+-- Name: project_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_users_id_seq OWNED BY public.project_users.id;
+
+
+--
 -- Name: projects; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -802,7 +840,6 @@ CREATE TABLE public.projects (
     "baselineBranch" character varying(255),
     "accountId" bigint NOT NULL,
     "githubRepositoryId" bigint,
-    "vercelProjectId" bigint,
     "prCommentEnabled" boolean DEFAULT true NOT NULL,
     "gitlabProjectId" bigint,
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
@@ -1018,7 +1055,7 @@ CREATE TABLE public.team_users (
     "userId" bigint NOT NULL,
     "teamId" bigint NOT NULL,
     "userLevel" text NOT NULL,
-    CONSTRAINT "team_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['member'::text, 'owner'::text])))
+    CONSTRAINT "team_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
 );
 
 
@@ -1054,7 +1091,9 @@ CREATE TABLE public.teams (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "inviteSecret" character varying(255),
-    "ssoGithubAccountId" bigint
+    "ssoGithubAccountId" bigint,
+    "defaultUserLevel" text NOT NULL,
+    CONSTRAINT "teams_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['member'::text, 'contributor'::text])))
 );
 
 
@@ -1175,192 +1214,6 @@ ALTER TABLE public.users_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
-
-
---
--- Name: vercel_checks; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.vercel_checks (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "vercelId" character varying(255) NOT NULL,
-    "vercelDeploymentId" bigint NOT NULL,
-    "buildId" bigint
-);
-
-
-ALTER TABLE public.vercel_checks OWNER TO postgres;
-
---
--- Name: vercel_checks_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.vercel_checks_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.vercel_checks_id_seq OWNER TO postgres;
-
---
--- Name: vercel_checks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.vercel_checks_id_seq OWNED BY public.vercel_checks.id;
-
-
---
--- Name: vercel_configurations; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.vercel_configurations (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "vercelId" character varying(255) NOT NULL,
-    "vercelTeamId" character varying(255),
-    deleted boolean DEFAULT false NOT NULL,
-    "vercelAccessToken" character varying(255)
-);
-
-
-ALTER TABLE public.vercel_configurations OWNER TO postgres;
-
---
--- Name: vercel_configurations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.vercel_configurations_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.vercel_configurations_id_seq OWNER TO postgres;
-
---
--- Name: vercel_configurations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.vercel_configurations_id_seq OWNED BY public.vercel_configurations.id;
-
-
---
--- Name: vercel_deployments; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.vercel_deployments (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "vercelId" character varying(255) NOT NULL,
-    url character varying(255) NOT NULL,
-    "githubCommitRef" character varying(255),
-    "githubCommitSha" character varying(255),
-    "githubPrId" character varying(255),
-    "vercelProjectId" bigint NOT NULL
-);
-
-
-ALTER TABLE public.vercel_deployments OWNER TO postgres;
-
---
--- Name: vercel_deployments_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.vercel_deployments_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.vercel_deployments_id_seq OWNER TO postgres;
-
---
--- Name: vercel_deployments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.vercel_deployments_id_seq OWNED BY public.vercel_deployments.id;
-
-
---
--- Name: vercel_project_configurations; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.vercel_project_configurations (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "vercelProjectId" bigint NOT NULL,
-    "vercelConfigurationId" bigint NOT NULL
-);
-
-
-ALTER TABLE public.vercel_project_configurations OWNER TO postgres;
-
---
--- Name: vercel_project_configurations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.vercel_project_configurations_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.vercel_project_configurations_id_seq OWNER TO postgres;
-
---
--- Name: vercel_project_configurations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.vercel_project_configurations_id_seq OWNED BY public.vercel_project_configurations.id;
-
-
---
--- Name: vercel_projects; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.vercel_projects (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "vercelId" character varying(255) NOT NULL
-);
-
-
-ALTER TABLE public.vercel_projects OWNER TO postgres;
-
---
--- Name: vercel_projects_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.vercel_projects_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.vercel_projects_id_seq OWNER TO postgres;
-
---
--- Name: vercel_projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.vercel_projects_id_seq OWNED BY public.vercel_projects.id;
 
 
 --
@@ -1490,6 +1343,13 @@ ALTER TABLE ONLY public.plans ALTER COLUMN id SET DEFAULT nextval('public.plans_
 
 
 --
+-- Name: project_users id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_users ALTER COLUMN id SET DEFAULT nextval('public.project_users_id_seq'::regclass);
+
+
+--
 -- Name: projects id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1550,41 +1410,6 @@ ALTER TABLE ONLY public.tests ALTER COLUMN id SET DEFAULT nextval('public.tests_
 --
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
-
-
---
--- Name: vercel_checks id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_checks ALTER COLUMN id SET DEFAULT nextval('public.vercel_checks_id_seq'::regclass);
-
-
---
--- Name: vercel_configurations id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_configurations ALTER COLUMN id SET DEFAULT nextval('public.vercel_configurations_id_seq'::regclass);
-
-
---
--- Name: vercel_deployments id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_deployments ALTER COLUMN id SET DEFAULT nextval('public.vercel_deployments_id_seq'::regclass);
-
-
---
--- Name: vercel_project_configurations id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_project_configurations ALTER COLUMN id SET DEFAULT nextval('public.vercel_project_configurations_id_seq'::regclass);
-
-
---
--- Name: vercel_projects id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_projects ALTER COLUMN id SET DEFAULT nextval('public.vercel_projects_id_seq'::regclass);
 
 
 --
@@ -1796,6 +1621,22 @@ ALTER TABLE ONLY public.plans
 
 
 --
+-- Name: project_users project_users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_users
+    ADD CONSTRAINT project_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_users project_users_userid_projectid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_users
+    ADD CONSTRAINT project_users_userid_projectid_unique UNIQUE ("userId", "projectId");
+
+
+--
 -- Name: projects projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1884,78 +1725,6 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: vercel_checks vercel_checks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_checks
-    ADD CONSTRAINT vercel_checks_pkey PRIMARY KEY (id);
-
-
---
--- Name: vercel_checks vercel_checks_vercelid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_checks
-    ADD CONSTRAINT vercel_checks_vercelid_unique UNIQUE ("vercelId");
-
-
---
--- Name: vercel_configurations vercel_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_configurations
-    ADD CONSTRAINT vercel_configurations_pkey PRIMARY KEY (id);
-
-
---
--- Name: vercel_configurations vercel_configurations_vercelid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_configurations
-    ADD CONSTRAINT vercel_configurations_vercelid_unique UNIQUE ("vercelId");
-
-
---
--- Name: vercel_deployments vercel_deployments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_deployments
-    ADD CONSTRAINT vercel_deployments_pkey PRIMARY KEY (id);
-
-
---
--- Name: vercel_deployments vercel_deployments_vercelid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_deployments
-    ADD CONSTRAINT vercel_deployments_vercelid_unique UNIQUE ("vercelId");
-
-
---
--- Name: vercel_project_configurations vercel_project_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_project_configurations
-    ADD CONSTRAINT vercel_project_configurations_pkey PRIMARY KEY (id);
-
-
---
--- Name: vercel_projects vercel_projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_projects
-    ADD CONSTRAINT vercel_projects_pkey PRIMARY KEY (id);
-
-
---
--- Name: vercel_projects vercel_projects_vercelid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_projects
-    ADD CONSTRAINT vercel_projects_vercelid_unique UNIQUE ("vercelId");
-
-
---
 -- Name: accounts_forcedplanid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1981,13 +1750,6 @@ CREATE INDEX accounts_teamid_index ON public.accounts USING btree ("teamId");
 --
 
 CREATE INDEX accounts_userid_index ON public.accounts USING btree ("userId");
-
-
---
--- Name: accounts_vercelconfigurationid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX accounts_vercelconfigurationid_index ON public.accounts USING btree ("vercelConfigurationId");
 
 
 --
@@ -2152,6 +1914,20 @@ CREATE INDEX plans_githubid_index ON public.plans USING btree ("githubPlanId");
 
 
 --
+-- Name: project_users_projectid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX project_users_projectid_index ON public.project_users USING btree ("projectId");
+
+
+--
+-- Name: project_users_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX project_users_userid_index ON public.project_users USING btree ("userId");
+
+
+--
 -- Name: projects_accountid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2177,13 +1953,6 @@ CREATE INDEX projects_name_index ON public.projects USING btree (name);
 --
 
 CREATE INDEX projects_token_index ON public.projects USING btree (token);
-
-
---
--- Name: projects_vercelprojectid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX projects_vercelprojectid_index ON public.projects USING btree ("vercelProjectId");
 
 
 --
@@ -2369,41 +2138,6 @@ CREATE INDEX tests_projectid_index ON public.tests USING btree ("projectId");
 
 
 --
--- Name: vercel_checks_buildid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX vercel_checks_buildid_index ON public.vercel_checks USING btree ("buildId");
-
-
---
--- Name: vercel_checks_verceldeploymentid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX vercel_checks_verceldeploymentid_index ON public.vercel_checks USING btree ("vercelDeploymentId");
-
-
---
--- Name: vercel_deployments_vercelprojectid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX vercel_deployments_vercelprojectid_index ON public.vercel_deployments USING btree ("vercelProjectId");
-
-
---
--- Name: vercel_project_configurations_vercelconfigurationid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX vercel_project_configurations_vercelconfigurationid_index ON public.vercel_project_configurations USING btree ("vercelConfigurationId");
-
-
---
--- Name: vercel_project_configurations_vercelprojectid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX vercel_project_configurations_vercelprojectid_index ON public.vercel_project_configurations USING btree ("vercelProjectId");
-
-
---
 -- Name: accounts accounts_forcedplanid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2433,14 +2167,6 @@ ALTER TABLE ONLY public.accounts
 
 ALTER TABLE ONLY public.accounts
     ADD CONSTRAINT accounts_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
-
-
---
--- Name: accounts accounts_vercelconfigurationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.accounts
-    ADD CONSTRAINT accounts_vercelconfigurationid_foreign FOREIGN KEY ("vercelConfigurationId") REFERENCES public.vercel_configurations(id);
 
 
 --
@@ -2580,6 +2306,22 @@ ALTER TABLE ONLY public.github_synchronizations
 
 
 --
+-- Name: project_users project_users_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_users
+    ADD CONSTRAINT project_users_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
+
+
+--
+-- Name: project_users project_users_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_users
+    ADD CONSTRAINT project_users_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+
+
+--
 -- Name: projects projects_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2601,14 +2343,6 @@ ALTER TABLE ONLY public.projects
 
 ALTER TABLE ONLY public.projects
     ADD CONSTRAINT projects_gitlabprojectid_foreign FOREIGN KEY ("gitlabProjectId") REFERENCES public.gitlab_projects(id);
-
-
---
--- Name: projects projects_vercelprojectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.projects
-    ADD CONSTRAINT projects_vercelprojectid_foreign FOREIGN KEY ("vercelProjectId") REFERENCES public.vercel_projects(id);
 
 
 --
@@ -2756,46 +2490,6 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: vercel_checks vercel_checks_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_checks
-    ADD CONSTRAINT vercel_checks_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
-
-
---
--- Name: vercel_checks vercel_checks_verceldeploymentid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_checks
-    ADD CONSTRAINT vercel_checks_verceldeploymentid_foreign FOREIGN KEY ("vercelDeploymentId") REFERENCES public.vercel_deployments(id);
-
-
---
--- Name: vercel_deployments vercel_deployments_vercelprojectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_deployments
-    ADD CONSTRAINT vercel_deployments_vercelprojectid_foreign FOREIGN KEY ("vercelProjectId") REFERENCES public.vercel_projects(id);
-
-
---
--- Name: vercel_project_configurations vercel_project_configurations_vercelconfigurationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_project_configurations
-    ADD CONSTRAINT vercel_project_configurations_vercelconfigurationid_foreign FOREIGN KEY ("vercelConfigurationId") REFERENCES public.vercel_configurations(id);
-
-
---
--- Name: vercel_project_configurations vercel_project_configurations_vercelprojectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vercel_project_configurations
-    ADD CONSTRAINT vercel_project_configurations_vercelprojectid_foreign FOREIGN KEY ("vercelProjectId") REFERENCES public.vercel_projects(id);
-
-
---
 -- PostgreSQL database dump complete
 --
 
@@ -2909,3 +2603,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024020
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240219213539_subscriptions_big_integer.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240222154748_not-nullable-payment-method-filled.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240301151709_screenshot-diffs-index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240307081941_project_users.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240309214656_clean_vercel.js', 1, NOW());
