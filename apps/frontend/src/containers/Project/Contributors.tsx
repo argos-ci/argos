@@ -402,7 +402,7 @@ function ProjectContributorsList(props: {
                   })}
                 </List>
               ) : (
-                <ListEmpty>You haven't added any contributors yet.</ListEmpty>
+                <ListEmpty>There's no contributors yet.</ListEmpty>
               )}
               {result.data.project.contributors.pageInfo.hasNextPage && (
                 <ListLoadMore
@@ -670,11 +670,10 @@ function TeamContributorsList(props: {
                   if (!search) {
                     return (
                       <ListEmpty>
-                        There are no members with the role of contributor in
-                        this team yet. Only members assigned the contributor
-                        role can be added as contributors to a project. Members
-                        with other roles automatically have access to all
-                        projects.
+                        There's no user with the "contributor" role in the team.
+                        Only team members with the "contributor" role can be
+                        added as contributors to the project. Others
+                        automatically get access to all projects.
                       </ListEmpty>
                     );
                   }
