@@ -19,9 +19,21 @@ import { Heading } from "@/ui/Typography";
 
 import { useProjectContext } from ".";
 import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
+import { ProjectContributors } from "@/containers/Project/Contributors";
+import { ProjectPermission } from "@/gql/graphql";
 
 const ProjectQuery = graphql(`
   query ProjectSettings_project($accountSlug: String!, $projectName: String!) {
+    account(slug: $accountSlug) {
+      id
+      ... on Team {
+        plan {
+          id
+          fineGrainedAccessControlIncluded
+        }
+      }
+    }
+
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       ...ProjectBadge_Project
@@ -33,22 +45,29 @@ const ProjectQuery = graphql(`
       ...ProjectTransfer_Project
       ...ProjectDelete_Project
       ...ProjectGitRepository_Project
-      # ...ProjectVercel_Project
+      ...ProjectContributors_Project
     }
   }
 `);
 
 export const ProjectSettings = () => {
   const { accountSlug, projectName } = useParams();
-  const { hasWritePermission } = useProjectContext();
+  const { permissions } = useProjectContext();
 
   if (!accountSlug || !projectName) {
     return <NotFound />;
   }
 
-  if (!hasWritePermission) {
+  const hasViewSettingsPermission = permissions.includes(
+    ProjectPermission.ViewSettings,
+  );
+
+  if (!hasViewSettingsPermission) {
     return <NotFound />;
   }
+
+  const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
+  const hasReviewPermission = permissions.includes(ProjectPermission.Review);
 
   return (
     <Container className="py-10">
@@ -66,20 +85,32 @@ export const ProjectSettings = () => {
           projectName,
         }}
       >
-        {({ project }) => {
-          if (!project) return <NotFound />;
+        {({ project, account }) => {
+          if (!project || !account) {
+            return <NotFound />;
+          }
+
+          const isTeam = account.__typename === "Team";
+          const fineGrainedAccessControlIncluded = Boolean(
+            isTeam && account.plan?.fineGrainedAccessControlIncluded,
+          );
 
           return (
             <SettingsLayout>
-              <ProjectChangeName project={project} />
-              <ProjectToken project={project} />
-              <ProjectGitRepository project={project} />
-              <ProjectReferenceBranch project={project} />
-              <ProjectStatusChecks project={project} />
+              {hasAdminPermission && <ProjectChangeName project={project} />}
+              {hasReviewPermission && <ProjectToken project={project} />}
+              {hasAdminPermission && <ProjectGitRepository project={project} />}
+              {hasAdminPermission && (
+                <ProjectReferenceBranch project={project} />
+              )}
+              {hasAdminPermission && <ProjectStatusChecks project={project} />}
               <ProjectBadge project={project} />
-              <ProjectVisibility project={project} />
-              <ProjectTransfer project={project} />
-              <ProjectDelete project={project} />
+              {hasAdminPermission && <ProjectVisibility project={project} />}
+              {fineGrainedAccessControlIncluded && (
+                <ProjectContributors project={project} />
+              )}
+              {hasAdminPermission && <ProjectTransfer project={project} />}
+              {hasAdminPermission && <ProjectDelete project={project} />}
             </SettingsLayout>
           );
         }}

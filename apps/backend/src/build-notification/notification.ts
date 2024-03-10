@@ -18,19 +18,6 @@ enum GitlabNotificationState {
   Canceled = "canceled",
 }
 
-enum VercelStatus {
-  Completed = "completed",
-  Running = "running",
-}
-
-enum VercelConclusion {
-  Neutral = "neutral",
-  Succeeded = "succeeded",
-  Canceled = "canceled",
-  Failed = "failed",
-  Skipped = "skipped",
-}
-
 /**
  * Get the notification status for each platform based on the build
  * notification type and if it's a reference build.
@@ -41,32 +28,24 @@ export function getNotificationStatus(
 ): {
   githubState: GithubNotificationState;
   gitlabState: GitlabNotificationState;
-  vercelStatus: VercelStatus | null;
-  vercelConclusion: VercelConclusion | null;
 } {
   switch (buildNotificationType) {
     case "queued": {
       return {
         githubState: GithubNotificationState.Pending,
         gitlabState: GitlabNotificationState.Pending,
-        vercelStatus: VercelStatus.Running,
-        vercelConclusion: null,
       };
     }
     case "progress": {
       return {
         githubState: GithubNotificationState.Pending,
         gitlabState: GitlabNotificationState.Running,
-        vercelStatus: VercelStatus.Running,
-        vercelConclusion: null,
       };
     }
     case "no-diff-detected": {
       return {
         githubState: GithubNotificationState.Success,
         gitlabState: GitlabNotificationState.Success,
-        vercelStatus: VercelStatus.Completed,
-        vercelConclusion: VercelConclusion.Succeeded,
       };
     }
     case "diff-detected": {
@@ -77,26 +56,18 @@ export function getNotificationStatus(
         gitlabState: isReference
           ? GitlabNotificationState.Success
           : GitlabNotificationState.Failed,
-        vercelStatus: VercelStatus.Completed,
-        vercelConclusion: isReference
-          ? VercelConclusion.Succeeded
-          : VercelConclusion.Failed,
       };
     }
     case "diff-accepted": {
       return {
         githubState: GithubNotificationState.Success,
         gitlabState: GitlabNotificationState.Success,
-        vercelStatus: null,
-        vercelConclusion: null,
       };
     }
     case "diff-rejected": {
       return {
         githubState: GithubNotificationState.Failure,
         gitlabState: GitlabNotificationState.Failed,
-        vercelStatus: null,
-        vercelConclusion: null,
       };
     }
     default: {
@@ -158,8 +129,6 @@ export type NotificationPayload = {
   description: string;
   githubState: GithubNotificationState;
   gitlabState: GitlabNotificationState;
-  vercelStatus: VercelStatus | null;
-  vercelConclusion: VercelConclusion | null;
 };
 
 /**

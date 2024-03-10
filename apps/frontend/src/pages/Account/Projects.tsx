@@ -12,7 +12,7 @@ import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
 
 import { NotFound } from "../NotFound";
-import { Permission } from "@/gql/graphql";
+import { AccountPermission } from "@/gql/graphql";
 import { invariant } from "@/util/invariant";
 
 const AccountQuery = graphql(`
@@ -50,8 +50,8 @@ export const AccountProjects = () => {
           data.account ? (
             <ProjectList
               projects={data.account.projects.edges}
-              hasWritePermission={data.account.permissions.includes(
-                Permission.Write,
+              canCreateProject={data.account.permissions.includes(
+                AccountPermission.Admin,
               )}
             />
           ) : (

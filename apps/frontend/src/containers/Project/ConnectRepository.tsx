@@ -17,7 +17,7 @@ import {
   GitlabProjectListProps,
 } from "../GitlabProjectList";
 import { Anchor } from "@/ui/Link";
-import { Permission } from "@/gql/graphql";
+import { AccountPermission } from "@/gql/graphql";
 import { getItem, removeItem, setItem } from "@/util/storage";
 import { TextInput } from "@/ui/TextInput";
 import { useDebounce } from "use-debounce";
@@ -282,7 +282,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
   invariant(me, "Invariant: no me");
   invariant(account, "Invariant: no account");
 
-  if (!account.permissions.includes(Permission.Write)) {
+  if (!account.permissions.includes(AccountPermission.Admin)) {
     return (
       <div>
         You can't import a project in this team. Only team owners can import

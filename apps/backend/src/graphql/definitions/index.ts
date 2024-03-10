@@ -16,7 +16,6 @@ import * as GlApiProject from "./GlApiProject.js";
 import * as JobStatus from "./JobStatus.js";
 import * as Node from "./Node.js";
 import * as PageInfo from "./PageInfo.js";
-import * as Permission from "./Permission.js";
 import * as Plan from "./Plan.js";
 import * as Project from "./Project.js";
 import * as PullRequest from "./PullRequest.js";
@@ -28,7 +27,6 @@ import * as Team from "./Team.js";
 import * as Test from "./Test.js";
 import * as User from "./User.js";
 import * as ValidationStatus from "./ValidationStatus.js";
-import * as Vercel from "./Vercel.js";
 import * as schema from "./schema.js";
 
 export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
@@ -48,7 +46,6 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   JobStatus,
   Node,
   PageInfo,
-  Permission,
   Plan,
   Project,
   PullRequest,
@@ -61,5 +58,4 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Test,
   User,
   ValidationStatus,
-  Vercel,
 ];

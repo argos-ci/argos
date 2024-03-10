@@ -20,8 +20,6 @@ import {
   TeamUser,
   Test,
   User,
-  VercelConfiguration,
-  VercelProject,
 } from "@/database/models/index.js";
 import { invariant } from "@/util/invariant.js";
 
@@ -136,17 +134,6 @@ const createAccountFromRelationLoader = () => {
   );
 };
 
-const createProjectFromVercelProjectLoader = () => {
-  return new DataLoader<string, Project | null>(async (vercelProjectIds) => {
-    const projects = await Project.query()
-      .joinRelated("vercelProject")
-      .whereIn("vercelProject.vercelId", vercelProjectIds as string[]);
-    return vercelProjectIds.map(
-      (id) => projects.find((p) => p.vercelProjectId === id) ?? null,
-    );
-  });
-};
-
 const createTeamUserFromGithubAccountMemberLoader = () => {
   return new DataLoader<
     { githubAccountId: string; githubMemberId: string },
@@ -220,7 +207,6 @@ export const createLoaders = () => ({
   LastScreenshotDiff: createLastScreenshotDiffLoader(),
   Plan: createModelLoader(Plan),
   Project: createModelLoader(Project),
-  ProjectFromVercelProject: createProjectFromVercelProjectLoader(),
   Screenshot: createModelLoader(Screenshot),
   ScreenshotBucket: createModelLoader(ScreenshotBucket),
   ScreenshotDiff: createModelLoader(ScreenshotDiff),
@@ -228,6 +214,4 @@ export const createLoaders = () => ({
   TeamUserFromGithubMember: createTeamUserFromGithubAccountMemberLoader(),
   Test: createModelLoader(Test),
   User: createModelLoader(User),
-  VercelConfiguration: createModelLoader(VercelConfiguration),
-  VercelProject: createModelLoader(VercelProject),
 });

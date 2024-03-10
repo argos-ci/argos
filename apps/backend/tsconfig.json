@@ -2,7 +2,8 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": [
     "@tsconfig/strictest/tsconfig.json",
-    "@tsconfig/node20/tsconfig.json"
+    "@tsconfig/node20/tsconfig.json",
+    "../../tsconfig.base.json"
   ],
   "compilerOptions": {
     "module": "ESNext",

@@ -4,7 +4,7 @@ import { useVisitAccount } from "@/containers/AccountHistory";
 import { useQuery } from "@/containers/Apollo";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
-import { Permission } from "@/gql/graphql";
+import { AccountPermission } from "@/gql/graphql";
 import { PageLoader } from "@/ui/PageLoader";
 import {
   TabLink,
@@ -28,7 +28,7 @@ const AccountQuery = graphql(`
 type Account = NonNullable<DocumentType<typeof AccountQuery>["account"]>;
 
 type OutletContext = {
-  hasWritePermission: boolean;
+  permissions: AccountPermission[];
 };
 
 export const useAccountContext = () => {
@@ -55,7 +55,9 @@ const AccountTabs = ({ account }: { account: Account }) => {
         tabId={tab.selectedId || null}
         className="flex flex-1 flex-col"
       >
-        <Outlet context={{ hasWritePermission: true } as OutletContext} />
+        <Outlet
+          context={{ permissions: account.permissions } as OutletContext}
+        />
       </TabLinkPanel>
     </>
   );
@@ -77,7 +79,7 @@ export const Account = () => {
   if (!account) {
     return <NotFound />;
   }
-  if (!account.permissions.includes("read" as Permission)) {
+  if (!account.permissions.includes(AccountPermission.View)) {
     return <NotFound />;
   }
   return <AccountTabs account={account} />;

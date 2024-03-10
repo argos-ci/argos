@@ -45,7 +45,7 @@ export async function joinSSOTeams(input: {
   // with the given GitHub account as a member
   // and where the user is not already a member
   const teams = await Team.query()
-    .select("teams.id")
+    .select("teams.id", "teams.defaultUserLevel")
     .joinRelated("ssoGithubAccount.members")
     .where("ssoGithubAccount:members.githubMemberId", input.githubAccountId)
     .whereNotExists(
@@ -60,7 +60,7 @@ export async function joinSSOTeams(input: {
       teams.map((team) => ({
         teamId: team.id,
         userId: input.userId,
-        userLevel: "member" as const,
+        userLevel: team.defaultUserLevel,
       })),
     );
   }

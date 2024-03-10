@@ -7,7 +7,9 @@ import {
   Account,
   Plan,
   Project,
+  ProjectUser,
   Subscription,
+  TeamUser,
 } from "@/database/models/index.js";
 import {
   encodeStripeClientReferenceId,
@@ -16,14 +18,14 @@ import {
 } from "@/stripe/index.js";
 
 import {
-  IPermission,
+  IAccountPermission,
   IAccountSubscriptionProvider,
   IAccountSubscriptionStatus,
   IResolvers,
   ITrialStatus,
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
-import { getWritableAccount } from "../services/account.js";
+import { getAdminAccount } from "../services/account.js";
 import { unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 import { checkAccountSlug } from "@/database/services/account.js";
@@ -33,6 +35,7 @@ import {
 } from "@/gitlab/index.js";
 import { invariant } from "@/util/invariant.js";
 import { getAvatarColor, githubAvatarUrlFactory } from "../services/avatar.js";
+import { assertUnreachable } from "@/util/unreachable.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -70,6 +73,11 @@ export const typeDefs = gql`
     expired
   }
 
+  enum AccountPermission {
+    admin
+    view
+  }
+
   interface Account implements Node {
     id: ID!
     stripeCustomerId: String
@@ -88,11 +96,10 @@ export const typeDefs = gql`
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
-    permissions: [Permission!]!
-    projects(after: Int!, first: Int!): ProjectConnection!
+    permissions: [AccountPermission!]!
+    projects(after: Int = 0, first: Int = 30): ProjectConnection!
     avatar: AccountAvatar!
     paymentProvider: AccountSubscriptionProvider
-    vercelConfiguration: VercelConfiguration
     gitlabAccessToken: String
     glNamespaces: GlApiNamespaceConnection
   }
@@ -126,11 +133,17 @@ const accountById = async (
   args: { id: string },
   ctx: Context,
 ) => {
-  if (!ctx.auth) return null;
+  if (!ctx.auth) {
+    return null;
+  }
   const account = await Account.query().findById(args.id);
-  if (!account) return null;
-  const hasReadPermission = await account.$checkReadPermission(ctx.auth.user);
-  if (!hasReadPermission) return null;
+  if (!account) {
+    return null;
+  }
+  const permissions = await account.$getPermissions(ctx.auth.user);
+  if (!permissions.includes("view")) {
+    return null;
+  }
   return account;
 };
 
@@ -155,19 +168,65 @@ export const resolvers: IResolvers = {
         subscriberId: ctx.auth.user.id,
       });
     },
-    projects: async (account, args) => {
-      const result = await Project.query()
+    projects: async (account, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+      const projectsQuery = Project.query()
         .where("accountId", account.id)
         // Sort by most recently created project or build
         .orderByRaw(
           `greatest(projects."createdAt", (select max("createdAt") from builds where builds."projectId" = projects.id)) desc`,
         )
         .range(args.after, args.after + args.first - 1);
-      return paginateResult({
-        after: args.after,
-        first: args.first,
-        result,
-      });
+
+      switch (account.type) {
+        case "user": {
+          if (account.userId !== auth.user.id) {
+            throw unauthenticated();
+          }
+
+          const result = await projectsQuery;
+          return paginateResult({
+            after: args.after,
+            first: args.first,
+            result,
+          });
+        }
+        case "team": {
+          const teamUserQuery = TeamUser.query().where({
+            teamId: account.id,
+            userId: auth.user.id,
+          });
+
+          const result = await projectsQuery.where((qb) => {
+            // User is a team member or owner
+            qb.whereExists(
+              teamUserQuery.clone().whereIn("userLevel", ["owner", "member"]),
+            ).orWhere((qb) => {
+              // User is a contributor
+              qb.whereExists(
+                teamUserQuery.clone().where("userLevel", "contributor"),
+              )
+                // And is a contributor to the project
+                .whereExists(
+                  ProjectUser.query()
+                    .whereRaw(`projects.id = project_users."projectId"`)
+                    .where("userId", auth.user.id),
+                );
+            });
+          });
+
+          return paginateResult({
+            after: args.after,
+            first: args.first,
+            result,
+          });
+        }
+        default:
+          assertUnreachable(account.type);
+      }
     },
     hasPaidPlan: async (account) => {
       const manager = account.$getSubscriptionManager();
@@ -245,19 +304,18 @@ export const resolvers: IResolvers = {
       return manager.getPlan();
     },
     permissions: async (account, _args, ctx) => {
-      if (!ctx.auth) {
-        return [];
-      }
-      const writable = await account.$checkWritePermission(ctx.auth.user);
-      return writable
-        ? [IPermission.Read, IPermission.Write]
-        : [IPermission.Read];
+      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+      return permissions as IAccountPermission[];
     },
     gitlabAccessToken: async (account, _args, ctx) => {
-      if (!ctx.auth) return null;
-      const writable = await account.$checkWritePermission(ctx.auth.user);
-      if (!writable) return account.gitlabAccessToken ? `••••••••` : null;
-      return account.gitlabAccessToken || null;
+      if (!account.gitlabAccessToken) {
+        return null;
+      }
+      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+      if (!permissions.includes("admin")) {
+        return `••••••••`;
+      }
+      return account.gitlabAccessToken;
     },
     paymentProvider: async (account) => {
       if (account.type === "user") {
@@ -317,15 +375,6 @@ export const resolvers: IResolvers = {
         color,
       };
     },
-    vercelConfiguration: async (account, _args, ctx) => {
-      if (!account.vercelConfigurationId) return null;
-      const configuration = await ctx.loaders.VercelConfiguration.load(
-        account.vercelConfigurationId,
-      );
-      if (!configuration) return null;
-      if (configuration.deleted) return null;
-      return configuration;
-    },
     glNamespaces: async (account) => {
       const client = await getGitlabClientFromAccount(account);
       if (!client) return null;
@@ -346,13 +395,14 @@ export const resolvers: IResolvers = {
   },
   Query: {
     account: async (_root, args, ctx) => {
-      if (!ctx.auth) return null;
       const account = await Account.query().findOne({ slug: args.slug });
-      if (!account) return null;
-      const hasReadPermission = await account.$checkReadPermission(
-        ctx.auth.user,
-      );
-      if (!hasReadPermission) return null;
+      if (!account) {
+        return null;
+      }
+      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+      if (!permissions.includes("view")) {
+        return null;
+      }
       return account;
     },
     accountById,
@@ -361,7 +411,7 @@ export const resolvers: IResolvers = {
   Mutation: {
     updateAccount: async (_root, args, ctx) => {
       const { id, ...input } = args.input;
-      const account = await getWritableAccount({ id, user: ctx.auth?.user });
+      const account = await getAdminAccount({ id, user: ctx.auth?.user });
 
       const data: PartialModelObject<Account> = {};
 
@@ -430,7 +480,7 @@ export const resolvers: IResolvers = {
     },
     terminateTrial: async (_root, args, ctx) => {
       const { accountId } = args;
-      const account = await getWritableAccount({
+      const account = await getAdminAccount({
         id: accountId,
         user: ctx.auth?.user,
       });

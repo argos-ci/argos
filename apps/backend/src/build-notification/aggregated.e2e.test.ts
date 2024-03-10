@@ -51,8 +51,6 @@ describe("#getAggregatedNotification", () => {
         description: "No diff detected",
         githubState: "success",
         gitlabState: "success",
-        vercelStatus: "completed",
-        vercelConclusion: "succeeded",
       });
     });
   });
@@ -98,8 +96,6 @@ describe("#getAggregatedNotification", () => {
         description: "Diff detected",
         githubState: "failure",
         gitlabState: "failed",
-        vercelStatus: "completed",
-        vercelConclusion: "failed",
       });
     });
 
@@ -167,8 +163,6 @@ describe("#getAggregatedNotification", () => {
         description: "Diff accepted",
         githubState: "success",
         gitlabState: "success",
-        vercelStatus: null,
-        vercelConclusion: null,
       });
     });
   });

@@ -1,28 +1,31 @@
-import type { RelationMappings } from "objection";
+import type { RelationMappings, RelationExpression } from "objection";
 
 import config from "@/config/index.js";
 
 import { generateRandomHexString } from "../services/crypto.js";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
-import { Account } from "./Account.js";
+import { Account, AccountPermission } from "./Account.js";
 import { TeamUser } from "./TeamUser.js";
 import { User } from "./User.js";
 import { GithubAccount } from "./GithubAccount.js";
+import { assertUnreachable } from "@/util/unreachable.js";
 
 export class Team extends Model {
   static override tableName = "teams";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: [],
+    required: ["defaultUserLevel"],
     properties: {
       inviteSecret: { type: ["null", "string"] },
       ssoGithubAccountId: { type: ["null", "string"] },
+      defaultUserLevel: { type: "string", enum: ["member", "contributor"] },
     },
   });
 
   inviteSecret!: string | null;
   ssoGithubAccountId!: string | null;
+  defaultUserLevel!: "member" | "contributor";
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -111,12 +114,23 @@ export class Team extends Model {
     }
   }
 
-  static async verifyInviteToken(token: string): Promise<Team | null> {
+  static async verifyInviteToken(
+    token: string,
+    options: {
+      withGraphFetched?: RelationExpression<Team>;
+    } = {},
+  ): Promise<Team | null> {
     const payload = Team.parseInviteToken(token);
     if (!payload) {
       return null;
     }
-    const team = await Team.query().findById(payload.teamId);
+    const teamQuery = Team.query().findById(payload.teamId);
+
+    if (options?.withGraphFetched) {
+      teamQuery.withGraphFetched(options.withGraphFetched);
+    }
+
+    const team = await teamQuery;
 
     if (!team) {
       return null;
@@ -128,30 +142,35 @@ export class Team extends Model {
     return team;
   }
 
-  async $checkWritePermission(user: User) {
-    return Team.checkWritePermission(this.id, user);
-  }
+  static async getPermissions(
+    teamId: string,
+    user: User | null,
+  ): Promise<AccountPermission[]> {
+    if (!user) {
+      return [];
+    }
 
-  static async checkWritePermission(teamId: string, user: User) {
-    if (!user) return false;
-    if (user.staff) return true;
+    if (user.staff) {
+      return ["admin", "view"];
+    }
+
     const teamUser = await TeamUser.query()
-      .select("id")
-      .findOne({ userId: user.id, teamId: teamId, userLevel: "owner" });
-    return Boolean(teamUser);
-  }
-
-  async $checkReadPermission(user: User) {
-    return Team.checkReadPermission(this.id, user);
-  }
-
-  static async checkReadPermission(teamId: string, user: User) {
-    if (!user) return false;
-    if (user.staff) return true;
-    const teamUser = await TeamUser.query()
-      .select("id")
+      .select("id", "userLevel")
       .findOne({ userId: user.id, teamId: teamId });
-    return Boolean(teamUser);
+
+    if (!teamUser) {
+      return [];
+    }
+
+    switch (teamUser.userLevel) {
+      case "owner":
+        return ["admin", "view"];
+      case "member":
+      case "contributor":
+        return ["view"];
+      default:
+        assertUnreachable(teamUser.userLevel);
+    }
   }
 
   async $getInviteLink() {

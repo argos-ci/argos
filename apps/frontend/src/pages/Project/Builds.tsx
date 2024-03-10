@@ -21,12 +21,12 @@ import { useProjectContext } from ".";
 import { NotFound } from "../NotFound";
 import { BuildNameFilter, useBuildNameFilter } from "./BuildNameFilter";
 import { GettingStarted } from "./GettingStarted";
+import { ProjectPermission } from "@/gql/graphql";
 
 const ProjectQuery = graphql(`
   query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
-      permissions
       repository {
         __typename
         id
@@ -278,7 +278,8 @@ const BuildsList = ({
 };
 
 const PageContent = (props: { accountSlug: string; projectName: string }) => {
-  const { hasWritePermission } = useProjectContext();
+  const { permissions } = useProjectContext();
+  const hasReviewPermission = permissions.includes(ProjectPermission.Review);
   const [buildName, setBuildName] = useBuildNameFilter();
   const projectResult = useQuery(ProjectQuery, {
     variables: {
@@ -361,7 +362,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   }
 
   if (builds.pageInfo.totalCount === 0) {
-    if (hasWritePermission) {
+    if (hasReviewPermission) {
       return (
         <Container className="py-10">
           <GettingStarted project={project} />

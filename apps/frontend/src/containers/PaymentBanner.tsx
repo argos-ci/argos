@@ -5,7 +5,7 @@ import { Link as RouterLink, useParams } from "react-router-dom";
 import { useQuery } from "@/containers/Apollo";
 import { TeamUpgradeDialogButton } from "@/containers/Team/UpgradeDialog";
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Permission, AccountSubscriptionStatus } from "@/gql/graphql";
+import { AccountPermission, AccountSubscriptionStatus } from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
 import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
@@ -193,7 +193,7 @@ export const PaymentBanner = memo(
       ),
       pendingCancelAt: pendingCancelAt,
     });
-    const userIsOwner = permissions.includes(Permission.Write);
+    const userIsAdmin = permissions.includes(AccountPermission.Admin);
 
     if (!message) {
       return null;
@@ -203,7 +203,7 @@ export const PaymentBanner = memo(
       <Banner className="flex justify-center" color={bannerColor ?? "neutral"}>
         <Container className="flex items-center justify-center gap-2">
           <p>{message}</p>
-          {userIsOwner &&
+          {userIsAdmin &&
             (subscriptionStatus === AccountSubscriptionStatus.PastDue &&
             stripeCustomerId ? (
               <StripePortalLink

@@ -11,6 +11,7 @@
       "GlApiNamespaceConnection",
       "GlApiProjectConnection",
       "ProjectConnection",
+      "ProjectContributorConnection",
       "ScreenshotDiffConnection",
       "TeamGithubMemberConnection",
       "TeamMemberConnection",
@@ -31,6 +32,7 @@
       "GlApiProject",
       "Plan",
       "Project",
+      "ProjectContributor",
       "Screenshot",
       "ScreenshotBucket",
       "ScreenshotDiff",
@@ -46,10 +48,6 @@
     "Repository": [
       "GithubRepository",
       "GitlabProject"
-    ],
-    "VercelApiProjectLink": [
-      "VercelApiProjectLinkGithub",
-      "VercelApiProjectLinkOther"
     ]
   }
 }

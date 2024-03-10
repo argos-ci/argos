@@ -11,7 +11,7 @@ import {
   User,
 } from "@/database/models/index.js";
 
-export const getWritableProject = async (args: {
+export const getAdminProject = async (args: {
   id: string;
   user: User | undefined | null;
 }): Promise<Project> => {
@@ -19,8 +19,8 @@ export const getWritableProject = async (args: {
     throw new Error("Unauthorized");
   }
   const project = await Project.query().findById(args.id).throwIfNotFound();
-  const hasWritePermission = await project.$checkWritePermission(args.user);
-  if (!hasWritePermission) {
+  const permissions = await project.$getPermissions(args.user);
+  if (!permissions.includes("admin")) {
     throw new Error("Unauthorized");
   }
   return project;
@@ -30,7 +30,7 @@ export const deleteProject = async (args: {
   id: string;
   user: User | undefined | null;
 }) => {
-  const project = await getWritableProject({
+  const project = await getAdminProject({
     id: args.id,
     user: args.user,
   });

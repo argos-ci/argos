@@ -79,10 +79,12 @@ const UnlinkGitlabProjectMutation = graphql(`
 
 const UpdateEnablePrCommentMutation = graphql(`
   mutation ProjectGitRepository_updateEnablePrComment(
-    $id: ID!
-    $enable: Boolean!
+    $projectId: ID!
+    $enabled: Boolean!
   ) {
-    updateProjectPrComment(input: { id: $id, enable: $enable }) {
+    updateProjectPrComment(
+      input: { projectId: $projectId, enabled: $enabled }
+    ) {
       id
       prCommentEnabled
     }
@@ -196,7 +198,7 @@ const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
 };
 
 type Inputs = {
-  prCommentEnabled: boolean;
+  enabled: boolean;
 };
 
 const GitOptionsForm = ({
@@ -205,15 +207,15 @@ const GitOptionsForm = ({
   project: ProjectGitRepository_ProjectFragment;
 }) => {
   const form = useForm<Inputs>({
-    defaultValues: { prCommentEnabled: project.prCommentEnabled },
+    defaultValues: { enabled: project.prCommentEnabled },
   });
   const client = useApolloClient();
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     await client.mutate({
       mutation: UpdateEnablePrCommentMutation,
       variables: {
-        id: project.id,
-        enable: data.prCommentEnabled,
+        projectId: project.id,
+        enabled: data.enabled,
       },
     });
   };
@@ -223,7 +225,7 @@ const GitOptionsForm = ({
       <Form onSubmit={onSubmit}>
         <div className="mx-4 mb-4">
           <FormCheckbox
-            {...form.register("prCommentEnabled")}
+            {...form.register("enabled")}
             label="Enable pull request comments"
           />
         </div>

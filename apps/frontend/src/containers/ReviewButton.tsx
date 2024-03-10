@@ -1,7 +1,11 @@
 import { useMutation } from "@apollo/client";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { BuildStatus, Permission, ValidationStatus } from "@/gql/graphql";
+import {
+  BuildStatus,
+  ProjectPermission,
+  ValidationStatus,
+} from "@/gql/graphql";
 import { Button, ButtonArrow } from "@/ui/Button";
 import {
   Menu,
@@ -128,18 +132,12 @@ const BaseReviewButton = ({
   );
 };
 
-interface DisabledReviewButtonProps {
-  build: BaseReviewButtonProps["build"];
-  tooltip: React.ReactNode;
-}
-
-const DisabledReviewButton = ({
-  build,
-  tooltip,
-}: DisabledReviewButtonProps) => {
+const DisabledReviewButton = ({ tooltip }: { tooltip: React.ReactNode }) => {
   return (
     <Tooltip content={tooltip} variant="info">
-      <BaseReviewButton build={build} disabled />
+      <Button accessibleWhenDisabled disabled>
+        Review changes
+      </Button>
     </Tooltip>
   );
 };
@@ -156,17 +154,9 @@ export const ReviewButton = (props: {
     return null;
   }
 
-  if (!project.permissions.includes("write" as Permission)) {
+  if (!project.permissions.includes(ProjectPermission.Review)) {
     return (
-      <DisabledReviewButton
-        build={project.build}
-        tooltip={
-          <>
-            You must be part of <strong>{project.account.slug}</strong> team to
-            review changes.
-          </>
-        }
-      ></DisabledReviewButton>
+      <DisabledReviewButton tooltip="You must be a reviewer to approve or reject changes." />
     );
   }
 

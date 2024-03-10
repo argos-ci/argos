@@ -15,6 +15,9 @@ const config: CodegenConfig = {
     "apps/frontend/src/gql-fragments.json": {
       plugins: ["fragment-matcher"],
     },
+    "apps/backend/src/graphql/__generated__/schema.gql": {
+      plugins: ["schema-ast"],
+    },
     "apps/backend/src/graphql/__generated__/resolver-types.ts": {
       plugins: ["typescript", "typescript-resolvers"],
       config: {
@@ -35,6 +38,7 @@ const config: CodegenConfig = {
           GlApiNamespace: "../../gitlab/index.js#GlApiNamespace",
           GlApiProject: "../../gitlab/index.js#GlApiProject",
           Plan: "../../database/models/index.js#Plan",
+          ProjectContributor: "../../database/models/index.js#ProjectUser",
           Screenshot: "../../database/models/index.js#Screenshot",
           ScreenshotBucket: "../../database/models/index.js#ScreenshotBucket",
           ScreenshotDiff: "../../database/models/index.js#ScreenshotDiff",
@@ -45,11 +49,6 @@ const config: CodegenConfig = {
             "../../database/models/index.js#GithubAccountMember",
           Test: "../../database/models/index.js#Test",
           User: "../../database/models/index.js#Account",
-          VercelApiProject: "../../vercel/index.js#VercelApiProject",
-          VercelApiTeam: "../../vercel/index.js#VercelApiTeam",
-          VercelConfiguration:
-            "../../database/models/index.js#VercelConfiguration",
-          VercelProject: "../../database/models/index.js#VercelProject",
         },
       },
     },

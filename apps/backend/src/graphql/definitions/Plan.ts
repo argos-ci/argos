@@ -9,5 +9,6 @@ export const typeDefs = gql`
     displayName: String!
     usageBased: Boolean!
     githubSsoIncluded: Boolean!
+    fineGrainedAccessControlIncluded: Boolean!
   }
 `;

@@ -2,23 +2,23 @@ import { RelationMappings } from "objection";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { User } from "./User.js";
-import { Team } from "./Team.js";
+import { Project } from "./Project.js";
 
-export class TeamUser extends Model {
-  static override tableName = "team_users";
+export class ProjectUser extends Model {
+  static override tableName = "project_users";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["userId", "teamId", "userLevel"],
+    required: ["userId", "projectId", "userLevel"],
     properties: {
       userId: { type: "string" },
-      teamId: { type: "string" },
-      userLevel: { type: "string", enum: ["owner", "member", "contributor"] },
+      projectId: { type: "string" },
+      userLevel: { type: "string", enum: ["admin", "reviewer", "viewer"] },
     },
   });
 
   userId!: string;
-  teamId!: string;
-  userLevel!: "owner" | "member" | "contributor";
+  projectId!: string;
+  userLevel!: "admin" | "reviewer" | "viewer";
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -26,16 +26,16 @@ export class TeamUser extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: User,
         join: {
-          from: "team_users.userId",
+          from: "project_users.userId",
           to: "users.id",
         },
       },
-      team: {
+      project: {
         relation: Model.BelongsToOneRelation,
-        modelClass: Team,
+        modelClass: Project,
         join: {
-          from: "team_users.teamId",
-          to: "teams.id",
+          from: "project_users.projectId",
+          to: "projects.id",
         },
       },
     };

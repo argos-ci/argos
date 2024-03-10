@@ -28,7 +28,6 @@ import { ProjectReference } from "./pages/Project/Reference";
 import { ProjectSettings } from "./pages/Project/Settings";
 // import { Tests } from "./pages/Project/Tests";
 import { Signup } from "./pages/Signup";
-import { VercelCallback } from "./pages/Vercel";
 import { TooltipProvider } from "./ui/Tooltip";
 import { NewProject } from "./pages/NewProject";
 
@@ -40,10 +39,6 @@ const router = createBrowserRouter([
   {
     path: `/auth/${AuthProvider.GitLab}/callback`,
     element: <AuthCallback provider={AuthProvider.GitLab} />,
-  },
-  {
-    path: "/vercel/callback",
-    element: <VercelCallback />,
   },
   {
     path: "/:accountSlug/:projectName/builds/:buildNumber",

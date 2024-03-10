@@ -7,17 +7,19 @@ import {
   Build,
   GitlabProject,
   Project,
+  ProjectUser,
   Screenshot,
-  Test,
   User,
-  VercelConfiguration,
 } from "@/database/models/index.js";
 
-import { IPermission, IResolvers } from "../__generated__/resolver-types.js";
-import { deleteProject, getWritableProject } from "../services/project.js";
+import {
+  IProjectPermission,
+  IProjectUserLevel,
+  IResolvers,
+} from "../__generated__/resolver-types.js";
+import { deleteProject, getAdminProject } from "../services/project.js";
 import { forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
-import { linkVercelProject } from "./Vercel.js";
 import {
   checkProjectName,
   resolveProjectName,
@@ -44,6 +46,31 @@ export const typeDefs = gql`
     private: Boolean!
   }
 
+  type ProjectContributorConnection implements Connection {
+    pageInfo: PageInfo!
+    edges: [ProjectContributor!]!
+  }
+
+  type ProjectContributor implements Node {
+    id: ID!
+    user: User!
+    project: Project!
+    level: ProjectUserLevel!
+  }
+
+  enum ProjectUserLevel {
+    admin
+    reviewer
+    viewer
+  }
+
+  enum ProjectPermission {
+    admin
+    review
+    view_settings
+    view
+  }
+
   type Project implements Node {
     id: ID!
     name: String!
@@ -56,11 +83,8 @@ export const typeDefs = gql`
     latestReferenceBuild: Build
     "Latest build"
     latestBuild: Build
-    "Tests associated to the repository"
-    tests(first: Int!, after: Int!): TestConnection!
-      @deprecated(reason: "Remove in future release")
-    "Determine if the current user has write access to the project"
-    permissions: [Permission!]!
+    "Determine permissions of the current user"
+    permissions: [ProjectPermission!]!
     "Owner of the repository"
     account: Account!
     "Repository associated to the project"
@@ -77,8 +101,6 @@ export const typeDefs = gql`
     currentPeriodScreenshots: Int!
     "Total screenshots used"
     totalScreenshots: Int!
-    "Vercel project"
-    vercelProject: VercelProject
     "Project slug"
     slug: String!
     "Pull request comment enabled"
@@ -87,6 +109,8 @@ export const typeDefs = gql`
     summaryCheck: SummaryCheck!
     "Build names"
     buildNames: [String!]!
+    "Contributors"
+    contributors(after: Int = 0, first: Int = 30): ProjectContributorConnection!
   }
 
   extend type Query {
@@ -149,19 +173,24 @@ export const typeDefs = gql`
     projectId: ID!
   }
 
-  input UnlinkVercelProjectInput {
-    projectId: ID!
-  }
-
-  input LinkVercelProjectInput {
-    projectId: ID!
-    configurationId: ID!
-    vercelProjectId: ID!
-  }
-
   input UpdateProjectPrCommentInput {
-    id: ID!
-    enable: Boolean!
+    projectId: ID!
+    enabled: Boolean!
+  }
+
+  input AddContributorToProjectInput {
+    projectId: ID!
+    userAccountId: ID!
+    level: ProjectUserLevel!
+  }
+
+  input RemoveContributorFromProjectInput {
+    projectId: ID!
+    userAccountId: ID!
+  }
+
+  type RemoveContributorFromProjectPayload {
+    projectContributorId: ID!
   }
 
   extend type Mutation {
@@ -179,16 +208,19 @@ export const typeDefs = gql`
     linkGitlabProject(input: LinkGitlabProjectInput!): Project!
     "Unlink Gitlab Project"
     unlinkGitlabProject(input: UnlinkGitlabProjectInput!): Project!
-    "Link Vercel project"
-    linkVercelProject(input: LinkVercelProjectInput!): Project!
-    "Unlink Vercel project"
-    unlinkVercelProject(input: UnlinkVercelProjectInput!): Project!
     "Transfer Project to another account"
     transferProject(input: TransferProjectInput!): Project!
     "Delete Project"
     deleteProject(id: ID!): Boolean!
     "Set project pull request comment"
     updateProjectPrComment(input: UpdateProjectPrCommentInput!): Project!
+    "Add contributor to project"
+    addOrUpdateProjectContributor(
+      input: AddContributorToProjectInput!
+    ): ProjectContributor!
+    removeContributorFromProject(
+      input: RemoveContributorFromProjectInput!
+    ): RemoveContributorFromProjectPayload!
   }
 `;
 
@@ -237,8 +269,8 @@ const importGithubProject = async (props: {
   const account = await Account.query()
     .findOne({ slug: props.accountSlug })
     .throwIfNotFound();
-  const hasWritePermission = await account.$checkWritePermission(props.creator);
-  if (!hasWritePermission) {
+  const permissions = await account.$getPermissions(props.creator);
+  if (!permissions.includes("admin")) {
     throw forbidden();
   }
 
@@ -314,8 +346,8 @@ const importGitlabProject = async (props: {
     .findOne({ slug: props.accountSlug })
     .throwIfNotFound();
 
-  const hasWritePermission = await account.$checkWritePermission(props.creator);
-  if (!hasWritePermission) {
+  const permissions = await account.$getPermissions(props.creator);
+  if (!permissions.includes("admin")) {
     throw forbidden();
   }
 
@@ -353,10 +385,10 @@ export const resolvers: IResolvers = {
   Project: {
     token: async (project, _args, ctx) => {
       if (!ctx.auth) return null;
-      const hasWritePermission = await project.$checkWritePermission(
-        ctx.auth.user,
-      );
-      if (!hasWritePermission) return null;
+      const permissions = await project.$getPermissions(ctx.auth.user);
+      if (!permissions.includes("review")) {
+        return null;
+      }
       return project.token;
     },
     latestReferenceBuild: async (project) => {
@@ -394,22 +426,9 @@ export const resolvers: IResolvers = {
       });
       return build ?? null;
     },
-    tests: async (project, { first, after }) => {
-      // @TODO remove in future release
-      const result = await Test.query()
-        .where("projectId", project.id)
-        .range(after, after + first - 1);
-
-      return paginateResult({ result, first, after });
-    },
     permissions: async (project, _args, ctx) => {
-      if (!ctx.auth) return [IPermission.Read];
-      const hasWritePermission = await project.$checkWritePermission(
-        ctx.auth.user,
-      );
-      return hasWritePermission
-        ? [IPermission.Read, IPermission.Write]
-        : [IPermission.Read];
+      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
+      return permissions as IProjectPermission[];
     },
     account: async (project, _args, ctx) => {
       const account = await ctx.loaders.Account.load(project.accountId);
@@ -424,18 +443,6 @@ export const resolvers: IResolvers = {
         return ctx.loaders.GitlabProject.load(project.gitlabProjectId);
       }
       return null;
-    },
-    vercelProject: async (project, _args, ctx) => {
-      if (!project.vercelProjectId) return null;
-      const vercelProject = await ctx.loaders.VercelProject.load(
-        project.vercelProjectId,
-      );
-      invariant(vercelProject, "Vercel project not found");
-      const activeConfiguration = await vercelProject
-        .$relatedQuery("activeConfiguration")
-        .first();
-      if (!activeConfiguration) return null;
-      return vercelProject;
     },
     referenceBranch: async (project) => {
       return project.$getReferenceBranch();
@@ -473,6 +480,25 @@ export const resolvers: IResolvers = {
         .distinct("name");
       return builds.map((build) => build.name);
     },
+    contributors: async (project, args, ctx) => {
+      const { first, after } = args;
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const result = await ProjectUser.query()
+        .where("project_users.projectId", project.id)
+        .orderByRaw(
+          `(CASE WHEN project_users."userId" = ? THEN 0
+     ELSE project_users."id"
+     END) ASC
+    `,
+          ctx.auth.user.id,
+        )
+        .range(after, after + first - 1);
+
+      return paginateResult({ result, first, after });
+    },
   },
   Query: {
     project: async (_root, args, ctx) => {
@@ -481,12 +507,15 @@ export const resolvers: IResolvers = {
         "projects.name": args.projectName,
       });
 
-      if (!project) return null;
+      if (!project) {
+        return null;
+      }
 
-      const hasReadPermission = await project.$checkReadPermission(
-        ctx.auth?.user ?? null,
-      );
-      if (!hasReadPermission) return null;
+      const permssions = await project.$getPermissions(ctx.auth?.user ?? null);
+
+      if (!permssions.includes("view")) {
+        return null;
+      }
 
       return project;
     },
@@ -495,15 +524,33 @@ export const resolvers: IResolvers = {
         .joinRelated("account")
         .findById(args.id);
 
-      if (!project) return null;
+      if (!project) {
+        return null;
+      }
 
-      const hasReadPermission = await project.$checkReadPermission(
-        ctx.auth?.user ?? null,
-      );
-      if (!hasReadPermission) return null;
+      const permssions = await project.$getPermissions(ctx.auth?.user ?? null);
+
+      if (!permssions.includes("view")) {
+        return null;
+      }
 
       return project;
     },
+  },
+  ProjectContributor: {
+    user: async (projectUser, _args, ctx) => {
+      const account = await ctx.loaders.AccountFromRelation.load({
+        userId: projectUser.userId,
+      });
+      invariant(account, "Account not found");
+      return account;
+    },
+    project: async (projectUser, _args, ctx) => {
+      const project = await ctx.loaders.Project.load(projectUser.projectId);
+      invariant(project, "Project not found");
+      return project;
+    },
+    level: (projectUser) => projectUser.userLevel as IProjectUserLevel,
   },
   Mutation: {
     importGithubProject: async (_root, args, ctx) => {
@@ -528,7 +575,7 @@ export const resolvers: IResolvers = {
       });
     },
     updateProject: async (_root, args, ctx) => {
-      const project = await getWritableProject({
+      const project = await getAdminProject({
         id: args.input.id,
         user: ctx.auth?.user,
       });
@@ -562,7 +609,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const project = await getWritableProject({
+      const project = await getAdminProject({
         id: args.input.projectId,
         user: ctx.auth.user,
       });
@@ -579,7 +626,7 @@ export const resolvers: IResolvers = {
       });
     },
     unlinkGithubRepository: async (_root, args, ctx) => {
-      const project = await getWritableProject({
+      const project = await getAdminProject({
         id: args.input.projectId,
         user: ctx.auth?.user,
       });
@@ -593,7 +640,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const project = await getWritableProject({
+      const project = await getAdminProject({
         id: args.input.projectId,
         user: ctx.auth.user,
       });
@@ -615,7 +662,7 @@ export const resolvers: IResolvers = {
       });
     },
     unlinkGitlabProject: async (_root, args, ctx) => {
-      const project = await getWritableProject({
+      const project = await getAdminProject({
         id: args.input.projectId,
         user: ctx.auth?.user,
       });
@@ -624,41 +671,8 @@ export const resolvers: IResolvers = {
         gitlabProjectId: null,
       });
     },
-    linkVercelProject: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-
-      const vercelConfiguration = await VercelConfiguration.query()
-        .findById(args.input.configurationId)
-        .throwIfNotFound();
-
-      if (!vercelConfiguration.vercelAccessToken) {
-        throw new Error("Invariant: Vercel access token is missing");
-      }
-
-      await linkVercelProject({
-        vercelProjectId: args.input.vercelProjectId,
-        projectId: args.input.projectId,
-        creator: ctx.auth.user,
-        vercelConfiguration,
-        vercelAccessToken: vercelConfiguration.vercelAccessToken,
-      });
-
-      return Project.query().findById(args.input.projectId).throwIfNotFound();
-    },
-    unlinkVercelProject: async (_root, args, ctx) => {
-      const project = await getWritableProject({
-        id: args.input.projectId,
-        user: ctx.auth?.user,
-      });
-
-      return project.$query().patchAndFetch({
-        vercelProjectId: null,
-      });
-    },
     transferProject: async (_root, args, ctx) => {
-      const project = await getWritableProject({
+      const project = await getAdminProject({
         id: args.input.id,
         user: ctx.auth?.user,
       });
@@ -680,14 +694,95 @@ export const resolvers: IResolvers = {
       return true;
     },
     updateProjectPrComment: async (_root, args, ctx) => {
-      const project = await getWritableProject({
-        id: args.input.id,
-        user: ctx.auth?.user,
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      const project = await getAdminProject({
+        id: args.input.projectId,
+        user: ctx.auth.user,
       });
 
       return project
         .$query()
-        .patchAndFetch({ prCommentEnabled: args.input.enable });
+        .patchAndFetch({ prCommentEnabled: args.input.enabled });
+    },
+    addOrUpdateProjectContributor: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      const [project, userAccount] = await Promise.all([
+        getAdminProject({
+          id: args.input.projectId,
+          user: ctx.auth.user,
+        }),
+        ctx.loaders.Account.load(args.input.userAccountId),
+      ]);
+
+      if (!userAccount?.userId) {
+        throw new GraphQLError("User not found", {
+          extensions: {
+            code: "BAD_USER_INPUT",
+          },
+        });
+      }
+
+      const projectUser = await ProjectUser.query().findOne({
+        projectId: project.id,
+        userId: userAccount.userId,
+      });
+
+      if (projectUser) {
+        if (projectUser.userLevel !== args.input.level) {
+          return projectUser
+            .$query()
+            .patchAndFetch({ userLevel: args.input.level });
+        }
+
+        return projectUser;
+      }
+
+      return ProjectUser.query().insertAndFetch({
+        projectId: project.id,
+        userId: userAccount.userId,
+        userLevel: args.input.level,
+      });
+    },
+    removeContributorFromProject: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      const [project, userAccount] = await Promise.all([
+        Project.query().findById(args.input.projectId).throwIfNotFound(),
+        ctx.loaders.Account.load(args.input.userAccountId),
+      ]);
+
+      invariant(userAccount?.userId, "User not found");
+
+      const canRemove = await (async () => {
+        invariant(ctx.auth, "Auth not found");
+        if (ctx.auth.account.id === args.input.userAccountId) {
+          return true;
+        }
+        const permissions = await project.$getPermissions(ctx.auth.user);
+        return permissions.includes("admin");
+      })();
+
+      if (!canRemove) {
+        throw forbidden();
+      }
+
+      const projectUser = await ProjectUser.query()
+        .select("id")
+        .findOne({
+          projectId: project.id,
+          userId: userAccount.userId,
+        })
+        .throwIfNotFound();
+
+      const projectContributorId = projectUser.id;
+      await projectUser.$query().delete();
+
+      return { projectContributorId };
     },
   },
 };

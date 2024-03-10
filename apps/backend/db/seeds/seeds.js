@@ -8,7 +8,10 @@ function duplicate(obj, count) {
 export const seed = async (knex) => {
   const [smoothTeam, helloTeam] = await knex("teams")
     .returning("id")
-    .insert([timeStamps, timeStamps]);
+    .insert([
+      { ...timeStamps, defaultUserLevel: "member" },
+      { ...timeStamps, defaultUserLevel: "member" },
+    ]);
 
   const [gregUser, jeremyUser] = await knex("users")
     .returning("id")
@@ -488,6 +491,7 @@ export const seed = async (knex) => {
       githubPlanId: 7772,
       usageBased: false,
       githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
     },
     {
       ...timeStamps,
@@ -497,6 +501,7 @@ export const seed = async (knex) => {
       stripeProductId: "prod_MzEZEfBDYFIc53",
       usageBased: false,
       githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
     },
     {
       ...timeStamps,
@@ -506,6 +511,7 @@ export const seed = async (knex) => {
       stripeProductId: "prod_MzEavomA8VeCvW",
       usageBased: false,
       githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
     },
     {
       ...timeStamps,
@@ -515,6 +521,7 @@ export const seed = async (knex) => {
       stripeProductId: "prod_MzEawyq1kFcHEn",
       usageBased: false,
       githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
     },
     {
       ...timeStamps,
@@ -524,6 +531,7 @@ export const seed = async (knex) => {
       stripeProductId: "prod_Njgin72JdGT9Yu",
       usageBased: true,
       githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
     },
   ]);
 };

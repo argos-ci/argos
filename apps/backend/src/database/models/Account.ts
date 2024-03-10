@@ -10,8 +10,8 @@ import { Subscription } from "./Subscription.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
-import { VercelConfiguration } from "./VercelConfiguration.js";
 import { invariant } from "@/util/invariant.js";
+import { assertUnreachable } from "@/util/unreachable.js";
 
 export type AccountAvatar = {
   getUrl(args: { size?: number }): string | Promise<string> | null;
@@ -33,6 +33,8 @@ type AccountSubscriptionManager = {
   getSubscriptionStatus(): Promise<Subscription["status"] | null>;
 };
 
+export type AccountPermission = "admin" | "view";
+
 export class Account extends Model {
   static override tableName = "accounts";
 
@@ -51,7 +53,6 @@ export class Account extends Model {
         pattern: "^[-a-z0-9]+$",
       },
       githubAccountId: { type: ["string", "null"] },
-      vercelConfigurationId: { type: "string" },
     },
   });
 
@@ -62,7 +63,6 @@ export class Account extends Model {
   name!: string | null;
   slug!: string;
   githubAccountId!: string | null;
-  vercelConfigurationId!: string | null;
   gitlabAccessToken!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
@@ -102,14 +102,6 @@ export class Account extends Model {
           to: "github_accounts.id",
         },
       },
-      vercelConfiguration: {
-        relation: Model.HasOneRelation,
-        modelClass: VercelConfiguration,
-        join: {
-          from: "accounts.vercelConfigurationId",
-          to: "vercel_configurations.id",
-        },
-      },
       subscriptions: {
         relation: Model.HasManyRelation,
         modelClass: Subscription,
@@ -132,7 +124,6 @@ export class Account extends Model {
   user?: User | null;
   team?: Team | null;
   githubAccount?: GithubAccount | null;
-  vercelConfiguration?: VercelConfiguration | null;
   subscriptions?: Subscription[];
   projects?: Project[];
 
@@ -361,37 +352,21 @@ export class Account extends Model {
     return result.total ? Number(result.total) : 0;
   }
 
-  async $checkWritePermission(user: User) {
-    return Account.checkWritePermission(this, user);
-  }
-
-  static async checkWritePermission(account: Account, user: User) {
-    if (!user) return false;
-    if (user.staff) return true;
+  static async getPermissions(
+    account: Account,
+    user: User | null,
+  ): Promise<AccountPermission[]> {
     switch (account.type) {
       case "user":
-        return User.checkWritePermission(account.userId as string, user);
+        return User.getPermissions(account.userId as string, user);
       case "team":
-        return Team.checkWritePermission(account.teamId as string, user);
+        return Team.getPermissions(account.teamId as string, user);
       default:
-        throw new Error(`Invariant incoherent account type`);
+        assertUnreachable(account.type);
     }
   }
 
-  async $checkReadPermission(user: User) {
-    return Account.checkReadPermission(this, user);
-  }
-
-  static async checkReadPermission(account: Account, user: User) {
-    if (!user) return false;
-    if (user.staff) return true;
-    switch (account.type) {
-      case "user":
-        return User.checkReadPermission(account.userId as string, user);
-      case "team":
-        return Team.checkReadPermission(account.teamId as string, user);
-      default:
-        throw new Error(`Invariant incoherent account type`);
-    }
+  async $getPermissions(user: User | null): Promise<AccountPermission[]> {
+    return Account.getPermissions(this, user);
   }
 }
