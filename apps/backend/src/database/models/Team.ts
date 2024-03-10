@@ -5,7 +5,11 @@ import config from "@/config/index.js";
 import { generateRandomHexString } from "../services/crypto.js";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
-import { Account, AccountPermission } from "./Account.js";
+import {
+  ALL_ACCOUNT_PERMISSIONS,
+  Account,
+  AccountPermission,
+} from "./Account.js";
 import { TeamUser } from "./TeamUser.js";
 import { User } from "./User.js";
 import { GithubAccount } from "./GithubAccount.js";
@@ -151,7 +155,7 @@ export class Team extends Model {
     }
 
     if (user.staff) {
-      return ["admin", "view"];
+      return ALL_ACCOUNT_PERMISSIONS;
     }
 
     const teamUser = await TeamUser.query()
@@ -164,7 +168,7 @@ export class Team extends Model {
 
     switch (teamUser.userLevel) {
       case "owner":
-        return ["admin", "view"];
+        return ALL_ACCOUNT_PERMISSIONS;
       case "member":
       case "contributor":
         return ["view"];

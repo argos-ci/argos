@@ -21,6 +21,13 @@ import { TeamUser } from "./TeamUser.js";
 
 type ProjectPermission = "admin" | "review" | "view_settings" | "view";
 
+const ALL_PROJECT_PERMISSIONS: ProjectPermission[] = [
+  "admin",
+  "review",
+  "view_settings",
+  "view",
+];
+
 export class Project extends Model {
   static override tableName = "projects";
 
@@ -123,20 +130,18 @@ export class Project extends Model {
     invariant(project.account);
 
     const defaultPermissions: ProjectPermission[] = isPublic ? ["view"] : [];
-    const allPermissions: ProjectPermission[] = [
-      "admin",
-      "review",
-      "view_settings",
-      "view",
-    ];
 
     if (!user) {
       return defaultPermissions;
     }
 
+    if (user.staff) {
+      return ALL_PROJECT_PERMISSIONS;
+    }
+
     if (project.account.type === "user") {
       if (project.account.userId === user.id) {
-        return allPermissions;
+        return ALL_PROJECT_PERMISSIONS;
       }
       return defaultPermissions;
     }
@@ -158,14 +163,14 @@ export class Project extends Model {
     switch (teamUser.userLevel) {
       case "owner":
       case "member":
-        return allPermissions;
+        return ALL_PROJECT_PERMISSIONS;
       case "contributor": {
         if (!projectUser) {
           return defaultPermissions;
         }
         switch (projectUser.userLevel) {
           case "admin":
-            return allPermissions;
+            return ALL_PROJECT_PERMISSIONS;
           case "reviewer":
             return ["review", "view_settings", "view"];
           case "viewer":

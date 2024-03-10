@@ -2,7 +2,11 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
-import { Account, AccountPermission } from "./Account.js";
+import {
+  ALL_ACCOUNT_PERMISSIONS,
+  Account,
+  AccountPermission,
+} from "./Account.js";
 import { Team } from "./Team.js";
 import { GitlabUser } from "./GitlabUser.js";
 
@@ -83,10 +87,10 @@ export class User extends Model {
       return [];
     }
     if (user.staff) {
-      return ["admin", "view"];
+      return ALL_ACCOUNT_PERMISSIONS;
     }
     if (userId === user.id) {
-      return ["admin", "view"];
+      return ALL_ACCOUNT_PERMISSIONS;
     }
     return [];
   }
