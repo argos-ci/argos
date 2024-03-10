@@ -4,6 +4,7 @@ import { Menu, MenuButton, MenuItem, useMenuState } from "@/ui/Menu";
 import { Tooltip } from "@/ui/Tooltip";
 import { MoreVerticalIcon } from "lucide-react";
 import { AccountAvatar } from "./AccountAvatar";
+import { ProjectUserLevel, TeamUserLevel } from "@/gql/graphql";
 
 export function RemoveMenu(props: {
   label: string;
@@ -71,3 +72,15 @@ export function UserListRow(props: {
     </ListRow>
   );
 }
+
+export const TeamMemberLabel: Record<TeamUserLevel, string> = {
+  owner: "Owner",
+  member: "Member",
+  contributor: "Contributor",
+};
+
+export const ProjectContributorLabel: Record<ProjectUserLevel, string> = {
+  admin: "Admin",
+  viewer: "Viewer",
+  reviewer: "Reviewer",
+};

@@ -27,7 +27,7 @@ import {
 } from "@/ui/Dialog";
 import { getGraphQLErrorMessage } from "@/ui/Form";
 import { FormError } from "@/ui/FormError";
-import { List, ListRow } from "@/ui/List";
+import { List, ListRow, ListTitle } from "@/ui/List";
 import {
   Select,
   SelectArrow,
@@ -42,7 +42,7 @@ import { useAssertAuthTokenPayload, useAuthTokenPayload } from "../Auth";
 import { invariant } from "@/util/invariant";
 import { GithubAccountLink } from "../GithubAccountLink";
 import { MarkGithubIcon } from "@primer/octicons-react";
-import { RemoveMenu, UserListRow } from "../UserList";
+import { RemoveMenu, TeamMemberLabel, UserListRow } from "../UserList";
 
 const NB_MEMBERS_PER_PAGE = 10;
 
@@ -337,7 +337,7 @@ const LevelSelect = (props: {
     <>
       <Select state={select} className="w-full text-sm text-low">
         <div className="flex w-full items-center justify-between gap-2">
-          {levelLabel[value]}
+          {TeamMemberLabel[value]}
           <SelectArrow />
         </div>
       </Select>
@@ -414,12 +414,6 @@ const InviteLinkButton = (props: InviteLinkButtonProps) => {
   );
 };
 
-const levelLabel: Record<TeamUserLevel, string> = {
-  owner: "Owner",
-  member: "Member",
-  contributor: "Contributor",
-};
-
 function TeamMembersList(props: {
   teamId: string;
   teamName: string;
@@ -445,9 +439,7 @@ function TeamMembersList(props: {
     !props.hasGithubSSO && data.team.members.pageInfo.totalCount === 1;
   return (
     <div className="my-4">
-      {props.hasGithubSSO && (
-        <h3 className="font-semibold mb-2 text-sm">Invited members</h3>
-      )}
+      {props.hasGithubSSO && <ListTitle>Invited members</ListTitle>}
       {members.length > 0 ? (
         <List>
           {members.map((member) => {
@@ -457,7 +449,7 @@ function TeamMembersList(props: {
               <UserListRow key={user.id} user={user}>
                 {isMe || !props.amOwner ? (
                   <div className="text-sm text-low">
-                    {levelLabel[member.level]}
+                    {TeamMemberLabel[member.level]}
                   </div>
                 ) : (
                   <div>
@@ -569,11 +561,11 @@ function TeamGithubMembersList(props: {
   const members = data.team.githubMembers.edges;
   return (
     <div className="my-4">
-      <h3 className="font-semibold mb-2 text-sm">
+      <ListTitle>
         <MarkGithubIcon className="w-4 h-4 mr-1.5" />
         GitHub members synced from{" "}
         <GithubAccountLink githubAccount={githubAccount} />
-      </h3>
+      </ListTitle>
       <List>
         {members.map((member) => {
           const teamMember = member.teamMember ?? null;
@@ -601,7 +593,7 @@ function TeamGithubMembersList(props: {
               {isMe || !props.amOwner || !teamMember ? (
                 <div className="text-sm text-low">
                   {teamMember ? (
-                    levelLabel[teamMember.level]
+                    TeamMemberLabel[teamMember.level]
                   ) : (
                     <Tooltip content="This user is not yet registered on Argos, you will be able to modify its permissions after its first login.">
                       <div>Pending</div>

@@ -103,3 +103,7 @@ export function ListEmpty(props: {
     </div>
   );
 }
+
+export function ListTitle(props: { children: React.ReactNode }) {
+  return <h3 className="font-semibold mb-2 text-sm">{props.children}</h3>;
+}

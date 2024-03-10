@@ -71,7 +71,7 @@ export const typeDefs = gql`
       after: Int = 0
       first: Int = 30
       search: String
-      userLevel: TeamUserLevel
+      levels: [TeamUserLevel!]
     ): TeamMemberConnection!
     githubMembers(after: Int = 0, first: Int = 30): TeamGithubMemberConnection
     inviteLink: String
@@ -236,7 +236,7 @@ export const resolvers: IResolvers = {
       return teamUser;
     },
     members: async (account, args, ctx) => {
-      const { first, after, userLevel, search } = args;
+      const { first, after, levels, search } = args;
       if (!ctx.auth) {
         throw unauthenticated();
       }
@@ -259,8 +259,8 @@ export const resolvers: IResolvers = {
         )
         .range(after, after + first - 1);
 
-      if (userLevel) {
-        query.where("team_users.userLevel", userLevel);
+      if (levels && levels.length > 0) {
+        query.whereIn("team_users.userLevel", levels);
       }
 
       if (search) {

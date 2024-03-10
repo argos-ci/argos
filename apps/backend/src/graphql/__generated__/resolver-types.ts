@@ -943,8 +943,8 @@ export type ITeamGithubMembersArgs = {
 export type ITeamMembersArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  levels?: InputMaybe<Array<ITeamUserLevel>>;
   search?: InputMaybe<Scalars['String']['input']>;
-  userLevel?: InputMaybe<ITeamUserLevel>;
 };
 
 

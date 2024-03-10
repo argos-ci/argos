@@ -10,7 +10,13 @@ import {
 } from "@/ui/Card";
 import { useQuery } from "../Apollo";
 import { invariant } from "@/util/invariant";
-import { List, ListEmpty, ListLoadMore } from "@/ui/List";
+import {
+  List,
+  ListEmpty,
+  ListLoadMore,
+  ListRowLoader,
+  ListTitle,
+} from "@/ui/List";
 import { Button } from "@/ui/Button";
 import {
   Dialog,
@@ -32,7 +38,12 @@ import {
   useSelectState,
 } from "@/ui/Select";
 import { ProjectPermission, ProjectUserLevel } from "@/gql/graphql";
-import { RemoveMenu, UserListRow } from "../UserList";
+import {
+  ProjectContributorLabel,
+  RemoveMenu,
+  TeamMemberLabel,
+  UserListRow,
+} from "../UserList";
 import { useAssertAuthTokenPayload } from "../Auth";
 import { useNavigate } from "react-router-dom";
 import { FormError } from "@/ui/FormError";
@@ -334,82 +345,95 @@ function ProjectContributorsList(props: {
       }
     },
   });
-  const { data, fetchMore } = useQuery(ProjectContributorsQuery, {
+  const result = useQuery(ProjectContributorsQuery, {
     variables: {
       projectId: props.projectId,
       after: 0,
       first: NB_MEMBERS_PER_PAGE,
     },
   });
-  if (!data) {
-    return null;
-  }
-  invariant(data.project, "Project not found");
-  const contributors = data.project.contributors.edges;
   return (
     <>
       <div className="my-4">
-        {contributors.length > 0 ? (
-          <List>
-            {contributors.map((contributor) => {
-              const isMe = authPayload.account.id === contributor.user.id;
-              const user = contributor.user;
-              return (
-                <UserListRow key={contributor.id} user={user}>
-                  <div>
-                    {props.readOnly ? (
-                      projectUserLevelLabel[contributor.level]
-                    ) : (
-                      <ProjectContributorLevelSelect
-                        projectId={props.projectId}
-                        userId={user.id}
-                        level={contributor.level}
-                      />
-                    )}
-                  </div>
-                  {(isMe || !props.readOnly) && (
-                    <RemoveMenu
-                      label="Contributor actions"
-                      actionLabel={
-                        isMe ? "Leave Project" : "Remove from Project"
-                      }
-                      onRemove={() => setRemovedUser(user)}
-                    />
-                  )}
-                </UserListRow>
-              );
-            })}
-          </List>
-        ) : (
-          <ListEmpty>You haven't added any contributors yet.</ListEmpty>
-        )}
-        {data.project.contributors.pageInfo.hasNextPage && (
-          <ListLoadMore
-            onClick={() => {
-              fetchMore({
-                variables: { after: contributors.length },
-                updateQuery: (prev, { fetchMoreResult }) => {
-                  if (!fetchMoreResult?.project || !prev?.project) {
-                    return prev;
-                  }
-                  return {
-                    project: {
-                      ...prev.project,
-                      contributors: {
-                        ...prev.project.contributors,
-                        ...fetchMoreResult.project.contributors,
-                        edges: [
-                          ...prev.project.contributors.edges,
-                          ...fetchMoreResult.project.contributors.edges,
-                        ],
+        <ListTitle>Project contributors</ListTitle>
+        {(() => {
+          if (!result.data) {
+            return (
+              <List>
+                <ListRowLoader>Loading contributors...</ListRowLoader>
+              </List>
+            );
+          }
+          invariant(result.data.project, "Project not found");
+          const contributors = result.data.project.contributors.edges;
+          return (
+            <>
+              {contributors.length > 0 ? (
+                <List>
+                  {contributors.map((contributor) => {
+                    const isMe = authPayload.account.id === contributor.user.id;
+                    const user = contributor.user;
+                    return (
+                      <UserListRow key={contributor.id} user={user}>
+                        <div>
+                          {props.readOnly ? (
+                            <div className="text-sm">
+                              {ProjectContributorLabel[contributor.level]}
+                            </div>
+                          ) : (
+                            <ProjectContributorLevelSelect
+                              projectId={props.projectId}
+                              userId={user.id}
+                              level={contributor.level}
+                            />
+                          )}
+                        </div>
+                        {(isMe || !props.readOnly) && (
+                          <RemoveMenu
+                            label="Contributor actions"
+                            actionLabel={
+                              isMe ? "Leave Project" : "Remove from Project"
+                            }
+                            onRemove={() => setRemovedUser(user)}
+                          />
+                        )}
+                      </UserListRow>
+                    );
+                  })}
+                </List>
+              ) : (
+                <ListEmpty>You haven't added any contributors yet.</ListEmpty>
+              )}
+              {result.data.project.contributors.pageInfo.hasNextPage && (
+                <ListLoadMore
+                  onClick={() => {
+                    result.fetchMore({
+                      variables: { after: contributors.length },
+                      updateQuery: (prev, { fetchMoreResult }) => {
+                        if (!fetchMoreResult?.project || !prev?.project) {
+                          return prev;
+                        }
+                        return {
+                          project: {
+                            ...prev.project,
+                            contributors: {
+                              ...prev.project.contributors,
+                              ...fetchMoreResult.project.contributors,
+                              edges: [
+                                ...prev.project.contributors.edges,
+                                ...fetchMoreResult.project.contributors.edges,
+                              ],
+                            },
+                          },
+                        };
                       },
-                    },
-                  };
-                },
-              });
-            }}
-          />
-        )}
+                    });
+                  }}
+                />
+              )}
+            </>
+          );
+        })()}
       </div>
       <Dialog state={removeDialog}>
         {removedUser ? (
@@ -435,7 +459,7 @@ function ProjectContributorsList(props: {
 }
 
 const TeamContributorsQuery = graphql(`
-  query TeamContributorsQuery(
+  query ProjectContributors_TeamContributors(
     $teamAccountId: ID!
     $projectId: ID!
     $search: String
@@ -447,7 +471,7 @@ const TeamContributorsQuery = graphql(`
       members(
         after: $after
         first: $first
-        userLevel: contributor
+        levels: [contributor]
         search: $search
       ) {
         edges {
@@ -483,12 +507,6 @@ const AddOrUpdateContributorMutation = graphql(`
     }
   }
 `);
-
-const projectUserLevelLabel: Record<ProjectUserLevel, string> = {
-  admin: "Admin",
-  viewer: "Viewer",
-  reviewer: "Reviewer",
-};
 
 function ProjectContributorLevelSelect(props: {
   projectId: string;
@@ -531,7 +549,7 @@ function ProjectContributorLevelSelect(props: {
     <>
       <Select state={select} className="w-full text-sm text-low">
         <div className="flex w-full items-center justify-between gap-2">
-          {value ? projectUserLevelLabel[value] : "Add as"}
+          {value ? ProjectContributorLabel[value] : "Add as"}
           <SelectArrow />
         </div>
       </Select>
@@ -539,19 +557,19 @@ function ProjectContributorLevelSelect(props: {
       <SelectPopover state={select} aria-label="Levels" portal>
         <SelectItem state={select} value="viewer">
           <div className="flex flex-col">
-            <div>{projectUserLevelLabel.viewer}</div>
-            <div className="text-low">See builds</div>
+            <div>{ProjectContributorLabel.viewer}</div>
+            <div className="text-low">See builds and screenshots</div>
           </div>
         </SelectItem>
         <SelectItem state={select} value="reviewer">
           <div className="flex flex-col">
-            <div>{projectUserLevelLabel.reviewer}</div>
-            <div className="text-low">Review builds</div>
+            <div>{ProjectContributorLabel.reviewer}</div>
+            <div className="text-low">See and review builds</div>
           </div>
         </SelectItem>
         <SelectItem state={select} value="admin">
           <div className="flex flex-col">
-            <div>{projectUserLevelLabel.admin}</div>
+            <div>{ProjectContributorLabel.admin}</div>
             <div className="text-low">
               Admin level access to the entire project
             </div>
@@ -751,6 +769,113 @@ function ProjectContributorsAdd(props: {
   );
 }
 
+const TeamMembersQuery = graphql(`
+  query ProjectContributors_TeamMembers(
+    $teamAccountId: ID!
+    $search: String
+    $after: Int
+    $first: Int
+  ) {
+    team: teamById(id: $teamAccountId) {
+      id
+      members(
+        after: $after
+        first: $first
+        levels: [owner, member]
+        search: $search
+      ) {
+        edges {
+          id
+          level
+          user {
+            id
+            ...UserListRow_user
+          }
+        }
+        pageInfo {
+          hasNextPage
+        }
+      }
+    }
+  }
+`);
+
+function TeamMembersList(props: { projectId: string; teamAccountId: string }) {
+  const result = useQuery(TeamMembersQuery, {
+    variables: {
+      teamAccountId: props.teamAccountId,
+      after: 0,
+      first: NB_MEMBERS_PER_PAGE,
+    },
+  });
+  const data = result.data || result.previousData;
+  const loading = !data;
+
+  return (
+    <div className="my-4">
+      <ListTitle>Team members with global access</ListTitle>
+      {(() => {
+        if (loading) {
+          return (
+            <List>
+              <ListRowLoader>Loading team members...</ListRowLoader>
+            </List>
+          );
+        }
+        invariant(data.team, "Team not found");
+        const members = data.team.members.edges;
+
+        return (
+          <>
+            <List>
+              {members.map((member) => {
+                const user = member.user;
+                return (
+                  <UserListRow key={user.id} user={user}>
+                    <div className="text-sm">
+                      Team {TeamMemberLabel[member.level]} → Project{" "}
+                      {ProjectContributorLabel.admin}
+                    </div>
+                  </UserListRow>
+                );
+              })}
+            </List>
+            {data.team.members.pageInfo.hasNextPage && (
+              <ListLoadMore
+                onClick={() => {
+                  result.fetchMore({
+                    variables: {
+                      after: members.length,
+                    },
+                    updateQuery: (prev, { fetchMoreResult }) => {
+                      if (!fetchMoreResult?.team || !prev?.team) {
+                        return prev;
+                      }
+                      return {
+                        team: {
+                          ...prev.team,
+                          members: {
+                            ...prev.team.members,
+                            ...fetchMoreResult.team.members,
+                            edges: [
+                              ...prev.team.members.edges,
+                              ...fetchMoreResult.team.members.edges,
+                            ],
+                          },
+                        },
+                      };
+                    },
+                  });
+                }}
+              />
+            )}
+          </>
+        );
+      })()}
+    </div>
+  );
+}
+
 export function ProjectContributors(props: {
   project: FragmentType<typeof ProjectFragment>;
 }) {
@@ -761,14 +886,19 @@ export function ProjectContributors(props: {
   return (
     <Card>
       <CardBody>
-        <CardTitle>Contributors</CardTitle>
+        <CardTitle>Access management</CardTitle>
         <CardParagraph>
-          Give access to this project to your team members.
+          Select which team members can access this project and determine their
+          level of access.
         </CardParagraph>
         <ProjectContributorsList
           readOnly={!hasAdminPermission}
           projectId={project.id}
           projectName={project.name}
+        />
+        <TeamMembersList
+          projectId={project.id}
+          teamAccountId={project.account.id}
         />
       </CardBody>
       <CardFooter className="flex items-center justify-between">

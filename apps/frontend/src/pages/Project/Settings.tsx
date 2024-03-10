@@ -67,6 +67,7 @@ export const ProjectSettings = () => {
   }
 
   const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
+  const hasReviewPermission = permissions.includes(ProjectPermission.Review);
 
   return (
     <Container className="py-10">
@@ -97,7 +98,7 @@ export const ProjectSettings = () => {
           return (
             <SettingsLayout>
               {hasAdminPermission && <ProjectChangeName project={project} />}
-              <ProjectToken project={project} />
+              {hasReviewPermission && <ProjectToken project={project} />}
               {hasAdminPermission && <ProjectGitRepository project={project} />}
               {hasAdminPermission && (
                 <ProjectReferenceBranch project={project} />
