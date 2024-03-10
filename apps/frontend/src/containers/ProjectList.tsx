@@ -98,8 +98,10 @@ export const ProjectList = (props: {
 
   if (projects.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center">
-        <div className="mb-2 text-2xl font-medium">No projects yet!</div>
+      <div className="flex flex-col items-center justify-center mt-10">
+        <div className="mb-2 text-2xl font-medium">
+          There's no projects yet.
+        </div>
         {props.canCreateProject && (
           <>
             <div className="mb-4 text-low">

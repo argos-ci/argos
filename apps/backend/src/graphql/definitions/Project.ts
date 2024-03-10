@@ -9,7 +9,6 @@ import {
   Project,
   ProjectUser,
   Screenshot,
-  Test,
   User,
 } from "@/database/models/index.js";
 
@@ -84,9 +83,6 @@ export const typeDefs = gql`
     latestReferenceBuild: Build
     "Latest build"
     latestBuild: Build
-    "Tests associated to the repository"
-    tests(first: Int!, after: Int!): TestConnection!
-      @deprecated(reason: "Remove in future release")
     "Determine permissions of the current user"
     permissions: [ProjectPermission!]!
     "Owner of the repository"
@@ -429,14 +425,6 @@ export const resolvers: IResolvers = {
         number: args.number,
       });
       return build ?? null;
-    },
-    tests: async (project, { first, after }) => {
-      // @TODO remove in future release
-      const result = await Test.query()
-        .where("projectId", project.id)
-        .range(after, after + first - 1);
-
-      return paginateResult({ result, first, after });
     },
     permissions: async (project, _args, ctx) => {
       const permissions = await project.$getPermissions(ctx.auth?.user ?? null);

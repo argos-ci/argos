@@ -47,8 +47,8 @@ export type Account = {
 
 
 export type AccountProjectsArgs = {
-  after: Scalars['Int']['input'];
-  first: Scalars['Int']['input'];
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type AccountAvatar = {
@@ -594,11 +594,6 @@ export type Project = Node & {
   slug: Scalars['String']['output'];
   /** Summary check */
   summaryCheck: SummaryCheck;
-  /**
-   * Tests associated to the repository
-   * @deprecated Remove in future release
-   */
-  tests: TestConnection;
   token?: Maybe<Scalars['String']['output']>;
   /** Total screenshots used */
   totalScreenshots: Scalars['Int']['output'];
@@ -620,12 +615,6 @@ export type ProjectBuildsArgs = {
 export type ProjectContributorsArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
-};
-
-
-export type ProjectTestsArgs = {
-  after: Scalars['Int']['input'];
-  first: Scalars['Int']['input'];
 };
 
 export type ProjectConnection = Connection & {
@@ -955,8 +944,8 @@ export type TeamMembersArgs = {
 
 
 export type TeamProjectsArgs = {
-  after: Scalars['Int']['input'];
-  first: Scalars['Int']['input'];
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export enum TeamDefaultUserLevel {
@@ -1101,8 +1090,8 @@ export type User = Account & Node & {
 
 
 export type UserProjectsArgs = {
-  after: Scalars['Int']['input'];
-  first: Scalars['Int']['input'];
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 

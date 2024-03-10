@@ -93,6 +93,13 @@ export function ListLoadMore(props: { onClick: () => void }) {
   );
 }
 
-export function ListEmpty(props: { children: React.ReactNode }) {
-  return <div className="my-2 font-medium">{props.children}</div>;
+export function ListEmpty(props: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={clsx("py-2 font-medium", props.className)}>
+      {props.children}
+    </div>
+  );
 }

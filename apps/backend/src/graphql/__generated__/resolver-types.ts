@@ -52,8 +52,8 @@ export type IAccount = {
 
 
 export type IAccountProjectsArgs = {
-  after: Scalars['Int']['input'];
-  first: Scalars['Int']['input'];
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type IAccountAvatar = {
@@ -599,11 +599,6 @@ export type IProject = INode & {
   slug: Scalars['String']['output'];
   /** Summary check */
   summaryCheck: ISummaryCheck;
-  /**
-   * Tests associated to the repository
-   * @deprecated Remove in future release
-   */
-  tests: ITestConnection;
   token?: Maybe<Scalars['String']['output']>;
   /** Total screenshots used */
   totalScreenshots: Scalars['Int']['output'];
@@ -625,12 +620,6 @@ export type IProjectBuildsArgs = {
 export type IProjectContributorsArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
-};
-
-
-export type IProjectTestsArgs = {
-  after: Scalars['Int']['input'];
-  first: Scalars['Int']['input'];
 };
 
 export type IProjectConnection = IConnection & {
@@ -960,8 +949,8 @@ export type ITeamMembersArgs = {
 
 
 export type ITeamProjectsArgs = {
-  after: Scalars['Int']['input'];
-  first: Scalars['Int']['input'];
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export enum ITeamDefaultUserLevel {
@@ -1106,8 +1095,8 @@ export type IUser = IAccount & INode & {
 
 
 export type IUserProjectsArgs = {
-  after: Scalars['Int']['input'];
-  first: Scalars['Int']['input'];
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1684,7 +1673,6 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   repository?: Resolver<Maybe<IResolversTypes['Repository']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   summaryCheck?: Resolver<IResolversTypes['SummaryCheck'], ParentType, ContextType>;
-  tests?: Resolver<IResolversTypes['TestConnection'], ParentType, ContextType, RequireFields<IProjectTestsArgs, 'after' | 'first'>>;
   token?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   totalScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

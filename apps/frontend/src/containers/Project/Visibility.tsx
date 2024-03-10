@@ -90,9 +90,6 @@ export const ProjectVisibility = (props: {
               Make a public project private in order to restrict access to
               builds and screenshots to only authorized users.
             </CardParagraph>
-            <CardParagraph>
-              This will also mark the screenshots as private and use up credit.
-            </CardParagraph>
             <FormRadioGroup>
               <FormRadio
                 {...form.register("visibility")}

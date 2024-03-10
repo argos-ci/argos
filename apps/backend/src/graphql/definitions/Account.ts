@@ -7,7 +7,9 @@ import {
   Account,
   Plan,
   Project,
+  ProjectUser,
   Subscription,
+  TeamUser,
 } from "@/database/models/index.js";
 import {
   encodeStripeClientReferenceId,
@@ -33,6 +35,7 @@ import {
 } from "@/gitlab/index.js";
 import { invariant } from "@/util/invariant.js";
 import { getAvatarColor, githubAvatarUrlFactory } from "../services/avatar.js";
+import { assertUnreachable } from "@/util/unreachable.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -94,7 +97,7 @@ export const typeDefs = gql`
     hasForcedPlan: Boolean!
     pendingCancelAt: DateTime
     permissions: [AccountPermission!]!
-    projects(after: Int!, first: Int!): ProjectConnection!
+    projects(after: Int = 0, first: Int = 30): ProjectConnection!
     avatar: AccountAvatar!
     paymentProvider: AccountSubscriptionProvider
     gitlabAccessToken: String
@@ -165,19 +168,65 @@ export const resolvers: IResolvers = {
         subscriberId: ctx.auth.user.id,
       });
     },
-    projects: async (account, args) => {
-      const result = await Project.query()
+    projects: async (account, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+      const projectsQuery = Project.query()
         .where("accountId", account.id)
         // Sort by most recently created project or build
         .orderByRaw(
           `greatest(projects."createdAt", (select max("createdAt") from builds where builds."projectId" = projects.id)) desc`,
         )
         .range(args.after, args.after + args.first - 1);
-      return paginateResult({
-        after: args.after,
-        first: args.first,
-        result,
-      });
+
+      switch (account.type) {
+        case "user": {
+          if (account.userId !== auth.user.id) {
+            throw unauthenticated();
+          }
+
+          const result = await projectsQuery;
+          return paginateResult({
+            after: args.after,
+            first: args.first,
+            result,
+          });
+        }
+        case "team": {
+          const teamUserQuery = TeamUser.query().where({
+            teamId: account.id,
+            userId: auth.user.id,
+          });
+
+          const result = await projectsQuery.where((qb) => {
+            // User is a team member or owner
+            qb.whereExists(
+              teamUserQuery.clone().whereIn("userLevel", ["owner", "member"]),
+            ).orWhere((qb) => {
+              // User is a contributor
+              qb.whereExists(
+                teamUserQuery.clone().where("userLevel", "contributor"),
+              )
+                // And is a contributor to the project
+                .whereExists(
+                  ProjectUser.query()
+                    .whereRaw(`projects.id = project_users."projectId"`)
+                    .where("userId", auth.user.id),
+                );
+            });
+          });
+
+          return paginateResult({
+            after: args.after,
+            first: args.first,
+            result,
+          });
+        }
+        default:
+          assertUnreachable(account.type);
+      }
     },
     hasPaidPlan: async (account) => {
       const manager = account.$getSubscriptionManager();

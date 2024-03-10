@@ -613,6 +613,7 @@ function TeamContributorsList(props: {
 
   const data = result.data || result.previousData;
   const loading = !data;
+  const noContributors = data?.team?.members.edges.length === 0 && !search;
 
   React.useEffect(() => {
     if (!loading) {
@@ -629,7 +630,7 @@ function TeamContributorsList(props: {
           type="search"
           placeholder="Search for a team member"
           className="w-full mb-2 search-cancel:appearance-none"
-          disabled={loading}
+          disabled={loading || noContributors}
           onChange={(e) => setSearch(e.target.value)}
         />
         {result.loading && (
@@ -651,8 +652,11 @@ function TeamContributorsList(props: {
                   if (!search) {
                     return (
                       <ListEmpty>
-                        There's no member with the role contributor in this team
-                        yet.
+                        There are no members with the role of contributor in
+                        this team yet. Only members assigned the contributor
+                        role can be added as contributors to a project. Members
+                        with other roles automatically have access to all
+                        projects.
                       </ListEmpty>
                     );
                   }
@@ -725,7 +729,7 @@ function ProjectContributorsAdd(props: {
           </Button>
         )}
       </DialogDisclosure>
-      <Dialog state={dialog}>
+      <Dialog state={dialog} className="!max-w-xl">
         <DialogBody>
           <DialogTitle>Add contributor</DialogTitle>
           <DialogText>

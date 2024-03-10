@@ -57,7 +57,7 @@ export const typeDefs = gql`
     subscriptionStatus: AccountSubscriptionStatus
     oldPaidSubscription: AccountSubscription
     permissions: [AccountPermission!]!
-    projects(after: Int!, first: Int!): ProjectConnection!
+    projects(after: Int = 0, first: Int = 30): ProjectConnection!
     avatar: AccountAvatar!
     trialStatus: TrialStatus
     hasForcedPlan: Boolean!
