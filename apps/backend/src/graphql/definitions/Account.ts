@@ -196,7 +196,7 @@ export const resolvers: IResolvers = {
         }
         case "team": {
           const teamUserQuery = TeamUser.query().where({
-            teamId: account.id,
+            teamId: account.teamId,
             userId: auth.user.id,
           });
 
