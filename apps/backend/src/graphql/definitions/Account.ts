@@ -181,6 +181,16 @@ export const resolvers: IResolvers = {
         )
         .range(args.after, args.after + args.first - 1);
 
+      // Staff can view all projects
+      if (auth.user.staff) {
+        const result = await projectsQuery;
+        return paginateResult({
+          after: args.after,
+          first: args.first,
+          result,
+        });
+      }
+
       switch (account.type) {
         case "user": {
           if (account.userId !== auth.user.id) {
