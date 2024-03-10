@@ -35,6 +35,8 @@ type AccountSubscriptionManager = {
 
 export type AccountPermission = "admin" | "view";
 
+export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = ["admin", "view"];
+
 export class Account extends Model {
   static override tableName = "accounts";
 
