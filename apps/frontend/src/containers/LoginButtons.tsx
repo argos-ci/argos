@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import config from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { GitLabLoginButton } from "@/containers/GitLab";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 import { clsx } from "clsx";
 
 export const LoginButtons = (props: {

@@ -7,7 +7,7 @@ import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { AccountPermission } from "@/gql/graphql";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 
 const AccountFragment = graphql(`
   fragment AccountGitLab_Account on Account {

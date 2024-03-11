@@ -143,7 +143,7 @@ const BuildRow = React.memo(
           <div className="hidden xl:block w-96">
             {build.pullRequest && (
               <PullRequestButton
-                fakeAnchor
+                emulatedAnchor
                 pullRequest={build.pullRequest}
                 className="max-w-full"
               />
@@ -279,7 +279,7 @@ const BuildsList = ({
 
 const PageContent = (props: { accountSlug: string; projectName: string }) => {
   const { permissions } = useProjectContext();
-  const hasReviewPermission = permissions.includes(ProjectPermission.Review);
+  const hasReviewerPermission = permissions.includes(ProjectPermission.Review);
   const [buildName, setBuildName] = useBuildNameFilter();
   const projectResult = useQuery(ProjectQuery, {
     variables: {
@@ -362,7 +362,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   }
 
   if (builds.pageInfo.totalCount === 0) {
-    if (hasReviewPermission) {
+    if (hasReviewerPermission) {
       return (
         <Container className="py-10">
           <GettingStarted project={project} />

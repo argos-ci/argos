@@ -12,7 +12,7 @@ import {
   DialogTitle,
   useDialogState,
 } from "@/ui/Dialog";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 
 type CheckoutStatus = "success" | "cancel" | null;
 

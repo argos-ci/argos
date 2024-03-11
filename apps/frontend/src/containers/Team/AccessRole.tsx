@@ -5,7 +5,7 @@ import { FragmentType, graphql, useFragment } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 import { TeamDefaultUserLevel } from "@/gql/graphql";
 import { FormRadio, FormRadioGroup } from "@/ui/FormRadio";
 

@@ -1,5 +1,5 @@
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 
 const GithubAccountLinkFragment = graphql(`
   fragment GithubAccountLink_GithubAccount on GithubAccount {

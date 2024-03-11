@@ -4,7 +4,7 @@ import { Link as RouterLink } from "react-router-dom";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 
 export const ErrorPage = () => {
   return (

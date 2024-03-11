@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useAssertAuthToken } from "@/containers/Auth";
 
 import { Button, ButtonProps } from "./Button";
-import { anchorClassNames } from "./Link";
+import { anchorClassNames } from "./Anchor";
 import { useEventCallback } from "./useEventCallback";
 
 async function getStripePortalLink({

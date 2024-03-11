@@ -16,7 +16,7 @@ import {
   GitlabProjectList,
   GitlabProjectListProps,
 } from "../GitlabProjectList";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 import { AccountPermission } from "@/gql/graphql";
 import { getItem, removeItem, setItem } from "@/util/storage";
 import { TextInput } from "@/ui/TextInput";

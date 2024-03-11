@@ -6,7 +6,7 @@ import { LoginButtons } from "@/containers/LoginButtons";
 import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 
 export const Login = () => {
   const loggedIn = useIsLoggedIn();

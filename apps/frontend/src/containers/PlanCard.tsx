@@ -43,7 +43,8 @@ import {
   DialogTitle,
   useDialogState,
 } from "@/ui/Dialog";
-import { Anchor, Link } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
+import { Link } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";

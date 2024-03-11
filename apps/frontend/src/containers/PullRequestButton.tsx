@@ -12,6 +12,7 @@ import * as React from "react";
 import { ImageAvatar } from "./ImageAvatar";
 import { Time } from "@/ui/Time";
 import { clsx } from "clsx";
+import { EmulatedAnchor } from "@/ui/Anchor";
 
 const PullRequestStatusIconFragment = graphql(`
   fragment PullRequestStatusIcon_PullRequest on PullRequest {
@@ -164,32 +165,15 @@ const PullRequestButtonFragment = graphql(`
   }
 `);
 
-const FakeAnchor = React.forwardRef(
-  (
-    { href, ...props }: { href: string } & React.HTMLAttributes<HTMLDivElement>,
-    ref: React.ForwardedRef<HTMLDivElement>,
-  ) => {
-    return (
-      <div
-        ref={ref}
-        onClick={(event) => {
-          event.preventDefault();
-          window.open(href, "_blank")?.focus();
-        }}
-        {...props}
-      />
-    );
-  },
-);
-
 export const PullRequestButton = (props: {
   pullRequest: FragmentType<typeof PullRequestButtonFragment>;
   size?: ButtonSize;
-  fakeAnchor?: boolean;
+  emulatedAnchor?: boolean;
   className?: string;
+  target?: string;
 }) => {
   const pullRequest = useFragment(PullRequestButtonFragment, props.pullRequest);
-  const Anchor = props.fakeAnchor ? FakeAnchor : "a";
+  const Anchor = props.emulatedAnchor ? EmulatedAnchor : "a";
   return (
     <Tooltip
       variant="info"
@@ -205,7 +189,7 @@ export const PullRequestButton = (props: {
         className={clsx("min-w-0 !bg-app", props.className)}
       >
         {(buttonProps) => (
-          <Anchor {...buttonProps} href={pullRequest.url}>
+          <Anchor {...buttonProps} href={pullRequest.url} target={props.target}>
             <>
               <PullRequestStatusIcon pullRequest={pullRequest} />
               {pullRequest.title ? (
