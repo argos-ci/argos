@@ -1,5 +1,5 @@
 import { Chip, ChipProps } from "@/ui/Chip";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 import { LinkIcon } from "lucide-react";
 
 export function UrlIndicator({

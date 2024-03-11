@@ -6,7 +6,7 @@ import { checkIsBuildEmpty } from "@/containers/Build";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useScrollListener } from "@/ui/useScrollListener";

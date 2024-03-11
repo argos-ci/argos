@@ -10,7 +10,7 @@ import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormCheckbox } from "@/ui/FormCheckbox";
 
 import { ConnectRepository } from "./ConnectRepository";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 import { getRepositoryIcon } from "../Repository";
 
 const ProjectFragment = graphql(`

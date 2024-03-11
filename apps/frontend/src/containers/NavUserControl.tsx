@@ -38,7 +38,7 @@ import { graphql } from "@/gql";
 import { useQuery } from "@apollo/client";
 import { InitialAvatar } from "./InitialAvatar";
 import { useBuildHotkeysDialogState } from "@/pages/Build/BuildHotkeysDialogState";
-import { HeadlessAnchor } from "@/ui/Link";
+import { HeadlessAnchor } from "@/ui/Anchor";
 
 const getColorModeLabel = (colorMode: ColorMode | "") => {
   switch (colorMode) {

@@ -1,5 +1,5 @@
 import { Chip } from "@/ui/Chip";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 import { Tooltip } from "@/ui/Tooltip";
 import { FlaskConical } from "lucide-react";
 

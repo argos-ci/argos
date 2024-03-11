@@ -6,7 +6,7 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 import { Pre } from "@/ui/Pre";
 
 const ProjectFragment = graphql(`

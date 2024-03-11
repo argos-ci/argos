@@ -1,6 +1,6 @@
 import config from "@/config";
 
-import { Anchor } from "./Link";
+import { Anchor } from "./Anchor";
 
 export const ContactLink = () => {
   return (

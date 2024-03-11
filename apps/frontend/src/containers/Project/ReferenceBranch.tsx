@@ -8,7 +8,7 @@ import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormCheckbox } from "@/ui/FormCheckbox";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { getRepositoryLabel } from "../Repository";
-import { Anchor } from "@/ui/Link";
+import { Anchor } from "@/ui/Anchor";
 
 const UpdateBaselineBranchMutation = graphql(`
   mutation ProjectReferenceBranch_updateProject(
