@@ -95,7 +95,10 @@ export function TeamAccessRole(props: {
           </CardBody>
           <FormCardFooter>
             Learn more about{" "}
-            <Anchor href="https://argos-ci.com/docs/team-access-roles" external>
+            <Anchor
+              href="https://argos-ci.com/docs/team-members-and-roles"
+              external
+            >
               access roles
             </Anchor>
             .

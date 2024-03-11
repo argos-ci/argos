@@ -51,6 +51,7 @@ import { getGraphQLErrorMessage } from "@/ui/Form";
 import { Loader } from "@/ui/Loader";
 import { TextInput } from "@/ui/TextInput";
 import { useDebounce } from "use-debounce";
+import { Anchor } from "@/ui/Anchor";
 
 const NB_MEMBERS_PER_PAGE = 10;
 
@@ -903,7 +904,16 @@ export function ProjectContributors(props: {
       <CardFooter className="flex items-center justify-between">
         {hasAdminPermission ? (
           <>
-            <div>Add team contributors to give access to this project.</div>
+            <div>
+              Learn more about{" "}
+              <Anchor
+                external
+                href="https://argos-ci.com/docs/team-members-and-roles"
+              >
+                access control management
+              </Anchor>
+              .
+            </div>
             <ProjectContributorsAdd
               projectId={project.id}
               teamAccountId={project.account.id}
