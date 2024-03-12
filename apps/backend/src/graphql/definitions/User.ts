@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import {
@@ -6,11 +7,10 @@ import {
   Subscription,
   User,
 } from "@/database/models/index.js";
-import { GhApiInstallation, getTokenOctokit } from "@/github/index.js";
+import { getTokenOctokit, GhApiInstallation } from "@/github/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { unauthenticated } from "../util.js";
-import { invariant } from "@/util/invariant.js";
 import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member

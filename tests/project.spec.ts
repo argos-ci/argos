@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { argosScreenshot } from "@argos-ci/playwright";
+import { expect, test } from "@playwright/test";
 
 test("project builds", async ({ page, browserName }) => {
   await page.goto("/smooth/big");

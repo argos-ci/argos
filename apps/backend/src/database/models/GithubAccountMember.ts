@@ -1,4 +1,5 @@
 import { RelationMappings } from "objection";
+
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";

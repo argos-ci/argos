@@ -1,7 +1,10 @@
-import { knex } from "@/database";
 import express from "express";
-import { asyncHandler } from "../util.js";
+
+import { knex } from "@/database";
 import { ScreenshotDiff } from "@/database/models/ScreenshotDiff.js";
+
+import { asyncHandler } from "../util.js";
+
 const router = express.Router();
 
 router.get("/status", (_req, res) => {

@@ -1,3 +1,6 @@
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
+
 import { getCommentHeader } from "@/database/index.js";
 import { Build, type BuildAggregatedStatus } from "@/database/models/index.js";
 
@@ -24,7 +27,7 @@ function getBuildStatusLabel(status: BuildAggregatedStatus): string {
     case "stable":
       return "✅ No change detected";
     default:
-      throw new Error("Unknown build status");
+      assertNever(status);
   }
 }
 
@@ -58,9 +61,7 @@ export const getCommentBody = async (props: {
         build.getUrl(),
       ]);
       const status = aggregateStatuses[index];
-      if (!status) {
-        throw new Error("Invariant: unknown build status");
-      }
+      invariant(status, "unknown build status");
       const statusMessage = getBuildStatusLabel(status);
       const review = status === "diffDetected" ? ` ([Review](${url}))` : "";
       return `| **${

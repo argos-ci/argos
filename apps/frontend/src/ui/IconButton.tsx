@@ -1,7 +1,7 @@
+import { cloneElement, forwardRef } from "react";
 import { Button as AriakitButton } from "ariakit/button";
 import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
-import { cloneElement, forwardRef } from "react";
 
 type IconButtonVariant = "contained" | "outline";
 type IconButtonColor = "danger" | "neutral";
@@ -37,9 +37,6 @@ export const IconButton = forwardRef<
     ref,
   ) => {
     const variantClassName = colorClassNames[variant][color];
-    if (!variantClassName) {
-      throw new Error(`Invalid color: ${color}`);
-    }
     return (
       <AriakitButton
         ref={ref}
@@ -49,7 +46,7 @@ export const IconButton = forwardRef<
           /* Group */
           "group-[]/button-group:rounded-none group-[]/button-group:first:rounded-l-lg group-[]/button-group:last:rounded-r-lg",
           /* Base */
-          "flex h-8 cursor-default items-center gap-2 rounded-lg border border-transparent p-[7px] text-sm transition disabled:opacity-disabled [&>*]:h-4 [&>*]:w-4",
+          "disabled:opacity-disabled flex h-8 cursor-default items-center gap-2 rounded-lg border border-transparent p-[7px] text-sm transition [&>*]:size-4",
           /* Focus */
           "focus:outline-none focus-visible:ring-4",
         )}

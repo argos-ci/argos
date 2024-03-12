@@ -1,10 +1,12 @@
 import * as React from "react";
+
+import { getItem, setItem } from "@/util/storage";
+
 import {
   decodeAuthToken,
   readAuthTokenCookie,
   useAuthTokenPayload,
 } from "./Auth";
-import { getItem, setItem } from "@/util/storage";
 
 const getStorageKey = (accountId: string) => {
   return `${accountId}:lastVisitedAccount`;

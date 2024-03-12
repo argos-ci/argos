@@ -1,8 +1,8 @@
-import { S3Client } from "@aws-sdk/client-s3";
 import { readFile } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { S3Client } from "@aws-sdk/client-s3";
 import { dirSync } from "tmp";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 

@@ -1,7 +1,10 @@
+import { invariant } from "@argos/util/invariant";
+
 import { Build, Project } from "@/database/models/index.js";
 import { getInstallationOctokit } from "@/github/index.js";
+import { getGitlabClientFromAccount, GitlabClient } from "@/gitlab/index.js";
 import { UnretryableError } from "@/job-core/index.js";
-import { GitlabClient, getGitlabClientFromAccount } from "@/gitlab/index.js";
+
 import {
   getBaseBucketForBuildAndCommit,
   queryBaseBucket,
@@ -50,9 +53,12 @@ const GithubStrategy: MergeBaseStrategy<{
 }> = {
   detect: (project: Project) => Boolean(project.githubRepository),
   getContext: async (project: Project) => {
-    if (!project.githubRepository?.githubAccount) {
-      throw new UnretryableError("Invariant: no github account found");
-    }
+    invariant(
+      project.githubRepository?.githubAccount,
+      "no github account found",
+      UnretryableError,
+    );
+
     const installation = project.githubRepository.activeInstallation;
     if (!installation) {
       return null;
@@ -114,13 +120,12 @@ const GitlabStrategy: MergeBaseStrategy<{
 }> = {
   detect: (project: Project) => Boolean(project.gitlabProject),
   getContext: async (project: Project) => {
-    if (!project.account) {
-      throw new UnretryableError("Invariant: no account found");
-    }
-
-    if (!project.gitlabProject) {
-      throw new UnretryableError("Invariant: no gitlab project found");
-    }
+    invariant(project.account, "no account found", UnretryableError);
+    invariant(
+      project.gitlabProject,
+      "no gitlab project found",
+      UnretryableError,
+    );
 
     const client = await getGitlabClientFromAccount(project.account);
 
@@ -155,15 +160,11 @@ export async function getBaseScreenshotBucket(build: Build) {
       "[project.[gitlabProject, githubRepository.[githubAccount, activeInstallation], account], compareScreenshotBucket]",
     );
 
-  if (!richBuild) {
-    throw new UnretryableError("Invariant: no build found");
-  }
+  invariant(richBuild, "no build found", UnretryableError);
 
   const project = richBuild.project;
 
-  if (!project) {
-    throw new UnretryableError("Invariant: no project found");
-  }
+  invariant(project, "no project found", UnretryableError);
 
   const strategy = strategies.find((s) => s.detect(project));
 

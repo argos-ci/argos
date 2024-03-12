@@ -1,27 +1,29 @@
-import { MarkGithubIcon } from "@primer/octicons-react";
 import * as React from "react";
+import { useQuery } from "@apollo/client";
+import { invariant } from "@apollo/client/utilities/globals";
+import { assertNever } from "@argos/util/assertNever";
+import { MarkGithubIcon } from "@primer/octicons-react";
 import { useLocation } from "react-router-dom";
+import { useDebounce } from "use-debounce";
 
 import config from "@/config";
 import { GithubInstallationsSelect } from "@/containers/GithubInstallationsSelect";
-import { GitlabNamespacesSelect } from "@/containers/GitlabNamespacesSelect";
 import { GithubRepositoryList } from "@/containers/GithubRepositoryList";
+import { GitlabNamespacesSelect } from "@/containers/GitlabNamespacesSelect";
 import { DocumentType, graphql } from "@/gql";
+import { AccountPermission } from "@/gql/graphql";
+import { Anchor } from "@/ui/Anchor";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { Card } from "@/ui/Card";
 import { PageLoader } from "@/ui/PageLoader";
+import { TextInput } from "@/ui/TextInput";
+import { getItem, removeItem, setItem } from "@/util/storage";
+
 import { GitLabLogo } from "../GitLab";
-import { useQuery } from "@apollo/client";
 import {
   GitlabProjectList,
   GitlabProjectListProps,
 } from "../GitlabProjectList";
-import { Anchor } from "@/ui/Anchor";
-import { AccountPermission } from "@/gql/graphql";
-import { getItem, removeItem, setItem } from "@/util/storage";
-import { TextInput } from "@/ui/TextInput";
-import { useDebounce } from "use-debounce";
-import { invariant } from "@apollo/client/utilities/globals";
 
 const ConnectRepositoryQuery = graphql(`
   query ConnectRepository($accountSlug: String!) {
@@ -77,12 +79,10 @@ type GithubInstallationsProps = {
 
 const GithubInstallations = (props: GithubInstallationsProps) => {
   const firstInstallation = props.installations[0];
-  if (!firstInstallation) {
-    throw new Error("No installations");
-  }
+  invariant(firstInstallation, "no installations");
   const [value, setValue] = React.useState<string>(firstInstallation.id);
   return (
-    <div className="flex flex-col gap-4 max-w-4xl" style={{ height: 400 }}>
+    <div className="flex max-w-4xl flex-col gap-4" style={{ height: 400 }}>
       <GithubInstallationsSelect
         disabled={props.disabled}
         installations={props.installations}
@@ -115,18 +115,14 @@ const GitlabNamespaces = (props: GitlabNamespacesProps) => {
   const defaultNamespace =
     props.namespaces.find((namespace) => namespace.kind === "group") ||
     props.namespaces[0];
-  if (!defaultNamespace) {
-    throw new Error("No namespaces");
-  }
+  invariant(defaultNamespace, "no namespaces");
   const [value, setValue] = React.useState<string>(defaultNamespace.id);
   const [search, setSearch] = React.useState<string>("");
   const [debouncedSearch] = useDebounce(search, 500);
   const namespace = props.namespaces.find(
     (namespace) => namespace.id === value,
   );
-  if (value !== "all" && !namespace) {
-    throw new Error("No active namespace");
-  }
+  invariant(value === "all" || namespace, "no active namespace");
 
   const projectListProps = (() => {
     if (namespace?.isProjectToken) {
@@ -143,7 +139,7 @@ const GitlabNamespaces = (props: GitlabNamespacesProps) => {
   })();
 
   return (
-    <div className="flex flex-col gap-4 max-w-4xl" style={{ height: 400 }}>
+    <div className="flex max-w-4xl flex-col gap-4" style={{ height: 400 }}>
       <GitlabNamespacesSelect
         disabled={props.disabled}
         namespaces={props.namespaces}
@@ -152,8 +148,8 @@ const GitlabNamespaces = (props: GitlabNamespacesProps) => {
         onSwitch={props.onSwitch}
       />
       {value === "all" && (
-        <div className="flex flex-col gap-1 mb-2">
-          <label className="font-medium text-sm">Search</label>
+        <div className="mb-2 flex flex-col gap-1">
+          <label className="text-sm font-medium">Search</label>
           <TextInput
             name="search"
             placeholder="Project name"
@@ -279,8 +275,8 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
 
   const { me, account } = result.data;
 
-  invariant(me, "Invariant: no me");
-  invariant(account, "Invariant: no account");
+  invariant(me, "no me");
+  invariant(account, "no account");
 
   if (!account.permissions.includes(AccountPermission.Admin)) {
     return (
@@ -324,15 +320,15 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
       );
     }
     return (
-      <Card className="flex h-full flex-col items-center justify-center p-4 gap-4">
+      <Card className="flex h-full flex-col items-center justify-center gap-4 p-4">
         <div
-          className="text-lg text-center"
+          className="text-center text-lg"
           style={{ textWrap: "balance" } as React.CSSProperties}
         >
           To import a project from GitLab, you need to setup a GitLab access
           token first.
         </div>
-        <div className="flex gap-4 items-center justify-center">
+        <div className="flex items-center justify-center gap-4">
           <Button>
             {(buttonProps) => (
               <a
@@ -385,7 +381,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
     }
     case "import": {
       return (
-        <Card className="flex h-full flex-col items-center justify-center py-4 gap-4">
+        <Card className="flex h-full flex-col items-center justify-center gap-4 py-4">
           <div className="text-low">
             Select a Git provider to import an existing project from a Git
             Repository.
@@ -407,6 +403,6 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
       );
     }
     default:
-      throw new Error("Invalid variant");
+      assertNever(props.variant);
   }
 };

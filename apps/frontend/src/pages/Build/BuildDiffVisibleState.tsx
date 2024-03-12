@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState } from "react";
+import { invariant } from "@argos/util/invariant";
 
 interface DiffVisibleContextValue {
   visible: boolean;
@@ -9,11 +10,10 @@ const DiffVisibleContext = createContext<DiffVisibleContextValue | null>(null);
 
 export const useBuildDiffVisibleState = () => {
   const context = useContext(DiffVisibleContext);
-  if (context === null) {
-    throw new Error(
-      "useBuildDiffVisibleState must be used within a BuildDiffVisibleStateProvider",
-    );
-  }
+  invariant(
+    context,
+    "useBuildDiffVisibleState must be used within a BuildDiffVisibleStateProvider",
+  );
   return context;
 };
 

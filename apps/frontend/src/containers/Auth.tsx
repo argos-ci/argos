@@ -1,5 +1,3 @@
-import Cookie from "js-cookie";
-import { jwtDecode } from "jwt-decode";
 import {
   createContext,
   useCallback,
@@ -7,6 +5,9 @@ import {
   useMemo,
   useState,
 } from "react";
+import { invariant } from "@apollo/client/utilities/globals";
+import Cookie from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 
 export enum AuthProvider {
   GitHub = "github",
@@ -65,9 +66,7 @@ export const AuthContextProvider = ({
 
 export function useAuth() {
   const value = useContext(AuthContext);
-  if (!value) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
+  invariant(value, "useAuth must be used within AuthProvider");
   return value;
 }
 

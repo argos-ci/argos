@@ -1,6 +1,6 @@
 import { useQuery } from "@apollo/client";
-import { PlusCircleIcon } from "lucide-react";
 import { RepoIcon } from "@primer/octicons-react";
+import { PlusCircleIcon } from "lucide-react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import { graphql } from "@/gql";

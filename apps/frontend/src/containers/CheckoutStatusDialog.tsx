@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import config from "@/config";
+import { Anchor } from "@/ui/Anchor";
 import {
   Dialog,
   DialogBody,
@@ -12,7 +13,6 @@ import {
   DialogTitle,
   useDialogState,
 } from "@/ui/Dialog";
-import { Anchor } from "@/ui/Anchor";
 
 type CheckoutStatus = "success" | "cancel" | null;
 

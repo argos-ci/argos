@@ -1,7 +1,7 @@
+import { forwardRef, HTMLProps } from "react";
 import { ApolloError } from "@apollo/client";
 import { captureException } from "@sentry/browser";
 import { clsx } from "clsx";
-import { HTMLProps, forwardRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useMatch } from "react-router-dom";
 
@@ -46,7 +46,7 @@ export const Layout = (props: { children: React.ReactNode }) => {
   const fullSize = useMatch("/:accountSlug/:projectName");
   return (
     <div className={clsx(fullSize && "h-screen", "flex min-h-full flex-col")}>
-      <header className="flex-shrink-0">
+      <header className="shrink-0">
         <Navbar />
       </header>
       <Main>{props.children}</Main>

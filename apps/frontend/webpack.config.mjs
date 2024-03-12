@@ -1,9 +1,9 @@
 /* eslint-env node */
-import AssetsPlugin from "assets-webpack-plugin";
-import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import AssetsPlugin from "assets-webpack-plugin";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import webpack from "webpack";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));

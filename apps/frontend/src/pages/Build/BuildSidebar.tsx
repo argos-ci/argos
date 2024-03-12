@@ -1,3 +1,4 @@
+import * as React from "react";
 import {
   Tab as AriakitTab,
   TabList,
@@ -5,24 +6,23 @@ import {
   TabProps,
   useTabState,
 } from "ariakit/tab";
-import * as React from "react";
+import { SearchIcon, XIcon } from "lucide-react";
 
 import { checkIsBuildEmpty } from "@/containers/Build";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { IconButton } from "@/ui/IconButton";
 
 import { BuildDiffList } from "./BuildDiffList";
+import { useSearchModeState, useSearchState } from "./BuildDiffState";
 import { useBuildHotkey } from "./BuildHotkeys";
 import { BuildInfos } from "./BuildInfos";
-import { SearchIcon, XIcon } from "lucide-react";
-import { IconButton } from "@/ui/IconButton";
-import { useSearchModeState, useSearchState } from "./BuildDiffState";
 
 const Tab = React.forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
   return (
     <AriakitTab
       ref={ref}
-      className="cursor-default px-2 text-sm font-medium leading-10 text-low transition hover:text aria-selected:text"
+      className="text-low hover:text aria-selected:text cursor-default px-2 text-sm font-medium leading-10 transition"
       {...props}
     />
   );
@@ -46,7 +46,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, object>(
         type="text"
         autoFocus
         placeholder="Find..."
-        className="flex-1 text text-xs leading-6 py-2 px-2 outline-none placeholder:text-low bg-transparent"
+        className="text placeholder:text-low flex-1 bg-transparent p-2 text-xs leading-6 outline-none"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         onKeyDown={(event) => {
@@ -101,7 +101,7 @@ export const BuildSidebar = React.memo(
     );
     return (
       <div className="group/sidebar flex w-[295px] shrink-0 flex-col border-r">
-        <div className="flex shrink-0 px-2 border-b items-center">
+        <div className="flex shrink-0 items-center border-b px-2">
           <HotkeyTooltip
             keys={searchModeHotKey.displayKeys}
             description="Find..."

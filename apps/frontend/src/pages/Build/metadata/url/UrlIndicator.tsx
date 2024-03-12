@@ -1,6 +1,7 @@
-import { Chip, ChipProps } from "@/ui/Chip";
-import { Anchor } from "@/ui/Anchor";
 import { LinkIcon } from "lucide-react";
+
+import { Anchor } from "@/ui/Anchor";
+import { Chip, ChipProps } from "@/ui/Chip";
 
 export function UrlIndicator({
   url,
@@ -13,7 +14,7 @@ export function UrlIndicator({
       <Anchor
         external
         href={url}
-        className="inline-block text-ellipsis overflow-hidden"
+        className="inline-block overflow-hidden text-ellipsis"
       >
         {url}
       </Anchor>

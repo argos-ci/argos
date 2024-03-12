@@ -1,20 +1,11 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": [
-    "@tsconfig/strictest/tsconfig.json",
-    "@tsconfig/node20/tsconfig.json",
-    "../../tsconfig.base.json"
-  ],
+  "extends": "@argos/tsconfig/node.json",
   "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    },
-    "noEmit": true,
-    "ignoreDeprecations": "5.0",
-    "jsx": "preserve"
+    }
   },
   "exclude": [
     "./db/seeds",

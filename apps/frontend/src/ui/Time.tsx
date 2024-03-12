@@ -1,12 +1,13 @@
-import moment from "moment";
 import {
   Children,
-  HTMLProps,
   forwardRef,
+  HTMLProps,
   useCallback,
   useEffect,
   useState,
 } from "react";
+import moment from "moment";
+
 import { Tooltip } from "./Tooltip";
 
 type TimeProps = HTMLProps<HTMLTimeElement> & {

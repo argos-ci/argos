@@ -1,13 +1,14 @@
+import { assertNever } from "@argos/util/assertNever";
 import {
   AlertTriangleIcon,
-  DotIcon,
+  BadgeCheckIcon,
   CheckCircle2Icon,
   CircleDotIcon,
-  RefreshCcwDotIcon,
   CircleSlashIcon,
+  DotIcon,
+  RefreshCcwDotIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-  BadgeCheckIcon,
   XCircleIcon,
 } from "lucide-react";
 
@@ -64,10 +65,12 @@ export const getBuildColor = (
           return "warning" as const;
 
         default:
-          throw new Error(`Invalid status: ${status}`);
+          assertNever(status);
       }
     }
+    // eslint-disable-next-line no-fallthrough
     case null:
+    case undefined:
       switch (status) {
         case "expired":
         case "error":
@@ -77,7 +80,7 @@ export const getBuildColor = (
           return "pending" as const;
       }
     default:
-      throw new Error(`Invalid type: ${type}`);
+      assertNever(type);
   }
 };
 
@@ -116,10 +119,12 @@ export const getBuildIcon = (
           return AlertTriangleIcon;
 
         default:
-          throw new Error(`Invalid status: ${status}`);
+          assertNever(status);
       }
     }
+    // eslint-disable-next-line no-fallthrough
     case null:
+    case undefined:
       switch (status) {
         case "expired":
         case "error":
@@ -128,7 +133,7 @@ export const getBuildIcon = (
           return DotIcon;
       }
     default:
-      throw new Error(`Invalid type: ${type}`);
+      assertNever(type);
   }
 };
 
@@ -162,10 +167,12 @@ export const getBuildLabel = (
         case "accepted":
           return "Changes approved";
         default:
-          throw new Error(`Invalid status: ${status}`);
+          assertNever(status);
       }
     }
+    // eslint-disable-next-line no-fallthrough
     case null:
+    case undefined:
       switch (status) {
         case "expired":
           return "Build expired";
@@ -175,7 +182,7 @@ export const getBuildLabel = (
           return "Build scheduled";
       }
     default:
-      throw new Error(`Invalid type: ${type}`);
+      assertNever(type);
   }
 };
 

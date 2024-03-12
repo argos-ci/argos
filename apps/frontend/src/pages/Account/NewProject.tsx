@@ -5,8 +5,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ConnectRepository } from "@/containers/Project/ConnectRepository";
 import { graphql } from "@/gql";
 import { Container } from "@/ui/Container";
-import { Heading, Headline } from "@/ui/Typography";
 import { getGraphQLErrorMessage } from "@/ui/Form";
+import { Heading, Headline } from "@/ui/Typography";
 
 const ImportGithubProjectMutation = graphql(`
   mutation NewProject_importGithubProject(
@@ -93,7 +93,7 @@ export const AccountNewProject = () => {
       <Helmet>
         <title>New Project</title>
       </Helmet>
-      <div className="flex-1 bg-subtle">
+      <div className="bg-subtle flex-1">
         <Container className="py-10">
           <Heading>Create a new Project</Heading>
           <Headline>

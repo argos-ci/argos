@@ -78,7 +78,7 @@ const DeleteProjectButton = (props: DeleteProjectButtonProps) => {
                 This project will be deleted, along with all of its Builds,
                 Screenshots, Screenshot Diffs, and Settings.
               </DialogText>
-              <div className="my-8 rounded bg-danger-hover p-2 text-danger-low">
+              <div className="bg-danger-hover text-danger-low my-8 rounded p-2">
                 <strong>Warning:</strong> This action is not reversible. Please
                 be certain.
               </div>

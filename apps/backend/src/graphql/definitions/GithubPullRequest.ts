@@ -1,9 +1,11 @@
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
+
 import {
   IPullRequestState,
   type IResolvers,
 } from "../__generated__/resolver-types.js";
-import { invariant } from "@/util/invariant.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -36,7 +38,7 @@ export const resolvers: IResolvers = {
         case "closed":
           return IPullRequestState.Closed;
         default:
-          throw new Error(`Unknown state: ${pullRequest.state}`);
+          assertNever(pullRequest.state);
       }
     },
     url: async (pullRequest, _args, ctx) => {

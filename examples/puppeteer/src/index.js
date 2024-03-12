@@ -1,5 +1,5 @@
-import puppeteer from "puppeteer";
 import { argosScreenshot } from "@argos-ci/puppeteer";
+import puppeteer from "puppeteer";
 
 (async () => {
   const browser = await puppeteer.launch({ headless: false });

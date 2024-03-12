@@ -1,11 +1,3 @@
-import { ChevronDownIcon, CornerDownRightIcon } from "lucide-react";
-import {
-  Range,
-  defaultRangeExtractor,
-  useVirtualizer,
-} from "@tanstack/react-virtual";
-import { Button as AriakitButton } from "ariakit/button";
-import { clsx } from "clsx";
 import {
   memo,
   useCallback,
@@ -15,8 +7,18 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  defaultRangeExtractor,
+  Range,
+  useVirtualizer,
+} from "@tanstack/react-virtual";
+import { Button as AriakitButton } from "ariakit/button";
+import { clsx } from "clsx";
+import { ChevronDownIcon, CornerDownRightIcon } from "lucide-react";
 
 import { Badge } from "@/ui/Badge";
+import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
+import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 
 import { getGroupLabel } from "./BuildDiffGroup";
 import {
@@ -27,10 +29,8 @@ import {
   useSearchModeState,
   useSearchState,
 } from "./BuildDiffState";
-import { BuildStatsIndicator } from "./BuildStatsIndicator";
-import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { useBuildHotkey } from "./BuildHotkeys";
-import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { BuildStatsIndicator } from "./BuildStatsIndicator";
 
 interface ListHeaderRow {
   type: "header";
@@ -202,18 +202,18 @@ const ListHeader = ({
       as="div"
       className={clsx(
         borderB,
-        "border-t-border z-10 flex cursor-default select-none items-center border-t bg-app pr-4 hover:bg-subtle",
+        "border-t-border bg-app hover:bg-subtle z-10 flex cursor-default select-none items-center border-t pr-4",
       )}
       style={style}
       onClick={onClick}
     >
       <ChevronDownIcon
         className={clsx(
-          "m-0.5 h-3 w-3 shrink-0 transform text-low opacity-0 transition group-hover/sidebar:opacity-100",
+          "text-low m-0.5 size-3 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100",
           !item.expanded && "-rotate-90",
         )}
       />
-      <div className="flex-1 text-sm font-medium text">
+      <div className="text flex-1 text-sm font-medium">
         {getGroupLabel(item.name)}
       </div>
       <Badge className="shrink-0">
@@ -271,7 +271,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
               {...getImgAttributes(diff.compareScreenshot!.url)}
               className="absolute w-full"
             />
-            <div className="absolute inset-0 bg-black bg-opacity-70" />
+            <div className="absolute inset-0 bg-black/70" />
             <img
               className="relative z-10 max-h-full w-full"
               {...getImgAttributes(diff.url!, dimensions)}
@@ -295,7 +295,7 @@ const CardStack = ({
   return (
     <div
       className={clsx(
-        "absolute -z-10 border block  border-border rounded-lg w-[262px] right-2 bg-hover",
+        "border-border bg-hover absolute right-2  -z-10 block w-[262px] rounded-lg border",
         isFirst ? "top-6" : "top-4",
         isLast ? "bottom-2" : "bottom-0",
       )}
@@ -366,14 +366,14 @@ const DiffCard = ({
 
   return (
     <div
-      className="relative flex h-full items-center justify-center rounded-lg overflow-hidden bg-app"
+      className="bg-app relative flex h-full items-center justify-center overflow-hidden rounded-lg"
       {...props}
     >
       {children}
       <div className={clsx(ring, "absolute inset-0 z-20 rounded-lg")} />
       <div
         className={clsx(
-          active && "ring-inset ring-1 ring-primary-highlight/90",
+          active && "ring-primary-highlight/90 ring-1 ring-inset",
           "absolute inset-0 z-20 rounded-lg",
         )}
       />
@@ -426,7 +426,7 @@ const ListItem = ({
       className={clsx(
         pt,
         pb,
-        "group/item w-full cursor-default px-4 focus:outline-none relative",
+        "group/item relative w-full cursor-default px-4 focus:outline-none",
         isSubItem && "pl-10",
       )}
       style={style}
@@ -439,7 +439,7 @@ const ListItem = ({
       {isSubItem && (
         <CornerDownRightIcon
           size="1em"
-          className="left-4 top-4 absolute text-low"
+          className="text-low absolute left-4 top-4"
         />
       )}
 
@@ -464,7 +464,7 @@ const ListItem = ({
             <DiffImage diff={item.diff} />{" "}
             <div
               className={clsx(
-                "absolute bottom-0 left-0 right-0 z-10 truncate bg-app/70 bg-gradient-to-b px-2 py-1.5 text-xxs font-medium",
+                "bg-app/70 text-xxs absolute inset-x-0 bottom-0 z-10 truncate bg-gradient-to-b px-2 py-1.5 font-medium",
                 !searchMode &&
                   "opacity-0 transition-opacity group-hover/sidebar:opacity-100",
               )}
@@ -731,7 +731,7 @@ const InternalBuildDiffList = memo(() => {
   }, [scrolledDiff, getDiffIndex, getIndicesInViewport]);
 
   if (searchMode && search && !results.length && totalDiffCount > 0) {
-    return <div className="text-sm p-4">No results</div>;
+    return <div className="p-4 text-sm">No results</div>;
   }
 
   return (

@@ -1,3 +1,6 @@
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
+
 import {
   Account,
   Subscription,
@@ -5,22 +8,18 @@ import {
   TeamUser,
   User,
 } from "@/database/models/index.js";
+import { cancelStripeSubscription } from "@/stripe/index.js";
 
 import { deleteProject } from "./project.js";
-import { cancelStripeSubscription } from "@/stripe/index.js";
 
 export const getAdminAccount = async (args: {
   id: string;
   user: User | undefined | null;
 }): Promise<Account> => {
-  if (!args.user) {
-    throw new Error("Unauthorized");
-  }
+  invariant(args.user, "no user");
   const account = await Account.query().findById(args.id).throwIfNotFound();
   const permissions = await account.$getPermissions(args.user);
-  if (!permissions.includes("admin")) {
-    throw new Error("Unauthorized");
-  }
+  invariant(permissions.includes("admin"), "not admin");
   return account;
 };
 
@@ -65,6 +64,6 @@ export const deleteAccount = async (args: {
       break;
     }
     default:
-      throw new Error(`Unknown account type: ${account.type}`);
+      assertNever(account.type);
   }
 };

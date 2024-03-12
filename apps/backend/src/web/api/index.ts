@@ -4,13 +4,13 @@ import { Application, Router } from "express";
 import { formatters } from "express-err";
 
 import { errorHandler } from "../middlewares/errorHandler.js";
+import { subdomain } from "../util.js";
 import auth from "./auth.js";
 import builds from "./builds.js";
 import { webhooksMiddleware } from "./github.js";
+import status from "./status.js";
 import stripe from "./stripe.js";
 import v2 from "./v2/index.js";
-import status from "./status.js";
-import { subdomain } from "../util.js";
 
 export const installApiRouter = (app: Application) => {
   const router = Router();

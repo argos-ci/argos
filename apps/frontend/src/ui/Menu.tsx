@@ -1,4 +1,4 @@
-import { ChevronsUpDownIcon } from "lucide-react";
+import { Children, cloneElement, forwardRef, HTMLProps } from "react";
 import {
   Menu as AriakitMenu,
   MenuButton as AriakitMenuButton,
@@ -10,7 +10,7 @@ import {
   MenuSeparatorProps as AriakitMenuSeparatorProps,
 } from "ariakit/menu";
 import { clsx } from "clsx";
-import { Children, HTMLProps, cloneElement, forwardRef } from "react";
+import { ChevronsUpDownIcon } from "lucide-react";
 
 export { MenuButton, useMenuState } from "ariakit/menu";
 export type { MenuState } from "ariakit/menu";
@@ -34,7 +34,7 @@ export const Menu = forwardRef<HTMLDivElement, AriakitMenuProps>(
       <AriakitMenu
         ref={ref}
         className={clsx(
-          "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border bg-subtle p-1 focus:outline-none",
+          "bg-subtle z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border p-1 focus:outline-none",
           className,
         )}
         {...props}
@@ -65,7 +65,7 @@ export const MenuItem = forwardRef<
       className={clsx(
         pointerClassName,
         menuItemVariantClasses[props.variant ?? "default"],
-        "flex items-center rounded px-3 py-1.5 text-sm transition focus:outline-none aria-disabled:opacity-disabled aria-disabled:hover:bg-transparent",
+        "aria-disabled:opacity-disabled flex items-center rounded px-3 py-1.5 text-sm transition focus:outline-none aria-disabled:hover:bg-transparent",
       )}
       {...props}
     />
@@ -82,7 +82,7 @@ export const MenuItemIcon = ({
   return (
     <div className="mr-2 w-[18px]">
       {cloneElement(Children.only(children), {
-        className: clsx(className, "h-[1em] w-[1em] mx-auto"),
+        className: clsx(className, "size-[1em] mx-auto"),
       })}
     </div>
   );
@@ -101,7 +101,7 @@ export const MenuItemShortcut = ({
 
 export const MenuTitle = (props: { children: React.ReactNode }) => {
   return (
-    <div className="px-2 py-1.5 text-xs font-medium text-low">
+    <div className="text-low px-2 py-1.5 text-xs font-medium">
       {props.children}
     </div>
   );
@@ -111,7 +111,7 @@ export const MenuText = (props: { children: React.ReactNode }) => {
   return (
     <>
       <MenuSeparator />
-      <div className="px-2 py-1.5 text-xs text-low">{props.children}</div>
+      <div className="text-low px-2 py-1.5 text-xs">{props.children}</div>
     </>
   );
 };
@@ -125,12 +125,12 @@ export const UpDownMenuButton = ({
   return (
     <AriakitMenuButton
       className={clsx(
-        "border-border rounded-md border p-0.5 text-low hover:border-hover hover:text aria-expanded:bg-active aria-expanded:text cursor-default",
+        "border-border text-low hover:border-hover hover:text aria-expanded:bg-active aria-expanded:text cursor-default rounded-md border p-0.5",
         className,
       )}
       {...props}
     >
-      <ChevronsUpDownIcon className="h-4 w-4" />
+      <ChevronsUpDownIcon className="size-4" />
     </AriakitMenuButton>
   );
 };

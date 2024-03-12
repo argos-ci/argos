@@ -1,16 +1,16 @@
-import axios from "axios";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import request from "supertest";
+import axios from "axios";
 import type { Express } from "express";
+import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { quitRedis } from "@/util/redis/index.js";
 import { Build, Project } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
 import { quitAmqp } from "@/job-core/index.js";
 import { getS3Client } from "@/storage/index.js";
+import { quitRedis } from "@/util/redis/index.js";
 
 import { createApp } from "./app.js";
 
@@ -82,11 +82,8 @@ describe("api v2", () => {
 
         const build = await Build.query()
           .withGraphFetched("compareScreenshotBucket")
-          .first();
-
-        if (!build) {
-          throw new Error("Build not found");
-        }
+          .first()
+          .throwIfNotFound();
 
         expect(build.jobStatus).toBe("pending");
         expect(build.name).toBe("current");
@@ -214,11 +211,8 @@ describe("api v2", () => {
 
         const build = await Build.query()
           .withGraphFetched("compareScreenshotBucket.screenshots.file")
-          .first();
-
-        if (!build) {
-          throw new Error("Build not found");
-        }
+          .first()
+          .throwIfNotFound();
 
         const screenshotWithMetadata =
           build.compareScreenshotBucket!.screenshots!.find(
@@ -363,11 +357,8 @@ describe("api v2", () => {
 
         const build = await Build.query()
           .withGraphFetched("compareScreenshotBucket.screenshots.file")
-          .first();
-
-        if (!build) {
-          throw new Error("Build not found");
-        }
+          .first()
+          .throwIfNotFound();
 
         expect(build.jobStatus).toBe("pending");
         expect(build.name).toBe("current");

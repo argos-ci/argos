@@ -1,5 +1,5 @@
-import { useApolloClient } from "@apollo/client";
 import { forwardRef } from "react";
+import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -102,7 +102,7 @@ const DeleteTeamButton = (props: DeleteTeamButtonProps) => {
                 Argos recommends that you transfer projects you want to keep to
                 another Team before deleting this Team.
               </DialogText>
-              <div className="my-8 rounded bg-danger-hover p-2 text-danger-low">
+              <div className="bg-danger-hover text-danger-low my-8 rounded p-2">
                 <strong>Warning:</strong> This action is not reversible. Please
                 be certain.
               </div>

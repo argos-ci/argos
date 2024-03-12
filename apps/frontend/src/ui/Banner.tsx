@@ -1,5 +1,5 @@
+import { forwardRef, HTMLProps } from "react";
 import { clsx } from "clsx";
-import { HTMLProps, forwardRef } from "react";
 
 export interface BannerProps extends HTMLProps<HTMLDivElement> {
   color: "neutral" | "danger" | "warning";

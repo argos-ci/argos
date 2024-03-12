@@ -73,7 +73,7 @@ export const GitlabProjectList = (props: GitlabProjectListProps) => {
             {glApiProjects.edges.map((project) => (
               <ListRow
                 key={project.id}
-                className="justify-between p-4 items-center"
+                className="items-center justify-between p-4"
               >
                 <div>
                   {project.name} •{" "}

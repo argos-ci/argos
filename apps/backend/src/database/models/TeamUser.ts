@@ -1,8 +1,9 @@
 import { RelationMappings } from "objection";
+
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
-import { User } from "./User.js";
 import { Team } from "./Team.js";
+import { User } from "./User.js";
 
 export class TeamUser extends Model {
   static override tableName = "team_users";

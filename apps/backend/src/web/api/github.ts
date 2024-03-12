@@ -1,4 +1,4 @@
-import { Webhooks, createNodeMiddleware } from "@octokit/webhooks";
+import { createNodeMiddleware, Webhooks } from "@octokit/webhooks";
 
 import config from "@/config/index.js";
 import { handleGitHubEvents } from "@/synchronize/index.js";

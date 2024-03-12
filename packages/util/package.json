@@ -1,0 +1,19 @@
+{
+  "name": "@argos/util",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "swc src -d dist --strip-leading-paths",
+    "watch-build": "npm run build -- --watch --quiet",
+    "check-types": "npm exec tsc --noEmit"
+  },
+  "sideEffects": false,
+  "exports": {
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  }
+}

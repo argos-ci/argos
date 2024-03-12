@@ -3,12 +3,12 @@ import type { RelationMappings } from "objection";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import {
-  ALL_ACCOUNT_PERMISSIONS,
   Account,
   AccountPermission,
+  ALL_ACCOUNT_PERMISSIONS,
 } from "./Account.js";
-import { Team } from "./Team.js";
 import { GitlabUser } from "./GitlabUser.js";
+import { Team } from "./Team.js";
 
 export class User extends Model {
   static override tableName = "users";

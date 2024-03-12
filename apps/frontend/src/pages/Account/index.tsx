@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { Outlet, useOutletContext, useParams } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
@@ -65,9 +66,7 @@ const AccountTabs = ({ account }: { account: Account }) => {
 
 export const Account = () => {
   const { accountSlug } = useParams();
-  if (!accountSlug) {
-    throw new Error("Missing accountSlug");
-  }
+  invariant(accountSlug, "missing accountSlug");
   useVisitAccount(accountSlug);
   const { data, loading } = useQuery(AccountQuery, {
     variables: { slug: accountSlug },

@@ -1,7 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "exclude": ["node_modules", "dist"],
-  "compilerOptions": {
-    "jsx": "preserve"
-  }
+  "extends": "@argos/tsconfig/react.json",
+  "exclude": ["node_modules", "dist"]
 }

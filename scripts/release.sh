@@ -3,7 +3,7 @@
 set -e
 
 # Run migrations
-npm run -w @argos-ci/backend db:migrate:latest
+npm run -w @argos/backend db:migrate:latest
 
 if [ "$SENTRY_RELEASE_DISABLED" != "true" ]; then
   # Setup releases on Sentry

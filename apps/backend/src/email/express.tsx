@@ -1,7 +1,9 @@
 import { render } from "@react-email/render";
-import { WelcomeEmail } from "./welcome.js";
-import config from "@/config/index.js";
 import { Router } from "express";
+
+import config from "@/config/index.js";
+
+import { WelcomeEmail } from "./welcome.js";
 
 const router = Router();
 

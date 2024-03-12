@@ -17,6 +17,9 @@ jobs:
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-npm
 
+      - name: Build
+        run: npm exec -- turbo run build --filter=\!@argos/frontend
+
       - name: Lint
         run: npm run lint
 

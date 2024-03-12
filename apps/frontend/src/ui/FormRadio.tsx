@@ -1,5 +1,5 @@
+import { forwardRef, HTMLAttributes, useId } from "react";
 import { clsx } from "clsx";
-import { HTMLAttributes, forwardRef, useId } from "react";
 
 export const FormRadio = forwardRef<
   HTMLInputElement,

@@ -5,22 +5,22 @@ import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
 import { ProjectBadge } from "@/containers/Project/Badge";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
+import { ProjectContributors } from "@/containers/Project/Contributors";
 import { ProjectDelete } from "@/containers/Project/Delete";
 import { ProjectGitRepository } from "@/containers/Project/GitRepository";
 import { ProjectReferenceBranch } from "@/containers/Project/ReferenceBranch";
+import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
 import { ProjectToken } from "@/containers/Project/Token";
 import { ProjectTransfer } from "@/containers/Project/Transfer";
 import { ProjectVisibility } from "@/containers/Project/Visibility";
 import { graphql } from "@/gql";
+import { ProjectPermission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
 import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
 import { Heading } from "@/ui/Typography";
 
 import { useProjectContext } from ".";
-import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
-import { ProjectContributors } from "@/containers/Project/Contributors";
-import { ProjectPermission } from "@/gql/graphql";
 
 const ProjectQuery = graphql(`
   query ProjectSettings_project($accountSlug: String!, $projectName: String!) {

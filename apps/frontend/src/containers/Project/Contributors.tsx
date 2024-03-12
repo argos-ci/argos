@@ -1,6 +1,13 @@
 import * as React from "react";
+import { ApolloCache, Reference, useMutation } from "@apollo/client";
+import { invariant } from "@argos/util/invariant";
+import { useNavigate } from "react-router-dom";
+import { useDebounce } from "use-debounce";
 
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { ProjectPermission, ProjectUserLevel } from "@/gql/graphql";
+import { Anchor } from "@/ui/Anchor";
+import { Button } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -8,16 +15,6 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
-import { useQuery } from "../Apollo";
-import { invariant } from "@/util/invariant";
-import {
-  List,
-  ListEmpty,
-  ListLoadMore,
-  ListRowLoader,
-  ListTitle,
-} from "@/ui/List";
-import { Button } from "@/ui/Button";
 import {
   Dialog,
   DialogBody,
@@ -29,7 +26,16 @@ import {
   DialogTitle,
   useDialogState,
 } from "@/ui/Dialog";
-import { ApolloCache, Reference, useMutation } from "@apollo/client";
+import { getGraphQLErrorMessage } from "@/ui/Form";
+import { FormError } from "@/ui/FormError";
+import {
+  List,
+  ListEmpty,
+  ListLoadMore,
+  ListRowLoader,
+  ListTitle,
+} from "@/ui/List";
+import { Loader } from "@/ui/Loader";
 import {
   Select,
   SelectArrow,
@@ -37,21 +43,16 @@ import {
   SelectPopover,
   useSelectState,
 } from "@/ui/Select";
-import { ProjectPermission, ProjectUserLevel } from "@/gql/graphql";
+import { TextInput } from "@/ui/TextInput";
+
+import { useQuery } from "../Apollo";
+import { useAssertAuthTokenPayload } from "../Auth";
 import {
   ProjectContributorLabel,
   RemoveMenu,
   TeamMemberLabel,
   UserListRow,
 } from "../UserList";
-import { useAssertAuthTokenPayload } from "../Auth";
-import { useNavigate } from "react-router-dom";
-import { FormError } from "@/ui/FormError";
-import { getGraphQLErrorMessage } from "@/ui/Form";
-import { Loader } from "@/ui/Loader";
-import { TextInput } from "@/ui/TextInput";
-import { useDebounce } from "use-debounce";
-import { Anchor } from "@/ui/Anchor";
 
 const NB_MEMBERS_PER_PAGE = 10;
 
@@ -548,7 +549,7 @@ function ProjectContributorLevelSelect(props: {
 
   return (
     <>
-      <Select state={select} className="w-full text-sm text-low">
+      <Select state={select} className="text-low w-full text-sm">
         <div className="flex w-full items-center justify-between gap-2">
           {value ? ProjectContributorLabel[value] : "Add as"}
           <SelectArrow />
@@ -642,13 +643,13 @@ function TeamContributorsList(props: {
   }, [loading]);
 
   return (
-    <div className="my-4 h-60 flex flex-col">
+    <div className="my-4 flex h-60 flex-col">
       <div className="relative">
         <TextInput
           ref={searchInputRef}
           type="search"
           placeholder="Search for a team member"
-          className="w-full mb-2 search-cancel:appearance-none"
+          className="search-cancel:appearance-none mb-2 w-full"
           disabled={loading || noContributors}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -659,7 +660,7 @@ function TeamContributorsList(props: {
       <div className="flex-1 overflow-auto">
         {(() => {
           if (loading) {
-            return <Loader size={32} className="mt-4 mx-auto" />;
+            return <Loader size={32} className="mx-auto mt-4" />;
           }
           invariant(data.team, "Team not found");
           const members = data.team.members.edges;

@@ -1,9 +1,9 @@
-// eslint-disable-next-line import/default
-import ejs from "ejs";
-import type { RequestHandler } from "express";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+// eslint-disable-next-line import/default
+import ejs from "ejs";
+import type { RequestHandler } from "express";
 
 import config from "@/config/index.js";
 

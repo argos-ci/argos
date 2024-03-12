@@ -1,7 +1,9 @@
+import { assertNever } from "@argos/util/assertNever";
+
 import type { BuildNotification } from "@/database/models/BuildNotification.js";
 import { UnretryableError } from "@/job-core/error.js";
+
 import { getStatsMessage } from "./utils.js";
-import { assertUnreachable } from "@/util/unreachable.js";
 
 enum GithubNotificationState {
   Pending = "pending",
@@ -71,8 +73,10 @@ export function getNotificationStatus(
       };
     }
     default: {
-      throw new UnretryableError(
-        `Unknown notification type: ${buildNotificationType}`,
+      assertNever(
+        buildNotificationType,
+        "unknown notification type",
+        UnretryableError,
       );
     }
   }
@@ -120,7 +124,7 @@ async function getNotificationDescription(
       return `${statsMessage} — rejected`;
     }
     default: {
-      assertUnreachable(buildNotification.type);
+      assertNever(buildNotification.type);
     }
   }
 }

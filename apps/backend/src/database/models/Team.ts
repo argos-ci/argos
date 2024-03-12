@@ -1,4 +1,5 @@
-import type { RelationMappings, RelationExpression } from "objection";
+import { assertNever } from "@argos/util/assertNever";
+import type { RelationExpression, RelationMappings } from "objection";
 
 import config from "@/config/index.js";
 
@@ -6,14 +7,13 @@ import { generateRandomHexString } from "../services/crypto.js";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import {
-  ALL_ACCOUNT_PERMISSIONS,
   Account,
   AccountPermission,
+  ALL_ACCOUNT_PERMISSIONS,
 } from "./Account.js";
+import { GithubAccount } from "./GithubAccount.js";
 import { TeamUser } from "./TeamUser.js";
 import { User } from "./User.js";
-import { GithubAccount } from "./GithubAccount.js";
-import { assertUnreachable } from "@/util/unreachable.js";
 
 export class Team extends Model {
   static override tableName = "teams";
@@ -173,7 +173,7 @@ export class Team extends Model {
       case "contributor":
         return ["view"];
       default:
-        assertUnreachable(teamUser.userLevel);
+        assertNever(teamUser.userLevel);
     }
   }
 

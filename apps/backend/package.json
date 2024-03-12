@@ -1,5 +1,5 @@
 {
-  "name": "@argos-ci/backend",
+  "name": "@argos/backend",
   "version": "2.0.0",
   "private": true,
   "type": "module",
@@ -26,6 +26,8 @@
   },
   "dependencies": {
     "@apollo/server": "^4.10.0",
+    "@argos/tsconfig": "*",
+    "@argos/util": "*",
     "@aws-sdk/client-s3": "^3.504.0",
     "@aws-sdk/s3-request-presigner": "^3.504.0",
     "@gitbeaker/rest": "^39.34.2",

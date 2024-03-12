@@ -1,4 +1,5 @@
-import { firstUpper } from "@/util/string.js";
+import { firstUpper } from "@argos/util/string";
+
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 

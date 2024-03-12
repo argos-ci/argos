@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import { HTMLProps } from "react";
+import { clsx } from "clsx";
 
 export const Container = ({
   className,

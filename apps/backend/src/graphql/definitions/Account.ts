@@ -1,7 +1,8 @@
-import { GraphQLError } from "graphql";
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
+import axios from "axios";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
-import axios from "axios";
 
 import {
   Account,
@@ -11,6 +12,11 @@ import {
   Subscription,
   TeamUser,
 } from "@/database/models/index.js";
+import { checkAccountSlug } from "@/database/services/account.js";
+import {
+  getGitlabClientFromAccount,
+  getTokenGitlabClient,
+} from "@/gitlab/index.js";
 import {
   encodeStripeClientReferenceId,
   terminateStripeTrial,
@@ -26,16 +32,9 @@ import {
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
 import { getAdminAccount } from "../services/account.js";
-import { unauthenticated } from "../util.js";
-import { paginateResult } from "./PageInfo.js";
-import { checkAccountSlug } from "@/database/services/account.js";
-import {
-  getGitlabClientFromAccount,
-  getTokenGitlabClient,
-} from "@/gitlab/index.js";
-import { invariant } from "@/util/invariant.js";
 import { getAvatarColor, githubAvatarUrlFactory } from "../services/avatar.js";
-import { assertUnreachable } from "@/util/unreachable.js";
+import { badUserInput, unauthenticated } from "../util.js";
+import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -156,7 +155,7 @@ export const resolvers: IResolvers = {
         case "user":
           return "User";
         default:
-          throw new Error(`Unknown account type: ${account.type}`);
+          assertNever(account.type);
       }
     },
     stripeClientReferenceId: (account, _args, ctx) => {
@@ -235,7 +234,7 @@ export const resolvers: IResolvers = {
           });
         }
         default:
-          assertUnreachable(account.type);
+          assertNever(account.type);
       }
     },
     hasPaidPlan: async (account) => {
@@ -430,12 +429,7 @@ export const resolvers: IResolvers = {
           await checkAccountSlug(input.slug);
         } catch (error: unknown) {
           if (error instanceof Error) {
-            throw new GraphQLError(error.message, {
-              extensions: {
-                code: "BAD_USER_INPUT",
-                field: "slug",
-              },
-            });
+            throw badUserInput(error.message, { field: "slug" });
           }
           throw error;
         }
@@ -457,27 +451,19 @@ export const resolvers: IResolvers = {
           try {
             const res = await gitlabClient.PersonalAccessTokens.show();
             if (!res.scopes?.includes("api")) {
-              throw new GraphQLError(
+              throw badUserInput(
                 "The provided GitLab access token does not have the `api` scope. Please create a new one with the `api` scope.",
                 {
-                  extensions: {
-                    code: "BAD_USER_INPUT",
-                    field: "gitlabAccessToken",
-                  },
+                  field: "gitlabAccessToken",
                 },
               );
             }
           } catch (error: unknown) {
             if (error instanceof Error) {
               if (error.message === "Unauthorized") {
-                throw new GraphQLError(
+                throw badUserInput(
                   "The provided GitLab access token is not valid.",
-                  {
-                    extensions: {
-                      code: "BAD_USER_INPUT",
-                      field: "gitlabAccessToken",
-                    },
-                  },
+                  { field: "gitlabAccessToken" },
                 );
               }
             }

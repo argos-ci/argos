@@ -1,12 +1,13 @@
+import { invariant } from "@argos/util/invariant";
+
 import { pushBuildNotification } from "@/build-notification/index.js";
 import { Build, Project, ScreenshotDiff } from "@/database/models/index.js";
-import { UnretryableError, createModelJob } from "@/job-core/index.js";
+import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
+import { createModelJob, UnretryableError } from "@/job-core/index.js";
 import { job as screenshotDiffJob } from "@/screenshot-diff/index.js";
 import { updateStripeUsage } from "@/stripe/index.js";
 
 import { createBuildDiffs } from "./createBuildDiffs.js";
-import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
-import { invariant } from "@/util/invariant.js";
 
 /**
  * Pushes the diffs to the screenshot-diff job queue.
@@ -64,10 +65,7 @@ async function updateProjectConsumption(project: Project) {
  */
 async function syncGitlabProject(project: Project) {
   if (!project.gitlabProjectId) return;
-
-  if (!project.gitlabProject) {
-    throw new UnretryableError("Invariant: no gitlabProject found");
-  }
+  invariant(project.gitlabProject, "no gitlabProject found", UnretryableError);
 
   // If the gitlab project has not been updated since 24h
   if (
@@ -77,9 +75,7 @@ async function syncGitlabProject(project: Project) {
     return;
   }
 
-  if (!project.account) {
-    throw new UnretryableError("Invariant: no account found");
-  }
+  invariant(project.account, "no account found", UnretryableError);
 
   const gitlabClient = await getGitlabClientFromAccount(project.account);
 

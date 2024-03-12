@@ -1,15 +1,17 @@
+import { invariant } from "@argos/util/invariant";
+import type { PartialModelObject } from "objection";
+
+import { sendWelcomeEmail } from "@/email/send.js";
 import type { RestEndpointMethodTypes } from "@/github/index.js";
 
 import { Account } from "../models/Account.js";
 import { GithubAccount } from "../models/GithubAccount.js";
-import { User } from "../models/User.js";
-import { transaction } from "../transaction.js";
+import { GithubAccountMember } from "../models/GithubAccountMember.js";
 import type { GitlabUser } from "../models/GitlabUser.js";
-import type { PartialModelObject } from "objection";
-import { sendWelcomeEmail } from "@/email/send.js";
 import { Team } from "../models/Team.js";
 import { TeamUser } from "../models/TeamUser.js";
-import { GithubAccountMember } from "../models/GithubAccountMember.js";
+import { User } from "../models/User.js";
+import { transaction } from "../transaction.js";
 
 const RESERVED_SLUGS = [
   "auth",
@@ -172,9 +174,7 @@ export const getOrCreateUserAccountFromGhAccount = async (
     .withGraphFetched("user");
 
   if (existingAccount) {
-    if (!existingAccount.user) {
-      throw new Error("Invariant: user not found");
-    }
+    invariant(existingAccount.user, "user not fetched");
 
     if (
       (accessToken !== undefined &&
@@ -196,9 +196,7 @@ export const getOrCreateUserAccountFromGhAccount = async (
       .withGraphFetched("account");
 
     if (existingEmailUser) {
-      if (!existingEmailUser.account) {
-        throw new Error("Invariant: account not found");
-      }
+      invariant(existingEmailUser.account, "account not fetched");
 
       if (accessToken) {
         await existingEmailUser.$clone().$query().patch({
@@ -245,9 +243,7 @@ export const getOrCreateUserAccountFromGitlabUser = async (
     .findOne({ gitlabUserId: gitlabUser.id });
 
   if (existingUser) {
-    if (!existingUser.account) {
-      throw new Error("Invariant: account not found");
-    }
+    invariant(existingUser.account, "account not fetched");
 
     await existingUser.$clone().$query().patch({ email });
 
@@ -259,9 +255,7 @@ export const getOrCreateUserAccountFromGitlabUser = async (
     .findOne({ email });
 
   if (existingEmailUser) {
-    if (!existingEmailUser.account) {
-      throw new Error("Invariant: account not found");
-    }
+    invariant(existingEmailUser.account, "account not fetched");
 
     await existingEmailUser.$clone().$query().patch({
       gitlabUserId: gitlabUser.id,

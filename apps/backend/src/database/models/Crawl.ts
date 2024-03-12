@@ -2,8 +2,8 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import {
-  JobStatus,
   jobModelSchema,
+  JobStatus,
   mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";

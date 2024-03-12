@@ -1,3 +1,13 @@
+import { useApolloClient } from "@apollo/client";
+import { invariant } from "@apollo/client/utilities/globals";
+import {
+  FormProvider,
+  SubmitHandler,
+  useController,
+  useForm,
+  useFormContext,
+} from "react-hook-form";
+
 import { GITHUB_SSO_PRICING } from "@/constants";
 import { useQuery } from "@/containers/Apollo";
 import { GithubInstallationsSelect } from "@/containers/GithubInstallationsSelect";
@@ -18,15 +28,6 @@ import { FormError } from "@/ui/FormError";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { Tooltip } from "@/ui/Tooltip";
-import { useApolloClient } from "@apollo/client";
-import { invariant } from "@apollo/client/utilities/globals";
-import {
-  FormProvider,
-  SubmitHandler,
-  useController,
-  useForm,
-  useFormContext,
-} from "react-hook-form";
 
 const query = graphql(`
   query ConfigureGitHubSSO_installations {
@@ -165,12 +166,12 @@ function ActiveConfigureSSO(props: { teamAccountId: string; priced: boolean }) {
                       your invoice and your credit card will be charged at the
                       end of your next billing cycle.
                     </div>
-                    <div className="flex justify-between font-bold text-low my-2">
+                    <div className="text-low my-2 flex justify-between font-bold">
                       <div>GitHub Single Sign-On</div>
                       <div>${GITHUB_SSO_PRICING} / month</div>
                     </div>
-                    <hr className="border-0 border-t my-2" />
-                    <div className="flex justify-between font-bold my-2">
+                    <hr className="my-2 border-0 border-t" />
+                    <div className="my-2 flex justify-between font-bold">
                       <div>Total</div>
                       <div>${GITHUB_SSO_PRICING} / month</div>
                     </div>

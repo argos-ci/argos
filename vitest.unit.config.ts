@@ -1,8 +1,8 @@
 import {
-  UserConfig,
   configDefaults,
   defineConfig,
   mergeConfig,
+  UserConfig,
 } from "vitest/config";
 
 import vitestConfig from "./vitest.config.js";

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "composite": true,
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "../backend/src/graphql/__generated__/schema.gql"
+      }
+    ]
+  }
+}

@@ -1,7 +1,8 @@
-import { Chip } from "@/ui/Chip";
-import { Anchor } from "@/ui/Anchor";
-import { Tooltip } from "@/ui/Tooltip";
 import { FlaskConical } from "lucide-react";
+
+import { Anchor } from "@/ui/Anchor";
+import { Chip } from "@/ui/Chip";
+import { Tooltip } from "@/ui/Tooltip";
 
 export function TestIndicator({
   test,

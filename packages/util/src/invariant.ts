@@ -1,5 +1,10 @@
 const invariantPrefix = "Invariant failed";
 
+/**
+ * An invariant function takes a value, and if the value is falsy
+ * then the invariant function will throw.
+ * If the value is truthy, then the function will not throw.
+ */
 export function invariant(
   condition: any,
   // Can provide a string, or a function that returns a string for cases where

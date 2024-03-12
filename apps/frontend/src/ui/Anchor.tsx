@@ -1,6 +1,6 @@
+import * as React from "react";
 import { clsx } from "clsx";
 import { ExternalLinkIcon } from "lucide-react";
-import * as React from "react";
 
 export const EmulatedAnchor = React.forwardRef(
   (
@@ -48,7 +48,7 @@ export const HeadlessAnchor = React.forwardRef(
       <a ref={ref} {...externalAttributes} {...props}>
         {children}
         {external && (
-          <ExternalLinkIcon className="ml-1 h-[1em] w-[1em] inline mb-0.5" />
+          <ExternalLinkIcon className="mb-0.5 ml-1 inline size-[1em]" />
         )}
       </a>
     );

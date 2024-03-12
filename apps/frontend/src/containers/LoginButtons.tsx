@@ -1,10 +1,10 @@
+import { clsx } from "clsx";
 import { useLocation } from "react-router-dom";
 
 import config from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { GitLabLoginButton } from "@/containers/GitLab";
 import { Anchor } from "@/ui/Anchor";
-import { clsx } from "clsx";
 
 export const LoginButtons = (props: {
   redirect?: string | null;
@@ -33,7 +33,7 @@ export const LoginButtons = (props: {
           Continue with GitLab
         </GitLabLoginButton>
       </div>
-      <p className="mt-6 text-left text-sm text-low">
+      <p className="text-low mt-6 text-left text-sm">
         Need another login provider?{" "}
         <Anchor href={`mailto:${config.get("contactEmail")}`}>
           Contact us

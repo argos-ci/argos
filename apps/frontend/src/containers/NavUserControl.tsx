@@ -1,19 +1,23 @@
+import { useQuery } from "@apollo/client";
 import {
+  ActivitySquareIcon,
+  CommandIcon,
+  FileTextIcon,
   LogOutIcon,
-  SettingsIcon,
+  MessagesSquareIcon,
   MonitorIcon,
   MoonIcon,
-  SunIcon,
   PlusCircleIcon,
-  CommandIcon,
-  MessagesSquareIcon,
-  FileTextIcon,
-  ActivitySquareIcon,
+  SettingsIcon,
+  SunIcon,
 } from "lucide-react";
-
 import { Link, Link as RouterLink, useLocation } from "react-router-dom";
 
-import { useAuthTokenPayload, useIsLoggedIn, logout } from "@/containers/Auth";
+import { logout, useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
+import { graphql } from "@/gql";
+import { useBuildHotkeysDialogState } from "@/pages/Build/BuildHotkeysDialogState";
+import { HeadlessAnchor } from "@/ui/Anchor";
+import { Button } from "@/ui/Button";
 import {
   Menu,
   MenuButton,
@@ -31,33 +35,28 @@ import {
   useSelectState,
 } from "@/ui/Select";
 
-import { ColorMode, useColorMode } from "./ColorMode";
-import { Button } from "@/ui/Button";
 import { AccountAvatar } from "./AccountAvatar";
-import { graphql } from "@/gql";
-import { useQuery } from "@apollo/client";
+import { ColorMode, useColorMode } from "./ColorMode";
 import { InitialAvatar } from "./InitialAvatar";
-import { useBuildHotkeysDialogState } from "@/pages/Build/BuildHotkeysDialogState";
-import { HeadlessAnchor } from "@/ui/Anchor";
 
 const getColorModeLabel = (colorMode: ColorMode | "") => {
   switch (colorMode) {
     case ColorMode.Dark:
       return (
         <>
-          <MoonIcon className="h-[1em] w-[1em]" /> Dark
+          <MoonIcon className="size-[1em]" /> Dark
         </>
       );
     case ColorMode.Light:
       return (
         <>
-          <SunIcon className="h-[1em] w-[1em]" /> Light
+          <SunIcon className="size-[1em]" /> Light
         </>
       );
     default:
       return (
         <>
-          <MonitorIcon className="h-[1em] w-[1em]" /> System
+          <MonitorIcon className="size-[1em]" /> System
         </>
       );
   }
@@ -138,7 +137,7 @@ const UserMenu = () => {
     <>
       <MenuButton
         state={menu}
-        className="rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125 shrink-0"
+        className="shrink-0 rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
       >
         <Avatar slug={authPayload.account.slug} />
       </MenuButton>

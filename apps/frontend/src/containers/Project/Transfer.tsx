@@ -1,6 +1,7 @@
-import { useApolloClient } from "@apollo/client";
-import { ArrowRightCircleIcon, CheckCircle2Icon } from "lucide-react";
 import { useState } from "react";
+import { useApolloClient } from "@apollo/client";
+import { invariant } from "@argos/util/invariant";
+import { ArrowRightCircleIcon, CheckCircle2Icon } from "lucide-react";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
@@ -203,9 +204,7 @@ const ReviewStep = (props: ReviewStepProps) => {
   };
   const actualAccount = readAccountFromCache(props.actualAccountId);
   const targetAccount = readAccountFromCache(props.targetAccountId);
-  if (!actualAccount || !targetAccount) {
-    throw new Error(`Invariant: cannot read accounts from cache`);
-  }
+  invariant(actualAccount && targetAccount, "cannot read accounts from cache");
   const form = useForm<ReviewInputs>({
     defaultValues: {
       name: props.projectName,
@@ -259,9 +258,10 @@ const ReviewStep = (props: ReviewStepProps) => {
             {(() => {
               if (!data) return <DialogText>Loading...</DialogText>;
               const project = data.projectById;
-              if (!project || !data.actualAccount || !data.targetAccount) {
-                throw new Error(`Invariant: data not found`);
-              }
+              invariant(
+                project && data.actualAccount && data.targetAccount,
+                "data not found",
+              );
               const buildCount = project.builds.pageInfo.totalCount;
               const screenshotCount = project.totalScreenshots;
               const samePlan =

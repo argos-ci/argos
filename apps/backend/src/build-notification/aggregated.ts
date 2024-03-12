@@ -1,11 +1,13 @@
+import { assertNever } from "@argos/util/assertNever";
+
 import { Build } from "@/database/models/Build.js";
 import { BuildNotification } from "@/database/models/BuildNotification.js";
-import {
-  type NotificationPayload,
-  getNotificationStatus,
-} from "./notification.js";
-import { assertUnreachable } from "@/util/unreachable.js";
 import type { Project } from "@/database/models/Project.js";
+
+import {
+  getNotificationStatus,
+  type NotificationPayload,
+} from "./notification.js";
 
 export async function getAggregatedNotification(
   commit: string,
@@ -92,6 +94,6 @@ export async function getAggregatedNotification(
         ...notificationStatus,
       };
     default:
-      assertUnreachable(type);
+      assertNever(type);
   }
 }

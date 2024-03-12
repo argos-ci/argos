@@ -1,7 +1,10 @@
+import { invariant } from "@argos/util/invariant";
+import * as Sentry from "@sentry/node";
 import bodyParser from "body-parser";
 import express from "express";
-import * as Sentry from "@sentry/node";
+
 import config from "@/config/index.js";
+import { getAdminAccount } from "@/graphql/services/account.js";
 import logger from "@/logger/index.js";
 import {
   createStripeCheckoutSession,
@@ -12,17 +15,14 @@ import {
 import type { Stripe } from "@/stripe/index.js";
 
 import { auth } from "../middlewares/auth.js";
-import { HTTPError, asyncHandler } from "../util.js";
-import { getAdminAccount } from "@/graphql/services/account.js";
+import { asyncHandler, boom } from "../util.js";
 
 const router = express.Router();
 
 async function parseStripeEvent(req: express.Request) {
   try {
     const signature = req.headers["stripe-signature"];
-    if (!signature) {
-      throw new Error("Stripe webhook signature missing");
-    }
+    invariant(signature, "Stripe webhook signature missing");
     const event: Stripe.Event = stripe.webhooks.constructEvent(
       req.body,
       signature,
@@ -30,7 +30,7 @@ async function parseStripeEvent(req: express.Request) {
     );
     return event;
   } catch (err) {
-    throw new HTTPError(400, "Stripe webhook signature verification failed");
+    throw boom(400, "Stripe webhook signature verification failed");
   }
 }
 
@@ -44,13 +44,9 @@ router.post(
     } catch (error) {
       Sentry.setContext("stripeEvent", event);
 
-      throw new HTTPError(
-        500,
-        "An error occurred while handling Stripe event.",
-        {
-          cause: error,
-        },
-      );
+      throw boom(500, "An error occurred while handling Stripe event.", {
+        cause: error,
+      });
     }
     res.sendStatus(200);
   }),
@@ -65,26 +61,19 @@ router.post(
       const { stripeCustomerId, accountId } = req.body;
       const user = req.auth?.user;
 
-      if (!user) {
-        throw new Error("User not logged in");
-      }
-
-      if (!stripeCustomerId) {
-        throw new Error("Stripe customer id missing");
-      }
-
-      if (!accountId) {
-        throw new Error("Account id missing");
-      }
+      invariant(user, "user not logged in");
+      invariant(stripeCustomerId, "Stripe customer id missing");
+      invariant(accountId, "account id missing");
 
       const account = await getAdminAccount({
         id: accountId,
         user,
       });
 
-      if (account.stripeCustomerId !== stripeCustomerId) {
-        throw new Error("Stripe customer id mismatch");
-      }
+      invariant(
+        account.stripeCustomerId === stripeCustomerId,
+        "Stripe customer id mismatch",
+      );
 
       const session = await stripe.billingPortal.sessions.create({
         customer: stripeCustomerId,
@@ -93,9 +82,7 @@ router.post(
           config.get("server.url"),
         ).href,
       });
-      if (!session.url) {
-        throw new Error("No session url");
-      }
+      invariant(session.url, "no session url");
 
       res.json({ sessionUrl: session.url });
     } catch (err) {
@@ -115,14 +102,8 @@ router.post(
   asyncHandler(async (req, res) => {
     try {
       const { accountId, successUrl, cancelUrl } = req.body;
-
-      if (!req.auth) {
-        throw new Error("Unauthenticated");
-      }
-
-      if (!accountId) {
-        throw new Error("AccountId missing");
-      }
+      invariant(req.auth, "Unauthenticated");
+      invariant(accountId, "accountId missing");
 
       const [teamAccount, proPlan, noTrial] = await Promise.all([
         getAdminAccount({ id: accountId, user: req.auth.user }),
@@ -139,9 +120,7 @@ router.post(
         trial: !noTrial,
       });
 
-      if (!session.url) {
-        throw new Error("No session url");
-      }
+      invariant(session.url, "no session url");
 
       res.json({ sessionUrl: session.url });
     } catch (err) {

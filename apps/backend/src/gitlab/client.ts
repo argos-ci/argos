@@ -1,4 +1,5 @@
 import { Gitlab } from "@gitbeaker/rest";
+
 import type { Account } from "@/database/models/index.js";
 
 export type { ExpandedUserSchema } from "@gitbeaker/rest";

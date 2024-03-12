@@ -1,6 +1,6 @@
 import { useQuery } from "@apollo/client";
 import { PlusCircleIcon } from "lucide-react";
-import { Link as RouterLink, matchPath, useLocation } from "react-router-dom";
+import { matchPath, Link as RouterLink, useLocation } from "react-router-dom";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";

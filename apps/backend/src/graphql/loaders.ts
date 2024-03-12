@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import DataLoader from "dataloader";
 import type { ModelClass } from "objection";
 
@@ -21,7 +22,6 @@ import {
   Test,
   User,
 } from "@/database/models/index.js";
-import { invariant } from "@/util/invariant.js";
 
 const createModelLoader = <TModelClass extends ModelClass<Model>>(
   Model: TModelClass,

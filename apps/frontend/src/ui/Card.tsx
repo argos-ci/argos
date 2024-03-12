@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import { HTMLProps } from "react";
+import { clsx } from "clsx";
 
 type CardProps = HTMLProps<HTMLDivElement> & {
   intent?: "danger";
@@ -10,7 +10,7 @@ export const Card = ({ className, intent, ...props }: CardProps) => {
     <div
       className={clsx(
         className,
-        "w-full overflow-hidden rounded border border-[--card-border] bg-app",
+        "bg-app w-full overflow-hidden rounded border border-[--card-border]",
         intent === "danger"
           ? "[--card-border:theme(borderColor.danger.hover)] [--card-footer-bg:theme(backgroundColor.danger.ui)]"
           : "[--card-border:theme(borderColor.DEFAULT)]",

@@ -1,4 +1,5 @@
 // import { callbackify } from "node:util";
+import { assertNever } from "@argos/util/assertNever";
 import { createClient } from "redis";
 
 import config from "@/config/index.js";
@@ -50,9 +51,8 @@ export const getRedisLock = async () => {
     case "disconnecting": {
       throw new Error("Redis is disconnecting");
     }
-    default: {
-      throw new Error(`Unknown status: ${status}`);
-    }
+    default:
+      assertNever(status);
   }
 };
 

@@ -1,4 +1,5 @@
 import type { ExpandedUserSchema } from "@/gitlab/index.js";
+
 import { GitlabUser } from "../models/GitlabUser.js";
 
 export async function getOrCreateGitlabUser(

@@ -1,16 +1,17 @@
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { invariant } from "@argos/util/invariant";
 import type { S3Client } from "@aws-sdk/client-s3";
 import type { TransactionOrKnex } from "objection";
-import { createReadStream } from "node:fs";
-import { createHash } from "node:crypto";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
 import { raw, transaction } from "@/database/index.js";
 import { File, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
 import { S3ImageFile } from "@/storage/index.js";
+import { chunk } from "@/util/chunk.js";
 import { getRedisLock } from "@/util/redis/index.js";
 
 import { diffImages } from "./util/image-diff/index.js";
-import { chunk } from "@/util/chunk.js";
 
 const hashFile = async (filepath: string): Promise<string> => {
   const fileStream = createReadStream(filepath);
@@ -155,15 +156,7 @@ export const computeScreenshotDiff = async (
       "[build, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]",
     );
 
-  if (!screenshotDiff) {
-    throw new Error(`Screenshot diff id: \`${screenshotDiff}\` not found`);
-  }
-
-  if (!screenshotDiff.compareScreenshot) {
-    throw new Error(
-      `Invariant violation: compareScreenshot should be defined for screenshotDiff id: \`${screenshotDiff.id}\``,
-    );
-  }
+  invariant(screenshotDiff?.compareScreenshot, "no compare screenshot");
 
   const baseImage = screenshotDiff.baseScreenshot?.s3Id
     ? new S3ImageFile({

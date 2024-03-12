@@ -3,10 +3,10 @@ import { Helmet } from "react-helmet";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
 
+import { BuildHotkeysDialogStateProvider } from "./BuildHotkeysDialogState";
 import { BuildNotFound } from "./BuildNotFound";
 import { BuildPage } from "./BuildPage";
 import { useBuildParams } from "./BuildParams";
-import { BuildHotkeysDialogStateProvider } from "./BuildHotkeysDialogState";
 
 export const Build = memo(() => {
   const params = useBuildParams();

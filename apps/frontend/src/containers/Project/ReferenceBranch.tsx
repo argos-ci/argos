@@ -2,13 +2,14 @@ import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
+import { Anchor } from "@/ui/Anchor";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormCheckbox } from "@/ui/FormCheckbox";
 import { FormTextInput } from "@/ui/FormTextInput";
+
 import { getRepositoryLabel } from "../Repository";
-import { Anchor } from "@/ui/Anchor";
 
 const UpdateBaselineBranchMutation = graphql(`
   mutation ProjectReferenceBranch_updateProject(

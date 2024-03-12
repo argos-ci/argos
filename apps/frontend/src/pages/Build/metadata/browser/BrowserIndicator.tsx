@@ -1,11 +1,13 @@
 import { HTMLAttributes } from "react";
-import edgeIcon from "./logos/edge.svg";
-import firefoxIcon from "./logos/firefox.svg";
-import safariIcon from "./logos/safari.svg";
+
+import { Tooltip } from "@/ui/Tooltip";
+
 import chromeIcon from "./logos/chrome.svg";
 import chromiumIcon from "./logos/chromium.svg";
+import edgeIcon from "./logos/edge.svg";
 import electronIcon from "./logos/electron.svg";
-import { Tooltip } from "@/ui/Tooltip";
+import firefoxIcon from "./logos/firefox.svg";
+import safariIcon from "./logos/safari.svg";
 
 const Icons: Record<string, string> = {
   edge: edgeIcon,

@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getPublicImageUrl } from "@/storage/index.js";
@@ -6,7 +7,6 @@ import type {
   IResolvers,
   IScreenshotDiffStatus,
 } from "../__generated__/resolver-types.js";
-import { invariant } from "@/util/invariant.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -66,9 +66,7 @@ export const resolvers: IResolvers = {
           : null,
       ]);
       const name = baseScreenshot?.name || compareScreenshot?.name;
-      if (!name) {
-        throw new Error("ScreenshotDiff without name");
-      }
+      invariant(name, "screenshot diff without name");
       return name;
     },
     width: async (screenshot, _args, ctx) => {

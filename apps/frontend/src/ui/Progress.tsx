@@ -19,10 +19,10 @@ export const Progress = ({
       aria-valuenow={value}
       aria-valuemin={min}
       aria-valuemax={max}
-      className={clsx("h-2 w-full overflow-hidden rounded-md bg-ui", className)}
+      className={clsx("bg-ui h-2 w-full overflow-hidden rounded-md", className)}
     >
       <div
-        className="h-2 bg-gradient-to-r from-progress-from to-progress-to"
+        className="from-progress-from to-progress-to h-2 bg-gradient-to-r"
         style={{
           width: `${percent * 100}%`,
         }}

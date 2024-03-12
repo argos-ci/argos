@@ -1,7 +1,8 @@
-import { CheckIcon, ClipboardIcon } from "lucide-react";
 import { Button as AriakitButton, ButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
+import { CheckIcon, ClipboardIcon } from "lucide-react";
 import { useClipboard } from "use-clipboard-copy";
+
 import { Tooltip } from "./Tooltip";
 
 export const CopyButton = ({
@@ -20,7 +21,7 @@ export const CopyButton = ({
         {...props}
         className={clsx(
           className,
-          "cursor-default text-low hover:text rounded bg-ui hover:bg-hover p-0.5",
+          "text-low hover:text bg-ui hover:bg-hover cursor-default rounded p-0.5",
         )}
         onClick={(event) => {
           event.preventDefault();

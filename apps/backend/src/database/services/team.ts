@@ -10,10 +10,7 @@ const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
   const nameSlug = slugify(name);
   const slug = index ? `${nameSlug}-${index}` : nameSlug;
 
-  const existingAccount = await Account.query()
-    .select("id")
-    .where({ slug })
-    .first();
+  const existingAccount = await Account.query().select("id").findOne({ slug });
 
   if (!existingAccount) {
     return slug;

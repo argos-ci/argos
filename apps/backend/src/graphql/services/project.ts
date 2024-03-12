@@ -1,3 +1,5 @@
+import { invariant } from "@argos/util/invariant";
+
 import {
   Build,
   BuildNotification,
@@ -14,15 +16,16 @@ import {
 export const getAdminProject = async (args: {
   id: string;
   user: User | undefined | null;
+  withGraphFetched?: string;
 }): Promise<Project> => {
-  if (!args.user) {
-    throw new Error("Unauthorized");
+  invariant(args.user, "no user");
+  const query = Project.query().findById(args.id).throwIfNotFound();
+  if (args.withGraphFetched) {
+    query.withGraphFetched(args.withGraphFetched);
   }
-  const project = await Project.query().findById(args.id).throwIfNotFound();
+  const project = await query;
   const permissions = await project.$getPermissions(args.user);
-  if (!permissions.includes("admin")) {
-    throw new Error("Unauthorized");
-  }
+  invariant(permissions.includes("admin"), "not admin");
   return project;
 };
 

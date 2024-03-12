@@ -17,9 +17,13 @@
     },
     "apps/transactional": {
       "entry": ["emails/*.tsx"]
+    },
+    "packages/tsconfig": {
+      "ignoreDependencies": ["@tsconfig/node20", "@tsconfig/strictest"]
     }
   },
   "exclude": ["classMembers"],
   "ignore": ["playwright.config.mjs", "examples/**/*"],
+  "ignoreDependencies": ["@argos/tsconfig"],
   "ignoreBinaries": ["stripe", "sleep"]
 }

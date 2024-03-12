@@ -1,4 +1,4 @@
-import { invariant } from "@/util/invariant.js";
+import { invariant } from "@argos/util/invariant";
 
 const retryableSymbol = Symbol("retryable");
 

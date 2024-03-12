@@ -1,16 +1,16 @@
-import { useQuery } from "@apollo/client";
 import { useEffect } from "react";
+import { useQuery } from "@apollo/client";
 
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { graphql } from "@/gql";
 
-import { BuildHeader } from "./header/BuildHeader";
 import { BuildHotkeysDialog } from "./BuildHotkeys";
+import { useBuildHotkeysDialogState } from "./BuildHotkeysDialogState";
 import { BuildNotFound } from "./BuildNotFound";
 import type { BuildParams } from "./BuildParams";
 import { BuildWorkspace } from "./BuildWorkspace";
+import { BuildHeader } from "./header/BuildHeader";
 import { OvercapacityBanner } from "./OvercapacityBanner";
-import { useBuildHotkeysDialogState } from "./BuildHotkeysDialogState";
 
 const ProjectQuery = graphql(`
   query BuildPage_Project(

@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import { ComponentProps, HTMLProps } from "react";
+import { clsx } from "clsx";
 import { Link } from "react-router-dom";
 
 import { UpDownMenuButton, UpDownMenuButtonProps } from "./Menu";
@@ -11,7 +11,7 @@ export const BreadcrumbItem = (props: HTMLProps<HTMLLIElement>) => {
 export const BreadcrumbLink = (props: ComponentProps<typeof Link>) => {
   return (
     <Link
-      className="flex min-h-[28px] items-center gap-2 font-medium text-low transition hover:text aria-[current=page]:cursor-default aria-[current=page]:text"
+      className="text-low hover:text aria-[current=page]:text flex min-h-[28px] items-center gap-2 font-medium transition aria-[current=page]:cursor-default"
       {...props}
     />
   );
@@ -19,7 +19,7 @@ export const BreadcrumbLink = (props: ComponentProps<typeof Link>) => {
 
 export const BreadcrumbItemIcon = (props: { children: React.ReactNode }) => {
   return (
-    <div className="flex h-6 w-6 items-center justify-center">
+    <div className="flex size-6 items-center justify-center">
       {props.children}
     </div>
   );
@@ -28,7 +28,7 @@ export const BreadcrumbItemIcon = (props: { children: React.ReactNode }) => {
 export const BreadcrumbSeparator = () => {
   return (
     <span
-      className="select-none text-2xl leading-none text-low"
+      className="text-low select-none text-2xl leading-none"
       role="separator"
       aria-orientation="vertical"
     >

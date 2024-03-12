@@ -1,7 +1,8 @@
 /* eslint-disable no-await-in-loop */
+import { invariant } from "@argos/util/invariant";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 
-import { TransactionOrKnex, transaction } from "@/database/index.js";
+import { transaction, TransactionOrKnex } from "@/database/index.js";
 import {
   GithubAccount,
   GithubInstallation,
@@ -68,12 +69,10 @@ const extractOwnersFromRepositories = (repositories: ApiRepository[]) => {
 
       if (!exist) {
         const lowerType = repo.owner.type.toLowerCase();
-
-        if (lowerType !== "organization" && lowerType !== "user") {
-          throw new Error(
-            `Unexpected owner type ${repo.owner.type} for repository ${repo.id}`,
-          );
-        }
+        invariant(
+          lowerType === "organization" || lowerType === "user",
+          `unexpected owner type ${repo.owner.type} for repository ${repo.id}`,
+        );
 
         owners.push({
           id: repo.owner.id,
@@ -183,11 +182,10 @@ const saveRepositories = async (
       ({ githubId }) => githubId === apiRepo.owner.id,
     )?.id;
 
-    if (!githubAccountId) {
-      throw new Error(
-        `Cannot find account ${apiRepo.owner.id} for repository ${apiRepo.id}`,
-      );
-    }
+    invariant(
+      githubAccountId,
+      `cannot find account ${apiRepo.owner.id} for repository ${apiRepo.id}`,
+    );
 
     return {
       githubId: apiRepo.id,
@@ -232,12 +230,9 @@ const getRepositories = async (ctx: SyncCtx): Promise<ApiRepository[]> => {
 };
 
 export const synchronizeInstallation = async (installationId: string) => {
-  const installation =
-    await GithubInstallation.query().findById(installationId);
-
-  if (!installation) {
-    throw new Error(`Installation with id "${installationId}" not found`);
-  }
+  const installation = await GithubInstallation.query()
+    .findById(installationId)
+    .throwIfNotFound();
 
   const appOctokit = getAppOctokit();
   const octokit = await getInstallationOctokit(installation.id, appOctokit);

@@ -1,6 +1,8 @@
-import { WelcomeEmail } from "./welcome.js";
 import { Resend } from "resend";
+
 import config from "@/config/index.js";
+
+import { WelcomeEmail } from "./welcome.js";
 
 const production = config.get("env") === "production";
 const resendApiKey = config.get("resend.apiKey");

@@ -1,5 +1,6 @@
-import { Tooltip } from "@/ui/Tooltip";
 import { LucideProps, Moon } from "lucide-react";
+
+import { Tooltip } from "@/ui/Tooltip";
 
 export function ColorSchemeIndicator({
   colorScheme,

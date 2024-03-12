@@ -1,12 +1,12 @@
-import { DownloadIcon } from "lucide-react";
-import { clsx } from "clsx";
 import { memo, useLayoutEffect, useRef, useState } from "react";
+import { clsx } from "clsx";
+import { DownloadIcon } from "lucide-react";
 
 import { checkIsBuildEmpty } from "@/containers/Build";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { Anchor } from "@/ui/Anchor";
 import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
-import { Anchor } from "@/ui/Anchor";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useScrollListener } from "@/ui/useScrollListener";
@@ -22,11 +22,11 @@ import {
   BuildDiffVisibleStateProvider,
   useBuildDiffVisibleState,
 } from "./BuildDiffVisibleState";
-import { ZoomPane, ZoomerSyncProvider } from "./Zoomer";
 import {
   BuildDiffViewModeStateProvider,
   useBuildDiffViewModeState,
 } from "./useBuildDiffViewModeState";
+import { ZoomerSyncProvider, ZoomPane } from "./Zoomer";
 
 const BuildFragment = graphql(`
   fragment BuildDetail_Build on Build {
@@ -103,15 +103,12 @@ const BuildScreenshotHeader = memo(
     date: string;
   }) => {
     return (
-      <div className="flex shrink-0 flex-col items-center gap-0.5 text-low">
+      <div className="text-low flex shrink-0 flex-col items-center gap-0.5">
         <div className="flex max-w-full items-center gap-1">
           <div className="shrink-0 select-none text-xs font-medium">
             {label} from
           </div>
-          <Code
-            className="overflow-hidden text-ellipsis whitespace-nowrap"
-            title={branch}
-          >
+          <Code className="truncate" title={branch}>
             {branch}
           </Code>
         </div>
@@ -133,12 +130,12 @@ const MissingScreenshotInfo = memo(
   }) => {
     return (
       <div className="w-full">
-        <div className="text-s flex flex-col items-center gap-4 rounded border bg-app p-8 text-center">
+        <div className="text-s bg-app flex flex-col items-center gap-4 rounded border p-8 text-center">
           <div className="flex flex-col items-center gap-2">
-            <div className="[&>*]:h-10 [&>*]:w-10">{icon}</div>
+            <div className="[&>*]:size-10">{icon}</div>
             <div className="text-base font-medium">{title}</div>
           </div>
-          <p className="text-sm text-low">{description}</p>
+          <p className="text-low text-sm">{description}</p>
         </div>
       </div>
     );
@@ -186,7 +183,7 @@ function ScreenshotContainer({
   return (
     <div
       className={clsx(
-        "relative min-w-0 min-h-0",
+        "relative min-h-0 min-w-0",
         contained && "max-h-full max-w-full",
       )}
       style={
@@ -513,7 +510,7 @@ export const BuildDetail = (props: {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-subtle pb-4"
+      className="bg-subtle flex min-h-0 flex-1 flex-col overflow-y-auto pb-4"
     >
       {activeDiff ? (
         <ZoomerSyncProvider id={activeDiff.id}>
@@ -535,7 +532,7 @@ export const BuildDetail = (props: {
         </ZoomerSyncProvider>
       ) : checkIsBuildEmpty(build) ? (
         <div className="flex h-full min-h-0 flex-1 items-center justify-center">
-          <div className="m-4 max-w-2xl rounded-lg border border-info bg-info-app p-8 text-center text-info-low">
+          <div className="border-info bg-info-app text-info-low m-4 max-w-2xl rounded-lg border p-8 text-center">
             <div className="mb-2 text-lg font-semibold">
               No screenshot found
             </div>

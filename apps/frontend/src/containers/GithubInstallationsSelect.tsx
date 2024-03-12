@@ -1,5 +1,7 @@
 import * as React from "react";
+import { invariant } from "@apollo/client/utilities/globals";
 import { MarkGithubIcon } from "@primer/octicons-react";
+import { ListIcon, PlusIcon } from "lucide-react";
 
 import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -11,8 +13,6 @@ import {
   SelectSeparator,
   useSelectState,
 } from "@/ui/Select";
-import { ListIcon, PlusIcon } from "lucide-react";
-import { invariant } from "@apollo/client/utilities/globals";
 
 const InstallationFragment = graphql(`
   fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {
@@ -110,7 +110,7 @@ export const GithubInstallationsSelect = React.forwardRef<
           className="cursor-pointer"
         >
           <div className="flex items-center gap-2">
-            <PlusIcon className="w-[1em] h-[1em]" />
+            <PlusIcon className="size-[1em]" />
             Add GitHub Account
           </div>
         </SelectItem>
@@ -124,7 +124,7 @@ export const GithubInstallationsSelect = React.forwardRef<
             }}
           >
             <div className="flex items-center gap-2">
-              <ListIcon className="w-[1em] h-[1em]" />
+              <ListIcon className="size-[1em]" />
               Switch Git Provider
             </div>
           </SelectItem>

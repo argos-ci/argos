@@ -2,13 +2,13 @@ import { memo } from "react";
 
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { Progress } from "@/ui/Progress";
 
 import { BuildDetail } from "./BuildDetail";
 import { BuildDiffProvider } from "./BuildDiffState";
+import { BuildOrphanDialog } from "./BuildOrphanDialog";
 import { BuildParams } from "./BuildParams";
 import { BuildSidebar } from "./BuildSidebar";
-import { BuildOrphanDialog } from "./BuildOrphanDialog";
-import { Progress } from "@/ui/Progress";
 
 const BuildFragment = graphql(`
   fragment BuildWorkspace_Build on Build {
@@ -65,11 +65,11 @@ const BuildProgress = memo(
               max={parallel.total}
               min={0}
             />
-            <div className="flex justify-between tabular-nums font-medium mb-0.5">
+            <div className="mb-0.5 flex justify-between font-medium tabular-nums">
               <div>{parallel.received} batches</div>
               <div className="text-low">/ {parallel.total}</div>
             </div>
-            <div className="text-low text-xs mb-1 font-mono">
+            <div className="text-low mb-1 font-mono text-xs">
               {parallel.nonce}
             </div>
           </div>

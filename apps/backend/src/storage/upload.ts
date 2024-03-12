@@ -1,8 +1,9 @@
+import { randomUUID } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { invariant } from "@argos/util/invariant";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import type { S3Client } from "@aws-sdk/client-s3";
 import mime from "mime";
-import { randomUUID } from "node:crypto";
-import { createReadStream } from "node:fs";
 
 export const uploadFromFilePath = async ({
   s3,
@@ -16,9 +17,7 @@ export const uploadFromFilePath = async ({
 } & Omit<PutObjectCommand["input"], "Key">) => {
   const Key = KeyArg || randomUUID();
   const ContentType = mime.getType(inputPath);
-  if (!ContentType) {
-    throw new Error(`Could not determine mime type for ${inputPath}`);
-  }
+  invariant(ContentType, `could not determine mime type for ${inputPath}`);
   await s3.send(
     new PutObjectCommand({
       Body: createReadStream(inputPath),
