@@ -56,6 +56,8 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          NODE_ENV: production
 
       - name: Run unit tests
         run: npm exec -- vitest -c vitest.unit.config.ts
@@ -108,6 +110,8 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          NODE_ENV: production
 
       - name: Setup
         run: npm run setup

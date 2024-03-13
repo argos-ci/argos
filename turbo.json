@@ -21,6 +21,7 @@
       "outputs": []
     },
     "watch-build": {
+      "dependsOn": ["build"],
       "persistent": true,
       "cache": false
     },
