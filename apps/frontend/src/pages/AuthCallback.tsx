@@ -3,11 +3,12 @@ import * as Sentry from "@sentry/browser";
 import axios, { isAxiosError } from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+import config from "@/config";
 import { AuthProvider, useAuth } from "@/containers/Auth";
 import { UniversalNavigate } from "@/containers/Redirect";
 
 const api = axios.create({
-  baseURL: process.env["API_BASE_URL"] as string,
+  baseURL: config.get("api.baseUrl"),
 });
 
 const getLoginUrl = (error: unknown) => {

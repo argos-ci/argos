@@ -4,7 +4,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
-      "env": ["BUILD_MODE"]
+      "env": ["BUILD_MODE", "CI"]
     },
     "//#codegen": {
       "outputs": [
