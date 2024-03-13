@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "build": "NODE_ENV=production webpack",
+    "build": "rm -rf dist && webpack",
     "check-types": "npm exec tsc --noEmit",
     "watch-build": "webpack-dev-server"
   },

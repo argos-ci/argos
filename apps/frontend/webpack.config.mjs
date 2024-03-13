@@ -7,7 +7,7 @@ import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import webpack from "webpack";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
-const prod = process.env["NODE_ENV"] === "production";
+const prod = process.env["BUILD_MODE"] === "production";
 
 export default {
   mode: prod ? "production" : "development",

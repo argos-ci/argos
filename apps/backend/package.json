@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "swc src -d dist --strip-leading-paths",
+    "build": "rm -rf dist && swc src -d dist --strip-leading-paths",
     "watch-build": "npm run build -- --watch --quiet",
     "setup": "npm run db:create && npm run db:load",
     "check-types": "npm exec tsc --noEmit",

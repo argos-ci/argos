@@ -3,10 +3,15 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      "env": ["BUILD_MODE"]
     },
     "//#codegen": {
-      "outputs": ["src/gql/**"]
+      "outputs": [
+        "apps/frontend/src/gql/**",
+        "apps/frontend/src/gql-fragments.json",
+        "apps/backend/src/graphql/__generated__/**"
+      ]
     },
     "setup": {
       "dependsOn": ["build"],
@@ -17,8 +22,9 @@
       "outputs": []
     },
     "watch-build": {
+      "dependsOn": ["build"],
       "persistent": true,
-      "outputs": ["dist/**"]
+      "cache": false
     },
     "watch-server": {
       "persistent": true,
