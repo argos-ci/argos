@@ -2,6 +2,7 @@ import * as React from "react";
 import { clsx } from "clsx";
 import { ExternalLinkIcon } from "lucide-react";
 
+import config from "@/config";
 import { useAssertAuthToken } from "@/containers/Auth";
 
 import { anchorClassNames } from "./Anchor";
@@ -18,7 +19,7 @@ async function getStripePortalLink({
   accountId: string;
 }) {
   const response = await fetch(
-    process.env["API_BASE_URL"] + "/stripe/create-customer-portal-session",
+    config.get("api.baseUrl") + "/stripe/create-customer-portal-session",
     {
       method: "POST",
       headers: {
@@ -102,7 +103,7 @@ async function getCheckoutSessionLink({
   cancelUrl: string;
 }) {
   const response = await fetch(
-    process.env["API_BASE_URL"] + "/stripe/create-checkout-session",
+    config.get("api.baseUrl") + "/stripe/create-checkout-session",
     {
       method: "POST",
       headers: {

@@ -84,6 +84,9 @@ export const rendering = (additionalClientData?: any) => {
           server: {
             url: config.get("server.url"),
           },
+          api: {
+            baseUrl: config.get("api.baseUrl"),
+          },
         },
         ...additionalClientData,
       }),

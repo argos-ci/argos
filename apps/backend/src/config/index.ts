@@ -66,6 +66,14 @@ const config = convict({
       default: false,
     },
   },
+  api: {
+    baseUrl: {
+      doc: "The API base URL",
+      format: String,
+      default: "https://api.argos-ci.dev:4001",
+      env: "API_BASE_URL",
+    },
+  },
   amqp: {
     url: {
       doc: "RabbitMQ url",

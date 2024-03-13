@@ -4,10 +4,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import AssetsPlugin from "assets-webpack-plugin";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
+// eslint-disable-next-line import/no-named-as-default
 import webpack from "webpack";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const prod = process.env["BUILD_MODE"] === "production";
+const ci = process.env["CI"] === "true";
 
 export default {
   mode: prod ? "production" : "development",
@@ -53,20 +55,10 @@ export default {
     new MiniCssExtractPlugin({
       filename: prod ? "[name]-bundle-[chunkhash:8].css" : "[name].css",
     }),
-    new webpack.EnvironmentPlugin({
-      PLATFORM: "browser",
-      SENTRY_RELEASE: process.env["COMMIT_REF"] || "",
-      API_BASE_URL: "https://api.argos-ci.dev:4001",
-    }),
-    ...(prod
-      ? [
-          new AssetsPlugin({
-            path: "dist",
-          }),
-        ]
-      : []),
+    new webpack.EnvironmentPlugin(),
+    ...(prod ? [new AssetsPlugin({ path: "dist" })] : []),
   ],
-  ...(!prod && process.env["CI"] !== "true"
+  ...(!prod && !ci
     ? {
         devServer: {
           historyApiFallback: true,
