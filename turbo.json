@@ -6,7 +6,11 @@
       "outputs": ["dist/**"]
     },
     "//#codegen": {
-      "outputs": ["src/gql/**"]
+      "outputs": [
+        "apps/frontend/src/gql/**",
+        "apps/frontend/src/gql-fragments.json",
+        "apps/backend/src/graphql/__generated__/**"
+      ]
     },
     "setup": {
       "dependsOn": ["build"],
@@ -18,7 +22,7 @@
     },
     "watch-build": {
       "persistent": true,
-      "outputs": ["dist/**"]
+      "cache": false
     },
     "watch-server": {
       "persistent": true,
