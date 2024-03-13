@@ -55,9 +55,7 @@ jobs:
         uses: ./.github/actions/setup-npm
 
       - name: Build
-        run: npm run build
-        env:
-          NODE_ENV: production
+        run: npm exec -- turbo run build --filter=\!@argos/frontend
 
       - name: Run unit tests
         run: npm exec -- vitest -c vitest.unit.config.ts
@@ -108,13 +106,10 @@ jobs:
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-npm
 
-      - name: Build
-        run: npm run build
-        env:
-          NODE_ENV: production
-
       - name: Setup
         run: npm run setup
+        env:
+          BUILD_MODE: production
 
       - name: Test
         run: npm exec -- vitest -c vitest.e2e.config.ts
@@ -163,6 +158,8 @@ jobs:
 
       - name: Setup
         run: npm run setup
+        env:
+          BUILD_MODE: production
 
       - name: Truncate and seed database
         run: npm run e2e:setup
