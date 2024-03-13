@@ -1,18 +1,20 @@
 #!/usr/bin/env node
 import { callbackify } from "node:util";
 
-import { Build } from "@/database/models/index.js";
+import { ScreenshotDiff } from "@/database/models/index.js";
 import logger from "@/logger/index.js";
 
-import { job as buildJob } from "../job.js";
+import { job as diffJob } from "../job.js";
 
 const main = callbackify(async () => {
-  const builds = await Build.query()
+  const diffs = await ScreenshotDiff.query()
     .where({ jobStatus: "pending" })
     .whereRaw(`"createdAt" > now() - interval '1 hour'`)
     .orderBy("id", "desc");
-  await Promise.all(builds.map((build) => buildJob.push(build.id)));
-  logger.info(`${builds.length} builds pushed in queue`);
+  for (const diff of diffs) {
+    await diffJob.push(diff.id);
+  }
+  logger.info(`${diffs.length} diffs pushed in queue`);
 });
 
 main((err) => {
