@@ -1,5 +1,5 @@
 {
-  "name": "@argos-ci/root",
+  "name": "@argos/root",
   "private": true,
   "workspaces": [
     "apps/*",

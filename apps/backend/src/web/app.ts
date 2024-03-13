@@ -23,20 +23,17 @@ export const createApp = async () => {
   app.set("views", join(__dirname, ".."));
 
   app.use((req, _res, next) => {
+    const scope = Sentry.getCurrentScope();
     if (req.headers["x-argos-release-version"]) {
-      Sentry.configureScope((scope) => {
-        scope.setTag(
-          "clientReleaseVersion",
-          req.headers["x-argos-release-version"] as string,
-        );
-      });
+      scope.setTag(
+        "clientReleaseVersion",
+        req.headers["x-argos-release-version"] as string,
+      );
     } else if (req.headers["x-argos-cli-version"]) {
-      Sentry.configureScope((scope) => {
-        scope.setTag(
-          "clientCliVersion",
-          req.headers["x-argos-cli-version"] as string,
-        );
-      });
+      scope.setTag(
+        "clientCliVersion",
+        req.headers["x-argos-cli-version"] as string,
+      );
     }
 
     next();
