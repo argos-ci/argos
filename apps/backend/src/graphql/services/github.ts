@@ -1,3 +1,6 @@
+import { invariant } from "@argos/util/invariant";
+import { z } from "zod";
+
 import {
   Account,
   GithubAccount,
@@ -6,9 +9,7 @@ import {
   TeamUser,
   User,
 } from "@/database/models/index.js";
-import { Octokit, getTokenOctokit } from "@/github/index.js";
-import { invariant } from "@/util/invariant.js";
-import { z } from "zod";
+import { getTokenOctokit, Octokit } from "@/github/index.js";
 
 const OwnerTypeSchema = z.enum(["user", "organization"]);
 

@@ -1,8 +1,8 @@
 "use client";
 
+import * as React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { clsx } from "clsx";
-import * as React from "react";
 
 type TooltipVariant = "default" | "info";
 
@@ -37,16 +37,13 @@ export const TooltipContent = React.forwardRef(
     ref: React.ForwardedRef<HTMLDivElement>,
   ) => {
     const variantClassName = variantClassNames[variant];
-    if (!variantClassName) {
-      throw new Error(`Invalid variant: ${variant}`);
-    }
     return (
       <TooltipPrimitive.Content
         ref={ref}
         sideOffset={4}
         {...props}
         className={clsx(
-          "z-50 overflow-hidden rounded-md border bg-subtle text shadow-md",
+          "bg-subtle text z-50 overflow-hidden rounded-md border shadow-md",
           "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
           variantClassName,
           className,

@@ -1,5 +1,5 @@
 import { setTimeout as delay } from "node:timers/promises";
-import { RedisClientType, createClient } from "redis";
+import { createClient, RedisClientType } from "redis";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import config from "@/config/index.js";

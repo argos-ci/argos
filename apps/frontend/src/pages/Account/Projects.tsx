@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
@@ -8,12 +9,11 @@ import {
 } from "@/containers/CheckoutStatusDialog";
 import { ProjectList } from "@/containers/ProjectList";
 import { graphql } from "@/gql";
+import { AccountPermission } from "@/gql/graphql";
 import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
 
 import { NotFound } from "../NotFound";
-import { AccountPermission } from "@/gql/graphql";
-import { invariant } from "@/util/invariant";
 
 const AccountQuery = graphql(`
   query AccountProjects_account($slug: String!) {
@@ -41,7 +41,7 @@ export const AccountProjects = () => {
   });
 
   return (
-    <div className="flex-1 bg-subtle">
+    <div className="bg-subtle flex-1">
       <Container className="pb-10 pt-4">
         <Helmet>
           <title>{accountSlug} • Projects</title>

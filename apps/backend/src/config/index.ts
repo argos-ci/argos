@@ -1,8 +1,8 @@
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import convict from "convict";
 // eslint-disable-next-line import/default
 import dotenv from "dotenv";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

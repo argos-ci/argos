@@ -1,8 +1,8 @@
-import { S3Client } from "@aws-sdk/client-s3";
-import axios from "axios";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { S3Client } from "@aws-sdk/client-s3";
+import axios from "axios";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import config from "@/config/index.js";

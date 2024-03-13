@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import { HTMLAttributes } from "react";
+import { clsx } from "clsx";
 
 import { CopyButton } from "./CopyButton";
 
@@ -14,7 +14,7 @@ export const Pre = ({
     <pre
       className={clsx(
         className,
-        "relative whitespace-pre-wrap rounded bg-ui p-4",
+        "bg-ui relative whitespace-pre-wrap rounded p-4",
       )}
       {...props}
     >

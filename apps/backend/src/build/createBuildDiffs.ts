@@ -1,9 +1,10 @@
+import { invariant } from "@argos/util/invariant";
+
 import { transaction } from "@/database/index.js";
 import { Build, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
 import type { BuildType, ScreenshotBucket } from "@/database/models/index.js";
 
 import { getBaseScreenshotBucket } from "./base.js";
-import { invariant } from "@/util/invariant.js";
 
 const getBuildType = ({
   baseScreenshotBucket,

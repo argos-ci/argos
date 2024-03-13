@@ -2,12 +2,12 @@ import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
+import { AccountPermission } from "@/gql/graphql";
+import { Anchor } from "@/ui/Anchor";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { AccountPermission } from "@/gql/graphql";
-import { Anchor } from "@/ui/Anchor";
 
 const AccountFragment = graphql(`
   fragment AccountGitLab_Account on Account {
@@ -71,7 +71,7 @@ export const AccountGitLab = (props: {
               label="Personal access token"
               disabled={!userIsAdmin}
             />
-            <div className="text-sm text-low mt-2">
+            <div className="text-low mt-2 text-sm">
               The access token is used to update commit status in GitLab. These
               updates are made on behalf of the user who created the access
               token. It must have access to the repository you want to integrate

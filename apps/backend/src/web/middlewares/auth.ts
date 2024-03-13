@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 
-import { asyncHandler } from "../util.js";
 import { AuthPayload, getAuthPayloadFromRequest } from "@/auth/request.js";
+
+import { asyncHandler } from "../util.js";
 
 declare global {
   namespace Express {

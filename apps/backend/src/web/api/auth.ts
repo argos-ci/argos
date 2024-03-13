@@ -1,28 +1,29 @@
+import { invariant } from "@argos/util/invariant";
 import axios from "axios";
 import bodyParser from "body-parser";
 import cors from "cors";
 import { Router } from "express";
+
+import { createJWT } from "@/auth/jwt.js";
 import config from "@/config/index.js";
+import type { Account } from "@/database/models/index.js";
 import {
   getOrCreateGhAccountFromGhProfile,
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
   joinSSOTeams,
 } from "@/database/services/account.js";
+import { getOrCreateGitlabUser } from "@/database/services/gitlabUser.js";
 import {
   getTokenOctokit,
   retrieveOAuthToken as retrieveGithubOAuthToken,
 } from "@/github/index.js";
-
-import { createJWT } from "@/auth/jwt.js";
-import { asyncHandler } from "../util.js";
 import {
   getTokenGitlabClient,
   retrieveOAuthToken as retrieveGitlabOAuthToken,
 } from "@/gitlab/index.js";
-import { getOrCreateGitlabUser } from "@/database/services/gitlabUser.js";
-import type { Account } from "@/database/models/index.js";
-import { invariant } from "@/util/invariant.js";
+
+import { asyncHandler } from "../util.js";
 
 const router = Router();
 

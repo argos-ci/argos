@@ -5,6 +5,7 @@ import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { Time } from "@/ui/Time";
+
 import { getRepositoryIcon } from "./Repository";
 
 const ProjectFragment = graphql(`
@@ -44,7 +45,7 @@ const ProjectCard = ({ project }: { project: Project }) => {
     <RouterLink
       key={project.id}
       to={`/${project.slug}`}
-      className="flex flex-col gap-4 rounded-md border bg-app p-4 hover:border-hover"
+      className="bg-app hover:border-hover flex flex-col gap-4 rounded-md border p-4"
     >
       <div className="flex min-w-0 justify-between">
         <div className="flex min-w-0 items-center gap-4">
@@ -55,14 +56,14 @@ const ProjectCard = ({ project }: { project: Project }) => {
           />
           <div className="min-w-0 flex-1">
             <div className="truncate font-medium">{project.name}</div>
-            <div className="truncate text-sm text-low">
+            <div className="text-low truncate text-sm">
               {project.repository?.fullName ?? "-"}
             </div>
           </div>
         </div>
-        {RepositoryIcon && <RepositoryIcon className="h-6 w-6 shrink-0" />}
+        {RepositoryIcon && <RepositoryIcon className="size-6 shrink-0" />}
       </div>
-      <div className="text-sm text-low">
+      <div className="text-low text-sm">
         {project.latestBuild ? (
           <>
             Last build <Time date={project.latestBuild.createdAt} />
@@ -98,13 +99,13 @@ export const ProjectList = (props: {
 
   if (projects.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center mt-10">
+      <div className="mt-10 flex flex-col items-center justify-center">
         <div className="mb-2 text-2xl font-medium">
           There's no projects yet.
         </div>
         {props.canCreateProject && (
           <>
-            <div className="mb-4 text-low">
+            <div className="text-low mb-4">
               Start by creating a new project.
             </div>
             <CreateProjectButton />

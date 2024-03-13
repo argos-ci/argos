@@ -3,23 +3,23 @@ import { useParams } from "react-router-dom";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
+import { AccountGitLab } from "@/containers/Account/GitLab";
 import { Query } from "@/containers/Apollo";
 import { useAuthTokenPayload } from "@/containers/Auth";
 import { SettingsLayout } from "@/containers/Layout";
 import { PlanCard } from "@/containers/PlanCard";
+import { TeamAccessRole } from "@/containers/Team/AccessRole";
 import { TeamDelete } from "@/containers/Team/Delete";
-import { TeamMembers } from "@/containers/Team/Members";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
-import { AccountGitLab } from "@/containers/Account/GitLab";
+import { TeamMembers } from "@/containers/Team/Members";
 import { graphql } from "@/gql";
+import { AccountPermission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
 import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
 import { Heading } from "@/ui/Typography";
 
 import { useAccountContext } from ".";
-import { TeamAccessRole } from "@/containers/Team/AccessRole";
-import { AccountPermission } from "@/gql/graphql";
 
 const AccountQuery = graphql(`
   query AccountSettings_account($slug: String!) {

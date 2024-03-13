@@ -1,11 +1,11 @@
-import { XIcon } from "lucide-react";
+import { forwardRef } from "react";
 import {
   Dialog as AriakitDialog,
   DialogDismiss as AriakitDialogDismiss,
   DialogProps as AriakitDialogProps,
 } from "ariakit/dialog";
 import { clsx } from "clsx";
-import { forwardRef } from "react";
+import { XIcon } from "lucide-react";
 
 import { Button, ButtonProps } from "./Button";
 import { IconButton } from "./IconButton";
@@ -35,7 +35,7 @@ export const DialogFooter = forwardRef<
   return (
     <div
       ref={ref}
-      className="flex items-center justify-end gap-4 border-t bg-subtle p-4"
+      className="bg-subtle flex items-center justify-end gap-4 border-t p-4"
     >
       {children}
     </div>
@@ -120,7 +120,7 @@ export const Dialog = forwardRef<HTMLDivElement, AriakitDialogProps>(
         ref={ref}
         className={clsx(
           className,
-          "bordered absolute left-[50%] top-[50%] z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-auto rounded-lg border bg-app text-sm shadow-lg",
+          "bordered bg-app absolute left-1/2 top-1/2 z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-auto rounded-lg border text-sm shadow-lg",
         )}
         {...props}
       >

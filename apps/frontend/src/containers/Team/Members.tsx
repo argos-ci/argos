@@ -1,5 +1,7 @@
-import { Reference, useMutation } from "@apollo/client";
 import * as React from "react";
+import { Reference, useMutation } from "@apollo/client";
+import { invariant } from "@argos/util/invariant";
+import { MarkGithubIcon } from "@primer/octicons-react";
 import { useNavigate } from "react-router-dom";
 
 import { useQuery } from "@/containers/Apollo";
@@ -39,9 +41,7 @@ import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "../AccountAvatar";
 import { useAssertAuthTokenPayload, useAuthTokenPayload } from "../Auth";
-import { invariant } from "@/util/invariant";
 import { GithubAccountLink } from "../GithubAccountLink";
-import { MarkGithubIcon } from "@primer/octicons-react";
 import { RemoveMenu, TeamMemberLabel, UserListRow } from "../UserList";
 
 const NB_MEMBERS_PER_PAGE = 10;
@@ -335,7 +335,7 @@ const LevelSelect = (props: {
 
   return (
     <>
-      <Select state={select} className="w-full text-sm text-low">
+      <Select state={select} className="text-low w-full text-sm">
         <div className="flex w-full items-center justify-between gap-2">
           {TeamMemberLabel[value]}
           <SelectArrow />
@@ -430,10 +430,10 @@ function TeamMembersList(props: {
       first: NB_MEMBERS_PER_PAGE,
     },
   });
-  if (!data) return null;
-  if (data.team?.__typename !== "Team") {
-    throw new Error("Invariant: Invalid team");
+  if (!data) {
+    return null;
   }
+  invariant(data.team?.__typename === "Team", "invalid team");
   const members = data.team.members.edges;
   const lastOne =
     !props.hasGithubSSO && data.team.members.pageInfo.totalCount === 1;
@@ -448,7 +448,7 @@ function TeamMembersList(props: {
             return (
               <UserListRow key={user.id} user={user}>
                 {isMe || !props.amOwner ? (
-                  <div className="text-sm text-low">
+                  <div className="text-low text-sm">
                     {TeamMemberLabel[member.level]}
                   </div>
                 ) : (
@@ -562,7 +562,7 @@ function TeamGithubMembersList(props: {
   return (
     <div className="my-4">
       <ListTitle>
-        <MarkGithubIcon className="w-4 h-4 mr-1.5" />
+        <MarkGithubIcon className="mr-1.5 size-4" />
         GitHub members synced from{" "}
         <GithubAccountLink githubAccount={githubAccount} />
       </ListTitle>
@@ -572,7 +572,7 @@ function TeamGithubMembersList(props: {
           const user = teamMember?.user ?? null;
           const isMe = Boolean(user && authPayload.account.id === user.id);
           return (
-            <ListRow key={member.id} className="px-4 py-2 items-center">
+            <ListRow key={member.id} className="items-center px-4 py-2">
               <AccountAvatar
                 avatar={user?.avatar ?? member.githubAccount.avatar}
                 size={36}
@@ -583,7 +583,7 @@ function TeamGithubMembersList(props: {
                   <div className="flex items-center gap-2">
                     <div className="text-sm font-semibold">{user.name}</div>
                   </div>
-                  <div className="text-xs text-low">{user.slug}</div>
+                  <div className="text-low text-xs">{user.slug}</div>
                 </div>
               ) : (
                 <div className="flex-1 text-sm font-semibold">
@@ -591,7 +591,7 @@ function TeamGithubMembersList(props: {
                 </div>
               )}
               {isMe || !props.amOwner || !teamMember ? (
-                <div className="text-sm text-low">
+                <div className="text-low text-sm">
                   {teamMember ? (
                     TeamMemberLabel[teamMember.level]
                   ) : (

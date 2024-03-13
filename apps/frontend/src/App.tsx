@@ -1,9 +1,9 @@
 import { Helmet } from "react-helmet";
 import {
+  createBrowserRouter,
   Navigate,
   Outlet,
   RouterProvider,
-  createBrowserRouter,
 } from "react-router-dom";
 
 import { Layout } from "@/containers/Layout";
@@ -20,6 +20,7 @@ import { Build } from "./pages/Build";
 import { Home } from "./pages/Home";
 import { Invite } from "./pages/Invite";
 import { Login } from "./pages/Login";
+import { NewProject } from "./pages/NewProject";
 import { NewTeam } from "./pages/NewTeam";
 import { NotFound } from "./pages/NotFound";
 import { Project } from "./pages/Project";
@@ -29,7 +30,6 @@ import { ProjectSettings } from "./pages/Project/Settings";
 // import { Tests } from "./pages/Project/Tests";
 import { Signup } from "./pages/Signup";
 import { TooltipProvider } from "./ui/Tooltip";
-import { NewProject } from "./pages/NewProject";
 
 const router = createBrowserRouter([
   {

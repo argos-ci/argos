@@ -1,5 +1,7 @@
-import { getItem, setItem, removeItem } from "@/util/storage";
 import * as React from "react";
+import { invariant } from "@argos/util/invariant";
+
+import { getItem, removeItem, setItem } from "@/util/storage";
 
 const STORAGE_KEY = "theme";
 
@@ -62,8 +64,6 @@ export const ColorModeProvider = (props: { children: React.ReactNode }) => {
 
 export const useColorMode = () => {
   const context = React.useContext(ColorModeContext);
-  if (!context) {
-    throw new Error("useColorMode must be used within a ColorModeProvider");
-  }
+  invariant(context, "useColorMode must be used within a ColorModeProvider");
   return context;
 };

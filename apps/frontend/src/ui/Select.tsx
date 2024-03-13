@@ -1,4 +1,4 @@
-import { CheckIcon } from "lucide-react";
+import { forwardRef } from "react";
 import {
   Select as AriakitSelect,
   SelectArrow as AriakitSelectArrow,
@@ -12,7 +12,7 @@ import {
   SelectSeparatorProps as AriakitSelectSeparatorProps,
 } from "ariakit/select";
 import { clsx } from "clsx";
-import { forwardRef } from "react";
+import { CheckIcon } from "lucide-react";
 
 export { useSelectState } from "ariakit/select";
 
@@ -39,7 +39,7 @@ export const Select = forwardRef<
     <AriakitSelect
       ref={ref}
       className={clsx(
-        "flex appearance-none items-center gap-2 rounded border bg-app leading-tight text invalid:border-danger hover:border-hover focus:border-active focus:outline-none disabled:opacity-disabled cursor-default",
+        "bg-app text invalid:border-danger hover:border-hover focus:border-active disabled:opacity-disabled flex cursor-default appearance-none items-center gap-2 rounded border leading-tight focus:outline-none",
         {
           md: "px-3 py-2 text-base",
           sm: "px-2 py-1 text-sm",
@@ -67,7 +67,7 @@ export const SelectPopover = forwardRef<
       as="div"
       className={clsx(
         className,
-        "z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border bg-subtle p-1 focus:outline-none",
+        "bg-subtle z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border p-1 focus:outline-none",
       )}
       {...props}
     />
@@ -86,14 +86,14 @@ export const SelectItem = forwardRef<
       className={clsx(
         className,
         "group/item",
-        "flex select-none items-center gap-2 rounded px-3 py-1.5 text-sm text transition hover:bg-active focus:bg-active focus:outline-none aria-disabled:opacity-disabled",
+        "text hover:bg-active focus:bg-active aria-disabled:opacity-disabled flex select-none items-center gap-2 rounded px-3 py-1.5 text-sm transition focus:outline-none",
       )}
       value={button ? "" : props.value}
       {...props}
     >
       <>
         {!button && (
-          <CheckIcon className="h-4 w-4 text opacity-0 group-aria-selected/item:opacity-100" />
+          <CheckIcon className="text size-4 opacity-0 group-aria-selected/item:opacity-100" />
         )}
         {children}
       </>

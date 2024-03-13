@@ -1,17 +1,17 @@
-import type { Pojo, RelationMappings } from "objection";
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import { memoize } from "lodash-es";
+import type { Pojo, RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";
 import { Plan } from "./Plan.js";
 import { Project } from "./Project.js";
-import { Subscription } from "./Subscription.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
+import { Subscription } from "./Subscription.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
-import { invariant } from "@/util/invariant.js";
-import { assertUnreachable } from "@/util/unreachable.js";
 
 export type AccountAvatar = {
   getUrl(args: { size?: number }): string | Promise<string> | null;
@@ -134,18 +134,20 @@ export class Account extends Model {
   static override virtualAttributes = ["type"];
 
   get type() {
-    if (this.userId && this.teamId) {
-      throw new Error(`Invariant incoherent account type`);
+    if (this.userId && !this.teamId) {
+      return "user";
     }
-    if (this.userId) return "user";
-    if (this.teamId) return "team";
-    throw new Error(`Invariant incoherent account type`);
+    if (!this.userId && this.teamId) {
+      return "team";
+    }
+    throw new Error("Incoherent account type");
   }
 
   async $checkHasSubscribedToTrial() {
-    if (!this.userId) {
-      throw new Error("$checkHasSubscribedToTrial can only be called on users");
-    }
+    invariant(
+      this.userId,
+      "$checkHasSubscribedToTrial can only be called on users",
+    );
     const subscriptionCount = await Subscription.query()
       .where({ subscriberId: this.userId })
       .whereNotNull("trialEndDate")
@@ -364,7 +366,7 @@ export class Account extends Model {
       case "team":
         return Team.getPermissions(account.teamId as string, user);
       default:
-        assertUnreachable(account.type);
+        assertNever(account.type);
     }
   }
 

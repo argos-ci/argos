@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
 import { argosScreenshot } from "@argos-ci/playwright";
+import { expect, test } from "@playwright/test";
 
 const buildExamples = [
   { name: "orphan", number: 1 },

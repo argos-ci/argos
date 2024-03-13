@@ -1,4 +1,5 @@
 import { useApolloClient, useQuery } from "@apollo/client";
+import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
@@ -41,9 +42,7 @@ export const useCreateTeamAndRedirect = () => {
           name: data.name,
         },
       });
-      if (!result.data) {
-        throw new Error("Invariant: missing data");
-      }
+      invariant(result.data, "missing data");
       const redirectUrl = result.data.createTeam.redirectUrl;
       window.location.replace(redirectUrl);
       await new Promise(() => {
@@ -81,7 +80,7 @@ export const TeamNewForm = (props: {
           autoFocus
           autoComplete="off"
         />
-        <p className={clsx("mt-4 font-medium text", !data && "invisible")}>
+        <p className={clsx("text mt-4 font-medium", !data && "invisible")}>
           {!data?.me?.hasSubscribedToTrial
             ? "Continue will start a 14-day Pro plan trial"
             : "You will be redirected to Stripe to complete the subscription"}

@@ -1,7 +1,7 @@
-import axios, { isAxiosError } from "axios";
 import { useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import * as Sentry from "@sentry/browser";
+import axios, { isAxiosError } from "axios";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "@/containers/Auth";
 import { UniversalNavigate } from "@/containers/Redirect";

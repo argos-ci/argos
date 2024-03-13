@@ -1,4 +1,6 @@
-import { ValidationError, raw } from "objection";
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
+import { raw, ValidationError } from "objection";
 import type {
   Pojo,
   QueryContext,
@@ -10,8 +12,8 @@ import config from "@/config/index.js";
 
 import { Model } from "../util/model.js";
 import {
-  JobStatus,
   jobModelSchema,
+  JobStatus,
   mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
@@ -213,7 +215,7 @@ export class Build extends Model {
           return "progress";
         }
         default:
-          throw new Error(`Unknown job status: ${build.jobStatus}`);
+          assertNever(build.jobStatus);
       }
     });
   }
@@ -339,15 +341,13 @@ export class Build extends Model {
   }
 
   async getUrl({ trx }: { trx?: TransactionOrKnex } = {}) {
-    const project =
-      this.project ??
-      (await this.$relatedQuery("project", trx).withGraphFetched("account"));
+    await this.$fetchGraph(
+      "project.account",
+      trx ? { transaction: trx, skipFetched: true } : { skipFetched: true },
+    );
+    invariant(this.project?.account, "account not found");
 
-    if (!project?.account) {
-      throw new Error("Account not found");
-    }
-
-    const pathname = `/${project.account.slug}/${project.name}/builds/${this.number}`;
+    const pathname = `/${this.project.account.slug}/${this.project.name}/builds/${this.number}`;
 
     return `${config.get("server.url")}${pathname}`;
   }

@@ -1,18 +1,20 @@
-import { Tooltip } from "@/ui/Tooltip";
-import { Button, ButtonIcon, ButtonSize } from "@/ui/Button";
+import * as React from "react";
 import {
   GitMergeIcon,
   GitPullRequestClosedIcon,
   GitPullRequestDraftIcon,
   GitPullRequestIcon,
 } from "@primer/octicons-react";
+import { clsx } from "clsx";
+
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { PullRequestState } from "@/gql/graphql";
-import * as React from "react";
-import { ImageAvatar } from "./ImageAvatar";
-import { Time } from "@/ui/Time";
-import { clsx } from "clsx";
 import { EmulatedAnchor } from "@/ui/Anchor";
+import { Button, ButtonIcon, ButtonSize } from "@/ui/Button";
+import { Time } from "@/ui/Time";
+import { Tooltip } from "@/ui/Tooltip";
+
+import { ImageAvatar } from "./ImageAvatar";
 
 const PullRequestStatusIconFragment = graphql(`
   fragment PullRequestStatusIcon_PullRequest on PullRequest {
@@ -93,7 +95,7 @@ const PullRequestInfo = (props: {
   }
   return (
     <div className="flex gap-2">
-      <div className="flex mt-1">
+      <div className="mt-1 flex">
         <PullRequestStatusIcon pullRequest={pullRequest} />
       </div>
       <div>
@@ -103,10 +105,10 @@ const PullRequestInfo = (props: {
             onClick={(event) => {
               event.stopPropagation();
             }}
-            className="inline-flex gap-2 items-center rounded hover:bg-hover px-1"
+            className="hover:bg-hover inline-flex items-center gap-2 rounded px-1"
           >
-            <span className="flex gap-2 min-w-0 max-w-prose items-center">
-              <span className="flex-1 min-w-0 truncate">
+            <span className="flex min-w-0 max-w-prose items-center gap-2">
+              <span className="min-w-0 flex-1 truncate">
                 {pullRequest.title}
               </span>
               <span className="text-low font-normal">
@@ -115,7 +117,7 @@ const PullRequestInfo = (props: {
             </span>
           </a>
         </div>
-        <div className="flex items-center gap-1 text-low px-1">
+        <div className="text-low flex items-center gap-1 px-1">
           {(() => {
             if (pullRequest.merged && pullRequest.mergedAt) {
               return (
@@ -186,15 +188,15 @@ export const PullRequestButton = (props: {
         color="neutral"
         variant="outline"
         size={props.size}
-        className={clsx("min-w-0 !bg-app", props.className)}
+        className={clsx("!bg-app min-w-0", props.className)}
       >
         {(buttonProps) => (
           <Anchor {...buttonProps} href={pullRequest.url} target={props.target}>
             <>
               <PullRequestStatusIcon pullRequest={pullRequest} />
               {pullRequest.title ? (
-                <span className="flex gap-2 min-w-0 max-w-prose items-center">
-                  <span className="flex-1 min-w-0 truncate">
+                <span className="flex min-w-0 max-w-prose items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate">
                     {pullRequest.title}
                   </span>
                   <span className="text-low font-normal">

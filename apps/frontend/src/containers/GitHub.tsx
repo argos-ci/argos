@@ -1,5 +1,5 @@
-import { MarkGithubIcon } from "@primer/octicons-react";
 import { memo } from "react";
+import { MarkGithubIcon } from "@primer/octicons-react";
 import { useLocation } from "react-router-dom";
 
 import config from "@/config";

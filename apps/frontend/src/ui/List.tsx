@@ -1,14 +1,14 @@
-import { clsx } from "clsx";
 import {
-  HTMLAttributes,
-  ReactNode,
   cloneElement,
   forwardRef,
+  HTMLAttributes,
   memo,
+  ReactNode,
 } from "react";
+import { clsx } from "clsx";
 
-import { Loader, useDelayedVisible } from "./Loader";
 import { Button } from "./Button";
+import { Loader, useDelayedVisible } from "./Loader";
 
 export const List = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
@@ -17,7 +17,7 @@ export const List = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
         ref={ref}
         role="table"
         className={clsx(
-          "flex flex-col rounded border overflow-auto",
+          "flex flex-col overflow-auto rounded border",
           className,
         )}
         {...props}
@@ -70,7 +70,7 @@ export const ListRowLoader = forwardRef<
   return (
     <ListRow
       ref={ref}
-      className={clsx(className, "items-center justify-center gap-2 text-low")}
+      className={clsx(className, "text-low items-center justify-center gap-2")}
       {...props}
     >
       <ListLoader>{children}</ListLoader>
@@ -105,5 +105,5 @@ export function ListEmpty(props: {
 }
 
 export function ListTitle(props: { children: React.ReactNode }) {
-  return <h3 className="font-semibold mb-2 text-sm">{props.children}</h3>;
+  return <h3 className="mb-2 text-sm font-semibold">{props.children}</h3>;
 }

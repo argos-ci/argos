@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState } from "react";
+import { invariant } from "@apollo/client/utilities/globals";
 
 interface DiffFitContextValue {
   contained: boolean;
@@ -9,11 +10,10 @@ const DiffFitContext = createContext<DiffFitContextValue | null>(null);
 
 export const useBuildDiffFitState = () => {
   const context = useContext(DiffFitContext);
-  if (context === null) {
-    throw new Error(
-      "useBuildDiffFitState must be used within a BuildDiffFitStateProvider",
-    );
-  }
+  invariant(
+    context,
+    "useBuildDiffFitState must be used within a BuildDiffFitStateProvider",
+  );
   return context;
 };
 

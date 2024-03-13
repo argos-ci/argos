@@ -1,12 +1,12 @@
+import { memo } from "react";
+import { clsx } from "clsx";
 import {
-  ShrinkIcon,
   ArrowDownIcon,
   ArrowUpIcon,
-  EyeIcon,
   ColumnsIcon,
+  EyeIcon,
+  ShrinkIcon,
 } from "lucide-react";
-import { clsx } from "clsx";
-import { memo } from "react";
 
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
@@ -16,17 +16,17 @@ import { useBuildDiffFitState } from "./BuildDiffFitState";
 import { Diff, useBuildDiffState } from "./BuildDiffState";
 import { useBuildDiffVisibleState } from "./BuildDiffVisibleState";
 import { useBuildHotkey } from "./BuildHotkeys";
-import { useZoomerSyncContext } from "./Zoomer";
-import { useBuildDiffViewModeState } from "./useBuildDiffViewModeState";
 import { AutomationLibraryIndicator } from "./metadata/automationLibrary/AutomationLibraryIndicator";
 import { BrowserIndicator } from "./metadata/browser/BrowserIndicator";
-import { SdkIndicator } from "./metadata/sdk/SdkIndicator";
-import { ViewportIndicator } from "./metadata/viewport/ViewportIndicator";
-import { UrlIndicator } from "./metadata/url/UrlIndicator";
 import { ColorSchemeIndicator } from "./metadata/colorScheme/ColorSchemeIndicator";
 import { MediaTypeIndicator } from "./metadata/mediaType/MediaTypeIndicator";
+import { SdkIndicator } from "./metadata/sdk/SdkIndicator";
 import { TestIndicator } from "./metadata/test/TestIndicator";
 import { TraceIndicator } from "./metadata/trace/TraceIndicator";
+import { UrlIndicator } from "./metadata/url/UrlIndicator";
+import { ViewportIndicator } from "./metadata/viewport/ViewportIndicator";
+import { useBuildDiffViewModeState } from "./useBuildDiffViewModeState";
+import { useZoomerSyncContext } from "./Zoomer";
 
 const BuildDiffChangesOverlayToggle = memo(() => {
   const { visible, setVisible } = useBuildDiffVisibleState();
@@ -280,34 +280,34 @@ export const BuildDetailToolbar = memo(
           !bordered && "border-b-transparent",
         )}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex gap-1 flex-shrink-0">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="flex shrink-0 gap-1">
             <PreviousDiffButton />
             <NextDiffButton />
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <div role="heading" className="line-clamp-2 text-xs font-medium">
               {activeDiff.name}
             </div>
-            <div className="flex flex-wrap gap-1.5 items-center empty:hidden mt-1 min-w-0">
-              {sdk && <SdkIndicator sdk={sdk} className="w-4 h-4" />}
+            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">
+              {sdk && <SdkIndicator sdk={sdk} className="size-4" />}
               {automationLibrary && (
                 <AutomationLibraryIndicator
                   automationLibrary={automationLibrary}
-                  className="w-4 h-4"
+                  className="size-4"
                 />
               )}
               {browser && (
-                <BrowserIndicator browser={browser} className="w-4 h-4" />
+                <BrowserIndicator browser={browser} className="size-4" />
               )}
               {colorScheme && (
                 <ColorSchemeIndicator
                   colorScheme={colorScheme}
-                  className="w-4 h-4"
+                  className="size-4"
                 />
               )}
               {mediaType && (
-                <MediaTypeIndicator mediaType={mediaType} className="w-4 h-4" />
+                <MediaTypeIndicator mediaType={mediaType} className="size-4" />
               )}
               {viewport && <ViewportIndicator viewport={viewport} />}
               {url && <UrlIndicator url={url} />}

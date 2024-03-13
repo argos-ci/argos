@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import { forwardRef } from "react";
+import { clsx } from "clsx";
 
 export type ChipColor =
   | "primary"
@@ -39,24 +39,21 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(
     ref,
   ) => {
     const colorClassName = colorClassNames[color];
-    if (!colorClassName) {
-      throw new Error(`Invalid color: ${color}`);
-    }
     return (
       <div
         ref={ref}
         className={clsx(
           colorClassName,
-          scale === "xs" && "px-2 text-xs gap-1",
-          scale === "sm" && "px-3 py-1 text-xs gap-1",
-          scale === "md" && "px-4 py-2 text-sm gap-2",
-          "min-w-0 inline-flex select-none items-center rounded-chip border font-medium leading-4",
+          scale === "xs" && "gap-1 px-2 text-xs",
+          scale === "sm" && "gap-1 px-3 py-1 text-xs",
+          scale === "md" && "gap-2 px-4 py-2 text-sm",
+          "rounded-chip inline-flex min-w-0 select-none items-center border font-medium leading-4",
           className,
         )}
         {...props}
       >
-        {Icon && <Icon className="h-[1em] w-[1em] shrink-0" />}
-        <span className="truncate flex-1">{children}</span>
+        {Icon && <Icon className="size-[1em] shrink-0" />}
+        <span className="flex-1 truncate">{children}</span>
       </div>
     );
   },

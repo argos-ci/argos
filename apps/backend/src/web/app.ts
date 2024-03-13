@@ -1,12 +1,12 @@
 /* eslint-disable no-console */
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import * as Sentry from "@sentry/node";
 import compress from "compression";
 import { renderFile } from "ejs";
 import express, { static as serveStatic } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import config from "@/config/index.js";
 

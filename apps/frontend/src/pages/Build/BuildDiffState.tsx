@@ -1,4 +1,3 @@
-import { useQuery } from "@apollo/client";
 import {
   createContext,
   useCallback,
@@ -9,15 +8,17 @@ import {
   useRef,
   useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useQuery } from "@apollo/client";
+import { invariant } from "@argos/util/invariant";
+import { ResultOf } from "@graphql-typed-document-node/core";
 import { MatchData, Searcher } from "fast-fuzzy";
+import { useNavigate } from "react-router-dom";
 
 import type { BuildStats } from "@/containers/Build";
 import { graphql } from "@/gql";
 
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
-import { ResultOf } from "@graphql-typed-document-node/core";
 
 const ScreenshotDiffFragment = graphql(`
   fragment BuildDiffState_ScreenshotDiff on ScreenshotDiff {
@@ -144,11 +145,10 @@ const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
 
 export const useBuildDiffState = () => {
   const context = useContext(BuildDiffContext);
-  if (context === null) {
-    throw new Error(
-      "useBuildDiffContext must be used within a BuildDiffProvider",
-    );
-  }
+  invariant(
+    context,
+    "useBuildDiffState must be used within a BuildDiffProvider",
+  );
   return context;
 };
 
@@ -291,11 +291,10 @@ const SearchModeContext = createContext<SearchModeContextValue | null>(null);
 
 export const useSearchModeState = () => {
   const context = useContext(SearchModeContext);
-  if (context === null) {
-    throw new Error(
-      "useSearchModeState must be used within a BuildDiffProvider",
-    );
-  }
+  invariant(
+    context,
+    "useSearchModeState must be used within a BuildDiffProvider",
+  );
   return context;
 };
 
@@ -308,9 +307,7 @@ const SearchContext = createContext<SearchContextValue | null>(null);
 
 export const useSearchState = () => {
   const context = useContext(SearchContext);
-  if (context === null) {
-    throw new Error("useSearchState must be used within a BuildDiffProvider");
-  }
+  invariant(context, "useSearchState must be used within a BuildDiffProvider");
   return context;
 };
 

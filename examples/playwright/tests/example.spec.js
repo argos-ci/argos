@@ -1,5 +1,5 @@
-import { test } from "@playwright/test";
 import { argosScreenshot } from "@argos-ci/playwright";
+import { test } from "@playwright/test";
 
 // Read more about streamline page screenshot captures
 // https://argos-ci.com/docs/screenshot-pages-script#playwright

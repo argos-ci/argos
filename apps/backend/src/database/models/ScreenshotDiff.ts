@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { ValidationError } from "objection";
 import type { Pojo, RelationMappings } from "objection";
 
@@ -12,7 +13,6 @@ import { Build } from "./Build.js";
 import { File } from "./File.js";
 import { Screenshot } from "./Screenshot.js";
 import { Test } from "./Test.js";
-import { invariant } from "@/util/invariant.js";
 
 export class ScreenshotDiff extends Model {
   static override tableName = "screenshot_diffs";

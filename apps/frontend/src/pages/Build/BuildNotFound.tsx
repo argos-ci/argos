@@ -1,5 +1,6 @@
-import { useIsLoggedIn } from "@/containers/Auth";
 import { Navigate, useLocation } from "react-router-dom";
+
+import { useIsLoggedIn } from "@/containers/Auth";
 
 export const BuildNotFound = () => {
   const loggedIn = useIsLoggedIn();

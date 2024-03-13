@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import {
   Tab,
   TabList,
@@ -8,7 +9,6 @@ import {
   useTabState,
 } from "ariakit/tab";
 import { clsx } from "clsx";
-import { forwardRef } from "react";
 import {
   useHref,
   useLinkClickHandler,
@@ -42,7 +42,7 @@ export const TabLink = forwardRef<HTMLAnchorElement, TabLinkProps>(
         as="a"
         className={clsx(
           className,
-          "z-10 -mb-px inline-block border-b-2 border-b-transparent px-3 py-3 text-sm font-medium text-low transition hover:text aria-selected:cursor-default aria-selected:border-b-current aria-selected:text",
+          "text-low hover:text aria-selected:text z-10 -mb-px inline-block border-b-2 border-b-transparent p-3 text-sm font-medium transition aria-selected:cursor-default aria-selected:border-b-current",
         )}
         href={href}
         onClick={onClick}

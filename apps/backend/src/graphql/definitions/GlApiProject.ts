@@ -1,8 +1,9 @@
 import gqlTag from "graphql-tag";
 
-import type { IResolvers } from "../__generated__/resolver-types.js";
 import { getTokenGitlabClient } from "@/gitlab/index.js";
-import { GraphQLError } from "graphql";
+
+import type { IResolvers } from "../__generated__/resolver-types.js";
+import { badUserInput } from "../util.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -56,7 +57,7 @@ export const resolvers: IResolvers = {
           if (args.allProjects) {
             return client.Projects.all({ ...options, membership: true });
           }
-          throw new GraphQLError(
+          throw badUserInput(
             "Either `userId`, `groupId` or `allProjects` option must be provided.",
           );
         })();

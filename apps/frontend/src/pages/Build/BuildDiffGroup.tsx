@@ -1,9 +1,10 @@
+import { assertNever } from "@argos/util/assertNever";
 import {
-  CheckCircle2Icon,
-  XCircleIcon,
-  PlusCircleIcon,
-  MinusCircleIcon,
   AlertCircleIcon,
+  CheckCircle2Icon,
+  MinusCircleIcon,
+  PlusCircleIcon,
+  XCircleIcon,
 } from "lucide-react";
 
 import type { DiffGroup } from "./BuildDiffState";
@@ -29,7 +30,7 @@ export const getGroupColor = (name: DiffGroup["name"]) => {
     case "unchanged":
       return "success" as const;
     default:
-      throw new Error(`Unknown group: ${name}`);
+      assertNever(name);
   }
 };
 
@@ -46,7 +47,7 @@ export const getGroupLabel = (name: DiffGroup["name"]) => {
     case "unchanged":
       return "Unchanged";
     default:
-      throw new Error(`Unknown group: ${name}`);
+      assertNever(name);
   }
 };
 
@@ -63,6 +64,6 @@ export const getGroupIcon = (name: DiffGroup["name"]) => {
     case "failure":
       return <XCircleIcon />;
     default:
-      throw new Error(`Unknown group: ${name}`);
+      assertNever(name);
   }
 };

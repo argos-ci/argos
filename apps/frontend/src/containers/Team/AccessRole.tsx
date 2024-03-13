@@ -2,11 +2,11 @@ import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
+import { TeamDefaultUserLevel } from "@/gql/graphql";
+import { Anchor } from "@/ui/Anchor";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
-import { Anchor } from "@/ui/Anchor";
-import { TeamDefaultUserLevel } from "@/gql/graphql";
 import { FormRadio, FormRadioGroup } from "@/ui/FormRadio";
 
 const TeamFragment = graphql(`
@@ -72,7 +72,7 @@ export function TeamAccessRole(props: {
                 label={
                   <div className="ml-2">
                     Member
-                    <p className="text-sm font-normal text-low">
+                    <p className="text-low text-sm font-normal">
                       New members will have access to all projects.
                     </p>
                   </div>
@@ -84,7 +84,7 @@ export function TeamAccessRole(props: {
                 label={
                   <div className="ml-2">
                     Contributor
-                    <p className="text-sm font-normal text-low">
+                    <p className="text-low text-sm font-normal">
                       New members will not have access to any projects until you
                       add them to a project.
                     </p>

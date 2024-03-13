@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   ApolloClient,
   ApolloProvider as BaseApolloProvider,
@@ -11,7 +12,8 @@ import {
   useQuery as useApolloQuery,
 } from "@apollo/client";
 import { onError } from "@apollo/client/link/error";
-import { useMemo } from "react";
+import { invariant } from "@apollo/client/utilities/globals";
+
 import fragments from "@/gql-fragments.json";
 
 import { logout, useAuthToken } from "./Auth";
@@ -43,13 +45,13 @@ const ApolloProvider = (props: {
         typePolicies: {
           Team: {
             keyFields: (obj) => {
-              if (!obj.id) throw new Error("Team.id is undefined");
+              invariant(obj.id, "Team.id is undefined");
               return `Account:${obj.id}`;
             },
           },
           User: {
             keyFields: (obj) => {
-              if (!obj.id) throw new Error("User.id is undefined");
+              invariant(obj.id, "User.id is undefined");
               return `Account:${obj.id}`;
             },
           },

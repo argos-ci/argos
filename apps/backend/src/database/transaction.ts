@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import type { Knex } from "knex";
 import type { TransactionOrKnex } from "objection";
 
@@ -28,14 +29,10 @@ export const transaction = <TReturn>(
     | ((trx: TransactionOrKnex) => Promise<TReturn>),
   maybeCallback?: (trx: TransactionOrKnex) => Promise<TReturn>,
 ): Promise<TReturn> => {
-  if (!transactionKnexInstance) {
-    throw new Error(`transaction is not initialized`);
-  }
+  invariant(transactionKnexInstance, "transaction is not initialized");
 
   if (maybeCallback === undefined) {
-    if (typeof trxOrCallback !== "function") {
-      throw new Error(`Invalid transaction call`);
-    }
+    invariant(typeof trxOrCallback === "function", "invalid transaction call");
     return transactionKnexInstance.transaction(trxOrCallback);
   }
 

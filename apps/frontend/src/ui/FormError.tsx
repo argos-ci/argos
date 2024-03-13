@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import { ComponentPropsWithoutRef } from "react";
+import { clsx } from "clsx";
 
 export const FormError = ({
   className,
@@ -8,7 +8,7 @@ export const FormError = ({
   return (
     <div
       role="alert"
-      className={clsx(className, "inline-block text-sm text-danger-low")}
+      className={clsx(className, "text-danger-low inline-block text-sm")}
       {...props}
     />
   );

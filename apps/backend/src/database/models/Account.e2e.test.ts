@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { factory, setupDatabase } from "../testing/index.js";
 import { Account } from "./Account.js";
-import { Plan } from "./Plan.js";
 import type { ScreenshotBucket } from "./index.js";
+import { Plan } from "./Plan.js";
 
 describe("Account", () => {
   let plans: Plan[];

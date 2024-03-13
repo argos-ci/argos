@@ -1,8 +1,10 @@
 import { HTMLAttributes } from "react";
-import playwrightIcon from "./logos/playwright.svg";
-import cypressIcon from "./logos/cypress.svg";
-import puppeteerIcon from "./logos/puppeteer.svg";
+
 import { Tooltip } from "@/ui/Tooltip";
+
+import cypressIcon from "./logos/cypress.svg";
+import playwrightIcon from "./logos/playwright.svg";
+import puppeteerIcon from "./logos/puppeteer.svg";
 
 const Icons: Record<string, string> = {
   playwright: playwrightIcon,

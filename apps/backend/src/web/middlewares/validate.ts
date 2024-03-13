@@ -1,6 +1,6 @@
 import Ajv, { AnySchema, ValidateFunction } from "ajv";
 
-import { HTTPError, asyncHandler } from "../util.js";
+import { asyncHandler, boom } from "../util.js";
 
 /**
  * Returns a middleware with compiled ajv validators
@@ -45,7 +45,7 @@ export const validate = (routeSchema: {
     if (validators.params) {
       validation = validators.params(req.params);
       if (!validation) {
-        throw new HTTPError(
+        throw boom(
           400,
           `Request URL parameters validation failed: ${ajv.errorsText(
             validators.params.errors,
@@ -57,7 +57,7 @@ export const validate = (routeSchema: {
     if (validators.query) {
       validation = validators.query(req.query);
       if (!validation) {
-        throw new HTTPError(
+        throw boom(
           400,
           `Request query validation failed: ${ajv.errorsText(
             validators.query.errors,
@@ -69,7 +69,7 @@ export const validate = (routeSchema: {
     if (validators.body) {
       validation = validators.body(req.body);
       if (!validation) {
-        throw new HTTPError(
+        throw boom(
           400,
           `Request body validation failed: ${ajv.errorsText(
             validators.body.errors,

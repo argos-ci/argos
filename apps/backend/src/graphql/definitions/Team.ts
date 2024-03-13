@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import config from "@/config/index.js";
@@ -10,14 +11,15 @@ import {
   TeamUser,
 } from "@/database/models/index.js";
 import { createTeamAccount } from "@/database/services/team.js";
+import { getAppOctokit, getInstallationOctokit } from "@/github/client.js";
 import {
   createArgosSubscriptionFromStripe,
   createStripeCheckoutSession,
   getCustomerIdFromUserAccount,
   getStripePriceFromPlanOrThrow,
   getStripeProPlanOrThrow,
-  stripe,
   getSubscriptionData,
+  stripe,
 } from "@/stripe/index.js";
 
 import type {
@@ -26,15 +28,13 @@ import type {
   ITeamUserLevel,
 } from "../__generated__/resolver-types.js";
 import { deleteAccount, getAdminAccount } from "../services/account.js";
-import { forbidden, unauthenticated } from "../util.js";
-import { paginateResult } from "./PageInfo.js";
-import { getAppOctokit, getInstallationOctokit } from "@/github/client.js";
-import { invariant } from "@/util/invariant.js";
 import {
   checkUserHasAccessToInstallation,
   getOrCreateGithubAccount,
   importOrgMembers,
 } from "../services/github.js";
+import { forbidden, unauthenticated } from "../util.js";
+import { paginateResult } from "./PageInfo.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -204,18 +204,15 @@ export const resolvers: IResolvers = {
       const account = await ctx.loaders.AccountFromRelation.load({
         userId: teamUser.userId,
       });
-      if (!account) {
-        throw new Error("Invariant: account is undefined");
-      }
+      invariant(account, "account not found");
       return account;
     },
     level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
   },
   Team: {
     me: async (account, _args, ctx) => {
-      if (!account.teamId) {
-        throw new Error("Invariant: account.teamId is undefined");
-      }
+      invariant(account.teamId, "not a team account");
+
       if (!ctx.auth) {
         throw unauthenticated();
       }
@@ -228,7 +225,7 @@ export const resolvers: IResolvers = {
       if (!teamUser) {
         invariant(
           ctx.auth.user.staff,
-          "Invariant: user is not staff and teamUser is undefined",
+          "user is not staff and teamUser is undefined",
         );
         return null;
       }
@@ -236,15 +233,17 @@ export const resolvers: IResolvers = {
       return teamUser;
     },
     members: async (account, args, ctx) => {
-      const { first, after, levels, search } = args;
+      invariant(account.teamId, "not a team account");
+
       if (!ctx.auth) {
         throw unauthenticated();
       }
 
-      invariant(account.teamId);
+      const { first, after, levels, search } = args;
 
       const team = await ctx.loaders.Team.load(account.teamId);
-      invariant(team);
+
+      invariant(team, "team not found");
 
       const hasGithubSSO = Boolean(team.ssoGithubAccountId);
 
@@ -288,10 +287,11 @@ export const resolvers: IResolvers = {
       return paginateResult({ result, first, after });
     },
     githubMembers: async (account, args, ctx) => {
-      const { first, after } = args;
       if (!ctx.auth) {
         throw unauthenticated();
       }
+
+      const { first, after } = args;
 
       invariant(account.teamId);
 
@@ -395,9 +395,7 @@ export const resolvers: IResolvers = {
           cancelUrl: `${teamUrl}?checkout=cancel`,
         });
 
-        if (!session.url) {
-          throw new Error("session.url is null");
-        }
+        invariant(session.url, "session.url missing");
 
         return { team: teamAccount, redirectUrl: session.url };
       };

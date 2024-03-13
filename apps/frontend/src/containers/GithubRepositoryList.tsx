@@ -1,9 +1,9 @@
+import { useState } from "react";
+
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { List, ListRow } from "@/ui/List";
 import { Loader } from "@/ui/Loader";
-import { Time } from "@/ui/Time";
-
 import {
   Pagination,
   PaginationButtonItem,
@@ -12,7 +12,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/ui/Pagination";
-import { useState } from "react";
+import { Time } from "@/ui/Time";
+
 import { Query } from "./Apollo";
 
 const InstallationQuery = graphql(`
@@ -146,7 +147,7 @@ export const GithubRepositoryList = (props: {
               {ghApiInstallationRepositories.edges.map((repo) => (
                 <ListRow
                   key={repo.id}
-                  className="justify-between p-4 items-center"
+                  className="items-center justify-between p-4"
                 >
                   <div>
                     {repo.name} •{" "}

@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -243,9 +244,7 @@ describe("#createBuildDiffs", () => {
     describe("when compare branch equal reference branch", () => {
       beforeEach(async () => {
         const referenceBranch = await project.$getReferenceBranch();
-        if (!referenceBranch) {
-          throw new Error("Reference branch not found");
-        }
+        invariant(referenceBranch, "reference branch not found");
         await ScreenshotBucket.query().findById(compareBucket.id).patch({
           branch: referenceBranch,
         });

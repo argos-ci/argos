@@ -1,4 +1,4 @@
-import { UserConfig, defineConfig, mergeConfig } from "vitest/config";
+import { defineConfig, mergeConfig, UserConfig } from "vitest/config";
 
 import vitestConfig from "./vitest.config.js";
 

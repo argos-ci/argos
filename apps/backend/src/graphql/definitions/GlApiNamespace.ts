@@ -1,4 +1,5 @@
 import gqlTag from "graphql-tag";
+
 import { IResolvers } from "../__generated__/resolver-types";
 
 // eslint-disable-next-line import/no-named-as-default-member

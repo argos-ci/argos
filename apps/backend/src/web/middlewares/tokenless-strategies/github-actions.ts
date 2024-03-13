@@ -1,6 +1,8 @@
+import { invariant } from "@argos/util/invariant";
+
 import { GithubRepository, Project } from "@/database/models/index.js";
 import { getInstallationOctokit } from "@/github/index.js";
-import { HTTPError } from "@/web/util.js";
+import { boom } from "@/web/util.js";
 
 const marker = "tokenless-github-";
 
@@ -11,13 +13,11 @@ const decodeToken = (bearerToken: string, marker: string) => {
   try {
     const parts = bearerToken.split(marker);
     const base64 = parts[1];
-    if (!base64) {
-      throw new Error("Missing marker");
-    }
+    invariant(base64, "missing marker");
     const payload = Buffer.from(base64, "base64").toString("utf-8");
     return JSON.parse(payload);
   } catch (error) {
-    throw new HTTPError(401, `Invalid token (token: "${bearerToken}")`);
+    throw boom(401, `Invalid token (token: "${bearerToken}")`);
   }
 };
 
@@ -61,7 +61,7 @@ const strategy = {
     }
 
     if (repository.projects.length > 1) {
-      throw new HTTPError(
+      throw boom(
         400,
         `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a Project token.`,
       );
@@ -93,10 +93,7 @@ const strategy = {
     })();
 
     if (!githubRun) {
-      throw new HTTPError(
-        404,
-        `GitHub run not found (token: "${bearerToken}")`,
-      );
+      throw boom(404, `GitHub run not found (token: "${bearerToken}")`);
     }
 
     const hasInProgressJob = githubRun.data.jobs.some(
@@ -104,7 +101,7 @@ const strategy = {
     );
 
     if (!hasInProgressJob) {
-      throw new HTTPError(
+      throw boom(
         401,
         `GitHub job is not in progress (token: "${bearerToken}")`,
       );

@@ -1,12 +1,12 @@
-import { Handlers } from "@sentry/node";
-import express, { Router, static as serveStatic } from "express";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Handlers } from "@sentry/node";
+import express, { Router, static as serveStatic } from "express";
 
 import config from "@/config/index.js";
 import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
-import { emailPreview } from "../email/express.js";
 
+import { emailPreview } from "../email/express.js";
 import { auth } from "./middlewares/auth.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { rendering } from "./middlewares/rendering.js";

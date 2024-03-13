@@ -1,9 +1,9 @@
+import { invariant } from "@argos/util/invariant";
 import Stripe from "stripe";
 import { z } from "zod";
 
 import config from "@/config/index.js";
 import { Account, Plan, Subscription } from "@/database/models/index.js";
-import { invariant } from "@/util/invariant.js";
 
 export type { Stripe };
 
@@ -42,18 +42,18 @@ const decodeStripeClientReferenceId = (clientReferenceId: string) => {
 
 const getClientReferenceIdFromSession = (session: Stripe.Checkout.Session) => {
   const clientReferenceId = session.client_reference_id;
-  if (!clientReferenceId) {
-    throw new Error(
-      `empty clientReferenceId in stripe session "${session.id}"`,
-    );
-  }
+  invariant(
+    clientReferenceId,
+    `empty clientReferenceId in Stripe session "${session.id}"`,
+  );
   return decodeStripeClientReferenceId(clientReferenceId);
 };
 
 const getCustomerIdFromSession = (session: Stripe.Checkout.Session) => {
-  if (!session.customer) {
-    throw new Error(`empty customer in stripe session "${session.id}"`);
-  }
+  invariant(
+    session.customer,
+    `empty customer in Stripe session "${session.id}"`,
+  );
 
   if (typeof session.customer === "string") {
     return session.customer;
@@ -66,9 +66,10 @@ const getStripeSubscriptionFromSession = async (
   session: Stripe.Checkout.Session,
   stripe: Stripe,
 ): Promise<Stripe.Subscription> => {
-  if (!session.subscription) {
-    throw new Error(`empty subscription in stripe session "${session.id}"`);
-  }
+  invariant(
+    session.subscription,
+    `empty subscription in Stripe session "${session.id}"`,
+  );
 
   if (typeof session.subscription === "string") {
     return stripe.subscriptions.retrieve(session.subscription);
@@ -81,9 +82,7 @@ const getFirstItemFromStripeSubscription = (
   subscription: Stripe.Subscription,
 ) => {
   const first = subscription.items.data[0];
-  if (!first) {
-    throw new Error("no item found in Stripe subscription");
-  }
+  invariant(first, "no item found in Stripe subscription");
   return first;
 };
 
@@ -324,7 +323,7 @@ export const updateStripeUsage = async ({
       quantity: totalScreenshots,
     });
   } catch (error) {
-    throw new Error("error updating stripe usage.", {
+    throw new Error("Error while updating stripe usage", {
       cause: error,
     });
   }
@@ -345,11 +344,10 @@ async function updateSubscriptionsFromCustomer(customerId: string) {
   for (const stripeSubscription of stripeSubscriptions.data) {
     const argosSubscription =
       await getArgosSubscriptionFromStripeSubscriptionId(stripeSubscription.id);
-    if (!argosSubscription) {
-      throw new Error(
-        `No Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
-      );
-    }
+    invariant(
+      argosSubscription,
+      `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
+    );
     await updateArgosSubscriptionFromStripe(
       argosSubscription,
       stripeSubscription,
@@ -425,11 +423,10 @@ export const handleStripeEvent = async ({
         await getArgosSubscriptionFromStripeSubscriptionId(
           stripeSubscription.id,
         );
-      if (!argosSubscription) {
-        throw new Error(
-          `No Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
-        );
-      }
+      invariant(
+        argosSubscription,
+        `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
+      );
       await updateArgosSubscriptionFromStripe(
         argosSubscription,
         stripeSubscription,
@@ -508,9 +505,7 @@ export const createStripeCheckoutSession = async ({
     getStripePriceFromPlanOrThrow(plan),
   ]);
 
-  if (activeSubscription) {
-    throw new Error("Account already has an active subscription");
-  }
+  invariant(!activeSubscription, "account already has an active subscription");
 
   return stripe.checkout.sessions.create({
     line_items: [{ price: price.id }],
@@ -562,11 +557,10 @@ export const getCustomerIdFromUserAccount = async (
     return userAccount.stripeCustomerId;
   }
 
-  const user = await userAccount.$relatedQuery("user").first();
-
-  if (!user) {
-    throw new Error("Account is not linked to a user");
-  }
+  const user = await userAccount
+    .$relatedQuery("user")
+    .first()
+    .throwIfNotFound();
 
   if (!user.email) {
     return null;

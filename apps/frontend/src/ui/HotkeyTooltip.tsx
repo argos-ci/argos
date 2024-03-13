@@ -25,7 +25,7 @@ export const HotkeyTooltip = ({
               {keys.map((key) => (
                 <kbd
                   key={key}
-                  className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded bg-active px-1 text-xxs text"
+                  className="bg-active text-xxs text inline-flex h-4 min-w-4 items-center justify-center rounded px-1"
                 >
                   {key}
                 </kbd>

@@ -1,4 +1,5 @@
 import { FragmentType, graphql, useFragment } from "@/gql";
+import { Anchor } from "@/ui/Anchor";
 import {
   Card,
   CardBody,
@@ -6,7 +7,6 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
-import { Anchor } from "@/ui/Anchor";
 import { Pre } from "@/ui/Pre";
 
 const ProjectFragment = graphql(`

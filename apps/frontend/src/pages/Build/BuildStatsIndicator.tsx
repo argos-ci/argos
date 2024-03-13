@@ -1,16 +1,17 @@
+import { memo } from "react";
+import { assertNever } from "@argos/util/assertNever";
 import { Button as AriakitButton } from "ariakit/button";
 import { clsx } from "clsx";
-import { memo } from "react";
 
 import type { BuildStats } from "@/containers/Build";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
 import {
-  GROUPS,
   getGroupColor,
   getGroupIcon,
   getGroupLabel,
+  GROUPS,
 } from "./BuildDiffGroup";
 import type { DiffGroup } from "./BuildDiffState";
 import { HotkeyName, useBuildHotkey } from "./BuildHotkeys";
@@ -47,7 +48,7 @@ const getStatHotkeyName = (group: DiffGroup["name"]): HotkeyName => {
     case "unchanged":
       return "goToFirstUnchanged";
     default:
-      throw new Error(`Unknown group: ${group}`);
+      assertNever(group);
   }
 };
 
@@ -74,12 +75,12 @@ const InteractiveStatCount = ({
         as="div"
         className={clsx(
           colorClassName,
-          "flex cursor-default items-center gap-1 p-2 transition aria-disabled:opacity-disabled",
+          "aria-disabled:opacity-disabled flex cursor-default items-center gap-1 p-2 transition",
         )}
         onClick={onActive}
         disabled={count === 0}
       >
-        <span className="[&>*]:h-4 [&>*]:w-4">{icon}</span>
+        <span className="[&>*]:size-4">{icon}</span>
         <span className="text-xs">{count}</span>
       </AriakitButton>
     </HotkeyTooltip>
@@ -102,7 +103,7 @@ const StatCount = ({ icon, count, color, tooltip }: StatCountProps) => {
         "flex w-16 items-center gap-1 tabular-nums",
       )}
     >
-      <span className="[&>*]:h-4 [&>*]:w-4">{icon}</span>
+      <span className="[&>*]:size-4">{icon}</span>
       <span className="text-xs">{count}</span>
     </div>
   );

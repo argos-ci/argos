@@ -1,3 +1,4 @@
+import { Code } from "@/ui/Code";
 import {
   Dialog,
   DialogBody,
@@ -8,7 +9,6 @@ import {
   DialogTitle,
   useDialogState,
 } from "@/ui/Dialog";
-import { Code } from "@/ui/Code";
 import { Link } from "@/ui/Link";
 
 export const BuildOrphanDialog = ({
@@ -32,7 +32,7 @@ export const BuildOrphanDialog = ({
           It's typical for new projects or first-time setup.
         </DialogText>
 
-        <h3 className="font-semibold mb-1">Next Steps?</h3>
+        <h3 className="mb-1 font-semibold">Next Steps?</h3>
         <p>
           To begin visual comparisons, run Argos on your reference branch{" "}
           <Code>{referenceBranch}</Code> to create a{" "}
@@ -40,7 +40,7 @@ export const BuildOrphanDialog = ({
           be your baseline for all future comparisons.
         </p>
 
-        <p className="text-xs text-low mt-2">
+        <p className="text-low mt-2 text-xs">
           Tip: You can change your reference branch on{" "}
           <Link tabIndex={-1} to={`/${projectSlug}/settings`}>
             project's settings
@@ -48,7 +48,7 @@ export const BuildOrphanDialog = ({
           .
         </p>
 
-        <h3 className="font-semibold mt-4 mb-1">Keep Baseline Updated</h3>
+        <h3 className="mb-1 mt-4 font-semibold">Keep Baseline Updated</h3>
         <p>
           Set your CI pipeline to run Argos on <Code>{referenceBranch}</Code>{" "}
           updates. This keeps your comparison baseline fresh and reliable.

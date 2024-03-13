@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import type { MarketplacePurchasePurchasedEvent } from "@octokit/webhooks-types";
 
 import {
@@ -53,14 +54,13 @@ const findRelevantUserTeam = async (
     .withGraphFetched("account.projects.githubRepository.githubAccount");
   // Find the team containing projects linked to the GitHub organization
   const relevantTeams = ownedTeams.filter((team) => {
-    if (!team?.account?.projects) {
-      throw new Error("Invariant: relation not fetched");
-    }
+    invariant(team.account?.projects, "projects not fetched");
     return team.account.projects.some((project) => {
       if (!project.githubRepository) return false;
-      if (!project.githubRepository.githubAccount) {
-        throw new Error("Invariant: relation not fetched");
-      }
+      invariant(
+        project.githubRepository.githubAccount,
+        "githubAccount not fetched",
+      );
       return (
         project.githubRepository.githubAccount.githubId ===
         payload.marketplace_purchase.account.id
@@ -70,9 +70,7 @@ const findRelevantUserTeam = async (
   // If there is one relevant team, we use it
   if (relevantTeams.length === 1) {
     const relevantTeam = relevantTeams[0];
-    if (!relevantTeam?.account) {
-      throw new Error("Invariant: relation not fetched");
-    }
+    invariant(relevantTeam?.account, "account not fetched");
     return relevantTeam.account;
   }
   // If there is no relevant team, we create a new team
@@ -125,9 +123,10 @@ export const getAccount = async (
   payload: PartialMarketplacePurchasePurchasedEventPayload,
 ): Promise<Account | null> => {
   const type = payload.marketplace_purchase.account.type.toLowerCase();
-  if (type !== "user" && type !== "organization") {
-    throw new Error(`Account of "${type}" is not supported`);
-  }
+  invariant(
+    type === "user" || type === "organization",
+    `account of "${type}" is not supported`,
+  );
   const githubAccount = await getOrCreateGhAccount({
     githubId: payload.marketplace_purchase.account.id,
     login: payload.marketplace_purchase.account.login,
@@ -142,9 +141,10 @@ export const getGithubPlan = async (payload: {
   marketplace_purchase: { plan?: { id: number } };
 }) => {
   const githubId = payload.marketplace_purchase.plan?.id;
-  if (!githubId) throw new Error(`can't find plan without githubId`);
-  const plan = await Plan.query().findOne({ githubPlanId: githubId });
-  if (!plan) throw new Error(`missing plan with githubId: '${githubId}'`);
+  invariant(githubId, "missing githubId");
+  const plan = await Plan.query()
+    .findOne({ githubPlanId: githubId })
+    .throwIfNotFound();
   return plan;
 };
 

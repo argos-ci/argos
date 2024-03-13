@@ -1,5 +1,6 @@
-import config from "@/config/index.js";
 import { WebhookClient } from "discord.js";
+
+import config from "@/config/index.js";
 
 const webhookUrl = config.get("discord.webhookUrl");
 

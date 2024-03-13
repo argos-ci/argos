@@ -1,4 +1,5 @@
-import { GraphQLError } from "graphql";
+import { invariant } from "@argos/util/invariant";
+import { captureException } from "@sentry/node";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
@@ -11,6 +12,13 @@ import {
   Screenshot,
   User,
 } from "@/database/models/index.js";
+import {
+  checkProjectName,
+  resolveProjectName,
+} from "@/database/services/project.js";
+import { notifyDiscord } from "@/discord/index.js";
+import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
+import { getOrCreateGithubRepository } from "@/graphql/services/github.js";
 
 import {
   IProjectPermission,
@@ -18,17 +26,8 @@ import {
   IResolvers,
 } from "../__generated__/resolver-types.js";
 import { deleteProject, getAdminProject } from "../services/project.js";
-import { forbidden, unauthenticated } from "../util.js";
+import { badUserInput, forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
-import {
-  checkProjectName,
-  resolveProjectName,
-} from "@/database/services/project.js";
-import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
-import { invariant } from "@/util/invariant.js";
-import { notifyDiscord } from "@/discord/index.js";
-import { captureException } from "@sentry/node";
-import { getOrCreateGithubRepository } from "@/graphql/services/github.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
@@ -231,12 +230,7 @@ const checkGqlProjectName = async (
     await checkProjectName(args);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      throw new GraphQLError(error.message, {
-        extensions: {
-          code: "BAD_USER_INPUT",
-          field: "name",
-        },
-      });
+      throw badUserInput(error.message, { field: "name" });
     }
     throw error;
   }
@@ -319,18 +313,11 @@ const getOrCreateGitlabProject = async (props: {
   }
 
   const glProject = await client.Projects.show(gitlabProjectId);
-  if (!glProject) {
-    throw new Error("GitLab Project not found");
-  }
+  invariant(glProject, "GitLab Project not found");
 
   if (!("default_branch" in glProject)) {
-    throw new GraphQLError(
+    throw badUserInput(
       `GitLab user behinds the specified access token should have a "developer" role at minimum.`,
-      {
-        extensions: {
-          code: "BAD_USER_INPUT",
-        },
-      },
     );
   }
 
@@ -351,9 +338,7 @@ const importGitlabProject = async (props: {
     throw forbidden();
   }
 
-  if (!account.gitlabAccessToken) {
-    throw new Error("Gitlab access token is missing");
-  }
+  invariant(account.gitlabAccessToken, "Gitlab access token is missing");
 
   const glProject = await getOrCreateGitlabProject({
     account,
@@ -643,16 +628,17 @@ export const resolvers: IResolvers = {
       const project = await getAdminProject({
         id: args.input.projectId,
         user: ctx.auth.user,
+        withGraphFetched: "account",
       });
 
-      const account = await project.$relatedQuery("account");
-
-      if (!account.gitlabAccessToken) {
-        throw new Error("Gitlab access token is missing");
-      }
+      invariant(project.account, "account not fetched");
+      invariant(
+        project.account.gitlabAccessToken,
+        "Gitlab access token is missing",
+      );
 
       const gitlabProject = await getOrCreateGitlabProject({
-        account,
+        account: project.account,
         gitlabProjectId: args.input.gitlabProjectId,
       });
 
@@ -678,7 +664,7 @@ export const resolvers: IResolvers = {
       });
       const { targetAccountId } = args.input;
       if (project.accountId === targetAccountId) {
-        throw new Error("Project is already owned by this account");
+        throw badUserInput("Project is already owned by this account.");
       }
       await checkGqlProjectName({
         name: args.input.name,
@@ -719,11 +705,7 @@ export const resolvers: IResolvers = {
       ]);
 
       if (!userAccount?.userId) {
-        throw new GraphQLError("User not found", {
-          extensions: {
-            code: "BAD_USER_INPUT",
-          },
-        });
+        throw badUserInput("User not found");
       }
 
       const projectUser = await ProjectUser.query().findOne({

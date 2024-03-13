@@ -1,6 +1,3 @@
-import { MinusIcon, PlusIcon, MaximizeIcon } from "lucide-react";
-import { Selection, pointer, select } from "d3-selection";
-import { ZoomBehavior, zoom, zoomIdentity } from "d3-zoom";
 import {
   createContext,
   memo,
@@ -12,6 +9,10 @@ import {
   useRef,
   useState,
 } from "react";
+import { invariant } from "@argos/util/invariant";
+import { pointer, select, Selection } from "d3-selection";
+import { zoom, ZoomBehavior, zoomIdentity } from "d3-zoom";
+import { MaximizeIcon, MinusIcon, PlusIcon } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
@@ -210,9 +211,7 @@ export const ZoomerSyncProvider = (props: {
 
 export const useZoomerSyncContext = () => {
   const ctx = useContext(ZoomerSyncContext);
-  if (!ctx) {
-    throw new Error("Missing ZoomerSyncProvider");
-  }
+  invariant(ctx, "Missing ZoomerSyncProvider");
   return ctx;
 };
 
@@ -308,7 +307,7 @@ export const ZoomPane = (props: {
   return (
     <div
       ref={paneRef}
-      className="group/pane flex min-h-0 flex-1 cursor-grab select-none overflow-hidden rounded border bg-app"
+      className="group/pane bg-app flex min-h-0 flex-1 cursor-grab select-none overflow-hidden rounded border"
     >
       <div
         ref={contentRef}

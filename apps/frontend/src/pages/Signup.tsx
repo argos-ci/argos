@@ -1,10 +1,10 @@
-import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 import {
   Disclosure,
   DisclosureContent,
   useDisclosureState,
 } from "ariakit/disclosure";
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 
@@ -49,9 +49,9 @@ const ProPlanWarning = () => {
         className="flex items-center gap-2 text-sm font-medium"
       >
         {disclosure.open ? (
-          <ChevronDownIcon className="inline h-[1em] w-[1em]" />
+          <ChevronDownIcon className="inline size-[1em]" />
         ) : (
-          <ChevronRightIcon className="inline h-[1em] w-[1em]" />
+          <ChevronRightIcon className="inline size-[1em]" />
         )}
         Continuing will start a 14-day Pro plan trial.
       </Disclosure>
@@ -86,7 +86,7 @@ const SignupPage = () => {
         <title>Sign up</title>
       </Helmet>
 
-      <Container className="flex justify-center pt-16 max-w-sm">
+      <Container className="flex max-w-sm justify-center pt-16">
         <div className="flex max-w-md flex-col gap-8 pb-8">
           <h1
             className="mx-auto mb-8 text-center text-4xl font-bold leading-tight"

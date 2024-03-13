@@ -13,7 +13,7 @@ import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
 import { SHA256_REGEX_STR } from "@/web/constants.js";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { validate } from "@/web/middlewares/validate.js";
-import { HTTPError, asyncHandler } from "@/web/util.js";
+import { asyncHandler, boom } from "@/web/util.js";
 
 const router = Router();
 export default router;
@@ -88,16 +88,13 @@ const handleUpdateParallel = async ({
   build: Build;
 }) => {
   if (!req.body.parallelTotal) {
-    throw new HTTPError(
-      400,
-      "`parallelTotal` is required when `parallel` is `true`",
-    );
+    throw boom(400, "`parallelTotal` is required when `parallel` is `true`");
   }
 
   const parallelTotal = Number(req.body.parallelTotal);
 
   if (build.totalBatch && build.totalBatch !== parallelTotal) {
-    throw new HTTPError(400, "`parallelTotal` must be the same on every batch");
+    throw boom(400, "`parallelTotal` must be the same on every batch");
   }
 
   const complete = await transaction(async (trx) => {
@@ -168,22 +165,19 @@ router.put(
       .withGraphFetched("compareScreenshotBucket");
 
     if (!build) {
-      throw new HTTPError(404, "Build not found");
+      throw boom(404, "Build not found");
     }
 
     if (!build.compareScreenshotBucket) {
-      throw new HTTPError(
-        500,
-        "Could not find compareScreenshotBucket for build",
-      );
+      throw boom(500, "Could not find compareScreenshotBucket for build");
     }
 
     if (build.compareScreenshotBucket.complete) {
-      throw new HTTPError(409, "Build is already finalized");
+      throw boom(409, "Build is already finalized");
     }
 
     if (build.projectId !== req.authProject!.id) {
-      throw new HTTPError(403, "Build does not belong to project");
+      throw boom(403, "Build does not belong to project");
     }
 
     const ctx = { req, build };

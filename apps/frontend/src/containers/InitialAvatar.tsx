@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import { forwardRef } from "react";
+import { clsx } from "clsx";
 
 export type InitialAvatar = {
   className?: string;

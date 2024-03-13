@@ -1,5 +1,9 @@
 {
-  "extends": ["plugin:react/recommended", "plugin:react-hooks/recommended"],
+  "extends": [
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:tailwindcss/recommended"
+  ],
   "env": {
     "es2022": true,
     "browser": true,
@@ -15,7 +19,6 @@
       "jsx": true
     }
   },
-  "plugins": ["react", "react-hooks"],
   "settings": {
     "react": {
       "version": "detect"
@@ -27,6 +30,11 @@
     "react/react-in-jsx-scope": "off",
     "react/no-unescaped-entities": "off",
 
-    "import/no-relative-packages": "error"
+    "import/no-relative-packages": "error",
+
+    // Doesn't work with our config
+    "tailwindcss/no-custom-classname": "off",
+    // We use Prettier for formatting
+    "tailwindcss/classnames-order": "off"
   }
 }

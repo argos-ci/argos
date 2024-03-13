@@ -1,7 +1,7 @@
 import type { Octokit } from "@octokit/rest";
 
-import { getRedisLock } from "@/util/redis/index.js";
 import type { GithubPullRequest } from "@/database/models/index.js";
+import { getRedisLock } from "@/util/redis/index.js";
 
 const getOrCreatePullRequestComment = async ({
   owner,

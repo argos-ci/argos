@@ -52,13 +52,13 @@ const computeDiff = async (args: {
 
   switch (result.reason) {
     case "file-not-exists":
-      throw new Error(`File not exists`);
+      throw new Error("File not exists");
     case "layout-diff":
       return 1;
     case "pixel-diff":
       return result.diffPercentage / 100;
     default:
-      throw new Error(`Unknown reason`);
+      throw new Error("Unknown reason");
   }
 };
 

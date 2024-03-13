@@ -1,4 +1,5 @@
 /* eslint-disable default-case */
+import { invariant } from "@argos/util/invariant";
 import type { EmitterWebhookEvent } from "@octokit/webhooks";
 
 import { getPendingCommentBody } from "@/database/index.js";
@@ -11,6 +12,11 @@ import {
   Team,
   TeamUser,
 } from "@/database/models/index.js";
+import {
+  getOrCreateGhAccount,
+  getOrCreateGithubAccountMember,
+  joinSSOTeams,
+} from "@/database/services/account.js";
 import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
 
@@ -23,12 +29,6 @@ import {
   getOrCreateInstallation,
 } from "./eventHelpers.js";
 import { updateSubscription } from "./updateSubscription.js";
-import {
-  getOrCreateGhAccount,
-  getOrCreateGithubAccountMember,
-  joinSSOTeams,
-} from "@/database/services/account.js";
-import { invariant } from "@/util/invariant.js";
 
 export const handleGitHubEvents = async ({
   name,

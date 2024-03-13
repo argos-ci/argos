@@ -1,5 +1,6 @@
 apps/*/lib/
 apps/*/dist/
+packages/*/dist/
 node_modules/
 *.pem
 .env

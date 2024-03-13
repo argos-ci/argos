@@ -1,12 +1,12 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { invariant } from "@argos/util/invariant";
 import { rimraf } from "rimraf";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { LocalImageFile } from "@/storage/index.js";
 
 import { diffImages } from "../index.js";
-import { invariant } from "@/util/invariant.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

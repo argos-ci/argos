@@ -1,11 +1,11 @@
-import { ExternalLinkIcon } from "lucide-react";
+import * as React from "react";
 import { clsx } from "clsx";
-import { useState } from "react";
+import { ExternalLinkIcon } from "lucide-react";
 
 import { useAssertAuthToken } from "@/containers/Auth";
 
-import { Button, ButtonProps } from "./Button";
 import { anchorClassNames } from "./Anchor";
+import { Button, ButtonProps } from "./Button";
 import { useEventCallback } from "./useEventCallback";
 
 async function getStripePortalLink({
@@ -33,7 +33,9 @@ async function getStripePortalLink({
 }
 const useRedirectToStripePortal = () => {
   const token = useAssertAuthToken();
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [status, setStatus] = React.useState<"idle" | "loading" | "error">(
+    "idle",
+  );
   const redirect = useEventCallback(
     (props: { stripeCustomerId: string; accountId: string }) => {
       setStatus("loading");
@@ -85,7 +87,7 @@ export const StripePortalLink = ({
       onClick={handleClick}
     >
       {children}
-      <ExternalLinkIcon className="ml-1 h-[1em] w-[1em] inline mb-0.5" />
+      <ExternalLinkIcon className="mb-0.5 ml-1 inline size-[1em]" />
     </button>
   );
 };
@@ -116,7 +118,9 @@ async function getCheckoutSessionLink({
 
 const useRedirectToStripeCheckout = () => {
   const token = useAssertAuthToken();
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [status, setStatus] = React.useState<"idle" | "loading" | "error">(
+    "idle",
+  );
   const redirect = useEventCallback(
     (props: { accountId: string; successUrl: string; cancelUrl: string }) => {
       setStatus("loading");

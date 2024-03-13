@@ -1,17 +1,17 @@
+import { ReactNode, useState } from "react";
 import { FetchResult, useMutation } from "@apollo/client";
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  PlusCircleIcon,
-} from "lucide-react";
 import {
   Disclosure,
   DisclosureContent,
   useDisclosureState,
 } from "ariakit/disclosure";
 import { clsx } from "clsx";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  PlusCircleIcon,
+} from "lucide-react";
 import moment from "moment";
-import { ReactNode, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
 import config from "@/config";
@@ -22,6 +22,7 @@ import {
   AccountSubscriptionStatus,
   TrialStatus,
 } from "@/gql/graphql";
+import { Anchor } from "@/ui/Anchor";
 import { Button, ButtonIcon } from "@/ui/Button";
 import {
   Card,
@@ -43,7 +44,6 @@ import {
   DialogTitle,
   useDialogState,
 } from "@/ui/Dialog";
-import { Anchor } from "@/ui/Anchor";
 import { Link } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { StripePortalLink } from "@/ui/StripeLink";
@@ -381,27 +381,27 @@ const ConsumptionBlock = ({
       <Disclosure
         state={disclosure}
         className={clsx(
-          "text-sm text-low transition hover:text focus:outline-none",
+          "text-low hover:text text-sm transition focus:outline-none",
           projects.length === 0 ? "hidden" : "",
         )}
       >
         {disclosure.open ? "Hide" : "Show"} usage detail{" "}
         {disclosure.open ? (
-          <ChevronDownIcon className="inline h-[1em] w-[1em]" />
+          <ChevronDownIcon className="inline size-[1em]" />
         ) : (
-          <ChevronRightIcon className="inline h-[1em] w-[1em]" />
+          <ChevronRightIcon className="inline size-[1em]" />
         )}
       </Disclosure>
 
       <DisclosureContent
         state={disclosure}
         as="ul"
-        className="mt-2 text-sm text-low"
+        className="text-low mt-2 text-sm"
       >
         {projects.map((project) => (
           <li
             key={project.id}
-            className="flex items-center justify-between border-b px-1 py-1 last:border-b-0"
+            className="flex items-center justify-between border-b p-1 last:border-b-0"
           >
             <span>{project.name}</span>
             <span className="tabular-nums">
@@ -415,7 +415,7 @@ const ConsumptionBlock = ({
 };
 
 const Paragraph = ({ children }: { children: ReactNode }) => (
-  <p className="mt-2 text-low">{children}</p>
+  <p className="text-low mt-2">{children}</p>
 );
 
 const ManageSubscriptionButton = ({
@@ -552,12 +552,12 @@ export const PlanCard = (props: { account: AccountFragment }) => {
         {!isTeam && (
           <>
             <CardSeparator className="my-6" />
-            <p className="my-4 text-sm text-low">
+            <p className="text-low my-4 text-sm">
               Your plan includes a limited amount of screenshots. If the usage
               on your projects exceeds the allotted limit, you will need to
               upgrade to a Pro team.
             </p>
-            <div className="border rounded p-2 mt-4 text-sm">
+            <div className="mt-4 rounded border p-2 text-sm">
               To take advantage of collaboration, create a new Pro team and
               transfer your projects.
             </div>
@@ -568,7 +568,7 @@ export const PlanCard = (props: { account: AccountFragment }) => {
         {account.hasForcedPlan ? (
           <ContactLink />
         ) : (
-          <div className="flex items-center justify-between gap-4 flex-row-reverse">
+          <div className="flex flex-row-reverse items-center justify-between gap-4">
             {isTeam && showUpgradeButton && (
               <TeamUpgradeDialogButton initialAccountId={account.id} />
             )}

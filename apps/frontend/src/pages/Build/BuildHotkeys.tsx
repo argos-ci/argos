@@ -1,4 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useRef } from "react";
+import { DisclosureState } from "ariakit/ts/disclosure";
 
 import {
   Dialog,
@@ -7,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/Dialog";
-import { DisclosureState } from "ariakit/ts/disclosure";
 
 interface Hotkey {
   keys: string[];
@@ -170,7 +170,7 @@ export const useBuildHotkey = (
 };
 
 const Kbd = ({ children }: { children: React.ReactNode }) => (
-  <kbd className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-ui px-1 text-xs">
+  <kbd className="bg-ui inline-flex h-5 min-w-5 items-center justify-center rounded px-1 text-xs">
     {children}
   </kbd>
 );

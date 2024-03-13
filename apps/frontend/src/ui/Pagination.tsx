@@ -1,7 +1,8 @@
-import { clsx } from "clsx";
 import * as React from "react";
-import { Button, ButtonProps } from "./Button";
+import { clsx } from "clsx";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+
+import { Button, ButtonProps } from "./Button";
 
 const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
   <nav
@@ -41,7 +42,7 @@ const PaginationButtonItem = ({
       size={size}
       aria-current={isActive ? "page" : undefined}
       className={clsx(
-        "flex items-center min-w-[44px] justify-center",
+        "flex min-w-[44px] items-center justify-center",
         className,
       )}
     >
@@ -59,7 +60,7 @@ const PaginationPrevious = ({
     className={clsx("gap-1 pl-2.5", className)}
     {...props}
   >
-    <ChevronLeft className="h-4 w-4" />
+    <ChevronLeft className="size-4" />
     <span>Previous</span>
   </PaginationButtonItem>
 );
@@ -75,7 +76,7 @@ const PaginationNext = ({
     {...props}
   >
     <span>Next</span>
-    <ChevronRight className="h-4 w-4" />
+    <ChevronRight className="size-4" />
   </PaginationButtonItem>
 );
 
@@ -85,10 +86,10 @@ const PaginationEllipsis = ({
 }: React.ComponentProps<"span">) => (
   <span
     aria-hidden
-    className={clsx("flex h-9 w-9 items-end justify-center", className)}
+    className={clsx("flex size-9 items-end justify-center", className)}
     {...props}
   >
-    <MoreHorizontal className="h-4 w-4" />
+    <MoreHorizontal className="size-4" />
     <span className="sr-only">More pages</span>
   </span>
 );

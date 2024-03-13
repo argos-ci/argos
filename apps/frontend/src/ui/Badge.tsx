@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import { forwardRef } from "react";
+import { clsx } from "clsx";
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ export const Badge = forwardRef<HTMLDivElement, BadgeProps>(
         ref={ref}
         className={clsx(
           className,
-          "rounded-md border px-2 py-0.5 text-xxs font-semibold tabular-nums leading-none text-low",
+          "text-xxs text-low rounded-md border px-2 py-0.5 font-semibold tabular-nums leading-none",
         )}
       >
         {children}

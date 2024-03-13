@@ -1,10 +1,15 @@
 import { init as initSentry } from "@sentry/browser";
+
 import "core-js";
+
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 import config from "./config";
+
 import "./index.css";
+
+import { invariant } from "@apollo/client/utilities/globals";
 
 if (process.env["NODE_ENV"] === "production") {
   initSentry({
@@ -15,8 +20,7 @@ if (process.env["NODE_ENV"] === "production") {
 }
 
 const container = document.querySelector("#root");
-if (!container) {
-  throw new Error("No #root element found");
-}
+invariant(container, "No #root element found");
+
 const root = createRoot(container);
 root.render(<App />);

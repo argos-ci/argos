@@ -1,3 +1,5 @@
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import type {
   Pojo,
   QueryContext,
@@ -5,19 +7,18 @@ import type {
   TransactionOrKnex,
 } from "objection";
 
+import config from "@/config/index.js";
+
 import { generateRandomHexString } from "../services/crypto.js";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
 import { Build } from "./Build.js";
 import { GithubRepository } from "./GithubRepository.js";
-import type { User } from "./User.js";
 import { GitlabProject } from "./GitlabProject.js";
-import config from "@/config/index.js";
-import { invariant } from "@/util/invariant.js";
 import { ProjectUser } from "./ProjectUser.js";
-import { assertUnreachable } from "@/util/unreachable.js";
 import { TeamUser } from "./TeamUser.js";
+import type { User } from "./User.js";
 
 type ProjectPermission = "admin" | "review" | "view_settings" | "view";
 
@@ -176,12 +177,12 @@ export class Project extends Model {
           case "viewer":
             return ["view", "view_settings"];
           default:
-            assertUnreachable(projectUser.userLevel);
+            assertNever(projectUser.userLevel);
         }
       }
       // eslint-disable-next-line no-fallthrough
       default:
-        assertUnreachable(teamUser.userLevel);
+        assertNever(teamUser.userLevel);
     }
   }
 
@@ -229,10 +230,8 @@ export class Project extends Model {
   }
 
   async getUrl() {
-    if (!this.account) {
-      throw new Error("Account not found");
-    }
-
+    await this.$fetchGraph("account", { skipFetched: true });
+    invariant(this.account, "account is not fetched");
     const pathname = `/${this.account.slug}/${this.name}`;
     return `${config.get("server.url")}${pathname}`;
   }

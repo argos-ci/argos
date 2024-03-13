@@ -1,5 +1,13 @@
 import * as React from "react";
+import { useMutation } from "@apollo/client";
+import { MarkGithubIcon } from "@primer/octicons-react";
+
+import { GITHUB_SSO_PRICING } from "@/constants";
 import { FragmentType, graphql, useFragment } from "@/gql";
+import {
+  AccountSubscriptionStatus,
+  TeamGitHubSso_TeamFragment,
+} from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -8,15 +16,6 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
-import { MarkGithubIcon } from "@primer/octicons-react";
-import { ConfigureGitHubSSO } from "./GitHubSSO/Configure";
-import { useMutation } from "@apollo/client";
-import {
-  AccountSubscriptionStatus,
-  TeamGitHubSso_TeamFragment,
-} from "@/gql/graphql";
-import { GithubAccountLink } from "../GithubAccountLink";
-import { GITHUB_SSO_PRICING } from "@/constants";
 import {
   Dialog,
   DialogBody,
@@ -27,8 +26,11 @@ import {
   DialogTitle,
   useDialogState,
 } from "@/ui/Dialog";
-import { FormError } from "@/ui/FormError";
 import { getGraphQLErrorMessage } from "@/ui/Form";
+import { FormError } from "@/ui/FormError";
+
+import { GithubAccountLink } from "../GithubAccountLink";
+import { ConfigureGitHubSSO } from "./GitHubSSO/Configure";
 
 const TeamFragment = graphql(`
   fragment TeamGitHubSSO_Team on Team {
@@ -124,7 +126,7 @@ export const TeamGitHubSSO = (props: {
         {team.ssoGithubAccount && (
           <div>
             <div className="flex items-center gap-2 rounded border p-4">
-              <MarkGithubIcon className="shrink-0 w-6 h-6" />
+              <MarkGithubIcon className="size-6 shrink-0" />
               <div className="flex-1 font-semibold">
                 <GithubAccountLink githubAccount={team.ssoGithubAccount} />
               </div>

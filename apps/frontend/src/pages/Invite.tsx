@@ -1,4 +1,5 @@
 import { useMutation } from "@apollo/client";
+import { invariant } from "@apollo/client/utilities/globals";
 import { Helmet } from "react-helmet";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 
@@ -72,9 +73,7 @@ export const Invite = () => {
   const loggedIn = useIsLoggedIn();
   const params = useParams();
   const token = params.inviteToken;
-  if (!token) {
-    throw new Error("No invite token");
-  }
+  invariant(token, "no invite token");
   const { data } = useQuery(InvitationQuery, {
     variables: {
       token,

@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import type { Octokit, RestEndpointMethodTypes } from "@octokit/rest";
 
 import {
@@ -6,14 +7,13 @@ import {
   GithubPullRequest,
 } from "@/database/models/index.js";
 import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
+import { getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { UnretryableError } from "@/job-core/index.js";
 
+import { getAggregatedNotification } from "./aggregated.js";
 import { getCommentBody } from "./comment.js";
 import { job as buildNotificationJob } from "./job.js";
-import { getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { getNotificationPayload, NotificationPayload } from "./notification.js";
-import { getAggregatedNotification } from "./aggregated.js";
-import { invariant } from "@/util/invariant.js";
 
 export async function pushBuildNotification({
   type,
@@ -153,26 +153,20 @@ const sendGithubNotification = async (ctx: Context) => {
 
 const sendGitlabNotification = async (ctx: Context) => {
   const { build, notification } = ctx;
-
-  if (!build) {
-    throw new UnretryableError("Invariant: no build found");
-  }
+  invariant(build, "no build found", UnretryableError);
 
   const { project, compareScreenshotBucket } = build;
 
-  if (!compareScreenshotBucket) {
-    throw new UnretryableError("Invariant: no compare screenshot bucket found");
-  }
-
-  if (!project) {
-    throw new UnretryableError("Invariant: no project found");
-  }
+  invariant(
+    compareScreenshotBucket,
+    "no compare screenshot bucket found",
+    UnretryableError,
+  );
+  invariant(project, "no project found", UnretryableError);
 
   const { gitlabProject, account } = project;
 
-  if (!account) {
-    throw new UnretryableError("Invariant: no account found");
-  }
+  invariant(account, "no account found", UnretryableError);
 
   if (!account.gitlabAccessToken) {
     return;

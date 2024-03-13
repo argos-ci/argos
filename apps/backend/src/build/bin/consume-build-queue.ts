@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { callbackify } from "node:util";
+import { z } from "zod";
 
 import { getAmqpChannel } from "@/job-core/index.js";
 
@@ -11,16 +12,14 @@ import { getAmqpChannel } from "@/job-core/index.js";
 
 const queue = "build";
 
+const MessageSchema = z.object({
+  attempts: z.number(),
+  args: z.array(z.unknown()),
+});
+
 const parseMessage = (message: Buffer) => {
   const payload = JSON.parse(message.toString());
-  if (
-    !payload ||
-    !Array.isArray(payload.args) ||
-    !Number.isInteger(payload.attempts)
-  ) {
-    throw new Error("Invalid payload");
-  }
-  return payload;
+  return MessageSchema.parse(payload);
 };
 
 const main = callbackify(async () => {

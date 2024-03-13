@@ -4,11 +4,11 @@ import { Link } from "react-router-dom";
 import { useIsLoggedIn } from "@/containers/Auth";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { NavUserControl } from "@/containers/NavUserControl";
+import { PullRequestButton } from "@/containers/PullRequestButton";
 import { ReviewButton } from "@/containers/ReviewButton";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Tooltip } from "@/ui/Tooltip";
-import { PullRequestButton } from "@/containers/PullRequestButton";
 
 const BrandLink = memo(
   ({
@@ -43,7 +43,7 @@ const ProjectLink = memo(
       <Tooltip content="See all builds">
         <Link
           to={`/${accountSlug}/${projectName}/builds`}
-          className="text-xs leading-none text-low transition hover:brightness-125"
+          className="text-low text-xs leading-none transition hover:brightness-125"
         >
           {accountSlug}/{projectName}
         </Link>
@@ -94,7 +94,7 @@ export const BuildHeader = memo(
     const build = useFragment(BuildFragment, props.build);
     const project = useFragment(ProjectFragment, props.project);
     return (
-      <div className="flex flex-none flex-grow-0 items-center justify-between border-b p-4 gap-4 min-w-0 w-screen">
+      <div className="flex w-screen min-w-0 flex-none grow-0 items-center justify-between gap-4 border-b p-4">
         <div className="flex h-[32px] items-center gap-4">
           <BrandLink
             accountSlug={props.accountSlug}
@@ -114,7 +114,7 @@ export const BuildHeader = memo(
             <BuildStatusChip build={build} project={project} />
           ) : null}
         </div>
-        <div className="flex gap-4 items-center min-w-0">
+        <div className="flex min-w-0 items-center gap-4">
           {build?.pullRequest ? (
             <PullRequestButton pullRequest={build.pullRequest} size="small" />
           ) : null}

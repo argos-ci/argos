@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState } from "react";
+import { invariant } from "@argos/util/invariant";
 
 type ViewMode = "split" | "baseline" | "changes";
 
@@ -13,11 +14,10 @@ const DiffViewModeContext = createContext<DiffViewModeContextValue | null>(
 
 export const useBuildDiffViewModeState = () => {
   const context = useContext(DiffViewModeContext);
-  if (context === null) {
-    throw new Error(
-      "useBuildDiffViewModeState must be used within a BuildDiffViewModeStateProvider",
-    );
-  }
+  invariant(
+    context,
+    "useBuildDiffViewModeState must be used within a BuildDiffViewModeStateProvider",
+  );
   return context;
 };
 

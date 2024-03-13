@@ -3,15 +3,15 @@ import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { ProjectGitRepository_ProjectFragment } from "@/gql/graphql";
+import { Anchor } from "@/ui/Anchor";
 import { Button } from "@/ui/Button";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormCheckbox } from "@/ui/FormCheckbox";
 
-import { ConnectRepository } from "./ConnectRepository";
-import { Anchor } from "@/ui/Anchor";
 import { getRepositoryIcon } from "../Repository";
+import { ConnectRepository } from "./ConnectRepository";
 
 const ProjectFragment = graphql(`
   fragment ProjectGitRepository_Project on Project {
@@ -253,7 +253,7 @@ export const ProjectGitRepository = (props: {
         {project.repository && RepoIcon ? (
           <div>
             <div className="flex items-center gap-2 rounded border p-4">
-              <RepoIcon className="shrink-0 w-6 h-6" />
+              <RepoIcon className="size-6 shrink-0" />
               <div className="flex-1 font-semibold">
                 <Anchor
                   href={project.repository.url}

@@ -1,6 +1,8 @@
+import { beforeEach, describe, expect, it } from "vitest";
+
 import { Build, ScreenshotBucket } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { beforeEach, describe, expect, it } from "vitest";
+
 import { getBaseBucketForBuildAndCommit } from "./baseQuery";
 
 describe("#getBaseBucketForBuildAndCommit", () => {

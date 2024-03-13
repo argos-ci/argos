@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import { HTMLProps } from "react";
+import { clsx } from "clsx";
 
 export const Heading = ({
   className,
@@ -14,5 +14,5 @@ export const Headline = ({
   className,
   ...props
 }: HTMLProps<HTMLParagraphElement>) => {
-  return <p className={clsx(className, "text-sm text-low")} {...props} />;
+  return <p className={clsx(className, "text-low text-sm")} {...props} />;
 };

@@ -1,5 +1,5 @@
-import moment from "moment";
 import { memo } from "react";
+import moment from "moment";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import { useQuery } from "@/containers/Apollo";

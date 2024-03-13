@@ -1,3 +1,6 @@
+import { invariant } from "@argos/util/invariant";
+import { ListIcon } from "lucide-react";
+
 import { FragmentType, graphql, useFragment } from "@/gql";
 import {
   Select,
@@ -7,7 +10,7 @@ import {
   SelectSeparator,
   useSelectState,
 } from "@/ui/Select";
-import { ListIcon } from "lucide-react";
+
 import { GitLabLogo } from "./GitLab";
 
 const NamespaceFragment = graphql(`
@@ -36,9 +39,7 @@ export const GitlabNamespacesSelect = (props: {
     (namespace) => namespace.id === props.value,
   );
 
-  if (props.value !== "all" && !activeNamespace) {
-    throw new Error("No active installation");
-  }
+  invariant(props.value === "all" || activeNamespace, "no active installation");
 
   return (
     <>
@@ -81,7 +82,7 @@ export const GitlabNamespacesSelect = (props: {
           }}
         >
           <div className="flex items-center gap-2">
-            <ListIcon className="w-[1em] h-[1em]" />
+            <ListIcon className="size-[1em]" />
             Switch Git Provider
           </div>
         </SelectItem>

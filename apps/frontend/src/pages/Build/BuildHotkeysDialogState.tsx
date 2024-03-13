@@ -1,6 +1,7 @@
-import { useDialogState } from "@/ui/Dialog";
-import { DisclosureState } from "ariakit/ts/disclosure";
 import { createContext, useContext } from "react";
+import { DisclosureState } from "ariakit/ts/disclosure";
+
+import { useDialogState } from "@/ui/Dialog";
 
 interface HotkeysDialogContextValue {
   hotkeysDialog: DisclosureState;

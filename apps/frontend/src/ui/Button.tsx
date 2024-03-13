@@ -1,8 +1,8 @@
-import { ChevronDownIcon } from "lucide-react";
+import { Children, cloneElement, forwardRef, memo } from "react";
 import { Button as AriakitButton } from "ariakit/button";
 import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
-import { Children, cloneElement, forwardRef, memo } from "react";
+import { ChevronDownIcon } from "lucide-react";
 
 export type ButtonColor =
   | "primary"
@@ -63,17 +63,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const colorClassNames = variantClassNames[variant];
-    if (!colorClassNames) {
-      throw new Error(`Invalid variant: ${variant}`);
-    }
     const variantClassName = colorClassNames[color];
-    if (!variantClassName) {
-      throw new Error(`Invalid color: ${color}`);
-    }
     const sizeClassName = sizeClassNames[size];
-    if (!sizeClassName) {
-      throw new Error(`Invalid size: ${size}`);
-    }
     return (
       <AriakitButton
         ref={ref}
@@ -83,7 +74,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           variantClassName,
           sizeClassName,
           "focus:outline-none focus-visible:ring-4",
-          "align-center select-none inline-flex whitespace-nowrap border font-sans font-medium transition aria-disabled:opacity-disabled [&:is(button)]:cursor-default",
+          "align-center aria-disabled:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium transition [&:is(button)]:cursor-default",
         )}
         {...props}
       >
@@ -105,7 +96,7 @@ export const ButtonIcon = ({
   return cloneElement(Children.only(children), {
     "aria-hidden": true,
     className: clsx(
-      "h-[1em] w-[1em]",
+      "size-[1em]",
       "group-[]/button-base:my-[0.1875rem]",
       "group-[]/button-small:my-0.5",
       "group-[]/button-large:my-1",

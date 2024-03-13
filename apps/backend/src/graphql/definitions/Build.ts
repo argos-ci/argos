@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
@@ -10,7 +11,6 @@ import type {
 import type { Context } from "../context.js";
 import { forbidden, notFound, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
-import { invariant } from "@/util/invariant.js";
 
 const { gql } = gqlTag;
 
@@ -110,9 +110,7 @@ const getCompareScreenshotBucket = async (ctx: Context, build: Build) => {
   const bucket = await ctx.loaders.ScreenshotBucket.load(
     build.compareScreenshotBucketId,
   );
-  if (!bucket) {
-    throw new Error("Invariant: compare bucket not found");
-  }
+  invariant(bucket, "bucket not found");
   return bucket;
 };
 

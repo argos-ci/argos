@@ -1,5 +1,5 @@
 {
-  "name": "@argos-ci/frontend",
+  "name": "@argos/frontend",
   "version": "2.0.0",
   "private": true,
   "scripts": {
@@ -10,6 +10,8 @@
   "sideEffects": false,
   "devDependencies": {
     "@apollo/client": "^3.9.2",
+    "@argos/tsconfig": "*",
+    "@argos/util": "*",
     "@graphql-typed-document-node/core": "^3.2.0",
     "@primer/octicons-react": "^19.8.0",
     "@radix-ui/colors": "^3.0.0",

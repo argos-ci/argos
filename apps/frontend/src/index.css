@@ -30,7 +30,7 @@
   }
 
   [data-backdrop]::after {
-    @apply absolute inset-0 bg-app backdrop-blur-sm opacity-60;
+    @apply bg-app absolute inset-0 opacity-60 backdrop-blur-sm;
     content: "";
   }
 }

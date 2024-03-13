@@ -2,11 +2,11 @@ import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
+import { SummaryCheck } from "@/gql/graphql";
+import { Anchor } from "@/ui/Anchor";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
-import { Anchor } from "@/ui/Anchor";
-import { SummaryCheck } from "@/gql/graphql";
 import { FormRadio, FormRadioGroup } from "@/ui/FormRadio";
 
 const UpdateStatusChecksMutation = graphql(`
@@ -73,7 +73,7 @@ export const ProjectStatusChecks = (props: {
                 label={
                   <div className="ml-2">
                     Add a summary check only if there is more than one build
-                    <p className="text-sm font-normal text-low">
+                    <p className="text-low text-sm font-normal">
                       Recommended for most projects.
                     </p>
                   </div>
@@ -85,7 +85,7 @@ export const ProjectStatusChecks = (props: {
                 label={
                   <div className="ml-2">
                     Always add a summary check
-                    <p className="text-sm font-normal text-low">
+                    <p className="text-low text-sm font-normal">
                       Useful if your project runs Argos builds conditionally.
                     </p>
                   </div>
@@ -97,7 +97,7 @@ export const ProjectStatusChecks = (props: {
                 label={
                   <div className="ml-2">
                     Never add a summary check
-                    <p className="text-sm font-normal text-low">
+                    <p className="text-low text-sm font-normal">
                       If you want to disable summary checks.
                     </p>
                   </div>

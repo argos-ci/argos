@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import { HTMLProps } from "react";
+import { clsx } from "clsx";
 
 export const Alert = ({ className, ...props }: HTMLProps<HTMLDivElement>) => {
   return (
@@ -20,7 +20,7 @@ export const AlertText = ({
   className,
   ...props
 }: HTMLProps<HTMLHeadingElement>) => {
-  return <p className={clsx(className, "my-2 text-sm text-low")} {...props} />;
+  return <p className={clsx(className, "text-low my-2 text-sm")} {...props} />;
 };
 
 export const AlertActions = ({

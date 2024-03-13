@@ -1,6 +1,7 @@
-import type { S3Client } from "@aws-sdk/client-s3";
 import { unlink } from "node:fs/promises";
 import { promisify } from "node:util";
+import { invariant } from "@argos/util/invariant";
+import type { S3Client } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import { tmpName as cbTmpName } from "tmp";
 import type { TmpNameCallback, TmpNameOptions } from "tmp";
@@ -37,9 +38,7 @@ abstract class AbstractImageFile implements ImageFile {
   async measure() {
     const filepath = await this.getFilepath();
     const { width, height } = await sharp(filepath).metadata();
-    if (!width || !height) {
-      throw new Error("Unable to get image dimensions");
-    }
+    invariant(width && height, "unable to get image dimensions");
     return { width, height };
   }
 
@@ -119,17 +118,13 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
   }
 
   private async downloadFromS3(): Promise<string> {
-    if (!this.key) {
-      throw new Error("Missing key");
-    }
+    invariant(this.key, "missing key");
     const result = await s3Get({
       s3: this.s3,
       Bucket: this.bucket,
       Key: this.key,
     });
-    if (!result.ContentType) {
-      throw new Error("Missing content type");
-    }
+    invariant(result.ContentType, "missing content type");
     const ext = getExtensionFromContentType(result.ContentType);
     const outputPath = await tmpName({ postfix: ext });
     await s3Download(result, outputPath);
@@ -154,9 +149,7 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
     const result = await (async () => {
       // If there is a buffer, we use it for upload
       if (this.buffer) {
-        if (!this.contentType) {
-          throw new Error("Missing content type");
-        }
+        invariant(this.contentType, "missing content type");
         return uploadFromBuffer({
           s3: this.s3,
           Bucket: this.bucket,

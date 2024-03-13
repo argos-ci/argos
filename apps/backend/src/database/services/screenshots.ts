@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import type { PartialModelObject, TransactionOrKnex } from "objection";
 
 import { transaction } from "@/database/index.js";
@@ -8,8 +9,8 @@ import {
   ScreenshotMetadata,
   Test,
 } from "@/database/models/index.js";
+
 import { getUnknownFileKeys } from "./file.js";
-import { invariant } from "@/util/invariant.js";
 
 const getOrCreateTests = async ({
   projectId,

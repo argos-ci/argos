@@ -86,7 +86,7 @@ export const TeamUpgradeDialogButton = ({
             />
           </div>
 
-          <p className="mt-4 font-medium text">
+          <p className="text mt-4 font-medium">
             You will be redirected to Stripe to{" "}
             {!hasSubscribedToTrial
               ? "start a 14-day Pro plan trial"

@@ -3,10 +3,10 @@ import { Navigate, useSearchParams } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginButtons } from "@/containers/LoginButtons";
-import { BrandShield } from "@/ui/BrandShield";
-import { Container } from "@/ui/Container";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { Anchor } from "@/ui/Anchor";
+import { BrandShield } from "@/ui/BrandShield";
+import { Container } from "@/ui/Container";
 
 export const Login = () => {
   const loggedIn = useIsLoggedIn();
@@ -31,11 +31,11 @@ export const Login = () => {
         <div className="mb-10 text-3xl font-semibold">Login to Argos</div>
 
         {error && (
-          <Alert className="border border-danger p-4 rounded mb-8">
+          <Alert className="border-danger mb-8 rounded border p-4">
             <AlertTitle>Sorry, an error occurred.</AlertTitle>
             <AlertText>
               <p>It seems we've some trouble to log you in.</p>
-              <p className="my-4 text text-base">Error message: {error}</p>
+              <p className="text my-4 text-base">Error message: {error}</p>
               <p>
                 Try again, if the error persists, please reach us on{" "}
                 <Anchor href="https://argos-ci.com/discord" external>

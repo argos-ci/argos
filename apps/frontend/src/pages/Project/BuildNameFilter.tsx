@@ -48,7 +48,7 @@ export function BuildNameFilter(props: {
   });
 
   return (
-    <div className="flex gap-3 items-center mb-4">
+    <div className="mb-4 flex items-center gap-3">
       <Select state={select} className="min-w-[8em] justify-between">
         {getBuildNameLabel(select.value)}
         <SelectArrow />

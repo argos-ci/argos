@@ -1,18 +1,18 @@
+import { invariant } from "@argos/util/invariant";
 import express, { Router } from "express";
 
-import { getRedisLock } from "@/util/redis/index.js";
 import config from "@/config/index.js";
 import type { Project } from "@/database/models/index.js";
 import { Build } from "@/database/models/index.js";
 import { getUnknownFileKeys } from "@/database/services/file.js";
 import { getS3Client, getSignedPutObjectUrl } from "@/storage/index.js";
-
+import { getRedisLock } from "@/util/redis/index.js";
 import { SHA1_REGEX_STR, SHA256_REGEX_STR } from "@/web/constants.js";
+
 import { repoAuth } from "../../../middlewares/repoAuth.js";
 import { validate } from "../../../middlewares/validate.js";
-import { HTTPError, asyncHandler } from "../../../util.js";
+import { asyncHandler, boom } from "../../../util.js";
 import { createBuildFromRequest, getBuildName } from "../util.js";
-import { invariant } from "@/util/invariant.js";
 
 const router = Router();
 export default router;
@@ -113,7 +113,7 @@ const getUploads = async (keys: string[]): Promise<Upload[]> => {
   );
   return unknownKeys.map((key, index) => {
     const putUrl = putUrls[index];
-    invariant(putUrl, "Invariant: putUrl is undefined");
+    invariant(putUrl, "`putUrl` is undefined");
     return { key, putUrl };
   });
 };
@@ -156,10 +156,7 @@ const handleCreateParallel = async ({
   req: CreateRequest;
 }): Promise<CreateResult> => {
   if (!req.body.parallelNonce) {
-    throw new HTTPError(
-      400,
-      "`parallelNonce` is required when `parallel` is `true`",
-    );
+    throw boom(400, "`parallelNonce` is required when `parallel` is `true`");
   }
   const { screenshots, pwTraces } = await getScreenshotAndPwTraces(req.body);
   const buildName = getBuildName(req.body.name);
@@ -178,7 +175,7 @@ const handleCreateParallel = async ({
 
     if (existingBuild) {
       if (existingBuild.compareScreenshotBucket!.complete) {
-        throw new HTTPError(409, `Build already finalized`);
+        throw boom(409, `Build already finalized`);
       }
 
       return existingBuild;

@@ -1,27 +1,27 @@
+import * as React from "react";
 import { useQuery } from "@apollo/client";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
-import * as React from "react";
 import { Helmet } from "react-helmet";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
+import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
+import { ProjectPermission } from "@/gql/graphql";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { List, ListRow, ListRowLoader } from "@/ui/List";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
-
-import { PullRequestButton } from "@/containers/PullRequestButton";
 import { Truncable } from "@/ui/Truncable";
+
 import { useProjectContext } from ".";
 import { NotFound } from "../NotFound";
 import { BuildNameFilter, useBuildNameFilter } from "./BuildNameFilter";
 import { GettingStarted } from "./GettingStarted";
-import { ProjectPermission } from "@/gql/graphql";
 
 const ProjectQuery = graphql(`
   query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {
@@ -98,7 +98,7 @@ const FakeLink = React.forwardRef(
     return (
       <div
         ref={ref}
-        className={clsx("text-low transition hover:text", className)}
+        className={clsx("text-low hover:text transition", className)}
         onClick={(event) => {
           event.preventDefault();
           window.open(href, "_blank")?.focus();
@@ -124,13 +124,13 @@ const BuildRow = React.memo(
       <ListRow
         asChild
         clickable
-        className="p-4 text-sm items-center"
+        className="items-center p-4 text-sm"
         style={style}
       >
         <RouterLink
           to={`/${accountSlug}/${projectName}/builds/${build.number}`}
         >
-          <div className="w-20 shrink-0 overflow-hidden text-ellipsis whitespace-nowrap">
+          <div className="w-20 shrink-0 truncate">
             <div className="tabular-nums">#{build.number}</div>
             <div className="text-low">
               {build.name !== "default" ? build.name : ""}
@@ -140,7 +140,7 @@ const BuildRow = React.memo(
             <BuildStatusChip build={build} project={project} />
           </div>
           <div className="flex-1" />
-          <div className="hidden xl:block w-96">
+          <div className="hidden w-96 xl:block">
             {build.pullRequest && (
               <PullRequestButton
                 emulatedAnchor
@@ -152,33 +152,33 @@ const BuildRow = React.memo(
           <div className="relative hidden w-60 md:block">
             <div>
               <FakeLink
-                className="inline-flex items-center max-w-full gap-2"
+                className="inline-flex max-w-full items-center gap-2"
                 href={
                   project.repository
                     ? `${project.repository.url}/tree/${build.branch}`
                     : undefined
                 }
               >
-                <GitBranchIcon className="shrink-0 w-3 h-3" />
+                <GitBranchIcon className="size-3 shrink-0" />
                 <Truncable>{build.branch}</Truncable>
               </FakeLink>
             </div>
             <div>
               <FakeLink
-                className="inline-flex items-center max-w-full gap-2"
+                className="inline-flex max-w-full items-center gap-2"
                 href={
                   project.repository
                     ? `${project.repository.url}/commit/${build.commit}`
                     : undefined
                 }
               >
-                <GitCommitIcon className="shrink-0 w-3 h-3" />
+                <GitCommitIcon className="size-3 shrink-0" />
                 <span className="truncate">{build.commit.slice(0, 7)}</span>
               </FakeLink>
             </div>
           </div>
           <div
-            className="w-32 shrink-0 overflow-hidden truncate whitespace-nowrap text-right text-low"
+            className="text-low w-32 shrink-0 overflow-hidden truncate whitespace-nowrap text-right"
             data-visual-test="transparent"
           >
             <Time date={build.createdAt} />
@@ -418,7 +418,7 @@ export const ProjectBuilds = () => {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-subtle">
+    <div className="bg-subtle flex min-h-0 flex-1 flex-col">
       <Helmet>
         <title>
           {accountSlug}/{projectName} • Builds

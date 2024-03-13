@@ -1,8 +1,8 @@
 import * as React from "react";
-
-import { TooltipContent, TooltipRoot, TooltipTrigger } from "./Tooltip";
 import { TooltipPortal } from "@radix-ui/react-tooltip";
 import { clsx } from "clsx";
+
+import { TooltipContent, TooltipRoot, TooltipTrigger } from "./Tooltip";
 
 export const Truncable = ({
   className,
