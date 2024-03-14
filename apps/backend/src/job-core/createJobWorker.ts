@@ -1,15 +1,13 @@
 import logger from "@/logger/index.js";
 
-import { getAmqpChannel } from "./amqp.js";
 import type { Job } from "./createJob.js";
 
 export async function createJobWorker(...jobs: Job<any>[]) {
   try {
-    const channel = await getAmqpChannel();
     await Promise.all(
-      jobs.map((job) => {
+      jobs.map(async (job) => {
         logger.info(`Start consuming ${job.queue} queue`);
-        return job.process({ channel });
+        return job.process();
       }),
     );
   } catch (error) {

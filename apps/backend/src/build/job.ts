@@ -19,12 +19,12 @@ async function pushDiffs(buildId: string, screenshotDiffs: ScreenshotDiff[]) {
     return;
   }
 
-  const toProcessedDiffs = screenshotDiffs
+  const toProcessedDiffIds = screenshotDiffs
     .filter(({ jobStatus }) => jobStatus !== "complete")
-    .map(({ id }) => screenshotDiffJob.push(id));
+    .map(({ id }) => id);
 
-  if (toProcessedDiffs.length > 0) {
-    await Promise.all(toProcessedDiffs);
+  if (toProcessedDiffIds.length > 0) {
+    await screenshotDiffJob.push(...toProcessedDiffIds);
     return;
   }
 
@@ -92,17 +92,18 @@ async function syncGitlabProject(project: Project) {
 }
 
 export async function performBuild(build: Build) {
-  const [, screenshotDiffs, project] = await Promise.all([
-    pushBuildNotification({ buildId: build.id, type: "progress" }),
-    createBuildDiffs(build),
+  const [project] = await Promise.all([
     Project.query()
       .findById(build.projectId)
       .withGraphFetched("[gitlabProject, account]")
       .throwIfNotFound(),
+    pushBuildNotification({ buildId: build.id, type: "progress" }),
+    createBuildDiffs(build).then(async (diffs) => {
+      pushDiffs(build.id, diffs);
+    }),
   ]);
 
   await Promise.all([
-    pushDiffs(build.id, screenshotDiffs),
     updateProjectConsumption(project),
     syncGitlabProject(project),
   ]);

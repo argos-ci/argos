@@ -1,73 +1,93 @@
 import * as Sentry from "@sentry/node";
-import type { Channel } from "amqplib";
+import { memoize } from "lodash-es";
 
 import logger from "@/logger/index.js";
 
-import { getAmqpChannel } from "./amqp.js";
+import { connect } from "./amqp.js";
 import { checkIsRetryable } from "./error.js";
 
-interface Payload<TArg> {
-  args: [TArg];
+interface Payload<TValue> {
+  args: [TValue];
   attempts: number;
 }
 
-const serializeMessage = <TArg>(payload: Payload<TArg>) =>
+const serializeMessage = <TValue>(payload: Payload<TValue>) =>
   Buffer.from(JSON.stringify(payload));
 
-const checkIsValidPayload = <TArg>(value: any): value is Payload<TArg> => {
+const checkIsValidPayload = <TValue>(value: any): value is Payload<TValue> => {
   return value && Array.isArray(value.args) && Number.isInteger(value.attempts);
 };
 
-const parseMessage = <TArg>(message: Buffer) => {
+const parseMessage = <TValue>(message: Buffer) => {
   const value = JSON.parse(message.toString());
-  if (!checkIsValidPayload<TArg>(value)) {
+  if (!checkIsValidPayload<TValue>(value)) {
     throw new Error("Invalid payload");
   }
   return value;
 };
 
-export interface Job<TArg> {
+export interface Job<TValue> {
   queue: string;
-  push: (arg: TArg) => Promise<void>;
-  process: (options: { channel: Channel }) => Promise<void>;
+  push: (...values: TValue[]) => Promise<void>;
+  process: () => Promise<void>;
 }
 
 export interface JobParams {
   prefetch?: number;
 }
 
-export const createJob = <TArg>(
+export const createJob = <TValue>(
   queue: string,
   consumer: {
-    perform: (arg: TArg) => void | Promise<void>;
-    complete: (arg: TArg) => void | Promise<void>;
-    error: (arg: TArg) => void | Promise<void>;
+    perform: (value: TValue) => void | Promise<void>;
+    complete: (value: TValue) => void | Promise<void>;
+    error: (value: TValue) => void | Promise<void>;
   },
   { prefetch = 1 }: JobParams = {},
-): Job<TArg> => {
+): Job<TValue> => {
+  const getChannel = memoize(async () => {
+    const amqp = await connect();
+    return amqp.createChannel();
+  });
   return {
     queue,
-    async push(arg: TArg) {
-      const channel = await getAmqpChannel();
+    async push(...values) {
+      const channel = await getChannel();
       await channel.assertQueue(queue, { durable: true });
-      channel.sendToQueue(
-        queue,
-        serializeMessage({ args: [arg], attempts: 0 }),
-        {
-          persistent: true,
-        },
-      );
+      const valuesSet = new Set(values);
+      const sendOne = (value: TValue) => {
+        return channel.sendToQueue(
+          queue,
+          serializeMessage({ args: [value], attempts: 0 }),
+          { persistent: true },
+        );
+      };
+      return new Promise((resolve) => {
+        const sendAll = () => {
+          for (const value of valuesSet) {
+            const keepSending = sendOne(value);
+            valuesSet.delete(value);
+            if (!keepSending) {
+              channel.once("drain", sendAll);
+              return;
+            }
+          }
+          resolve();
+        };
+        sendAll();
+      });
     },
-    async process({ channel }: { channel: Channel }) {
+    async process() {
+      const channel = await getChannel();
       await channel.prefetch(prefetch);
       await channel.assertQueue(queue, { durable: true });
       await channel.consume(queue, async (msg) => {
         if (!msg) return;
 
-        let payload: Payload<TArg>;
+        let payload: Payload<TValue>;
 
         try {
-          payload = parseMessage<TArg>(msg.content);
+          payload = parseMessage<TValue>(msg.content);
           try {
             await consumer.perform(payload.args[0]);
             await consumer.complete(payload.args[0]);

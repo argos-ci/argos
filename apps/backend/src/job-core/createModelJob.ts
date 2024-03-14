@@ -11,7 +11,7 @@ export const createModelJob = <TModelConstructor extends ModelClass<any>>(
   perform: (model: InstanceType<TModelConstructor>) => void | Promise<void>,
   params?: JobParams,
 ) => {
-  return createJob(
+  return createJob<string>(
     queue,
     {
       perform: async (id) => {
