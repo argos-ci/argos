@@ -8,7 +8,12 @@
         "src/database/testing/index.ts",
         "src/graphql/definitions/*.ts"
       ],
-      "ignore": ["db/**/*", "knexfile.js", "src/graphql/__generated__/**/*"],
+      "ignore": [
+        "db/**/*",
+        "knexfile.js",
+        "src/graphql/__generated__/**/*",
+        "**/bin/**/*"
+      ],
       "ignoreDependencies": ["pg"]
     },
     "apps/frontend": {

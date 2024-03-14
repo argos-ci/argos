@@ -11,9 +11,8 @@ const main = callbackify(async () => {
     .where({ jobStatus: "pending" })
     .whereRaw(`"createdAt" > now() - interval '1 hour'`)
     .orderBy("id", "desc");
-  for (const diff of diffs) {
-    await diffJob.push(diff.id);
-  }
+  const diffIds = diffs.map((diff) => diff.id);
+  await diffJob.push(...diffIds);
   logger.info(`${diffs.length} diffs pushed in queue`);
 });
 

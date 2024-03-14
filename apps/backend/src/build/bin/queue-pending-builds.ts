@@ -11,7 +11,8 @@ const main = callbackify(async () => {
     .where({ jobStatus: "pending" })
     .whereRaw(`"createdAt" > now() - interval '1 hour'`)
     .orderBy("id", "desc");
-  await Promise.all(builds.map((build) => buildJob.push(build.id)));
+  const buildIds = builds.map((build) => build.id);
+  await buildJob.push(...buildIds);
   logger.info(`${builds.length} builds pushed in queue`);
 });
 
