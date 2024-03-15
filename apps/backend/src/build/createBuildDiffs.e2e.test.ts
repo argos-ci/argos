@@ -22,7 +22,9 @@ describe("#createBuildDiffs", () => {
 
   beforeEach(async () => {
     await setupDatabase();
-    project = await factory.Project.create();
+    project = await factory.Project.create({
+      githubRepositoryId: null,
+    });
     compareBucket = await factory.ScreenshotBucket.create({
       branch: "BUGS-123",
       projectId: project.id,

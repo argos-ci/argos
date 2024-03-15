@@ -21,7 +21,9 @@ describe("build", () => {
     let compareBucket: ScreenshotBucket;
 
     beforeEach(async () => {
-      project = await factory.Project.create();
+      project = await factory.Project.create({
+        githubRepositoryId: null,
+      });
       compareBucket = await factory.ScreenshotBucket.create({
         projectId: project.id,
       });

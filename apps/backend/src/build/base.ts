@@ -60,9 +60,12 @@ const GithubStrategy: MergeBaseStrategy<{
     );
 
     const installation = project.githubRepository.activeInstallation;
-    if (!installation) {
-      return null;
-    }
+    invariant(
+      installation,
+      "no installation found, we should send an email",
+      UnretryableError,
+    );
+
     const octokit = await getInstallationOctokit(installation.id);
     if (!octokit) {
       return null;
