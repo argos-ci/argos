@@ -1,6 +1,10 @@
 // import { callbackify } from "node:util";
 import { assertNever } from "@argos/util/assertNever";
-import { createClient } from "redis";
+import {
+  ConnectionTimeoutError,
+  createClient,
+  SocketClosedUnexpectedlyError,
+} from "redis";
 
 import config from "@/config/index.js";
 import logger from "@/logger/index.js";
@@ -8,12 +12,15 @@ import logger from "@/logger/index.js";
 import { createRedisLock } from "./lock.js";
 
 const redisClient = createClient({ url: config.get("redis.url") });
-redisClient.on("error", (err: unknown) => {
-  // Ignore this error, it will reconnect anyway
-  if ((err as { message: string }).message === "Socket closed unexpectedly") {
+redisClient.on("error", (error: unknown) => {
+  // Ignore these errors, Redis will automatically reconnect
+  if (error instanceof ConnectionTimeoutError) {
     return;
   }
-  logger.error(err);
+  if (error instanceof SocketClosedUnexpectedlyError) {
+    return;
+  }
+  logger.error(error);
 });
 redisClient.on("connect", () => {
   logger.info("Redis client is connected");
