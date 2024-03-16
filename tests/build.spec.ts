@@ -18,12 +18,12 @@ const buildExamples = [
 ];
 
 buildExamples.forEach((build) => {
-  test(build.name, async ({ page, browserName }) => {
+  test(build.name, async ({ page }) => {
     await page.goto(`/smooth/big/builds/${build.number}`);
     await expect(page.getByText(`Build ${build.number}`)).toBeVisible();
     if (build.compare === undefined || build.compare) {
       await expect(page.getByText(`Changes from`)).toBeVisible();
     }
-    await argosScreenshot(page, `build-${build.name}-${browserName}`);
+    await argosScreenshot(page, `build-${build.name}`);
   });
 });
