@@ -32,12 +32,13 @@ import {
   CardSeparator,
   CardTitle,
 } from "@/ui/Card";
-import { Link } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
 
 import { AccountPlanChip } from "./AccountPlanChip";
+
+const contactHref = `mailto:${config.get("contactEmail")}`;
 
 const PlanCardFragment = graphql(`
   fragment PlanCard_Account on Account {
@@ -282,7 +283,15 @@ function ManageSubscriptionButton({
       );
     case AccountSubscriptionProvider.Stripe: {
       if (!account.stripeCustomerId) {
-        return <ContactSalesLink isButton />;
+        return (
+          <Button>
+            {(buttonProps) => (
+              <a href={contactHref} {...buttonProps}>
+                {children}
+              </a>
+            )}
+          </Button>
+        );
       }
       return (
         <StripePortalLink
@@ -294,7 +303,15 @@ function ManageSubscriptionButton({
       );
     }
     case null: {
-      return <ContactSalesLink isButton />;
+      return (
+        <Button>
+          {(buttonProps) => (
+            <a href={contactHref} {...buttonProps}>
+              {children}
+            </a>
+          )}
+        </Button>
+      );
     }
     default:
       assertNever(provider);
@@ -333,6 +350,12 @@ function PlanCardFooter(props: {
     case "User": {
       return (
         <CardFooter className="flex items-center justify-between gap-4">
+          <div>
+            Custom needs?{" "}
+            <Anchor external href={contactHref}>
+              Contact Sales
+            </Anchor>
+          </div>
           <div className="flex items-center gap-4">
             Want to collaborate?
             <Button>
@@ -346,7 +369,6 @@ function PlanCardFooter(props: {
               )}
             </Button>
           </div>
-          <ContactSalesLink isButton />
         </CardFooter>
       );
     }
@@ -355,7 +377,12 @@ function PlanCardFooter(props: {
         case AccountSubscriptionStatus.Canceled: {
           return (
             <CardFooter className="flex items-center justify-between gap-4">
-              <ContactSalesLink isButton />
+              <div>
+                Custom needs?{" "}
+                <Anchor external href={contactHref}>
+                  Contact Sales
+                </Anchor>
+              </div>
               <TeamSubscribeDialog initialAccountId={account.id}>
                 Subscribe
               </TeamSubscribeDialog>
@@ -365,10 +392,19 @@ function PlanCardFooter(props: {
         default: {
           return (
             <CardFooter className="flex items-center justify-between gap-4">
-              <ContactSalesLink isButton />
               <ManageSubscriptionButton account={account}>
                 Manage subscription
               </ManageSubscriptionButton>
+              <div className="flex items-center gap-4">
+                Custom needs?{" "}
+                <Button color="neutral" variant="outline">
+                  {(buttonProps) => (
+                    <a href={contactHref} {...buttonProps}>
+                      Contact Sales
+                    </a>
+                  )}
+                </Button>
+              </div>
             </CardFooter>
           );
         }
@@ -377,21 +413,6 @@ function PlanCardFooter(props: {
     default:
       assertNever(account);
   }
-}
-
-function ContactSalesLink({ isButton }: { isButton: boolean }) {
-  const contactHref = `mailto:${config.get("contactEmail")}`;
-  return isButton ? (
-    <Button color="neutral" variant="outline">
-      {(buttonProps) => (
-        <a href={contactHref} {...buttonProps}>
-          Contact Sales
-        </a>
-      )}
-    </Button>
-  ) : (
-    <Link to={contactHref}>Contact Sales</Link>
-  );
 }
 
 export function PlanCard(props: {
