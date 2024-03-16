@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "build": "rm -rf dist && webpack",
-    "check-types": "npm exec tsc --noEmit",
+    "check-types": "tsc --noEmit",
+    "check-format": "prettier --check --ignore-path .gitignore .",
+    "lint": "eslint --ignore-path .gitignore .",
     "watch-build": "webpack-dev-server"
   },
   "sideEffects": false,

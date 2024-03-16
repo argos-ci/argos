@@ -6,7 +6,9 @@
   "scripts": {
     "build": "rm -rf dist && swc src -d dist --strip-leading-paths",
     "watch-build": "npm run build -- --watch --quiet",
-    "check-types": "npm exec tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "check-format": "prettier --check --ignore-path .gitignore .",
+    "lint": "eslint --ignore-path .gitignore ."
   },
   "sideEffects": false,
   "exports": {

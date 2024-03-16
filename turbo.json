@@ -21,6 +21,14 @@
       "dependsOn": [],
       "outputs": []
     },
+    "check-format": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "lint": {
+      "dependsOn": [],
+      "outputs": []
+    },
     "watch-build": {
       "dependsOn": ["build"],
       "persistent": true,
