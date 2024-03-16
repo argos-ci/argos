@@ -273,14 +273,6 @@ export const getStripePriceFromPlanOrThrow = async (plan: Plan) => {
   return defaultPrice;
 };
 
-export const terminateStripeTrial = async (stripeSubscriptionId: string) => {
-  const result = await stripe.subscriptions.update(stripeSubscriptionId, {
-    trial_end: "now",
-  });
-
-  return result;
-};
-
 export const updateStripeUsage = async ({
   account,
   totalScreenshots,
@@ -355,13 +347,13 @@ async function updateSubscriptionsFromCustomer(customerId: string) {
   }
 }
 
-export const updateArgosSubscriptionFromStripe = async (
+async function updateArgosSubscriptionFromStripe(
   argosSubscription: Subscription,
   stripeSubscription: Stripe.Subscription,
-) => {
+) {
   const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
   return argosSubscription.$query().patchAndFetch(data);
-};
+}
 
 export const handleStripeEvent = async ({
   data,

@@ -107,11 +107,4 @@ export class Subscription extends Model {
           ),
         );
   }
-
-  $isTrialActive() {
-    return Boolean(
-      this.status === "trialing" ||
-        (this.trialEndDate && new Date() < new Date(this.trialEndDate)),
-    );
-  }
 }

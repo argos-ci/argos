@@ -1,15 +1,14 @@
 import { memo } from "react";
-import moment from "moment";
-import { Link as RouterLink, useParams } from "react-router-dom";
+import { invariant } from "@argos/util/invariant";
 
 import { useQuery } from "@/containers/Apollo";
-import { TeamUpgradeDialogButton } from "@/containers/Team/UpgradeDialog";
+import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { AccountPermission, AccountSubscriptionStatus } from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
-import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { StripePortalLink } from "@/ui/StripeLink";
+import { Time } from "@/ui/Time";
 
 const PaymentBannerFragment = graphql(`
   fragment PaymentBanner_Account on Account {
@@ -17,13 +16,11 @@ const PaymentBannerFragment = graphql(`
     subscriptionStatus
     permissions
     stripeCustomerId
-    pendingCancelAt
 
     subscription {
       id
       trialDaysRemaining
-      provider
-      paymentMethodFilled
+      endDate
     }
   }
 `);
@@ -37,194 +34,198 @@ const PaymentBannerQuery = graphql(`
   }
 `);
 
-type SubmitAction =
-  | "stripeCheckoutSession"
-  | "stripePortalSession"
-  | "settings";
-
-const BannerCta = ({
-  stripeCustomerId,
-  children,
-  accountId,
-  action,
-}: {
+function ManageStripeButton(props: {
   stripeCustomerId: string | null;
-  children: React.ReactNode;
   accountId: string;
-  action: SubmitAction;
-}) => {
-  const { accountSlug } = useParams();
-
-  switch (action) {
-    case "settings":
-      return (
-        <Button>
-          {(buttonProps) => (
-            <RouterLink to={`/${accountSlug}/settings`} {...buttonProps}>
-              {children}
-            </RouterLink>
-          )}
-        </Button>
-      );
-
-    case "stripeCheckoutSession":
-      return (
-        <TeamUpgradeDialogButton initialAccountId={accountId}>
-          {children}
-        </TeamUpgradeDialogButton>
-      );
-
-    case "stripePortalSession":
-      return stripeCustomerId ? (
-        <StripePortalLink
-          accountId={accountId}
-          stripeCustomerId={stripeCustomerId}
-          asButton
-        >
-          {children}
-        </StripePortalLink>
-      ) : null;
-
-    default:
-      return null;
+  children: React.ReactNode;
+}) {
+  if (props.stripeCustomerId) {
+    return (
+      <StripePortalLink
+        stripeCustomerId={props.stripeCustomerId}
+        accountId={props.accountId}
+        asButton
+      >
+        {props.children}
+      </StripePortalLink>
+    );
   }
-};
+  return (
+    <TeamSubscribeDialog initialAccountId={props.accountId}>
+      {props.children}
+    </TeamSubscribeDialog>
+  );
+}
 
-const getTeamBannerProps = ({
-  subscriptionStatus,
-  trialDaysRemaining,
-  hasGitHubSubscription,
-  missingPaymentMethod,
-  pendingCancelAt,
-}: {
-  subscriptionStatus: AccountSubscriptionStatus;
-  trialDaysRemaining: number | null;
-  hasGitHubSubscription: boolean;
-  missingPaymentMethod: boolean;
-  pendingCancelAt: string | null;
-}): {
-  message: string;
-  buttonLabel?: string;
-  bannerColor?: BannerProps["color"];
-  action: SubmitAction;
-} => {
-  switch (subscriptionStatus) {
-    case AccountSubscriptionStatus.PastDue:
-      return {
-        bannerColor: "warning",
-        message:
-          "Your subscription is past due. Please update your payment info.",
-        buttonLabel: "Manage subscription",
-        action: hasGitHubSubscription ? "settings" : "stripeCheckoutSession",
-      };
+function ManageButton(props: {
+  stripeCustomerId: string | null;
+  accountId: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <ManageStripeButton
+      stripeCustomerId={props.stripeCustomerId}
+      accountId={props.accountId}
+    >
+      {props.children}
+    </ManageStripeButton>
+  );
+}
 
-    case AccountSubscriptionStatus.Canceled:
-      return {
-        bannerColor: "danger",
-        message: "Upgrade to Pro plan to use team features.",
-        ...(hasGitHubSubscription
-          ? { action: "settings", buttonLabel: "Manage subscription" }
-          : { action: "stripeCheckoutSession", buttonLabel: "Upgrade" }),
-      };
-
-    case AccountSubscriptionStatus.Active:
-    case AccountSubscriptionStatus.Trialing: {
-      if (missingPaymentMethod) {
-        const remainingDayMessage = `Your trial ends in ${trialDaysRemaining} days. `;
-        return {
-          message: `${
-            trialDaysRemaining ? remainingDayMessage : ""
-          }Add a payment method to retain access to team features.`,
-          buttonLabel: "Add payment method",
-          bannerColor:
-            !trialDaysRemaining || trialDaysRemaining < 5
-              ? "warning"
-              : "neutral",
-          action: "stripePortalSession",
-        };
-      }
-
-      if (pendingCancelAt) {
-        const formatDate = (date: string) => moment(date).format("LL");
-        const subscriptionTypeLabel =
-          subscriptionStatus === "trialing" ? "trial" : "subscription";
-        return {
-          action: "stripePortalSession",
-          buttonLabel: `Reactivate ${subscriptionTypeLabel}`,
-          message: `Your ${subscriptionTypeLabel} has been canceled. You can still use team features until the trial ends on ${formatDate(
-            pendingCancelAt,
-          )}.`,
-        };
-      }
-
-      // Trial is active
-      return { action: "stripePortalSession", message: "" };
-    }
-
-    default:
-      return { action: "stripePortalSession", message: "" };
-  }
-};
+function BannerTemplate(props: {
+  color: BannerProps["color"];
+  children: React.ReactNode;
+}) {
+  return (
+    <Banner className="flex justify-center" color={props.color ?? "neutral"}>
+      <Container className="flex items-center justify-center gap-2">
+        {props.children}
+      </Container>
+    </Banner>
+  );
+}
 
 export const PaymentBanner = memo(
   (props: { account: FragmentType<typeof PaymentBannerFragment> }) => {
     const account = useFragment(PaymentBannerFragment, props.account);
     const { data: { me } = {} } = useQuery(PaymentBannerQuery);
 
-    const {
-      subscription,
-      permissions,
-      subscriptionStatus,
-      stripeCustomerId,
-      pendingCancelAt,
-    } = account;
+    const { subscription, subscriptionStatus, permissions, stripeCustomerId } =
+      account;
 
-    // no banner for user account
-    if (!me || !subscriptionStatus) return null;
-
-    const { message, buttonLabel, bannerColor, action } = getTeamBannerProps({
-      subscriptionStatus,
-      trialDaysRemaining: subscription?.trialDaysRemaining ?? null,
-      hasGitHubSubscription: Boolean(
-        subscription && subscription.provider === "github",
-      ),
-      missingPaymentMethod: Boolean(
-        subscription && !subscription.paymentMethodFilled,
-      ),
-      pendingCancelAt: pendingCancelAt,
-    });
-    const userIsAdmin = permissions.includes(AccountPermission.Admin);
-
-    if (!message) {
+    if (!me) {
       return null;
     }
 
-    return (
-      <Banner className="flex justify-center" color={bannerColor ?? "neutral"}>
-        <Container className="flex items-center justify-center gap-2">
-          <p>{message}</p>
-          {userIsAdmin &&
-            (subscriptionStatus === AccountSubscriptionStatus.PastDue &&
-            stripeCustomerId ? (
-              <StripePortalLink
-                stripeCustomerId={stripeCustomerId}
-                accountId={account.id}
-              >
-                Manage your subscription
-              </StripePortalLink>
-            ) : (
-              <BannerCta
+    const userIsAdmin = permissions.includes(AccountPermission.Admin);
+
+    const pendingCancelAt = subscription?.endDate;
+    if (pendingCancelAt) {
+      const subscriptionTypeLabel =
+        subscriptionStatus === AccountSubscriptionStatus.Trialing
+          ? "trial"
+          : "subscription";
+      return (
+        <BannerTemplate color="warning">
+          <p>
+            Your {subscriptionTypeLabel} has been canceled. You can still use
+            team features until the <Time date={pendingCancelAt} format="LL" />.
+          </p>
+          {userIsAdmin && (
+            <ManageButton
+              stripeCustomerId={stripeCustomerId ?? null}
+              accountId={account.id}
+            >
+              Reactivate {subscriptionTypeLabel}
+            </ManageButton>
+          )}
+        </BannerTemplate>
+      );
+    }
+
+    switch (subscriptionStatus) {
+      case AccountSubscriptionStatus.Trialing: {
+        invariant(subscription, "If trialing, subscription must be defined");
+        const daysRemaining = subscription.trialDaysRemaining;
+        return (
+          <BannerTemplate
+            color={
+              !daysRemaining || daysRemaining === 1
+                ? "danger"
+                : daysRemaining < 5
+                  ? "warning"
+                  : "neutral"
+            }
+          >
+            <p>
+              {daysRemaining === 1 ? (
+                <>Your trial ends today. </>
+              ) : daysRemaining ? (
+                <>Your trial ends in {daysRemaining} days. </>
+              ) : null}
+              Add a payment method to retain access to team features.
+            </p>
+            {userIsAdmin && (
+              <ManageButton
                 stripeCustomerId={stripeCustomerId ?? null}
                 accountId={account.id}
-                action={action}
               >
-                {buttonLabel || me.hasSubscribedToTrial
-                  ? "Upgrade"
-                  : "Start trial"}
-              </BannerCta>
-            ))}
-        </Container>
-      </Banner>
-    );
+                Add payment method
+              </ManageButton>
+            )}
+          </BannerTemplate>
+        );
+      }
+      case AccountSubscriptionStatus.PastDue: {
+        return (
+          <BannerTemplate color="danger">
+            <p>
+              Your subscription is past due. Please update your payment method.
+            </p>
+            {userIsAdmin && (
+              <ManageButton
+                stripeCustomerId={stripeCustomerId ?? null}
+                accountId={account.id}
+              >
+                Update payment method
+              </ManageButton>
+            )}
+          </BannerTemplate>
+        );
+      }
+      case AccountSubscriptionStatus.Unpaid: {
+        return (
+          <BannerTemplate color="danger">
+            <p>
+              Your subscription is unpaid. Please proceed to payment to retain
+              access to team features.
+            </p>
+            {userIsAdmin && (
+              <ManageButton
+                stripeCustomerId={stripeCustomerId ?? null}
+                accountId={account.id}
+              >
+                Proceed to payment
+              </ManageButton>
+            )}
+          </BannerTemplate>
+        );
+      }
+      case AccountSubscriptionStatus.TrialExpired: {
+        return (
+          <BannerTemplate color="danger">
+            <p>
+              Your trial has expired. Subscribe to Pro plan to use team
+              features.
+            </p>
+            {userIsAdmin && (
+              <ManageButton
+                stripeCustomerId={stripeCustomerId ?? null}
+                accountId={account.id}
+              >
+                Subscribe
+              </ManageButton>
+            )}
+          </BannerTemplate>
+        );
+      }
+      case AccountSubscriptionStatus.Canceled: {
+        return (
+          <BannerTemplate color="danger">
+            <p>Subscribe to Pro plan to use team features.</p>
+            {userIsAdmin && (
+              <ManageButton
+                stripeCustomerId={stripeCustomerId ?? null}
+                accountId={account.id}
+              >
+                Subscribe
+              </ManageButton>
+            )}
+          </BannerTemplate>
+        );
+      }
+    }
+
+    return null;
   },
 );

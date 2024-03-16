@@ -1,5 +1,6 @@
-import { ReactNode, useState } from "react";
-import { FetchResult, useMutation } from "@apollo/client";
+import { ReactNode } from "react";
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import {
   Disclosure,
   DisclosureContent,
@@ -15,12 +16,11 @@ import moment from "moment";
 import { Link as RouterLink } from "react-router-dom";
 
 import config from "@/config";
-import { TeamUpgradeDialogButton } from "@/containers/Team/UpgradeDialog";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
+import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import {
   AccountSubscriptionProvider,
   AccountSubscriptionStatus,
-  TrialStatus,
 } from "@/gql/graphql";
 import { Anchor } from "@/ui/Anchor";
 import { Button, ButtonIcon } from "@/ui/Button";
@@ -32,35 +32,12 @@ import {
   CardSeparator,
   CardTitle,
 } from "@/ui/Card";
-import { Chip } from "@/ui/Chip";
-import { ContactLink } from "@/ui/ContactLink";
-import {
-  Dialog,
-  DialogBody,
-  DialogDismiss,
-  DialogFooter,
-  DialogState,
-  DialogText,
-  DialogTitle,
-  useDialogState,
-} from "@/ui/Dialog";
 import { Link } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
 
-const now = new Date();
-const FREE_PLAN_EXPIRATION_DATE = new Date("2023-06-01");
-
-const TerminateTrialMutation = graphql(`
-  mutation terminateTrial($accountId: ID!) {
-    terminateTrial(accountId: $accountId) {
-      id
-      subscriptionStatus
-      __typename
-    }
-  }
-`);
+import { AccountPlanChip } from "./AccountPlanChip";
 
 const PlanCardFragment = graphql(`
   fragment PlanCard_Account on Account {
@@ -70,10 +47,7 @@ const PlanCardFragment = graphql(`
     periodStartDate
     periodEndDate
     subscriptionStatus
-    trialStatus
     hasForcedPlan
-    pendingCancelAt
-    paymentProvider
     includedScreenshots
 
     plan {
@@ -84,6 +58,9 @@ const PlanCardFragment = graphql(`
     subscription {
       id
       paymentMethodFilled
+      trialDaysRemaining
+      endDate
+      provider
     }
 
     projects(first: 100, after: 0) {
@@ -94,10 +71,10 @@ const PlanCardFragment = graphql(`
         currentPeriodScreenshots
       }
     }
+    ...AccountPlanChip_Account
   }
 `);
 
-type AccountFragment = FragmentType<typeof PlanCardFragment>;
 type Project = {
   id: string;
   name: string;
@@ -105,257 +82,131 @@ type Project = {
   currentPeriodScreenshots: number;
 };
 
-const ConfirmTrialEndDialog = ({
-  state,
-  terminateTrial,
-  loading,
-  accountId,
-}: {
-  state: DialogState;
-  terminateTrial: (props: {
-    variables: any;
-  }) => Promise<FetchResult<{ terminateTrial: any }>>;
-  loading: boolean;
-  accountId: string;
-}) => {
-  return (
-    <Dialog
-      state={state}
-      style={{ width: 560 }}
-      aria-label="Confirm early trial termination"
-    >
-      <DialogBody>
-        <DialogTitle>Terminate Trial Early</DialogTitle>
-        <DialogText>
-          You are about to terminate your trial early. This will initiate your
-          subscription and remove the screenshot usage limitation.{" "}
-          <span className="font-semibold">
-            Charges will be applied at the end of the billing period.
-          </span>
-        </DialogText>
-        <DialogText>Do you want to continue?</DialogText>
-      </DialogBody>
-      <DialogFooter>
-        <DialogDismiss>Cancel</DialogDismiss>
-        <Button
-          disabled={loading}
-          onClick={async () => {
-            await terminateTrial({
-              variables: { accountId },
-            });
-            state.hide();
-          }}
-        >
-          Terminate Trial
-        </Button>
-      </DialogFooter>
-    </Dialog>
-  );
-};
-
-const PricingLinks = () => {
-  return (
-    <Anchor href="https://argos-ci.com/pricing" external>
-      Learn more
-    </Anchor>
-  );
-};
-
-const PlanStatus = ({
-  subscriptionStatus,
-  planName,
-  trialStatus,
-}: {
-  subscriptionStatus: AccountSubscriptionStatus | null | undefined;
-  planName: string | null;
-  trialStatus: TrialStatus | null;
-}) => {
-  if (subscriptionStatus === null) {
-    return (
-      <>
-        Your Personal account is on the{" "}
-        <span className="font-medium">Hobby</span> plan. Free of charge.
-      </>
-    );
-  }
-
-  if (trialStatus === TrialStatus.Expired) {
-    return (
-      <>
-        Your trial has expired.{" "}
-        <Chip scale="sm" color="danger">
-          Trial expired
-        </Chip>{" "}
-        <PricingLinks />
-      </>
-    );
-  }
-
-  switch (subscriptionStatus) {
-    case AccountSubscriptionStatus.Canceled:
+function PlanStatus(props: { account: DocumentType<typeof PlanCardFragment> }) {
+  const { account } = props;
+  switch (account.subscriptionStatus) {
+    case AccountSubscriptionStatus.TrialExpired: {
       return (
-        <>
-          No plan. <PricingLinks />
-        </>
+        <CardParagraph>
+          Your trial has expired. Subscribe to Pro plan to use Team features.
+        </CardParagraph>
       );
-
-    default:
-      return (
-        <>
-          Your team is on the{" "}
-          {planName ? (
-            <>
-              <span className="font-medium">{planName}</span> plan
-            </>
-          ) : (
-            "plan"
-          )}
-          {subscriptionStatus === AccountSubscriptionStatus.Trialing && (
-            <>
-              {" "}
-              <Chip scale="xs" color="info">
-                Trial
-              </Chip>
-            </>
-          )}
-          .
-        </>
-      );
-  }
-};
-
-const PlanStatusDescription = ({
-  openTrialEndDialog,
-  hasGitHubSubscription,
-  account,
-}: {
-  openTrialEndDialog: () => void;
-  hasGitHubSubscription: boolean;
-  account: FragmentType<typeof PlanCardFragment>;
-}) => {
-  const {
-    id: accountId,
-    subscriptionStatus,
-    stripeCustomerId,
-    trialStatus,
-    hasForcedPlan,
-    pendingCancelAt,
-    subscription,
-    periodEndDate,
-  } = useFragment(PlanCardFragment, account);
-
-  const missingPaymentMethod = Boolean(
-    subscription && !subscription.paymentMethodFilled,
-  );
-  const formattedPeriodEndDate = moment(periodEndDate).format("LL");
-
-  if (missingPaymentMethod && stripeCustomerId) {
-    return (
-      <Paragraph>
-        Please{" "}
-        <StripePortalLink
-          stripeCustomerId={stripeCustomerId}
-          accountId={accountId}
-        >
-          add a payment method
-        </StripePortalLink>{" "}
-        to retain access to team features after the trial ends on{" "}
-        {formattedPeriodEndDate}.
-      </Paragraph>
-    );
-  }
-
-  switch (subscriptionStatus) {
+    }
     case AccountSubscriptionStatus.Trialing: {
-      if (pendingCancelAt) {
+      invariant(
+        account.subscription,
+        "If trialing, subscription must be defined",
+      );
+      invariant(
+        account.stripeCustomerId,
+        "Stripe customer ID must be defined if trialing",
+      );
+      if (account.subscription.endDate) {
         return (
-          <Paragraph>
-            Trial canceled. You can still use team features until the trial ends
-            on {formattedPeriodEndDate}.
-          </Paragraph>
+          <CardParagraph>
+            Your trial has been canceled. You can still use team features until{" "}
+            <strong>
+              <Time date={account.subscription.endDate} format="LL" />
+            </strong>
+            .
+          </CardParagraph>
         );
       }
-
+      const daysRemaining = account.subscription.trialDaysRemaining;
       return (
         <>
-          <Paragraph>
-            Your subscription will automatically begin after the trial ends on{" "}
-            {formattedPeriodEndDate}.
-          </Paragraph>
-          <Paragraph>
-            To remove the screenshot limitation and enable usage-based pricing,
-            you can{" "}
-            <Anchor className="cursor-pointer" onClick={openTrialEndDialog}>
-              terminate the trial early
-            </Anchor>
-            .
-          </Paragraph>
+          <CardParagraph>
+            Your team is on the <AccountPlanChip account={props.account} />{" "}
+            plan.
+          </CardParagraph>
+          <CardParagraph>
+            {daysRemaining === 1 ? (
+              <>
+                <strong>Your trial ends today.</strong>{" "}
+              </>
+            ) : daysRemaining ? (
+              <>
+                <strong>Your trial ends in {daysRemaining} days.</strong>{" "}
+              </>
+            ) : null}
+            <StripePortalLink
+              stripeCustomerId={account.stripeCustomerId}
+              accountId={account.id}
+            >
+              Add a payment method
+            </StripePortalLink>{" "}
+            method to retain access to team features.
+          </CardParagraph>
         </>
       );
     }
-
     case AccountSubscriptionStatus.Active: {
-      if (hasForcedPlan) {
-        return (
-          <Paragraph>
-            You are on a specific plan that is not available for subscription.
-            Contact our Sales team to learn more.
-          </Paragraph>
-        );
-      }
-
-      if (hasGitHubSubscription) {
-        return (
-          <Paragraph>
-            You subscribed from GitHub Marketplace. You can upgrade or cancel
-            your plan directly from{" "}
-            <Anchor href="https://github.com/marketplace/argos-ci">
-              GitHub
-            </Anchor>
-            .
-          </Paragraph>
-        );
-      }
-
       return (
-        <Paragraph>
-          The next payment will occur on {formattedPeriodEndDate}.
-        </Paragraph>
-      );
-    }
-
-    case AccountSubscriptionStatus.Canceled: {
-      return trialStatus === TrialStatus.Expired ? (
-        <Paragraph>Subscribe to Pro plan to use team features.</Paragraph>
-      ) : (
         <>
-          <Paragraph>
-            {now < FREE_PLAN_EXPIRATION_DATE
-              ? "Starting June 1st, 2023, a Pro plan will be required to use team features."
-              : "Subscribe to Pro plan to use team features."}
-          </Paragraph>
-          {hasGitHubSubscription && (
-            <Paragraph>
-              Note: To switch to a Stripe Plan, you must cancel your Github Free
-              plan first. Your data will be preserved.
-            </Paragraph>
-          )}
+          <CardParagraph>
+            Your team is on the <AccountPlanChip account={props.account} />{" "}
+            plan.
+          </CardParagraph>
+          {(() => {
+            if (account.hasForcedPlan) {
+              return (
+                <CardParagraph className="text-low">
+                  You are on a specific plan that is not available for
+                  subscription. Contact our Sales team to learn more.
+                </CardParagraph>
+              );
+            }
+            if (
+              account.subscription?.provider ===
+              AccountSubscriptionProvider.Github
+            ) {
+              return (
+                <CardParagraph className="text-low">
+                  You subscribed from GitHub Marketplace. You can upgrade or
+                  cancel your plan directly from{" "}
+                  <Anchor
+                    href="https://github.com/marketplace/argos-ci"
+                    external
+                  >
+                    GitHub
+                  </Anchor>
+                  .
+                </CardParagraph>
+              );
+            }
+            return (
+              <CardParagraph className="text-low">
+                The next payment will occur on{" "}
+                {moment(account.periodEndDate).format("LL")}.
+              </CardParagraph>
+            );
+          })()}
         </>
       );
     }
-
-    default:
-      return null;
+    case null: {
+      return (
+        <CardParagraph>
+          Your Personal account is on the{" "}
+          <AccountPlanChip account={props.account} /> plan. Free of charge.
+        </CardParagraph>
+      );
+    }
   }
-};
+  return (
+    <CardParagraph>
+      No active plan. Subscribe to Pro plan to use Team features.
+    </CardParagraph>
+  );
+}
 
-const ConsumptionBlock = ({
+function ConsumptionBlock({
   projects,
   includedScreenshots,
 }: {
   projects: Project[];
   includedScreenshots: number;
-}) => {
+}) {
   const disclosure = useDisclosureState({ defaultOpen: false });
   const screenshotsSum = projects.reduce(
     (sum, project) => project.currentPeriodScreenshots + sum,
@@ -412,45 +263,43 @@ const ConsumptionBlock = ({
       </DisclosureContent>
     </div>
   );
-};
+}
 
-const Paragraph = ({ children }: { children: ReactNode }) => (
-  <p className="text-low mt-2">{children}</p>
-);
-
-const ManageSubscriptionButton = ({
-  stripeCustomerId,
-  accountId,
-  paymentProvider,
+function ManageSubscriptionButton({
+  account,
+  children = "Manage your subscription",
 }: {
-  accountId: string;
-  stripeCustomerId: string | null;
-  paymentProvider: AccountSubscriptionProvider | null;
-}) => {
-  if (paymentProvider === AccountSubscriptionProvider.Github) {
-    return (
-      <Anchor href={config.get("github.marketplaceUrl")} external>
-        Manage your subscription
-      </Anchor>
-    );
+  account: DocumentType<typeof PlanCardFragment>;
+  children: ReactNode;
+}) {
+  const provider = account.subscription?.provider ?? null;
+  switch (provider) {
+    case AccountSubscriptionProvider.Github:
+      return (
+        <Anchor href={config.get("github.marketplaceUrl")} external>
+          {children}
+        </Anchor>
+      );
+    case AccountSubscriptionProvider.Stripe: {
+      if (!account.stripeCustomerId) {
+        return <ContactSalesLink isButton />;
+      }
+      return (
+        <StripePortalLink
+          stripeCustomerId={account.stripeCustomerId}
+          accountId={account.id}
+        >
+          {children}
+        </StripePortalLink>
+      );
+    }
+    case null: {
+      return <ContactSalesLink isButton />;
+    }
+    default:
+      assertNever(provider);
   }
-
-  if (
-    paymentProvider === AccountSubscriptionProvider.Stripe &&
-    stripeCustomerId
-  ) {
-    return (
-      <StripePortalLink
-        stripeCustomerId={stripeCustomerId}
-        accountId={accountId}
-      >
-        Manage your subscription
-      </StripePortalLink>
-    );
-  }
-
-  return null;
-};
+}
 
 function Period({ start, end }: { start: string; end: string }) {
   const sameYear = moment(start).isSame(end, "year");
@@ -463,81 +312,100 @@ function Period({ start, end }: { start: string; end: string }) {
   );
 }
 
-export const PlanCard = (props: { account: AccountFragment }) => {
-  const account = useFragment(PlanCardFragment, props.account);
-  const {
-    plan,
-    projects,
-    subscriptionStatus,
-    stripeCustomerId,
-    periodStartDate,
-    periodEndDate,
-    trialStatus,
-    paymentProvider,
-  } = account;
-
-  const [showTrialEndDialog, setShowTrialEndDialog] = useState(false);
-  const confirmTrialEndDialogState = useDialogState({
-    open: showTrialEndDialog,
-    setOpen: (open) => {
-      if (!open) {
-        setShowTrialEndDialog(false);
-      }
-    },
-  });
-
-  const ContactSalesLink = ({ isButton }: { isButton: boolean }) => {
-    const contactHref = `mailto:${config.get("contactEmail")}`;
-    return isButton ? (
-      <Button color="neutral" variant="outline">
-        {(buttonProps) => (
-          <a href={contactHref} {...buttonProps}>
-            Contact Sales
-          </a>
-        )}
-      </Button>
-    ) : (
-      <Link to={contactHref}>Contact Sales</Link>
+function PlanCardFooter(props: {
+  account: DocumentType<typeof PlanCardFragment>;
+}) {
+  const { account } = props;
+  if (account.hasForcedPlan) {
+    return (
+      <CardFooter>
+        Contact Argos support on{" "}
+        <Anchor href="https://argos-ci.com/discord" external>
+          Discord
+        </Anchor>{" "}
+        or{" "}
+        <Anchor href={`mailto:${config.get("contactEmail")}`}>by email</Anchor>
+        {"  "}to manage your subscription.
+      </CardFooter>
     );
-  };
+  }
+  switch (account.__typename) {
+    case "User": {
+      return (
+        <CardFooter className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            Want to collaborate?
+            <Button>
+              {(buttonProps) => (
+                <RouterLink to="/teams/new" {...buttonProps}>
+                  <ButtonIcon>
+                    <PlusCircleIcon />
+                  </ButtonIcon>
+                  Create a Team
+                </RouterLink>
+              )}
+            </Button>
+          </div>
+          <ContactSalesLink isButton />
+        </CardFooter>
+      );
+    }
+    case "Team": {
+      switch (account.subscriptionStatus) {
+        case AccountSubscriptionStatus.Canceled: {
+          return (
+            <CardFooter className="flex items-center justify-between gap-4">
+              <ContactSalesLink isButton />
+              <TeamSubscribeDialog initialAccountId={account.id}>
+                Subscribe
+              </TeamSubscribeDialog>
+            </CardFooter>
+          );
+        }
+        default: {
+          return (
+            <CardFooter className="flex items-center justify-between gap-4">
+              <ContactSalesLink isButton />
+              <ManageSubscriptionButton account={account}>
+                Manage subscription
+              </ManageSubscriptionButton>
+            </CardFooter>
+          );
+        }
+      }
+    }
+    default:
+      assertNever(account);
+  }
+}
 
-  const [terminateTrial, { loading: terminateTrialLoading }] = useMutation(
-    TerminateTrialMutation,
-    {
-      optimisticResponse: (variables) => ({
-        terminateTrial: {
-          id: variables.accountId,
-          subscriptionStatus: AccountSubscriptionStatus.Active,
-          __typename: "Team" as const,
-        },
-      }),
-    },
+function ContactSalesLink({ isButton }: { isButton: boolean }) {
+  const contactHref = `mailto:${config.get("contactEmail")}`;
+  return isButton ? (
+    <Button color="neutral" variant="outline">
+      {(buttonProps) => (
+        <a href={contactHref} {...buttonProps}>
+          Contact Sales
+        </a>
+      )}
+    </Button>
+  ) : (
+    <Link to={contactHref}>Contact Sales</Link>
   );
+}
 
-  const isTeam = account.__typename === "Team";
-  const showUpgradeButton =
-    account.subscriptionStatus === AccountSubscriptionStatus.Canceled;
+export function PlanCard(props: {
+  account: FragmentType<typeof PlanCardFragment>;
+}) {
+  const account = useFragment(PlanCardFragment, props.account);
+  const { plan, projects, periodStartDate, periodEndDate } = account;
 
   return (
     <Card>
       <CardBody>
         <CardTitle>Plan</CardTitle>
-        <CardParagraph>
-          <PlanStatus
-            subscriptionStatus={subscriptionStatus}
-            planName={plan?.displayName ?? null}
-            trialStatus={trialStatus ?? null}
-          />
-          <PlanStatusDescription
-            openTrialEndDialog={() => setShowTrialEndDialog(true)}
-            hasGitHubSubscription={
-              paymentProvider === AccountSubscriptionProvider.Github
-            }
-            account={props.account}
-          />
-        </CardParagraph>
-
-        {plan ? (
+        <PlanStatus account={account} />
+        {plan && (
           <>
             <CardSeparator className="my-6" />
             <Period start={periodStartDate} end={periodEndDate} />
@@ -548,63 +416,21 @@ export const PlanCard = (props: { account: AccountFragment }) => {
               />
             </div>
           </>
-        ) : null}
-        {!isTeam && (
+        )}
+        {account.__typename === "User" && (
           <>
-            <CardSeparator className="my-6" />
             <p className="text-low my-4 text-sm">
-              Your plan includes a limited amount of screenshots. If the usage
-              on your projects exceeds the allotted limit, you will need to
-              upgrade to a Pro team.
+              Your plan has a specific limit on screenshots. If you exceed this
+              limit in your projects, upgrading to a Team is required.
             </p>
             <div className="mt-4 rounded border p-2 text-sm">
-              To take advantage of collaboration, create a new Pro team and
-              transfer your projects.
+              To take advantage of collaboration, create a Team and transfer
+              your projects.
             </div>
           </>
         )}
       </CardBody>
-      <CardFooter>
-        {account.hasForcedPlan ? (
-          <ContactLink />
-        ) : (
-          <div className="flex flex-row-reverse items-center justify-between gap-4">
-            {isTeam && showUpgradeButton && (
-              <TeamUpgradeDialogButton initialAccountId={account.id} />
-            )}
-            {!isTeam && (
-              <div className="flex items-center justify-between gap-4">
-                Want to collaborate?
-                <Button>
-                  {(buttonProps) => (
-                    <RouterLink to="/teams/new" {...buttonProps}>
-                      <ButtonIcon>
-                        <PlusCircleIcon />
-                      </ButtonIcon>
-                      Create a Team
-                    </RouterLink>
-                  )}
-                </Button>
-              </div>
-            )}
-            <ContactSalesLink isButton={!showUpgradeButton} />
-            <ManageSubscriptionButton
-              accountId={account.id}
-              stripeCustomerId={stripeCustomerId ?? null}
-              paymentProvider={paymentProvider ?? null}
-            />
-          </div>
-        )}
-      </CardFooter>
-      {subscriptionStatus === AccountSubscriptionStatus.Trialing &&
-        stripeCustomerId && (
-          <ConfirmTrialEndDialog
-            state={confirmTrialEndDialogState}
-            loading={terminateTrialLoading}
-            terminateTrial={terminateTrial}
-            accountId={account.id}
-          />
-        )}
+      <PlanCardFooter account={account} />
     </Card>
   );
-};
+}

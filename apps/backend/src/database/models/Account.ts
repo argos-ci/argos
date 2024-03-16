@@ -19,10 +19,11 @@ export type AccountAvatar = {
   color: string;
 };
 
+type AccountSubscriptionStatus = Subscription["status"] | "trial_expired";
+
 type AccountSubscriptionManager = {
   getActiveSubscription(): Promise<Subscription | null>;
   getPlan(): Promise<Plan | null>;
-  checkIsTrialing(): Promise<boolean>;
   checkIsUsageBasedPlan(): Promise<boolean>;
   getCurrentPeriodStartDate(): Promise<Date>;
   getCurrentPeriodEndDate(): Promise<Date>;
@@ -30,7 +31,7 @@ type AccountSubscriptionManager = {
   getCurrentPeriodConsumptionRatio(): Promise<number>;
   checkIsOutOfCapacity(): Promise<"flat-rate" | "trialing" | null>;
   getIncludedScreenshots(): Promise<number>;
-  getSubscriptionStatus(): Promise<Subscription["status"] | null>;
+  getSubscriptionStatus(): Promise<AccountSubscriptionStatus | null>;
 };
 
 export type AccountPermission = "admin" | "view";
@@ -204,14 +205,13 @@ export class Account extends Model {
     });
 
     const getCurrentPeriodEndDate = memoize(async () => {
-      const [startDate, activeSubscription, trialing] = await Promise.all([
+      const [startDate, activeSubscription] = await Promise.all([
         getCurrentPeriodStartDate(),
         getActiveSubscription(),
-        checkIsTrialing(),
       ]);
 
-      if (trialing) {
-        invariant(activeSubscription?.trialEndDate);
+      if (activeSubscription?.status === "trialing") {
+        invariant(activeSubscription.trialEndDate);
         return new Date(activeSubscription.trialEndDate);
       }
 
@@ -229,11 +229,6 @@ export class Account extends Model {
     const getCurrentPeriodScreenshots = memoize(async () => {
       const startDate = await getCurrentPeriodStartDate();
       return this.$getScreenshotCountFromDate(startDate.toISOString());
-    });
-
-    const checkIsTrialing = memoize(async () => {
-      const subscription = await getActiveSubscription();
-      return subscription?.$isTrialActive() ?? false;
     });
 
     const checkIsUsageBasedPlan = memoize(async () => {
@@ -287,21 +282,36 @@ export class Account extends Model {
         return subscription.status;
       }
 
+      const previousPaidSubscription = await Subscription.query()
+        .where("accountId", this.id)
+        .whereNot({ name: "free" })
+        .whereRaw("?? < now()", "endDate")
+        .joinRelated("plan")
+        .orderBy("endDate", "DESC")
+        .first();
+
+      const subscriptionEndsAtTrialEnd =
+        previousPaidSubscription &&
+        previousPaidSubscription.endDate ===
+          previousPaidSubscription.trialEndDate;
+
+      if (subscriptionEndsAtTrialEnd) {
+        return "trial_expired";
+      }
+
       return "canceled";
     });
 
     const checkIsOutOfCapacity = memoize(async () => {
-      const [usageBased, trialing, consumptionRatio, activeSubscription] =
+      const [usageBased, consumptionRatio, activeSubscription] =
         await Promise.all([
           checkIsUsageBasedPlan(),
-          checkIsTrialing(),
           getCurrentPeriodConsumptionRatio(),
           getActiveSubscription(),
         ]);
 
       if (usageBased) {
-        if (trialing) {
-          invariant(activeSubscription);
+        if (activeSubscription?.status === "trialing") {
           // If trialing and a payment method is filled
           // then we allow the user to go over capacity
           if (activeSubscription.paymentMethodFilled) {
@@ -321,7 +331,6 @@ export class Account extends Model {
     this._cachedSubscriptionManager = {
       getActiveSubscription,
       getPlan,
-      checkIsTrialing,
       checkIsUsageBasedPlan,
       getCurrentPeriodStartDate,
       getCurrentPeriodEndDate,
