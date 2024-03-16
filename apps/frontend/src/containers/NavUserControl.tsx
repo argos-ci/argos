@@ -137,7 +137,7 @@ const UserMenu = () => {
     <>
       <MenuButton
         state={menu}
-        className="shrink-0 rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
+        className="shrink-0 cursor-default rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
       >
         <Avatar slug={authPayload.account.slug} />
       </MenuButton>

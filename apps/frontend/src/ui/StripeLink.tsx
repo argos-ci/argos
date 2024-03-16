@@ -77,14 +77,22 @@ export const StripePortalLink = ({
   });
 
   return asButton ? (
-    <Button type="button" disabled={disabled} onClick={handleClick}>
+    <Button
+      type="button"
+      disabled={disabled}
+      onClick={handleClick}
+      className="!cursor-pointer"
+    >
       {children}
     </Button>
   ) : (
     <button
       type="button"
       disabled={disabled}
-      className={clsx(anchorClassNames, "inline-flex items-center")}
+      className={clsx(
+        anchorClassNames,
+        "inline-flex cursor-pointer items-center",
+      )}
       onClick={handleClick}
     >
       {children}
