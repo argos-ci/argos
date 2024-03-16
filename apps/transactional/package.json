@@ -8,6 +8,6 @@
     "export": "email export --pretty"
   },
   "dependencies": {
-    "react-email": "^2.0.0"
+    "react-email": "^2.1.0"
   }
 }

@@ -29,7 +29,6 @@ import { deleteProject, getAdminProject } from "../services/project.js";
 import { badUserInput, forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
-// eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`

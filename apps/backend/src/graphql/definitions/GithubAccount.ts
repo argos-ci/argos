@@ -3,7 +3,6 @@ import gqlTag from "graphql-tag";
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { getAvatarColor, githubAvatarUrlFactory } from "../services/avatar.js";
 
-// eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`

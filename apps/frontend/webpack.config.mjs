@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import AssetsPlugin from "assets-webpack-plugin";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
-// eslint-disable-next-line import/no-named-as-default
 import webpack from "webpack";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));

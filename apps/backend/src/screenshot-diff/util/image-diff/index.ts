@@ -1,4 +1,3 @@
-/* eslint-disable import/namespace */
 import { compare } from "odiff-bin";
 
 import { tmpName } from "@/storage/index.js";

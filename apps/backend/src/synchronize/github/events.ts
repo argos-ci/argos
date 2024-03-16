@@ -42,6 +42,7 @@ export const handleGitHubEvents = async ({
           case "purchased": {
             const [plan, account] = await Promise.all([
               getGithubPlan(payload),
+              // @ts-expect-error problem with Octokit types
               getOrCreateAccountFromEvent(payload),
             ]);
 
@@ -180,6 +181,7 @@ export const handleGitHubEvents = async ({
             "converted_to_draft",
           ].includes(payload.action)
         ) {
+          invariant(payload.pull_request);
           await pr
             .$clone()
             .$query()
@@ -191,8 +193,8 @@ export const handleGitHubEvents = async ({
               date: payload.pull_request.created_at,
               closedAt: payload.pull_request.closed_at ?? null,
               mergedAt: payload.pull_request.merged_at ?? null,
-              merged: payload.pull_request.merged,
-              draft: payload.pull_request.draft,
+              merged: payload.pull_request.merged ?? null,
+              draft: payload.pull_request.draft ?? null,
             });
           return;
         }
@@ -232,6 +234,7 @@ export const handleGitHubEvents = async ({
             return;
           }
           case "member_added": {
+            invariant(payload.membership.user);
             // Create both the organization and the member if they don't exist.
             const [orgGithubAccount, memberGithubAccount] = await Promise.all([
               getOrCreateGhAccount({
@@ -273,6 +276,7 @@ export const handleGitHubEvents = async ({
             return;
           }
           case "member_removed": {
+            invariant(payload.membership.user);
             // Create both the organization and the member if they don't exist.
             const [orgGithubAccount, memberGithubAccount] = await Promise.all([
               getOrCreateGhAccount({

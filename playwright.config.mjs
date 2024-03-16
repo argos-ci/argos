@@ -1,4 +1,3 @@
-/* eslint-disable import/no-unresolved */
 // @ts-check
 import { devices } from "@playwright/test";
 

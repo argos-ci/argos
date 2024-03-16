@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/default
 import jwt from "jsonwebtoken";
 
 import config from "@/config/index.js";

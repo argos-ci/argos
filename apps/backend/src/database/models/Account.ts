@@ -13,6 +13,7 @@ import { Subscription } from "./Subscription.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
 
+/** @public */
 export type AccountAvatar = {
   getUrl(args: { size?: number }): string | Promise<string> | null;
   initial: string;

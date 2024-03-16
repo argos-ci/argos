@@ -5,7 +5,6 @@ import { getTokenOctokit } from "@/github/index.js";
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { unauthenticated } from "../util.js";
 
-// eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
