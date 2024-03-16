@@ -14,7 +14,9 @@ export const typeDefs = gql`
     id: ID!
     provider: AccountSubscriptionProvider!
     trialDaysRemaining: Int
+    endDate: DateTime
     paymentMethodFilled: Boolean!
+    status: AccountSubscriptionStatus!
   }
 `;
 

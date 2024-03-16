@@ -5,12 +5,9 @@ interface Account implements Node {
   gitlabAccessToken: String
   glNamespaces: GlApiNamespaceConnection
   hasForcedPlan: Boolean!
-  hasPaidPlan: Boolean!
   id: ID!
   includedScreenshots: Int!
   name: String
-  paymentProvider: AccountSubscriptionProvider
-  pendingCancelAt: DateTime
   periodEndDate: DateTime
   periodStartDate: DateTime
   permissions: [AccountPermission!]!
@@ -21,7 +18,6 @@ interface Account implements Node {
   stripeCustomerId: String
   subscription: AccountSubscription
   subscriptionStatus: AccountSubscriptionStatus
-  trialStatus: TrialStatus
 }
 
 type AccountAvatar {
@@ -36,9 +32,11 @@ enum AccountPermission {
 }
 
 type AccountSubscription implements Node {
+  endDate: DateTime
   id: ID!
   paymentMethodFilled: Boolean!
   provider: AccountSubscriptionProvider!
+  status: AccountSubscriptionStatus!
   trialDaysRemaining: Int
 }
 
@@ -65,6 +63,9 @@ enum AccountSubscriptionStatus {
 
   """Paused"""
   paused
+
+  """Trial expired"""
+  trial_expired
 
   """Ongoing trial"""
   trialing
@@ -392,9 +393,6 @@ type Mutation {
   """Change the validationStatus on a build"""
   setValidationStatus(buildId: ID!, validationStatus: ValidationStatus!): Build!
 
-  """Terminate trial early"""
-  terminateTrial(accountId: ID!): Account!
-
   """Transfer Project to another account"""
   transferProject(input: TransferProjectInput!): Project!
 
@@ -713,7 +711,6 @@ type Team implements Account & Node {
   gitlabAccessToken: String
   glNamespaces: GlApiNamespaceConnection
   hasForcedPlan: Boolean!
-  hasPaidPlan: Boolean!
   id: ID!
   includedScreenshots: Int!
   inviteLink: String
@@ -721,8 +718,6 @@ type Team implements Account & Node {
   members(after: Int = 0, first: Int = 30, levels: [TeamUserLevel!], search: String): TeamMemberConnection!
   name: String
   oldPaidSubscription: AccountSubscription
-  paymentProvider: AccountSubscriptionProvider
-  pendingCancelAt: DateTime
   periodEndDate: DateTime
   periodStartDate: DateTime
   permissions: [AccountPermission!]!
@@ -734,7 +729,6 @@ type Team implements Account & Node {
   stripeCustomerId: String
   subscription: AccountSubscription
   subscriptionStatus: AccountSubscriptionStatus
-  trialStatus: TrialStatus
 }
 
 enum TeamDefaultUserLevel {
@@ -805,14 +799,6 @@ input TransferProjectInput {
   targetAccountId: ID!
 }
 
-enum TrialStatus {
-  """Trial is active"""
-  active
-
-  """Subscription ended when trial did"""
-  expired
-}
-
 input UnlinkGithubRepositoryInput {
   projectId: ID!
 }
@@ -849,15 +835,12 @@ type User implements Account & Node {
   gitlabAccessToken: String
   glNamespaces: GlApiNamespaceConnection
   hasForcedPlan: Boolean!
-  hasPaidPlan: Boolean!
   hasSubscribedToTrial: Boolean!
   id: ID!
   includedScreenshots: Int!
   lastSubscription: AccountSubscription
   name: String
   oldPaidSubscription: AccountSubscription
-  paymentProvider: AccountSubscriptionProvider
-  pendingCancelAt: DateTime
   periodEndDate: DateTime
   periodStartDate: DateTime
   permissions: [AccountPermission!]!
@@ -870,7 +853,6 @@ type User implements Account & Node {
   subscription: AccountSubscription
   subscriptionStatus: AccountSubscriptionStatus
   teams: [Team!]!
-  trialStatus: TrialStatus
 }
 
 type UserConnection implements Connection {

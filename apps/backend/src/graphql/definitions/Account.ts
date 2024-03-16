@@ -6,10 +6,8 @@ import type { PartialModelObject } from "objection";
 
 import {
   Account,
-  Plan,
   Project,
   ProjectUser,
-  Subscription,
   TeamUser,
 } from "@/database/models/index.js";
 import { checkAccountSlug } from "@/database/services/account.js";
@@ -17,18 +15,12 @@ import {
   getGitlabClientFromAccount,
   getTokenGitlabClient,
 } from "@/gitlab/index.js";
-import {
-  encodeStripeClientReferenceId,
-  terminateStripeTrial,
-  updateArgosSubscriptionFromStripe,
-} from "@/stripe/index.js";
+import { encodeStripeClientReferenceId } from "@/stripe/index.js";
 
 import {
   IAccountPermission,
-  IAccountSubscriptionProvider,
   IAccountSubscriptionStatus,
   IResolvers,
-  ITrialStatus,
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
 import { getAdminAccount } from "../services/account.js";
@@ -63,13 +55,8 @@ export const typeDefs = gql`
     unpaid
     "Paused"
     paused
-  }
-
-  enum TrialStatus {
-    "Trial is active"
-    active
-    "Subscription ended when trial did"
-    expired
+    "Trial expired"
+    trial_expired
   }
 
   enum AccountPermission {
@@ -81,7 +68,6 @@ export const typeDefs = gql`
     id: ID!
     stripeCustomerId: String
     stripeClientReferenceId: String!
-    hasPaidPlan: Boolean!
     consumptionRatio: Float!
     currentPeriodScreenshots: Int!
     includedScreenshots: Int!
@@ -92,13 +78,10 @@ export const typeDefs = gql`
     periodEndDate: DateTime
     subscription: AccountSubscription
     subscriptionStatus: AccountSubscriptionStatus
-    trialStatus: TrialStatus
     hasForcedPlan: Boolean!
-    pendingCancelAt: DateTime
     permissions: [AccountPermission!]!
     projects(after: Int = 0, first: Int = 30): ProjectConnection!
     avatar: AccountAvatar!
-    paymentProvider: AccountSubscriptionProvider
     gitlabAccessToken: String
     glNamespaces: GlApiNamespaceConnection
   }
@@ -122,8 +105,6 @@ export const typeDefs = gql`
   extend type Mutation {
     "Update Account"
     updateAccount(input: UpdateAccountInput!): Account!
-    "Terminate trial early"
-    terminateTrial(accountId: ID!): Account!
   }
 `;
 
@@ -237,11 +218,6 @@ export const resolvers: IResolvers = {
           assertNever(account.type);
       }
     },
-    hasPaidPlan: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      const plan = await manager.getPlan();
-      return Boolean(plan && !Plan.checkIsFreePlan(plan));
-    },
     consumptionRatio: async (account) => {
       const manager = account.$getSubscriptionManager();
       return manager.getCurrentPeriodConsumptionRatio();
@@ -271,42 +247,8 @@ export const resolvers: IResolvers = {
       const status = await manager.getSubscriptionStatus();
       return status as IAccountSubscriptionStatus;
     },
-    trialStatus: async (account) => {
-      if (account.type === "user") {
-        return null;
-      }
-      const manager = account.$getSubscriptionManager();
-      const trialing = await manager.checkIsTrialing();
-
-      if (trialing) {
-        return ITrialStatus.Active;
-      }
-
-      const previousPaidSubscription = await Subscription.query()
-        .where("accountId", account.id)
-        .whereNot({ name: "free" })
-        .whereRaw("?? < now()", "endDate")
-        .joinRelated("plan")
-        .orderBy("endDate", "DESC")
-        .first();
-
-      const subscriptionEndsAtTrialEnd =
-        previousPaidSubscription &&
-        previousPaidSubscription.endDate ===
-          previousPaidSubscription.trialEndDate;
-
-      return subscriptionEndsAtTrialEnd ? ITrialStatus.Expired : null;
-    },
     hasForcedPlan: async (account) => {
       return account.forcedPlanId !== null;
-    },
-    pendingCancelAt: async (account) => {
-      if (account.type === "user") {
-        return null;
-      }
-      const manager = account.$getSubscriptionManager();
-      const subscription = await manager.getActiveSubscription();
-      return subscription?.endDate ?? null;
     },
     plan: async (account) => {
       const manager = account.$getSubscriptionManager();
@@ -325,19 +267,6 @@ export const resolvers: IResolvers = {
         return `••••••••`;
       }
       return account.gitlabAccessToken;
-    },
-    paymentProvider: async (account) => {
-      if (account.type === "user") {
-        return null;
-      }
-      const lastSubscription = await Subscription.query()
-        .orderBy("createdAt", "DESC")
-        .where("accountId", account.id)
-        .first();
-      if (!lastSubscription) {
-        return null;
-      }
-      return lastSubscription.provider as IAccountSubscriptionProvider;
     },
     avatar: async (account, _args, ctx) => {
       const ghAccount = account.githubAccountId
@@ -473,44 +402,6 @@ export const resolvers: IResolvers = {
       }
 
       return account.$query().patchAndFetch(data);
-    },
-    terminateTrial: async (_root, args, ctx) => {
-      const { accountId } = args;
-      const account = await getAdminAccount({
-        id: accountId,
-        user: ctx.auth?.user,
-      });
-      const manager = account.$getSubscriptionManager();
-      const argosSubscription = await manager.getActiveSubscription();
-
-      // No subscription
-      if (!argosSubscription) {
-        return account;
-      }
-
-      // Not a stripe subscription
-      if (argosSubscription.provider !== "stripe") {
-        return account;
-      }
-
-      // Not a trial
-      if (!argosSubscription.$isTrialActive()) {
-        return account;
-      }
-
-      invariant(
-        argosSubscription.stripeSubscriptionId,
-        "no stripeSubscriptionId for stripe subscription",
-      );
-
-      const stripeSubscription = await terminateStripeTrial(
-        argosSubscription.stripeSubscriptionId,
-      );
-      await updateArgosSubscriptionFromStripe(
-        argosSubscription,
-        stripeSubscription,
-      );
-      return account;
     },
   },
 };

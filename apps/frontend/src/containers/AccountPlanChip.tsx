@@ -24,7 +24,10 @@ export const AccountPlanChip = (props: {
           ? { color: "info", children: account.plan.displayName }
           : null;
       case AccountSubscriptionStatus.Trialing:
-        return { color: "info", children: "Trial" };
+        return {
+          color: "info",
+          children: `${account.plan?.displayName} Trial`,
+        };
       case AccountSubscriptionStatus.PastDue:
         return { color: "danger", children: "Past Due" };
       case null:

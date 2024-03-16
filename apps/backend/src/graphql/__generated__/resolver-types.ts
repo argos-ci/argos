@@ -31,12 +31,9 @@ export type IAccount = {
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
   hasForcedPlan: Scalars['Boolean']['output'];
-  hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
   name?: Maybe<Scalars['String']['output']>;
-  paymentProvider?: Maybe<IAccountSubscriptionProvider>;
-  pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IAccountPermission>;
@@ -47,7 +44,6 @@ export type IAccount = {
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
   subscription?: Maybe<IAccountSubscription>;
   subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
-  trialStatus?: Maybe<ITrialStatus>;
 };
 
 
@@ -75,9 +71,11 @@ export enum IAccountPermission {
 
 export type IAccountSubscription = INode & {
   __typename?: 'AccountSubscription';
+  endDate?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   paymentMethodFilled: Scalars['Boolean']['output'];
   provider: IAccountSubscriptionProvider;
+  status: IAccountSubscriptionStatus;
   trialDaysRemaining?: Maybe<Scalars['Int']['output']>;
 };
 
@@ -99,6 +97,8 @@ export enum IAccountSubscriptionStatus {
   PastDue = 'past_due',
   /** Paused */
   Paused = 'paused',
+  /** Trial expired */
+  TrialExpired = 'trial_expired',
   /** Ongoing trial */
   Trialing = 'trialing',
   /** Unpaid */
@@ -405,8 +405,6 @@ export type IMutation = {
   setTeamMemberLevel: ITeamMember;
   /** Change the validationStatus on a build */
   setValidationStatus: IBuild;
-  /** Terminate trial early */
-  terminateTrial: IAccount;
   /** Transfer Project to another account */
   transferProject: IProject;
   /** Unlink GitHub Repository */
@@ -505,11 +503,6 @@ export type IMutationSetTeamMemberLevelArgs = {
 export type IMutationSetValidationStatusArgs = {
   buildId: Scalars['ID']['input'];
   validationStatus: IValidationStatus;
-};
-
-
-export type IMutationTerminateTrialArgs = {
-  accountId: Scalars['ID']['input'];
 };
 
 
@@ -909,7 +902,6 @@ export type ITeam = IAccount & INode & {
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
   hasForcedPlan: Scalars['Boolean']['output'];
-  hasPaidPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
   inviteLink?: Maybe<Scalars['String']['output']>;
@@ -917,8 +909,6 @@ export type ITeam = IAccount & INode & {
   members: ITeamMemberConnection;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidSubscription?: Maybe<IAccountSubscription>;
-  paymentProvider?: Maybe<IAccountSubscriptionProvider>;
-  pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IAccountPermission>;
@@ -930,7 +920,6 @@ export type ITeam = IAccount & INode & {
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
   subscription?: Maybe<IAccountSubscription>;
   subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
-  trialStatus?: Maybe<ITrialStatus>;
 };
 
 
@@ -1025,13 +1014,6 @@ export type ITransferProjectInput = {
   targetAccountId: Scalars['ID']['input'];
 };
 
-export enum ITrialStatus {
-  /** Trial is active */
-  Active = 'active',
-  /** Subscription ended when trial did */
-  Expired = 'expired'
-}
-
 export type IUnlinkGithubRepositoryInput = {
   projectId: Scalars['ID']['input'];
 };
@@ -1069,15 +1051,12 @@ export type IUser = IAccount & INode & {
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
   hasForcedPlan: Scalars['Boolean']['output'];
-  hasPaidPlan: Scalars['Boolean']['output'];
   hasSubscribedToTrial: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
   lastSubscription?: Maybe<IAccountSubscription>;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidSubscription?: Maybe<IAccountSubscription>;
-  paymentProvider?: Maybe<IAccountSubscriptionProvider>;
-  pendingCancelAt?: Maybe<Scalars['DateTime']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IAccountPermission>;
@@ -1090,7 +1069,6 @@ export type IUser = IAccount & INode & {
   subscription?: Maybe<IAccountSubscription>;
   subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
   teams: Array<ITeam>;
-  trialStatus?: Maybe<ITrialStatus>;
 };
 
 
@@ -1296,7 +1274,6 @@ export type IResolversTypes = ResolversObject<{
   TestStatus: ITestStatus;
   Time: ResolverTypeWrapper<Scalars['Time']['output']>;
   TransferProjectInput: ITransferProjectInput;
-  TrialStatus: ITrialStatus;
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
   UnlinkGitlabProjectInput: IUnlinkGitlabProjectInput;
   UpdateAccountInput: IUpdateAccountInput;
@@ -1404,12 +1381,9 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  paymentProvider?: Resolver<Maybe<IResolversTypes['AccountSubscriptionProvider']>, ParentType, ContextType>;
-  pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
@@ -1420,7 +1394,6 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   subscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
-  trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
 }>;
 
 export type IAccountAvatarResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountAvatar'] = IResolversParentTypes['AccountAvatar']> = ResolversObject<{
@@ -1431,9 +1404,11 @@ export type IAccountAvatarResolvers<ContextType = Context, ParentType extends IR
 }>;
 
 export type IAccountSubscriptionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountSubscription'] = IResolversParentTypes['AccountSubscription']> = ResolversObject<{
+  endDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   paymentMethodFilled?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   provider?: Resolver<IResolversTypes['AccountSubscriptionProvider'], ParentType, ContextType>;
+  status?: Resolver<IResolversTypes['AccountSubscriptionStatus'], ParentType, ContextType>;
   trialDaysRemaining?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1624,7 +1599,6 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   setTeamDefaultUserLevel?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationSetTeamDefaultUserLevelArgs, 'input'>>;
   setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
   setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
-  terminateTrial?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationTerminateTrialArgs, 'accountId'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
   unlinkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkGithubRepositoryArgs, 'input'>>;
   unlinkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkGitlabProjectArgs, 'input'>>;
@@ -1845,7 +1819,6 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   inviteLink?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -1853,8 +1826,6 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
-  paymentProvider?: Resolver<Maybe<IResolversTypes['AccountSubscriptionProvider']>, ParentType, ContextType>;
-  pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
@@ -1866,7 +1837,6 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   subscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
-  trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1931,15 +1901,12 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  hasPaidPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   lastSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
-  paymentProvider?: Resolver<Maybe<IResolversTypes['AccountSubscriptionProvider']>, ParentType, ContextType>;
-  pendingCancelAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
@@ -1952,7 +1919,6 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   subscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
   teams?: Resolver<Array<IResolversTypes['Team']>, ParentType, ContextType>;
-  trialStatus?: Resolver<Maybe<IResolversTypes['TrialStatus']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

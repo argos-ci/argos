@@ -21,7 +21,6 @@ export const typeDefs = gql`
     id: ID!
     stripeCustomerId: String
     stripeClientReferenceId: String!
-    hasPaidPlan: Boolean!
     consumptionRatio: Float!
     currentPeriodScreenshots: Int!
     includedScreenshots: Int!
@@ -36,10 +35,7 @@ export const typeDefs = gql`
     permissions: [AccountPermission!]!
     projects(after: Int = 0, first: Int = 30): ProjectConnection!
     avatar: AccountAvatar!
-    trialStatus: TrialStatus
     hasForcedPlan: Boolean!
-    pendingCancelAt: DateTime
-    paymentProvider: AccountSubscriptionProvider
     gitlabAccessToken: String
     glNamespaces: GlApiNamespaceConnection
 
