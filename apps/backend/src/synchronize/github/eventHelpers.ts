@@ -21,7 +21,7 @@ type PartialMarketplacePurchasePurchasedEventPayload = {
       id: number;
       type: string;
       login: string;
-      organization_billing_email: string;
+      organization_billing_email: string | null;
     };
   };
 };

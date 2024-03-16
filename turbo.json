@@ -21,6 +21,17 @@
       "dependsOn": [],
       "outputs": []
     },
+    "check-format": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "lint": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "static-checks": {
+      "dependsOn": ["check-types", "check-format", "lint"]
+    },
     "watch-build": {
       "dependsOn": ["build"],
       "persistent": true,

@@ -30,8 +30,6 @@
     "react/react-in-jsx-scope": "off",
     "react/no-unescaped-entities": "off",
 
-    "import/no-relative-packages": "error",
-
     // Doesn't work with our config
     "tailwindcss/no-custom-classname": "off",
     // We use Prettier for formatting

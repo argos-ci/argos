@@ -1,10 +1,10 @@
 /* eslint-env node */
 import { readFileSync } from "node:fs";
+import { type } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import AssetsPlugin from "assets-webpack-plugin";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
-// eslint-disable-next-line import/no-named-as-default
 import webpack from "webpack";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -63,22 +63,26 @@ export default {
         devServer: {
           historyApiFallback: true,
           allowedHosts: "all",
-          https: {
-            key: readFileSync(
-              join(__dirname, "../../_wildcard.argos-ci.dev-key.pem"),
-            ),
-            cert: readFileSync(
-              join(__dirname, "../../_wildcard.argos-ci.dev.pem"),
-            ),
+          server: {
+            type: "https",
+            options: {
+              key: readFileSync(
+                join(__dirname, "../../_wildcard.argos-ci.dev-key.pem"),
+              ),
+              cert: readFileSync(
+                join(__dirname, "../../_wildcard.argos-ci.dev.pem"),
+              ),
+            },
           },
           host: "app.argos-ci.dev",
           port: 4002,
-          proxy: {
-            "**": {
+          proxy: [
+            {
+              context: "**",
               target: `https://app.argos-ci.dev:4001`,
               secure: false,
             },
-          },
+          ],
         },
       }
     : {}),

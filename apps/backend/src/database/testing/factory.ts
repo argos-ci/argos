@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import { randomBytes } from "node:crypto";
 import { FactoryGirl, ModelAdapter } from "factory-girl-ts";
 import moment from "moment";

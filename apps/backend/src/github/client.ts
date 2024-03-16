@@ -7,11 +7,12 @@ import { GithubInstallation } from "@/database/models/index.js";
 
 export type { RestEndpointMethodTypes } from "@octokit/rest";
 
+// @ts-expect-error problem with Octokit types
 Octokit.plugin(retry);
 
 export type { Octokit };
 
-export const getAppOctokit = () => {
+export const getAppOctokit = (): Octokit => {
   return new Octokit({
     debug: config.get("env") === "development",
     authStrategy: createAppAuth,
@@ -22,17 +23,17 @@ export const getAppOctokit = () => {
   });
 };
 
-export const getTokenOctokit = (token: string) => {
+export const getTokenOctokit = (token: string): Octokit => {
   return new Octokit({
     debug: config.get("env") === "development",
     auth: token,
   });
 };
 
-export const getInstallationOctokit = async (
+export async function getInstallationOctokit(
   installationId: string,
-  appOctokit = getAppOctokit(),
-): Promise<Octokit | null> => {
+  appOctokit: Octokit = getAppOctokit(),
+): Promise<Octokit | null> {
   const installation = await GithubInstallation.query()
     .findById(installationId)
     .throwIfNotFound();
@@ -77,4 +78,4 @@ export const getInstallationOctokit = async (
     githubTokenExpiresAt: result.expiresAt,
   });
   return getTokenOctokit(result.token);
-};
+}

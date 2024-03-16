@@ -4,11 +4,11 @@
     "wdio": "wdio run wdio.conf.js"
   },
   "devDependencies": {
-    "@wdio/cli": "^8.29.7",
-    "@wdio/local-runner": "^8.29.7",
-    "@wdio/mocha-framework": "^8.29.3",
-    "@wdio/spec-reporter": "^8.29.7",
-    "chromedriver": "^121.0.0",
+    "@wdio/cli": "^8.34.1",
+    "@wdio/local-runner": "^8.34.1",
+    "@wdio/mocha-framework": "^8.33.1",
+    "@wdio/spec-reporter": "^8.32.4",
+    "chromedriver": "^122.0.6",
     "wdio-chromedriver-service": "^8.1.1"
   }
 }

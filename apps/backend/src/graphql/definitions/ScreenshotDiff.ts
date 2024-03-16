@@ -8,7 +8,6 @@ import type {
   IScreenshotDiffStatus,
 } from "../__generated__/resolver-types.js";
 
-// eslint-disable-next-line import/no-named-as-default-member
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
