@@ -136,7 +136,7 @@ function PlanStatus(props: { account: DocumentType<typeof PlanCardFragment> }) {
             >
               Add a payment method
             </StripePortalLink>{" "}
-            method to retain access to team features.
+            to retain access to team features.
           </CardParagraph>
         </>
       );
