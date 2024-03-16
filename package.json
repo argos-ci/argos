@@ -45,8 +45,6 @@
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
     "eslint": "^8.57.0",
-    "eslint-import-resolver-typescript": "^3.6.1",
-    "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-tailwindcss": "^3.15.1",
     "eslint-plugin-vitest": "^0.3.26",
     "knip": "^5.1.1",
