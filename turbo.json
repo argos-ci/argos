@@ -4,6 +4,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
+      "inputs": ["src/**", "package.json"],
       "env": ["BUILD_MODE"]
     },
     "//#codegen": {
