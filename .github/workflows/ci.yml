@@ -164,8 +164,7 @@ jobs:
       - name: Truncate and seed database
         run: npm run e2e:setup
 
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
-
       - name: Run Playwright tests
-        run: npm exec -- playwright test
+        uses: docker://mcr.microsoft.com/playwright:v1.42.1-jammy
+        with:
+          args: npm exec -- playwright test
