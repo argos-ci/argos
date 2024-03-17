@@ -1,6 +1,5 @@
 /* eslint-env node */
 import { readFileSync } from "node:fs";
-import { type } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import AssetsPlugin from "assets-webpack-plugin";
