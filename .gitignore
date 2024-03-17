@@ -1,17 +1,30 @@
-apps/*/lib/
-apps/*/dist/
-packages/*/dist/
+# Dist
+dist/
+# Node modules
 node_modules/
+# Keys
 *.pem
+# Env
 .env
-diff_tmp.png
-examples/*/package-lock.json
-examples/*/pnpm-lock.yaml
-apps/backend/src/screenshot-diff/util/image-diff/test/actual-files/*
+# Examples
+/examples/*/package-lock.json
+/examples/*/pnpm-lock.yaml
+# Generated files @ frontend
+src/gql
+src/gql-fragments.json
+/apps/frontend/src/gql
+/apps/frontend/src/gql-fragments.json
+# Generated files @ backend
+src/graphql/__generated__
+/apps/backend/src/graphql/__generated__
+# Various cache files
+.cache
+# Playwright
 /test-results/
 /playwright-report/
 /playwright/.cache/
-screenshots/*
-.cache
+/screenshots
+# Turborepo
 .turbo
+# TypeScript logs
 tsconfig.tsbuildinfo
