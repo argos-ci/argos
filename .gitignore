@@ -10,10 +10,13 @@ node_modules/
 /examples/*/package-lock.json
 /examples/*/pnpm-lock.yaml
 # Generated files @ frontend
-src/gql/
+src/gql
 src/gql-fragments.json
+/apps/frontend/src/gql
+/apps/frontend/src/gql-fragments.json
 # Generated files @ backend
-src/graphql/__generated__/
+src/graphql/__generated__
+/apps/backend/src/graphql/__generated__
 # Various cache files
 .cache
 # Playwright
