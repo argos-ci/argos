@@ -9,7 +9,7 @@ import config from "@/config/index.js";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 const indexString = readFileSync(
-  join(__dirname, "../../../templates/index.ejs"),
+  join(__dirname, "../../../src/templates/index.ejs"),
   "utf-8",
 );
 
