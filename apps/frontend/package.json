@@ -5,8 +5,8 @@
   "scripts": {
     "build": "rm -rf dist && webpack",
     "check-types": "tsc --noEmit",
-    "check-format": "prettier --check --ignore-path .gitignore .",
-    "lint": "eslint --ignore-path .gitignore .",
+    "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
+    "lint": "eslint --ignore-path=../../.gitignore .",
     "watch-build": "webpack-dev-server"
   },
   "sideEffects": false,
