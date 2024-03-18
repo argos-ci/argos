@@ -77,7 +77,7 @@ export const BuildDetailToolbar = memo(
     return (
       <div
         className={clsx(
-          "sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b p-4 transition-colors",
+          "sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b p-4 transition-colors has-[[data-meta]:empty]:items-center",
           !bordered && "border-b-transparent",
         )}
       >
@@ -90,7 +90,10 @@ export const BuildDetailToolbar = memo(
             <div role="heading" className="line-clamp-2 text-xs font-medium">
               {activeDiff.name}
             </div>
-            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">
+            <div
+              data-meta=""
+              className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden"
+            >
               {sdk && <SdkIndicator sdk={sdk} className="size-4" />}
               {automationLibrary && (
                 <AutomationLibraryIndicator
