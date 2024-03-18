@@ -22,7 +22,7 @@ const BuildReviewStateContext = createContext<BuildReviewStateValue | null>(
   null,
 );
 
-export function useBuildReviewState() {
+function useBuildReviewState() {
   const context = useContext(BuildReviewStateContext);
   invariant(
     context,
