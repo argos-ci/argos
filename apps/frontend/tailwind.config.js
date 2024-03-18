@@ -18,6 +18,7 @@ module.exports = {
         ui: "var(--mauve-3)",
         hover: "var(--mauve-4)",
         active: "var(--mauve-5)",
+        border: "var(--mauve-6)",
         solid: {
           DEFAULT: "var(--mauve-9)",
           hover: "var(--mauve-10)",
@@ -65,14 +66,21 @@ module.exports = {
             active: "var(--amber-11)",
           },
         },
+        success: {
+          app: "var(--grass-1)",
+          ui: "var(--grass-3)",
+          active: "var(--grass-5)",
+          solid: {
+            DEFAULT: "var(--grass-9)",
+            hover: "var(--grass-10)",
+            active: "var(--grass-11)",
+          },
+        },
         info: {
           app: "var(--blue-1)",
         },
         pending: {
           app: "var(--amber-1)",
-        },
-        success: {
-          app: "var(--grass-1)",
         },
       },
       textColor: {
@@ -117,7 +125,17 @@ module.exports = {
         },
         danger: {
           DEFAULT: "var(--tomato-6)",
+          ui: "var(--tomato-7)",
           hover: "var(--tomato-8)",
+          active: "var(--tomato-9)",
+          highlight: "var(--tomato-12)",
+        },
+        success: {
+          DEFAULT: "var(--grass-6)",
+          ui: "var(--grass-7)",
+          hover: "var(--grass-8)",
+          active: "var(--grass-9)",
+          highlight: "var(--grass-12)",
         },
       },
       borderColor: {

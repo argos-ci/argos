@@ -14,8 +14,8 @@ import { ResultOf } from "@graphql-typed-document-node/core";
 import { MatchData, Searcher } from "fast-fuzzy";
 import { useNavigate } from "react-router-dom";
 
-import type { BuildStats } from "@/containers/Build";
-import { graphql } from "@/gql";
+import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { ScreenshotDiffStatus } from "@/gql/graphql";
 
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
@@ -142,6 +142,14 @@ type BuildDiffContextValue = {
 };
 
 const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
+
+export function checkCanBeReviewed(screenshotDiffStatus: ScreenshotDiffStatus) {
+  return (
+    screenshotDiffStatus === ScreenshotDiffStatus.Added ||
+    screenshotDiffStatus === ScreenshotDiffStatus.Removed ||
+    screenshotDiffStatus === ScreenshotDiffStatus.Changed
+  );
+}
 
 export const useBuildDiffState = () => {
   const context = useContext(BuildDiffContext);
@@ -311,15 +319,30 @@ export const useSearchState = () => {
   return context;
 };
 
-export const BuildDiffProvider = ({
-  children,
-  stats,
-  params,
-}: {
+const BuildDiffStateFragment = graphql(`
+  fragment BuildDiffState_Build on Build {
+    id
+    stats {
+      total
+      failure
+      changed
+      added
+      removed
+      unchanged
+    }
+  }
+`);
+
+type BuildStats = DocumentType<typeof BuildDiffStateFragment>["stats"];
+
+export const BuildDiffProvider = (props: {
   children: React.ReactNode;
-  stats: BuildStats | null;
+  build: FragmentType<typeof BuildDiffStateFragment> | null;
   params: BuildParams;
 }) => {
+  const { children, params } = props;
+  const build = useFragment(BuildDiffStateFragment, props.build);
+  const stats = build?.stats ?? null;
   const [search, setSearch] = useState("");
   const [searchMode, setSearchMode] = useState(false);
   const navigate = useNavigate();

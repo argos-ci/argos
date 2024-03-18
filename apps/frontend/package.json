@@ -17,6 +17,7 @@
     "@graphql-typed-document-node/core": "^3.2.0",
     "@primer/octicons-react": "^19.8.0",
     "@radix-ui/colors": "^3.0.0",
+    "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@sentry/browser": "^7.107.0",
     "@tanstack/react-virtual": "^3.1.3",

@@ -1,5 +1,7 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { invariant } from "@argos/util/invariant";
+
+import { useStorageState } from "@/util/useStorageState";
 
 type ViewMode = "split" | "baseline" | "changes";
 
@@ -21,12 +23,17 @@ export const useBuildDiffViewModeState = () => {
   return context;
 };
 
+const storageKey = "preferences.diffViewMode";
+
 export const BuildDiffViewModeStateProvider = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
-  const [viewMode, setViewMode] = useState("split" as ViewMode);
+  const [viewMode, setViewMode] = useStorageState(
+    storageKey,
+    "split" as ViewMode,
+  );
   const value = useMemo(
     (): DiffViewModeContextValue => ({
       viewMode,

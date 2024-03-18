@@ -1,5 +1,6 @@
 import { useMutation } from "@apollo/client";
 
+import { getBuildIcon } from "@/containers/Build";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import {
   BuildStatus,
@@ -15,8 +16,6 @@ import {
   useMenuState,
 } from "@/ui/Menu";
 import { Tooltip } from "@/ui/Tooltip";
-
-import { getBuildIcon } from "./Build";
 
 const ProjectFragment = graphql(`
   fragment ReviewButton_Project on Project {
@@ -132,7 +131,11 @@ const BaseReviewButton = ({
   );
 };
 
-const DisabledReviewButton = ({ tooltip }: { tooltip: React.ReactNode }) => {
+export const DisabledReviewButton = ({
+  tooltip,
+}: {
+  tooltip: React.ReactNode;
+}) => {
   return (
     <Tooltip content={tooltip} variant="info">
       <Button accessibleWhenDisabled disabled>
@@ -149,7 +152,11 @@ export const ReviewButton = (props: {
   if (
     !project.build ||
     !project.account ||
-    !["accepted", "rejected", "diffDetected"].includes(project.build.status)
+    ![
+      BuildStatus.Accepted,
+      BuildStatus.Rejected,
+      BuildStatus.DiffDetected,
+    ].includes(project.build.status)
   ) {
     return null;
   }

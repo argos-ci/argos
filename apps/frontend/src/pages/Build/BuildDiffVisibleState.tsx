@@ -1,5 +1,7 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { invariant } from "@argos/util/invariant";
+
+import { useStorageState } from "@/util/useStorageState";
 
 interface DiffVisibleContextValue {
   visible: boolean;
@@ -17,12 +19,14 @@ export const useBuildDiffVisibleState = () => {
   return context;
 };
 
+const storageKey = "preferences.overlay.visible";
+
 export const BuildDiffVisibleStateProvider = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useStorageState(storageKey, true);
   const value = useMemo(
     (): DiffVisibleContextValue => ({ visible, setVisible }),
     [visible, setVisible],
