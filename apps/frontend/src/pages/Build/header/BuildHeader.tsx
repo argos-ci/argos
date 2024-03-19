@@ -1,11 +1,13 @@
 import { ComponentProps, memo } from "react";
+import { EllipsisIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { PullRequestButton } from "@/containers/PullRequestButton";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { BuildType } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Chip } from "@/ui/Chip";
 import { Progress } from "@/ui/Progress";
@@ -17,6 +19,19 @@ import {
   useGetDiffEvaluationStatus,
 } from "../BuildReviewState";
 import { DisabledReviewButton, ReviewButton } from "./ReviewButton";
+
+const BuildFragment = graphql(`
+  fragment BuildHeader_Build on Build {
+    name
+    status
+    type
+    pullRequest {
+      id
+      ...PullRequestButton_PullRequest
+    }
+    ...BuildStatusChip_Build
+  }
+`);
 
 const BrandLink = memo(
   ({
@@ -83,6 +98,7 @@ function useBuildReviewProgression() {
 
 function LoggedReviewButton(props: {
   project: ComponentProps<typeof ReviewButton>["project"];
+  build: DocumentType<typeof BuildFragment>;
 }) {
   const progression = useBuildReviewProgression();
   if (!progression) {
@@ -91,28 +107,37 @@ function LoggedReviewButton(props: {
   if (progression.toReview.length === 0) {
     return <DisabledReviewButton tooltip="No changes to review" />;
   }
+  if (props.build.type !== BuildType.Check) {
+    return <DisabledReviewButton tooltip="Only check builds can be reviewed" />;
+  }
   const reviewComplete =
     progression.reviewed.length === progression.toReview.length;
-  const { color, tooltip } = (() => {
+  const { color, tooltip, icon } = (() => {
     if (progression.rejected.length > 0) {
       return {
-        color: "warning" as const,
+        color: "danger" as const,
         tooltip: "Some changes have been rejected",
+        icon: ThumbsDownIcon,
       };
     }
     if (reviewComplete) {
       return {
         color: "success" as const,
-        tooltip: "All changes have been reviewed",
+        tooltip: "All changes have been accepted",
+        icon: ThumbsUpIcon,
       };
     }
-    return { color: "neutral" as const, tooltip: "Track your review progress" };
+    return {
+      color: "neutral" as const,
+      tooltip: "Track your review progress",
+      icon: EllipsisIcon,
+    };
   })();
   return (
     <>
       <Tooltip content={tooltip}>
         <div className="flex flex-col gap-1.5">
-          <Chip scale="xs" color={color} className="tabular-nums">
+          <Chip scale="xs" color={color} className="tabular-nums" icon={icon}>
             {progression.reviewed.length} / {progression.toReview.length}{" "}
             reviewed
           </Chip>
@@ -130,23 +155,16 @@ function LoggedReviewButton(props: {
 }
 
 const BuildReviewButton = memo(
-  (props: { project: ComponentProps<typeof ReviewButton>["project"] }) => {
+  (props: {
+    project: ComponentProps<typeof ReviewButton>["project"];
+    build: DocumentType<typeof BuildFragment>;
+  }) => {
     const loggedIn = useIsLoggedIn();
-    return loggedIn ? <LoggedReviewButton project={props.project} /> : null;
+    return loggedIn ? (
+      <LoggedReviewButton project={props.project} build={props.build} />
+    ) : null;
   },
 );
-
-const BuildFragment = graphql(`
-  fragment BuildHeader_Build on Build {
-    name
-    status
-    pullRequest {
-      id
-      ...PullRequestButton_PullRequest
-    }
-    ...BuildStatusChip_Build
-  }
-`);
 
 const ProjectFragment = graphql(`
   fragment BuildHeader_Project on Project {
@@ -190,7 +208,9 @@ export const BuildHeader = memo(
           {build?.pullRequest ? (
             <PullRequestButton pullRequest={build.pullRequest} size="small" />
           ) : null}
-          {project && <BuildReviewButton project={project} />}
+          {project && build && (
+            <BuildReviewButton project={project} build={build} />
+          )}
           <NavUserControl />
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { clsx } from "clsx";
 
+import { BuildType } from "@/gql/graphql";
 import { Separator } from "@/ui/Separator";
 
 import { checkCanBeReviewed, Diff } from "./BuildDiffState";
@@ -27,6 +28,7 @@ export const BuildDetailToolbar = memo(
     bordered,
     repoUrl,
     prMerged,
+    buildType,
   }: {
     activeDiff: Diff;
     bordered: boolean;
@@ -34,6 +36,7 @@ export const BuildDetailToolbar = memo(
     baseBranch: string | null;
     compareBranch: string | null;
     prMerged: boolean;
+    buildType: BuildType | null;
   }) => {
     const automationLibrary =
       activeDiff.compareScreenshot?.metadata?.automationLibrary ??
@@ -73,7 +76,8 @@ export const BuildDetailToolbar = memo(
         : compareBranch;
     const playwrightTraceUrl =
       activeDiff.compareScreenshot?.playwrightTraceUrl ?? null;
-    const canBeReviewed = checkCanBeReviewed(activeDiff.status);
+    const canBeReviewed =
+      buildType === BuildType.Check && checkCanBeReviewed(activeDiff.status);
     return (
       <div
         className={clsx(
@@ -133,10 +137,12 @@ export const BuildDetailToolbar = memo(
           <div className="flex gap-1">
             <RejectButton
               screenshotDiffId={activeDiff.id}
+              diffGroup={activeDiff.group ?? null}
               disabled={!canBeReviewed}
             />
             <AcceptButton
               screenshotDiffId={activeDiff.id}
+              diffGroup={activeDiff.group ?? null}
               disabled={!canBeReviewed}
             />
           </div>

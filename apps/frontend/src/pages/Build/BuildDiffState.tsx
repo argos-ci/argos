@@ -463,9 +463,6 @@ export const BuildDiffProvider = (props: {
   useLayoutEffect(() => {
     if (initialDiffGroup) {
       toggleGroup(initialDiffGroup.name, true);
-      if (initialDiff?.group) {
-        toggleGroup(initialDiff.group, true);
-      }
       setReady(true);
     } else if (complete) {
       setReady(true);

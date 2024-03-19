@@ -8,8 +8,15 @@ import { useBuildHotkey } from "../BuildHotkeys";
 import { EvaluationStatus, useBuildDiffStatusState } from "../BuildReviewState";
 
 export const AcceptButton = memo(
-  (props: { screenshotDiffId: string; disabled: boolean }) => {
-    const [status, setStatus] = useBuildDiffStatusState(props.screenshotDiffId);
+  (props: {
+    screenshotDiffId: string;
+    diffGroup: string | null;
+    disabled: boolean;
+  }) => {
+    const [status, setStatus] = useBuildDiffStatusState({
+      diffId: props.screenshotDiffId,
+      diffGroup: props.diffGroup,
+    });
     const toggle = () =>
       setStatus(
         status === EvaluationStatus.Accepted
@@ -29,7 +36,7 @@ export const AcceptButton = memo(
     const active = status === EvaluationStatus.Accepted;
     return (
       <HotkeyTooltip
-        description={active ? "Remove mark" : "Mark as accepted"}
+        description={active ? "Remove mark" : hotkey.description}
         keys={hotkey.displayKeys}
         keysEnabled={!active}
         disabled={props.disabled}
@@ -48,8 +55,15 @@ export const AcceptButton = memo(
 );
 
 export const RejectButton = memo(
-  (props: { screenshotDiffId: string; disabled: boolean }) => {
-    const [status, setStatus] = useBuildDiffStatusState(props.screenshotDiffId);
+  (props: {
+    screenshotDiffId: string;
+    diffGroup: string | null;
+    disabled: boolean;
+  }) => {
+    const [status, setStatus] = useBuildDiffStatusState({
+      diffId: props.screenshotDiffId,
+      diffGroup: props.diffGroup,
+    });
     const toggle = () =>
       setStatus(
         status === EvaluationStatus.Rejected
@@ -69,7 +83,7 @@ export const RejectButton = memo(
     const active = status === EvaluationStatus.Rejected;
     return (
       <HotkeyTooltip
-        description={active ? "Remove mark" : "Mark as rejected"}
+        description={active ? "Remove mark" : hotkey.description}
         keys={hotkey.displayKeys}
         keysEnabled={!active}
         disabled={props.disabled}
