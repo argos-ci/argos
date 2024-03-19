@@ -70,7 +70,7 @@ export const SplitViewToggle = memo(() => {
     <HotkeyTooltip
       description={
         viewMode === "split"
-          ? "Show new screenshot only"
+          ? "Show only one image at a time"
           : "Show baseline and changes side by side"
       }
       keys={hotkey.displayKeys}

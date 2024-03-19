@@ -36,7 +36,11 @@ import {
   useSearchState,
 } from "./BuildDiffState";
 import { useBuildHotkey } from "./BuildHotkeys";
-import { EvaluationStatus, useBuildDiffStatusState } from "./BuildReviewState";
+import {
+  EvaluationStatus,
+  useBuildDiffGroupStatus,
+  useBuildDiffStatusState,
+} from "./BuildReviewState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 
 interface ListHeaderRow {
@@ -295,16 +299,21 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
 const CardStack = ({
   isFirst,
   isLast,
+  status,
 }: {
   isFirst: boolean;
   isLast: boolean;
+  status: EvaluationStatus | null;
 }) => {
   return (
     <div
       className={clsx(
-        "border-border bg-hover absolute right-2  -z-10 block w-[262px] rounded-lg border",
+        "absolute right-2 -z-10 block w-[262px] rounded-lg border",
         isFirst ? "top-6" : "top-4",
         isLast ? "bottom-2" : "bottom-0",
+        status === EvaluationStatus.Accepted && "bg-success-hover",
+        status === EvaluationStatus.Rejected && "bg-danger-hover",
+        status === null && "bg-hover",
       )}
       tabIndex={-1}
     />
@@ -458,7 +467,11 @@ const ListItem = ({
     return undefined;
   }, [observer]);
   const { searchMode } = useSearchModeState();
-  const [status] = useBuildDiffStatusState(item.diff?.id ?? null);
+  const [status] = useBuildDiffStatusState({
+    diffId: item.diff?.id ?? null,
+    diffGroup: null,
+  });
+  const groupStatus = useBuildDiffGroupStatus(item.diff?.group ?? null);
   const isGroupItem = item.type === "group-item";
   const isSubItem = !searchMode && item.type === "item" && item.diff?.group;
 
@@ -488,7 +501,13 @@ const ListItem = ({
         />
       )}
 
-      {isGroupItem && <CardStack isFirst={item.first} isLast={item.last} />}
+      {isGroupItem && (
+        <CardStack
+          isFirst={item.first}
+          isLast={item.last}
+          status={groupStatus}
+        />
+      )}
 
       <DiffCard active={active} status={status}>
         {item.diff ? (

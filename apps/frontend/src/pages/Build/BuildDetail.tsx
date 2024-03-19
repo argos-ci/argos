@@ -36,6 +36,7 @@ const BuildFragment = graphql(`
     }
     createdAt
     branch
+    type
     baseScreenshotBucket {
       branch
       createdAt
@@ -524,6 +525,7 @@ export const BuildDetail = (props: {
                   compareBranch={build.branch}
                   bordered={scrolled}
                   prMerged={build.pullRequest?.merged ?? false}
+                  buildType={build.type ?? null}
                 />
                 <BuildScreenshots build={build} diff={activeDiff} />
               </BuildDiffViewModeStateProvider>

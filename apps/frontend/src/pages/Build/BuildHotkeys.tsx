@@ -112,12 +112,12 @@ const hotkeys = {
   acceptDiff: {
     keys: ["KeyY"],
     displayKeys: ["Y"],
-    description: "Mark as accepted",
+    description: "Mark individual change as accepted",
   } as Hotkey,
   rejectDiff: {
     keys: ["KeyN"],
     displayKeys: ["N"],
-    description: "Mark as rejected",
+    description: "Mark individual change as rejected",
   } as Hotkey,
 };
 

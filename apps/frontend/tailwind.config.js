@@ -69,6 +69,7 @@ module.exports = {
         success: {
           app: "var(--grass-1)",
           ui: "var(--grass-3)",
+          hover: "var(--grass-4)",
           active: "var(--grass-5)",
           solid: {
             DEFAULT: "var(--grass-9)",
