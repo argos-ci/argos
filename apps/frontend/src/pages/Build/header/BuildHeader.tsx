@@ -5,10 +5,18 @@ import { useIsLoggedIn } from "@/containers/Auth";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { PullRequestButton } from "@/containers/PullRequestButton";
-import { ReviewButton } from "@/containers/ReviewButton";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BrandShield } from "@/ui/BrandShield";
+import { Chip } from "@/ui/Chip";
+import { Progress } from "@/ui/Progress";
 import { Tooltip } from "@/ui/Tooltip";
+
+import { checkCanBeReviewed, useBuildDiffState } from "../BuildDiffState";
+import {
+  EvaluationStatus,
+  useGetDiffEvaluationStatus,
+} from "../BuildReviewState";
+import { DisabledReviewButton, ReviewButton } from "./ReviewButton";
 
 const BrandLink = memo(
   ({
@@ -52,11 +60,79 @@ const ProjectLink = memo(
   },
 );
 
+function useBuildReviewProgression() {
+  const diffState = useBuildDiffState();
+  const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
+  if (diffState.ready) {
+    const toReview = diffState.diffs.filter((diff) =>
+      checkCanBeReviewed(diff.status),
+    );
+    const reviewed = toReview.filter(
+      (diff) => getDiffEvaluationStatus(diff.id) !== EvaluationStatus.Pending,
+    );
+    const accepted = toReview.filter(
+      (diff) => getDiffEvaluationStatus(diff.id) === EvaluationStatus.Accepted,
+    );
+    const rejected = toReview.filter(
+      (diff) => getDiffEvaluationStatus(diff.id) === EvaluationStatus.Rejected,
+    );
+    return { toReview, reviewed, accepted, rejected };
+  }
+  return null;
+}
+
+function LoggedReviewButton(props: {
+  project: ComponentProps<typeof ReviewButton>["project"];
+}) {
+  const progression = useBuildReviewProgression();
+  if (!progression) {
+    return <DisabledReviewButton tooltip="Loading..." />;
+  }
+  if (progression.toReview.length === 0) {
+    return <DisabledReviewButton tooltip="No changes to review" />;
+  }
+  const reviewComplete =
+    progression.reviewed.length === progression.toReview.length;
+  const { color, tooltip } = (() => {
+    if (progression.rejected.length > 0) {
+      return {
+        color: "warning" as const,
+        tooltip: "Some changes have been rejected",
+      };
+    }
+    if (reviewComplete) {
+      return {
+        color: "success" as const,
+        tooltip: "All changes have been reviewed",
+      };
+    }
+    return { color: "neutral" as const, tooltip: "Track your review progress" };
+  })();
+  return (
+    <>
+      <Tooltip content={tooltip}>
+        <div className="flex flex-col gap-1.5">
+          <Chip scale="xs" color={color} className="tabular-nums">
+            {progression.reviewed.length} / {progression.toReview.length}{" "}
+            reviewed
+          </Chip>
+          <Progress
+            scale="sm"
+            value={progression.reviewed.length}
+            min={0}
+            max={progression.toReview.length}
+          />
+        </div>
+      </Tooltip>
+      <ReviewButton project={props.project} />
+    </>
+  );
+}
+
 const BuildReviewButton = memo(
   (props: { project: ComponentProps<typeof ReviewButton>["project"] }) => {
     const loggedIn = useIsLoggedIn();
-    if (!loggedIn) return null;
-    return <ReviewButton project={props.project} />;
+    return loggedIn ? <LoggedReviewButton project={props.project} /> : null;
   },
 );
 
@@ -76,10 +152,6 @@ const ProjectFragment = graphql(`
   fragment BuildHeader_Project on Project {
     ...BuildStatusChip_Project
     ...ReviewButton_Project
-    repository {
-      id
-      url
-    }
   }
 `);
 

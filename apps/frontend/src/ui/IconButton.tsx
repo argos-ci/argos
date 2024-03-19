@@ -4,7 +4,7 @@ import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
 import { clsx } from "clsx";
 
 type IconButtonVariant = "contained" | "outline";
-type IconButtonColor = "danger" | "neutral";
+type IconButtonColor = "danger" | "success" | "neutral";
 
 const colorClassNames: Record<
   IconButtonVariant,
@@ -14,12 +14,15 @@ const colorClassNames: Record<
     neutral:
       "hover:border-hover hover:bg-ui text-low hover:text bg-ui/60 focus-visible:ring-default",
     danger: "", // not used
+    success: "", // not used
   },
   outline: {
     neutral:
       "hover:border-hover text-low aria-pressed:bg-active aria-pressed:text focus-visible:ring-default",
     danger:
       "hover:border-danger-hover text-danger-low aria-pressed:bg-danger-active focus-visible:ring-danger",
+    success:
+      "hover:border-success-hover text-success-low aria-pressed:bg-success-active focus-visible:ring-success",
   },
 };
 

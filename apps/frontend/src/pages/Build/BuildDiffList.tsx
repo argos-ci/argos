@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { assertNever } from "@argos/util/assertNever";
 import {
   defaultRangeExtractor,
   Range,
@@ -14,7 +15,12 @@ import {
 } from "@tanstack/react-virtual";
 import { Button as AriakitButton } from "ariakit/button";
 import { clsx } from "clsx";
-import { ChevronDownIcon, CornerDownRightIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  CornerDownRightIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+} from "lucide-react";
 
 import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
@@ -30,6 +36,7 @@ import {
   useSearchState,
 } from "./BuildDiffState";
 import { useBuildHotkey } from "./BuildHotkeys";
+import { EvaluationStatus, useBuildDiffStatusState } from "./BuildReviewState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 
 interface ListHeaderRow {
@@ -351,24 +358,39 @@ const ShowSubItemToggle = (
   );
 };
 
-const DiffCard = ({
-  children,
-  active,
-  ...props
-}: React.HTMLProps<HTMLDivElement> & {
+const DiffCard = (props: {
   active: boolean;
+  status: EvaluationStatus;
+  children: React.ReactNode;
 }) => {
-  const ring = active
-    ? "ring-3 ring-inset ring-primary-active"
-    : children
-      ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
-      : "";
+  const { active, status, children } = props;
+  const ring = (() => {
+    switch (status) {
+      case EvaluationStatus.Accepted:
+        return active
+          ? "ring-3 ring-inset ring-success-active"
+          : children
+            ? "ring-1 ring-inset ring-success group-hover/item:ring-success-hover"
+            : "";
+      case EvaluationStatus.Rejected:
+        return active
+          ? "ring-3 ring-inset ring-danger-active"
+          : children
+            ? "ring-1 ring-inset ring-danger group-hover/item:ring-danger-hover"
+            : "";
+      case EvaluationStatus.Pending:
+        return active
+          ? "ring-3 ring-inset ring-primary-active"
+          : children
+            ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
+            : "";
+      default:
+        assertNever(status);
+    }
+  })();
 
   return (
-    <div
-      className="bg-app relative flex h-full items-center justify-center overflow-hidden rounded-lg"
-      {...props}
-    >
+    <div className="bg-app relative flex h-full items-center justify-center overflow-hidden rounded-lg">
       {children}
       <div className={clsx(ring, "absolute inset-0 z-20 rounded-lg")} />
       <div
@@ -381,14 +403,28 @@ const DiffCard = ({
   );
 };
 
-interface ListItemProps {
-  style: React.HTMLProps<HTMLDivElement>["style"];
-  item: ListItemRow | ListGroupItemRow;
-  index: number;
-  active: boolean;
-  setActiveDiff: (diff: Diff) => void;
-  observer: IntersectionObserver | null;
-  onToggleGroupItem: (groupId: string | null) => void;
+function EvaluationStatusIndicator(props: { status: EvaluationStatus }) {
+  const value = (() => {
+    switch (props.status) {
+      case EvaluationStatus.Accepted:
+        return { color: "text-success", icon: ThumbsUpIcon };
+      case EvaluationStatus.Rejected:
+        return { color: "text-danger", icon: ThumbsDownIcon };
+      case EvaluationStatus.Pending:
+        return null;
+      default:
+        assertNever(props.status);
+    }
+  })();
+  if (!value) {
+    return null;
+  }
+  const Icon = value.icon;
+  return (
+    <div className={clsx("absolute right-4 top-3 z-30", value.color)}>
+      <Icon className="size-4" />
+    </div>
+  );
 }
 
 const ListItem = ({
@@ -399,7 +435,15 @@ const ListItem = ({
   setActiveDiff,
   onToggleGroupItem,
   observer,
-}: ListItemProps) => {
+}: {
+  style: React.HTMLProps<HTMLDivElement>["style"];
+  item: ListItemRow | ListGroupItemRow;
+  index: number;
+  active: boolean;
+  setActiveDiff: (diff: Diff) => void;
+  observer: IntersectionObserver | null;
+  onToggleGroupItem: (groupId: string | null) => void;
+}) => {
   const pt = item.first ? "pt-4" : "pt-2";
   const pb = item.last ? "pb-4" : "pb-2";
   const ref = useRef<HTMLDivElement>(null);
@@ -414,6 +458,7 @@ const ListItem = ({
     return undefined;
   }, [observer]);
   const { searchMode } = useSearchModeState();
+  const [status] = useBuildDiffStatusState(item.diff?.id ?? null);
   const isGroupItem = item.type === "group-item";
   const isSubItem = !searchMode && item.type === "item" && item.diff?.group;
 
@@ -445,9 +490,10 @@ const ListItem = ({
 
       {isGroupItem && <CardStack isFirst={item.first} isLast={item.last} />}
 
-      <DiffCard active={active}>
+      <DiffCard active={active} status={status}>
         {item.diff ? (
           <>
+            <EvaluationStatusIndicator status={status} />
             {isGroupItem && (
               <ShowSubItemToggle
                 onClick={(event) => {

@@ -1,21 +1,9 @@
 import { memo } from "react";
 import { clsx } from "clsx";
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ColumnsIcon,
-  EyeIcon,
-  ShrinkIcon,
-} from "lucide-react";
 
-import { ButtonGroup } from "@/ui/ButtonGroup";
-import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
+import { Separator } from "@/ui/Separator";
 
-import { useBuildDiffFitState } from "./BuildDiffFitState";
-import { Diff, useBuildDiffState } from "./BuildDiffState";
-import { useBuildDiffVisibleState } from "./BuildDiffVisibleState";
-import { useBuildHotkey } from "./BuildHotkeys";
+import { checkCanBeReviewed, Diff } from "./BuildDiffState";
 import { AutomationLibraryIndicator } from "./metadata/automationLibrary/AutomationLibraryIndicator";
 import { BrowserIndicator } from "./metadata/browser/BrowserIndicator";
 import { ColorSchemeIndicator } from "./metadata/colorScheme/ColorSchemeIndicator";
@@ -25,199 +13,11 @@ import { TestIndicator } from "./metadata/test/TestIndicator";
 import { TraceIndicator } from "./metadata/trace/TraceIndicator";
 import { UrlIndicator } from "./metadata/url/UrlIndicator";
 import { ViewportIndicator } from "./metadata/viewport/ViewportIndicator";
-import { useBuildDiffViewModeState } from "./useBuildDiffViewModeState";
-import { useZoomerSyncContext } from "./Zoomer";
-
-const BuildDiffChangesOverlayToggle = memo(() => {
-  const { visible, setVisible } = useBuildDiffVisibleState();
-  const toggle = () => setVisible((visible) => !visible);
-  const hotkey = useBuildHotkey("toggleChangesOverlay", toggle, {
-    preventDefault: true,
-  });
-  return (
-    <HotkeyTooltip
-      description={visible ? "Hide changes overlay" : "Show changes overlay"}
-      keys={hotkey.displayKeys}
-    >
-      <IconButton color="danger" aria-pressed={visible} onClick={toggle}>
-        <EyeIcon />
-      </IconButton>
-    </HotkeyTooltip>
-  );
-});
-
-const BuildDiffFitToggle = memo(() => {
-  const { contained, setContained } = useBuildDiffFitState();
-  const { reset } = useZoomerSyncContext();
-  const toggle = () => {
-    setContained((contained) => !contained);
-    reset();
-  };
-  const hotkey = useBuildHotkey("toggleDiffFit", toggle, {
-    preventDefault: true,
-  });
-  return (
-    <HotkeyTooltip
-      description={contained ? "Expand the screenshot" : "Fit the screenshot"}
-      keys={hotkey.displayKeys}
-    >
-      <IconButton aria-pressed={contained} onClick={toggle}>
-        <ShrinkIcon />
-      </IconButton>
-    </HotkeyTooltip>
-  );
-});
-
-const BuildVisibleDiffButtonGroup = memo(() => {
-  const { viewMode, setViewMode } = useBuildDiffViewModeState();
-  const toggleBaselineChanges = () => {
-    setViewMode((viewMode) =>
-      viewMode === "changes" ? "baseline" : "changes",
-    );
-  };
-  const hotkey = useBuildHotkey(
-    "toggleBaselineChanges",
-    toggleBaselineChanges,
-    { preventDefault: true },
-  );
-
-  if (viewMode === "split") {
-    return null;
-  }
-
-  return (
-    <ButtonGroup>
-      <HotkeyTooltip
-        description={hotkey.description}
-        keys={hotkey.displayKeys}
-        keysEnabled={viewMode !== "baseline"}
-      >
-        <IconButton
-          aria-pressed={viewMode === "baseline"}
-          onClick={toggleBaselineChanges}
-        >
-          Baseline
-        </IconButton>
-      </HotkeyTooltip>
-      <HotkeyTooltip
-        description={hotkey.description}
-        keys={hotkey.displayKeys}
-        keysEnabled={viewMode !== "changes"}
-      >
-        <IconButton
-          aria-pressed={viewMode === "changes"}
-          onClick={toggleBaselineChanges}
-        >
-          Changes
-        </IconButton>
-      </HotkeyTooltip>
-    </ButtonGroup>
-  );
-});
-
-const BuildSplitViewToggle = memo(() => {
-  const { viewMode, setViewMode } = useBuildDiffViewModeState();
-  const { reset } = useZoomerSyncContext();
-  const toggleSplitView = () => {
-    setViewMode((viewMode) => (viewMode === "split" ? "changes" : "split"));
-    reset();
-  };
-  const hotkey = useBuildHotkey("toggleSplitView", toggleSplitView, {
-    preventDefault: true,
-  });
-  return (
-    <HotkeyTooltip
-      description={
-        viewMode === "split"
-          ? "Show new screenshot only"
-          : "Show baseline and changes side by side"
-      }
-      keys={hotkey.displayKeys}
-    >
-      <IconButton aria-pressed={viewMode === "split"} onClick={toggleSplitView}>
-        <ColumnsIcon />
-      </IconButton>
-    </HotkeyTooltip>
-  );
-});
-
-const NextDiffButton = memo(() => {
-  const { diffs, activeDiff, setActiveDiff, expanded } = useBuildDiffState();
-  const activeDiffIndex = activeDiff ? diffs.indexOf(activeDiff) : -1;
-  const disabled = activeDiffIndex >= diffs.length - 1;
-  const goToNextDiff = () => {
-    if (disabled) return;
-
-    const isGroupExpanded =
-      !activeDiff?.group || expanded.includes(activeDiff.group);
-    if (isGroupExpanded) {
-      const nextDiff = diffs[activeDiffIndex + 1];
-      if (nextDiff) setActiveDiff(nextDiff, true);
-      return;
-    }
-
-    const offsetIndex = activeDiffIndex + 1;
-    const nextDiffIndex = diffs
-      .slice(offsetIndex)
-      .findIndex((diff) => diff.group !== activeDiff.group);
-    if (nextDiffIndex !== -1) {
-      const nextDiff = diffs[nextDiffIndex + offsetIndex];
-      if (nextDiff) setActiveDiff(nextDiff, true);
-    }
-  };
-  const hotkey = useBuildHotkey("goToNextDiff", goToNextDiff, {
-    preventDefault: true,
-    enabled: !disabled,
-    allowInInput: true,
-  });
-  return (
-    <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <IconButton disabled={disabled} onClick={goToNextDiff}>
-        <ArrowDownIcon />
-      </IconButton>
-    </HotkeyTooltip>
-  );
-});
-
-const PreviousDiffButton = memo(() => {
-  const { diffs, activeDiff, setActiveDiff, expanded } = useBuildDiffState();
-  const activeDiffIndex = activeDiff ? diffs.indexOf(activeDiff) : -1;
-  const disabled = activeDiffIndex <= 0;
-  const goToPreviousDiff = () => {
-    if (disabled) return;
-
-    const previousDiffIndex = activeDiffIndex - 1;
-    const previousDiff = diffs[previousDiffIndex];
-    if (!previousDiff) return;
-
-    const isGroupExpanded =
-      !previousDiff.group || expanded.includes(previousDiff.group);
-    if (isGroupExpanded) {
-      setActiveDiff(previousDiff, true);
-      return;
-    }
-
-    const newDiffIndex = diffs
-      .slice(0, previousDiffIndex)
-      .findIndex((diff) => diff.group === previousDiff.group);
-    if (newDiffIndex !== -1) {
-      const newDiff = diffs[newDiffIndex];
-      if (newDiff) setActiveDiff(newDiff, true);
-    }
-  };
-  const hotkey = useBuildHotkey("goToPreviousDiff", goToPreviousDiff, {
-    preventDefault: true,
-    enabled: !disabled,
-    allowInInput: true,
-  });
-  return (
-    <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <IconButton disabled={disabled} onClick={goToPreviousDiff}>
-        <ArrowUpIcon />
-      </IconButton>
-    </HotkeyTooltip>
-  );
-});
+import { FitToggle } from "./toolbar/FitToggle";
+import { NextButton, PreviousButton } from "./toolbar/NavButtons";
+import { OverlayToggle } from "./toolbar/OverlayToggle";
+import { AcceptButton, RejectButton } from "./toolbar/TrackButtons";
+import { SplitViewToggle, ViewToggle } from "./toolbar/ViewToggle";
 
 export const BuildDetailToolbar = memo(
   ({
@@ -273,23 +73,27 @@ export const BuildDetailToolbar = memo(
         : compareBranch;
     const playwrightTraceUrl =
       activeDiff.compareScreenshot?.playwrightTraceUrl ?? null;
+    const canBeReviewed = checkCanBeReviewed(activeDiff.status);
     return (
       <div
         className={clsx(
-          "sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b p-4 transition-colors",
+          "sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b p-4 transition-colors has-[[data-meta]:empty]:items-center",
           !bordered && "border-b-transparent",
         )}
       >
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="flex shrink-0 gap-1">
-            <PreviousDiffButton />
-            <NextDiffButton />
-          </div>
+        <div className="flex shrink-0 gap-1">
+          <PreviousButton />
+          <NextButton />
+        </div>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <div className="min-w-0 flex-1">
             <div role="heading" className="line-clamp-2 text-xs font-medium">
               {activeDiff.name}
             </div>
-            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">
+            <div
+              data-meta=""
+              className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden"
+            >
               {sdk && <SdkIndicator sdk={sdk} className="size-4" />}
               {automationLibrary && (
                 <AutomationLibraryIndicator
@@ -320,11 +124,22 @@ export const BuildDetailToolbar = memo(
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <BuildVisibleDiffButtonGroup />
-          <BuildSplitViewToggle />
-          <BuildDiffFitToggle />
-          <BuildDiffChangesOverlayToggle />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <ViewToggle />
+          <SplitViewToggle />
+          <FitToggle />
+          <OverlayToggle />
+          <Separator orientation="vertical" className="mx-1 !h-6" />
+          <div className="flex gap-1">
+            <RejectButton
+              screenshotDiffId={activeDiff.id}
+              disabled={!canBeReviewed}
+            />
+            <AcceptButton
+              screenshotDiffId={activeDiff.id}
+              disabled={!canBeReviewed}
+            />
+          </div>
         </div>
       </div>
     );

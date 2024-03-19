@@ -5,7 +5,6 @@ import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { Progress } from "@/ui/Progress";
 
 import { BuildDetail } from "./BuildDetail";
-import { BuildDiffProvider } from "./BuildDiffState";
 import { BuildOrphanDialog } from "./BuildOrphanDialog";
 import { BuildParams } from "./BuildParams";
 import { BuildSidebar } from "./BuildSidebar";
@@ -102,22 +101,20 @@ export const BuildWorkspace = (props: {
       return <BuildProgress parallel={build.parallel} />;
     default:
       return (
-        <BuildDiffProvider params={props.params} stats={build?.stats ?? null}>
-          <div className="flex min-h-0 flex-1">
-            <BuildSidebar build={build} repoUrl={repoUrl} />
-            {build ? (
-              <>
-                <BuildDetail build={build} repoUrl={repoUrl} />
-                {build.type === "orphan" ? (
-                  <BuildOrphanDialog
-                    referenceBranch={project.referenceBranch}
-                    projectSlug={project.slug}
-                  />
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        </BuildDiffProvider>
+        <div className="flex min-h-0 flex-1">
+          <BuildSidebar build={build} repoUrl={repoUrl} />
+          {build ? (
+            <>
+              <BuildDetail build={build} repoUrl={repoUrl} />
+              {build.type === "orphan" ? (
+                <BuildOrphanDialog
+                  referenceBranch={project.referenceBranch}
+                  projectSlug={project.slug}
+                />
+              ) : null}
+            </>
+          ) : null}
+        </div>
       );
   }
 };

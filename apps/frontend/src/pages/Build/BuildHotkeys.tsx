@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useRef } from "react";
+import { memo, useEffect } from "react";
 import { DisclosureState } from "ariakit/ts/disclosure";
 
 import {
@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/Dialog";
+import { useLiveRef } from "@/ui/useLiveRef";
 
 interface Hotkey {
   keys: string[];
@@ -108,6 +109,16 @@ const hotkeys = {
     displayKeys: ["D"],
     description: "Toggle changes overlay",
   } as Hotkey,
+  acceptDiff: {
+    keys: ["KeyY"],
+    displayKeys: ["Y"],
+    description: "Mark as accepted",
+  } as Hotkey,
+  rejectDiff: {
+    keys: ["KeyN"],
+    displayKeys: ["N"],
+    description: "Mark as rejected",
+  } as Hotkey,
 };
 
 export type HotkeyName = keyof typeof hotkeys;
@@ -135,11 +146,7 @@ export const useBuildHotkey = (
     allowInInput = false,
   } = options ?? {};
   const optionsWithDefaults = { preventDefault, enabled, allowInInput };
-  const refs = useRef({ callback, options: optionsWithDefaults });
-  useLayoutEffect(() => {
-    refs.current.callback = callback;
-    refs.current.options = optionsWithDefaults;
-  });
+  const refs = useLiveRef({ callback, options: optionsWithDefaults });
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
       const { options, callback } = refs.current;
@@ -165,7 +172,7 @@ export const useBuildHotkey = (
     return () => {
       document.removeEventListener("keydown", listener);
     };
-  }, [hotkey]);
+  }, [hotkey, refs]);
   return hotkey;
 };
 
