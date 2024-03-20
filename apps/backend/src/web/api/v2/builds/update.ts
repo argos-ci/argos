@@ -10,6 +10,7 @@ import {
   ScreenshotMetadataJsonSchema,
 } from "@/database/models/index.js";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
+import { getRedisLock } from "@/util/redis";
 import { SHA256_REGEX_STR } from "@/web/constants.js";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { validate } from "@/web/middlewares/validate.js";
@@ -97,31 +98,35 @@ const handleUpdateParallel = async ({
     throw boom(400, "`parallelTotal` must be the same on every batch");
   }
 
-  const complete = await transaction(async (trx) => {
-    await insertFilesAndScreenshots({
-      screenshots: req.body.screenshots,
-      build,
-      trx,
-    });
-
-    await Build.query(trx)
-      .findById(build.id)
-      .patch({
-        batchCount: raw('"batchCount" + 1'),
-        totalBatch: parallelTotal,
+  const lockKey = `build.${build.id}.parallel`;
+  const lock = await getRedisLock();
+  const complete = await lock.acquire(lockKey, async () => {
+    return transaction(async (trx) => {
+      await insertFilesAndScreenshots({
+        screenshots: req.body.screenshots,
+        build,
+        trx,
       });
 
-    if (parallelTotal === build.batchCount! + 1) {
-      const screenshotCount = await Screenshot.query(trx)
-        .where("screenshotBucketId", build.compareScreenshotBucketId)
-        .resultSize();
-      await build
-        .$relatedQuery("compareScreenshotBucket", trx)
-        .patch({ complete: true, screenshotCount });
-      return true;
-    }
+      const patchedBuild = await Build.query(trx)
+        .patchAndFetchById(build.id, {
+          batchCount: raw('"batchCount" + 1'),
+          totalBatch: parallelTotal,
+        })
+        .select("batchCount");
 
-    return false;
+      if (parallelTotal === patchedBuild.batchCount) {
+        const screenshotCount = await Screenshot.query(trx)
+          .where("screenshotBucketId", build.compareScreenshotBucketId)
+          .resultSize();
+        await build
+          .$relatedQuery("compareScreenshotBucket", trx)
+          .patch({ complete: true, screenshotCount });
+        return true;
+      }
+
+      return false;
+    });
   });
 
   if (complete) {
