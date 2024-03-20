@@ -34,7 +34,9 @@ describe("redis-lock", () => {
     const spy1 = vi.fn();
     const spy2 = vi.fn();
     lock.acquire("x", async () => p1).then(spy1);
-    lock.acquire("x", async () => "second", { retryDelay: 30 }).then(spy2);
+    lock
+      .acquire("x", async () => "second", { retryDelay: { min: 30, max: 40 } })
+      .then(spy2);
     await delay(10);
     expect(spy1).not.toHaveBeenCalled();
     expect(spy2).not.toHaveBeenCalled();
