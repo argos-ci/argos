@@ -11,7 +11,7 @@ const acquireLock = ({
   client: RedisClient;
   name: string;
   timeout: number;
-  retryDelay: number;
+  retryDelay: { min: number; max: number };
 }) => {
   return new Promise<string>((resolve, reject) => {
     function tryAcquire() {
@@ -25,7 +25,9 @@ const acquireLock = ({
           if (result === "OK") {
             resolve(rdn);
           } else {
-            const adjustedTimeout = retryDelay + Math.ceil(Math.random() * 10);
+            const adjustedTimeout =
+              retryDelay.min +
+              Math.ceil(Math.random() * retryDelay.max - retryDelay.min);
             setTimeout(tryAcquire, adjustedTimeout);
           }
         })
@@ -40,7 +42,7 @@ export const createRedisLock = (client: RedisClient) => {
   async function acquire<T>(
     name: string,
     task: () => Promise<T>,
-    { timeout = 20000, retryDelay = 500 } = {},
+    { timeout = 20000, retryDelay = { min: 100, max: 200 } } = {},
   ) {
     const fullName = `lock.${name}`;
     const id = await acquireLock({
