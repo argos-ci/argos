@@ -325,18 +325,27 @@ const ShowSubItemToggle = (
     count: number;
     open: boolean;
     onToggleGroupItem: () => void;
+    active: boolean;
   },
 ) => {
   const { open, onToggleGroupItem } = props;
 
   const expandDiff = useBuildHotkey(
     "expandDiffGroup",
-    () => !open && onToggleGroupItem(),
+    () => {
+      if (props.active && !open) {
+        onToggleGroupItem();
+      }
+    },
     { preventDefault: true },
   );
   const collapseDiff = useBuildHotkey(
     "collapseDiffGroup",
-    () => open && onToggleGroupItem(),
+    () => {
+      if (props.active && open) {
+        onToggleGroupItem();
+      }
+    },
     { preventDefault: true },
   );
 
@@ -524,6 +533,7 @@ const ListItem = ({
                 }
                 count={item.group.length}
                 open={item.expanded}
+                active={active}
               />
             )}
             <DiffImage diff={item.diff} />{" "}
