@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import pRetry from "p-retry";
 
 import { GithubRepository, Project } from "@/database/models/index.js";
 import { getInstallationOctokit } from "@/github/index.js";
@@ -75,22 +76,29 @@ const strategy = {
       return null;
     }
 
-    const githubRun = await (async () => {
-      try {
-        const result = await octokit.actions.listJobsForWorkflowRun({
-          owner: authData.owner,
-          repo: authData.repository,
-          run_id: Number(authData.runId),
-          filter: "latest",
-        });
-        return result;
-      } catch (error: any) {
-        if (error.status === 404) {
-          return null;
+    const githubRun = await pRetry(
+      async () => {
+        try {
+          const result = await octokit.actions.listJobsForWorkflowRun({
+            owner: authData.owner,
+            repo: authData.repository,
+            run_id: Number(authData.runId),
+            filter: "latest",
+          });
+          return result;
+        } catch (error: unknown) {
+          if (
+            error instanceof Error &&
+            "status" in error &&
+            error.status === 404
+          ) {
+            return null;
+          }
+          throw error;
         }
-        throw error;
-      }
-    })();
+      },
+      { retries: 3 },
+    );
 
     if (!githubRun) {
       throw boom(404, `GitHub run not found (token: "${bearerToken}")`);
