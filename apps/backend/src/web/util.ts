@@ -11,9 +11,14 @@ export const asyncHandler = (requestHandler: RequestHandler) => {
     try {
       await requestHandler(req, res, next);
     } catch (err: any) {
-      // Handle objection errors
-      const candidates = [err.status, err.statusCode, err.code, 500];
-      err.status = candidates.find(Number.isInteger);
+      // Handle all kinds of errors
+      err.status = Number.isInteger(err.status)
+        ? err.status
+        : Number.isInteger(err.statusCode)
+          ? err.statusCode
+          : Number.isInteger(err.code)
+            ? err.code
+            : 500;
       next(err);
     }
   };
