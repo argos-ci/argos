@@ -107,8 +107,10 @@ function LoggedReviewButton(props: {
   if (progression.toReview.length === 0) {
     return <DisabledReviewButton tooltip="No changes to review" />;
   }
-  if (props.build.type !== BuildType.Check) {
-    return <DisabledReviewButton tooltip="Only check builds can be reviewed" />;
+  if (props.build.type === BuildType.Reference) {
+    return (
+      <DisabledReviewButton tooltip="No need to review reference builds" />
+    );
   }
   const reviewComplete =
     progression.reviewed.length === progression.toReview.length;
