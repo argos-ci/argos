@@ -27,7 +27,7 @@ const acquireLock = ({
           } else {
             const adjustedTimeout =
               retryDelay.min +
-              Math.ceil(Math.random() * retryDelay.max - retryDelay.min);
+              Math.ceil(Math.random() * (retryDelay.max - retryDelay.min));
             setTimeout(tryAcquire, adjustedTimeout);
           }
         })
