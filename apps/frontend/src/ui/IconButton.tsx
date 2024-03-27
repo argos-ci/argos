@@ -18,11 +18,11 @@ const colorClassNames: Record<
   },
   outline: {
     neutral:
-      "hover:border-hover text-low aria-pressed:bg-active aria-pressed:text focus-visible:ring-default",
+      "hover:border-hover text-low aria-pressed:bg-active aria-pressed:text active:bg-active active:text focus-visible:ring-default",
     danger:
-      "hover:border-danger-hover text-danger-low aria-pressed:bg-danger-active focus-visible:ring-danger",
+      "hover:border-danger-hover text-danger-low aria-pressed:bg-danger-active active:bg-danger-active focus-visible:ring-danger",
     success:
-      "hover:border-success-hover text-success-low aria-pressed:bg-success-active focus-visible:ring-success",
+      "hover:border-success-hover text-success-low aria-pressed:bg-success-active active:bg-success-active focus-visible:ring-success",
   },
 };
 

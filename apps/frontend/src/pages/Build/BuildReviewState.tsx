@@ -67,6 +67,29 @@ export function useBuildDiffGroupStatus(diffGroup: string | null) {
   return status ?? null;
 }
 
+export function useMarkAllDiffsAsAccepted() {
+  const diffState = useBuildDiffState();
+  const { setDiffStatuses } = useBuildReviewState();
+  const markAllDiffsAsAccepted = useEventCallback(() => {
+    setDiffStatuses((diffStatuses) => {
+      const diffIds = diffState.diffs.map((diff) => diff.id);
+      if (
+        diffIds.some(
+          (diffId) => diffStatuses[diffId] === EvaluationStatus.Rejected,
+        )
+      ) {
+        return diffStatuses;
+      }
+      const nextValue = { ...diffStatuses };
+      diffIds.forEach((diffId) => {
+        nextValue[diffId] = EvaluationStatus.Accepted;
+      });
+      return nextValue;
+    });
+  });
+  return markAllDiffsAsAccepted;
+}
+
 export function useBuildDiffStatusState(args: {
   diffId: string | null;
   diffGroup: string | null;

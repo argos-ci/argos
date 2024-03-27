@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
+import { useEventCallback } from "@/ui/useEventCallback";
 
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
@@ -159,6 +160,84 @@ export const useBuildDiffState = () => {
   );
   return context;
 };
+
+function useActiveDiffIndex() {
+  const { diffs, activeDiff } = useBuildDiffState();
+  return activeDiff ? diffs.indexOf(activeDiff) : -1;
+}
+
+export function useHasNextDiff() {
+  const { diffs } = useBuildDiffState();
+  const activeDiffIndex = useActiveDiffIndex();
+  return activeDiffIndex < diffs.length;
+}
+
+export function useGoToNextDiff() {
+  const { diffs, activeDiff, setActiveDiff, expanded } = useBuildDiffState();
+  const hasNextDiff = useHasNextDiff();
+  const activeDiffIndex = useActiveDiffIndex();
+  const goToNextDiff = useEventCallback(() => {
+    if (!hasNextDiff) {
+      return;
+    }
+
+    const isGroupExpanded =
+      !activeDiff?.group || expanded.includes(activeDiff.group);
+    if (isGroupExpanded) {
+      const nextDiff = diffs[activeDiffIndex + 1];
+      if (nextDiff) setActiveDiff(nextDiff, true);
+      return;
+    }
+
+    const offsetIndex = activeDiffIndex + 1;
+    const nextDiffIndex = diffs
+      .slice(offsetIndex)
+      .findIndex((diff) => diff.group !== activeDiff.group);
+    if (nextDiffIndex !== -1) {
+      const nextDiff = diffs[nextDiffIndex + offsetIndex];
+      if (nextDiff) setActiveDiff(nextDiff, true);
+    }
+  });
+  return goToNextDiff;
+}
+
+export function useHasPreviousDiff() {
+  const activeDiffIndex = useActiveDiffIndex();
+  return activeDiffIndex > 0;
+}
+
+export function useGoToPreviousDiff() {
+  const { diffs, setActiveDiff, expanded } = useBuildDiffState();
+  const activeDiffIndex = useActiveDiffIndex();
+  const hasPreviousDiff = useHasPreviousDiff();
+  const goToPreviousDiff = useEventCallback(() => {
+    if (!hasPreviousDiff) {
+      return;
+    }
+
+    const previousDiffIndex = activeDiffIndex - 1;
+    const previousDiff = diffs[previousDiffIndex];
+    if (!previousDiff) {
+      return;
+    }
+
+    const isGroupExpanded =
+      !previousDiff.group || expanded.includes(previousDiff.group);
+    if (isGroupExpanded) {
+      setActiveDiff(previousDiff, true);
+      return;
+    }
+
+    const newDiffIndex = diffs
+      .slice(0, previousDiffIndex)
+      .findIndex((diff) => diff.group === previousDiff.group);
+    if (newDiffIndex !== -1) {
+      const newDiff = diffs[newDiffIndex];
+      if (newDiff) setActiveDiff(newDiff, true);
+    }
+  });
+  return goToPreviousDiff;
+}
 
 const useExpandedState = (initial: string[]) => {
   const [expanded, setExpanded] = useState<string[]>(initial);
