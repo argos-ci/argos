@@ -4,6 +4,7 @@ import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
+import { useGoToNextDiff } from "../BuildDiffState";
 import { useBuildHotkey } from "../BuildHotkeys";
 import { EvaluationStatus, useBuildDiffStatusState } from "../BuildReviewState";
 
@@ -13,26 +14,23 @@ export const AcceptButton = memo(
     diffGroup: string | null;
     disabled: boolean;
   }) => {
+    const goToNextDiff = useGoToNextDiff();
     const [status, setStatus] = useBuildDiffStatusState({
       diffId: props.screenshotDiffId,
       diffGroup: props.diffGroup,
     });
-    const toggle = () =>
-      setStatus(
-        status === EvaluationStatus.Accepted
-          ? EvaluationStatus.Pending
-          : EvaluationStatus.Accepted,
-      );
-    const hotkey = useBuildHotkey(
-      "acceptDiff",
-      () => {
+    const toggle = () => {
+      if (status === EvaluationStatus.Pending) {
         setStatus(EvaluationStatus.Accepted);
-      },
-      {
-        preventDefault: true,
-        enabled: !props.disabled,
-      },
-    );
+        goToNextDiff();
+      } else {
+        setStatus(EvaluationStatus.Pending);
+      }
+    };
+    const hotkey = useBuildHotkey("acceptDiff", toggle, {
+      preventDefault: true,
+      enabled: !props.disabled,
+    });
     const active = status === EvaluationStatus.Accepted;
     return (
       <HotkeyTooltip
@@ -60,26 +58,23 @@ export const RejectButton = memo(
     diffGroup: string | null;
     disabled: boolean;
   }) => {
+    const goToNextDiff = useGoToNextDiff();
     const [status, setStatus] = useBuildDiffStatusState({
       diffId: props.screenshotDiffId,
       diffGroup: props.diffGroup,
     });
-    const toggle = () =>
-      setStatus(
-        status === EvaluationStatus.Rejected
-          ? EvaluationStatus.Pending
-          : EvaluationStatus.Rejected,
-      );
-    const hotkey = useBuildHotkey(
-      "rejectDiff",
-      () => {
+    const toggle = () => {
+      if (status === EvaluationStatus.Pending) {
         setStatus(EvaluationStatus.Rejected);
-      },
-      {
-        preventDefault: true,
-        enabled: !props.disabled,
-      },
-    );
+        goToNextDiff();
+      } else {
+        setStatus(EvaluationStatus.Pending);
+      }
+    };
+    const hotkey = useBuildHotkey("rejectDiff", toggle, {
+      preventDefault: true,
+      enabled: !props.disabled,
+    });
     const active = status === EvaluationStatus.Rejected;
     return (
       <HotkeyTooltip

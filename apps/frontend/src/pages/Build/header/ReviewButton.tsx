@@ -17,6 +17,8 @@ import {
 } from "@/ui/Menu";
 import { Tooltip } from "@/ui/Tooltip";
 
+import { useMarkAllDiffsAsAccepted } from "../BuildReviewState";
+
 const ProjectFragment = graphql(`
   fragment ReviewButton_Project on Project {
     name
@@ -78,6 +80,8 @@ const BaseReviewButton = ({
   const AcceptIcon = getBuildIcon("check", "accepted");
   const RejectIcon = getBuildIcon("check", "rejected");
 
+  const markAllDiffsAsAccepted = useMarkAllDiffsAsAccepted();
+
   return (
     <>
       <MenuButton
@@ -99,6 +103,7 @@ const BaseReviewButton = ({
                 validationStatus: ValidationStatus.Accepted,
               },
             });
+            markAllDiffsAsAccepted();
             menu.hide();
           }}
           disabled={build.status === "accepted"}
