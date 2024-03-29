@@ -12,6 +12,7 @@ import { jwtDecode } from "jwt-decode";
 export enum AuthProvider {
   GitHub = "github",
   GitLab = "gitlab",
+  Google = "google",
 }
 
 type Token = null | string;

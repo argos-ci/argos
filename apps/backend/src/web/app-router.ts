@@ -1,9 +1,11 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { invariant } from "@argos/util/invariant";
 import { Handlers } from "@sentry/node";
 import express, { Router, static as serveStatic } from "express";
 
 import config from "@/config/index.js";
+import { getGoogleAuthUrl } from "@/google/index.js";
 import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
 
 import { emailPreview } from "../email/express.js";
@@ -47,6 +49,12 @@ export const installAppRouter = async (app: express.Application) => {
     } else {
       res.redirect("https://www.argos-ci.com/");
     }
+  });
+
+  router.get("/auth/google/login", (req, res) => {
+    const r = req.query["r"];
+    invariant(typeof r === "string", "Expected r to be a string");
+    res.redirect(getGoogleAuthUrl({ r }));
   });
 
   router.get("*", rendering());

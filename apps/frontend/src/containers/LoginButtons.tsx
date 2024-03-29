@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import config from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { GitLabLoginButton } from "@/containers/GitLab";
+import { GoogleLoginButton } from "@/containers/Google";
 import { Anchor } from "@/ui/Anchor";
 
 export const LoginButtons = (props: {
@@ -32,6 +33,14 @@ export const LoginButtons = (props: {
         >
           Continue with GitLab
         </GitLabLoginButton>
+        <GoogleLoginButton
+          redirect={redirect}
+          size="large"
+          className="w-full justify-center"
+          disabled={props.disabled}
+        >
+          Continue with Google
+        </GoogleLoginButton>
       </div>
       <p className="text-low mt-6 text-left text-sm">
         Need another login provider?{" "}

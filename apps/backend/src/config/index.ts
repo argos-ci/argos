@@ -299,6 +299,20 @@ const config = convict({
       env: "DISCORD_WEBHOOK_URL",
     },
   },
+  google: {
+    clientId: {
+      doc: "Google client ID",
+      format: String,
+      default: "",
+      env: "GOOGLE_CLIENT_ID",
+    },
+    clientSecret: {
+      doc: "Google client secret",
+      format: String,
+      default: "",
+      env: "GOOGLE_CLIENT_SECRET",
+    },
+  },
 });
 
 const env = config.get("env");

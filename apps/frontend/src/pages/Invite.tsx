@@ -102,8 +102,7 @@ export const Invite = () => {
                       Join <strong>{teamTitle}</strong> on Argos.
                     </h1>
                     <p className="mb-10 text-xl">
-                      Log in or create an account using GitHub to accept this
-                      invitation.
+                      Log in or create an account to accept this invitation.
                     </p>
                     <LoginButtons />
                   </div>

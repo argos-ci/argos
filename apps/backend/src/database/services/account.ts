@@ -1,8 +1,10 @@
 import { invariant } from "@argos/util/invariant";
+import slugify from "@sindresorhus/slugify";
 import type { PartialModelObject } from "objection";
 
 import { sendWelcomeEmail } from "@/email/send.js";
 import type { RestEndpointMethodTypes } from "@/github/index.js";
+import { GoogleUserProfile } from "@/google/index.js";
 
 import { Account } from "../models/Account.js";
 import { GithubAccount } from "../models/GithubAccount.js";
@@ -168,10 +170,10 @@ export const getOrCreateUserAccountFromGhAccount = async (
 ): Promise<Account> => {
   const email = ghAccount.email?.toLowerCase() ?? null;
   const existingAccount = await Account.query()
+    .withGraphFetched("user")
     .findOne({
       githubAccountId: ghAccount.id,
-    })
-    .withGraphFetched("user");
+    });
 
   if (existingAccount) {
     invariant(existingAccount.user, "user not fetched");
@@ -198,15 +200,12 @@ export const getOrCreateUserAccountFromGhAccount = async (
     if (existingEmailUser) {
       invariant(existingEmailUser.account, "account not fetched");
 
-      if (accessToken) {
-        await existingEmailUser.$clone().$query().patch({
-          accessToken,
-        });
-      }
-
-      await existingEmailUser.account.$query().patchAndFetch({
-        githubAccountId: ghAccount.id,
-      });
+      await Promise.all([
+        accessToken ? existingEmailUser.$query().patch({ accessToken }) : null,
+        existingEmailUser.account.$query().patchAndFetch({
+          githubAccountId: ghAccount.id,
+        }),
+      ]);
 
       return existingEmailUser.account;
     }
@@ -236,32 +235,43 @@ export const getOrCreateUserAccountFromGhAccount = async (
 export const getOrCreateUserAccountFromGitlabUser = async (
   gitlabUser: GitlabUser,
 ): Promise<Account> => {
-  const email = gitlabUser.email.toLowerCase();
+  const email = gitlabUser.email.trim().toLowerCase();
 
-  const existingUser = await User.query()
+  const existingUsers = await User.query()
     .withGraphFetched("account")
-    .findOne({ gitlabUserId: gitlabUser.id });
+    .where("gitlabUserId", gitlabUser.id)
+    .orWhere("email", email);
+
+  // If we match multiple accounts, it means that another
+  // user has the same email or gitlabUserId
+  // In this case we don't update anything and choose the one with gitLabUserId
+  if (existingUsers.length > 1) {
+    const userWithId = existingUsers.find(
+      (u) => u.gitlabUserId === gitlabUser.id,
+    );
+    invariant(userWithId?.account, "account not fetched");
+    return userWithId.account;
+  }
+
+  const existingUser = existingUsers[0];
 
   if (existingUser) {
     invariant(existingUser.account, "account not fetched");
 
-    await existingUser.$clone().$query().patch({ email });
+    // Either update the gitlabUserId or the email if needed
+    const data: PartialModelObject<User> = {};
+    if (existingUser.gitlabUserId !== gitlabUser.id) {
+      data.gitlabUserId = gitlabUser.id;
+    }
+    if (email && existingUser.email !== email) {
+      data.email = email;
+    }
+
+    if (Object.keys(data).length > 0) {
+      await existingUser.$clone().$query().patch(data);
+    }
 
     return existingUser.account;
-  }
-
-  const existingEmailUser = await User.query()
-    .withGraphFetched("account")
-    .findOne({ email });
-
-  if (existingEmailUser) {
-    invariant(existingEmailUser.account, "account not fetched");
-
-    await existingEmailUser.$clone().$query().patch({
-      gitlabUserId: gitlabUser.id,
-    });
-
-    return existingEmailUser.account;
   }
 
   const slug = await resolveAccountSlug(gitlabUser.username.toLowerCase());
@@ -282,3 +292,70 @@ export const getOrCreateUserAccountFromGitlabUser = async (
 
   return account;
 };
+
+export async function getOrCreateAccountFromGoogleUserProfile(
+  profile: GoogleUserProfile,
+) {
+  const existingUsers = await User.query()
+    .withGraphFetched("account")
+    .whereIn("email", profile.emails)
+    .orWhere("googleUserId", profile.id);
+
+  // If we match multiple accounts we have to handle the case
+  if (existingUsers.length > 1) {
+    // First we try to find a user with the same googleUserId
+    // If we find one, we return its account
+    const userWithId = existingUsers.find((u) => u.googleUserId === profile.id);
+    if (userWithId) {
+      invariant(userWithId.account, "account not fetched");
+      return userWithId.account;
+    }
+
+    // Then we try to find a user with the same email, starting with the primary
+    // we mark it by updating the googleUserId
+    const userWithEmail =
+      existingUsers.find((u) => u.email === profile.primaryEmail) ??
+      existingUsers[0];
+
+    invariant(userWithEmail?.account, "account not fetched");
+    await userWithEmail.$clone().$query().patch({
+      googleUserId: profile.id,
+    });
+    return userWithEmail.account;
+  }
+
+  const existingUser = existingUsers[0];
+
+  if (existingUser) {
+    invariant(existingUser.account, "account not fetched");
+
+    // If needed, update the googleUserId
+    if (existingUser.googleUserId !== profile.id) {
+      await existingUser.$clone().$query().patch({
+        googleUserId: profile.id,
+      });
+    }
+
+    return existingUser.account;
+  }
+
+  const emailSlug = profile.primaryEmail.split("@")[0];
+  invariant(emailSlug, "Expected email to have a slug");
+  const slug = await resolveAccountSlug(slugify(emailSlug));
+
+  const account = await transaction(async (trx) => {
+    const user = await User.query(trx).insertAndFetch({
+      email: profile.primaryEmail,
+      googleUserId: profile.id,
+    });
+    return Account.query(trx).insertAndFetch({
+      userId: user.id,
+      name: profile.name,
+      slug,
+    });
+  });
+
+  await sendWelcomeEmail({ to: profile.primaryEmail });
+
+  return account;
+}

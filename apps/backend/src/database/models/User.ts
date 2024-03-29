@@ -16,9 +16,10 @@ export class User extends Model {
   static override jsonSchema = mergeSchemas(timestampsSchema, {
     required: [],
     properties: {
-      email: { type: ["string", "null"] },
+      email: { oneOf: [{ type: "string", format: "email" }, { type: "null" }] },
       accessToken: { type: "string" },
       gitlabUserId: { type: ["string", "null"] },
+      googleUserId: { type: ["string", "null"] },
       staff: { type: "boolean" },
     },
   });
@@ -26,6 +27,7 @@ export class User extends Model {
   email!: string | null;
   accessToken!: string;
   gitlabUserId!: string | null;
+  googleUserId!: string | null;
   staff!: boolean;
 
   static override get relationMappings(): RelationMappings {

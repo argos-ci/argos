@@ -1189,7 +1189,8 @@ CREATE TABLE public.users (
     "updatedAt" timestamp with time zone NOT NULL,
     "accessToken" character varying(255),
     "gitlabUserId" bigint,
-    staff boolean DEFAULT false
+    staff boolean DEFAULT false,
+    "googleUserId" character varying(255)
 );
 
 
@@ -2138,6 +2139,13 @@ CREATE INDEX tests_projectid_index ON public.tests USING btree ("projectId");
 
 
 --
+-- Name: users_googleuserid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX users_googleuserid_index ON public.users USING btree ("googleUserId");
+
+
+--
 -- Name: accounts accounts_forcedplanid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2605,3 +2613,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024022
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240301151709_screenshot-diffs-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240307081941_project_users.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240309214656_clean_vercel.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240329130227_googleUserId.js', 1, NOW());
