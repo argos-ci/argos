@@ -164,8 +164,14 @@ jobs:
       - name: Truncate and seed database
         run: npm run e2e:setup
 
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
-
       - name: Run Playwright tests
-        run: npm exec -- playwright test
+        uses: docker://mcr.microsoft.com/playwright:v1.42.1-jammy
+        with:
+          # Fix for Firefox
+          # https://github.com/microsoft/playwright/issues/6500
+          # HOME=/root is required to avoid permission issues
+          args: env HOME=/root npm exec -- playwright test
+        env:
+          REDIS_URL: redis://redis:6379/1
+          DATABASE_URL: postgresql://postgres@postgres/test
+          CLOUDAMQP_URL: amqp://rabbitmq
