@@ -170,7 +170,7 @@ jobs:
           # Fix for Firefox
           # https://github.com/microsoft/playwright/issues/6500
           # HOME=/root is required to avoid permission issues
-          args: HOME=/root npm exec -- playwright test
+          args: env HOME=/root npm exec -- playwright test
         env:
           REDIS_URL: redis://redis:6379/1
           DATABASE_URL: postgresql://postgres@postgres/test
