@@ -9,7 +9,8 @@ export type ButtonColor =
   | "danger"
   | "neutral"
   | "github"
-  | "gitlab";
+  | "gitlab"
+  | "google";
 export type ButtonVariant = "contained" | "outline";
 export type ButtonSize = "base" | "small" | "large";
 
@@ -31,6 +32,8 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
       "focus-visible:ring-default text-white border-transparent bg-github [&:not([aria-disabled])]:hover:bg-github-hover [&:not([aria-disabled])]:active:bg-github-active aria-expanded:bg-github-active",
     gitlab:
       "focus-visible:ring-default text-white border-transparent bg-gitlab [&:not([aria-disabled])]:hover:bg-gitlab-hover [&:not([aria-disabled])]:active:bg-gitlab-active aria-expanded:bg-gitlab-active",
+    google:
+      "focus-visible:ring-default text border-transparent bg-google [&:not([aria-disabled])]:hover:bg-google-hover [&:not([aria-disabled])]:active:bg-google-active aria-expanded:bg-google-active ring-1 ring-google",
   },
   outline: {
     primary:
@@ -41,6 +44,7 @@ const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
       "focus-visible:ring-default text border bg-transparent [&:not([aria-disabled])]:hover:bg-hover [&:not([aria-disabled])]:hover:border-hover",
     github: "", // not used
     gitlab: "", // not used
+    google: "", // not used
   },
 };
 

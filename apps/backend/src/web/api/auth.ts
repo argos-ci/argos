@@ -8,6 +8,7 @@ import { createJWT } from "@/auth/jwt.js";
 import config from "@/config/index.js";
 import type { Account } from "@/database/models/index.js";
 import {
+  getOrCreateAccountFromGoogleUserProfile,
   getOrCreateGhAccountFromGhProfile,
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
@@ -22,6 +23,10 @@ import {
   getTokenGitlabClient,
   retrieveOAuthToken as retrieveGitlabOAuthToken,
 } from "@/gitlab/index.js";
+import {
+  getGoogleAuthenticatedClient,
+  getGoogleUserProfile,
+} from "@/google/index.js";
 
 import { asyncHandler } from "../util.js";
 
@@ -111,6 +116,19 @@ router.post(
       refreshToken: response.refresh_token,
     });
     const account = await getOrCreateUserAccountFromGitlabUser(glUser);
+    return account;
+  }),
+);
+
+router.post(
+  "/auth/google",
+  bodyParser.json(),
+  handleOAuth(async (body) => {
+    const oAuth2Client = await getGoogleAuthenticatedClient({
+      code: body.code,
+    });
+    const profile = await getGoogleUserProfile({ oAuth2Client });
+    const account = await getOrCreateAccountFromGoogleUserProfile(profile);
     return account;
   }),
 );

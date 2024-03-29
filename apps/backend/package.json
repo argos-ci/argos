@@ -61,6 +61,7 @@
     "express": "^4.18.3",
     "express-err": "^3.0.0",
     "express-rate-limit": "^7.2.0",
+    "google-auth-library": "^9.7.0",
     "graphql": "^16.8.1",
     "graphql-scalars": "^1.22.5",
     "graphql-tag": "^2.12.6",

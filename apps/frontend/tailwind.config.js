@@ -34,6 +34,11 @@ module.exports = {
           hover: "rgb(252 109 38 / <alpha-value>)",
           active: "rgb(252 109 38 / <alpha-value>)",
         },
+        google: {
+          DEFAULT: "var(--gray-1)",
+          hover: "var(--gray-2)",
+          active: "var(--gray-3)",
+        },
         primary: {
           app: "var(--violet-1)",
           ui: "var(--violet-3)",
@@ -137,6 +142,9 @@ module.exports = {
           hover: "var(--grass-8)",
           active: "var(--grass-9)",
           highlight: "var(--grass-12)",
+        },
+        google: {
+          DEFAULT: "var(--gray-6)",
         },
       },
       borderColor: {

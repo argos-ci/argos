@@ -41,6 +41,10 @@ const router = createBrowserRouter([
     element: <AuthCallback provider={AuthProvider.GitLab} />,
   },
   {
+    path: `/auth/${AuthProvider.Google}/callback`,
+    element: <AuthCallback provider={AuthProvider.Google} />,
+  },
+  {
     path: "/:accountSlug/:projectName/builds/:buildNumber",
     element: <Build />,
   },

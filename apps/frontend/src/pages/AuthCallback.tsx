@@ -31,16 +31,6 @@ export const AuthCallback = (props: { provider: AuthProvider }) => {
   const error = params.get("error");
   const { setToken, token } = useAuth();
   useEffect(() => {
-    // @ts-ignore
-    if (typeof window.gtag !== "function") return;
-    // @ts-ignore
-    window.gtag("event", "conversion", {
-      send_to: "AW-847457408/E_X0CL7Uz-8YEIDZjJQD",
-      value: 1.0,
-      currency: "EUR",
-    });
-  }, []);
-  useEffect(() => {
     if (!code) return;
     api
       .post(`/auth/${props.provider}`, { code, r })
