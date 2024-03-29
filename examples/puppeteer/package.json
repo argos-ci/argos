@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "puppeteer": "^22.5.0"
+    "puppeteer": "^22.6.1"
   },
   "devDependencies": {
     "@argos-ci/cli": "^1.0.12",
