@@ -332,7 +332,9 @@ if (process.env["DATABASE_URL"]) {
   config.set("pg.connection.user", url.username);
   config.set("pg.connection.password", url.password);
   config.set("pg.connection.database", url.pathname.substring(1));
-  config.set("pg.connection.ssl", { rejectUnauthorized: false });
+  if (env === "production") {
+    config.set("pg.connection.ssl", { rejectUnauthorized: false });
+  }
   config.set("pg.connection.timezone", "utc");
 }
 
