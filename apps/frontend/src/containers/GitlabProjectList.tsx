@@ -8,10 +8,10 @@ import { Query } from "./Apollo";
 
 const ProjectsQuery = graphql(`
   query GitlabProjectList_glApiProjects(
+    $accountId: ID!
     $userId: ID
     $groupId: ID
     $allProjects: Boolean!
-    $accessToken: String!
     $page: Int!
     $search: String
   ) {
@@ -19,7 +19,7 @@ const ProjectsQuery = graphql(`
       userId: $userId
       groupId: $groupId
       allProjects: $allProjects
-      accessToken: $accessToken
+      accountId: $accountId
       page: $page
       search: $search
     ) {
@@ -36,7 +36,7 @@ const ProjectsQuery = graphql(`
 `);
 
 export type GitlabProjectListProps = {
-  gitlabAccessToken: string;
+  accountId: string;
   onSelectProject: (project: { id: string }) => void;
   disabled?: boolean;
   connectButtonLabel: string;
@@ -54,10 +54,10 @@ export const GitlabProjectList = (props: GitlabProjectListProps) => {
       fallback={<Loader />}
       query={ProjectsQuery}
       variables={{
+        accountId: props.accountId,
         userId: props.userId,
         groupId: props.groupId,
         allProjects: props.allProjects,
-        accessToken: props.gitlabAccessToken,
         search: props.search,
         page: 1,
       }}

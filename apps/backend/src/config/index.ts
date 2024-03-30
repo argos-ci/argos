@@ -166,6 +166,11 @@ const config = convict({
       format: String,
       default: `https://gitlab.com/oauth/authorize?scope=read_user&response_type=code&client_id=${process.env["GITLAB_APP_ID"]}`,
     },
+    argosAuthSecret: {
+      format: String,
+      default: "",
+      env: "GITLAB_ARGOS_AUTH_SECRET",
+    },
   },
   stripe: {
     url: {

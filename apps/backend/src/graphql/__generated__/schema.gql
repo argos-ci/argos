@@ -3,6 +3,7 @@ interface Account implements Node {
   consumptionRatio: Float!
   currentPeriodScreenshots: Int!
   gitlabAccessToken: String
+  gitlabBaseUrl: String
   glNamespaces: GlApiNamespaceConnection
   hasForcedPlan: Boolean!
   id: ID!
@@ -543,7 +544,7 @@ type Query {
   """Get Account by id"""
   accountById(id: ID!): Account
   ghApiInstallationRepositories(installationId: ID!, page: Int!, reposPerPage: Int): GhApiRepositoryConnection!
-  glApiProjects(accessToken: String!, allProjects: Boolean!, groupId: ID, page: Int!, search: String, userId: ID): GlApiProjectConnection!
+  glApiProjects(accountId: ID!, allProjects: Boolean!, groupId: ID, page: Int!, search: String, userId: ID): GlApiProjectConnection!
   invitation(token: String!): Team
 
   """Get the authenticated user"""
@@ -709,6 +710,7 @@ type Team implements Account & Node {
   defaultUserLevel: TeamDefaultUserLevel!
   githubMembers(after: Int = 0, first: Int = 30): TeamGithubMemberConnection
   gitlabAccessToken: String
+  gitlabBaseUrl: String
   glNamespaces: GlApiNamespaceConnection
   hasForcedPlan: Boolean!
   id: ID!
@@ -833,6 +835,7 @@ type User implements Account & Node {
   currentPeriodScreenshots: Int!
   ghInstallations: GhApiInstallationConnection!
   gitlabAccessToken: String
+  gitlabBaseUrl: String
   glNamespaces: GlApiNamespaceConnection
   hasForcedPlan: Boolean!
   hasSubscribedToTrial: Boolean!

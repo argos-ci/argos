@@ -57,6 +57,7 @@ export class Account extends Model {
         pattern: "^[-a-z0-9]+$",
       },
       githubAccountId: { type: ["string", "null"] },
+      gitlabBaseUrl: { type: ["string", "null"] },
     },
   });
 
@@ -68,6 +69,7 @@ export class Account extends Model {
   slug!: string;
   githubAccountId!: string | null;
   gitlabAccessToken!: string | null;
+  gitlabBaseUrl!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

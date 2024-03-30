@@ -1,6 +1,7 @@
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
+import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Anchor } from "@/ui/Anchor";
@@ -14,6 +15,7 @@ const AccountFragment = graphql(`
     id
     permissions
     gitlabAccessToken
+    gitlabBaseUrl
   }
 `);
 
@@ -28,6 +30,7 @@ const UpdateAccountMutation = graphql(`
 
 type Inputs = {
   gitlabAccessToken: string;
+  gitlabBaseUrl: string;
 };
 
 export const AccountGitLab = (props: {
@@ -38,6 +41,7 @@ export const AccountGitLab = (props: {
   const form = useForm<Inputs>({
     defaultValues: {
       gitlabAccessToken: account.gitlabAccessToken ?? "",
+      gitlabBaseUrl: account.gitlabBaseUrl ?? "",
     },
   });
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
@@ -62,8 +66,8 @@ export const AccountGitLab = (props: {
             <FormTextInput
               {...form.register("gitlabAccessToken", {
                 validate: (value) => {
-                  if (value && !/^(glpat-)?[a-zA-Z0-9_]{20,}$/.test(value)) {
-                    return "Invalid GitLab personal access token, please be sure to enter a valid one ([a-zA-Z0-9_]{20,}).";
+                  if (value && !/^(glpat-)?[a-zA-Z0-9_-]{20,}$/.test(value)) {
+                    return "Invalid GitLab personal access token, please be sure to enter a valid one ([a-zA-Z0-9_-]{20,}).";
                   }
                   return true;
                 },
@@ -77,6 +81,27 @@ export const AccountGitLab = (props: {
               token. It must have access to the repository you want to integrate
               with.
             </div>
+            {account.gitlabBaseUrl && (
+              <div>
+                <h3 className="mb-2 mt-4 font-semibold">
+                  On-premise configuration
+                </h3>
+                <FormTextInput
+                  {...form.register("gitlabBaseUrl")}
+                  label="GitLab proxy URL"
+                  readOnly
+                />
+                <div className="text-low mt-2 text-sm">
+                  Proxy URL used to connect to your GitLab on-premise instance.
+                  If you have any issue with your GitLab on-premise
+                  configuration, please contact us{" "}
+                  <Anchor href={`mailto:${config.get("contactEmail")}`}>
+                    by email
+                  </Anchor>
+                  .
+                </div>
+              </div>
+            )}
             {!userIsAdmin && (
               <div className="mt-4">
                 If you want to setup GitLab integration, please ask your team

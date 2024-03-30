@@ -106,7 +106,7 @@ type GitlabNamespacesProps = {
   onSwitch: () => void;
   onSelectProject: GitlabProjectListProps["onSelectProject"];
   connectButtonLabel: GitlabProjectListProps["connectButtonLabel"];
-  gitlabAccessToken: GitlabProjectListProps["gitlabAccessToken"];
+  accountId: GitlabProjectListProps["accountId"];
 };
 
 const GitlabNamespaces = (props: GitlabNamespacesProps) => {
@@ -163,7 +163,7 @@ const GitlabNamespaces = (props: GitlabNamespacesProps) => {
         disabled={props.disabled}
         onSelectProject={props.onSelectProject}
         connectButtonLabel={props.connectButtonLabel}
-        gitlabAccessToken={props.gitlabAccessToken}
+        accountId={props.accountId}
         search={debouncedSearch}
       />
     </div>
@@ -310,7 +310,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
     ) {
       return (
         <GitlabNamespaces
-          gitlabAccessToken={account.gitlabAccessToken}
+          accountId={account.id}
           onSelectProject={props.onSelectProject}
           namespaces={account.glNamespaces.edges}
           disabled={props.disabled}

@@ -79,7 +79,9 @@ async function syncGitlabProject(project: Project) {
 
   const gitlabClient = await getGitlabClientFromAccount(project.account);
 
-  if (!gitlabClient) return;
+  if (!gitlabClient) {
+    return;
+  }
 
   const glProject = await gitlabClient.Projects.show(
     project.gitlabProject.gitlabId,
