@@ -76,28 +76,39 @@ jobs:
         image: redis:6-alpine
         ports:
           - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        # Speed up initialization by disabling health checks
+        # Services run during the installation of the dependencies
+        # options: >-
+        #   --health-cmd "redis-cli ping"
+        #   --health-interval 10s
+        #   --health-timeout 5s
+        #   --health-retries 5
 
       postgres:
-        image: postgres:13-alpine
+        image: postgres:14-alpine
         ports:
           - 5432:5432
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        # Speed up initialization by disabling health checks
+        # Services run during the installation of the dependencies
+        # options: >-
+        #   --health-cmd "pg_isready"
+        #   --health-interval 10s
+        #   --health-timeout 5s
+        #   --health-retries 5
 
       rabbit:
         image: rabbitmq:3-alpine
         ports:
           - 5672:5672
+        # Speed up initialization by disabling health checks
+        # Services run during the installation of the dependencies
+        # options: >-
+        #   --health-cmd "rabbitmq-diagnostics -q ping"
+        #   --health-interval 10s
+        #   --health-timeout 5s
+        #   --health-retries 5
 
     steps:
       - name: Check out repository code
@@ -116,7 +127,7 @@ jobs:
 
   e2e-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
@@ -131,11 +142,13 @@ jobs:
         image: redis:6-alpine
         ports:
           - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        # Speed up initialization by disabling health checks
+        # Services run during the installation of the dependencies
+        # options: >-
+        #   --health-cmd "redis-cli ping"
+        #   --health-interval 10s
+        #   --health-timeout 5s
+        #   --health-retries 5
 
       postgres:
         image: postgres:13-alpine
@@ -143,11 +156,13 @@ jobs:
           - 5432:5432
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        # Speed up initialization by disabling health checks
+        # Services run during the installation of the dependencies
+        # options: >-
+        #   --health-cmd "pg_isready"
+        #   --health-interval 10s
+        #   --health-timeout 5s
+        #   --health-retries 5
 
     steps:
       - name: Check out repository code
@@ -167,9 +182,8 @@ jobs:
       - name: Run Playwright tests
         uses: docker://mcr.microsoft.com/playwright:v1.42.1-jammy
         with:
-          # Fix for Firefox
+          # Fix for Firefox, HOME=/root is required to avoid permission issues
           # https://github.com/microsoft/playwright/issues/6500
-          # HOME=/root is required to avoid permission issues
           args: env HOME=/root npm exec -- playwright test
         env:
           REDIS_URL: redis://redis:6379/1
