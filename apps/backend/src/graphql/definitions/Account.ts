@@ -11,10 +11,7 @@ import {
   TeamUser,
 } from "@/database/models/index.js";
 import { checkAccountSlug } from "@/database/services/account.js";
-import {
-  getGitlabClientFromAccount,
-  getTokenGitlabClient,
-} from "@/gitlab/index.js";
+import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { encodeStripeClientReferenceId } from "@/stripe/index.js";
 
 import {
@@ -82,6 +79,7 @@ export const typeDefs = gql`
     projects(after: Int = 0, first: Int = 30): ProjectConnection!
     avatar: AccountAvatar!
     gitlabAccessToken: String
+    gitlabBaseUrl: String
     glNamespaces: GlApiNamespaceConnection
   }
 
@@ -314,7 +312,9 @@ export const resolvers: IResolvers = {
     },
     glNamespaces: async (account) => {
       const client = await getGitlabClientFromAccount(account);
-      if (!client) return null;
+      if (!client) {
+        return null;
+      }
       const namespaces = await client.Namespaces.all();
       return {
         edges: namespaces,
@@ -375,7 +375,10 @@ export const resolvers: IResolvers = {
         data.gitlabAccessToken = input.gitlabAccessToken;
 
         if (input.gitlabAccessToken) {
-          const gitlabClient = getTokenGitlabClient(input.gitlabAccessToken);
+          const gitlabClient = getGitlabClient({
+            accessToken: input.gitlabAccessToken,
+            baseUrl: account.gitlabBaseUrl,
+          });
           try {
             const res = await gitlabClient.PersonalAccessTokens.show();
             if (!res.scopes?.includes("api")) {

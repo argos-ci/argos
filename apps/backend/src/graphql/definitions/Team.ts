@@ -59,6 +59,7 @@ export const typeDefs = gql`
     avatar: AccountAvatar!
     hasForcedPlan: Boolean!
     gitlabAccessToken: String
+    gitlabBaseUrl: String
     glNamespaces: GlApiNamespaceConnection
 
     me: TeamMember

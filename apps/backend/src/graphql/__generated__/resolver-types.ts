@@ -29,6 +29,7 @@ export type IAccount = {
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: Scalars['Int']['output'];
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
+  gitlabBaseUrl?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
   hasForcedPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
@@ -705,7 +706,7 @@ export type IQueryGhApiInstallationRepositoriesArgs = {
 
 
 export type IQueryGlApiProjectsArgs = {
-  accessToken: Scalars['String']['input'];
+  accountId: Scalars['ID']['input'];
   allProjects: Scalars['Boolean']['input'];
   groupId?: InputMaybe<Scalars['ID']['input']>;
   page: Scalars['Int']['input'];
@@ -900,6 +901,7 @@ export type ITeam = IAccount & INode & {
   defaultUserLevel: ITeamDefaultUserLevel;
   githubMembers?: Maybe<ITeamGithubMemberConnection>;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
+  gitlabBaseUrl?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
   hasForcedPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
@@ -1049,6 +1051,7 @@ export type IUser = IAccount & INode & {
   currentPeriodScreenshots: Scalars['Int']['output'];
   ghInstallations: IGhApiInstallationConnection;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
+  gitlabBaseUrl?: Maybe<Scalars['String']['output']>;
   glNamespaces?: Maybe<IGlApiNamespaceConnection>;
   hasForcedPlan: Scalars['Boolean']['output'];
   hasSubscribedToTrial: Scalars['Boolean']['output'];
@@ -1379,6 +1382,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  gitlabBaseUrl?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
@@ -1690,7 +1694,7 @@ export type IQueryResolvers<ContextType = Context, ParentType extends IResolvers
   account?: Resolver<Maybe<IResolversTypes['Account']>, ParentType, ContextType, RequireFields<IQueryAccountArgs, 'slug'>>;
   accountById?: Resolver<Maybe<IResolversTypes['Account']>, ParentType, ContextType, RequireFields<IQueryAccountByIdArgs, 'id'>>;
   ghApiInstallationRepositories?: Resolver<IResolversTypes['GhApiRepositoryConnection'], ParentType, ContextType, RequireFields<IQueryGhApiInstallationRepositoriesArgs, 'installationId' | 'page'>>;
-  glApiProjects?: Resolver<IResolversTypes['GlApiProjectConnection'], ParentType, ContextType, RequireFields<IQueryGlApiProjectsArgs, 'accessToken' | 'allProjects' | 'page'>>;
+  glApiProjects?: Resolver<IResolversTypes['GlApiProjectConnection'], ParentType, ContextType, RequireFields<IQueryGlApiProjectsArgs, 'accountId' | 'allProjects' | 'page'>>;
   invitation?: Resolver<Maybe<IResolversTypes['Team']>, ParentType, ContextType, RequireFields<IQueryInvitationArgs, 'token'>>;
   me?: Resolver<Maybe<IResolversTypes['User']>, ParentType, ContextType>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
@@ -1817,6 +1821,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   defaultUserLevel?: Resolver<IResolversTypes['TeamDefaultUserLevel'], ParentType, ContextType>;
   githubMembers?: Resolver<Maybe<IResolversTypes['TeamGithubMemberConnection']>, ParentType, ContextType, RequireFields<ITeamGithubMembersArgs, 'after' | 'first'>>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  gitlabBaseUrl?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
@@ -1899,6 +1904,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ghInstallations?: Resolver<IResolversTypes['GhApiInstallationConnection'], ParentType, ContextType>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  gitlabBaseUrl?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;

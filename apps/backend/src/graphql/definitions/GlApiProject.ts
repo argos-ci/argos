@@ -1,9 +1,10 @@
 import gqlTag from "graphql-tag";
 
-import { getTokenGitlabClient } from "@/gitlab/index.js";
+import { getGitlabClientFromAccount } from "@/gitlab/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
-import { badUserInput } from "../util.js";
+import { getAdminAccount } from "../services/account.js";
+import { badUserInput, notFound, unauthenticated } from "../util.js";
 
 const { gql } = gqlTag;
 
@@ -22,10 +23,10 @@ export const typeDefs = gql`
 
   extend type Query {
     glApiProjects(
+      accountId: ID!
       userId: ID
       groupId: ID
       allProjects: Boolean!
-      accessToken: String!
       page: Int!
       search: String
     ): GlApiProjectConnection!
@@ -34,8 +35,21 @@ export const typeDefs = gql`
 
 export const resolvers: IResolvers = {
   Query: {
-    glApiProjects: async (_root, args) => {
-      const client = getTokenGitlabClient(args.accessToken);
+    glApiProjects: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      const account = await getAdminAccount({
+        id: args.accountId,
+        user: ctx.auth.user,
+      });
+      if (!account.gitlabAccessToken) {
+        throw notFound("Account has no GitLab access token.");
+      }
+      const client = await getGitlabClientFromAccount(account);
+      if (!client) {
+        throw notFound("Invalid GitLab access token.");
+      }
       try {
         const projects = await (() => {
           const options = {

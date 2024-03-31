@@ -132,7 +132,9 @@ const GitlabStrategy: MergeBaseStrategy<{
 
     const client = await getGitlabClientFromAccount(project.account);
 
-    if (!client) return null;
+    if (!client) {
+      return null;
+    }
 
     return { client, gitlabProjectId: project.gitlabProject.gitlabId };
   },

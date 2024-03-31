@@ -20,7 +20,7 @@ import {
   retrieveOAuthToken as retrieveGithubOAuthToken,
 } from "@/github/index.js";
 import {
-  getTokenGitlabClient,
+  getGitlabClient,
   retrieveOAuthToken as retrieveGitlabOAuthToken,
 } from "@/gitlab/index.js";
 import {
@@ -108,7 +108,9 @@ router.post(
       )}/auth/gitlab/callback?r=${encodeURIComponent(body.r)}`,
     });
 
-    const api = getTokenGitlabClient(response.access_token);
+    const api = getGitlabClient({
+      accessToken: response.access_token,
+    });
     const apiUser = await api.Users.showCurrentUser();
     const glUser = await getOrCreateGitlabUser(apiUser, {
       accessToken: response.access_token,
