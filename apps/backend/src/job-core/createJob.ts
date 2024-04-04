@@ -53,8 +53,7 @@ export const createJob = <TValue>(
       invariant(getChannel.cache.clear, "No clear method on cache.");
       getChannel.cache.clear();
     };
-    channel.once("error", reset);
-    channel.once("closed", reset);
+    channel.once("close", reset);
     return channel;
   });
   return {
@@ -85,54 +84,63 @@ export const createJob = <TValue>(
         sendAll();
       });
     },
-    async process() {
-      const channel = await getChannel();
-      await channel.prefetch(prefetch);
-      await channel.assertQueue(queue, { durable: true });
-      await channel.consume(queue, async (msg) => {
-        if (!msg) return;
+    process() {
+      return new Promise((resolve, reject) => {
+        const run = async () => {
+          const channel = await getChannel();
+          channel.once("close", () => {
+            run().then(resolve, reject);
+          });
+          await channel.prefetch(prefetch);
+          await channel.assertQueue(queue, { durable: true });
+          await channel.consume(queue, async (msg) => {
+            if (!msg) return;
 
-        let payload: Payload<TValue>;
+            let payload: Payload<TValue>;
 
-        try {
-          payload = parseMessage<TValue>(msg.content);
-          try {
-            await consumer.perform(payload.args[0]);
-            await consumer.complete(payload.args[0]);
-          } catch (error: any) {
-            if (checkIsRetryable(error) && payload.attempts < 2) {
+            try {
+              payload = parseMessage<TValue>(msg.content);
+              try {
+                await consumer.perform(payload.args[0]);
+                await consumer.complete(payload.args[0]);
+              } catch (error: any) {
+                if (checkIsRetryable(error) && payload.attempts < 2) {
+                  channel.ack(msg);
+                  channel.sendToQueue(
+                    queue,
+                    serializeMessage({
+                      args: payload.args,
+                      attempts: payload.attempts + 1,
+                    }),
+                    { persistent: true },
+                  );
+                  return;
+                }
+
+                channel.ack(msg);
+                Sentry.withScope((scope) => {
+                  scope.setTag("jobQueue", queue);
+                  scope.setExtra("jobArgs", payload.args);
+                  logger.error(error);
+                });
+                await consumer.error(payload.args[0]);
+                return;
+              }
+            } catch (error: any) {
               channel.ack(msg);
-              channel.sendToQueue(
-                queue,
-                serializeMessage({
-                  args: payload.args,
-                  attempts: payload.attempts + 1,
-                }),
-                { persistent: true },
-              );
+              Sentry.withScope((scope) => {
+                scope.setTag("jobQueue", queue);
+                scope.setExtra("jobArgs", payload.args);
+                logger.error(error);
+              });
               return;
             }
 
             channel.ack(msg);
-            Sentry.withScope((scope) => {
-              scope.setTag("jobQueue", queue);
-              scope.setExtra("jobArgs", payload.args);
-              logger.error(error);
-            });
-            await consumer.error(payload.args[0]);
-            return;
-          }
-        } catch (error: any) {
-          channel.ack(msg);
-          Sentry.withScope((scope) => {
-            scope.setTag("jobQueue", queue);
-            scope.setExtra("jobArgs", payload.args);
-            logger.error(error);
           });
-          return;
-        }
+        };
 
-        channel.ack(msg);
+        run().then(resolve, reject);
       });
     },
   };
