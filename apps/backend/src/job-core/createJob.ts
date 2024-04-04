@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 import { memoize } from "lodash-es";
 
@@ -47,7 +48,14 @@ export const createJob = <TValue>(
 ): Job<TValue> => {
   const getChannel = memoize(async () => {
     const amqp = await connect();
-    return amqp.createChannel();
+    const channel = await amqp.createChannel();
+    const reset = () => {
+      invariant(getChannel.cache.clear, "No clear method on cache.");
+      getChannel.cache.clear();
+    };
+    channel.once("error", reset);
+    channel.once("closed", reset);
+    return channel;
   });
   return {
     queue,
