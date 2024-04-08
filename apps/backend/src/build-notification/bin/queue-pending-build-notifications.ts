@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import { callbackify } from "node:util";
 
-import { Build } from "@/database/models/index.js";
+import { BuildNotification } from "@/database/models/index.js";
 import logger from "@/logger/index.js";
 
 import { job } from "../job.js";
 
 const main = callbackify(async () => {
-  const nodes = await Build.query()
+  const nodes = await BuildNotification.query()
     .where({ jobStatus: "error" })
     .whereRaw(`"createdAt" > now() - interval '2 hour'`)
     .orderBy("id", "desc");
