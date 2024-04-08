@@ -51,7 +51,10 @@ export async function getGitlabClientFromAccount(
     }
     return client;
   } catch (error: unknown) {
-    if (error instanceof Error && error.message === "Unauthorized") {
+    if (
+      error instanceof Error &&
+      (error.message === "Unauthorized" || error.message === "Not Found")
+    ) {
       // @TODO notify user that its token has expired
       await account.$clone().$query().patch({
         gitlabAccessToken: null,
