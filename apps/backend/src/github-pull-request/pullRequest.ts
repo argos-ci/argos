@@ -3,9 +3,31 @@ import {
   getGhAccountType,
   getOrCreateGhAccount,
 } from "@/database/services/account.js";
-import { getInstallationOctokit } from "@/github/client.js";
+import { getInstallationOctokit, Octokit } from "@/github/client.js";
 import { unretryable } from "@/job-core/error.js";
 import logger from "@/logger/index.js";
+
+/**
+ * Fetches a pull request from GitHub.
+ */
+async function fetchPullRequest(
+  octokit: Octokit,
+  params: {
+    owner: string;
+    repo: string;
+    pull_number: number;
+  },
+) {
+  try {
+    const { data } = await octokit.rest.pulls.get(params);
+    return data;
+  } catch (error: unknown) {
+    if (error instanceof Error && "status" in error && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
 
 export async function processPullRequest(pullRequest: GithubPullRequest) {
   await pullRequest.$fetchGraph(
@@ -39,11 +61,15 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
     return;
   }
 
-  const { data: pullRequestData } = await octokit.rest.pulls.get({
+  const pullRequestData = await fetchPullRequest(octokit, {
     owner: pullRequest.githubRepository.githubAccount.login,
     repo: pullRequest.githubRepository.name,
     pull_number: pullRequest.number,
   });
+
+  if (!pullRequestData) {
+    return;
+  }
 
   const githubAccount = await getOrCreateGhAccount({
     githubId: pullRequestData.user.id,
