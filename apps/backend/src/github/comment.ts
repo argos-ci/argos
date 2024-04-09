@@ -66,8 +66,8 @@ export const commentGithubPr = async ({
         body,
       });
     }
-  } catch (error: any) {
-    if (error.status === 404) {
+  } catch (error: unknown) {
+    if (error instanceof Error && "status" in error && error.status === 404) {
       await pullRequest.$clone().$query().patch({ commentDeleted: true });
     } else {
       throw error;
