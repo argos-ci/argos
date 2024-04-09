@@ -5,6 +5,7 @@ import type { PartialModelObject } from "objection";
 import { sendWelcomeEmail } from "@/email/send.js";
 import type { RestEndpointMethodTypes } from "@/github/index.js";
 import { GoogleUserProfile } from "@/google/index.js";
+import logger from "@/logger/index.js";
 
 import { Account } from "../models/Account.js";
 import { GithubAccount } from "../models/GithubAccount.js";
@@ -80,10 +81,10 @@ export const checkAccountSlug = async (slug: string) => {
   }
 };
 
-const resolveAccountSlug = async (
+async function resolveAccountSlug(
   slug: string,
   index: number = 0,
-): Promise<string> => {
+): Promise<string> {
   const nextSlug = index ? `${slug}-${index}` : slug;
   try {
     await checkAccountSlug(nextSlug);
@@ -92,7 +93,7 @@ const resolveAccountSlug = async (
   }
 
   return nextSlug;
-};
+}
 
 export const getGhAccountType = (strType: string) => {
   const type = strType.toLowerCase();
@@ -339,10 +340,19 @@ export async function getOrCreateAccountFromGoogleUserProfile(
     return existingUser.account;
   }
 
-  const emailSlug = profile.primaryEmail.split("@")[0];
-  invariant(emailSlug, "Expected email to have a slug");
-  const slug = await resolveAccountSlug(slugify(emailSlug.toLowerCase()));
+  const emailIdentifier = profile.primaryEmail.split("@")[0];
+  invariant(
+    emailIdentifier,
+    `Invalid email identifier: ${profile.primaryEmail}`,
+  );
+  const emailSlug = slugify(emailIdentifier.toLowerCase());
+  invariant(
+    emailSlug,
+    `Invalid email slug: (slug: ${emailSlug}, email: ${profile.primaryEmail})`,
+  );
+  const accountSlug = await resolveAccountSlug(emailSlug);
 
+  logger.info(`Creating account with slug: ${accountSlug}`);
   const account = await transaction(async (trx) => {
     const user = await User.query(trx).insertAndFetch({
       email: profile.primaryEmail,
@@ -351,7 +361,7 @@ export async function getOrCreateAccountFromGoogleUserProfile(
     return Account.query(trx).insertAndFetch({
       userId: user.id,
       name: profile.name,
-      slug,
+      slug: accountSlug,
     });
   });
 
