@@ -341,7 +341,7 @@ export async function getOrCreateAccountFromGoogleUserProfile(
 
   const emailSlug = profile.primaryEmail.split("@")[0];
   invariant(emailSlug, "Expected email to have a slug");
-  const slug = await resolveAccountSlug(slugify(emailSlug));
+  const slug = await resolveAccountSlug(slugify(emailSlug.toLowerCase()));
 
   const account = await transaction(async (trx) => {
     const user = await User.query(trx).insertAndFetch({
