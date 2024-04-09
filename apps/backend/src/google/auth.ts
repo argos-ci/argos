@@ -63,6 +63,12 @@ export type GoogleUserProfile = {
   emails: string[];
 };
 
+const EmailSchema = z.string().email();
+
+function checkIsValidEmail(email: string) {
+  return EmailSchema.safeParse(email).success;
+}
+
 export async function getGoogleUserProfile(input: {
   oAuth2Client: OAuth2Client;
 }): Promise<GoogleUserProfile> {
@@ -70,12 +76,18 @@ export async function getGoogleUserProfile(input: {
     url: "https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses",
   });
   const profile = RawGoogleProfileSchema.parse(response.data);
-  const primaryEmail = profile.emailAddresses.find((e) => e.metadata.primary);
-  invariant(primaryEmail, "Expected primary email");
+  const emails = profile.emailAddresses.reduce<string[]>((emails, entry) => {
+    const value = entry.value.trim().toLowerCase();
+    if (checkIsValidEmail(value)) {
+      emails.push(value);
+    }
+    return emails;
+  }, []);
+  invariant(emails[0], "Expected one email");
   return {
     id: getIdFromResourceName(profile.resourceName),
     name: profile.names.find((n) => n.metadata.primary)?.displayName ?? null,
-    primaryEmail: primaryEmail.value.trim().toLowerCase(),
-    emails: profile.emailAddresses.map((e) => e.value.trim().toLowerCase()),
+    primaryEmail: emails[0],
+    emails,
   };
 }
