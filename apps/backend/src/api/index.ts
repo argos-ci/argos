@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import * as Sentry from "@sentry/node";
 import cors from "cors";
 import { Router } from "express";
 import { stringify } from "yaml";
@@ -8,7 +9,7 @@ import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { boom } from "@/web/util.js";
 
 import { schema } from "./schema.js";
-import { get } from "./util.js";
+import { errorHandler, get } from "./util.js";
 
 const router = Router();
 
@@ -57,5 +58,8 @@ get(
     res.json({ id: build.id, number: build.number, status });
   },
 );
+
+router.use(Sentry.Handlers.errorHandler());
+router.use(errorHandler);
 
 export { router as openAPIRouter };

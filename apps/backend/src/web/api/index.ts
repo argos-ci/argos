@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import { Application, Router } from "express";
 // @ts-ignore
 import { formatters } from "express-err";
@@ -21,8 +20,6 @@ export const installApiRouter = (app: Application) => {
   router.use(auth);
   router.use(webhooksMiddleware);
   router.use(stripe);
-
-  router.use(Sentry.Handlers.errorHandler());
 
   router.use(
     errorHandler({

@@ -39,7 +39,7 @@ function convertPath(path: string) {
   return path.replace(/{([^}]+)}/g, ":$1");
 }
 
-const errorHandler: ErrorRequestHandler = (
+export const errorHandler: ErrorRequestHandler = (
   error: unknown,
   _req,
   res,
@@ -98,6 +98,5 @@ export function get<TPath extends keyof paths>(
       next();
     }),
     ...wrappedHandlers,
-    errorHandler,
   );
 }
