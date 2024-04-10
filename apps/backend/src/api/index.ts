@@ -14,7 +14,7 @@ const router = Router();
 
 router.use(
   cors({
-    origin: ["editor.swagger.io", "editor-next.swagger.io"],
+    origin: ["https://editor.swagger.io", "https://editor-next.swagger.io/"],
   }),
 );
 
