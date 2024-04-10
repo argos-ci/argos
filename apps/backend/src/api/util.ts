@@ -46,6 +46,7 @@ export const errorHandler: ErrorRequestHandler = (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next,
 ) => {
+  console.log(error);
   if (
     error instanceof Error &&
     "statusCode" in error &&

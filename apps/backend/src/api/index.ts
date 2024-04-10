@@ -40,8 +40,8 @@ get(
     }
 
     const build = await Build.query()
-      .joinRelated("account")
-      .where("account.slug", owner)
+      .joinRelated("project.account")
+      .where("project:account.slug", owner)
       .where({
         projectId: req.authProject.id,
         number: buildNumber,
