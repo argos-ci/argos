@@ -7,6 +7,7 @@ import type {
   RelationMappings,
   TransactionOrKnex,
 } from "objection";
+import { z } from "zod";
 
 import config from "@/config/index.js";
 
@@ -23,19 +24,31 @@ import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
 import { User } from "./User.js";
 
-export type BuildType = "orphan" | "reference" | "check";
-type BuildStatus =
-  | "expired"
-  | "pending"
-  | "progress"
-  | "complete"
-  | "error"
-  | "aborted";
-type BuildConclusion = "stable" | "diffDetected" | null;
-type BuildReviewStatus = "accepted" | "rejected" | null;
-export type BuildAggregatedStatus = NonNullable<
-  BuildReviewStatus | BuildConclusion | Exclude<BuildStatus, "complete">
->;
+const BuildTypeSchema = z.enum(["reference", "check", "orphan"]);
+export type BuildType = z.infer<typeof BuildTypeSchema>;
+
+const BuildStatusSchema = z.enum([
+  "expired",
+  "pending",
+  "progress",
+  "complete",
+  "error",
+  "aborted",
+]);
+type BuildStatus = z.infer<typeof BuildStatusSchema>;
+
+const BuildConclusionSchema = z.enum(["stable", "diffDetected"]);
+type BuildConclusion = z.infer<typeof BuildConclusionSchema> | null;
+
+const BuildReviewStatusSchema = z.enum(["accepted", "rejected"]);
+type BuildReviewStatus = z.infer<typeof BuildReviewStatusSchema> | null;
+
+export const BuildAggregatedStatusSchema = z.union([
+  BuildReviewStatusSchema,
+  BuildConclusionSchema,
+  BuildStatusSchema.exclude(["complete"]),
+]);
+export type BuildAggregatedStatus = z.infer<typeof BuildAggregatedStatusSchema>;
 
 export class Build extends Model {
   static override tableName = "builds";

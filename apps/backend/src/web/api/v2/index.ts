@@ -1,6 +1,8 @@
 import express from "express";
 import { rateLimit } from "express-rate-limit";
 
+import { openAPIRouter } from "@/api/index.js";
+
 import builds from "./builds/index.js";
 
 const router = express.Router();
@@ -12,6 +14,7 @@ const limiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
+router.use(openAPIRouter);
 router.use(limiter);
 router.use(builds);
 
