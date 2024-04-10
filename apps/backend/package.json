@@ -82,7 +82,9 @@
     "sharp": "^0.33.3",
     "stripe": "^14.23.0",
     "tmp": "^0.2.3",
-    "zod": "^3.22.4"
+    "yaml": "^2.4.1",
+    "zod": "^3.22.4",
+    "zod-openapi": "^2.15.0"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.5",
@@ -103,6 +105,7 @@
     "factory-girl-ts": "^2.3.0",
     "knex-scripts": "^0.3.6",
     "moment": "^2.30.1",
+    "openapi3-ts": "^4.3.1",
     "rimraf": "^5.0.5",
     "supertest": "^6.3.4"
   }
