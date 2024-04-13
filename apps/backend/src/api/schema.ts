@@ -11,21 +11,6 @@ import { BuildAggregatedStatusSchema } from "@/database/models";
 
 extendZodWithOpenApi(z);
 
-const owner = z.string().openapi({
-  description: "Account owner",
-  example: "acme",
-});
-
-const project = z.string().openapi({
-  description: "Project name",
-  example: "web",
-});
-
-const buildNumber = z.string().openapi({
-  description: "Build number",
-  example: "123",
-});
-
 const ErrorSchema = z
   .object({
     error: z.string(),
@@ -47,20 +32,38 @@ function createErrorResponse(description: string) {
   };
 }
 
-const invalidParameterResponse = createErrorResponse("Invalid parameters");
-const forbidden = createErrorResponse("Forbidden");
-const notFound = createErrorResponse("Not found");
+const invalidParameters = createErrorResponse("Invalid parameters");
+const unauthorized = createErrorResponse("Unauthorized");
+const serverError = createErrorResponse("Server error");
 
 const Build = z
   .object({
     id: z.string(),
     number: z.number().min(1),
     status: BuildAggregatedStatusSchema,
+    url: z.string().url(),
   })
   .openapi({
     description: "Build",
     ref: "Build",
   });
+
+const PageParamsSchema = z.object({
+  perPage: z
+    .string()
+    .optional()
+    .pipe(z.coerce.number().min(1).max(100).default(30))
+    .openapi({
+      description: "Number of items per page (max 100)",
+    }),
+  page: z
+    .string()
+    .optional()
+    .pipe(z.coerce.number().min(1).default(1))
+    .openapi({
+      description: "Page number",
+    }),
+});
 
 export const zodSchema = {
   openapi: "3.0.3",
@@ -84,41 +87,37 @@ export const zodSchema = {
       },
     },
   },
-  security: [
-    {
-      tokenAuth: [],
-    },
-  ],
+  security: [{ tokenAuth: [] }],
   paths: {
-    "/projects/{owner}/{project}/builds/{buildNumber}": {
+    "/project/builds": {
       get: {
-        operationId: "getBuild",
+        operationId: "getAuthProjectBuilds",
         requestParams: {
-          path: z.object({ owner, project, buildNumber }),
+          query: PageParamsSchema.extend({
+            commit: z.string().optional().openapi({
+              description: "Commit hash",
+            }),
+          }),
         },
         responses: {
           "200": {
-            description: "200 OK",
-            content: {
-              "application/json": { schema: Build },
-            },
-          },
-          "403": forbidden,
-          "404": notFound,
-          "400": invalidParameterResponse,
-          "500": {
-            description: "Unexpected error",
+            description: "List of builds",
             content: {
               "application/json": {
                 schema: z.object({
-                  error: z.string(),
-                  details: z
-                    .array(z.object({ message: z.string() }))
-                    .optional(),
+                  results: z.array(Build),
+                  pageInfo: z.object({
+                    total: z.number(),
+                    page: z.number(),
+                    perPage: z.number(),
+                  }),
                 }),
               },
             },
           },
+          "401": unauthorized,
+          "400": invalidParameters,
+          "500": serverError,
         },
       },
     },

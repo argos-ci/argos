@@ -14,6 +14,9 @@ describe("validate", () => {
           properties: { foo: { type: "number" } },
         },
       }),
+      (_req, res) => {
+        res.sendStatus(200);
+      },
     );
     await request(app)
       .get("/")
@@ -34,6 +37,9 @@ describe("validate", () => {
           properties: { foo: { type: "number" } },
         },
       }),
+      (_req, res) => {
+        res.sendStatus(200);
+      },
     );
     await request(app)
       .get("/")
@@ -54,6 +60,9 @@ describe("validate", () => {
           properties: { foo: { type: "number" } },
         },
       }),
+      (_req, res) => {
+        res.sendStatus(200);
+      },
     );
     await request(app)
       .get("/")

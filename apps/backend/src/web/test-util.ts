@@ -7,7 +7,7 @@ export const createTestApp = (
   app.use(
     ...middlewares,
     ((_req, res) => {
-      res.sendStatus(200);
+      res.sendStatus(503);
     }) as express.RequestHandler,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ((_err, _req, res, _next) => {
