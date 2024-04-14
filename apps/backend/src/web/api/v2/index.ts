@@ -14,8 +14,8 @@ const limiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
-router.use(openAPIRouter);
 router.use(limiter);
+router.use(openAPIRouter);
 router.use(builds);
 
 export default router;
