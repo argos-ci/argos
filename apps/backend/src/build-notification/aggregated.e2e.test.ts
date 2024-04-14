@@ -51,8 +51,8 @@ describe("#getAggregatedNotification", () => {
       );
       expect(notification).toEqual({
         description: "No diff detected",
-        githubState: "success",
-        gitlabState: "success",
+        github: { state: "success" },
+        gitlab: { state: "success" },
       });
     });
   });
@@ -96,8 +96,8 @@ describe("#getAggregatedNotification", () => {
       );
       expect(notification).toEqual({
         description: "Diff detected",
-        githubState: "failure",
-        gitlabState: "failed",
+        github: { state: "failure" },
+        gitlab: { state: "failed" },
       });
     });
 
@@ -163,8 +163,8 @@ describe("#getAggregatedNotification", () => {
       );
       expect(notification).toEqual({
         description: "Diff accepted",
-        githubState: "success",
-        gitlabState: "success",
+        github: { state: "success" },
+        gitlab: { state: "success" },
       });
     });
   });
