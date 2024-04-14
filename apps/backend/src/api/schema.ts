@@ -6,6 +6,7 @@ import {
   ZodOpenApiObject,
 } from "zod-openapi";
 
+import { NotificationPayloadSchema } from "@/build-notification/index.js";
 import config from "@/config";
 import { BuildAggregatedStatusSchema } from "@/database/models";
 
@@ -42,6 +43,7 @@ const Build = z
     number: z.number().min(1),
     status: BuildAggregatedStatusSchema,
     url: z.string().url(),
+    notification: NotificationPayloadSchema.nullable(),
   })
   .openapi({
     description: "Build",
