@@ -11,8 +11,10 @@ export const createTestApp = (
     }) as express.RequestHandler,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ((_err, _req, res, _next) => {
-      if (_err.statusCode) {
-        res.status(_err.statusCode);
+      if (_err.statusCode || _err.status) {
+        res.status(_err.statusCode || _err.status);
+      } else {
+        res.status(500);
       }
 
       res.send(_err.message);

@@ -41,11 +41,6 @@ type Context = {
   aggregatedNotification: NotificationPayload | null;
 };
 
-const AGGREGATED_CONTEXT = "argos/summary";
-
-const getStatusContext = (buildName: string) =>
-  buildName === "default" ? "argos" : `argos/${buildName}`;
-
 const createGhCommitStatus = async (
   octokit: Octokit,
   params: RestEndpointMethodTypes["repos"]["createCommitStatus"]["parameters"],
@@ -130,10 +125,10 @@ const sendGithubNotification = async (ctx: Context) => {
     owner: githubAccount.login,
     repo: githubRepository.name,
     sha: commit,
-    state: notification.githubState,
+    state: notification.github.state,
     target_url: ctx.buildUrl,
     description: notification.description,
-    context: getStatusContext(build.name),
+    context: notification.context,
   });
 
   await createGhComment();
@@ -143,10 +138,10 @@ const sendGithubNotification = async (ctx: Context) => {
       owner: githubAccount.login,
       repo: githubRepository.name,
       sha: commit,
-      state: ctx.aggregatedNotification.githubState,
+      state: ctx.aggregatedNotification.github.state,
       target_url: ctx.projectUrl,
       description: ctx.aggregatedNotification.description,
-      context: AGGREGATED_CONTEXT,
+      context: ctx.aggregatedNotification.context,
     });
   }
 };
@@ -185,9 +180,9 @@ const sendGitlabNotification = async (ctx: Context) => {
   await client.Commits.editStatus(
     gitlabProject.gitlabId,
     ctx.commit,
-    notification.gitlabState,
+    notification.gitlab.state,
     {
-      context: getStatusContext(build.name),
+      context: notification.context,
       targetUrl: ctx.buildUrl,
       description: notification.description,
     },
@@ -197,9 +192,9 @@ const sendGitlabNotification = async (ctx: Context) => {
     await client.Commits.editStatus(
       gitlabProject.gitlabId,
       ctx.commit,
-      ctx.aggregatedNotification.gitlabState,
+      ctx.aggregatedNotification.gitlab.state,
       {
-        context: AGGREGATED_CONTEXT,
+        context: ctx.aggregatedNotification.context,
         targetUrl: ctx.projectUrl,
         description: ctx.aggregatedNotification.description,
       },
@@ -237,7 +232,10 @@ export const processBuildNotification = async (
     await Promise.all([
       buildNotification.build.getUrl(),
       buildNotification.build.project.getUrl(),
-      getNotificationPayload(buildNotification, isReference),
+      getNotificationPayload({
+        buildNotification,
+        build: buildNotification.build,
+      }),
       getAggregatedNotification(
         buildNotification.build.compareScreenshotBucket.commit,
         isReference,

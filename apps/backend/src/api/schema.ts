@@ -6,6 +6,7 @@ import {
   ZodOpenApiObject,
 } from "zod-openapi";
 
+import { NotificationPayloadSchema } from "@/build-notification/index.js";
 import config from "@/config";
 import { BuildAggregatedStatusSchema } from "@/database/models";
 
@@ -42,6 +43,7 @@ const Build = z
     number: z.number().min(1),
     status: BuildAggregatedStatusSchema,
     url: z.string().url(),
+    notification: NotificationPayloadSchema.nullable(),
   })
   .openapi({
     description: "Build",
@@ -62,6 +64,28 @@ const PageParamsSchema = z.object({
     .pipe(z.coerce.number().min(1).default(1))
     .openapi({
       description: "Page number",
+    }),
+});
+
+const GetAuthProjectBuildsParams = PageParamsSchema.extend({
+  commit: z.string().optional().openapi({
+    description: "Commit hash.",
+  }),
+  distinctName: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === "true") {
+        return true;
+      }
+      if (v === "false") {
+        return false;
+      }
+      return null;
+    })
+    .openapi({
+      description:
+        "Only return the latest builds created, unique by name and commit.",
     }),
 });
 
@@ -93,11 +117,7 @@ export const zodSchema = {
       get: {
         operationId: "getAuthProjectBuilds",
         requestParams: {
-          query: PageParamsSchema.extend({
-            commit: z.string().optional().openapi({
-              description: "Commit hash",
-            }),
-          }),
+          query: GetAuthProjectBuildsParams,
         },
         responses: {
           "200": {

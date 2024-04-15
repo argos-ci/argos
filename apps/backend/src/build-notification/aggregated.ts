@@ -5,7 +5,7 @@ import { BuildNotification } from "@/database/models/BuildNotification.js";
 import type { Project } from "@/database/models/Project.js";
 
 import {
-  getNotificationStatus,
+  getNotificationStates,
   type NotificationPayload,
 } from "./notification.js";
 
@@ -72,26 +72,44 @@ export async function getAggregatedNotification(
               ? "diff-accepted"
               : "no-diff-detected";
 
-  const notificationStatus = getNotificationStatus(type, isReference);
+  const states = getNotificationStates({
+    buildNotificationType: type,
+    isReference,
+  });
+  const base = {
+    context: "argos/summary",
+    github: {
+      state: states.github,
+    },
+    gitlab: {
+      state: states.gitlab,
+    },
+  };
 
   switch (type) {
     case "queued":
-      return { description: "Builds queued...", ...notificationStatus };
+      return {
+        ...base,
+        description: "Builds queued...",
+      };
     case "progress":
-      return { description: "Builds in progress...", ...notificationStatus };
+      return {
+        ...base,
+        description: "Builds in progress...",
+      };
     case "diff-detected":
       return {
+        ...base,
         description: isReference ? "Used as new baseline" : "Diff detected",
-        ...notificationStatus,
       };
     case "diff-accepted":
-      return { description: "Diff accepted", ...notificationStatus };
+      return { ...base, description: "Diff accepted" };
     case "diff-rejected":
-      return { description: "Diff rejected", ...notificationStatus };
+      return { ...base, description: "Diff rejected" };
     case "no-diff-detected":
       return {
+        ...base,
         description: isReference ? "Used as new baseline" : "No diff detected",
-        ...notificationStatus,
       };
     default:
       assertNever(type);
