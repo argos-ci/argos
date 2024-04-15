@@ -35,17 +35,15 @@ export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
       throw boom(401, "Unauthorized");
     }
 
-    const { page, perPage, commit } = req.ctx.query;
+    const { page, perPage, commit, latest } = req.ctx.query;
 
-    const query = Build.query()
-      .withGraphFetched("project.account")
-      .where("builds.projectId", req.authProject.id)
-      .orderBy("builds.id", "desc")
-      .page(page - 1, perPage);
+    const filterQuery = Build.query()
+      .select("builds.id")
+      .where("builds.projectId", req.authProject.id);
 
     if (commit) {
       // Check if the commit is in the compareScreenshotBucket or prHeadCommit
-      query.joinRelated("compareScreenshotBucket").where((qb) => {
+      filterQuery.joinRelated("compareScreenshotBucket").where((qb) => {
         qb.where("compareScreenshotBucket.commit", commit).orWhere(
           "prHeadCommit",
           commit,
@@ -53,7 +51,15 @@ export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
       });
     }
 
-    const builds = await query;
+    if (latest) {
+      filterQuery.distinctOn("builds.name").orderBy("builds.name");
+    }
+
+    const builds = await Build.query()
+      .withGraphFetched("project.account")
+      .whereIn("id", filterQuery)
+      .orderBy("builds.id", "desc")
+      .page(page - 1, perPage);
 
     const [statuses, urls] = await Promise.all([
       Build.getAggregatedBuildStatuses(builds.results),

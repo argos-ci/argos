@@ -67,6 +67,28 @@ const PageParamsSchema = z.object({
     }),
 });
 
+const GetAuthProjectBuildsParams = PageParamsSchema.extend({
+  commit: z.string().optional().openapi({
+    description: "Commit hash.",
+  }),
+  latest: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === "true") {
+        return true;
+      }
+      if (v === "false") {
+        return false;
+      }
+      return null;
+    })
+    .openapi({
+      description:
+        "Only return the latest builds created, unique by name and commit.",
+    }),
+});
+
 export const zodSchema = {
   openapi: "3.0.3",
   info: {
@@ -95,11 +117,7 @@ export const zodSchema = {
       get: {
         operationId: "getAuthProjectBuilds",
         requestParams: {
-          query: PageParamsSchema.extend({
-            commit: z.string().optional().openapi({
-              description: "Commit hash",
-            }),
-          }),
+          query: GetAuthProjectBuildsParams,
         },
         responses: {
           "200": {
