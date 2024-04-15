@@ -71,7 +71,7 @@ const GetAuthProjectBuildsParams = PageParamsSchema.extend({
   commit: z.string().optional().openapi({
     description: "Commit hash.",
   }),
-  latest: z
+  distinctName: z
     .string()
     .optional()
     .transform((v) => {

@@ -35,7 +35,7 @@ export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
       throw boom(401, "Unauthorized");
     }
 
-    const { page, perPage, commit, latest } = req.ctx.query;
+    const { page, perPage, commit, distinctName } = req.ctx.query;
 
     const filterQuery = Build.query()
       .select("builds.id")
@@ -51,7 +51,7 @@ export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
       });
     }
 
-    if (latest) {
+    if (distinctName) {
       filterQuery.distinctOn("builds.name").orderBy("builds.name");
     }
 

@@ -27,16 +27,18 @@ describe("getAuthProjectBuilds", () => {
     builds.sort((a: Build, b: Build) => b.id.localeCompare(a.id));
   });
 
-  it("returns 401 without a valid token", async () => {
-    await request(app)
-      .get("/project/builds")
-      .set("Authorization", "Bearer invalid-token")
-      .expect((res) => {
-        expect(res.text).toBe(
-          `Project not found in Argos. If the issue persists, verify your token. (token: "invalid-token").`,
-        );
-      })
-      .expect(401);
+  describe("without a valid token", () => {
+    it("returns 401 status code", async () => {
+      await request(app)
+        .get("/project/builds")
+        .set("Authorization", "Bearer invalid-token")
+        .expect((res) => {
+          expect(res.text).toBe(
+            `Project not found in Argos. If the issue persists, verify your token. (token: "invalid-token").`,
+          );
+        })
+        .expect(401);
+    });
   });
 
   it("returns a list of project builds sorted by id desc", async () => {
@@ -55,68 +57,74 @@ describe("getAuthProjectBuilds", () => {
       .expect(200);
   });
 
-  it("supports page & perPage", async () => {
-    await request(app)
-      .get("/project/builds?perPage=1&page=2")
-      .set("Authorization", "Bearer the-awesome-token")
-      .expect((res) => {
-        expect(res.body.results).toHaveLength(1);
-        invariant(builds[1]);
-        expect(res.body.results[0].id).toBe(builds[1].id);
-      })
-      .expect(200);
+  describe('with "page" and "perPage" params', () => {
+    it("returns limited number of builds", async () => {
+      await request(app)
+        .get("/project/builds?perPage=1&page=2")
+        .set("Authorization", "Bearer the-awesome-token")
+        .expect((res) => {
+          expect(res.body.results).toHaveLength(1);
+          invariant(builds[1]);
+          expect(res.body.results[0].id).toBe(builds[1].id);
+        })
+        .expect(200);
+    });
   });
 
-  it("supports commit filter", async () => {
-    const commit = "a0a6e27051024a628a3b8e632874f5afc08c5c2d";
-    const [withPrHeadCommit, withCompareScreenshotBucket] = builds;
-    invariant(withPrHeadCommit && withCompareScreenshotBucket);
-    await withPrHeadCommit.$query().patch({ prHeadCommit: commit });
+  describe('with "commit" params', () => {
+    it("filters builds by `compareScreenshotBucket.commit` or `builds.prHeadCommit`", async () => {
+      const commit = "a0a6e27051024a628a3b8e632874f5afc08c5c2d";
+      const [withPrHeadCommit, withCompareScreenshotBucket] = builds;
+      invariant(withPrHeadCommit && withCompareScreenshotBucket);
+      await withPrHeadCommit.$query().patch({ prHeadCommit: commit });
 
-    const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      name: withCompareScreenshotBucket.name,
-      commit,
-    });
-    await withCompareScreenshotBucket.$query().patch({
-      compareScreenshotBucketId: compareScreenshotBucket.id,
-    });
-    await request(app)
-      .get(`/project/builds?commit=${commit}`)
-      .set("Authorization", "Bearer the-awesome-token")
-      .expect((res) => {
-        expect(res.body.results).toHaveLength(2);
-        expect(res.body.results.map((b: Build) => b.id)).toEqual([
-          withPrHeadCommit.id,
-          withCompareScreenshotBucket.id,
-        ]);
-      })
-      .expect(200);
-  });
-
-  it("supports latest filer", async () => {
-    const commit = "a0a6e27051024a628a3b8e632874f5afc08c5c2d";
-    const [withPrHeadCommit, withCompareScreenshotBucket] = builds;
-    invariant(withPrHeadCommit && withCompareScreenshotBucket);
-    await withPrHeadCommit.$query().patch({ prHeadCommit: commit });
-
-    const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      name: withCompareScreenshotBucket.name,
-      commit,
-    });
-    await withCompareScreenshotBucket.$query().patch({
-      compareScreenshotBucketId: compareScreenshotBucket.id,
-    });
-    await request(app)
-      .get(`/project/builds?commit=${commit}&latest=true`)
-      .set("Authorization", "Bearer the-awesome-token")
-      .expect(200)
-      .expect((res) => {
-        expect(res.body.results).toHaveLength(1);
-        expect(res.body.results.map((b: Build) => b.id)).toEqual([
-          withPrHeadCommit.id,
-        ]);
+      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        name: withCompareScreenshotBucket.name,
+        commit,
       });
+      await withCompareScreenshotBucket.$query().patch({
+        compareScreenshotBucketId: compareScreenshotBucket.id,
+      });
+      await request(app)
+        .get(`/project/builds?commit=${commit}`)
+        .set("Authorization", "Bearer the-awesome-token")
+        .expect((res) => {
+          expect(res.body.results).toHaveLength(2);
+          expect(res.body.results.map((b: Build) => b.id)).toEqual([
+            withPrHeadCommit.id,
+            withCompareScreenshotBucket.id,
+          ]);
+        })
+        .expect(200);
+    });
+  });
+
+  describe('with "distinctName" params', () => {
+    it("returns only the latest builds by `builds.name`", async () => {
+      const commit = "a0a6e27051024a628a3b8e632874f5afc08c5c2d";
+      const [withPrHeadCommit, withCompareScreenshotBucket] = builds;
+      invariant(withPrHeadCommit && withCompareScreenshotBucket);
+      await withPrHeadCommit.$query().patch({ prHeadCommit: commit });
+
+      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        name: withCompareScreenshotBucket.name,
+        commit,
+      });
+      await withCompareScreenshotBucket.$query().patch({
+        compareScreenshotBucketId: compareScreenshotBucket.id,
+      });
+      await request(app)
+        .get(`/project/builds?commit=${commit}&distinctName=true`)
+        .set("Authorization", "Bearer the-awesome-token")
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.results).toHaveLength(1);
+          expect(res.body.results.map((b: Build) => b.id)).toEqual([
+            withPrHeadCommit.id,
+          ]);
+        });
+    });
   });
 });
