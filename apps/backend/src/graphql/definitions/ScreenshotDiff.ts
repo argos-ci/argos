@@ -12,11 +12,12 @@ const { gql } = gqlTag;
 
 export const typeDefs = gql`
   enum ScreenshotDiffStatus {
-    added
-    unchanged
-    changed
-    failure
+    pending
     removed
+    failure
+    added
+    changed
+    unchanged
   }
 
   type ScreenshotDiff implements Node {
@@ -81,11 +82,13 @@ export const resolvers: IResolvers = {
       return file.height;
     },
     status: async (screenshotDiff, _args, ctx) => {
-      return screenshotDiff.$getDiffStatus(async (id) => {
+      const diffStatus = await screenshotDiff.$getDiffStatus(async (id) => {
         const screenshot = await ctx.loaders.Screenshot.load(id);
         invariant(screenshot, "Screenshot not found");
         return screenshot;
-      }) as Promise<IScreenshotDiffStatus>;
+      });
+
+      return diffStatus as IScreenshotDiffStatus;
     },
     // @TODO: Remove in future release
     flakyDetected: () => {
