@@ -50,6 +50,7 @@ describe("#getAggregatedNotification", () => {
         "always",
       );
       expect(notification).toEqual({
+        context: "argos/summary",
         description: "No diff detected",
         github: { state: "success" },
         gitlab: { state: "success" },
@@ -95,6 +96,7 @@ describe("#getAggregatedNotification", () => {
         "auto",
       );
       expect(notification).toEqual({
+        context: "argos/summary",
         description: "Diff detected",
         github: { state: "failure" },
         gitlab: { state: "failed" },
@@ -162,6 +164,7 @@ describe("#getAggregatedNotification", () => {
         "auto",
       );
       expect(notification).toEqual({
+        context: "argos/summary",
         description: "Diff accepted",
         github: { state: "success" },
         gitlab: { state: "success" },
