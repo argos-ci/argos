@@ -33,7 +33,7 @@ export function BuildModeLabel(props: { mode: BuildMode }) {
   }
 }
 
-export function getBuildModeIcon(mode: BuildMode) {
+function getBuildModeIcon(mode: BuildMode) {
   switch (mode) {
     case BuildMode.Ci:
       return RefreshCcwIcon;
