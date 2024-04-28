@@ -7,27 +7,29 @@ import {
   XCircleIcon,
 } from "lucide-react";
 
+import { ScreenshotDiffStatus } from "@/gql/graphql";
+
 import type { DiffGroup } from "./BuildDiffState";
 
 export const GROUPS = [
-  "failure",
-  "changed",
-  "added",
-  "removed",
-  "unchanged",
+  ScreenshotDiffStatus.Failure,
+  ScreenshotDiffStatus.Changed,
+  ScreenshotDiffStatus.Added,
+  ScreenshotDiffStatus.Removed,
+  ScreenshotDiffStatus.Unchanged,
 ] as const;
 
 export const getGroupColor = (name: DiffGroup["name"]) => {
   switch (name) {
-    case "failure":
+    case ScreenshotDiffStatus.Failure:
       return "danger" as const;
-    case "changed":
+    case ScreenshotDiffStatus.Changed:
       return "warning" as const;
-    case "added":
+    case ScreenshotDiffStatus.Added:
       return "neutral" as const;
-    case "removed":
+    case ScreenshotDiffStatus.Removed:
       return "neutral" as const;
-    case "unchanged":
+    case ScreenshotDiffStatus.Unchanged:
       return "success" as const;
     default:
       assertNever(name);
@@ -36,15 +38,15 @@ export const getGroupColor = (name: DiffGroup["name"]) => {
 
 export const getGroupLabel = (name: DiffGroup["name"]) => {
   switch (name) {
-    case "failure":
+    case ScreenshotDiffStatus.Failure:
       return "Failures";
-    case "changed":
+    case ScreenshotDiffStatus.Changed:
       return "Changed";
-    case "added":
+    case ScreenshotDiffStatus.Added:
       return "Added";
-    case "removed":
+    case ScreenshotDiffStatus.Removed:
       return "Removed";
-    case "unchanged":
+    case ScreenshotDiffStatus.Unchanged:
       return "Unchanged";
     default:
       assertNever(name);
@@ -53,15 +55,15 @@ export const getGroupLabel = (name: DiffGroup["name"]) => {
 
 export const getGroupIcon = (name: DiffGroup["name"]) => {
   switch (name) {
-    case "added":
+    case ScreenshotDiffStatus.Added:
       return <PlusCircleIcon />;
-    case "removed":
+    case ScreenshotDiffStatus.Removed:
       return <MinusCircleIcon />;
-    case "changed":
+    case ScreenshotDiffStatus.Changed:
       return <AlertCircleIcon />;
-    case "unchanged":
+    case ScreenshotDiffStatus.Unchanged:
       return <CheckCircle2Icon />;
-    case "failure":
+    case ScreenshotDiffStatus.Failure:
       return <XCircleIcon />;
     default:
       assertNever(name);

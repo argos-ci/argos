@@ -4,6 +4,7 @@ import { DownloadIcon } from "lucide-react";
 
 import { checkIsBuildEmpty } from "@/containers/Build";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Anchor } from "@/ui/Anchor";
 import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
@@ -220,7 +221,7 @@ function DownloadBaseScreenshotButton({
 const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
   const { contained } = useBuildDiffFitState();
   switch (diff.status) {
-    case "added":
+    case ScreenshotDiffStatus.Added:
       return (
         <MissingScreenshotInfo
           title="New screenshot"
@@ -230,10 +231,10 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
               doesn&quot;t have a baseline to compare with.
             </>
           }
-          icon={getGroupIcon("added")}
+          icon={getGroupIcon(ScreenshotDiffStatus.Added)}
         />
       );
-    case "failure":
+    case ScreenshotDiffStatus.Failure:
       return (
         <MissingScreenshotInfo
           title="Failure screenshot"
@@ -243,10 +244,10 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
               is detected as a failure when its name ends by "(failed)".
             </>
           }
-          icon={getGroupIcon("failure")}
+          icon={getGroupIcon(ScreenshotDiffStatus.Failure)}
         />
       );
-    case "unchanged":
+    case ScreenshotDiffStatus.Unchanged:
       return (
         <MissingScreenshotInfo
           title="Unchanged screenshot"
@@ -255,10 +256,10 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
               All good! This screenshot is similar to the baseline screenshot.
             </>
           }
-          icon={getGroupIcon("unchanged")}
+          icon={getGroupIcon(ScreenshotDiffStatus.Unchanged)}
         />
       );
-    case "removed":
+    case ScreenshotDiffStatus.Removed:
       return (
         <ZoomPane
           controls={
@@ -277,7 +278,7 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
           </ScreenshotContainer>
         </ZoomPane>
       );
-    case "changed":
+    case ScreenshotDiffStatus.Changed:
       return (
         <ZoomPane
           controls={
@@ -333,7 +334,7 @@ const CompareScreenshot = ({
   const { contained } = useBuildDiffFitState();
   const opacity = visible ? "" : "opacity-0";
   switch (diff.status) {
-    case "added":
+    case ScreenshotDiffStatus.Added:
       return (
         <ZoomPane
           controls={
@@ -352,7 +353,7 @@ const CompareScreenshot = ({
           </ScreenshotContainer>
         </ZoomPane>
       );
-    case "failure":
+    case ScreenshotDiffStatus.Failure:
       return (
         <ZoomPane
           controls={
@@ -371,7 +372,7 @@ const CompareScreenshot = ({
           </ScreenshotContainer>
         </ZoomPane>
       );
-    case "unchanged":
+    case ScreenshotDiffStatus.Unchanged:
       return (
         <ZoomPane
           controls={
@@ -390,7 +391,7 @@ const CompareScreenshot = ({
           </ScreenshotContainer>
         </ZoomPane>
       );
-    case "removed":
+    case ScreenshotDiffStatus.Removed:
       return (
         <MissingScreenshotInfo
           title="Removed screenshot"
@@ -400,10 +401,10 @@ const CompareScreenshot = ({
               changes to compare with.
             </>
           }
-          icon={getGroupIcon("removed")}
+          icon={getGroupIcon(ScreenshotDiffStatus.Removed)}
         />
       );
-    case "changed":
+    case ScreenshotDiffStatus.Changed:
       return (
         <ZoomPane
           controls={
