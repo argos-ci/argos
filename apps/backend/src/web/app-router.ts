@@ -1,5 +1,4 @@
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { invariant } from "@argos/util/invariant";
 import { Handlers } from "@sentry/node";
 import express, { Router, static as serveStatic } from "express";
@@ -11,8 +10,6 @@ import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
 import { emailPreview } from "../email/express.js";
 import { auth } from "./middlewares/auth.js";
 import { subdomain } from "./util.js";
-
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 export const installAppRouter = async (app: express.Application) => {
   const router = Router();
@@ -51,10 +48,11 @@ export const installAppRouter = async (app: express.Application) => {
     );
   });
 
+  const distDir = join(import.meta.dirname, "../../../frontend/dist");
+
   // Static directory
   router.use(
-    "/static/app",
-    serveStatic(join(__dirname, "../../../frontend/dist"), {
+    serveStatic(distDir, {
       etag: true,
       lastModified: false,
       maxAge: "1 year",
@@ -85,6 +83,10 @@ export const installAppRouter = async (app: express.Application) => {
     const r = req.query["r"];
     invariant(typeof r === "string", "Expected r to be a string");
     res.redirect(getGoogleAuthUrl({ r }));
+  });
+
+  router.get("/*", (_req, res) => {
+    res.sendFile(join(distDir, "index.html"));
   });
 
   router.use(Handlers.errorHandler());
