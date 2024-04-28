@@ -32,27 +32,33 @@ export default defineConfig(({ mode }) => {
     define: {
       "process.env.NODE_ENV": JSON.stringify(mode),
     },
-    server: {
-      host: "app.argos-ci.dev",
-      port: 4002,
-      https: {
-        key: readFileSync(
-          join(import.meta.dirname, "../../_wildcard.argos-ci.dev-key.pem"),
-        ),
-        cert: readFileSync(
-          join(import.meta.dirname, "../../_wildcard.argos-ci.dev.pem"),
-        ),
-      },
-      proxy: {
-        "/graphql": {
-          target: "https://app.argos-ci.dev:4001",
-          secure: false,
-        },
-        "/config.js": {
-          target: "https://app.argos-ci.dev:4001",
-          secure: false,
-        },
-      },
-    },
+    server:
+      mode === "development"
+        ? {
+            host: "app.argos-ci.dev",
+            port: 4002,
+            https: {
+              key: readFileSync(
+                join(
+                  import.meta.dirname,
+                  "../../_wildcard.argos-ci.dev-key.pem",
+                ),
+              ),
+              cert: readFileSync(
+                join(import.meta.dirname, "../../_wildcard.argos-ci.dev.pem"),
+              ),
+            },
+            proxy: {
+              "/graphql": {
+                target: "https://app.argos-ci.dev:4001",
+                secure: false,
+              },
+              "/config.js": {
+                target: "https://app.argos-ci.dev:4001",
+                secure: false,
+              },
+            },
+          }
+        : undefined,
   };
 });
