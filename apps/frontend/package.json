@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "build": "rm -rf dist && vite build",
+    "build": "rm -rf dist && NODE_ENV=production vite build",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "lint": "eslint --ignore-path=../../.gitignore .",
