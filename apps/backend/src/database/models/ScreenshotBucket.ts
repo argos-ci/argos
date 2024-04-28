@@ -2,6 +2,7 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import type { BuildMode } from "./Build.js";
 import { Project } from "./Project.js";
 import { Screenshot } from "./Screenshot.js";
 
@@ -22,6 +23,7 @@ export class ScreenshotBucket extends Model {
       branch: { type: "string" },
       projectId: { type: "string" },
       screenshotCount: { type: "integer" },
+      mode: { type: "string", enum: ["ci", "monitoring"] },
     },
   });
 
@@ -31,6 +33,7 @@ export class ScreenshotBucket extends Model {
   branch!: string;
   projectId!: string;
   screenshotCount!: number;
+  mode!: BuildMode;
 
   static override get relationMappings(): RelationMappings {
     return {

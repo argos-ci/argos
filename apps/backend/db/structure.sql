@@ -887,7 +887,9 @@ CREATE TABLE public.screenshot_buckets (
     complete boolean DEFAULT false NOT NULL,
     "projectId" bigint NOT NULL,
     "screenshotCount" integer,
-    CONSTRAINT chk_complete_true_screenshotcount_not_null CHECK (((complete = false) OR ("screenshotCount" IS NOT NULL)))
+    mode text DEFAULT 'ci'::text NOT NULL,
+    CONSTRAINT chk_complete_true_screenshotcount_not_null CHECK (((complete = false) OR ("screenshotCount" IS NOT NULL))),
+    CONSTRAINT screenshot_buckets_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text])))
 );
 
 
@@ -2619,3 +2621,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024030
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240329130227_googleUserId.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240330152633_gitlab-on-prem.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240428061335_monitoring-mode.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240428200226_monitoring-mode-bucket.js', 1, NOW());

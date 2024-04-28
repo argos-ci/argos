@@ -114,6 +114,7 @@ const createBuild = async (params: {
   }
 
   const buildName = params.buildName || "default";
+  const mode = params.mode ?? "ci";
 
   const githubRepository =
     await params.project.$relatedQuery("githubRepository");
@@ -137,6 +138,7 @@ const createBuild = async (params: {
           branch: params.branch,
           projectId: params.project.id,
           complete: false,
+          mode,
         });
 
         const build = await Build.query(trx).insertAndFetch({
@@ -152,7 +154,7 @@ const createBuild = async (params: {
           referenceCommit: params.referenceCommit ?? null,
           referenceBranch: params.referenceBranch ?? null,
           compareScreenshotBucketId: bucket.id,
-          mode: params.mode ?? "ci",
+          mode,
         });
 
         return build;

@@ -19,6 +19,7 @@ export async function getBaseBucketForBuildAndCommit(
           projectId: build.projectId,
           name: build.name,
           prHeadCommit: commit,
+          mode: build.mode,
         }),
       );
   });
@@ -33,5 +34,6 @@ export function queryBaseBucket(build: Build) {
     projectId: build.projectId,
     name: build.name,
     complete: true,
+    mode: build.mode,
   });
 }
