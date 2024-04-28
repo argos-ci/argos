@@ -10,7 +10,8 @@ export function errorHandler() {
       }
       next(error);
     },
-    (error: unknown, _req, res) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (error: unknown, _req, res, _next) => {
       const statusCode =
         error instanceof Error &&
         "statusCode" in error &&
