@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Build, ScreenshotBucket } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getBaseBucketForBuildAndCommit } from "./baseQuery";
+import { getBaseBucketForBuildAndCommit } from "./query";
 
 describe("#getBaseBucketForBuildAndCommit", () => {
   describe("when the build is triggered by a pull request", () => {

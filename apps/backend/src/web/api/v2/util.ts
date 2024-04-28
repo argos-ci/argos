@@ -5,6 +5,7 @@ import { pushBuildNotification } from "@/build-notification/index.js";
 import { transaction } from "@/database/index.js";
 import {
   Build,
+  BuildMode,
   GithubPullRequest,
   Project,
   ScreenshotBucket,
@@ -60,6 +61,7 @@ type CreateRequest = Request<
     parallelNonce?: string | null;
     prNumber?: number | null;
     prHeadCommit?: string | null;
+    mode?: BuildMode | null;
   }
 > & { authProject: Project };
 
@@ -73,6 +75,7 @@ const createBuild = async (params: {
   prHeadCommit?: string | null;
   referenceCommit?: string | null;
   referenceBranch?: string | null;
+  mode?: BuildMode | null;
 }) => {
   const account = await params.project.$relatedQuery("account");
   if (!account) {
@@ -149,6 +152,7 @@ const createBuild = async (params: {
           referenceCommit: params.referenceCommit ?? null,
           referenceBranch: params.referenceBranch ?? null,
           compareScreenshotBucketId: bucket.id,
+          mode: params.mode ?? "ci",
         });
 
         return build;
@@ -174,6 +178,7 @@ export const createBuildFromRequest = async ({
     buildName: req.body.name ?? null,
     commit: req.body.commit,
     branch: req.body.branch,
+    mode: req.body.mode ?? null,
     parallel:
       req.body.parallel && req.body.parallelNonce
         ? { nonce: req.body.parallelNonce }

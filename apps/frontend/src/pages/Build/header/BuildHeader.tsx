@@ -3,11 +3,12 @@ import { EllipsisIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
+import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
-import { BuildType } from "@/gql/graphql";
+import { BuildMode, BuildType } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Chip } from "@/ui/Chip";
 import { Progress } from "@/ui/Progress";
@@ -25,6 +26,7 @@ const BuildFragment = graphql(`
     name
     status
     type
+    mode
     pullRequest {
       id
       ...PullRequestButton_PullRequest
@@ -193,14 +195,24 @@ export const BuildHeader = memo(
             projectName={props.projectName}
           />
           <div className="flex flex-col justify-center">
-            <div className="mb-1 text-sm font-medium leading-none">
-              Build {props.buildNumber}
-              {build && build.name !== "default" ? ` • ${build.name}` : ""}
+            <div className="mb-1 flex gap-1">
+              <div className="flex">
+                <BuildModeIndicator
+                  mode={build ? build.mode : BuildMode.Ci}
+                  scale="sm"
+                />
+              </div>
+              <div className="text-sm font-medium leading-none">
+                Build {props.buildNumber}
+                {build && build.name !== "default" ? ` • ${build.name}` : ""}
+              </div>
             </div>
-            <ProjectLink
-              accountSlug={props.accountSlug}
-              projectName={props.projectName}
-            />
+            <div className="flex">
+              <ProjectLink
+                accountSlug={props.accountSlug}
+                projectName={props.projectName}
+              />
+            </div>
           </div>
           {build && project ? (
             <BuildStatusChip build={build} project={project} />

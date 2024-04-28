@@ -233,6 +233,103 @@ describe("api v2", () => {
         expect(build.projectId).toBe(project.id);
         expect(build.externalId).toBe(null);
         expect(build.batchCount).toBe(null);
+        expect(build.mode).toBe("ci");
+        expect(
+          build.compareScreenshotBucket!.screenshots!.map((s) => ({
+            s3Id: s.s3Id,
+            name: s.name,
+          })),
+        ).toEqual(
+          screenshots.map((screenshot) => ({
+            s3Id: screenshot.key,
+            name: screenshot.name,
+          })),
+        );
+        expect(build.compareScreenshotBucket!.complete).toBe(true);
+        expect(build.compareScreenshotBucket!.name).toBe("current");
+        expect(build.compareScreenshotBucket!.commit).toBe(
+          "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+        );
+        expect(build.compareScreenshotBucket!.branch).toBe("main");
+        expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
+
+        expect(updateResult.body).toEqual({
+          build: {
+            id: build.id,
+            url: await build.getUrl(),
+          },
+        });
+      });
+
+      it("create a complete monitoring build", async () => {
+        const screenshots = [
+          {
+            key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            name: "first",
+            path: join(__dirname, "__fixtures__", "screenshot_test.jpg"),
+          },
+        ];
+        const createResult = await request(app)
+          .post("/v2/builds")
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .send({
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            screenshotKeys: Array.from(
+              new Set(screenshots.map((screenshot) => screenshot.key)),
+            ),
+            branch: "main",
+            name: "current",
+            mode: "monitoring",
+          })
+          .expect(201);
+
+        // Upload screenshots
+        await Promise.all(
+          createResult.body.screenshots.map(
+            async (resScreenshot: { key: string; putUrl: string }) => {
+              const path = screenshots.find(
+                (s) => s.key === resScreenshot.key,
+              )!.path;
+              const file = await readFile(path);
+
+              const axiosResponse = await axios({
+                method: "PUT",
+                url: resScreenshot.putUrl,
+                data: file,
+                headers: {
+                  "Content-Type": "image/jpeg",
+                },
+              });
+
+              expect(axiosResponse.status).toBe(200);
+            },
+          ),
+        );
+
+        const updateResult = await request(app)
+          .put(`/v2/builds/${createResult.body.build.id}`)
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .send({
+            screenshots: screenshots.map((screenshot) => ({
+              key: screenshot.key,
+              name: screenshot.name,
+            })),
+          })
+          .expect(200);
+
+        const build = await Build.query()
+          .withGraphFetched("compareScreenshotBucket.screenshots.file")
+          .first()
+          .throwIfNotFound();
+
+        expect(build.jobStatus).toBe("pending");
+        expect(build.name).toBe("current");
+        expect(build.projectId).toBe(project.id);
+        expect(build.externalId).toBe(null);
+        expect(build.batchCount).toBe(null);
+        expect(build.mode).toBe("monitoring");
         expect(
           build.compareScreenshotBucket!.screenshots!.map((s) => ({
             s3Id: s.s3Id,

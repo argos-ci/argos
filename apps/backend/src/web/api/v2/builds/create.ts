@@ -68,6 +68,10 @@ const validateRoute = validate({
         type: "string",
         nullable: true,
       },
+      mode: {
+        type: "string",
+        enum: ["ci", "monitoring"],
+      },
     },
   },
 });
@@ -84,6 +88,7 @@ type RequestPayload = {
   prHeadCommit?: string | null;
   referenceCommit?: string | null;
   referenceBranch?: string | null;
+  mode?: "ci" | "monitoring";
 };
 
 type CreateRequest = express.Request<

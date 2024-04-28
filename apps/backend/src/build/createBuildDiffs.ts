@@ -2,47 +2,39 @@ import { invariant } from "@argos/util/invariant";
 
 import { transaction } from "@/database/index.js";
 import { Build, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
-import type { BuildType, ScreenshotBucket } from "@/database/models/index.js";
+import type { ScreenshotBucket } from "@/database/models/index.js";
 
-import { getBaseScreenshotBucket } from "./base.js";
+import { BuildStrategy, getBuildStrategy } from "./strategy/index.js";
 
-const getBuildType = ({
-  baseScreenshotBucket,
-  compareScreenshotBucket,
-  referenceBranch,
-}: {
-  baseScreenshotBucket: ScreenshotBucket | null;
-  compareScreenshotBucket: ScreenshotBucket;
-  referenceBranch: string;
-}): BuildType => {
-  if (compareScreenshotBucket.branch === referenceBranch) {
-    return "reference";
-  }
-  if (!baseScreenshotBucket) {
-    return "orphan";
-  }
-  return "check";
-};
-
-async function getOrRetrieveBaseScreenshotBucket(build: Build) {
+/**
+ * Get the base screenshot bucket for a build, or retrieve it if it doesn't exist.
+ */
+async function getOrRetrieveBaseScreenshotBucket(input: {
+  build: Build;
+  strategy: BuildStrategy<unknown>;
+}): Promise<ScreenshotBucket | null> {
+  const { build, strategy } = input;
   if (build.baseScreenshotBucket) {
     return build.baseScreenshotBucket;
   }
 
-  const baseScreenshotBucket = await getBaseScreenshotBucket(build);
+  const baseScreenshotBucket = await strategy.getBaseScreenshotBucket(build);
 
   if (baseScreenshotBucket) {
-    await Build.query()
-      .findById(build.id)
-      .patch({ baseScreenshotBucketId: baseScreenshotBucket.id });
+    await Promise.all([
+      Build.query()
+        .findById(build.id)
+        .patch({ baseScreenshotBucketId: baseScreenshotBucket.id }),
+      baseScreenshotBucket.$fetchGraph("screenshots"),
+    ]);
 
-    return baseScreenshotBucket.$query().withGraphFetched("screenshots");
+    return baseScreenshotBucket;
   }
 
   return null;
 }
 
-const getJobStatus = ({
+function getJobStatus({
   baseScreenshot,
   sameFileId,
   compareScreenshot,
@@ -50,7 +42,7 @@ const getJobStatus = ({
   baseScreenshot: Screenshot | null;
   sameFileId: boolean;
   compareScreenshot: Screenshot;
-}) => {
+}) {
   if (
     baseScreenshot &&
     (baseScreenshot.fileId === null ||
@@ -59,6 +51,7 @@ const getJobStatus = ({
   ) {
     return "pending" as const;
   }
+
   if (
     compareScreenshot.fileId === null ||
     compareScreenshot.file?.width == null ||
@@ -66,13 +59,21 @@ const getJobStatus = ({
   ) {
     return "pending" as const;
   }
-  if (!baseScreenshot) return "complete" as const;
-  if (sameFileId) return "complete" as const;
+
+  if (!baseScreenshot) {
+    return "complete" as const;
+  }
+
+  if (sameFileId) {
+    return "complete" as const;
+  }
 
   return "pending" as const;
-};
+}
 
-export const createBuildDiffs = async (build: Build) => {
+export async function createBuildDiffs(build: Build) {
+  const strategy = getBuildStrategy(build);
+
   const richBuild = await build
     .$query()
     .withGraphFetched(
@@ -91,9 +92,9 @@ export const createBuildDiffs = async (build: Build) => {
   const compareScreenshots = compareScreenshotBucket.screenshots;
   invariant(compareScreenshots, "no compare screenshots found for build");
 
-  const [referenceBranch, baseScreenshotBucket] = await Promise.all([
-    project.$getReferenceBranch(),
-    getOrRetrieveBaseScreenshotBucket(richBuild),
+  const [ctx, baseScreenshotBucket] = await Promise.all([
+    strategy.getContext(richBuild),
+    getOrRetrieveBaseScreenshotBucket({ build: richBuild, strategy }),
   ]);
 
   const sameBucket = Boolean(
@@ -168,11 +169,13 @@ export const createBuildDiffs = async (build: Build) => {
 
   const allInserts = [...inserts, ...removedScreenshots];
 
-  const buildType = getBuildType({
-    baseScreenshotBucket,
-    compareScreenshotBucket,
-    referenceBranch,
-  });
+  const buildType = strategy.getBuildType(
+    {
+      baseScreenshotBucket,
+      compareScreenshotBucket,
+    },
+    ctx,
+  );
 
   return transaction(async (trx) => {
     const [screenshots] = await Promise.all([
@@ -184,4 +187,4 @@ export const createBuildDiffs = async (build: Build) => {
 
     return screenshots;
   });
-};
+}

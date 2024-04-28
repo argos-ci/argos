@@ -1,3 +1,7 @@
+import {
+  BuildModeDescription,
+  BuildModeLabel,
+} from "@/containers/BuildModeIndicator";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Anchor } from "@/ui/Anchor";
 import { Time } from "@/ui/Time";
@@ -49,6 +53,7 @@ const BuildFragment = graphql(`
     name
     commit
     branch
+    mode
     stats {
       total
     }
@@ -74,8 +79,16 @@ export const BuildInfos = (props: {
       <Dt>Created</Dt>
       <Dd>{build ? <Time date={build.createdAt} format="LLL" /> : "-"}</Dd>
 
-      <Dt>Build name</Dt>
+      <Dt>Name</Dt>
       <Dd>{build.name}</Dd>
+
+      <Dt>Mode</Dt>
+      <Dd>
+        <BuildModeLabel mode={build.mode} />
+        <div className="text-low mt-0.5 text-xs font-normal">
+          <BuildModeDescription mode={build.mode} />
+        </div>
+      </Dd>
 
       <Dt>Total screenshots count</Dt>
       <Dd>{build ? build.stats.total : "-"}</Dd>
