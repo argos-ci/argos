@@ -628,6 +628,7 @@ enum ScreenshotDiffStatus {
   added
   changed
   failure
+  pending
   removed
   unchanged
 }

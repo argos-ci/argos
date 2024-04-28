@@ -811,6 +811,7 @@ export enum IScreenshotDiffStatus {
   Added = 'added',
   Changed = 'changed',
   Failure = 'failure',
+  Pending = 'pending',
   Removed = 'removed',
   Unchanged = 'unchanged'
 }

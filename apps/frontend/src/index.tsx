@@ -1,7 +1,4 @@
 import { init as initSentry } from "@sentry/browser";
-
-import "core-js";
-
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
@@ -9,7 +6,7 @@ import config from "./config";
 
 import "./index.css";
 
-import { invariant } from "@apollo/client/utilities/globals";
+import { invariant } from "@argos/util/invariant";
 
 if (process.env["NODE_ENV"] === "production") {
   initSentry({

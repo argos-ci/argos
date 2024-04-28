@@ -806,6 +806,7 @@ export enum ScreenshotDiffStatus {
   Added = 'added',
   Changed = 'changed',
   Failure = 'failure',
+  Pending = 'pending',
   Removed = 'removed',
   Unchanged = 'unchanged'
 }
