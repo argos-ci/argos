@@ -142,15 +142,15 @@ export const App = () => {
   return (
     <>
       <Helmet defaultTitle="Argos" />
-      <ColorModeProvider>
-        <AuthContextProvider>
-          <ApolloInitializer>
-            <TooltipProvider>
+      <TooltipProvider disableHoverableContent>
+        <ColorModeProvider>
+          <AuthContextProvider>
+            <ApolloInitializer>
               <RouterProvider router={router} />
-            </TooltipProvider>
-          </ApolloInitializer>
-        </AuthContextProvider>
-      </ColorModeProvider>
+            </ApolloInitializer>
+          </AuthContextProvider>
+        </ColorModeProvider>
+      </TooltipProvider>
     </>
   );
 };

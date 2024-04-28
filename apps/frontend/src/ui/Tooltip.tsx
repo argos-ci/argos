@@ -30,9 +30,11 @@ export const TooltipContent = React.forwardRef(
     {
       className,
       variant = "default",
+      disableHoverableContent,
       ...props
     }: TooltipPrimitive.TooltipContentProps & {
       variant?: TooltipVariant;
+      disableHoverableContent?: boolean;
     },
     ref: React.ForwardedRef<HTMLDivElement>,
   ) => {
@@ -45,6 +47,7 @@ export const TooltipContent = React.forwardRef(
         className={clsx(
           "bg-subtle text z-50 overflow-hidden rounded-md border shadow-md",
           "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          disableHoverableContent !== false && "pointer-events-none",
           variantClassName,
           className,
         )}
@@ -59,10 +62,12 @@ export const Tooltip = ({
   content,
   align,
   side,
-  disableHoverableContent = true,
+  disableHoverableContent,
   preventPointerDownOutside,
 }: TooltipProps) => {
-  if (!content) return <>{children}</>;
+  if (!content) {
+    return <>{children}</>;
+  }
   return (
     <TooltipRoot disableHoverableContent={disableHoverableContent}>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
@@ -77,6 +82,7 @@ export const Tooltip = ({
               event.preventDefault();
             }
           }}
+          disableHoverableContent={disableHoverableContent}
         >
           {content}
         </TooltipContent>
