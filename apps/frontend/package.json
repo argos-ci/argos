@@ -33,7 +33,6 @@
     "autoprefixer": "^10.4.19",
     "axios": "^1.6.8",
     "clsx": "^2.1.0",
-    "css-loader": "^6.10.0",
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
     "eslint-plugin-react": "^7.34.1",
