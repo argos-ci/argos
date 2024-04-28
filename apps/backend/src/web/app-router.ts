@@ -1,5 +1,4 @@
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { invariant } from "@argos/util/invariant";
 import { Handlers } from "@sentry/node";
 import express, { Router, static as serveStatic } from "express";
@@ -10,21 +9,50 @@ import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
 
 import { emailPreview } from "../email/express.js";
 import { auth } from "./middlewares/auth.js";
-import { errorHandler } from "./middlewares/errorHandler.js";
-import { rendering } from "./middlewares/rendering.js";
 import { subdomain } from "./util.js";
 
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
-
 export const installAppRouter = async (app: express.Application) => {
-  const production = config.get("env") === "production";
-
   const router = Router();
+
+  router.get("/config.js", (_req, res) => {
+    res.setHeader("Content-Type", "application/javascript");
+    res.send(
+      `window.clientData = ${JSON.stringify({
+        config: {
+          sentry: {
+            environment: config.get("sentry.environment"),
+            clientDsn: config.get("sentry.clientDsn"),
+          },
+          releaseVersion: config.get("releaseVersion"),
+          contactEmail: config.get("contactEmail"),
+          github: {
+            appUrl: config.get("github.appUrl"),
+            loginUrl: config.get("github.loginUrl"),
+            marketplaceUrl: config.get("github.marketplaceUrl"),
+          },
+          gitlab: {
+            loginUrl: config.get("gitlab.loginUrl"),
+          },
+          stripe: {
+            pricingTableId: config.get("stripe.pricingTableId"),
+            publishableKey: config.get("stripe.publishableKey"),
+          },
+          server: {
+            url: config.get("server.url"),
+          },
+          api: {
+            baseUrl: config.get("api.baseUrl"),
+          },
+        },
+      })}`,
+    );
+  });
+
+  const distDir = join(import.meta.dirname, "../../../frontend/dist");
 
   // Static directory
   router.use(
-    "/static/app",
-    serveStatic(join(__dirname, "../../../frontend/dist"), {
+    serveStatic(distDir, {
       etag: true,
       lastModified: false,
       maxAge: "1 year",
@@ -57,33 +85,11 @@ export const installAppRouter = async (app: express.Application) => {
     res.redirect(getGoogleAuthUrl({ r }));
   });
 
-  router.get("*", rendering());
-
-  const htmlErrorHandler: express.ErrorRequestHandler = (
-    err,
-    req,
-    res,
-    next,
-  ) => {
-    rendering({
-      error: {
-        statusCode: res.statusCode,
-        message: production ? "" : err.message,
-        stack: production ? "" : err.stack,
-      },
-    })(req, res, next);
-  };
+  router.get("*", (_req, res) => {
+    res.sendFile(join(distDir, "index.html"));
+  });
 
   router.use(Handlers.errorHandler());
-
-  router.use(
-    errorHandler({
-      formatters: {
-        html: htmlErrorHandler,
-        default: htmlErrorHandler,
-      },
-    }),
-  );
 
   app.use(subdomain(router, "app"));
 };

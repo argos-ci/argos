@@ -1,11 +1,7 @@
 import * as Sentry from "@sentry/node";
 import type { ErrorRequestHandler } from "express";
-// @ts-ignore
-import expressErr from "express-err";
 
-const interopRequireDefault = (mod: any) => mod.default || mod;
-
-export function errorHandler({ formatters }: any) {
+export function errorHandler() {
   const handlers: ErrorRequestHandler[] = [
     Sentry.Handlers.errorHandler(),
     (error, _req, _res, next) => {
@@ -14,10 +10,26 @@ export function errorHandler({ formatters }: any) {
       }
       next(error);
     },
-    interopRequireDefault(expressErr)({
-      exitOnUncaughtException: false,
-      formatters,
-    }),
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (error: unknown, _req, res, _next) => {
+      const statusCode =
+        error instanceof Error &&
+        "statusCode" in error &&
+        typeof error.statusCode === "number"
+          ? error.statusCode
+          : 500;
+      const message =
+        error instanceof Error ? error.message : "Internal Server Error";
+      const code =
+        error instanceof Error && "code" in error ? error.code : undefined;
+      res.status(statusCode);
+      return res.send({
+        error: {
+          message,
+          code,
+        },
+      });
+    },
   ];
   return handlers;
 }

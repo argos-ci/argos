@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import "@radix-ui/colors/gray";
 @import "@radix-ui/colors/gray-dark";
 @import "@radix-ui/colors/mauve";
@@ -16,6 +12,10 @@
 @import "@radix-ui/colors/grass-dark";
 @import "@radix-ui/colors/blue";
 @import "@radix-ui/colors/blue-dark";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   html,

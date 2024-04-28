@@ -3,8 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as Sentry from "@sentry/node";
 import compress from "compression";
-import { renderFile } from "ejs";
-import express, { static as serveStatic } from "express";
+import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
@@ -18,7 +17,6 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 export const createApp = async () => {
   const app = express();
   app.disable("x-powered-by");
-  app.engine("html", renderFile);
   app.set("trust proxy", 1);
   app.set("views", join(__dirname, ".."));
 
@@ -57,17 +55,6 @@ export const createApp = async () => {
       }
     });
   }
-
-  // Public directory
-  app.use(
-    serveStatic(join(__dirname, "../../../../public"), {
-      etag: true,
-      lastModified: false,
-      setHeaders: (res) => {
-        res.set("Cache-Control", "no-cache");
-      },
-    }),
-  );
 
   app.use(
     helmet({

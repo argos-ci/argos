@@ -1,6 +1,4 @@
 import { Application, Router } from "express";
-// @ts-ignore
-import { formatters } from "express-err";
 
 import { errorHandler } from "../middlewares/errorHandler.js";
 import { subdomain } from "../util.js";
@@ -21,14 +19,7 @@ export const installApiRouter = (app: Application) => {
   router.use(webhooksMiddleware);
   router.use(stripe);
 
-  router.use(
-    errorHandler({
-      formatters: {
-        json: formatters.json,
-        default: formatters.json,
-      },
-    }),
-  );
+  router.use(errorHandler());
 
   app.use(subdomain(router, "api"));
 };

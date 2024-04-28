@@ -3,11 +3,11 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "build": "rm -rf dist && webpack",
+    "build": "rm -rf dist && NODE_ENV=production vite build",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "lint": "eslint --ignore-path=../../.gitignore .",
-    "watch-build": "webpack-dev-server"
+    "watch-build": "vite"
   },
   "sideEffects": false,
   "devDependencies": {
@@ -28,12 +28,11 @@
     "@types/react": "^18.2.73",
     "@types/react-dom": "^18.2.23",
     "@types/react-helmet": "^6.1.11",
+    "@vitejs/plugin-react": "^4.2.1",
     "ariakit": "^2.0.0-next.44",
-    "assets-webpack-plugin": "^7.1.1",
     "autoprefixer": "^10.4.19",
     "axios": "^1.6.8",
     "clsx": "^2.1.0",
-    "core-js": "^3.36.1",
     "css-loader": "^6.10.0",
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
@@ -43,26 +42,22 @@
     "js-cookie": "^3.0.5",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.364.0",
-    "mini-css-extract-plugin": "^2.8.1",
     "moment": "^2.30.1",
     "postcss": "^8.4.38",
-    "postcss-loader": "^8.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-error-boundary": "^4.0.13",
     "react-helmet": "^6.1.0",
     "react-hook-form": "^7.51.2",
     "react-router-dom": "^6.22.3",
-    "swc-loader": "^0.2.6",
     "tailwindcss": "^3.4.3",
     "tailwindcss-animate": "^1.0.7",
     "use-clipboard-copy": "^0.2.0",
     "use-debounce": "^10.0.0",
-    "webpack": "^5.91.0",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.0.4"
+    "vite": "^5.2.10"
   },
   "overrides": {
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   }
 }
