@@ -85,7 +85,7 @@ export const installAppRouter = async (app: express.Application) => {
     res.redirect(getGoogleAuthUrl({ r }));
   });
 
-  router.get("/*", (_req, res) => {
+  router.get("*", (_req, res) => {
     res.sendFile(join(distDir, "index.html"));
   });
 
