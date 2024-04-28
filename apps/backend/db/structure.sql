@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 13.10
+-- Dumped from database version 14.11
 -- Dumped by pg_dump version 14.10 (Homebrew)
 
 SET statement_timeout = 0;
@@ -90,6 +90,7 @@ CREATE TABLE public.accounts (
     name character varying(255),
     slug character varying(255) NOT NULL,
     "gitlabAccessToken" character varying(255),
+    "gitlabBaseUrl" character varying(255),
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -177,6 +178,8 @@ CREATE TABLE public.builds (
     "referenceBranch" character varying(255),
     "githubPullRequestId" bigint,
     "prHeadCommit" character varying(255),
+    mode text DEFAULT 'ci'::text NOT NULL,
+    CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
 
@@ -884,7 +887,9 @@ CREATE TABLE public.screenshot_buckets (
     complete boolean DEFAULT false NOT NULL,
     "projectId" bigint NOT NULL,
     "screenshotCount" integer,
-    CONSTRAINT chk_complete_true_screenshotcount_not_null CHECK (((complete = false) OR ("screenshotCount" IS NOT NULL)))
+    mode text DEFAULT 'ci'::text NOT NULL,
+    CONSTRAINT chk_complete_true_screenshotcount_not_null CHECK (((complete = false) OR ("screenshotCount" IS NOT NULL))),
+    CONSTRAINT screenshot_buckets_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text])))
 );
 
 
@@ -2614,3 +2619,6 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024030
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240307081941_project_users.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240309214656_clean_vercel.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240329130227_googleUserId.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240330152633_gitlab-on-prem.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240428061335_monitoring-mode.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240428200226_monitoring-mode-bucket.js', 1, NOW());

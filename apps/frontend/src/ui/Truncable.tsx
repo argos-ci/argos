@@ -25,11 +25,7 @@ export const Truncable = ({
   };
 
   return (
-    <TooltipRoot
-      open={open}
-      onOpenChange={handleOpenChange}
-      disableHoverableContent
-    >
+    <TooltipRoot open={open} onOpenChange={handleOpenChange}>
       <TooltipTrigger ref={ref} asChild>
         <div className={clsx("truncate", className)} {...props}>
           {children}

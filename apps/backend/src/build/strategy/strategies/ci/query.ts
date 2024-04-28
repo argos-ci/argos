@@ -7,7 +7,7 @@ export async function getBaseBucketForBuildAndCommit(
   build: Build,
   commit: string,
 ) {
-  return queryBaseBucket(build).findOne((qb) => {
+  const bucket = await queryBaseBucket(build).findOne((qb) => {
     // Try to find a bucket for the commit
     qb.where("commit", commit)
       // Try to find a build by "prHeadCommit"
@@ -19,9 +19,11 @@ export async function getBaseBucketForBuildAndCommit(
           projectId: build.projectId,
           name: build.name,
           prHeadCommit: commit,
+          mode: build.mode,
         }),
       );
   });
+  return bucket ?? null;
 }
 
 /**
@@ -32,5 +34,6 @@ export function queryBaseBucket(build: Build) {
     projectId: build.projectId,
     name: build.name,
     complete: true,
+    mode: build.mode,
   });
 }

@@ -93,6 +93,9 @@ type Build implements Node {
   createdAt: DateTime!
   id: ID!
 
+  """Mode"""
+  mode: BuildMode!
+
   """Build name"""
   name: String!
 
@@ -130,6 +133,16 @@ type Build implements Node {
 type BuildConnection implements Connection {
   edges: [Build!]!
   pageInfo: PageInfo!
+}
+
+enum BuildMode {
+  """
+  Build is compared with a baseline based on reference branch and Git history
+  """
+  ci
+
+  """Build is compared with the latest approved build"""
+  monitoring
 }
 
 type BuildParallel {

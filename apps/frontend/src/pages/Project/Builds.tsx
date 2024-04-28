@@ -6,6 +6,7 @@ import { clsx } from "clsx";
 import { Helmet } from "react-helmet";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
+import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
@@ -68,6 +69,7 @@ const ProjectBuildsQuery = graphql(`
           name
           branch
           commit
+          mode
           pullRequest {
             id
             ...PullRequestButton_PullRequest
@@ -130,13 +132,18 @@ const BuildRow = React.memo(
         <RouterLink
           to={`/${accountSlug}/${projectName}/builds/${build.number}`}
         >
-          <div className="w-20 shrink-0 truncate">
-            <div className="tabular-nums">#{build.number}</div>
-            <div className="text-low">
+          <div className="w-20 shrink-0">
+            <div className="flex items-center gap-1">
+              <div className="shrink-0">
+                <BuildModeIndicator mode={build.mode} />
+              </div>
+              <div className="tabular-nums">{build.number}</div>
+            </div>
+            <div className="text-low truncate">
               {build.name !== "default" ? build.name : ""}
             </div>
           </div>
-          <div className="flex shrink-0 flex-col items-start">
+          <div className="flex w-[12.5rem] shrink-0 items-start">
             <BuildStatusChip build={build} project={project} />
           </div>
           <div className="flex-1" />

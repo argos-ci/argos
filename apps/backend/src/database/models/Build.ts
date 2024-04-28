@@ -50,6 +50,8 @@ export const BuildAggregatedStatusSchema = z.union([
 ]);
 export type BuildAggregatedStatus = z.infer<typeof BuildAggregatedStatusSchema>;
 
+export type BuildMode = "ci" | "monitoring";
+
 export class Build extends Model {
   static override tableName = "builds";
 
@@ -73,6 +75,7 @@ export class Build extends Model {
       githubPullRequestId: { type: ["string", "null"] },
       referenceCommit: { type: ["string", "null"] },
       referenceBranch: { type: ["string", "null"] },
+      mode: { type: "string", enum: ["ci", "monitoring"] },
     },
   });
 
@@ -91,6 +94,7 @@ export class Build extends Model {
   githubPullRequestId!: string | null;
   referenceCommit!: string | null;
   referenceBranch!: string | null;
+  mode!: BuildMode;
 
   static override get relationMappings(): RelationMappings {
     return {

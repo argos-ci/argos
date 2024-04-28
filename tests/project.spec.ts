@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 test("project builds", async ({ page }) => {
   await page.goto("/smooth/big");
-  await expect(page.getByText("#12")).toBeVisible();
+  await expect(page.getByText("12")).toBeVisible();
   await argosScreenshot(page, `project-builds`);
 });
 

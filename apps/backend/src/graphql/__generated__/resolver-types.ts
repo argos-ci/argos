@@ -122,6 +122,8 @@ export type IBuild = INode & {
   commit: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
+  /** Mode */
+  mode: IBuildMode;
   /** Build name */
   name: Scalars['String']['output'];
   /** Continuous number. It is incremented after each build */
@@ -156,6 +158,13 @@ export type IBuildConnection = IConnection & {
   edges: Array<IBuild>;
   pageInfo: IPageInfo;
 };
+
+export enum IBuildMode {
+  /** Build is compared with a baseline based on reference branch and Git history */
+  Ci = 'ci',
+  /** Build is compared with the latest approved build */
+  Monitoring = 'monitoring'
+}
 
 export type IBuildParallel = {
   __typename?: 'BuildParallel';
@@ -1196,6 +1205,7 @@ export type IResolversTypes = ResolversObject<{
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Build: ResolverTypeWrapper<Build>;
   BuildConnection: ResolverTypeWrapper<Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversTypes['Build']> }>;
+  BuildMode: IBuildMode;
   BuildParallel: ResolverTypeWrapper<IBuildParallel>;
   BuildStats: ResolverTypeWrapper<IBuildStats>;
   BuildStatus: IBuildStatus;
@@ -1424,6 +1434,7 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  mode?: Resolver<IResolversTypes['BuildMode'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   number?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   parallel?: Resolver<Maybe<IResolversTypes['BuildParallel']>, ParentType, ContextType>;

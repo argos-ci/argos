@@ -4,6 +4,7 @@ import { Button as AriakitButton } from "ariakit/button";
 import { clsx } from "clsx";
 
 import type { BuildStats } from "@/containers/Build";
+import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -37,15 +38,15 @@ const getStatCountColorClassName = (
 
 const getStatHotkeyName = (group: DiffGroup["name"]): HotkeyName => {
   switch (group) {
-    case "failure":
+    case ScreenshotDiffStatus.Failure:
       return "goToFirstFailure";
-    case "changed":
+    case ScreenshotDiffStatus.Changed:
       return "goToFirstChanged";
-    case "added":
+    case ScreenshotDiffStatus.Added:
       return "goToFirstAdded";
-    case "removed":
+    case ScreenshotDiffStatus.Removed:
       return "goToFirstRemoved";
-    case "unchanged":
+    case ScreenshotDiffStatus.Unchanged:
       return "goToFirstUnchanged";
     default:
       assertNever(group);

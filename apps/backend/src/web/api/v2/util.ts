@@ -5,6 +5,7 @@ import { pushBuildNotification } from "@/build-notification/index.js";
 import { transaction } from "@/database/index.js";
 import {
   Build,
+  BuildMode,
   GithubPullRequest,
   Project,
   ScreenshotBucket,
@@ -60,6 +61,7 @@ type CreateRequest = Request<
     parallelNonce?: string | null;
     prNumber?: number | null;
     prHeadCommit?: string | null;
+    mode?: BuildMode | null;
   }
 > & { authProject: Project };
 
@@ -73,6 +75,7 @@ const createBuild = async (params: {
   prHeadCommit?: string | null;
   referenceCommit?: string | null;
   referenceBranch?: string | null;
+  mode?: BuildMode | null;
 }) => {
   const account = await params.project.$relatedQuery("account");
   if (!account) {
@@ -111,6 +114,7 @@ const createBuild = async (params: {
   }
 
   const buildName = params.buildName || "default";
+  const mode = params.mode ?? "ci";
 
   const githubRepository =
     await params.project.$relatedQuery("githubRepository");
@@ -134,6 +138,7 @@ const createBuild = async (params: {
           branch: params.branch,
           projectId: params.project.id,
           complete: false,
+          mode,
         });
 
         const build = await Build.query(trx).insertAndFetch({
@@ -149,6 +154,7 @@ const createBuild = async (params: {
           referenceCommit: params.referenceCommit ?? null,
           referenceBranch: params.referenceBranch ?? null,
           compareScreenshotBucketId: bucket.id,
+          mode,
         });
 
         return build;
@@ -174,6 +180,7 @@ export const createBuildFromRequest = async ({
     buildName: req.body.name ?? null,
     commit: req.body.commit,
     branch: req.body.branch,
+    mode: req.body.mode ?? null,
     parallel:
       req.body.parallel && req.body.parallelNonce
         ? { nonce: req.body.parallelNonce }

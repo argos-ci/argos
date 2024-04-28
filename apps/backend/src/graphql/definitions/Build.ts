@@ -54,6 +54,13 @@ export const typeDefs = gql`
     unchanged: Int!
   }
 
+  enum BuildMode {
+    "Build is compared with a baseline based on reference branch and Git history"
+    ci
+    "Build is compared with the latest approved build"
+    monitoring
+  }
+
   type Build implements Node {
     id: ID!
     createdAt: DateTime!
@@ -84,6 +91,8 @@ export const typeDefs = gql`
     branch: String!
     "Parallel infos"
     parallel: BuildParallel
+    "Mode"
+    mode: BuildMode!
   }
 
   type BuildParallel {

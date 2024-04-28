@@ -109,7 +109,12 @@ const ScreenshotDiffFragment = graphql(`
 export type Diff = ResultOf<typeof ScreenshotDiffFragment>;
 
 export interface DiffGroup {
-  name: "failure" | "changed" | "added" | "removed" | "unchanged";
+  name:
+    | ScreenshotDiffStatus.Failure
+    | ScreenshotDiffStatus.Changed
+    | ScreenshotDiffStatus.Added
+    | ScreenshotDiffStatus.Removed
+    | ScreenshotDiffStatus.Unchanged;
   diffs: (Diff | null)[];
 }
 
@@ -354,12 +359,18 @@ const hydrateGroups = (groups: DiffGroup[], screenshotDiffs: Diff[]) => {
   });
 };
 
+function checkIsGroupDiffStatus(
+  value: unknown,
+): value is (typeof GROUPS)[number] {
+  return GROUPS.includes(value as (typeof GROUPS)[number]);
+}
+
 const groupDiffs = (diffs: Diff[]): DiffGroup[] => {
   return diffs.reduce<DiffGroup[]>((groups, diff) => {
     const group = groups.find((group) => group.name === diff.status);
     if (group) {
       group.diffs.push(diff);
-    } else {
+    } else if (checkIsGroupDiffStatus(diff.status)) {
       groups.push({
         name: diff.status,
         diffs: [diff],
@@ -425,13 +436,16 @@ export const BuildDiffProvider = (props: {
   const [search, setSearch] = useState("");
   const [searchMode, setSearchMode] = useState(false);
   const navigate = useNavigate();
-  const expandedState = useExpandedState(["failure", "changed"]);
+  const expandedState = useExpandedState([
+    ScreenshotDiffStatus.Failure,
+    ScreenshotDiffStatus.Changed,
+  ]);
   const searchExpandedState = useExpandedState([
-    "failure",
-    "changed",
-    "added",
-    "removed",
-    "unchanged",
+    ScreenshotDiffStatus.Failure,
+    ScreenshotDiffStatus.Changed,
+    ScreenshotDiffStatus.Added,
+    ScreenshotDiffStatus.Removed,
+    ScreenshotDiffStatus.Unchanged,
   ]);
   const { expanded, toggleGroup } = searchMode
     ? searchExpandedState
