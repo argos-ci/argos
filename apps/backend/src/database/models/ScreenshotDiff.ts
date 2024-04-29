@@ -170,9 +170,13 @@ export class ScreenshotDiff extends Model {
         return loadScreenshot(this.compareScreenshotId);
       })();
 
-      const { name } = compareScreenshot;
+      const { name, metadata } = compareScreenshot;
       return ScreenshotDiff.screenshotFailureRegexp.test(name)
-        ? "failure"
+        ? metadata?.test?.retry == null ||
+          metadata?.test?.retries == null ||
+          metadata.test.retry === metadata.test.retries
+          ? "failure"
+          : "retryFailure"
         : "added";
     }
 
