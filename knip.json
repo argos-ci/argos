@@ -18,7 +18,11 @@
     },
     "apps/frontend": {
       "ignore": ["src/gql/**/*", "vite.config.ts"],
-      "ignoreDependencies": ["@radix-ui/colors", "@vitejs/plugin-react"],
+      "ignoreDependencies": [
+        "@radix-ui/colors",
+        "@vitejs/plugin-react",
+        "@sentry/vite-plugin"
+      ],
       "vite": {
         "config": []
       }

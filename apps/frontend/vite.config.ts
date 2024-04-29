@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
@@ -8,7 +9,14 @@ import { defineConfig } from "vite";
 export default defineConfig(({ mode }) => {
   return {
     mode: process.env.BUILD_MODE || mode,
-    plugins: [react()],
+    plugins: [
+      react(),
+      sentryVitePlugin({
+        org: "argos",
+        project: "argos-browser",
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+      }),
+    ],
     build: {
       rollupOptions: {
         output: {
