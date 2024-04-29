@@ -6,9 +6,10 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode: argMode }) => {
+  const mode = process.env.BUILD_MODE || argMode;
   return {
-    mode: process.env.BUILD_MODE || mode,
+    mode,
     plugins: [
       react(),
       sentryVitePlugin({
@@ -18,6 +19,7 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     build: {
+      sourcemap: mode !== "development",
       rollupOptions: {
         output: {
           manualChunks: (id) => {
