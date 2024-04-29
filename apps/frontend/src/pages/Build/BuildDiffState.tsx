@@ -63,6 +63,8 @@ const ScreenshotDiffFragment = graphql(`
             file
             line
           }
+          retry
+          retries
         }
       }
     }
@@ -99,6 +101,8 @@ const ScreenshotDiffFragment = graphql(`
             file
             line
           }
+          retry
+          retries
         }
       }
       playwrightTraceUrl
@@ -114,7 +118,8 @@ export interface DiffGroup {
     | ScreenshotDiffStatus.Changed
     | ScreenshotDiffStatus.Added
     | ScreenshotDiffStatus.Removed
-    | ScreenshotDiffStatus.Unchanged;
+    | ScreenshotDiffStatus.Unchanged
+    | ScreenshotDiffStatus.RetryFailure;
   diffs: (Diff | null)[];
 }
 
@@ -419,6 +424,7 @@ const BuildDiffStateFragment = graphql(`
       added
       removed
       unchanged
+      retryFailure
     }
   }
 `);

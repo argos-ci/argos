@@ -32,6 +32,7 @@ export interface BuildStats {
   added: number;
   removed: number;
   unchanged: number;
+  retryFailure: number;
 }
 
 export const getBuildColor = (

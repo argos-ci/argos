@@ -179,6 +179,7 @@ export type IBuildStats = {
   changed: Scalars['Int']['output'];
   failure: Scalars['Int']['output'];
   removed: Scalars['Int']['output'];
+  retryFailure: Scalars['Int']['output'];
   total: Scalars['Int']['output'];
   unchanged: Scalars['Int']['output'];
 };
@@ -822,6 +823,7 @@ export enum IScreenshotDiffStatus {
   Failure = 'failure',
   Pending = 'pending',
   Removed = 'removed',
+  RetryFailure = 'retryFailure',
   Unchanged = 'unchanged'
 }
 
@@ -876,6 +878,8 @@ export type IScreenshotMetadataTest = {
   __typename?: 'ScreenshotMetadataTest';
   id?: Maybe<Scalars['String']['output']>;
   location?: Maybe<IScreenshotMetadataLocation>;
+  retries?: Maybe<Scalars['Int']['output']>;
+  retry?: Maybe<Scalars['Int']['output']>;
   title: Scalars['String']['output'];
   titlePath: Array<Scalars['String']['output']>;
 };
@@ -1467,6 +1471,7 @@ export type IBuildStatsResolvers<ContextType = Context, ParentType extends IReso
   changed?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   failure?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   removed?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  retryFailure?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   unchanged?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1815,6 +1820,8 @@ export type IScreenshotMetadataSdkResolvers<ContextType = Context, ParentType ex
 export type IScreenshotMetadataTestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataTest'] = IResolversParentTypes['ScreenshotMetadataTest']> = ResolversObject<{
   id?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   location?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataLocation']>, ParentType, ContextType>;
+  retries?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  retry?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   title?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   titlePath?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
