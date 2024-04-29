@@ -2,6 +2,19 @@
   "$schema": "https://turborepo.org/schema.json",
   "extends": ["//"],
   "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "inputs": [
+        "src/**",
+        "package.json",
+        "index.html",
+        "tailwind.config.js",
+        "postcss.config.js",
+        "vite.config.js"
+      ],
+      "env": ["BUILD_MODE"]
+    },
     "watch-build": {
       "dependsOn": ["^build"],
       "persistent": true,
