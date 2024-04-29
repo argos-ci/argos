@@ -234,6 +234,20 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
           icon={getGroupIcon(ScreenshotDiffStatus.Added)}
         />
       );
+    case ScreenshotDiffStatus.RetryFailure:
+      return (
+        <MissingScreenshotInfo
+          title="Retried failure screenshot"
+          description={
+            <>
+              A failure screenshot has no baseline to compare with. This
+              screenshot was taken at the end of a failed attempt of the test.
+              Since it has been retried, it is not considered as a failure.
+            </>
+          }
+          icon={getGroupIcon(ScreenshotDiffStatus.Failure)}
+        />
+      );
     case ScreenshotDiffStatus.Failure:
       return (
         <MissingScreenshotInfo
@@ -367,6 +381,25 @@ const CompareScreenshot = ({
             <img
               className={clsx(contained && "max-h-full")}
               alt="Failure screenshot"
+              {...getImgAttributes(diff.compareScreenshot!)}
+            />
+          </ScreenshotContainer>
+        </ZoomPane>
+      );
+    case ScreenshotDiffStatus.RetryFailure:
+      return (
+        <ZoomPane
+          controls={
+            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+          }
+        >
+          <ScreenshotContainer
+            dimensions={diff.compareScreenshot!}
+            contained={contained}
+          >
+            <img
+              className={clsx(contained && "max-h-full")}
+              alt="Retried failure screenshot"
               {...getImgAttributes(diff.compareScreenshot!)}
             />
           </ScreenshotContainer>

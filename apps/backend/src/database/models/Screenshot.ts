@@ -23,6 +23,8 @@ export type ScreenshotMetadata = {
       line: number;
       column: number;
     };
+    retry?: number;
+    retries?: number;
   } | null;
   browser?: {
     name: string;

@@ -257,6 +257,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
     case "added":
     case "unchanged":
     case "failure":
+    case "retryFailure":
       return (
         <img
           {...getImgAttributes(diff.compareScreenshot!.url, dimensions)}
