@@ -156,7 +156,7 @@ type BuildStats {
   changed: Int!
   failure: Int!
   removed: Int!
-  retryFailure: Int!
+  retriedFailure: Int!
   total: Int!
   unchanged: Int!
 }
@@ -644,7 +644,7 @@ enum ScreenshotDiffStatus {
   failure
   pending
   removed
-  retryFailure
+  retriedFailure
   unchanged
 }
 

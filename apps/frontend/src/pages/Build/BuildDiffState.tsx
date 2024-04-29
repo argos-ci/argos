@@ -119,7 +119,7 @@ export interface DiffGroup {
     | ScreenshotDiffStatus.Added
     | ScreenshotDiffStatus.Removed
     | ScreenshotDiffStatus.Unchanged
-    | ScreenshotDiffStatus.RetryFailure;
+    | ScreenshotDiffStatus.RetriedFailure;
   diffs: (Diff | null)[];
 }
 
@@ -424,7 +424,7 @@ const BuildDiffStateFragment = graphql(`
       added
       removed
       unchanged
-      retryFailure
+      retriedFailure
     }
   }
 `);

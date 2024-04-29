@@ -179,7 +179,7 @@ export type IBuildStats = {
   changed: Scalars['Int']['output'];
   failure: Scalars['Int']['output'];
   removed: Scalars['Int']['output'];
-  retryFailure: Scalars['Int']['output'];
+  retriedFailure: Scalars['Int']['output'];
   total: Scalars['Int']['output'];
   unchanged: Scalars['Int']['output'];
 };
@@ -823,7 +823,7 @@ export enum IScreenshotDiffStatus {
   Failure = 'failure',
   Pending = 'pending',
   Removed = 'removed',
-  RetryFailure = 'retryFailure',
+  RetriedFailure = 'retriedFailure',
   Unchanged = 'unchanged'
 }
 
@@ -1471,7 +1471,7 @@ export type IBuildStatsResolvers<ContextType = Context, ParentType extends IReso
   changed?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   failure?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   removed?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  retryFailure?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  retriedFailure?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   unchanged?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

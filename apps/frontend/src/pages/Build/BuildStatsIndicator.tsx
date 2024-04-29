@@ -48,8 +48,8 @@ const getStatHotkeyName = (group: DiffGroup["name"]): HotkeyName => {
       return "goToFirstRemoved";
     case ScreenshotDiffStatus.Unchanged:
       return "goToFirstUnchanged";
-    case ScreenshotDiffStatus.RetryFailure:
-      return "goToFirstRetryFailure";
+    case ScreenshotDiffStatus.RetriedFailure:
+      return "goToFirstRetriedFailure";
     default:
       assertNever(group);
   }

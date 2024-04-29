@@ -261,7 +261,7 @@ export class Build extends Model {
         changed: 0,
         removed: 0,
         total: 0,
-        retryFailure: 0,
+        retriedFailure: 0,
       },
     );
   }

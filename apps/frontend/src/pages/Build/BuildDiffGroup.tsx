@@ -18,14 +18,14 @@ export const GROUPS = [
   ScreenshotDiffStatus.Added,
   ScreenshotDiffStatus.Removed,
   ScreenshotDiffStatus.Unchanged,
-  ScreenshotDiffStatus.RetryFailure,
+  ScreenshotDiffStatus.RetriedFailure,
 ] as const;
 
 export const getGroupColor = (name: DiffGroup["name"]) => {
   switch (name) {
     case ScreenshotDiffStatus.Failure:
       return "danger" as const;
-    case ScreenshotDiffStatus.RetryFailure:
+    case ScreenshotDiffStatus.RetriedFailure:
     case ScreenshotDiffStatus.Changed:
       return "warning" as const;
     case ScreenshotDiffStatus.Added:
@@ -51,8 +51,8 @@ export const getGroupLabel = (name: DiffGroup["name"]) => {
       return "Removed";
     case ScreenshotDiffStatus.Unchanged:
       return "Unchanged";
-    case ScreenshotDiffStatus.RetryFailure:
-      return "Retry Failures";
+    case ScreenshotDiffStatus.RetriedFailure:
+      return "Retried failures";
     default:
       assertNever(name);
   }
@@ -70,7 +70,7 @@ export const getGroupIcon = (name: DiffGroup["name"]) => {
       return <CheckCircle2Icon />;
     case ScreenshotDiffStatus.Failure:
       return <XCircleIcon />;
-    case ScreenshotDiffStatus.RetryFailure:
+    case ScreenshotDiffStatus.RetriedFailure:
       return <RotateCcwIcon />;
     default:
       assertNever(name);

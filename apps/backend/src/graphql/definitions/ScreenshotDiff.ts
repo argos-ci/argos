@@ -18,7 +18,7 @@ export const typeDefs = gql`
     added
     changed
     unchanged
-    retryFailure
+    retriedFailure
   }
 
   type ScreenshotDiff implements Node {

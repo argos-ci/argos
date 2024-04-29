@@ -44,10 +44,10 @@ const hotkeys = {
     displayKeys: ["5"],
     description: "Go to first unchanged screenshot",
   } as Hotkey,
-  goToFirstRetryFailure: {
+  goToFirstRetriedFailure: {
     keys: ["Digit6"],
     displayKeys: ["6"],
-    description: "Go to first retry failure screenshot",
+    description: "Go to first retried failure screenshot",
   } as Hotkey,
   toggleSidebarPanel: {
     keys: ["KeyB"],

@@ -120,7 +120,7 @@ export class ScreenshotDiff extends Model {
               metadata->'test'->>'retry' = metadata->'test'->>'retries'
             )
               THEN 'failure'
-            ELSE 'retryFailure'
+            ELSE 'retriedFailure'
           END)
         ELSE 'added'
       END)
