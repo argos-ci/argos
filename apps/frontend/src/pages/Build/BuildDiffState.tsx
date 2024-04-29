@@ -445,6 +445,8 @@ export const BuildDiffProvider = (props: {
   const expandedState = useExpandedState([
     ScreenshotDiffStatus.Failure,
     ScreenshotDiffStatus.Changed,
+    ScreenshotDiffStatus.Added,
+    ScreenshotDiffStatus.Removed,
   ]);
   const searchExpandedState = useExpandedState([
     ScreenshotDiffStatus.Failure,
@@ -452,6 +454,7 @@ export const BuildDiffProvider = (props: {
     ScreenshotDiffStatus.Added,
     ScreenshotDiffStatus.Removed,
     ScreenshotDiffStatus.Unchanged,
+    ScreenshotDiffStatus.RetryFailure,
   ]);
   const { expanded, toggleGroup } = searchMode
     ? searchExpandedState
