@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 
 import config from "@/config/index.js";
+import logger from "@/logger/index.js";
 
 import { WelcomeEmail } from "./welcome.js";
 
@@ -15,10 +16,14 @@ const resend =
 const from = "Argos <contact@argos-ci.com>";
 
 export async function sendWelcomeEmail({ to }: { to: string }) {
-  await resend?.emails.send({
-    from,
-    to: [to],
-    subject: "Welcome to Argos!",
-    react: WelcomeEmail({ baseUrl: config.get("server.url") }),
-  });
+  try {
+    await resend?.emails.send({
+      from,
+      to: [to],
+      subject: "Welcome to Argos!",
+      react: WelcomeEmail({ baseUrl: config.get("server.url") }),
+    });
+  } catch (error) {
+    logger.error(new Error("Failed to send welcome email", { cause: error }));
+  }
 }
