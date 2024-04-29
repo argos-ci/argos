@@ -52,6 +52,7 @@ export const typeDefs = gql`
     added: Int!
     removed: Int!
     unchanged: Int!
+    retryFailure: Int!
   }
 
   enum BuildMode {

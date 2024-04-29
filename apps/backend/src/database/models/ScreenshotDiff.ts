@@ -111,7 +111,17 @@ export class ScreenshotDiff extends Model {
     WHEN "baseScreenshotId" IS NULL
       THEN (CASE
         WHEN "name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
-          THEN 'failure'
+          THEN (CASE
+            WHEN  (
+              -- Checks for absence of 'retry' and 'retries' or their values being null
+              (metadata->'test'->>'retry' IS NULL OR metadata->'test'->>'retries' IS NULL)
+              OR
+              -- Checks for 'retry' being equal to 'retries'
+              metadata->'test'->>'retry' = metadata->'test'->>'retries'
+            )
+              THEN 'failure'
+            ELSE 'retryFailure'
+          END)
         ELSE 'added'
       END)
     WHEN "score" IS NOT NULL AND "score" > 0
@@ -120,15 +130,25 @@ export class ScreenshotDiff extends Model {
     END`;
 
   static sortDiffByStatus = `CASE
-    WHEN "compareScreenshotId" IS NULL THEN 30 -- removed
+    WHEN "compareScreenshotId" IS NULL THEN 3 -- removed
     WHEN "baseScreenshotId" IS NULL
       THEN (CASE
         WHEN "compareScreenshot"."name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
-          THEN 0 -- failure
-        ELSE 20 -- added
+          THEN (CASE
+            WHEN  (
+              -- Checks for absence of 'retry' and 'retries' or their values being null
+              ("compareScreenshot".metadata->'test'->>'retry' IS NULL OR "compareScreenshot".metadata->'test'->>'retries' IS NULL)
+              OR
+              -- Checks for 'retry' being equal to 'retries'
+              "compareScreenshot".metadata->'test'->>'retry' = "compareScreenshot".metadata->'test'->>'retries'
+            )
+              THEN 0
+            ELSE 5
+          END)
+        ELSE 2 -- added
       END)
-    WHEN "score" IS NOT NULL AND "score" > 0 THEN 10 -- changed
-    ELSE 40 -- unchanged
+    WHEN "score" IS NOT NULL AND "score" > 0 THEN 1 -- changed
+    ELSE 4 -- unchanged
     END ASC`;
 
   $getDiffStatus = async (

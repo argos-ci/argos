@@ -156,6 +156,7 @@ type BuildStats {
   changed: Int!
   failure: Int!
   removed: Int!
+  retryFailure: Int!
   total: Int!
   unchanged: Int!
 }
@@ -643,6 +644,7 @@ enum ScreenshotDiffStatus {
   failure
   pending
   removed
+  retryFailure
   unchanged
 }
 
@@ -691,6 +693,8 @@ type ScreenshotMetadataSDK {
 type ScreenshotMetadataTest {
   id: String
   location: ScreenshotMetadataLocation
+  retries: Int
+  retry: Int
   title: String!
   titlePath: [String!]!
 }

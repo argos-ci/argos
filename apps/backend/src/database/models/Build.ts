@@ -254,7 +254,15 @@ export class Build extends Model {
         [status]: Number(count),
         total: Number(count) + res.total,
       }),
-      { failure: 0, added: 0, unchanged: 0, changed: 0, removed: 0, total: 0 },
+      {
+        failure: 0,
+        added: 0,
+        unchanged: 0,
+        changed: 0,
+        removed: 0,
+        total: 0,
+        retryFailure: 0,
+      },
     );
   }
 
