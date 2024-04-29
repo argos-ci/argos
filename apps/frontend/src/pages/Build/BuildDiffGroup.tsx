@@ -52,7 +52,7 @@ export const getGroupLabel = (name: DiffGroup["name"]) => {
     case ScreenshotDiffStatus.Unchanged:
       return "Unchanged";
     case ScreenshotDiffStatus.RetryFailure:
-      return "Retry Failures";
+      return "Retried failures";
     default:
       assertNever(name);
   }
