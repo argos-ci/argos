@@ -219,8 +219,8 @@ importers:
         specifier: ^3.1.4
         version: 3.1.4(knex@3.1.0)
       odiff-bin:
-        specifier: ^3.0.0
-        version: 3.0.0
+        specifier: ^2.6.1
+        version: 2.6.1
       p-retry:
         specifier: ^6.2.0
         version: 6.2.0
@@ -10778,8 +10778,8 @@ packages:
       knex: 3.1.0(pg@8.11.5)
     dev: false
 
-  /odiff-bin@3.0.0:
-    resolution: {integrity: sha512-V7LVsuah0xKmr2O4Q5QMdKWlT0NwLGpQZT63KZ37S9houuIFYKzKJLuumaM1jNvXa9aEZJfMxEA3sisNXV4drQ==}
+  /odiff-bin@2.6.1:
+    resolution: {integrity: sha512-SeI3ehAqjQUMlUkGjvIFGKoHZIO3zG1N1wMRhf7ojM7Vb+HcyB2RKSSCu7kbvYVtSdZADEBSJ7nvP/d7iBLivA==}
     hasBin: true
     requiresBuild: true
     dev: false
