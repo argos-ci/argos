@@ -27,9 +27,6 @@
         "config": []
       }
     },
-    "apps/transactional": {
-      "entry": ["emails/*.tsx"]
-    },
     "packages/tsconfig": {
       "ignoreDependencies": ["@tsconfig/node20", "@tsconfig/strictest"]
     }
