@@ -21,8 +21,7 @@
   },
   "repository": "github:argos-ci/argos",
   "engines": {
-    "node": "20",
-    "pnpm": "9"
+    "node": "20"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.1",
