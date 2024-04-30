@@ -1,13 +1,5 @@
 .github
-.turbo
 .vscode
-tsconfig.json
-.swcrc
-src/
-typings/
-postcss.config.js
-tailwind.config.js
-turbo.json
 /docs
 /examples
 /rabbitmq
@@ -15,11 +7,8 @@ turbo.json
 /tests
 .env.example
 .eslintrc.json
-.gitignore
-.nvmrc
 .prettierignore
 .prettierrc
-codegen.ts
 CONTRIBUTING.md
 docker-compose.yml
 jsconfig.json
@@ -27,8 +16,6 @@ knip.json
 LICENSE
 nodemon.json
 playwright.config.mjs
-pnpm-lock.yaml
-pnpm-workspace.yaml
 README.md
 vitest.config.ts
 vitest.e2e.config.ts
