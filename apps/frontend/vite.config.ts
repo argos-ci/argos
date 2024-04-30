@@ -12,11 +12,13 @@ export default defineConfig(({ mode: argMode }) => {
     mode,
     plugins: [
       react(),
-      mode !== 'development' ? sentryVitePlugin({
-        org: "argos",
-        project: "argos-browser",
-        authToken: process.env.SENTRY_AUTH_TOKEN,
-      }) : null,
+      mode !== "development"
+        ? sentryVitePlugin({
+            org: "argos",
+            project: "argos-browser",
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+          })
+        : null,
     ],
     build: {
       sourcemap: mode !== "development",

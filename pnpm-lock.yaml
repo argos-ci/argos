@@ -462,6 +462,10 @@ importers:
       react-email:
         specifier: ^2.1.2
         version: 2.1.2(@babel/core@7.24.5)(eslint@8.57.0)
+    devDependencies:
+      '@argos/tsconfig':
+        specifier: '*'
+        version: link:../../packages/tsconfig
 
   packages/tsconfig:
     dependencies:

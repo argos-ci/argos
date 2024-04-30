@@ -1,5 +1,10 @@
 {
   "name": "@argos/tsconfig",
+  "exports": {
+    "./react/tsconfig.json": "./react/tsconfig.json",
+    "./base/tsconfig.json": "./base/tsconfig.json",
+    "./node/tsconfig.json": "./node/tsconfig.json"
+  },
   "scripts": {
     "check-format": "prettier --check ."
   },

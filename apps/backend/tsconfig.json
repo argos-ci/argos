@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": "@argos/tsconfig/node.json",
+  "extends": "@argos/tsconfig/node/tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

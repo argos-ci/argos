@@ -7,6 +7,9 @@
     "check-format": "prettier --check .",
     "export": "email export --pretty"
   },
+  "devDependencies": {
+    "@argos/tsconfig": "*"
+  },
   "dependencies": {
     "react-email": "^2.1.2"
   }
