@@ -17,5 +17,8 @@
       "types": "./src/*.ts",
       "default": "./dist/*.js"
     }
+  },
+  "devDependencies": {
+    "@argos/tsconfig": "*"
   }
 }
