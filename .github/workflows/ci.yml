@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
-        uses: ./.github/actions/setup-npm
+        uses: ./.github/actions/setup-deps
 
       - name: Build
         run: npm exec -- turbo run build --filter=\!@argos/frontend
@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
-        uses: ./.github/actions/setup-npm
+        uses: ./.github/actions/setup-deps
 
       - name: Build
         run: npm exec -- turbo run build --filter=\!@argos/frontend
@@ -113,7 +113,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
-        uses: ./.github/actions/setup-npm
+        uses: ./.github/actions/setup-deps
 
       - name: Setup
         run: npm run setup
@@ -165,7 +165,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js & install dependencies
-        uses: ./.github/actions/setup-npm
+        uses: ./.github/actions/setup-deps
 
       - name: Setup
         run: npm run setup

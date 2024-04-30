@@ -1,0 +1,21 @@
+name: "Setup deps"
+description: "Install Node.js and dependencies"
+runs:
+  using: "composite"
+  steps:
+    - uses: pnpm/action-setup@v3
+      name: Install pnpm
+      id: pnpm-install
+      with:
+        version: 8
+        run_install: false
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
