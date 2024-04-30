@@ -288,6 +288,9 @@ importers:
       '@types/morgan':
         specifier: ^1.9.9
         version: 1.9.9
+      '@types/react':
+        specifier: ^18.3.1
+        version: 18.3.1
       '@types/sharp':
         specifier: ^0.31.1
         version: 0.31.1
@@ -402,6 +405,9 @@ importers:
       fast-fuzzy:
         specifier: ^1.12.0
         version: 1.12.0
+      graphql:
+        specifier: ^16.8.1
+        version: 16.8.1
       js-cookie:
         specifier: ^3.0.5
         version: 3.0.5
@@ -466,7 +472,11 @@ importers:
         specifier: ^2.0.5
         version: 2.0.5
 
-  packages/util: {}
+  packages/util:
+    devDependencies:
+      '@argos/tsconfig':
+        specifier: '*'
+        version: link:../tsconfig
 
 packages:
 
@@ -7992,6 +8002,7 @@ packages:
   /clone@1.0.4:
     resolution: {integrity: sha512-JQHZ2QMW6l3aH/j6xCqQThY/9OH4D/9ls34cgkUBiEeocRTU04tHfKPBsUK1PqZCUQM7GiA0IIXJSuXHI64Kbg==}
     engines: {node: '>=0.8'}
+    requiresBuild: true
 
   /clsx@1.2.1:
     resolution: {integrity: sha512-EcR6r5a8bj6pu3ycsa/E/cKVGuTgZJZdsyUYHOksG/UHIiKfjxzRxYJpyVBwYaQeOvghal9fcc4PidlgzugAQg==}
@@ -8456,6 +8467,7 @@ packages:
 
   /defaults@1.0.4:
     resolution: {integrity: sha512-eFuaLoy/Rxalv2kr+lqMlUnrDWV+3j4pljOIJgLIhI058IQfWJ7vXhyEIHu+HtC738klGALYxOKDO0bQP3tg8A==}
+    requiresBuild: true
     dependencies:
       clone: 1.0.4
 

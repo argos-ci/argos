@@ -95,6 +95,7 @@
     "@types/lodash-es": "^4.17.12",
     "@types/mime": "^3.0.4",
     "@types/morgan": "^1.9.9",
+    "@types/react": "^18.3.1",
     "@types/sharp": "^0.31.1",
     "@types/supertest": "^6.0.2",
     "@types/tmp": "^0.2.6",
