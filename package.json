@@ -22,7 +22,7 @@
   "repository": "github:argos-ci/argos",
   "engines": {
     "node": "20",
-    "pnpm": "8"
+    "pnpm": "9"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.1",
@@ -51,5 +51,6 @@
     "typescript": "^5.4.5",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^1.5.3"
-  }
+  },
+  "packageManager": "pnpm@9.1.0-0+sha256.c557b24d2298d9b5e3be7086ebf55a28253b008324d545f72645a6de89844102"
 }
