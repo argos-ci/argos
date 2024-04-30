@@ -8,7 +8,7 @@
     "watch-build": "npm run build -- --watch --quiet",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
-    "lint": "eslint ."
+    "lint": "eslint --ignore-path=../../.gitignore"
   },
   "sideEffects": false,
   "exports": {

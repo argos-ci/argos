@@ -6,7 +6,7 @@
     "build": "rm -rf dist && NODE_ENV=production vite build",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
-    "lint": "eslint .",
+    "lint": "eslint --ignore-path=../../.gitignore .",
     "watch-build": "vite"
   },
   "sideEffects": false,
