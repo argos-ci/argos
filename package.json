@@ -14,7 +14,7 @@
     "check-types": "turbo run check-types",
     "check-format": "turbo run check-format",
     "format": "prettier --write .",
-    "heroku-postbuild": "BUILD_MODE=production npm run build && pnpm prune --prod",
+    "heroku-postbuild": "BUILD_MODE=production npm run build",
     "codegen": "NODE_TLS_REJECT_UNAUTHORIZED=0 graphql-codegen --config codegen.ts",
     "watch-codegen": "npm run codegen -- --watch",
     "knip": "knip"
