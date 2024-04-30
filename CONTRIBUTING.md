@@ -99,7 +99,7 @@ npm run setup
 You can fill the database with some development data with the following command:
 
 ```sh
-npm run -w @argos/backend db:truncate && npm run -w @argos/backend db:seed
+pnpm run --filter @argos/backend db:truncate && pnpm run --filter @argos/backend db:seed
 ```
 
 ## Develop
@@ -149,19 +149,19 @@ const mappers = {
 #### Create a migration
 
 ```sh
-npm run -w @argos/backend db:migrate:make my_migration
+pnpm run --filter @argos/backend db:migrate:make my_migration
 ```
 
 #### Dump database
 
 ```sh
-npm run -w @argos/backend db:dump
+pnpm run --filter @argos/backend db:dump
 ```
 
 #### Execute the latest migration
 
 ```sh
-npm run -w @argos/backend db:migrate:latest
+pnpm run --filter @argos/backend db:migrate:latest
 ```
 
 ### Running the test suite
@@ -169,7 +169,7 @@ npm run -w @argos/backend db:migrate:latest
 You can reset the test database using:
 
 ```sh
-NODE_ENV=test npm run -w @argos/backend db:reset
+NODE_ENV=test pnpm run --filter @argos/backend db:reset
 ```
 
 ## Coding style

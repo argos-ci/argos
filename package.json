@@ -5,7 +5,7 @@
     "dev": "turbo run watch-build watch-server watch-codegen --concurrency 100",
     "build": "turbo run build",
     "test": "TZ=utc vitest",
-    "e2e:setup": "NODE_ENV=test npm run -w @argos/backend db:truncate && NODE_ENV=test npm run -w @argos/backend db:seed",
+    "e2e:setup": "NODE_ENV=test pnpm run --filter @argos/backend db:truncate && NODE_ENV=test pnpm run --filter @argos/backend db:seed",
     "e2e:start": "NODE_ENV=test playwright test",
     "setup": "turbo run setup",
     "github-webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/SmH89Dx2HZ89wK7T --target https://api.argos-ci.dev:4001/github/event-handler",
