@@ -164,7 +164,9 @@ export const resolvers: IResolvers = {
       return Build.getStats(build.id);
     },
     commit: async (build, _args, ctx) => {
-      if (build.prHeadCommit) return build.prHeadCommit;
+      if (build.prHeadCommit) {
+        return build.prHeadCommit;
+      }
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
       return compareBucket.commit;
     },
@@ -173,7 +175,9 @@ export const resolvers: IResolvers = {
       return compareBucket.branch;
     },
     pullRequest: async (build, _args, ctx) => {
-      if (!build.githubPullRequestId) return null;
+      if (!build.githubPullRequestId) {
+        return null;
+      }
       return ctx.loaders.GithubPullRequest.load(build.githubPullRequestId);
     },
     parallel: (build) => {

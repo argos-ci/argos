@@ -216,7 +216,9 @@ export class Project extends Model {
   }
 
   async $getReferenceBranch() {
-    if (this.baselineBranch) return this.baselineBranch;
+    if (this.baselineBranch) {
+      return this.baselineBranch;
+    }
     await this.$fetchGraph("[githubRepository, gitlabProject]", {
       skipFetched: true,
     });

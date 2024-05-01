@@ -163,14 +163,18 @@ export const handleGitHubEvents = async ({
           githubId: payload.repository.id,
         });
 
-        if (!repository) return;
+        if (!repository) {
+          return;
+        }
 
         const pr = await GithubPullRequest.query().findOne({
           githubRepositoryId: repository.id,
           number: payload.pull_request.number,
         });
 
-        if (!pr) return;
+        if (!pr) {
+          return;
+        }
 
         if (
           [
@@ -200,7 +204,9 @@ export const handleGitHubEvents = async ({
         }
 
         if (payload.action === "synchronize" && pr.commentId) {
-          if (!payload.installation) return;
+          if (!payload.installation) {
+            return;
+          }
           const installation = await getOrCreateInstallation({
             githubId: payload.installation.id,
             deleted: false,

@@ -15,7 +15,9 @@ export const ProjectBreadcrumbItem = () => {
   const { accountSlug, projectName } = useParams();
   const loggedIn = useIsLoggedIn();
 
-  if (!projectName) return null;
+  if (!projectName) {
+    return null;
+  }
 
   return (
     <>

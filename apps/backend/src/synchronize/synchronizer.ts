@@ -224,7 +224,9 @@ const getRepositories = async (ctx: SyncCtx): Promise<ApiRepository[]> => {
       { installation_id: ctx.installation.githubId },
     )) as unknown as ApiRepository[];
   } catch (error: any) {
-    if (error.response.status === 404) return [];
+    if (error.response.status === 404) {
+      return [];
+    }
     throw error;
   }
 };

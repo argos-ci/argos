@@ -133,14 +133,18 @@ export class S3ImageFile extends AbstractImageFile implements ImageFile {
   }
 
   async getFilepath(): Promise<string> {
-    if (this.filepath) return this.filepath;
+    if (this.filepath) {
+      return this.filepath;
+    }
     this.downloadFromS3Promise =
       this.downloadFromS3Promise || this.downloadFromS3();
     return this.downloadFromS3Promise;
   }
 
   async unlink() {
-    if (!this.filepath) return;
+    if (!this.filepath) {
+      return;
+    }
     const filepath = await this.getFilepath();
     await unlink(filepath);
   }

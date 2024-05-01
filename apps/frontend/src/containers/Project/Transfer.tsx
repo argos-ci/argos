@@ -256,7 +256,9 @@ const ReviewStep = (props: ReviewStepProps) => {
               />
             </div>
             {(() => {
-              if (!data) return <DialogText>Loading...</DialogText>;
+              if (!data) {
+                return <DialogText>Loading...</DialogText>;
+              }
               const project = data.projectById;
               invariant(
                 project && data.actualAccount && data.targetAccount,

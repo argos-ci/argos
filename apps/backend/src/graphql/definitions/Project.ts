@@ -368,7 +368,9 @@ const importGitlabProject = async (props: {
 export const resolvers: IResolvers = {
   Project: {
     token: async (project, _args, ctx) => {
-      if (!ctx.auth) return null;
+      if (!ctx.auth) {
+        return null;
+      }
       const permissions = await project.$getPermissions(ctx.auth.user);
       if (!permissions.includes("review")) {
         return null;

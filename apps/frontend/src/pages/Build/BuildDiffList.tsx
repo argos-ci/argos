@@ -152,7 +152,9 @@ const getRows = (
         ];
 
         // If the group is not expanded, return the header row only
-        if (!isGroupExpanded) return initialRows;
+        if (!isGroupExpanded) {
+          return initialRows;
+        }
 
         return group.diffs.reduce((acc, diff, index, diffs) => {
           const first = index === 0;
@@ -658,7 +660,9 @@ const getDiffDimensions = (diff: Diff | null) => {
 
 const preloaded: string[] = [];
 const preloadImage = (src: string) => {
-  if (preloaded.includes(src)) return;
+  if (preloaded.includes(src)) {
+    return;
+  }
   const img = new Image();
   img.src = src;
   preloaded.push(src);
@@ -703,7 +707,9 @@ const InternalBuildDiffList = memo(() => {
   rowsRef.current = rows;
   const containerRef = useRef<HTMLDivElement>(null);
   const getDiffIndex = useCallback((diff: Diff | null) => {
-    if (!diff) return -1;
+    if (!diff) {
+      return -1;
+    }
     return rowsRef.current.findIndex(
       (row) =>
         (row.type === "item" || row.type === "group-item") && row.diff === diff,
@@ -736,7 +742,9 @@ const InternalBuildDiffList = memo(() => {
     count: rows.length,
     estimateSize: (index) => {
       const row = rows[index];
-      if (!row) return 0;
+      if (!row) {
+        return 0;
+      }
       switch (row.type) {
         case "header": {
           const headerHeight = 34;
@@ -784,7 +792,9 @@ const InternalBuildDiffList = memo(() => {
 
   useLayoutEffect(() => {
     // Don't scroll to the first diff if the user has already scrolled
-    if (firstDiff === initialDiff) return;
+    if (firstDiff === initialDiff) {
+      return;
+    }
     const index = getDiffIndex(initialDiff);
     if (index !== -1) {
       scrollToIndexRef.current(index, {
@@ -832,7 +842,9 @@ const InternalBuildDiffList = memo(() => {
             .map((virtualRow) => {
               const item = rows[virtualRow.index];
 
-              if (!item) return null;
+              if (!item) {
+                return null;
+              }
 
               switch (item.type) {
                 case "header":
@@ -899,6 +911,8 @@ const InternalBuildDiffList = memo(() => {
 
 export const BuildDiffList = () => {
   const { ready } = useBuildDiffState();
-  if (!ready) return null;
+  if (!ready) {
+    return null;
+  }
   return <InternalBuildDiffList />;
 };

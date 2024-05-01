@@ -72,7 +72,9 @@ export const ProjectReferenceBranch = (props: {
 
   const baselineBranchRef = (element: HTMLInputElement | null) => {
     baselineBranchFieldProps.ref(element);
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     // Just checked
     if (
       !useDefaultBranch &&

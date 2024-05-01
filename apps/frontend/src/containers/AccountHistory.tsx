@@ -23,8 +23,12 @@ export const useVisitAccount = (accountSlug: string | null) => {
 
 export const getLatestVisitedAccount = () => {
   const token = readAuthTokenCookie();
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
   const payload = decodeAuthToken(token);
-  if (!payload) return null;
+  if (!payload) {
+    return null;
+  }
   return getItem(getStorageKey(payload.account.id));
 };

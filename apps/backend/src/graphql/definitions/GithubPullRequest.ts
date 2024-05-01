@@ -52,7 +52,9 @@ export const resolvers: IResolvers = {
       return `https://github.com/${account.login}/${repo.name}/pull/${pullRequest.number}`;
     },
     creator: async (pullRequest, _args, ctx) => {
-      if (!pullRequest.creatorId) return null;
+      if (!pullRequest.creatorId) {
+        return null;
+      }
       const creator = await ctx.loaders.GithubAccount.load(
         pullRequest.creatorId,
       );

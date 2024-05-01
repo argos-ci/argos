@@ -13,7 +13,9 @@ export async function connect() {
 }
 
 export async function quitAmqp() {
-  if (!connectPromise) return;
+  if (!connectPromise) {
+    return;
+  }
   const connection = await connectPromise;
   connectPromise = null;
   await connection.close();

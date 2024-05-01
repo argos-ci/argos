@@ -46,15 +46,21 @@ export const typeDefs = gql`
 export const resolvers: IResolvers = {
   ScreenshotDiff: {
     baseScreenshot: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.baseScreenshotId) return null;
+      if (!screenshotDiff.baseScreenshotId) {
+        return null;
+      }
       return ctx.loaders.Screenshot.load(screenshotDiff.baseScreenshotId);
     },
     compareScreenshot: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.compareScreenshotId) return null;
+      if (!screenshotDiff.compareScreenshotId) {
+        return null;
+      }
       return ctx.loaders.Screenshot.load(screenshotDiff.compareScreenshotId);
     },
     url: async (screenshotDiff) => {
-      if (!screenshotDiff.s3Id) return null;
+      if (!screenshotDiff.s3Id) {
+        return null;
+      }
       return getPublicImageUrl(screenshotDiff.s3Id);
     },
     name: async (screenshotDiff, _args, ctx) => {
@@ -71,13 +77,17 @@ export const resolvers: IResolvers = {
       return name;
     },
     width: async (screenshot, _args, ctx) => {
-      if (!screenshot.fileId) return null;
+      if (!screenshot.fileId) {
+        return null;
+      }
       const file = await ctx.loaders.File.load(screenshot.fileId);
       invariant(file, "File not found");
       return file.width;
     },
     height: async (screenshot, _args, ctx) => {
-      if (!screenshot.fileId) return null;
+      if (!screenshot.fileId) {
+        return null;
+      }
       const file = await ctx.loaders.File.load(screenshot.fileId);
       invariant(file, "File not found");
       return file.height;

@@ -9,7 +9,9 @@ export const FormSuccess = ({
   ...props
 }: HTMLProps<HTMLDivElement>) => {
   const { formState } = useFormContext();
-  if (!formState.isSubmitSuccessful) return null;
+  if (!formState.isSubmitSuccessful) {
+    return null;
+  }
   return (
     <div
       className={clsx(className, "flex items-center gap-2 font-medium")}

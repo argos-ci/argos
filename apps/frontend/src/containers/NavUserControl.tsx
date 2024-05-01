@@ -131,7 +131,9 @@ const UserMenu = () => {
   });
   const { hotkeysDialog } = useBuildHotkeysDialogState();
 
-  if (!authPayload) return null;
+  if (!authPayload) {
+    return null;
+  }
 
   return (
     <>

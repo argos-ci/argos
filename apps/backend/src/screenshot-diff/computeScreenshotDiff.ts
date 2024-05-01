@@ -79,7 +79,9 @@ async function lockAndUploadDiffFile(args: {
   return lock.acquire(`diffUpload-${args.key}`, async () => {
     // Check if the diff file has been uploaded by another process
     const existingDiffFile = await File.query().findOne({ key: args.key });
-    if (existingDiffFile) return existingDiffFile;
+    if (existingDiffFile) {
+      return existingDiffFile;
+    }
 
     await args.image.upload();
 
@@ -148,7 +150,9 @@ export const computeScreenshotDiff = async (
   poorScreenshotDiff: ScreenshotDiff,
   { s3, bucket }: { s3: S3Client; bucket: string },
 ) => {
-  if (poorScreenshotDiff.jobStatus === "complete") return;
+  if (poorScreenshotDiff.jobStatus === "complete") {
+    return;
+  }
 
   const screenshotDiff = await poorScreenshotDiff
     .$query()

@@ -17,5 +17,7 @@ const main = callbackify(async () => {
 });
 
 main((err) => {
-  if (err) throw err;
+  if (err) {
+    throw err;
+  }
 });

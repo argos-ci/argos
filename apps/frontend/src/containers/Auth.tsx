@@ -83,7 +83,9 @@ export type JWTData = {
 export const decodeAuthToken = (t: string) => {
   try {
     const value = jwtDecode<JWTData>(t);
-    if (value?.version !== 1) return null;
+    if (value?.version !== 1) {
+      return null;
+    }
     return value as JWTData;
   } catch (e) {
     return null;

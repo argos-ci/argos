@@ -53,7 +53,9 @@ const query = graphql(`
 function GitHubInstallationsSelectControl() {
   const { data } = useQuery(query);
   const installations = (() => {
-    if (!data) return [];
+    if (!data) {
+      return [];
+    }
     invariant(data.me, "Expected me");
     return data.me.ghInstallations.edges;
   })();
@@ -64,7 +66,9 @@ function GitHubInstallationsSelectControl() {
     rules: { required: "Please select a GitHub account" },
   });
   const value = (() => {
-    if (!controller.field.value) return "";
+    if (!controller.field.value) {
+      return "";
+    }
     const installation = installations.find(
       (installation) => installation.id === controller.field.value,
     );

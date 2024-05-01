@@ -110,7 +110,9 @@ const StatCount = ({ icon, count, color, tooltip }: StatCountProps) => {
       <span className="text-xs">{count}</span>
     </div>
   );
-  if (!tooltip) return element;
+  if (!tooltip) {
+    return element;
+  }
   return <Tooltip content={tooltip}>{element}</Tooltip>;
 };
 

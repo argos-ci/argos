@@ -71,8 +71,12 @@ const AccountMenuItems = (props: { menu: MenuState; accounts: Account[] }) => {
 
 const MenuContent = (props: { menu: MenuState }) => {
   const { data, error } = useQuery(MeQuery);
-  if (error) return null;
-  if (!data?.me) return null;
+  if (error) {
+    return null;
+  }
+  if (!data?.me) {
+    return null;
+  }
   const userAccounts = [data.me];
   const teamAccounts = data.me.teams;
   return (

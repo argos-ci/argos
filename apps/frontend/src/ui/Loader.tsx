@@ -103,7 +103,9 @@ const SvgLoader = (props: SVGProps<SVGSVGElement>) => (
 export const useDelayedVisible = (delay: number) => {
   const [visible, setVisible] = useState(delay === 0);
   useEffect(() => {
-    if (delay === 0) return;
+    if (delay === 0) {
+      return;
+    }
     const timeout = setTimeout(() => {
       setVisible(true);
     }, delay);
