@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { PlusCircleIcon } from "lucide-react";
 import { matchPath, Link as RouterLink, useLocation } from "react-router-dom";
@@ -8,6 +9,7 @@ import {
   Menu,
   MenuItem,
   MenuItemIcon,
+  MenuLoader,
   MenuState,
   MenuTitle,
   useMenuState,
@@ -102,7 +104,30 @@ export const AccountBreadcrumbMenu = () => {
     <>
       <BreadcrumbMenuButton state={menu} />
       <Menu aria-label="Accounts" state={menu}>
-        {menu.open && <MenuContent menu={menu} />}
+        {menu.open && (
+          <Suspense
+            fallback={
+              <>
+                <MenuTitle>Personal</MenuTitle>
+                <MenuLoader />
+                <MenuTitle>Teams</MenuTitle>
+                <MenuLoader />
+                <MenuItem state={menu} pointer>
+                  {(menuItemProps) => (
+                    <RouterLink {...menuItemProps} to="/teams/new">
+                      <MenuItemIcon>
+                        <PlusCircleIcon />
+                      </MenuItemIcon>
+                      Create a Team
+                    </RouterLink>
+                  )}
+                </MenuItem>
+              </>
+            }
+          >
+            <MenuContent menu={menu} />
+          </Suspense>
+        )}
       </Menu>
     </>
   );

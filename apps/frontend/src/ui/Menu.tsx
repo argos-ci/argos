@@ -107,6 +107,10 @@ export const MenuTitle = (props: { children: React.ReactNode }) => {
   );
 };
 
+export const MenuLoader = () => {
+  return <div className="text-low px-2 py-1.5 text-xs">Loading...</div>;
+};
+
 export const MenuText = (props: { children: React.ReactNode }) => {
   return (
     <>
