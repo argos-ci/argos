@@ -50,7 +50,7 @@ const ProjectQuery = graphql(`
   }
 `);
 
-export const ProjectSettings = () => {
+export function Component() {
   const { accountSlug, projectName } = useParams();
   const { permissions } = useProjectContext();
 
@@ -117,4 +117,4 @@ export const ProjectSettings = () => {
       </Query>
     </Container>
   );
-};
+}

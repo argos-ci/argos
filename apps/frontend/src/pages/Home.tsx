@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { getLatestVisitedAccount } from "@/containers/AccountHistory";
 import { AuthGuard } from "@/containers/AuthGuard";
 
-export const Home = () => {
+export function Component() {
   return (
     <AuthGuard>
       {({ authPayload }) => {
@@ -13,4 +13,4 @@ export const Home = () => {
       }}
     </AuthGuard>
   );
-};
+}

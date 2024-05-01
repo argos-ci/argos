@@ -1,4 +1,4 @@
-import { useQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client";
 import { PlusCircleIcon } from "lucide-react";
 import { matchPath, Link as RouterLink, useLocation } from "react-router-dom";
 
@@ -38,15 +38,15 @@ const MeQuery = graphql(`
 
 type Account = FragmentType<typeof AccountFragment>;
 
-const resolveAccountPath = (slug: string, pathname: string) => {
+function resolveAccountPath(slug: string, pathname: string) {
   if (matchPath("/:slug/settings/*", pathname)) {
     const parts = pathname.split("/");
     return "/" + [slug, ...parts.slice(2)].join("/");
   }
   return `/${slug}`;
-};
+}
 
-const AccountMenuItems = (props: { menu: MenuState; accounts: Account[] }) => {
+function AccountMenuItems(props: { menu: MenuState; accounts: Account[] }) {
   const accounts = useFragment(AccountFragment, props.accounts);
   const location = useLocation();
   return (
@@ -67,14 +67,11 @@ const AccountMenuItems = (props: { menu: MenuState; accounts: Account[] }) => {
       })}
     </>
   );
-};
+}
 
 const MenuContent = (props: { menu: MenuState }) => {
-  const { data, error } = useQuery(MeQuery);
-  if (error) {
-    return null;
-  }
-  if (!data?.me) {
+  const { data } = useSuspenseQuery(MeQuery);
+  if (!data.me) {
     return null;
   }
   const userAccounts = [data.me];

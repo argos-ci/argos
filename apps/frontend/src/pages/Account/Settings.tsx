@@ -45,7 +45,7 @@ const AccountQuery = graphql(`
   }
 `);
 
-export const AccountSettings = () => {
+export function Component() {
   const { accountSlug } = useParams();
   const { permissions } = useAccountContext();
   const authPayload = useAuthTokenPayload();
@@ -137,4 +137,4 @@ export const AccountSettings = () => {
       </Query>
     </Container>
   );
-};
+}
