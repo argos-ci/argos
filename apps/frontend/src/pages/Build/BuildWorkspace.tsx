@@ -105,19 +105,17 @@ export const BuildWorkspace = (props: {
             return <BuildProgress parallel={build.parallel} />;
           default:
             return (
-              <div className="flex min-h-0 flex-1">
-                {build && (
-                  <>
-                    <BuildDetail build={build} repoUrl={repoUrl} />
-                    {build.type === "orphan" && (
-                      <BuildOrphanDialog
-                        referenceBranch={project.referenceBranch}
-                        projectSlug={project.slug}
-                      />
-                    )}
-                  </>
-                )}
-              </div>
+              build && (
+                <>
+                  <BuildDetail build={build} repoUrl={repoUrl} />
+                  {build.type === "orphan" && (
+                    <BuildOrphanDialog
+                      referenceBranch={project.referenceBranch}
+                      projectSlug={project.slug}
+                    />
+                  )}
+                </>
+              )
             );
         }
       })()}
