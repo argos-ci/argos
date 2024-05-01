@@ -67,6 +67,7 @@ function AccountTabs({ account }: { account: Account }) {
   );
 }
 
+/** @route */
 export function Component() {
   const { accountSlug } = useParams();
   invariant(accountSlug, "missing accountSlug");

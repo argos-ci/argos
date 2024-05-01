@@ -9,10 +9,12 @@ import { invariant } from "@apollo/client/utilities/globals";
 import Cookie from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 
-export enum AuthProvider {
-  GitHub = "github",
-  GitLab = "gitlab",
-  Google = "google",
+export type AuthProvider = "github" | "gitlab" | "google";
+
+export function checkIsAuthProvider(
+  provider: string,
+): provider is AuthProvider {
+  return ["github", "gitlab", "google"].includes(provider as AuthProvider);
 }
 
 type Token = null | string;

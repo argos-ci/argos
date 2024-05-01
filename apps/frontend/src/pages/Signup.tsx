@@ -130,6 +130,7 @@ const SignupPage = () => {
   );
 };
 
+/** @route */
 export function Component() {
   const loggedIn = useIsLoggedIn();
 

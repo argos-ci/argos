@@ -7,6 +7,7 @@ import { BuildNotFound } from "./BuildNotFound";
 import { BuildPage } from "./BuildPage";
 import { useBuildParams } from "./BuildParams";
 
+/** @route */
 export function Component() {
   const params = useBuildParams();
   useVisitAccount(params?.accountSlug ?? null);

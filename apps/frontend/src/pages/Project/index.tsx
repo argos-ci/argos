@@ -103,6 +103,7 @@ function Project({
   );
 }
 
+/** @route */
 export function Component() {
   const { accountSlug, projectName } = useParams();
   useVisitAccount(accountSlug ?? null);

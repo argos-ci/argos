@@ -29,6 +29,7 @@ const AccountQuery = graphql(`
   }
 `);
 
+/** @route */
 export function Component() {
   const { accountSlug } = useParams();
   const { dialog, checkoutStatus } = useCheckoutStatusDialog();

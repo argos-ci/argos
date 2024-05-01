@@ -69,6 +69,7 @@ const JoinTeamButton = (props: {
   );
 };
 
+/** @route */
 export function Component() {
   const loggedIn = useIsLoggedIn();
   const params = useParams();

@@ -4,7 +4,8 @@ import axios, { isAxiosError } from "axios";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import config from "@/config";
-import { AuthProvider, useAuth } from "@/containers/Auth";
+import { checkIsAuthProvider, useAuth } from "@/containers/Auth";
+import type { AuthProvider } from "@/containers/Auth";
 import { UniversalNavigate } from "@/containers/Redirect";
 
 import { NotFound } from "./NotFound";
@@ -56,10 +57,7 @@ function AuthCallback(props: { provider: AuthProvider }) {
   return null;
 }
 
-function checkIsAuthProvider(provider: string): provider is AuthProvider {
-  return Object.values(AuthProvider).includes(provider as AuthProvider);
-}
-
+/** @route */
 export function Component() {
   const params = useParams();
   if (!params.provider || !checkIsAuthProvider(params.provider)) {

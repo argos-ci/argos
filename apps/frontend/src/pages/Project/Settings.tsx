@@ -50,6 +50,7 @@ const ProjectQuery = graphql(`
   }
 `);
 
+/** @route */
 export function Component() {
   const { accountSlug, projectName } = useParams();
   const { permissions } = useProjectContext();

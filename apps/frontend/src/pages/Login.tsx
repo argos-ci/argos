@@ -8,6 +8,7 @@ import { Anchor } from "@/ui/Anchor";
 import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
 
+/** @route */
 export function Component() {
   const loggedIn = useIsLoggedIn();
   const [params] = useSearchParams();
