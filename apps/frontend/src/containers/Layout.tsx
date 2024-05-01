@@ -1,8 +1,7 @@
 import { forwardRef, HTMLProps, Suspense } from "react";
 import { ApolloError } from "@apollo/client";
-import { captureException } from "@sentry/browser";
+import { ErrorBoundary } from "@sentry/react";
 import { clsx } from "clsx";
-import { ErrorBoundary } from "react-error-boundary";
 import { useMatch } from "react-router-dom";
 
 import { ErrorPage } from "@/pages/ErrorPage";
@@ -33,7 +32,6 @@ const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
                 return;
               }
             }
-            captureException(error);
           }}
         >
           {props.children}

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import * as Sentry from "@sentry/browser";
+import * as Sentry from "@sentry/react";
 import axios, { isAxiosError } from "axios";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 

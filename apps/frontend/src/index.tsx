@@ -1,4 +1,4 @@
-import { init as initSentry } from "@sentry/browser";
+import * as Sentry from "@sentry/react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
@@ -9,7 +9,7 @@ import "./index.css";
 import { invariant } from "@argos/util/invariant";
 
 if (process.env["NODE_ENV"] === "production") {
-  initSentry({
+  Sentry.init({
     dsn: config.get("sentry.clientDsn"),
     environment: config.get("sentry.environment"),
     release: config.get("releaseVersion"),

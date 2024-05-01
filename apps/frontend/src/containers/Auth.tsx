@@ -2,10 +2,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 import { invariant } from "@apollo/client/utilities/globals";
+import * as Sentry from "@sentry/react";
 import Cookie from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 
@@ -63,6 +65,17 @@ export const AuthContextProvider = ({
       setAuthTokenCookie(newToken);
     }
   }, []);
+  useEffect(() => {
+    if (token) {
+      const payload = decodeAuthToken(token);
+      if (payload) {
+        Sentry.setUser({
+          id: payload.account.id,
+          username: payload.account.slug,
+        });
+      }
+    }
+  }, [token]);
   const value = useMemo(() => ({ token, setToken }), [token, setToken]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -114,3 +114,7 @@
       1px 1px;
   }
 }
+
+[data-radix-popper-content-wrapper]:has([data-pointer-events="none"]) {
+  @apply pointer-events-none;
+}
