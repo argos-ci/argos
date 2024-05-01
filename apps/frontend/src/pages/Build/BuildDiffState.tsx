@@ -431,6 +431,7 @@ const BuildDiffStateFragment = graphql(`
   fragment BuildDiffState_Build on Build {
     id
     stats {
+      ...BuildStatsIndicator_BuildStats
       total
       failure
       changed
