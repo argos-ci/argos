@@ -1,11 +1,10 @@
+import { useSuspenseQuery } from "@apollo/client";
 import { Outlet, useOutletContext, useParams } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
-import { Query } from "@/containers/Apollo";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
-import { PageLoader } from "@/ui/PageLoader";
 import {
   TabLink,
   TabLinkList,
@@ -65,46 +64,51 @@ interface OutletContext {
   permissions: ProjectPermission[];
 }
 
-export const useProjectContext = () => {
+export function useProjectContext() {
   return useOutletContext<OutletContext>();
-};
+}
 
-export const Project = () => {
+function Project({
+  accountSlug,
+  projectName,
+}: {
+  accountSlug: string;
+  projectName: string;
+}) {
+  const {
+    data: { project },
+  } = useSuspenseQuery(ProjectQuery, {
+    variables: { accountSlug, projectName },
+  });
+
+  if (!project) {
+    return <NotFound />;
+  }
+
+  if (!project.permissions.includes(ProjectPermission.View)) {
+    return <NotFound />;
+  }
+
+  if (project.permissions.includes(ProjectPermission.ViewSettings)) {
+    return (
+      <ProjectTabs
+        permissions={project.permissions}
+        account={project.account}
+      />
+    );
+  }
+
+  return (
+    <Outlet context={{ permissions: project.permissions } as OutletContext} />
+  );
+}
+
+/** @route */
+export function Component() {
   const { accountSlug, projectName } = useParams();
   useVisitAccount(accountSlug ?? null);
   if (!accountSlug || !projectName) {
     return <NotFound />;
   }
-  return (
-    <Query
-      fallback={<PageLoader />}
-      query={ProjectQuery}
-      variables={{ accountSlug, projectName }}
-    >
-      {({ project }) => {
-        if (!project) {
-          return <NotFound />;
-        }
-
-        if (!project.permissions.includes(ProjectPermission.View)) {
-          return <NotFound />;
-        }
-
-        if (project.permissions.includes(ProjectPermission.ViewSettings)) {
-          return (
-            <ProjectTabs
-              permissions={project.permissions}
-              account={project.account}
-            />
-          );
-        }
-
-        return (
-          <Outlet
-            context={{ permissions: project.permissions } as OutletContext}
-          />
-        );
-      }}
-    </Query>
-  );
-};
+  return <Project accountSlug={accountSlug} projectName={projectName} />;
+}

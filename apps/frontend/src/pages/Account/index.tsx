@@ -1,8 +1,9 @@
+import { Suspense } from "react";
+import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { Outlet, useOutletContext, useParams } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
-import { useQuery } from "@/containers/Apollo";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
@@ -36,7 +37,7 @@ export const useAccountContext = () => {
   return useOutletContext<OutletContext>();
 };
 
-const AccountTabs = ({ account }: { account: Account }) => {
+function AccountTabs({ account }: { account: Account }) {
   const tab = useTabLinkState();
 
   return (
@@ -56,25 +57,25 @@ const AccountTabs = ({ account }: { account: Account }) => {
         tabId={tab.selectedId || null}
         className="flex flex-1 flex-col"
       >
-        <Outlet
-          context={{ permissions: account.permissions } as OutletContext}
-        />
+        <Suspense fallback={<PageLoader />}>
+          <Outlet
+            context={{ permissions: account.permissions } as OutletContext}
+          />
+        </Suspense>
       </TabLinkPanel>
     </>
   );
-};
+}
 
-export const Account = () => {
+/** @route */
+export function Component() {
   const { accountSlug } = useParams();
   invariant(accountSlug, "missing accountSlug");
   useVisitAccount(accountSlug);
-  const { data, loading } = useQuery(AccountQuery, {
+  const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: accountSlug },
   });
-  if (loading) {
-    return <PageLoader />;
-  }
-  const account = data?.account;
+  const account = data.account;
   if (!account) {
     return <NotFound />;
   }
@@ -82,4 +83,4 @@ export const Account = () => {
     return <NotFound />;
   }
   return <AccountTabs account={account} />;
-};
+}

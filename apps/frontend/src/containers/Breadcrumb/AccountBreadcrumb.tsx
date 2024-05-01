@@ -1,4 +1,4 @@
-import { useQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client";
 import { OrganizationIcon } from "@primer/octicons-react";
 import { useMatch, useParams } from "react-router-dom";
 
@@ -27,44 +27,38 @@ const AccountQuery = graphql(`
     }
   }
 `);
-
-const AccountBreadcrumbLink = ({ accountSlug }: { accountSlug: string }) => {
+function AccountBreadcrumbLink({ accountSlug }: { accountSlug: string }) {
   const match = useMatch(`/${accountSlug}`);
-  const { data, error } = useQuery(AccountQuery, {
+  const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: accountSlug },
   });
-  if (error) {
-    throw error;
-  }
   return (
     <BreadcrumbLink
       to={`/${accountSlug}`}
       aria-current={match ? "page" : undefined}
     >
       <BreadcrumbItemIcon>
-        {data ? (
-          data.account ? (
-            <AccountAvatar avatar={data.account.avatar} size={24} />
-          ) : (
-            <OrganizationIcon size={18} />
-          )
-        ) : null}
+        {data.account ? (
+          <AccountAvatar avatar={data.account.avatar} size={24} />
+        ) : (
+          <OrganizationIcon size={24} />
+        )}
       </BreadcrumbItemIcon>
-      {data?.account?.name || accountSlug}
-      {data?.account && <AccountPlanChip account={data.account} />}
+      {data.account?.name || accountSlug}
+      {data.account && <AccountPlanChip account={data.account} />}
     </BreadcrumbLink>
   );
-};
+}
 
-const HomeBreadcrumbLink = () => {
+function HomeBreadcrumbLink() {
   const payload = useAuthTokenPayload();
   if (!payload) {
     return null;
   }
   return <AccountBreadcrumbLink accountSlug={payload.account.slug} />;
-};
+}
 
-export const AccountBreadcrumbItem = () => {
+export function AccountBreadcrumbItem() {
   const { accountSlug } = useParams();
   const loggedIn = useIsLoggedIn();
 
@@ -80,4 +74,4 @@ export const AccountBreadcrumbItem = () => {
       </BreadcrumbItem>
     </>
   );
-};
+}

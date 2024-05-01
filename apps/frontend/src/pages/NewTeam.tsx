@@ -23,7 +23,8 @@ const AutoCreateTeam = ({ name }: { name: string }) => {
   return <PageLoader />;
 };
 
-export const NewTeam = () => {
+/** @route */
+export function Component() {
   const [params] = useSearchParams();
   const name = params.get("name");
   const autoSubmit = params.get("autoSubmit") === "true";
@@ -34,6 +35,7 @@ export const NewTeam = () => {
 
   return (
     <>
+      <hr className="border-t" />
       <Helmet>
         <title>New Team</title>
       </Helmet>
@@ -54,4 +56,4 @@ export const NewTeam = () => {
       </AuthGuard>
     </>
   );
-};
+}

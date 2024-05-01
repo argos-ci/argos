@@ -3,7 +3,8 @@ import { Navigate } from "react-router-dom";
 import { getLatestVisitedAccount } from "@/containers/AccountHistory";
 import { AuthGuard } from "@/containers/AuthGuard";
 
-export const NewProject = () => {
+/** @route */
+export function Component() {
   return (
     <AuthGuard>
       {({ authPayload }) => {
@@ -13,4 +14,4 @@ export const NewProject = () => {
       }}
     </AuthGuard>
   );
-};
+}

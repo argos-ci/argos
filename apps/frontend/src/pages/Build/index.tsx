@@ -1,4 +1,3 @@
-import { memo } from "react";
 import { Helmet } from "react-helmet";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
@@ -8,7 +7,8 @@ import { BuildNotFound } from "./BuildNotFound";
 import { BuildPage } from "./BuildPage";
 import { useBuildParams } from "./BuildParams";
 
-export const Build = memo(() => {
+/** @route */
+export function Component() {
   const params = useBuildParams();
   useVisitAccount(params?.accountSlug ?? null);
 
@@ -26,4 +26,4 @@ export const Build = memo(() => {
       </BuildHotkeysDialogStateProvider>
     </>
   );
-});
+}

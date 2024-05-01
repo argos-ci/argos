@@ -1,10 +1,9 @@
+import { useSuspenseQuery } from "@apollo/client";
 import { Navigate, useParams } from "react-router-dom";
 
-import { Query } from "@/containers/Apollo";
 import { graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
 import { Container } from "@/ui/Container";
-import { PageLoader } from "@/ui/PageLoader";
 
 const ProjectQuery = graphql(`
   query ProjectReference_project($accountSlug: String!, $projectName: String!) {
@@ -18,7 +17,42 @@ const ProjectQuery = graphql(`
   }
 `);
 
-export const ProjectReference = () => {
+function ProjectReference({
+  accountSlug,
+  projectName,
+}: {
+  accountSlug: string;
+  projectName: string;
+}) {
+  const {
+    data: { project },
+  } = useSuspenseQuery(ProjectQuery, {
+    variables: {
+      accountSlug,
+      projectName,
+    },
+  });
+
+  if (!project) {
+    return <NotFound />;
+  }
+
+  if (!project.latestReferenceBuild) {
+    return (
+      <Navigate to={`/${accountSlug}/${projectName}/builds`} replace={true} />
+    );
+  }
+
+  return (
+    <Navigate
+      to={`/${accountSlug}/${projectName}/builds/${project.latestReferenceBuild.number}`}
+      replace={true}
+    />
+  );
+}
+
+/** @route */
+export function Component() {
   const { accountSlug, projectName } = useParams();
 
   if (!accountSlug || !projectName) {
@@ -27,36 +61,7 @@ export const ProjectReference = () => {
 
   return (
     <Container>
-      <Query
-        fallback={<PageLoader />}
-        query={ProjectQuery}
-        variables={{
-          accountSlug,
-          projectName,
-        }}
-      >
-        {({ project }) => {
-          if (!project) {
-            return <NotFound />;
-          }
-
-          if (!project?.latestReferenceBuild) {
-            return (
-              <Navigate
-                to={`/${accountSlug}/${projectName}/builds`}
-                replace={true}
-              />
-            );
-          }
-
-          return (
-            <Navigate
-              to={`/${accountSlug}/${projectName}/builds/${project.latestReferenceBuild.number}`}
-              replace={true}
-            />
-          );
-        }}
-      </Query>
+      <ProjectReference accountSlug={accountSlug} projectName={projectName} />
     </Container>
   );
-};
+}

@@ -8,7 +8,8 @@ import { Anchor } from "@/ui/Anchor";
 import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
 
-export const Login = () => {
+/** @route */
+export function Component() {
   const loggedIn = useIsLoggedIn();
   const [params] = useSearchParams();
 
@@ -51,4 +52,4 @@ export const Login = () => {
       </Container>
     </>
   );
-};
+}

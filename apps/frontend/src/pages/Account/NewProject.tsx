@@ -37,7 +37,8 @@ const ImportGitlabProjectMutation = graphql(`
   }
 `);
 
-export const AccountNewProject = () => {
+/** @route */
+export function Component() {
   const { accountSlug } = useParams();
   const navigate = useNavigate();
   const [importGithubProject, { loading: githubImportLoading }] = useMutation(
@@ -134,4 +135,4 @@ export const AccountNewProject = () => {
       </div>
     </>
   );
-};
+}

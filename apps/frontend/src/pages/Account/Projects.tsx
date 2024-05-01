@@ -1,8 +1,8 @@
+import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
-import { useQuery } from "@/containers/Apollo";
 import {
   CheckoutStatusDialog,
   useCheckoutStatusDialog,
@@ -11,7 +11,6 @@ import { ProjectList } from "@/containers/ProjectList";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Container } from "@/ui/Container";
-import { PageLoader } from "@/ui/PageLoader";
 
 import { NotFound } from "../NotFound";
 
@@ -30,12 +29,13 @@ const AccountQuery = graphql(`
   }
 `);
 
-export const AccountProjects = () => {
+/** @route */
+export function Component() {
   const { accountSlug } = useParams();
   const { dialog, checkoutStatus } = useCheckoutStatusDialog();
   invariant(accountSlug);
 
-  const { data } = useQuery(AccountQuery, {
+  const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: accountSlug },
     fetchPolicy: "cache-and-network",
   });
@@ -46,22 +46,18 @@ export const AccountProjects = () => {
         <Helmet>
           <title>{accountSlug} • Projects</title>
         </Helmet>
-        {data ? (
-          data.account ? (
-            <ProjectList
-              projects={data.account.projects.edges}
-              canCreateProject={data.account.permissions.includes(
-                AccountPermission.Admin,
-              )}
-            />
-          ) : (
-            <NotFound />
-          )
+        {data.account ? (
+          <ProjectList
+            projects={data.account.projects.edges}
+            canCreateProject={data.account.permissions.includes(
+              AccountPermission.Admin,
+            )}
+          />
         ) : (
-          <PageLoader />
+          <NotFound />
         )}
         <CheckoutStatusDialog dialog={dialog} checkoutStatus={checkoutStatus} />
       </Container>
     </div>
   );
-};
+}

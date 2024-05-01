@@ -130,11 +130,13 @@ const SignupPage = () => {
   );
 };
 
-export const Signup = () => {
+/** @route */
+export function Component() {
   const loggedIn = useIsLoggedIn();
+
   if (loggedIn) {
     return <Navigate to="/" replace />;
   }
 
   return <SignupPage />;
-};
+}

@@ -1,4 +1,5 @@
-import { useQuery } from "@apollo/client";
+import { Suspense } from "react";
+import { useSuspenseQuery } from "@apollo/client";
 import {
   ActivitySquareIcon,
   CommandIcon,
@@ -39,7 +40,7 @@ import { AccountAvatar } from "./AccountAvatar";
 import { ColorMode, useColorMode } from "./ColorMode";
 import { InitialAvatar } from "./InitialAvatar";
 
-const getColorModeLabel = (colorMode: ColorMode | "") => {
+function getColorModeLabel(colorMode: ColorMode | "") {
   switch (colorMode) {
     case ColorMode.Dark:
       return (
@@ -60,9 +61,9 @@ const getColorModeLabel = (colorMode: ColorMode | "") => {
         </>
       );
   }
-};
+}
 
-const ColorModeSelect = () => {
+function ColorModeSelect() {
   const { colorMode, setColorMode } = useColorMode();
   const value = colorMode ?? "";
   const select = useSelectState({
@@ -91,7 +92,7 @@ const ColorModeSelect = () => {
       </SelectPopover>
     </>
   );
-};
+}
 
 const AccountQuery = graphql(`
   query NavUserControl_account($slug: String!) {
@@ -104,26 +105,19 @@ const AccountQuery = graphql(`
   }
 `);
 
-const Avatar = (props: { slug: string }) => {
-  const { data, error } = useQuery(AccountQuery, {
+function Avatar(props: { slug: string }) {
+  const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: props.slug },
   });
-  if (error) {
-    throw error;
-  }
 
-  if (!data) {
-    return <InitialAvatar initial="" color="#eee" />;
-  }
-
-  if (!data?.account) {
+  if (!data.account) {
     return null;
   }
 
   return <AccountAvatar avatar={data.account.avatar} />;
-};
+}
 
-const UserMenu = () => {
+function UserMenu() {
   const authPayload = useAuthTokenPayload();
   const menu = useMenuState({
     placement: "bottom-end",
@@ -141,7 +135,11 @@ const UserMenu = () => {
         state={menu}
         className="shrink-0 cursor-default rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
       >
-        <Avatar slug={authPayload.account.slug} />
+        <Suspense
+          fallback={<InitialAvatar initial="" color="var(--mauve-3)" />}
+        >
+          <Avatar slug={authPayload.account.slug} />
+        </Suspense>
       </MenuButton>
       <Menu aria-label="User settings" state={menu} className="w-60">
         <MenuItem state={menu} pointer>
@@ -247,7 +245,7 @@ const UserMenu = () => {
       </Menu>
     </>
   );
-};
+}
 
 const LoginButton = () => {
   const { pathname } = useLocation();

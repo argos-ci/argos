@@ -426,7 +426,8 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   );
 };
 
-export const ProjectBuilds = () => {
+/** @route */
+export function Component() {
   const { accountSlug, projectName } = useParams();
 
   if (!accountSlug || !projectName) {
@@ -443,4 +444,4 @@ export const ProjectBuilds = () => {
       <PageContent accountSlug={accountSlug} projectName={projectName} />
     </div>
   );
-};
+}

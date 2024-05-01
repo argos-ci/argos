@@ -51,7 +51,7 @@ const BuildProgress = memo(
     parallel: DocumentType<typeof BuildFragment>["parallel"];
   }) => {
     return (
-      <div className="flex flex-1 flex-col items-center gap-10 p-10">
+      <div className="flex min-h-0 flex-1 flex-col items-center gap-10 p-10">
         <div className="text-4xl">Your build is cooking...</div>
         <div>
           <div className="egg-loader" data-visual-test="transparent" />
@@ -87,34 +87,40 @@ export const BuildWorkspace = (props: {
   const project = useFragment(ProjectFragment, props.project);
   const repoUrl = project.repository?.url ?? null;
 
-  switch (build.status) {
-    case "aborted":
-    case "error":
-    case "expired":
-      return (
-        <div className="flex-1 p-10 text-center text-xl">
-          <BuildStatusDescription build={build} project={project} />
-        </div>
-      );
-    case "pending":
-    case "progress":
-      return <BuildProgress parallel={build.parallel} />;
-    default:
-      return (
-        <div className="flex min-h-0 flex-1">
-          <BuildSidebar build={build} repoUrl={repoUrl} params={props.params} />
-          {build ? (
-            <>
-              <BuildDetail build={build} repoUrl={repoUrl} />
-              {build.type === "orphan" ? (
-                <BuildOrphanDialog
-                  referenceBranch={project.referenceBranch}
-                  projectSlug={project.slug}
-                />
-              ) : null}
-            </>
-          ) : null}
-        </div>
-      );
-  }
+  return (
+    <div className="flex min-h-0 flex-1">
+      <BuildSidebar build={build} repoUrl={repoUrl} params={props.params} />
+      {(() => {
+        switch (build.status) {
+          case "aborted":
+          case "error":
+          case "expired":
+            return (
+              <div className="min-h-0 flex-1 p-10 text-center text-xl">
+                <BuildStatusDescription build={build} project={project} />
+              </div>
+            );
+          case "pending":
+          case "progress":
+            return <BuildProgress parallel={build.parallel} />;
+          default:
+            return (
+              <div className="flex min-h-0 flex-1">
+                {build && (
+                  <>
+                    <BuildDetail build={build} repoUrl={repoUrl} />
+                    {build.type === "orphan" && (
+                      <BuildOrphanDialog
+                        referenceBranch={project.referenceBranch}
+                        projectSlug={project.slug}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+            );
+        }
+      })()}
+    </div>
+  );
 };

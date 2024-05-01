@@ -1,4 +1,4 @@
-import { useQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client";
 import { RepoIcon } from "@primer/octicons-react";
 import { PlusCircleIcon } from "lucide-react";
 import { Link as RouterLink, useParams } from "react-router-dom";
@@ -29,16 +29,10 @@ const AccountQuery = graphql(`
   }
 `);
 
-const Repositories = (props: { accountSlug: string; menu: MenuState }) => {
-  const { data, error } = useQuery(AccountQuery, {
+function Projects(props: { accountSlug: string; menu: MenuState }) {
+  const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: props.accountSlug },
   });
-  if (error) {
-    return null;
-  }
-  if (!data) {
-    return null;
-  }
   const projectNames =
     data.account?.projects.edges
       .map(({ name }) => name)
@@ -69,9 +63,9 @@ const Repositories = (props: { accountSlug: string; menu: MenuState }) => {
       })}
     </>
   );
-};
+}
 
-export const ProjectBreadcrumbMenu = () => {
+export function ProjectBreadcrumbMenu() {
   const { accountSlug } = useParams();
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
 
@@ -84,10 +78,9 @@ export const ProjectBreadcrumbMenu = () => {
   return (
     <>
       <BreadcrumbMenuButton state={menu} />
-
       <Menu aria-label={title} state={menu}>
         <MenuTitle>{title}</MenuTitle>
-        {menu.open && <Repositories accountSlug={accountSlug} menu={menu} />}
+        {menu.open && <Projects accountSlug={accountSlug} menu={menu} />}
         <MenuItem state={menu} pointer>
           {(menuItemProps) => (
             <RouterLink {...menuItemProps} to={`/${accountSlug}/new`}>
@@ -101,4 +94,4 @@ export const ProjectBreadcrumbMenu = () => {
       </Menu>
     </>
   );
-};
+}

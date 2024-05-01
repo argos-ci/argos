@@ -1,17 +1,20 @@
 import { useEffect } from "react";
 import * as Sentry from "@sentry/browser";
 import axios, { isAxiosError } from "axios";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import config from "@/config";
-import { AuthProvider, useAuth } from "@/containers/Auth";
+import { checkIsAuthProvider, useAuth } from "@/containers/Auth";
+import type { AuthProvider } from "@/containers/Auth";
 import { UniversalNavigate } from "@/containers/Redirect";
+
+import { NotFound } from "./NotFound";
 
 const api = axios.create({
   baseURL: config.get("api.baseUrl"),
 });
 
-const getLoginUrl = (error: unknown) => {
+function getLoginUrl(error: unknown) {
   if (isAxiosError(error)) {
     if (error.response?.data?.error?.message) {
       return `/login?error=${encodeURIComponent(
@@ -20,9 +23,9 @@ const getLoginUrl = (error: unknown) => {
     }
   }
   return "/login";
-};
+}
 
-export const AuthCallback = (props: { provider: AuthProvider }) => {
+function AuthCallback(props: { provider: AuthProvider }) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const code = params.get("code");
@@ -52,4 +55,14 @@ export const AuthCallback = (props: { provider: AuthProvider }) => {
     return <UniversalNavigate to="/login" replace />;
   }
   return null;
-};
+}
+
+/** @route */
+export function Component() {
+  const params = useParams();
+  if (!params.provider || !checkIsAuthProvider(params.provider)) {
+    return <NotFound />;
+  }
+
+  return <AuthCallback provider={params.provider} />;
+}

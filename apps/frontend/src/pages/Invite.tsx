@@ -69,7 +69,8 @@ const JoinTeamButton = (props: {
   );
 };
 
-export const Invite = () => {
+/** @route */
+export function Component() {
   const loggedIn = useIsLoggedIn();
   const params = useParams();
   const token = params.inviteToken;
@@ -163,4 +164,4 @@ export const Invite = () => {
       </Container>
     </>
   );
-};
+}
