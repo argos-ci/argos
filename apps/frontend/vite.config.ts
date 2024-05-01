@@ -22,6 +22,16 @@ export default defineConfig(({ mode: argMode }) => {
     ],
     build: {
       sourcemap: mode !== "development",
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            if (id.includes("node_modules")) {
+              return "vendor";
+            }
+            return undefined;
+          },
+        },
+      },
     },
     resolve: {
       alias: [
