@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { RepoIcon } from "@primer/octicons-react";
 import { PlusCircleIcon } from "lucide-react";
@@ -9,6 +10,7 @@ import {
   Menu,
   MenuItem,
   MenuItemIcon,
+  MenuLoader,
   MenuState,
   MenuText,
   MenuTitle,
@@ -80,7 +82,9 @@ export function ProjectBreadcrumbMenu() {
       <BreadcrumbMenuButton state={menu} />
       <Menu aria-label={title} state={menu}>
         <MenuTitle>{title}</MenuTitle>
-        {menu.open && <Projects accountSlug={accountSlug} menu={menu} />}
+        <Suspense fallback={<MenuLoader />}>
+          {menu.open && <Projects accountSlug={accountSlug} menu={menu} />}
+        </Suspense>
         <MenuItem state={menu} pointer>
           {(menuItemProps) => (
             <RouterLink {...menuItemProps} to={`/${accountSlug}/new`}>
