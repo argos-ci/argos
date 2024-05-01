@@ -1,19 +1,18 @@
-import { Link as RouterLink } from "react-router-dom";
-
 import { BrandLogo } from "@/ui/BrandLogo";
 import { Tooltip } from "@/ui/Tooltip";
 
+import { HomeLink } from "./HomeLink";
 import { NavUserControl } from "./NavUserControl";
 import { SubNavbar } from "./SubNavbar";
 
-export const Navbar = () => {
+export function Navbar() {
   return (
     <nav className="container mx-auto flex items-center justify-between p-4">
       <div className="flex shrink-0 items-center">
         <Tooltip content="Go to home">
-          <RouterLink to="/" className="transition hover:brightness-125">
+          <HomeLink className="transition hover:brightness-125">
             <BrandLogo height={32} className="max-w-none" />
-          </RouterLink>
+          </HomeLink>
         </Tooltip>
         <SubNavbar />
       </div>
@@ -39,4 +38,4 @@ export const Navbar = () => {
       </div>
     </nav>
   );
-};
+}

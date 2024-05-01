@@ -10,13 +10,13 @@ const RedirectToWebsite = () => {
   return null;
 };
 
-export const AuthGuard = (props: {
+export function AuthGuard(props: {
   children: ({ authPayload }: { authPayload: JWTData }) => React.ReactNode;
-}) => {
+}) {
   const authPayload = useAuthTokenPayload();
   if (authPayload) {
     return props.children({ authPayload }) as React.ReactElement;
   }
 
   return <RedirectToWebsite />;
-};
+}

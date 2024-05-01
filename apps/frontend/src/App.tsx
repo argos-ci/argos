@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { Helmet } from "react-helmet";
 import {
   createBrowserRouter,
@@ -30,16 +29,16 @@ const router = createBrowserRouter([
   },
   {
     path: "/",
+    lazy: () => import("./pages/Home"),
+  },
+  {
+    path: "/",
     element: (
       <Layout>
         <Outlet />
       </Layout>
     ),
     children: [
-      {
-        index: true,
-        lazy: () => import("./pages/Home"),
-      },
       {
         path: "new",
         lazy: () => import("./pages/NewProject"),
@@ -117,9 +116,7 @@ export const App = () => {
         <ColorModeProvider>
           <AuthContextProvider>
             <ApolloInitializer>
-              <Suspense fallback={null}>
-                <RouterProvider router={router} />
-              </Suspense>
+              <RouterProvider router={router} />
             </ApolloInitializer>
           </AuthContextProvider>
         </ColorModeProvider>
