@@ -16,7 +16,9 @@ export const useBuildParams = (): BuildParams | null => {
     }
     const numBuildNumber = Number(buildNumber);
     const valid = Number.isInteger(numBuildNumber);
-    if (!valid) return null;
+    if (!valid) {
+      return null;
+    }
     return {
       accountSlug,
       projectName,

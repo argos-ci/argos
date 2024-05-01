@@ -17,6 +17,7 @@ import { BuildDiffList } from "./BuildDiffList";
 import { useSearchModeState, useSearchState } from "./BuildDiffState";
 import { useBuildHotkey } from "./BuildHotkeys";
 import { BuildInfos } from "./BuildInfos";
+import { BuildParams } from "./BuildParams";
 
 const Tab = React.forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
   return (
@@ -63,6 +64,7 @@ export const BuildSidebar = React.memo(
   (props: {
     repoUrl: string | null;
     build: FragmentType<typeof BuildFragment>;
+    params: BuildParams;
   }) => {
     const build = useFragment(BuildFragment, props.build);
     const tab = useTabState({
@@ -171,10 +173,14 @@ export const BuildSidebar = React.memo(
             <TabPanel
               state={tab}
               tabId="info"
-              className="flex-1 p-4"
+              className="flex-1 overflow-auto p-4"
               focusable={false}
             >
-              <BuildInfos build={build} repoUrl={props.repoUrl} />
+              <BuildInfos
+                build={build}
+                repoUrl={props.repoUrl}
+                params={props.params}
+              />
             </TabPanel>
           </>
         )}

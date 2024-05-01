@@ -1,3 +1,5 @@
+import { invariant } from "@argos/util/invariant";
+
 import { Build } from "@/database/models/index.js";
 
 /**
@@ -8,7 +10,8 @@ import { Build } from "@/database/models/index.js";
 export const getStatsMessage = async function getStatsMessage(
   buildId: string,
 ): Promise<string> {
-  const stats = await Build.getStats(buildId);
+  const [stats] = await Build.getStats([buildId]);
+  invariant(stats, "Build stats not found");
   const parts = [];
   if (stats.changed > 0) {
     parts.push(`${stats.changed} changed`);

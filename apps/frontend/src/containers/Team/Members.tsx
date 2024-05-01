@@ -496,9 +496,15 @@ function TeamMembersList(props: {
                   after: members.length,
                 },
                 updateQuery: (prev, { fetchMoreResult }) => {
-                  if (!fetchMoreResult) return prev;
-                  if (!fetchMoreResult.team) return prev;
-                  if (!prev.team) return prev;
+                  if (!fetchMoreResult) {
+                    return prev;
+                  }
+                  if (!fetchMoreResult.team) {
+                    return prev;
+                  }
+                  if (!prev.team) {
+                    return prev;
+                  }
                   return {
                     team: {
                       ...prev.team,
@@ -553,7 +559,9 @@ function TeamGithubMembersList(props: {
       first: NB_MEMBERS_PER_PAGE,
     },
   });
-  if (!data) return null;
+  if (!data) {
+    return null;
+  }
   invariant(data.team?.__typename === "Team", "Invalid team");
   if (!data.team.githubMembers) {
     return null;
@@ -628,11 +636,21 @@ function TeamGithubMembersList(props: {
                   after: members.length,
                 },
                 updateQuery: (prev, { fetchMoreResult }) => {
-                  if (!fetchMoreResult) return prev;
-                  if (!fetchMoreResult.team) return prev;
-                  if (!prev.team) return prev;
-                  if (!prev.team.githubMembers) return prev;
-                  if (!fetchMoreResult.team.githubMembers) return prev;
+                  if (!fetchMoreResult) {
+                    return prev;
+                  }
+                  if (!fetchMoreResult.team) {
+                    return prev;
+                  }
+                  if (!prev.team) {
+                    return prev;
+                  }
+                  if (!prev.team.githubMembers) {
+                    return prev;
+                  }
+                  if (!fetchMoreResult.team.githubMembers) {
+                    return prev;
+                  }
                   return {
                     team: {
                       ...prev.team,

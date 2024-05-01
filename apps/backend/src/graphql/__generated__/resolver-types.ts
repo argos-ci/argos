@@ -114,7 +114,9 @@ export type IAddContributorToProjectInput = {
 
 export type IBuild = INode & {
   __typename?: 'Build';
-  /** The screenshot bucket of the baselineBranch */
+  /** The base build that contains the base screeenshot bucket */
+  baseBuild?: Maybe<IBuild>;
+  /** The screenshot bucket that serves as base for comparison */
   baseScreenshotBucket?: Maybe<IScreenshotBucket>;
   /** Branch */
   branch: Scalars['String']['output'];
@@ -1433,6 +1435,7 @@ export type IAccountSubscriptionResolvers<ContextType = Context, ParentType exte
 }>;
 
 export type IBuildResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Build'] = IResolversParentTypes['Build']> = ResolversObject<{
+  baseBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   baseScreenshotBucket?: Resolver<Maybe<IResolversTypes['ScreenshotBucket']>, ParentType, ContextType>;
   branch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;

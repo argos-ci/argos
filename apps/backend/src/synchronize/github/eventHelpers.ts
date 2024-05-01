@@ -56,7 +56,9 @@ const findRelevantUserTeam = async (
   const relevantTeams = ownedTeams.filter((team) => {
     invariant(team.account?.projects, "projects not fetched");
     return team.account.projects.some((project) => {
-      if (!project.githubRepository) return false;
+      if (!project.githubRepository) {
+        return false;
+      }
       invariant(
         project.githubRepository.githubAccount,
         "githubAccount not fetched",

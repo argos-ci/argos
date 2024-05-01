@@ -166,8 +166,12 @@ export class Account extends Model {
     }
 
     const getActiveSubscription = memoize(async () => {
-      if (!this.id) return null;
-      if (this.forcedPlanId) return null;
+      if (!this.id) {
+        return null;
+      }
+      if (this.forcedPlanId) {
+        return null;
+      }
 
       const subscription = await Subscription.query()
         .where("accountId", this.id)

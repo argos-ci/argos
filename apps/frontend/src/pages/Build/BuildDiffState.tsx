@@ -195,7 +195,9 @@ export function useGoToNextDiff() {
       !activeDiff?.group || expanded.includes(activeDiff.group);
     if (isGroupExpanded) {
       const nextDiff = diffs[activeDiffIndex + 1];
-      if (nextDiff) setActiveDiff(nextDiff, true);
+      if (nextDiff) {
+        setActiveDiff(nextDiff, true);
+      }
       return;
     }
 
@@ -205,7 +207,9 @@ export function useGoToNextDiff() {
       .findIndex((diff) => diff.group !== activeDiff.group);
     if (nextDiffIndex !== -1) {
       const nextDiff = diffs[nextDiffIndex + offsetIndex];
-      if (nextDiff) setActiveDiff(nextDiff, true);
+      if (nextDiff) {
+        setActiveDiff(nextDiff, true);
+      }
     }
   });
   return goToNextDiff;
@@ -243,7 +247,9 @@ export function useGoToPreviousDiff() {
       .findIndex((diff) => diff.group === previousDiff.group);
     if (newDiffIndex !== -1) {
       const newDiff = diffs[newDiffIndex];
-      if (newDiff) setActiveDiff(newDiff, true);
+      if (newDiff) {
+        setActiveDiff(newDiff, true);
+      }
     }
   });
   return goToPreviousDiff;
@@ -255,8 +261,12 @@ const useExpandedState = (initial: string[]) => {
     setExpanded((expanded) => {
       const included = expanded.includes(name);
       const expand = value !== undefined ? value : !included;
-      if (expand && included) return expanded;
-      if (!expand && !included) return expanded;
+      if (expand && included) {
+        return expanded;
+      }
+      if (!expand && !included) {
+        return expanded;
+      }
       return expand ? [...expanded, name] : expanded.filter((n) => n !== name);
     });
   }, []);
@@ -321,9 +331,12 @@ const useDataState = ({
           first: 100,
         },
         updateQuery: (prev, { fetchMoreResult }) => {
-          if (!fetchMoreResult?.project?.build?.screenshotDiffs.edges)
+          if (!fetchMoreResult?.project?.build?.screenshotDiffs.edges) {
             return prev;
-          if (!prev?.project?.build?.screenshotDiffs.edges) return prev;
+          }
+          if (!prev?.project?.build?.screenshotDiffs.edges) {
+            return prev;
+          }
 
           return {
             ...prev,
@@ -418,6 +431,7 @@ const BuildDiffStateFragment = graphql(`
   fragment BuildDiffState_Build on Build {
     id
     stats {
+      ...BuildStatsIndicator_BuildStats
       total
       failure
       changed
@@ -474,12 +488,16 @@ export const BuildDiffProvider = (props: {
   }, [screenshotDiffs]);
 
   const results = useMemo(() => {
-    if (!searchMode) return [];
+    if (!searchMode) {
+      return [];
+    }
     return searcher.search(search);
   }, [searchMode, searcher, search]);
 
   const filteredDiffs = useMemo(() => {
-    if (!searchMode) return screenshotDiffs;
+    if (!searchMode) {
+      return screenshotDiffs;
+    }
     return results.map((result) => {
       return result.item;
     });
@@ -529,7 +547,9 @@ export const BuildDiffProvider = (props: {
   groupsRef.current = groups;
 
   const getDiffGroup = useCallback((diff: Diff | null) => {
-    if (!diff) return null;
+    if (!diff) {
+      return null;
+    }
     const group = groupsRef.current.find((group) =>
       group.diffs.includes(diff),
     ) as DiffGroup;

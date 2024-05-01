@@ -33,8 +33,12 @@ const Repositories = (props: { accountSlug: string; menu: MenuState }) => {
   const { data, error } = useQuery(AccountQuery, {
     variables: { slug: props.accountSlug },
   });
-  if (error) return null;
-  if (!data) return null;
+  if (error) {
+    return null;
+  }
+  if (!data) {
+    return null;
+  }
   const projectNames =
     data.account?.projects.edges
       .map(({ name }) => name)
@@ -71,7 +75,9 @@ export const ProjectBreadcrumbMenu = () => {
   const { accountSlug } = useParams();
   const menu = useMenuState({ placement: "bottom", gutter: 4 });
 
-  if (!accountSlug) return null;
+  if (!accountSlug) {
+    return null;
+  }
 
   const title = "Switch project";
 

@@ -19,7 +19,9 @@ const ColorModeContext = React.createContext<ColorModeContextType | null>(null);
 
 const getStorageTheme = () => {
   const value = getItem(STORAGE_KEY);
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   return value as ColorMode;
 };
 

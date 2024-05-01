@@ -64,7 +64,9 @@ async function updateProjectConsumption(project: Project) {
  * Sync GitLab project if needed.
  */
 async function syncGitlabProject(project: Project) {
-  if (!project.gitlabProjectId) return;
+  if (!project.gitlabProjectId) {
+    return;
+  }
   invariant(project.gitlabProject, "no gitlabProject found", UnretryableError);
 
   // If the gitlab project has not been updated since 24h

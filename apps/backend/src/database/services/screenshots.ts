@@ -78,7 +78,9 @@ export const insertFilesAndScreenshots = async (
   );
 
   return await transaction(params.trx, async (trx) => {
-    if (params.screenshots.length === 0) return 0;
+    if (params.screenshots.length === 0) {
+      return 0;
+    }
 
     if (unknownKeys.length > 0) {
       await File.query(trx)

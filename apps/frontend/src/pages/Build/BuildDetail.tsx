@@ -39,6 +39,7 @@ const BuildFragment = graphql(`
     branch
     type
     baseScreenshotBucket {
+      id
       branch
       createdAt
     }
@@ -273,7 +274,8 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
           icon={getGroupIcon(ScreenshotDiffStatus.Unchanged)}
         />
       );
-    case ScreenshotDiffStatus.Removed:
+    case ScreenshotDiffStatus.Removed: {
+      const { key, ...attrs } = getImgAttributes(diff.baseScreenshot!);
       return (
         <ZoomPane
           controls={
@@ -285,14 +287,24 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
             contained={contained}
           >
             <img
+              key={key}
               className={clsx(contained && "max-h-full")}
               alt="Baseline screenshot"
-              {...getImgAttributes(diff.baseScreenshot!)}
+              {...attrs}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
-    case ScreenshotDiffStatus.Changed:
+    }
+    case ScreenshotDiffStatus.Changed: {
+      const { key: diffKey, ...diffAttrs } = getImgAttributes({
+        url: diff.url!,
+        width: diff.width,
+        height: diff.height,
+      });
+      const { key: baseKey, ...baseAttrs } = getImgAttributes(
+        diff.baseScreenshot!,
+      );
       return (
         <ZoomPane
           controls={
@@ -301,21 +313,20 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
         >
           <ScreenshotContainer dimensions={diff} contained={contained}>
             <img
+              key={diffKey}
               className={clsx("relative opacity-0", contained && "max-h-full")}
-              {...getImgAttributes({
-                url: diff.url!,
-                width: diff.width,
-                height: diff.height,
-              })}
+              {...diffAttrs}
             />
             <img
+              key={baseKey}
               className="absolute left-0 top-0"
               alt="Baseline screenshot"
-              {...getImgAttributes(diff.baseScreenshot!)}
+              {...baseAttrs}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
+    }
     default:
       return null;
   }
@@ -348,7 +359,8 @@ const CompareScreenshot = ({
   const { contained } = useBuildDiffFitState();
   const opacity = visible ? "" : "opacity-0";
   switch (diff.status) {
-    case ScreenshotDiffStatus.Added:
+    case ScreenshotDiffStatus.Added: {
+      const { key, ...attrs } = getImgAttributes(diff.compareScreenshot!);
       return (
         <ZoomPane
           controls={
@@ -360,14 +372,17 @@ const CompareScreenshot = ({
             contained={contained}
           >
             <img
+              key={key}
               className={clsx(contained && "max-h-full max-w-full")}
               alt="Changes screenshot"
-              {...getImgAttributes(diff.compareScreenshot!)}
+              {...attrs}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
-    case ScreenshotDiffStatus.Failure:
+    }
+    case ScreenshotDiffStatus.Failure: {
+      const { key, ...attrs } = getImgAttributes(diff.compareScreenshot!);
       return (
         <ZoomPane
           controls={
@@ -379,14 +394,17 @@ const CompareScreenshot = ({
             contained={contained}
           >
             <img
+              key={key}
               className={clsx(contained && "max-h-full")}
               alt="Failure screenshot"
-              {...getImgAttributes(diff.compareScreenshot!)}
+              {...attrs}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
-    case ScreenshotDiffStatus.RetryFailure:
+    }
+    case ScreenshotDiffStatus.RetryFailure: {
+      const { key, ...attrs } = getImgAttributes(diff.compareScreenshot!);
       return (
         <ZoomPane
           controls={
@@ -398,14 +416,17 @@ const CompareScreenshot = ({
             contained={contained}
           >
             <img
+              key={key}
               className={clsx(contained && "max-h-full")}
               alt="Retried failure screenshot"
-              {...getImgAttributes(diff.compareScreenshot!)}
+              {...attrs}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
-    case ScreenshotDiffStatus.Unchanged:
+    }
+    case ScreenshotDiffStatus.Unchanged: {
+      const { key, ...attrs } = getImgAttributes(diff.compareScreenshot!);
       return (
         <ZoomPane
           controls={
@@ -417,14 +438,16 @@ const CompareScreenshot = ({
             contained={contained}
           >
             <img
+              key={key}
               className={clsx(contained && "max-h-full")}
               alt="Baseline screenshot"
-              {...getImgAttributes(diff.compareScreenshot!)}
+              {...attrs}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
-    case ScreenshotDiffStatus.Removed:
+    }
+    case ScreenshotDiffStatus.Removed: {
       return (
         <MissingScreenshotInfo
           title="Removed screenshot"
@@ -437,7 +460,16 @@ const CompareScreenshot = ({
           icon={getGroupIcon(ScreenshotDiffStatus.Removed)}
         />
       );
-    case ScreenshotDiffStatus.Changed:
+    }
+    case ScreenshotDiffStatus.Changed: {
+      const { key: compareKey, ...compareAttrs } = getImgAttributes(
+        diff.compareScreenshot!,
+      );
+      const { key: diffKey, ...diffAttrs } = getImgAttributes({
+        url: diff.url!,
+        width: diff.width,
+        height: diff.height,
+      });
       return (
         <ZoomPane
           controls={
@@ -446,28 +478,27 @@ const CompareScreenshot = ({
         >
           <ScreenshotContainer dimensions={diff} contained={contained}>
             <img
+              key={compareKey}
               className={clsx(
                 "absolute left-0 top-0",
                 visible && "opacity-disabled",
               )}
-              {...getImgAttributes(diff.compareScreenshot!)}
+              {...compareAttrs}
             />
             <img
+              key={diffKey}
               className={clsx(
                 opacity,
                 "relative z-10",
                 contained && "max-h-full",
               )}
               alt="Changes screenshot"
-              {...getImgAttributes({
-                url: diff.url!,
-                width: diff.width,
-                height: diff.height,
-              })}
+              {...diffAttrs}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
+    }
     default:
       return null;
   }

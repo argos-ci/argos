@@ -94,7 +94,9 @@ export const createJob = <TValue>(
           await channel.prefetch(prefetch);
           await channel.assertQueue(queue, { durable: true });
           await channel.consume(queue, async (msg) => {
-            if (!msg) return;
+            if (!msg) {
+              return;
+            }
 
             let payload: Payload<TValue>;
 

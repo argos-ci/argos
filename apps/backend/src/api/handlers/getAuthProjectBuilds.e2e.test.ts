@@ -45,6 +45,7 @@ describe("getAuthProjectBuilds", () => {
     await request(app)
       .get("/project/builds")
       .set("Authorization", "Bearer the-awesome-token")
+      .expect(200)
       .expect((res) => {
         expect(res.body.results).toHaveLength(3);
         expect(res.body.results.map((b: Build) => b.id)).toEqual(
@@ -53,8 +54,7 @@ describe("getAuthProjectBuilds", () => {
         expect(res.body.pageInfo.total).toBe(3);
         expect(res.body.pageInfo.page).toBe(1);
         expect(res.body.pageInfo.perPage).toBe(30);
-      })
-      .expect(200);
+      });
   });
 
   describe('with "page" and "perPage" params', () => {
@@ -62,12 +62,12 @@ describe("getAuthProjectBuilds", () => {
       await request(app)
         .get("/project/builds?perPage=1&page=2")
         .set("Authorization", "Bearer the-awesome-token")
+        .expect(200)
         .expect((res) => {
           expect(res.body.results).toHaveLength(1);
           invariant(builds[1]);
           expect(res.body.results[0].id).toBe(builds[1].id);
-        })
-        .expect(200);
+        });
     });
   });
 
@@ -89,14 +89,14 @@ describe("getAuthProjectBuilds", () => {
       await request(app)
         .get(`/project/builds?commit=${commit}`)
         .set("Authorization", "Bearer the-awesome-token")
+        .expect(200)
         .expect((res) => {
           expect(res.body.results).toHaveLength(2);
           expect(res.body.results.map((b: Build) => b.id)).toEqual([
             withPrHeadCommit.id,
             withCompareScreenshotBucket.id,
           ]);
-        })
-        .expect(200);
+        });
     });
   });
 

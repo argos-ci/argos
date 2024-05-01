@@ -3,7 +3,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { Button as AriakitButton } from "ariakit/button";
 import { clsx } from "clsx";
 
-import type { BuildStats } from "@/containers/Build";
+import { FragmentType, graphql, useFragment } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
@@ -103,29 +103,45 @@ const StatCount = ({ icon, count, color, tooltip }: StatCountProps) => {
     <div
       className={clsx(
         colorClassName,
-        "flex w-16 items-center gap-1 tabular-nums",
+        "flex items-center gap-0.5 tabular-nums",
+        count === 0 && "opacity-disabled",
       )}
     >
       <span className="[&>*]:size-4">{icon}</span>
-      <span className="text-xs">{count}</span>
+      <span className="min-w-6 text-xs">{count}</span>
     </div>
   );
-  if (!tooltip) return element;
+  if (!tooltip) {
+    return element;
+  }
   return <Tooltip content={tooltip}>{element}</Tooltip>;
 };
 
+const BuildStatsFragment = graphql(`
+  fragment BuildStatsIndicator_BuildStats on BuildStats {
+    total
+    failure
+    changed
+    added
+    removed
+    unchanged
+    retryFailure
+  }
+`);
+
 export const BuildStatsIndicator = memo(
   ({
-    stats,
+    stats: rawStats,
     onClickGroup,
     className,
     tooltip = true,
   }: {
-    stats: BuildStats;
+    stats: FragmentType<typeof BuildStatsFragment>;
     onClickGroup?: (group: DiffGroup["name"]) => void;
     className?: string;
     tooltip?: boolean;
   }) => {
+    const stats = useFragment(BuildStatsFragment, rawStats);
     return (
       <div className={clsx(className, "flex items-center")}>
         {GROUPS.map((group) => {

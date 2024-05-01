@@ -6,7 +6,9 @@ function walk(obj: any, path: string, initializeMissing = false) {
     const ar = path.split(".");
     while (ar.length) {
       const k = ar.shift();
-      if (!k) continue;
+      if (!k) {
+        continue;
+      }
       if (initializeMissing && obj[k] == null) {
         newObj[k] = {};
         newObj = newObj[k];

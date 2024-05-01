@@ -10,10 +10,14 @@ export const useScrollListener = (
   });
   useEffect(() => {
     const element = elementRef.current;
-    if (!element) return undefined;
+    if (!element) {
+      return undefined;
+    }
     let ticking = false;
     const listener = (ev: Event) => {
-      if (ticking) return;
+      if (ticking) {
+        return;
+      }
       requestAnimationFrame(() => {
         listenerRef.current(ev);
         ticking = false;

@@ -38,8 +38,12 @@ export class Test extends Model {
   static override virtualAttributes = ["mute"];
 
   get mute() {
-    if (!this.muted) return false;
-    if (!this.muteUntil) return true;
+    if (!this.muted) {
+      return false;
+    }
+    if (!this.muteUntil) {
+      return true;
+    }
     const now = new Date();
     const muteUntilDate = new Date(this.muteUntil);
     return muteUntilDate > now;

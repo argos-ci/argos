@@ -6,6 +6,7 @@ import {
   Account,
   Build,
   BuildAggregatedStatus,
+  BuildStats,
   File,
   GithubAccount,
   GithubPullRequest,
@@ -23,9 +24,9 @@ import {
   User,
 } from "@/database/models/index.js";
 
-const createModelLoader = <TModelClass extends ModelClass<Model>>(
+function createModelLoader<TModelClass extends ModelClass<Model>>(
   Model: TModelClass,
-) => {
+) {
   return new DataLoader<string, InstanceType<TModelClass> | null>(
     async (ids) => {
       const models = await Model.query().findByIds(ids as string[]);
@@ -34,15 +35,16 @@ const createModelLoader = <TModelClass extends ModelClass<Model>>(
       ) as InstanceType<TModelClass>[];
     },
   );
-};
+}
 
-const createBuildAggregatedStatusLoader = () =>
-  new DataLoader<Build, BuildAggregatedStatus>(async (builds) =>
+function createBuildAggregatedStatusLoader() {
+  return new DataLoader<Build, BuildAggregatedStatus>(async (builds) =>
     Build.getAggregatedBuildStatuses(builds as Build[]),
   );
+}
 
-const createLatestProjectBuildLoader = () =>
-  new DataLoader<string, Build | null>(async (projectIds) => {
+function createLatestProjectBuildLoader() {
+  return new DataLoader<string, Build | null>(async (projectIds) => {
     const latestBuilds = await Build.query()
       .select("*")
       .whereIn("projectId", projectIds as string[])
@@ -55,9 +57,10 @@ const createLatestProjectBuildLoader = () =>
     }
     return projectIds.map((id) => latestBuildsMap[id] ?? null);
   });
+}
 
-const createLastScreenshotDiffLoader = () =>
-  new DataLoader<string, ScreenshotDiff | null>(async (testIds) => {
+function createLastScreenshotDiffLoader() {
+  return new DataLoader<string, ScreenshotDiff | null>(async (testIds) => {
     const lastScreenshotDiffs = await ScreenshotDiff.query()
       .select("*")
       .whereIn("testId", testIds as string[])
@@ -70,9 +73,10 @@ const createLastScreenshotDiffLoader = () =>
     }
     return testIds.map((id) => lastScreenshotDiffMap[id] ?? null);
   });
+}
 
-const createLastScreenshotLoader = () =>
-  new DataLoader<string, Screenshot | null>(async (testIds) => {
+function createLastScreenshotLoader() {
+  return new DataLoader<string, Screenshot | null>(async (testIds) => {
     const project = await Project.query()
       .whereIn(
         "id",
@@ -99,8 +103,9 @@ const createLastScreenshotLoader = () =>
     }
     return testIds.map((id) => lastScreenshotMap[id] ?? null);
   });
+}
 
-const createAccountFromRelationLoader = () => {
+function createAccountFromRelationLoader() {
   return new DataLoader<{ userId?: string; teamId?: string }, Account | null>(
     async (relations) => {
       const userIds = relations
@@ -132,9 +137,9 @@ const createAccountFromRelationLoader = () => {
       });
     },
   );
-};
+}
 
-const createTeamUserFromGithubAccountMemberLoader = () => {
+function createTeamUserFromGithubAccountMemberLoader() {
   return new DataLoader<
     { githubAccountId: string; githubMemberId: string },
     TeamUser | null
@@ -191,12 +196,40 @@ const createTeamUserFromGithubAccountMemberLoader = () => {
       return teamMember ?? null;
     });
   });
-};
+}
+
+function createBuildFromCompareScreenshotBucketIdLoader() {
+  return new DataLoader<string, Build | null>(
+    async (compareScreenshotBucketIds) => {
+      const builds = await Build.query()
+        .select("builds.*")
+        .joinRelated("compareScreenshotBucket")
+        .whereIn(
+          "compareScreenshotBucketId",
+          compareScreenshotBucketIds as string[],
+        );
+      const buildsMap: Record<string, Build> = {};
+      for (const build of builds) {
+        buildsMap[build.compareScreenshotBucketId] = build;
+      }
+      return compareScreenshotBucketIds.map((id) => buildsMap[id] ?? null);
+    },
+  );
+}
+
+function createBuildStatsLoader() {
+  return new DataLoader<string, BuildStats>(async (buildIds) => {
+    return Build.getStats(buildIds as string[]);
+  });
+}
 
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
+  BuildFromCompareScreenshotBucketId:
+    createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
+  BuildStats: createBuildStatsLoader(),
   File: createModelLoader(File),
   GithubAccount: createModelLoader(GithubAccount),
   GithubPullRequest: createModelLoader(GithubPullRequest),

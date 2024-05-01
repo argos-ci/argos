@@ -57,8 +57,12 @@ export function TeamSubscribeDialog({
           a.subscriptionStatus === AccountSubscriptionStatus.Active;
         const bActive =
           b.subscriptionStatus === AccountSubscriptionStatus.Active;
-        if (aActive && !bActive) return 1;
-        if (!aActive && bActive) return -1;
+        if (aActive && !bActive) {
+          return 1;
+        }
+        if (!aActive && bActive) {
+          return -1;
+        }
         return 0;
       })
     : null;

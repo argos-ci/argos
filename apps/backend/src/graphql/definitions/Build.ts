@@ -68,8 +68,10 @@ export const typeDefs = gql`
     updatedAt: DateTime!
     "The screenshot diffs between the base screenshot bucket of the compare screenshot bucket"
     screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
-    "The screenshot bucket of the baselineBranch"
+    "The screenshot bucket that serves as base for comparison"
     baseScreenshotBucket: ScreenshotBucket
+    "The base build that contains the base screeenshot bucket"
+    baseBuild: Build
     "Continuous number. It is incremented after each build"
     number: Int!
     "Review status, conclusion or job status"
@@ -140,19 +142,31 @@ export const resolvers: IResolvers = {
       return paginateResult({ result, first, after });
     },
     baseScreenshotBucket: async (build, _args, ctx) => {
-      if (!build.baseScreenshotBucketId) return null;
+      if (!build.baseScreenshotBucketId) {
+        return null;
+      }
       return ctx.loaders.ScreenshotBucket.load(build.baseScreenshotBucketId);
+    },
+    baseBuild: async (build, _args, ctx) => {
+      if (!build.baseScreenshotBucketId) {
+        return null;
+      }
+      return ctx.loaders.BuildFromCompareScreenshotBucketId.load(
+        build.baseScreenshotBucketId,
+      );
     },
     status: async (build, _args, ctx) => {
       return ctx.loaders.BuildAggregatedStatus.load(
         build,
       ) as Promise<IBuildStatus>;
     },
-    stats: async (build) => {
-      return Build.getStats(build.id);
+    stats: async (build, _args, ctx) => {
+      return ctx.loaders.BuildStats.load(build.id);
     },
     commit: async (build, _args, ctx) => {
-      if (build.prHeadCommit) return build.prHeadCommit;
+      if (build.prHeadCommit) {
+        return build.prHeadCommit;
+      }
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
       return compareBucket.commit;
     },
@@ -161,7 +175,9 @@ export const resolvers: IResolvers = {
       return compareBucket.branch;
     },
     pullRequest: async (build, _args, ctx) => {
-      if (!build.githubPullRequestId) return null;
+      if (!build.githubPullRequestId) {
+        return null;
+      }
       return ctx.loaders.GithubPullRequest.load(build.githubPullRequestId);
     },
     parallel: (build) => {

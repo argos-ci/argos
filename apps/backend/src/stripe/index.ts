@@ -143,7 +143,9 @@ const checkSubscriptionPaymentMethodFilled = async (
     return true;
   }
   const customer = await getCustomerFromSubscription(subscription);
-  if (customer.deleted) return false;
+  if (customer.deleted) {
+    return false;
+  }
   return customer.invoice_settings.default_payment_method !== null;
 };
 

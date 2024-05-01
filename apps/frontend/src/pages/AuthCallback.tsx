@@ -31,7 +31,9 @@ export const AuthCallback = (props: { provider: AuthProvider }) => {
   const error = params.get("error");
   const { setToken, token } = useAuth();
   useEffect(() => {
-    if (!code) return;
+    if (!code) {
+      return;
+    }
     api
       .post(`/auth/${props.provider}`, { code, r })
       .then((result) => {

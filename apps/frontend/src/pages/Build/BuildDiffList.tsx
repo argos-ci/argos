@@ -152,7 +152,9 @@ const getRows = (
         ];
 
         // If the group is not expanded, return the header row only
-        if (!isGroupExpanded) return initialRows;
+        if (!isGroupExpanded) {
+          return initialRows;
+        }
 
         return group.diffs.reduce((acc, diff, index, diffs) => {
           const first = index === 0;
@@ -257,22 +259,41 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
     case "added":
     case "unchanged":
     case "failure":
-    case "retryFailure":
+    case "retryFailure": {
+      const { key, ...attrs } = getImgAttributes(
+        diff.compareScreenshot!.url,
+        dimensions,
+      );
       return (
         <img
-          {...getImgAttributes(diff.compareScreenshot!.url, dimensions)}
+          key={key}
+          {...attrs}
           className="max-h-full max-w-full object-contain"
         />
       );
-    case "removed":
+    }
+    case "removed": {
+      const { key, ...attrs } = getImgAttributes(
+        diff.baseScreenshot!.url,
+        dimensions,
+      );
       return (
         <img
-          {...getImgAttributes(diff.baseScreenshot!.url, dimensions)}
+          key={key}
+          {...attrs}
           className="max-h-full max-w-full object-contain"
         />
       );
+    }
     case "changed": {
       const dimensions = getDiffDimensions(diff);
+      const { key: compareKey, ...compareAttrs } = getImgAttributes(
+        diff.compareScreenshot!.url,
+      );
+      const { key: diffKey, ...diffAttrs } = getImgAttributes(
+        diff.url!,
+        dimensions,
+      );
       return (
         <div className="flex h-full items-center justify-center">
           <div
@@ -280,13 +301,15 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
             style={{ width: dimensions.width, height: dimensions.height }}
           >
             <img
-              {...getImgAttributes(diff.compareScreenshot!.url)}
+              key={compareKey}
+              {...compareAttrs}
               className="absolute w-full"
             />
             <div className="absolute inset-0 bg-black/70" />
             <img
+              key={diffKey}
+              {...diffAttrs}
               className="relative z-10 max-h-full w-full"
-              {...getImgAttributes(diff.url!, dimensions)}
             />
           </div>
         </div>
@@ -658,7 +681,9 @@ const getDiffDimensions = (diff: Diff | null) => {
 
 const preloaded: string[] = [];
 const preloadImage = (src: string) => {
-  if (preloaded.includes(src)) return;
+  if (preloaded.includes(src)) {
+    return;
+  }
   const img = new Image();
   img.src = src;
   preloaded.push(src);
@@ -703,7 +728,9 @@ const InternalBuildDiffList = memo(() => {
   rowsRef.current = rows;
   const containerRef = useRef<HTMLDivElement>(null);
   const getDiffIndex = useCallback((diff: Diff | null) => {
-    if (!diff) return -1;
+    if (!diff) {
+      return -1;
+    }
     return rowsRef.current.findIndex(
       (row) =>
         (row.type === "item" || row.type === "group-item") && row.diff === diff,
@@ -736,7 +763,9 @@ const InternalBuildDiffList = memo(() => {
     count: rows.length,
     estimateSize: (index) => {
       const row = rows[index];
-      if (!row) return 0;
+      if (!row) {
+        return 0;
+      }
       switch (row.type) {
         case "header": {
           const headerHeight = 34;
@@ -784,7 +813,9 @@ const InternalBuildDiffList = memo(() => {
 
   useLayoutEffect(() => {
     // Don't scroll to the first diff if the user has already scrolled
-    if (firstDiff === initialDiff) return;
+    if (firstDiff === initialDiff) {
+      return;
+    }
     const index = getDiffIndex(initialDiff);
     if (index !== -1) {
       scrollToIndexRef.current(index, {
@@ -832,7 +863,9 @@ const InternalBuildDiffList = memo(() => {
             .map((virtualRow) => {
               const item = rows[virtualRow.index];
 
-              if (!item) return null;
+              if (!item) {
+                return null;
+              }
 
               switch (item.type) {
                 case "header":
@@ -899,6 +932,8 @@ const InternalBuildDiffList = memo(() => {
 
 export const BuildDiffList = () => {
   const { ready } = useBuildDiffState();
-  if (!ready) return null;
+  if (!ready) {
+    return null;
+  }
   return <InternalBuildDiffList />;
 };

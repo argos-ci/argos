@@ -80,19 +80,25 @@ export const resolvers: IResolvers = {
       return getPublicImageUrl(screenshot.s3Id);
     },
     width: async (screenshot, _args, ctx) => {
-      if (!screenshot.fileId) return null;
+      if (!screenshot.fileId) {
+        return null;
+      }
       const file = await ctx.loaders.File.load(screenshot.fileId);
       invariant(file, "File not found");
       return file.width;
     },
     height: async (screenshot, _args, ctx) => {
-      if (!screenshot.fileId) return null;
+      if (!screenshot.fileId) {
+        return null;
+      }
       const file = await ctx.loaders.File.load(screenshot.fileId);
       invariant(file, "File not found");
       return file.height;
     },
     playwrightTraceUrl: async (screenshot, _args, ctx) => {
-      if (!screenshot.playwrightTraceFileId) return null;
+      if (!screenshot.playwrightTraceFileId) {
+        return null;
+      }
       const file = await ctx.loaders.File.load(
         screenshot.playwrightTraceFileId,
       );

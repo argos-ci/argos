@@ -54,7 +54,9 @@ export const ListRow = forwardRef<
 
 const ListLoader = memo((props: { children: ReactNode }) => {
   const visible = useDelayedVisible(500);
-  if (!visible) return null;
+  if (!visible) {
+    return null;
+  }
   return (
     <>
       <Loader size={24} delay={0} />

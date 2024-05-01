@@ -156,18 +156,30 @@ export const useBuildHotkey = (
     const listener = (event: KeyboardEvent) => {
       const { options, callback } = refs.current;
       if (!options.allowInInput && event.target instanceof HTMLInputElement) {
-        if (event.target.type === "text") return;
-        if (event.target.type === "textarea") return;
+        if (event.target.type === "text") {
+          return;
+        }
+        if (event.target.type === "textarea") {
+          return;
+        }
       }
       const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
-      if (!options.enabled) return;
-      if (modifierShouldBePressed !== checkIsModifiedPressed(event)) return;
+      if (!options.enabled) {
+        return;
+      }
+      if (modifierShouldBePressed !== checkIsModifiedPressed(event)) {
+        return;
+      }
       const matchKeys = hotkey.keys.every((key) => {
         // Ignore modifier keys
-        if (key === "⌘") return true;
+        if (key === "⌘") {
+          return true;
+        }
         return key === event.code || key === event.key;
       });
-      if (!matchKeys) return;
+      if (!matchKeys) {
+        return;
+      }
       if (options.preventDefault) {
         event.preventDefault();
       }

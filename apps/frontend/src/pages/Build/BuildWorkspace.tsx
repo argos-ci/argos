@@ -102,7 +102,7 @@ export const BuildWorkspace = (props: {
     default:
       return (
         <div className="flex min-h-0 flex-1">
-          <BuildSidebar build={build} repoUrl={repoUrl} />
+          <BuildSidebar build={build} repoUrl={repoUrl} params={props.params} />
           {build ? (
             <>
               <BuildDetail build={build} repoUrl={repoUrl} />
