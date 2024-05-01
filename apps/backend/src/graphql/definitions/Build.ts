@@ -160,8 +160,8 @@ export const resolvers: IResolvers = {
         build,
       ) as Promise<IBuildStatus>;
     },
-    stats: async (build) => {
-      return Build.getStats(build.id);
+    stats: async (build, _args, ctx) => {
+      return ctx.loaders.BuildStats.load(build.id);
     },
     commit: async (build, _args, ctx) => {
       if (build.prHeadCommit) {

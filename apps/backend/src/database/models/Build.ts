@@ -52,6 +52,16 @@ export type BuildAggregatedStatus = z.infer<typeof BuildAggregatedStatusSchema>;
 
 export type BuildMode = "ci" | "monitoring";
 
+export type BuildStats = {
+  failure: number;
+  added: number;
+  unchanged: number;
+  changed: number;
+  removed: number;
+  total: number;
+  retryFailure: number;
+};
+
 export class Build extends Model {
   static override tableName = "builds";
 
@@ -240,30 +250,41 @@ export class Build extends Model {
   /**
    * Get stats of the build.
    */
-  static async getStats(buildId: string) {
+  static async getStats(buildIds: string[]): Promise<BuildStats[]> {
     const data = (await ScreenshotDiff.query()
-      .where("buildId", buildId)
+      .whereIn("buildId", buildIds)
       .leftJoinRelated("compareScreenshot")
-      .select(raw(`(${ScreenshotDiff.selectDiffStatus}) as status`))
+      .select("buildId", raw(`(${ScreenshotDiff.selectDiffStatus}) as status`))
       .count("*")
-      .groupBy("status")) as unknown as { status: string; count: string }[];
+      .groupBy("status", "buildId")) as unknown as {
+      buildId: string;
+      status: string;
+      count: string;
+    }[];
 
-    return data.reduce(
-      (res, { status, count }) => ({
-        ...res,
-        [status]: Number(count),
-        total: Number(count) + res.total,
-      }),
-      {
-        failure: 0,
-        added: 0,
-        unchanged: 0,
-        changed: 0,
-        removed: 0,
-        total: 0,
-        retryFailure: 0,
-      },
-    );
+    return buildIds.map((buildId) => {
+      return data.reduce(
+        (res, input) => {
+          if (input.buildId !== buildId) {
+            return res;
+          }
+          return {
+            ...res,
+            [input.status]: Number(input.count),
+            total: Number(input.count) + res.total,
+          };
+        },
+        {
+          failure: 0,
+          added: 0,
+          unchanged: 0,
+          changed: 0,
+          removed: 0,
+          total: 0,
+          retryFailure: 0,
+        },
+      );
+    });
   }
 
   /**

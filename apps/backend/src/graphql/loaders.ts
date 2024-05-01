@@ -6,6 +6,7 @@ import {
   Account,
   Build,
   BuildAggregatedStatus,
+  BuildStats,
   File,
   GithubAccount,
   GithubPullRequest,
@@ -216,12 +217,19 @@ function createBuildFromCompareScreenshotBucketIdLoader() {
   );
 }
 
+function createBuildStatsLoader() {
+  return new DataLoader<string, BuildStats>(async (buildIds) => {
+    return Build.getStats(buildIds as string[]);
+  });
+}
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
+  BuildStats: createBuildStatsLoader(),
   File: createModelLoader(File),
   GithubAccount: createModelLoader(GithubAccount),
   GithubPullRequest: createModelLoader(GithubPullRequest),
