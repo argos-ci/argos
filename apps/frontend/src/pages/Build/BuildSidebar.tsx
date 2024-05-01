@@ -173,7 +173,7 @@ export const BuildSidebar = React.memo(
             <TabPanel
               state={tab}
               tabId="info"
-              className="flex-1 p-4"
+              className="flex-1 overflow-auto p-4"
               focusable={false}
             >
               <BuildInfos

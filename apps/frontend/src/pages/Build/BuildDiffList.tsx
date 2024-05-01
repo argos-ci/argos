@@ -259,22 +259,41 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
     case "added":
     case "unchanged":
     case "failure":
-    case "retryFailure":
+    case "retryFailure": {
+      const { key, ...attrs } = getImgAttributes(
+        diff.compareScreenshot!.url,
+        dimensions,
+      );
       return (
         <img
-          {...getImgAttributes(diff.compareScreenshot!.url, dimensions)}
+          key={key}
+          {...attrs}
           className="max-h-full max-w-full object-contain"
         />
       );
-    case "removed":
+    }
+    case "removed": {
+      const { key, ...attrs } = getImgAttributes(
+        diff.baseScreenshot!.url,
+        dimensions,
+      );
       return (
         <img
-          {...getImgAttributes(diff.baseScreenshot!.url, dimensions)}
+          key={key}
+          {...attrs}
           className="max-h-full max-w-full object-contain"
         />
       );
+    }
     case "changed": {
       const dimensions = getDiffDimensions(diff);
+      const { key: compareKey, ...compareAttrs } = getImgAttributes(
+        diff.compareScreenshot!.url,
+      );
+      const { key: diffKey, ...diffAttrs } = getImgAttributes(
+        diff.url!,
+        dimensions,
+      );
       return (
         <div className="flex h-full items-center justify-center">
           <div
@@ -282,13 +301,15 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
             style={{ width: dimensions.width, height: dimensions.height }}
           >
             <img
-              {...getImgAttributes(diff.compareScreenshot!.url)}
+              key={compareKey}
+              {...compareAttrs}
               className="absolute w-full"
             />
             <div className="absolute inset-0 bg-black/70" />
             <img
+              key={diffKey}
+              {...diffAttrs}
               className="relative z-10 max-h-full w-full"
-              {...getImgAttributes(diff.url!, dimensions)}
             />
           </div>
         </div>
