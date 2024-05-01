@@ -25,16 +25,6 @@ type BuildStatus =
   | "aborted"
   | "expired";
 
-export interface BuildStats {
-  total: number;
-  failure: number;
-  changed: number;
-  added: number;
-  removed: number;
-  unchanged: number;
-  retryFailure: number;
-}
-
 export const getBuildColor = (
   type: BuildType | null | undefined,
   status: BuildStatus,
