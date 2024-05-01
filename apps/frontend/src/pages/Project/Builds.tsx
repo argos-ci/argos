@@ -20,6 +20,7 @@ import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
 
 import { useProjectContext } from ".";
+import { BuildStatsIndicator } from "../Build/BuildStatsIndicator";
 import { NotFound } from "../NotFound";
 import { BuildNameFilter, useBuildNameFilter } from "./BuildNameFilter";
 import { GettingStarted } from "./GettingStarted";
@@ -70,6 +71,9 @@ const ProjectBuildsQuery = graphql(`
           branch
           commit
           mode
+          stats {
+            ...BuildStatsIndicator_BuildStats
+          }
           pullRequest {
             id
             ...PullRequestButton_PullRequest
@@ -146,8 +150,13 @@ const BuildRow = React.memo(
           <div className="flex w-[12.5rem] shrink-0 items-start">
             <BuildStatusChip build={build} project={project} />
           </div>
-          <div className="flex-1" />
-          <div className="hidden w-96 xl:block">
+          <div className="flex grow">
+            <BuildStatsIndicator
+              stats={build.stats}
+              className="flex-wrap gap-2"
+            />
+          </div>
+          <div className="hidden xl:block xl:w-56 2xl:w-96">
             {build.pullRequest && (
               <PullRequestButton
                 emulatedAnchor
@@ -156,7 +165,7 @@ const BuildRow = React.memo(
               />
             )}
           </div>
-          <div className="relative hidden w-60 md:block">
+          <div className="relative hidden w-32 md:block 2xl:w-60">
             <div>
               <FakeLink
                 className="inline-flex max-w-full items-center gap-2"
