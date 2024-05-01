@@ -14,7 +14,7 @@ export type AuthProvider = "github" | "gitlab" | "google";
 export function checkIsAuthProvider(
   provider: string,
 ): provider is AuthProvider {
-  return ["github", "gitlab", "google"].includes(provider as AuthProvider);
+  return ["github", "gitlab", "google"].includes(provider);
 }
 
 type Token = null | string;

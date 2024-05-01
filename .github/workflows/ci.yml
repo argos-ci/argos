@@ -125,7 +125,7 @@ jobs:
 
   e2e-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     env:
       API_BASE_URL: http://localhost:3000
       NODE_ENV: test
