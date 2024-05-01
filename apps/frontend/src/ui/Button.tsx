@@ -1,6 +1,11 @@
-import { Children, cloneElement, forwardRef, memo } from "react";
-import { Button as AriakitButton } from "ariakit/button";
-import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
+import {
+  ButtonHTMLAttributes,
+  Children,
+  cloneElement,
+  forwardRef,
+  memo,
+} from "react";
+import { Slot } from "@radix-ui/react-slot";
 import { clsx } from "clsx";
 import { ChevronDownIcon } from "lucide-react";
 
@@ -14,10 +19,11 @@ export type ButtonColor =
 export type ButtonVariant = "contained" | "outline";
 export type ButtonSize = "base" | "small" | "large";
 
-export type ButtonProps = AriakitButtonProps<"button"> & {
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   color?: ButtonColor;
   variant?: ButtonVariant;
   size?: ButtonSize;
+  asChild?: boolean;
 };
 
 const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
@@ -62,17 +68,18 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = "base",
       children,
       className,
+      asChild,
       ...props
     },
     ref,
   ) => {
+    const Comp = asChild ? Slot : "button";
     const colorClassNames = variantClassNames[variant];
     const variantClassName = colorClassNames[color];
     const sizeClassName = sizeClassNames[size];
     return (
-      <AriakitButton
+      <Comp
         ref={ref}
-        as="button"
         className={clsx(
           className,
           variantClassName,
@@ -83,7 +90,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {children}
-      </AriakitButton>
+      </Comp>
     );
   },
 );

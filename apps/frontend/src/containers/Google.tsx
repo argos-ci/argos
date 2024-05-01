@@ -46,21 +46,19 @@ export const GoogleLoginButton = React.memo(
     children,
     redirect,
     ...props
-  }: Omit<ButtonProps, "children"> & {
+  }: Omit<ButtonProps, "children" | "asChild"> & {
     children?: React.ReactNode;
     redirect?: string | null;
   }) => {
     const loginUrl = useLoginUrl(redirect);
     return (
-      <Button color="google" {...props}>
-        {(buttonProps) => (
-          <a href={loginUrl} {...buttonProps}>
-            <ButtonIcon>
-              <GoogleLogo />
-            </ButtonIcon>
-            {children ?? "Login with Google"}
-          </a>
-        )}
+      <Button color="google" asChild {...props}>
+        <a href={loginUrl}>
+          <ButtonIcon>
+            <GoogleLogo />
+          </ButtonIcon>
+          {children ?? "Login with Google"}
+        </a>
       </Button>
     );
   },

@@ -15,12 +15,8 @@ export const NotFound = () => {
         <AlertTitle>Page not found</AlertTitle>
         <AlertText>There is nothing to see here.</AlertText>
         <AlertActions>
-          <Button>
-            {(buttonProps) => (
-              <RouterLink to="/" {...buttonProps}>
-                Back to home
-              </RouterLink>
-            )}
+          <Button asChild>
+            <RouterLink to="/">Back to home</RouterLink>
           </Button>
         </AlertActions>
       </Alert>

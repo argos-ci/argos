@@ -19,8 +19,8 @@ export type TooltipProps = {
   variant?: TooltipVariant;
   side?: TooltipPrimitive.TooltipContentProps["side"];
   align?: TooltipPrimitive.TooltipContentProps["align"];
-  preventPointerDownOutside?: boolean;
   disableHoverableContent?: boolean;
+  onPointerDownOutside?: TooltipPrimitive.TooltipContentProps["onPointerDownOutside"];
 };
 
 export const TooltipTrigger = TooltipPrimitive.Trigger;
@@ -65,7 +65,7 @@ export const Tooltip = ({
   align,
   side,
   disableHoverableContent,
-  preventPointerDownOutside,
+  onPointerDownOutside,
 }: TooltipProps) => {
   if (!content) {
     return <>{children}</>;
@@ -79,11 +79,7 @@ export const Tooltip = ({
           align={align}
           side={side}
           variant={variant}
-          onPointerDownOutside={(event) => {
-            if (preventPointerDownOutside) {
-              event.preventDefault();
-            }
-          }}
+          onPointerDownOutside={onPointerDownOutside}
           disableHoverableContent={disableHoverableContent}
         >
           {content}

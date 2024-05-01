@@ -189,26 +189,25 @@ export const PullRequestButton = (props: {
         variant="outline"
         size={props.size}
         className={clsx("!bg-app min-w-0", props.className)}
+        asChild
       >
-        {(buttonProps) => (
-          <Anchor {...buttonProps} href={pullRequest.url} target={props.target}>
-            <>
-              <PullRequestStatusIcon pullRequest={pullRequest} />
-              {pullRequest.title ? (
-                <span className="flex min-w-0 max-w-prose items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate">
-                    {pullRequest.title}
-                  </span>
-                  <span className="text-low font-normal">
-                    #{pullRequest.number}
-                  </span>
+        <Anchor href={pullRequest.url} target={props.target}>
+          <>
+            <PullRequestStatusIcon pullRequest={pullRequest} />
+            {pullRequest.title ? (
+              <span className="flex min-w-0 max-w-prose items-center gap-2">
+                <span className="min-w-0 flex-1 truncate">
+                  {pullRequest.title}
                 </span>
-              ) : (
-                <>#{pullRequest.number}</>
-              )}
-            </>
-          </Anchor>
-        )}
+                <span className="text-low font-normal">
+                  #{pullRequest.number}
+                </span>
+              </span>
+            ) : (
+              <>#{pullRequest.number}</>
+            )}
+          </>
+        </Anchor>
       </Button>
     </Tooltip>
   );

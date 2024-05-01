@@ -284,12 +284,8 @@ function ManageSubscriptionButton({
     case AccountSubscriptionProvider.Stripe: {
       if (!account.stripeCustomerId) {
         return (
-          <Button>
-            {(buttonProps) => (
-              <a href={contactHref} {...buttonProps}>
-                {children}
-              </a>
-            )}
+          <Button asChild>
+            <a href={contactHref}>{children}</a>
           </Button>
         );
       }
@@ -304,12 +300,8 @@ function ManageSubscriptionButton({
     }
     case null: {
       return (
-        <Button>
-          {(buttonProps) => (
-            <a href={contactHref} {...buttonProps}>
-              {children}
-            </a>
-          )}
+        <Button asChild>
+          <a href={contactHref}>{children}</a>
         </Button>
       );
     }
@@ -358,15 +350,13 @@ function PlanCardFooter(props: {
           </div>
           <div className="flex items-center gap-4">
             Want to collaborate?
-            <Button>
-              {(buttonProps) => (
-                <RouterLink to="/teams/new" {...buttonProps}>
-                  <ButtonIcon>
-                    <PlusCircleIcon />
-                  </ButtonIcon>
-                  Create a Team
-                </RouterLink>
-              )}
+            <Button asChild>
+              <RouterLink to="/teams/new">
+                <ButtonIcon>
+                  <PlusCircleIcon />
+                </ButtonIcon>
+                Create a Team
+              </RouterLink>
             </Button>
           </div>
         </CardFooter>
@@ -397,12 +387,8 @@ function PlanCardFooter(props: {
               </ManageSubscriptionButton>
               <div className="flex items-center gap-4">
                 Custom needs?{" "}
-                <Button color="neutral" variant="outline">
-                  {(buttonProps) => (
-                    <a href={contactHref} {...buttonProps}>
-                      Contact Sales
-                    </a>
-                  )}
+                <Button color="neutral" variant="outline" asChild>
+                  <a href={contactHref}>Contact Sales</a>
                 </Button>
               </div>
             </CardFooter>

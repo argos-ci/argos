@@ -50,15 +50,16 @@ const DeleteTeamMutation = graphql(`
   }
 `);
 
-const DeleteButton = forwardRef<HTMLButtonElement, Omit<ButtonProps, "color">>(
-  (props, ref) => {
-    return (
-      <Button ref={ref} color="danger" {...props}>
-        Delete
-      </Button>
-    );
-  },
-);
+const DeleteButton = forwardRef<
+  HTMLButtonElement,
+  Omit<ButtonProps, "color" | "children">
+>((props, ref) => {
+  return (
+    <Button ref={ref} color="danger" {...props}>
+      Delete
+    </Button>
+  );
+});
 
 type DeleteTeamButtonProps = {
   teamAccountId: string;
@@ -177,7 +178,7 @@ export const TeamDelete = (props: {
             subscription before deleting the team.
           </div>
           <Tooltip content="Cancel your subscription before deleting the team.">
-            <DeleteButton disabled accessibleWhenDisabled />
+            <DeleteButton aria-disabled />
           </Tooltip>
         </CardFooter>
       ) : (

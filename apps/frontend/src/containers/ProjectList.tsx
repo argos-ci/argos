@@ -76,17 +76,17 @@ const ProjectCard = ({ project }: { project: Project }) => {
   );
 };
 
-const CreateProjectButton = (props: ButtonProps) => {
+const CreateProjectButton = (
+  props: Omit<ButtonProps, "children" | "asChild">,
+) => {
   return (
-    <Button {...props}>
-      {(buttonProps) => (
-        <RouterLink to="new" {...buttonProps}>
-          <ButtonIcon>
-            <PlusCircleIcon />
-          </ButtonIcon>
-          Create a new Project
-        </RouterLink>
-      )}
+    <Button asChild {...props}>
+      <RouterLink to="new">
+        <ButtonIcon>
+          <PlusCircleIcon />
+        </ButtonIcon>
+        Create a new Project
+      </RouterLink>
     </Button>
   );
 };

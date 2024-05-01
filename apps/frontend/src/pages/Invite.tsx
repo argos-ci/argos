@@ -121,12 +121,10 @@ export function Component() {
                     <p className="mb-10 text-xl">
                       You are a member of {teamTitle}.
                     </p>
-                    <Button size="large">
-                      {(buttonProps) => (
-                        <RouterLink to={`/${team.slug}`} {...buttonProps}>
-                          View Team Projects
-                        </RouterLink>
-                      )}
+                    <Button size="large" asChild>
+                      <RouterLink to={`/${team.slug}`}>
+                        View Team Projects
+                      </RouterLink>
                     </Button>
                   </>
                 );

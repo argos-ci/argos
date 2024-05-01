@@ -210,9 +210,7 @@ export function ConfigureGitHubSSO(props: {
   if (props.disabledReason) {
     return (
       <Tooltip content={props.disabledReason}>
-        <Button disabled accessibleWhenDisabled>
-          {getButtonLabel(props.priced)}
-        </Button>
+        <Button aria-disabled>{getButtonLabel(props.priced)}</Button>
       </Tooltip>
     );
   }
