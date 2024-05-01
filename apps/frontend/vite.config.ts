@@ -38,6 +38,9 @@ export default defineConfig(({ mode: argMode }) => {
             if (id.includes("node_modules/d3")) {
               return "d3";
             }
+            if (id.includes("node_modules")) {
+              return "vendor";
+            }
             return undefined;
           },
         },
