@@ -68,8 +68,10 @@ export const typeDefs = gql`
     updatedAt: DateTime!
     "The screenshot diffs between the base screenshot bucket of the compare screenshot bucket"
     screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
-    "The screenshot bucket of the baselineBranch"
+    "The screenshot bucket that serves as base for comparison"
     baseScreenshotBucket: ScreenshotBucket
+    "The base build that contains the base screeenshot bucket"
+    baseBuild: Build
     "Continuous number. It is incremented after each build"
     number: Int!
     "Review status, conclusion or job status"
@@ -140,8 +142,18 @@ export const resolvers: IResolvers = {
       return paginateResult({ result, first, after });
     },
     baseScreenshotBucket: async (build, _args, ctx) => {
-      if (!build.baseScreenshotBucketId) return null;
+      if (!build.baseScreenshotBucketId) {
+        return null;
+      }
       return ctx.loaders.ScreenshotBucket.load(build.baseScreenshotBucketId);
+    },
+    baseBuild: async (build, _args, ctx) => {
+      if (!build.baseScreenshotBucketId) {
+        return null;
+      }
+      return ctx.loaders.BuildFromCompareScreenshotBucketId.load(
+        build.baseScreenshotBucketId,
+      );
     },
     status: async (build, _args, ctx) => {
       return ctx.loaders.BuildAggregatedStatus.load(

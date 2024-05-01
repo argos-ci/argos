@@ -39,6 +39,7 @@ const BuildFragment = graphql(`
     branch
     type
     baseScreenshotBucket {
+      id
       branch
       createdAt
     }

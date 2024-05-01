@@ -82,7 +82,10 @@ input AddContributorToProjectInput {
 }
 
 type Build implements Node {
-  """The screenshot bucket of the baselineBranch"""
+  """The base build that contains the base screeenshot bucket"""
+  baseBuild: Build
+
+  """The screenshot bucket that serves as base for comparison"""
   baseScreenshotBucket: ScreenshotBucket
 
   """Branch"""
