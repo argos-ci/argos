@@ -3,4 +3,4 @@
 set -e
 
 # Run migrations
-pnpm run --filter @argos/backend db:migrate:latest
+npm run -w @argos/backend db:migrate:latest

@@ -1,11 +1,15 @@
 {
   "name": "@argos/root",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo run watch-build watch-server watch-codegen --concurrency 100",
     "build": "turbo run build",
     "test": "TZ=utc vitest",
-    "e2e:setup": "NODE_ENV=test pnpm run --filter @argos/backend db:truncate && NODE_ENV=test pnpm run --filter @argos/backend db:seed",
+    "e2e:setup": "NODE_ENV=test npm run -w @argos/backend db:truncate && NODE_ENV=test npm run -w @argos/backend db:seed",
     "e2e:start": "NODE_ENV=test playwright test",
     "setup": "turbo run setup",
     "github-webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/SmH89Dx2HZ89wK7T --target https://api.argos-ci.dev:4001/github/event-handler",
@@ -50,6 +54,5 @@
     "typescript": "^5.4.5",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^1.5.3"
-  },
-  "packageManager": "pnpm@9.1.0-0+sha256.c557b24d2298d9b5e3be7086ebf55a28253b008324d545f72645a6de89844102"
+  }
 }
