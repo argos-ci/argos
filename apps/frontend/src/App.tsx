@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Helmet } from "react-helmet";
 import {
   createBrowserRouter,
@@ -116,7 +117,9 @@ export const App = () => {
         <ColorModeProvider>
           <AuthContextProvider>
             <ApolloInitializer>
-              <RouterProvider router={router} />
+              <Suspense fallback={null}>
+                <RouterProvider router={router} />
+              </Suspense>
             </ApolloInitializer>
           </AuthContextProvider>
         </ColorModeProvider>
