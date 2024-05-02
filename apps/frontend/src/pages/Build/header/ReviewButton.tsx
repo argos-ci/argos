@@ -143,9 +143,7 @@ export const DisabledReviewButton = ({
 }) => {
   return (
     <Tooltip content={tooltip} variant="info">
-      <Button accessibleWhenDisabled disabled>
-        Review changes
-      </Button>
+      <Button aria-disabled>Review changes</Button>
     </Tooltip>
   );
 };

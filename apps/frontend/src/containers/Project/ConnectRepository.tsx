@@ -184,21 +184,18 @@ const GitHubButton = (props: {
   const { pathname } = useLocation();
   if (!props.hasInstallations) {
     return (
-      <Button color="github" size={props.size}>
-        {(buttonProps) => (
-          <a
-            href={`${config.get(
-              "github.appUrl",
-            )}/installations/new?state=${encodeURIComponent(pathname)}`}
-            onClick={props.onClick}
-            {...buttonProps}
-          >
-            <ButtonIcon>
-              <MarkGithubIcon />
-            </ButtonIcon>
-            {props.children}
-          </a>
-        )}
+      <Button color="github" size={props.size} asChild>
+        <a
+          href={`${config.get(
+            "github.appUrl",
+          )}/installations/new?state=${encodeURIComponent(pathname)}`}
+          onClick={props.onClick}
+        >
+          <ButtonIcon>
+            <MarkGithubIcon />
+          </ButtonIcon>
+          {props.children}
+        </a>
       </Button>
     );
   }
@@ -329,17 +326,14 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
           token first.
         </div>
         <div className="flex items-center justify-center gap-4">
-          <Button>
-            {(buttonProps) => (
-              <a
-                {...buttonProps}
-                href="https://argos-ci.com/docs/gitlab"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Setup GitLab Access token
-              </a>
-            )}
+          <Button asChild>
+            <a
+              href="https://argos-ci.com/docs/gitlab"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Setup GitLab Access token
+            </a>
           </Button>
           <Button
             color="neutral"

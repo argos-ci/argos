@@ -22,12 +22,8 @@ export const ErrorPage = () => {
           .
         </AlertText>
         <AlertActions>
-          <Button>
-            {(buttonProps) => (
-              <RouterLink to="/" {...buttonProps}>
-                Back to home
-              </RouterLink>
-            )}
+          <Button asChild>
+            <RouterLink to="/">Back to home</RouterLink>
           </Button>
         </AlertActions>
       </Alert>

@@ -1,6 +1,5 @@
-import { cloneElement, forwardRef } from "react";
-import { Button as AriakitButton } from "ariakit/button";
-import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
+import { ButtonHTMLAttributes, forwardRef } from "react";
+import { Slot } from "@radix-ui/react-slot";
 import { clsx } from "clsx";
 
 type IconButtonVariant = "contained" | "outline";
@@ -28,7 +27,7 @@ const colorClassNames: Record<
 
 export const IconButton = forwardRef<
   HTMLButtonElement,
-  Omit<AriakitButtonProps<"button">, "className" | "children"> & {
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children"> & {
     color?: IconButtonColor;
     variant?: IconButtonVariant;
     children: React.ReactNode;
@@ -40,10 +39,10 @@ export const IconButton = forwardRef<
     ref,
   ) => {
     const variantClassName = colorClassNames[variant][color];
+    const Comp = asChild ? Slot : "button";
     return (
-      <AriakitButton
+      <Comp
         ref={ref}
-        as="button"
         className={clsx(
           variantClassName,
           /* Group */
@@ -55,10 +54,8 @@ export const IconButton = forwardRef<
         )}
         {...props}
       >
-        {asChild
-          ? (p) => cloneElement(children as React.ReactElement, p)
-          : children}
-      </AriakitButton>
+        {children}
+      </Comp>
     );
   },
 );

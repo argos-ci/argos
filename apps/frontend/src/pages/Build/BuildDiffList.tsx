@@ -13,7 +13,6 @@ import {
   Range,
   useVirtualizer,
 } from "@tanstack/react-virtual";
-import { Button as AriakitButton } from "ariakit/button";
 import { clsx } from "clsx";
 import {
   ChevronDownIcon,
@@ -204,18 +203,17 @@ const ListHeader = ({
   item,
   activeIndex,
 }: {
-  style: React.HTMLProps<HTMLDivElement>["style"];
-  onClick: React.HTMLProps<HTMLDivElement>["onClick"];
+  style: React.HTMLProps<HTMLButtonElement>["style"];
+  onClick: React.HTMLProps<HTMLButtonElement>["onClick"];
   item: ListHeaderRow;
   activeIndex: number;
 }) => {
   const borderB = item.borderBottom ? "border-b border-b-border" : "";
   return (
-    <AriakitButton
-      as="div"
+    <button
       className={clsx(
         borderB,
-        "border-t-border bg-app hover:bg-subtle z-10 flex cursor-default select-none items-center border-t pr-4",
+        "border-t-border bg-app hover:bg-subtle z-10 flex w-full cursor-default select-none items-center border-t pr-4 text-left",
       )}
       style={style}
       onClick={onClick}
@@ -233,7 +231,7 @@ const ListHeader = ({
         {activeIndex !== -1 ? <>{activeIndex + 1} / </> : null}
         {item.count}
       </Badge>
-    </AriakitButton>
+    </button>
   );
 };
 
@@ -478,7 +476,7 @@ const ListItem = ({
   onToggleGroupItem,
   observer,
 }: {
-  style: React.HTMLProps<HTMLDivElement>["style"];
+  style: React.HTMLProps<HTMLButtonElement>["style"];
   item: ListItemRow | ListGroupItemRow;
   index: number;
   active: boolean;
@@ -488,7 +486,7 @@ const ListItem = ({
 }) => {
   const pt = item.first ? "pt-4" : "pt-2";
   const pb = item.last ? "pb-4" : "pb-2";
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const element = ref.current;
     if (observer && element) {
@@ -509,15 +507,14 @@ const ListItem = ({
   const isSubItem = !searchMode && item.type === "item" && item.diff?.group;
 
   return (
-    <AriakitButton
+    <button
       ref={ref}
       data-index={index}
-      as="div"
       disabled={!item.diff}
       className={clsx(
         pt,
         pb,
-        "group/item relative w-full cursor-default px-4 focus:outline-none",
+        "group/item relative w-full cursor-default px-4 text-left focus:outline-none",
         isSubItem && "pl-10",
       )}
       style={style}
@@ -592,7 +589,7 @@ const ListItem = ({
           </>
         ) : null}
       </DiffCard>
-    </AriakitButton>
+    </button>
   );
 };
 

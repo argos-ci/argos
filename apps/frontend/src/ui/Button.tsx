@@ -1,6 +1,11 @@
-import { Children, cloneElement, forwardRef, memo } from "react";
-import { Button as AriakitButton } from "ariakit/button";
-import type { ButtonProps as AriakitButtonProps } from "ariakit/button";
+import {
+  ButtonHTMLAttributes,
+  Children,
+  cloneElement,
+  forwardRef,
+  memo,
+} from "react";
+import { Slot } from "@radix-ui/react-slot";
 import { clsx } from "clsx";
 import { ChevronDownIcon } from "lucide-react";
 
@@ -14,10 +19,11 @@ export type ButtonColor =
 export type ButtonVariant = "contained" | "outline";
 export type ButtonSize = "base" | "small" | "large";
 
-export type ButtonProps = AriakitButtonProps<"button"> & {
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   color?: ButtonColor;
   variant?: ButtonVariant;
   size?: ButtonSize;
+  asChild?: boolean;
 };
 
 const variantClassNames: Record<ButtonVariant, Record<ButtonColor, string>> = {
@@ -62,28 +68,39 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = "base",
       children,
       className,
+      asChild,
+      onClick,
       ...props
     },
     ref,
   ) => {
+    const Comp = asChild ? Slot : "button";
     const colorClassNames = variantClassNames[variant];
     const variantClassName = colorClassNames[color];
     const sizeClassName = sizeClassNames[size];
     return (
-      <AriakitButton
+      <Comp
         ref={ref}
-        as="button"
         className={clsx(
           className,
           variantClassName,
           sizeClassName,
           "focus:outline-none focus-visible:ring-4",
-          "align-center aria-disabled:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium transition [&:is(button)]:cursor-default",
+          "align-center aria-disabled:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium transition aria-disabled:cursor-default [&:is(button)]:cursor-default",
         )}
+        aria-disabled={asChild ? props.disabled : undefined}
+        onClick={(event) => {
+          if (props["aria-disabled"] || props.disabled) {
+            event.preventDefault();
+            console.log("Prevented default");
+            return;
+          }
+          onClick?.(event);
+        }}
         {...props}
       >
         {children}
-      </AriakitButton>
+      </Comp>
     );
   },
 );

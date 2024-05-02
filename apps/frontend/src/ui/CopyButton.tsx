@@ -1,4 +1,4 @@
-import { Button as AriakitButton, ButtonProps } from "ariakit/button";
+import { ButtonHTMLAttributes } from "react";
 import { clsx } from "clsx";
 import { CheckIcon, ClipboardIcon } from "lucide-react";
 import { useClipboard } from "use-clipboard-copy";
@@ -10,31 +10,35 @@ export const CopyButton = ({
   onClick,
   className,
   ...props
-}: { text: string } & ButtonProps) => {
+}: { text: string } & ButtonHTMLAttributes<HTMLButtonElement>) => {
   const clipboard = useClipboard({ copiedTimeout: 2000 });
   return (
     <Tooltip
       content={clipboard.copied ? "Copied!" : "Copy"}
-      preventPointerDownOutside
+      onPointerDownOutside={(event) => {
+        event.preventDefault();
+      }}
     >
-      <AriakitButton
-        {...props}
+      <button
         className={clsx(
           className,
           "text-low hover:text bg-ui hover:bg-hover cursor-default rounded p-0.5",
         )}
         onClick={(event) => {
-          event.preventDefault();
-          clipboard.copy(text);
-          onClick && onClick(event);
+          onClick?.(event);
+          if (!event.defaultPrevented) {
+            event.preventDefault();
+            clipboard.copy(text);
+          }
         }}
+        {...props}
       >
         {clipboard.copied ? (
           <CheckIcon style={{ width: "1em", height: "1em" }} />
         ) : (
           <ClipboardIcon style={{ width: "1em", height: "1em" }} />
         )}
-      </AriakitButton>
+      </button>
     </Tooltip>
   );
 };

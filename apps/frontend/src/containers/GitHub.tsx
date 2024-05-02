@@ -24,15 +24,13 @@ export const GitHubLoginButton = memo<
 >(({ children, redirect, ...props }) => {
   const loginUrl = useLoginUrl(redirect);
   return (
-    <Button color="github" {...props}>
-      {(buttonProps) => (
-        <a href={loginUrl} {...buttonProps}>
-          <ButtonIcon>
-            <MarkGithubIcon />
-          </ButtonIcon>
-          {children ?? "Login with GitHub"}
-        </a>
-      )}
+    <Button color="github" asChild {...props}>
+      <a href={loginUrl}>
+        <ButtonIcon>
+          <MarkGithubIcon />
+        </ButtonIcon>
+        {children ?? "Login with GitHub"}
+      </a>
     </Button>
   );
 });

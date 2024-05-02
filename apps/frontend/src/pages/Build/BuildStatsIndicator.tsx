@@ -1,6 +1,5 @@
 import { memo } from "react";
 import { assertNever } from "@argos/util/assertNever";
-import { Button as AriakitButton } from "ariakit/button";
 import { clsx } from "clsx";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -74,18 +73,17 @@ const InteractiveStatCount = ({
   const hotkey = useBuildHotkey(hotkeyName, onActive);
   return (
     <HotkeyTooltip keys={hotkey.displayKeys} description={hotkey.description}>
-      <AriakitButton
-        as="div"
+      <button
         className={clsx(
           colorClassName,
           "aria-disabled:opacity-disabled flex cursor-default items-center gap-1 p-2 transition",
         )}
         onClick={onActive}
-        disabled={count === 0}
+        aria-disabled={count === 0}
       >
         <span className="[&>*]:size-4">{icon}</span>
         <span className="text-xs">{count}</span>
-      </AriakitButton>
+      </button>
     </HotkeyTooltip>
   );
 };
