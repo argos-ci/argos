@@ -62,13 +62,13 @@ interface InteractiveStatCountProps {
   hotkeyName: HotkeyName;
 }
 
-const InteractiveStatCount = ({
+function InteractiveStatCount({
   icon,
   count,
   color,
   onActive,
   hotkeyName,
-}: InteractiveStatCountProps) => {
+}: InteractiveStatCountProps) {
   const colorClassName = getStatCountColorClassName(color, true);
   const hotkey = useBuildHotkey(hotkeyName, onActive);
   return (
@@ -86,7 +86,7 @@ const InteractiveStatCount = ({
       </button>
     </HotkeyTooltip>
   );
-};
+}
 
 interface StatCountProps {
   icon: React.ReactNode;
@@ -95,25 +95,25 @@ interface StatCountProps {
   tooltip: string | null;
 }
 
-const StatCount = ({ icon, count, color, tooltip }: StatCountProps) => {
+function StatCount({ icon, count, color, tooltip }: StatCountProps) {
   const colorClassName = getStatCountColorClassName(color, false);
   const element = (
     <div
       className={clsx(
         colorClassName,
-        "flex items-center gap-0.5 tabular-nums",
+        "flex items-center gap-1 tabular-nums",
         count === 0 && "opacity-disabled",
       )}
     >
       <span className="[&>*]:size-4">{icon}</span>
-      <span className="min-w-6 text-xs">{count}</span>
+      <span className="text-xs">{count}</span>
     </div>
   );
   if (!tooltip) {
     return element;
   }
   return <Tooltip content={tooltip}>{element}</Tooltip>;
-};
+}
 
 const BuildStatsFragment = graphql(`
   fragment BuildStatsIndicator_BuildStats on BuildStats {
@@ -127,46 +127,47 @@ const BuildStatsFragment = graphql(`
   }
 `);
 
-export const BuildStatsIndicator = memo(
-  ({
-    stats: rawStats,
-    onClickGroup,
-    className,
-    tooltip = true,
-  }: {
-    stats: FragmentType<typeof BuildStatsFragment>;
-    onClickGroup?: (group: DiffGroup["name"]) => void;
-    className?: string;
-    tooltip?: boolean;
-  }) => {
-    const stats = useFragment(BuildStatsFragment, rawStats);
-    return (
-      <div className={clsx(className, "flex items-center")}>
-        {GROUPS.map((group) => {
-          const count = stats[group];
-          if (!onClickGroup) {
-            return (
-              <StatCount
-                key={group}
-                icon={getGroupIcon(group)}
-                count={count}
-                color={getGroupColor(group)}
-                tooltip={tooltip ? getGroupLabel(group) : null}
-              />
-            );
+export const BuildStatsIndicator = memo(function BuildStatsIndicator({
+  stats: rawStats,
+  onClickGroup,
+  className,
+  tooltip = true,
+}: {
+  stats: FragmentType<typeof BuildStatsFragment>;
+  onClickGroup?: (group: DiffGroup["name"]) => void;
+  className?: string;
+  tooltip?: boolean;
+}) {
+  const stats = useFragment(BuildStatsFragment, rawStats);
+  return (
+    <div className={clsx(className, "flex items-center")}>
+      {GROUPS.map((group) => {
+        const count = stats[group];
+        if (!onClickGroup) {
+          if (count === 0) {
+            return null;
           }
           return (
-            <InteractiveStatCount
+            <StatCount
               key={group}
               icon={getGroupIcon(group)}
               count={count}
               color={getGroupColor(group)}
-              onActive={() => onClickGroup(group)}
-              hotkeyName={getStatHotkeyName(group)}
+              tooltip={tooltip ? getGroupLabel(group) : null}
             />
           );
-        })}
-      </div>
-    );
-  },
-);
+        }
+        return (
+          <InteractiveStatCount
+            key={group}
+            icon={getGroupIcon(group)}
+            count={count}
+            color={getGroupColor(group)}
+            onActive={() => onClickGroup(group)}
+            hotkeyName={getStatHotkeyName(group)}
+          />
+        );
+      })}
+    </div>
+  );
+});
