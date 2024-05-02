@@ -69,6 +69,10 @@ export default defineConfig(({ mode: argMode }) => {
                 target: "https://app.argos-ci.dev:4001",
                 secure: false,
               },
+              "/auth/google/login": {
+                target: "https://app.argos-ci.dev:4001",
+                secure: false,
+              },
             },
           }
         : undefined,

@@ -69,6 +69,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       children,
       className,
       asChild,
+      onClick,
       ...props
     },
     ref,
@@ -85,8 +86,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           variantClassName,
           sizeClassName,
           "focus:outline-none focus-visible:ring-4",
-          "align-center aria-disabled:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium transition [&:is(button)]:cursor-default",
+          "align-center aria-disabled:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium transition aria-disabled:cursor-default [&:is(button)]:cursor-default",
         )}
+        aria-disabled={asChild ? props.disabled : undefined}
+        onClick={(event) => {
+          if (props["aria-disabled"] || props.disabled) {
+            event.preventDefault();
+            console.log("Prevented default");
+            return;
+          }
+          onClick?.(event);
+        }}
         {...props}
       >
         {children}

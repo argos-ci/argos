@@ -18,6 +18,7 @@
     "@primer/octicons-react": "^19.9.0",
     "@radix-ui/colors": "^3.0.0",
     "@radix-ui/react-separator": "^1.0.3",
+    "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@sentry/react": "^7.112.2",
     "@sentry/vite-plugin": "^2.16.1",
