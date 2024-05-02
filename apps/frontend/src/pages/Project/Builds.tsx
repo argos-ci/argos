@@ -151,10 +151,12 @@ const BuildRow = React.memo(
             <BuildStatusChip build={build} project={project} />
           </div>
           <div className="flex grow">
-            <BuildStatsIndicator
-              stats={build.stats}
-              className="flex-wrap gap-2"
-            />
+            <div className="hidden lg:flex">
+              <BuildStatsIndicator
+                stats={build.stats}
+                className="flex-wrap gap-3"
+              />
+            </div>
           </div>
           <div className="hidden xl:block xl:w-56 2xl:w-96">
             {build.pullRequest && (
@@ -165,7 +167,7 @@ const BuildRow = React.memo(
               />
             )}
           </div>
-          <div className="relative hidden w-32 md:block 2xl:w-60">
+          <div className="relative hidden w-32 md:block">
             <div>
               <FakeLink
                 className="inline-flex max-w-full items-center gap-2"
@@ -194,7 +196,7 @@ const BuildRow = React.memo(
             </div>
           </div>
           <div
-            className="text-low w-32 shrink-0 overflow-hidden truncate whitespace-nowrap text-right"
+            className="text-low w-24 shrink-0 overflow-hidden truncate whitespace-nowrap text-right"
             data-visual-test="transparent"
           >
             <Time date={build.createdAt} />
