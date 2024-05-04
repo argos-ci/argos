@@ -25,12 +25,11 @@ export const getGroupColor = (name: DiffGroup["name"]) => {
   switch (name) {
     case ScreenshotDiffStatus.Failure:
       return "danger" as const;
-    case ScreenshotDiffStatus.RetryFailure:
     case ScreenshotDiffStatus.Changed:
-      return "warning" as const;
     case ScreenshotDiffStatus.Added:
-      return "neutral" as const;
     case ScreenshotDiffStatus.Removed:
+      return "warning" as const;
+    case ScreenshotDiffStatus.RetryFailure:
       return "neutral" as const;
     case ScreenshotDiffStatus.Unchanged:
       return "success" as const;
