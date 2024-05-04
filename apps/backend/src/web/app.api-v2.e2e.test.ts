@@ -76,6 +76,7 @@ describe("api v2", () => {
             branch: "main",
             name: "current",
             prNumber: 12,
+            mode: null,
           })
           // .end(console.log);
           .expect(201);

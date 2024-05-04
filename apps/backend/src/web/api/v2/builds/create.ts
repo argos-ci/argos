@@ -69,9 +69,10 @@ const validateRoute = validate({
         nullable: true,
       },
       mode: {
-        type: "string",
-        enum: ["ci", "monitoring"],
-        nullable: true,
+        oneOf: [
+          { type: "string", enum: ["ci", "monitoring"] },
+          { type: "null" },
+        ],
       },
     },
   },
