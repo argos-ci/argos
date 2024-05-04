@@ -13,7 +13,7 @@ function getBuildStatusLabel(status: BuildAggregatedStatus): string {
     case "aborted":
       return "🙅 Build aborted";
     case "diffDetected":
-      return "🧿 Changes detected";
+      return "⚠️  Changes detected";
     case "error":
       return "❌ An error happened";
     case "expired":
