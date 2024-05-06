@@ -1,35 +1,9 @@
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
+import { getBuildLabel } from "@/build/label.js";
+import { getStatsMessage } from "@/build/stats.js";
 import { getCommentHeader } from "@/database/index.js";
-import { Build, type BuildAggregatedStatus } from "@/database/models/index.js";
-
-import { getStatsMessage } from "./utils.js";
-
-function getBuildStatusLabel(status: BuildAggregatedStatus): string {
-  switch (status) {
-    case "accepted":
-      return "👍 Changes approved";
-    case "aborted":
-      return "🙅 Build aborted";
-    case "diffDetected":
-      return "⚠️  Changes detected";
-    case "error":
-      return "❌ An error happened";
-    case "expired":
-      return "💀 Build expired";
-    case "pending":
-      return "📭 Waiting for screenshots";
-    case "progress":
-      return "🚜 Diffing screenshots";
-    case "rejected":
-      return "👎 Changes rejected";
-    case "stable":
-      return "✅ No change detected";
-    default:
-      assertNever(status);
-  }
-}
+import { Build } from "@/database/models/index.js";
 
 const dateFormatter = Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
@@ -62,11 +36,9 @@ export const getCommentBody = async (props: {
       ]);
       const status = aggregateStatuses[index];
       invariant(status, "unknown build status");
-      const statusMessage = getBuildStatusLabel(status);
+      const label = getBuildLabel(build.type, status);
       const review = status === "diffDetected" ? ` ([Review](${url}))` : "";
-      return `| **${
-        build.name
-      }** ([Inspect](${url})) | ${statusMessage}${review} | ${
+      return `| **${build.name}** ([Inspect](${url})) | ${label}${review} | ${
         stats || "-"
       } | ${formatDate(build.updatedAt)} |`;
     }),

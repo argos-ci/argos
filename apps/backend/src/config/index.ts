@@ -318,6 +318,32 @@ const config = convict({
       env: "GOOGLE_CLIENT_SECRET",
     },
   },
+  slack: {
+    clientId: {
+      doc: "Slack client ID",
+      format: String,
+      default: "",
+      env: "SLACK_CLIENT_ID",
+    },
+    clientSecret: {
+      doc: "Slack client secret",
+      format: String,
+      default: "",
+      env: "SLACK_CLIENT_SECRET",
+    },
+    signingSecret: {
+      doc: "Slack signing secret",
+      format: String,
+      default: "",
+      env: "SLACK_SIGNING_SECRET",
+    },
+    stateSecret: {
+      doc: "Slack state secret",
+      format: String,
+      default: "",
+      env: "SLACK_STATE_SECRET",
+    },
+  },
 });
 
 const env = config.get("env");

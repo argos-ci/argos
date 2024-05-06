@@ -14,6 +14,7 @@ interface Account implements Node {
   permissions: [AccountPermission!]!
   plan: Plan
   projects(after: Int = 0, first: Int = 30): ProjectConnection!
+  slackInstallation: SlackInstallation
   slug: String!
   stripeClientReferenceId: String!
   stripeCustomerId: String
@@ -414,6 +415,9 @@ type Mutation {
   """Transfer Project to another account"""
   transferProject(input: TransferProjectInput!): Project!
 
+  """Uninstall Slack"""
+  uninstallSlack(input: UninstallSlackInput!): Account!
+
   """Unlink GitHub Repository"""
   unlinkGithubRepository(input: UnlinkGithubRepositoryInput!): Project!
 
@@ -718,6 +722,13 @@ input SetTeamMemberLevelInput {
   userAccountId: ID!
 }
 
+type SlackInstallation implements Node {
+  createdAt: DateTime!
+  id: ID!
+  teamDomain: String!
+  teamName: String!
+}
+
 enum SummaryCheck {
   always
   auto
@@ -746,6 +757,7 @@ type Team implements Account & Node {
   permissions: [AccountPermission!]!
   plan: Plan
   projects(after: Int = 0, first: Int = 30): ProjectConnection!
+  slackInstallation: SlackInstallation
   slug: String!
   ssoGithubAccount: GithubAccount
   stripeClientReferenceId: String!
@@ -822,6 +834,10 @@ input TransferProjectInput {
   targetAccountId: ID!
 }
 
+input UninstallSlackInput {
+  accountId: ID!
+}
+
 input UnlinkGithubRepositoryInput {
   projectId: ID!
 }
@@ -871,6 +887,7 @@ type User implements Account & Node {
   plan: Plan
   projects(after: Int = 0, first: Int = 30): ProjectConnection!
   projectsContributedOn(after: Int = 0, first: Int = 30, projectId: ID!): ProjectContributorConnection!
+  slackInstallation: SlackInstallation
   slug: String!
   stripeClientReferenceId: String!
   stripeCustomerId: String

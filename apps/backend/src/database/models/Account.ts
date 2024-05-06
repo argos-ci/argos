@@ -9,6 +9,7 @@ import { GithubAccount } from "./GithubAccount.js";
 import { Plan } from "./Plan.js";
 import { Project } from "./Project.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
+import { SlackInstallation } from "./SlackInstallation.js";
 import { Subscription } from "./Subscription.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
@@ -58,6 +59,7 @@ export class Account extends Model {
       },
       githubAccountId: { type: ["string", "null"] },
       gitlabBaseUrl: { type: ["string", "null"] },
+      slackInstallationId: { type: ["string", "null"] },
     },
   });
 
@@ -70,6 +72,7 @@ export class Account extends Model {
   githubAccountId!: string | null;
   gitlabAccessToken!: string | null;
   gitlabBaseUrl!: string | null;
+  slackInstallationId!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);
@@ -124,6 +127,14 @@ export class Account extends Model {
           to: "projects.accountId",
         },
       },
+      slackInstallation: {
+        relation: Model.HasOneRelation,
+        modelClass: SlackInstallation,
+        join: {
+          from: "accounts.slackInstallationId",
+          to: "slack_installations.id",
+        },
+      },
     };
   }
 
@@ -132,6 +143,7 @@ export class Account extends Model {
   githubAccount?: GithubAccount | null;
   subscriptions?: Subscription[];
   projects?: Project[];
+  slackInstallation?: SlackInstallation | null;
 
   _cachedSubscriptionManager?: AccountSubscriptionManager;
 

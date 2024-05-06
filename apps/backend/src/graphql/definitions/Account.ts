@@ -12,6 +12,7 @@ import {
 } from "@/database/models/index.js";
 import { checkAccountSlug } from "@/database/services/account.js";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab/index.js";
+import { uninstallSlackInstallation } from "@/slack/index.js";
 import { encodeStripeClientReferenceId } from "@/stripe/index.js";
 
 import {
@@ -81,6 +82,7 @@ export const typeDefs = gql`
     gitlabAccessToken: String
     gitlabBaseUrl: String
     glNamespaces: GlApiNamespaceConnection
+    slackInstallation: SlackInstallation
   }
 
   input UpdateAccountInput {
@@ -88,6 +90,10 @@ export const typeDefs = gql`
     name: String
     slug: String
     gitlabAccessToken: String
+  }
+
+  input UninstallSlackInput {
+    accountId: ID!
   }
 
   extend type Query {
@@ -102,6 +108,8 @@ export const typeDefs = gql`
   extend type Mutation {
     "Update Account"
     updateAccount(input: UpdateAccountInput!): Account!
+    "Uninstall Slack"
+    uninstallSlack(input: UninstallSlackInput!): Account!
   }
 `;
 
@@ -324,6 +332,12 @@ export const resolvers: IResolvers = {
         },
       };
     },
+    slackInstallation: async (account, _args, ctx) => {
+      if (!account.slackInstallationId) {
+        return null;
+      }
+      return ctx.loaders.SlackInstallation.load(account.slackInstallationId);
+    },
   },
   AccountAvatar: {
     url: (avatar, args) => {
@@ -404,6 +418,22 @@ export const resolvers: IResolvers = {
       }
 
       return account.$query().patchAndFetch(data);
+    },
+    uninstallSlack: async (_root, args, ctx) => {
+      const { accountId } = args.input;
+      const account = await getAdminAccount({
+        id: accountId,
+        user: ctx.auth?.user,
+      });
+      if (!account.slackInstallationId) {
+        return account;
+      }
+      await account.$fetchGraph("slackInstallation");
+      if (!account.slackInstallation) {
+        return account;
+      }
+      await uninstallSlackInstallation(account.slackInstallation);
+      return account.$query();
     },
   },
 };

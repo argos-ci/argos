@@ -1,11 +1,10 @@
 import { assertNever } from "@argos/util/assertNever";
 import { z } from "zod";
 
+import { getStatsMessage } from "@/build/stats.js";
 import { Build } from "@/database/models/Build.js";
 import type { BuildNotification } from "@/database/models/BuildNotification.js";
 import { UnretryableError } from "@/job-core/error.js";
-
-import { getStatsMessage } from "./utils.js";
 
 export const NotificationPayloadSchema = z.object({
   description: z.string(),

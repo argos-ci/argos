@@ -38,6 +38,7 @@ export const typeDefs = gql`
     gitlabAccessToken: String
     gitlabBaseUrl: String
     glNamespaces: GlApiNamespaceConnection
+    slackInstallation: SlackInstallation
 
     hasSubscribedToTrial: Boolean!
     lastSubscription: AccountSubscription

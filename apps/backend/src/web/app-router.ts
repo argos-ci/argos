@@ -6,6 +6,7 @@ import express, { Router, static as serveStatic } from "express";
 import config from "@/config/index.js";
 import { getGoogleAuthUrl } from "@/google/index.js";
 import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
+import { slackMiddleware } from "@/slack/index.js";
 
 import { emailPreview } from "../email/express.js";
 import { auth } from "./middlewares/auth.js";
@@ -84,6 +85,8 @@ export const installAppRouter = async (app: express.Application) => {
     invariant(typeof r === "string", "Expected r to be a string");
     res.redirect(getGoogleAuthUrl({ r }));
   });
+
+  router.use(slackMiddleware);
 
   router.get("*", (_req, res) => {
     res.sendFile(join(distDir, "index.html"));

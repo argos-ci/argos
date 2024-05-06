@@ -30,7 +30,19 @@ export const subdomain =
   (...args) => {
     const req = args[0];
     const next = args[2];
-    if (req.subdomains[0] === subdomain || req.subdomains.length === 0) {
+
+    const matchSubdomain = (subdomains: string[]) => {
+      return subdomains[0] === subdomain;
+    };
+
+    const getHostHeaderSubdomains = (host: string | undefined) => {
+      return host?.split(".") || [];
+    };
+
+    if (
+      matchSubdomain(req.subdomains) ||
+      matchSubdomain(getHostHeaderSubdomains(req.headers.host))
+    ) {
       return requestHandler(...args);
     } else {
       return next();

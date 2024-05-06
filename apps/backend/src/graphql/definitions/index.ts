@@ -21,6 +21,7 @@ import * as Project from "./Project.js";
 import * as PullRequest from "./PullRequest.js";
 import * as Repository from "./Repository.js";
 import * as schema from "./schema.js";
+import * as SlackInstallation from "./SlackInstallation.js";
 import * as Screenshot from "./Screenshot.js";
 import * as ScreenshotBucket from "./ScreenshotBucket.js";
 import * as ScreenshotDiff from "./ScreenshotDiff.js";
@@ -51,6 +52,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   PullRequest,
   Repository,
   schema,
+  SlackInstallation,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,

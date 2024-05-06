@@ -12,6 +12,7 @@ import { TeamAccessRole } from "@/containers/Team/AccessRole";
 import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { TeamMembers } from "@/containers/Team/Members";
+import { TeamSlack } from "@/containers/Team/Slack";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
@@ -33,6 +34,7 @@ const AccountQuery = graphql(`
         }
       }
 
+      ...TeamSlack_Account
       ...TeamMembers_Team
       ...TeamDelete_Team
       ...AccountChangeName_Account
@@ -130,6 +132,7 @@ export function Component() {
                 fineGrainedAccessControlIncluded && (
                   <TeamAccessRole team={account} />
                 )}
+              {isTeam && <TeamSlack account={account} />}
               {hasAdminPermission && <AccountGitLab account={account} />}
               {isTeam && hasAdminPermission && <TeamDelete team={account} />}
             </SettingsLayout>

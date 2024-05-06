@@ -13,6 +13,7 @@
     "e2e:start": "NODE_ENV=test playwright test",
     "setup": "turbo run setup",
     "github-webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/SmH89Dx2HZ89wK7T --target https://api.argos-ci.dev:4001/github/event-handler",
+    "slack-webhook-proxy": "ngrok http --host-header=rewrite --domain=foal-great-publicly.ngrok-free.app https://app.argos-ci.dev:4001",
     "stripe-webhook-proxy": "stripe listen --forward-to https://api.argos-ci.dev:4001/stripe/event-handler",
     "lint": "turbo run lint",
     "check-types": "turbo run check-types",
