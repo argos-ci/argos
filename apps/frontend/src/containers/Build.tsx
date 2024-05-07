@@ -32,8 +32,18 @@ export const getBuildColor = (
   switch (type) {
     case "reference":
       return "success" as const;
-    case "orphan":
-      return "info" as const;
+    case "orphan": {
+      switch (status) {
+        case "accepted":
+          return "success" as const;
+
+        case "rejected":
+          return "danger" as const;
+
+        default:
+          return "info" as const;
+      }
+    }
     case "check": {
       switch (status) {
         case "accepted":
@@ -82,8 +92,18 @@ export const getBuildIcon = (
   switch (type) {
     case "reference":
       return BadgeCheckIcon;
-    case "orphan":
-      return CircleSlashIcon;
+    case "orphan": {
+      switch (status) {
+        case "accepted":
+          return ThumbsUpIcon;
+
+        case "rejected":
+          return ThumbsDownIcon;
+
+        default:
+          return CircleSlashIcon;
+      }
+    }
     case "check": {
       switch (status) {
         case "accepted":
@@ -133,8 +153,16 @@ export const getBuildLabel = (
   status: BuildStatus,
 ): string => {
   switch (type) {
-    case "orphan":
-      return "Orphan build";
+    case "orphan": {
+      switch (status) {
+        case "rejected":
+          return "Changes rejected";
+        case "accepted":
+          return "Changes approved";
+        default:
+          return "Orphan build";
+      }
+    }
     case "reference":
       return "Reference build";
     case "check": {
