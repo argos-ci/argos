@@ -11,7 +11,7 @@ async function getBaseScreenshotBucket(build: Build) {
     .where("mode", "monitoring")
     .where("jobStatus", "complete")
     .whereNot("id", build.id)
-    .whereNotExists(
+    .whereExists(
       ScreenshotDiff.query()
         .select(1)
         .where("buildId", build.id)
