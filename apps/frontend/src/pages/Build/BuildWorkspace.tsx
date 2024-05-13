@@ -2,6 +2,7 @@ import { memo } from "react";
 
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { BuildStatus } from "@/gql/graphql";
 import { Progress } from "@/ui/Progress";
 
 import { BuildDetail } from "./BuildDetail";
@@ -108,12 +109,13 @@ export const BuildWorkspace = (props: {
               build && (
                 <>
                   <BuildDetail build={build} repoUrl={repoUrl} />
-                  {build.type === "orphan" && (
-                    <BuildOrphanDialog
-                      referenceBranch={project.referenceBranch}
-                      projectSlug={project.slug}
-                    />
-                  )}
+                  {build.type === "orphan" &&
+                    build.status === BuildStatus.DiffDetected && (
+                      <BuildOrphanDialog
+                        referenceBranch={project.referenceBranch}
+                        projectSlug={project.slug}
+                      />
+                    )}
                 </>
               )
             );

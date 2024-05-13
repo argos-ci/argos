@@ -48,28 +48,35 @@ export const BuildStatusDescription = (props: {
 
   switch (build.type) {
     case "orphan":
-      return (
-        <>
-          Comparing screenshot is not possible because no reference build was
-          found.
-          <div className="my-4">
-            It may happens because:
-            <ul className="ml-8 mt-2 list-disc space-y-1">
-              <li>
-                There is no Argos build on the{" "}
-                <Code>{project.referenceBranch}</Code> branch yet
-              </li>
-              <li>
-                Your pull-request is not rebased on{" "}
-                <Code>{project.referenceBranch}</Code> branch
-              </li>
-            </ul>
-          </div>
-          To perform comparison, make sure that you have an Argos build on{" "}
-          <Code>{project.referenceBranch}</Code> branch and that your
-          pull-request is rebased.
-        </>
-      );
+      switch (build.status) {
+        case "accepted":
+          return <>Changes have been accepted by a user.</>;
+        case "rejected":
+          return <>Changes have been rejected by a user.</>;
+        default:
+          return (
+            <>
+              Comparing screenshot is not possible because no reference build
+              was found.
+              <div className="my-4">
+                It may happens because:
+                <ul className="ml-8 mt-2 list-disc space-y-1">
+                  <li>
+                    There is no Argos build on the{" "}
+                    <Code>{project.referenceBranch}</Code> branch yet
+                  </li>
+                  <li>
+                    Your pull-request is not rebased on{" "}
+                    <Code>{project.referenceBranch}</Code> branch
+                  </li>
+                </ul>
+              </div>
+              To perform comparison, make sure that you have an Argos build on{" "}
+              <Code>{project.referenceBranch}</Code> branch and that your
+              pull-request is rebased.
+            </>
+          );
+      }
 
     case "reference":
       return (
