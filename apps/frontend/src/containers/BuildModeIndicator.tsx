@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import clsx from "clsx";
-import { RefreshCcwIcon, TowerControlIcon } from "lucide-react";
+import { GitPullRequestIcon, TowerControlIcon } from "lucide-react";
 
 import { BuildMode } from "@/gql/graphql";
 import { Tooltip } from "@/ui/Tooltip";
@@ -36,7 +36,7 @@ export function BuildModeLabel(props: { mode: BuildMode }) {
 function getBuildModeIcon(mode: BuildMode) {
   switch (mode) {
     case BuildMode.Ci:
-      return RefreshCcwIcon;
+      return GitPullRequestIcon;
     case BuildMode.Monitoring:
       return TowerControlIcon;
     default:
@@ -55,10 +55,10 @@ export const BuildModeIndicator = memo(function BuildModeIndicator(props: {
       content={
         <>
           <div className="font-medium">
-            <BuildModeLabel mode={BuildMode.Ci} />
+            <BuildModeLabel mode={props.mode} />
           </div>
           <div>
-            <BuildModeDescription mode={BuildMode.Ci} />
+            <BuildModeDescription mode={props.mode} />
           </div>
         </>
       }
@@ -70,7 +70,7 @@ export const BuildModeIndicator = memo(function BuildModeIndicator(props: {
         )}
       >
         <Icon
-          strokeWidth={1.4}
+          strokeWidth={1.8}
           className={{ sm: "size-2", md: "size-2.5" }[scale]}
         />
       </div>
