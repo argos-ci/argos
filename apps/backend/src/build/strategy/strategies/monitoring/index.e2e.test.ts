@@ -1,0 +1,80 @@
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { Build } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
+
+import { MonitoringStrategy } from "./index.js";
+
+describe("MonitoringStrategy.getBaseScreenshotBucket", () => {
+  let sourceBuild: Build;
+  let matchedBuild: Build;
+
+  beforeEach(async () => {
+    await setupDatabase();
+    const [
+      firstApproved,
+      lastApproved,
+      approvedWithOtherMode,
+      approvedWithOtherName,
+      nonApproved,
+      source,
+    ] = await factory.Build.createMany(6, [
+      {
+        mode: "monitoring",
+        jobStatus: "complete",
+        name: "default",
+      },
+      {
+        mode: "monitoring",
+        jobStatus: "complete",
+        name: "default",
+      },
+      {
+        mode: "ci",
+        jobStatus: "complete",
+        name: "default",
+      },
+      {
+        mode: "monitoring",
+        jobStatus: "complete",
+        name: "other",
+      },
+      {
+        mode: "monitoring",
+        jobStatus: "complete",
+        name: "default",
+      },
+      // The source build
+      {
+        mode: "monitoring",
+        jobStatus: "complete",
+        name: "default",
+      },
+    ]);
+    await Promise.all(
+      [
+        firstApproved,
+        lastApproved,
+        approvedWithOtherName,
+        approvedWithOtherMode,
+      ].map((build) =>
+        factory.ScreenshotDiff.create({
+          buildId: build!.id,
+          validationStatus: "accepted",
+        }),
+      ),
+    );
+    await factory.ScreenshotDiff.create({
+      buildId: nonApproved!.id,
+      validationStatus: "rejected",
+    });
+    sourceBuild = source!;
+    matchedBuild = lastApproved!;
+  });
+
+  it("picks the latest approved builds of the same name", async () => {
+    const bucket =
+      await MonitoringStrategy.getBaseScreenshotBucket(sourceBuild);
+    expect(bucket!.id).toBe(matchedBuild.compareScreenshotBucketId);
+  });
+});

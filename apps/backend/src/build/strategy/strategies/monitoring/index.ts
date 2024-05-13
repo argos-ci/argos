@@ -14,8 +14,8 @@ async function getBaseScreenshotBucket(build: Build) {
     .whereExists(
       ScreenshotDiff.query()
         .select(1)
-        .where("buildId", build.id)
-        .where("validationStatus", "approved"),
+        .whereRaw('"buildId" = builds.id')
+        .where("validationStatus", "accepted"),
     )
     .orderBy("id", "desc")
     .first();
