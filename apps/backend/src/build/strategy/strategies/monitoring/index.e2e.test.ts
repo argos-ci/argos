@@ -11,6 +11,7 @@ describe("MonitoringStrategy.getBaseScreenshotBucket", () => {
 
   beforeEach(async () => {
     await setupDatabase();
+    const project = await factory.Project.create();
     const [
       firstApproved,
       lastApproved,
@@ -20,32 +21,38 @@ describe("MonitoringStrategy.getBaseScreenshotBucket", () => {
       source,
     ] = await factory.Build.createMany(6, [
       {
+        projectId: project.id,
         mode: "monitoring",
         jobStatus: "complete",
         name: "default",
       },
       {
+        projectId: project.id,
         mode: "monitoring",
         jobStatus: "complete",
         name: "default",
       },
       {
+        projectId: project.id,
         mode: "ci",
         jobStatus: "complete",
         name: "default",
       },
       {
+        projectId: project.id,
         mode: "monitoring",
         jobStatus: "complete",
         name: "other",
       },
       {
+        projectId: project.id,
         mode: "monitoring",
         jobStatus: "complete",
         name: "default",
       },
       // The source build
       {
+        projectId: project.id,
         mode: "monitoring",
         jobStatus: "complete",
         name: "default",
