@@ -7,6 +7,7 @@ import { BuildStrategy } from "../../types";
 async function getBaseScreenshotBucket(build: Build) {
   const lastApprovedBuild = await Build.query()
     .withGraphFetched("compareScreenshotBucket")
+    .where("projectId", build.projectId)
     .where("name", build.name)
     .where("mode", "monitoring")
     .where("jobStatus", "complete")
