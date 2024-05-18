@@ -1,6 +1,8 @@
 import { STATUS_CODES } from "node:http";
 import type { RequestHandler } from "express";
 
+import config from "@/config/index.js";
+
 /**
  * Takes a route handling function and returns
  * a function that wraps it in a `try/catch`. Caught
@@ -41,7 +43,9 @@ export const subdomain =
 
     if (
       matchSubdomain(req.subdomains) ||
-      matchSubdomain(getHostHeaderSubdomains(req.headers.host))
+      matchSubdomain(getHostHeaderSubdomains(req.headers.host)) ||
+      // Allow localhost for testing
+      (config.get("env") === "test" && req.hostname === "localhost")
     ) {
       return requestHandler(...args);
     } else {

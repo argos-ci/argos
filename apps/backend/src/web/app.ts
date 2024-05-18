@@ -16,6 +16,9 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 export const createApp = async () => {
   const app = express();
+
+  Sentry.setupExpressErrorHandler(app);
+
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
   app.set("views", join(__dirname, ".."));
@@ -37,15 +40,11 @@ export const createApp = async () => {
     next();
   });
 
-  app.use(express());
-
   if (config.get("server.logFormat")) {
     app.use(morgan(config.get("server.logFormat")));
   }
 
   app.use(compress());
-
-  Sentry.setupExpressErrorHandler(app);
 
   // Redirect from http to https
   if (config.get("server.secure") && config.get("server.httpsRedirect")) {
