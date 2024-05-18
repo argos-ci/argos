@@ -168,7 +168,7 @@ export const getBuildLabel = (
     case "check": {
       switch (status) {
         case "stable":
-          return "No change detected";
+          return "No changes detected";
         case "diffDetected":
           return "Changes detected";
         case "pending":

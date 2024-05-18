@@ -61,6 +61,7 @@ export const typeDefs = gql`
     gitlabAccessToken: String
     gitlabBaseUrl: String
     glNamespaces: GlApiNamespaceConnection
+    slackInstallation: SlackInstallation
 
     me: TeamMember
     members(

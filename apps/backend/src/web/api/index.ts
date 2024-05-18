@@ -13,10 +13,10 @@ export const installApiRouter = (app: Application) => {
   const router = Router();
 
   router.use(status);
+  router.use(webhooksMiddleware);
   router.use("/v2", v2);
   router.use(builds);
   router.use(auth);
-  router.use(webhooksMiddleware);
   router.use(stripe);
 
   router.use(errorHandler());

@@ -1,11 +1,11 @@
 import { join } from "node:path";
 import { invariant } from "@argos/util/invariant";
-import { Handlers } from "@sentry/node";
 import express, { Router, static as serveStatic } from "express";
 
 import config from "@/config/index.js";
 import { getGoogleAuthUrl } from "@/google/index.js";
 import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
+import { slackMiddleware } from "@/slack/index.js";
 
 import { emailPreview } from "../email/express.js";
 import { auth } from "./middlewares/auth.js";
@@ -85,11 +85,11 @@ export const installAppRouter = async (app: express.Application) => {
     res.redirect(getGoogleAuthUrl({ r }));
   });
 
+  router.use(slackMiddleware);
+
   router.get("*", (_req, res) => {
     res.sendFile(join(distDir, "index.html"));
   });
-
-  router.use(Handlers.errorHandler());
 
   app.use(subdomain(router, "app"));
 };

@@ -7,9 +7,7 @@ import { Build } from "@/database/models/index.js";
  * Example: 40 changed, 20 added, 10 removed, 5 failures
  * Around 45 characters max.
  */
-export const getStatsMessage = async function getStatsMessage(
-  buildId: string,
-): Promise<string> {
+export async function getStatsMessage(buildId: string): Promise<string> {
   const [stats] = await Build.getStats([buildId]);
   invariant(stats, "Build stats not found");
   const parts = [];
@@ -26,4 +24,4 @@ export const getStatsMessage = async function getStatsMessage(
     parts.push(`${stats.failure} failure${stats.failure > 1 ? "s" : ""}`);
   }
   return parts.join(", ");
-};
+}

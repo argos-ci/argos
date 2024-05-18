@@ -16,6 +16,9 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 export const createApp = async () => {
   const app = express();
+
+  Sentry.setupExpressErrorHandler(app);
+
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
   app.set("views", join(__dirname, ".."));
@@ -36,8 +39,6 @@ export const createApp = async () => {
 
     next();
   });
-
-  app.use(Sentry.Handlers.requestHandler());
 
   if (config.get("server.logFormat")) {
     app.use(morgan(config.get("server.logFormat")));

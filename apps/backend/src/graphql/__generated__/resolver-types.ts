@@ -40,6 +40,7 @@ export type IAccount = {
   permissions: Array<IAccountPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
+  slackInstallation?: Maybe<ISlackInstallation>;
   slug: Scalars['String']['output'];
   stripeClientReferenceId: Scalars['String']['output'];
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
@@ -420,6 +421,8 @@ export type IMutation = {
   setValidationStatus: IBuild;
   /** Transfer Project to another account */
   transferProject: IProject;
+  /** Uninstall Slack */
+  uninstallSlack: IAccount;
   /** Unlink GitHub Repository */
   unlinkGithubRepository: IProject;
   /** Unlink Gitlab Project */
@@ -521,6 +524,11 @@ export type IMutationSetValidationStatusArgs = {
 
 export type IMutationTransferProjectArgs = {
   input: ITransferProjectInput;
+};
+
+
+export type IMutationUninstallSlackArgs = {
+  input: IUninstallSlackInput;
 };
 
 
@@ -903,6 +911,14 @@ export type ISetTeamMemberLevelInput = {
   userAccountId: Scalars['ID']['input'];
 };
 
+export type ISlackInstallation = INode & {
+  __typename?: 'SlackInstallation';
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  teamDomain: Scalars['String']['output'];
+  teamName: Scalars['String']['output'];
+};
+
 export enum ISummaryCheck {
   Always = 'always',
   Auto = 'auto',
@@ -932,6 +948,7 @@ export type ITeam = IAccount & INode & {
   permissions: Array<IAccountPermission>;
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
+  slackInstallation?: Maybe<ISlackInstallation>;
   slug: Scalars['String']['output'];
   ssoGithubAccount?: Maybe<IGithubAccount>;
   stripeClientReferenceId: Scalars['String']['output'];
@@ -1032,6 +1049,10 @@ export type ITransferProjectInput = {
   targetAccountId: Scalars['ID']['input'];
 };
 
+export type IUninstallSlackInput = {
+  accountId: Scalars['ID']['input'];
+};
+
 export type IUnlinkGithubRepositoryInput = {
   projectId: Scalars['ID']['input'];
 };
@@ -1082,6 +1103,7 @@ export type IUser = IAccount & INode & {
   plan?: Maybe<IPlan>;
   projects: IProjectConnection;
   projectsContributedOn: IProjectContributorConnection;
+  slackInstallation?: Maybe<ISlackInstallation>;
   slug: Scalars['String']['output'];
   stripeClientReferenceId: Scalars['String']['output'];
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
@@ -1191,10 +1213,10 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 
 /** Mapping of interface types */
-export type IResolversInterfaceTypes<RefType extends Record<string, unknown>> = ResolversObject<{
+export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
-  Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<RefType['User']> } );
-  Node: ( Subscription ) | ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( Account );
+  Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<_RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
+  Node: ( Subscription ) | ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( ISlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
 }>;
@@ -1280,6 +1302,7 @@ export type IResolversTypes = ResolversObject<{
   ScreenshotMetadataViewport: ResolverTypeWrapper<IScreenshotMetadataViewport>;
   SetTeamDefaultUserLevelInput: ISetTeamDefaultUserLevelInput;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
+  SlackInstallation: ResolverTypeWrapper<ISlackInstallation>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   SummaryCheck: ISummaryCheck;
   Team: ResolverTypeWrapper<Account>;
@@ -1294,6 +1317,7 @@ export type IResolversTypes = ResolversObject<{
   TestStatus: ITestStatus;
   Time: ResolverTypeWrapper<Scalars['Time']['output']>;
   TransferProjectInput: ITransferProjectInput;
+  UninstallSlackInput: IUninstallSlackInput;
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
   UnlinkGitlabProjectInput: IUnlinkGitlabProjectInput;
   UpdateAccountInput: IUpdateAccountInput;
@@ -1373,6 +1397,7 @@ export type IResolversParentTypes = ResolversObject<{
   ScreenshotMetadataViewport: IScreenshotMetadataViewport;
   SetTeamDefaultUserLevelInput: ISetTeamDefaultUserLevelInput;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
+  SlackInstallation: ISlackInstallation;
   String: Scalars['String']['output'];
   Team: Account;
   TeamGithubMember: GithubAccountMember;
@@ -1383,6 +1408,7 @@ export type IResolversParentTypes = ResolversObject<{
   TestConnection: Omit<ITestConnection, 'edges'> & { edges: Array<IResolversParentTypes['Test']> };
   Time: Scalars['Time']['output'];
   TransferProjectInput: ITransferProjectInput;
+  UninstallSlackInput: IUninstallSlackInput;
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
   UnlinkGitlabProjectInput: IUnlinkGitlabProjectInput;
   UpdateAccountInput: IUpdateAccountInput;
@@ -1410,6 +1436,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IAccountProjectsArgs, 'after' | 'first'>>;
+  slackInstallation?: Resolver<Maybe<IResolversTypes['SlackInstallation']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -1624,6 +1651,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
   setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
+  uninstallSlack?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUninstallSlackArgs, 'input'>>;
   unlinkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkGithubRepositoryArgs, 'input'>>;
   unlinkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkGitlabProjectArgs, 'input'>>;
   updateAccount?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUpdateAccountArgs, 'input'>>;
@@ -1632,7 +1660,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
@@ -1836,6 +1864,14 @@ export type IScreenshotMetadataViewportResolvers<ContextType = Context, ParentTy
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type ISlackInstallationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['SlackInstallation'] = IResolversParentTypes['SlackInstallation']> = ResolversObject<{
+  createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  teamDomain?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  teamName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type ITeamResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Team'] = IResolversParentTypes['Team']> = ResolversObject<{
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
@@ -1858,6 +1894,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<ITeamProjectsArgs, 'after' | 'first'>>;
+  slackInstallation?: Resolver<Maybe<IResolversTypes['SlackInstallation']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   ssoGithubAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
@@ -1941,6 +1978,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
   projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IUserProjectsArgs, 'after' | 'first'>>;
   projectsContributedOn?: Resolver<IResolversTypes['ProjectContributorConnection'], ParentType, ContextType, RequireFields<IUserProjectsContributedOnArgs, 'after' | 'first' | 'projectId'>>;
+  slackInstallation?: Resolver<Maybe<IResolversTypes['SlackInstallation']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2011,6 +2049,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   ScreenshotMetadataSDK?: IScreenshotMetadataSdkResolvers<ContextType>;
   ScreenshotMetadataTest?: IScreenshotMetadataTestResolvers<ContextType>;
   ScreenshotMetadataViewport?: IScreenshotMetadataViewportResolvers<ContextType>;
+  SlackInstallation?: ISlackInstallationResolvers<ContextType>;
   Team?: ITeamResolvers<ContextType>;
   TeamGithubMember?: ITeamGithubMemberResolvers<ContextType>;
   TeamGithubMemberConnection?: ITeamGithubMemberConnectionResolvers<ContextType>;

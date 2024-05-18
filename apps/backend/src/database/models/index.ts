@@ -19,6 +19,7 @@ export * from "./GithubPullRequest.js";
 export * from "./Screenshot.js";
 export * from "./ScreenshotBucket.js";
 export * from "./ScreenshotDiff.js";
+export * from "./SlackInstallation.js";
 export * from "./Subscription.js";
 export * from "./Team.js";
 export * from "./TeamUser.js";

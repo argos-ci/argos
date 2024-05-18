@@ -36,6 +36,7 @@
       "Screenshot",
       "ScreenshotBucket",
       "ScreenshotDiff",
+      "SlackInstallation",
       "Team",
       "TeamGithubMember",
       "TeamMember",

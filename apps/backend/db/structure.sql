@@ -91,6 +91,7 @@ CREATE TABLE public.accounts (
     slug character varying(255) NOT NULL,
     "gitlabAccessToken" character varying(255),
     "gitlabBaseUrl" character varying(255),
+    "slackInstallationId" bigint,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -1003,6 +1004,44 @@ ALTER SEQUENCE public.screenshots_id_seq OWNED BY public.screenshots.id;
 
 
 --
+-- Name: slack_installations; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.slack_installations (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "teamId" character varying(255) NOT NULL,
+    "teamName" character varying(255) NOT NULL,
+    "teamDomain" character varying(255) NOT NULL,
+    installation jsonb NOT NULL
+);
+
+
+ALTER TABLE public.slack_installations OWNER TO postgres;
+
+--
+-- Name: slack_installations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.slack_installations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.slack_installations_id_seq OWNER TO postgres;
+
+--
+-- Name: slack_installations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.slack_installations_id_seq OWNED BY public.slack_installations.id;
+
+
+--
 -- Name: subscriptions; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1384,6 +1423,13 @@ ALTER TABLE ONLY public.screenshots ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: slack_installations id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.slack_installations ALTER COLUMN id SET DEFAULT nextval('public.slack_installations_id_seq'::regclass);
+
+
+--
 -- Name: subscriptions id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1424,6 +1470,14 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 ALTER TABLE ONLY public.accounts
     ADD CONSTRAINT accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: accounts accounts_slackinstallationid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_slackinstallationid_unique UNIQUE ("slackInstallationId");
 
 
 --
@@ -1672,6 +1726,30 @@ ALTER TABLE ONLY public.screenshot_diffs
 
 ALTER TABLE ONLY public.screenshots
     ADD CONSTRAINT screenshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: slack_installations slack_installations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.slack_installations
+    ADD CONSTRAINT slack_installations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: slack_installations slack_installations_teamdomain_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.slack_installations
+    ADD CONSTRAINT slack_installations_teamdomain_unique UNIQUE ("teamDomain");
+
+
+--
+-- Name: slack_installations slack_installations_teamid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.slack_installations
+    ADD CONSTRAINT slack_installations_teamid_unique UNIQUE ("teamId");
 
 
 --
@@ -2167,6 +2245,14 @@ ALTER TABLE ONLY public.accounts
 
 
 --
+-- Name: accounts accounts_slackinstallationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_slackinstallationid_foreign FOREIGN KEY ("slackInstallationId") REFERENCES public.slack_installations(id);
+
+
+--
 -- Name: accounts accounts_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2622,3 +2708,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024032
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240330152633_gitlab-on-prem.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240428061335_monitoring-mode.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240428200226_monitoring-mode-bucket.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240505121926_slack-installation.js', 1, NOW());
