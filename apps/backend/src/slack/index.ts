@@ -131,7 +131,7 @@ const installationStore: Bolt.InstallationStore = {
         );
         const teamDomain = teamInfo.team.domain;
         invariant(teamDomain, "Expected team domain to be defined");
-        const teamName = teamInfo.team.name ?? teamDomain;
+        const teamName = teamInfo.team.name || teamDomain;
         return {
           teamId: installation.team.id,
           teamDomain,
@@ -286,7 +286,9 @@ boltApp.event("team_rename", async ({ event, context }) => {
     teamId: context.teamId,
   }).throwIfNotFound();
 
-  await slackInstallation.$query().patch({ teamName: event.name });
+  await slackInstallation
+    .$query()
+    .patch({ teamName: event.name || slackInstallation.teamDomain });
 });
 
 boltApp.event("team_domain_change", async ({ event, context }) => {
