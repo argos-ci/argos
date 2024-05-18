@@ -1,7 +1,8 @@
 import { useMutation } from "@apollo/client";
 
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
-import { TeamSlack_AccountFragment } from "@/gql/graphql";
+import { AccountPermission, TeamSlack_AccountFragment } from "@/gql/graphql";
+import { useAccountContext } from "@/pages/Account";
 import { Anchor } from "@/ui/Anchor";
 import { Button, ButtonIcon } from "@/ui/Button";
 import {
@@ -31,6 +32,8 @@ export function TeamSlack(props: {
   account: FragmentType<typeof AccountFragment>;
 }) {
   const account = useFragment(AccountFragment, props.account);
+  const { permissions } = useAccountContext();
+  const hasAdminPermission = permissions.includes(AccountPermission.Admin);
   return (
     <Card>
       <CardBody>
@@ -65,18 +68,20 @@ export function TeamSlack(props: {
           </Anchor>
           .
         </div>
-        {account.slackInstallation ? (
-          <DisconnectSlackButton account={account} />
-        ) : (
-          <Button color="google" asChild>
-            <a href={`/auth/slack/login?accountId=${account.id}`}>
-              <ButtonIcon>
-                <SlackColoredLogo />
-              </ButtonIcon>
-              Connect to Slack
-            </a>
-          </Button>
-        )}
+        {hasAdminPermission ? (
+          account.slackInstallation ? (
+            <DisconnectSlackButton account={account} />
+          ) : (
+            <Button color="google" asChild>
+              <a href={`/auth/slack/login?accountId=${account.id}`}>
+                <ButtonIcon>
+                  <SlackColoredLogo />
+                </ButtonIcon>
+                Connect to Slack
+              </a>
+            </Button>
+          )
+        ) : null}
       </CardFooter>
     </Card>
   );
