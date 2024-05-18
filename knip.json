@@ -34,5 +34,5 @@
   "exclude": ["classMembers"],
   "ignore": ["playwright.config.mjs", "examples/**/*"],
   "ignoreDependencies": ["@argos/tsconfig"],
-  "ignoreBinaries": ["stripe", "sleep"]
+  "ignoreBinaries": ["stripe", "sleep", "ngrok"]
 }
