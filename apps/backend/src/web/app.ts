@@ -37,13 +37,15 @@ export const createApp = async () => {
     next();
   });
 
-  app.use(Sentry.Handlers.requestHandler());
+  app.use(express());
 
   if (config.get("server.logFormat")) {
     app.use(morgan(config.get("server.logFormat")));
   }
 
   app.use(compress());
+
+  Sentry.setupExpressErrorHandler(app);
 
   // Redirect from http to https
   if (config.get("server.secure") && config.get("server.httpsRedirect")) {

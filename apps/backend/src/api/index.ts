@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import cors from "cors";
 import { Router } from "express";
 import { stringify } from "yaml";
@@ -28,7 +27,6 @@ router.get("/openapi.yaml", (_req, res) => {
 registerHandler(router, getAuthProjectBuilds);
 
 // Error handlers
-router.use(Sentry.Handlers.errorHandler());
 router.use(errorHandler);
 
 export { router as openAPIRouter };

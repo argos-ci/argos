@@ -1,6 +1,5 @@
 import { join } from "node:path";
 import { invariant } from "@argos/util/invariant";
-import { Handlers } from "@sentry/node";
 import express, { Router, static as serveStatic } from "express";
 
 import config from "@/config/index.js";
@@ -91,8 +90,6 @@ export const installAppRouter = async (app: express.Application) => {
   router.get("*", (_req, res) => {
     res.sendFile(join(distDir, "index.html"));
   });
-
-  router.use(Handlers.errorHandler());
 
   app.use(subdomain(router, "app"));
 };
