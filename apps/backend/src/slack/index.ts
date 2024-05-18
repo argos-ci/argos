@@ -260,8 +260,8 @@ async function unfurlBuild(
     title: `Build ${build.number} — ${build.name} — ${build.project.account.name || build.project.account.slug}/${build.project.name}`,
     fields: [
       { title: "Status", value: getBuildLabel(build.type, status) },
-      { title: "Screenshots", value: statsMessage },
-    ],
+      statsMessage ? { title: "Screenshots", value: statsMessage } : null,
+    ].filter(checkIsNonNullable),
   };
 
   if (imageUrl) {
