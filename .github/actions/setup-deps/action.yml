@@ -11,4 +11,6 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: npm ci
+      # Use "npm install" instead of "npm ci" because of swc issue
+      # https://github.com/swc-project/swc/issues/5837
+      run: npm install
