@@ -356,19 +356,29 @@ boltApp.event("link_shared", async ({ event, client, context }) => {
  */
 export async function uninstallSlackInstallation(
   installation: SlackInstallation,
-) {
+  trx?: TransactionOrKnex,
+): Promise<void> {
   const token = installation.installation.bot?.token;
   invariant(token, "Expected bot token to be defined");
-  await boltApp.client.apps.uninstall({
-    token,
-    client_id: config.get("slack.clientId"),
-    client_secret: config.get("slack.clientSecret"),
-  });
-  await deleteInstallation({
-    isEnterpriseInstall: Boolean(installation.installation.isEnterpriseInstall),
-    enterpriseId: installation.installation.enterprise?.id,
-    teamId: installation.installation.team?.id,
-  });
+  await Promise.all([
+    // Uninstall the app from the workspace on Slack
+    boltApp.client.apps.uninstall({
+      token,
+      client_id: config.get("slack.clientId"),
+      client_secret: config.get("slack.clientSecret"),
+    }),
+    // Delete the installation from the database
+    deleteInstallation(
+      {
+        isEnterpriseInstall: Boolean(
+          installation.installation.isEnterpriseInstall,
+        ),
+        enterpriseId: installation.installation.enterprise?.id,
+        teamId: installation.installation.team?.id,
+      },
+      trx,
+    ),
+  ]);
 }
 
 export const slackMiddleware = receiver.router;
