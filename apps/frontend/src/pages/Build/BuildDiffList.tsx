@@ -132,6 +132,7 @@ const getRows = (
   groups: DiffGroup[],
   expandedGroups: string[],
   results: DiffResult[],
+  searchMode: boolean,
 ): ListRow[] => {
   return (
     groups
@@ -161,7 +162,7 @@ const getRows = (
           const result = results.find((r) => r.item === diff) ?? null;
 
           // If the diff is not part of a group, return a single item row
-          if (!diff?.group || Boolean(result)) {
+          if (searchMode || !diff?.group || Boolean(result)) {
             return [...acc, createListItemRow({ diff, first, last, result })];
           }
 
@@ -719,8 +720,8 @@ const InternalBuildDiffList = memo(() => {
   const { searchMode } = useSearchModeState();
   const { search } = useSearchState();
   const rows = useMemo(
-    () => getRows(groups, expanded, results),
-    [groups, expanded, results],
+    () => getRows(groups, expanded, results, searchMode),
+    [groups, expanded, results, searchMode],
   );
   const rowsRef = useRef(rows);
   rowsRef.current = rows;

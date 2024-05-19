@@ -183,6 +183,7 @@ export function useHasNextDiff() {
 }
 
 export function useGoToNextDiff() {
+  const { searchMode } = useSearchModeState();
   const { diffs, activeDiff, setActiveDiff, expanded } = useBuildDiffState();
   const hasNextDiff = useHasNextDiff();
   const activeDiffIndex = useActiveDiffIndex();
@@ -193,7 +194,8 @@ export function useGoToNextDiff() {
 
     const isGroupExpanded =
       !activeDiff?.group || expanded.includes(activeDiff.group);
-    if (isGroupExpanded) {
+
+    if (isGroupExpanded || searchMode) {
       const nextDiff = diffs[activeDiffIndex + 1];
       if (nextDiff) {
         setActiveDiff(nextDiff, true);
@@ -221,6 +223,7 @@ export function useHasPreviousDiff() {
 }
 
 export function useGoToPreviousDiff() {
+  const { searchMode } = useSearchModeState();
   const { diffs, setActiveDiff, expanded } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
   const hasPreviousDiff = useHasPreviousDiff();
@@ -237,7 +240,8 @@ export function useGoToPreviousDiff() {
 
     const isGroupExpanded =
       !previousDiff.group || expanded.includes(previousDiff.group);
-    if (isGroupExpanded) {
+
+    if (isGroupExpanded || searchMode) {
       setActiveDiff(previousDiff, true);
       return;
     }
