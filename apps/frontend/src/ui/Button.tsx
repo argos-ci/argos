@@ -92,7 +92,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         onClick={(event) => {
           if (props["aria-disabled"] || props.disabled) {
             event.preventDefault();
-            console.log("Prevented default");
             return;
           }
           onClick?.(event);
