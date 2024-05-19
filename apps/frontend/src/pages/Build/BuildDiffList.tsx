@@ -132,6 +132,7 @@ const getRows = (
   groups: DiffGroup[],
   expandedGroups: string[],
   results: DiffResult[],
+  searchMode: boolean,
 ): ListRow[] => {
   return (
     groups
@@ -161,7 +162,7 @@ const getRows = (
           const result = results.find((r) => r.item === diff) ?? null;
 
           // If the diff is not part of a group, return a single item row
-          if (!diff?.group || Boolean(result)) {
+          if (searchMode || !diff?.group || Boolean(result)) {
             return [...acc, createListItemRow({ diff, first, last, result })];
           }
 
@@ -486,7 +487,7 @@ const ListItem = ({
 }) => {
   const pt = item.first ? "pt-4" : "pt-2";
   const pb = item.last ? "pb-4" : "pb-2";
-  const ref = useRef<HTMLButtonElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = ref.current;
     if (observer && element) {
@@ -507,10 +508,11 @@ const ListItem = ({
   const isSubItem = !searchMode && item.type === "item" && item.diff?.group;
 
   return (
-    <button
+    <div
       ref={ref}
+      role="button"
       data-index={index}
-      disabled={!item.diff}
+      aria-disabled={!item.diff}
       className={clsx(
         pt,
         pb,
@@ -589,7 +591,7 @@ const ListItem = ({
           </>
         ) : null}
       </DiffCard>
-    </button>
+    </div>
   );
 };
 
@@ -718,8 +720,8 @@ const InternalBuildDiffList = memo(() => {
   const { searchMode } = useSearchModeState();
   const { search } = useSearchState();
   const rows = useMemo(
-    () => getRows(groups, expanded, results),
-    [groups, expanded, results],
+    () => getRows(groups, expanded, results, searchMode),
+    [groups, expanded, results, searchMode],
   );
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
