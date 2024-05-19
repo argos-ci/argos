@@ -17,6 +17,7 @@ import { clsx } from "clsx";
 import {
   ChevronDownIcon,
   CornerDownRightIcon,
+  SquareStackIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "lucide-react";
@@ -24,6 +25,7 @@ import {
 import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { Truncable } from "@/ui/Truncable";
 
 import { getGroupLabel } from "./BuildDiffGroup";
 import {
@@ -343,14 +345,14 @@ const CardStack = ({
   );
 };
 
-const ShowSubItemToggle = (
+function ShowSubItemToggle(
   props: ButtonProps & {
     count: number;
     open: boolean;
     onToggleGroupItem: () => void;
     active: boolean;
   },
-) => {
+) {
   const { open, onToggleGroupItem } = props;
 
   const expandDiff = useBuildHotkey(
@@ -383,21 +385,27 @@ const ShowSubItemToggle = (
     >
       <Button
         color="neutral"
+        variant="outline"
         size="small"
-        className="absolute bottom-6 left-2 z-30 items-start"
         onClick={(event) => {
           event.stopPropagation();
           onToggleGroupItem();
         }}
       >
         <ButtonIcon className={clsx("transition", !open && "-rotate-90")}>
-          <ChevronDownIcon />
+          <div>
+            {open ? (
+              <ChevronDownIcon className="size-[1em]" />
+            ) : (
+              <SquareStackIcon className="size-[1em]" />
+            )}
+          </div>
         </ButtonIcon>
-        {props.count} similar changes
+        {props.count} similar
       </Button>
     </HotkeyTooltip>
   );
-};
+}
 
 const DiffCard = (props: {
   active: boolean;
@@ -433,11 +441,16 @@ const DiffCard = (props: {
   return (
     <div className="bg-app relative flex h-full items-center justify-center overflow-hidden rounded-lg">
       {children}
-      <div className={clsx(ring, "absolute inset-0 z-20 rounded-lg")} />
       <div
         className={clsx(
+          "pointer-events-none absolute inset-0 z-20 rounded-lg",
+          ring,
+        )}
+      />
+      <div
+        className={clsx(
+          "pointer-events-none absolute inset-0 z-20 rounded-lg",
           active && "ring-primary-highlight/90 ring-1 ring-inset",
-          "absolute inset-0 z-20 rounded-lg",
         )}
       />
     </div>
@@ -545,47 +558,51 @@ const ListItem = ({
         {item.diff ? (
           <>
             <EvaluationStatusIndicator status={status} />
-            {isGroupItem && (
-              <ShowSubItemToggle
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggleGroupItem(item.diff?.group ?? null);
-                }}
-                onToggleGroupItem={() =>
-                  onToggleGroupItem(item.diff?.group ?? null)
-                }
-                count={item.group.length}
-                open={item.expanded}
-                active={active}
-              />
-            )}
             <DiffImage diff={item.diff} />{" "}
             <div
               className={clsx(
-                "bg-app/70 text-xxs absolute inset-x-0 bottom-0 z-10 truncate bg-gradient-to-b px-2 py-1.5 font-medium",
+                "bg-app absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 truncate px-2",
                 !searchMode &&
-                  "opacity-0 transition-opacity group-hover/sidebar:opacity-100",
+                  "opacity-0 transition-opacity group-focus-within/item:opacity-100 group-hover/sidebar:opacity-100",
               )}
             >
-              {item.result ? (
-                <>
-                  {item.result.key.slice(
-                    0,
-                    Math.max(item.result.match.index, 0),
-                  )}
-                  <strong>
+              <Truncable className="bg-app text-xxs flex-1 pb-1.5 pt-1 font-medium">
+                {item.result ? (
+                  <>
                     {item.result.key.slice(
+                      0,
                       Math.max(item.result.match.index, 0),
-                      item.result.match.index + item.result.match.length,
                     )}
-                  </strong>
-                  {item.result.key.slice(
-                    item.result.match.index + item.result.match.length,
-                    item.result.key.length,
-                  )}
-                </>
-              ) : (
-                item.diff.name
+                    <strong>
+                      {item.result.key.slice(
+                        Math.max(item.result.match.index, 0),
+                        item.result.match.index + item.result.match.length,
+                      )}
+                    </strong>
+                    {item.result.key.slice(
+                      item.result.match.index + item.result.match.length,
+                      item.result.key.length,
+                    )}
+                  </>
+                ) : (
+                  item.diff.name
+                )}
+              </Truncable>
+              {isGroupItem && (
+                <div className="shrink-0 py-2">
+                  <ShowSubItemToggle
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleGroupItem(item.diff?.group ?? null);
+                    }}
+                    onToggleGroupItem={() =>
+                      onToggleGroupItem(item.diff?.group ?? null)
+                    }
+                    count={item.group.length}
+                    open={item.expanded}
+                    active={active}
+                  />
+                </div>
               )}
             </div>
           </>

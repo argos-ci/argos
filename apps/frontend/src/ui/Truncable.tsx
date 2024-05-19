@@ -4,13 +4,13 @@ import { clsx } from "clsx";
 
 import { TooltipContent, TooltipRoot, TooltipTrigger } from "./Tooltip";
 
-export const Truncable = ({
+export function Truncable({
   className,
   children,
   ...props
 }: Omit<React.HTMLAttributes<HTMLDivElement>, "children"> & {
   children: React.ReactNode;
-}) => {
+}) {
   const ref = React.useRef<HTMLButtonElement>(null);
   const [open, setOpen] = React.useState(false);
 
@@ -36,4 +36,4 @@ export const Truncable = ({
       </TooltipPortal>
     </TooltipRoot>
   );
-};
+}
