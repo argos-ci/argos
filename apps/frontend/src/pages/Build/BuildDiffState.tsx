@@ -179,7 +179,7 @@ function useActiveDiffIndex() {
 export function useHasNextDiff() {
   const { diffs } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
-  return activeDiffIndex < diffs.length;
+  return activeDiffIndex < diffs.length - 1;
 }
 
 export function useGoToNextDiff() {
