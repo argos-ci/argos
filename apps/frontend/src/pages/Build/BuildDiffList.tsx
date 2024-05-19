@@ -306,7 +306,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
               {...compareAttrs}
               className="absolute w-full"
             />
-            <div className="absolute inset-0 bg-black/70" />
+            <div className="bg-app absolute inset-0 opacity-70" />
             <img
               key={diffKey}
               {...diffAttrs}
