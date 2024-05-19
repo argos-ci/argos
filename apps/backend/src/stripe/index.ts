@@ -246,15 +246,14 @@ export async function cancelStripeSubscription(subscriptionId: string) {
   await stripe.subscriptions.cancel(subscriptionId);
 }
 
-const getArgosSubscriptionFromStripeSubscriptionId = async (
+async function getArgosSubscriptionFromStripeSubscriptionId(
   stripeSubscriptionId: string,
-) => {
+) {
   const subscription = await Subscription.query().findOne({
     stripeSubscriptionId,
   });
-
   return subscription ?? null;
-};
+}
 
 export const getStripePriceFromPlanOrThrow = async (plan: Plan) => {
   const { stripeProductId } = plan;

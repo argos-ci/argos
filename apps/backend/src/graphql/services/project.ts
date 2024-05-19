@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { TransactionOrKnex } from "objection";
 
 import {
   Build,
@@ -12,12 +13,16 @@ import {
   Test,
   User,
 } from "@/database/models/index.js";
+import { transaction } from "@/database/transaction.js";
 
-export const getAdminProject = async (args: {
+/**
+ * Get a project by ID, ensuring the user has admin permissions.
+ */
+export async function getAdminProject(args: {
   id: string;
   user: User | undefined | null;
   withGraphFetched?: string;
-}): Promise<Project> => {
+}): Promise<Project> {
   invariant(args.user, "no user");
   const query = Project.query().findById(args.id).throwIfNotFound();
   if (args.withGraphFetched) {
@@ -27,38 +32,55 @@ export const getAdminProject = async (args: {
   const permissions = await project.$getPermissions(args.user);
   invariant(permissions.includes("admin"), "not admin");
   return project;
-};
+}
 
-export const deleteProject = async (args: {
+/**
+ * Delete a project and all associated data after checking permissions.
+ */
+export async function deleteProject(args: {
   id: string;
   user: User | undefined | null;
-}) => {
+}) {
   const project = await getAdminProject({
     id: args.id,
     user: args.user,
   });
-  await Capture.query()
-    .joinRelated("crawl.build")
-    .where("crawl:build.projectId", project.id)
-    .delete();
-  await Crawl.query()
-    .joinRelated("build")
-    .where("build.projectId", project.id)
-    .delete();
-  await ScreenshotDiff.query()
-    .joinRelated("build")
-    .where("build.projectId", project.id)
-    .delete();
-  await Screenshot.query()
-    .joinRelated("screenshotBucket")
-    .where("screenshotBucket.projectId", project.id)
-    .delete();
-  await BuildNotification.query()
-    .joinRelated("build")
-    .where("build.projectId", project.id)
-    .delete();
-  await Build.query().where("projectId", project.id).delete();
-  await ScreenshotBucket.query().where("projectId", project.id).delete();
-  await Test.query().where("projectId", project.id).delete();
-  await project.$query().delete();
-};
+  await unsafe_deleteProject({ projectId: project.id });
+}
+
+/**
+ * Delete a project and all associated data without checking permissions.
+ */
+export async function unsafe_deleteProject(args: {
+  projectId: string;
+  trx?: TransactionOrKnex;
+}) {
+  await transaction(args.trx, async (trx) => {
+    await Capture.query(trx)
+      .joinRelated("crawl.build")
+      .where("crawl:build.projectId", args.projectId)
+      .delete();
+    await Crawl.query(trx)
+      .joinRelated("build")
+      .where("build.projectId", args.projectId)
+      .delete();
+    await ScreenshotDiff.query(trx)
+      .joinRelated("build")
+      .where("build.projectId", args.projectId)
+      .delete();
+    await Screenshot.query(trx)
+      .joinRelated("screenshotBucket")
+      .where("screenshotBucket.projectId", args.projectId)
+      .delete();
+    await BuildNotification.query(trx)
+      .joinRelated("build")
+      .where("build.projectId", args.projectId)
+      .delete();
+    await Build.query(trx).where("projectId", args.projectId).delete();
+    await ScreenshotBucket.query(trx)
+      .where("projectId", args.projectId)
+      .delete();
+    await Test.query(trx).where("projectId", args.projectId).delete();
+    await Project.query(trx).findById(args.projectId).delete();
+  });
+}

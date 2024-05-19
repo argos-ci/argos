@@ -424,11 +424,8 @@ export const resolvers: IResolvers = {
       const account = await getAdminAccount({
         id: accountId,
         user: ctx.auth?.user,
+        withGraphFetched: "slackInstallation",
       });
-      if (!account.slackInstallationId) {
-        return account;
-      }
-      await account.$fetchGraph("slackInstallation");
       if (!account.slackInstallation) {
         return account;
       }
