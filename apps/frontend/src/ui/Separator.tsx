@@ -1,26 +1,21 @@
-import * as React from "react";
-import * as SeparatorPrimitive from "@radix-ui/react-separator";
 import { clsx } from "clsx";
+import { SeparatorProps, useSeparator } from "react-aria";
 
-export const Separator = React.forwardRef<
-  React.ElementRef<typeof SeparatorPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root>
->(
-  (
-    { className, orientation = "horizontal", decorative = true, ...props },
-    ref,
-  ) => (
-    <SeparatorPrimitive.Root
-      ref={ref}
-      decorative={decorative}
-      orientation={orientation}
+export function Separator(
+  props: SeparatorProps & {
+    className?: string;
+  },
+) {
+  const { separatorProps } = useSeparator(props);
+  return (
+    <div
+      {...separatorProps}
       className={clsx(
         "bg-border shrink-0",
-        orientation === "horizontal" ? "h-px w-full" : "h-full w-px",
-        className,
+        "aria-[orientation=vertical]:h-full aria-[orientation=vertical]:w-px",
+        "aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full",
+        props.className,
       )}
-      {...props}
     />
-  ),
-);
-Separator.displayName = SeparatorPrimitive.Root.displayName;
+  );
+}

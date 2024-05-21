@@ -241,8 +241,12 @@ const FitViewButton = memo(() => {
     preventDefault: true,
   });
   return (
-    <HotkeyTooltip side="left" description="Fit view" keys={hotkey.displayKeys}>
-      <IconButton variant="contained" onClick={reset}>
+    <HotkeyTooltip
+      placement="left"
+      description="Fit view"
+      keys={hotkey.displayKeys}
+    >
+      <IconButton variant="contained" onPress={reset}>
         <MaximizeIcon />
       </IconButton>
     </HotkeyTooltip>
@@ -252,11 +256,11 @@ const FitViewButton = memo(() => {
 const ZoomInButton = memo((props: { disabled: boolean }) => {
   const { zoomIn } = useZoomerSyncContext();
   return (
-    <Tooltip side="left" content="Zoom in">
+    <Tooltip placement="left" content="Zoom in">
       <IconButton
         variant="contained"
-        onClick={zoomIn}
-        disabled={props.disabled}
+        onPress={zoomIn}
+        isDisabled={props.disabled}
       >
         <PlusIcon />
       </IconButton>
@@ -267,11 +271,11 @@ const ZoomInButton = memo((props: { disabled: boolean }) => {
 const ZoomOutButton = memo((props: { disabled: boolean }) => {
   const { zoomOut } = useZoomerSyncContext();
   return (
-    <Tooltip side="left" content="Zoom out">
+    <Tooltip placement="left" content="Zoom out">
       <IconButton
         variant="contained"
-        onClick={zoomOut}
-        disabled={props.disabled}
+        onPress={zoomOut}
+        isDisabled={props.disabled}
       >
         <MinusIcon />
       </IconButton>

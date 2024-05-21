@@ -5,9 +5,9 @@ import { DownloadIcon } from "lucide-react";
 import { checkIsBuildEmpty } from "@/containers/Build";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
-import { Anchor } from "@/ui/Anchor";
 import { Code } from "@/ui/Code";
-import { IconButton } from "@/ui/IconButton";
+import { IconButtonLink } from "@/ui/IconButton";
+import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useScrollListener } from "@/ui/useScrollListener";
@@ -58,12 +58,13 @@ const DownloadScreenshotButton = memo(
     const [loading, setLoading] = useState(false);
 
     return (
-      <Tooltip side="left" content={props.tooltip}>
-        <IconButton
+      <Tooltip placement="left" content={props.tooltip}>
+        <IconButtonLink
           variant="contained"
-          disabled={loading}
-          onClick={(event) => {
-            event.preventDefault();
+          isDisabled={loading}
+          href={downloadUrl.toString()}
+          download={props.name}
+          onPress={() => {
             setLoading(true);
             fetch(downloadUrl)
               .then((res) => res.blob())
@@ -79,17 +80,9 @@ const DownloadScreenshotButton = memo(
                 setLoading(false);
               });
           }}
-          asChild
         >
-          <a
-            href={downloadUrl.toString()}
-            download={props.name}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <DownloadIcon />
-          </a>
-        </IconButton>
+          <DownloadIcon />
+        </IconButtonLink>
       </Tooltip>
     );
   },
@@ -606,12 +599,12 @@ export const BuildDetail = (props: {
             Be sure to specify a directory containing images in the upload
             command.
             <br />
-            <Anchor
-              external
+            <Link
               href="https://argos-ci.com/docs/argos-cli#upload-command"
+              target="_blank"
             >
               See upload documentation
-            </Anchor>
+            </Link>
             .
           </div>
         </div>

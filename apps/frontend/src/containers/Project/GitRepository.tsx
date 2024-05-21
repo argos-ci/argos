@@ -3,12 +3,12 @@ import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { ProjectGitRepository_ProjectFragment } from "@/gql/graphql";
-import { Anchor } from "@/ui/Anchor";
 import { Button } from "@/ui/Button";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormCheckbox } from "@/ui/FormCheckbox";
+import { Link } from "@/ui/Link";
 
 import { getRepositoryIcon } from "../Repository";
 import { ConnectRepository } from "./ConnectRepository";
@@ -91,9 +91,9 @@ const UpdateEnablePrCommentMutation = graphql(`
   }
 `);
 
-const UnlinkGithubRepositoryButton = (props: {
+function UnlinkGithubRepositoryButton(props: {
   project: ProjectGitRepository_ProjectFragment;
-}) => {
+}) {
   const [unlink] = useMutation(UnlinkGithubRepositoryMutation, {
     variables: {
       projectId: props.project.id,
@@ -107,16 +107,15 @@ const UnlinkGithubRepositoryButton = (props: {
   });
   return (
     <Button
-      variant="outline"
-      color="neutral"
-      onClick={() => {
-        unlink();
+      variant="secondary"
+      onPress={() => {
+        unlink().catch(() => {});
       }}
     >
       Disconnect
     </Button>
   );
-};
+}
 
 const UnlinkGitlabProjectButton = (props: {
   project: ProjectGitRepository_ProjectFragment;
@@ -134,10 +133,9 @@ const UnlinkGitlabProjectButton = (props: {
   });
   return (
     <Button
-      variant="outline"
-      color="neutral"
-      onClick={() => {
-        unlink();
+      variant="secondary"
+      onPress={() => {
+        unlink().catch(() => {});
       }}
     >
       Disconnect
@@ -255,13 +253,13 @@ export const ProjectGitRepository = (props: {
             <div className="flex items-center gap-2 rounded border p-4">
               <RepoIcon className="size-6 shrink-0" />
               <div className="flex-1 font-semibold">
-                <Anchor
-                  href={project.repository.url}
-                  external
+                <Link
                   className="!text"
+                  href={project.repository.url}
+                  target="_blank"
                 >
                   {project.repository.fullName}
-                </Anchor>
+                </Link>
               </div>
               {(() => {
                 switch (project.repository.__typename) {

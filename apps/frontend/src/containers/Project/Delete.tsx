@@ -13,16 +13,16 @@ import {
 import {
   Dialog,
   DialogBody,
-  DialogDisclosure,
   DialogDismiss,
   DialogFooter,
   DialogText,
   DialogTitle,
-  useDialogState,
+  DialogTrigger,
 } from "@/ui/Dialog";
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Modal } from "@/ui/Modal";
 
 type DeleteProjectButtonProps = {
   projectId: string;
@@ -42,7 +42,6 @@ const DeleteProjectMutation = graphql(`
 `);
 
 const DeleteProjectButton = (props: DeleteProjectButtonProps) => {
-  const dialog = useDialogState();
   const client = useApolloClient();
   const form = useForm<ConfirmDeleteInputs>({
     defaultValues: {
@@ -61,67 +60,64 @@ const DeleteProjectButton = (props: DeleteProjectButtonProps) => {
   };
   const slug = `${props.accountSlug}/${props.projectName}`;
   return (
-    <>
-      <DialogDisclosure state={dialog}>
-        {(disclosureProps) => (
-          <Button {...disclosureProps} color="danger">
-            Delete
-          </Button>
-        )}
-      </DialogDisclosure>
-      <Dialog state={dialog} style={{ width: 560 }}>
-        <FormProvider {...form}>
-          <Form onSubmit={onSubmit}>
-            <DialogBody>
-              <DialogTitle>Delete Project</DialogTitle>
-              <DialogText>
-                This project will be deleted, along with all of its Builds,
-                Screenshots, Screenshot Diffs, and Settings.
-              </DialogText>
-              <div className="bg-danger-hover text-danger-low my-8 rounded p-2">
-                <strong>Warning:</strong> This action is not reversible. Please
-                be certain.
-              </div>
-              <FormTextInput
-                {...form.register("name", {
-                  validate: (value) => {
-                    if (value !== slug) {
-                      return "Project name does not match";
-                    }
-                    return true;
-                  },
-                })}
-                className="mb-4"
-                label={
-                  <>
-                    Enter the project name <strong>{slug}</strong> to continue:
-                  </>
-                }
-              />
-              <FormTextInput
-                {...form.register("verify", {
-                  validate: (value) => {
-                    if (value !== "delete my project") {
-                      return "Please type 'delete my project' to confirm";
-                    }
-                    return true;
-                  },
-                })}
-                label={
-                  <>
-                    To verify, type <strong>delete my project</strong> below:
-                  </>
-                }
-              />
-            </DialogBody>
-            <DialogFooter>
-              <DialogDismiss>Cancel</DialogDismiss>
-              <FormSubmit color="danger">Delete</FormSubmit>
-            </DialogFooter>
-          </Form>
-        </FormProvider>
-      </Dialog>
-    </>
+    <DialogTrigger>
+      <Button variant="destructive">Delete</Button>
+      <Modal>
+        <Dialog size="medium">
+          <FormProvider {...form}>
+            <Form onSubmit={onSubmit}>
+              <DialogBody>
+                <DialogTitle>Delete Project</DialogTitle>
+                <DialogText>
+                  This project will be deleted, along with all of its Builds,
+                  Screenshots, Screenshot Diffs, and Settings.
+                </DialogText>
+                <div className="bg-danger-hover text-danger-low my-8 rounded p-2">
+                  <strong>Warning:</strong> This action is not reversible.
+                  Please be certain.
+                </div>
+                <FormTextInput
+                  {...form.register("name", {
+                    validate: (value) => {
+                      if (value !== slug) {
+                        return "Project name does not match";
+                      }
+                      return true;
+                    },
+                  })}
+                  className="mb-4"
+                  label={
+                    <>
+                      Enter the project name <strong>{slug}</strong> to
+                      continue:
+                    </>
+                  }
+                />
+                <FormTextInput
+                  {...form.register("verify", {
+                    validate: (value) => {
+                      if (value !== "delete my project") {
+                        return "Please type 'delete my project' to confirm";
+                      }
+                      return true;
+                    },
+                  })}
+                  label={
+                    <>
+                      To verify, type <strong>delete my project</strong> below:
+                    </>
+                  }
+                />
+              </DialogBody>
+              <DialogFooter>
+                <DialogDismiss>Cancel</DialogDismiss>
+                <FormSubmit variant="destructive">Delete</FormSubmit>
+              </DialogFooter>
+            </Form>
+          </FormProvider>
+        </Dialog>
+      </Modal>
+    </DialogTrigger>
   );
 };
 

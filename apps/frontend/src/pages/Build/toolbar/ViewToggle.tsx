@@ -35,7 +35,7 @@ export const ViewToggle = memo(() => {
       >
         <IconButton
           aria-pressed={viewMode === "baseline"}
-          onClick={toggleBaselineChanges}
+          onPress={toggleBaselineChanges}
         >
           Baseline
         </IconButton>
@@ -47,7 +47,7 @@ export const ViewToggle = memo(() => {
       >
         <IconButton
           aria-pressed={viewMode === "changes"}
-          onClick={toggleBaselineChanges}
+          onPress={toggleBaselineChanges}
         >
           Changes
         </IconButton>
@@ -75,7 +75,7 @@ export const SplitViewToggle = memo(() => {
       }
       keys={hotkey.displayKeys}
     >
-      <IconButton aria-pressed={viewMode === "split"} onClick={toggleSplitView}>
+      <IconButton aria-pressed={viewMode === "split"} onPress={toggleSplitView}>
         <ColumnsIcon />
       </IconButton>
     </HotkeyTooltip>

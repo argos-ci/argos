@@ -3,13 +3,13 @@ import { ListIcon } from "lucide-react";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import {
-  Select,
-  SelectArrow,
-  SelectItem,
-  SelectPopover,
-  SelectSeparator,
-  useSelectState,
-} from "@/ui/Select";
+  ListBox,
+  ListBoxItem,
+  ListBoxItemIcon,
+  ListBoxSeparator,
+} from "@/ui/ListBox";
+import { Popover } from "@/ui/Popover";
+import { Select, SelectButton } from "@/ui/Select";
 
 import { GitLabLogo } from "./GitLab";
 
@@ -29,12 +29,6 @@ export const GitlabNamespacesSelect = (props: {
   onSwitch: () => void;
 }) => {
   const namespaces = useFragment(NamespaceFragment, props.namespaces);
-  const select = useSelectState({
-    gutter: 4,
-    value: props.value,
-    setValue: props.setValue,
-  });
-  const title = "Namespaces";
   const activeNamespace = namespaces.find(
     (namespace) => namespace.id === props.value,
   );
@@ -42,51 +36,57 @@ export const GitlabNamespacesSelect = (props: {
   invariant(props.value === "all" || activeNamespace, "no active installation");
 
   return (
-    <>
-      <Select state={select} className="w-full" disabled={props.disabled}>
-        <div className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-2">
-            <GitLabLogo aria-hidden />
-            {activeNamespace
-              ? activeNamespace.name || activeNamespace.path
-              : "All Projects..."}
-          </div>
-          <SelectArrow />
+    <Select
+      aria-label="Namespaces"
+      selectedKey={props.value}
+      onSelectionChange={(value) => {
+        if (value === "switch-git-provider") {
+          props.onSwitch();
+          return;
+        }
+        props.setValue(String(value));
+      }}
+    >
+      <SelectButton className="w-full" isDisabled={props.disabled}>
+        <div className="flex items-center gap-2">
+          <GitLabLogo aria-hidden />
+          {activeNamespace
+            ? activeNamespace.name || activeNamespace.path
+            : "All Projects..."}
         </div>
-      </Select>
+      </SelectButton>
 
-      <SelectPopover aria-label={title} state={select}>
-        {namespaces.map((namespace) => {
-          return (
-            <SelectItem state={select} key={namespace.id} value={namespace.id}>
-              <div className="flex items-center gap-2">
-                <GitLabLogo aria-hidden />
+      <Popover>
+        <ListBox>
+          {namespaces.map((namespace) => {
+            return (
+              <ListBoxItem
+                key={namespace.id}
+                id={namespace.id}
+                textValue={namespace.name || namespace.path}
+              >
+                <ListBoxItemIcon>
+                  <GitLabLogo />
+                </ListBoxItemIcon>
                 {namespace.name || namespace.path}
-              </div>
-            </SelectItem>
-          );
-        })}
-        <SelectItem value="all">
-          <div className="flex items-center gap-2">
-            <GitLabLogo aria-hidden />
+              </ListBoxItem>
+            );
+          })}
+          <ListBoxItem id="all" textValue="All Projects...">
+            <ListBoxItemIcon>
+              <GitLabLogo />
+            </ListBoxItemIcon>
             All Projects...
-          </div>
-        </SelectItem>
-        <SelectSeparator />
-        <SelectItem
-          state={select}
-          button
-          onClick={(event) => {
-            event.preventDefault();
-            props.onSwitch();
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <ListIcon className="size-[1em]" />
+          </ListBoxItem>
+          <ListBoxSeparator />
+          <ListBoxItem id="switch-git-provider" textValue="Switch Git Provider">
+            <ListBoxItemIcon>
+              <ListIcon />
+            </ListBoxItemIcon>
             Switch Git Provider
-          </div>
-        </SelectItem>
-      </SelectPopover>
-    </>
+          </ListBoxItem>
+        </ListBox>
+      </Popover>
+    </Select>
   );
 };

@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import {
   ActivitySquareIcon,
@@ -12,85 +12,88 @@ import {
   SettingsIcon,
   SunIcon,
 } from "lucide-react";
-import { Link, Link as RouterLink, useLocation } from "react-router-dom";
+import { Button as RACButton, SubmenuTrigger } from "react-aria-components";
+import { useLocation } from "react-router-dom";
 
 import { logout, useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import { useBuildHotkeysDialogState } from "@/pages/Build/BuildHotkeysDialogState";
-import { HeadlessAnchor } from "@/ui/Anchor";
-import { Button } from "@/ui/Button";
+import { LinkButton } from "@/ui/Button";
 import {
   Menu,
-  MenuButton,
   MenuItem,
   MenuItemIcon,
   MenuItemShortcut,
   MenuSeparator,
-  useMenuState,
+  MenuTrigger,
 } from "@/ui/Menu";
-import {
-  Select,
-  SelectArrow,
-  SelectItem,
-  SelectPopover,
-  useSelectState,
-} from "@/ui/Select";
+import { Popover } from "@/ui/Popover";
 
 import { AccountAvatar } from "./AccountAvatar";
 import { ColorMode, useColorMode } from "./ColorMode";
 import { InitialAvatar } from "./InitialAvatar";
 
-function getColorModeLabel(colorMode: ColorMode | "") {
+function getColorModeIcon(colorMode: ColorMode | "system") {
   switch (colorMode) {
     case ColorMode.Dark:
-      return (
-        <>
-          <MoonIcon className="size-[1em]" /> Dark
-        </>
-      );
+      return <MoonIcon />;
     case ColorMode.Light:
-      return (
-        <>
-          <SunIcon className="size-[1em]" /> Light
-        </>
-      );
+      return <SunIcon />;
     default:
-      return (
-        <>
-          <MonitorIcon className="size-[1em]" /> System
-        </>
-      );
+      return <MonitorIcon />;
   }
 }
 
-function ColorModeSelect() {
+function getColorModeLabel(colorMode: ColorMode | "system") {
+  switch (colorMode) {
+    case ColorMode.Dark:
+      return "Dark";
+    case ColorMode.Light:
+      return "Light";
+    default:
+      return "System";
+  }
+}
+
+function ColorModeSubmenu() {
   const { colorMode, setColorMode } = useColorMode();
-  const value = colorMode ?? "";
-  const select = useSelectState({
-    gutter: 4,
-    value: value,
-    setValue: (value) => {
-      setColorMode((value as ColorMode) || null);
-    },
-  });
+  const value = colorMode ?? "system";
+  const selected = useMemo(
+    () => new Set<ColorMode | "system">([value]),
+    [value],
+  );
 
   return (
-    <>
-      <Select state={select} size="sm">
-        {getColorModeLabel(value)} <SelectArrow />
-      </Select>
-      <SelectPopover aria-label="Themes" state={select} portal>
-        <SelectItem state={select} value="">
-          {getColorModeLabel("")}
-        </SelectItem>
-        <SelectItem state={select} value={ColorMode.Dark}>
-          {getColorModeLabel(ColorMode.Dark)}
-        </SelectItem>
-        <SelectItem state={select} value={ColorMode.Light}>
-          {getColorModeLabel(ColorMode.Light)}
-        </SelectItem>
-      </SelectPopover>
-    </>
+    <SubmenuTrigger>
+      <MenuItem>
+        <MenuItemIcon>{getColorModeIcon(value)}</MenuItemIcon>
+        Theme ({getColorModeLabel(value)})
+      </MenuItem>
+      <Popover>
+        <Menu
+          aria-label="Color modes"
+          selectionMode="single"
+          selectedKeys={selected}
+          onSelectionChange={(selection) => {
+            const value = Array.from(selection as Set<ColorMode | "system">)[0];
+            setColorMode(!value || value === "system" ? null : value);
+          }}
+        >
+          <MenuItem id="system">
+            <MenuItemIcon>{getColorModeIcon("system")}</MenuItemIcon>
+            {getColorModeLabel("system")}
+          </MenuItem>
+          <MenuItem id={ColorMode.Dark}>
+            <MenuItemIcon>{getColorModeIcon(ColorMode.Dark)}</MenuItemIcon>
+            {getColorModeLabel(ColorMode.Dark)}
+          </MenuItem>
+          <MenuItem id={ColorMode.Light}>
+            <MenuItemIcon>{getColorModeIcon(ColorMode.Light)}</MenuItemIcon>
+            {getColorModeLabel(ColorMode.Light)}
+          </MenuItem>
+        </Menu>
+      </Popover>
+    </SubmenuTrigger>
   );
 }
 
@@ -119,145 +122,101 @@ function Avatar(props: { slug: string }) {
 
 function UserMenu() {
   const authPayload = useAuthTokenPayload();
-  const menu = useMenuState({
-    placement: "bottom-end",
-    gutter: 4,
-  });
-  const { hotkeysDialog } = useBuildHotkeysDialogState();
+  const hotkeysDialog = useBuildHotkeysDialogState();
 
   if (!authPayload) {
     return null;
   }
 
   return (
-    <>
-      <MenuButton
-        state={menu}
+    <MenuTrigger>
+      <RACButton
         className="shrink-0 cursor-default rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
+        aria-label="User settings"
       >
         <Suspense
           fallback={<InitialAvatar initial="" color="var(--mauve-3)" />}
         >
           <Avatar slug={authPayload.account.slug} />
         </Suspense>
-      </MenuButton>
-      <Menu aria-label="User settings" state={menu} className="w-60">
-        <MenuItem state={menu} pointer>
-          {(menuItemProps) => (
-            <RouterLink
-              {...menuItemProps}
-              to={`/${authPayload.account.slug}/new`}
-            >
-              <MenuItemIcon>
-                <PlusCircleIcon />
-              </MenuItemIcon>
-              New Project
-            </RouterLink>
-          )}
-        </MenuItem>
-        <MenuItem state={menu} pointer>
-          {(menuItemProps) => (
-            <RouterLink {...menuItemProps} to={`/teams/new`}>
-              <MenuItemIcon>
-                <PlusCircleIcon />
-              </MenuItemIcon>
-              New Team
-            </RouterLink>
-          )}
-        </MenuItem>
-        <MenuItem state={menu} pointer>
-          {(menuItemProps) => (
-            <RouterLink
-              {...menuItemProps}
-              to={`/${authPayload.account.slug}/settings`}
-            >
-              <MenuItemIcon>
-                <SettingsIcon />
-              </MenuItemIcon>
-              Personal Settings
-            </RouterLink>
-          )}
-        </MenuItem>
-        <MenuSeparator />
-        <div className="my-2 flex items-center justify-between gap-4 px-4 text-sm">
-          Theme
-          <ColorModeSelect />
-        </div>
-        <MenuSeparator />
-        {hotkeysDialog && (
-          <MenuItem state={menu} pointer onClick={() => hotkeysDialog.toggle()}>
+      </RACButton>
+      <Popover placement="bottom end">
+        <Menu className="w-60">
+          <MenuItem href={`/${authPayload.account.slug}/new`}>
             <MenuItemIcon>
-              <CommandIcon />
+              <PlusCircleIcon />
             </MenuItemIcon>
-            Keyboard shortcuts
-            <MenuItemShortcut>?</MenuItemShortcut>
+            New Project
           </MenuItem>
-        )}
-        <MenuItem state={menu} pointer>
-          {(menuItemProps) => (
-            <HeadlessAnchor
-              {...menuItemProps}
-              href="https://argos-ci.com/docs/open-source"
-              external
-            >
+          <MenuItem href="/teams/new">
+            <MenuItemIcon>
+              <PlusCircleIcon />
+            </MenuItemIcon>
+            New Team
+          </MenuItem>
+          <MenuItem href={`/${authPayload.account.slug}/settings`}>
+            <MenuItemIcon>
+              <SettingsIcon />
+            </MenuItemIcon>
+            Personal Settings
+          </MenuItem>
+          <MenuSeparator />
+          <ColorModeSubmenu />
+          <MenuSeparator />
+          {hotkeysDialog && (
+            <MenuItem onAction={() => hotkeysDialog.setIsOpen(true)}>
               <MenuItemIcon>
-                <FileTextIcon />
+                <CommandIcon />
               </MenuItemIcon>
-              Documentation
-            </HeadlessAnchor>
+              Keyboard shortcuts
+              <MenuItemShortcut>?</MenuItemShortcut>
+            </MenuItem>
           )}
-        </MenuItem>
-        <MenuItem state={menu} pointer>
-          {(menuItemProps) => (
-            <HeadlessAnchor
-              {...menuItemProps}
-              href="https://argos-ci.com/discord"
-              external
-            >
-              <MenuItemIcon>
-                <MessagesSquareIcon />
-              </MenuItemIcon>
-              Discord community
-            </HeadlessAnchor>
-          )}
-        </MenuItem>
-        <MenuItem state={menu} pointer>
-          {(menuItemProps) => (
-            <HeadlessAnchor
-              {...menuItemProps}
-              href="https://argos.openstatus.dev"
-              external
-            >
-              <MenuItemIcon>
-                <ActivitySquareIcon />
-              </MenuItemIcon>
-              Status
-            </HeadlessAnchor>
-          )}
-        </MenuItem>
-        <MenuSeparator />
-        <MenuItem state={menu} pointer onClick={() => logout()}>
-          <MenuItemIcon>
-            <LogOutIcon />
-          </MenuItemIcon>
-          Logout
-        </MenuItem>
-      </Menu>
-    </>
+          <MenuItem
+            href="https://argos-ci.com/docs/open-source"
+            target="_blank"
+          >
+            <MenuItemIcon>
+              <FileTextIcon />
+            </MenuItemIcon>
+            Documentation
+          </MenuItem>
+          <MenuItem href="https://argos-ci.com/discord" target="_blank">
+            <MenuItemIcon>
+              <MessagesSquareIcon />
+            </MenuItemIcon>
+            Discord community
+          </MenuItem>
+          <MenuItem href="https://argos.openstatus.dev" target="_blank">
+            <MenuItemIcon>
+              <ActivitySquareIcon />
+            </MenuItemIcon>
+            Status
+          </MenuItem>
+          <MenuSeparator />
+          <MenuItem onAction={() => logout()}>
+            <MenuItemIcon>
+              <LogOutIcon />
+            </MenuItemIcon>
+            Logout
+          </MenuItem>
+        </Menu>
+      </Popover>
+    </MenuTrigger>
   );
 }
 
-const LoginButton = () => {
+function LoginButton() {
   const { pathname } = useLocation();
   const url = `/login?r=${encodeURIComponent(pathname)}`;
   return (
-    <Button className="shrink-0" color="neutral" variant="outline" asChild>
-      <Link to={url}>Login</Link>
-    </Button>
+    <LinkButton className="shrink-0" variant="secondary" href={url}>
+      Login
+    </LinkButton>
   );
-};
+}
 
-export const NavUserControl = () => {
+export function NavUserControl() {
   const loggedIn = useIsLoggedIn();
   return loggedIn ? <UserMenu /> : <LoginButton />;
-};
+}

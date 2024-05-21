@@ -4,17 +4,17 @@ import { AccountSelector } from "@/containers/AccountSelector";
 import { useQuery } from "@/containers/Apollo";
 import { graphql } from "@/gql";
 import { AccountSubscriptionStatus } from "@/gql/graphql";
-import { Button, ButtonColor, ButtonVariant } from "@/ui/Button";
+import { Button, ButtonProps } from "@/ui/Button";
 import {
   Dialog,
   DialogBody,
-  DialogDisclosure,
   DialogDismiss,
   DialogFooter,
   DialogTitle,
-  useDialogState,
+  DialogTrigger,
 } from "@/ui/Dialog";
 import { FormLabel } from "@/ui/FormLabel";
+import { Modal } from "@/ui/Modal";
 import { StripeCheckoutButton } from "@/ui/StripeLink";
 
 const MeQuery = graphql(`
@@ -37,16 +37,13 @@ const MeQuery = graphql(`
 export function TeamSubscribeDialog({
   children,
   initialAccountId,
-  color = "primary",
-  variant = "contained",
+  variant,
 }: {
   initialAccountId: string;
   children?: React.ReactNode;
-  color?: ButtonColor;
-  variant?: ButtonVariant;
+  variant?: ButtonProps["variant"];
 }) {
   const { data } = useQuery(MeQuery);
-  const dialog = useDialogState();
   const [accountId, setAccountId] = useState(initialAccountId);
   const hasSubscribedToTrial = Boolean(data?.me?.hasSubscribedToTrial);
   const teams = data?.me ? data.me.teams : null;
@@ -75,65 +72,60 @@ export function TeamSubscribeDialog({
     : [];
 
   return (
-    <>
-      <DialogDisclosure state={dialog}>
-        {(disclosureProps) => (
-          <Button {...disclosureProps} color={color} variant={variant}>
-            {children || "Subscribe"}
-          </Button>
-        )}
-      </DialogDisclosure>
+    <DialogTrigger>
+      <Button variant={variant}>{children || "Subscribe"}</Button>
+      <Modal>
+        <Dialog size="medium">
+          <DialogBody>
+            <DialogTitle>Subscribe to Pro plan</DialogTitle>
 
-      <Dialog state={dialog} className="w-[36rem]">
-        <DialogBody>
-          <DialogTitle>Subscribe to Pro plan</DialogTitle>
+            <div className="my-4">
+              <FormLabel>Team to subscribe</FormLabel>
+              <AccountSelector
+                accounts={sortedTeams}
+                disabledAccountIds={disabledAccountIds}
+                disabledTooltip="This team already has a paid plan."
+                value={accountId}
+                setValue={setAccountId}
+              />
+            </div>
 
-          <div className="my-4">
-            <FormLabel>Team to subscribe</FormLabel>
-            <AccountSelector
-              accounts={sortedTeams}
-              disabledAccountIds={disabledAccountIds}
-              disabledTooltip="This team already has a paid plan."
-              value={accountId}
-              setValue={setAccountId}
-            />
-          </div>
+            <p className="text mt-4 font-medium">
+              You will be redirected to Stripe to{" "}
+              {!hasSubscribedToTrial
+                ? "start a 14-day Pro plan trial"
+                : "complete the subscription"}
+              .
+            </p>
+          </DialogBody>
 
-          <p className="text mt-4 font-medium">
-            You will be redirected to Stripe to{" "}
-            {!hasSubscribedToTrial
-              ? "start a 14-day Pro plan trial"
-              : "complete the subscription"}
-            .
-          </p>
-        </DialogBody>
+          <DialogFooter>
+            <DialogDismiss>Cancel</DialogDismiss>
 
-        <DialogFooter>
-          <DialogDismiss>Cancel</DialogDismiss>
-
-          <StripeCheckoutButton
-            accountId={accountId}
-            successUrl={
-              team
-                ? new URL(
-                    `/${team.slug}?checkout=success`,
-                    window.location.origin,
-                  ).href
-                : window.location.href
-            }
-            cancelUrl={
-              team
-                ? new URL(
-                    `/${team.slug}?checkout=cancel`,
-                    window.location.origin,
-                  ).href
-                : window.location.href
-            }
-          >
-            Continue
-          </StripeCheckoutButton>
-        </DialogFooter>
-      </Dialog>
-    </>
+            <StripeCheckoutButton
+              accountId={accountId}
+              successUrl={
+                team
+                  ? new URL(
+                      `/${team.slug}?checkout=success`,
+                      window.location.origin,
+                    ).href
+                  : window.location.href
+              }
+              cancelUrl={
+                team
+                  ? new URL(
+                      `/${team.slug}?checkout=cancel`,
+                      window.location.origin,
+                    ).href
+                  : window.location.href
+              }
+            >
+              Continue
+            </StripeCheckoutButton>
+          </DialogFooter>
+        </Dialog>
+      </Modal>
+    </DialogTrigger>
   );
 }

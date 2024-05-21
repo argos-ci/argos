@@ -41,9 +41,9 @@ export const AcceptButton = memo(
       >
         <IconButton
           aria-pressed={status === EvaluationStatus.Accepted}
-          onClick={toggle}
+          onPress={toggle}
           color={active ? "success" : undefined}
-          disabled={props.disabled}
+          isDisabled={props.disabled}
         >
           <ThumbsUpIcon />
         </IconButton>
@@ -85,9 +85,9 @@ export const RejectButton = memo(
       >
         <IconButton
           aria-pressed={status === EvaluationStatus.Rejected}
-          onClick={toggle}
+          onPress={toggle}
           color={active ? "danger" : undefined}
-          disabled={props.disabled}
+          isDisabled={props.disabled}
         >
           <ThumbsDownIcon />
         </IconButton>

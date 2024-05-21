@@ -12,9 +12,15 @@ import { GithubRepositoryList } from "@/containers/GithubRepositoryList";
 import { GitlabNamespacesSelect } from "@/containers/GitlabNamespacesSelect";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
-import { Anchor } from "@/ui/Anchor";
-import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
+import {
+  Button,
+  ButtonIcon,
+  ButtonProps,
+  LinkButton,
+  LinkButtonProps,
+} from "@/ui/Button";
 import { Card } from "@/ui/Card";
+import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { TextInput } from "@/ui/TextInput";
 import { getItem, removeItem, setItem } from "@/util/storage";
@@ -175,53 +181,52 @@ enum GitProvider {
   GitLab = "gitlab",
 }
 
-const GitHubButton = (props: {
-  onClick: () => void;
+function GitHubButton(props: {
+  onPress: LinkButtonProps["onPress"];
   hasInstallations: boolean;
   children?: React.ReactNode;
   size?: ButtonProps["size"];
-}) => {
+}) {
   const { pathname } = useLocation();
   if (!props.hasInstallations) {
     return (
-      <Button color="github" size={props.size} asChild>
-        <a
-          href={`${config.get(
-            "github.appUrl",
-          )}/installations/new?state=${encodeURIComponent(pathname)}`}
-          onClick={props.onClick}
-        >
-          <ButtonIcon>
-            <MarkGithubIcon />
-          </ButtonIcon>
-          {props.children}
-        </a>
-      </Button>
+      <LinkButton
+        variant="github"
+        size={props.size}
+        href={`${config.get(
+          "github.appUrl",
+        )}/installations/new?state=${encodeURIComponent(pathname)}`}
+      >
+        <ButtonIcon>
+          <MarkGithubIcon />
+        </ButtonIcon>
+        {props.children}
+      </LinkButton>
     );
   }
   return (
-    <Button color="github" size={props.size} onClick={props.onClick}>
+    <Button variant="github" size={props.size} onPress={props.onPress}>
       <ButtonIcon>
         <MarkGithubIcon />
       </ButtonIcon>
       {props.children}
     </Button>
   );
-};
+}
 
-const GitLabButton = ({
+function GitLabButton({
   children,
   ...props
-}: ButtonProps & { children: React.ReactNode }) => {
+}: ButtonProps & { children: React.ReactNode }) {
   return (
-    <Button color="gitlab" {...props}>
+    <Button variant="gitlab" {...props}>
       <ButtonIcon>
         <GitLabLogo />
       </ButtonIcon>
       {children}
     </Button>
   );
-};
+}
 
 type ConnectRepositoryProps = {
   onSelectRepository: GithubInstallationsProps["onSelectRepository"];
@@ -326,22 +331,15 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
           token first.
         </div>
         <div className="flex items-center justify-center gap-4">
-          <Button asChild>
-            <a
-              href="https://argos-ci.com/docs/gitlab"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Setup GitLab Access token
-            </a>
-          </Button>
-          <Button
-            color="neutral"
-            variant="outline"
-            onClick={() => setAndStoreProvider(null)}
+          <LinkButton href="https://argos-ci.com/docs/gitlab" target="_blank">
+            Setup GitLab Access token
+          </LinkButton>
+          <LinkButton
+            variant="secondary"
+            onPress={() => setAndStoreProvider(null)}
           >
             Use another Git provider
-          </Button>
+          </LinkButton>
         </div>
       </Card>
     );
@@ -353,22 +351,22 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
         <div className="flex items-center justify-between gap-4">
           <div className="flex gap-4">
             <GitHubButton
-              onClick={() => setAndStoreProvider(GitProvider.GitHub)}
+              onPress={() => setAndStoreProvider(GitProvider.GitHub)}
               hasInstallations={hasGhInstallations}
             >
               GitHub
             </GitHubButton>
             <GitLabButton
-              onClick={() => setAndStoreProvider(GitProvider.GitLab)}
+              onPress={() => setAndStoreProvider(GitProvider.GitLab)}
             >
               GitLab
             </GitLabButton>
           </div>
           <div>
             Need another provider?{" "}
-            <Anchor href={`mailto:${config.get("contactEmail")}`}>
+            <Link href={`mailto:${config.get("contactEmail")}`} target="_blank">
               Contact us
-            </Anchor>
+            </Link>
           </div>
         </div>
       );
@@ -382,14 +380,14 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
           </div>
           <GitHubButton
             size="large"
-            onClick={() => setAndStoreProvider(GitProvider.GitHub)}
+            onPress={() => setAndStoreProvider(GitProvider.GitHub)}
             hasInstallations={hasGhInstallations}
           >
             Continue with GitHub
           </GitHubButton>
           <GitLabButton
             size="large"
-            onClick={() => setAndStoreProvider(GitProvider.GitLab)}
+            onPress={() => setAndStoreProvider(GitProvider.GitLab)}
           >
             Continue with GitLab
           </GitLabButton>

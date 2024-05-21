@@ -3,11 +3,11 @@ import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { SummaryCheck } from "@/gql/graphql";
-import { Anchor } from "@/ui/Anchor";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormRadio, FormRadioGroup } from "@/ui/FormRadio";
+import { Link } from "@/ui/Link";
 
 const UpdateStatusChecksMutation = graphql(`
   mutation ProjectStatusChecks_updateProject(
@@ -107,9 +107,12 @@ export const ProjectStatusChecks = (props: {
           </CardBody>
           <FormCardFooter>
             Learn more about{" "}
-            <Anchor href="https://argos-ci.com/docs/summary-checks" external>
+            <Link
+              href="https://argos-ci.com/docs/summary-checks"
+              target="_blank"
+            >
               summary checks
-            </Anchor>
+            </Link>
             .
           </FormCardFooter>
         </Form>

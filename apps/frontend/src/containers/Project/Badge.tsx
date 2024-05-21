@@ -1,5 +1,4 @@
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Anchor } from "@/ui/Anchor";
 import {
   Card,
   CardBody,
@@ -7,6 +6,7 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
+import { Link } from "@/ui/Link";
 import { Pre } from "@/ui/Pre";
 
 const ProjectFragment = graphql(`
@@ -67,9 +67,9 @@ export const ProjectBadge = (props: {
       </CardBody>
       <CardFooter>
         If your project is Open Source, read{" "}
-        <Anchor href="https://argos-ci.com/docs/open-source" external>
+        <Link href="https://argos-ci.com/docs/open-source" target="_blank">
           Argos documentation
-        </Anchor>{" "}
+        </Link>{" "}
         to learn more about Argos Open Source Sponsorship.
       </CardFooter>
     </Card>

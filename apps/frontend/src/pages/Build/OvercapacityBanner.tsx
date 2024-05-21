@@ -40,7 +40,7 @@ export const OvercapacityBanner = memo(
           You&apos;ve hit {Math.floor(consumptionRatio * 100)}% of the{" "}
           {plan.displayName} plan limit.
         </span>
-        <Link to={`/${accountSlug}/settings`}>Upgrade plan</Link>
+        <Link href={`/${accountSlug}/settings`}>Upgrade plan</Link>
       </Banner>
     );
   },

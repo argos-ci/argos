@@ -16,17 +16,18 @@ import { Button } from "@/ui/Button";
 import {
   Dialog,
   DialogBody,
-  DialogDisclosure,
   DialogDismiss,
   DialogFooter,
   DialogText,
   DialogTitle,
-  useDialogState,
+  DialogTrigger,
+  useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { Form } from "@/ui/Form";
 import { FormError } from "@/ui/FormError";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
+import { Modal } from "@/ui/Modal";
 import { Tooltip } from "@/ui/Tooltip";
 
 const query = graphql(`
@@ -120,14 +121,17 @@ function getButtonLabel(priced: boolean) {
   return priced ? "Enable and Pay" : "Enable";
 }
 
-function ActiveConfigureSSO(props: { teamAccountId: string; priced: boolean }) {
-  const dialog = useDialogState();
+function ActiveConfigureSSOForm(props: {
+  teamAccountId: string;
+  priced: boolean;
+}) {
   const form = useForm<FormInputs>({
     defaultValues: {
       ghInstallationId: "",
     },
   });
   const client = useApolloClient();
+  const state = useOverlayTriggerState();
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     await client.mutate({
       mutation: EnableGitHubSSOMutation,
@@ -137,68 +141,67 @@ function ActiveConfigureSSO(props: { teamAccountId: string; priced: boolean }) {
       },
       refetchQueries: ["TeamMembers_teamMembers"],
     });
-    dialog.hide();
+    state.close();
   };
-
   return (
-    <>
-      <DialogDisclosure state={dialog}>
-        {(disclosureProps) => (
-          <Button {...disclosureProps} color="primary">
-            {getButtonLabel(props.priced)}
-          </Button>
-        )}
-      </DialogDisclosure>
-      <Dialog state={dialog} style={{ width: 560 }}>
-        {dialog.mounted && (
-          <FormProvider {...form}>
-            <Form onSubmit={onSubmit}>
-              <DialogBody>
-                <DialogTitle>Enable GitHub Single Sign-On</DialogTitle>
-                <DialogText className="mb-8">
-                  Choose a GitHub Organization to enable GitHub Single Sign-On.
-                  People from your GitHub organization will be automatically
-                  added to your Argos Team. You will be able to configure role
-                  for each Team member.
-                </DialogText>
-                <GitHubInstallationsSelectControl />
-                {props.priced ? (
-                  <>
-                    <div className="my-8">
-                      By clicking <strong>Enable and Pay</strong>, the amount of{" "}
-                      <strong>${GITHUB_SSO_PRICING}</strong> will be added to
-                      your invoice and your credit card will be charged at the
-                      end of your next billing cycle.
-                    </div>
-                    <div className="text-low my-2 flex justify-between font-bold">
-                      <div>GitHub Single Sign-On</div>
-                      <div>${GITHUB_SSO_PRICING} / month</div>
-                    </div>
-                    <hr className="my-2 border-0 border-t" />
-                    <div className="my-2 flex justify-between font-bold">
-                      <div>Total</div>
-                      <div>${GITHUB_SSO_PRICING} / month</div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="my-8">
-                    By clicking <strong>Enable</strong>, you will enable the
-                    GitHub Single Sign-On feature for your Team.
-                  </div>
-                )}
-              </DialogBody>
-              <DialogFooter>
-                <FormRootError />
-                <DialogDismiss>Cancel</DialogDismiss>
-                <FormSubmit>
-                  {props.priced ? "Enable and Pay" : "Enable"}
-                </FormSubmit>
-              </DialogFooter>
-            </Form>
-          </FormProvider>
-        )}
-      </Dialog>
-    </>
+    <FormProvider {...form}>
+      <Form onSubmit={onSubmit}>
+        <DialogBody>
+          <DialogTitle>Enable GitHub Single Sign-On</DialogTitle>
+          <DialogText className="mb-8">
+            Choose a GitHub Organization to enable GitHub Single Sign-On. People
+            from your GitHub organization will be automatically added to your
+            Argos Team. You will be able to configure role for each Team member.
+          </DialogText>
+          <GitHubInstallationsSelectControl />
+          {props.priced ? (
+            <>
+              <div className="my-8">
+                By clicking <strong>Enable and Pay</strong>, the amount of{" "}
+                <strong>${GITHUB_SSO_PRICING}</strong> will be added to your
+                invoice and your credit card will be charged at the end of your
+                next billing cycle.
+              </div>
+              <div className="text-low my-2 flex justify-between font-bold">
+                <div>GitHub Single Sign-On</div>
+                <div>${GITHUB_SSO_PRICING} / month</div>
+              </div>
+              <hr className="my-2 border-0 border-t" />
+              <div className="my-2 flex justify-between font-bold">
+                <div>Total</div>
+                <div>${GITHUB_SSO_PRICING} / month</div>
+              </div>
+            </>
+          ) : (
+            <div className="my-8">
+              By clicking <strong>Enable</strong>, you will enable the GitHub
+              Single Sign-On feature for your Team.
+            </div>
+          )}
+        </DialogBody>
+        <DialogFooter>
+          <FormRootError />
+          <DialogDismiss>Cancel</DialogDismiss>
+          <FormSubmit>{props.priced ? "Enable and Pay" : "Enable"}</FormSubmit>
+        </DialogFooter>
+      </Form>
+    </FormProvider>
+  );
+}
+
+function ActiveConfigureSSO(props: { teamAccountId: string; priced: boolean }) {
+  return (
+    <DialogTrigger>
+      <Button>{getButtonLabel(props.priced)}</Button>
+      <Modal>
+        <Dialog size="medium">
+          <ActiveConfigureSSOForm
+            teamAccountId={props.teamAccountId}
+            priced={props.priced}
+          />
+        </Dialog>
+      </Modal>
+    </DialogTrigger>
   );
 }
 
@@ -210,7 +213,9 @@ export function ConfigureGitHubSSO(props: {
   if (props.disabledReason) {
     return (
       <Tooltip content={props.disabledReason}>
-        <Button aria-disabled>{getButtonLabel(props.priced)}</Button>
+        <div className="flex">
+          <Button isDisabled>{getButtonLabel(props.priced)}</Button>
+        </div>
       </Tooltip>
     );
   }

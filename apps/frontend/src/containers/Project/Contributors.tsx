@@ -6,7 +6,6 @@ import { useDebounce } from "use-debounce";
 
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { ProjectPermission, ProjectUserLevel } from "@/gql/graphql";
-import { Anchor } from "@/ui/Anchor";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -18,16 +17,16 @@ import {
 import {
   Dialog,
   DialogBody,
-  DialogDisclosure,
   DialogDismiss,
   DialogFooter,
-  DialogState,
   DialogText,
   DialogTitle,
-  useDialogState,
+  DialogTrigger,
+  useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { getGraphQLErrorMessage } from "@/ui/Form";
 import { FormError } from "@/ui/FormError";
+import { Link } from "@/ui/Link";
 import {
   List,
   ListEmpty,
@@ -35,14 +34,16 @@ import {
   ListRowLoader,
   ListTitle,
 } from "@/ui/List";
-import { Loader } from "@/ui/Loader";
 import {
-  Select,
-  SelectArrow,
-  SelectItem,
-  SelectPopover,
-  useSelectState,
-} from "@/ui/Select";
+  ListBox,
+  ListBoxItem,
+  ListBoxItemDescription,
+  ListBoxItemLabel,
+} from "@/ui/ListBox";
+import { Loader } from "@/ui/Loader";
+import { Modal } from "@/ui/Modal";
+import { Popover } from "@/ui/Popover";
+import { Select, SelectButton } from "@/ui/Select";
 import { TextInput } from "@/ui/TextInput";
 
 import { useQuery } from "../Apollo";
@@ -119,6 +120,7 @@ function addContributor(
     variables: { projectId: data.projectId },
     data: {
       projectsContributedOn: {
+        __typename: "ProjectContributorConnection",
         edges: [
           {
             __typename: "ProjectContributor",
@@ -215,8 +217,9 @@ const LeaveProjectDialog = React.memo(
     projectId: string;
     userAccountId: string;
     projectName: string;
-    state: DialogState;
   }) => {
+    const state = useOverlayTriggerState();
+    const navigate = useNavigate();
     const [leaveProject, { loading, error }] = useMutation(
       RemoveContributorFromProjectMutation,
       {
@@ -225,14 +228,13 @@ const LeaveProjectDialog = React.memo(
           userAccountId: props.userAccountId,
         },
         onCompleted() {
-          props.state.hide();
+          state.close();
           navigate("/");
         },
       },
     );
-    const navigate = useNavigate();
     return (
-      <>
+      <Dialog>
         <DialogBody confirm>
           <DialogTitle>Remove me as contributor</DialogTitle>
           <DialogText>
@@ -246,16 +248,16 @@ const LeaveProjectDialog = React.memo(
           {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
           <DialogDismiss>Cancel</DialogDismiss>
           <Button
-            disabled={loading}
-            color="danger"
-            onClick={() => {
+            isDisabled={loading}
+            variant="destructive"
+            onPress={() => {
               leaveProject().catch(() => {});
             }}
           >
             Remove me as contributor
           </Button>
         </DialogFooter>
-      </>
+      </Dialog>
     );
   },
 );
@@ -270,17 +272,13 @@ const RemoveFromProjectDialogUserFragment = graphql(`
 type RemovedUser = DocumentType<typeof RemoveFromProjectDialogUserFragment>;
 
 const RemoveFromProjectDialog = React.memo(
-  (props: {
-    state: DialogState;
-    projectName: string;
-    projectId: string;
-    user: RemovedUser;
-  }) => {
+  (props: { projectName: string; projectId: string; user: RemovedUser }) => {
+    const state = useOverlayTriggerState();
     const [removeFromProject, { loading, error }] = useMutation(
       RemoveContributorFromProjectMutation,
       {
         onCompleted() {
-          props.state.hide();
+          state.close();
         },
         update(cache, { data }) {
           if (data?.removeContributorFromProject) {
@@ -316,9 +314,9 @@ const RemoveFromProjectDialog = React.memo(
           )}
           <DialogDismiss>Cancel</DialogDismiss>
           <Button
-            disabled={loading}
-            color="danger"
-            onClick={() => {
+            isDisabled={loading}
+            variant="destructive"
+            onPress={() => {
               removeFromProject().catch(() => {});
             }}
           >
@@ -339,14 +337,14 @@ function ProjectContributorsList(props: {
   const [removedUser, setRemovedUser] = React.useState<RemovedUser | null>(
     null,
   );
-  const removeDialog = useDialogState({
-    open: removedUser !== null,
-    setOpen: (open) => {
+  const removeModal = {
+    isOpen: removedUser !== null,
+    onOpenChange: (open: boolean) => {
       if (!open) {
         setRemovedUser(null);
       }
     },
-  });
+  };
   const result = useQuery(ProjectContributorsQuery, {
     variables: {
       projectId: props.projectId,
@@ -408,7 +406,7 @@ function ProjectContributorsList(props: {
               )}
               {result.data.project.contributors.pageInfo.hasNextPage && (
                 <ListLoadMore
-                  onClick={() => {
+                  onPress={() => {
                     result.fetchMore({
                       variables: { after: contributors.length },
                       updateQuery: (prev, { fetchMoreResult }) => {
@@ -437,25 +435,23 @@ function ProjectContributorsList(props: {
           );
         })()}
       </div>
-      <Dialog state={removeDialog}>
+      <Modal {...removeModal}>
         {removedUser ? (
           authPayload.account.id === removedUser.id ? (
             <LeaveProjectDialog
               projectId={props.projectId}
               projectName={props.projectName}
               userAccountId={removedUser.id}
-              state={removeDialog}
             />
           ) : (
             <RemoveFromProjectDialog
               projectId={props.projectId}
               projectName={props.projectName}
               user={removedUser}
-              state={removeDialog}
             />
           )
         ) : null}
-      </Dialog>
+      </Modal>
     </>
   );
 }
@@ -516,69 +512,72 @@ function ProjectContributorLevelSelect(props: {
   level: ProjectUserLevel | "";
 }) {
   const [addOrUpdateContributor] = useMutation(AddOrUpdateContributorMutation);
-  const select = useSelectState({
-    gutter: 4,
-    value: props.level,
-    setValue: (value) => {
-      addOrUpdateContributor({
-        variables: {
-          projectId: props.projectId,
-          userAccountId: props.userId,
-          level: value as ProjectUserLevel,
-        },
-        optimisticResponse: {
-          addOrUpdateProjectContributor: {
-            id: OPTIMISTIC_CONTRIBUTOR_ID,
-            level: value as ProjectUserLevel,
-          },
-        },
-        update: (cache, { data }) => {
-          if (data?.addOrUpdateProjectContributor) {
-            addContributor(cache, {
-              projectId: props.projectId,
-              userId: props.userId,
-              contributor: data.addOrUpdateProjectContributor,
-            });
-          }
-        },
-      });
-    },
-  });
-
-  const value = select.value as ProjectUserLevel;
 
   return (
-    <>
-      <Select state={select} className="text-low w-full text-sm">
-        <div className="flex w-full items-center justify-between gap-2">
-          {value ? ProjectContributorLabel[value] : "Add as"}
-          <SelectArrow />
-        </div>
-      </Select>
+    <Select
+      aria-label="Levels"
+      selectedKey={props.level}
+      onSelectionChange={(value) => {
+        invariant(typeof value === "string");
+        addOrUpdateContributor({
+          variables: {
+            projectId: props.projectId,
+            userAccountId: props.userId,
+            level: value as ProjectUserLevel,
+          },
+          optimisticResponse: {
+            addOrUpdateProjectContributor: {
+              __typename: "ProjectContributor",
+              id: OPTIMISTIC_CONTRIBUTOR_ID,
+              level: value as ProjectUserLevel,
+            },
+          },
+          update: (cache, { data }) => {
+            if (data?.addOrUpdateProjectContributor) {
+              addContributor(cache, {
+                projectId: props.projectId,
+                userId: props.userId,
+                contributor: data.addOrUpdateProjectContributor,
+              });
+            }
+          },
+        });
+      }}
+    >
+      <SelectButton className="text-low w-full text-sm">
+        {props.level ? ProjectContributorLabel[props.level] : "Add as"}
+      </SelectButton>
 
-      <SelectPopover state={select} aria-label="Levels" portal>
-        <SelectItem state={select} value="viewer">
-          <div className="flex flex-col">
-            <div>{ProjectContributorLabel.viewer}</div>
-            <div className="text-low">See builds and screenshots</div>
-          </div>
-        </SelectItem>
-        <SelectItem state={select} value="reviewer">
-          <div className="flex flex-col">
-            <div>{ProjectContributorLabel.reviewer}</div>
-            <div className="text-low">See and review builds</div>
-          </div>
-        </SelectItem>
-        <SelectItem state={select} value="admin">
-          <div className="flex flex-col">
-            <div>{ProjectContributorLabel.admin}</div>
-            <div className="text-low">
+      <Popover>
+        <ListBox>
+          <ListBoxItem id="viewer" textValue={ProjectContributorLabel.viewer}>
+            <ListBoxItemLabel>
+              {ProjectContributorLabel.viewer}
+            </ListBoxItemLabel>
+            <ListBoxItemDescription>
+              See builds and screenshots
+            </ListBoxItemDescription>
+          </ListBoxItem>
+          <ListBoxItem
+            id="reviewer"
+            textValue={ProjectContributorLabel.reviewer}
+          >
+            <ListBoxItemLabel>
+              {ProjectContributorLabel.reviewer}
+            </ListBoxItemLabel>
+            <ListBoxItemDescription>
+              See and review builds
+            </ListBoxItemDescription>
+          </ListBoxItem>
+          <ListBoxItem id="admin" textValue={ProjectContributorLabel.admin}>
+            <ListBoxItemLabel>{ProjectContributorLabel.admin}</ListBoxItemLabel>
+            <ListBoxItemDescription>
               Admin level access to the entire project
-            </div>
-          </div>
-        </SelectItem>
-      </SelectPopover>
-    </>
+            </ListBoxItemDescription>
+          </ListBoxItem>
+        </ListBox>
+      </Popover>
+    </Select>
   );
 }
 
@@ -699,7 +698,7 @@ function TeamContributorsList(props: {
               })()}
               {data.team.members.pageInfo.hasNextPage && (
                 <ListLoadMore
-                  onClick={() => {
+                  onPress={() => {
                     result.fetchMore({
                       variables: {
                         after: members.length,
@@ -738,35 +737,28 @@ function ProjectContributorsAdd(props: {
   projectId: string;
   teamAccountId: string;
 }) {
-  const dialog = useDialogState();
   return (
-    <>
-      <DialogDisclosure state={dialog}>
-        {(disclosureProps) => (
-          <Button {...disclosureProps} color="neutral" variant="outline">
-            Add contributor
-          </Button>
-        )}
-      </DialogDisclosure>
-      <Dialog state={dialog} className="!max-w-xl">
-        <DialogBody>
-          <DialogTitle>Add contributor</DialogTitle>
-          <DialogText>
-            Find a team member by their username or email address to give them
-            access to this project.
-          </DialogText>
-          {dialog.open && (
+    <DialogTrigger>
+      <Button variant="secondary">Add contributor</Button>
+      <Modal>
+        <Dialog>
+          <DialogBody>
+            <DialogTitle>Add contributor</DialogTitle>
+            <DialogText>
+              Find a team member by their username or email address to give them
+              access to this project.
+            </DialogText>
             <TeamContributorsList
               projectId={props.projectId}
               teamAccountId={props.teamAccountId}
             />
-          )}
-        </DialogBody>
-        <DialogFooter>
-          <DialogDismiss single>Close</DialogDismiss>
-        </DialogFooter>
-      </Dialog>
-    </>
+          </DialogBody>
+          <DialogFooter>
+            <DialogDismiss single>Close</DialogDismiss>
+          </DialogFooter>
+        </Dialog>
+      </Modal>
+    </DialogTrigger>
   );
 }
 
@@ -843,7 +835,7 @@ function TeamMembersList(props: { projectId: string; teamAccountId: string }) {
             </List>
             {data.team.members.pageInfo.hasNextPage && (
               <ListLoadMore
-                onClick={() => {
+                onPress={() => {
                   result.fetchMore({
                     variables: {
                       after: members.length,
@@ -907,12 +899,12 @@ export function ProjectContributors(props: {
           <>
             <div>
               Learn more about{" "}
-              <Anchor
-                external
+              <Link
                 href="https://argos-ci.com/docs/team-members-and-roles"
+                target="_blank"
               >
                 access control management
-              </Anchor>
+              </Link>
               .
             </div>
             <ProjectContributorsAdd

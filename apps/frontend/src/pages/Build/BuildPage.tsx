@@ -55,7 +55,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
     build?.status &&
       (build.status === "pending" || build.status === "progress"),
   );
-  const { hotkeysDialog } = useBuildHotkeysDialogState();
+  const hotkeysDialog = useBuildHotkeysDialogState();
 
   useEffect(() => {
     if (buildStatusProgress) {
@@ -79,7 +79,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
   return (
     <BuildDiffProvider params={params} build={build}>
       <BuildReviewStateProvider params={params}>
-        {hotkeysDialog && <BuildHotkeysDialog dialog={hotkeysDialog} />}
+        {hotkeysDialog && <BuildHotkeysDialog state={hotkeysDialog} />}
         <div className="m flex h-screen min-h-0 flex-col">
           {data?.project?.account && (
             <>

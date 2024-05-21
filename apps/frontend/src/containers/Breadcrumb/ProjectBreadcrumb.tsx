@@ -24,7 +24,7 @@ export const ProjectBreadcrumbItem = () => {
       <BreadcrumbSeparator />
       <BreadcrumbItem>
         <BreadcrumbLink
-          to={`${accountSlug}/${projectName}/builds`}
+          href={`${accountSlug}/${projectName}/builds`}
           aria-current="page"
         >
           <BreadcrumbItemIcon>

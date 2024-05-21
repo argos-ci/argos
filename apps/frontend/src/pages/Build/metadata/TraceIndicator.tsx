@@ -1,7 +1,7 @@
 import { PlayCircleIcon } from "lucide-react";
 
-import { Anchor } from "@/ui/Anchor";
 import { Chip } from "@/ui/Chip";
+import { Link } from "@/ui/Link";
 import { Tooltip } from "@/ui/Tooltip";
 
 export function TraceIndicator({
@@ -14,9 +14,9 @@ export function TraceIndicator({
   return (
     <Tooltip content="View trace in Playwright Trace Viewer">
       <Chip icon={PlayCircleIcon} scale="xs" {...props}>
-        <Anchor external href={traceUrl}>
+        <Link href={traceUrl} target="_blank">
           Playwright Trace
-        </Anchor>
+        </Link>
       </Chip>
     </Tooltip>
   );

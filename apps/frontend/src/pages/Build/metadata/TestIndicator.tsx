@@ -1,7 +1,7 @@
 import { FlaskConical } from "lucide-react";
 
-import { Anchor } from "@/ui/Anchor";
 import { Chip } from "@/ui/Chip";
+import { Link } from "@/ui/Link";
 import { Tooltip } from "@/ui/Tooltip";
 
 export function TestIndicator({
@@ -31,12 +31,12 @@ export function TestIndicator({
     return (
       <Tooltip content="View test on GitHub">
         <Chip icon={FlaskConical} scale="xs" {...props}>
-          <Anchor
-            external
+          <Link
             href={`${repoUrl}/blob/${branch}/${test.location.file}#L${test.location.line}`}
+            target="_blank"
           >
             {title}
-          </Anchor>
+          </Link>
         </Chip>
       </Tooltip>
     );

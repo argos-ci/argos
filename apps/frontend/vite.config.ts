@@ -69,7 +69,7 @@ export default defineConfig(({ mode: argMode }) => {
                 target: "https://app.argos-ci.dev:4001",
                 secure: false,
               },
-              "^/auth/.*": {
+              "^(?!/auth/github/callback)/auth/.*": {
                 target: "https://app.argos-ci.dev:4001",
                 secure: false,
               },

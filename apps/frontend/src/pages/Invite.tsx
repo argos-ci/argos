@@ -1,14 +1,14 @@
 import { useMutation } from "@apollo/client";
 import { invariant } from "@apollo/client/utilities/globals";
 import { Helmet } from "react-helmet";
-import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useQuery } from "@/containers/Apollo";
 import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginButtons } from "@/containers/LoginButtons";
 import { graphql } from "@/gql";
-import { Button } from "@/ui/Button";
+import { Button, LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
 
@@ -59,9 +59,9 @@ const JoinTeamButton = (props: {
   return (
     <Button
       size="large"
-      disabled={loading || !!data}
-      onClick={() => {
-        accept();
+      isDisabled={loading || !!data}
+      onPress={() => {
+        accept().catch(() => {});
       }}
     >
       {props.children}
@@ -121,11 +121,9 @@ export function Component() {
                     <p className="mb-10 text-xl">
                       You are a member of {teamTitle}.
                     </p>
-                    <Button size="large" asChild>
-                      <RouterLink to={`/${team.slug}`}>
-                        View Team Projects
-                      </RouterLink>
-                    </Button>
+                    <LinkButton size="large" href={`/${team.slug}`}>
+                      View Team Projects
+                    </LinkButton>
                   </>
                 );
               }

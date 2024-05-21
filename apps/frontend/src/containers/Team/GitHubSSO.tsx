@@ -19,15 +19,15 @@ import {
 import {
   Dialog,
   DialogBody,
-  DialogDisclosure,
   DialogDismiss,
   DialogFooter,
   DialogText,
   DialogTitle,
-  useDialogState,
+  DialogTrigger,
 } from "@/ui/Dialog";
 import { getGraphQLErrorMessage } from "@/ui/Form";
 import { FormError } from "@/ui/FormError";
+import { Modal } from "@/ui/Modal";
 
 import { GithubAccountLink } from "../GithubAccountLink";
 import { ConfigureGitHubSSO } from "./GitHubSSO/Configure";
@@ -60,7 +60,6 @@ const DisableGitHubSSOMutation = graphql(`
 const DisableButton = React.memo(function DisableButton(props: {
   teamAccountId: string;
 }) {
-  const dialog = useDialogState();
   const [disable, { error, loading }] = useMutation(DisableGitHubSSOMutation, {
     variables: {
       teamAccountId: props.teamAccountId,
@@ -74,36 +73,32 @@ const DisableButton = React.memo(function DisableButton(props: {
     refetchQueries: ["TeamMembers_teamMembers"],
   });
   return (
-    <>
-      <DialogDisclosure state={dialog}>
-        {(disclosureProps) => (
-          <Button {...disclosureProps} color="neutral" variant="outline">
-            Disable
-          </Button>
-        )}
-      </DialogDisclosure>
-      <Dialog state={dialog}>
-        <DialogBody confirm>
-          <DialogTitle>Disable GitHub Single Sign-On</DialogTitle>
-          <DialogText>
-            You are about to disable GitHub Single Sign-On on your Team.
-          </DialogText>
-          <DialogText>Are you sure you want to continue?</DialogText>
-        </DialogBody>
-        <DialogFooter>
-          {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
-          <DialogDismiss>Cancel</DialogDismiss>
-          <Button
-            disabled={loading}
-            onClick={() => {
-              disable().catch(() => {});
-            }}
-          >
-            Disable
-          </Button>
-        </DialogFooter>
-      </Dialog>
-    </>
+    <DialogTrigger>
+      <Button variant="secondary">Disable</Button>
+      <Modal>
+        <Dialog>
+          <DialogBody confirm>
+            <DialogTitle>Disable GitHub Single Sign-On</DialogTitle>
+            <DialogText>
+              You are about to disable GitHub Single Sign-On on your Team.
+            </DialogText>
+            <DialogText>Are you sure you want to continue?</DialogText>
+          </DialogBody>
+          <DialogFooter>
+            {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
+            <DialogDismiss>Cancel</DialogDismiss>
+            <Button
+              isDisabled={loading}
+              onPress={() => {
+                disable().catch(() => {});
+              }}
+            >
+              Disable
+            </Button>
+          </DialogFooter>
+        </Dialog>
+      </Modal>
+    </DialogTrigger>
   );
 });
 

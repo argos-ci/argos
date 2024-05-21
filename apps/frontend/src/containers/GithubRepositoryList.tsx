@@ -87,7 +87,7 @@ const ReposPagination = ({
     return (
       <PaginationButtonItem
         isActive={index === page}
-        onClick={() => setPage(index)}
+        onPress={() => setPage(index)}
       >
         {index}
       </PaginationButtonItem>
@@ -98,8 +98,8 @@ const ReposPagination = ({
     <Pagination>
       <PaginationContent>
         <PaginationPrevious
-          onClick={() => setPage(page - 1)}
-          disabled={page === 1}
+          onPress={() => setPage(page - 1)}
+          isDisabled={page === 1}
         />
         <PaginationItem index={1} />
         {page > paginationItemCount / 2 + 1 && <PaginationEllipsis />}
@@ -109,8 +109,8 @@ const ReposPagination = ({
         {page < pageCount - paginationItemCount / 2 && <PaginationEllipsis />}
         <PaginationItem index={pageCount} />
         <PaginationNext
-          onClick={() => setPage(page + 1)}
-          disabled={page === pageCount}
+          onPress={() => setPage(page + 1)}
+          isDisabled={page === pageCount}
         />
       </PaginationContent>
     </Pagination>
@@ -154,10 +154,10 @@ export const GithubRepositoryList = (props: {
                     <Time date={repo.updated_at} className="text-low" />
                   </div>
                   <Button
-                    onClick={() => {
+                    onPress={() => {
                       props.onSelectRepository(repo);
                     }}
-                    disabled={props.disabled}
+                    isDisabled={props.disabled}
                   >
                     {props.connectButtonLabel}
                   </Button>

@@ -48,7 +48,7 @@ export type GitlabProjectListProps = {
   | { groupId?: never; userId?: never }
 );
 
-export const GitlabProjectList = (props: GitlabProjectListProps) => {
+export function GitlabProjectList(props: GitlabProjectListProps) {
   return (
     <Query
       fallback={<Loader />}
@@ -80,10 +80,10 @@ export const GitlabProjectList = (props: GitlabProjectListProps) => {
                   <Time date={project.last_activity_at} className="text-low" />
                 </div>
                 <Button
-                  onClick={() => {
+                  onPress={() => {
                     props.onSelectProject(project);
                   }}
-                  disabled={props.disabled}
+                  isDisabled={props.disabled}
                 >
                   {props.connectButtonLabel}
                 </Button>
@@ -94,4 +94,4 @@ export const GitlabProjectList = (props: GitlabProjectListProps) => {
       }}
     </Query>
   );
-};
+}

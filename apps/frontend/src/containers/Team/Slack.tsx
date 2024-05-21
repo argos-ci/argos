@@ -3,8 +3,7 @@ import { useMutation } from "@apollo/client";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { AccountPermission, TeamSlack_AccountFragment } from "@/gql/graphql";
 import { useAccountContext } from "@/pages/Account";
-import { Anchor } from "@/ui/Anchor";
-import { Button, ButtonIcon } from "@/ui/Button";
+import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -12,6 +11,7 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
+import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
 import { SlackColoredLogo } from "../Slack";
@@ -46,13 +46,13 @@ export function TeamSlack(props: {
           <Card className="flex justify-between p-4">
             <div className="flex items-center gap-2 font-semibold">
               <SlackColoredLogo className="size-6" />{" "}
-              <Anchor
-                href={`https://${account.slackInstallation.teamDomain}.slack.com`}
-                external
+              <Link
                 className="!text"
+                href={`https://${account.slackInstallation.teamDomain}.slack.com`}
+                target="_blank"
               >
                 {account.slackInstallation.teamName}
-              </Anchor>
+              </Link>
             </div>
             <div className="text-low text-sm">
               Connected <Time date={account.slackInstallation.createdAt} />
@@ -63,23 +63,24 @@ export function TeamSlack(props: {
       <CardFooter className="flex items-center justify-between">
         <div>
           Learn more about{" "}
-          <Anchor href="https://argos-ci.com/docs/slack" external>
+          <Link href="https://argos-ci.com/docs/slack" target="_blank">
             Slack integration
-          </Anchor>
+          </Link>
           .
         </div>
         {hasAdminPermission ? (
           account.slackInstallation ? (
             <DisconnectSlackButton account={account} />
           ) : (
-            <Button color="google" asChild>
-              <a href={`/auth/slack/login?accountId=${account.id}`}>
-                <ButtonIcon>
-                  <SlackColoredLogo />
-                </ButtonIcon>
-                Connect to Slack
-              </a>
-            </Button>
+            <LinkButton
+              variant="google"
+              href={`/auth/slack/login?accountId=${account.id}`}
+            >
+              <ButtonIcon>
+                <SlackColoredLogo />
+              </ButtonIcon>
+              Connect to Slack
+            </LinkButton>
           )
         ) : null}
       </CardFooter>
@@ -111,10 +112,9 @@ function DisconnectSlackButton(props: {
 
   return (
     <Button
-      color="neutral"
-      variant="outline"
-      onClick={() => {
-        uninstallSlack();
+      variant="secondary"
+      onPress={() => {
+        uninstallSlack().catch(() => {});
       }}
     >
       Disconnect

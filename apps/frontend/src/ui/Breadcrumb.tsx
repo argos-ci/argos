@@ -1,16 +1,16 @@
-import { ComponentProps, HTMLProps } from "react";
+import { HTMLProps } from "react";
 import { clsx } from "clsx";
-import { Link } from "react-router-dom";
 
+import { HeadlessLink, HeadlessLinkProps } from "./Link";
 import { UpDownMenuButton, UpDownMenuButtonProps } from "./Menu";
 
 export const BreadcrumbItem = (props: HTMLProps<HTMLLIElement>) => {
   return <li className="flex shrink-0 items-center gap-2" {...props} />;
 };
 
-export const BreadcrumbLink = (props: ComponentProps<typeof Link>) => {
+export const BreadcrumbLink = (props: HeadlessLinkProps) => {
   return (
-    <Link
+    <HeadlessLink
       className="text-low hover:text aria-[current=page]:text flex min-h-[28px] items-center gap-2 font-medium transition aria-[current=page]:cursor-default"
       {...props}
     />
@@ -37,11 +37,11 @@ export const BreadcrumbSeparator = () => {
   );
 };
 
-export const BreadcrumbMenuButton = ({
+export function BreadcrumbMenuButton({
   className,
   ...props
-}: UpDownMenuButtonProps) => {
+}: UpDownMenuButtonProps) {
   return (
     <UpDownMenuButton className={clsx("shrink-0", className)} {...props} />
   );
-};
+}

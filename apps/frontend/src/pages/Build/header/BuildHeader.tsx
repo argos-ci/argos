@@ -1,6 +1,5 @@
 import { ComponentProps, memo } from "react";
 import { EllipsisIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
-import { Link } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
@@ -11,6 +10,7 @@ import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { BuildMode, BuildType } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Chip } from "@/ui/Chip";
+import { HeadlessLink } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -45,12 +45,12 @@ const BrandLink = memo(
   }) => {
     return (
       <Tooltip content="See all builds">
-        <Link
-          to={`/${accountSlug}/${projectName}/builds`}
+        <HeadlessLink
+          href={`/${accountSlug}/${projectName}/builds`}
           className="transition hover:brightness-125"
         >
           <BrandShield height={32} />
-        </Link>
+        </HeadlessLink>
       </Tooltip>
     );
   },
@@ -66,12 +66,12 @@ const ProjectLink = memo(
   }) => {
     return (
       <Tooltip content="See all builds">
-        <Link
-          to={`/${accountSlug}/${projectName}/builds`}
+        <HeadlessLink
+          href={`/${accountSlug}/${projectName}/builds`}
           className="text-low text-xs leading-none transition hover:brightness-125"
         >
           {accountSlug}/{projectName}
-        </Link>
+        </HeadlessLink>
       </Tooltip>
     );
   },

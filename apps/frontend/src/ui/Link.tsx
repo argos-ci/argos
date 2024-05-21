@@ -1,16 +1,45 @@
 import { forwardRef } from "react";
 import { clsx } from "clsx";
-import { Link as ReactRouterLink } from "react-router-dom";
-import type { LinkProps as ReactRouterLinkProps } from "react-router-dom";
+import { ExternalLinkIcon } from "lucide-react";
+import {
+  Link as RACLink,
+  LinkProps as RACLinkProps,
+} from "react-aria-components";
 
-import { anchorClassNames } from "./Anchor";
+type LinkProps = RACLinkProps & { external?: boolean };
 
-export const Link = forwardRef<HTMLAnchorElement, ReactRouterLinkProps>(
+export type HeadlessLinkProps = LinkProps;
+
+export const HeadlessLink = forwardRef<HTMLAnchorElement, LinkProps>(
+  ({ target, children, external, ...props }, ref) => {
+    const isExternal =
+      external !== undefined
+        ? external
+        : typeof children !== "function" && target === "_blank";
+    return (
+      <RACLink ref={ref} {...props}>
+        {isExternal ? (
+          <>
+            {children}
+            <ExternalLinkIcon className="mb-0.5 ml-1 inline size-[1em]" />
+          </>
+        ) : (
+          children
+        )}
+      </RACLink>
+    );
+  },
+);
+
+export const Link = forwardRef<HTMLAnchorElement, LinkProps>(
   ({ className, ...props }, ref) => {
     return (
-      <ReactRouterLink
+      <HeadlessLink
         ref={ref}
-        className={clsx(className, anchorClassNames)}
+        className={clsx(
+          "text-primary-low no-underline hover:underline",
+          className,
+        )}
         {...props}
       />
     );

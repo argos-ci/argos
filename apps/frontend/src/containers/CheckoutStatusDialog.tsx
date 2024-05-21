@@ -2,21 +2,20 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import config from "@/config";
-import { Anchor } from "@/ui/Anchor";
 import {
   Dialog,
   DialogBody,
   DialogDismiss,
   DialogFooter,
-  DialogState,
   DialogText,
   DialogTitle,
-  useDialogState,
 } from "@/ui/Dialog";
+import { Link } from "@/ui/Link";
+import { Modal } from "@/ui/Modal";
 
 type CheckoutStatus = "success" | "cancel" | null;
 
-export const useCheckoutStatusDialog = () => {
+export function CheckoutStatusDialog() {
   const { search } = useLocation();
   const searchParams = new URLSearchParams(search);
   const checkoutParam = searchParams.get("checkout");
@@ -24,66 +23,49 @@ export const useCheckoutStatusDialog = () => {
     checkoutParam === "success" || checkoutParam === "cancel"
       ? checkoutParam
       : null;
-  const [showCheckoutDialog, setShowCheckoutDialog] = useState<boolean>(
-    checkoutStatus !== null,
-  );
-
-  const dialog = useDialogState({
-    open: showCheckoutDialog,
-    setOpen: (open) => {
-      if (!open) {
-        setShowCheckoutDialog(false);
-      }
-    },
-  });
-  return { dialog, checkoutStatus };
-};
-
-export const CheckoutStatusDialog = ({
-  checkoutStatus,
-  dialog,
-}: {
-  checkoutStatus: CheckoutStatus;
-  dialog: DialogState;
-}) => {
+  const [isOpen, setIsOpen] = useState<boolean>(checkoutStatus !== null);
   return (
-    <Dialog state={dialog} style={{ width: 560 }}>
-      <DialogBody>
-        <DialogTitle>
-          {checkoutStatus === "success"
-            ? "Subscription Confirmed"
-            : "Subscription Failed"}
-        </DialogTitle>
-        {checkoutStatus === "success" ? (
-          <>
-            <DialogText>
-              We've received your subscription. Thank you for choosing Argos 🎉
-            </DialogText>
-            <DialogText>You can now create build on your projects.</DialogText>
-          </>
-        ) : (
-          <>
-            <DialogText>
-              Your subscription has been interrupted. You won't be able to
-              create build until you subscribe to a paid plan.
-            </DialogText>
-            <DialogText>
-              If you think this is a mistake, please{" "}
-              <Anchor
-                tabIndex={-1}
-                href={`mailto:${config.get("contactEmail")}`}
-                external
-              >
-                contact support
-              </Anchor>
-              .
-            </DialogText>
-          </>
-        )}
-      </DialogBody>
-      <DialogFooter>
-        <DialogDismiss onClick={dialog.hide}>OK</DialogDismiss>
-      </DialogFooter>
-    </Dialog>
+    <Modal isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Dialog>
+        <DialogBody>
+          <DialogTitle>
+            {checkoutStatus === "success"
+              ? "Subscription Confirmed"
+              : "Subscription Failed"}
+          </DialogTitle>
+          {checkoutStatus === "success" ? (
+            <>
+              <DialogText>
+                We've received your subscription. Thank you for choosing Argos
+                🎉
+              </DialogText>
+              <DialogText>
+                You can now create build on your projects.
+              </DialogText>
+            </>
+          ) : (
+            <>
+              <DialogText>
+                Your subscription has been interrupted. You won't be able to
+                create build until you subscribe to a paid plan.
+              </DialogText>
+              <DialogText>
+                If you think this is a mistake, please{" "}
+                <Link
+                  href={`mailto:${config.get("contactEmail")}`}
+                  target="_blank"
+                >
+                  contact support
+                </Link>
+                .
+              </DialogText>
+            </>
+          )}
+        </DialogBody>
+        <DialogFooter>
+          <DialogDismiss>OK</DialogDismiss>
+        </DialogFooter>
+      </Dialog>
+    </Modal>
   );
-};
+}

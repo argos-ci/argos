@@ -8,12 +8,7 @@ import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { PageLoader } from "@/ui/PageLoader";
-import {
-  TabLink,
-  TabLinkList,
-  TabLinkPanel,
-  useTabLinkState,
-} from "@/ui/TabLink";
+import { TabLink, TabLinkList, TabLinkPanel, TabsLink } from "@/ui/TabLink";
 
 import { NotFound } from "../NotFound";
 
@@ -21,6 +16,7 @@ const AccountQuery = graphql(`
   query Account_account($slug: String!) {
     account(slug: $slug) {
       id
+      slug
       permissions
       ...PaymentBanner_Account
     }
@@ -38,13 +34,11 @@ export const useAccountContext = () => {
 };
 
 function AccountTabs({ account }: { account: Account }) {
-  const tab = useTabLinkState();
-
   return (
-    <>
-      <TabLinkList state={tab} aria-label="Sections">
-        <TabLink to="">Projects</TabLink>
-        <TabLink to="settings">
+    <TabsLink key={account.slug} className="flex min-h-0 flex-1 flex-col">
+      <TabLinkList aria-label="Sections">
+        <TabLink href="">Projects</TabLink>
+        <TabLink href="settings">
           {account.__typename === "User"
             ? "Personal Settings"
             : "Team Settings"}
@@ -52,18 +46,14 @@ function AccountTabs({ account }: { account: Account }) {
       </TabLinkList>
       <hr className="border-t-border" />
       <PaymentBanner account={account} />
-      <TabLinkPanel
-        state={tab}
-        tabId={tab.selectedId || null}
-        className="flex flex-1 flex-col"
-      >
+      <TabLinkPanel className="flex flex-1 flex-col">
         <Suspense fallback={<PageLoader />}>
           <Outlet
             context={{ permissions: account.permissions } as OutletContext}
           />
         </Suspense>
       </TabLinkPanel>
-    </>
+    </TabsLink>
   );
 }
 

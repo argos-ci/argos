@@ -3,11 +3,11 @@ import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { TeamDefaultUserLevel } from "@/gql/graphql";
-import { Anchor } from "@/ui/Anchor";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormRadio, FormRadioGroup } from "@/ui/FormRadio";
+import { Link } from "@/ui/Link";
 
 const TeamFragment = graphql(`
   fragment TeamAccessRole_Team on Team {
@@ -95,12 +95,12 @@ export function TeamAccessRole(props: {
           </CardBody>
           <FormCardFooter>
             Learn more about{" "}
-            <Anchor
+            <Link
               href="https://argos-ci.com/docs/team-members-and-roles"
-              external
+              target="_blank"
             >
               access roles
-            </Anchor>
+            </Link>
             .
           </FormCardFooter>
         </Form>

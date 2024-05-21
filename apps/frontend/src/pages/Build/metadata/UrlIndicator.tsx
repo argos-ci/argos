@@ -1,7 +1,7 @@
 import { LinkIcon } from "lucide-react";
 
-import { Anchor } from "@/ui/Anchor";
 import { Chip, ChipProps } from "@/ui/Chip";
+import { Link } from "@/ui/Link";
 
 export function UrlIndicator({
   url,
@@ -11,9 +11,9 @@ export function UrlIndicator({
 }) {
   return (
     <Chip icon={LinkIcon} scale="xs" className="font-mono" {...props}>
-      <Anchor external href={url}>
+      <Link href={url} target="_blank">
         {url}
-      </Anchor>
+      </Link>
     </Chip>
   );
 }

@@ -1,12 +1,10 @@
 import * as React from "react";
-import { clsx } from "clsx";
-import { ExternalLinkIcon } from "lucide-react";
 
 import config from "@/config";
 import { useAssertAuthToken } from "@/containers/Auth";
 
-import { anchorClassNames } from "./Anchor";
 import { Button, ButtonProps } from "./Button";
+import { Link } from "./Link";
 import { useEventCallback } from "./useEventCallback";
 
 async function getStripePortalLink({
@@ -57,7 +55,7 @@ const useRedirectToStripePortal = () => {
   return { status, redirect };
 };
 
-export const StripePortalLink = ({
+export function StripePortalLink({
   stripeCustomerId,
   accountId,
   asButton,
@@ -67,39 +65,34 @@ export const StripePortalLink = ({
   accountId: string;
   asButton?: boolean;
   children: React.ReactNode;
-}) => {
+}) {
   const { redirect, status } = useRedirectToStripePortal();
 
   const disabled = status === "loading";
 
-  const handleClick = useEventCallback(() => {
+  const handlePress = () => {
     redirect({ stripeCustomerId, accountId });
-  });
+  };
 
   return asButton ? (
     <Button
-      type="button"
-      disabled={disabled}
-      onClick={handleClick}
+      isDisabled={disabled}
+      onPress={handlePress}
       className="!cursor-pointer"
     >
       {children}
     </Button>
   ) : (
-    <button
-      type="button"
-      disabled={disabled}
-      className={clsx(
-        anchorClassNames,
-        "inline-flex cursor-pointer items-center",
-      )}
-      onClick={handleClick}
+    <Link
+      isDisabled={disabled}
+      className="inline-flex cursor-pointer items-center"
+      onPress={handlePress}
+      external
     >
       {children}
-      <ExternalLinkIcon className="mb-0.5 ml-1 inline size-[1em]" />
-    </button>
+    </Link>
   );
-};
+}
 
 async function getCheckoutSessionLink({
   token,
@@ -151,8 +144,8 @@ const useRedirectToStripeCheckout = () => {
   return { status, redirect };
 };
 
-export const StripeCheckoutButton = ({
-  disabled,
+export function StripeCheckoutButton({
+  isDisabled,
   accountId,
   successUrl,
   cancelUrl,
@@ -161,21 +154,21 @@ export const StripeCheckoutButton = ({
   accountId: string;
   successUrl: string;
   cancelUrl: string;
-}) => {
+}) {
   const { redirect, status } = useRedirectToStripeCheckout();
 
   return (
     <Button
       type="button"
-      onClick={() => {
+      onPress={() => {
         redirect({
           accountId,
           successUrl,
           cancelUrl,
         });
       }}
-      disabled={disabled || status === "loading"}
+      isDisabled={isDisabled || status === "loading"}
       {...props}
     />
   );
-};
+}

@@ -1,6 +1,5 @@
 import { SettingsLayout } from "@/containers/Layout";
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Anchor } from "@/ui/Anchor";
 import {
   Card,
   CardBody,
@@ -9,6 +8,7 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { Code } from "@/ui/Code";
+import { Link } from "@/ui/Link";
 import { Pre } from "@/ui/Pre";
 
 const ProjectFragment = graphql(`
@@ -17,9 +17,9 @@ const ProjectFragment = graphql(`
   }
 `);
 
-export const GettingStarted = (props: {
+export function GettingStarted(props: {
   project: FragmentType<typeof ProjectFragment>;
-}) => {
+}) {
   const project = useFragment(ProjectFragment, props.project);
   return (
     <SettingsLayout className="mx-auto">
@@ -40,12 +40,12 @@ export const GettingStarted = (props: {
         </CardBody>
         <CardFooter>
           Read{" "}
-          <Anchor href="https://argos-ci.com/docs" external>
+          <Link href="https://argos-ci.com/docs" target="_blank">
             Argos documentation
-          </Anchor>{" "}
+          </Link>{" "}
           for more information about installing and using it.
         </CardFooter>
       </Card>
     </SettingsLayout>
   );
-};
+}
