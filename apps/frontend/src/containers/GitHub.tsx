@@ -1,11 +1,10 @@
-import { memo } from "react";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { useLocation } from "react-router-dom";
 
 import config from "@/config";
-import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
+import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 
-const useLoginUrl = (redirect: string | null | undefined) => {
+function useLoginUrl(redirect: string | null | undefined) {
   const { origin } = window.location;
   const { pathname } = useLocation();
   const callbackUrl = `${origin}/auth/github/callback?r=${encodeURIComponent(
@@ -14,23 +13,23 @@ const useLoginUrl = (redirect: string | null | undefined) => {
   return `${config.get("github.loginUrl")}&redirect_uri=${encodeURIComponent(
     callbackUrl,
   )}`;
-};
+}
 
-export const GitHubLoginButton = memo<
-  Omit<ButtonProps, "children"> & {
-    children?: React.ReactNode;
-    redirect?: string | null;
-  }
->(({ children, redirect, ...props }) => {
+export function GitHubLoginButton({
+  children,
+  redirect,
+  ...props
+}: Omit<LinkButtonProps, "children"> & {
+  children?: React.ReactNode;
+  redirect?: string | null;
+}) {
   const loginUrl = useLoginUrl(redirect);
   return (
-    <Button color="github" asChild {...props}>
-      <a href={loginUrl}>
-        <ButtonIcon>
-          <MarkGithubIcon />
-        </ButtonIcon>
-        {children ?? "Login with GitHub"}
-      </a>
-    </Button>
+    <LinkButton variant="github" href={loginUrl} {...props}>
+      <ButtonIcon>
+        <MarkGithubIcon />
+      </ButtonIcon>
+      {children ?? "Login with GitHub"}
+    </LinkButton>
   );
-});
+}

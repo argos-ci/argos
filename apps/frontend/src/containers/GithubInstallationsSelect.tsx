@@ -6,13 +6,13 @@ import { ListIcon, PlusIcon } from "lucide-react";
 import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import {
-  Select,
-  SelectArrow,
-  SelectItem,
-  SelectPopover,
-  SelectSeparator,
-  useSelectState,
-} from "@/ui/Select";
+  ListBox,
+  ListBoxItem,
+  ListBoxItemIcon,
+  ListBoxSeparator,
+} from "@/ui/ListBox";
+import { Popover } from "@/ui/Popover";
+import { Select, SelectButton } from "@/ui/Select";
 
 const InstallationFragment = graphql(`
   fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {
@@ -36,12 +36,6 @@ export const GithubInstallationsSelect = React.forwardRef<
   }
 >(function GithubInstallationsSelect(props, ref) {
   const installations = useFragment(InstallationFragment, props.installations);
-  const select = useSelectState({
-    gutter: 4,
-    value: props.value,
-    setValue: props.setValue,
-  });
-  const title = "Organizations";
   const activeInstallation = (() => {
     if (props.value) {
       const installation = installations.find(
@@ -55,81 +49,76 @@ export const GithubInstallationsSelect = React.forwardRef<
   })();
 
   return (
-    <>
-      <Select
-        ref={ref}
-        state={select}
-        className="w-full"
-        disabled={props.disabled}
-      >
+    <Select
+      aria-label="Accounts"
+      selectedKey={props.value}
+      onSelectionChange={(key) => {
+        if (key === "switch-git-provider") {
+          invariant(props.onSwitchProvider, "Expected onSwitchProvider");
+          props.onSwitchProvider();
+          return;
+        }
+        props.setValue(String(key));
+      }}
+    >
+      <SelectButton ref={ref} className="w-full" isDisabled={props.disabled}>
         {activeInstallation ? (
-          <div className="flex w-full items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MarkGithubIcon />
-              {activeInstallation.account.name ||
-                activeInstallation.account.login}
-            </div>
-            <SelectArrow />
+          <div className="flex items-center gap-2">
+            <MarkGithubIcon />
+            {activeInstallation.account.name ||
+              activeInstallation.account.login}
           </div>
         ) : (
           "Select a GitHub account"
         )}
-      </Select>
+      </SelectButton>
 
-      <SelectPopover aria-label={title} state={select} portal>
-        {installations.map((installation) => {
-          return (
-            <SelectItem
-              state={select}
-              key={installation.id}
-              value={installation.id}
-            >
-              <div className="flex items-center gap-2">
-                <MarkGithubIcon />
+      <Popover>
+        <ListBox>
+          {installations.map((installation) => {
+            return (
+              <ListBoxItem
+                key={installation.id}
+                id={installation.id}
+                textValue={
+                  installation.account.name || installation.account.login
+                }
+              >
+                <ListBoxItemIcon>
+                  <MarkGithubIcon />
+                </ListBoxItemIcon>
                 {installation.account.name || installation.account.login}
-              </div>
-            </SelectItem>
-          );
-        })}
-        <SelectSeparator />
-        <SelectItem
-          state={select}
-          button
-          onClick={(event) => {
-            event.preventDefault();
-            window.open(
-              `${config.get(
-                "github.appUrl",
-              )}/installations/new?state=${encodeURIComponent(
-                window.location.pathname,
-              )}`,
-              "_blank",
-              "noopener noreferrer",
+              </ListBoxItem>
             );
-          }}
-          className="cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <PlusIcon className="size-[1em]" />
-            Add GitHub Account
-          </div>
-        </SelectItem>
-        {props.onSwitchProvider && (
-          <SelectItem
-            state={select}
-            button
-            onClick={(event) => {
-              event.preventDefault();
-              props.onSwitchProvider!();
-            }}
+          })}
+          <ListBoxSeparator />
+          <ListBoxItem
+            href={`${config.get(
+              "github.appUrl",
+            )}/installations/new?state=${encodeURIComponent(
+              window.location.pathname,
+            )}`}
+            target="_blank"
+            textValue="Add GitHub Account"
           >
-            <div className="flex items-center gap-2">
-              <ListIcon className="size-[1em]" />
+            <ListBoxItemIcon>
+              <PlusIcon />
+            </ListBoxItemIcon>
+            Add GitHub Account
+          </ListBoxItem>
+          {props.onSwitchProvider && (
+            <ListBoxItem
+              id="switch-git-provider"
+              textValue="Switch Git Provider"
+            >
+              <ListBoxItemIcon>
+                <ListIcon />
+              </ListBoxItemIcon>
               Switch Git Provider
-            </div>
-          </SelectItem>
-        )}
-      </SelectPopover>
-    </>
+            </ListBoxItem>
+          )}
+        </ListBox>
+      </Popover>
+    </Select>
   );
 });

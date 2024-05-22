@@ -18,7 +18,7 @@ export const OverlayToggle = memo(() => {
       description={visible ? "Hide changes overlay" : "Show changes overlay"}
       keys={hotkey.displayKeys}
     >
-      <IconButton color="danger" aria-pressed={visible} onClick={toggle}>
+      <IconButton color="danger" aria-pressed={visible} onPress={toggle}>
         <EyeIcon />
       </IconButton>
     </HotkeyTooltip>

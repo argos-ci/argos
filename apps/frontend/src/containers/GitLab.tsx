@@ -2,9 +2,9 @@ import * as React from "react";
 import { useLocation } from "react-router-dom";
 
 import config from "@/config";
-import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
+import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 
-const useLoginUrl = (redirect: string | null | undefined) => {
+function useLoginUrl(redirect: string | null | undefined) {
   const { origin } = window.location;
   const { pathname } = useLocation();
   const callbackUrl = `${origin}/auth/gitlab/callback?r=${encodeURIComponent(
@@ -13,9 +13,9 @@ const useLoginUrl = (redirect: string | null | undefined) => {
   return `${config.get("gitlab.loginUrl")}&redirect_uri=${encodeURIComponent(
     callbackUrl,
   )}`;
-};
+}
 
-export const GitLabLogo = (props: React.SVGProps<SVGSVGElement>) => {
+export function GitLabLogo(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       width="1em"
@@ -45,9 +45,9 @@ export const GitLabLogo = (props: React.SVGProps<SVGSVGElement>) => {
       />
     </svg>
   );
-};
+}
 
-export const GitLabColoredLogo = (props: React.SVGProps<SVGSVGElement>) => {
+export function GitLabColoredLogo(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       width="1em"
@@ -74,23 +74,23 @@ export const GitLabColoredLogo = (props: React.SVGProps<SVGSVGElement>) => {
       />
     </svg>
   );
-};
+}
 
-export const GitLabLoginButton = React.memo<
-  Omit<ButtonProps, "children"> & {
-    children?: React.ReactNode;
-    redirect?: string | null;
-  }
->(({ children, redirect, ...props }) => {
+export function GitLabLoginButton({
+  children,
+  redirect,
+  ...props
+}: Omit<LinkButtonProps, "children" | "variant" | "href"> & {
+  children?: React.ReactNode;
+  redirect?: string | null;
+}) {
   const loginUrl = useLoginUrl(redirect);
   return (
-    <Button color="gitlab" asChild {...props}>
-      <a href={loginUrl}>
-        <ButtonIcon>
-          <GitLabLogo />
-        </ButtonIcon>
-        {children ?? "Login with GitLab"}
-      </a>
-    </Button>
+    <LinkButton variant="gitlab" href={loginUrl} {...props}>
+      <ButtonIcon>
+        <GitLabLogo />
+      </ButtonIcon>
+      {children ?? "Login with GitLab"}
+    </LinkButton>
   );
-});
+}

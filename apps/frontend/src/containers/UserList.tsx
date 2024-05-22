@@ -1,9 +1,11 @@
-import { MoreVerticalIcon } from "lucide-react";
+import { InfoIcon, MoreVerticalIcon } from "lucide-react";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { ProjectUserLevel, TeamUserLevel } from "@/gql/graphql";
+import { IconButton } from "@/ui/IconButton";
 import { ListRow } from "@/ui/List";
-import { Menu, MenuButton, MenuItem, useMenuState } from "@/ui/Menu";
+import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
+import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "./AccountAvatar";
@@ -12,36 +14,35 @@ export function RemoveMenu(props: {
   label: string;
   actionLabel: string;
   onRemove: () => void;
-  disabled?: boolean;
+  isDisabled?: boolean;
   tooltip?: string | null;
 }) {
-  const menu = useMenuState({ gutter: 4 });
-
   return (
-    <>
-      <MenuButton
-        state={menu}
-        className="flex shrink-0 items-center justify-center"
-      >
-        <MoreVerticalIcon className="size-4" />
-      </MenuButton>
-      <Menu state={menu} aria-label={props.label}>
-        <Tooltip content={props.tooltip}>
+    <MenuTrigger>
+      <IconButton>
+        <MoreVerticalIcon />
+      </IconButton>
+      <Popover>
+        <Menu aria-label={props.label}>
           <MenuItem
             variant="danger"
-            state={menu}
-            onClick={() => {
+            onAction={() => {
               props.onRemove();
-              menu.hide();
             }}
-            disabled={props.disabled}
-            accessibleWhenDisabled
+            isDisabled={props.isDisabled}
           >
+            {props.tooltip && (
+              <MenuItemIcon>
+                <Tooltip content={props.tooltip}>
+                  <InfoIcon className="size-[1em]" />
+                </Tooltip>
+              </MenuItemIcon>
+            )}
             {props.actionLabel}
           </MenuItem>
-        </Tooltip>
-      </Menu>
-    </>
+        </Menu>
+      </Popover>
+    </MenuTrigger>
   );
 }
 

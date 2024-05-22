@@ -1,9 +1,9 @@
 import { PlusCircleIcon } from "lucide-react";
-import { Link as RouterLink } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
-import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
+import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
+import { HeadlessLink } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
 import { getRepositoryIcon } from "./Repository";
@@ -36,15 +36,15 @@ const ProjectFragment = graphql(`
 type Project = DocumentType<typeof ProjectFragment>;
 type ProjectFragmentType = FragmentType<typeof ProjectFragment>;
 
-const ProjectCard = ({ project }: { project: Project }) => {
+function ProjectCard({ project }: { project: Project }) {
   const repositoryType = project.repository?.__typename;
   const RepositoryIcon = repositoryType
     ? getRepositoryIcon(repositoryType)
     : null;
   return (
-    <RouterLink
+    <HeadlessLink
       key={project.id}
-      to={`/${project.slug}`}
+      href={`/${project.slug}`}
       className="bg-app hover:border-hover flex flex-col gap-4 rounded-md border p-4"
     >
       <div className="flex min-w-0 justify-between">
@@ -72,29 +72,25 @@ const ProjectCard = ({ project }: { project: Project }) => {
           "-"
         )}
       </div>
-    </RouterLink>
+    </HeadlessLink>
   );
-};
+}
 
-const CreateProjectButton = (
-  props: Omit<ButtonProps, "children" | "asChild">,
-) => {
+function CreateProjectButton(props: Omit<LinkButtonProps, "children">) {
   return (
-    <Button asChild {...props}>
-      <RouterLink to="new">
-        <ButtonIcon>
-          <PlusCircleIcon />
-        </ButtonIcon>
-        Create a new Project
-      </RouterLink>
-    </Button>
+    <LinkButton href="new" {...props}>
+      <ButtonIcon>
+        <PlusCircleIcon />
+      </ButtonIcon>
+      Create a new Project
+    </LinkButton>
   );
-};
+}
 
-export const ProjectList = (props: {
+export function ProjectList(props: {
   projects: ProjectFragmentType[];
   canCreateProject: boolean;
-}) => {
+}) {
   const projects = useFragment(ProjectFragment, props.projects);
 
   if (projects.length === 0) {
@@ -119,7 +115,7 @@ export const ProjectList = (props: {
     <div className="flex flex-col gap-4">
       {props.canCreateProject && (
         <div className="flex justify-end">
-          <CreateProjectButton variant="outline" color="neutral" />
+          <CreateProjectButton variant="secondary" />
         </div>
       )}
       <div className="grid grid-cols-3 gap-4">
@@ -129,4 +125,4 @@ export const ProjectList = (props: {
       </div>
     </div>
   );
-};
+}

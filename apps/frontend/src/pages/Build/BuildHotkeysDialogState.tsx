@@ -1,33 +1,26 @@
-import { createContext, useContext } from "react";
-import { DisclosureState } from "ariakit/ts/disclosure";
+import { createContext, useContext, useMemo, useState } from "react";
 
-import { useDialogState } from "@/ui/Dialog";
+import { ModalOverlayProps } from "@/ui/Modal";
 
-interface HotkeysDialogContextValue {
-  hotkeysDialog: DisclosureState;
+export type HotkeysDialogState = {
+  isOpen: ModalOverlayProps["isOpen"];
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+const HotkeysDialogContext = createContext<HotkeysDialogState | null>(null);
+
+export function useBuildHotkeysDialogState() {
+  return useContext(HotkeysDialogContext);
 }
 
-const HotkeysDialogContext = createContext<HotkeysDialogContextValue | null>(
-  null,
-);
-
-export const useBuildHotkeysDialogState = () => {
-  const context = useContext(HotkeysDialogContext);
-  if (context === null) {
-    return { hotkeysDialog: null };
-  }
-  return context;
-};
-
-export const BuildHotkeysDialogStateProvider = ({
-  children,
-}: {
+export function BuildHotkeysDialogStateProvider(props: {
   children: React.ReactNode;
-}) => {
-  const dialog = useDialogState();
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const value = useMemo(() => ({ isOpen, setIsOpen }), [isOpen]);
   return (
-    <HotkeysDialogContext.Provider value={{ hotkeysDialog: dialog }}>
-      {children}
+    <HotkeysDialogContext.Provider value={value}>
+      {props.children}
     </HotkeysDialogContext.Provider>
   );
-};
+}

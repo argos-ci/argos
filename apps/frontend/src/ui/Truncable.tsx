@@ -1,8 +1,7 @@
 import * as React from "react";
-import { TooltipPortal } from "@radix-ui/react-tooltip";
 import { clsx } from "clsx";
 
-import { TooltipContent, TooltipRoot, TooltipTrigger } from "./Tooltip";
+import { Tooltip } from "./Tooltip";
 
 export function Truncable({
   className,
@@ -12,10 +11,10 @@ export function Truncable({
   children: React.ReactNode;
 }) {
   const ref = React.useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(
+    setIsOpen(
       Boolean(
         open &&
           ref.current &&
@@ -25,15 +24,10 @@ export function Truncable({
   };
 
   return (
-    <TooltipRoot open={open} onOpenChange={handleOpenChange}>
-      <TooltipTrigger ref={ref} asChild>
-        <div className={clsx("truncate", className)} {...props}>
-          {children}
-        </div>
-      </TooltipTrigger>
-      <TooltipPortal>
-        <TooltipContent className="break-words">{children}</TooltipContent>
-      </TooltipPortal>
-    </TooltipRoot>
+    <Tooltip content={children} isOpen={isOpen} onOpenChange={handleOpenChange}>
+      <div className={clsx("truncate", className)} {...props}>
+        {children}
+      </div>
+    </Tooltip>
   );
 }

@@ -1,5 +1,5 @@
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Anchor } from "@/ui/Anchor";
+import { Link } from "@/ui/Link";
 
 const GithubAccountLinkFragment = graphql(`
   fragment GithubAccountLink_GithubAccount on GithubAccount {
@@ -18,7 +18,7 @@ export const GithubAccountLink = (props: {
   );
 
   return (
-    <Anchor href={githubAccount.url} external className="!text">
+    <Link href={githubAccount.url} target="_blank" className="!text">
       {githubAccount.name ? (
         <>
           {githubAccount.name} ({githubAccount.login})
@@ -26,6 +26,6 @@ export const GithubAccountLink = (props: {
       ) : (
         githubAccount.login
       )}
-    </Anchor>
+    </Link>
   );
 };

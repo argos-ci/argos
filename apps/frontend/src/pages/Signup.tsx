@@ -1,67 +1,58 @@
 import { CSSProperties, useEffect, useRef, useState } from "react";
-import {
-  Disclosure,
-  DisclosureContent,
-  useDisclosureState,
-} from "ariakit/disclosure";
-import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginButtons } from "@/containers/LoginButtons";
 import { Container } from "@/ui/Container";
+import { Details, Summary } from "@/ui/Details";
 import { FormLabel } from "@/ui/FormLabel";
-import { RadioField, RadioGroup, useRadioState } from "@/ui/Radio";
+import { RadioField } from "@/ui/Radio";
 import { TextInput } from "@/ui/TextInput";
 
-const AccountTypeSelector = ({
-  value,
-  setValue,
-}: {
+function AccountTypeSelector(props: {
   value: string | null;
   setValue: (value: any) => void;
-}) => {
-  const radio = useRadioState({ value, setValue });
-
+}) {
   return (
-    <RadioGroup
-      state={radio}
+    <div
+      role="radiogroup"
+      aria-orientation="vertical"
       className="flex w-full flex-col justify-start gap-6"
     >
-      <RadioField label="Hobby" value="hobby" scale="large">
+      <RadioField
+        label="Hobby"
+        value="hobby"
+        scale="large"
+        checked={props.value === "hobby"}
+        onChange={() => props.setValue("hobby")}
+      >
         I'm working on personal projects
       </RadioField>
-      <RadioField label="Pro" value="pro" scale="large">
+      <RadioField
+        label="Pro"
+        value="pro"
+        scale="large"
+        checked={props.value === "pro"}
+        onChange={() => props.setValue("pro")}
+      >
         I'm building commercial projects
       </RadioField>
-    </RadioGroup>
-  );
-};
-
-const ProPlanWarning = () => {
-  const disclosure = useDisclosureState();
-
-  return (
-    <div className="mt-4">
-      <Disclosure
-        state={disclosure}
-        className="flex items-center gap-2 text-sm font-medium"
-      >
-        {disclosure.open ? (
-          <ChevronDownIcon className="inline size-[1em]" />
-        ) : (
-          <ChevronRightIcon className="inline size-[1em]" />
-        )}
-        Continuing will start a 14-day Pro plan trial.
-      </Disclosure>
-      <DisclosureContent state={disclosure} className="ml-6 mt-2 text-sm">
-        Once the trial period ends for your new Argos team, you can continue on
-        the Pro plan starting at $30 per month.
-      </DisclosureContent>
     </div>
   );
-};
+}
+
+function ProPlanWarning() {
+  return (
+    <Details className="mt-4 text-sm">
+      <Summary>Continuing will start a 14-day Pro plan trial.</Summary>
+      <p>
+        Once the trial period ends for your new Argos team, you can continue on
+        the Pro plan starting at $30 per month.
+      </p>
+    </Details>
+  );
+}
 
 const SignupPage = () => {
   const [params] = useSearchParams();
@@ -122,7 +113,7 @@ const SignupPage = () => {
                 ? `/teams/new?name=${encodeURIComponent(name)}&autoSubmit=true`
                 : "/"
             }
-            disabled={name.length === 0}
+            isDisabled={name.length === 0}
           />
         </div>
       </Container>

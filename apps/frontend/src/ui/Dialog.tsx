@@ -1,17 +1,15 @@
-import { forwardRef } from "react";
-import {
-  Dialog as AriakitDialog,
-  DialogDismiss as AriakitDialogDismiss,
-  DialogProps as AriakitDialogProps,
-} from "ariakit/dialog";
+import { forwardRef, useContext } from "react";
 import { clsx } from "clsx";
-import { XIcon } from "lucide-react";
+import {
+  Heading,
+  OverlayTriggerStateContext,
+  Dialog as RACDialog,
+  DialogProps as RACDialogProps,
+} from "react-aria-components";
 
 import { Button, ButtonProps } from "./Button";
-import { IconButton } from "./IconButton";
 
-export { useDialogState, DialogDisclosure } from "ariakit/dialog";
-export type { DialogState } from "ariakit/dialog";
+export { DialogTrigger } from "react-aria-components";
 
 export const DialogHeader = forwardRef<
   HTMLDivElement,
@@ -50,7 +48,7 @@ export const DialogText = forwardRef<
   }
 >(({ children, className }, ref) => {
   return (
-    <p ref={ref} className={clsx(className, "my-4")}>
+    <p ref={ref} className={clsx("my-4", className)}>
       {children}
     </p>
   );
@@ -65,7 +63,7 @@ export const DialogBody = forwardRef<
   }
 >(({ children, className, confirm }, ref) => {
   return (
-    <div ref={ref} className={clsx(className, confirm && "text-center", "p-4")}>
+    <div ref={ref} className={clsx("p-4", confirm && "text-center", className)}>
       {children}
     </div>
   );
@@ -78,54 +76,57 @@ export const DialogTitle = forwardRef<
   }
 >(({ children }, ref) => {
   return (
-    <h2 ref={ref} className="text-xl font-medium">
+    <Heading ref={ref} slot="title" className="text-xl font-medium">
       {children}
-    </h2>
+    </Heading>
   );
 });
+
+export function useOverlayTriggerState() {
+  return useContext(OverlayTriggerStateContext);
+}
 
 export const DialogDismiss = forwardRef<
   HTMLButtonElement,
   {
-    children?: React.ReactNode;
+    children: React.ReactNode;
+    onPress?: ButtonProps["onPress"];
     single?: boolean;
-    onClick?: ButtonProps["onClick"];
   }
 >((props, ref) => {
+  const state = useOverlayTriggerState();
   return (
-    <AriakitDialogDismiss
+    <Button
       ref={ref}
       className={props.single ? "flex-1 justify-center" : undefined}
-      onClick={props.onClick}
+      variant="secondary"
+      onPress={(event) => {
+        props.onPress?.(event);
+        state.close();
+      }}
+      autoFocus
     >
-      {(dialogDismissProps) =>
-        props.children ? (
-          <Button {...dialogDismissProps} color="neutral" variant="outline">
-            {props.children}
-          </Button>
-        ) : (
-          <IconButton {...dialogDismissProps} color="neutral">
-            <XIcon />
-          </IconButton>
-        )
-      }
-    </AriakitDialogDismiss>
+      {props.children}
+    </Button>
   );
 });
 
-export const Dialog = forwardRef<HTMLDivElement, AriakitDialogProps>(
-  ({ children, className, ...props }, ref) => {
+type DialogProps = RACDialogProps & {
+  size?: "auto" | "medium";
+};
+
+export const Dialog = forwardRef<HTMLDivElement, DialogProps>(
+  ({ className, size = "auto", ...props }, ref) => {
     return (
-      <AriakitDialog
+      <RACDialog
         ref={ref}
         className={clsx(
           className,
-          "bordered bg-app absolute left-1/2 top-1/2 z-50 max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-auto rounded-lg border text-sm shadow-lg",
+          "relative max-h-[inherit] overflow-auto",
+          size === "medium" && "w-[36rem]",
         )}
         {...props}
-      >
-        {children}
-      </AriakitDialog>
+      />
     );
   },
 );

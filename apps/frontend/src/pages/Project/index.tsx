@@ -5,12 +5,7 @@ import { useVisitAccount } from "@/containers/AccountHistory";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
-import {
-  TabLink,
-  TabLinkList,
-  TabLinkPanel,
-  useTabLinkState,
-} from "@/ui/TabLink";
+import { TabLink, TabLinkList, TabLinkPanel, TabsLink } from "@/ui/TabLink";
 
 import { NotFound } from "../NotFound";
 
@@ -19,6 +14,7 @@ const ProjectQuery = graphql(`
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       permissions
+      name
       account {
         id
         ...PaymentBanner_Account
@@ -31,34 +27,31 @@ type Account = NonNullable<
   NonNullable<DocumentType<typeof ProjectQuery>["project"]>["account"]
 >;
 
-const ProjectTabs = ({
+function ProjectTabs({
   permissions,
   account,
+  projectName,
 }: {
   permissions: ProjectPermission[];
   account: Account;
-}) => {
-  const tab = useTabLinkState();
+  projectName: string;
+}) {
   return (
-    <>
-      <TabLinkList state={tab} aria-label="Sections">
-        <TabLink to="">Builds</TabLink>
+    <TabsLink key={projectName} className="flex min-h-0 flex-1 flex-col">
+      <TabLinkList aria-label="Sections">
+        <TabLink href="">Builds</TabLink>
         {permissions.includes(ProjectPermission.ViewSettings) && (
-          <TabLink to="settings">Project Settings</TabLink>
+          <TabLink href="settings">Project Settings</TabLink>
         )}
       </TabLinkList>
       <hr className="border-t" />
       <PaymentBanner account={account} />
-      <TabLinkPanel
-        state={tab}
-        tabId={tab.selectedId || null}
-        className="flex min-h-0 flex-1 flex-col"
-      >
+      <TabLinkPanel className="flex min-h-0 flex-1 flex-col">
         <Outlet context={{ permissions } as OutletContext} />
       </TabLinkPanel>
-    </>
+    </TabsLink>
   );
-};
+}
 
 interface OutletContext {
   permissions: ProjectPermission[];
@@ -94,6 +87,7 @@ function Project({
       <ProjectTabs
         permissions={project.permissions}
         account={project.account}
+        projectName={project.name}
       />
     );
   }

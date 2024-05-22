@@ -1,14 +1,10 @@
 import { memo, useEffect } from "react";
-import { DisclosureState } from "ariakit/ts/disclosure";
 
-import {
-  Dialog,
-  DialogBody,
-  DialogDismiss,
-  DialogHeader,
-  DialogTitle,
-} from "@/ui/Dialog";
+import { Dialog, DialogBody, DialogHeader, DialogTitle } from "@/ui/Dialog";
+import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
+
+import { HotkeysDialogState } from "./BuildHotkeysDialogState";
 
 interface Hotkey {
   keys: string[];
@@ -48,11 +44,6 @@ const hotkeys = {
     keys: ["Digit6"],
     displayKeys: ["6"],
     description: "Go to first retried failure screenshot",
-  } as Hotkey,
-  toggleSidebarPanel: {
-    keys: ["KeyB"],
-    displayKeys: ["B"],
-    description: "Toggle info/screenshots sidebar panel",
   } as Hotkey,
   goToPreviousDiff: {
     keys: ["ArrowUp"],
@@ -200,39 +191,42 @@ const Kbd = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const BuildHotkeysDialog = memo(
-  ({ dialog }: { dialog: DisclosureState }) => {
-    const toggle = () => {
-      dialog.toggle();
-    };
-    useBuildHotkey("toggleHotkeysDialog", toggle);
+  (props: { state: HotkeysDialogState }) => {
+    useBuildHotkey("toggleHotkeysDialog", () =>
+      props.state.setIsOpen((value) => !value),
+    );
     return (
-      <Dialog state={dialog}>
-        <DialogHeader>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
-          <DialogDismiss />
-        </DialogHeader>
-
-        <DialogBody>
-          <div className="flex flex-col gap-2">
-            {Object.entries(hotkeys)
-              .filter(([, hotKey]) => hotKey.description)
-              .map(([name, hotKey]) => {
-                return (
-                  <div key={name} className="flex items-center gap-2">
-                    <div className="w-[400px] text-sm font-medium">
-                      {hotKey.description}
+      <Modal
+        isOpen={props.state.isOpen}
+        onOpenChange={props.state.setIsOpen}
+        isDismissable
+      >
+        <Dialog>
+          <DialogHeader>
+            <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <div className="flex flex-col gap-2">
+              {Object.entries(hotkeys)
+                .filter(([, hotKey]) => hotKey.description)
+                .map(([name, hotKey]) => {
+                  return (
+                    <div key={name} className="flex items-center gap-2">
+                      <div className="w-[400px] text-sm font-medium">
+                        {hotKey.description}
+                      </div>
+                      <div className="flex flex-1 justify-end gap-2">
+                        {hotKey.displayKeys.map((key) => (
+                          <Kbd key={key}>{key}</Kbd>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex flex-1 justify-end gap-2">
-                      {hotKey.displayKeys.map((key) => (
-                        <Kbd key={key}>{key}</Kbd>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </DialogBody>
-      </Dialog>
+                  );
+                })}
+            </div>
+          </DialogBody>
+        </Dialog>
+      </Modal>
     );
   },
 );

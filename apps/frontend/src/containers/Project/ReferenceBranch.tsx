@@ -2,12 +2,12 @@ import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Anchor } from "@/ui/Anchor";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormCheckbox } from "@/ui/FormCheckbox";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Link } from "@/ui/Link";
 
 import { getRepositoryLabel } from "../Repository";
 
@@ -119,9 +119,12 @@ export const ProjectReferenceBranch = (props: {
           </CardBody>
           <FormCardFooter>
             Learn more about{" "}
-            <Anchor href="https://argos-ci.com/docs/reference-build" external>
+            <Link
+              href="https://argos-ci.com/docs/reference-build"
+              target="_blank"
+            >
               reference branch
-            </Anchor>
+            </Link>
             .
           </FormCardFooter>
         </Form>

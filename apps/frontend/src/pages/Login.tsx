@@ -4,9 +4,9 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginButtons } from "@/containers/LoginButtons";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
-import { Anchor } from "@/ui/Anchor";
 import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
+import { Link } from "@/ui/Link";
 
 /** @route */
 export function Component() {
@@ -39,9 +39,9 @@ export function Component() {
               <p className="text my-4 text-base">Error message: {error}</p>
               <p>
                 Try again, if the error persists, please reach us on{" "}
-                <Anchor href="https://argos-ci.com/discord" external>
+                <Link href="https://argos-ci.com/discord" target="_blank">
                   Discord
-                </Anchor>
+                </Link>
                 .
               </p>
             </AlertText>

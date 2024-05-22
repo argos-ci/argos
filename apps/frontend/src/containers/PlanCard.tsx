@@ -1,19 +1,8 @@
 import { ReactNode } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import {
-  Disclosure,
-  DisclosureContent,
-  useDisclosureState,
-} from "ariakit/disclosure";
-import { clsx } from "clsx";
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  PlusCircleIcon,
-} from "lucide-react";
+import { PlusCircleIcon } from "lucide-react";
 import moment from "moment";
-import { Link as RouterLink } from "react-router-dom";
 
 import config from "@/config";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
@@ -22,8 +11,7 @@ import {
   AccountSubscriptionProvider,
   AccountSubscriptionStatus,
 } from "@/gql/graphql";
-import { Anchor } from "@/ui/Anchor";
-import { Button, ButtonIcon } from "@/ui/Button";
+import { ButtonIcon, LinkButton } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -32,6 +20,8 @@ import {
   CardSeparator,
   CardTitle,
 } from "@/ui/Card";
+import { Details, Summary } from "@/ui/Details";
+import { Link } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
@@ -165,12 +155,12 @@ function PlanStatus(props: { account: DocumentType<typeof PlanCardFragment> }) {
                 <CardParagraph className="text-low">
                   You subscribed from GitHub Marketplace. You can upgrade or
                   cancel your plan directly from{" "}
-                  <Anchor
+                  <Link
                     href="https://github.com/marketplace/argos-ci"
-                    external
+                    target="_blank"
                   >
                     GitHub
-                  </Anchor>
+                  </Link>
                   .
                 </CardParagraph>
               );
@@ -208,7 +198,6 @@ function ConsumptionBlock({
   projects: Project[];
   includedScreenshots: number;
 }) {
-  const disclosure = useDisclosureState({ defaultOpen: false });
   const screenshotsSum = projects.reduce(
     (sum, project) => project.currentPeriodScreenshots + sum,
     0,
@@ -230,38 +219,24 @@ function ConsumptionBlock({
         <Progress value={screenshotsSum} max={includedScreenshots} min={0} />
       </div>
 
-      <Disclosure
-        state={disclosure}
-        className={clsx(
-          "text-low hover:text text-sm transition focus:outline-none",
-          projects.length === 0 ? "hidden" : "",
-        )}
-      >
-        {disclosure.open ? "Hide" : "Show"} usage detail{" "}
-        {disclosure.open ? (
-          <ChevronDownIcon className="inline size-[1em]" />
-        ) : (
-          <ChevronRightIcon className="inline size-[1em]" />
-        )}
-      </Disclosure>
-
-      <DisclosureContent
-        state={disclosure}
-        as="ul"
-        className="text-low mt-2 text-sm"
-      >
-        {projects.map((project) => (
-          <li
-            key={project.id}
-            className="flex items-center justify-between border-b p-1 last:border-b-0"
-          >
-            <span>{project.name}</span>
-            <span className="tabular-nums">
-              {project.currentPeriodScreenshots.toLocaleString()}
-            </span>
-          </li>
-        ))}
-      </DisclosureContent>
+      {projects.length > 0 && (
+        <Details className="text-sm">
+          <Summary>Show usage detail</Summary>
+          <ul className="text-low">
+            {projects.map((project) => (
+              <li
+                key={project.id}
+                className="flex items-center justify-between border-b p-1 last:border-b-0"
+              >
+                <span>{project.name}</span>
+                <span className="tabular-nums">
+                  {project.currentPeriodScreenshots.toLocaleString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Details>
+      )}
     </div>
   );
 }
@@ -277,17 +252,13 @@ function ManageSubscriptionButton({
   switch (provider) {
     case AccountSubscriptionProvider.Github:
       return (
-        <Anchor href={config.get("github.marketplaceUrl")} external>
+        <Link href={config.get("github.marketplaceUrl")} target="_blank">
           {children}
-        </Anchor>
+        </Link>
       );
     case AccountSubscriptionProvider.Stripe: {
       if (!account.stripeCustomerId) {
-        return (
-          <Button asChild>
-            <a href={contactHref}>{children}</a>
-          </Button>
-        );
+        return <LinkButton href={contactHref}>{children}</LinkButton>;
       }
       return (
         <StripePortalLink
@@ -299,11 +270,7 @@ function ManageSubscriptionButton({
       );
     }
     case null: {
-      return (
-        <Button asChild>
-          <a href={contactHref}>{children}</a>
-        </Button>
-      );
+      return <LinkButton href={contactHref}>{children}</LinkButton>;
     }
     default:
       assertNever(provider);
@@ -329,11 +296,13 @@ function PlanCardFooter(props: {
     return (
       <CardFooter>
         Contact Argos support on{" "}
-        <Anchor href="https://argos-ci.com/discord" external>
+        <Link href="https://argos-ci.com/discord" target="_blank">
           Discord
-        </Anchor>{" "}
+        </Link>{" "}
         or{" "}
-        <Anchor href={`mailto:${config.get("contactEmail")}`}>by email</Anchor>
+        <Link href={`mailto:${config.get("contactEmail")}`} target="_blank">
+          by email
+        </Link>
         {"  "}to manage your subscription.
       </CardFooter>
     );
@@ -344,20 +313,18 @@ function PlanCardFooter(props: {
         <CardFooter className="flex items-center justify-between gap-4">
           <div>
             Custom needs?{" "}
-            <Anchor external href={contactHref}>
+            <Link href={contactHref} target="_blank">
               Contact Sales
-            </Anchor>
+            </Link>
           </div>
           <div className="flex items-center gap-4">
             Want to collaborate?
-            <Button asChild>
-              <RouterLink to="/teams/new">
-                <ButtonIcon>
-                  <PlusCircleIcon />
-                </ButtonIcon>
-                Create a Team
-              </RouterLink>
-            </Button>
+            <LinkButton href="/teams/new">
+              <ButtonIcon>
+                <PlusCircleIcon />
+              </ButtonIcon>
+              Create a Team
+            </LinkButton>
           </div>
         </CardFooter>
       );
@@ -369,9 +336,9 @@ function PlanCardFooter(props: {
             <CardFooter className="flex items-center justify-between gap-4">
               <div>
                 Custom needs?{" "}
-                <Anchor external href={contactHref}>
+                <Link href={contactHref} target="_blank">
                   Contact Sales
-                </Anchor>
+                </Link>
               </div>
               <TeamSubscribeDialog initialAccountId={account.id}>
                 Subscribe
@@ -387,9 +354,9 @@ function PlanCardFooter(props: {
               </ManageSubscriptionButton>
               <div className="flex items-center gap-4">
                 Custom needs?{" "}
-                <Button color="neutral" variant="outline" asChild>
-                  <a href={contactHref}>Contact Sales</a>
-                </Button>
+                <LinkButton variant="secondary" href={contactHref}>
+                  Contact Sales
+                </LinkButton>
               </div>
             </CardFooter>
           );

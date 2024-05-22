@@ -1,11 +1,7 @@
-import {
-  cloneElement,
-  forwardRef,
-  HTMLAttributes,
-  memo,
-  ReactNode,
-} from "react";
+import { forwardRef, HTMLAttributes, memo, ReactNode } from "react";
 import { clsx } from "clsx";
+import { usePress } from "react-aria";
+import { ButtonProps } from "react-aria-components";
 
 import { Button } from "./Button";
 import { Loader, useDelayedVisible } from "./Loader";
@@ -29,27 +25,29 @@ export const List = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
 export const ListRow = forwardRef<
   HTMLDivElement,
   {
-    clickable?: boolean;
-    asChild?: boolean;
-  } & HTMLAttributes<HTMLDivElement>
->(({ className, clickable, asChild, children, ...props }, ref) => {
-  const childProps = {
-    ref,
-    role: "row",
-    className: clsx(
-      "flex gap-6 border-b last:border-b-0 bg-app",
-      clickable && "hover:bg-hover",
-      className,
-    ),
-    ...props,
-  };
-
-  if (asChild) {
-    const child = children as React.ReactElement;
-    return cloneElement(child, childProps);
+    onPress?: ButtonProps["onPress"];
+    children: ReactNode;
+    className?: string;
+    style?: React.CSSProperties;
   }
+>(({ className, children, onPress, style }, ref) => {
+  const { pressProps } = usePress({ onPress });
 
-  return <div {...childProps}>{children}</div>;
+  return (
+    <div
+      ref={ref}
+      role="row"
+      style={style}
+      className={clsx(
+        "bg-app flex gap-6 border-b last:border-b-0",
+        onPress && "hover:bg-hover",
+        className,
+      )}
+      {...pressProps}
+    >
+      {children}
+    </div>
+  );
 });
 
 const ListLoader = memo((props: { children: ReactNode }) => {
@@ -80,14 +78,13 @@ export const ListRowLoader = forwardRef<
   );
 });
 
-export function ListLoadMore(props: { onClick: () => void }) {
+export function ListLoadMore(props: { onPress: () => void }) {
   return (
     <div className="pt-2">
       <Button
-        variant="outline"
-        color="neutral"
+        variant="secondary"
         className="w-full justify-center"
-        onClick={props.onClick}
+        onPress={props.onPress}
       >
         Load more
       </Button>

@@ -4,11 +4,11 @@ import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
-import { Anchor } from "@/ui/Anchor";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Link } from "@/ui/Link";
 
 const AccountFragment = graphql(`
   fragment AccountGitLab_Account on Account {
@@ -95,9 +95,12 @@ export const AccountGitLab = (props: {
                   Proxy URL used to connect to your GitLab on-premise instance.
                   If you have any issue with your GitLab on-premise
                   configuration, please contact us{" "}
-                  <Anchor href={`mailto:${config.get("contactEmail")}`}>
+                  <Link
+                    href={`mailto:${config.get("contactEmail")}`}
+                    target="_blank"
+                  >
                     by email
-                  </Anchor>
+                  </Link>
                   .
                 </div>
               </div>
@@ -109,11 +112,11 @@ export const AccountGitLab = (props: {
               </div>
             )}
           </CardBody>
-          <FormCardFooter disabled={!userIsAdmin}>
+          <FormCardFooter isDisabled={!userIsAdmin}>
             Learn more about{" "}
-            <Anchor href="https://argos-ci.com/docs/gitlab" external>
+            <Link href="https://argos-ci.com/docs/gitlab" target="_blank">
               setting up GitLab + Argos integration
-            </Anchor>
+            </Link>
             .
           </FormCardFooter>
         </Form>

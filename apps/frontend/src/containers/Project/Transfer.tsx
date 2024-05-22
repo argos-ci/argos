@@ -17,16 +17,16 @@ import {
 import {
   Dialog,
   DialogBody,
-  DialogDisclosure,
   DialogDismiss,
   DialogFooter,
   DialogText,
   DialogTitle,
-  useDialogState,
+  DialogTrigger,
 } from "@/ui/Dialog";
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Modal } from "@/ui/Modal";
 
 import { AccountAvatar } from "../AccountAvatar";
 import { AccountSelector } from "../AccountSelector";
@@ -90,11 +90,10 @@ const SelectAccountStep = (props: SelectAccountStepProps) => {
       <DialogFooter>
         <DialogDismiss>Cancel</DialogDismiss>
         <Button
-          type="button"
-          onClick={() => {
+          onPress={() => {
             props.onContinue();
           }}
-          disabled={!props.targetAccountId}
+          isDisabled={!props.targetAccountId}
         >
           Continue
         </Button>
@@ -315,12 +314,7 @@ const ReviewStep = (props: ReviewStepProps) => {
             })()}
           </DialogBody>
           <DialogFooter>
-            <Button
-              type="button"
-              onClick={props.onBack}
-              color="neutral"
-              variant="outline"
-            >
+            <Button variant="secondary" onPress={props.onBack}>
               Back
             </Button>
             <FormSubmit>Transfer</FormSubmit>
@@ -357,7 +351,7 @@ const SuccessStep = (props: SuccessStepProps) => {
       <DialogFooter>
         <DialogDismiss
           single
-          onClick={() => {
+          onPress={() => {
             props.onContinue();
           }}
         >
@@ -370,66 +364,56 @@ const SuccessStep = (props: SuccessStepProps) => {
 
 const TransferDialogButton = (props: TransferDialogButtonProps) => {
   const project = useFragment(ProjectFragment, props.project);
-  const dialog = useDialogState();
   const [targetAccountId, setTargetAccountId] = useState<string>("");
   const [step, setStep] = useState<"select" | "review" | "success">("select");
   const navigate = useNavigate();
   return (
-    <>
-      <DialogDisclosure state={dialog}>
-        {(disclosureProps) => (
-          <Button {...disclosureProps} color="primary">
-            Transfer
-          </Button>
-        )}
-      </DialogDisclosure>
-      <Dialog
-        state={dialog}
-        hideOnEscape={false}
-        hideOnInteractOutside={false}
-        style={{ width: 560 }}
-      >
-        {(() => {
-          switch (step) {
-            case "select":
-              return (
-                <SelectAccountStep
-                  actualAccountId={project.account.id}
-                  targetAccountId={targetAccountId}
-                  setTargetAccountId={setTargetAccountId}
-                  onContinue={() => {
-                    setStep("review");
-                  }}
-                />
-              );
-            case "review":
-              return (
-                <ReviewStep
-                  actualAccountId={project.account.id}
-                  targetAccountId={targetAccountId}
-                  projectId={project.id}
-                  projectName={project.name}
-                  onBack={() => setStep("select")}
-                  onContinue={() => {
-                    setStep("success");
-                  }}
-                />
-              );
-            case "success":
-              return (
-                <SuccessStep
-                  accountName={project.account.name || project.account.slug}
-                  onContinue={() => {
-                    navigate(`/${project.slug}/settings`, {
-                      replace: true,
-                    });
-                  }}
-                />
-              );
-          }
-        })()}
-      </Dialog>
-    </>
+    <DialogTrigger>
+      <Button>Transfer</Button>
+      <Modal>
+        <Dialog size="medium">
+          {(() => {
+            switch (step) {
+              case "select":
+                return (
+                  <SelectAccountStep
+                    actualAccountId={project.account.id}
+                    targetAccountId={targetAccountId}
+                    setTargetAccountId={setTargetAccountId}
+                    onContinue={() => {
+                      setStep("review");
+                    }}
+                  />
+                );
+              case "review":
+                return (
+                  <ReviewStep
+                    actualAccountId={project.account.id}
+                    targetAccountId={targetAccountId}
+                    projectId={project.id}
+                    projectName={project.name}
+                    onBack={() => setStep("select")}
+                    onContinue={() => {
+                      setStep("success");
+                    }}
+                  />
+                );
+              case "success":
+                return (
+                  <SuccessStep
+                    accountName={project.account.name || project.account.slug}
+                    onContinue={() => {
+                      navigate(`/${project.slug}/settings`, {
+                        replace: true,
+                      });
+                    }}
+                  />
+                );
+            }
+          })()}
+        </Dialog>
+      </Modal>
+    </DialogTrigger>
   );
 };
 

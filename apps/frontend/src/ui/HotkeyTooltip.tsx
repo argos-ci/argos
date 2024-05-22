@@ -1,23 +1,22 @@
 import { Tooltip, TooltipProps } from "./Tooltip";
 
-export const HotkeyTooltip = ({
+export function HotkeyTooltip({
   description,
   keys,
   children,
   keysEnabled = true,
-  side,
   disabled,
+  placement,
 }: {
   description: React.ReactNode;
   keys: string[];
   children: React.ReactElement;
   keysEnabled?: boolean;
-  side?: TooltipProps["side"];
   disabled?: boolean;
-}) => {
+  placement?: TooltipProps["placement"];
+}) {
   return (
     <Tooltip
-      side={side}
       content={
         !disabled && (
           <div className="flex items-center gap-1">
@@ -38,8 +37,9 @@ export const HotkeyTooltip = ({
           </div>
         )
       }
+      placement={placement}
     >
       {children}
     </Tooltip>
   );
-};
+}

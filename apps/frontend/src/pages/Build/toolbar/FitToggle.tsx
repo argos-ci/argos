@@ -23,7 +23,7 @@ export const FitToggle = memo(() => {
       description={contained ? "Expand the screenshot" : "Fit the screenshot"}
       keys={hotkey.displayKeys}
     >
-      <IconButton aria-pressed={contained} onClick={toggle}>
+      <IconButton aria-pressed={contained} onPress={toggle}>
         <ShrinkIcon />
       </IconButton>
     </HotkeyTooltip>

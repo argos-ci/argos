@@ -1,8 +1,7 @@
 import { Helmet } from "react-helmet";
-import { Link as RouterLink } from "react-router-dom";
 
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
-import { Button } from "@/ui/Button";
+import { LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 
 export const NotFound = () => {
@@ -15,9 +14,7 @@ export const NotFound = () => {
         <AlertTitle>Page not found</AlertTitle>
         <AlertText>There is nothing to see here.</AlertText>
         <AlertActions>
-          <Button asChild>
-            <RouterLink to="/">Back to home</RouterLink>
-          </Button>
+          <LinkButton href="/">Back to home</LinkButton>
         </AlertActions>
       </Alert>
     </Container>

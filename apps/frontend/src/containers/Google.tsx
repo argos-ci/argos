@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useLocation } from "react-router-dom";
 
-import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
+import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 
 function useLoginUrl(redirect: string | null | undefined) {
   const { pathname } = useLocation();
@@ -41,25 +41,21 @@ function GoogleLogo(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export const GoogleLoginButton = React.memo(
-  ({
-    children,
-    redirect,
-    ...props
-  }: Omit<ButtonProps, "children" | "asChild"> & {
-    children?: React.ReactNode;
-    redirect?: string | null;
-  }) => {
-    const loginUrl = useLoginUrl(redirect);
-    return (
-      <Button color="google" asChild {...props}>
-        <a href={loginUrl}>
-          <ButtonIcon>
-            <GoogleLogo />
-          </ButtonIcon>
-          {children ?? "Login with Google"}
-        </a>
-      </Button>
-    );
-  },
-);
+export function GoogleLoginButton({
+  children,
+  redirect,
+  ...props
+}: Omit<LinkButtonProps, "children" | "variant" | "href"> & {
+  children?: React.ReactNode;
+  redirect?: string | null;
+}) {
+  const loginUrl = useLoginUrl(redirect);
+  return (
+    <LinkButton variant="google" href={loginUrl} {...props}>
+      <ButtonIcon>
+        <GoogleLogo />
+      </ButtonIcon>
+      {children ?? "Login with Google"}
+    </LinkButton>
+  );
+}

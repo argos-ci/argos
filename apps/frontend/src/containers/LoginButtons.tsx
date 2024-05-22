@@ -5,13 +5,13 @@ import config from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { GitLabLoginButton } from "@/containers/GitLab";
 import { GoogleLoginButton } from "@/containers/Google";
-import { Anchor } from "@/ui/Anchor";
+import { Link } from "@/ui/Link";
 
-export const LoginButtons = (props: {
+export function LoginButtons(props: {
   redirect?: string | null;
-  disabled?: boolean;
+  isDisabled?: boolean;
   className?: string;
-}) => {
+}) {
   const location = useLocation();
   const redirect = props.redirect ?? location.pathname + location.search;
   return (
@@ -21,7 +21,7 @@ export const LoginButtons = (props: {
           redirect={redirect}
           size="large"
           className="w-full justify-center"
-          disabled={props.disabled}
+          isDisabled={props.isDisabled}
         >
           Continue with GitHub
         </GitHubLoginButton>
@@ -29,7 +29,7 @@ export const LoginButtons = (props: {
           redirect={redirect}
           size="large"
           className="w-full justify-center"
-          disabled={props.disabled}
+          isDisabled={props.isDisabled}
         >
           Continue with GitLab
         </GitLabLoginButton>
@@ -37,17 +37,17 @@ export const LoginButtons = (props: {
           redirect={redirect}
           size="large"
           className="w-full justify-center"
-          disabled={props.disabled}
+          isDisabled={props.isDisabled}
         >
           Continue with Google
         </GoogleLoginButton>
       </div>
       <p className="text-low mt-6 text-left text-sm">
         Need another login provider?{" "}
-        <Anchor href={`mailto:${config.get("contactEmail")}`}>
+        <Link href={`mailto:${config.get("contactEmail")}`} target="_blank">
           Contact us
-        </Anchor>
+        </Link>
       </p>
     </div>
   );
-};
+}

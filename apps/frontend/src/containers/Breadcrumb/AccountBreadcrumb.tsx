@@ -34,7 +34,7 @@ function AccountBreadcrumbLink({ accountSlug }: { accountSlug: string }) {
   });
   return (
     <BreadcrumbLink
-      to={`/${accountSlug}`}
+      href={`/${accountSlug}`}
       aria-current={match ? "page" : undefined}
     >
       <BreadcrumbItemIcon>

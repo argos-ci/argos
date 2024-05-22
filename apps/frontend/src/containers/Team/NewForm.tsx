@@ -80,7 +80,12 @@ export const TeamNewForm = (props: {
           autoFocus
           autoComplete="off"
         />
-        <p className={clsx("text mt-4 font-medium", !data && "invisible")}>
+        <p
+          className={clsx(
+            "text mt-4 text-sm font-medium",
+            !data && "invisible",
+          )}
+        >
           {!data?.me?.hasSubscribedToTrial
             ? "Continue will start a 14-day Pro plan trial"
             : "You will be redirected to Stripe to complete the subscription"}

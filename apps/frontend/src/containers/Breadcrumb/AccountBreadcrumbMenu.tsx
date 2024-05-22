@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { PlusCircleIcon } from "lucide-react";
-import { matchPath, Link as RouterLink, useLocation } from "react-router-dom";
+import { Section } from "react-aria-components";
+import { matchPath, useLocation } from "react-router-dom";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
@@ -10,10 +11,10 @@ import {
   MenuItem,
   MenuItemIcon,
   MenuLoader,
-  MenuState,
   MenuTitle,
-  useMenuState,
+  MenuTrigger,
 } from "@/ui/Menu";
+import { Popover } from "@/ui/Popover";
 
 import { AccountItem } from "../AccountItem";
 
@@ -48,22 +49,18 @@ function resolveAccountPath(slug: string, pathname: string) {
   return `/${slug}`;
 }
 
-function AccountMenuItems(props: { menu: MenuState; accounts: Account[] }) {
+function AccountMenuItems(props: { accounts: Account[] }) {
   const accounts = useFragment(AccountFragment, props.accounts);
   const location = useLocation();
   return (
     <>
       {accounts.map((account) => {
         return (
-          <MenuItem key={account.id} state={props.menu} pointer>
-            {(menuItemProps) => (
-              <RouterLink
-                {...menuItemProps}
-                to={resolveAccountPath(account.slug, location.pathname)}
-              >
-                <AccountItem account={account} />
-              </RouterLink>
-            )}
+          <MenuItem
+            key={account.id}
+            href={resolveAccountPath(account.slug, location.pathname)}
+          >
+            <AccountItem account={account} />
           </MenuItem>
         );
       })}
@@ -71,7 +68,7 @@ function AccountMenuItems(props: { menu: MenuState; accounts: Account[] }) {
   );
 }
 
-const MenuContent = (props: { menu: MenuState }) => {
+function MenuContent() {
   const { data } = useSuspenseQuery(MeQuery);
   if (!data.me) {
     return null;
@@ -80,55 +77,54 @@ const MenuContent = (props: { menu: MenuState }) => {
   const teamAccounts = data.me.teams;
   return (
     <>
-      <MenuTitle>Personal</MenuTitle>
-      <AccountMenuItems menu={props.menu} accounts={userAccounts} />
-      <MenuTitle>Teams</MenuTitle>
-      <AccountMenuItems menu={props.menu} accounts={teamAccounts} />
-      <MenuItem state={props.menu} pointer>
-        {(menuItemProps) => (
-          <RouterLink {...menuItemProps} to="/teams/new">
-            <MenuItemIcon>
-              <PlusCircleIcon />
-            </MenuItemIcon>
-            Create a Team
-          </RouterLink>
-        )}
-      </MenuItem>
+      <Section>
+        <MenuTitle>Personal</MenuTitle>
+        <AccountMenuItems accounts={userAccounts} />
+      </Section>
+      <Section>
+        <MenuTitle>Teams</MenuTitle>
+        <AccountMenuItems accounts={teamAccounts} />
+        <MenuItem href="/teams/new">
+          <MenuItemIcon>
+            <PlusCircleIcon />
+          </MenuItemIcon>
+          Create a Team
+        </MenuItem>
+      </Section>
     </>
   );
-};
+}
 
-export const AccountBreadcrumbMenu = () => {
-  const menu = useMenuState({ placement: "bottom", gutter: 4 });
+export function AccountBreadcrumbMenu() {
   return (
-    <>
-      <BreadcrumbMenuButton state={menu} />
-      <Menu aria-label="Accounts" state={menu}>
-        {menu.open && (
+    <MenuTrigger>
+      <BreadcrumbMenuButton />
+      <Popover placement="bottom start">
+        <Menu>
           <Suspense
             fallback={
               <>
-                <MenuTitle>Personal</MenuTitle>
-                <MenuLoader />
-                <MenuTitle>Teams</MenuTitle>
-                <MenuLoader />
-                <MenuItem state={menu} pointer>
-                  {(menuItemProps) => (
-                    <RouterLink {...menuItemProps} to="/teams/new">
-                      <MenuItemIcon>
-                        <PlusCircleIcon />
-                      </MenuItemIcon>
-                      Create a Team
-                    </RouterLink>
-                  )}
-                </MenuItem>
+                <Section>
+                  <MenuTitle>Personal</MenuTitle>
+                  <MenuLoader />
+                </Section>
+                <Section>
+                  <MenuTitle>Teams</MenuTitle>
+                  <MenuLoader />
+                  <MenuItem href="/teams/new">
+                    <MenuItemIcon>
+                      <PlusCircleIcon />
+                    </MenuItemIcon>
+                    Create a Team
+                  </MenuItem>
+                </Section>
               </>
             }
           >
-            <MenuContent menu={menu} />
+            <MenuContent />
           </Suspense>
-        )}
-      </Menu>
-    </>
+        </Menu>
+      </Popover>
+    </MenuTrigger>
   );
-};
+}

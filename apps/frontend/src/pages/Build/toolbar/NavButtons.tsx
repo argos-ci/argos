@@ -22,7 +22,7 @@ export const NextButton = memo(() => {
   });
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <IconButton disabled={!hasNextDiff} onClick={goToNextDiff}>
+      <IconButton isDisabled={!hasNextDiff} onPress={goToNextDiff}>
         <ArrowDownIcon />
       </IconButton>
     </HotkeyTooltip>
@@ -39,7 +39,7 @@ export const PreviousButton = memo(() => {
   });
   return (
     <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
-      <IconButton disabled={!hasPreviousDiff} onClick={goToPreviousDiff}>
+      <IconButton isDisabled={!hasPreviousDiff} onPress={goToPreviousDiff}>
         <ArrowUpIcon />
       </IconButton>
     </HotkeyTooltip>

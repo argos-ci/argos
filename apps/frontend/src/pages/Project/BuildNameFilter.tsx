@@ -1,13 +1,9 @@
 import * as React from "react";
 import { useSearchParams } from "react-router-dom";
 
-import {
-  Select,
-  SelectArrow,
-  SelectItem,
-  SelectPopover,
-  useSelectState,
-} from "@/ui/Select";
+import { ListBox, ListBoxItem } from "@/ui/ListBox";
+import { Popover } from "@/ui/Popover";
+import { Select, SelectButton } from "@/ui/Select";
 import { useEventCallback } from "@/ui/useEventCallback";
 
 function getBuildNameLabel(buildName: string) {
@@ -39,30 +35,36 @@ export function BuildNameFilter(props: {
   value: string | null;
   onChange: (value: string | null) => void;
 }) {
-  const select = useSelectState({
-    gutter: 4,
-    value: props.value ?? "",
-    setValue: (value: string) => {
-      props.onChange(value || null);
-    },
-  });
-
+  const value = props.value ?? "";
   return (
     <div className="mb-4 flex items-center gap-3">
-      <Select state={select} className="min-w-[8em] justify-between">
-        {getBuildNameLabel(select.value)}
-        <SelectArrow />
+      <Select
+        aria-label="Build name"
+        selectedKey={value}
+        onSelectionChange={(value) =>
+          props.onChange(value ? String(value) : null)
+        }
+      >
+        <SelectButton className="min-w-[8em]">
+          {getBuildNameLabel(value)}
+        </SelectButton>
+        <Popover>
+          <ListBox>
+            <ListBoxItem id="" textValue="All Builds">
+              All Builds
+            </ListBoxItem>
+            {props.buildNames.map((name) => (
+              <ListBoxItem
+                key={name}
+                id={name}
+                textValue={getBuildNameLabel(name)}
+              >
+                {getBuildNameLabel(name)}
+              </ListBoxItem>
+            ))}
+          </ListBox>
+        </Popover>
       </Select>
-      <SelectPopover aria-label="Build name" state={select} portal>
-        <SelectItem state={select} value="">
-          All Builds
-        </SelectItem>
-        {props.buildNames.map((name) => (
-          <SelectItem key={name} state={select} value={name}>
-            {getBuildNameLabel(name)}
-          </SelectItem>
-        ))}
-      </SelectPopover>
     </div>
   );
 }

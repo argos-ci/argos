@@ -1,47 +1,32 @@
-import { Children, cloneElement, forwardRef, HTMLProps } from "react";
-import {
-  Menu as AriakitMenu,
-  MenuButton as AriakitMenuButton,
-  MenuButtonProps as AriakitMenuButtonProps,
-  MenuItem as AriakitMenuItem,
-  MenuItemProps as AriakitMenuItemProps,
-  MenuProps as AriakitMenuProps,
-  MenuSeparator as AriakitMenuSeparator,
-  MenuSeparatorProps as AriakitMenuSeparatorProps,
-} from "ariakit/menu";
+import { Children, cloneElement } from "react";
 import { clsx } from "clsx";
-import { ChevronsUpDownIcon } from "lucide-react";
+import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
+import {
+  Button,
+  ButtonProps,
+  Header,
+  Keyboard,
+  MenuItemProps,
+  MenuProps,
+  Menu as RACMenu,
+  MenuItem as RACMenuItem,
+  Separator,
+} from "react-aria-components";
 
-export { MenuButton, useMenuState } from "ariakit/menu";
-export type { MenuState } from "ariakit/menu";
+export function MenuSeparator() {
+  return <Separator className="-mx-1 my-1 border-t" />;
+}
 
-export const MenuSeparator = forwardRef<
-  HTMLHRElement,
-  Omit<AriakitMenuSeparatorProps, "className">
->((props, ref) => {
+export { MenuTrigger } from "react-aria-components";
+
+export function Menu<T extends object>({ className, ...props }: MenuProps<T>) {
   return (
-    <AriakitMenuSeparator
-      ref={ref}
-      className="-mx-1 my-1 border-t"
+    <RACMenu<T>
+      className={clsx("select-none overflow-auto outline-none", className)}
       {...props}
     />
   );
-});
-
-export const Menu = forwardRef<HTMLDivElement, AriakitMenuProps>(
-  ({ className, ...props }, ref) => {
-    return (
-      <AriakitMenu
-        ref={ref}
-        className={clsx(
-          "bg-subtle z-50 max-h-[--popover-available-height] min-w-[--popover-anchor-width] overflow-auto rounded-lg border p-1 focus:outline-none",
-          className,
-        )}
-        {...props}
-      />
-    );
-  },
-);
+}
 
 type MenuItemVariant = "default" | "danger";
 
@@ -50,84 +35,88 @@ const menuItemVariantClasses: Record<MenuItemVariant, string> = {
   danger: "text-danger-low hover:bg-danger-active focus:bg-danger-active",
 };
 
-export const MenuItem = forwardRef<
-  HTMLDivElement,
-  Omit<AriakitMenuItemProps, "className"> & {
-    pointer?: boolean;
-    selected?: boolean;
+export function MenuItem(
+  props: Omit<MenuItemProps, "className"> & {
     variant?: MenuItemVariant;
-  }
->(({ pointer, ...props }, ref) => {
-  const pointerClassName = pointer ? "cursor-pointer" : "cursor-default";
+    children: React.ReactNode;
+  },
+) {
   return (
-    <AriakitMenuItem
-      ref={ref}
+    <RACMenuItem
       className={clsx(
-        pointerClassName,
         menuItemVariantClasses[props.variant ?? "default"],
+        props.href ? "cursor-pointer" : "cursor-default",
         "aria-disabled:opacity-disabled flex items-center rounded px-3 py-1.5 text-sm transition focus:outline-none aria-disabled:hover:bg-transparent",
       )}
       {...props}
-    />
+    >
+      {(menuProps) => {
+        if (menuProps.selectionMode === "single") {
+          return (
+            <div className="flex items-center justify-between">
+              <CheckIcon
+                className={clsx(
+                  "mr-2 size-4",
+                  menuProps.isSelected ? "" : "opacity-0",
+                )}
+              />
+              <div className="flex items-center">{props.children}</div>
+            </div>
+          );
+        }
+        return props.children;
+      }}
+    </RACMenuItem>
   );
-});
+}
 
-export const MenuItemIcon = ({
-  children,
-  className = "",
-}: {
+export function MenuItemIcon(props: {
   children: React.ReactElement;
   className?: string;
-}) => {
+}) {
   return (
-    <div className="mr-2 w-[18px]">
-      {cloneElement(Children.only(children), {
-        className: clsx(className, "size-[1em] mx-auto"),
+    <div className="mr-2">
+      {cloneElement(Children.only(props.children), {
+        className: clsx("size-[1em] mx-auto", props.className),
       })}
     </div>
   );
-};
+}
 
-export const MenuItemShortcut = ({
-  children,
-  ...props
-}: HTMLProps<HTMLDivElement>) => {
+export function MenuItemShortcut(props: { children: React.ReactNode }) {
+  return <Keyboard className="text-low absolute right-5" {...props} />;
+}
+
+export function MenuTitle(props: { children: React.ReactNode }) {
   return (
-    <div {...props} className="text-low absolute right-5">
-      {children}
-    </div>
+    <Header className="text-low px-2 py-1.5 text-xs font-medium" {...props} />
   );
-};
+}
 
-export const MenuTitle = (props: { children: React.ReactNode }) => {
+export function MenuLoader() {
   return (
-    <div className="text-low px-2 py-1.5 text-xs font-medium">
+    <RACMenuItem isDisabled className="text-low px-2 py-1.5 text-xs">
+      Loading...
+    </RACMenuItem>
+  );
+}
+
+export function MenuText(props: { children: React.ReactNode }) {
+  return (
+    <RACMenuItem isDisabled className="text-low px-2 py-1.5 text-xs">
       {props.children}
-    </div>
+    </RACMenuItem>
   );
-};
+}
 
-export const MenuLoader = () => {
-  return <div className="text-low px-2 py-1.5 text-xs">Loading...</div>;
-};
+export type UpDownMenuButtonProps = Omit<ButtonProps, "children">;
 
-export const MenuText = (props: { children: React.ReactNode }) => {
-  return (
-    <>
-      <MenuSeparator />
-      <div className="text-low px-2 py-1.5 text-xs">{props.children}</div>
-    </>
-  );
-};
-
-export type UpDownMenuButtonProps = Omit<AriakitMenuButtonProps, "children">;
-
-export const UpDownMenuButton = ({
+export function UpDownMenuButton({
   className,
   ...props
-}: UpDownMenuButtonProps) => {
+}: UpDownMenuButtonProps) {
   return (
-    <AriakitMenuButton
+    <Button
       className={clsx(
         "border-border text-low hover:border-hover hover:text aria-expanded:bg-active aria-expanded:text cursor-default rounded-md border p-0.5",
         className,
@@ -135,6 +124,6 @@ export const UpDownMenuButton = ({
       {...props}
     >
       <ChevronsUpDownIcon className="size-4" />
-    </AriakitMenuButton>
+    </Button>
   );
-};
+}

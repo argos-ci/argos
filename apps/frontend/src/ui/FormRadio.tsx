@@ -23,5 +23,12 @@ export const FormRadioGroup = ({
   className,
   ...props
 }: HTMLAttributes<HTMLDivElement>) => {
-  return <div className={clsx(className, "flex flex-col gap-4")} {...props} />;
+  return (
+    <div
+      role="radiogroup"
+      aria-orientation="vertical"
+      className={clsx(className, "flex flex-col gap-4")}
+      {...props}
+    />
+  );
 };

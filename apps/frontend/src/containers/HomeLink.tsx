@@ -1,11 +1,13 @@
 import { ForwardedRef, forwardRef } from "react";
-import { Link, LinkProps, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+
+import { HeadlessLink, HeadlessLinkProps } from "@/ui/Link";
 
 import { getLatestVisitedAccount } from "./AccountHistory";
 import { useAuthTokenPayload } from "./Auth";
 
 export const HomeLink = forwardRef(function HomeLink(
-  props: Omit<LinkProps, "to">,
+  props: Omit<HeadlessLinkProps, "to">,
   ref: ForwardedRef<HTMLAnchorElement>,
 ) {
   const authPayload = useAuthTokenPayload();
@@ -15,5 +17,5 @@ export const HomeLink = forwardRef(function HomeLink(
     getLatestVisitedAccount() ??
     authPayload?.account.slug ??
     "";
-  return <Link ref={ref} to={`/${accountSlug}`} {...props} />;
+  return <HeadlessLink ref={ref} href={`/${accountSlug}`} {...props} />;
 });

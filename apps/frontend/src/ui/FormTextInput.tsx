@@ -48,7 +48,7 @@ export const FormTextInput = forwardRef<HTMLInputElement, FormTextInputProps>(
           disabled={disabled || isSubmitting}
           {...props}
         />
-        {error?.message && (
+        {typeof error?.message === "string" && (
           <FormError className="mt-2">{error.message}</FormError>
         )}
       </div>

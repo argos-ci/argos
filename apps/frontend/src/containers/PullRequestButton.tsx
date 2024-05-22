@@ -9,8 +9,7 @@ import { clsx } from "clsx";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { PullRequestState } from "@/gql/graphql";
-import { EmulatedAnchor } from "@/ui/Anchor";
-import { Button, ButtonIcon, ButtonSize } from "@/ui/Button";
+import { ButtonIcon, ButtonSize, LinkButton } from "@/ui/Button";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -167,15 +166,13 @@ const PullRequestButtonFragment = graphql(`
   }
 `);
 
-export const PullRequestButton = (props: {
+export function PullRequestButton(props: {
   pullRequest: FragmentType<typeof PullRequestButtonFragment>;
   size?: ButtonSize;
-  emulatedAnchor?: boolean;
   className?: string;
   target?: string;
-}) => {
+}) {
   const pullRequest = useFragment(PullRequestButtonFragment, props.pullRequest);
-  const Anchor = props.emulatedAnchor ? EmulatedAnchor : "a";
   return (
     <Tooltip
       variant="info"
@@ -184,31 +181,23 @@ export const PullRequestButton = (props: {
         pullRequest.title && <PullRequestInfo pullRequest={pullRequest} />
       }
     >
-      <Button
-        color="neutral"
-        variant="outline"
+      <LinkButton
+        variant="secondary"
         size={props.size}
         className={clsx("!bg-app min-w-0", props.className)}
-        asChild
+        href={pullRequest.url}
+        target={props.target}
       >
-        <Anchor href={pullRequest.url} target={props.target}>
-          <>
-            <PullRequestStatusIcon pullRequest={pullRequest} />
-            {pullRequest.title ? (
-              <span className="flex min-w-0 max-w-prose items-center gap-2">
-                <span className="min-w-0 flex-1 truncate">
-                  {pullRequest.title}
-                </span>
-                <span className="text-low font-normal">
-                  #{pullRequest.number}
-                </span>
-              </span>
-            ) : (
-              <>#{pullRequest.number}</>
-            )}
-          </>
-        </Anchor>
-      </Button>
+        <PullRequestStatusIcon pullRequest={pullRequest} />
+        {pullRequest.title ? (
+          <span className="flex min-w-0 max-w-prose items-center gap-2">
+            <span className="min-w-0 flex-1 truncate">{pullRequest.title}</span>
+            <span className="text-low font-normal">#{pullRequest.number}</span>
+          </span>
+        ) : (
+          <>#{pullRequest.number}</>
+        )}
+      </LinkButton>
     </Tooltip>
   );
-};
+}

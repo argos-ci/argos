@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { RepoIcon } from "@primer/octicons-react";
 import { PlusCircleIcon } from "lucide-react";
-import { Link as RouterLink, useParams } from "react-router-dom";
+import { Section } from "react-aria-components";
+import { useParams } from "react-router-dom";
 
 import { graphql } from "@/gql";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
@@ -11,11 +12,11 @@ import {
   MenuItem,
   MenuItemIcon,
   MenuLoader,
-  MenuState,
   MenuText,
   MenuTitle,
-  useMenuState,
+  MenuTrigger,
 } from "@/ui/Menu";
+import { Popover } from "@/ui/Popover";
 
 const AccountQuery = graphql(`
   query ProjectBreadcrumbMenu_account($slug: String!) {
@@ -31,7 +32,7 @@ const AccountQuery = graphql(`
   }
 `);
 
-function Projects(props: { accountSlug: string; menu: MenuState }) {
+function Projects(props: { accountSlug: string }) {
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: props.accountSlug },
   });
@@ -48,18 +49,14 @@ function Projects(props: { accountSlug: string; menu: MenuState }) {
     <>
       {projectNames.map((projectName) => {
         return (
-          <MenuItem key={projectName} state={props.menu} pointer>
-            {(menuItemProps) => (
-              <RouterLink
-                {...menuItemProps}
-                to={`${props.accountSlug}/${projectName}`}
-              >
-                <MenuItemIcon>
-                  <RepoIcon size={18} />
-                </MenuItemIcon>
-                {projectName}
-              </RouterLink>
-            )}
+          <MenuItem
+            key={projectName}
+            href={`${props.accountSlug}/${projectName}`}
+          >
+            <MenuItemIcon>
+              <RepoIcon size={18} />
+            </MenuItemIcon>
+            {projectName}
           </MenuItem>
         );
       })}
@@ -69,7 +66,6 @@ function Projects(props: { accountSlug: string; menu: MenuState }) {
 
 export function ProjectBreadcrumbMenu() {
   const { accountSlug } = useParams();
-  const menu = useMenuState({ placement: "bottom", gutter: 4 });
 
   if (!accountSlug) {
     return null;
@@ -78,24 +74,24 @@ export function ProjectBreadcrumbMenu() {
   const title = "Switch project";
 
   return (
-    <>
-      <BreadcrumbMenuButton state={menu} />
-      <Menu aria-label={title} state={menu}>
-        <MenuTitle>{title}</MenuTitle>
-        <Suspense fallback={<MenuLoader />}>
-          {menu.open && <Projects accountSlug={accountSlug} menu={menu} />}
-        </Suspense>
-        <MenuItem state={menu} pointer>
-          {(menuItemProps) => (
-            <RouterLink {...menuItemProps} to={`/${accountSlug}/new`}>
-              <MenuItemIcon>
-                <PlusCircleIcon />
-              </MenuItemIcon>
-              Create a Project
-            </RouterLink>
-          )}
-        </MenuItem>
-      </Menu>
-    </>
+    <MenuTrigger>
+      <BreadcrumbMenuButton />
+      <Popover placement="bottom start">
+        <Menu>
+          <Section>
+            <MenuTitle>{title}</MenuTitle>
+            <Suspense fallback={<MenuLoader />}>
+              <Projects accountSlug={accountSlug} />
+            </Suspense>
+          </Section>
+          <MenuItem href={`/${accountSlug}/new`}>
+            <MenuItemIcon>
+              <PlusCircleIcon />
+            </MenuItemIcon>
+            Create a Project
+          </MenuItem>
+        </Menu>
+      </Popover>
+    </MenuTrigger>
   );
 }

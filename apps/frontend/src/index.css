@@ -35,6 +35,11 @@
     @apply bg-app absolute inset-0 opacity-60 backdrop-blur-sm;
     content: "";
   }
+
+  button,
+  [role="button"] {
+    cursor: default;
+  }
 }
 
 @layer utilities {
@@ -113,8 +118,4 @@
       2px 2px,
       1px 1px;
   }
-}
-
-[data-radix-popper-content-wrapper]:has([data-pointer-events="none"]) {
-  @apply pointer-events-none;
 }

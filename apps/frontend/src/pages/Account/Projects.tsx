@@ -3,10 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
-import {
-  CheckoutStatusDialog,
-  useCheckoutStatusDialog,
-} from "@/containers/CheckoutStatusDialog";
+import { CheckoutStatusDialog } from "@/containers/CheckoutStatusDialog";
 import { ProjectList } from "@/containers/ProjectList";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
@@ -32,7 +29,6 @@ const AccountQuery = graphql(`
 /** @route */
 export function Component() {
   const { accountSlug } = useParams();
-  const { dialog, checkoutStatus } = useCheckoutStatusDialog();
   invariant(accountSlug);
 
   const { data } = useSuspenseQuery(AccountQuery, {
@@ -56,7 +52,7 @@ export function Component() {
         ) : (
           <NotFound />
         )}
-        <CheckoutStatusDialog dialog={dialog} checkoutStatus={checkoutStatus} />
+        <CheckoutStatusDialog />
       </Container>
     </div>
   );

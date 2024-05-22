@@ -4,7 +4,7 @@ import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import { Helmet } from "react-helmet";
-import { Link as RouterLink, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
@@ -12,7 +12,7 @@ import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
-import { Button } from "@/ui/Button";
+import { LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { List, ListRow, ListRowLoader } from "@/ui/List";
 import { PageLoader } from "@/ui/PageLoader";
@@ -126,82 +126,80 @@ const BuildRow = React.memo(
     style: React.CSSProperties;
   }) => {
     const { accountSlug, projectName } = useParams();
+    const navigate = useNavigate();
     return (
       <ListRow
-        asChild
-        clickable
-        className="items-center p-4 text-sm"
+        className="cursor-pointer items-center p-4 text-sm"
         style={style}
+        onPress={() => {
+          navigate(`/${accountSlug}/${projectName}/builds/${build.number}`);
+        }}
       >
-        <RouterLink
-          to={`/${accountSlug}/${projectName}/builds/${build.number}`}
+        <div className="w-20 shrink-0">
+          <div className="flex items-center gap-1">
+            <div className="shrink-0">
+              <BuildModeIndicator mode={build.mode} />
+            </div>
+            <div className="tabular-nums">{build.number}</div>
+          </div>
+          <div className="text-low truncate">
+            {build.name !== "default" ? build.name : ""}
+          </div>
+        </div>
+        <div className="flex w-[12.5rem] shrink-0 items-start">
+          <BuildStatusChip build={build} project={project} />
+        </div>
+        <div className="flex grow">
+          <div className="hidden lg:flex">
+            <BuildStatsIndicator
+              stats={build.stats}
+              className="flex-wrap gap-3"
+            />
+          </div>
+        </div>
+        <div className="hidden xl:block xl:w-56 2xl:w-96">
+          {build.pullRequest && (
+            <PullRequestButton
+              pullRequest={build.pullRequest}
+              className="max-w-full"
+              target="_blank"
+            />
+          )}
+        </div>
+        <div className="relative hidden w-32 md:block">
+          <div>
+            <FakeLink
+              className="inline-flex max-w-full items-center gap-2"
+              href={
+                project.repository
+                  ? `${project.repository.url}/tree/${build.branch}`
+                  : undefined
+              }
+            >
+              <GitBranchIcon className="size-3 shrink-0" />
+              <Truncable>{build.branch}</Truncable>
+            </FakeLink>
+          </div>
+          <div>
+            <FakeLink
+              className="inline-flex max-w-full items-center gap-2"
+              href={
+                project.repository
+                  ? `${project.repository.url}/commit/${build.commit}`
+                  : undefined
+              }
+            >
+              <GitCommitIcon className="size-3 shrink-0" />
+              <span className="truncate">{build.commit.slice(0, 7)}</span>
+            </FakeLink>
+          </div>
+        </div>
+        <div
+          className="text-low w-24 shrink-0 overflow-hidden truncate whitespace-nowrap text-right"
+          data-visual-test="transparent"
         >
-          <div className="w-20 shrink-0">
-            <div className="flex items-center gap-1">
-              <div className="shrink-0">
-                <BuildModeIndicator mode={build.mode} />
-              </div>
-              <div className="tabular-nums">{build.number}</div>
-            </div>
-            <div className="text-low truncate">
-              {build.name !== "default" ? build.name : ""}
-            </div>
-          </div>
-          <div className="flex w-[12.5rem] shrink-0 items-start">
-            <BuildStatusChip build={build} project={project} />
-          </div>
-          <div className="flex grow">
-            <div className="hidden lg:flex">
-              <BuildStatsIndicator
-                stats={build.stats}
-                className="flex-wrap gap-3"
-              />
-            </div>
-          </div>
-          <div className="hidden xl:block xl:w-56 2xl:w-96">
-            {build.pullRequest && (
-              <PullRequestButton
-                emulatedAnchor
-                pullRequest={build.pullRequest}
-                className="max-w-full"
-              />
-            )}
-          </div>
-          <div className="relative hidden w-32 md:block">
-            <div>
-              <FakeLink
-                className="inline-flex max-w-full items-center gap-2"
-                href={
-                  project.repository
-                    ? `${project.repository.url}/tree/${build.branch}`
-                    : undefined
-                }
-              >
-                <GitBranchIcon className="size-3 shrink-0" />
-                <Truncable>{build.branch}</Truncable>
-              </FakeLink>
-            </div>
-            <div>
-              <FakeLink
-                className="inline-flex max-w-full items-center gap-2"
-                href={
-                  project.repository
-                    ? `${project.repository.url}/commit/${build.commit}`
-                    : undefined
-                }
-              >
-                <GitCommitIcon className="size-3 shrink-0" />
-                <span className="truncate">{build.commit.slice(0, 7)}</span>
-              </FakeLink>
-            </div>
-          </div>
-          <div
-            className="text-low w-24 shrink-0 overflow-hidden truncate whitespace-nowrap text-right"
-            data-visual-test="transparent"
-          >
-            <Time date={build.createdAt} />
-          </div>
-        </RouterLink>
+          <Time date={build.createdAt} />
+        </div>
       </ListRow>
     );
   },
@@ -393,9 +391,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
             <AlertTitle>No build</AlertTitle>
             <AlertText>There is no build yet on this project.</AlertText>
             <AlertActions>
-              <Button asChild>
-                <RouterLink to="/">Back to home</RouterLink>
-              </Button>
+              <LinkButton href="/">Back to home</LinkButton>
             </AlertActions>
           </Alert>
         </Container>

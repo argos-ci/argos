@@ -3,7 +3,6 @@ import {
   BuildModeLabel,
 } from "@/containers/BuildModeIndicator";
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { Anchor } from "@/ui/Anchor";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
@@ -31,9 +30,13 @@ function CommitLink({
     return <>{shortCommit}</>;
   }
   return (
-    <Anchor className="font-mono" href={`${repoUrl}/commit/${commit}`}>
+    <Link
+      className="font-mono"
+      href={`${repoUrl}/commit/${commit}`}
+      target="_blank"
+    >
       {shortCommit}
-    </Anchor>
+    </Link>
   );
 }
 
@@ -48,9 +51,13 @@ function BranchLink({
     return <>{branch}</>;
   }
   return (
-    <Anchor className="font-mono" href={`${repoUrl}/tree/${branch}`}>
+    <Link
+      className="font-mono"
+      href={`${repoUrl}/tree/${branch}`}
+      target="_blank"
+    >
       {branch}
-    </Anchor>
+    </Link>
   );
 }
 
@@ -64,7 +71,7 @@ function BuildLink({
   buildNumber: number;
 }) {
   return (
-    <Link to={`/${accountSlug}/${projectName}/builds/${buildNumber}`}>
+    <Link href={`/${accountSlug}/${projectName}/builds/${buildNumber}`}>
       Build {buildNumber}
     </Link>
   );
@@ -126,9 +133,9 @@ export const BuildInfos = (props: {
         <>
           <Dt>Pull request</Dt>
           <Dd>
-            <Anchor className="font-mono" href={build.pullRequest.url}>
+            <Link className="font-mono" href={build.pullRequest.url}>
               #{build.pullRequest.number}
-            </Anchor>
+            </Link>
           </Dd>
         </>
       ) : null}

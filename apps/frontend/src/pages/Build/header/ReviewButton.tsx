@@ -1,4 +1,5 @@
 import { useMutation } from "@apollo/client";
+import { ChevronDownIcon } from "lucide-react";
 
 import { getBuildIcon } from "@/containers/Build";
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -7,14 +8,9 @@ import {
   ProjectPermission,
   ValidationStatus,
 } from "@/gql/graphql";
-import { Button, ButtonArrow } from "@/ui/Button";
-import {
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItemIcon,
-  useMenuState,
-} from "@/ui/Menu";
+import { Button, ButtonIcon } from "@/ui/Button";
+import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
+import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useMarkAllDiffsAsAccepted } from "../BuildReviewState";
@@ -59,7 +55,6 @@ const BaseReviewButton = ({
   build,
   disabled = false,
 }: BaseReviewButtonProps) => {
-  const menu = useMenuState({ placement: "bottom-end", gutter: 4 });
   const [setValidationStatus, { loading }] = useMutation(
     SetValidationStatusMutation,
     {
@@ -83,70 +78,63 @@ const BaseReviewButton = ({
   const markAllDiffsAsAccepted = useMarkAllDiffsAsAccepted();
 
   return (
-    <>
-      <MenuButton
-        className="shrink-0"
-        state={menu}
-        as={Button}
-        disabled={disabled || loading}
-      >
+    <MenuTrigger>
+      <Button className="shrink-0" isDisabled={disabled || loading}>
         Review changes
-        <ButtonArrow />
-      </MenuButton>
-      <Menu state={menu} aria-label="Review choices">
-        <MenuItem
-          state={menu}
-          onClick={() => {
-            setValidationStatus({
-              variables: {
-                buildId: build.id,
-                validationStatus: ValidationStatus.Accepted,
-              },
-            });
-            markAllDiffsAsAccepted();
-            menu.hide();
-          }}
-          disabled={build.status === "accepted"}
-        >
-          <MenuItemIcon className="text-success-low">
-            <AcceptIcon />
-          </MenuItemIcon>
-          Approve changes
-        </MenuItem>
-        <MenuItem
-          state={menu}
-          onClick={() => {
-            setValidationStatus({
-              variables: {
-                buildId: build.id,
-                validationStatus: ValidationStatus.Rejected,
-              },
-            });
-            menu.hide();
-          }}
-          disabled={build.status === "rejected"}
-        >
-          <MenuItemIcon className="text-danger-low">
-            <RejectIcon />
-          </MenuItemIcon>
-          Reject changes
-        </MenuItem>
-      </Menu>
-    </>
+        <ButtonIcon position="right">
+          <ChevronDownIcon />
+        </ButtonIcon>
+      </Button>
+      <Popover placement="bottom end">
+        <Menu>
+          <MenuItem
+            onAction={() => {
+              setValidationStatus({
+                variables: {
+                  buildId: build.id,
+                  validationStatus: ValidationStatus.Accepted,
+                },
+              });
+              markAllDiffsAsAccepted();
+            }}
+            isDisabled={build.status === "accepted"}
+          >
+            <MenuItemIcon className="text-success-low">
+              <AcceptIcon />
+            </MenuItemIcon>
+            Approve changes
+          </MenuItem>
+          <MenuItem
+            onAction={() => {
+              setValidationStatus({
+                variables: {
+                  buildId: build.id,
+                  validationStatus: ValidationStatus.Rejected,
+                },
+              });
+            }}
+            isDisabled={build.status === "rejected"}
+          >
+            <MenuItemIcon className="text-danger-low">
+              <RejectIcon />
+            </MenuItemIcon>
+            Reject changes
+          </MenuItem>
+        </Menu>
+      </Popover>
+    </MenuTrigger>
   );
 };
 
-export const DisabledReviewButton = ({
-  tooltip,
-}: {
-  tooltip: React.ReactNode;
-}) => {
+export function DisabledReviewButton(props: { tooltip: React.ReactNode }) {
   return (
-    <Tooltip content={tooltip} variant="info">
-      <Button aria-disabled>Review changes</Button>
+    <Tooltip content={props.tooltip}>
+      <div>
+        <Button isDisabled>Review changes</Button>
+      </div>
     </Tooltip>
   );
-};
+}
 
 export const ReviewButton = (props: {
   project: FragmentType<typeof ProjectFragment>;

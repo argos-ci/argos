@@ -1,44 +1,51 @@
-import { ButtonHTMLAttributes } from "react";
+import { useState } from "react";
 import { clsx } from "clsx";
-import { CheckIcon, ClipboardIcon } from "lucide-react";
+import { CheckIcon, CopyIcon } from "lucide-react";
+import { Button, ButtonProps } from "react-aria-components";
 import { useClipboard } from "use-clipboard-copy";
 
 import { Tooltip } from "./Tooltip";
 
-export const CopyButton = ({
+export function CopyButton({
   text,
-  onClick,
   className,
   ...props
-}: { text: string } & ButtonHTMLAttributes<HTMLButtonElement>) => {
+}: ButtonProps & { text: string }) {
   const clipboard = useClipboard({ copiedTimeout: 2000 });
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   return (
     <Tooltip
       content={clipboard.copied ? "Copied!" : "Copy"}
-      onPointerDownOutside={(event) => {
-        event.preventDefault();
-      }}
+      isOpen={clipboard.copied || isTooltipOpen}
+      onOpenChange={setIsTooltipOpen}
     >
-      <button
+      <Button
         className={clsx(
+          "text-low hover:text bg-ui hover:bg-hover data-[pressed]:bg-active cursor-default rounded p-1 transition",
           className,
-          "text-low hover:text bg-ui hover:bg-hover cursor-default rounded p-0.5",
         )}
-        onClick={(event) => {
-          onClick?.(event);
-          if (!event.defaultPrevented) {
-            event.preventDefault();
-            clipboard.copy(text);
-          }
+        onPress={() => {
+          clipboard.copy(text);
         }}
         {...props}
       >
-        {clipboard.copied ? (
-          <CheckIcon style={{ width: "1em", height: "1em" }} />
-        ) : (
-          <ClipboardIcon style={{ width: "1em", height: "1em" }} />
-        )}
-      </button>
+        <div className="relative size-[1em] overflow-hidden">
+          <div
+            className={clsx(
+              "absolute flex flex-col transition",
+              clipboard.copied && "translate-y-[-1em]",
+            )}
+          >
+            <CopyIcon
+              className={clsx(
+                "size-[1em] transition",
+                clipboard.copied && "opacity-0",
+              )}
+            />
+            <CheckIcon className="size-[1em]" />
+          </div>
+        </div>
+      </Button>
     </Tooltip>
   );
-};
+}

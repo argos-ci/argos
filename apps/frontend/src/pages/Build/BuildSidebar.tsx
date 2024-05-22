@@ -1,12 +1,12 @@
 import * as React from "react";
+import { SearchIcon, XIcon } from "lucide-react";
 import {
-  Tab as AriakitTab,
-  TabList,
+  Tab as RACTab,
+  TabList as RACTabList,
   TabPanel,
   TabProps,
-  useTabState,
-} from "ariakit/tab";
-import { SearchIcon, XIcon } from "lucide-react";
+  Tabs,
+} from "react-aria-components";
 
 import { checkIsBuildEmpty } from "@/containers/Build";
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -19,9 +19,12 @@ import { useBuildHotkey } from "./BuildHotkeys";
 import { BuildInfos } from "./BuildInfos";
 import { BuildParams } from "./BuildParams";
 
-const Tab = React.forwardRef<HTMLButtonElement, TabProps>((props, ref) => {
+const Tab = React.forwardRef(function Tab(
+  props: TabProps,
+  ref: React.ForwardedRef<HTMLDivElement>,
+) {
   return (
-    <AriakitTab
+    <RACTab
       ref={ref}
       className="text-low hover:text aria-selected:text cursor-default px-2 text-sm font-medium leading-10 transition"
       {...props}
@@ -67,17 +70,6 @@ export const BuildSidebar = React.memo(
     params: BuildParams;
   }) => {
     const build = useFragment(BuildFragment, props.build);
-    const tab = useTabState({
-      defaultSelectedId:
-        build && checkIsBuildEmpty(build) ? "info" : "screenshots",
-    });
-    const hotkey = useBuildHotkey(
-      "toggleSidebarPanel",
-      () => {
-        tab.setSelectedId(tab.next());
-      },
-      { preventDefault: true },
-    );
     const { searchMode, setSearchMode } = useSearchModeState();
     const searchInputRef = React.useRef<HTMLInputElement>(null);
     const enterSearchMode = React.useCallback(() => {
@@ -102,14 +94,19 @@ export const BuildSidebar = React.memo(
       },
     );
     return (
-      <div className="group/sidebar flex w-[295px] shrink-0 flex-col border-r">
+      <Tabs
+        defaultSelectedKey={
+          build && checkIsBuildEmpty(build) ? "info" : "screenshots"
+        }
+        className="group/sidebar flex w-[295px] shrink-0 flex-col border-r"
+      >
         <div className="flex shrink-0 items-center border-b px-2">
           <HotkeyTooltip
             keys={searchModeHotKey.displayKeys}
             description="Find..."
           >
             <IconButton
-              onClick={() => enterSearchMode()}
+              onPress={() => enterSearchMode()}
               aria-pressed={searchMode}
             >
               <SearchIcon />
@@ -122,36 +119,16 @@ export const BuildSidebar = React.memo(
                 keys={leaveSearchModeHotKey.displayKeys}
                 description="Exit search mode"
               >
-                <IconButton onClick={() => setSearchMode(false)}>
+                <IconButton onPress={() => setSearchMode(false)}>
                   <XIcon />
                 </IconButton>
               </HotkeyTooltip>
             </>
           ) : (
-            <TabList
-              state={tab}
-              aria-label="Build details"
-              className="flex shrink-0"
-            >
-              <HotkeyTooltip
-                keys={hotkey.displayKeys}
-                description="Screenshots"
-                keysEnabled={tab.selectedId !== "screenshots"}
-              >
-                <Tab id="screenshots" state={tab}>
-                  Screenshots
-                </Tab>
-              </HotkeyTooltip>
-              <HotkeyTooltip
-                keys={hotkey.displayKeys}
-                description="Info"
-                keysEnabled={tab.selectedId !== "info"}
-              >
-                <Tab id="info" state={tab}>
-                  Info
-                </Tab>
-              </HotkeyTooltip>
-            </TabList>
+            <RACTabList className="flex shrink-0" aria-label="Build details">
+              <Tab id="screenshots">Screenshots</Tab>
+              <Tab id="info">Info</Tab>
+            </RACTabList>
           )}
         </div>
 
@@ -161,21 +138,11 @@ export const BuildSidebar = React.memo(
           </div>
         ) : (
           <>
-            <TabPanel
-              state={tab}
-              tabId="screenshots"
-              focusable={false}
-              className="flex min-h-0 flex-1 flex-col"
-            >
+            <TabPanel id="screenshots" className="flex min-h-0 flex-1 flex-col">
               <BuildDiffList />
             </TabPanel>
 
-            <TabPanel
-              state={tab}
-              tabId="info"
-              className="flex-1 overflow-auto p-4"
-              focusable={false}
-            >
+            <TabPanel id="info" className="flex-1 overflow-auto p-4">
               <BuildInfos
                 build={build}
                 repoUrl={props.repoUrl}
@@ -184,7 +151,7 @@ export const BuildSidebar = React.memo(
             </TabPanel>
           </>
         )}
-      </div>
+      </Tabs>
     );
   },
 );

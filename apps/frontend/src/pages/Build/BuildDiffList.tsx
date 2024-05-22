@@ -384,11 +384,9 @@ function ShowSubItemToggle(
       keys={open ? collapseDiff.displayKeys : expandDiff.displayKeys}
     >
       <Button
-        color="neutral"
-        variant="outline"
+        variant="secondary"
         size="small"
-        onClick={(event) => {
-          event.stopPropagation();
+        onPress={() => {
           onToggleGroupItem();
         }}
       >
@@ -591,8 +589,7 @@ const ListItem = ({
               {isGroupItem && (
                 <div className="shrink-0 py-2">
                   <ShowSubItemToggle
-                    onClick={(event) => {
-                      event.stopPropagation();
+                    onPress={() => {
                       onToggleGroupItem(item.diff?.group ?? null);
                     }}
                     onToggleGroupItem={() =>
