@@ -22,11 +22,11 @@ export type AccountItemProps = {
   showPlan?: boolean;
 } & HTMLAttributes<HTMLDivElement>;
 
-export const AccountItem = ({
+export function AccountItem({
   account: accountProp,
   showPlan = false,
   ...props
-}: AccountItemProps) => {
+}: AccountItemProps) {
   const account = useFragment(AccountFragment, accountProp);
   return (
     <div className="flex items-center gap-2" {...props}>
@@ -35,4 +35,4 @@ export const AccountItem = ({
       {showPlan && <AccountPlanChip account={account} />}
     </div>
   );
-};
+}

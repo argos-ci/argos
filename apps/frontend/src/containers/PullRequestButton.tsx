@@ -85,9 +85,9 @@ const PullRequestInfoFragment = graphql(`
   }
 `);
 
-const PullRequestInfo = (props: {
+function PullRequestInfo(props: {
   pullRequest: FragmentType<typeof PullRequestInfoFragment>;
-}) => {
+}) {
   const pullRequest = useFragment(PullRequestInfoFragment, props.pullRequest);
   if (!pullRequest.title || !pullRequest.date || !pullRequest.creator) {
     return null;
@@ -154,7 +154,29 @@ const PullRequestInfo = (props: {
       </div>
     </div>
   );
-};
+}
+
+function PullRequestInfoTooltip(props: {
+  pullRequest: FragmentType<typeof PullRequestInfoFragment>;
+  children: React.ReactElement;
+}) {
+  const pullRequest = useFragment(PullRequestInfoFragment, props.pullRequest);
+  return (
+    <Tooltip
+      variant="info"
+      disableHoverableContent={false}
+      content={
+        !pullRequest.title ||
+        !pullRequest.date ||
+        !pullRequest.creator ? null : (
+          <PullRequestInfo pullRequest={props.pullRequest} />
+        )
+      }
+    >
+      {props.children}
+    </Tooltip>
+  );
+}
 
 const PullRequestButtonFragment = graphql(`
   fragment PullRequestButton_PullRequest on PullRequest {
@@ -174,13 +196,7 @@ export function PullRequestButton(props: {
 }) {
   const pullRequest = useFragment(PullRequestButtonFragment, props.pullRequest);
   return (
-    <Tooltip
-      variant="info"
-      disableHoverableContent={false}
-      content={
-        pullRequest.title && <PullRequestInfo pullRequest={pullRequest} />
-      }
-    >
+    <PullRequestInfoTooltip pullRequest={pullRequest}>
       <LinkButton
         variant="secondary"
         size={props.size}
@@ -198,6 +214,6 @@ export function PullRequestButton(props: {
           <>#{pullRequest.number}</>
         )}
       </LinkButton>
-    </Tooltip>
+    </PullRequestInfoTooltip>
   );
 }

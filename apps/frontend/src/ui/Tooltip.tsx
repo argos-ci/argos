@@ -95,11 +95,13 @@ function TooltipTarget(props: { children: React.ReactElement }) {
 }
 
 export function Tooltip(props: TooltipProps) {
+  if (!props.content) {
+    return props.children;
+  }
   return (
     <TooltipTrigger
       delay={900}
       closeDelay={100}
-      isDisabled={!props.content}
       isOpen={props.isOpen}
       onOpenChange={props.onOpenChange}
     >
