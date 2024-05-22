@@ -1,6 +1,6 @@
 import { Children, cloneElement } from "react";
 import { clsx } from "clsx";
-import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon, ChevronsUpDownIcon } from "lucide-react";
 import {
   Button,
   ButtonProps,
@@ -51,12 +51,20 @@ export function MenuItem(
       {...props}
     >
       {(menuProps) => {
+        if (menuProps.hasSubmenu) {
+          return (
+            <div className="flex flex-1 items-center justify-between gap-2">
+              <div className="flex items-center">{props.children}</div>
+              <ChevronRightIcon className="text size-4" />
+            </div>
+          );
+        }
         if (menuProps.selectionMode === "single") {
           return (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <CheckIcon
                 className={clsx(
-                  "mr-2 size-4",
+                  "size-4",
                   menuProps.isSelected ? "" : "opacity-0",
                 )}
               />
@@ -64,6 +72,7 @@ export function MenuItem(
             </div>
           );
         }
+
         return props.children;
       }}
     </RACMenuItem>

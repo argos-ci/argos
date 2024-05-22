@@ -234,7 +234,7 @@ const LeaveProjectDialog = React.memo(
       },
     );
     return (
-      <Dialog>
+      <Dialog size="medium">
         <DialogBody confirm>
           <DialogTitle>Remove me as contributor</DialogTitle>
           <DialogText>
@@ -297,7 +297,7 @@ const RemoveFromProjectDialog = React.memo(
       },
     );
     return (
-      <>
+      <Dialog size="medium">
         <DialogBody confirm>
           <DialogTitle>Remove Project contributor</DialogTitle>
           <DialogText>
@@ -323,7 +323,7 @@ const RemoveFromProjectDialog = React.memo(
             Remove from Project
           </Button>
         </DialogFooter>
-      </>
+      </Dialog>
     );
   },
 );
@@ -741,7 +741,7 @@ function ProjectContributorsAdd(props: {
     <DialogTrigger>
       <Button variant="secondary">Add contributor</Button>
       <Modal>
-        <Dialog>
+        <Dialog size="medium">
           <DialogBody>
             <DialogTitle>Add contributor</DialogTitle>
             <DialogText>

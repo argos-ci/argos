@@ -22,6 +22,7 @@ export function AccountSelector(props: {
 
   return (
     <Select
+      aria-label="Accounts"
       selectedKey={props.value}
       onSelectionChange={(value) => props.setValue(String(value))}
     >
@@ -43,6 +44,7 @@ export function AccountSelector(props: {
                 isDisabled={Boolean(
                   props.disabledAccountIds?.includes(account.id),
                 )}
+                textValue={account.name || account.slug}
               >
                 <AccountItem account={account} showPlan />
               </ListBoxItem>
