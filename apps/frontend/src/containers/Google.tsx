@@ -51,7 +51,7 @@ export function GoogleLoginButton({
 }) {
   const loginUrl = useLoginUrl(redirect);
   return (
-    <LinkButton variant="google" href={loginUrl} {...props}>
+    <LinkButton variant="google" href={loginUrl} target="_parent" {...props}>
       <ButtonIcon>
         <GoogleLogo />
       </ButtonIcon>
