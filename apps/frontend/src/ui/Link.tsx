@@ -11,13 +11,13 @@ type LinkProps = RACLinkProps & { external?: boolean };
 export type HeadlessLinkProps = LinkProps;
 
 export const HeadlessLink = forwardRef<HTMLAnchorElement, LinkProps>(
-  ({ target, children, external, ...props }, ref) => {
+  ({ target, children, external, className, ...props }, ref) => {
     const isExternal =
       external !== undefined
         ? external
         : typeof children !== "function" && target === "_blank";
     return (
-      <RACLink ref={ref} {...props}>
+      <RACLink ref={ref} className={clsx("rac-focus", className)} {...props}>
         {isExternal ? (
           <>
             {children}
@@ -37,7 +37,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(
       <HeadlessLink
         ref={ref}
         className={clsx(
-          "text-primary-low no-underline hover:underline",
+          "text-primary-low rac-focus no-underline hover:underline",
           className,
         )}
         {...props}

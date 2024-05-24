@@ -4,7 +4,7 @@ import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import { Helmet } from "react-helmet";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useResolvedPath } from "react-router-dom";
 
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
@@ -14,7 +14,7 @@ import { ProjectPermission } from "@/gql/graphql";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
-import { List, ListRow, ListRowLoader } from "@/ui/List";
+import { List, ListRowLink, ListRowLoader } from "@/ui/List";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
@@ -125,15 +125,12 @@ const BuildRow = React.memo(
     project: Project;
     style: React.CSSProperties;
   }) => {
-    const { accountSlug, projectName } = useParams();
-    const navigate = useNavigate();
+    const resolvedBuild = useResolvedPath(`builds/${build.number}`);
     return (
-      <ListRow
-        className="cursor-pointer items-center p-4 text-sm"
+      <ListRowLink
+        href={resolvedBuild.pathname}
+        className="items-center p-4 text-sm"
         style={style}
-        onPress={() => {
-          navigate(`/${accountSlug}/${projectName}/builds/${build.number}`);
-        }}
       >
         <div className="w-20 shrink-0">
           <div className="flex items-center gap-1">
@@ -163,6 +160,7 @@ const BuildRow = React.memo(
               pullRequest={build.pullRequest}
               className="max-w-full"
               target="_blank"
+              emulateLink
             />
           )}
         </div>
@@ -200,7 +198,7 @@ const BuildRow = React.memo(
         >
           <Time date={build.createdAt} />
         </div>
-      </ListRow>
+      </ListRowLink>
     );
   },
 );

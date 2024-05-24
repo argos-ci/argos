@@ -35,8 +35,8 @@ export const useAccountContext = () => {
 
 function AccountTabs({ account }: { account: Account }) {
   return (
-    <TabsLink key={account.slug} className="flex min-h-0 flex-1 flex-col">
-      <TabLinkList aria-label="Sections">
+    <TabsLink className="flex min-h-0 flex-1 flex-col">
+      <TabLinkList aria-label="Account navigation">
         <TabLink href="">Projects</TabLink>
         <TabLink href="settings">
           {account.__typename === "User"
@@ -57,10 +57,15 @@ function AccountTabs({ account }: { account: Account }) {
   );
 }
 
+function useAccountParams() {
+  const { accountSlug } = useParams();
+  invariant(accountSlug);
+  return { accountSlug };
+}
+
 /** @route */
 export function Component() {
-  const { accountSlug } = useParams();
-  invariant(accountSlug, "missing accountSlug");
+  const { accountSlug } = useAccountParams();
   useVisitAccount(accountSlug);
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: accountSlug },

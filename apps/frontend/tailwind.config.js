@@ -1,4 +1,6 @@
 /* eslint-env node */
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const tailwindPlugin = require("tailwindcss/plugin");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -205,9 +207,21 @@ module.exports = {
   },
   plugins: [
     require("tailwindcss-animate"),
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require("tailwindcss/plugin")(({ addVariant }) => {
+    tailwindPlugin(({ addVariant }) => {
       addVariant("search-cancel", "&::-webkit-search-cancel-button");
+    }),
+    tailwindPlugin(({ addComponents }) => {
+      addComponents({
+        ".rac-focus": {
+          "&:focus": {
+            outline: "none",
+          },
+          "&[data-focus-visible]": {
+            outline: "var(--violet-10) auto 1px",
+            outlineOffset: "1px",
+          },
+        },
+      });
     }),
   ],
 };

@@ -8,20 +8,20 @@ import {
   useAuthTokenPayload,
 } from "./Auth";
 
-const getStorageKey = (accountId: string) => {
+function getStorageKey(accountId: string) {
   return `${accountId}:lastVisitedAccount`;
-};
+}
 
-export const useVisitAccount = (accountSlug: string | null) => {
+export function useVisitAccount(accountSlug: string | null) {
   const payload = useAuthTokenPayload();
   React.useEffect(() => {
     if (accountSlug && payload) {
       setItem(getStorageKey(payload.account.id), accountSlug);
     }
   }, [accountSlug, payload]);
-};
+}
 
-export const getLatestVisitedAccount = () => {
+export function getLatestVisitedAccount() {
   const token = readAuthTokenCookie();
   if (!token) {
     return null;
@@ -31,4 +31,4 @@ export const getLatestVisitedAccount = () => {
     return null;
   }
   return getItem(getStorageKey(payload.account.id));
-};
+}

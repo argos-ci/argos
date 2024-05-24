@@ -1,4 +1,5 @@
 import * as React from "react";
+import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 
 import { Tooltip } from "./Tooltip";
@@ -10,22 +11,17 @@ export function Truncable({
 }: Omit<React.HTMLAttributes<HTMLDivElement>, "children"> & {
   children: React.ReactNode;
 }) {
-  const ref = React.useRef<HTMLButtonElement>(null);
-  const [isOpen, setIsOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [isEnabled, setIsEnabled] = React.useState(false);
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(
-      Boolean(
-        open &&
-          ref.current &&
-          ref.current.scrollWidth > ref.current.clientWidth,
-      ),
-    );
-  };
+  React.useEffect(() => {
+    invariant(ref.current);
+    setIsEnabled(ref.current.scrollWidth > ref.current.clientWidth);
+  }, []);
 
   return (
-    <Tooltip content={children} isOpen={isOpen} onOpenChange={handleOpenChange}>
-      <div className={clsx("truncate", className)} {...props}>
+    <Tooltip content={isEnabled ? children : null}>
+      <div ref={ref} className={clsx("truncate", className)} {...props}>
         {children}
       </div>
     </Tooltip>

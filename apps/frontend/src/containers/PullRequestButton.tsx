@@ -9,7 +9,7 @@ import { clsx } from "clsx";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { PullRequestState } from "@/gql/graphql";
-import { ButtonIcon, ButtonSize, LinkButton } from "@/ui/Button";
+import { Button, ButtonIcon, ButtonSize, LinkButton } from "@/ui/Button";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -193,27 +193,58 @@ export function PullRequestButton(props: {
   size?: ButtonSize;
   className?: string;
   target?: string;
+  emulateLink?: boolean;
 }) {
   const pullRequest = useFragment(PullRequestButtonFragment, props.pullRequest);
+  const ButtonComponent = props.emulateLink ? Button : LinkButton;
   return (
-    <PullRequestInfoTooltip pullRequest={pullRequest}>
-      <LinkButton
-        variant="secondary"
-        size={props.size}
-        className={clsx("!bg-app min-w-0", props.className)}
-        href={pullRequest.url}
-        target={props.target}
-      >
-        <PullRequestStatusIcon pullRequest={pullRequest} />
-        {pullRequest.title ? (
-          <span className="flex min-w-0 max-w-prose items-center gap-2">
-            <span className="min-w-0 flex-1 truncate">{pullRequest.title}</span>
-            <span className="text-low font-normal">#{pullRequest.number}</span>
-          </span>
-        ) : (
-          <>#{pullRequest.number}</>
-        )}
-      </LinkButton>
-    </PullRequestInfoTooltip>
+    // Prevent default is not possible with React Aria, so we do a trick here
+    <div
+      className="contents"
+      onClickCapture={(event) => {
+        if (
+          event.target instanceof HTMLElement &&
+          event.currentTarget.contains(event.target)
+        ) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <PullRequestInfoTooltip pullRequest={pullRequest}>
+        <ButtonComponent
+          variant="secondary"
+          size={props.size}
+          className={clsx("!bg-app min-w-0 cursor-pointer", props.className)}
+          onPress={
+            props.emulateLink
+              ? (event) => {
+                  window.open(
+                    pullRequest.url,
+                    event.metaKey || event.ctrlKey
+                      ? "_blank"
+                      : props.target || "_self",
+                  );
+                }
+              : undefined
+          }
+          href={props.emulateLink ? undefined : pullRequest.url}
+          target={props.emulateLink ? undefined : props.target}
+        >
+          <PullRequestStatusIcon pullRequest={pullRequest} />
+          {pullRequest.title ? (
+            <span className="flex min-w-0 max-w-prose items-center gap-2">
+              <span className="min-w-0 flex-1 truncate">
+                {pullRequest.title}
+              </span>
+              <span className="text-low font-normal">
+                #{pullRequest.number}
+              </span>
+            </span>
+          ) : (
+            <>#{pullRequest.number}</>
+          )}
+        </ButtonComponent>
+      </PullRequestInfoTooltip>
+    </div>
   );
 }
