@@ -12,10 +12,10 @@ function getStorageKey(accountId: string) {
   return `${accountId}:lastVisitedAccount`;
 }
 
-export function useVisitAccount(accountSlug: string) {
+export function useVisitAccount(accountSlug: string | null) {
   const payload = useAuthTokenPayload();
   React.useEffect(() => {
-    if (payload) {
+    if (accountSlug && payload) {
       setItem(getStorageKey(payload.account.id), accountSlug);
     }
   }, [accountSlug, payload]);
