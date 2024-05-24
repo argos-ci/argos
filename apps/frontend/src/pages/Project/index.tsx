@@ -30,14 +30,12 @@ type Account = NonNullable<
 function ProjectTabs({
   permissions,
   account,
-  projectName,
 }: {
   permissions: ProjectPermission[];
   account: Account;
-  projectName: string;
 }) {
   return (
-    <TabsLink key={projectName} className="flex min-h-0 flex-1 flex-col">
+    <TabsLink className="flex min-h-0 flex-1 flex-col">
       <TabLinkList aria-label="Sections">
         <TabLink href="">Builds</TabLink>
         {permissions.includes(ProjectPermission.ViewSettings) && (
@@ -87,7 +85,6 @@ function Project({
       <ProjectTabs
         permissions={project.permissions}
         account={project.account}
-        projectName={project.name}
       />
     );
   }

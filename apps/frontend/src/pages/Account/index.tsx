@@ -35,7 +35,7 @@ export const useAccountContext = () => {
 
 function AccountTabs({ account }: { account: Account }) {
   return (
-    <TabsLink key={account.slug} className="flex min-h-0 flex-1 flex-col">
+    <TabsLink className="flex min-h-0 flex-1 flex-col">
       <TabLinkList aria-label="Sections">
         <TabLink href="">Projects</TabLink>
         <TabLink href="settings">

@@ -43,15 +43,16 @@ export function TabLink({
   children: React.ReactNode;
   className?: string;
 }) {
-  href = useHref(href);
+  const resolvedHref = useHref(href);
   return (
     <Tab
-      id={href}
+      key={resolvedHref}
+      id={resolvedHref}
+      href={resolvedHref}
       className={clsx(
         className,
         "text-low hover:text aria-selected:text focus-visible:ring-primary z-10 -mb-px inline-block border-b-2 border-b-transparent p-3 text-sm font-medium transition aria-selected:cursor-default aria-selected:border-b-current",
       )}
-      href={href}
       {...props}
     />
   );
