@@ -1,7 +1,9 @@
 import { forwardRef, HTMLAttributes, memo, ReactNode } from "react";
 import { clsx } from "clsx";
-import { usePress } from "react-aria";
-import { ButtonProps } from "react-aria-components";
+import {
+  Link as RACLink,
+  LinkProps as RACLinkProps,
+} from "react-aria-components";
 
 import { Button } from "./Button";
 import { Loader, useDelayedVisible } from "./Loader";
@@ -22,33 +24,29 @@ export const List = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   },
 );
 
-export const ListRow = forwardRef<
-  HTMLDivElement,
-  {
-    onPress?: ButtonProps["onPress"];
-    children: ReactNode;
-    className?: string;
-    style?: React.CSSProperties;
-  }
->(({ className, children, onPress, style }, ref) => {
-  const { pressProps } = usePress({ onPress });
+const listRowClassName = "bg-app flex gap-6 border-b last:border-b-0";
 
+export function ListRowLink({ className, ...props }: RACLinkProps) {
   return (
-    <div
-      ref={ref}
-      role="row"
-      style={style}
+    <RACLink
       className={clsx(
-        "bg-app flex gap-6 border-b last:border-b-0",
-        onPress && "hover:bg-hover",
+        listRowClassName,
+        "data-[hovered]:bg-hover data-[focus-visible]:bg-hover focus:outline-none",
         className,
       )}
-      {...pressProps}
-    >
-      {children}
-    </div>
+      {...props}
+    />
   );
-});
+}
+
+export function ListRow({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div role="row" className={clsx(listRowClassName, className)} {...props} />
+  );
+}
 
 const ListLoader = memo((props: { children: ReactNode }) => {
   const visible = useDelayedVisible(500);
@@ -63,20 +61,20 @@ const ListLoader = memo((props: { children: ReactNode }) => {
   );
 });
 
-export const ListRowLoader = forwardRef<
-  HTMLDivElement,
-  HTMLAttributes<HTMLDivElement>
->(({ className, children, ...props }, ref) => {
+export function ListRowLoader({
+  className,
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
   return (
     <ListRow
-      ref={ref}
       className={clsx(className, "text-low items-center justify-center gap-2")}
       {...props}
     >
       <ListLoader>{children}</ListLoader>
     </ListRow>
   );
-});
+}
 
 export function ListLoadMore(props: { onPress: () => void }) {
   return (

@@ -48,7 +48,7 @@ export function ListBoxItem({
       className={clsx(
         className,
         "group/item",
-        "text data-[hovered]:bg-active focus:bg-active aria-disabled:opacity-disabled flex select-none flex-wrap items-center gap-x-2 rounded px-3 py-1.5 text-sm transition focus:outline-none",
+        "text data-[focused]:bg-active data-[pressed]:bg-active data-[disabled]:opacity-disabled flex select-none flex-wrap items-center gap-x-2 rounded px-3 py-1.5 text-sm transition focus:outline-none",
       )}
       {...props}
     >

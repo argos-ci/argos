@@ -21,17 +21,17 @@ const colorClassNames: Record<
 > = {
   contained: {
     neutral:
-      "data-[hovered]:border-hover data-[hovered]:bg-ui text-low data-[hovered]:text bg-ui/60 focus-visible:ring-default",
+      "data-[hovered]:border-hover data-[hovered]:bg-ui text-low data-[hovered]:text bg-ui/60 data-[focus-visible]:ring-default",
     danger: "", // not used
     success: "", // not used
   },
   outline: {
     neutral:
-      "data-[hovered]:border-hover text-low aria-pressed:bg-active aria-pressed:text data-[pressed]:bg-active data-[pressed]:text focus-visible:ring-default",
+      "data-[hovered]:border-hover text-low aria-pressed:bg-active aria-pressed:text data-[pressed]:bg-active data-[pressed]:text data-[focus-visible]:ring-default",
     danger:
-      "data-[hovered]:border-danger-hover text-danger-low aria-pressed:bg-danger-active data-[pressed]:bg-danger-active focus-visible:ring-danger",
+      "data-[hovered]:border-danger-hover text-danger-low aria-pressed:bg-danger-active data-[pressed]:bg-danger-active data-[focus-visible]:ring-danger",
     success:
-      "data-[hovered]:border-success-hover text-success-low aria-pressed:bg-success-active data-[pressed]:bg-success-active focus-visible:ring-success",
+      "data-[hovered]:border-success-hover text-success-low aria-pressed:bg-success-active data-[pressed]:bg-success-active data-[focus-visible]:ring-success",
   },
 };
 
@@ -45,7 +45,7 @@ function getIconButtonClassName(options: IconButtonOptions) {
     /* Base */
     "data-[disabled]:opacity-disabled flex h-8 cursor-default items-center gap-2 rounded-lg border border-transparent p-[7px] text-sm transition [&>*]:size-4",
     /* Focus */
-    "focus:outline-none focus-visible:ring-4",
+    "focus:outline-none data-[focus-visible]:ring-4",
   );
 }
 

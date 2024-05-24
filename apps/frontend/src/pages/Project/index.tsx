@@ -1,4 +1,5 @@
 import { useSuspenseQuery } from "@apollo/client";
+import { invariant } from "@argos/util/invariant";
 import { Outlet, useOutletContext, useParams } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
@@ -36,7 +37,7 @@ function ProjectTabs({
 }) {
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
-      <TabLinkList aria-label="Sections">
+      <TabLinkList aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
         {permissions.includes(ProjectPermission.ViewSettings) && (
           <TabLink href="settings">Project Settings</TabLink>
@@ -94,12 +95,16 @@ function Project({
   );
 }
 
+function useProjectParams() {
+  const { accountSlug, projectName } = useParams();
+  invariant(accountSlug);
+  invariant(projectName);
+  return { accountSlug, projectName };
+}
+
 /** @route */
 export function Component() {
-  const { accountSlug, projectName } = useParams();
-  useVisitAccount(accountSlug ?? null);
-  if (!accountSlug || !projectName) {
-    return <NotFound />;
-  }
+  const { accountSlug, projectName } = useProjectParams();
+  useVisitAccount(accountSlug);
   return <Project accountSlug={accountSlug} projectName={projectName} />;
 }

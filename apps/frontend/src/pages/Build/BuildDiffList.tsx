@@ -21,6 +21,10 @@ import {
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "lucide-react";
+import {
+  Button as RACButton,
+  ButtonProps as RACButtonProps,
+} from "react-aria-components";
 
 import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
@@ -207,23 +211,23 @@ const ListHeader = ({
   activeIndex,
 }: {
   style: React.HTMLProps<HTMLButtonElement>["style"];
-  onClick: React.HTMLProps<HTMLButtonElement>["onClick"];
+  onClick: RACButtonProps["onPress"];
   item: ListHeaderRow;
   activeIndex: number;
 }) => {
   const borderB = item.borderBottom ? "border-b border-b-border" : "";
   return (
-    <button
+    <RACButton
       className={clsx(
         borderB,
-        "border-t-border bg-app hover:bg-subtle z-10 flex w-full cursor-default select-none items-center border-t pr-4 text-left",
+        "group/list-header border-t-border bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle z-10 flex w-full cursor-default select-none items-center border-t pr-4 text-left focus:outline-none",
       )}
       style={style}
-      onClick={onClick}
+      onPress={onClick}
     >
       <ChevronDownIcon
         className={clsx(
-          "text-low m-0.5 size-3 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100",
+          "text-low m-0.5 size-3 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100 group-data-[focus-visible]/list-header:opacity-100",
           !item.expanded && "-rotate-90",
         )}
       />
@@ -234,7 +238,7 @@ const ListHeader = ({
         {activeIndex !== -1 ? <>{activeIndex + 1} / </> : null}
         {item.count}
       </Badge>
-    </button>
+    </RACButton>
   );
 };
 

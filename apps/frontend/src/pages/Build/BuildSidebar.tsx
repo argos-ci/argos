@@ -26,7 +26,7 @@ const Tab = React.forwardRef(function Tab(
   return (
     <RACTab
       ref={ref}
-      className="text-low hover:text aria-selected:text cursor-default px-2 text-sm font-medium leading-10 transition"
+      className="text-low data-[hovered]:text data-[selected]:text rac-focus cursor-default px-2 text-sm font-medium leading-10 transition"
       {...props}
     />
   );

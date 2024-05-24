@@ -131,7 +131,7 @@ function UserMenu() {
   return (
     <MenuTrigger>
       <RACButton
-        className="shrink-0 cursor-default rounded-full transition hover:brightness-125 focus:outline-none focus:brightness-125 aria-expanded:brightness-125"
+        className="rac-focus shrink-0 cursor-default rounded-full transition hover:brightness-125 focus:brightness-125 aria-expanded:brightness-125"
         aria-label="User settings"
       >
         <Suspense
