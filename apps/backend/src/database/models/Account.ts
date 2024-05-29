@@ -308,7 +308,7 @@ export class Account extends Model {
         .where((qb) => {
           qb.whereNull("endDate").orWhereRaw("?? >= now()", "endDate");
         })
-        .orderBy("endDate", "DESC", "first")
+        .orderBy("startDate", "desc")
         .first();
 
       if (previousPaidSubscription) {
