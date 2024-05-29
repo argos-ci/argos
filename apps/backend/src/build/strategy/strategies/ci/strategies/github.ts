@@ -15,6 +15,11 @@ export const GithubStrategy: MergeBaseStrategy<{
 }> = {
   detect: (project: Project) => Boolean(project.githubRepository),
   getContext: async (project: Project) => {
+    await project.$fetchGraph(
+      "githubRepository.[githubAccount, activeInstallation]",
+      { skipFetched: true },
+    );
+
     invariant(
       project.githubRepository?.githubAccount,
       "no github account found",
