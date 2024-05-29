@@ -12,6 +12,10 @@ export const GitlabStrategy: MergeBaseStrategy<{
 }> = {
   detect: (project: Project) => Boolean(project.gitlabProject),
   getContext: async (project: Project) => {
+    await project.$fetchGraph("[account, gitlabProject]", {
+      skipFetched: true,
+    });
+
     invariant(project.account, "no account found", UnretryableError);
     invariant(
       project.gitlabProject,
