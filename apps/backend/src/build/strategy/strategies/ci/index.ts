@@ -36,16 +36,14 @@ const strategies: MergeBaseStrategy<any>[] = [GithubStrategy, GitlabStrategy];
 async function getBaseScreenshotBucket(build: Build) {
   const richBuild = await build
     .$query()
-    .withGraphFetched("[project,compareScreenshotBucket]");
+    .withGraphFetched(
+      "[project.[gitlabProject, githubRepository.[githubAccount, activeInstallation], account], compareScreenshotBucket]",
+    );
+
+  invariant(richBuild, "no build found", UnretryableError);
 
   const project = richBuild.project;
-  const compareScreenshotBucket = richBuild.compareScreenshotBucket;
 
-  invariant(
-    compareScreenshotBucket,
-    "no compare screenshot bucket found",
-    UnretryableError,
-  );
   invariant(project, "no project found", UnretryableError);
 
   const strategy = strategies.find((s) => s.detect(project));
@@ -62,7 +60,7 @@ async function getBaseScreenshotBucket(build: Build) {
   const referenceBranch =
     richBuild.referenceBranch ?? (await project.$getReferenceBranch());
   const base = referenceBranch;
-  const head = compareScreenshotBucket.commit;
+  const head = build.compareScreenshotBucket!.commit;
 
   const ctx = await strategy.getContext(project);
 
