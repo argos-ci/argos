@@ -188,7 +188,7 @@ export class Account extends Model {
       const subscription = await Subscription.query()
         .where("accountId", this.id)
         .whereRaw("?? < now()", "startDate")
-        .whereNot("status", "canceled")
+        .whereIn("status", ["active", "trialing"])
         .where((query) =>
           query.whereNull("endDate").orWhereRaw("?? >= now()", "endDate"),
         )
@@ -302,20 +302,29 @@ export class Account extends Model {
       }
 
       const previousPaidSubscription = await Subscription.query()
-        .where("accountId", this.id)
-        .whereNot({ name: "free" })
-        .whereRaw("?? < now()", "endDate")
         .joinRelated("plan")
-        .orderBy("endDate", "DESC")
+        .where("subscriptions.accountId", this.id)
+        .whereNot("plan.name", "free")
+        .where((qb) => {
+          qb.whereNull("endDate").orWhereRaw("?? >= now()", "endDate");
+        })
+        .orderBy("endDate", "DESC", "first")
         .first();
 
-      const subscriptionEndsAtTrialEnd =
-        previousPaidSubscription &&
-        previousPaidSubscription.endDate ===
-          previousPaidSubscription.trialEndDate;
+      if (previousPaidSubscription) {
+        if (
+          previousPaidSubscription.endDate ===
+          previousPaidSubscription.trialEndDate
+        ) {
+          return "trial_expired";
+        }
 
-      if (subscriptionEndsAtTrialEnd) {
-        return "trial_expired";
+        if (
+          previousPaidSubscription.status === "past_due" ||
+          previousPaidSubscription.status === "unpaid"
+        ) {
+          return previousPaidSubscription.status;
+        }
       }
 
       return "canceled";
