@@ -10,7 +10,7 @@ export const GitlabStrategy: MergeBaseStrategy<{
   client: GitlabClient;
   gitlabProjectId: number;
 }> = {
-  detect: (project: Project) => Boolean(project.gitlabProject),
+  detect: (project: Project) => Boolean(project.gitlabProjectId),
   getContext: async (project: Project) => {
     await project.$fetchGraph("[account, gitlabProject]", {
       skipFetched: true,
