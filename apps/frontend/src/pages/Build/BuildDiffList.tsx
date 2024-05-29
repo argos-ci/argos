@@ -30,6 +30,7 @@ import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Truncable } from "@/ui/Truncable";
+import { TwicPicture } from "@/ui/TwicPicture";
 
 import { getGroupLabel } from "./BuildDiffGroup";
 import {
@@ -242,20 +243,20 @@ const ListHeader = ({
   );
 };
 
-const getImgAttributes = (
+function getImgAttributes(
   url: string,
   dimensions?: { width: number; height: number },
-) => {
-  const src = dimensions
-    ? `${url}?contain-max=${dimensions.width * 2}x${dimensions.height * 2}`
-    : url;
+) {
   return {
-    key: src,
-    src,
+    key: url,
+    src: url,
     width: dimensions?.width,
     height: dimensions?.height,
+    transforms: dimensions
+      ? [`contain-max=${dimensions.width * 2}x${dimensions.height * 2}`]
+      : [],
   };
-};
+}
 
 const DiffImage = memo(({ diff }: { diff: Diff }) => {
   const dimensions = getDiffDimensions(diff);
@@ -270,7 +271,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
         dimensions,
       );
       return (
-        <img
+        <TwicPicture
           key={key}
           {...attrs}
           className="max-h-full max-w-full object-contain"
@@ -283,7 +284,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
         dimensions,
       );
       return (
-        <img
+        <TwicPicture
           key={key}
           {...attrs}
           className="max-h-full max-w-full object-contain"
@@ -305,13 +306,13 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
             className="relative"
             style={{ width: dimensions.width, height: dimensions.height }}
           >
-            <img
+            <TwicPicture
               key={compareKey}
               {...compareAttrs}
               className="absolute w-full"
             />
             <div className="bg-app absolute inset-0 opacity-70" />
-            <img
+            <TwicPicture
               key={diffKey}
               {...diffAttrs}
               className="relative z-10 max-h-full w-full"

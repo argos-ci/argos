@@ -10,6 +10,7 @@ import { IconButtonLink } from "@/ui/IconButton";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { TwicPicture } from "@/ui/TwicPicture";
 import { useScrollListener } from "@/ui/useScrollListener";
 
 import { BuildDetailToolbar } from "./BuildDetailToolbar";
@@ -279,7 +280,7 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
             dimensions={diff.baseScreenshot!}
             contained={contained}
           >
-            <img
+            <TwicPicture
               key={key}
               className={clsx(contained && "max-h-full")}
               alt="Baseline screenshot"
@@ -305,12 +306,12 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
           }
         >
           <ScreenshotContainer dimensions={diff} contained={contained}>
-            <img
+            <TwicPicture
               key={diffKey}
               className={clsx("relative opacity-0", contained && "max-h-full")}
               {...diffAttrs}
             />
-            <img
+            <TwicPicture
               key={baseKey}
               className="absolute left-0 top-0"
               alt="Baseline screenshot"
@@ -364,7 +365,7 @@ const CompareScreenshot = ({
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
-            <img
+            <TwicPicture
               key={key}
               className={clsx(contained && "max-h-full max-w-full")}
               alt="Changes screenshot"
@@ -386,7 +387,7 @@ const CompareScreenshot = ({
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
-            <img
+            <TwicPicture
               key={key}
               className={clsx(contained && "max-h-full")}
               alt="Failure screenshot"
@@ -408,7 +409,7 @@ const CompareScreenshot = ({
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
-            <img
+            <TwicPicture
               key={key}
               className={clsx(contained && "max-h-full")}
               alt="Retried failure screenshot"
@@ -430,7 +431,7 @@ const CompareScreenshot = ({
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
-            <img
+            <TwicPicture
               key={key}
               className={clsx(contained && "max-h-full")}
               alt="Baseline screenshot"
@@ -470,7 +471,7 @@ const CompareScreenshot = ({
           }
         >
           <ScreenshotContainer dimensions={diff} contained={contained}>
-            <img
+            <TwicPicture
               key={compareKey}
               className={clsx(
                 "absolute left-0 top-0",
@@ -478,7 +479,7 @@ const CompareScreenshot = ({
               )}
               {...compareAttrs}
             />
-            <img
+            <TwicPicture
               key={diffKey}
               className={clsx(
                 opacity,
