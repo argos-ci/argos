@@ -13,7 +13,7 @@ export const GithubStrategy: MergeBaseStrategy<{
   owner: string;
   repo: string;
 }> = {
-  detect: (project: Project) => Boolean(project.githubRepository),
+  detect: (project: Project) => Boolean(project.githubRepositoryId),
   getContext: async (project: Project) => {
     await project.$fetchGraph(
       "githubRepository.[githubAccount, activeInstallation]",
