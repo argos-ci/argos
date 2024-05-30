@@ -201,14 +201,18 @@ export function PullRequestButton(props: {
     // Prevent default is not possible with React Aria, so we do a trick here
     <div
       className="contents"
-      onClickCapture={(event) => {
-        if (
-          event.target instanceof HTMLElement &&
-          event.currentTarget.contains(event.target)
-        ) {
-          event.preventDefault();
-        }
-      }}
+      onClickCapture={
+        props.emulateLink
+          ? (event) => {
+              if (
+                event.target instanceof HTMLElement &&
+                event.currentTarget.contains(event.target)
+              ) {
+                event.preventDefault();
+              }
+            }
+          : undefined
+      }
     >
       <PullRequestInfoTooltip pullRequest={pullRequest}>
         <ButtonComponent
