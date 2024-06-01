@@ -21,7 +21,7 @@ export function CopyButton({
     >
       <Button
         className={clsx(
-          "text-low hover:text bg-ui hover:bg-hover data-[pressed]:bg-active cursor-default rounded p-1 transition",
+          "text-low data-[hovered]:text bg-ui data-[hovered]:bg-hover data-[pressed]:bg-active data-[focus-visible]:ring-default cursor-default rounded p-1 transition focus:outline-none data-[focus-visible]:ring-4",
           className,
         )}
         onPress={() => {
