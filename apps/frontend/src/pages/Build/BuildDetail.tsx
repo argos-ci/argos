@@ -161,6 +161,7 @@ function getImgAttributes({
   return {
     key: url,
     src: url,
+    original: true,
     style: { aspectRatio: getAspectRatio({ width, height }) },
   };
 }
