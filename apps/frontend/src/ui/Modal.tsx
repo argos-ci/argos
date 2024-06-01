@@ -16,7 +16,7 @@ const overlayStyles = (props: ModalRenderProps) =>
 
 const modalStyles = (props: ModalRenderProps) =>
   clsx(
-    "overflow-hidden max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] rounded-2xl bg-app dark:backdrop-blur-2xl dark:backdrop-saturate-200 forced-colors:bg-[Canvas] text-left align-middle text-sm shadow-2xl bg-clip-padding border",
+    "overflow-hidden max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] rounded-2xl bg-app dark:backdrop-blur-2xl dark:backdrop-saturate-200 forced-colors:bg-[Canvas] text-left align-middle text-sm shadow-2xl bg-clip-padding dark:border",
     props.isEntering && "animate-in zoom-in-105 ease-out duration-200",
     props.isExiting && "animate-out zoom-out-95 ease-in duration-200",
   );

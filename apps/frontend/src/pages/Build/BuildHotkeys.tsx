@@ -1,130 +1,162 @@
 import { memo, useEffect } from "react";
 
-import { Dialog, DialogBody, DialogHeader, DialogTitle } from "@/ui/Dialog";
+import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
 
 import { HotkeysDialogState } from "./BuildHotkeysDialogState";
 
-interface Hotkey {
+export type Hotkey = {
   keys: string[];
   displayKeys: string[];
   description: string;
-}
+};
+
+type HotkeyGroup = {
+  name: string;
+  hotkeys: Record<string, Hotkey>;
+};
 
 const isMacOS = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
-const hotkeys = {
-  goToFirstFailure: {
-    keys: ["Digit1"],
-    displayKeys: ["1"],
-    description: "Go to first failure screenshot",
-  } as Hotkey,
-  goToFirstChanged: {
-    keys: ["Digit2"],
-    displayKeys: ["2"],
-    description: "Go to first changed screenshot",
-  } as Hotkey,
-  goToFirstAdded: {
-    keys: ["Digit3"],
-    displayKeys: ["3"],
-    description: "Go to first added screenshot",
-  } as Hotkey,
-  goToFirstRemoved: {
-    keys: ["Digit4"],
-    displayKeys: ["4"],
-    description: "Go to first removed screenshot",
-  } as Hotkey,
-  goToFirstUnchanged: {
-    keys: ["Digit5"],
-    displayKeys: ["5"],
-    description: "Go to first unchanged screenshot",
-  } as Hotkey,
-  goToFirstRetryFailure: {
-    keys: ["Digit6"],
-    displayKeys: ["6"],
-    description: "Go to first retried failure screenshot",
-  } as Hotkey,
-  goToPreviousDiff: {
-    keys: ["ArrowUp"],
-    displayKeys: ["↑"],
-    description: "Go to previous screenshot",
-  } as Hotkey,
-  goToNextDiff: {
-    keys: ["ArrowDown"],
-    displayKeys: ["↓"],
-    description: "Go to next screenshot",
-  } as Hotkey,
-  toggleDiffFit: {
-    keys: ["Space"],
-    displayKeys: ["Space"],
-    description: "Toggle fit to screen",
-  } as Hotkey,
-  fitView: {
-    keys: ["Digit0"],
-    displayKeys: ["0"],
-    description: "Fit view into screen",
-  } as Hotkey,
-  toggleHotkeysDialog: {
-    keys: ["?"],
-    displayKeys: ["?"],
-    description: "Open this dialog",
-  } as Hotkey,
-  enterSearchMode: {
-    keys: ["⌘", "KeyF"],
-    displayKeys: ["⌘", "F"],
-    description: "Find screenshot",
+const hotkeyGroups = [
+  {
+    name: "Navigation",
+    hotkeys: {
+      goToPreviousDiff: {
+        keys: ["ArrowUp"],
+        displayKeys: ["↑"],
+        description: "Go to previous screenshot",
+      },
+      goToNextDiff: {
+        keys: ["ArrowDown"],
+        displayKeys: ["↓"],
+        description: "Go to next screenshot",
+      },
+      toggleDiffGroup: {
+        keys: ["KeyG"],
+        displayKeys: ["G"],
+        description: "Toggle group",
+      },
+      goToFirstFailure: {
+        keys: ["Digit1"],
+        displayKeys: ["1"],
+        description: "Go to first failure screenshot",
+      },
+      goToFirstChanged: {
+        keys: ["Digit2"],
+        displayKeys: ["2"],
+        description: "Go to first changed screenshot",
+      },
+      goToFirstAdded: {
+        keys: ["Digit3"],
+        displayKeys: ["3"],
+        description: "Go to first added screenshot",
+      },
+      goToFirstRemoved: {
+        keys: ["Digit4"],
+        displayKeys: ["4"],
+        description: "Go to first removed screenshot",
+      },
+      goToFirstUnchanged: {
+        keys: ["Digit5"],
+        displayKeys: ["5"],
+        description: "Go to first unchanged screenshot",
+      },
+      goToFirstRetryFailure: {
+        keys: ["Digit6"],
+        displayKeys: ["6"],
+        description: "Go to first retried failure screenshot",
+      },
+    },
   },
-  leaveSearchMode: {
-    keys: ["Escape"],
-    displayKeys: ["Esc"],
-    description: "Exit search",
+  {
+    name: "View",
+    hotkeys: {
+      toggleChangesOverlay: {
+        keys: ["KeyD"],
+        displayKeys: ["D"],
+        description: "Toggle changes overlay",
+      },
+      showBaseline: {
+        keys: ["ArrowLeft"],
+        displayKeys: ["←"],
+        description: "Show only baseline",
+      },
+      showChanges: {
+        keys: ["ArrowRight"],
+        displayKeys: ["→"],
+        description: "Show only changes",
+      },
+      toggleSplitView: {
+        keys: ["KeyS"],
+        displayKeys: ["S"],
+        description: "Toggle side by side mode",
+      },
+      toggleDiffFit: {
+        keys: ["Space"],
+        displayKeys: ["Space"],
+        description: "Toggle fit to screen",
+      },
+      fitView: {
+        keys: ["Digit0"],
+        displayKeys: ["0"],
+        description: "Fit view into screen",
+      },
+    },
   },
-  collapseDiffGroup: {
-    keys: ["ArrowLeft"],
-    displayKeys: ["←"],
-    description: "Collapse group",
-  } as Hotkey,
-  expandDiffGroup: {
-    keys: ["ArrowRight"],
-    displayKeys: ["→"],
-    description: "Expand group",
-  } as Hotkey,
-  toggleBaselineChanges: {
-    keys: ["KeyA"],
-    displayKeys: ["Q", "A"],
-    description: "Toggle baseline/changes",
-  } as Hotkey,
-  toggleSplitView: {
-    keys: ["KeyS"],
-    displayKeys: ["S"],
-    description: "Toggle side by side mode",
-  } as Hotkey,
-  toggleChangesOverlay: {
-    keys: ["KeyD"],
-    displayKeys: ["D"],
-    description: "Toggle changes overlay",
-  } as Hotkey,
-  acceptDiff: {
-    keys: ["KeyY"],
-    displayKeys: ["Y"],
-    description: "Mark individual change as accepted",
-  } as Hotkey,
-  rejectDiff: {
-    keys: ["KeyN"],
-    displayKeys: ["N"],
-    description: "Mark individual change as rejected",
-  } as Hotkey,
-};
+  {
+    name: "Actions",
+    hotkeys: {
+      acceptDiff: {
+        keys: ["KeyY"],
+        displayKeys: ["Y"],
+        description: "Mark individual change as accepted",
+      },
+      rejectDiff: {
+        keys: ["KeyN"],
+        displayKeys: ["N"],
+        description: "Mark individual change as rejected",
+      },
+    },
+  },
+  {
+    name: "General",
+    hotkeys: {
+      toggleHotkeysDialog: {
+        keys: ["?"],
+        displayKeys: ["?"],
+        description: "Open this dialog",
+      },
+      enterSearchMode: {
+        keys: ["⌘", "KeyF"],
+        displayKeys: ["⌘", "F"],
+        description: "Find screenshot",
+      },
+      leaveSearchMode: {
+        keys: ["Escape"],
+        displayKeys: ["Esc"],
+        description: "Exit search",
+      },
+    },
+  },
+] satisfies HotkeyGroup[];
 
-export type HotkeyName = keyof typeof hotkeys;
+export type HotkeyName = keyof (typeof hotkeyGroups)[number]["hotkeys"];
 
-const checkIsModifiedPressed = (event: KeyboardEvent) => {
+const plainHotkeyGroups = hotkeyGroups as unknown as HotkeyGroup[];
+
+const hotkeys = plainHotkeyGroups.reduce(
+  (acc, group) => ({ ...acc, ...group.hotkeys }),
+  {} as Record<HotkeyName, Hotkey>,
+);
+
+function checkIsModifiedPressed(event: KeyboardEvent) {
   if (isMacOS) {
     return event.metaKey;
   }
   return event.ctrlKey;
-};
+}
 
 export const useBuildHotkey = (
   name: HotkeyName,
@@ -134,7 +166,7 @@ export const useBuildHotkey = (
     enabled?: boolean;
     allowInInput?: boolean;
   },
-) => {
+): Hotkey => {
   const hotkey = hotkeys[name];
   const {
     preventDefault = true,
@@ -184,11 +216,13 @@ export const useBuildHotkey = (
   return hotkey;
 };
 
-const Kbd = ({ children }: { children: React.ReactNode }) => (
-  <kbd className="bg-ui inline-flex h-5 min-w-5 items-center justify-center rounded px-1 text-xs">
-    {children}
-  </kbd>
-);
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="bg-ui inline-flex h-5 min-w-5 items-center justify-center rounded px-1 text-xs">
+      {children}
+    </kbd>
+  );
+}
 
 export const BuildHotkeysDialog = memo(
   (props: { state: HotkeysDialogState }) => {
@@ -202,27 +236,37 @@ export const BuildHotkeysDialog = memo(
         isDismissable
       >
         <Dialog>
-          <DialogHeader>
-            <DialogTitle>Keyboard Shortcuts</DialogTitle>
-          </DialogHeader>
           <DialogBody>
-            <div className="flex flex-col gap-2">
-              {Object.entries(hotkeys)
-                .filter(([, hotKey]) => hotKey.description)
-                .map(([name, hotKey]) => {
-                  return (
-                    <div key={name} className="flex items-center gap-2">
-                      <div className="w-[400px] text-sm font-medium">
-                        {hotKey.description}
-                      </div>
-                      <div className="flex flex-1 justify-end gap-2">
-                        {hotKey.displayKeys.map((key) => (
-                          <Kbd key={key}>{key}</Kbd>
-                        ))}
-                      </div>
+            <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            <div
+              className="gap-12 space-y-6 md:max-h-[500px] md:columns-2"
+              style={{ columnFill: "auto" }}
+            >
+              {plainHotkeyGroups.map((group, index) => {
+                return (
+                  <div key={index} className="break-inside-avoid-column">
+                    <h3 className="mb-2 text-sm font-medium">{group.name}</h3>
+                    <div className="flex flex-col gap-2">
+                      {Object.entries(group.hotkeys)
+                        .filter(([, hotKey]) => hotKey.description)
+                        .map(([name, hotKey]) => {
+                          return (
+                            <div key={name} className="flex items-center gap-2">
+                              <div className="w-72 text-sm">
+                                {hotKey.description}
+                              </div>
+                              <div className="flex flex-1 justify-end gap-2">
+                                {hotKey.displayKeys.map((key) => (
+                                  <Kbd key={key}>{key}</Kbd>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
             </div>
           </DialogBody>
         </Dialog>

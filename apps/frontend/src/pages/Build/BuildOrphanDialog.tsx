@@ -4,7 +4,6 @@ import {
   DialogBody,
   DialogDismiss,
   DialogFooter,
-  DialogHeader,
   DialogText,
   DialogTitle,
 } from "@/ui/Dialog";
@@ -21,10 +20,8 @@ export function BuildOrphanDialog({
   return (
     <Modal defaultOpen>
       <Dialog size="medium">
-        <DialogHeader>
-          <DialogTitle>Welcome to an orphan build!</DialogTitle>
-        </DialogHeader>
         <DialogBody>
+          <DialogTitle>Welcome to an orphan build!</DialogTitle>
           <DialogText>
             An <strong className="font-semibold">orphan build</strong> means
             Argos doesn't have a prior set of screenshots to compare with this

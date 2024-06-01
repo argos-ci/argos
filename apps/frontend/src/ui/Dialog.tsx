@@ -11,19 +11,6 @@ import { Button, ButtonProps } from "./Button";
 
 export { DialogTrigger } from "react-aria-components";
 
-export const DialogHeader = forwardRef<
-  HTMLDivElement,
-  {
-    children: React.ReactNode;
-  }
->(({ children }, ref) => {
-  return (
-    <div ref={ref} className="flex items-center justify-between border-b p-4">
-      {children}
-    </div>
-  );
-});
-
 export const DialogFooter = forwardRef<
   HTMLDivElement,
   {
@@ -76,7 +63,7 @@ export const DialogTitle = forwardRef<
   }
 >(({ children }, ref) => {
   return (
-    <Heading ref={ref} slot="title" className="text-xl font-medium">
+    <Heading ref={ref} slot="title" className="mb-4 text-xl font-medium">
       {children}
     </Heading>
   );
@@ -122,7 +109,7 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(
         ref={ref}
         className={clsx(
           className,
-          "relative max-h-[inherit] overflow-auto",
+          "relative max-h-[inherit] overflow-auto focus:outline-none",
           size === "medium" && "w-[36rem]",
         )}
         {...props}

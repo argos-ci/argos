@@ -1,3 +1,5 @@
+import { cloneElement } from "react";
+
 import { Tooltip, TooltipProps } from "./Tooltip";
 
 export function HotkeyTooltip({
@@ -39,7 +41,7 @@ export function HotkeyTooltip({
       }
       placement={placement}
     >
-      {children}
+      {cloneElement(children, { "aria-keyshortcuts": keys.join("+") })}
     </Tooltip>
   );
 }
