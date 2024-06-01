@@ -300,7 +300,7 @@ function PlanCardFooter(props: {
           Discord
         </Link>{" "}
         or{" "}
-        <Link href={`mailto:${config.get("contactEmail")}`} target="_blank">
+        <Link href={contactHref} target="_blank">
           by email
         </Link>
         {"  "}to manage your subscription.
@@ -354,7 +354,11 @@ function PlanCardFooter(props: {
               </ManageSubscriptionButton>
               <div className="flex items-center gap-4">
                 Custom needs?{" "}
-                <LinkButton variant="secondary" href={contactHref}>
+                <LinkButton
+                  variant="secondary"
+                  target="_blank"
+                  href={contactHref}
+                >
                   Contact Sales
                 </LinkButton>
               </div>

@@ -360,19 +360,10 @@ function ShowSubItemToggle(
 ) {
   const { open, onToggleGroupItem } = props;
 
-  const expandDiff = useBuildHotkey(
-    "expandDiffGroup",
+  const toggleDiff = useBuildHotkey(
+    "toggleDiffGroup",
     () => {
-      if (props.active && !open) {
-        onToggleGroupItem();
-      }
-    },
-    { preventDefault: true },
-  );
-  const collapseDiff = useBuildHotkey(
-    "collapseDiffGroup",
-    () => {
-      if (props.active && open) {
+      if (props.active) {
         onToggleGroupItem();
       }
     },
@@ -385,8 +376,8 @@ function ShowSubItemToggle(
 
   return (
     <HotkeyTooltip
-      description={open ? collapseDiff.description : expandDiff.description}
-      keys={open ? collapseDiff.displayKeys : expandDiff.displayKeys}
+      description={open ? "Collapse group" : "Expand group"}
+      keys={toggleDiff.displayKeys}
     >
       <Button
         variant="secondary"
