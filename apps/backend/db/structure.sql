@@ -446,7 +446,7 @@ CREATE TABLE public.github_pull_requests (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "commentDeleted" boolean DEFAULT false NOT NULL,
-    "commentId" integer,
+    "commentId" bigint,
     "githubRepositoryId" bigint NOT NULL,
     number integer NOT NULL,
     "jobStatus" character varying(255) NOT NULL,
@@ -2709,3 +2709,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024033
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240428061335_monitoring-mode.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240428200226_monitoring-mode-bucket.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240505121926_slack-installation.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240604133729_comment_id_big_integer.js', 1, NOW());
