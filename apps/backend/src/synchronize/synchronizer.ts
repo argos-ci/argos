@@ -8,6 +8,7 @@ import {
   GithubInstallation,
   GithubRepository,
   GithubRepositoryInstallation,
+  Project,
 } from "@/database/models/index.js";
 import { getAppOctokit, getInstallationOctokit } from "@/github/index.js";
 
@@ -19,11 +20,11 @@ type SyncCtx = {
   octokit: Exclude<Awaited<ReturnType<typeof getInstallationOctokit>>, null>;
 };
 
-const linkInstallationRepositories = async (
+async function linkInstallationRepositories(
   installationId: string,
   repositories: GithubRepository[],
   trx: TransactionOrKnex,
-) => {
+) {
   const links = await GithubRepositoryInstallation.query(trx).where({
     githubInstallationId: installationId,
   });
@@ -43,6 +44,7 @@ const linkInstallationRepositories = async (
   );
 
   await Promise.all([
+    // Link repositories
     toLink.length > 0
       ? GithubRepositoryInstallation.query(trx).insert(
           toLink.map((repository) => ({
@@ -51,6 +53,7 @@ const linkInstallationRepositories = async (
           })),
         )
       : null,
+    // Unlink repositories
     toUnlink.length > 0
       ? GithubRepositoryInstallation.query(trx)
           .whereIn(
@@ -59,10 +62,19 @@ const linkInstallationRepositories = async (
           )
           .delete()
       : null,
+    // Unlink projects if repository no longer have a valid installation
+    toUnlink.length > 0
+      ? Project.query(trx)
+          .whereIn(
+            "githubRepositoryId",
+            toUnlink.map(({ githubRepositoryId }) => githubRepositoryId),
+          )
+          .patch({ githubRepositoryId: null })
+      : null,
   ]);
-};
+}
 
-const extractOwnersFromRepositories = (repositories: ApiRepository[]) => {
+function extractOwnersFromRepositories(repositories: ApiRepository[]) {
   return repositories.reduce(
     (owners, repo) => {
       const exist = owners.some(({ id }) => id === repo.owner.id);
@@ -91,12 +103,12 @@ const extractOwnersFromRepositories = (repositories: ApiRepository[]) => {
       type: "user" | "organization";
     }[],
   );
-};
+}
 
-const saveAccounts = async (
+async function saveAccounts(
   repositories: ApiRepository[],
   trx: TransactionOrKnex,
-) => {
+) {
   const owners = extractOwnersFromRepositories(repositories);
   const existingAccounts = owners.length
     ? await GithubAccount.query(trx).whereIn(
@@ -148,13 +160,13 @@ const saveAccounts = async (
         owners.map(({ id }) => id),
       )
     : ([] as GithubAccount[]);
-};
+}
 
-const saveRepositories = async (
+async function saveRepositories(
   accounts: GithubAccount[],
   apiRepositories: ApiRepository[],
   trx: TransactionOrKnex,
-) => {
+) {
   const existingRepositories = apiRepositories.length
     ? await GithubRepository.query(trx).whereIn(
         "githubId",
@@ -215,9 +227,9 @@ const saveRepositories = async (
         apiRepositories.map(({ id }) => id),
       )
     : ([] as GithubRepository[]);
-};
+}
 
-const getRepositories = async (ctx: SyncCtx): Promise<ApiRepository[]> => {
+async function getRepositories(ctx: SyncCtx): Promise<ApiRepository[]> {
   try {
     return (await ctx.octokit.paginate(
       ctx.octokit.apps.listReposAccessibleToInstallation,
@@ -229,9 +241,9 @@ const getRepositories = async (ctx: SyncCtx): Promise<ApiRepository[]> => {
     }
     throw error;
   }
-};
+}
 
-export const synchronizeInstallation = async (installationId: string) => {
+export async function synchronizeInstallation(installationId: string) {
   const installation = await GithubInstallation.query()
     .findById(installationId)
     .throwIfNotFound();
@@ -260,4 +272,4 @@ export const synchronizeInstallation = async (installationId: string) => {
     const repositories = await saveRepositories(accounts, apiRepositories, trx);
     await linkInstallationRepositories(installationId, repositories, trx);
   });
-};
+}
