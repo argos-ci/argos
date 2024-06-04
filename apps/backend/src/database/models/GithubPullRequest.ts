@@ -18,7 +18,7 @@ export class GithubPullRequest extends Model {
     required: ["githubRepositoryId", "number"],
     properties: {
       commentDeleted: { type: "boolean" },
-      commentId: { type: ["number", "null"] },
+      commentId: { type: ["string", "null"] },
       githubRepositoryId: { type: "string" },
       number: { type: "integer" },
       title: { type: ["string", "null"] },
@@ -35,7 +35,7 @@ export class GithubPullRequest extends Model {
   });
 
   commentDeleted!: boolean;
-  commentId!: number | null;
+  commentId!: string | null;
   jobStatus!: JobStatus;
   githubRepositoryId!: string;
   number!: number;
