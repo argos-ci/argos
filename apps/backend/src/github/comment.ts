@@ -29,7 +29,10 @@ const getOrCreatePullRequestComment = async ({
       issue_number: pullRequest.number,
       body,
     });
-    await pullRequest.$clone().$query().patch({ commentId: data.id });
+    await pullRequest
+      .$clone()
+      .$query()
+      .patch({ commentId: String(data.id) });
     return null;
   });
 };
@@ -62,7 +65,7 @@ export const commentGithubPr = async ({
       await octokit.issues.updateComment({
         owner,
         repo,
-        comment_id: commentId,
+        comment_id: Number.parseInt(commentId, 10),
         body,
       });
     }
