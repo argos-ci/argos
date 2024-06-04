@@ -283,10 +283,18 @@ const ZoomOutButton = memo((props: { disabled: boolean }) => {
   );
 });
 
-export const ZoomPane = (props: {
+const TransformContext = createContext<Transform | null>(null);
+
+export function useZoomTransform(): Transform {
+  const ctx = useContext(TransformContext);
+  invariant(ctx, "Missing TransformProvider");
+  return ctx;
+}
+
+export function ZoomPane(props: {
   children: React.ReactNode;
   controls?: React.ReactNode;
-}) => {
+}) {
   const paneRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const { register, getInitialTransform } = useZoomerSyncContext();
@@ -313,23 +321,25 @@ export const ZoomPane = (props: {
       ref={paneRef}
       className="group/pane bg-app flex min-h-0 flex-1 cursor-grab select-none overflow-hidden rounded border"
     >
-      <div
-        ref={contentRef}
-        className="flex min-h-0 min-w-0 flex-1 origin-top-left justify-center"
-        style={{ transform: transformToCss(transform) }}
-      >
-        {props.children}
-      </div>
-      {props.controls && (
-        <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">
-          <div className="zoomer-controls absolute bottom-2 right-2 flex flex-col items-center gap-1">
-            {props.controls}
-            <FitViewButton />
-            <ZoomInButton disabled={transform.scale >= MAX_ZOOM_SCALE} />
-            <ZoomOutButton disabled={transform.scale <= MIN_ZOOM_SCALE} />
-          </div>
+      <TransformContext.Provider value={transform}>
+        <div
+          ref={contentRef}
+          className="flex min-h-0 min-w-0 flex-1 origin-top-left justify-center"
+          style={{ transform: transformToCss(transform) }}
+        >
+          {props.children}
         </div>
-      )}
+        {props.controls && (
+          <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">
+            <div className="zoomer-controls absolute bottom-2 right-2 flex flex-col items-center gap-1">
+              {props.controls}
+              <FitViewButton />
+              <ZoomInButton disabled={transform.scale >= MAX_ZOOM_SCALE} />
+              <ZoomOutButton disabled={transform.scale <= MIN_ZOOM_SCALE} />
+            </div>
+          </div>
+        )}
+      </TransformContext.Provider>
     </div>
   );
-};
+}

@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { DownloadIcon } from "lucide-react";
 
@@ -28,7 +28,7 @@ import {
   BuildDiffViewModeStateProvider,
   useBuildDiffViewModeState,
 } from "./useBuildDiffViewModeState";
-import { ZoomerSyncProvider, ZoomPane } from "./Zoomer";
+import { useZoomTransform, ZoomerSyncProvider, ZoomPane } from "./Zoomer";
 
 const BuildFragment = graphql(`
   fragment BuildDetail_Build on Build {
@@ -139,31 +139,59 @@ const MissingScreenshotInfo = memo(
   },
 );
 
-function getAspectRatio({
-  width,
-  height,
-}: {
+function getAspectRatio(dimensions: {
   width?: number | null | undefined;
   height?: number | null | undefined;
 }) {
-  return width && height ? `${width}/${height}` : undefined;
+  return dimensions.width && dimensions.height
+    ? `${dimensions.width}/${dimensions.height}`
+    : undefined;
 }
 
-function getImgAttributes({
-  url,
-  width,
-  height,
-}: {
+function getScreenshotPictureProps(screenshot: {
   url: string;
   width?: number | null | undefined;
   height?: number | null | undefined;
 }) {
   return {
-    key: url,
-    src: url,
-    original: true,
-    style: { aspectRatio: getAspectRatio({ width, height }) },
+    src: screenshot.url,
+    width: screenshot.width,
+    height: screenshot.height,
   };
+}
+
+function ScreenshotPicture(
+  props: Omit<React.ComponentProps<typeof TwicPicture>, "width" | "height"> & {
+    src: string;
+    width?: number | null | undefined;
+    height?: number | null | undefined;
+  },
+) {
+  const { src, style, width, height, ...attrs } = props;
+  const transform = useZoomTransform();
+  const ref = useRef<HTMLImageElement>(null);
+  const [pixelated, setPixelated] = useState(false);
+  useEffect(() => {
+    if (ref.current) {
+      const layoutScale = ref.current.naturalWidth / ref.current.width;
+      const realScale = transform.scale - layoutScale;
+      setPixelated(realScale > 1.5);
+    }
+  }, [transform.scale]);
+  return (
+    <TwicPicture
+      key={src}
+      ref={ref}
+      src={src}
+      original
+      style={{
+        ...style,
+        aspectRatio: getAspectRatio({ width, height }),
+        imageRendering: pixelated ? "pixelated" : undefined,
+      }}
+      {...attrs}
+    />
+  );
 }
 
 function ScreenshotContainer({
@@ -270,7 +298,6 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
         />
       );
     case ScreenshotDiffStatus.Removed: {
-      const { key, ...attrs } = getImgAttributes(diff.baseScreenshot!);
       return (
         <ZoomPane
           controls={
@@ -281,25 +308,16 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
             dimensions={diff.baseScreenshot!}
             contained={contained}
           >
-            <TwicPicture
-              key={key}
+            <ScreenshotPicture
               className={clsx(contained && "max-h-full")}
               alt="Baseline screenshot"
-              {...attrs}
+              {...getScreenshotPictureProps(diff.baseScreenshot!)}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
     }
     case ScreenshotDiffStatus.Changed: {
-      const { key: diffKey, ...diffAttrs } = getImgAttributes({
-        url: diff.url!,
-        width: diff.width,
-        height: diff.height,
-      });
-      const { key: baseKey, ...baseAttrs } = getImgAttributes(
-        diff.baseScreenshot!,
-      );
       return (
         <ZoomPane
           controls={
@@ -307,16 +325,16 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
           }
         >
           <ScreenshotContainer dimensions={diff} contained={contained}>
-            <TwicPicture
-              key={diffKey}
+            <ScreenshotPicture
               className={clsx("relative opacity-0", contained && "max-h-full")}
-              {...diffAttrs}
+              src={diff.url!}
+              width={diff.width}
+              height={diff.height}
             />
-            <TwicPicture
-              key={baseKey}
+            <ScreenshotPicture
               className="absolute left-0 top-0"
               alt="Baseline screenshot"
-              {...baseAttrs}
+              {...getScreenshotPictureProps(diff.baseScreenshot!)}
             />
           </ScreenshotContainer>
         </ZoomPane>
@@ -355,7 +373,6 @@ const CompareScreenshot = ({
   const opacity = visible ? "" : "opacity-0";
   switch (diff.status) {
     case ScreenshotDiffStatus.Added: {
-      const { key, ...attrs } = getImgAttributes(diff.compareScreenshot!);
       return (
         <ZoomPane
           controls={
@@ -366,18 +383,16 @@ const CompareScreenshot = ({
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
-            <TwicPicture
-              key={key}
+            <ScreenshotPicture
               className={clsx(contained && "max-h-full max-w-full")}
               alt="Changes screenshot"
-              {...attrs}
+              {...getScreenshotPictureProps(diff.compareScreenshot!)}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
     }
     case ScreenshotDiffStatus.Failure: {
-      const { key, ...attrs } = getImgAttributes(diff.compareScreenshot!);
       return (
         <ZoomPane
           controls={
@@ -388,18 +403,16 @@ const CompareScreenshot = ({
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
-            <TwicPicture
-              key={key}
+            <ScreenshotPicture
               className={clsx(contained && "max-h-full")}
               alt="Failure screenshot"
-              {...attrs}
+              {...getScreenshotPictureProps(diff.compareScreenshot!)}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
     }
     case ScreenshotDiffStatus.RetryFailure: {
-      const { key, ...attrs } = getImgAttributes(diff.compareScreenshot!);
       return (
         <ZoomPane
           controls={
@@ -410,18 +423,16 @@ const CompareScreenshot = ({
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
-            <TwicPicture
-              key={key}
+            <ScreenshotPicture
               className={clsx(contained && "max-h-full")}
               alt="Retried failure screenshot"
-              {...attrs}
+              {...getScreenshotPictureProps(diff.compareScreenshot!)}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
     }
     case ScreenshotDiffStatus.Unchanged: {
-      const { key, ...attrs } = getImgAttributes(diff.compareScreenshot!);
       return (
         <ZoomPane
           controls={
@@ -432,11 +443,10 @@ const CompareScreenshot = ({
             dimensions={diff.compareScreenshot!}
             contained={contained}
           >
-            <TwicPicture
-              key={key}
+            <ScreenshotPicture
               className={clsx(contained && "max-h-full")}
               alt="Baseline screenshot"
-              {...attrs}
+              {...getScreenshotPictureProps(diff.compareScreenshot!)}
             />
           </ScreenshotContainer>
         </ZoomPane>
@@ -457,14 +467,6 @@ const CompareScreenshot = ({
       );
     }
     case ScreenshotDiffStatus.Changed: {
-      const { key: compareKey, ...compareAttrs } = getImgAttributes(
-        diff.compareScreenshot!,
-      );
-      const { key: diffKey, ...diffAttrs } = getImgAttributes({
-        url: diff.url!,
-        width: diff.width,
-        height: diff.height,
-      });
       return (
         <ZoomPane
           controls={
@@ -472,23 +474,23 @@ const CompareScreenshot = ({
           }
         >
           <ScreenshotContainer dimensions={diff} contained={contained}>
-            <TwicPicture
-              key={compareKey}
+            <ScreenshotPicture
               className={clsx(
                 "absolute left-0 top-0",
                 visible && "opacity-disabled",
               )}
-              {...compareAttrs}
+              {...getScreenshotPictureProps(diff.compareScreenshot!)}
             />
-            <TwicPicture
-              key={diffKey}
+            <ScreenshotPicture
               className={clsx(
                 opacity,
                 "relative z-10",
                 contained && "max-h-full",
               )}
               alt="Changes screenshot"
-              {...diffAttrs}
+              src={diff.url!}
+              width={diff.width}
+              height={diff.height}
             />
           </ScreenshotContainer>
         </ZoomPane>
