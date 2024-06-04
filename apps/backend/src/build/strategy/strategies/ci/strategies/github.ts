@@ -29,7 +29,7 @@ export const GithubStrategy: MergeBaseStrategy<{
     const installation = project.githubRepository.activeInstallation;
     invariant(
       installation,
-      "no installation found, we should send an email",
+      "no installation found, repository should be unlinked from project at this point",
       UnretryableError,
     );
 
