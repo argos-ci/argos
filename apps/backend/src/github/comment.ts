@@ -23,13 +23,14 @@ const getOrCreatePullRequestComment = async ({
       return pullRequest.commentId;
     }
 
-    const { data } = await octokit.issues.createComment({
+    await octokit.issues.createComment({
       owner,
       repo,
       issue_number: pullRequest.number,
       body,
     });
-    await pullRequest.$clone().$query().patch({ commentId: data.id });
+    // TODO: Uncomment this line when the database is updated
+    //await pullRequest.$clone().$query().patch({ commentId: data.id });
     return null;
   });
 };
