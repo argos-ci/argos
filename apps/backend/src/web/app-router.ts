@@ -1,11 +1,13 @@
 import { join } from "node:path";
 import { invariant } from "@argos/util/invariant";
 import express, { Router, static as serveStatic } from "express";
+import { rateLimit } from "express-rate-limit";
 
 import config from "@/config/index.js";
 import { getGoogleAuthUrl } from "@/google/index.js";
 import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
 import { slackMiddleware } from "@/slack/index.js";
+import { redisStore } from "@/util/rate-limit.js";
 
 import { emailPreview } from "../email/express.js";
 import { auth } from "./middlewares/auth.js";
@@ -13,6 +15,16 @@ import { subdomain } from "./util.js";
 
 export const installAppRouter = async (app: express.Application) => {
   const router = Router();
+
+  const limiter = rateLimit({
+    windowMs: 10 * 1000, // 10 seconds
+    max: 1000, // Limit each IP to 1000 requests per `window` (here, per 10 seconds)
+    standardHeaders: false, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    store: redisStore,
+  });
+
+  app.use(limiter);
 
   router.get("/config.js", (_req, res) => {
     res.setHeader("Content-Type", "application/javascript");
