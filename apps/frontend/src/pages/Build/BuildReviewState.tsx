@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useStorageState } from "@/util/useStorageState";
 
-import { useBuildDiffState } from "./BuildDiffState";
+import { checkCanBeReviewed, useBuildDiffState } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
 
 export enum EvaluationStatus {
@@ -72,7 +72,13 @@ export function useMarkAllDiffsAsAccepted() {
   const { setDiffStatuses } = useBuildReviewState();
   const markAllDiffsAsAccepted = useEventCallback(() => {
     setDiffStatuses((diffStatuses) => {
-      const diffIds = diffState.diffs.map((diff) => diff.id);
+      const diffIds = diffState.diffs.reduce<string[]>((ids, diff) => {
+        if (checkCanBeReviewed(diff.status)) {
+          ids.push(diff.id);
+        }
+        return ids;
+      }, []);
+
       if (
         diffIds.some(
           (diffId) => diffStatuses[diffId] === EvaluationStatus.Rejected,
@@ -80,11 +86,14 @@ export function useMarkAllDiffsAsAccepted() {
       ) {
         return diffStatuses;
       }
-      const nextValue = { ...diffStatuses };
-      diffIds.forEach((diffId) => {
-        nextValue[diffId] = EvaluationStatus.Accepted;
-      });
-      return nextValue;
+
+      return diffIds.reduce<Record<string, EvaluationStatus>>(
+        (statuses, diffId) => {
+          statuses[diffId] = EvaluationStatus.Accepted;
+          return statuses;
+        },
+        {},
+      );
     });
   });
   return markAllDiffsAsAccepted;
