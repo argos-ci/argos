@@ -1,4 +1,3 @@
-version: "3"
 services:
   postgres:
     # Last time I have checked, production is running 14.10

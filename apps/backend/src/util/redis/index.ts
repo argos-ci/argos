@@ -11,7 +11,7 @@ import logger from "@/logger/index.js";
 
 import { createRedisLock } from "./lock.js";
 
-const redisClient = createClient({ url: config.get("redis.url") });
+export const redisClient = createClient({ url: config.get("redis.url") });
 redisClient.on("error", (error: unknown) => {
   // Ignore these errors, Redis will automatically reconnect
   if (error instanceof ConnectionTimeoutError) {
@@ -39,13 +39,11 @@ let status: "connecting" | "connected" | "disconnecting" | "disconnected" =
 let connection: Promise<unknown> | null = null;
 let disconnection: Promise<string> | null = null;
 
-export const getRedisLock = async () => {
+export async function connectToRedis() {
   switch (status) {
     case "connected":
-      return redisLock;
     case "connecting": {
-      await connection;
-      return redisLock;
+      return connection;
     }
     case "disconnected": {
       connection = redisClient.connect();
@@ -53,7 +51,7 @@ export const getRedisLock = async () => {
       await connection;
       status = "connected";
       connection = null;
-      return redisLock;
+      return connection;
     }
     case "disconnecting": {
       throw new Error("Redis is disconnecting");
@@ -61,7 +59,12 @@ export const getRedisLock = async () => {
     default:
       assertNever(status);
   }
-};
+}
+
+export async function getRedisLock() {
+  await connectToRedis();
+  return redisLock;
+}
 
 export const quitRedis = async () => {
   switch (status) {
@@ -88,9 +91,3 @@ export const quitRedis = async () => {
     }
   }
 };
-
-// process.on("SIGTERM", () => {
-//   callbackify(quitRedis)((err) => {
-//     console.error(err);
-//   });
-// });
