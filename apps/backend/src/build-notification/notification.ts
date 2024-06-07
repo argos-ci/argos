@@ -100,19 +100,19 @@ async function getNotificationDescription(input: {
       const statsMessage = await getStatsMessage(buildId);
       if (!statsMessage) {
         if (isReference) {
-          return "Used as comparison baseline";
+          return "Used as comparison baseline, no changes found";
         }
         return "Everything's good!";
       }
       if (isReference) {
-        return `${statsMessage} — used as comparison baseline`;
+        return `Used a comparison baseline, no changes found — ${statsMessage}`;
       }
-      return `${statsMessage} — no change`;
+      return `${statsMessage} — no changes found`;
     }
     case "diff-detected": {
       const statsMessage = await getStatsMessage(buildId);
       if (isReference) {
-        return `${statsMessage} — used as comparison baseline`;
+        return `${statsMessage}, automatically approved and used as comparison baseline`;
       }
       return `${statsMessage} — waiting for your decision`;
     }
