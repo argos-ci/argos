@@ -556,10 +556,10 @@ const useScrollToTop = (
   }, [ref, activeDiff]);
 };
 
-export const BuildDetail = (props: {
+export function BuildDetail(props: {
   build: FragmentType<typeof BuildFragment>;
   repoUrl: string | null;
-}) => {
+}) {
   const build = useFragment(BuildFragment, props.build);
   const { activeDiff } = useBuildDiffState();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -615,4 +615,4 @@ export const BuildDetail = (props: {
       ) : null}
     </div>
   );
-};
+}

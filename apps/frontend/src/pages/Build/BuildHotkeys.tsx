@@ -158,7 +158,7 @@ function checkIsModifiedPressed(event: KeyboardEvent) {
   return event.ctrlKey;
 }
 
-export const useBuildHotkey = (
+export function useBuildHotkey(
   name: HotkeyName,
   callback: (event: KeyboardEvent) => void,
   options?: {
@@ -166,7 +166,7 @@ export const useBuildHotkey = (
     enabled?: boolean;
     allowInInput?: boolean;
   },
-): Hotkey => {
+): Hotkey {
   const hotkey = hotkeys[name];
   const {
     preventDefault = true,
@@ -178,6 +178,19 @@ export const useBuildHotkey = (
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
       const { options, callback } = refs.current;
+
+      if (!options.enabled) {
+        return;
+      }
+
+      // Ignore key events from menu & menuitem elements
+      if (
+        event.target instanceof HTMLElement &&
+        (event.target.role === "menu" || event.target.role === "menuitem")
+      ) {
+        return;
+      }
+
       if (!options.allowInInput && event.target instanceof HTMLInputElement) {
         if (event.target.type === "text") {
           return;
@@ -186,13 +199,13 @@ export const useBuildHotkey = (
           return;
         }
       }
+
       const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
-      if (!options.enabled) {
-        return;
-      }
+
       if (modifierShouldBePressed !== checkIsModifiedPressed(event)) {
         return;
       }
+
       const matchKeys = hotkey.keys.every((key) => {
         // Ignore modifier keys
         if (key === "⌘") {
@@ -200,12 +213,15 @@ export const useBuildHotkey = (
         }
         return key === event.code || key === event.key;
       });
+
       if (!matchKeys) {
         return;
       }
+
       if (options.preventDefault) {
         event.preventDefault();
       }
+
       callback(event);
     };
     document.addEventListener("keydown", listener);
@@ -214,7 +230,7 @@ export const useBuildHotkey = (
     };
   }, [hotkey, refs]);
   return hotkey;
-};
+}
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (

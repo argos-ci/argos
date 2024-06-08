@@ -1,11 +1,24 @@
-import { createContext, useCallback, useContext, useMemo } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+} from "react";
 import { invariant } from "@argos/util/invariant";
 
 import { useEventCallback } from "@/ui/useEventCallback";
+import { usePrevious } from "@/ui/usePrevious";
 import { useStorageState } from "@/util/useStorageState";
 
-import { checkCanBeReviewed, useBuildDiffState } from "./BuildDiffState";
+import {
+  checkCanBeReviewed,
+  Diff,
+  useBuildDiffState,
+  useGetNextDiff,
+} from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
+import { useReviewDialog } from "./BuildReviewDialog";
 
 export enum EvaluationStatus {
   Accepted = "accepted",
@@ -14,9 +27,9 @@ export enum EvaluationStatus {
 }
 
 type BuildReviewStateValue = {
-  diffStatuses: Record<string, EvaluationStatus>;
+  diffStatuses: Record<Diff["id"], EvaluationStatus>;
   setDiffStatuses: React.Dispatch<
-    React.SetStateAction<Record<string, EvaluationStatus>>
+    React.SetStateAction<Record<Diff["id"], EvaluationStatus>>
   >;
 };
 
@@ -24,6 +37,9 @@ const BuildReviewStateContext = createContext<BuildReviewStateValue | null>(
   null,
 );
 
+/**
+ * Returns the current review state of the build.
+ */
 function useBuildReviewState() {
   const context = useContext(BuildReviewStateContext);
   invariant(
@@ -33,6 +49,100 @@ function useBuildReviewState() {
   return context;
 }
 
+/**
+ * Get the current review status of all diffs.
+ * - "initializing": The review state is not yet initialized.
+ * - "pending": Some diffs are not reviewed yet.
+ * - "complete": All diffs are reviewed.
+ */
+function useReviewStatus() {
+  const { stats } = useBuildDiffState();
+  const { diffStatuses } = useBuildReviewState();
+  return useMemo(() => {
+    if (!stats) {
+      return "initializing";
+    }
+    const expected = stats.added + stats.changed + stats.removed;
+    const reviewed = Object.values(diffStatuses).filter(
+      (status) => status !== EvaluationStatus.Pending,
+    ).length;
+    return expected === reviewed ? "complete" : "pending";
+  }, [stats, diffStatuses]);
+}
+
+/**
+ * Triggers the callback when the review becomes "complete".
+ * Switching from "pending" to "complete" state.
+ */
+function useWatchReviewComplete(callback: () => void) {
+  const reviewStatus = useReviewStatus();
+  const previousReviewStatus = usePrevious(reviewStatus);
+  const evtCallback = useEventCallback(callback);
+  useEffect(() => {
+    if (previousReviewStatus === "pending" && reviewStatus === "complete") {
+      evtCallback();
+    }
+  }, [reviewStatus, previousReviewStatus, evtCallback]);
+}
+
+/**
+ * Watch the review status and trigger the callback when the review is complete.
+ */
+export function ReviewCompleteWatcher(props: { onReviewComplete: () => void }) {
+  useWatchReviewComplete(props.onReviewComplete);
+  return null;
+}
+
+/**
+ * Acknowledge the current diff and move to the next diff or show the review dialog.
+ */
+export function useAcknowledgeMarkedDiff() {
+  const getNextDiff = useGetNextDiff();
+  const reviewStatus = useReviewStatus();
+  const { setActiveDiff } = useBuildDiffState();
+  const reviewDialog = useReviewDialog();
+
+  return useEventCallback(() => {
+    const nextDiff = getNextDiff();
+    if (reviewStatus === "complete") {
+      reviewDialog.show();
+    } else if (nextDiff && checkCanBeReviewed(nextDiff.status)) {
+      setActiveDiff(nextDiff, true);
+    }
+  });
+}
+
+/**
+ * Get the summary of the review status.
+ * Diffs are grouped by their evaluation status.
+ */
+export function useBuildReviewSummary() {
+  const { diffStatuses } = useBuildReviewState();
+  const { diffs } = useBuildDiffState();
+  return useMemo(() => {
+    return Object.entries(diffStatuses).reduce<
+      Record<EvaluationStatus, Diff[]>
+    >(
+      (summary, [diffId, status]) => {
+        const diff = diffs.find((diff) => diff.id === diffId);
+        if (!diff) {
+          return summary;
+        }
+        summary[status].push(diff);
+        return summary;
+      },
+      {
+        [EvaluationStatus.Accepted]: [],
+        [EvaluationStatus.Rejected]: [],
+        [EvaluationStatus.Pending]: [],
+      },
+    );
+  }, [diffStatuses, diffs]);
+}
+
+/**
+ * Get the current evaluation status of the diff.
+ */
 export function useGetDiffEvaluationStatus() {
   const { diffStatuses } = useBuildReviewState();
   return useCallback(
@@ -43,6 +153,9 @@ export function useGetDiffEvaluationStatus() {
   );
 }
 
+/**
+ * Get the current evaluation status of the diff group.
+ */
 export function useBuildDiffGroupStatus(diffGroup: string | null) {
   const diffState = useBuildDiffState();
   const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
@@ -67,6 +180,9 @@ export function useBuildDiffGroupStatus(diffGroup: string | null) {
   return status ?? null;
 }
 
+/**
+ * Mark all diffs as accepted.
+ */
 export function useMarkAllDiffsAsAccepted() {
   const diffState = useBuildDiffState();
   const { setDiffStatuses } = useBuildReviewState();
@@ -99,6 +215,9 @@ export function useMarkAllDiffsAsAccepted() {
   return markAllDiffsAsAccepted;
 }
 
+/**
+ * State hook to manage the review status of one diff or diff group.
+ */
 export function useBuildDiffStatusState(args: {
   diffId: string | null;
   diffGroup: string | null;
@@ -151,6 +270,9 @@ export function useBuildDiffStatusState(args: {
   ] as const;
 }
 
+/**
+ * Provider to manage the review status of the build.
+ */
 export function BuildReviewStateProvider(props: {
   children: React.ReactNode;
   params: BuildParams;

@@ -16,10 +16,13 @@ import { Tooltip } from "@/ui/Tooltip";
 
 import { checkCanBeReviewed, useBuildDiffState } from "../BuildDiffState";
 import {
+  BuildReviewButton,
+  DisabledBuildReviewButton,
+} from "../BuildReviewButton";
+import {
   EvaluationStatus,
   useGetDiffEvaluationStatus,
 } from "../BuildReviewState";
-import { DisabledReviewButton, ReviewButton } from "./ReviewButton";
 
 const BuildFragment = graphql(`
   fragment BuildHeader_Build on Build {
@@ -99,19 +102,19 @@ function useBuildReviewProgression() {
 }
 
 function LoggedReviewButton(props: {
-  project: ComponentProps<typeof ReviewButton>["project"];
+  project: ComponentProps<typeof BuildReviewButton>["project"];
   build: DocumentType<typeof BuildFragment>;
 }) {
   const progression = useBuildReviewProgression();
   if (!progression) {
-    return <DisabledReviewButton tooltip="Loading..." />;
+    return <DisabledBuildReviewButton tooltip="Loading..." />;
   }
   if (progression.toReview.length === 0) {
-    return <DisabledReviewButton tooltip="No changes to review" />;
+    return <DisabledBuildReviewButton tooltip="No changes to review" />;
   }
   if (props.build.type === BuildType.Reference) {
     return (
-      <DisabledReviewButton tooltip="No need to review reference builds" />
+      <DisabledBuildReviewButton tooltip="No need to review reference builds" />
     );
   }
   const reviewComplete =
@@ -153,14 +156,14 @@ function LoggedReviewButton(props: {
           />
         </div>
       </Tooltip>
-      <ReviewButton project={props.project} />
+      <BuildReviewButton project={props.project} />
     </>
   );
 }
 
-const BuildReviewButton = memo(
+const ConditionalBuildReviewButton = memo(
   (props: {
-    project: ComponentProps<typeof ReviewButton>["project"];
+    project: ComponentProps<typeof BuildReviewButton>["project"];
     build: DocumentType<typeof BuildFragment>;
   }) => {
     const loggedIn = useIsLoggedIn();
@@ -173,7 +176,7 @@ const BuildReviewButton = memo(
 const ProjectFragment = graphql(`
   fragment BuildHeader_Project on Project {
     ...BuildStatusChip_Project
-    ...ReviewButton_Project
+    ...BuildReviewButton_Project
   }
 `);
 
@@ -223,7 +226,7 @@ export const BuildHeader = memo(
             <PullRequestButton pullRequest={build.pullRequest} size="small" />
           ) : null}
           {project && build && (
-            <BuildReviewButton project={project} build={build} />
+            <ConditionalBuildReviewButton project={project} build={build} />
           )}
           <NavUserControl />
         </div>

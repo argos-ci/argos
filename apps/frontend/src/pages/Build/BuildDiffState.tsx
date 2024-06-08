@@ -182,39 +182,45 @@ export function useHasNextDiff() {
   return activeDiffIndex < diffs.length - 1;
 }
 
-export function useGoToNextDiff() {
-  const { searchMode } = useSearchModeState();
-  const { diffs, activeDiff, setActiveDiff, expanded } = useBuildDiffState();
+export function useGetNextDiff() {
   const hasNextDiff = useHasNextDiff();
+  const { searchMode } = useSearchModeState();
+  const { diffs, activeDiff, expanded } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
-  const goToNextDiff = useEventCallback(() => {
+  return useEventCallback(() => {
     if (!hasNextDiff) {
-      return;
+      return null;
     }
 
     const isGroupExpanded =
       !activeDiff?.group || expanded.includes(activeDiff.group);
 
     if (isGroupExpanded || searchMode) {
-      const nextDiff = diffs[activeDiffIndex + 1];
-      if (nextDiff) {
-        setActiveDiff(nextDiff, true);
-      }
-      return;
+      return diffs[activeDiffIndex + 1] ?? null;
     }
 
     const offsetIndex = activeDiffIndex + 1;
     const nextDiffIndex = diffs
       .slice(offsetIndex)
       .findIndex((diff) => diff.group !== activeDiff.group);
+
     if (nextDiffIndex !== -1) {
-      const nextDiff = diffs[nextDiffIndex + offsetIndex];
-      if (nextDiff) {
-        setActiveDiff(nextDiff, true);
-      }
+      return diffs[nextDiffIndex + offsetIndex] ?? null;
+    }
+
+    return null;
+  });
+}
+
+export function useGoToNextDiff() {
+  const getNextDiff = useGetNextDiff();
+  const { setActiveDiff } = useBuildDiffState();
+  return useEventCallback(() => {
+    const nextDiff = getNextDiff();
+    if (nextDiff) {
+      setActiveDiff(nextDiff, true);
     }
   });
-  return goToNextDiff;
 }
 
 export function useHasPreviousDiff() {
@@ -222,41 +228,49 @@ export function useHasPreviousDiff() {
   return activeDiffIndex > 0;
 }
 
-export function useGoToPreviousDiff() {
+function useGetPreviousDiff() {
   const { searchMode } = useSearchModeState();
-  const { diffs, setActiveDiff, expanded } = useBuildDiffState();
+  const { diffs, expanded } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
   const hasPreviousDiff = useHasPreviousDiff();
-  const goToPreviousDiff = useEventCallback(() => {
+  return useEventCallback(() => {
     if (!hasPreviousDiff) {
-      return;
+      return null;
     }
 
     const previousDiffIndex = activeDiffIndex - 1;
     const previousDiff = diffs[previousDiffIndex];
     if (!previousDiff) {
-      return;
+      return null;
     }
 
     const isGroupExpanded =
       !previousDiff.group || expanded.includes(previousDiff.group);
 
     if (isGroupExpanded || searchMode) {
-      setActiveDiff(previousDiff, true);
-      return;
+      return previousDiff;
     }
 
     const newDiffIndex = diffs
       .slice(0, previousDiffIndex)
       .findIndex((diff) => diff.group === previousDiff.group);
     if (newDiffIndex !== -1) {
-      const newDiff = diffs[newDiffIndex];
-      if (newDiff) {
-        setActiveDiff(newDiff, true);
-      }
+      return diffs[newDiffIndex] ?? null;
+    }
+
+    return null;
+  });
+}
+
+export function useGoToPreviousDiff() {
+  const getPreviousDiff = useGetPreviousDiff();
+  const { setActiveDiff } = useBuildDiffState();
+  return useEventCallback(() => {
+    const previousDiff = getPreviousDiff();
+    if (previousDiff) {
+      setActiveDiff(previousDiff, true);
     }
   });
-  return goToPreviousDiff;
 }
 
 const useExpandedState = (initial: string[]) => {

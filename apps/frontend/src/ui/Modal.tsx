@@ -21,9 +21,9 @@ const modalStyles = (props: ModalRenderProps) =>
     props.isExiting && "animate-out zoom-out-95 ease-in duration-200",
   );
 
-export type { ModalOverlayProps };
+export type ModalProps = ModalOverlayProps;
 
-export function Modal(props: ModalOverlayProps) {
+export function Modal(props: ModalProps) {
   return (
     <ModalOverlay {...props} className={overlayStyles}>
       <RACModal {...props} className={modalStyles} />
