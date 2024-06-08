@@ -4,11 +4,13 @@ import { useQuery } from "@apollo/client";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { graphql } from "@/gql";
 
+import { BuildContextProvider } from "./BuildContext";
 import { BuildDiffProvider } from "./BuildDiffState";
 import { BuildHotkeysDialog } from "./BuildHotkeys";
 import { useBuildHotkeysDialogState } from "./BuildHotkeysDialogState";
 import { BuildNotFound } from "./BuildNotFound";
 import type { BuildParams } from "./BuildParams";
+import { BuildReviewDialogProvider } from "./BuildReviewDialog";
 import { BuildReviewStateProvider } from "./BuildReviewState";
 import { BuildWorkspace } from "./BuildWorkspace";
 import { BuildHeader } from "./header/BuildHeader";
@@ -24,6 +26,8 @@ const ProjectQuery = graphql(`
       id
       ...BuildHeader_Project
       ...BuildWorkspace_Project
+      ...BuildReviewDialog_Project
+      permissions
       account {
         id
         ...OvercapacityBanner_Account
@@ -77,31 +81,39 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
   }
 
   return (
-    <BuildDiffProvider params={params} build={build}>
-      <BuildReviewStateProvider params={params}>
-        {hotkeysDialog && <BuildHotkeysDialog state={hotkeysDialog} />}
-        <div className="m flex h-screen min-h-0 flex-col">
-          {data?.project?.account && (
-            <>
-              <PaymentBanner account={data.project.account} />
-              <OvercapacityBanner
-                account={data.project.account}
+    <BuildContextProvider permissions={data?.project?.permissions ?? null}>
+      <BuildDiffProvider params={params} build={build}>
+        <BuildReviewStateProvider params={params}>
+          <BuildReviewDialogProvider project={data?.project ?? null}>
+            {hotkeysDialog && <BuildHotkeysDialog state={hotkeysDialog} />}
+            <div className="m flex h-screen min-h-0 flex-col">
+              {data?.project?.account && (
+                <>
+                  <PaymentBanner account={data.project.account} />
+                  <OvercapacityBanner
+                    account={data.project.account}
+                    accountSlug={params.accountSlug}
+                  />
+                </>
+              )}
+              <BuildHeader
+                buildNumber={params.buildNumber}
                 accountSlug={params.accountSlug}
+                projectName={params.projectName}
+                build={build}
+                project={data?.project ?? null}
               />
-            </>
-          )}
-          <BuildHeader
-            buildNumber={params.buildNumber}
-            accountSlug={params.accountSlug}
-            projectName={params.projectName}
-            build={build}
-            project={data?.project ?? null}
-          />
-          {project && build ? (
-            <BuildWorkspace params={params} build={build} project={project} />
-          ) : null}
-        </div>
-      </BuildReviewStateProvider>
-    </BuildDiffProvider>
+              {project && build ? (
+                <BuildWorkspace
+                  params={params}
+                  build={build}
+                  project={project}
+                />
+              ) : null}
+            </div>
+          </BuildReviewDialogProvider>
+        </BuildReviewStateProvider>
+      </BuildDiffProvider>
+    </BuildContextProvider>
   );
 };

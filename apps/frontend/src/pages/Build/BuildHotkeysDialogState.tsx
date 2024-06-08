@@ -1,9 +1,9 @@
 import { createContext, useContext, useMemo, useState } from "react";
 
-import { ModalOverlayProps } from "@/ui/Modal";
+import { ModalProps } from "@/ui/Modal";
 
 export type HotkeysDialogState = {
-  isOpen: ModalOverlayProps["isOpen"];
+  isOpen: ModalProps["isOpen"];
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
 

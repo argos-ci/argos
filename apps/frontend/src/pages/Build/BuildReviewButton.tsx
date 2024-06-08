@@ -1,4 +1,3 @@
-import { useMutation } from "@apollo/client";
 import { ChevronDownIcon } from "lucide-react";
 
 import { getBuildIcon } from "@/containers/Build";
@@ -13,10 +12,11 @@ import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { useMarkAllDiffsAsAccepted } from "../BuildReviewState";
+import { useSetValidationStatusMutation } from "./BuildReviewAction";
+import { useMarkAllDiffsAsAccepted } from "./BuildReviewState";
 
 const ProjectFragment = graphql(`
-  fragment ReviewButton_Project on Project {
+  fragment BuildReviewButton_Project on Project {
     name
     permissions
     public
@@ -31,56 +31,32 @@ const ProjectFragment = graphql(`
   }
 `);
 
-const SetValidationStatusMutation = graphql(`
-  mutation setValidationStatus(
-    $buildId: ID!
-    $validationStatus: ValidationStatus!
-  ) {
-    setValidationStatus(
-      buildId: $buildId
-      validationStatus: $validationStatus
-    ) {
-      id
-      status
-    }
-  }
-`);
-
-interface BaseReviewButtonProps {
+function BaseReviewButton(props: {
   build: { id: string; status: BuildStatus };
   disabled?: boolean;
-}
-
-const BaseReviewButton = ({
-  build,
-  disabled = false,
-}: BaseReviewButtonProps) => {
-  const [setValidationStatus, { loading }] = useMutation(
-    SetValidationStatusMutation,
-    {
-      optimisticResponse: (variables) => ({
-        setValidationStatus: {
-          id: variables.buildId,
-          status:
-            variables.validationStatus === ValidationStatus.Accepted
-              ? BuildStatus.Accepted
-              : variables.validationStatus === ValidationStatus.Rejected
-                ? BuildStatus.Rejected
-                : BuildStatus.Pending,
-        },
-      }),
+  autoFocus?: boolean;
+  onCompleted?: () => void;
+  children?: React.ReactNode;
+}) {
+  const markAllDiffsAsAccepted = useMarkAllDiffsAsAccepted();
+  const [setValidationStatus, { loading }] = useSetValidationStatusMutation({
+    onCompleted: () => {
+      markAllDiffsAsAccepted();
+      props.onCompleted?.();
     },
-  );
+  });
 
   const AcceptIcon = getBuildIcon("check", "accepted");
   const RejectIcon = getBuildIcon("check", "rejected");
 
-  const markAllDiffsAsAccepted = useMarkAllDiffsAsAccepted();
-
   return (
     <MenuTrigger>
-      <Button className="shrink-0" isDisabled={disabled || loading}>
-        Review changes
+      <Button
+        className="shrink-0"
+        isDisabled={props.disabled || loading}
+        autoFocus={props.autoFocus}
+      >
+        {props.children ?? "Review changes"}
         <ButtonIcon position="right">
           <ChevronDownIcon />
         </ButtonIcon>
@@ -91,13 +67,12 @@ const BaseReviewButton = ({
             onAction={() => {
               setValidationStatus({
                 variables: {
-                  buildId: build.id,
+                  buildId: props.build.id,
                   validationStatus: ValidationStatus.Accepted,
                 },
               });
-              markAllDiffsAsAccepted();
             }}
-            isDisabled={build.status === "accepted"}
+            isDisabled={props.build.status === "accepted"}
           >
             <MenuItemIcon className="text-success-low">
               <AcceptIcon />
@@ -108,12 +83,12 @@ const BaseReviewButton = ({
             onAction={() => {
               setValidationStatus({
                 variables: {
-                  buildId: build.id,
+                  buildId: props.build.id,
                   validationStatus: ValidationStatus.Rejected,
                 },
               });
             }}
-            isDisabled={build.status === "rejected"}
+            isDisabled={props.build.status === "rejected"}
           >
             <MenuItemIcon className="text-danger-low">
               <RejectIcon />
@@ -124,9 +99,9 @@ const BaseReviewButton = ({
       </Popover>
     </MenuTrigger>
   );
-};
+}
 
-export function DisabledReviewButton(props: { tooltip: React.ReactNode }) {
+export function DisabledBuildReviewButton(props: { tooltip: React.ReactNode }) {
   return (
     <Tooltip content={props.tooltip}>
       <div>
@@ -136,9 +111,12 @@ export function DisabledReviewButton(props: { tooltip: React.ReactNode }) {
   );
 }
 
-export const ReviewButton = (props: {
+export function BuildReviewButton(props: {
   project: FragmentType<typeof ProjectFragment>;
-}) => {
+  autoFocus?: boolean;
+  onCompleted?: () => void;
+  children?: React.ReactNode;
+}) {
   const project = useFragment(ProjectFragment, props.project);
   if (
     !project.build ||
@@ -154,9 +132,17 @@ export const ReviewButton = (props: {
 
   if (!project.permissions.includes(ProjectPermission.Review)) {
     return (
-      <DisabledReviewButton tooltip="You must be a reviewer to approve or reject changes." />
+      <DisabledBuildReviewButton tooltip="You must be a reviewer to approve or reject changes." />
     );
   }
 
-  return <BaseReviewButton build={project.build} />;
-};
+  return (
+    <BaseReviewButton
+      build={project.build}
+      autoFocus={props.autoFocus}
+      onCompleted={props.onCompleted}
+    >
+      {props.children}
+    </BaseReviewButton>
+  );
+}
