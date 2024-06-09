@@ -17,6 +17,7 @@ const BuildFragment = graphql(`
     ...BuildDetail_Build
     status
     type
+    mode
     stats {
       total
       failure
@@ -114,6 +115,7 @@ export const BuildWorkspace = (props: {
                       <BuildOrphanDialog
                         referenceBranch={project.referenceBranch}
                         projectSlug={project.slug}
+                        mode={build.mode}
                       />
                     )}
                 </>

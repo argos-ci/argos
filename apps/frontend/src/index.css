@@ -40,6 +40,10 @@
   [role="button"] {
     cursor: default;
   }
+
+  strong {
+    @apply font-semibold;
+  }
 }
 
 @layer utilities {
