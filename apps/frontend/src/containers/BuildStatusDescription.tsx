@@ -1,4 +1,7 @@
+import { assertNever } from "@argos/util/assertNever";
+
 import { FragmentType, graphql, useFragment } from "@/gql";
+import { BuildMode } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 
 import { checkIsBuildEmpty } from "./Build";
@@ -7,6 +10,7 @@ const BuildFragment = graphql(`
   fragment BuildStatusDescription_Build on Build {
     type
     status
+    mode
     stats {
       total
     }
@@ -53,36 +57,51 @@ export const BuildStatusDescription = (props: {
           return <>Changes have been accepted by a user.</>;
         case "rejected":
           return <>Changes have been rejected by a user.</>;
-        default:
-          return (
-            <>
-              Comparing screenshot is not possible because no reference build
-              was found.
-              <div className="my-4">
-                It may happens because:
-                <ul className="ml-8 mt-2 list-disc space-y-1">
-                  <li>
-                    There is no Argos build on the{" "}
-                    <Code>{project.referenceBranch}</Code> branch yet
-                  </li>
-                  <li>
-                    Your pull-request is not rebased on{" "}
-                    <Code>{project.referenceBranch}</Code> branch
-                  </li>
-                </ul>
-              </div>
-              To perform comparison, make sure that you have an Argos build on{" "}
-              <Code>{project.referenceBranch}</Code> branch and that your
-              pull-request is rebased.
-            </>
-          );
+        default: {
+          switch (build.mode) {
+            case BuildMode.Ci:
+              return (
+                <>
+                  Comparing screenshot is not possible because no reference
+                  build was found.
+                  <div className="my-4">
+                    It may happens because:
+                    <ul className="ml-8 mt-2 list-disc space-y-1">
+                      <li>
+                        There is no Argos build on the{" "}
+                        <Code>{project.referenceBranch}</Code> branch yet
+                      </li>
+                      <li>
+                        Your pull-request is not rebased on{" "}
+                        <Code>{project.referenceBranch}</Code> branch
+                      </li>
+                    </ul>
+                  </div>
+                  To perform comparison, make sure that you have an Argos build
+                  on <Code>{project.referenceBranch}</Code> branch and that your
+                  pull-request is rebased.
+                </>
+              );
+            case BuildMode.Monitoring:
+              return (
+                <>
+                  This build has no comparison because no previous build has
+                  been approved yet. To start comparing screenshots, you need to
+                  approve this build.
+                </>
+              );
+            default:
+              assertNever(build.mode);
+          }
+        }
       }
 
+    // eslint-disable-next-line no-fallthrough
     case "reference":
       return (
         <>
           This build was performed on the reference branch. Screenshots will be
-          used as a comparison baseline in next Argos builds
+          used as a comparison baseline in next Argos builds.
         </>
       );
 
@@ -97,7 +116,7 @@ export const BuildStatusDescription = (props: {
               </>
             );
           }
-          return <>This build is stable: no screenshot change detected.</>;
+          return <>This build is stable: no changes found.</>;
         }
 
         case "error":
