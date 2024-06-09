@@ -75,10 +75,11 @@ const BuildReviewDialog = memo(function BuildReviewDialog(props: {
           return (
             <Dialog size="medium">
               <DialogBody>
-                <DialogTitle>Review completed</DialogTitle>
+                <DialogTitle>Finish your review</DialogTitle>
                 <DialogText>
-                  All changes have been marked as accepted. It's now time to
-                  approve the build.
+                  <strong>All changes have been marked as accepted.</strong>
+                  <br />
+                  Approve the changes to submit your review.
                 </DialogText>
               </DialogBody>
               <DialogFooter>
@@ -103,7 +104,7 @@ const BuildReviewDialog = memo(function BuildReviewDialog(props: {
                     props.onOpenChange(false);
                   }}
                 >
-                  Approve build
+                  Approve changes
                 </Button>
               </DialogFooter>
             </Dialog>
@@ -112,7 +113,7 @@ const BuildReviewDialog = memo(function BuildReviewDialog(props: {
         return (
           <Dialog size="medium">
             <DialogBody>
-              <DialogTitle>Review completed</DialogTitle>
+              <DialogTitle>Finish your review</DialogTitle>
               <DialogText>
                 During your review,{" "}
                 {summary.rejected.length > 1 ? (
@@ -125,7 +126,8 @@ const BuildReviewDialog = memo(function BuildReviewDialog(props: {
                     {summary.rejected.length} change has been marked as rejected
                   </strong>
                 )}
-                . It's now time to approve or reject the entire build.
+                .<br />
+                Approve or reject the changes to submit your review.
               </DialogText>
             </DialogBody>
             <DialogFooter>
