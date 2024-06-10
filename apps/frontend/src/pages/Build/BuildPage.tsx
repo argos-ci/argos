@@ -83,7 +83,10 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
   return (
     <BuildContextProvider permissions={data?.project?.permissions ?? null}>
       <BuildDiffProvider params={params} build={build}>
-        <BuildReviewStateProvider params={params}>
+        <BuildReviewStateProvider
+          params={params}
+          buildStatus={data?.project?.build?.status ?? null}
+        >
           <BuildReviewDialogProvider project={data?.project ?? null}>
             {hotkeysDialog && <BuildHotkeysDialog state={hotkeysDialog} />}
             <div className="m flex h-screen min-h-0 flex-col">
