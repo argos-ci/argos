@@ -7,6 +7,7 @@ import {
 } from "react";
 import { invariant } from "@argos/util/invariant";
 
+import { BuildStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { usePrevious } from "@/ui/usePrevious";
 import { useStorageState } from "@/util/useStorageState";
@@ -31,6 +32,7 @@ type BuildReviewStateValue = {
   setDiffStatuses: React.Dispatch<
     React.SetStateAction<Record<Diff["id"], EvaluationStatus>>
   >;
+  buildStatus: BuildStatus | null;
 };
 
 const BuildReviewStateContext = createContext<BuildReviewStateValue | null>(
@@ -77,12 +79,17 @@ function useReviewStatus() {
 function useWatchReviewComplete(callback: () => void) {
   const reviewStatus = useReviewStatus();
   const previousReviewStatus = usePrevious(reviewStatus);
+  const { buildStatus } = useBuildReviewState();
   const evtCallback = useEventCallback(callback);
   useEffect(() => {
-    if (previousReviewStatus === "pending" && reviewStatus === "complete") {
+    if (
+      buildStatus === BuildStatus.DiffDetected &&
+      previousReviewStatus === "pending" &&
+      reviewStatus === "complete"
+    ) {
       evtCallback();
     }
-  }, [reviewStatus, previousReviewStatus, evtCallback]);
+  }, [reviewStatus, previousReviewStatus, evtCallback, buildStatus]);
 }
 
 /**
@@ -276,14 +283,16 @@ export function useBuildDiffStatusState(args: {
 export function BuildReviewStateProvider(props: {
   children: React.ReactNode;
   params: BuildParams;
+  buildStatus: BuildStatus | null;
 }) {
+  const { buildStatus } = props;
   const storageKey = `${props.params.projectName}#${props.params.buildNumber}.review.diffStatuses`;
   const [diffStatuses, setDiffStatuses] = useStorageState<
     Record<string, EvaluationStatus>
   >(storageKey, {});
   const value = useMemo<BuildReviewStateValue>(
-    () => ({ diffStatuses, setDiffStatuses }),
-    [diffStatuses, setDiffStatuses],
+    () => ({ diffStatuses, setDiffStatuses, buildStatus }),
+    [diffStatuses, setDiffStatuses, buildStatus],
   );
   return (
     <BuildReviewStateContext.Provider value={value}>
