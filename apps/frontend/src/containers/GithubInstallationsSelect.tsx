@@ -3,7 +3,6 @@ import { invariant } from "@apollo/client/utilities/globals";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { ListIcon, PlusIcon } from "lucide-react";
 
-import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import {
   ListBox,
@@ -13,6 +12,8 @@ import {
 } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
+
+import { getInstallationUrl } from "./GitHub";
 
 const InstallationFragment = graphql(`
   fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {
@@ -93,11 +94,7 @@ export const GithubInstallationsSelect = React.forwardRef<
           })}
           <ListBoxSeparator />
           <ListBoxItem
-            href={`${config.get(
-              "github.appUrl",
-            )}/installations/new?state=${encodeURIComponent(
-              window.location.pathname,
-            )}`}
+            href={getInstallationUrl()}
             target="_blank"
             textValue="Add GitHub Account"
           >

@@ -15,6 +15,12 @@ function useLoginUrl(redirect: string | null | undefined) {
   )}`;
 }
 
+export function getInstallationUrl() {
+  return `${config.get(
+    "github.appUrl",
+  )}/installations/new?state=${encodeURIComponent(window.location.pathname)}`;
+}
+
 export function GitHubLoginButton({
   children,
   redirect,
