@@ -17,7 +17,12 @@ export const HeadlessLink = forwardRef<HTMLAnchorElement, LinkProps>(
         ? external
         : typeof children !== "function" && target === "_blank";
     return (
-      <RACLink ref={ref} className={clsx("rac-focus", className)} {...props}>
+      <RACLink
+        ref={ref}
+        className={clsx("rac-focus", className)}
+        target={target}
+        {...props}
+      >
         {isExternal ? (
           <>
             {children}

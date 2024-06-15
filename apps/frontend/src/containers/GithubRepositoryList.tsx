@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
+import { Link } from "@/ui/Link";
 import { List, ListRow } from "@/ui/List";
 import { Loader } from "@/ui/Loader";
 import {
@@ -15,6 +16,7 @@ import {
 import { Time } from "@/ui/Time";
 
 import { Query } from "./Apollo";
+import { getInstallationUrl } from "./GitHub";
 
 const InstallationQuery = graphql(`
   query GithubRepositoryList_ghApiInstallationRepositories(
@@ -41,7 +43,7 @@ const InstallationQuery = graphql(`
   }
 `);
 
-const getPaginationIndexes = function (
+function getPaginationIndexes(
   page: number,
   pageCount: number,
   maxPaginationButtonCount: number,
@@ -64,9 +66,24 @@ const getPaginationIndexes = function (
     { length: lastPage - firstPage + 1 },
     (_, i) => i + firstPage,
   );
-};
+}
 
-const ReposPagination = ({
+function PaginationItem(props: {
+  index: number;
+  page: number;
+  setPage: (page: number) => void;
+}) {
+  return (
+    <PaginationButtonItem
+      isActive={props.index === props.page}
+      onPress={() => props.setPage(props.index)}
+    >
+      {props.index}
+    </PaginationButtonItem>
+  );
+}
+
+function ReposPagination({
   setPage,
   page,
   pageCount,
@@ -76,23 +93,12 @@ const ReposPagination = ({
   page: number;
   pageCount: number;
   paginationItemCount: number;
-}) => {
+}) {
   const paginationIndexes = getPaginationIndexes(
     page,
     pageCount,
     paginationItemCount,
   );
-
-  const PaginationItem = function ({ index }: { index: number }) {
-    return (
-      <PaginationButtonItem
-        isActive={index === page}
-        onPress={() => setPage(index)}
-      >
-        {index}
-      </PaginationButtonItem>
-    );
-  };
 
   return (
     <Pagination>
@@ -101,13 +107,18 @@ const ReposPagination = ({
           onPress={() => setPage(page - 1)}
           isDisabled={page === 1}
         />
-        <PaginationItem index={1} />
+        <PaginationItem index={1} page={page} setPage={setPage} />
         {page > paginationItemCount / 2 + 1 && <PaginationEllipsis />}
         {paginationIndexes.map((pageNumber) => (
-          <PaginationItem key={pageNumber} index={pageNumber} />
+          <PaginationItem
+            key={pageNumber}
+            index={pageNumber}
+            page={page}
+            setPage={setPage}
+          />
         ))}
         {page < pageCount - paginationItemCount / 2 && <PaginationEllipsis />}
-        <PaginationItem index={pageCount} />
+        <PaginationItem index={pageCount} page={page} setPage={setPage} />
         <PaginationNext
           onPress={() => setPage(page + 1)}
           isDisabled={page === pageCount}
@@ -115,7 +126,7 @@ const ReposPagination = ({
       </PaginationContent>
     </Pagination>
   );
-};
+}
 
 export const GithubRepositoryList = (props: {
   installationId: string;
@@ -163,6 +174,16 @@ export const GithubRepositoryList = (props: {
                   </Button>
                 </ListRow>
               ))}
+              {page === pageCount && (
+                <ListRow className="p-4 text-sm">
+                  <div>
+                    Repository not in the list?{" "}
+                    <Link href={getInstallationUrl()} target="_blank">
+                      Manage repositories
+                    </Link>
+                  </div>
+                </ListRow>
+              )}
             </List>
 
             {pageCount > 1 && (
@@ -170,7 +191,7 @@ export const GithubRepositoryList = (props: {
                 page={page}
                 pageCount={pageCount}
                 setPage={setPage}
-                paginationItemCount={7}
+                paginationItemCount={5}
               />
             )}
           </>
