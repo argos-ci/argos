@@ -127,11 +127,11 @@ export async function finalizePartialBuilds(input: {
   await Promise.all(
     builds.map(async (build) => {
       const previousBuild = await Build.query()
-        .where("ciProvider", "github-actions")
-        .where("projectId", build.projectId)
-        .where("runId", build.runId)
-        .where("runAttempt", "<", build.runAttempt)
-        .where("name", build.name)
+        .where("builds.ciProvider", "github-actions")
+        .where("builds.projectId", build.projectId)
+        .where("builds.runId", build.runId)
+        .where("builds.runAttempt", "<", build.runAttempt)
+        .where("builds.name", build.name)
         .joinRelated("compareScreenshotBucket")
         .where("compareScreenshotBucket.complete", true)
         .withGraphFetched("shards.screenshots.playwrightTraceFile")
