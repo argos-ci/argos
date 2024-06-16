@@ -341,7 +341,7 @@ export const handleGitHubEvents = async ({
           case "completed": {
             await finalizePartialBuilds({
               runId: String(payload.workflow_run.id),
-              runAttempt: payload.workflow_run.run_number,
+              runAttempt: payload.workflow_run.run_attempt,
             });
             return;
           }
