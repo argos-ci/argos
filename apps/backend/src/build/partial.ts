@@ -29,7 +29,7 @@ export async function checkIsPartialBuild(input: {
   }
 
   await project.$fetchGraph(
-    "githubRepository.githubAccount.activeInstallation",
+    "githubRepository.[githubAccount,activeInstallation]",
   );
 
   const { githubRepository } = project;
