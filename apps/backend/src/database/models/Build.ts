@@ -18,6 +18,7 @@ import {
   mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
+import { BuildShard } from "./BuildShard.js";
 import { GithubPullRequest } from "./GithubPullRequest.js";
 import { Project } from "./Project.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
@@ -86,6 +87,11 @@ export class Build extends Model {
       referenceCommit: { type: ["string", "null"] },
       referenceBranch: { type: ["string", "null"] },
       mode: { type: "string", enum: ["ci", "monitoring"] },
+      ciProvider: { type: ["string", "null"] },
+      argosSdk: { type: ["string", "null"] },
+      runId: { type: ["string", "null"] },
+      runAttempt: { type: ["integer", "null"] },
+      partial: { type: ["boolean", "null"] },
     },
   });
 
@@ -105,6 +111,11 @@ export class Build extends Model {
   referenceCommit!: string | null;
   referenceBranch!: string | null;
   mode!: BuildMode;
+  ciProvider!: string | null;
+  argosSdk!: string | null;
+  runId!: string | null;
+  runAttempt!: number | null;
+  partial!: boolean | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -148,6 +159,14 @@ export class Build extends Model {
           to: "github_pull_requests.id",
         },
       },
+      shards: {
+        relation: Model.HasManyRelation,
+        modelClass: BuildShard,
+        join: {
+          from: "builds.id",
+          to: "build_shards.buildId",
+        },
+      },
     };
   }
 
@@ -156,6 +175,7 @@ export class Build extends Model {
   project?: Project;
   screenshotDiffs?: ScreenshotDiff[];
   pullRequest?: GithubPullRequest | null;
+  shards?: BuildShard[];
 
   override $afterValidate(json: Pojo) {
     if (

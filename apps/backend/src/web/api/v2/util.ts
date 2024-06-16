@@ -2,6 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import type { Request } from "express";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
+import { checkIsPartialBuild } from "@/build/partial.js";
 import { transaction } from "@/database/index.js";
 import {
   Build,
@@ -9,21 +10,25 @@ import {
   GithubPullRequest,
   Project,
   ScreenshotBucket,
+  ScreenshotMetadata,
+  ScreenshotMetadataJsonSchema,
 } from "@/database/models/index.js";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 import { getRedisLock } from "@/util/redis/index.js";
+import { SHA1_REGEX_STR, SHA256_REGEX_STR } from "@/web/constants";
+import { validate } from "@/web/middlewares/validate";
 import { boom } from "@/web/util.js";
 
 export const getBuildName = (name: string | undefined | null) =>
   name || "default";
 
-const getOrCreatePullRequest = async ({
+async function getOrCreatePullRequest({
   githubRepositoryId,
   number,
 }: {
   githubRepositoryId: string;
   number: number;
-}) => {
+}) {
   const lockKey = `pullRequestCreation-${githubRepositoryId}:${number}`;
   const lock = await getRedisLock();
   return lock.acquire(lockKey, async () => {
@@ -46,26 +51,180 @@ const getOrCreatePullRequest = async ({
 
     return pr;
   });
+}
+
+export const validateCreateRequest = validate({
+  body: {
+    type: "object",
+    required: ["commit", "branch", "screenshotKeys"],
+    properties: {
+      commit: {
+        type: "string",
+        pattern: SHA1_REGEX_STR,
+      },
+      screenshotKeys: {
+        type: "array",
+        uniqueItems: true,
+        items: { type: "string", pattern: SHA256_REGEX_STR },
+      },
+      pwTraceKeys: {
+        type: "array",
+        uniqueItems: true,
+        items: { type: "string", pattern: SHA256_REGEX_STR },
+      },
+      branch: {
+        type: "string",
+      },
+      name: {
+        type: "string",
+        nullable: true,
+      },
+      parallel: {
+        type: "boolean",
+        nullable: true,
+      },
+      parallelNonce: {
+        type: "string",
+        nullable: true,
+      },
+      prNumber: {
+        type: "integer",
+        minimum: 1,
+        nullable: true,
+      },
+      prHeadCommit: {
+        type: "string",
+        nullable: true,
+      },
+      referenceCommit: {
+        type: "string",
+        nullable: true,
+      },
+      referenceBranch: {
+        type: "string",
+        nullable: true,
+      },
+      mode: {
+        oneOf: [
+          { type: "string", enum: ["ci", "monitoring"] },
+          { type: "null" },
+        ],
+      },
+      ciProvider: {
+        type: "string",
+        nullable: true,
+      },
+      argosSdk: {
+        type: "string",
+        nullable: true,
+      },
+      runId: {
+        type: "string",
+        nullable: true,
+      },
+      runAttempt: {
+        type: "integer",
+        minimum: 1,
+        nullable: true,
+      },
+    },
+  },
+});
+
+type CreateRequestPayload = {
+  commit: string;
+  screenshotKeys: string[];
+  pwTraceKeys?: string[];
+  branch: string;
+  name?: string | null;
+  parallel?: string | null;
+  parallelNonce?: string | null;
+  prNumber: number | null;
+  prHeadCommit?: string | null;
+  referenceCommit?: string | null;
+  referenceBranch?: string | null;
+  mode?: "ci" | "monitoring";
+  ciProvider?: string | null;
+  argosSdk?: string | null;
+  runId?: string | null;
+  runAttempt?: number | null;
 };
 
-type CreateRequest = Request<
+export type CreateRequest = Request<
   Record<string, never>,
+  Record<string, never>,
+  CreateRequestPayload
+> & { authProject: Project };
+
+export const validateUpdateRequest = validate({
+  params: {
+    type: "object",
+    required: ["buildId"],
+    properties: {
+      buildId: {
+        type: "integer",
+      },
+    },
+  },
+  body: {
+    type: "object",
+    required: ["screenshots"],
+    properties: {
+      screenshots: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["key", "name"],
+          properties: {
+            key: {
+              type: "string",
+              pattern: SHA256_REGEX_STR,
+            },
+            name: {
+              type: "string",
+            },
+            metadata: ScreenshotMetadataJsonSchema,
+          },
+        },
+      },
+      parallel: {
+        type: "boolean",
+        nullable: true,
+      },
+      parallelTotal: {
+        type: "integer",
+        minimum: 1,
+        nullable: true,
+      },
+      parallelIndex: {
+        type: "integer",
+        minimum: 1,
+        nullable: true,
+      },
+    },
+  },
+});
+
+export type UpdateRequest = Request<
+  {
+    buildId?: string;
+  },
   Record<string, never>,
   {
     commit: string;
-    branch: string;
-    referenceCommit?: string | null;
-    referenceBranch?: string | null;
-    name?: string | null;
-    parallel?: string | null;
-    parallelNonce?: string | null;
-    prNumber?: number | null;
-    prHeadCommit?: string | null;
-    mode?: BuildMode | null;
+    screenshots: {
+      key: string;
+      name: string;
+      metadata?: ScreenshotMetadata | null;
+      pwTraceKey?: string | null;
+    }[];
+    parallel?: boolean | null;
+    parallelTotal?: number | null;
+    parallelIndex?: number | null;
   }
-> & { authProject: Project };
+> & { authProject?: Project };
 
-const createBuild = async (params: {
+async function createBuild(params: {
   project: Project;
   commit: string;
   branch: string;
@@ -76,7 +235,11 @@ const createBuild = async (params: {
   referenceCommit?: string | null;
   referenceBranch?: string | null;
   mode?: BuildMode | null;
-}) => {
+  ciProvider?: string | null;
+  argosSdk?: string | null;
+  runId?: string | null;
+  runAttempt?: number | null;
+}) {
   const account = await params.project.$relatedQuery("account");
   if (!account) {
     throw boom(404, `Account not found.`);
@@ -141,6 +304,13 @@ const createBuild = async (params: {
           mode,
         });
 
+        const isPartial = await checkIsPartialBuild({
+          ciProvider: params.ciProvider ?? null,
+          project: params.project,
+          runAttempt: params.runAttempt ?? null,
+          runId: params.runId ?? null,
+        });
+
         const build = await Build.query(trx).insertAndFetch({
           jobStatus: "pending" as const,
           baseScreenshotBucketId: null,
@@ -155,6 +325,11 @@ const createBuild = async (params: {
           referenceBranch: params.referenceBranch ?? null,
           compareScreenshotBucketId: bucket.id,
           mode,
+          ciProvider: params.ciProvider ?? null,
+          argosSdk: params.argosSdk ?? null,
+          runId: params.runId ?? null,
+          runAttempt: params.runAttempt ?? null,
+          partial: isPartial,
         });
 
         return build;
@@ -168,13 +343,10 @@ const createBuild = async (params: {
   });
 
   return build;
-};
+}
 
-export const createBuildFromRequest = async ({
-  req,
-}: {
-  req: CreateRequest;
-}) => {
+export async function createBuildFromRequest({ req }: { req: CreateRequest }) {
+  console.log(req.body);
   return createBuild({
     project: req.authProject,
     buildName: req.body.name ?? null,
@@ -189,5 +361,9 @@ export const createBuildFromRequest = async ({
     prHeadCommit: req.body.prHeadCommit ?? null,
     referenceCommit: req.body.referenceCommit ?? null,
     referenceBranch: req.body.referenceBranch ?? null,
+    runId: req.body.runId ?? null,
+    runAttempt: req.body.runAttempt ?? null,
+    ciProvider: req.body.ciProvider ?? null,
+    argosSdk: req.body.argosSdk ?? null,
   });
-};
+}

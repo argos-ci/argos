@@ -157,6 +157,42 @@ ALTER SEQUENCE public.build_notifications_id_seq OWNED BY public.build_notificat
 
 
 --
+-- Name: build_shards; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.build_shards (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "buildId" bigint NOT NULL,
+    index integer
+);
+
+
+ALTER TABLE public.build_shards OWNER TO postgres;
+
+--
+-- Name: build_shards_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.build_shards_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.build_shards_id_seq OWNER TO postgres;
+
+--
+-- Name: build_shards_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.build_shards_id_seq OWNED BY public.build_shards.id;
+
+
+--
 -- Name: builds; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -180,6 +216,11 @@ CREATE TABLE public.builds (
     "githubPullRequestId" bigint,
     "prHeadCommit" character varying(255),
     mode text DEFAULT 'ci'::text NOT NULL,
+    "ciProvider" character varying(255),
+    "argosSdk" character varying(255),
+    "runId" character varying(255),
+    "runAttempt" integer,
+    partial boolean DEFAULT false NOT NULL,
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
@@ -976,7 +1017,8 @@ CREATE TABLE public.screenshots (
     "fileId" bigint,
     "testId" bigint,
     metadata jsonb,
-    "playwrightTraceFileId" bigint
+    "playwrightTraceFileId" bigint,
+    "buildShardId" bigint
 );
 
 
@@ -1276,6 +1318,13 @@ ALTER TABLE ONLY public.build_notifications ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: build_shards id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_shards ALTER COLUMN id SET DEFAULT nextval('public.build_shards_id_seq'::regclass);
+
+
+--
 -- Name: builds id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1502,6 +1551,14 @@ ALTER TABLE ONLY public.accounts
 
 ALTER TABLE ONLY public.build_notifications
     ADD CONSTRAINT build_notifications_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: build_shards build_shards_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_shards
+    ADD CONSTRAINT build_shards_pkey PRIMARY KEY (id);
 
 
 --
@@ -2277,6 +2334,14 @@ ALTER TABLE ONLY public.build_notifications
 
 
 --
+-- Name: build_shards build_shards_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_shards
+    ADD CONSTRAINT build_shards_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
+
+
+--
 -- Name: builds builds_basescreenshotbucketid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2490,6 +2555,14 @@ ALTER TABLE ONLY public.screenshot_diffs
 
 ALTER TABLE ONLY public.screenshot_diffs
     ADD CONSTRAINT screenshot_diffs_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
+
+
+--
+-- Name: screenshots screenshots_buildshardid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.screenshots
+    ADD CONSTRAINT screenshots_buildshardid_foreign FOREIGN KEY ("buildShardId") REFERENCES public.build_shards(id);
 
 
 --
@@ -2710,3 +2783,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024042
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240428200226_monitoring-mode-bucket.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240505121926_slack-installation.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240604133729_comment_id_big_integer.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240614204320_build_shards.js', 1, NOW());
