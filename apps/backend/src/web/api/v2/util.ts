@@ -291,6 +291,14 @@ async function createBuild(params: {
       : null;
 
   const lock = await getRedisLock();
+
+  const isPartial = await checkIsPartialBuild({
+    ciProvider: params.ciProvider ?? null,
+    project: params.project,
+    runAttempt: params.runAttempt ?? null,
+    runId: params.runId ?? null,
+  });
+
   const build = await lock.acquire(
     `buildCreation-${params.project.id}`,
     async () => {
@@ -302,13 +310,6 @@ async function createBuild(params: {
           projectId: params.project.id,
           complete: false,
           mode,
-        });
-
-        const isPartial = await checkIsPartialBuild({
-          ciProvider: params.ciProvider ?? null,
-          project: params.project,
-          runAttempt: params.runAttempt ?? null,
-          runId: params.runId ?? null,
         });
 
         const build = await Build.query(trx).insertAndFetch({

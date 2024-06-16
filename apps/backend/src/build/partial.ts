@@ -63,7 +63,7 @@ export async function checkIsPartialBuild(input: {
         owner: githubAccount.login,
         repo: githubRepository.name,
         run_id: Number(runId),
-        per_page: 100,
+        per_page: 30,
       }),
       { milliseconds: 5000 },
     );
