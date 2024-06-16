@@ -117,6 +117,7 @@ export async function finalizePartialBuilds(input: {
     .where("runId", input.runId)
     .where("runAttempt", input.runAttempt)
     .where("jobStatus", "pending")
+    .where("partial", true)
     .withGraphFetched("shards");
 
   await Promise.all(
