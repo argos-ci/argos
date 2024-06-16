@@ -25,13 +25,15 @@ export async function checkIsPartialBuild(input: {
   runAttempt: number | null;
   project: Project;
 }) {
-  const { runAttempt, runId, ciProvider, project } = input;
+  const { runAttempt, runId, ciProvider } = input;
   const isEligibleBuild =
     ciProvider === "github-actions" && runAttempt && runAttempt > 1 && runId;
 
   if (!isEligibleBuild) {
     return false;
   }
+
+  const project = input.project.$clone();
 
   await project.$fetchGraph(
     "githubRepository.[githubAccount,activeInstallation]",
@@ -117,6 +119,9 @@ export async function finalizePartialBuilds(input: {
     .where("runId", input.runId)
     .where("runAttempt", input.runAttempt)
     .where("jobStatus", "pending")
+    .where("partial", true)
+    .joinRelated("compareScreenshotBucket")
+    .where("compareScreenshotBucket.complete", false)
     .withGraphFetched("shards");
 
   await Promise.all(
@@ -127,6 +132,8 @@ export async function finalizePartialBuilds(input: {
         .where("runId", build.runId)
         .where("runAttempt", "<", build.runAttempt)
         .where("name", build.name)
+        .joinRelated("compareScreenshotBucket")
+        .where("compareScreenshotBucket.complete", true)
         .withGraphFetched("shards.screenshots.playwrightTraceFile")
         .first();
 
