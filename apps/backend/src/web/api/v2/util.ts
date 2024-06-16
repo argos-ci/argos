@@ -280,18 +280,18 @@ async function createBuild(params: {
 
   const [pullRequest, isPartial, lock] = await Promise.all([
     (async () => {
-      if (params.prNumber) {
-        const githubRepository =
-          await params.project.$relatedQuery("githubRepository");
-        if (!githubRepository) {
-          return null;
-        }
-        return getOrCreatePullRequest({
-          githubRepositoryId: githubRepository.id,
-          number: params.prNumber,
-        });
+      if (!params.prNumber) {
+        return null;
       }
-      return null;
+      const githubRepository =
+        await params.project.$relatedQuery("githubRepository");
+      if (!githubRepository) {
+        return null;
+      }
+      return getOrCreatePullRequest({
+        githubRepositoryId: githubRepository.id,
+        number: params.prNumber,
+      });
     })(),
     checkIsPartialBuild({
       ciProvider: params.ciProvider ?? null,
