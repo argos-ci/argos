@@ -135,6 +135,7 @@ export async function finalizePartialBuilds(input: {
         .joinRelated("compareScreenshotBucket")
         .where("compareScreenshotBucket.complete", true)
         .withGraphFetched("shards.screenshots.playwrightTraceFile")
+        .orderBy("builds.runAttempt", "desc")
         .first();
 
       if (!previousBuild) {
