@@ -1,7 +1,12 @@
 import { invariant } from "@argos/util/invariant";
 import pTimeout from "p-timeout";
 
-import { Build, Project, Screenshot } from "@/database/models/index.js";
+import {
+  Build,
+  BuildShard,
+  Project,
+  Screenshot,
+} from "@/database/models/index.js";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
@@ -118,8 +123,8 @@ export async function finalizePartialBuilds(input: {
     builds.map(async (build) => {
       const previousBuild = await Build.query()
         .where("ciProvider", "github-actions")
-        .where("runId", input.runId)
-        .where("runAttempt", "<", input.runAttempt)
+        .where("runId", build.runId)
+        .where("runAttempt", "<", build.runAttempt)
         .where("name", build.name)
         .withGraphFetched("shards.screenshots.playwrightTraceFile")
         .first();
@@ -143,6 +148,10 @@ export async function finalizePartialBuilds(input: {
       await Promise.all(
         missingShards.map(async (shard) => {
           invariant(shard.screenshots, "Screenshots should be fetched");
+          const copiedShard = await BuildShard.query().insertAndFetch({
+            buildId: build.id,
+            index: shard.index,
+          });
           await insertFilesAndScreenshots({
             screenshots: shard.screenshots.map((screenshot) => ({
               key: screenshot.s3Id,
@@ -150,7 +159,7 @@ export async function finalizePartialBuilds(input: {
               metadata: screenshot.metadata,
               pwTraceKey: screenshot.playwrightTraceFile?.key ?? null,
             })),
-            shard,
+            shard: copiedShard,
             build,
           });
         }),
