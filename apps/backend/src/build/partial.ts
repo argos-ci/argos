@@ -25,13 +25,15 @@ export async function checkIsPartialBuild(input: {
   runAttempt: number | null;
   project: Project;
 }) {
-  const { runAttempt, runId, ciProvider, project } = input;
+  const { runAttempt, runId, ciProvider } = input;
   const isEligibleBuild =
     ciProvider === "github-actions" && runAttempt && runAttempt > 1 && runId;
 
   if (!isEligibleBuild) {
     return false;
   }
+
+  const project = input.project.$clone();
 
   await project.$fetchGraph(
     "githubRepository.[githubAccount,activeInstallation]",

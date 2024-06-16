@@ -1,4 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import type { Request } from "express";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
@@ -241,9 +242,7 @@ async function createBuild(params: {
   runAttempt?: number | null;
 }) {
   const account = await params.project.$relatedQuery("account");
-  if (!account) {
-    throw boom(404, `Account not found.`);
-  }
+  invariant(account, "Account should be fetched");
 
   const manager = account.$getSubscriptionManager();
   const [plan, outOfCapacityReason] = await Promise.all([
@@ -279,28 +278,32 @@ async function createBuild(params: {
   const buildName = params.buildName || "default";
   const mode = params.mode ?? "ci";
 
-  const githubRepository =
-    await params.project.$relatedQuery("githubRepository");
-
-  const pullRequest =
-    params.prNumber && githubRepository
-      ? await getOrCreatePullRequest({
+  const [pullRequest, isPartial, lock] = await Promise.all([
+    (async () => {
+      if (params.prNumber) {
+        const githubRepository =
+          await params.project.$relatedQuery("githubRepository");
+        if (!githubRepository) {
+          return null;
+        }
+        return getOrCreatePullRequest({
           githubRepositoryId: githubRepository.id,
           number: params.prNumber,
-        })
-      : null;
-
-  const lock = await getRedisLock();
-
-  const isPartial = await checkIsPartialBuild({
-    ciProvider: params.ciProvider ?? null,
-    project: params.project,
-    runAttempt: params.runAttempt ?? null,
-    runId: params.runId ?? null,
-  });
+        });
+      }
+      return null;
+    })(),
+    checkIsPartialBuild({
+      ciProvider: params.ciProvider ?? null,
+      project: params.project,
+      runAttempt: params.runAttempt ?? null,
+      runId: params.runId ?? null,
+    }),
+    getRedisLock(),
+  ]);
 
   const build = await lock.acquire(
-    `buildCreation-${params.project.id}`,
+    `buildCreation-${params.project.id}-${buildName}`,
     async () => {
       return transaction(async (trx) => {
         const bucket = await ScreenshotBucket.query(trx).insertAndFetch({
@@ -347,7 +350,6 @@ async function createBuild(params: {
 }
 
 export async function createBuildFromRequest({ req }: { req: CreateRequest }) {
-  console.log(req.body);
   return createBuild({
     project: req.authProject,
     buildName: req.body.name ?? null,
