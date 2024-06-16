@@ -56,7 +56,7 @@ export const createRedisLock = (client: RedisClient) => {
       task(),
       new Promise((_resolve, reject) => {
         timer = setTimeout(() => {
-          reject(new Error("Lock timeout"));
+          reject(new Error(`Lock timeout "${name}" after ${timeout}ms`));
         }, timeout);
       }),
     ])) as T;
