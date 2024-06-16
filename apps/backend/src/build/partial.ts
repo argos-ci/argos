@@ -123,6 +123,7 @@ export async function finalizePartialBuilds(input: {
     builds.map(async (build) => {
       const previousBuild = await Build.query()
         .where("ciProvider", "github-actions")
+        .where("projectId", build.projectId)
         .where("runId", build.runId)
         .where("runAttempt", "<", build.runAttempt)
         .where("name", build.name)
