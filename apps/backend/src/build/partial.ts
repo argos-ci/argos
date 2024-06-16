@@ -115,26 +115,24 @@ export async function finalizePartialBuilds(input: {
   }
 
   const builds = await Build.query()
-    .where("ciProvider", "github-actions")
+    .withGraphFetched("shards")
     .where("runId", input.runId)
     .where("runAttempt", input.runAttempt)
+    .where("ciProvider", "github-actions")
     .where("jobStatus", "pending")
-    .where("partial", true)
-    .joinRelated("compareScreenshotBucket")
-    .where("compareScreenshotBucket.complete", false)
-    .withGraphFetched("shards");
+    .where("partial", true);
 
   await Promise.all(
     builds.map(async (build) => {
       const previousBuild = await Build.query()
-        .where("builds.ciProvider", "github-actions")
-        .where("builds.projectId", build.projectId)
-        .where("builds.runId", build.runId)
-        .where("builds.runAttempt", "<", build.runAttempt)
-        .where("builds.name", build.name)
         .joinRelated("compareScreenshotBucket")
-        .where("compareScreenshotBucket.complete", true)
         .withGraphFetched("shards.screenshots.playwrightTraceFile")
+        .where("builds.runId", build.runId)
+        .where("builds.projectId", build.projectId)
+        .where("builds.name", build.name)
+        .where("builds.ciProvider", "github-actions")
+        .where("builds.runAttempt", "<", build.runAttempt)
+        .where("compareScreenshotBucket.complete", true)
         .orderBy("builds.runAttempt", "desc")
         .first();
 
