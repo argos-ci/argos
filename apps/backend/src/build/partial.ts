@@ -119,7 +119,7 @@ export async function finalizePartialBuilds(input: {
       const previousBuild = await Build.query()
         .where("ciProvider", "github-actions")
         .where("runId", input.runId)
-        .where("runAttempt", input.runAttempt - 1)
+        .where("runAttempt", "<", input.runAttempt)
         .where("name", build.name)
         .withGraphFetched("shards.screenshots.playwrightTraceFile")
         .first();
@@ -135,20 +135,26 @@ export async function finalizePartialBuilds(input: {
       const missingShards = previousBuild.shards.filter(
         (shard) => !currentShardIndices.includes(shard.index),
       );
-      const missingScreenshots = missingShards.flatMap((shard) => {
-        invariant(shard.screenshots, "Screenshots should be fetched");
-        return shard.screenshots;
-      });
 
-      await insertFilesAndScreenshots({
-        screenshots: missingScreenshots.map((screenshot) => ({
-          key: screenshot.s3Id,
-          name: screenshot.name,
-          metadata: screenshot.metadata,
-          pwTraceKey: screenshot.playwrightTraceFile?.key ?? null,
-        })),
-        build,
-      });
+      if (missingShards.length === 0) {
+        return;
+      }
+
+      await Promise.all(
+        missingShards.map(async (shard) => {
+          invariant(shard.screenshots, "Screenshots should be fetched");
+          await insertFilesAndScreenshots({
+            screenshots: shard.screenshots.map((screenshot) => ({
+              key: screenshot.s3Id,
+              name: screenshot.name,
+              metadata: screenshot.metadata,
+              pwTraceKey: screenshot.playwrightTraceFile?.key ?? null,
+            })),
+            shard,
+            build,
+          });
+        }),
+      );
 
       const screenshotCount = await Screenshot.query()
         .where("screenshotBucketId", build.compareScreenshotBucketId)
