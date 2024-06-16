@@ -12,7 +12,7 @@ Octokit.plugin(retry);
 
 export type { Octokit };
 
-export const getAppOctokit = (): Octokit => {
+export function getAppOctokit(): Octokit {
   return new Octokit({
     debug: config.get("env") === "development",
     authStrategy: createAppAuth,
@@ -21,14 +21,14 @@ export const getAppOctokit = (): Octokit => {
       privateKey: config.get("github.privateKey"),
     },
   });
-};
+}
 
-export const getTokenOctokit = (token: string): Octokit => {
+export function getTokenOctokit(token: string): Octokit {
   return new Octokit({
     debug: config.get("env") === "development",
     auth: token,
   });
-};
+}
 
 export async function getInstallationOctokit(
   installationId: string,

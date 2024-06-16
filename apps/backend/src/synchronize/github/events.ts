@@ -2,6 +2,7 @@
 import { invariant } from "@argos/util/invariant";
 import type { EmitterWebhookEvent } from "@octokit/webhooks";
 
+import { finalizePartialBuilds } from "@/build/partial.js";
 import { getPendingCommentBody } from "@/database/index.js";
 import {
   Account,
@@ -330,6 +331,18 @@ export const handleGitHubEvents = async ({
               })(),
             ]);
 
+            return;
+          }
+        }
+        return;
+      }
+      case "workflow_run": {
+        switch (payload.action) {
+          case "completed": {
+            await finalizePartialBuilds({
+              runId: String(payload.workflow_run.id),
+              runAttempt: payload.workflow_run.run_number,
+            });
             return;
           }
         }

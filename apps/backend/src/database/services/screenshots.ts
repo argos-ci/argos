@@ -4,6 +4,7 @@ import type { PartialModelObject, TransactionOrKnex } from "objection";
 import { transaction } from "@/database/index.js";
 import {
   Build,
+  BuildShard,
   File,
   Screenshot,
   ScreenshotMetadata,
@@ -52,15 +53,16 @@ type InsertFilesAndScreenshotsParams = {
     pwTraceKey?: string | null;
   }[];
   build: Build;
+  shard?: BuildShard | null;
   trx?: TransactionOrKnex;
 };
 
 /**
  * @returns The number of screenshots inserted
  */
-export const insertFilesAndScreenshots = async (
+export async function insertFilesAndScreenshots(
   params: InsertFilesAndScreenshotsParams,
-): Promise<number> => {
+): Promise<number> {
   const screenshots = params.screenshots;
 
   if (screenshots.length === 0) {
@@ -164,10 +166,11 @@ export const insertFilesAndScreenshots = async (
           testId: test.id,
           metadata: screenshot.metadata ?? null,
           playwrightTraceFileId: pwTraceFile?.id ?? null,
+          buildShardId: params.shard?.id ?? null,
         };
       }),
     );
 
     return params.screenshots.length;
   });
-};
+}

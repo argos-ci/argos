@@ -3,7 +3,7 @@ import type { Octokit } from "@octokit/rest";
 import type { GithubPullRequest } from "@/database/models/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
 
-const getOrCreatePullRequestComment = async ({
+async function getOrCreatePullRequestComment({
   owner,
   repo,
   body,
@@ -15,7 +15,7 @@ const getOrCreatePullRequestComment = async ({
   body: string;
   octokit: Octokit;
   pullRequest: GithubPullRequest;
-}) => {
+}) {
   const lock = await getRedisLock();
   await lock.acquire(pullRequest.id, async () => {
     await pullRequest.$query();
@@ -35,9 +35,9 @@ const getOrCreatePullRequestComment = async ({
       .patch({ commentId: String(data.id) });
     return null;
   });
-};
+}
 
-export const commentGithubPr = async ({
+export async function commentGithubPr({
   owner,
   repo,
   body,
@@ -49,7 +49,7 @@ export const commentGithubPr = async ({
   body: string;
   octokit: Octokit;
   pullRequest: GithubPullRequest;
-}) => {
+}) {
   try {
     const commentId =
       pullRequest.commentId ??
@@ -76,4 +76,4 @@ export const commentGithubPr = async ({
       throw error;
     }
   }
-};
+}

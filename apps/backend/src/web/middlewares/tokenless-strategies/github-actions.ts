@@ -79,7 +79,7 @@ const strategy = {
     const githubRun = await pRetry(
       async () => {
         try {
-          const result = await octokit.actions.listJobsForWorkflowRun({
+          const result = await octokit.actions.getWorkflowRun({
             owner: authData.owner,
             repo: authData.repository,
             run_id: Number(authData.runId),
@@ -104,11 +104,9 @@ const strategy = {
       throw boom(404, `GitHub run not found (token: "${bearerToken}")`);
     }
 
-    const hasInProgressJob = githubRun.data.jobs.some(
-      (job) => job.status === "in_progress",
-    );
+    const isRunInProgress = githubRun.data.status === "in_progress";
 
-    if (!hasInProgressJob) {
+    if (!isRunInProgress) {
       throw boom(
         401,
         `GitHub job is not in progress (token: "${bearerToken}")`,

@@ -2,6 +2,7 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { BuildShard } from "./BuildShard.js";
 import { File } from "./File.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { Test } from "./Test.js";
@@ -160,6 +161,7 @@ export class Screenshot extends Model {
       testId: { type: ["string", "null"] },
       metadata: ScreenshotMetadataJsonSchema,
       playwrightTraceFileId: { type: ["string", "null"] },
+      buildShardId: { type: ["string", "null"] },
     },
   });
 
@@ -170,6 +172,7 @@ export class Screenshot extends Model {
   testId!: string | null;
   metadata!: ScreenshotMetadata | null;
   playwrightTraceFileId!: string | null;
+  buildShardId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -197,10 +200,27 @@ export class Screenshot extends Model {
           to: "tests.id",
         },
       },
+      playwrightTraceFile: {
+        relation: Model.HasOneRelation,
+        modelClass: File,
+        join: {
+          from: "screenshots.playwrightTraceFileId",
+          to: "files.id",
+        },
+      },
+      buildShard: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: BuildShard,
+        join: {
+          from: "screenshots.buildShardId",
+          to: "build_shards.id",
+        },
+      },
     };
   }
 
   screenshotBucket?: ScreenshotBucket;
   file?: File;
   test?: Test | null;
+  playwrightTraceFile?: File | null;
 }

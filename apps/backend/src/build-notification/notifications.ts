@@ -58,7 +58,7 @@ const createGhCommitStatus = async (
   }
 };
 
-const sendGithubNotification = async (ctx: Context) => {
+async function sendGithubNotification(ctx: Context) {
   const { build, notification, commit } = ctx;
 
   invariant(build, "No build found", UnretryableError);
@@ -144,7 +144,7 @@ const sendGithubNotification = async (ctx: Context) => {
       context: ctx.aggregatedNotification.context,
     });
   }
-};
+}
 
 const sendGitlabNotification = async (ctx: Context) => {
   const { build, notification } = ctx;

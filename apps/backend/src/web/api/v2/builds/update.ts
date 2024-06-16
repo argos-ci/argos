@@ -2,92 +2,24 @@ import express, { Router } from "express";
 
 import { job as buildJob } from "@/build/index.js";
 import { raw, transaction } from "@/database/index.js";
-import {
-  Build,
-  Project,
-  Screenshot,
-  ScreenshotMetadata,
-  ScreenshotMetadataJsonSchema,
-} from "@/database/models/index.js";
+import { Build, BuildShard, Screenshot } from "@/database/models/index.js";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
 import { getRedisLock } from "@/util/redis";
-import { SHA256_REGEX_STR } from "@/web/constants.js";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
-import { validate } from "@/web/middlewares/validate.js";
 import { asyncHandler, boom } from "@/web/util.js";
+
+import { UpdateRequest, validateUpdateRequest } from "../util";
 
 const router = Router();
 export default router;
 
-const validateRoute = validate({
-  params: {
-    type: "object",
-    required: ["buildId"],
-    properties: {
-      buildId: {
-        type: "integer",
-      },
-    },
-  },
-  body: {
-    type: "object",
-    required: ["screenshots"],
-    properties: {
-      screenshots: {
-        type: "array",
-        items: {
-          type: "object",
-          required: ["key", "name"],
-          properties: {
-            key: {
-              type: "string",
-              pattern: SHA256_REGEX_STR,
-            },
-            name: {
-              type: "string",
-            },
-            metadata: ScreenshotMetadataJsonSchema,
-          },
-        },
-      },
-      parallel: {
-        type: "boolean",
-        nullable: true,
-      },
-      parallelTotal: {
-        type: "integer",
-        minimum: 1,
-        nullable: true,
-      },
-    },
-  },
-});
-
-type UpdateRequest = express.Request<
-  {
-    buildId?: string;
-  },
-  Record<string, never>,
-  {
-    commit: string;
-    screenshots: {
-      key: string;
-      name: string;
-      metadata?: ScreenshotMetadata | null;
-      pwTraceKey?: string | null;
-    }[];
-    parallel?: boolean;
-    parallelTotal?: number;
-  }
-> & { authProject?: Project };
-
-const handleUpdateParallel = async ({
+async function handleUpdateParallel({
   req,
   build,
 }: {
   req: UpdateRequest;
   build: Build;
-}) => {
+}) {
   if (!req.body.parallelTotal) {
     throw boom(400, "`parallelTotal` is required when `parallel` is `true`");
   }
@@ -102,26 +34,41 @@ const handleUpdateParallel = async ({
   const lock = await getRedisLock();
   const complete = await lock.acquire(lockKey, async () => {
     return transaction(async (trx) => {
+      const [shard, patchedBuild] = await Promise.all([
+        typeof req.body.parallelIndex === "number"
+          ? BuildShard.query(trx).insert({
+              buildId: build.id,
+              index: req.body.parallelIndex,
+            })
+          : null,
+        Build.query(trx)
+          .patchAndFetchById(build.id, {
+            batchCount: raw('"batchCount" + 1'),
+            totalBatch: parallelTotal,
+          })
+          .select("batchCount"),
+      ]);
+
       await insertFilesAndScreenshots({
         screenshots: req.body.screenshots,
         build,
+        shard,
         trx,
       });
-
-      const patchedBuild = await Build.query(trx)
-        .patchAndFetchById(build.id, {
-          batchCount: raw('"batchCount" + 1'),
-          totalBatch: parallelTotal,
-        })
-        .select("batchCount");
 
       if (parallelTotal === patchedBuild.batchCount) {
         const screenshotCount = await Screenshot.query(trx)
           .where("screenshotBucketId", build.compareScreenshotBucketId)
           .resultSize();
-        await build
-          .$relatedQuery("compareScreenshotBucket", trx)
-          .patch({ complete: true, screenshotCount });
+        await Promise.all([
+          build
+            .$relatedQuery("compareScreenshotBucket", trx)
+            .patch({ complete: true, screenshotCount }),
+          // If the build was marked as partial, then it was obviously an error, we unmark it.
+          build.partial
+            ? Build.query(trx).where("id", build.id).patch({ partial: false })
+            : null,
+        ]);
         return true;
       }
 
@@ -132,7 +79,7 @@ const handleUpdateParallel = async ({
   if (complete) {
     await buildJob.push(build.id);
   }
-};
+}
 
 const handleUpdateSingle = async ({
   req,
@@ -161,7 +108,7 @@ router.put(
   // Temporary increase the limit
   // we should find a way to split the upload in several requests
   express.json({ limit: "1mb" }),
-  validateRoute,
+  validateUpdateRequest,
   asyncHandler(async (req: UpdateRequest, res) => {
     const buildId = Number(req.params["buildId"]);
 
