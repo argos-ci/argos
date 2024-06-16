@@ -67,7 +67,9 @@ const BuildProgress = memo(
               min={0}
             />
             <div className="mb-0.5 flex justify-between font-medium tabular-nums">
-              <div>{parallel.received} batches</div>
+              <div>
+                {parallel.received} batch{parallel.received > 1 ? "es" : ""}
+              </div>
               <div className="text-low">/ {parallel.total}</div>
             </div>
             <div className="text-low mb-1 font-mono text-xs">

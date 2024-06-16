@@ -1901,6 +1901,13 @@ CREATE INDEX build_notifications_buildid_index ON public.build_notifications USI
 
 
 --
+-- Name: build_shards_buildid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX build_shards_buildid_index ON public.build_shards USING btree ("buildId");
+
+
+--
 -- Name: builds_basescreenshotbucketid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1940,6 +1947,13 @@ CREATE INDEX builds_number_index ON public.builds USING btree (number);
 --
 
 CREATE INDEX builds_projectid_index ON public.builds USING btree ("projectId");
+
+
+--
+-- Name: builds_runid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_runid_index ON public.builds USING btree ("runId");
 
 
 --
@@ -2178,6 +2192,13 @@ CREATE INDEX screenshot_diffs_test_id_id_desc_idx ON public.screenshot_diffs USI
 --
 
 CREATE INDEX screenshot_diffs_testid_index ON public.screenshot_diffs USING btree ("testId");
+
+
+--
+-- Name: screenshots_buildshardid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshots_buildshardid_index ON public.screenshots USING btree ("buildShardId");
 
 
 --
@@ -2784,3 +2805,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024042
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240505121926_slack-installation.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240604133729_comment_id_big_integer.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240614204320_build_shards.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240616142430_build_shards_indices.js', 1, NOW());
