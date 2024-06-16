@@ -118,6 +118,8 @@ export async function finalizePartialBuilds(input: {
     .where("runAttempt", input.runAttempt)
     .where("jobStatus", "pending")
     .where("partial", true)
+    .joinRelated("compareScreenshotBucket")
+    .where("compareScreenshotBucket.complete", false)
     .withGraphFetched("shards");
 
   await Promise.all(
@@ -128,6 +130,8 @@ export async function finalizePartialBuilds(input: {
         .where("runId", build.runId)
         .where("runAttempt", "<", build.runAttempt)
         .where("name", build.name)
+        .joinRelated("compareScreenshotBucket")
+        .where("compareScreenshotBucket.complete", true)
         .withGraphFetched("shards.screenshots.playwrightTraceFile")
         .first();
 
