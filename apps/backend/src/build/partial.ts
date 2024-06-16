@@ -7,7 +7,6 @@ import {
   Project,
   Screenshot,
 } from "@/database/models/index.js";
-import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
 
@@ -152,22 +151,33 @@ export async function finalizePartialBuilds(input: {
         return;
       }
 
-      await Promise.all(
-        missingShards.map(async (shard) => {
+      const insertedShards = await BuildShard.query()
+        .insert(
+          missingShards.map((shard) => {
+            return {
+              buildId: build.id,
+              index: shard.index,
+            };
+          }),
+        )
+        .returning("id");
+
+      await Screenshot.query().insert(
+        missingShards.flatMap((shard, index) => {
+          const insertedShard = insertedShards[index];
+          invariant(insertedShard, "Inserted shard should be found");
           invariant(shard.screenshots, "Screenshots should be fetched");
-          const copiedShard = await BuildShard.query().insertAndFetch({
-            buildId: build.id,
-            index: shard.index,
-          });
-          await insertFilesAndScreenshots({
-            screenshots: shard.screenshots.map((screenshot) => ({
-              key: screenshot.s3Id,
+          return shard.screenshots.map((screenshot) => {
+            return {
               name: screenshot.name,
+              s3Id: screenshot.s3Id,
+              screenshotBucketId: build.compareScreenshotBucketId,
+              fileId: screenshot.fileId,
+              testId: screenshot.testId,
               metadata: screenshot.metadata,
-              pwTraceKey: screenshot.playwrightTraceFile?.key ?? null,
-            })),
-            shard: copiedShard,
-            build,
+              playwrightTraceFileId: screenshot.playwrightTraceFileId,
+              buildShardId: insertedShard.id,
+            };
           });
         }),
       );
