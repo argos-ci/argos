@@ -4,7 +4,7 @@ import type { Account } from "@/database/models/index.js";
 
 import { getGithubPlan } from "./eventHelpers.js";
 
-export const updateSubscription = async (
+export async function updateSubscription(
   payload: {
     effective_date?: string;
     marketplace_purchase: {
@@ -13,7 +13,7 @@ export const updateSubscription = async (
     };
   },
   account: Account,
-) => {
+) {
   const plan = await getGithubPlan(payload);
   const manager = account.$getSubscriptionManager();
   const activeSubscription = await manager.getActiveSubscription();
@@ -26,6 +26,7 @@ export const updateSubscription = async (
       startDate: effectiveDate,
       provider: "github",
       trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
+      paymentMethodFilled: true,
       status: "active",
     });
     return;
@@ -54,7 +55,8 @@ export const updateSubscription = async (
         startDate: effectiveDate,
         provider: "github",
         status: "active",
+        paymentMethodFilled: true,
       }),
     ]);
   });
-};
+}
