@@ -567,9 +567,7 @@ function DiffIndicator(props: {
 }) {
   const rects = useColoredRects({ url: props.url });
   const transform = useZoomTransform();
-  if (!rects || !props.scale || !props.height) {
-    return null;
-  }
+
   return (
     <div
       className={clsx(
@@ -577,29 +575,31 @@ function DiffIndicator(props: {
         !props.visible && "opacity-0",
       )}
     >
-      <div
-        className="absolute top-0 origin-top"
-        style={{
-          height: props.height,
-          transform: `scaleY(${transform.scale}) translateY(${transform.y / transform.scale}px)`,
-        }}
-      >
+      {rects && props.scale && props.height ? (
         <div
-          className="absolute inset-y-0 origin-top"
-          style={{ transform: `scaleY(${props.scale})` }}
+          className="absolute top-0 origin-top"
+          style={{
+            height: props.height,
+            transform: `scaleY(${transform.scale}) translateY(${transform.y / transform.scale}px)`,
+          }}
         >
-          {rects.map((rect, index) => (
-            <div
-              key={index}
-              className="bg-danger-solid absolute w-1.5"
-              style={{
-                top: rect.y,
-                height: rect.height,
-              }}
-            />
-          ))}
+          <div
+            className="absolute inset-y-0 origin-top"
+            style={{ transform: `scaleY(${props.scale})` }}
+          >
+            {rects.map((rect, index) => (
+              <div
+                key={index}
+                className="bg-danger-solid absolute w-1.5"
+                style={{
+                  top: rect.y,
+                  height: rect.height,
+                }}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
