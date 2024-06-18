@@ -129,6 +129,15 @@ class Zoomer {
     this.zoom.scaleBy(this.selection, 1 / 1.2);
   }
 
+  getTransform(): Transform {
+    const t = this.selection.property("__zoom");
+    return {
+      scale: t.k,
+      x: t.x,
+      y: t.y,
+    };
+  }
+
   subscribe(
     fn: ZoomPaneListener["fn"],
     options?: {
@@ -147,9 +156,12 @@ class Zoomer {
   }
 }
 
+type ZoomerSyncCallback = (transform: Transform) => void;
+
 type ZoomerSyncContextValue = {
   register: (instance: Zoomer) => () => void;
-  getInitialTransform: () => Transform | null;
+  subscribe: (callback: ZoomerSyncCallback) => () => void;
+  getInitialTransform: () => Transform;
   reset: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -157,12 +169,26 @@ type ZoomerSyncContextValue = {
 
 const ZoomerSyncContext = createContext<ZoomerSyncContextValue | null>(null);
 
+const initialTransform = { scale: 1, x: 0, y: 0 };
+
 export const ZoomerSyncProvider = (props: {
   children: React.ReactNode;
   id: string;
 }) => {
   const refInstances = useRef<Zoomer[]>([]);
-  const transformRef = useRef<Transform | null>(null);
+  const subscribersRef = useRef<ZoomerSyncCallback[]>([]);
+  const transformRef = useRef<Transform>(initialTransform);
+  const subscribe = useCallback((callback: ZoomerSyncCallback) => {
+    const handler = (transform: Transform) => {
+      callback(transform);
+    };
+    subscribersRef.current.push(handler);
+    return () => {
+      subscribersRef.current = subscribersRef.current.filter(
+        (f) => f !== handler,
+      );
+    };
+  }, []);
   const register = useCallback((zoomer: Zoomer) => {
     refInstances.current.push(zoomer);
     const unsubscribe = zoomer.subscribe(
@@ -173,6 +199,9 @@ export const ZoomerSyncProvider = (props: {
             i.update(event.state);
           }
         });
+        subscribersRef.current.forEach((fn) => {
+          fn(event.state);
+        });
       },
       { ignoreUpdate: true },
     );
@@ -181,16 +210,18 @@ export const ZoomerSyncProvider = (props: {
       refInstances.current = refInstances.current.filter((i) => i !== zoomer);
     };
   }, []);
-  useEffect(() => {
-    return () => {
-      refInstances.current.forEach((i) => i.reset());
-    };
-  }, [props.id]);
-  const getInitialTransform = useCallback(() => {
-    return transformRef.current;
-  }, []);
   const reset = useCallback(() => {
     refInstances.current.forEach((i) => i.reset());
+    transformRef.current = initialTransform;
+    subscribersRef.current.forEach((fn) => {
+      fn(initialTransform);
+    });
+  }, []);
+  useEffect(() => {
+    return reset;
+  }, [props.id, reset]);
+  const getInitialTransform = useCallback(() => {
+    return transformRef.current;
   }, []);
   const zoomIn = useCallback(() => {
     refInstances.current.forEach((i) => i.zoomIn());
@@ -199,8 +230,15 @@ export const ZoomerSyncProvider = (props: {
     refInstances.current.forEach((i) => i.zoomOut());
   }, []);
   const value = useMemo(
-    () => ({ register, getInitialTransform, reset, zoomIn, zoomOut }),
-    [register, getInitialTransform, reset, zoomIn, zoomOut],
+    () => ({
+      register,
+      subscribe,
+      getInitialTransform,
+      reset,
+      zoomIn,
+      zoomOut,
+    }),
+    [register, subscribe, getInitialTransform, reset, zoomIn, zoomOut],
   );
   return (
     <ZoomerSyncContext.Provider value={value}>
@@ -214,6 +252,20 @@ export const useZoomerSyncContext = () => {
   invariant(ctx, "Missing ZoomerSyncProvider");
   return ctx;
 };
+
+/**
+ * Hook to get the current transform of the zoomer.
+ */
+export function useZoomTransform() {
+  const { subscribe, getInitialTransform } = useZoomerSyncContext();
+  const [transform, setTransform] = useState(getInitialTransform);
+  useLayoutEffect(() => {
+    return subscribe((t) => {
+      setTransform(t);
+    });
+  }, [subscribe]);
+  return transform;
+}
 
 type Transform = {
   scale: number;
@@ -283,14 +335,6 @@ const ZoomOutButton = memo((props: { disabled: boolean }) => {
   );
 });
 
-const TransformContext = createContext<Transform | null>(null);
-
-export function useZoomTransform(): Transform {
-  const ctx = useContext(TransformContext);
-  invariant(ctx, "Missing TransformProvider");
-  return ctx;
-}
-
 export function ZoomPane(props: {
   children: React.ReactNode;
   controls?: React.ReactNode;
@@ -311,9 +355,7 @@ export function ZoomPane(props: {
       });
     });
     const initialTransform = getInitialTransform();
-    if (initialTransform) {
-      zoomer.update(initialTransform);
-    }
+    zoomer.update(initialTransform);
     return register(zoomer);
   }, [register, getInitialTransform]);
   return (
@@ -321,25 +363,23 @@ export function ZoomPane(props: {
       ref={paneRef}
       className="group/pane bg-app flex min-h-0 flex-1 cursor-grab select-none overflow-hidden rounded border"
     >
-      <TransformContext.Provider value={transform}>
-        <div
-          ref={contentRef}
-          className="flex min-h-0 min-w-0 flex-1 origin-top-left justify-center"
-          style={{ transform: transformToCss(transform) }}
-        >
-          {props.children}
-        </div>
-        {props.controls && (
-          <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">
-            <div className="zoomer-controls absolute bottom-2 right-2 flex flex-col items-center gap-1">
-              {props.controls}
-              <FitViewButton />
-              <ZoomInButton disabled={transform.scale >= MAX_ZOOM_SCALE} />
-              <ZoomOutButton disabled={transform.scale <= MIN_ZOOM_SCALE} />
-            </div>
+      <div
+        ref={contentRef}
+        className="flex min-h-0 min-w-0 flex-1 origin-top-left justify-center"
+        style={{ transform: transformToCss(transform) }}
+      >
+        {props.children}
+      </div>
+      {props.controls && (
+        <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">
+          <div className="zoomer-controls absolute bottom-2 right-2 flex flex-col items-center gap-1">
+            {props.controls}
+            <FitViewButton />
+            <ZoomInButton disabled={transform.scale >= MAX_ZOOM_SCALE} />
+            <ZoomOutButton disabled={transform.scale <= MIN_ZOOM_SCALE} />
           </div>
-        )}
-      </TransformContext.Provider>
+        </div>
+      )}
     </div>
   );
 }

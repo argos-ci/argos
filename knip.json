@@ -17,7 +17,11 @@
       "ignoreDependencies": ["pg"]
     },
     "apps/frontend": {
-      "ignore": ["src/gql/**/*", "vite.config.ts"],
+      "ignore": [
+        "src/gql/**/*",
+        "vite.config.ts",
+        "src/util/color-detection/worker.ts"
+      ],
       "ignoreDependencies": [
         "@radix-ui/colors",
         "@vitejs/plugin-react",
