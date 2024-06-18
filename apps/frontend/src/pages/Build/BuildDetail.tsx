@@ -559,6 +559,18 @@ function DiffIndicator(props: {
     }
   }, []);
 
+  const imageHeight = props.height;
+
+  const renderHeight = (() => {
+    if (!imageHeight) {
+      return null;
+    }
+    if (props.contained) {
+      return Math.min(containerHeight ?? 0, imageHeight);
+    }
+    return imageHeight;
+  })();
+
   return (
     <div
       ref={measureContainer}
@@ -567,11 +579,11 @@ function DiffIndicator(props: {
         !props.visible && "opacity-0",
       )}
     >
-      {rects && props.height ? (
+      {rects && renderHeight && imageHeight ? (
         <div
           className="absolute top-0 origin-top"
           style={{
-            height: props.height,
+            height: renderHeight,
             transform: `scaleY(${transform.scale}) translateY(${transform.y / transform.scale}px)`,
           }}
         >
@@ -579,11 +591,8 @@ function DiffIndicator(props: {
             <div
               className="absolute inset-y-0 origin-top"
               style={{
-                height: props.height,
-                transform:
-                  props.contained && containerHeight / props.height < 1
-                    ? `scaleY(${containerHeight / props.height})`
-                    : undefined,
+                height: imageHeight,
+                transform: `scaleY(${renderHeight / imageHeight})`,
               }}
             >
               {rects.map((rect, index) => (
