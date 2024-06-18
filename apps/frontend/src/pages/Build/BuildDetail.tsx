@@ -580,9 +580,10 @@ function DiffIndicator(props: {
               className="absolute inset-y-0 origin-top"
               style={{
                 height: props.height,
-                transform: props.contained
-                  ? `scaleY(${containerHeight / props.height})`
-                  : undefined,
+                transform:
+                  props.contained && containerHeight / props.height < 1
+                    ? `scaleY(${containerHeight / props.height})`
+                    : undefined,
               }}
             >
               {rects.map((rect, index) => (
