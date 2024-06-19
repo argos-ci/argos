@@ -1,5 +1,5 @@
 import { ForwardedRef, forwardRef } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 import { HeadlessLink, HeadlessLinkProps } from "@/ui/Link";
 
@@ -12,10 +12,21 @@ export const HomeLink = forwardRef(function HomeLink(
 ) {
   const authPayload = useAuthTokenPayload();
   const params = useParams();
+  const { pathname } = useLocation();
   const accountSlug =
     params.accountSlug ??
     getLatestVisitedAccount() ??
     authPayload?.account.slug ??
     "";
-  return <HeadlessLink ref={ref} href={`/${accountSlug}`} {...props} />;
+  return (
+    <HeadlessLink
+      ref={ref}
+      href={
+        pathname === "/login" || pathname === "/signup"
+          ? "https://argos-ci.com"
+          : `/${accountSlug}`
+      }
+      {...props}
+    />
+  );
 });
