@@ -304,6 +304,7 @@ const ProjectQuery = graphql(`
       id
       build(number: $buildNumber) {
         id
+        previousNumber
         screenshotDiffs(after: $after, first: $first) {
           pageInfo {
             hasNextPage

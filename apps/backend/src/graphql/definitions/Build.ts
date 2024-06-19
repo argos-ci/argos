@@ -70,10 +70,12 @@ export const typeDefs = gql`
     screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
     "The screenshot bucket that serves as base for comparison"
     baseScreenshotBucket: ScreenshotBucket
-    "The base build that contains the base screeenshot bucket"
+    "The base build that contains the base screenshot bucket"
     baseBuild: Build
     "Continuous number. It is incremented after each build"
     number: Int!
+    "Previous build number for the same branch"
+    previousNumber: Int
     "Review status, conclusion or job status"
     status: BuildStatus!
     "Build name"
@@ -173,6 +175,16 @@ export const resolvers: IResolvers = {
     branch: async (build, _args, ctx) => {
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
       return compareBucket.branch;
+    },
+    previousNumber: async (build, _args, ctx) => {
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      const previousBuild = await Build.query()
+        .joinRelated("compareScreenshotBucket")
+        .where({ branch: compareBucket.branch })
+        .where("number", "<", build.number)
+        .orderBy("number", "desc")
+        .first();
+      return previousBuild?.number;
     },
     pullRequest: async (build, _args, ctx) => {
       if (!build.githubPullRequestId) {

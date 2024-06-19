@@ -115,7 +115,7 @@ export type IAddContributorToProjectInput = {
 
 export type IBuild = INode & {
   __typename?: 'Build';
-  /** The base build that contains the base screeenshot bucket */
+  /** The base build that contains the base screenshot bucket */
   baseBuild?: Maybe<IBuild>;
   /** The screenshot bucket that serves as base for comparison */
   baseScreenshotBucket?: Maybe<IScreenshotBucket>;
@@ -137,6 +137,8 @@ export type IBuild = INode & {
   prHeadCommit?: Maybe<Scalars['String']['output']>;
   /** Pull request number */
   prNumber?: Maybe<Scalars['Int']['output']>;
+  /** Previous build number for the same branch */
+  previousNumber?: Maybe<Scalars['Int']['output']>;
   /** Pull request */
   pullRequest?: Maybe<IPullRequest>;
   /** The screenshot diffs between the base screenshot bucket of the compare screenshot bucket */
@@ -1474,6 +1476,7 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   parallel?: Resolver<Maybe<IResolversTypes['BuildParallel']>, ParentType, ContextType>;
   prHeadCommit?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   prNumber?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  previousNumber?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   pullRequest?: Resolver<Maybe<IResolversTypes['PullRequest']>, ParentType, ContextType>;
   screenshotDiffs?: Resolver<IResolversTypes['ScreenshotDiffConnection'], ParentType, ContextType, RequireFields<IBuildScreenshotDiffsArgs, 'after' | 'first'>>;
   stats?: Resolver<IResolversTypes['BuildStats'], ParentType, ContextType>;
