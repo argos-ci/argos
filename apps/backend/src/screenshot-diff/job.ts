@@ -14,5 +14,5 @@ export const job = createModelJob(
       bucket: config.get("s3.screenshotsBucket"),
     });
   },
-  { prefetch: 2 },
+  { prefetch: 1 },
 );
