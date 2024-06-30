@@ -66,7 +66,7 @@ async function detectColoredZones(input: { url: string }): Promise<Rect[]> {
         const index = (i * canvas.width + j) * 4;
         const red = data[index];
 
-        if (red) {
+        if (red === 255) {
           return true;
         }
       }
