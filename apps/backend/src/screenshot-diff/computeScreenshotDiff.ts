@@ -11,7 +11,7 @@ import { S3ImageFile } from "@/storage/index.js";
 import { chunk } from "@/util/chunk.js";
 import { getRedisLock } from "@/util/redis/index.js";
 
-import { diffImages } from "./util/image-diff/index.js";
+import { DEFAULT_THRESHOLD, diffImages } from "./util/image-diff/index.js";
 
 const hashFile = async (filepath: string): Promise<string> => {
   const fileStream = createReadStream(filepath);
@@ -210,7 +210,11 @@ export const computeScreenshotDiff = async (
   let diffKey: string | null = null;
 
   if (baseImage && baseImage.key !== compareImage.key && !screenshotDiff.s3Id) {
-    const diffResult = await diffImages(baseImage, compareImage);
+    const diffResult = await diffImages(
+      baseImage,
+      compareImage,
+      screenshotDiff.compareScreenshot.threshold ?? DEFAULT_THRESHOLD,
+    );
     if (diffResult === null) {
       await ScreenshotDiff.query()
         .findById(screenshotDiff.id)

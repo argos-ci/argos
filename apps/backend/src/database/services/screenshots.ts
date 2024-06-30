@@ -1,3 +1,4 @@
+import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
 import type { PartialModelObject, TransactionOrKnex } from "objection";
 
@@ -51,6 +52,7 @@ type InsertFilesAndScreenshotsParams = {
     name: string;
     metadata?: ScreenshotMetadata | null;
     pwTraceKey?: string | null;
+    threshold?: number | null;
   }[];
   build: Build;
   shard?: BuildShard | null;
@@ -72,7 +74,7 @@ export async function insertFilesAndScreenshots(
   const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
   const pwTraceKeys = screenshots
     .map((screenshot) => screenshot.pwTraceKey)
-    .filter(Boolean) as string[];
+    .filter(checkIsNonNullable);
 
   const unknownKeys = await getUnknownFileKeys(
     [...screenshotKeys, ...pwTraceKeys],
@@ -167,6 +169,7 @@ export async function insertFilesAndScreenshots(
           metadata: screenshot.metadata ?? null,
           playwrightTraceFileId: pwTraceFile?.id ?? null,
           buildShardId: params.shard?.id ?? null,
+          threshold: screenshot.threshold ?? null,
         };
       }),
     );

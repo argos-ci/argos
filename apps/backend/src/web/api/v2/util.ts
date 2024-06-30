@@ -185,6 +185,17 @@ export const validateUpdateRequest = validate({
               type: "string",
             },
             metadata: ScreenshotMetadataJsonSchema,
+            pwTraceKey: {
+              type: "string",
+              pattern: SHA256_REGEX_STR,
+              nullable: true,
+            },
+            threshold: {
+              type: "number",
+              minimum: 0,
+              maximum: 1,
+              nullable: true,
+            },
           },
         },
       },
@@ -218,6 +229,7 @@ export type UpdateRequest = Request<
       name: string;
       metadata?: ScreenshotMetadata | null;
       pwTraceKey?: string | null;
+      threshold?: number | null;
     }[];
     parallel?: boolean | null;
     parallelTotal?: number | null;

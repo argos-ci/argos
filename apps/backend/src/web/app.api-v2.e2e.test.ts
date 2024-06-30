@@ -206,6 +206,7 @@ describe("api v2", () => {
               key: screenshot.key,
               name: screenshot.name,
               metadata: screenshot.metadata,
+              threshold: 0.3,
             })),
           })
           .expect(200);
@@ -214,6 +215,12 @@ describe("api v2", () => {
           .withGraphFetched("compareScreenshotBucket.screenshots.file")
           .first()
           .throwIfNotFound();
+
+        expect(
+          build.compareScreenshotBucket!.screenshots?.every(
+            (s) => s.threshold === 0.3,
+          ),
+        ).toBe(true);
 
         const screenshotWithMetadata =
           build.compareScreenshotBucket!.screenshots!.find(

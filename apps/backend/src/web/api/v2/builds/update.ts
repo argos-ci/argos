@@ -81,13 +81,13 @@ async function handleUpdateParallel({
   }
 }
 
-const handleUpdateSingle = async ({
+async function handleUpdateSingle({
   req,
   build,
 }: {
   req: UpdateRequest;
   build: Build;
-}) => {
+}) {
   await transaction(async (trx) => {
     const screenshotCount = await insertFilesAndScreenshots({
       screenshots: req.body.screenshots,
@@ -100,7 +100,7 @@ const handleUpdateSingle = async ({
       .patchAndFetch({ complete: true, screenshotCount });
   });
   await buildJob.push(build.id);
-};
+}
 
 router.put(
   "/builds/:buildId",
