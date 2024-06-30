@@ -21,6 +21,7 @@ async function compareLocalImages(params: {
     new LocalImageFile({
       filepath: params.compareFilepath,
     }),
+    0.5,
   );
 }
 

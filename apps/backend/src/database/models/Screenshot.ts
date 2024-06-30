@@ -162,6 +162,7 @@ export class Screenshot extends Model {
       metadata: ScreenshotMetadataJsonSchema,
       playwrightTraceFileId: { type: ["string", "null"] },
       buildShardId: { type: ["string", "null"] },
+      threshold: { type: ["number", "null"], minimum: 0, maximum: 1 },
     },
   });
 
@@ -173,6 +174,7 @@ export class Screenshot extends Model {
   metadata!: ScreenshotMetadata | null;
   playwrightTraceFileId!: string | null;
   buildShardId!: string | null;
+  threshold!: number | null;
 
   static override get relationMappings(): RelationMappings {
     return {

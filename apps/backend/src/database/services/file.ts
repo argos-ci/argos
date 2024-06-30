@@ -2,10 +2,10 @@ import type { TransactionOrKnex } from "objection";
 
 import { File } from "@/database/models/index.js";
 
-export const getUnknownFileKeys = async (
+export async function getUnknownFileKeys(
   keys: string[],
   trx?: TransactionOrKnex,
-): Promise<string[]> => {
+): Promise<string[]> {
   if (keys.length === 0) {
     return [];
   }
@@ -14,4 +14,4 @@ export const getUnknownFileKeys = async (
     .whereIn("key", keys);
   const existingKeys = existingFiles.map((file) => file.key);
   return Array.from(new Set(keys.filter((key) => !existingKeys.includes(key))));
-};
+}
