@@ -69,6 +69,7 @@ export const typeDefs = gql`
       first: Int = 30
       search: String
       levels: [TeamUserLevel!]
+      sso: Boolean
     ): TeamMemberConnection!
     githubMembers(after: Int = 0, first: Int = 30): TeamGithubMemberConnection
     inviteLink: String
@@ -268,15 +269,26 @@ export const resolvers: IResolvers = {
       }
 
       // If SSO is activated, exclude SSO members.
-      if (hasGithubSSO) {
-        query
-          .withGraphJoined("user.account")
-          .whereNotIn(
-            "user:account.githubAccountId",
-            GithubAccountMember.query()
-              .select("githubMemberId")
-              .where("githubAccountId", team.ssoGithubAccountId),
-          );
+      if (hasGithubSSO && typeof args.sso === "boolean") {
+        if (args.sso) {
+          query
+            .withGraphJoined("user.account")
+            .whereIn(
+              "user:account.githubAccountId",
+              GithubAccountMember.query()
+                .select("githubMemberId")
+                .where("githubAccountId", team.ssoGithubAccountId),
+            );
+        } else {
+          query
+            .withGraphJoined("user.account")
+            .whereNotIn(
+              "user:account.githubAccountId",
+              GithubAccountMember.query()
+                .select("githubMemberId")
+                .where("githubAccountId", team.ssoGithubAccountId),
+            );
+        }
       }
 
       const result = await query;

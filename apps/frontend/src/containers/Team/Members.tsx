@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useQuery } from "@/containers/Apollo";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
-import { TeamUserLevel } from "@/gql/graphql";
+import { AccountPermission, TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -51,7 +51,7 @@ const TeamMembersQuery = graphql(`
   query TeamMembers_teamMembers($id: ID!, $first: Int!, $after: Int!) {
     team: teamById(id: $id) {
       id
-      members(first: $first, after: $after) {
+      members(first: $first, after: $after, sso: false) {
         edges {
           id
           level
@@ -114,6 +114,7 @@ const TeamFragment = graphql(`
     name
     slug
     inviteLink
+    permissions
     ssoGithubAccount {
       id
       ...TeamGithubMembersList_GithubAccount
@@ -671,7 +672,9 @@ export const TeamMembers = (props: {
     },
   };
   const me = team.me;
-  const amOwner = Boolean(me && me.level === TeamUserLevel.Owner);
+  const amOwner =
+    team.permissions.includes(AccountPermission.Admin) ||
+    Boolean(me && me.level === TeamUserLevel.Owner);
   const hasGithubSSO = Boolean(team.ssoGithubAccount);
   const hasFineGrainedAccessControl = Boolean(
     team.plan?.fineGrainedAccessControlIncluded,
