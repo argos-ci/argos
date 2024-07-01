@@ -969,6 +969,7 @@ export type ITeamMembersArgs = {
   first?: InputMaybe<Scalars['Int']['input']>;
   levels?: InputMaybe<Array<ITeamUserLevel>>;
   search?: InputMaybe<Scalars['String']['input']>;
+  sso?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 

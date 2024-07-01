@@ -51,7 +51,7 @@ const TeamMembersQuery = graphql(`
   query TeamMembers_teamMembers($id: ID!, $first: Int!, $after: Int!) {
     team: teamById(id: $id) {
       id
-      members(first: $first, after: $after) {
+      members(first: $first, after: $after, sso: false) {
         edges {
           id
           level
