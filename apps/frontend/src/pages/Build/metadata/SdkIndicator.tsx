@@ -1,9 +1,11 @@
+import clsx from "clsx";
+
 import { BrandShield } from "@/ui/BrandShield";
 import { Tooltip } from "@/ui/Tooltip";
 
 export function SdkIndicator({
   sdk,
-  ...props
+  className,
 }: {
   className?: string;
   sdk: {
@@ -13,7 +15,9 @@ export function SdkIndicator({
 }) {
   return (
     <Tooltip content={`${sdk.name} v${sdk.version}`}>
-      <BrandShield {...props} />
+      <div className={clsx("flex", className)}>
+        <BrandShield />
+      </div>
     </Tooltip>
   );
 }

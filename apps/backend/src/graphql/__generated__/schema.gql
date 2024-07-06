@@ -635,6 +635,7 @@ type ScreenshotDiff implements Node {
   name: String!
   status: ScreenshotDiffStatus!
   test: Test @deprecated(reason: "Remove in future release")
+  threshold: Float
   url: String
   validationStatus: String
   width: Int
