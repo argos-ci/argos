@@ -103,10 +103,7 @@ export const resolvers: IResolvers = {
       return diffStatus as IScreenshotDiffStatus;
     },
     threshold: async (screenshotDiff, _args, ctx) => {
-      if (
-        !screenshotDiff.compareScreenshotId ||
-        !screenshotDiff.baseScreenshotId
-      ) {
+      if (!screenshotDiff.compareScreenshotId) {
         return null;
       }
       const compareScreenshot = await ctx.loaders.Screenshot.load(
