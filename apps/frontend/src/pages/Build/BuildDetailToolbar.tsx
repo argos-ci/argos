@@ -61,7 +61,6 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
     activeDiff.compareScreenshot?.playwrightTraceUrl ?? null;
   const canBeReviewed =
     buildType === BuildType.Check && checkCanBeReviewed(activeDiff.status);
-  console.log(activeDiff);
   return (
     <div
       className={clsx(
