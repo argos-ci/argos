@@ -12,6 +12,7 @@ import { MediaTypeIndicator } from "./metadata/MediaTypeIndicator";
 import { RetryIndicator } from "./metadata/RetryIndicator";
 import { SdkIndicator } from "./metadata/SdkIndicator";
 import { TestIndicator } from "./metadata/TestIndicator";
+import { ThresholdIndicator } from "./metadata/ThresholdIndicator";
 import { TraceIndicator } from "./metadata/TraceIndicator";
 import { UrlIndicator } from "./metadata/UrlIndicator";
 import { ViewportIndicator } from "./metadata/ViewportIndicator";
@@ -51,6 +52,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
   const test = metadata?.test ?? null;
   const retry = test?.retry ?? null;
   const retries = test?.retries ?? null;
+  const threshold = activeDiff.threshold ?? null;
   const branch =
     prMerged || test === activeDiff.baseScreenshot?.metadata?.test
       ? baseBranch
@@ -59,6 +61,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
     activeDiff.compareScreenshot?.playwrightTraceUrl ?? null;
   const canBeReviewed =
     buildType === BuildType.Check && checkCanBeReviewed(activeDiff.status);
+  console.log(activeDiff);
   return (
     <div
       className={clsx(
@@ -89,6 +92,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
             {browser && (
               <BrowserIndicator browser={browser} className="size-4" />
             )}
+            {threshold !== null && <ThresholdIndicator threshold={threshold} />}
             {colorScheme && (
               <ColorSchemeIndicator
                 colorScheme={colorScheme}

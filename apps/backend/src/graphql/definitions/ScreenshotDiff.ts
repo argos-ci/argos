@@ -35,6 +35,7 @@ export const typeDefs = gql`
     flakyDetected: Boolean! @deprecated(reason: "Remove in future release")
     test: Test @deprecated(reason: "Remove in future release")
     group: String
+    threshold: Float
   }
 
   type ScreenshotDiffConnection implements Connection {
@@ -76,19 +77,19 @@ export const resolvers: IResolvers = {
       invariant(name, "screenshot diff without name");
       return name;
     },
-    width: async (screenshot, _args, ctx) => {
-      if (!screenshot.fileId) {
+    width: async (screenshotDiff, _args, ctx) => {
+      if (!screenshotDiff.fileId) {
         return null;
       }
-      const file = await ctx.loaders.File.load(screenshot.fileId);
+      const file = await ctx.loaders.File.load(screenshotDiff.fileId);
       invariant(file, "File not found");
       return file.width;
     },
-    height: async (screenshot, _args, ctx) => {
-      if (!screenshot.fileId) {
+    height: async (screenshotDiff, _args, ctx) => {
+      if (!screenshotDiff.fileId) {
         return null;
       }
-      const file = await ctx.loaders.File.load(screenshot.fileId);
+      const file = await ctx.loaders.File.load(screenshotDiff.fileId);
       invariant(file, "File not found");
       return file.height;
     },
@@ -100,6 +101,18 @@ export const resolvers: IResolvers = {
       });
 
       return diffStatus as IScreenshotDiffStatus;
+    },
+    threshold: async (screenshotDiff, _args, ctx) => {
+      if (
+        !screenshotDiff.compareScreenshotId ||
+        !screenshotDiff.baseScreenshotId
+      ) {
+        return null;
+      }
+      const compareScreenshot = await ctx.loaders.Screenshot.load(
+        screenshotDiff.compareScreenshotId,
+      );
+      return compareScreenshot?.threshold ?? null;
     },
   },
 };

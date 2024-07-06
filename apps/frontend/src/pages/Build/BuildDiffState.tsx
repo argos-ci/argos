@@ -30,6 +30,7 @@ const ScreenshotDiffFragment = graphql(`
     width
     height
     group
+    threshold
     baseScreenshot {
       id
       url
@@ -123,16 +124,16 @@ export interface DiffGroup {
   diffs: (Diff | null)[];
 }
 
-const createDiffs = (count: number): null[] => {
+function createDiffs(count: number): null[] {
   return Array.from({ length: count }, () => null);
-};
+}
 
-const getGroupsFromStats = (stats: BuildStats): DiffGroup[] => {
+function getGroupsFromStats(stats: BuildStats): DiffGroup[] {
   return GROUPS.map((group) => ({
     name: group,
     diffs: createDiffs(stats[group]),
   }));
-};
+}
 
 export type DiffResult = MatchData<Diff>;
 
@@ -162,14 +163,14 @@ export function checkCanBeReviewed(screenshotDiffStatus: ScreenshotDiffStatus) {
   );
 }
 
-export const useBuildDiffState = () => {
+export function useBuildDiffState() {
   const context = useContext(BuildDiffContext);
   invariant(
     context,
     "useBuildDiffState must be used within a BuildDiffProvider",
   );
   return context;
-};
+}
 
 function useActiveDiffIndex() {
   const { diffs, activeDiff } = useBuildDiffState();
@@ -273,7 +274,7 @@ export function useGoToPreviousDiff() {
   });
 }
 
-const useExpandedState = (initial: string[]) => {
+function useExpandedState(initial: string[]) {
   const [expanded, setExpanded] = useState<string[]>(initial);
   const toggleGroup = useCallback((name: string, value?: boolean) => {
     setExpanded((expanded) => {
@@ -290,7 +291,7 @@ const useExpandedState = (initial: string[]) => {
   }, []);
 
   return useMemo(() => ({ expanded, toggleGroup }), [expanded, toggleGroup]);
-};
+}
 
 const ProjectQuery = graphql(`
   query BuildDiffState_Project(
@@ -317,7 +318,7 @@ const ProjectQuery = graphql(`
   }
 `);
 
-const useDataState = ({
+function useDataState({
   accountSlug,
   projectName,
   buildNumber,
@@ -325,7 +326,7 @@ const useDataState = ({
   accountSlug: string;
   projectName: string;
   buildNumber: number;
-}) => {
+}) {
   const { data, loading, error, fetchMore } = useQuery(ProjectQuery, {
     variables: {
       accountSlug,
@@ -379,9 +380,9 @@ const useDataState = ({
   const screenshotDiffs = (data?.project?.build?.screenshotDiffs.edges ??
     []) as Diff[];
   return screenshotDiffs;
-};
+}
 
-const hydrateGroups = (groups: DiffGroup[], screenshotDiffs: Diff[]) => {
+function hydrateGroups(groups: DiffGroup[], screenshotDiffs: Diff[]) {
   let index = 0;
   return groups.map((group) => {
     return {
@@ -393,7 +394,7 @@ const hydrateGroups = (groups: DiffGroup[], screenshotDiffs: Diff[]) => {
       }),
     };
   });
-};
+}
 
 function checkIsGroupDiffStatus(
   value: unknown,
@@ -401,7 +402,7 @@ function checkIsGroupDiffStatus(
   return GROUPS.includes(value as (typeof GROUPS)[number]);
 }
 
-const groupDiffs = (diffs: Diff[]): DiffGroup[] => {
+function groupDiffs(diffs: Diff[]): DiffGroup[] {
   return diffs.reduce<DiffGroup[]>((groups, diff) => {
     const group = groups.find((group) => group.name === diff.status);
     if (group) {
@@ -414,7 +415,7 @@ const groupDiffs = (diffs: Diff[]): DiffGroup[] => {
     }
     return groups;
   }, [] as DiffGroup[]);
-};
+}
 
 type SearchModeContextValue = {
   searchMode: boolean;
@@ -423,14 +424,14 @@ type SearchModeContextValue = {
 
 const SearchModeContext = createContext<SearchModeContextValue | null>(null);
 
-export const useSearchModeState = () => {
+export function useSearchModeState() {
   const context = useContext(SearchModeContext);
   invariant(
     context,
     "useSearchModeState must be used within a BuildDiffProvider",
   );
   return context;
-};
+}
 
 type SearchContextValue = {
   search: string;
@@ -439,11 +440,11 @@ type SearchContextValue = {
 
 const SearchContext = createContext<SearchContextValue | null>(null);
 
-export const useSearchState = () => {
+export function useSearchState() {
   const context = useContext(SearchContext);
   invariant(context, "useSearchState must be used within a BuildDiffProvider");
   return context;
-};
+}
 
 const BuildDiffStateFragment = graphql(`
   fragment BuildDiffState_Build on Build {
@@ -463,11 +464,11 @@ const BuildDiffStateFragment = graphql(`
 
 type BuildStats = DocumentType<typeof BuildDiffStateFragment>["stats"];
 
-export const BuildDiffProvider = (props: {
+export function BuildDiffProvider(props: {
   children: React.ReactNode;
   build: FragmentType<typeof BuildDiffStateFragment> | null;
   params: BuildParams;
-}) => {
+}) {
   const { children, params } = props;
   const build = useFragment(BuildDiffStateFragment, props.build);
   const stats = build?.stats ?? null;
@@ -666,4 +667,4 @@ export const BuildDiffProvider = (props: {
       </SearchContext.Provider>
     </SearchModeContext.Provider>
   );
-};
+}

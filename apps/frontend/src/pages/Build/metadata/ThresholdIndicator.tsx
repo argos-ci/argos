@@ -1,30 +1,25 @@
 import { clsx } from "clsx";
-import { AppWindow } from "lucide-react";
+import { TargetIcon } from "lucide-react";
 
 import { Chip, ChipProps } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
-export function ViewportIndicator({
-  viewport,
+export function ThresholdIndicator({
+  threshold,
   className,
   ...props
 }: Omit<ChipProps, "ref"> & {
-  viewport: {
-    width: number;
-    height: number;
-  };
+  threshold: number;
 }) {
   return (
-    <Tooltip
-      content={`Viewport size of ${viewport.width}x${viewport.height}px`}
-    >
+    <Tooltip content={`Custom sensitivity of ${threshold * 100}%`}>
       <Chip
-        icon={AppWindow}
+        icon={TargetIcon}
         scale="xs"
         className={clsx("font-mono", className)}
         {...props}
       >
-        {viewport.width}x{viewport.height}
+        {threshold * 100}%
       </Chip>
     </Tooltip>
   );
