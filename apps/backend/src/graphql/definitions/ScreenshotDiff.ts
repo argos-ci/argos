@@ -101,13 +101,5 @@ export const resolvers: IResolvers = {
 
       return diffStatus as IScreenshotDiffStatus;
     },
-    // @TODO: Remove in future release
-    flakyDetected: () => {
-      return false;
-    },
-    // @TODO: Remove in future release
-    test: async () => {
-      return null;
-    },
   },
 };
