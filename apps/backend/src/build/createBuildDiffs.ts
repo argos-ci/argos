@@ -122,9 +122,12 @@ export async function createBuildDiffs(build: Build) {
         "no base screenshots found for build",
       );
 
-      return baseScreenshotBucket.screenshots.find(
-        ({ name }) => name === compareScreenshot.name,
-      );
+      return baseScreenshotBucket.screenshots.find(({ name }) => {
+        if (compareScreenshot.baseName) {
+          return name === compareScreenshot.baseName;
+        }
+        return name === compareScreenshot.name;
+      });
     })();
 
     const sameFileId = Boolean(

@@ -1019,7 +1019,8 @@ CREATE TABLE public.screenshots (
     metadata jsonb,
     "playwrightTraceFileId" bigint,
     "buildShardId" bigint,
-    threshold real
+    threshold real,
+    "baseName" character varying(1024)
 );
 
 
@@ -2808,3 +2809,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024060
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240614204320_build_shards.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240616142430_build_shards_indices.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240630151704_screenshot-threshold.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240706121810_screenshot-base-name.js', 1, NOW());

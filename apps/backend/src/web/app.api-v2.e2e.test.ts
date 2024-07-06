@@ -138,6 +138,8 @@ describe("api v2", () => {
           {
             key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
             name: "first",
+            baseName: "first-base",
+            threshold: 0.3,
             path: join(__dirname, "__fixtures__", "screenshot_test.jpg"),
           },
           {
@@ -206,7 +208,8 @@ describe("api v2", () => {
               key: screenshot.key,
               name: screenshot.name,
               metadata: screenshot.metadata,
-              threshold: 0.3,
+              threshold: screenshot.threshold,
+              baseName: screenshot.baseName ?? null,
             })),
           })
           .expect(200);
@@ -216,11 +219,9 @@ describe("api v2", () => {
           .first()
           .throwIfNotFound();
 
-        expect(
-          build.compareScreenshotBucket!.screenshots?.every(
-            (s) => s.threshold === 0.3,
-          ),
-        ).toBe(true);
+        const firstScreenshot = build.compareScreenshotBucket!.screenshots![0]!;
+        expect(firstScreenshot.threshold).toBe(0.3);
+        expect(firstScreenshot.baseName).toBe("first-base");
 
         const screenshotWithMetadata =
           build.compareScreenshotBucket!.screenshots!.find(

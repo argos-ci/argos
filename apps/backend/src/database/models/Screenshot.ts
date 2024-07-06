@@ -155,6 +155,7 @@ export class Screenshot extends Model {
     required: ["name", "s3Id", "screenshotBucketId"],
     properties: {
       name: { type: "string", maxLength: 1024 },
+      baseName: { type: ["string", "null"], maxLength: 1024 },
       s3Id: { type: "string" },
       screenshotBucketId: { type: "string" },
       fileId: { type: ["string", "null"] },
@@ -167,6 +168,7 @@ export class Screenshot extends Model {
   });
 
   name!: string;
+  baseName!: string | null;
   s3Id!: string;
   screenshotBucketId!: string;
   fileId!: string | null;
