@@ -3,6 +3,7 @@ import express, { Router } from "express";
 import { job as buildJob } from "@/build/index.js";
 import { raw, transaction } from "@/database/index.js";
 import { Build, BuildShard, Screenshot } from "@/database/models/index.js";
+import { BuildMetadata } from "@/database/services/buildMetadata";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
 import { getRedisLock } from "@/util/redis";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
@@ -12,6 +13,13 @@ import { UpdateRequest, validateUpdateRequest } from "../util";
 
 const router = Router();
 export default router;
+
+/**
+ * Check if the bucket is valid from the metadata.
+ */
+function checkIsBucketValidFromMetadata(metadata: BuildMetadata | null) {
+  return !metadata?.testReport || metadata.testReport.status === "passed";
+}
 
 async function handleUpdateParallel({
   req,
@@ -39,6 +47,7 @@ async function handleUpdateParallel({
           ? BuildShard.query(trx).insert({
               buildId: build.id,
               index: req.body.parallelIndex,
+              metadata: req.body.metadata ?? null,
             })
           : null,
         Build.query(trx)
@@ -57,13 +66,19 @@ async function handleUpdateParallel({
       });
 
       if (parallelTotal === patchedBuild.batchCount) {
-        const screenshotCount = await Screenshot.query(trx)
-          .where("screenshotBucketId", build.compareScreenshotBucketId)
-          .resultSize();
+        const [screenshotCount, shards] = await Promise.all([
+          Screenshot.query(trx)
+            .where("screenshotBucketId", build.compareScreenshotBucketId)
+            .resultSize(),
+          BuildShard.query(trx).select("metadata").where("buildId", build.id),
+        ]);
+        const valid = shards.every((shard) =>
+          checkIsBucketValidFromMetadata(shard.metadata),
+        );
         await Promise.all([
           build
             .$relatedQuery("compareScreenshotBucket", trx)
-            .patch({ complete: true, screenshotCount }),
+            .patch({ complete: true, valid, screenshotCount }),
           // If the build was marked as partial, then it was obviously an error, we unmark it.
           build.partial
             ? Build.query(trx).where("id", build.id).patch({ partial: false })
@@ -95,9 +110,18 @@ async function handleUpdateSingle({
       trx,
     });
 
-    await build
-      .compareScreenshotBucket!.$query(trx)
-      .patchAndFetch({ complete: true, screenshotCount });
+    const buildMetadata = req.body.metadata ?? null;
+
+    await Promise.all([
+      build.compareScreenshotBucket!.$query(trx).patchAndFetch({
+        complete: true,
+        valid: checkIsBucketValidFromMetadata(buildMetadata),
+        screenshotCount,
+      }),
+      buildMetadata
+        ? build.$clone().$query(trx).patch({ metadata: buildMetadata })
+        : null,
+    ]);
   });
   await buildJob.push(build.id);
 }

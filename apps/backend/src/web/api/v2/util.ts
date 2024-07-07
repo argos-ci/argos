@@ -14,6 +14,10 @@ import {
   ScreenshotMetadata,
   ScreenshotMetadataJsonSchema,
 } from "@/database/models/index.js";
+import {
+  BuildMetadata,
+  BuildMetadataJsonSchema,
+} from "@/database/services/buildMetadata.js";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 import { getRedisLock } from "@/util/redis/index.js";
 import { SHA1_REGEX_STR, SHA256_REGEX_STR } from "@/web/constants";
@@ -217,6 +221,7 @@ export const validateUpdateRequest = validate({
         minimum: 1,
         nullable: true,
       },
+      metadata: BuildMetadataJsonSchema,
     },
   },
 });
@@ -239,6 +244,7 @@ export type UpdateRequest = Request<
     parallel?: boolean | null;
     parallelTotal?: number | null;
     parallelIndex?: number | null;
+    metadata?: BuildMetadata | null;
   }
 > & { authProject?: Project };
 
@@ -246,17 +252,17 @@ async function createBuild(params: {
   project: Project;
   commit: string;
   branch: string;
-  buildName?: string | null;
-  parallel?: { nonce: string } | null;
-  prNumber?: number | null;
-  prHeadCommit?: string | null;
-  referenceCommit?: string | null;
-  referenceBranch?: string | null;
-  mode?: BuildMode | null;
-  ciProvider?: string | null;
-  argosSdk?: string | null;
-  runId?: string | null;
-  runAttempt?: number | null;
+  buildName: string | null;
+  parallel: { nonce: string } | null;
+  prNumber: number | null;
+  prHeadCommit: string | null;
+  referenceCommit: string | null;
+  referenceBranch: string | null;
+  mode: BuildMode | null;
+  ciProvider: string | null;
+  argosSdk: string | null;
+  runId: string | null;
+  runAttempt: number | null;
 }) {
   const account = await params.project.$relatedQuery("account");
   invariant(account, "Account should be fetched");
@@ -329,6 +335,7 @@ async function createBuild(params: {
           branch: params.branch,
           projectId: params.project.id,
           complete: false,
+          valid: false,
           mode,
         });
 

@@ -44,12 +44,16 @@ export type ScreenshotMetadata = {
 
 export const ScreenshotMetadataJsonSchema = {
   type: ["object", "null"],
+  required: ["sdk", "automationLibrary"],
+  additionalProperties: false,
   properties: {
     url: {
       type: "string",
     },
     viewport: {
       type: "object",
+      required: ["width", "height"],
+      additionalProperties: false,
       properties: {
         width: {
           type: "integer",
@@ -60,7 +64,6 @@ export const ScreenshotMetadataJsonSchema = {
           minimum: 0,
         },
       },
-      required: ["width", "height"],
     },
     colorScheme: {
       type: "string",
@@ -74,6 +77,8 @@ export const ScreenshotMetadataJsonSchema = {
       oneOf: [
         {
           type: "object",
+          required: ["title", "titlePath"],
+          additionalProperties: false,
           properties: {
             id: {
               type: "string",
@@ -101,6 +106,8 @@ export const ScreenshotMetadataJsonSchema = {
             },
             location: {
               type: "object",
+              required: ["file", "line", "column"],
+              additionalProperties: false,
               properties: {
                 file: {
                   type: "string",
@@ -114,18 +121,16 @@ export const ScreenshotMetadataJsonSchema = {
                   minimum: 0,
                 },
               },
-              required: ["file", "line", "column"],
             },
           },
-          required: ["title", "titlePath"],
         },
-        {
-          type: "null",
-        },
+        { type: "null" },
       ],
     },
     browser: {
       type: "object",
+      required: ["name", "version"],
+      additionalProperties: false,
       properties: {
         name: {
           type: "string",
@@ -134,10 +139,11 @@ export const ScreenshotMetadataJsonSchema = {
           type: "string",
         },
       },
-      required: ["name", "version"],
     },
     automationLibrary: {
       type: "object",
+      required: ["name", "version"],
+      additionalProperties: false,
       properties: {
         name: {
           type: "string",
@@ -146,10 +152,11 @@ export const ScreenshotMetadataJsonSchema = {
           type: "string",
         },
       },
-      required: ["name", "version"],
     },
     sdk: {
       type: "object",
+      required: ["name", "version"],
+      additionalProperties: false,
       properties: {
         name: {
           type: "string",
@@ -158,11 +165,8 @@ export const ScreenshotMetadataJsonSchema = {
           type: "string",
         },
       },
-      required: ["name", "version"],
     },
   },
-  required: ["sdk", "automationLibrary"],
-  additionalProperties: false,
 };
 
 export class Screenshot extends Model {
