@@ -701,6 +701,7 @@ type ScreenshotMetadataSDK {
 type ScreenshotMetadataTest {
   id: String
   location: ScreenshotMetadataLocation
+  repeat: Int
   retries: Int
   retry: Int
   title: String!

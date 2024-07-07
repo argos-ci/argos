@@ -26,6 +26,7 @@ export type ScreenshotMetadata = {
     };
     retry?: number;
     retries?: number;
+    repeat?: number;
   } | null;
   browser?: {
     name: string;
@@ -51,10 +52,12 @@ export const ScreenshotMetadataJsonSchema = {
       type: "object",
       properties: {
         width: {
-          type: "number",
+          type: "integer",
+          minimum: 0,
         },
         height: {
-          type: "number",
+          type: "integer",
+          minimum: 0,
         },
       },
       required: ["width", "height"],
@@ -84,6 +87,18 @@ export const ScreenshotMetadataJsonSchema = {
                 type: "string",
               },
             },
+            retries: {
+              type: "integer",
+              minimum: 0,
+            },
+            retry: {
+              type: "integer",
+              minimum: 0,
+            },
+            repeat: {
+              type: "integer",
+              minimum: 0,
+            },
             location: {
               type: "object",
               properties: {
@@ -91,10 +106,12 @@ export const ScreenshotMetadataJsonSchema = {
                   type: "string",
                 },
                 line: {
-                  type: "number",
+                  type: "integer",
+                  minimum: 0,
                 },
                 column: {
-                  type: "number",
+                  type: "integer",
+                  minimum: 0,
                 },
               },
               required: ["file", "line", "column"],

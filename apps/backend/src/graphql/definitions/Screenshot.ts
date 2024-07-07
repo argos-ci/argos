@@ -36,6 +36,7 @@ export const typeDefs = gql`
     location: ScreenshotMetadataLocation
     retry: Int
     retries: Int
+    repeat: Int
   }
 
   type ScreenshotMetadataBrowser {
