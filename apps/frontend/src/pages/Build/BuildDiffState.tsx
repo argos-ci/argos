@@ -66,6 +66,7 @@ const ScreenshotDiffFragment = graphql(`
           }
           retry
           retries
+          repeat
         }
       }
     }
@@ -104,6 +105,7 @@ const ScreenshotDiffFragment = graphql(`
           }
           retry
           retries
+          repeat
         }
       }
       playwrightTraceUrl

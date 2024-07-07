@@ -53,6 +53,7 @@ type InsertFilesAndScreenshotsParams = {
     metadata?: ScreenshotMetadata | null;
     pwTraceKey?: string | null;
     threshold?: number | null;
+    baseName?: string | null;
   }[];
   build: Build;
   shard?: BuildShard | null;
@@ -170,6 +171,7 @@ export async function insertFilesAndScreenshots(
           playwrightTraceFileId: pwTraceFile?.id ?? null,
           buildShardId: params.shard?.id ?? null,
           threshold: screenshot.threshold ?? null,
+          baseName: screenshot.baseName ?? null,
         };
       }),
     );

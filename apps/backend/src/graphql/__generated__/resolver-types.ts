@@ -889,6 +889,7 @@ export type IScreenshotMetadataTest = {
   __typename?: 'ScreenshotMetadataTest';
   id?: Maybe<Scalars['String']['output']>;
   location?: Maybe<IScreenshotMetadataLocation>;
+  repeat?: Maybe<Scalars['Int']['output']>;
   retries?: Maybe<Scalars['Int']['output']>;
   retry?: Maybe<Scalars['Int']['output']>;
   title: Scalars['String']['output'];
@@ -1854,6 +1855,7 @@ export type IScreenshotMetadataSdkResolvers<ContextType = Context, ParentType ex
 export type IScreenshotMetadataTestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataTest'] = IResolversParentTypes['ScreenshotMetadataTest']> = ResolversObject<{
   id?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   location?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataLocation']>, ParentType, ContextType>;
+  repeat?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   retries?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   retry?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   title?: Resolver<IResolversTypes['String'], ParentType, ContextType>;

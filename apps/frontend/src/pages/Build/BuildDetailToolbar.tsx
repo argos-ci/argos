@@ -9,6 +9,7 @@ import { AutomationLibraryIndicator } from "./metadata/automationLibrary/Automat
 import { BrowserIndicator } from "./metadata/browser/BrowserIndicator";
 import { ColorSchemeIndicator } from "./metadata/ColorSchemeIndicator";
 import { MediaTypeIndicator } from "./metadata/MediaTypeIndicator";
+import { RepeatIndicator } from "./metadata/RepeatIndicator";
 import { RetryIndicator } from "./metadata/RetryIndicator";
 import { SdkIndicator } from "./metadata/SdkIndicator";
 import { TestIndicator } from "./metadata/TestIndicator";
@@ -52,6 +53,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
   const test = metadata?.test ?? null;
   const retry = test?.retry ?? null;
   const retries = test?.retries ?? null;
+  const repeat = test?.repeat ?? null;
   const threshold = activeDiff.threshold ?? null;
   const branch =
     prMerged || test === activeDiff.baseScreenshot?.metadata?.test
@@ -92,6 +94,15 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
               <BrowserIndicator browser={browser} className="size-4" />
             )}
             {threshold !== null && <ThresholdIndicator threshold={threshold} />}
+            {retry !== null && retries !== null && retries > 0 && (
+              <RetryIndicator retry={retry} retries={retries} />
+            )}
+            {repeat !== null && repeat > 0 && (
+              <RepeatIndicator
+                repeat={repeat}
+                isPlaywright={automationLibrary?.name === "@playwright/test"}
+              />
+            )}
             {colorScheme && (
               <ColorSchemeIndicator
                 colorScheme={colorScheme}
@@ -103,9 +114,6 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
             )}
             {viewport && <ViewportIndicator viewport={viewport} />}
             {url && <UrlIndicator url={url} />}
-            {retry !== null && retries !== null && retries > 0 && (
-              <RetryIndicator retry={retry} retries={retries} />
-            )}
             {test && (
               <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
             )}

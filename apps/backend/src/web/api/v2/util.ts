@@ -184,6 +184,10 @@ export const validateUpdateRequest = validate({
             name: {
               type: "string",
             },
+            baseName: {
+              type: "string",
+              nullable: true,
+            },
             metadata: ScreenshotMetadataJsonSchema,
             pwTraceKey: {
               type: "string",
@@ -227,6 +231,7 @@ export type UpdateRequest = Request<
     screenshots: {
       key: string;
       name: string;
+      baseName?: string | null;
       metadata?: ScreenshotMetadata | null;
       pwTraceKey?: string | null;
       threshold?: number | null;
