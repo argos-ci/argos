@@ -16,8 +16,8 @@ export function RepeatIndicator({
       content={
         isPlaywright ? (
           <>
-            Repeat number {repeat}. This mode is enabled by passing{" "}
-            <code>--repeat-each</code> to the command line.
+            Repeat number {repeat} (Enabled by passing{" "}
+            <code>--repeat-each</code> to Playwright CLI).
           </>
         ) : (
           `Repeat number ${repeat}`
