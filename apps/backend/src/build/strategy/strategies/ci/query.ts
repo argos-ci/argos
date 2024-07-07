@@ -34,6 +34,7 @@ export function queryBaseBucket(build: Build) {
     projectId: build.projectId,
     name: build.name,
     complete: true,
+    valid: true,
     mode: build.mode,
   });
 }

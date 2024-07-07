@@ -11,6 +11,10 @@ import { z } from "zod";
 
 import config from "@/config/index.js";
 
+import {
+  BuildMetadata,
+  BuildMetadataJsonSchema,
+} from "../services/buildMetadata.js";
 import { Model } from "../util/model.js";
 import {
   jobModelSchema,
@@ -92,6 +96,7 @@ export class Build extends Model {
       runId: { type: ["string", "null"] },
       runAttempt: { type: ["integer", "null"] },
       partial: { type: ["boolean", "null"] },
+      metadata: BuildMetadataJsonSchema,
     },
   });
 
@@ -116,6 +121,7 @@ export class Build extends Model {
   runId!: string | null;
   runAttempt!: number | null;
   partial!: boolean | null;
+  metadata!: BuildMetadata | null;
 
   static override get relationMappings(): RelationMappings {
     return {
