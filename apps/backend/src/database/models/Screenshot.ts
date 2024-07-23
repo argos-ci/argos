@@ -162,7 +162,6 @@ export const ScreenshotMetadataJsonSchema = {
     },
   },
   required: ["sdk", "automationLibrary"],
-  additionalProperties: false,
 };
 
 export class Screenshot extends Model {
