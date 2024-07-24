@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import pRetry from "p-retry";
 
 import { GithubRepository, Project } from "@/database/models/index.js";
-import { getInstallationOctokit } from "@/github/index.js";
+import { getInstallationOctokit, OctokitRequestError } from "@/github/index.js";
 import { boom } from "@/web/util.js";
 
 const marker = "tokenless-github-";
@@ -86,12 +86,8 @@ const strategy = {
             filter: "latest",
           });
           return result;
-        } catch (error: unknown) {
-          if (
-            error instanceof Error &&
-            "status" in error &&
-            error.status === 404
-          ) {
+        } catch (error) {
+          if (error instanceof OctokitRequestError && error.status === 404) {
             return null;
           }
           throw error;

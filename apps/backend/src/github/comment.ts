@@ -3,6 +3,8 @@ import type { Octokit } from "@octokit/rest";
 import type { GithubPullRequest } from "@/database/models/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
 
+import { OctokitRequestError } from "./client";
+
 async function getOrCreatePullRequestComment({
   owner,
   repo,
@@ -70,7 +72,7 @@ export async function commentGithubPr({
       });
     }
   } catch (error: unknown) {
-    if (error instanceof Error && "status" in error && error.status === 404) {
+    if (error instanceof OctokitRequestError && error.status === 404) {
       await pullRequest.$clone().$query().patch({ commentDeleted: true });
     } else {
       throw error;

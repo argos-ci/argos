@@ -7,7 +7,7 @@ import {
   Project,
   Screenshot,
 } from "@/database/models/index.js";
-import { getInstallationOctokit } from "@/github/index.js";
+import { getInstallationOctokit, OctokitRequestError } from "@/github/index.js";
 import logger from "@/logger/index.js";
 
 import { job as buildJob } from "./job.js";
@@ -62,17 +62,25 @@ export async function checkIsPartialBuild(input: {
 
   const previousRunAttempt = runAttempt - 1;
 
-  const getJobsForRunAttempt = (attempt: number) => {
-    return pTimeout(
-      octokit.actions.listJobsForWorkflowRunAttempt({
-        attempt_number: attempt,
-        owner: githubAccount.login,
-        repo: githubRepository.name,
-        run_id: Number(runId),
-        per_page: 30,
-      }),
-      { milliseconds: 5000 },
-    );
+  const getJobsForRunAttempt = async (attempt: number) => {
+    try {
+      return await pTimeout(
+        octokit.actions.listJobsForWorkflowRunAttempt({
+          attempt_number: attempt,
+          owner: githubAccount.login,
+          repo: githubRepository.name,
+          run_id: Number(runId),
+          per_page: 30,
+        }),
+        { milliseconds: 5000 },
+      );
+    } catch (error) {
+      if (error instanceof OctokitRequestError && error.status === 404) {
+        return null;
+      }
+
+      throw error;
+    }
   };
 
   try {
@@ -80,6 +88,10 @@ export async function checkIsPartialBuild(input: {
       getJobsForRunAttempt(previousRunAttempt),
       getJobsForRunAttempt(runAttempt),
     ]);
+
+    if (!previousRun || !currentRun) {
+      return false;
+    }
 
     const previousRunJobs = previousRun.data.jobs;
     const currentRunJobs = currentRun.data.jobs;

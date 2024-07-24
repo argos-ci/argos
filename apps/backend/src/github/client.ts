@@ -6,6 +6,7 @@ import config from "@/config/index.js";
 import { GithubInstallation } from "@/database/models/index.js";
 
 export type { RestEndpointMethodTypes } from "@octokit/rest";
+export { RequestError as OctokitRequestError } from "@octokit/request-error";
 
 // @ts-expect-error problem with Octokit types
 Octokit.plugin(retry);
