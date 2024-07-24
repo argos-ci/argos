@@ -17,7 +17,10 @@ describe("ScreenshotBucket", () => {
           ...baseData,
           commit: "esfsefsfsef",
         });
-      } catch (error: any) {
+      } catch (error) {
+        if (!(error instanceof Error)) {
+          throw error;
+        }
         expect(error.message).toBe(
           'commit: must match pattern "^[0-9a-f]{40}$"',
         );

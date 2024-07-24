@@ -105,7 +105,7 @@ export const createJob = <TValue>(
               try {
                 await consumer.perform(payload.args[0]);
                 await consumer.complete(payload.args[0]);
-              } catch (error: any) {
+              } catch (error) {
                 if (checkIsRetryable(error) && payload.attempts < 2) {
                   channel.ack(msg);
                   channel.sendToQueue(
@@ -128,7 +128,7 @@ export const createJob = <TValue>(
                 await consumer.error(payload.args[0]);
                 return;
               }
-            } catch (error: any) {
+            } catch (error) {
               channel.ack(msg);
               Sentry.withScope((scope) => {
                 scope.setTag("jobQueue", queue);

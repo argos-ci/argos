@@ -5,8 +5,12 @@ export const checkIfExists = async ({ s3, ...other }: GetParams) => {
   try {
     await get({ s3, ...other });
     return true;
-  } catch (error: any) {
-    if (error.Code === "AccessDenied") {
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "Code" in error &&
+      error.Code === "AccessDenied"
+    ) {
       return false;
     }
     throw error;
