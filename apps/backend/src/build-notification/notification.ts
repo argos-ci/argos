@@ -1,7 +1,9 @@
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import { getStatsMessage } from "@/build/stats.js";
+import { Project } from "@/database/models";
 import { Build } from "@/database/models/Build.js";
 import type { BuildNotification } from "@/database/models/BuildNotification.js";
 import { UnretryableError } from "@/job-core/error.js";
@@ -18,8 +20,48 @@ export const NotificationPayloadSchema = z.object({
 });
 export type NotificationPayload = z.infer<typeof NotificationPayloadSchema>;
 
-function getStatusContext(buildName: string): string {
-  return buildName === "default" ? "argos" : `argos/${buildName}`;
+/**
+ * Check if the project has a sibling project with the same repository.
+ */
+async function checkHasSiblingProject(project: Project): Promise<boolean> {
+  if (!project.githubRepositoryId && !project.gitlabProjectId) {
+    return false;
+  }
+
+  const query = Project.query();
+
+  if (project.githubRepositoryId) {
+    query.orWhere("githubRepositoryId", project.githubRepositoryId);
+  }
+
+  if (project.gitlabProjectId) {
+    query.orWhere("gitlabProjectId", project.gitlabProjectId);
+  }
+
+  const projectCount = await query.resultSize();
+  return projectCount > 1;
+}
+
+/**
+ * Get the status context for the build.
+ */
+async function getStatusContext(build: Build): Promise<string> {
+  let context = "argos";
+
+  await build.$fetchGraph("project", { skipFetched: true });
+  invariant(build.project, "Project not found", UnretryableError);
+
+  const hasSiblingProject = await checkHasSiblingProject(build.project);
+
+  if (hasSiblingProject) {
+    context = `${context}/${build.project.name}`;
+  }
+
+  if (build.name === "default") {
+    return context;
+  }
+
+  return `${context}/${build.name}`;
 }
 
 /**
@@ -135,18 +177,21 @@ async function getNotificationDescription(input: {
  */
 export async function getNotificationPayload(input: {
   buildNotification: Pick<BuildNotification, "type">;
-  build: Pick<Build, "id" | "name" | "type">;
+  build: Build;
 }): Promise<NotificationPayload> {
-  const context = getStatusContext(input.build.name);
+  const [description, context] = await Promise.all([
+    getNotificationDescription({
+      buildNotificationType: input.buildNotification.type,
+      buildId: input.build.id,
+      isReference: input.build.type === "reference",
+    }),
+    getStatusContext(input.build),
+  ]);
   const states = getNotificationStates({
     buildNotificationType: input.buildNotification.type,
     isReference: input.build.type === "reference",
   });
-  const description = await getNotificationDescription({
-    buildNotificationType: input.buildNotification.type,
-    buildId: input.build.id,
-    isReference: input.build.type === "reference",
-  });
+
   return {
     description,
     context,
