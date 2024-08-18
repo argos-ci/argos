@@ -16,7 +16,7 @@
     "setup": {
       "dependsOn": ["build"],
       "cache": false,
-      "env": ["NODE_ENV"]
+      "env": ["NODE_ENV", "TZ", "BUILD_MODE"]
     },
     "check-types": {
       "dependsOn": [],
