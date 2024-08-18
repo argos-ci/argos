@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 
 import { Project } from "@/database/models/index.js";
-import { getInstallationOctokit, OctokitRequestError } from "@/github/index.js";
+import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
 import { UnretryableError } from "@/job-core/index.js";
 
 import { MergeBaseStrategy } from "../types.js";
@@ -54,7 +54,7 @@ export const GithubStrategy: MergeBaseStrategy<{
       return data.merge_base_commit.sha;
     } catch (error) {
       // If we can't find the base commit, then we can't give a bucket
-      if (error instanceof OctokitRequestError && error.status === 404) {
+      if (checkErrorStatus(404, error)) {
         return null;
       }
 
@@ -71,7 +71,7 @@ export const GithubStrategy: MergeBaseStrategy<{
       });
       return response.data.map((commit) => commit.sha);
     } catch (error) {
-      if (error instanceof OctokitRequestError && error.status === 404) {
+      if (checkErrorStatus(404, error)) {
         const notFoundError = new Error(
           `"${args.sha}" not found on repository "${args.ctx.repo}"`,
         );

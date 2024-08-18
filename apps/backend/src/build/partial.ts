@@ -7,7 +7,7 @@ import {
   Project,
   Screenshot,
 } from "@/database/models/index.js";
-import { getInstallationOctokit, OctokitRequestError } from "@/github/index.js";
+import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
 
 import { job as buildJob } from "./job.js";
@@ -75,7 +75,7 @@ export async function checkIsPartialBuild(input: {
         { milliseconds: 5000 },
       );
     } catch (error) {
-      if (error instanceof OctokitRequestError && error.status === 404) {
+      if (checkErrorStatus(404, error)) {
         return null;
       }
 

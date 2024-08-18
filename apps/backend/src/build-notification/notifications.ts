@@ -7,9 +7,9 @@ import {
   GithubPullRequest,
 } from "@/database/models/index.js";
 import {
+  checkErrorStatus,
   commentGithubPr,
   getInstallationOctokit,
-  OctokitRequestError,
 } from "@/github/index.js";
 import { getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { UnretryableError } from "@/job-core/index.js";
@@ -54,7 +54,7 @@ const createGhCommitStatus = async (
   } catch (error) {
     // It happens if a push-force occurs before sending the notification, it is not considered as an error
     // No commit found for SHA: xxx
-    if (error instanceof OctokitRequestError && error.status === 422) {
+    if (checkErrorStatus(422, error)) {
       return;
     }
 
