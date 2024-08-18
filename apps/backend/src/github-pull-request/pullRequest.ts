@@ -4,9 +4,9 @@ import {
   getOrCreateGhAccount,
 } from "@/database/services/account.js";
 import {
+  checkErrorStatus,
   getInstallationOctokit,
   Octokit,
-  OctokitRequestError,
 } from "@/github/client.js";
 import { unretryable } from "@/job-core/error.js";
 import logger from "@/logger/index.js";
@@ -25,8 +25,8 @@ async function fetchPullRequest(
   try {
     const { data } = await octokit.rest.pulls.get(params);
     return data;
-  } catch (error: unknown) {
-    if (error instanceof OctokitRequestError && error.status === 404) {
+  } catch (error) {
+    if (checkErrorStatus(404, error)) {
       return null;
     }
     throw error;

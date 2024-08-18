@@ -39,7 +39,6 @@
     "@octokit/openapi-types": "^22.2.0",
     "@octokit/plugin-retry": "^7.1.1",
     "@octokit/rest": "^20.1.1",
-    "@octokit/request-error": "^6.1.4",
     "@octokit/webhooks": "^13.2.7",
     "@octokit/webhooks-types": "^7.5.1",
     "@react-email/components": "^0.0.18",

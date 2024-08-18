@@ -6,7 +6,6 @@ import config from "@/config/index.js";
 import { GithubInstallation } from "@/database/models/index.js";
 
 export type { RestEndpointMethodTypes } from "@octokit/rest";
-export { RequestError as OctokitRequestError } from "@octokit/request-error";
 
 // @ts-expect-error problem with Octokit types
 Octokit.plugin(retry);
@@ -79,4 +78,18 @@ export async function getInstallationOctokit(
     githubTokenExpiresAt: result.expiresAt,
   });
   return getTokenOctokit(result.token);
+}
+
+/**
+ * Check the error status.
+ */
+export function checkErrorStatus(status: number, error: unknown): boolean {
+  if (
+    error instanceof Error &&
+    "status" in error &&
+    typeof error.status === "number"
+  ) {
+    return error.status === status;
+  }
+  return false;
 }
