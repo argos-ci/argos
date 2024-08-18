@@ -29,7 +29,7 @@
     "@types/react-helmet": "^6.1.11",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.19",
-    "axios": "^1.7.2",
+    "axios": "^1.7.4",
     "clsx": "^2.1.1",
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
