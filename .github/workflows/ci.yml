@@ -58,7 +58,7 @@ jobs:
         run: npm exec -- turbo run build --filter=\!@argos/frontend
 
       - name: Run unit tests
-        run: npm exec -- vitest -c vitest.unit.config.ts
+        run: npm exec -- vitest -c vitest.unit.config.mts
 
   integration-test:
     runs-on: ubuntu-latest
@@ -121,7 +121,7 @@ jobs:
           BUILD_MODE: production
 
       - name: Test
-        run: npm exec -- vitest -c vitest.e2e.config.ts
+        run: npm exec -- vitest -c vitest.e2e.config.mts
 
   e2e-test:
     runs-on: ubuntu-latest

@@ -17,6 +17,6 @@ LICENSE
 nodemon.json
 playwright.config.mjs
 README.md
-vitest.config.ts
-vitest.e2e.config.ts
-vitest.unit.config.ts
+vitest.config.mts
+vitest.e2e.config.mts
+vitest.unit.config.mts
