@@ -1,6 +1,5 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalEnv": ["NODE_ENV"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -16,7 +15,8 @@
     },
     "setup": {
       "dependsOn": ["build"],
-      "cache": false
+      "cache": false,
+      "env": ["NODE_ENV"]
     },
     "check-types": {
       "dependsOn": [],
