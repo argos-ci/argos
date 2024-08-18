@@ -11,10 +11,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "puppeteer": "^22.6.1"
+    "puppeteer": "^23.1.0"
   },
   "devDependencies": {
-    "@argos-ci/cli": "^1.0.12",
-    "@argos-ci/puppeteer": "^1.6.4"
+    "@argos-ci/cli": "^2.3.1",
+    "@argos-ci/puppeteer": "^2.2.1"
   }
 }
