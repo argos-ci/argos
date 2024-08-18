@@ -1,5 +1,5 @@
 /* eslint-env node */
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
 const tailwindPlugin = require("tailwindcss/plugin");
 
 /** @type {import('tailwindcss').Config} */
@@ -206,6 +206,7 @@ module.exports = {
     },
   },
   plugins: [
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("tailwindcss-animate"),
     tailwindPlugin(({ addVariant }) => {
       addVariant("search-cancel", "&::-webkit-search-cancel-button");

@@ -102,7 +102,7 @@ export const decodeAuthToken = (t: string) => {
       return null;
     }
     return value as JWTData;
-  } catch (e) {
+  } catch {
     return null;
   }
 };

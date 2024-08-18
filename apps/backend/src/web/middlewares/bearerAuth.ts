@@ -15,7 +15,7 @@ declare global {
 const parseAuthHeader = (authHeader: string) => {
   try {
     return authorization.parse(authHeader);
-  } catch (error) {
+  } catch {
     const httpError = boom(400, `Invalid authorization header`);
     httpError.cause = httpError;
     throw httpError;
