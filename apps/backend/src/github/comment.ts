@@ -19,7 +19,7 @@ async function getOrCreatePullRequestComment({
   pullRequest: GithubPullRequest;
 }) {
   const lock = await getRedisLock();
-  await lock.acquire(pullRequest.id, async () => {
+  await lock.acquire(["create-pr-comment", pullRequest.id], async () => {
     await pullRequest.$query();
     if (pullRequest.commentId) {
       return pullRequest.commentId;

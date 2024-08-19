@@ -30,28 +30,30 @@ async function getOrCreatePullRequest({
   githubRepositoryId: string;
   number: number;
 }) {
-  const lockKey = `pullRequestCreation-${githubRepositoryId}:${number}`;
   const lock = await getRedisLock();
-  return lock.acquire(lockKey, async () => {
-    const existingPr = await GithubPullRequest.query().findOne({
-      githubRepositoryId,
-      number,
-    });
+  return lock.acquire(
+    ["pull-request-creation", githubRepositoryId, number],
+    async () => {
+      const existingPr = await GithubPullRequest.query().findOne({
+        githubRepositoryId,
+        number,
+      });
 
-    if (existingPr) {
-      return existingPr;
-    }
+      if (existingPr) {
+        return existingPr;
+      }
 
-    const pr = await GithubPullRequest.query().insertAndFetch({
-      githubRepositoryId,
-      number,
-      jobStatus: "pending",
-    });
+      const pr = await GithubPullRequest.query().insertAndFetch({
+        githubRepositoryId,
+        number,
+        jobStatus: "pending",
+      });
 
-    await githubPullRequestJob.push(pr.id);
+      await githubPullRequestJob.push(pr.id);
 
-    return pr;
-  });
+      return pr;
+    },
+  );
 }
 
 export const validateCreateRequest = validate({
@@ -320,7 +322,7 @@ async function createBuild(params: {
   ]);
 
   const build = await lock.acquire(
-    `buildCreation-${params.project.id}-${buildName}`,
+    ["create-build", params.project.id, buildName],
     async () => {
       return transaction(async (trx) => {
         const bucket = await ScreenshotBucket.query(trx).insertAndFetch({

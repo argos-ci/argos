@@ -30,51 +30,53 @@ async function handleUpdateParallel({
     throw boom(400, "`parallelTotal` must be the same on every batch");
   }
 
-  const lockKey = `build.${build.id}.parallel`;
   const lock = await getRedisLock();
-  const complete = await lock.acquire(lockKey, async () => {
-    return transaction(async (trx) => {
-      const [shard, patchedBuild] = await Promise.all([
-        typeof req.body.parallelIndex === "number"
-          ? BuildShard.query(trx).insert({
-              buildId: build.id,
-              index: req.body.parallelIndex,
-            })
-          : null,
-        Build.query(trx)
-          .patchAndFetchById(build.id, {
-            batchCount: raw('"batchCount" + 1'),
-            totalBatch: parallelTotal,
-          })
-          .select("batchCount"),
-      ]);
-
-      await insertFilesAndScreenshots({
-        screenshots: req.body.screenshots,
-        build,
-        shard,
-        trx,
-      });
-
-      if (parallelTotal === patchedBuild.batchCount) {
-        const screenshotCount = await Screenshot.query(trx)
-          .where("screenshotBucketId", build.compareScreenshotBucketId)
-          .resultSize();
-        await Promise.all([
-          build
-            .$relatedQuery("compareScreenshotBucket", trx)
-            .patch({ complete: true, screenshotCount }),
-          // If the build was marked as partial, then it was obviously an error, we unmark it.
-          build.partial
-            ? Build.query(trx).where("id", build.id).patch({ partial: false })
+  const complete = await lock.acquire(
+    ["update-build-parallel", build.id],
+    async () => {
+      return transaction(async (trx) => {
+        const [shard, patchedBuild] = await Promise.all([
+          typeof req.body.parallelIndex === "number"
+            ? BuildShard.query(trx).insert({
+                buildId: build.id,
+                index: req.body.parallelIndex,
+              })
             : null,
+          Build.query(trx)
+            .patchAndFetchById(build.id, {
+              batchCount: raw('"batchCount" + 1'),
+              totalBatch: parallelTotal,
+            })
+            .select("batchCount"),
         ]);
-        return true;
-      }
 
-      return false;
-    });
-  });
+        await insertFilesAndScreenshots({
+          screenshots: req.body.screenshots,
+          build,
+          shard,
+          trx,
+        });
+
+        if (parallelTotal === patchedBuild.batchCount) {
+          const screenshotCount = await Screenshot.query(trx)
+            .where("screenshotBucketId", build.compareScreenshotBucketId)
+            .resultSize();
+          await Promise.all([
+            build
+              .$relatedQuery("compareScreenshotBucket", trx)
+              .patch({ complete: true, screenshotCount }),
+            // If the build was marked as partial, then it was obviously an error, we unmark it.
+            build.partial
+              ? Build.query(trx).where("id", build.id).patch({ partial: false })
+              : null,
+          ]);
+          return true;
+        }
+
+        return false;
+      });
+    },
+  );
 
   if (complete) {
     await buildJob.push(build.id);

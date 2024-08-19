@@ -13,6 +13,7 @@ import {
 } from "@/github/index.js";
 import { getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { UnretryableError } from "@/job-core/index.js";
+import { getRedisLock } from "@/util/redis/index.js";
 
 import { getAggregatedNotification } from "./aggregated.js";
 import { getCommentBody } from "./comment.js";
@@ -49,17 +50,23 @@ const createGhCommitStatus = async (
   octokit: Octokit,
   params: RestEndpointMethodTypes["repos"]["createCommitStatus"]["parameters"],
 ) => {
-  try {
-    await octokit.repos.createCommitStatus(params);
-  } catch (error) {
-    // It happens if a push-force occurs before sending the notification, it is not considered as an error
-    // No commit found for SHA: xxx
-    if (checkErrorStatus(422, error)) {
-      return;
-    }
+  const lock = await getRedisLock();
+  await lock.acquire(
+    ["create-github-commit-status", params.owner],
+    async () => {
+      try {
+        await octokit.repos.createCommitStatus(params);
+      } catch (error) {
+        // It happens if a push-force occurs before sending the notification, it is not considered as an error
+        // No commit found for SHA: xxx
+        if (checkErrorStatus(422, error)) {
+          return;
+        }
 
-    throw error;
-  }
+        throw error;
+      }
+    },
+  );
 };
 
 async function sendGithubNotification(ctx: Context) {

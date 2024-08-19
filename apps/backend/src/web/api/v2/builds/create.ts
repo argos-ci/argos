@@ -89,28 +89,36 @@ async function handleCreateParallel({
   const buildName = getBuildName(req.body.name);
   const parallelNonce = req.body.parallelNonce;
 
-  const lockKey = `${req.authProject.id}:${req.body.commit}:${buildName}:${parallelNonce}`;
   const lock = await getRedisLock();
-  const build = await lock.acquire(lockKey, async () => {
-    const existingBuild = await Build.query()
-      .withGraphFetched("compareScreenshotBucket")
-      .findOne({
-        "builds.projectId": req.authProject.id,
-        externalId: parallelNonce,
-        name: getBuildName(req.body.name),
-      });
+  const build = await lock.acquire(
+    [
+      "create-build-parallel",
+      req.authProject.id,
+      req.body.commit,
+      buildName,
+      parallelNonce,
+    ],
+    async () => {
+      const existingBuild = await Build.query()
+        .withGraphFetched("compareScreenshotBucket")
+        .findOne({
+          "builds.projectId": req.authProject.id,
+          externalId: parallelNonce,
+          name: getBuildName(req.body.name),
+        });
 
-    if (existingBuild) {
-      invariant(existingBuild.compareScreenshotBucket, "Bucket should exist");
-      if (existingBuild.compareScreenshotBucket.complete) {
-        throw boom(409, `Build already finalized`);
+      if (existingBuild) {
+        invariant(existingBuild.compareScreenshotBucket, "Bucket should exist");
+        if (existingBuild.compareScreenshotBucket.complete) {
+          throw boom(409, `Build already finalized`);
+        }
+
+        return existingBuild;
       }
 
-      return existingBuild;
-    }
-
-    return createBuildFromRequest({ req });
-  });
+      return createBuildFromRequest({ req });
+    },
+  );
 
   return { build, screenshots, pwTraces };
 }

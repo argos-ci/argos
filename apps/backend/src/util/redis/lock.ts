@@ -40,11 +40,12 @@ const acquireLock = ({
 
 export const createRedisLock = (client: RedisClient) => {
   async function acquire<T>(
-    name: string,
+    key: (string | number)[],
     task: () => Promise<T>,
     { timeout = 20000, retryDelay = { min: 100, max: 200 } } = {},
   ) {
-    const fullName = `lock.${name}`;
+    const hash = key.join(":");
+    const fullName = `lock.${hash}`;
     const id = await acquireLock({
       client,
       name: fullName,
@@ -56,7 +57,7 @@ export const createRedisLock = (client: RedisClient) => {
       task(),
       new Promise((_resolve, reject) => {
         timer = setTimeout(() => {
-          reject(new Error(`Lock timeout "${name}" after ${timeout}ms`));
+          reject(new Error(`Lock timeout "${hash}" after ${timeout}ms`));
         }, timeout);
       }),
     ])) as T;

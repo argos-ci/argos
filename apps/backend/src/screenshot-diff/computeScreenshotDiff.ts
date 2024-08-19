@@ -76,7 +76,7 @@ async function lockAndUploadDiffFile(args: {
   image: S3ImageFile;
 }) {
   const lock = await getRedisLock();
-  return lock.acquire(`diffUpload-${args.key}`, async () => {
+  return lock.acquire(["diff-upload", args.key], async () => {
     // Check if the diff file has been uploaded by another process
     const existingDiffFile = await File.query().findOne({ key: args.key });
     if (existingDiffFile) {
