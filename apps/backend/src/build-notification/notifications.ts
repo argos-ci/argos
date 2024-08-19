@@ -52,7 +52,7 @@ const createGhCommitStatus = async (
 ) => {
   const lock = await getRedisLock();
   await lock.acquire(
-    ["create-github-commit-status", params.owner],
+    ["create-github-commit-status", params.owner, params.repo, params.sha],
     async () => {
       try {
         await octokit.repos.createCommitStatus(params);
