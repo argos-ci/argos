@@ -17,7 +17,7 @@ const decodeToken = (bearerToken: string, marker: string) => {
     invariant(base64, "missing marker");
     const payload = Buffer.from(base64, "base64").toString("utf-8");
     return JSON.parse(payload);
-  } catch (error) {
+  } catch {
     throw boom(401, `Invalid token (token: "${bearerToken}")`);
   }
 };

@@ -29,7 +29,7 @@ export const resolveProjectName = async (args: {
   const name = args.index ? `${args.name}-${index}` : args.name;
   try {
     await checkProjectName({ ...args, name });
-  } catch (e) {
+  } catch {
     return resolveProjectName({ ...args, index: index + 1 });
   }
 

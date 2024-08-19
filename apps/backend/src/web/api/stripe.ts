@@ -29,7 +29,7 @@ async function parseStripeEvent(req: express.Request) {
       config.get("stripe.webhookSecret"),
     );
     return event;
-  } catch (err) {
+  } catch {
     throw boom(400, "Stripe webhook signature verification failed");
   }
 }

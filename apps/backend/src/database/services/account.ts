@@ -88,7 +88,7 @@ async function resolveAccountSlug(
   const nextSlug = index ? `${slug}-${index}` : slug;
   try {
     await checkAccountSlug(nextSlug);
-  } catch (e) {
+  } catch {
     return resolveAccountSlug(slug, index + 1);
   }
 

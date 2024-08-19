@@ -191,6 +191,7 @@ const LeaveTeamDialog = React.memo(
   },
 );
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const RemoveFromTeamDialogUserFragment = graphql(`
   fragment RemoveFromTeamDialog_User on User {
     id

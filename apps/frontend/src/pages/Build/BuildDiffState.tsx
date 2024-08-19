@@ -21,6 +21,7 @@ import { useEventCallback } from "@/ui/useEventCallback";
 import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
   fragment BuildDiffState_ScreenshotDiff on ScreenshotDiff {
     id

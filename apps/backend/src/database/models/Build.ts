@@ -25,8 +25,7 @@ import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
 import { User } from "./User.js";
 
-const BuildTypeSchema = z.enum(["reference", "check", "orphan"]);
-export type BuildType = z.infer<typeof BuildTypeSchema>;
+export type BuildType = "reference" | "check" | "orphan";
 
 const BuildStatusSchema = z.enum([
   "expired",

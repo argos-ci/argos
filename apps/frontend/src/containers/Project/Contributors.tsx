@@ -262,6 +262,7 @@ const LeaveProjectDialog = React.memo(
   },
 );
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const RemoveFromProjectDialogUserFragment = graphql(`
   fragment RemoveFromProjectDialog_User on User {
     id
