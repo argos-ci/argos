@@ -287,15 +287,15 @@ export class Account extends Model {
         return null;
       }
 
-      const [trialing, subscription] = await Promise.all([
-        checkIsUsageBasedPlan(),
-        getActiveSubscription(),
-      ]);
+      const subscription = await getActiveSubscription();
 
       if (subscription) {
         // We consider a trialing subscription as active
         // if the payment method is filled.
-        if (trialing && subscription.paymentMethodFilled) {
+        if (
+          subscription.status === "trialing" &&
+          subscription.paymentMethodFilled
+        ) {
           return "active";
         }
         return subscription.status;
