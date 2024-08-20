@@ -131,7 +131,8 @@ function PlanStatus(props: { account: DocumentType<typeof PlanCardFragment> }) {
         </>
       );
     }
-    case AccountSubscriptionStatus.Active: {
+    case AccountSubscriptionStatus.Active:
+    case AccountSubscriptionStatus.PastDue: {
       return (
         <>
           <CardParagraph>
