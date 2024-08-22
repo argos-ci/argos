@@ -1,6 +1,10 @@
 import { invariant } from "@argos/util/invariant";
 
-import { GithubRepository, Project } from "@/database/models/index.js";
+import {
+  GithubInstallation,
+  GithubRepository,
+  Project,
+} from "@/database/models/index.js";
 import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
 import { UnretryableError } from "@/job-core/index.js";
 
@@ -12,6 +16,7 @@ export const GithubStrategy: MergeBaseStrategy<{
   octokit: Octokit;
   owner: string;
   repo: string;
+  installation: GithubInstallation;
 }> = {
   detect: (project: Project) => Boolean(project.githubRepositoryId),
   getContext: async (project: Project) => {
@@ -52,6 +57,11 @@ export const GithubStrategy: MergeBaseStrategy<{
   },
 
   getMergeBaseCommitSha: async (args) => {
+    // If the app is light, then we rely on the reference commit provided by the user in CLI.
+    if (args.ctx.installation.app === "light") {
+      return args.build.referenceCommit;
+    }
+
     try {
       const { data } =
         await args.ctx.octokit.rest.repos.compareCommitsWithBasehead({

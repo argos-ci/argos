@@ -75,6 +75,7 @@ async function getBaseScreenshotBucket(build: Build) {
     ctx,
     base,
     head,
+    build,
   });
 
   if (!mergeBaseCommitSha) {

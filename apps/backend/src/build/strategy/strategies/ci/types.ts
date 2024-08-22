@@ -1,4 +1,4 @@
-import type { Project } from "@/database/models/index.js";
+import type { Build, Project } from "@/database/models/index.js";
 
 export type MergeBaseStrategy<TCtx> = {
   detect: (project: Project) => Promise<boolean> | boolean;
@@ -8,6 +8,7 @@ export type MergeBaseStrategy<TCtx> = {
     ctx: TCtx;
     base: string;
     head: string;
+    build: Build;
   }) => Promise<string | null>;
   listParentCommitShas: (args: {
     project: Project;
