@@ -32,6 +32,8 @@ const config: CodegenConfig = {
           GhApiInstallation: "../../github/index.js#GhApiInstallation",
           GhApiRepository: "../../github/index.js#GhApiRepository",
           GithubAccount: "../../database/models/index.js#GithubAccount",
+          GithubInstallation:
+            "../../database/models/index.js#GithubInstallation",
           GithubPullRequest: "../../database/models/index.js#GithubPullRequest",
           GithubRepository: "../../database/models/index.js#GithubRepository",
           GitlabProject: "../../database/models/index.js#GitlabProject",

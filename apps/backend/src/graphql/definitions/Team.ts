@@ -75,6 +75,7 @@ export const typeDefs = gql`
     inviteLink: String
     ssoGithubAccount: GithubAccount
     defaultUserLevel: TeamDefaultUserLevel!
+    githubLightInstallation: GithubInstallation
   }
 
   enum TeamDefaultUserLevel {
@@ -362,6 +363,24 @@ export const resolvers: IResolvers = {
 
       return team.defaultUserLevel as ITeamDefaultUserLevel;
     },
+    githubLightInstallation: async (account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      if (!account.githubLightInstallationId) {
+        return null;
+      }
+
+      const installation = await ctx.loaders.GithubInstallation.load(
+        account.githubLightInstallationId,
+      );
+      invariant(installation);
+      if (installation.deleted) {
+        return null;
+      }
+      return installation;
+    },
   },
   Query: {
     invitation: async (_root, { token }) => {
@@ -621,6 +640,7 @@ export const resolvers: IResolvers = {
           getAdminAccount({
             id: args.input.teamAccountId,
             user: ctx.auth.user,
+            withGraphFetched: "githubLightInstallation",
           }),
         ]);
 
@@ -628,7 +648,13 @@ export const resolvers: IResolvers = {
         throw forbidden("User does not have access to GitHub installation");
       }
 
-      const appOctokit = getAppOctokit();
+      const app =
+        teamAccount.githubLightInstallation &&
+        !teamAccount.githubLightInstallation.deleted
+          ? "light"
+          : "main";
+
+      const appOctokit = getAppOctokit({ app });
 
       const ghInstallation = await appOctokit.apps.getInstallation({
         installation_id: installation.githubId,
@@ -640,7 +666,7 @@ export const resolvers: IResolvers = {
       const githubAccount = await getOrCreateGithubAccount(ghOrg);
       invariant(githubAccount, "GitHub account not found");
 
-      const octokit = await getInstallationOctokit(installation.id);
+      const octokit = await getInstallationOctokit(installation.id, appOctokit);
       invariant(octokit, "Invalid installation");
 
       const { teamId } = teamAccount;

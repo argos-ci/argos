@@ -7,6 +7,7 @@ import { getPendingCommentBody } from "@/database/index.js";
 import {
   Account,
   GithubAccountMember,
+  GithubInstallation,
   GithubPullRequest,
   GithubRepository,
   Subscription,
@@ -31,13 +32,16 @@ import {
 } from "./eventHelpers.js";
 import { updateSubscription } from "./updateSubscription.js";
 
-export async function handleGitHubEvents({
-  name,
-  payload,
-}: EmitterWebhookEvent) {
+export async function handleGitHubEvents(
+  app: GithubInstallation["app"],
+  { name, payload }: EmitterWebhookEvent,
+) {
   logger.info("GitHub event", name);
   switch (name) {
     case "marketplace_purchase": {
+      if (app !== "main") {
+        return;
+      }
       switch (payload.action) {
         case "purchased": {
           const [plan, account] = await Promise.all([
@@ -94,6 +98,7 @@ export async function handleGitHubEvents({
         case "renamed": {
           if (payload.installation?.id) {
             const installation = await getOrCreateInstallation({
+              app,
               githubId: payload.installation.id,
             });
             await synchronizeFromInstallationId(installation.id);
@@ -108,6 +113,7 @@ export async function handleGitHubEvents({
         case "removed":
         case "added": {
           const installation = await getOrCreateInstallation({
+            app,
             githubId: payload.installation.id,
             deleted: false,
           });
@@ -122,6 +128,7 @@ export async function handleGitHubEvents({
       switch (payload.action) {
         case "created": {
           const installation = await getOrCreateInstallation({
+            app,
             githubId: payload.installation.id,
             deleted: false,
           });
@@ -130,6 +137,7 @@ export async function handleGitHubEvents({
         }
         case "deleted": {
           const installation = await getOrCreateInstallation({
+            app,
             githubId: payload.installation.id,
             deleted: true,
           });
@@ -202,6 +210,7 @@ export async function handleGitHubEvents({
           return;
         }
         const installation = await getOrCreateInstallation({
+          app,
           githubId: payload.installation.id,
           deleted: false,
         });

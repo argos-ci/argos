@@ -7,7 +7,7 @@ import {
   Subscription,
   User,
 } from "@/database/models/index.js";
-import { getTokenOctokit, GhApiInstallation } from "@/github/index.js";
+import { getTokenOctokit } from "@/github/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { unauthenticated } from "../util.js";
@@ -108,7 +108,7 @@ export const resolvers: IResolvers = {
           per_page: 100,
         });
       return {
-        edges: apiInstallations.data.installations as GhApiInstallation[],
+        edges: apiInstallations.data.installations,
         pageInfo: {
           hasNextPage: false,
           totalCount: apiInstallations.data.total_count,

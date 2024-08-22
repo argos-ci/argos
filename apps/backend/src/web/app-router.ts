@@ -7,7 +7,7 @@ import config from "@/config/index.js";
 import { getGoogleAuthUrl } from "@/google/index.js";
 import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
 import { slackMiddleware } from "@/slack/index.js";
-import { redisStore } from "@/util/rate-limit.js";
+import { createRedisStore } from "@/util/rate-limit.js";
 
 import { emailPreview } from "../email/express.js";
 import { auth } from "./middlewares/auth.js";
@@ -21,7 +21,7 @@ export const installAppRouter = async (app: express.Application) => {
     max: 1000, // Limit each IP to 1000 requests per `window` (here, per 10 seconds)
     standardHeaders: false, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    store: redisStore,
+    store: createRedisStore("app"),
   });
 
   app.use(limiter);
@@ -41,6 +41,9 @@ export const installAppRouter = async (app: express.Application) => {
             appUrl: config.get("github.appUrl"),
             loginUrl: config.get("github.loginUrl"),
             marketplaceUrl: config.get("github.marketplaceUrl"),
+          },
+          githubLight: {
+            appUrl: config.get("githubLight.appUrl"),
           },
           gitlab: {
             loginUrl: config.get("gitlab.loginUrl"),

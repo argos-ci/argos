@@ -23,9 +23,11 @@ const InstallationQuery = graphql(`
     $installationId: ID!
     $page: Int!
     $reposPerPage: Int
+    $fromAuthUser: Boolean!
   ) {
     ghApiInstallationRepositories(
       installationId: $installationId
+      fromAuthUser: $fromAuthUser
       page: $page
       reposPerPage: $reposPerPage
     ) {
@@ -130,6 +132,7 @@ function ReposPagination({
 
 export const GithubRepositoryList = (props: {
   installationId: string;
+  fromAuthUser: boolean;
   onSelectRepository: (repo: {
     id: string;
     name: string;
@@ -145,7 +148,12 @@ export const GithubRepositoryList = (props: {
     <Query
       fallback={<Loader />}
       query={InstallationQuery}
-      variables={{ installationId: props.installationId, page, reposPerPage }}
+      variables={{
+        installationId: props.installationId,
+        page,
+        reposPerPage,
+        fromAuthUser: props.fromAuthUser,
+      }}
     >
       {({ ghApiInstallationRepositories }) => {
         const pageCount = Math.ceil(

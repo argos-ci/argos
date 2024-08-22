@@ -1,6 +1,24 @@
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Link } from "@/ui/Link";
 
+export function AccountLink(props: {
+  name?: string | null | undefined;
+  login: string;
+  url: string;
+}) {
+  return (
+    <Link href={props.url} target="_blank" className="!text">
+      {props.name ? (
+        <>
+          {props.name} ({props.login})
+        </>
+      ) : (
+        props.login
+      )}
+    </Link>
+  );
+}
+
 const GithubAccountLinkFragment = graphql(`
   fragment GithubAccountLink_GithubAccount on GithubAccount {
     login
@@ -9,23 +27,19 @@ const GithubAccountLinkFragment = graphql(`
   }
 `);
 
-export const GithubAccountLink = (props: {
+export function GithubAccountLink(props: {
   githubAccount: FragmentType<typeof GithubAccountLinkFragment>;
-}) => {
+}) {
   const githubAccount = useFragment(
     GithubAccountLinkFragment,
     props.githubAccount,
   );
 
   return (
-    <Link href={githubAccount.url} target="_blank" className="!text">
-      {githubAccount.name ? (
-        <>
-          {githubAccount.name} ({githubAccount.login})
-        </>
-      ) : (
-        githubAccount.login
-      )}
-    </Link>
+    <AccountLink
+      login={githubAccount.login}
+      name={githubAccount.name}
+      url={githubAccount.url}
+    />
   );
-};
+}

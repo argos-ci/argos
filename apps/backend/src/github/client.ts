@@ -11,13 +11,32 @@ Octokit.plugin(retry);
 
 export type { Octokit };
 
-export function getAppOctokit(): Octokit {
+const apps: Record<
+  GithubInstallation["app"],
+  {
+    appId: string;
+    privateKey: string;
+  }
+> = {
+  main: {
+    appId: config.get("github.appId"),
+    privateKey: config.get("github.privateKey"),
+  },
+  light: {
+    appId: config.get("githubLight.appId"),
+    privateKey: config.get("githubLight.privateKey"),
+  },
+};
+
+export function getAppOctokit(input: {
+  app: GithubInstallation["app"];
+}): Octokit {
   return new Octokit({
     debug: config.get("env") === "development",
     authStrategy: createAppAuth,
     auth: {
-      appId: config.get("github.appId"),
-      privateKey: config.get("github.privateKey"),
+      appId: apps[input.app].appId,
+      privateKey: apps[input.app].privateKey,
     },
   });
 }
@@ -31,11 +50,14 @@ export function getTokenOctokit(token: string): Octokit {
 
 export async function getInstallationOctokit(
   installationId: string,
-  appOctokit: Octokit = getAppOctokit(),
+  appOctokit?: Octokit,
 ): Promise<Octokit | null> {
   const installation = await GithubInstallation.query()
     .findById(installationId)
     .throwIfNotFound();
+
+  appOctokit = appOctokit ?? getAppOctokit({ app: installation.app });
+
   if (installation.githubToken && installation.githubTokenExpiresAt) {
     const expiredAt = Number(new Date(installation.githubTokenExpiresAt));
     const now = Date.now();

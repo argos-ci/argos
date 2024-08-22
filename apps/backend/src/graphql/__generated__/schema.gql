@@ -245,6 +245,7 @@ type GhApiInstallationAccount implements Node {
   id: ID!
   login: String!
   name: String
+  url: String!
 }
 
 type GhApiInstallationConnection implements Connection {
@@ -270,6 +271,12 @@ type GithubAccount implements Node {
   login: String!
   name: String
   url: String!
+}
+
+type GithubInstallation implements Node {
+  ghAccount: GhApiInstallationAccount
+  ghInstallation: GhApiInstallation
+  id: ID!
 }
 
 type GithubPullRequest implements Node & PullRequest {
@@ -564,7 +571,7 @@ type Query {
 
   """Get Account by id"""
   accountById(id: ID!): Account
-  ghApiInstallationRepositories(installationId: ID!, page: Int!, reposPerPage: Int): GhApiRepositoryConnection!
+  ghApiInstallationRepositories(fromAuthUser: Boolean!, installationId: ID!, page: Int!, reposPerPage: Int): GhApiRepositoryConnection!
   glApiProjects(accountId: ID!, allProjects: Boolean!, groupId: ID, page: Int!, search: String, userId: ID): GlApiProjectConnection!
   invitation(token: String!): Team
 
@@ -742,6 +749,7 @@ type Team implements Account & Node {
   consumptionRatio: Float!
   currentPeriodScreenshots: Int!
   defaultUserLevel: TeamDefaultUserLevel!
+  githubLightInstallation: GithubInstallation
   githubMembers(after: Int = 0, first: Int = 30): TeamGithubMemberConnection
   gitlabAccessToken: String
   gitlabBaseUrl: String

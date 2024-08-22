@@ -9,6 +9,7 @@ import {
   BuildStats,
   File,
   GithubAccount,
+  GithubInstallation,
   GithubPullRequest,
   GithubRepository,
   GitlabProject,
@@ -24,6 +25,7 @@ import {
   Test,
   User,
 } from "@/database/models/index.js";
+import { getAppOctokit, GhApiInstallation } from "@/github/index.js";
 
 function createModelLoader<TModelClass extends ModelClass<Model>>(
   Model: TModelClass,
@@ -224,6 +226,26 @@ function createBuildStatsLoader() {
   });
 }
 
+function createGhApiInstallationLoader() {
+  return new DataLoader<
+    { app: GithubInstallation["app"]; installationId: number },
+    GhApiInstallation | null
+  >(async (inputs) => {
+    return Promise.all(
+      inputs.map(async (input) => {
+        const octokit = getAppOctokit({ app: input.app });
+        const result = await octokit.apps.getInstallation({
+          installation_id: input.installationId,
+        });
+        if (!result.data.account || !("login" in result.data.account)) {
+          return null;
+        }
+        return result.data;
+      }),
+    );
+  });
+}
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
@@ -232,7 +254,9 @@ export const createLoaders = () => ({
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
   BuildStats: createBuildStatsLoader(),
   File: createModelLoader(File),
+  GhApiInstallation: createGhApiInstallationLoader(),
   GithubAccount: createModelLoader(GithubAccount),
+  GithubInstallation: createModelLoader(GithubInstallation),
   GithubPullRequest: createModelLoader(GithubPullRequest),
   GithubRepository: createModelLoader(GithubRepository),
   GitlabProject: createModelLoader(GitlabProject),
