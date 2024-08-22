@@ -47,17 +47,29 @@ const strategy = {
 
     const repository = await GithubRepository.query()
       .joinRelated("githubAccount")
-      .withGraphJoined("[activeInstallation, projects]")
+      .withGraphJoined("[activeInstallations, projects]")
       .where("githubAccount.login", authData.owner)
       .findOne("github_repositories.name", authData.repository)
       .orderBy("github_repositories.updatedAt", "desc")
       .first();
 
-    if (
-      !repository ||
-      !repository.activeInstallation ||
-      !repository.projects?.[0]
-    ) {
+    if (!repository) {
+      return null;
+    }
+
+    invariant(repository.projects);
+
+    if (!repository.projects[0]) {
+      return null;
+    }
+
+    invariant(repository.activeInstallations);
+
+    const installation = GithubRepository.pickBestInstallation(
+      repository.activeInstallations,
+    );
+
+    if (!installation) {
       return null;
     }
 
@@ -68,9 +80,7 @@ const strategy = {
       );
     }
 
-    const octokit = await getInstallationOctokit(
-      repository.activeInstallation.id,
-    );
+    const octokit = await getInstallationOctokit(installation.id);
 
     if (!octokit) {
       return null;

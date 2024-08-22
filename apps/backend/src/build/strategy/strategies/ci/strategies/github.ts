@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
-import { Project } from "@/database/models/index.js";
+import { GithubRepository, Project } from "@/database/models/index.js";
 import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
 import { UnretryableError } from "@/job-core/index.js";
 
@@ -16,7 +16,7 @@ export const GithubStrategy: MergeBaseStrategy<{
   detect: (project: Project) => Boolean(project.githubRepositoryId),
   getContext: async (project: Project) => {
     await project.$fetchGraph(
-      "githubRepository.[githubAccount, activeInstallation]",
+      "githubRepository.[githubAccount, activeInstallations]",
       { skipFetched: true },
     );
 
@@ -26,7 +26,15 @@ export const GithubStrategy: MergeBaseStrategy<{
       UnretryableError,
     );
 
-    const installation = project.githubRepository.activeInstallation;
+    invariant(
+      project.githubRepository.activeInstallations,
+      "no active installations found",
+      UnretryableError,
+    );
+
+    const installation = GithubRepository.pickBestInstallation(
+      project.githubRepository.activeInstallations,
+    );
     invariant(
       installation,
       "no installation found, repository should be unlinked from project at this point",
@@ -40,8 +48,9 @@ export const GithubStrategy: MergeBaseStrategy<{
     const owner = project.githubRepository.githubAccount.login;
     const repo = project.githubRepository.name;
 
-    return { octokit, owner, repo };
+    return { octokit, owner, repo, installation };
   },
+
   getMergeBaseCommitSha: async (args) => {
     try {
       const { data } =

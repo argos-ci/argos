@@ -1,4 +1,5 @@
 import type { GithubPullRequest } from "@/database/models/GithubPullRequest.js";
+import { GithubRepository } from "@/database/models/index.js";
 import {
   getGhAccountType,
   getOrCreateGhAccount,
@@ -35,7 +36,7 @@ async function fetchPullRequest(
 
 export async function processPullRequest(pullRequest: GithubPullRequest) {
   await pullRequest.$fetchGraph(
-    "githubRepository.[activeInstallation,githubAccount]",
+    "githubRepository.[activeInstallations,githubAccount]",
   );
   unretryable(
     pullRequest.githubRepository,
@@ -47,7 +48,14 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
     "`githubAccount` relation not found",
   );
 
-  const installation = pullRequest.githubRepository.activeInstallation;
+  unretryable(
+    pullRequest.githubRepository.activeInstallations,
+    "`githubRepository.activeInstallations` relation not found",
+  );
+
+  const installation = GithubRepository.pickBestInstallation(
+    pullRequest.githubRepository.activeInstallations,
+  );
 
   if (!installation) {
     logger.info("No active installation found for repository", {

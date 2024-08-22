@@ -4,6 +4,7 @@ import pTimeout from "p-timeout";
 import {
   Build,
   BuildShard,
+  GithubRepository,
   Project,
   Screenshot,
 } from "@/database/models/index.js";
@@ -35,7 +36,7 @@ export async function checkIsPartialBuild(input: {
   const project = input.project.$clone();
 
   await project.$fetchGraph(
-    "githubRepository.[githubAccount,activeInstallation]",
+    "githubRepository.[githubAccount,activeInstallations]",
   );
 
   const { githubRepository } = project;
@@ -47,8 +48,14 @@ export async function checkIsPartialBuild(input: {
   const githubAccount = githubRepository.githubAccount;
 
   invariant(githubAccount, "No github account found");
+  invariant(
+    githubRepository.activeInstallations,
+    "No active installations found",
+  );
 
-  const installation = githubRepository.activeInstallation;
+  const installation = GithubRepository.pickBestInstallation(
+    githubRepository.activeInstallations,
+  );
 
   if (!installation) {
     return false;

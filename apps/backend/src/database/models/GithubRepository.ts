@@ -51,8 +51,8 @@ export class GithubRepository extends Model {
           to: "github_accounts.id",
         },
       },
-      activeInstallation: {
-        relation: Model.HasOneThroughRelation,
+      activeInstallations: {
+        relation: Model.HasManyRelation,
         modelClass: GithubInstallation,
         join: {
           from: "github_repositories.id",
@@ -78,6 +78,14 @@ export class GithubRepository extends Model {
   }
 
   githubAccount?: GithubAccount;
-  activeInstallation?: GithubInstallation | null;
+  activeInstallations?: GithubInstallation[] | null;
   projects?: Project[] | null;
+
+  static pickBestInstallation(installations: GithubInstallation[]) {
+    return (
+      installations.find((installation) => installation.app === "main") ??
+      installations[0] ??
+      null
+    );
+  }
 }

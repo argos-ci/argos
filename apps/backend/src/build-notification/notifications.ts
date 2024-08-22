@@ -5,6 +5,7 @@ import {
   Build,
   BuildNotification,
   GithubPullRequest,
+  GithubRepository,
 } from "@/database/models/index.js";
 import {
   checkErrorStatus,
@@ -93,8 +94,14 @@ async function sendGithubNotification(ctx: Context) {
   const githubAccount = githubRepository.githubAccount;
 
   invariant(githubAccount, "No github account found", UnretryableError);
+  invariant(
+    githubRepository.activeInstallations,
+    "No active installations found",
+  );
 
-  const installation = githubRepository.activeInstallation;
+  const installation = GithubRepository.pickBestInstallation(
+    githubRepository.activeInstallations,
+  );
 
   if (!installation) {
     return;
@@ -217,7 +224,7 @@ export const processBuildNotification = async (
   buildNotification: BuildNotification,
 ) => {
   await buildNotification.$fetchGraph(
-    `build.[project.[gitlabProject, githubRepository.[githubAccount,activeInstallation], account], compareScreenshotBucket]`,
+    `build.[project.[gitlabProject, githubRepository.[githubAccount,activeInstallations], account], compareScreenshotBucket]`,
   );
 
   invariant(buildNotification.build, "No build found", UnretryableError);
