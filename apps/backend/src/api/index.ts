@@ -2,6 +2,7 @@ import cors from "cors";
 import { Router } from "express";
 import { stringify } from "yaml";
 
+import { getAuthProject } from "./handlers/getAuthProject.js";
 import { getAuthProjectBuilds } from "./handlers/getAuthProjectBuilds.js";
 import { schema } from "./schema.js";
 import { errorHandler, registerHandler } from "./util.js";
@@ -24,6 +25,7 @@ router.get("/openapi.yaml", (_req, res) => {
 });
 
 // Register the handlers.
+registerHandler(router, getAuthProject);
 registerHandler(router, getAuthProjectBuilds);
 
 // Error handlers

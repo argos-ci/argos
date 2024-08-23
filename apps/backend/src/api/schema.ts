@@ -37,6 +37,11 @@ const invalidParameters = createErrorResponse("Invalid parameters");
 const unauthorized = createErrorResponse("Unauthorized");
 const serverError = createErrorResponse("Server error");
 
+const Project = z.object({
+  id: z.string(),
+  defaultBaseBranch: z.string(),
+});
+
 const Build = z
   .object({
     id: z.string(),
@@ -113,6 +118,23 @@ export const zodSchema = {
   },
   security: [{ tokenAuth: [] }],
   paths: {
+    "/project": {
+      get: {
+        operationId: "getAuthProject",
+        responses: {
+          "200": {
+            description: "Project",
+            content: {
+              "application/json": {
+                schema: Project,
+              },
+            },
+          },
+          "401": unauthorized,
+          "500": serverError,
+        },
+      },
+    },
     "/project/builds": {
       get: {
         operationId: "getAuthProjectBuilds",
