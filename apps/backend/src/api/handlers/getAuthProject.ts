@@ -24,14 +24,14 @@ export const getAuthProject: CreateAPIHandler = ({ get }) => {
     );
 
     // We have remote content access if the installation is the main app
-    const hasRemoteContentAcess = Boolean(
+    const hasRemoteContentAccess = Boolean(
       installation && installation.app === "main",
     );
 
     res.send({
       id: req.authProject.id,
       defaultBaseBranch: referenceBranch,
-      hasRemoteContentAcess,
+      hasRemoteContentAccess,
     });
   });
 };
