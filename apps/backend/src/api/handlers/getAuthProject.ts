@@ -14,13 +14,15 @@ export const getAuthProject: CreateAPIHandler = ({ get }) => {
 
     const [referenceBranch] = await Promise.all([
       req.authProject.$getReferenceBranch(),
-      req.authProject.$fetchGraph("githubRepository.activeInstallations"),
+      req.authProject.$fetchGraph(
+        "githubRepository.repoInstallations.installation",
+      ),
     ]);
 
-    invariant(req.authProject.githubRepository?.activeInstallations);
+    invariant(req.authProject.githubRepository);
 
     const installation = GithubRepository.pickBestInstallation(
-      req.authProject.githubRepository.activeInstallations,
+      req.authProject.githubRepository,
     );
 
     // We have remote content access if the installation is the main app

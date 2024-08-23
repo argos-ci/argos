@@ -22,10 +22,6 @@ const config = convict({
     default: "development",
     env: "NODE_ENV",
   },
-  googleAnalytics: {
-    doc: "The tracking id",
-    default: "UA-89989315-2",
-  },
   contactEmail: {
     doc: "The contact email",
     default: "contact@argos-ci.com",
@@ -166,18 +162,6 @@ const config = convict({
       format: String,
       default: "",
       env: "GITHUB_LIGHT_APP_PRIVATE_KEY",
-    },
-    clientId: {
-      doc: "Client ID",
-      format: String,
-      default: "",
-      env: "GITHUB_LIGHT_CLIENT_ID",
-    },
-    clientSecret: {
-      doc: "Client Secret",
-      format: String,
-      default: "",
-      env: "GITHUB_LIGHT_CLIENT_SECRET",
     },
     webhookSecret: {
       format: String,

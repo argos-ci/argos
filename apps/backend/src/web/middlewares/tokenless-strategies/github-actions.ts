@@ -47,7 +47,7 @@ const strategy = {
 
     const repository = await GithubRepository.query()
       .joinRelated("githubAccount")
-      .withGraphJoined("[activeInstallations, projects]")
+      .withGraphJoined("[repoInstallations.installation, projects]")
       .where("githubAccount.login", authData.owner)
       .findOne("github_repositories.name", authData.repository)
       .orderBy("github_repositories.updatedAt", "desc")
@@ -63,11 +63,7 @@ const strategy = {
       return null;
     }
 
-    invariant(repository.activeInstallations);
-
-    const installation = GithubRepository.pickBestInstallation(
-      repository.activeInstallations,
-    );
+    const installation = GithubRepository.pickBestInstallation(repository);
 
     if (!installation) {
       return null;

@@ -94,14 +94,8 @@ async function sendGithubNotification(ctx: Context) {
   const githubAccount = githubRepository.githubAccount;
 
   invariant(githubAccount, "No github account found", UnretryableError);
-  invariant(
-    githubRepository.activeInstallations,
-    "No active installations found",
-  );
 
-  const installation = GithubRepository.pickBestInstallation(
-    githubRepository.activeInstallations,
-  );
+  const installation = GithubRepository.pickBestInstallation(githubRepository);
 
   if (!installation) {
     return;
@@ -224,7 +218,7 @@ export const processBuildNotification = async (
   buildNotification: BuildNotification,
 ) => {
   await buildNotification.$fetchGraph(
-    `build.[project.[gitlabProject, githubRepository.[githubAccount,activeInstallations], account], compareScreenshotBucket]`,
+    `build.[project.[gitlabProject, githubRepository.[githubAccount,repoInstallations.installation], account], compareScreenshotBucket]`,
   );
 
   invariant(buildNotification.build, "No build found", UnretryableError);

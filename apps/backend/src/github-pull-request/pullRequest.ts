@@ -36,7 +36,7 @@ async function fetchPullRequest(
 
 export async function processPullRequest(pullRequest: GithubPullRequest) {
   await pullRequest.$fetchGraph(
-    "githubRepository.[activeInstallations,githubAccount]",
+    "githubRepository.[repoInstallations.installation,githubAccount]",
   );
   unretryable(
     pullRequest.githubRepository,
@@ -48,13 +48,8 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
     "`githubAccount` relation not found",
   );
 
-  unretryable(
-    pullRequest.githubRepository.activeInstallations,
-    "`githubRepository.activeInstallations` relation not found",
-  );
-
   const installation = GithubRepository.pickBestInstallation(
-    pullRequest.githubRepository.activeInstallations,
+    pullRequest.githubRepository,
   );
 
   if (!installation) {

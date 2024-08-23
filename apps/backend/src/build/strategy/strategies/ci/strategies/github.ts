@@ -21,7 +21,7 @@ export const GithubStrategy: MergeBaseStrategy<{
   detect: (project: Project) => Boolean(project.githubRepositoryId),
   getContext: async (project: Project) => {
     await project.$fetchGraph(
-      "githubRepository.[githubAccount, activeInstallations]",
+      "githubRepository.[githubAccount, repoInstallations.installation]",
       { skipFetched: true },
     );
 
@@ -31,15 +31,10 @@ export const GithubStrategy: MergeBaseStrategy<{
       UnretryableError,
     );
 
-    invariant(
-      project.githubRepository.activeInstallations,
-      "no active installations found",
-      UnretryableError,
+    const installation = GithubRepository.pickBestInstallation(
+      project.githubRepository,
     );
 
-    const installation = GithubRepository.pickBestInstallation(
-      project.githubRepository.activeInstallations,
-    );
     invariant(
       installation,
       "no installation found, repository should be unlinked from project at this point",

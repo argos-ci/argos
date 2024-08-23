@@ -36,7 +36,7 @@ export async function checkIsPartialBuild(input: {
   const project = input.project.$clone();
 
   await project.$fetchGraph(
-    "githubRepository.[githubAccount,activeInstallations]",
+    "githubRepository.[githubAccount,repoInstallations.installation]",
   );
 
   const { githubRepository } = project;
@@ -47,15 +47,9 @@ export async function checkIsPartialBuild(input: {
 
   const githubAccount = githubRepository.githubAccount;
 
-  invariant(githubAccount, "No github account found");
-  invariant(
-    githubRepository.activeInstallations,
-    "No active installations found",
-  );
+  invariant(githubAccount, "Relation `githubAccount` should be fetched");
 
-  const installation = GithubRepository.pickBestInstallation(
-    githubRepository.activeInstallations,
-  );
+  const installation = GithubRepository.pickBestInstallation(githubRepository);
 
   if (!installation) {
     return false;

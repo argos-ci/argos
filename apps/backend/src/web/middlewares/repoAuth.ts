@@ -28,6 +28,8 @@ export const repoAuth = [
       );
     }
 
+    console.log({ bearerToken });
+
     const strategy =
       tokenlessStrategies.find((strategy) => strategy.detect(bearerToken)) ??
       null;
