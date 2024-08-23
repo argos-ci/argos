@@ -40,6 +40,7 @@ const serverError = createErrorResponse("Server error");
 const Project = z.object({
   id: z.string(),
   defaultBaseBranch: z.string(),
+  hasRemoteContentAcess: z.boolean(),
 });
 
 const Build = z
