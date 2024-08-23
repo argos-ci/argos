@@ -87,16 +87,18 @@ export const errorHandler: ErrorRequestHandler = (
 
 type HandlerParams<T> = (T | T[])[];
 
-type GetAPIHandler<TPath extends Path> = (
-  path: TPath,
-  ...handlers: HandlerParams<GetOperationHandler<TPath>>
-) => void;
+type Context = {
+  get<TPath extends Path>(
+    path: TPath,
+    ...handlers: HandlerParams<GetOperationHandler<TPath>>
+  ): void;
+};
 
 /**
  * Register a GET handler.
  */
-function get<TPath extends Path>(router: Router) {
-  const apiHandler: GetAPIHandler<TPath> = (path, ...handlers) => {
+function get(router: Router) {
+  const apiHandler: Context["get"] = (path, ...handlers) => {
     const operation: ZodOpenApiOperationObject = zodSchema.paths[path].get;
     const wrappedHandlers = handlers.map((handler) =>
       typeof handler === "function"
@@ -143,10 +145,6 @@ function get<TPath extends Path>(router: Router) {
   };
   return apiHandler;
 }
-
-type Context = {
-  get: GetAPIHandler<Path>;
-};
 
 export type CreateAPIHandler = (context: Context) => void;
 
