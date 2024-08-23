@@ -49,6 +49,7 @@ describe("getAuthProject", () => {
         expect(res.body).toEqual({
           id: project.id,
           defaultBaseBranch: "main",
+          hasRemoteContentAccess: false,
         });
       });
   });
