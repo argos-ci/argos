@@ -92,6 +92,7 @@ CREATE TABLE public.accounts (
     "gitlabAccessToken" character varying(255),
     "gitlabBaseUrl" character varying(255),
     "slackInstallationId" bigint,
+    "githubLightInstallationId" bigint,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -451,7 +452,9 @@ CREATE TABLE public.github_installations (
     "githubId" integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL,
     "githubToken" character varying(255),
-    "githubTokenExpiresAt" timestamp with time zone
+    "githubTokenExpiresAt" timestamp with time zone,
+    app text DEFAULT 'main'::text NOT NULL,
+    CONSTRAINT github_installations_app_check CHECK ((app = ANY (ARRAY['main'::text, 'light'::text])))
 );
 
 
@@ -1882,6 +1885,13 @@ CREATE INDEX accounts_githubaccountid_index ON public.accounts USING btree ("git
 
 
 --
+-- Name: accounts_githublightinstallationid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX accounts_githublightinstallationid_index ON public.accounts USING btree ("githubLightInstallationId");
+
+
+--
 -- Name: accounts_teamid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2322,6 +2332,14 @@ ALTER TABLE ONLY public.accounts
 
 ALTER TABLE ONLY public.accounts
     ADD CONSTRAINT accounts_githubaccountid_foreign FOREIGN KEY ("githubAccountId") REFERENCES public.github_accounts(id);
+
+
+--
+-- Name: accounts accounts_githublightinstallationid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_githublightinstallationid_foreign FOREIGN KEY ("githubLightInstallationId") REFERENCES public.github_installations(id);
 
 
 --
@@ -2810,3 +2828,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024061
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240616142430_build_shards_indices.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240630151704_screenshot-threshold.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240706121810_screenshot-base-name.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240822082247_github-light.js', 1, NOW());
