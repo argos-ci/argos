@@ -60,7 +60,24 @@ export const createApp = async () => {
   app.use(
     helmet({
       // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: {
+        directives: {
+          "default-src": ["'self'"],
+          "img-src": [
+            "'self'",
+            "https://argos-ci.com",
+            "https://github.com",
+            "https://avatars.githubusercontent.com",
+            "https://argos.twic.pics",
+          ],
+          "script-src": [
+            "'self'",
+            // Script to update color classes
+            "'sha256-3eiqAvd5lbIOVQdobPBczwuRAhAf7/oxg3HH2aFmp8Y='",
+            ...config.get("csp.scriptSrc"),
+          ],
+        },
+      },
       crossOriginEmbedderPolicy: false,
       crossOriginResourcePolicy: false,
       crossOriginOpenerPolicy: false,

@@ -1,5 +1,6 @@
 // @ts-check
-import { devices } from "@playwright/test";
+import { getCSPScriptHash } from "@argos-ci/playwright";
+import { defineConfig, devices } from "@playwright/test";
 
 import argosConfig from "./apps/backend/src/config/index.js";
 
@@ -13,7 +14,7 @@ import argosConfig from "./apps/backend/src/config/index.js";
  * @see https://playwright.dev/docs/test-configuration
  * @type {import('@playwright/test').PlaywrightTestConfig}
  */
-const config = {
+const config = defineConfig({
   testDir: "./tests",
   /* Maximum time one test can run for. */
   timeout: 30 * 1000,
@@ -77,7 +78,10 @@ const config = {
     port: 3000,
     timeout: 10 * 1000,
     reuseExistingServer: false,
+    env: {
+      CSP_SCRIPT_SRC: `${getCSPScriptHash()},'unsafe-eval'`,
+    },
   },
-};
+});
 
 export default config;

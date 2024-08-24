@@ -32,7 +32,7 @@
   "packageManager": "npm@10.5.0",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.13",
-    "@argos-ci/playwright": "^3.4.1",
+    "@argos-ci/playwright": "^3.5.0",
     "@graphql-codegen/cli": "^5.0.2",
     "@graphql-codegen/client-preset": "^4.3.3",
     "@graphql-codegen/fragment-matcher": "^5.0.2",
