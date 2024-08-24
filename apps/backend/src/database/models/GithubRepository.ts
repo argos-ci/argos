@@ -1,10 +1,11 @@
+import { invariant } from "@argos/util/invariant";
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";
-import { GithubInstallation } from "./GithubInstallation.js";
 import { GithubPullRequest } from "./GithubPullRequest.js";
+import { GithubRepositoryInstallation } from "./GithubRepositoryInstallation.js";
 import { Project } from "./Project.js";
 
 export class GithubRepository extends Model {
@@ -51,19 +52,12 @@ export class GithubRepository extends Model {
           to: "github_accounts.id",
         },
       },
-      activeInstallation: {
-        relation: Model.HasOneThroughRelation,
-        modelClass: GithubInstallation,
+      repoInstallations: {
+        relation: Model.HasManyRelation,
+        modelClass: GithubRepositoryInstallation,
         join: {
           from: "github_repositories.id",
-          through: {
-            from: "github_repository_installations.githubRepositoryId",
-            to: "github_repository_installations.githubInstallationId",
-          },
-          to: "github_installations.id",
-        },
-        modify(builder) {
-          builder.where("github_installations.deleted", false);
+          to: "github_repository_installations.githubRepositoryId",
         },
       },
       pullRequests: {
@@ -77,7 +71,35 @@ export class GithubRepository extends Model {
     };
   }
 
+  projects?: Project[];
   githubAccount?: GithubAccount;
-  activeInstallation?: GithubInstallation | null;
-  projects?: Project[] | null;
+  repoInstallations?: GithubRepositoryInstallation[];
+  pullRequests?: GithubPullRequest[];
+
+  static pickBestInstallation(repository: GithubRepository) {
+    invariant(
+      repository.repoInstallations,
+      "Relation `repoInstallations` not loaded",
+    );
+
+    const installations = repository.repoInstallations.map(
+      (repoInstallation) => {
+        invariant(
+          repoInstallation.installation,
+          'Relation "installation" not loaded',
+        );
+        return repoInstallation.installation;
+      },
+    );
+
+    const activeInstallations = installations.filter(
+      (installation) => !installation.deleted,
+    );
+
+    return (
+      activeInstallations.find((installation) => installation.app === "main") ??
+      activeInstallations[0] ??
+      null
+    );
+  }
 }

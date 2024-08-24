@@ -11,6 +11,7 @@ export class GithubInstallation extends Model {
       deleted: { type: "boolean" },
       githubToken: { type: ["string", "null"] },
       githubTokenExpiresAt: { type: ["string", "null"] },
+      app: { type: "string", enum: ["main", "light"] },
     },
   });
 
@@ -18,4 +19,5 @@ export class GithubInstallation extends Model {
   deleted!: boolean;
   githubToken!: string | null;
   githubTokenExpiresAt!: string | null;
+  app!: "main" | "light";
 }

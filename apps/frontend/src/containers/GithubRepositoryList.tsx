@@ -23,9 +23,11 @@ const InstallationQuery = graphql(`
     $installationId: ID!
     $page: Int!
     $reposPerPage: Int
+    $fromAuthUser: Boolean!
   ) {
     ghApiInstallationRepositories(
       installationId: $installationId
+      fromAuthUser: $fromAuthUser
       page: $page
       reposPerPage: $reposPerPage
     ) {
@@ -128,7 +130,7 @@ function ReposPagination({
   );
 }
 
-export const GithubRepositoryList = (props: {
+export function GithubRepositoryList(props: {
   installationId: string;
   onSelectRepository: (repo: {
     id: string;
@@ -137,7 +139,8 @@ export const GithubRepositoryList = (props: {
   }) => void;
   disabled?: boolean;
   connectButtonLabel: string;
-}) => {
+  app: "main" | "light";
+}) {
   const reposPerPage = 100;
   const [page, setPage] = useState(1);
 
@@ -145,7 +148,12 @@ export const GithubRepositoryList = (props: {
     <Query
       fallback={<Loader />}
       query={InstallationQuery}
-      variables={{ installationId: props.installationId, page, reposPerPage }}
+      variables={{
+        installationId: props.installationId,
+        page,
+        reposPerPage,
+        fromAuthUser: props.app === "main",
+      }}
     >
       {({ ghApiInstallationRepositories }) => {
         const pageCount = Math.ceil(
@@ -178,7 +186,7 @@ export const GithubRepositoryList = (props: {
                 <ListRow className="p-4 text-sm">
                   <div>
                     Repository not in the list?{" "}
-                    <Link href={getInstallationUrl()} target="_blank">
+                    <Link href={getInstallationUrl(props.app)} target="_blank">
                       Manage repositories
                     </Link>
                   </div>
@@ -199,4 +207,4 @@ export const GithubRepositoryList = (props: {
       }}
     </Query>
   );
-};
+}

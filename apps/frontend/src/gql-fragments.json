@@ -25,6 +25,7 @@
       "GhApiInstallationAccount",
       "GhApiRepository",
       "GithubAccount",
+      "GithubInstallation",
       "GithubPullRequest",
       "GithubRepository",
       "GitlabProject",

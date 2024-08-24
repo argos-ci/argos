@@ -6,6 +6,7 @@ import type { Pojo, RelationMappings } from "objection";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";
+import { GithubInstallation } from "./GithubInstallation.js";
 import { Plan } from "./Plan.js";
 import { Project } from "./Project.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
@@ -60,6 +61,7 @@ export class Account extends Model {
       githubAccountId: { type: ["string", "null"] },
       gitlabBaseUrl: { type: ["string", "null"] },
       slackInstallationId: { type: ["string", "null"] },
+      githubLightInstallationId: { type: ["string", "null"] },
     },
   });
 
@@ -73,6 +75,7 @@ export class Account extends Model {
   gitlabAccessToken!: string | null;
   gitlabBaseUrl!: string | null;
   slackInstallationId!: string | null;
+  githubLightInstallationId!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);
@@ -135,6 +138,14 @@ export class Account extends Model {
           to: "slack_installations.id",
         },
       },
+      githubLightInstallation: {
+        relation: Model.HasOneRelation,
+        modelClass: GithubInstallation,
+        join: {
+          from: "accounts.githubLightInstallationId",
+          to: "github_installations.id",
+        },
+      },
     };
   }
 
@@ -144,6 +155,7 @@ export class Account extends Model {
   subscriptions?: Subscription[];
   projects?: Project[];
   slackInstallation?: SlackInstallation | null;
+  githubLightInstallation?: GithubInstallation | null;
 
   _cachedSubscriptionManager?: AccountSubscriptionManager;
 

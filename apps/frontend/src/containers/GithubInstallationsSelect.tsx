@@ -34,6 +34,7 @@ export const GithubInstallationsSelect = React.forwardRef<
     setValue: (value: string) => void;
     disabled?: boolean;
     onSwitchProvider?: () => void;
+    app: "main" | "light";
   }
 >(function GithubInstallationsSelect(props, ref) {
   const installations = useFragment(InstallationFragment, props.installations);
@@ -94,7 +95,7 @@ export const GithubInstallationsSelect = React.forwardRef<
           })}
           <ListBoxSeparator />
           <ListBoxItem
-            href={getInstallationUrl()}
+            href={getInstallationUrl(props.app)}
             target="_blank"
             textValue="Add GitHub Account"
           >

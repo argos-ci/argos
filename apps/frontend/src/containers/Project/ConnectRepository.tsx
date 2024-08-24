@@ -34,6 +34,7 @@ import {
 const ConnectRepositoryQuery = graphql(`
   query ConnectRepository($accountSlug: String!) {
     account(slug: $accountSlug) {
+      __typename
       id
       gitlabAccessToken
       glNamespaces {
@@ -45,6 +46,15 @@ const ConnectRepositoryQuery = graphql(`
         }
       }
       permissions
+      ... on Team {
+        githubLightInstallation {
+          id
+          ghInstallation {
+            id
+            ...GithubInstallationsSelect_GhApiInstallation
+          }
+        }
+      }
     }
     me {
       id
@@ -81,9 +91,10 @@ type GithubInstallationsProps = {
   disabled?: boolean;
   connectButtonLabel: string;
   onSwitch: () => void;
+  app: "main" | "light";
 };
 
-const GithubInstallations = (props: GithubInstallationsProps) => {
+function GithubInstallations(props: GithubInstallationsProps) {
   const firstInstallation = props.installations[0];
   invariant(firstInstallation, "no installations");
   const [value, setValue] = React.useState<string>(firstInstallation.id);
@@ -95,16 +106,18 @@ const GithubInstallations = (props: GithubInstallationsProps) => {
         value={value}
         setValue={setValue}
         onSwitchProvider={props.onSwitch}
+        app={props.app}
       />
       <GithubRepositoryList
         installationId={value}
         disabled={props.disabled}
         onSelectRepository={props.onSelectRepository}
         connectButtonLabel={props.connectButtonLabel}
+        app={props.app}
       />
     </div>
   );
-};
+}
 
 type GitlabNamespacesProps = {
   namespaces: GitlabNamespace[];
@@ -178,6 +191,7 @@ const GitlabNamespaces = (props: GitlabNamespacesProps) => {
 
 enum GitProvider {
   GitHub = "github",
+  GitHubLight = "github-light",
   GitLab = "gitlab",
 }
 
@@ -204,6 +218,14 @@ function GitHubButton(props: {
       </LinkButton>
     );
   }
+  return <GitHubBaseButton {...props} />;
+}
+
+function GitHubBaseButton(props: {
+  onPress: LinkButtonProps["onPress"];
+  children?: React.ReactNode;
+  size?: ButtonProps["size"];
+}) {
   return (
     <Button variant="github" size={props.size} onPress={props.onPress}>
       <ButtonIcon>
@@ -291,58 +313,88 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
   }
 
   const hasGhInstallations = me.ghInstallations.edges.length > 0;
+  const ghLightGhInstallation =
+    account.__typename === "Team"
+      ? account.githubLightInstallation?.ghInstallation
+      : null;
 
-  if (provider === GitProvider.GitHub && hasGhInstallations) {
-    return (
-      <GithubInstallations
-        onSelectRepository={props.onSelectRepository}
-        installations={me.ghInstallations.edges}
-        disabled={props.disabled}
-        connectButtonLabel={buttonLabels[props.variant]}
-        onSwitch={() => setAndStoreProvider(null)}
-      />
-    );
-  }
+  switch (provider) {
+    case GitProvider.GitHub: {
+      if (hasGhInstallations) {
+        return (
+          <GithubInstallations
+            onSelectRepository={props.onSelectRepository}
+            installations={me.ghInstallations.edges}
+            disabled={props.disabled}
+            connectButtonLabel={buttonLabels[props.variant]}
+            onSwitch={() => setAndStoreProvider(null)}
+            app="main"
+          />
+        );
+      }
+      break;
+    }
+    case GitProvider.GitHubLight: {
+      if (ghLightGhInstallation) {
+        return (
+          <GithubInstallations
+            onSelectRepository={props.onSelectRepository}
+            installations={[ghLightGhInstallation]}
+            disabled={props.disabled}
+            connectButtonLabel={buttonLabels[props.variant]}
+            onSwitch={() => setAndStoreProvider(null)}
+            app="light"
+          />
+        );
+      }
+      break;
+    }
+    case GitProvider.GitLab: {
+      if (
+        account.gitlabAccessToken &&
+        account.glNamespaces &&
+        account.glNamespaces.edges.length > 0
+      ) {
+        return (
+          <GitlabNamespaces
+            accountId={account.id}
+            onSelectProject={props.onSelectProject}
+            namespaces={account.glNamespaces.edges}
+            disabled={props.disabled}
+            connectButtonLabel={buttonLabels[props.variant]}
+            onSwitch={() => setAndStoreProvider(null)}
+          />
+        );
+      }
 
-  if (provider === GitProvider.GitLab) {
-    if (
-      account.gitlabAccessToken &&
-      account.glNamespaces &&
-      account.glNamespaces.edges.length > 0
-    ) {
       return (
-        <GitlabNamespaces
-          accountId={account.id}
-          onSelectProject={props.onSelectProject}
-          namespaces={account.glNamespaces.edges}
-          disabled={props.disabled}
-          connectButtonLabel={buttonLabels[props.variant]}
-          onSwitch={() => setAndStoreProvider(null)}
-        />
+        <Card className="flex h-full flex-col items-center justify-center gap-4 p-4">
+          <div
+            className="text-center text-lg"
+            style={{ textWrap: "balance" } as React.CSSProperties}
+          >
+            To import a project from GitLab, you need to setup a GitLab access
+            token first.
+          </div>
+          <div className="flex items-center justify-center gap-4">
+            <LinkButton href="https://argos-ci.com/docs/gitlab" target="_blank">
+              Setup GitLab Access token
+            </LinkButton>
+            <LinkButton
+              variant="secondary"
+              onPress={() => setAndStoreProvider(null)}
+            >
+              Use another Git provider
+            </LinkButton>
+          </div>
+        </Card>
       );
     }
-    return (
-      <Card className="flex h-full flex-col items-center justify-center gap-4 p-4">
-        <div
-          className="text-center text-lg"
-          style={{ textWrap: "balance" } as React.CSSProperties}
-        >
-          To import a project from GitLab, you need to setup a GitLab access
-          token first.
-        </div>
-        <div className="flex items-center justify-center gap-4">
-          <LinkButton href="https://argos-ci.com/docs/gitlab" target="_blank">
-            Setup GitLab Access token
-          </LinkButton>
-          <LinkButton
-            variant="secondary"
-            onPress={() => setAndStoreProvider(null)}
-          >
-            Use another Git provider
-          </LinkButton>
-        </div>
-      </Card>
-    );
+    case null: {
+      break;
+    }
+    default:
+      assertNever(provider);
   }
 
   switch (props.variant) {
@@ -356,6 +408,13 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
             >
               GitHub
             </GitHubButton>
+            {ghLightGhInstallation && (
+              <GitHubBaseButton
+                onPress={() => setAndStoreProvider(GitProvider.GitHubLight)}
+              >
+                GitHub (no content-access)
+              </GitHubBaseButton>
+            )}
             <GitLabButton
               onPress={() => setAndStoreProvider(GitProvider.GitLab)}
             >
@@ -385,6 +444,14 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
           >
             Continue with GitHub
           </GitHubButton>
+          {ghLightGhInstallation && (
+            <GitHubBaseButton
+              size="large"
+              onPress={() => setAndStoreProvider(GitProvider.GitHubLight)}
+            >
+              Continue with GitHub (no content-access)
+            </GitHubBaseButton>
+          )}
           <GitLabButton
             size="large"
             onPress={() => setAndStoreProvider(GitProvider.GitLab)}

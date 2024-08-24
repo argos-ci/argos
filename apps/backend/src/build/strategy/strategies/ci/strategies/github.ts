@@ -1,6 +1,10 @@
 import { invariant } from "@argos/util/invariant";
 
-import { Project } from "@/database/models/index.js";
+import {
+  GithubInstallation,
+  GithubRepository,
+  Project,
+} from "@/database/models/index.js";
 import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
 import { UnretryableError } from "@/job-core/index.js";
 
@@ -12,11 +16,12 @@ export const GithubStrategy: MergeBaseStrategy<{
   octokit: Octokit;
   owner: string;
   repo: string;
+  installation: GithubInstallation;
 }> = {
   detect: (project: Project) => Boolean(project.githubRepositoryId),
   getContext: async (project: Project) => {
     await project.$fetchGraph(
-      "githubRepository.[githubAccount, activeInstallation]",
+      "githubRepository.[githubAccount, repoInstallations.installation]",
       { skipFetched: true },
     );
 
@@ -26,7 +31,10 @@ export const GithubStrategy: MergeBaseStrategy<{
       UnretryableError,
     );
 
-    const installation = project.githubRepository.activeInstallation;
+    const installation = GithubRepository.pickBestInstallation(
+      project.githubRepository,
+    );
+
     invariant(
       installation,
       "no installation found, repository should be unlinked from project at this point",
@@ -40,9 +48,15 @@ export const GithubStrategy: MergeBaseStrategy<{
     const owner = project.githubRepository.githubAccount.login;
     const repo = project.githubRepository.name;
 
-    return { octokit, owner, repo };
+    return { octokit, owner, repo, installation };
   },
+
   getMergeBaseCommitSha: async (args) => {
+    // If the app is light, then we rely on the reference commit provided by the user in CLI.
+    if (args.ctx.installation.app === "light") {
+      return args.build.referenceCommit;
+    }
+
     try {
       const { data } =
         await args.ctx.octokit.rest.repos.compareCommitsWithBasehead({

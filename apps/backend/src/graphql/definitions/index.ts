@@ -8,6 +8,7 @@ import * as DateDefs from "./Date.js";
 import * as GhApiInstallation from "./GhApiInstallation.js";
 import * as GhApiRepository from "./GhApiRepository.js";
 import * as GithubAccount from "./GithubAccount.js";
+import * as GithubInstallation from "./GithubInstallation.js";
 import * as GithubPullRequest from "./GithubPullRequest.js";
 import * as GithubRepository from "./GithubRepository.js";
 import * as GitlabProject from "./GitlabProject.js";
@@ -39,6 +40,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   GhApiInstallation,
   GhApiRepository,
   GithubAccount,
+  GithubInstallation,
   GithubPullRequest,
   GithubRepository,
   GitlabProject,

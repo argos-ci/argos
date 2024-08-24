@@ -163,16 +163,24 @@ export const cancelSubscription = async (
   }
 };
 
-export const getOrCreateInstallation = async ({
+export async function getOrCreateInstallation({
   githubId,
   deleted = false,
+  app,
 }: {
   githubId: number;
   deleted?: boolean;
-}) => {
+  app: GithubInstallation["app"];
+}) {
   const data = deleted
-    ? { githubId, deleted: true, githubToken: null, githubTokenExpiresAt: null }
-    : { githubId, deleted: false };
+    ? {
+        app,
+        githubId,
+        deleted: true,
+        githubToken: null,
+        githubTokenExpiresAt: null,
+      }
+    : { app, githubId, deleted: false };
   const installation = await GithubInstallation.query().findOne({ githubId });
   if (installation) {
     if (installation.deleted !== deleted) {
@@ -184,4 +192,4 @@ export const getOrCreateInstallation = async ({
     return installation;
   }
   return GithubInstallation.query().insertAndFetch(data);
-};
+}

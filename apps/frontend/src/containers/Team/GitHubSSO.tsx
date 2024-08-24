@@ -102,9 +102,9 @@ const DisableButton = React.memo(function DisableButton(props: {
   );
 });
 
-export const TeamGitHubSSO = (props: {
+export function TeamGitHubSSO(props: {
   team: FragmentType<typeof TeamFragment>;
-}) => {
+}) {
   const team = useFragment(TeamFragment, props.team);
 
   const hasActiveSubscription =
@@ -159,4 +159,4 @@ export const TeamGitHubSSO = (props: {
       </CardFooter>
     </Card>
   );
-};
+}
