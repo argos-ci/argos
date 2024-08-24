@@ -30,9 +30,9 @@ const TeamFragment = graphql(`
   }
 `);
 
-export const TeamGitHubLight = (props: {
+export function TeamGitHubLight(props: {
   team: FragmentType<typeof TeamFragment>;
-}) => {
+}) {
   const team = useFragment(TeamFragment, props.team);
 
   return (
@@ -67,7 +67,10 @@ export const TeamGitHubLight = (props: {
       <CardFooter className="flex items-center justify-between">
         <p>
           Learn more about{" "}
-          <Link href="https://argos-ci.com/docs/gitlab" target="_blank">
+          <Link
+            href="https://argos-ci.com/docs/github#github-integration-without-content-permission"
+            target="_blank"
+          >
             using GitHub without content read permissions
           </Link>
           .
@@ -91,4 +94,4 @@ export const TeamGitHubLight = (props: {
       </CardFooter>
     </Card>
   );
-};
+}

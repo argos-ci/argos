@@ -130,9 +130,8 @@ function ReposPagination({
   );
 }
 
-export const GithubRepositoryList = (props: {
+export function GithubRepositoryList(props: {
   installationId: string;
-  fromAuthUser: boolean;
   onSelectRepository: (repo: {
     id: string;
     name: string;
@@ -140,7 +139,8 @@ export const GithubRepositoryList = (props: {
   }) => void;
   disabled?: boolean;
   connectButtonLabel: string;
-}) => {
+  app: "main" | "light";
+}) {
   const reposPerPage = 100;
   const [page, setPage] = useState(1);
 
@@ -152,7 +152,7 @@ export const GithubRepositoryList = (props: {
         installationId: props.installationId,
         page,
         reposPerPage,
-        fromAuthUser: props.fromAuthUser,
+        fromAuthUser: props.app === "main",
       }}
     >
       {({ ghApiInstallationRepositories }) => {
@@ -186,7 +186,7 @@ export const GithubRepositoryList = (props: {
                 <ListRow className="p-4 text-sm">
                   <div>
                     Repository not in the list?{" "}
-                    <Link href={getInstallationUrl()} target="_blank">
+                    <Link href={getInstallationUrl(props.app)} target="_blank">
                       Manage repositories
                     </Link>
                   </div>
@@ -207,4 +207,4 @@ export const GithubRepositoryList = (props: {
       }}
     </Query>
   );
-};
+}

@@ -91,7 +91,7 @@ type GithubInstallationsProps = {
   disabled?: boolean;
   connectButtonLabel: string;
   onSwitch: () => void;
-  fromAuthUser: boolean;
+  app: "main" | "light";
 };
 
 function GithubInstallations(props: GithubInstallationsProps) {
@@ -106,13 +106,14 @@ function GithubInstallations(props: GithubInstallationsProps) {
         value={value}
         setValue={setValue}
         onSwitchProvider={props.onSwitch}
+        app={props.app}
       />
       <GithubRepositoryList
-        fromAuthUser={props.fromAuthUser}
         installationId={value}
         disabled={props.disabled}
         onSelectRepository={props.onSelectRepository}
         connectButtonLabel={props.connectButtonLabel}
+        app={props.app}
       />
     </div>
   );
@@ -327,7 +328,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
             disabled={props.disabled}
             connectButtonLabel={buttonLabels[props.variant]}
             onSwitch={() => setAndStoreProvider(null)}
-            fromAuthUser
+            app="main"
           />
         );
       }
@@ -342,7 +343,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
             disabled={props.disabled}
             connectButtonLabel={buttonLabels[props.variant]}
             onSwitch={() => setAndStoreProvider(null)}
-            fromAuthUser={false}
+            app="light"
           />
         );
       }

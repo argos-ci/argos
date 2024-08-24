@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { useLocation } from "react-router-dom";
 
@@ -15,10 +16,20 @@ function useLoginUrl(redirect: string | null | undefined) {
   )}`;
 }
 
-export function getInstallationUrl() {
-  return `${config.get(
-    "github.appUrl",
-  )}/installations/new?state=${encodeURIComponent(window.location.pathname)}`;
+export function getInstallationUrl(app: "main" | "light") {
+  const baseURL = () => {
+    switch (app) {
+      case "main":
+        return config.get("github.appUrl");
+      case "light":
+        return config.get("githubLight.appUrl");
+      default:
+        assertNever(app);
+    }
+  };
+  const url = new URL("/installations/new", baseURL());
+  url.searchParams.set("state", window.location.pathname);
+  return url.toString();
 }
 
 export function GitHubLoginButton({

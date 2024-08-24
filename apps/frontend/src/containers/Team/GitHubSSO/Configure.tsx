@@ -66,16 +66,17 @@ function GitHubInstallationsSelectControl() {
     control: form.control,
     rules: { required: "Please select a GitHub account" },
   });
-  const value = (() => {
+  const installation = (() => {
     if (!controller.field.value) {
-      return "";
+      return null;
     }
     const installation = installations.find(
       (installation) => installation.id === controller.field.value,
     );
     invariant(installation, "Expected installation");
-    return installation.id;
+    return installation;
   })();
+  const value = installation?.id ?? "";
   return (
     <div>
       <GithubInstallationsSelect
@@ -89,6 +90,9 @@ function GitHubInstallationsSelectControl() {
           invariant(installation, "Expected installation");
           controller.field.onChange(installation.id);
         }}
+        // Could be wrong if the user use GitHub light
+        // @TODO use the correct app here
+        app="main"
       />
       {controller.fieldState.error?.message && (
         <FormError className="mt-2">
