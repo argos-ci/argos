@@ -74,6 +74,7 @@ export const createApp = async () => {
             "'self'",
             // Script to update color classes
             "'sha256-3eiqAvd5lbIOVQdobPBczwuRAhAf7/oxg3HH2aFmp8Y='",
+            ...config.get("csp.scriptSrc"),
           ],
         },
       },

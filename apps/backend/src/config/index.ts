@@ -61,6 +61,14 @@ const config = convict({
       default: false,
     },
   },
+  csp: {
+    scriptSrc: {
+      doc: "Content Security Policy script-src",
+      format: Array,
+      default: [],
+      env: "CSP_SCRIPT_SRC",
+    },
+  },
   api: {
     baseUrl: {
       doc: "The API base URL",
