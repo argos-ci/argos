@@ -76,6 +76,7 @@ export const createApp = async () => {
             "'sha256-3eiqAvd5lbIOVQdobPBczwuRAhAf7/oxg3HH2aFmp8Y='",
             ...config.get("csp.scriptSrc"),
           ],
+          "connect-src": ["'self'", "*"],
         },
       },
       crossOriginEmbedderPolicy: false,
