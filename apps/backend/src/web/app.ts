@@ -65,6 +65,7 @@ export const createApp = async () => {
           "default-src": ["'self'"],
           "img-src": [
             "'self'",
+            "data:",
             "https://argos-ci.com",
             "https://github.com",
             "https://avatars.githubusercontent.com",
