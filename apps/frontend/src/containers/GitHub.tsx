@@ -16,19 +16,37 @@ function useLoginUrl(redirect: string | null | undefined) {
   )}`;
 }
 
-export function getInstallationUrl(app: "main" | "light") {
-  const baseURL = () => {
+/**
+ * Get the URL to install the GitHub app.
+ */
+export function getGitHubAppManageURL(app: "main" | "light") {
+  const baseURL = (() => {
     switch (app) {
       case "main":
-        return config.get("github.appUrl");
+        return new URL(config.get("github.appUrl"));
       case "light":
-        return config.get("githubLight.appUrl");
+        return new URL(config.get("githubLight.appUrl"));
       default:
         assertNever(app);
     }
-  };
-  const url = new URL("/installations/new", baseURL());
-  url.searchParams.set("state", window.location.pathname);
+  })();
+  // /installations/new let you manage the installed app
+  // that's why we use it here
+  return new URL(
+    `${baseURL.pathname}/installations/new`,
+    baseURL.origin,
+  ).toString();
+}
+
+export function getGitHubMainAppInstallUrl(input: { pathname: string }) {
+  const url = new URL(getGitHubAppManageURL("main"));
+  url.searchParams.set("state", input.pathname);
+  return url.toString();
+}
+
+export function getGitHubLightAppInstallUrl(input: { accountId: string }) {
+  const url = new URL(getGitHubAppManageURL("light"));
+  url.searchParams.set("state", JSON.stringify({ accountId: input.accountId }));
   return url.toString();
 }
 
