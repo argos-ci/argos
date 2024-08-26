@@ -39,7 +39,7 @@ export function TeamGitHubLight(props: {
     <Card>
       <CardBody>
         <CardTitle id="github-without-content-access">
-          GitHub witout content access
+          GitHub without content access
         </CardTitle>
         <CardParagraph>
           Setup a GitHub app without content read permissions to use Argos
