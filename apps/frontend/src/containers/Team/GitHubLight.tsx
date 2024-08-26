@@ -1,7 +1,6 @@
 import * as React from "react";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
-import config from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { LinkButton } from "@/ui/Button";
 import {
@@ -13,6 +12,7 @@ import {
 } from "@/ui/Card";
 import { Link } from "@/ui/Link";
 
+import { getGitHubAppManageURL, getGitHubLightAppInstallUrl } from "../GitHub";
 import { AccountLink } from "../GithubAccountLink";
 
 const TeamFragment = graphql(`
@@ -76,17 +76,12 @@ export function TeamGitHubLight(props: {
           .
         </p>
         {team.githubLightInstallation ? (
-          <LinkButton
-            variant="secondary"
-            href={`${config.get("githubLight.appUrl")}/installations/new`}
-          >
+          <LinkButton variant="secondary" href={getGitHubAppManageURL("light")}>
             Uninstall
           </LinkButton>
         ) : (
           <LinkButton
-            href={`${config.get(
-              "githubLight.appUrl",
-            )}/installations/new?state=${encodeURIComponent(JSON.stringify({ accountId: team.id }))}`}
+            href={getGitHubLightAppInstallUrl({ accountId: team.id })}
           >
             Install GitHub App
           </LinkButton>

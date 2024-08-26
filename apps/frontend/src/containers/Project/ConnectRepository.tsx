@@ -25,6 +25,7 @@ import { PageLoader } from "@/ui/PageLoader";
 import { TextInput } from "@/ui/TextInput";
 import { getItem, removeItem, setItem } from "@/util/storage";
 
+import { getGitHubMainAppInstallUrl } from "../GitHub";
 import { GitLabLogo } from "../GitLab";
 import {
   GitlabProjectList,
@@ -207,9 +208,7 @@ function GitHubButton(props: {
       <LinkButton
         variant="github"
         size={props.size}
-        href={`${config.get(
-          "github.appUrl",
-        )}/installations/new?state=${encodeURIComponent(pathname)}`}
+        href={getGitHubMainAppInstallUrl({ pathname })}
       >
         <ButtonIcon>
           <MarkGithubIcon />

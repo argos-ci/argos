@@ -16,7 +16,7 @@ import {
 import { Time } from "@/ui/Time";
 
 import { Query } from "./Apollo";
-import { getInstallationUrl } from "./GitHub";
+import { getGitHubAppManageURL } from "./GitHub";
 
 const InstallationQuery = graphql(`
   query GithubRepositoryList_ghApiInstallationRepositories(
@@ -186,7 +186,10 @@ export function GithubRepositoryList(props: {
                 <ListRow className="p-4 text-sm">
                   <div>
                     Repository not in the list?{" "}
-                    <Link href={getInstallationUrl(props.app)} target="_blank">
+                    <Link
+                      href={getGitHubAppManageURL(props.app)}
+                      target="_blank"
+                    >
                       Manage repositories
                     </Link>
                   </div>
